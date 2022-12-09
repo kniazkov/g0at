@@ -6,6 +6,7 @@
 */
 
 #include <iostream>
+#include <cstdlib>
 #include "test_model.h"
 
 namespace goat {
@@ -20,7 +21,7 @@ namespace goat {
         { "string object", test_object_string }
     };
 
-    int unit_testing() {
+    bool unit_testing() {
         int passed = 0;
         int failed = 0;
         int count = sizeof(test_list) / sizeof(test_description);
@@ -35,10 +36,13 @@ namespace goat {
         }
         std::cout << "Unit testing done; total: " << count 
             << ", passed: " << passed << ", failed: " << failed << '.' << std::endl;
-        return failed != 0 ? -1 : 0;
+        return failed == 0;
     }   
 }
 
-int main(int argc, char** argv) {
-    return goat::unit_testing();
+int main() {
+    bool success = goat::unit_testing();
+    if (!success)
+        exit(EXIT_FAILURE);
+    return 0;
 }

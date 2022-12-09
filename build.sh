@@ -25,8 +25,8 @@ if [ -e unit_testing ]
 then
     echo ""
     ./unit_testing
-    echo ""
     testing_result=$?
+    echo ""
     echo "Done."
     exit $testing_result
 else
