@@ -11,7 +11,7 @@
 namespace goat {
 
     bool test_empty_object() {
-        return get_empty_object()->to_string() == L"{ }";
+        return get_empty_object()->to_string() == L"{}";
     }
 
     bool test_object_string() {
