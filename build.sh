@@ -9,5 +9,6 @@ cd build
 [ -e goat ] && rm goat
 cmake ../src
 make goat
+make unit_testing
 [ -e goat ] && cp goat ..
 cd ..

@@ -1,4 +1,4 @@
-name: build_goat
+name: build and test
 run-name: ${{ github.actor }} is building the Goat interpreter
 on: [push]
 jobs:
