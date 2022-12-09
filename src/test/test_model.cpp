@@ -6,6 +6,7 @@
 */
 
 #include "object.h"
+#include "object_string.h"
 
 namespace goat {
 
@@ -13,4 +14,9 @@ namespace goat {
         return get_empty_object()->to_string() == L"{}";
     }
 
+    bool test_object_string() {
+        std::wstring str = L"test";
+        object *obj = new object_string(str);
+        return obj->to_string() == str;
+    }
 }

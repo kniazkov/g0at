@@ -6,8 +6,29 @@
 [ -e goat ] && rm goat
 mkdir -p build
 cd build
+
 [ -e goat ] && rm goat
+[ -e unit_testing ] && rm unit_testing
+
 cmake ../src
+
 make goat
-[ -e goat ] && cp goat ..
-cd ..
+if [ -e goat ]
+then
+    cp goat ..
+else
+    exit -1
+fi
+
+make unit_testing
+if [ -e unit_testing ]
+then
+    echo ""
+    ./unit_testing
+    testing_result=$?
+    echo ""
+    echo "Done."
+    exit $testing_result
+else
+    exit -1
+fi

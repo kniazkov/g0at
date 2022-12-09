@@ -1,4 +1,4 @@
-name: build_goat
+name: build and test
 run-name: ${{ github.actor }} is building the Goat interpreter
 on: [push]
 jobs:
@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
       - name: build
         run: ./build.sh
         shell: bash
