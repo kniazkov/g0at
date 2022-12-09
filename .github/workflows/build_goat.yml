@@ -1,0 +1,9 @@
+name: build_goat
+run-name: ${{ github.actor }} is building the Goat interpreter
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: build.sh
