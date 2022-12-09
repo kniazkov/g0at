@@ -16,7 +16,8 @@ namespace goat {
     };
 
     static test_description test_list[] = {
-        { "empty object", test_empty_object }
+        { "empty object", test_empty_object },
+        { "string object", test_object_string }
     };
 
     int unit_testing() {

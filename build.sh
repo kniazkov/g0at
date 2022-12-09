@@ -23,8 +23,11 @@ fi
 make unit_testing
 if [ -e unit_testing ]
 then
+    echo ""
     ./unit_testing
+    echo ""
     testing_result=$?
+    echo "Done."
     exit $testing_result
 else
     exit -1

@@ -11,11 +11,12 @@
 namespace goat {
 
     bool test_empty_object() {
-        return get_empty_object()->to_string() == L"{}";
+        return get_empty_object()->to_string() == L"{ }";
     }
 
     bool test_object_string() {
-        object *obj = new object_string(L"test");
-        return true;
+        std::wstring str = L"test";
+        object *obj = new object_string(str);
+        return obj->to_string() == str;
     }
 }

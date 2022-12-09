@@ -5,16 +5,18 @@
 
 @echo off
 if exist goat.exe del goat.exe
-if exist unit_testing.exe del unit_testing.exe
 if not exist build mkdir build
 cd build
 if exist goat.exe del goat.exe
+if exist unit_testing.exe del unit_testing.exe
 cmake -G "MinGW Makefiles" ..\src
+
 make goat
+if exist build\goat.exe copy build\goat.exe .
+
 make unit_testing
 echo.
 if exist unit_testing.exe unit_testing.exe
 cd ..
 echo.
-if exist build\goat.exe copy build\goat.exe .
 echo Done.

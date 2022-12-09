@@ -10,5 +10,6 @@
 namespace goat {
 
     bool test_empty_object();
+    bool test_object_string();
 
 }
