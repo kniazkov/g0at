@@ -8,6 +8,7 @@ if exist goat.exe del goat.exe
 if exist unit_testing.exe del unit_testing.exe
 if not exist build mkdir build
 cd build
+if exist goat.exe del goat.exe
 cmake -G "MinGW Makefiles" ..\src
 make goat
 make unit_testing
