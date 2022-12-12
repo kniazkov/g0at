@@ -6,7 +6,8 @@
 */
 
 #include "object.h"
-#include "object_string.h"
+#include "strings.h"
+#include "unit_testing.h"
 
 namespace goat {
 
@@ -14,9 +15,15 @@ namespace goat {
         return get_empty_object()->to_string() == L"{}";
     }
 
-    bool test_object_string() {
-        std::wstring str = L"test";
-        object *obj = new object_string(str);
-        return obj->to_string() == str;
+    bool test_dynamic_string() {
+        bool result;
+        gc_data gc;
+        const std::wstring str = L"test";
+        object *obj = new dynamic_string(&gc, str);
+        result = str == obj->to_string();
+        assert_equals(unsigned int, 1, gc.get_count());
+        obj->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return result;
     }
 }

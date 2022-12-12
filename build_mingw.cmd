@@ -9,7 +9,7 @@ if not exist build mkdir build
 cd build
 if exist goat.exe del goat.exe
 if exist unit_testing.exe del unit_testing.exe
-cmake -G "MinGW Makefiles" ..\src
+cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug ..\src
 
 make goat
 if exist build\goat.exe copy build\goat.exe .

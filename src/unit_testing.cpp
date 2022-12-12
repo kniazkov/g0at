@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include "unit_testing.h"
 #include "test_model.h"
 
 namespace goat {
@@ -18,7 +19,7 @@ namespace goat {
 
     static test_description test_list[] = {
         { "empty object", test_empty_object },
-        { "string object", test_object_string }
+        { "dynamic string", test_dynamic_string }
     };
 
     bool unit_testing() {
@@ -26,7 +27,13 @@ namespace goat {
         int failed = 0;
         int count = sizeof(test_list) / sizeof(test_description);
         for (int i = 0; i < count; i++) {
-            bool result = test_list[i].test();
+            bool result = false;
+            try {
+                result = test_list[i].test();
+            } catch (test_failed_exception ex) {
+                std::cout << "Test '" << test_list[i].name << "': " 
+                    << ex.file << ", " << ex.line << ": " << ex.message << std::endl;
+            }
             if (result) {
                 passed++;
             } else {
@@ -37,7 +44,7 @@ namespace goat {
         std::cout << "Unit testing done; total: " << count 
             << ", passed: " << passed << ", failed: " << failed << '.' << std::endl;
         return failed == 0;
-    }   
+    }
 }
 
 int main() {

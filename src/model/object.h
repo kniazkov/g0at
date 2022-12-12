@@ -70,6 +70,28 @@ namespace goat {
     class object {
     public:
         /**
+         * @brief Destructor
+         */
+        virtual ~object() { }
+
+        /**
+         * @brief Increases the counter of objects referring to this object
+         * 
+         * This method is used by the garbage collector to count objects.
+         * The interpreter uses two garbage collection systems at once: one based on
+         * reference counting and the other on tracing. Using reference counting allows us
+         * to reduce the lifetime of an object - short-lived objects will be deleted as soon
+         * as the execution thread exits the scope. However, this method does not guarantee
+         * destruction in all cases (cyclic references will not be processed). 
+         */
+        virtual void add_ref() = 0;
+
+        /**
+         * @brief Decreases the counter of objects referring to this object
+         */
+        virtual void release() = 0;
+
+        /**
          * @brief Returns the type of the object
          * @return The type of the object
          */
@@ -77,11 +99,12 @@ namespace goat {
 
         /**
          * @brief Compares the object to another
+         * @param other Pointer to another object
          * 
          * Compares the object to another object and makes some decision (by some criteria) that
          * the object is "less" than the other
          */
-        virtual bool less(const object *other) const;
+        virtual bool less(const object* const other) const;
 
         /**
          * @brief Returns the string representation of the object, which is used for printing
@@ -97,7 +120,15 @@ namespace goat {
          */
         virtual std::wstring to_string_notation() const;
 
-    private:
+        /**
+         * @brief Retrieves the string value of the object
+         * @param value_ptr Pointer to retrievable value
+         * @return <code>true</code> if the object is a string (value can be retrieved),
+         *   or <code>false</code> otherwise
+         */
+        virtual bool get_string_value(std::wstring* const value_ptr) const;
+
+    protected:
         /**
          * @brief Comparator of two objects in order to place objects in the map
          * 

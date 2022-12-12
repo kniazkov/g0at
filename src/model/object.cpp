@@ -9,7 +9,7 @@
 
 namespace goat {
     
-    bool object::less(const object *other) const {
+    bool object::less(const object* const other) const {
         /*
            In general, an object is less than another if its address in memory is less.
         */
@@ -22,5 +22,9 @@ namespace goat {
 
     std::wstring object::to_string_notation() const {
         return L"{}";
+    }
+
+    bool object::get_string_value(std::wstring* const value_ptr) const {
+        return false;
     }
 }
