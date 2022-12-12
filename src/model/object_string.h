@@ -23,8 +23,9 @@ namespace goat {
             this->value = value;
         }
 
-        std::wstring to_string() override {
-            return value;
-        }
+        object_type get_type() const override;
+        bool less(const object *other) const override;
+        std::wstring to_string() const override;
+        std::wstring to_string_notation() const override;
     };
 }

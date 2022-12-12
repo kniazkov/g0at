@@ -43,6 +43,24 @@ namespace goat {
     };
 
     /**
+     * @brief Defines kinds of objects for further separation of objects in a comparison
+     * 
+     * Each object can contain child objects. They are stored in a map, whose key is also objects
+     * (since almost all Goat entities are objects). We need to compare objects in order to place
+     * them in the map. A simple comparison by memory address is not suitable, because,
+     * for example, two identical strings can have two different addresses in memory, but
+     * in terms of map it is the same key. Accordingly, we need to compare the contents of objects,
+     * but we cannot compare objects of different kinds (for example, an integer and a string).
+     * So we divide the objects into families, and inside the objects of the same type (family) we
+     * can compare the contents.
+     */
+    enum object_type {
+        generic = 1,
+        string,
+        integer
+    };
+
+    /**
      * @brief The basic essence of the Goat object-oriented language
      * 
      * Almost everything in the Goat programming language - data, functions, operators,
@@ -50,23 +68,56 @@ namespace goat {
      * as well as be a prototype for other objects.
      */
     class object {
-    private:
-        /// Set of child objects
-        std::map<object*, variable> children;
-    public:       
+    public:
         /**
-         * @brief Returns the string representation of the object,
-         *   which is used for printing and debugging purposes
-         * @return A string representation of an object 
+         * @brief Returns the type of the object
+         * @return The type of the object
          */
-        virtual std::wstring to_string();
+        virtual object_type get_type() const = 0;
 
         /**
-         * @brief Represents an object in Goat notation, that is, as a string
-         *   that can be transformed back into a Goat object
+         * @brief Compares the object to another
+         * 
+         * Compares the object to another object and makes some decision (by some criteria) that
+         * the object is "less" than the other
+         */
+        virtual bool less(const object *other) const;
+
+        /**
+         * @brief Returns the string representation of the object, which is used for printing
+         *   and debugging purposes
+         * @return A string representation of an object 
+         */
+        virtual std::wstring to_string() const;
+
+        /**
+         * @brief Represents an object in Goat notation, that is, as a string that can be
+         *   transformed back into a Goat object
          * @return A string representation of an object in Goat notation
          */
-        virtual std::wstring to_string_notation();
+        virtual std::wstring to_string_notation() const;
+
+    private:
+        /**
+         * @brief Comparator of two objects in order to place objects in the map
+         * 
+         * First it compares types, and then the contents of objects.
+         */
+        struct object_comparator {
+            bool operator()(const object *first, const object *second) const {
+                object_type first_type = first->get_type();
+                object_type second_type = second->get_type();
+                if (first_type == second_type) {
+                    return first->less(second);
+                }
+                return first_type < second_type;
+            }
+        };
+
+        /**
+         * @brief Set of child objects
+         */
+        std::map<object*, variable, object_comparator> children;
     };
 
     object * get_empty_object();

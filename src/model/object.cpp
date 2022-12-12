@@ -9,11 +9,18 @@
 
 namespace goat {
     
-    std::wstring object::to_string() {
+    bool object::less(const object *other) const {
+        /*
+           In general, an object is less than another if its address in memory is less.
+        */
+        return this < other;
+    }
+
+    std::wstring object::to_string() const {
         return to_string_notation();
     }
 
-    std::wstring object::to_string_notation() {
-        return L"";
+    std::wstring object::to_string_notation() const {
+        return L"{}";
     }
 }

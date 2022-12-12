@@ -13,7 +13,12 @@ namespace goat {
      * @brief Empty object that contains no other objects
      */
     class empty_object : public object {
-        std::wstring to_string_notation() override {
+
+        object_type get_type() const override {
+            return object_type::generic;
+        }
+
+        std::wstring to_string_notation() const override {
             return L"{}";
         }
     };
