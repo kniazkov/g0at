@@ -29,7 +29,7 @@ namespace goat {
 
     bool test_generic_object_string_notation() {
         gc_data gc;
-        object *obj = new generic_object(&gc);
+        object *obj = new generic_dynamic_object(&gc);
         object *key = new dynamic_string(&gc, L"alpha");
         object *value = new dynamic_string(&gc, L"black");
         obj->set_child(key, value);
@@ -60,7 +60,7 @@ namespace goat {
 
     bool test_static_string_declaration() {
         gc_data gc;
-        object *obj = new generic_object(&gc);
+        object *obj = new generic_dynamic_object(&gc);
         static_string key_1(L"alpha");
         static_string value_1(L"red");
         obj->set_child(&key_1, &value_1);

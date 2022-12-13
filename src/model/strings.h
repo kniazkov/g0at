@@ -25,7 +25,6 @@ namespace goat {
     public:
         /**
          * Constructor
-         * @param gc Data required for the garbage collector
          * @param value The value
          */
         base_string(const std::wstring &value) :
@@ -39,15 +38,31 @@ namespace goat {
         bool get_string_value(std::wstring* const value_ptr) const override;
     };
 
+    /**
+     * @brief A static string, that is, one that always exists in the system
+     *   and is not considered by the garbage collector
+     */
     class static_string : public static_object, public base_string {
     public:
+        /**
+         * Constructor
+         * @param value The value
+         */
         static_string(const std::wstring &value) : 
             base_string(value) {
         }
     };
 
+    /**
+     * @brief A dynamic string, that is, one that is created while the program is running
+     */
     class dynamic_string : public dynamic_object, public base_string {
     public:
+        /**
+         * Constructor
+         * @param gc Data required for the garbage collector
+         * @param value The value
+         */
         dynamic_string(gc_data* const gc, const std::wstring &value) : 
                 dynamic_object(gc), base_string(value) {
         }
