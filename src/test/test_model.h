@@ -12,4 +12,5 @@ namespace goat {
     bool test_empty_object();
     bool test_dynamic_string();
     bool test_generic_object_string_notation();
+    bool test_static_string_declaration();
 }

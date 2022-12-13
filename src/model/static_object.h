@@ -15,7 +15,7 @@ namespace goat {
      * @brief A static object always exists in the system, so it is not counted
      *   by the garbage collector
      */
-    class static_object : public object {
+    class static_object : public virtual object {
     public:
         void add_reference() override;
         void release() override;

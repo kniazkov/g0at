@@ -61,7 +61,7 @@ namespace goat {
      * 
      * If they are no longer needed, the garbage collector deletes them.
      */
-    class dynamic_object : public object {
+    class dynamic_object : public virtual object {
     public:
         /**
          * @brief Constructor

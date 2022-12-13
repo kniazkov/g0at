@@ -6,9 +6,9 @@
 */
 
 #include "unit_testing.h"
-#include "object.h"
-#include "generic_object.h"
-#include "strings.h"
+#include "model/object.h"
+#include "model/generic_object.h"
+#include "model/strings.h"
 
 namespace goat {
 
@@ -50,9 +50,33 @@ namespace goat {
         obj->set_child(key, value);
         key->release();
         value->release();
+        assert_equals(unsigned int, 7, gc.get_count());
         std::wstring result = obj->to_string_notation();
+        assert_equals(std::wstring, L"{\"alpha\": \"red\", \"beta\": \"green\", \"gamma\": \"blue\"}", result);
+        obj->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
+
+    bool test_static_string_declaration() {
+        gc_data gc;
+        object *obj = new generic_object(&gc);
+        static_string key_1(L"alpha");
+        static_string value_1(L"red");
+        obj->set_child(&key_1, &value_1);
+        static_string key_2(L"beta");
+        static_string value_2(L"green");
+        obj->set_child(&key_2, &value_2);
+        static_string key_3(L"gamma");
+        static_string value_3(L"blue");
+        obj->set_child(&key_3, &value_3);
+        assert_equals(unsigned int, 1, gc.get_count());
+        std::wstring result = obj->to_string_notation();
+        assert_equals(std::wstring, L"{\"alpha\": \"red\", \"beta\": \"green\", \"gamma\": \"blue\"}", result);
         obj->release();
         assert_equals(unsigned int, 0, gc.get_count());
         return true;
     }
 }
+
+

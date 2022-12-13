@@ -15,7 +15,7 @@ namespace goat {
     /**
      * @brief Object that stores an unicode string
      */
-    class dynamic_string : public dynamic_object {
+    class base_string : public virtual object {
     private:
         /**
          * @brief The value
@@ -28,8 +28,8 @@ namespace goat {
          * @param gc Data required for the garbage collector
          * @param value The value
          */
-        dynamic_string(gc_data* const gc, const std::wstring &value) :
-                dynamic_object(gc), value(value) {
+        base_string(const std::wstring &value) :
+                value(value) {
         }
 
         object_type get_type() const override;
@@ -37,5 +37,19 @@ namespace goat {
         std::wstring to_string() const override;
         std::wstring to_string_notation() const override;
         bool get_string_value(std::wstring* const value_ptr) const override;
+    };
+
+    class static_string : public static_object, public base_string {
+    public:
+        static_string(const std::wstring &value) : 
+            base_string(value) {
+        }
+    };
+
+    class dynamic_string : public dynamic_object, public base_string {
+    public:
+        dynamic_string(gc_data* const gc, const std::wstring &value) : 
+                dynamic_object(gc), base_string(value) {
+        }
     };
 }

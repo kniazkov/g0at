@@ -7,8 +7,8 @@
 
 #include <iostream>
 #include <cstdlib>
-#include "unit_testing.h"
-#include "test_model.h"
+#include "test/unit_testing.h"
+#include "test/test_model.h"
 
 namespace goat {
 
@@ -20,7 +20,8 @@ namespace goat {
     static test_description test_list[] = {
         { "empty object", test_empty_object },
         { "dynamic string", test_dynamic_string },
-        { "string notation of a generic object", test_generic_object_string_notation }
+        { "string notation of a generic object", test_generic_object_string_notation },
+        { "static strings declaration", test_static_string_declaration }
     };
 
     bool unit_testing() {
