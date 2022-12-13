@@ -9,11 +9,21 @@
 
 namespace goat {
 
-    void static_object::add_ref() {
+    void static_object::add_reference() {
         // Since a static object is never deleted, reference counting is not needed for it
     }
 
     void static_object::release() {
         // Since a static object is never deleted, reference counting is not needed for it
+    }
+
+    bool static_object::is_static() {
+        return true;
+    }
+
+    void static_object::set_child(object *key, variable &value) {
+        if (key->is_static() && value.obj->is_static()) {
+            set_child_unsafe(key, value);
+        }
     }
 }

@@ -28,18 +28,26 @@ namespace goat {
     dynamic_object::~dynamic_object() {
         for (auto pair = children.begin(); pair != children.end(); pair++) {
             pair->first->release();
-            pair->second.obj->release();
+            pair->second.release();
         }
     }
 
-    void dynamic_object::add_ref() {
+    void dynamic_object::add_reference() {
         refs++;
     }
 
     void dynamic_object::release() {
-        if (!(--refs)); {
+        if (!(--refs)) {
             gc->remove_object(this);
             delete this;
         }
+    }
+
+    bool dynamic_object::is_static() {
+        return false;
+    }
+
+    void dynamic_object::set_child(object *key, variable &value) {
+        set_child_unsafe(key, value);
     }
 }

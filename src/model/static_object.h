@@ -17,7 +17,9 @@ namespace goat {
      */
     class static_object : public object {
     public:
-        void add_ref() override;
+        void add_reference() override;
         void release() override;
+        bool is_static() override;
+        void set_child(object *key, variable &value) override;
     };
 }

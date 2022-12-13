@@ -31,15 +31,29 @@ namespace goat {
     /**
      * @brief Variable that stores the data
      * 
-     * A variable consists of two components: the processing object and the data. If a variable
-     * stores a primitive (e.g., an integer), then the object that processes it is static
-     * (i.e., not stored in the heap). This allows not to use dynamic memory for primitives,
+     * A variable consists of two components: the processing object (can't be null) and the data.
+     * If a variable stores a primitive (e.g., an integer), then the object that processes it is
+     * static (i.e., not stored in the heap). This allows not to use dynamic memory for primitives,
      * which greatly speeds up the interpreter. If the data are not primitive, then they are stored
      * inside the object, and the memory of such an object is allocated from the heap.
      */
     struct variable {
         object *obj;
         raw_data data;
+
+        /**
+         * @brief Increases the counter of objects referring to processing object
+         *
+         * This method is used by the garbage collector to count objects.
+         */
+        inline void add_reference();
+
+        /**
+         * @brief Decreases the counter of objects referring to processing object
+         *
+         * This method is used by the garbage collector to count objects.
+         */
+        inline void release();
     };
 
     /**
@@ -78,18 +92,21 @@ namespace goat {
          * @brief Increases the counter of objects referring to this object
          * 
          * This method is used by the garbage collector to count objects.
-         * The interpreter uses two garbage collection systems at once: one based on
-         * reference counting and the other on tracing. Using reference counting allows us
-         * to reduce the lifetime of an object - short-lived objects will be deleted as soon
-         * as the execution thread exits the scope. However, this method does not guarantee
-         * destruction in all cases (cyclic references will not be processed). 
          */
-        virtual void add_ref() = 0;
+        virtual void add_reference() = 0;
 
         /**
          * @brief Decreases the counter of objects referring to this object
+         * 
+         * This method is used by the garbage collector to count objects.
          */
         virtual void release() = 0;
+
+        /**
+         * @return <code>true</code> if the object is static (i.e. not counted by the
+         * garbage collector), or <code>false</code> otherwise
+         */
+        virtual bool is_static() = 0;
 
         /**
          * @brief Returns the type of the object
@@ -118,7 +135,25 @@ namespace goat {
          *   transformed back into a Goat object
          * @return A string representation of an object in Goat notation
          */
-        virtual std::wstring to_string_notation() const;
+        virtual std::wstring to_string_notation() const = 0;
+
+        /**
+         * @brief Sets the child object (key-value pair)
+         * @param key The key
+         * @param value The value
+         */
+        virtual void set_child(object *key, variable &value) = 0;
+
+        /**
+         * @brief Sets the child object (key-value pair), where object is an object
+         * @param key The key
+         * @param value The value
+         */
+        void set_child(object *key, object* value) {
+            variable var = {0};
+            var.obj = value;
+            set_child(key, var);
+        }
 
         /**
          * @brief Retrieves the string value of the object
@@ -135,7 +170,7 @@ namespace goat {
          * First it compares types, and then the contents of objects.
          */
         struct object_comparator {
-            bool operator()(const object *first, const object *second) const {
+            bool operator()(const object *first, const object* second) const {
                 object_type first_type = first->get_type();
                 object_type second_type = second->get_type();
                 if (first_type == second_type) {
@@ -149,7 +184,23 @@ namespace goat {
          * @brief Set of child objects
          */
         std::map<object*, variable, object_comparator> children;
+
+        /**
+         * @brief Sets the child object (key-value pair), but does not check
+         *   the correctness of this operation
+         * @param key The key
+         * @param value The value
+         */
+        void set_child_unsafe(object *key, variable &value);
     };
+
+    void variable::add_reference() {
+        obj->add_reference();
+    }
+
+    void variable::release() {
+        obj->release();
+    }
 
     object * get_empty_object();
 }

@@ -30,9 +30,9 @@ namespace goat {
      * @todo Escape entities
      */
     std::wstring dynamic_string::to_string_notation() const {
-        std::wstringstream wss;
-        wss << L'"' << value << L'"';
-        return wss.str();
+        std::wstringstream stream;
+        stream << L'"' << value << L'"';
+        return stream.str();
     }
 
     bool dynamic_string::get_string_value(std::wstring* const value_ptr) const {

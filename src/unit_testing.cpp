@@ -19,7 +19,8 @@ namespace goat {
 
     static test_description test_list[] = {
         { "empty object", test_empty_object },
-        { "dynamic string", test_dynamic_string }
+        { "dynamic string", test_dynamic_string },
+        { "string notation of a generic object", test_generic_object_string_notation }
     };
 
     bool unit_testing() {
@@ -31,7 +32,7 @@ namespace goat {
             try {
                 result = test_list[i].test();
             } catch (test_failed_exception ex) {
-                std::cout << "Test '" << test_list[i].name << "': " 
+                std::wcout << "Test '" << test_list[i].name << "': " 
                     << ex.file << ", " << ex.line << ": " << ex.message << std::endl;
             }
             if (result) {

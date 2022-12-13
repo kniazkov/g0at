@@ -15,6 +15,12 @@ namespace goat {
 
     /**
      * @brief Data required for the garbage collector
+     * 
+     * The interpreter uses two garbage collection systems at once: one based on
+     * reference counting and the other on tracing. Using reference counting allows us
+     * to reduce the lifetime of an object - short-lived objects will be deleted as soon
+     * as the execution thread exits the scope. However, this method does not guarantee
+     * destruction in all cases (cyclic references will not be processed). 
      */
     class gc_data {
     public:
@@ -64,12 +70,14 @@ namespace goat {
         dynamic_object(gc_data* const gc_ptr);
 
         /**
-         * @brief Destructor
+         * Destructor
          */
         ~dynamic_object();
 
-        void add_ref() override;
+        void add_reference() override;
         void release() override;
+        bool is_static() override;
+        void set_child(object *key, variable &value) override;
 
     private:
         /**

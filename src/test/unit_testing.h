@@ -29,7 +29,7 @@ namespace goat {
         /**
          * @brief The message that will be displayed in the log
          */
-        std::string message;
+        std::wstring message;
 
         /**
          * Constructor
@@ -51,7 +51,7 @@ namespace goat {
          */
         assertion_equals_exception(const char *file, int line, T expected, T actual) :
                 test_failed_exception(file, line) {
-            std::stringstream stream;
+            std::wstringstream stream;
             stream << "expected '" << expected << "' but actual '" << actual << "'.";
             message = stream.str();
         }

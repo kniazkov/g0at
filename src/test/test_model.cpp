@@ -5,9 +5,10 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
-#include "object.h"
-#include "strings.h"
 #include "unit_testing.h"
+#include "object.h"
+#include "generic_object.h"
+#include "strings.h"
 
 namespace goat {
 
@@ -16,14 +17,42 @@ namespace goat {
     }
 
     bool test_dynamic_string() {
-        bool result;
         gc_data gc;
         const std::wstring str = L"test";
         object *obj = new dynamic_string(&gc, str);
-        result = str == obj->to_string();
+        assert_equals(std::wstring, str, obj->to_string());
         assert_equals(unsigned int, 1, gc.get_count());
         obj->release();
         assert_equals(unsigned int, 0, gc.get_count());
-        return result;
+        return true;
+    }
+
+    bool test_generic_object_string_notation() {
+        gc_data gc;
+        object *obj = new generic_object(&gc);
+        object *key = new dynamic_string(&gc, L"alpha");
+        object *value = new dynamic_string(&gc, L"black");
+        obj->set_child(key, value);
+        key->release();
+        value->release();
+        key = new dynamic_string(&gc, L"beta");
+        value = new dynamic_string(&gc, L"green");
+        obj->set_child(key, value);
+        key->release();
+        value->release();
+        key = new dynamic_string(&gc, L"gamma");
+        value = new dynamic_string(&gc, L"blue");
+        obj->set_child(key, value);
+        key->release();
+        value->release();
+        key = new dynamic_string(&gc, L"alpha");
+        value = new dynamic_string(&gc, L"red");
+        obj->set_child(key, value);
+        key->release();
+        value->release();
+        std::wstring result = obj->to_string_notation();
+        obj->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
     }
 }
