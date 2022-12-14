@@ -11,7 +11,6 @@
 #include "dynamic_object.h"
 
 namespace goat {
-    
     /**
      * @brief Object that stores an unicode string
      */
@@ -27,9 +26,7 @@ namespace goat {
          * Constructor
          * @param value The value
          */
-        base_string(const std::wstring &value) :
-                value(value) {
-        }
+        base_string(const std::wstring &value);
 
         object_type get_type() const override;
         bool less(const object* const others) const override;
@@ -67,4 +64,9 @@ namespace goat {
                 dynamic_object(gc), base_string(value) {
         }
     };
+
+    /**
+     * @return Pointer to the prototype of string objects
+     */
+    object * get_string_prototype();
 }

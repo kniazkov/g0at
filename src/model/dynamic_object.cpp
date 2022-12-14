@@ -29,7 +29,7 @@ namespace goat {
         for (auto pair = children.begin(); pair != children.end(); pair++) {
             pair->first->release();
             pair->second.release();
-        }
+        } 
     }
 
     void dynamic_object::add_reference() {

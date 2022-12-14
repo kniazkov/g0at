@@ -5,13 +5,26 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
+#include <cassert>
 #include "object.h"
+#include "root_object.h"
 
 namespace goat {
     
+    object::object() {
+        /*
+            By default, the prototype for any object is the root object:
+        */
+        proto.data.obj = get_root_object();
+        proto.count = 1;
+    }
+
+    object::~object() {
+    }
+
     bool object::less(const object* const other) const {
         /*
-           In general, an object is less than another if its address in memory is less.
+           In general, an object is less than another if its address in memory is less:
         */
         return this < other;
     }

@@ -29,4 +29,29 @@ namespace goat {
         stream << L'}';
         return stream.str();
     }
+
+    generic_dynamic_object::generic_dynamic_object(gc_data *gc, prototype_list *pl) :
+            dynamic_object(gc) {
+        if (pl->count == 1) {
+            (proto.data.obj = pl->data[0])->add_reference();
+        } else if (pl->count > 1) {
+            proto.count = pl->count;
+            proto.data.list = new object*[pl->count];
+            for (unsigned int i = 0; i < pl->count; i++) {
+                proto.data.list[i] = pl->data[i];
+                proto.data.list[i]->add_reference();
+            }
+        }
+    }
+
+    generic_dynamic_object::~generic_dynamic_object() {
+        if (proto.count > 1) {
+            for (unsigned int i = 0; i < proto.count; i++) {
+                proto.data.list[i]->release();
+            }
+            delete proto.data.list;
+        } else {
+            proto.data.obj->release();
+        }
+    }
 }

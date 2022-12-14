@@ -8,8 +8,32 @@
 #include <cassert>
 #include <sstream>
 #include "strings.h"
+#include "generic_object.h"
 
 namespace goat {
+    /**
+     * Prototype object for objects that store a string
+     */
+    class prototype : public generic_static_object {
+    public:
+        /**
+         * @brief Constructor
+         */
+        prototype() {
+        }
+    };
+
+    static prototype proto_instance;
+
+    object * get_string_prototype() {
+        return &proto_instance;
+    }
+
+    base_string::base_string(const std::wstring &value) {
+        this->value = value;
+        proto.count = 1;
+        proto.data.obj = &proto_instance;
+    }
 
     object_type base_string::get_type() const {
         return object_type::string;

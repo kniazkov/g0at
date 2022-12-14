@@ -23,9 +23,17 @@ namespace goat {
     };
 
     /**
-     * @brief A pre-defined object permanently present in the system
+     * @brief A predefined object permanently present in the system
      */
     class generic_static_object : public static_object, public generic_object {
+    };
+
+    /**
+     * @brief List of prototypes used when creating a generic dynamic object
+     */
+    struct prototype_list {
+        object** data;
+        unsigned int count;
     };
 
     /**
@@ -36,9 +44,13 @@ namespace goat {
         /**
          * Constructor
          * @param gc Data required for the garbage collector
+         * @param proto List of prototypes used when creating a dynamic object
          */
-        generic_dynamic_object(gc_data* const gc) :
-                dynamic_object(gc) {
-        }
+        generic_dynamic_object(gc_data *gc, prototype_list *proto);
+
+        /**
+         * Destructor
+         */
+        ~generic_dynamic_object();
     };
 }

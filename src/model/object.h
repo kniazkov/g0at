@@ -8,6 +8,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <map>
 #include <cstdint>
 
@@ -84,9 +85,14 @@ namespace goat {
     class object {
     public:
         /**
+         * @brief Constructor
+         */
+        object();
+
+        /**
          * @brief Destructor
          */
-        virtual ~object() { }
+        virtual ~object();
 
         /**
          * @brief Increases the counter of objects referring to this object
@@ -185,7 +191,26 @@ namespace goat {
          */
         std::map<object*, variable, object_comparator> children;
 
-        /**
+        struct {
+            /**
+             * @brief List of prototypes
+             * 
+             * If an object has one prototype, it is stored in the <code>obj</code> variable.
+             * If there are several prototypes, the list of prototypes is stored in the 
+             * <code>list</code> variable.
+             */
+            union {
+                object *obj;
+                object **list;
+            } data;
+
+            /**
+             * @brief Number of prototypes of the object
+             */
+            unsigned int count;
+        } proto;
+        
+         /**
          * @brief Sets the child object (key-value pair), but does not check
          *   the correctness of this operation
          * @param key The key
