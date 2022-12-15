@@ -10,22 +10,26 @@
 namespace goat {
 
     root_object::root_object() {
+
+    }
+
+    object * root_object::get_first_prototype() {
         /*
-         * The root object itself has no prototype:
-         */
-        proto.count = 0;
-        proto.data.obj = nullptr;
+            Root object has no prototypes:
+        */
+        return nullptr;
+    }
+
+    unsigned int root_object::get_number_of_prototypes() {
+        /*
+            Root object has no prototypes:
+        */
+        return 0;
     }
 
     static root_object instance;
-    static object *ptr = &instance;
-    static prototype_list list = { &ptr, 1 };
 
     object * get_root_object() {
         return &instance;
-    }
-
-    prototype_list * get_prototype_list_contains_root_object() {
-        return &list;
     }
 }

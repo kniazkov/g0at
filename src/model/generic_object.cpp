@@ -5,6 +5,7 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
+#include <cassert>
 #include <sstream>
 #include "generic_object.h"
 
@@ -30,28 +31,42 @@ namespace goat {
         return stream.str();
     }
 
-    generic_dynamic_object::generic_dynamic_object(gc_data *gc, prototype_list *pl) :
-            dynamic_object(gc) {
-        if (pl->count == 1) {
-            (proto.data.obj = pl->data[0])->add_reference();
-        } else if (pl->count > 1) {
-            proto.count = pl->count;
-            proto.data.list = new object*[pl->count];
-            for (unsigned int i = 0; i < pl->count; i++) {
-                proto.data.list[i] = pl->data[i];
-                proto.data.list[i]->add_reference();
-            }
-        }
+    generic_dynamic_object::generic_dynamic_object(gc_data *gc, object *proto)
+            : dynamic_object(gc), proto(proto) {
+        proto->add_reference();
     }
 
     generic_dynamic_object::~generic_dynamic_object() {
-        if (proto.count > 1) {
-            for (unsigned int i = 0; i < proto.count; i++) {
-                proto.data.list[i]->release();
-            }
-            delete proto.data.list;
-        } else {
-            proto.data.obj->release();
+        proto->release();
+    }
+
+    object * generic_dynamic_object::get_first_prototype() {
+        return proto;
+    }
+
+    object_with_multiple_prototypes::object_with_multiple_prototypes(gc_data *gc,
+            std::vector<object*> &proto) : dynamic_object(gc), proto(proto)  {
+        assert(proto.size() > 1);
+        for (object *obj : proto) {
+            obj->add_reference();
         }
+    }
+
+    object_with_multiple_prototypes::~object_with_multiple_prototypes() {
+        for (object *obj : proto) {
+            obj->release();
+        }
+    }
+
+    object * object_with_multiple_prototypes::get_prototype(unsigned int index) {
+        return index < proto.size() ? proto[index] : nullptr;
+    }
+
+    object * object_with_multiple_prototypes::get_first_prototype() {
+        return proto[0];
+    }
+
+    unsigned int object_with_multiple_prototypes::get_number_of_prototypes() {
+        return proto.size();
     }
 }

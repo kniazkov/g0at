@@ -31,8 +31,6 @@ namespace goat {
 
     base_string::base_string(const std::wstring &value) {
         this->value = value;
-        proto.count = 1;
-        proto.data.obj = &proto_instance;
     }
 
     object_type base_string::get_type() const {
@@ -44,6 +42,10 @@ namespace goat {
         bool other_is_a_string = other->get_string_value(&other_value);
         assert(other_is_a_string);
         return value < other_value;
+    }
+
+    object * base_string::get_first_prototype() {
+        return &proto_instance;
     }
 
     std::wstring base_string::to_string() const {

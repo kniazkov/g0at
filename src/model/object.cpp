@@ -12,11 +12,6 @@
 namespace goat {
     
     object::object() {
-        /*
-            By default, the prototype for any object is the root object:
-        */
-        proto.data.obj = get_root_object();
-        proto.count = 1;
     }
 
     object::~object() {
@@ -27,6 +22,24 @@ namespace goat {
            In general, an object is less than another if its address in memory is less:
         */
         return this < other;
+    }
+
+    object * object::get_prototype(unsigned int index) {
+        return index ? nullptr : get_first_prototype();
+    }
+
+    object * object::get_first_prototype() {
+        /*
+            By default, the prototype for any object is the root object:
+        */
+        return get_root_object();
+    }
+
+    unsigned int object::get_number_of_prototypes() {
+        /*
+            By default, the object has one prototype:
+        */
+        return 1;
     }
 
     std::wstring object::to_string() const {

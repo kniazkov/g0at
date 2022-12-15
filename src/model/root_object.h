@@ -22,15 +22,13 @@ namespace goat {
          * Constructor
          */
         root_object();
+
+        object *get_first_prototype() override;
+        unsigned int get_number_of_prototypes() override;
     };
 
     /**
      * @return Pointer to the root object instance
      */
     object *get_root_object();
-
-    /**
-     * @return Pointer to prototype list that contains root object
-     */
-    prototype_list * get_prototype_list_contains_root_object();
 }

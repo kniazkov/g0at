@@ -109,6 +109,7 @@ namespace goat {
         virtual void release() = 0;
 
         /**
+         * @brief Determines if the object is static or not
          * @return <code>true</code> if the object is static (i.e. not counted by the
          * garbage collector), or <code>false</code> otherwise
          */
@@ -128,6 +129,26 @@ namespace goat {
          * the object is "less" than the other
          */
         virtual bool less(const object* const other) const;
+
+        /**
+         * @brief Returns the prototype of this object by index
+         * @param index The index
+         * @return The prototype of this object or <code>nullptr</code> if there is no prototype
+         *   for the specified index
+         */
+        virtual object *get_prototype(unsigned int index);
+
+        /**
+         * @brief Returns the first prototype of this object
+         * @return The first prototype of this object
+         */
+        virtual object *get_first_prototype();
+
+        /**
+         * @brief Returns the number of prototypes of this object
+         * @return The number of prototypes of this object
+         */
+        virtual unsigned int get_number_of_prototypes();
 
         /**
          * @brief Returns the string representation of the object, which is used for printing
@@ -190,25 +211,6 @@ namespace goat {
          * @brief Set of child objects
          */
         std::map<object*, variable, object_comparator> children;
-
-        struct {
-            /**
-             * @brief List of prototypes
-             * 
-             * If an object has one prototype, it is stored in the <code>obj</code> variable.
-             * If there are several prototypes, the list of prototypes is stored in the 
-             * <code>list</code> variable.
-             */
-            union {
-                object *obj;
-                object **list;
-            } data;
-
-            /**
-             * @brief Number of prototypes of the object
-             */
-            unsigned int count;
-        } proto;
         
          /**
          * @brief Sets the child object (key-value pair), but does not check
@@ -217,6 +219,19 @@ namespace goat {
          * @param value The value
          */
         void set_child_unsafe(object *key, variable &value);
+    
+    private:
+        /**
+         * @brief Privte copy constructor to prevent copying
+         */
+        object(const object &) {
+        }
+
+        /**
+         * @brief Privte assignment operator to prevent copying
+         */
+        void operator=(const object &) {
+        }
     };
 
     void variable::add_reference() {

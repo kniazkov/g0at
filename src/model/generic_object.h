@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <vector>
 #include "static_object.h"
 #include "dynamic_object.h"
 
@@ -29,14 +30,6 @@ namespace goat {
     };
 
     /**
-     * @brief List of prototypes used when creating a generic dynamic object
-     */
-    struct prototype_list {
-        object** data;
-        unsigned int count;
-    };
-
-    /**
      * @brief An object whose structure is set by the programmer in the program code
      */
     class generic_dynamic_object : public dynamic_object, public generic_object {
@@ -44,13 +37,50 @@ namespace goat {
         /**
          * Constructor
          * @param gc Data required for the garbage collector
-         * @param proto List of prototypes used when creating a dynamic object
+         * @param proto The prototype of the object
          */
-        generic_dynamic_object(gc_data *gc, prototype_list *proto);
+        generic_dynamic_object(gc_data *gc, object *proto);
 
         /**
          * Destructor
          */
         ~generic_dynamic_object();
+
+        object* get_first_prototype() override;
+
+    private:
+        /**
+         * @brief The prototype of the object
+         */
+        object *proto;
+    };
+
+    /**
+     * @brief A dynamic object (i.e. an object whose structure is set by the programmer
+     *   in the program code) that has two or more prototypes
+     */
+    class object_with_multiple_prototypes : public dynamic_object, public generic_object {
+    public:
+        /**
+         * Constructor
+         * @param gc Data required for the garbage collector
+         * @param proto The list of prototypes of the object
+         */
+        object_with_multiple_prototypes(gc_data *gc, std::vector<object*> &proto);
+
+        /**
+         * Destructor
+         */
+        ~object_with_multiple_prototypes();
+
+        object* get_prototype(unsigned int index) override;
+        object* get_first_prototype() override;
+        unsigned int get_number_of_prototypes() override;
+
+    private:
+        /**
+         * @brief The list of prototypes of the object
+         */
+        std::vector<object*> proto;
     };
 }

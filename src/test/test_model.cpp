@@ -30,7 +30,7 @@ namespace goat {
 
     bool test_generic_object_string_notation() {
         gc_data gc;
-        object *obj = new generic_dynamic_object(&gc, get_prototype_list_contains_root_object());
+        object *obj = new generic_dynamic_object(&gc, get_root_object());
         object *key = new dynamic_string(&gc, L"alpha");
         object *value = new dynamic_string(&gc, L"black");
         obj->set_child(key, value);
@@ -61,7 +61,7 @@ namespace goat {
 
     bool test_static_string_declaration() {
         gc_data gc;
-        object *obj = new generic_dynamic_object(&gc, get_prototype_list_contains_root_object());
+        object *obj = new generic_dynamic_object(&gc, get_root_object());
         static_string key_1(L"alpha");
         static_string value_1(L"red");
         obj->set_child(&key_1, &value_1);
