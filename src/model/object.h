@@ -165,21 +165,21 @@ namespace goat {
         virtual std::wstring to_string_notation() const = 0;
 
         /**
-         * @brief Sets the child object (key-value pair)
+         * @brief Sets the attribute (key-value pair)
          * @param key The key
          * @param value The value
          */
-        virtual void set_child(object *key, variable &value) = 0;
+        virtual void set_attribute(object *key, variable &value) = 0;
 
         /**
-         * @brief Sets the child object (key-value pair), where object is an object
+         * @brief Sets the attribute (key-value pair), where value is an object
          * @param key The key
          * @param value The value
          */
-        void set_child(object *key, object* value) {
+        void set_attribute(object *key, object* value) {
             variable var = {0};
             var.obj = value;
-            set_child(key, var);
+            set_attribute(key, var);
         }
 
         /**
@@ -189,36 +189,6 @@ namespace goat {
          *   or <code>false</code> otherwise
          */
         virtual bool get_string_value(std::wstring* const value_ptr) const;
-
-    protected:
-        /**
-         * @brief Comparator of two objects in order to place objects in the map
-         * 
-         * First it compares types, and then the contents of objects.
-         */
-        struct object_comparator {
-            bool operator()(const object *first, const object* second) const {
-                object_type first_type = first->get_type();
-                object_type second_type = second->get_type();
-                if (first_type == second_type) {
-                    return first->less(second);
-                }
-                return first_type < second_type;
-            }
-        };
-
-        /**
-         * @brief Set of child objects
-         */
-        std::map<object*, variable, object_comparator> children;
-        
-         /**
-         * @brief Sets the child object (key-value pair), but does not check
-         *   the correctness of this operation
-         * @param key The key
-         * @param value The value
-         */
-        void set_child_unsafe(object *key, variable &value);
     
     private:
         /**

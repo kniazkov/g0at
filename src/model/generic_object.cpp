@@ -19,7 +19,7 @@ namespace goat {
         std::wstringstream stream;
         stream << L'{';
         bool flag = false;
-        for (auto pair = children.begin(); pair != children.end(); pair++) {
+        for (auto pair = attributes.begin(); pair != attributes.end(); pair++) {
             if (flag) {
                 stream << ", ";
             }

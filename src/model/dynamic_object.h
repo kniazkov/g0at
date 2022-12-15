@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "object.h"
+#include "object_with_attributes.h"
 
 namespace goat {
     
@@ -61,7 +61,7 @@ namespace goat {
      * 
      * If they are no longer needed, the garbage collector deletes them.
      */
-    class dynamic_object : public virtual object {
+    class dynamic_object : public virtual object_with_attributes {
     public:
         /**
          * @brief Constructor
@@ -77,7 +77,7 @@ namespace goat {
         void add_reference() override;
         void release() override;
         bool is_static() override;
-        void set_child(object *key, variable &value) override;
+        void set_attribute(object *key, variable &value) override;
 
     private:
         /**

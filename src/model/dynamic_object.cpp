@@ -26,7 +26,7 @@ namespace goat {
     }
 
     dynamic_object::~dynamic_object() {
-        for (auto pair = children.begin(); pair != children.end(); pair++) {
+        for (auto pair = attributes.begin(); pair != attributes.end(); pair++) {
             pair->first->release();
             pair->second.release();
         } 
@@ -47,7 +47,7 @@ namespace goat {
         return false;
     }
 
-    void dynamic_object::set_child(object *key, variable &value) {
-        set_child_unsafe(key, value);
+    void dynamic_object::set_attribute(object *key, variable &value) {
+        set_attribute_unsafe(key, value);
     }
 }

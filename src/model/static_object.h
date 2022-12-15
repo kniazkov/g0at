@@ -20,6 +20,6 @@ namespace goat {
         void add_reference() override;
         void release() override;
         bool is_static() override;
-        void set_child(object *key, variable &value) override;
+        void set_attribute(object *key, variable &value) override;
     };
 }

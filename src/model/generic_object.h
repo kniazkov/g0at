@@ -8,6 +8,7 @@
 #pragma once
 
 #include <vector>
+#include "object_with_attributes.h"
 #include "static_object.h"
 #include "dynamic_object.h"
 
@@ -17,7 +18,7 @@ namespace goat {
      * @brief An "ordinary" object that does not have any special properties
      *   (such as built-in data types)
      */
-    class generic_object : public virtual object {
+    class generic_object : public virtual object_with_attributes {
     public:
         object_type get_type() const override;
         std::wstring to_string_notation() const override;

@@ -21,9 +21,9 @@ namespace goat {
         return true;
     }
 
-    void static_object::set_child(object *key, variable &value) {
-        if (key->is_static() && value.obj->is_static()) {
-            set_child_unsafe(key, value);
-        }
+    void static_object::set_attribute(object *key, variable &value) {
+        /**
+         * @todo: Exception
+         */
     }
 }
