@@ -31,6 +31,10 @@ namespace goat {
         return this == proto;
     }
 
+    variable * root_object::get_attribute(object *key) {
+        return get_own_attribute(key);
+    }
+
     static root_object instance;
 
     object * get_root_object() {

@@ -191,6 +191,21 @@ namespace goat {
         }
 
         /**
+         * @brief Searches for an attribute in the object and its prototypes by the key
+         * @param key The key
+         * @return Pointer to value or <code>nullptr</code> if there is no such attribute 
+         */
+        virtual variable * get_attribute(object *key);
+
+        /**
+         * @brief Searches for an attribute that belongs to this object,
+         *   but not to its prototypes, by the key
+         * @param key The key
+         * @return Pointer to value or <code>nullptr</code> if there is no such attribute 
+         */
+        virtual variable * get_own_attribute(object *key);
+
+        /**
          * @brief Retrieves the string value of the object
          * @param value_ptr Pointer to retrievable value
          * @return <code>true</code> if the object is a string (value can be retrieved),

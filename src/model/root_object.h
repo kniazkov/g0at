@@ -26,6 +26,7 @@ namespace goat {
         object *get_first_prototype() const override;
         unsigned int get_number_of_prototypes() const override;
         bool is_instance_of(const object *proto) const override;
+        variable * get_attribute(object *key) override;
     };
 
     /**

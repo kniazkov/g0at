@@ -53,6 +53,18 @@ namespace goat {
         return to_string_notation();
     }
 
+    variable * object::get_attribute(object *key) {
+        /*
+            If the object does not have its own attributes,
+            need to look for them in the prototype:
+        */
+        return get_first_prototype()->get_attribute(key);
+    }
+
+    variable * object::get_own_attribute(object *key) {
+        return nullptr;
+    }
+
     bool object::get_string_value(std::wstring* const value_ptr) const {
         return false;
     }

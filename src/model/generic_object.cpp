@@ -129,4 +129,14 @@ namespace goat {
         }
         return false;
     }
+
+    variable * object_with_multiple_prototypes::get_attribute(object *key) {
+        for (object *obj : topology) {
+            variable *result = obj->get_own_attribute(key);
+            if (result != nullptr) {
+                return result;
+            }
+        }
+        return nullptr;
+    }
 }

@@ -15,6 +15,10 @@ namespace goat {
      * @brief An object that contains a set of attributes, that is, child objects
      */
     class object_with_attributes : public virtual object {
+    public:
+        variable * get_attribute(object *key) override;
+        variable * get_own_attribute(object *key) override;
+        
     protected:
         /**
          * @brief Comparator of two objects in order to place objects in the map
