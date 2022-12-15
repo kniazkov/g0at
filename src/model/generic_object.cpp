@@ -40,7 +40,7 @@ namespace goat {
         proto->release();
     }
 
-    object * generic_dynamic_object::get_first_prototype() {
+    object * generic_dynamic_object::get_first_prototype() const {
         return proto;
     }
 
@@ -58,15 +58,27 @@ namespace goat {
         }
     }
 
-    object * object_with_multiple_prototypes::get_prototype(unsigned int index) {
+    object * object_with_multiple_prototypes::get_prototype(unsigned int index) const {
         return index < proto.size() ? proto[index] : nullptr;
     }
 
-    object * object_with_multiple_prototypes::get_first_prototype() {
+    object * object_with_multiple_prototypes::get_first_prototype() const {
         return proto[0];
     }
 
-    unsigned int object_with_multiple_prototypes::get_number_of_prototypes() {
+    unsigned int object_with_multiple_prototypes::get_number_of_prototypes() const {
         return proto.size();
+    }
+
+    bool object_with_multiple_prototypes::is_instance_of(const object* possible_proto) const {
+        if (this == possible_proto) {
+            return true;
+        }
+        for (object *obj : proto) {
+            if (obj->is_instance_of(possible_proto)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

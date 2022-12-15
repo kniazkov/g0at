@@ -47,7 +47,7 @@ namespace goat {
          */
         ~generic_dynamic_object();
 
-        object* get_first_prototype() override;
+        object* get_first_prototype() const override;
 
     private:
         /**
@@ -74,9 +74,10 @@ namespace goat {
          */
         ~object_with_multiple_prototypes();
 
-        object* get_prototype(unsigned int index) override;
-        object* get_first_prototype() override;
-        unsigned int get_number_of_prototypes() override;
+        object* get_prototype(unsigned int index) const override;
+        object* get_first_prototype() const override;
+        unsigned int get_number_of_prototypes() const override;
+        bool is_instance_of(const object* proto) const override;
 
     private:
         /**

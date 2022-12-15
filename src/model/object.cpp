@@ -24,22 +24,29 @@ namespace goat {
         return this < other;
     }
 
-    object * object::get_prototype(unsigned int index) {
+    object * object::get_prototype(unsigned int index) const {
         return index ? nullptr : get_first_prototype();
     }
 
-    object * object::get_first_prototype() {
+    object * object::get_first_prototype() const {
         /*
             By default, the prototype for any object is the root object:
         */
         return get_root_object();
     }
 
-    unsigned int object::get_number_of_prototypes() {
+    unsigned int object::get_number_of_prototypes() const {
         /*
             By default, the object has one prototype:
         */
         return 1;
+    }
+
+    bool object::is_instance_of(const object *proto) const {
+        if (this == proto) {
+            return true;
+        }
+        return get_first_prototype()->is_instance_of(proto);
     }
 
     std::wstring object::to_string() const {

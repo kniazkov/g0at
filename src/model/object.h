@@ -136,19 +136,27 @@ namespace goat {
          * @return The prototype of this object or <code>nullptr</code> if there is no prototype
          *   for the specified index
          */
-        virtual object *get_prototype(unsigned int index);
+        virtual object *get_prototype(unsigned int index) const;
 
         /**
          * @brief Returns the first prototype of this object
          * @return The first prototype of this object
          */
-        virtual object *get_first_prototype();
+        virtual object *get_first_prototype() const;
 
         /**
          * @brief Returns the number of prototypes of this object
          * @return The number of prototypes of this object
          */
-        virtual unsigned int get_number_of_prototypes();
+        virtual unsigned int get_number_of_prototypes() const;
+
+        /**
+         * @brief Determines that the object is inherited from another object
+         * @param proto A possible prototype of the object
+         * @return <code>true</code> if the object has the specified prototype,
+         *    and <code>false</code> otherwise 
+         */
+        virtual bool is_instance_of(const object *proto) const;
 
         /**
          * @brief Returns the string representation of the object, which is used for printing

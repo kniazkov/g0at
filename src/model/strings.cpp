@@ -44,7 +44,7 @@ namespace goat {
         return value < other_value;
     }
 
-    object * base_string::get_first_prototype() {
+    object * base_string::get_first_prototype() const {
         return &proto_instance;
     }
 

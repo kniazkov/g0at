@@ -13,18 +13,22 @@ namespace goat {
 
     }
 
-    object * root_object::get_first_prototype() {
+    object * root_object::get_first_prototype() const {
         /*
             Root object has no prototypes:
         */
         return nullptr;
     }
 
-    unsigned int root_object::get_number_of_prototypes() {
+    unsigned int root_object::get_number_of_prototypes() const {
         /*
             Root object has no prototypes:
         */
         return 0;
+    }
+
+    bool root_object::is_instance_of(const object* proto) const {
+        return this == proto;
     }
 
     static root_object instance;

@@ -78,6 +78,45 @@ namespace goat {
         assert_equals(unsigned int, 0, gc.get_count());
         return true;
     }
+
+    bool test_is_instance_of() {
+        assert_equals(bool, true, get_root_object()->is_instance_of(get_root_object()));
+        gc_data gc;
+        object *str = new dynamic_string(&gc, L"test");
+        assert_equals(bool, true, str->is_instance_of(get_root_object()));
+        assert_equals(bool, true, str->is_instance_of(get_string_prototype()));
+        assert_equals(bool, false, str->is_instance_of(get_empty_object()));
+        str->release();
+        object *A = new generic_dynamic_object(&gc, get_root_object());
+        object *B = new generic_dynamic_object(&gc, A);
+        object *C = new generic_dynamic_object(&gc, A);
+        std::vector<object*> list = {B, C};
+        object *D = new object_with_multiple_prototypes(&gc, list);
+        object *E = new generic_dynamic_object(&gc, D);
+        assert_equals(bool, true, B->is_instance_of(get_root_object()));
+        assert_equals(bool, true, B->is_instance_of(A));
+        assert_equals(bool, true, B->is_instance_of(B));
+        assert_equals(bool, false, B->is_instance_of(C));
+        assert_equals(bool, false, B->is_instance_of(D));
+        assert_equals(bool, true, D->is_instance_of(get_root_object()));
+        assert_equals(bool, true, D->is_instance_of(A));
+        assert_equals(bool, true, D->is_instance_of(B));
+        assert_equals(bool, true, D->is_instance_of(C));
+        assert_equals(bool, true, D->is_instance_of(D));
+        assert_equals(bool, false, D->is_instance_of(E));
+        assert_equals(bool, true, E->is_instance_of(get_root_object()));
+        assert_equals(bool, true, E->is_instance_of(A));
+        assert_equals(bool, true, E->is_instance_of(B));
+        assert_equals(bool, true, E->is_instance_of(C));
+        assert_equals(bool, true, E->is_instance_of(D));
+        assert_equals(bool, true, E->is_instance_of(E));
+        assert_equals(bool, false, E->is_instance_of(get_empty_object()));
+        A->release();
+        B->release();
+        C->release();
+        D->release();
+        E->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
 }
-
-
