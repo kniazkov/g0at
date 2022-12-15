@@ -84,5 +84,10 @@ namespace goat {
          * @brief The list of prototypes of the object
          */
         std::vector<object*> proto;
+
+        /**
+         * @brief Full list of prototypes in the order defined by the topological sorting algorithm
+         */
+        std::vector<object*> topology;
     };
 }

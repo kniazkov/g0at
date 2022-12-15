@@ -12,9 +12,6 @@
 
 namespace goat {
 
-
-
-
     bool unit_testing() {
         unsigned int passed = 0;
         unsigned int failed = 0;

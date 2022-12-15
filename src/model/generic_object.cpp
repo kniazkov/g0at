@@ -7,6 +7,8 @@
 
 #include <cassert>
 #include <sstream>
+#include <stack>
+#include <set>
 #include "generic_object.h"
 
 namespace goat {
@@ -44,11 +46,60 @@ namespace goat {
         return proto;
     }
 
+    /**
+     * @brief Data used for topological sorting of the object graph
+     * 
+     * Topological sorting is used to determine the traversal order of the prototype tree
+     * in the case of multiple inheritance.
+     */
+    struct topological_sorting_data {
+        /**
+         * @brief Stack containing sorted objects
+         * 
+         * An object from which nothing is inherited will be put into this stack last.
+         */
+        std::stack<object*> stack;
+
+        /**
+         * @brief Set of already processed objects, needed to avoid putting
+         *   already processed objects to the stack
+         */
+        std::set<object*> processed_objects;
+    };
+
+    /**
+     * @brief Topological sorting algorithm
+     * @param obj Root object
+     * @param data Data used for topological sorting
+     */
+    static void topological_sorting(object *obj, topological_sorting_data *data) {
+        if (data->processed_objects.find(obj) != data->processed_objects.end()) {
+            return;
+        }
+
+        unsigned int count = obj->get_number_of_prototypes();
+        for (unsigned int i = 0; i < count; i++) {
+            topological_sorting(obj->get_prototype(i), data);
+        }
+
+        data->stack.push(obj);
+        data->processed_objects.insert(obj);
+    }
+
     object_with_multiple_prototypes::object_with_multiple_prototypes(gc_data *gc,
             std::vector<object*> &proto) : dynamic_object(gc), proto(proto)  {
         assert(proto.size() > 1);
+        topological_sorting_data data;
         for (object *obj : proto) {
             obj->add_reference();
+            topological_sorting(obj, &data);
+        }
+        size_t size = data.stack.size();
+        topology.reserve(size + 1);
+        topology.push_back(this);
+        for (size_t i = 0; i < size; i++) {
+            topology.push_back(data.stack.top());
+            data.stack.pop();
         }
     }
 
@@ -71,11 +122,8 @@ namespace goat {
     }
 
     bool object_with_multiple_prototypes::is_instance_of(const object* possible_proto) const {
-        if (this == possible_proto) {
-            return true;
-        }
-        for (object *obj : proto) {
-            if (obj->is_instance_of(possible_proto)) {
+        for (object *obj : topology) {
+            if (obj == possible_proto) {
                 return true;
             }
         }
