@@ -11,13 +11,37 @@ namespace goat {
 
     gc_data::gc_data() {
         count = 0;
+        first = nullptr;
+        last = nullptr;
     }
 
     void gc_data::add_object(dynamic_object* const obj) {
+        obj->previous = last;
+        obj->next = nullptr;
+
+        if (last) {
+            last->next = obj;
+        } else {
+            first = obj;
+        }
+        last = obj;
+
         count++;
     }
 
     void gc_data::remove_object(dynamic_object* const obj) {
+        if (obj->previous) {
+            obj->previous->next = obj->next;
+        } else {
+            first = obj->next;
+        }
+
+        if (obj->next) {
+            obj->next->previous = obj->previous;
+        } else {
+            last = obj->previous;
+        }
+
         count--;
     }
 

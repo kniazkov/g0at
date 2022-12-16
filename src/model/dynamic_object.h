@@ -21,11 +21,14 @@ namespace goat {
      * to reduce the lifetime of an object - short-lived objects will be deleted as soon
      * as the execution thread exits the scope. However, this method does not guarantee
      * destruction in all cases (cyclic references will not be processed). 
+     * 
+     * All created objects are stored in a doubly linked list. Thus, the garbage collector
+     * has access to all objects.
      */
     class gc_data {
     public:
         /**
-         * Constructor
+         * @brief Constructor
          */
         gc_data();
 
@@ -54,6 +57,16 @@ namespace goat {
          * @brief Total number of dynamic objects
          */
         unsigned int count;
+
+        /**
+         * @brief First object in the object list
+         */
+        dynamic_object *first;
+
+        /**
+         * @brief Last object in the object list
+         */
+        dynamic_object *last;
     };
 
     /**
@@ -62,6 +75,7 @@ namespace goat {
      * If they are no longer needed, the garbage collector deletes them.
      */
     class dynamic_object : public virtual object_with_attributes {
+        friend class gc_data;
     public:
         /**
          * @brief Constructor
@@ -70,7 +84,7 @@ namespace goat {
         dynamic_object(gc_data* const gc_ptr);
 
         /**
-         * Destructor
+         * @brief Destructor
          */
         ~dynamic_object();
 
@@ -81,9 +95,19 @@ namespace goat {
 
     private:
         /**
-         * Data required for the garbage collector
+         * @brief Data required for the garbage collector
          */
         gc_data* const gc;
+
+        /**
+         * @brief Previous object in the object list
+         */
+        dynamic_object* previous;
+
+        /**
+         * @brief Next object in the object list
+         */
+        dynamic_object* next;
 
         /**
          * @brief The counter of objects referring to this object
