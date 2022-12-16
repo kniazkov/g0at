@@ -14,4 +14,6 @@ namespace goat {
     bool test_generic_object_string_notation();
     bool test_static_string_declaration();
     bool test_is_instance_of();
+    bool test_get_attribute();
+    bool test_get_attribute_multiple_inheritance();
 }

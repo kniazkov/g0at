@@ -15,7 +15,9 @@ namespace goat {
         { "dynamic string", test_dynamic_string },
         { "string notation of a generic object", test_generic_object_string_notation },
         { "static strings declaration", test_static_string_declaration },
-        { "'is_instance_of' method", test_is_instance_of }
+        { "'is_instance_of' method", test_is_instance_of },
+        { "'get_attribute' method, single inheritance", test_get_attribute },
+        { "'get_attribute' method, multiple inheritance", test_get_attribute_multiple_inheritance }
     };
 
     unsigned int get_number_of_tests() {

@@ -78,8 +78,8 @@ namespace goat {
         }
 
         unsigned int count = obj->get_number_of_prototypes();
-        for (unsigned int i = 0; i < count; i++) {
-            topological_sorting(obj->get_prototype(i), data);
+        for (unsigned int i = count; i > 0; i--) {
+            topological_sorting(obj->get_prototype(i - 1), data);
         }
 
         data->stack.push(obj);
@@ -90,14 +90,15 @@ namespace goat {
             std::vector<object*> &proto) : dynamic_object(gc), proto(proto)  {
         assert(proto.size() > 1);
         topological_sorting_data data;
-        for (object *obj : proto) {
+        for (size_t i = proto.size(); i > 0; i--) {
+            object *obj = proto[i - 1];
             obj->add_reference();
             topological_sorting(obj, &data);
         }
-        size_t size = data.stack.size();
-        topology.reserve(size + 1);
+        size_t stack_size = data.stack.size();
+        topology.reserve(stack_size + 1);
         topology.push_back(this);
-        for (size_t i = 0; i < size; i++) {
+        for (size_t i = 0; i < stack_size; i++) {
             topology.push_back(data.stack.top());
             data.stack.pop();
         }

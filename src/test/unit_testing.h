@@ -58,4 +58,20 @@ namespace goat {
     };
 
     #define assert_equals(T, expected, actual) if ((expected) != (actual)) throw assertion_equals_exception<T>(__FILE__, __LINE__, expected, actual)
+
+    struct assertion_not_null_exception : public test_failed_exception {
+        /**
+         * Constructor
+         * @param file Name of the file where the exception was triggered
+         * @param line Number of the line where the exception was triggered
+         * @param expected Expected value
+         * @param actual Actual value
+         */
+        assertion_not_null_exception(const char *file, int line) :
+                test_failed_exception(file, line) {
+            message = L"non-null pointer expected";
+        }
+    };
+
+    #define assert_not_null(value) if (value == nullptr) throw assertion_not_null_exception(__FILE__, __LINE__)
 }

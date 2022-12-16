@@ -119,4 +119,147 @@ namespace goat {
         assert_equals(unsigned int, 0, gc.get_count());
         return true;
     }
+
+    bool test_get_attribute() {
+        gc_data gc;
+        variable *var;
+        object *value;
+        object *A = new generic_dynamic_object(&gc, get_root_object());
+        static_string key_A(L"A");
+        value = new dynamic_string(&gc, L"aaa");
+        A->set_attribute(&key_A, value);
+        value->release();
+        var = A->get_attribute(&key_A);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"aaa", var->obj->to_string());
+        
+        object *B = new generic_dynamic_object(&gc, A);
+        static_string key_B(L"B");
+        value = new dynamic_string(&gc, L"bbb");
+        B->set_attribute(&key_B, value);
+        value->release();
+        var = B->get_attribute(&key_A);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"aaa", var->obj->to_string());
+        var = B->get_attribute(&key_B);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"bbb", var->obj->to_string());
+        
+        object *C = new generic_dynamic_object(&gc, B);
+        static_string key_C(L"C");
+        value = new dynamic_string(&gc, L"ccc");
+        C->set_attribute(&key_C, value);
+        value->release();
+        var = C->get_attribute(&key_A);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"aaa", var->obj->to_string());
+        var = C->get_attribute(&key_B);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"bbb", var->obj->to_string());
+        var = C->get_attribute(&key_C);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"ccc", var->obj->to_string());
+
+        value = new dynamic_string(&gc, L"xxx");
+        A->set_attribute(&key_A, value);
+        value->release();
+        var = C->get_attribute(&key_A);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"xxx", var->obj->to_string());        
+
+        value = new dynamic_string(&gc, L"yyy");
+        B->set_attribute(&key_A, value);
+        value->release();
+        var = C->get_attribute(&key_A);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"yyy", var->obj->to_string());        
+
+        A->release();
+        B->release();
+        C->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
+
+    bool test_get_attribute_multiple_inheritance() {
+        gc_data gc;
+        object *value;
+        variable *var;
+        object *A = new generic_dynamic_object(&gc, get_root_object());
+        object *B = new generic_dynamic_object(&gc, A);
+        object *C = new generic_dynamic_object(&gc, A);
+        std::vector<object*> list = {B, C};
+        object *D = new object_with_multiple_prototypes(&gc, list);
+        object *E = new generic_dynamic_object(&gc, D);
+
+        static_string key_A(L"A");
+        value = new dynamic_string(&gc, L"aaa");
+        A->set_attribute(&key_A, value);
+        value->release();
+
+        static_string key_B(L"B");
+        value = new dynamic_string(&gc, L"bbb");
+        B->set_attribute(&key_B, value);
+        value->release();
+
+        static_string key_C(L"C");
+        value = new dynamic_string(&gc, L"ccc");
+        C->set_attribute(&key_C, value);
+        value->release();
+
+        static_string key_D(L"D");
+        value = new dynamic_string(&gc, L"ddd");
+        D->set_attribute(&key_D, value);
+        value->release();
+
+        static_string key_E(L"E");
+        value = new dynamic_string(&gc, L"eee");
+        E->set_attribute(&key_E, value);
+        value->release();
+
+        var = E->get_attribute(&key_A);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"aaa", var->obj->to_string());
+        var = E->get_attribute(&key_B);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"bbb", var->obj->to_string());
+        var = E->get_attribute(&key_C);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"ccc", var->obj->to_string());
+        var = E->get_attribute(&key_D);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"ddd", var->obj->to_string());
+        var = E->get_attribute(&key_E);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"eee", var->obj->to_string());
+
+        value = new dynamic_string(&gc, L"xxx");
+        A->set_attribute(&key_A, value);
+        value->release();
+        var = E->get_attribute(&key_A);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"xxx", var->obj->to_string());        
+
+        value = new dynamic_string(&gc, L"yyy");
+        C->set_attribute(&key_A, value);
+        value->release();
+        var = E->get_attribute(&key_A);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"yyy", var->obj->to_string());        
+
+        value = new dynamic_string(&gc, L"zzz");
+        B->set_attribute(&key_A, value);
+        value->release();
+        var = E->get_attribute(&key_A);
+        assert_not_null(var);
+        assert_equals(std::wstring, L"zzz", var->obj->to_string());        
+
+        A->release();
+        B->release();
+        C->release();
+        D->release();
+        E->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
 }
