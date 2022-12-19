@@ -17,7 +17,8 @@ namespace goat {
         { "static strings declaration", test_static_string_declaration },
         { "'is_instance_of' method", test_is_instance_of },
         { "'get_attribute' method, single inheritance", test_get_attribute },
-        { "'get_attribute' method, multiple inheritance", test_get_attribute_multiple_inheritance }
+        { "'get_attribute' method, multiple inheritance", test_get_attribute_multiple_inheritance },
+        { "multiple threads create and delete objects", test_multithreaded_object_creation }
     };
 
     unsigned int get_number_of_tests() {

@@ -10,6 +10,7 @@
 #include "model/generic_object.h"
 #include "model/root_object.h"
 #include "model/strings.h"
+#include <thread>
 
 namespace goat {
 
@@ -259,6 +260,28 @@ namespace goat {
         C->release();
         D->release();
         E->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
+
+    void thread_create_and_delete_objects(gc_data *gc) {
+        std::vector<object*> list;
+        for (int i = 0; i < 1000; i++) {
+            list.push_back(new generic_dynamic_object(gc, get_root_object()));
+        }
+        for (object* obj : list) {
+            obj->release();
+        }
+    }
+
+    bool test_multithreaded_object_creation() {
+        gc_data gc;
+        std::thread A(thread_create_and_delete_objects, &gc);
+        std::thread B(thread_create_and_delete_objects, &gc);
+        std::thread C(thread_create_and_delete_objects, &gc);
+        A.join();
+        B.join();
+        C.join();
         assert_equals(unsigned int, 0, gc.get_count());
         return true;
     }

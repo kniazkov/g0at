@@ -8,6 +8,7 @@
 #pragma once
 
 #include "object_with_attributes.h"
+#include "lib/spinlock.h"
 
 namespace goat {
     
@@ -53,6 +54,11 @@ namespace goat {
         }
 
     private:
+        /**
+         * @brief Mutex, allowing multi-threaded modification of the list of objects
+         */
+        spinlock mutex;
+
         /**
          * @brief Total number of dynamic objects
          */

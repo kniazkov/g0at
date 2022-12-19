@@ -16,6 +16,8 @@ namespace goat {
     }
 
     void gc_data::add_object(dynamic_object* const obj) {
+        mutex.lock();
+
         obj->previous = last;
         obj->next = nullptr;
 
@@ -25,11 +27,14 @@ namespace goat {
             first = obj;
         }
         last = obj;
-
         count++;
+
+        mutex.unlock();
     }
 
     void gc_data::remove_object(dynamic_object* const obj) {
+        mutex.lock();
+
         if (obj->previous) {
             obj->previous->next = obj->next;
         } else {
@@ -43,6 +48,8 @@ namespace goat {
         }
 
         count--;
+
+        mutex.unlock();
     }
 
     dynamic_object::dynamic_object(gc_data* const gc_ptr) : gc(gc_ptr), refs(1) {

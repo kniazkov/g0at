@@ -16,4 +16,5 @@ namespace goat {
     bool test_is_instance_of();
     bool test_get_attribute();
     bool test_get_attribute_multiple_inheritance();
+    bool test_multithreaded_object_creation();
 }
