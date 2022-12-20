@@ -84,6 +84,12 @@ namespace goat {
         }
     };
 
+    static real_number_handler real_handler_instance;
+
+    object * get_real_handler() {
+        return &real_handler_instance;
+    }
+
     /* ----------------------------------------------------------------------------------------- */
 
     real_number::real_number(gc_data* const gc, const double value) 

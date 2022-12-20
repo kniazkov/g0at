@@ -69,6 +69,20 @@ namespace goat {
          * @return A string representation of the variable in Goat notation
          */
         inline std::wstring to_string_notation() const;
+
+        /**
+         * @brief Retrieves the real value of the variable
+         * @param value_ptr Pointer to retrievable value
+         * @return <code>true</code> if the variable contains a real number
+         *   (value can be retrieved), or <code>false</code> otherwise
+         */
+        inline bool get_real_value(double* const value_ptr) const;
+
+        /**
+         * @brief Sets a real number as the value of this variable
+         * @param value The new value
+         */
+        void set_real_value(double value);
     };
 
     /**
@@ -236,7 +250,7 @@ namespace goat {
          * @param var Pointer to a variable to be handled (only for objects
          *   that do not store data themselves)
          * @param value_ptr Pointer to retrievable value
-         * @return <code>true</code> if the object is a string (value can be retrieved),
+         * @return <code>true</code> if the object is a real number (value can be retrieved),
          *   or <code>false</code> otherwise
          */
         virtual bool get_real_value(const variable* var, double* const value_ptr) const;
@@ -271,6 +285,10 @@ namespace goat {
 
     std::wstring variable::to_string_notation() const {
         return obj->to_string_notation(this);
+    }
+
+    bool variable::get_real_value(double* const value_ptr) const {
+        return obj->get_real_value(this, value_ptr);
     }
 
     object * get_empty_object();

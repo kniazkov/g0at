@@ -45,4 +45,9 @@ namespace goat {
      * @return Pointer to the prototype of real number objects
      */
     object * get_real_prototype();
+
+    /**
+     * @return Pointer to the static object that handles real values
+     */
+    object * get_real_handler();
 }

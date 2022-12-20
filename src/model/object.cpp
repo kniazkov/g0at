@@ -8,8 +8,16 @@
 #include <cassert>
 #include "object.h"
 #include "root_object.h"
+#include "numbers.h"
 
 namespace goat {
+
+    void variable::set_real_value(double value) {
+        obj = get_real_handler();
+        data.double_value = value;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
     
     object::object() {
     }
