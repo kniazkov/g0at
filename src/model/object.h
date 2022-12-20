@@ -216,7 +216,7 @@ namespace goat {
          * @param key The key
          * @param value The value
          */
-        void set_attribute(object *key, object* value) {
+        inline void set_attribute(object *key, object* value) {
             variable var = {0};
             var.obj = value;
             set_attribute(key, var);
