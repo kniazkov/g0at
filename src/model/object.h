@@ -72,7 +72,7 @@ namespace goat {
     enum object_type {
         generic = 1,
         string,
-        integer
+        number
     };
 
     /**
@@ -213,6 +213,14 @@ namespace goat {
          */
         virtual bool get_string_value(std::wstring* const value_ptr) const;
     
+        /**
+         * @brief Retrieves the real value of the object
+         * @param value_ptr Pointer to retrievable value
+         * @return <code>true</code> if the object is a string (value can be retrieved),
+         *   or <code>false</code> otherwise
+         */
+        virtual bool get_real_value(double* const value_ptr) const;
+        
     private:
         /**
          * @brief Privte copy constructor to prevent copying

@@ -68,4 +68,8 @@ namespace goat {
     bool object::get_string_value(std::wstring* const value_ptr) const {
         return false;
     }
+
+    bool object::get_real_value(double* const value_ptr) const {
+        return false;
+    }
 }
