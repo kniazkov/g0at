@@ -47,18 +47,6 @@ namespace goat {
          * @param key The key
          * @param value The value
          */
-        void set_attribute_unsafe(object *key, variable &value);
-
-         /**
-         * @brief Sets the attrubute (key-value pair), where value is an object, but does not check
-         *   the correctness of this operation
-         * @param key The key
-         * @param value The value
-         */
-        inline void set_attribute_unsafe(object *key, object *value) {
-            variable var = {0};
-            var.obj = value;
-            set_attribute_unsafe(key, var);
-        }
+        void write_attribute(object *key, variable &value);
     };
 }

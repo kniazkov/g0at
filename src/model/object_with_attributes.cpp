@@ -25,7 +25,7 @@ namespace goat {
         return nullptr;
     }
 
-    void object_with_attributes::set_attribute_unsafe(object *key, variable &value) {
+    void object_with_attributes::write_attribute(object *key, variable &value) {
         auto pair = attributes.find(key);
         if (pair != attributes.end()) {
             if (pair->second.obj != value.obj) {

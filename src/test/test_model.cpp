@@ -5,6 +5,7 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
+#include <thread>
 #include "unit_testing.h"
 #include "model/object.h"
 #include "model/generic_object.h"
@@ -12,7 +13,7 @@
 #include "model/strings.h"
 #include "model/numbers.h"
 #include "model/built_in_functions.h"
-#include <thread>
+#include "model/scope.h"
 
 namespace goat {
 
@@ -308,6 +309,16 @@ namespace goat {
         assert_equals(double, 32, value);
         arg.release();
         assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
+
+    bool test_root_scope() {
+        object *scope = get_root_scope();
+        static_string name(L"String");
+        variable *var = scope->get_attribute(&name);
+        assert_not_null(var);
+        object *proto = var->obj;
+        assert_equals(bool, true, name.is_instance_of(proto));
         return true;
     }
 }

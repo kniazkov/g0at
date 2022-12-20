@@ -79,6 +79,6 @@ namespace goat {
     }
 
     void dynamic_object::set_attribute(object *key, variable &value) {
-        set_attribute_unsafe(key, value);
+        write_attribute(key, value);
     }
 }

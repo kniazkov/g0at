@@ -18,4 +18,6 @@ namespace goat {
     bool test_get_attribute_multiple_inheritance();
     bool test_multithreaded_object_creation();
     bool test_square_root();
+    bool test_root_scope();
+
 }

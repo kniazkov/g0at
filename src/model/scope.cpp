@@ -30,44 +30,11 @@ namespace goat {
          * Constructor
          */
         root_scope() {
-            initialized = false;
-        }
-
-        variable * get_attribute(object *key) override {
-            return get_own_attribute(key);
-        }
-
-        variable * get_own_attribute(object *key) override {
-            if (!initialized) {
-                init();
-            }
-            auto pair = attributes.find(key);
-            if (pair != attributes.end()) {
-                return &pair->second;
-            }
-            return nullptr;
-        }
-    
-    protected:
-        /**
-         * @brief Initialization flag
-         * 
-         * We cannot initialize all objects in the constructor because not all static sub-objects
-         * have been created at the time of creation of this object, and the order in which
-         * they are created is unknown.
-         */
-        bool initialized;
-        
-        /**
-         * @brief Initialization method
-         */
-        void init() {
-            set_attribute_unsafe(&str_Object, get_root_object());
-            set_attribute_unsafe(&str_Function, get_function_prototype());
-            set_attribute_unsafe(&str_String, get_string_prototype());
-            set_attribute_unsafe(&str_Number, get_number_prototype());
-            set_attribute_unsafe(&str_Real, get_real_prototype());
-            initialized = true;
+            write_static_attribute(&str_Object, get_root_object());
+            write_static_attribute(&str_Function, get_function_prototype());
+            write_static_attribute(&str_String, get_string_prototype());
+            write_static_attribute(&str_Number, get_number_prototype());
+            write_static_attribute(&str_Real, get_real_prototype());
         }
     };
 

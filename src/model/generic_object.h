@@ -28,6 +28,17 @@ namespace goat {
      * @brief A predefined object permanently present in the system
      */
     class generic_static_object : public static_object, public generic_object {
+    protected:
+         /**
+         * @brief Sets the attrubute (key-value pair), where both key and value are static objects
+         * @param key The key
+         * @param value The value
+         */
+        inline void write_static_attribute(object *key, object *value) {
+            variable var = {0};
+            var.obj = value;
+            attributes[key] = var;
+        }
     };
 
     /**
