@@ -31,8 +31,8 @@ namespace goat {
         object_type get_type() const override;
         bool less(const object* const others) const override;
         object *get_first_prototype() const override;
-        std::wstring to_string() const override;
-        std::wstring to_string_notation() const override;
+        std::wstring to_string(const variable* var) const override;
+        std::wstring to_string_notation(const variable* var) const override;
         bool get_string_value(std::wstring* const value_ptr) const override;
     };
 

@@ -17,7 +17,7 @@ namespace goat {
         return object_type::generic;
     }
 
-    std::wstring generic_object::to_string_notation() const {
+    std::wstring generic_object::to_string_notation(const variable* var) const {
         std::wstringstream stream;
         stream << L'{';
         bool flag = false;
@@ -26,8 +26,8 @@ namespace goat {
                 stream << ", ";
             }
             flag = true;
-            stream << pair->first->to_string_notation() << L": "
-                << pair->second.obj->to_string_notation();
+            stream << pair->first->to_string_notation(nullptr) << L": "
+                << pair->second.to_string_notation();
         }
         stream << L'}';
         return stream.str();

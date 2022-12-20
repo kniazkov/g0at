@@ -49,8 +49,8 @@ namespace goat {
         return get_first_prototype()->is_instance_of(proto);
     }
 
-    std::wstring object::to_string() const {
-        return to_string_notation();
+    std::wstring object::to_string(const variable* var) const {
+        return to_string_notation(var);
     }
 
     variable * object::get_attribute(object *key) {
@@ -69,7 +69,7 @@ namespace goat {
         return false;
     }
 
-    bool object::get_real_value(double* const value_ptr) const {
+    bool object::get_real_value(const variable* var, double* const value_ptr) const {
         return false;
     }
 }

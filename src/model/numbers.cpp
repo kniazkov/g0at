@@ -6,8 +6,8 @@
 */
 
 #include <cassert>
-#include <sstream>
 #include "numbers.h"
+#include "static_object.h"
 #include "generic_object.h"
 
 namespace goat {
@@ -51,6 +51,41 @@ namespace goat {
         return &real_proto_instance;
     }
 
+    /**
+     * @brief Static object that handles real values
+     * 
+     * The value itself is stored separately in a variable.
+     */
+    class real_number_handler : public static_object {
+    public:
+        object_type get_type() const override {
+            return object_type::number;
+        }
+
+        bool less(const object* const others) const override {
+            /*
+                This method should never be called for handler objects
+            */
+            assert(false);
+            return false;
+        }
+
+        object * get_first_prototype() const override {
+            return &real_proto_instance;
+        }
+        
+        std::wstring to_string_notation(const variable* var) const override {
+            return std::to_wstring(var->data.double_value);
+        }
+
+        bool get_real_value(const variable* var, double* const value_ptr) const override {
+            *value_ptr = var->data.double_value;
+            return true;
+        }
+    };
+
+    /* ----------------------------------------------------------------------------------------- */
+
     real_number::real_number(gc_data* const gc, const double value) 
             : dynamic_object(gc), value(value) {
     }
@@ -61,7 +96,7 @@ namespace goat {
 
     bool real_number::less(const object* const other) const {
         double other_value;
-        bool other_is_a_number = other->get_real_value(&other_value);
+        bool other_is_a_number = other->get_real_value(nullptr, &other_value);
         assert(other_is_a_number);
         return value < other_value;
     }
@@ -70,11 +105,11 @@ namespace goat {
         return &real_proto_instance;
     }
 
-    std::wstring real_number::to_string_notation() const {
+    std::wstring real_number::to_string_notation(const variable* var) const {
         return std::to_wstring(value);
     }
 
-    bool real_number::get_real_value(double* const value_ptr) const {
+    bool real_number::get_real_value(const variable* var, double* const value_ptr) const {
         *value_ptr = value;
         return true;
     }

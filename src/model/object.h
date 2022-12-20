@@ -55,6 +55,20 @@ namespace goat {
          * This method is used by the garbage collector to count objects.
          */
         inline void release();
+
+        /**
+         * @brief Returns the string representation of the variable, which is used for printing
+         *   and debugging purposes
+         * @return A string representation of the variable 
+         */
+        inline std::wstring to_string() const;
+
+        /**
+         * @brief Represents the variable in Goat notation, that is, as a string that can be
+         *   transformed back into a Goat object
+         * @return A string representation of the variable in Goat notation
+         */
+        inline std::wstring to_string_notation() const;
     };
 
     /**
@@ -161,16 +175,20 @@ namespace goat {
         /**
          * @brief Returns the string representation of the object, which is used for printing
          *   and debugging purposes
-         * @return A string representation of an object 
+         * @param var Pointer to a variable to be handled (only for objects
+         *   that do not store data themselves)
+         * @return A string representation of the object 
          */
-        virtual std::wstring to_string() const;
+        virtual std::wstring to_string(const variable* var) const;
 
         /**
-         * @brief Represents an object in Goat notation, that is, as a string that can be
+         * @brief Represents the object in Goat notation, that is, as a string that can be
          *   transformed back into a Goat object
-         * @return A string representation of an object in Goat notation
+         * @param var Pointer to a variable to be handled (only for objects
+         *   that do not store data themselves)
+         * @return A string representation of the object in Goat notation
          */
-        virtual std::wstring to_string_notation() const = 0;
+        virtual std::wstring to_string_notation(const variable* var) const = 0;
 
         /**
          * @brief Sets the attribute (key-value pair)
@@ -215,11 +233,13 @@ namespace goat {
     
         /**
          * @brief Retrieves the real value of the object
+         * @param var Pointer to a variable to be handled (only for objects
+         *   that do not store data themselves)
          * @param value_ptr Pointer to retrievable value
          * @return <code>true</code> if the object is a string (value can be retrieved),
          *   or <code>false</code> otherwise
          */
-        virtual bool get_real_value(double* const value_ptr) const;
+        virtual bool get_real_value(const variable* var, double* const value_ptr) const;
         
     private:
         /**
@@ -235,12 +255,22 @@ namespace goat {
         }
     };
 
+    /* ----------------------------------------------------------------------------------------- */
+
     void variable::add_reference() {
         obj->add_reference();
     }
 
     void variable::release() {
         obj->release();
+    }
+
+    std::wstring variable::to_string() const {
+        return obj->to_string(this);
+    }
+
+    std::wstring variable::to_string_notation() const {
+        return obj->to_string_notation(this);
     }
 
     object * get_empty_object();

@@ -15,14 +15,14 @@
 namespace goat {
 
     bool test_empty_object() {
-        return get_empty_object()->to_string() == L"{}";
+        return get_empty_object()->to_string(nullptr) == L"{}";
     }
 
     bool test_dynamic_string() {
         gc_data gc;
         const std::wstring str = L"test";
         object *obj = new dynamic_string(&gc, str);
-        assert_equals(std::wstring, str, obj->to_string());
+        assert_equals(std::wstring, str, obj->to_string(nullptr));
         assert_equals(unsigned int, 1, gc.get_count());
         obj->release();
         assert_equals(unsigned int, 0, gc.get_count());
@@ -53,7 +53,7 @@ namespace goat {
         key->release();
         value->release();
         assert_equals(unsigned int, 7, gc.get_count());
-        std::wstring result = obj->to_string_notation();
+        std::wstring result = obj->to_string_notation(nullptr);
         assert_equals(std::wstring, L"{\"alpha\": \"red\", \"beta\": \"green\", \"gamma\": \"blue\"}", result);
         obj->release();
         assert_equals(unsigned int, 0, gc.get_count());
@@ -73,7 +73,7 @@ namespace goat {
         static_string value_3(L"blue");
         obj->set_attribute(&key_3, &value_3);
         assert_equals(unsigned int, 1, gc.get_count());
-        std::wstring result = obj->to_string_notation();
+        std::wstring result = obj->to_string_notation(nullptr);
         assert_equals(std::wstring, L"{\"alpha\": \"red\", \"beta\": \"green\", \"gamma\": \"blue\"}", result);
         obj->release();
         assert_equals(unsigned int, 0, gc.get_count());
@@ -132,7 +132,7 @@ namespace goat {
         value->release();
         var = A->get_attribute(&key_A);
         assert_not_null(var);
-        assert_equals(std::wstring, L"aaa", var->obj->to_string());
+        assert_equals(std::wstring, L"aaa", var->obj->to_string(nullptr));
         
         object *B = new generic_dynamic_object(&gc, A);
         static_string key_B(L"B");
@@ -141,10 +141,10 @@ namespace goat {
         value->release();
         var = B->get_attribute(&key_A);
         assert_not_null(var);
-        assert_equals(std::wstring, L"aaa", var->obj->to_string());
+        assert_equals(std::wstring, L"aaa", var->obj->to_string(nullptr));
         var = B->get_attribute(&key_B);
         assert_not_null(var);
-        assert_equals(std::wstring, L"bbb", var->obj->to_string());
+        assert_equals(std::wstring, L"bbb", var->obj->to_string(nullptr));
         
         object *C = new generic_dynamic_object(&gc, B);
         static_string key_C(L"C");
@@ -153,27 +153,27 @@ namespace goat {
         value->release();
         var = C->get_attribute(&key_A);
         assert_not_null(var);
-        assert_equals(std::wstring, L"aaa", var->obj->to_string());
+        assert_equals(std::wstring, L"aaa", var->obj->to_string(nullptr));
         var = C->get_attribute(&key_B);
         assert_not_null(var);
-        assert_equals(std::wstring, L"bbb", var->obj->to_string());
+        assert_equals(std::wstring, L"bbb", var->obj->to_string(nullptr));
         var = C->get_attribute(&key_C);
         assert_not_null(var);
-        assert_equals(std::wstring, L"ccc", var->obj->to_string());
+        assert_equals(std::wstring, L"ccc", var->obj->to_string(nullptr));
 
         value = new dynamic_string(&gc, L"xxx");
         A->set_attribute(&key_A, value);
         value->release();
         var = C->get_attribute(&key_A);
         assert_not_null(var);
-        assert_equals(std::wstring, L"xxx", var->obj->to_string());        
+        assert_equals(std::wstring, L"xxx", var->obj->to_string(nullptr));        
 
         value = new dynamic_string(&gc, L"yyy");
         B->set_attribute(&key_A, value);
         value->release();
         var = C->get_attribute(&key_A);
         assert_not_null(var);
-        assert_equals(std::wstring, L"yyy", var->obj->to_string());        
+        assert_equals(std::wstring, L"yyy", var->obj->to_string(nullptr));        
 
         A->release();
         B->release();
@@ -220,40 +220,40 @@ namespace goat {
 
         var = E->get_attribute(&key_A);
         assert_not_null(var);
-        assert_equals(std::wstring, L"aaa", var->obj->to_string());
+        assert_equals(std::wstring, L"aaa", var->obj->to_string(nullptr));
         var = E->get_attribute(&key_B);
         assert_not_null(var);
-        assert_equals(std::wstring, L"bbb", var->obj->to_string());
+        assert_equals(std::wstring, L"bbb", var->obj->to_string(nullptr));
         var = E->get_attribute(&key_C);
         assert_not_null(var);
-        assert_equals(std::wstring, L"ccc", var->obj->to_string());
+        assert_equals(std::wstring, L"ccc", var->obj->to_string(nullptr));
         var = E->get_attribute(&key_D);
         assert_not_null(var);
-        assert_equals(std::wstring, L"ddd", var->obj->to_string());
+        assert_equals(std::wstring, L"ddd", var->obj->to_string(nullptr));
         var = E->get_attribute(&key_E);
         assert_not_null(var);
-        assert_equals(std::wstring, L"eee", var->obj->to_string());
+        assert_equals(std::wstring, L"eee", var->obj->to_string(nullptr));
 
         value = new dynamic_string(&gc, L"xxx");
         A->set_attribute(&key_A, value);
         value->release();
         var = E->get_attribute(&key_A);
         assert_not_null(var);
-        assert_equals(std::wstring, L"xxx", var->obj->to_string());        
+        assert_equals(std::wstring, L"xxx", var->obj->to_string(nullptr));        
 
         value = new dynamic_string(&gc, L"yyy");
         C->set_attribute(&key_A, value);
         value->release();
         var = E->get_attribute(&key_A);
         assert_not_null(var);
-        assert_equals(std::wstring, L"yyy", var->obj->to_string());        
+        assert_equals(std::wstring, L"yyy", var->obj->to_string(nullptr));        
 
         value = new dynamic_string(&gc, L"zzz");
         B->set_attribute(&key_A, value);
         value->release();
         var = E->get_attribute(&key_A);
         assert_not_null(var);
-        assert_equals(std::wstring, L"zzz", var->obj->to_string());        
+        assert_equals(std::wstring, L"zzz", var->obj->to_string(nullptr));        
 
         A->release();
         B->release();

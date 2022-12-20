@@ -48,14 +48,14 @@ namespace goat {
         return &proto_instance;
     }
 
-    std::wstring base_string::to_string() const {
+    std::wstring base_string::to_string(const variable* var) const {
         return value;
     }
 
     /**
      * @todo Escape entities
      */
-    std::wstring base_string::to_string_notation() const {
+    std::wstring base_string::to_string_notation(const variable* var) const {
         std::wstringstream stream;
         stream << L'"' << value << L'"';
         return stream.str();

@@ -18,7 +18,7 @@ namespace goat {
             return object_type::generic;
         }
 
-        std::wstring to_string_notation() const override {
+        std::wstring to_string_notation(const variable* var) const override {
             return L"{}";
         }
     };

@@ -21,7 +21,7 @@ namespace goat {
     class generic_object : public virtual object_with_attributes {
     public:
         object_type get_type() const override;
-        std::wstring to_string_notation() const override;
+        std::wstring to_string_notation(const variable* var) const override;
     };
 
     /**

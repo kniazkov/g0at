@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include <vector>
-#include "static_object.h"
 #include "dynamic_object.h"
 
 namespace goat {
@@ -34,8 +32,8 @@ namespace goat {
         object_type get_type() const override;
         bool less(const object* const others) const override;
         object *get_first_prototype() const override;
-        std::wstring to_string_notation() const override;
-        bool get_real_value(double* const value_ptr) const override;
+        std::wstring to_string_notation(const variable* var) const override;
+        bool get_real_value(const variable* var, double* const value_ptr) const override;
     };
 
     /**
