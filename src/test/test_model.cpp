@@ -14,6 +14,7 @@
 #include "model/numbers.h"
 #include "model/built_in_functions.h"
 #include "model/scope.h"
+#include "model/expressions.h"
 
 namespace goat {
 
@@ -332,13 +333,30 @@ namespace goat {
         object *proto = var->obj;
         static_string key(L"x");
         variable value;
-        value.set_real_value(0);
+        value.set_real_value(7);
         assert_equals(bool, true, value.obj->is_instance_of(proto));
         clone->set_attribute(&key, value);
         var = clone->get_attribute(&key);
         assert_not_null(var);
         clone->release();
         main->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
+
+    bool test_read_variable_expression() {
+        gc_data gc;
+        scope *main = create_main_scope(&gc);
+        static_string key(L"x");
+        variable value;
+        value.set_real_value(7);
+        main->set_attribute(&key, value);
+        base_string *name = &key;
+        read_variable *expr = new read_variable(name);
+        variable result = expr->calc(main);
+        assert_equals(double, 7, result.data.double_value);
+        main->release();
+        expr->release();
         assert_equals(unsigned int, 0, gc.get_count());
         return true;
     }

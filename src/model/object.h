@@ -100,7 +100,8 @@ namespace goat {
     enum object_type {
         generic = 1,
         string,
-        number
+        number,
+        code
     };
 
     /**
@@ -138,8 +139,8 @@ namespace goat {
 
         /**
          * @brief Determines if the object is static or not
-         * @return <code>true</code> if the object is static (i.e. not counted by the
-         * garbage collector), or <code>false</code> otherwise
+         * @return <code>true</code> if the object is static (i.e. not counted by any type of
+         * garbage collectors), or <code>false</code> otherwise
          */
         virtual bool is_static() = 0;
 

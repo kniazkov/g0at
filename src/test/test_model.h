@@ -20,5 +20,6 @@ namespace goat {
     bool test_square_root();
     bool test_root_scope();
     bool test_main_scope();
+    bool test_read_variable_expression();
 
 }

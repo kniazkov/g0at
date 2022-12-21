@@ -21,7 +21,8 @@ namespace goat {
         { "multiple threads create and delete objects", test_multithreaded_object_creation },
         { "square root calcilation", test_square_root },
         { "root scope", test_root_scope },
-        { "main scope", test_main_scope }        
+        { "main scope", test_main_scope },
+        { "'read_variable' expression", test_read_variable_expression }
     };
 
     unsigned int get_number_of_tests() {
