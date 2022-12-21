@@ -21,13 +21,12 @@ namespace goat {
     static_string str_Real(L"Real");
 
     /**
-     * @brief A static object always exists in the system, so it is not counted
-     *   by the garbage collector
+     * @brief Root scope, i.e. set of built-in objects
      */
-    class root_scope : public generic_static_object {
+    class root_scope : public generic_static_object, public scope {
     public:
         /**
-         * Constructor
+         * @brief Constructor
          */
         root_scope() {
             write_static_attribute(&str_Object, get_root_object());
@@ -39,7 +38,20 @@ namespace goat {
     };
 
     root_scope root_scope_instance;
-    object * get_root_scope() {
+    scope * get_root_scope() {
         return &root_scope_instance;
+    }
+
+    /**
+     * @brief Scope with one prototype
+     */
+    class scope_with_one_prototype : public generic_dynamic_object, public scope {
+    public:
+        scope_with_one_prototype(gc_data *gc, scope *proto) : generic_dynamic_object(gc, proto) {
+        } 
+    };
+
+    scope * create_main_scope(gc_data *gc) {
+        return new scope_with_one_prototype(gc, &root_scope_instance);
     }
 }

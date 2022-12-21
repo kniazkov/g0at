@@ -20,7 +20,8 @@ namespace goat {
         { "'get_attribute' method, multiple inheritance", test_get_attribute_multiple_inheritance },
         { "multiple threads create and delete objects", test_multithreaded_object_creation },
         { "square root calcilation", test_square_root },
-        { "root scope", test_root_scope }
+        { "root scope", test_root_scope },
+        { "main scope", test_main_scope }        
     };
 
     unsigned int get_number_of_tests() {

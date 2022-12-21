@@ -313,12 +313,31 @@ namespace goat {
     }
 
     bool test_root_scope() {
-        object *scope = get_root_scope();
+        scope *root = get_root_scope();
         static_string name(L"String");
-        variable *var = scope->get_attribute(&name);
+        variable *var = root->get_attribute(&name);
         assert_not_null(var);
         object *proto = var->obj;
         assert_equals(bool, true, name.is_instance_of(proto));
+        return true;
+    }
+
+    bool test_main_scope() {
+        gc_data gc;
+        scope *main = create_main_scope(&gc);
+        static_string name(L"Number");
+        variable *var = main->get_attribute(&name);
+        assert_not_null(var);
+        object *proto = var->obj;
+        static_string key(L"x");
+        variable value;
+        value.set_real_value(0);
+        assert_equals(bool, true, value.obj->is_instance_of(proto));
+        main->set_attribute(&key, value);
+        var = main->get_attribute(&key);
+        assert_not_null(var);
+        main->release();
+        assert_equals(unsigned int, 0, gc.get_count());
         return true;
     }
 }

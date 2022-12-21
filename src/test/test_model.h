@@ -19,5 +19,6 @@ namespace goat {
     bool test_multithreaded_object_creation();
     bool test_square_root();
     bool test_root_scope();
+    bool test_main_scope();
 
 }
