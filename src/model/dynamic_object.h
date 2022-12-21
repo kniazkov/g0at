@@ -99,6 +99,15 @@ namespace goat {
         bool is_static() override;
         void set_attribute(object *key, variable &value) override;
 
+    protected:
+        /**
+         * @brief Returns the data required for the garbage collector
+         * @return Data required for the garbage collector
+         */
+        inline gc_data* get_garbage_collector_data() {
+            return gc;
+        }
+
     private:
         /**
          * @brief Data required for the garbage collector

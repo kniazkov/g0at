@@ -78,7 +78,7 @@ namespace goat {
          * @param gc Data required for the garbage collector
          * @param proto The list of prototypes of the object
          */
-        object_with_multiple_prototypes(gc_data *gc, std::vector<object*> &proto);
+        object_with_multiple_prototypes(gc_data *gc, std::vector<object*> proto);
 
         /**
          * Destructor

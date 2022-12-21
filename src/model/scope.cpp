@@ -35,6 +35,14 @@ namespace goat {
             write_static_attribute(&str_Number, get_number_prototype());
             write_static_attribute(&str_Real, get_real_prototype());
         }
+
+        scope * clone() override {
+            return this;
+        }
+
+        scope * clone(object *proto) override {
+            return this;
+        }
     };
 
     root_scope root_scope_instance;
@@ -47,9 +55,52 @@ namespace goat {
      */
     class scope_with_one_prototype : public generic_dynamic_object, public scope {
     public:
+        /**
+         * @brief Constructor
+         * @param gc Data required for the garbage collector
+         * @param proto The prototype scope
+         */
         scope_with_one_prototype(gc_data *gc, scope *proto) : generic_dynamic_object(gc, proto) {
-        } 
+        }
+
+        scope * clone() override;
+        scope * clone(object *proto) override;
     };
+
+    /**
+     * @brief Scope with one prototype
+     */
+    class scope_with_two_prototypes : public object_with_multiple_prototypes, public scope {
+    public:
+        /**
+         * @brief Constructor
+         * @param gc Data required for the garbage collector
+         * @param first The first prototype
+         * @param second The second prototype
+         */
+        scope_with_two_prototypes(gc_data *gc, object *first, scope *second) 
+                : object_with_multiple_prototypes(gc, std::vector<object*>{first, second}) {
+        }
+
+        scope * clone() override;
+        scope * clone(object *proto) override;
+    };
+
+    scope * scope_with_one_prototype::clone() {
+        return new scope_with_one_prototype(get_garbage_collector_data(), this);
+    }
+
+    scope * scope_with_one_prototype::clone(object *proto) {
+        return new scope_with_two_prototypes(get_garbage_collector_data(), proto, this);
+    }
+
+    scope * scope_with_two_prototypes::clone() {
+        return new scope_with_one_prototype(get_garbage_collector_data(), this);
+    }
+
+    scope * scope_with_two_prototypes::clone(object *proto) {
+        return new scope_with_two_prototypes(get_garbage_collector_data(), proto, this);
+    }
 
     scope * create_main_scope(gc_data *gc) {
         return new scope_with_one_prototype(gc, &root_scope_instance);

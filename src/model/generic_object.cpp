@@ -87,7 +87,7 @@ namespace goat {
     }
 
     object_with_multiple_prototypes::object_with_multiple_prototypes(gc_data *gc,
-            std::vector<object*> &proto) : dynamic_object(gc), proto(proto)  {
+            std::vector<object*> proto) : dynamic_object(gc), proto(proto)  {
         assert(proto.size() > 1);
         topological_sorting_data data;
         for (size_t i = proto.size(); i > 0; i--) {

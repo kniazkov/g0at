@@ -20,6 +20,19 @@ namespace goat {
      * the scope itself is an object.
      */
     class scope : public virtual object {
+    public:
+        /**
+         * @brief Creates a new instance of the scope, using this scope as a prototype
+         * @return New scope
+         */
+        virtual scope* clone() = 0;
+
+        /**
+         * @brief Creates a new instance of the scope, using some object and this scope
+         *   as prototypes
+         * @return New scope
+         */
+        virtual scope* clone(object *proto) = 0;
     };
 
     /**
