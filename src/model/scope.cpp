@@ -11,6 +11,7 @@
 #include "functions.h"
 #include "strings.h"
 #include "numbers.h"
+#include "built_in_functions.h"
 
 namespace goat {
 
@@ -19,6 +20,8 @@ namespace goat {
     static_string str_String(L"String");
     static_string str_Number(L"Number");
     static_string str_Real(L"Real");
+
+    static_string str_sqrt(L"sqrt");
 
     /**
      * @brief Root scope, i.e. set of built-in objects
@@ -34,6 +37,8 @@ namespace goat {
             write_static_attribute(&str_String, get_string_prototype());
             write_static_attribute(&str_Number, get_number_prototype());
             write_static_attribute(&str_Real, get_real_prototype());
+
+            write_static_attribute(&str_sqrt, get_sqrt_instance());
         }
 
         scope * clone() override {

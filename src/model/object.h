@@ -15,6 +15,7 @@
 namespace goat {
 
     class object;
+    class base_function;
 
     /**
      * @brief Primitive data processed by the interpreter
@@ -83,6 +84,12 @@ namespace goat {
          * @param value The new value
          */
         void set_real_value(double value);
+
+        /**
+         * @brief Converts variable into a pointer to a function, if possible
+         * @return Pointer to a function object or <code>nullptr</code>
+         */
+        inline base_function * to_function();
     };
 
     /**
@@ -256,6 +263,12 @@ namespace goat {
          */
         virtual bool get_real_value(const variable* var, double* const value_ptr) const;
         
+        /**
+         * @brief Converts pointer to object into a pointer to a function object, if possible
+         * @return Pointer to a function object or <code>nullptr</code>
+         */
+        virtual base_function * to_function();
+
     private:
         /**
          * @brief Privte copy constructor to prevent copying
@@ -290,6 +303,10 @@ namespace goat {
 
     bool variable::get_real_value(double* const value_ptr) const {
         return obj->get_real_value(this, value_ptr);
+    }
+
+    base_function * variable::to_function() {
+        return obj->to_function();
     }
 
     object * get_empty_object();

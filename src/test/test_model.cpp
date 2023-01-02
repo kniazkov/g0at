@@ -293,9 +293,9 @@ namespace goat {
     bool test_square_root() {
         variable arg = {0};
         arg.set_real_value(256);
-        std::vector<variable*> args = { &arg };
+        std::vector<variable> args = { arg };
         variable result = {0};
-        base_function *func = get_sqrt_instance();
+        base_function *func = get_sqrt_instance()->to_function();
         func->exec(args, &result);
         double value = 0;
         bool result_is_real_value = result.get_real_value(&value);
@@ -303,6 +303,8 @@ namespace goat {
         assert_equals(double, 16, value);
         gc_data gc;
         arg.obj = new real_number(&gc, 1024);
+        args.clear();
+        args.push_back(arg);
         func->exec(args, &result);
         value = 0;
         result_is_real_value = result.get_real_value(&value);
@@ -357,6 +359,22 @@ namespace goat {
         assert_equals(double, 7, result.data.double_value);
         main->release();
         expr->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
+
+    bool test_function_call_expression() {
+        gc_data gc;
+        scope *main = create_main_scope(&gc);
+        static_string key(L"sqrt");
+        base_string *name = &key;
+        std::vector<expression*> args;
+        constant_real_number number(17.64);
+        args.push_back(&number);
+        function_call expr(name, args);
+        variable result = expr.calc(main);
+        assert_equals(double, 4.2, result.data.double_value);
+        main->release();
         assert_equals(unsigned int, 0, gc.get_count());
         return true;
     }

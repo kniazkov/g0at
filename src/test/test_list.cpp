@@ -22,7 +22,8 @@ namespace goat {
         { "square root calcilation", test_square_root },
         { "root scope", test_root_scope },
         { "main scope", test_main_scope },
-        { "'read_variable' expression", test_read_variable_expression }
+        { "'read_variable' expression", test_read_variable_expression },
+        { "'function_call' expression", test_function_call_expression }
     };
 
     unsigned int get_number_of_tests() {

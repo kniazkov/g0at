@@ -80,4 +80,8 @@ namespace goat {
     bool object::get_real_value(const variable* var, double* const value_ptr) const {
         return false;
     }
+
+    base_function * object::to_function() {
+        return nullptr;
+    }
 }

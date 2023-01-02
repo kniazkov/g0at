@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <vector>
 #include "code.h"
 #include "scope.h"
 #include "strings.h"
@@ -24,6 +25,26 @@ namespace goat {
          * @return Calculated expression
          */
         virtual variable calc(scope *scope) = 0;
+    };
+
+    /**
+     * @brief Expression representing a constant real number
+     */
+    class constant_real_number : public expression {
+    public:
+        /**
+         * @brief Constructor
+         * @param value The value
+         */
+        constant_real_number(double value);
+
+        variable calc(scope *scope) override;
+
+    private:
+        /**
+         * @brief The value
+         */
+        double value;
     };
 
     /**
@@ -49,5 +70,32 @@ namespace goat {
          * @brief The variable name
          */
         base_string *name;
+    };
+
+    class function_call : public expression {
+    public:
+        /**
+         * @brief Constructor
+         * @param name Function name (Name of the variable that contains the function object)
+         * @param args Function arguments
+         */
+        function_call(base_string *name, std::vector<expression*> &args);
+        /**
+         * @brief Destructor
+         */
+        ~function_call();
+
+        variable calc(scope *scope) override;
+
+    private:
+        /**
+         * @brief Function name
+         */
+        base_string *name;
+
+        /**
+         * @brief Function arguments
+         */
+        std::vector<expression*> args;
     };
 }

@@ -23,11 +23,12 @@ namespace goat {
          * @param args Arguments of the function
          * @param ret_val [out] Return value
          */
-        virtual void exec(std::vector<variable*> &args, variable* ret_val) = 0;
+        virtual void exec(std::vector<variable> &args, variable* ret_val) = 0;
 
         object_type get_type() const override;
         object *get_first_prototype() const override;
         std::wstring to_string_notation(const variable* var) const override;
+        base_function *to_function() override;
     };
 
     /**

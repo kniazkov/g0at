@@ -14,5 +14,5 @@ namespace goat {
     /**
      * @return Pointer to the function that calculates square root
      */
-    base_function * get_sqrt_instance();
+    object * get_sqrt_instance();
 }

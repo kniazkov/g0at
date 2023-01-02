@@ -41,4 +41,8 @@ namespace goat {
     std::wstring base_function::to_string_notation(const variable* var) const {
         return L"function";
     }
+
+    base_function * base_function::to_function() {
+        return this;
+    }    
 }
