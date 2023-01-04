@@ -11,7 +11,6 @@
 #include "functions.h"
 #include "strings.h"
 #include "numbers.h"
-#include "built_in_functions.h"
 
 namespace goat {
 
@@ -21,6 +20,7 @@ namespace goat {
     static_string str_Number(L"Number");
     static_string str_Real(L"Real");
 
+    static_string str_print(L"print");
     static_string str_sqrt(L"sqrt");
 
     /**
@@ -73,7 +73,7 @@ namespace goat {
     };
 
     /**
-     * @brief Scope with one prototype
+     * @brief Scope with two prototypes
      */
     class scope_with_two_prototypes : public object_with_multiple_prototypes, public scope {
     public:
@@ -107,7 +107,27 @@ namespace goat {
         return new scope_with_two_prototypes(get_garbage_collector_data(), proto, this);
     }
 
-    scope * create_main_scope(gc_data *gc) {
-        return new scope_with_one_prototype(gc, &root_scope_instance);
+    /**
+     * @brief The main scope, that is, the one in which code execution begins
+     */
+    class main_scope : public scope_with_one_prototype {
+    public:
+        /**
+         * @brief Constructor
+         * @param gc Data required for the garbage collector
+         * @param printer An abstract printer that actually does the printing
+         */
+        main_scope(gc_data *gc, function_print::printer *printer) :
+                scope_with_one_prototype(gc, &root_scope_instance) {
+            function_print *fn = new function_print(gc, printer);
+            variable var = {0};
+            var.obj = fn;
+            set_attribute(&str_print, var);
+            fn->release();
+        }
+    };
+
+    scope * create_main_scope(gc_data *gc, function_print::printer *printer) {
+        return new main_scope(gc, printer);
     }
 }

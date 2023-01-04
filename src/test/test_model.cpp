@@ -5,6 +5,7 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
+#include <sstream>
 #include <thread>
 #include "unit_testing.h"
 #include "model/object.h"
@@ -17,6 +18,20 @@
 #include "model/expressions.h"
 
 namespace goat {
+
+    /**
+     * @brief Debug printer that prints to the buffer
+     */
+    struct dbg_printer : public function_print::printer {
+        /**
+         * The buffer
+         */
+        std::wstringstream stream;
+
+        void print(std::wstring str) override {
+            stream << str;
+        }
+    };
 
     bool test_empty_object() {
         return get_empty_object()->to_string(nullptr) == L"{}";
@@ -327,7 +342,8 @@ namespace goat {
 
     bool test_main_scope() {
         gc_data gc;
-        scope *main = create_main_scope(&gc);
+        dbg_printer printer;
+        scope *main = create_main_scope(&gc, &printer);
         scope *clone = main->clone();
         static_string name(L"Number");
         variable *var = clone->get_attribute(&name);
@@ -348,7 +364,8 @@ namespace goat {
 
     bool test_read_variable_expression() {
         gc_data gc;
-        scope *main = create_main_scope(&gc);
+        dbg_printer printer;
+        scope *main = create_main_scope(&gc, &printer);
         static_string key(L"x");
         variable value;
         value.set_real_value(7);
@@ -365,7 +382,8 @@ namespace goat {
 
     bool test_function_call_expression() {
         gc_data gc;
-        scope *main = create_main_scope(&gc);
+        dbg_printer printer;
+        scope *main = create_main_scope(&gc, &printer);
         static_string key(L"sqrt");
         base_string *name = &key;
         std::vector<expression*> args;
@@ -374,6 +392,23 @@ namespace goat {
         function_call expr(name, args);
         variable result = expr.calc(main);
         assert_equals(double, 4.2, result.data.double_value);
+        main->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
+
+    bool test_function_print() {
+        gc_data gc;
+        dbg_printer printer;
+        scope *main = create_main_scope(&gc, &printer);
+        static_string key(L"print");
+        base_string *name = &key;
+        std::vector<expression*> args;
+        constant_real_number number(3.14);
+        args.push_back(&number);
+        function_call expr(name, args);
+        expr.calc(main);
+        assert_equals(std::wstring, L"3.14", printer.stream.str());        
         main->release();
         assert_equals(unsigned int, 0, gc.get_count());
         return true;

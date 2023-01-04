@@ -23,7 +23,8 @@ namespace goat {
         { "root scope", test_root_scope },
         { "main scope", test_main_scope },
         { "'read_variable' expression", test_read_variable_expression },
-        { "'function_call' expression", test_function_call_expression }
+        { "'function_call' expression", test_function_call_expression },
+        { "'print' function", test_function_print }
     };
 
     unsigned int get_number_of_tests() {

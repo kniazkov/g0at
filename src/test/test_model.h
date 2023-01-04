@@ -22,5 +22,5 @@ namespace goat {
     bool test_main_scope();
     bool test_read_variable_expression();
     bool test_function_call_expression();
-
+    bool test_function_print();
 }

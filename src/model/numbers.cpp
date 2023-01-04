@@ -6,11 +6,24 @@
 */
 
 #include <cassert>
+#include <cwchar>
 #include "numbers.h"
 #include "static_object.h"
 #include "generic_object.h"
 
 namespace goat {
+
+    /**
+     * @brief Converts double value to wide string
+     * @param value The value
+     * @return String representation of the value
+     */
+    static std::wstring double_to_string(double value) {
+        wchar_t buff[32];
+        std::swprintf(buff, 32, L"%g", value);
+        return buff;
+    }
+
     /**
      * Prototype object for objects storing or wrapping a number
      */
@@ -75,7 +88,7 @@ namespace goat {
         }
         
         std::wstring to_string_notation(const variable* var) const override {
-            return std::to_wstring(var->data.double_value);
+            return double_to_string(var->data.double_value);
         }
 
         bool get_real_value(const variable* var, double* const value_ptr) const override {
@@ -112,7 +125,7 @@ namespace goat {
     }
 
     std::wstring real_number::to_string_notation(const variable* var) const {
-        return std::to_wstring(value);
+        return double_to_string(value);
     }
 
     bool real_number::get_real_value(const variable* var, double* const value_ptr) const {

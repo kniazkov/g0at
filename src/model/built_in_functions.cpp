@@ -11,11 +11,19 @@
 
 namespace goat {
 
+    void function_print::exec(std::vector<variable> &args, variable* ret_val) {
+        assert(args.size() > 0);
+        device->print(args[0].to_string());
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
     /**
      * @brief Built-in function, compute square root
      */
     class function_sqrt : public static_function {
-        void exec(std::vector<variable> &args, variable* ret_val) {
+    public:
+        void exec(std::vector<variable> &args, variable* ret_val) override {
             assert(args.size() > 0);
             double value;
             bool value_is_a_number = args[0].get_real_value(&value);

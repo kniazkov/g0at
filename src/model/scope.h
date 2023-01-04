@@ -8,6 +8,7 @@
 #pragma once
 
 #include "generic_object.h"
+#include "built_in_functions.h"
 
 namespace goat {
 
@@ -43,7 +44,8 @@ namespace goat {
     /**
      * @brief Creates the main scope from which code execution begins
      * @param gc Data required for the garbage collector
+     * @param printer An abstract printer that actually does the printing
      * @return Pointer to the main scope (must be released manually!)
      */
-    scope * create_main_scope(gc_data *gc);
+    scope * create_main_scope(gc_data *gc, function_print::printer *printer);
 }
