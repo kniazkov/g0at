@@ -19,7 +19,7 @@ namespace goat {
     class root_object : public generic_static_object {
     public:
         /**
-         * Constructor
+         * @brief Constructor
          */
         root_object();
 

@@ -23,7 +23,7 @@ namespace goat {
 
     public:
         /**
-         * Constructor
+         * @brief Constructor
          * @param value The value
          */
         base_string(const std::wstring &value);
@@ -43,7 +43,7 @@ namespace goat {
     class static_string : public static_object, public base_string {
     public:
         /**
-         * Constructor
+         * @brief Constructor
          * @param value The value
          */
         static_string(const std::wstring &value) : 
@@ -57,7 +57,7 @@ namespace goat {
     class dynamic_string : public dynamic_object, public base_string {
     public:
         /**
-         * Constructor
+         * @brief Constructor
          * @param gc Data required for the garbage collector
          * @param value The value
          */

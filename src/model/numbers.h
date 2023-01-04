@@ -23,7 +23,7 @@ namespace goat {
 
     public:
         /**
-         * Constructor
+         * @brief Constructor
          * @param gc Data required for the garbage collector
          * @param value The value
          */

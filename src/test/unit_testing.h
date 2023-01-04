@@ -32,7 +32,7 @@ namespace goat {
         std::wstring message;
 
         /**
-         * Constructor
+         * @brief Constructor
          * @param _file Name of the file where the exception was triggered
          * @param _line Number of the line where the exception was triggered
          */
@@ -43,7 +43,7 @@ namespace goat {
 
     template <typename T> struct assertion_equals_exception : public test_failed_exception {
         /**
-         * Constructor
+         * @brief Constructor
          * @param file Name of the file where the exception was triggered
          * @param line Number of the line where the exception was triggered
          * @param expected Expected value
@@ -61,7 +61,7 @@ namespace goat {
 
     struct assertion_not_null_exception : public test_failed_exception {
         /**
-         * Constructor
+         * @brief Constructor
          * @param file Name of the file where the exception was triggered
          * @param line Number of the line where the exception was triggered
          * @param expected Expected value

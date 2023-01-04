@@ -47,14 +47,14 @@ namespace goat {
     class generic_dynamic_object : public dynamic_object, public generic_object {
     public:
         /**
-         * Constructor
+         * @brief Constructor
          * @param gc Data required for the garbage collector
          * @param proto The prototype of the object
          */
         generic_dynamic_object(gc_data *gc, object *proto);
 
         /**
-         * Destructor
+         * @brief Destructor
          */
         ~generic_dynamic_object();
 
@@ -74,14 +74,14 @@ namespace goat {
     class object_with_multiple_prototypes : public dynamic_object, public generic_object {
     public:
         /**
-         * Constructor
+         * @brief Constructor
          * @param gc Data required for the garbage collector
          * @param proto The list of prototypes of the object
          */
         object_with_multiple_prototypes(gc_data *gc, std::vector<object*> proto);
 
         /**
-         * Destructor
+         * @brief Destructor
          */
         ~object_with_multiple_prototypes();
 
