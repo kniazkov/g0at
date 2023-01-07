@@ -24,7 +24,8 @@ namespace goat {
         { "main scope", test_main_scope },
         { "'read_variable' expression", test_read_variable_expression },
         { "'function_call' expression", test_function_call_expression },
-        { "'print' function", test_function_print }
+        { "'print' function", test_function_print },
+        { "string concatenation", test_string_concatenation }
     };
 
     unsigned int get_number_of_tests() {

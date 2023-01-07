@@ -28,6 +28,31 @@ namespace goat {
     };
 
     /**
+     * @brief Expression representing a constant string
+     */
+    class constant_string : public expression {
+    public:
+        /**
+         * @brief Constructor
+         * @param value The value
+         */
+        constant_string(base_string *value);
+
+        /**
+         * @brief Destructor
+         */
+        ~constant_string();
+
+        variable calc(scope *scope) override;
+
+    private:
+        /**
+         * @brief The value
+         */
+        base_string *value;
+    };
+    
+    /**
      * @brief Expression representing a constant real number
      */
     class constant_real_number : public expression {
@@ -72,6 +97,9 @@ namespace goat {
         base_string *name;
     };
 
+    /**
+     * @brief Searches for a function in scope and invokes it
+     */
     class function_call : public expression {
     public:
         /**
@@ -97,5 +125,63 @@ namespace goat {
          * @brief Function arguments
          */
         std::vector<expression*> args;
+    };
+
+    /**
+     * @brief An operation that has two operands
+     */
+    class binary_operation : public expression {
+    public:
+        /**
+         * @brief Constructor
+         * @param left Left operand
+         * @param right Right operand
+         */
+        binary_operation(expression *left, expression *right);
+
+        /**
+         * @brief Destructor
+         */
+        ~binary_operation();
+
+        variable calc(scope *scope) override;
+
+    protected:
+        /**
+         * @brief Calculates the value of the expression
+         * @param scope The scope in which the expression is calculated
+         * @param left Left operand
+         * @param right Right operand
+         * @return Calculated expression
+         */
+        virtual variable calc(scope *scope, variable *left, variable *right) = 0;
+
+    private:
+        /**
+         * @brief Left operand
+         */
+        expression *left;
+
+        /**
+         * @brief Right operand
+         */
+        expression *right;
+    };
+
+    /**
+     * @brief Addition
+     */
+    class addition : public binary_operation {
+    public:
+        /**
+         * @brief Constructor
+         * @param left Left operand
+         * @param right Right operand
+         */
+        addition(expression *left, expression *right) : binary_operation(left, right) {
+        }
+
+    protected:
+        variable calc(scope *scope, variable *left, variable *right) override;
     };
 }

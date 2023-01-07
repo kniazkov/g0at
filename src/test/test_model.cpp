@@ -413,4 +413,32 @@ namespace goat {
         assert_equals(unsigned int, 0, gc.get_count());
         return true;
     }
+
+    bool test_string_concatenation() {
+        gc_data gc;
+        dbg_printer printer;
+        scope *main = create_main_scope(&gc, &printer);
+        dynamic_string *str = new dynamic_string(&gc, L"it");
+        constant_string *left = new constant_string(str);
+        str->release();
+        str = new dynamic_string(&gc, L" ");
+        constant_string *center = new constant_string(str);
+        str->release();
+        str = new dynamic_string(&gc, L"works.");
+        constant_string *right = new constant_string(str);
+        str->release();
+        expression *nested = new addition(left, center);
+        left->release();
+        center->release();
+        expression *expr = new addition(nested, right);
+        nested->release();
+        right->release();
+        variable result = expr->calc(main);
+        assert_equals(std::wstring, L"it works.", result.to_string());
+        result.release();
+        expr->release();
+        main->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
 }

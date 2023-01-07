@@ -84,4 +84,14 @@ namespace goat {
     base_function * object::to_function() {
         return nullptr;
     }
+
+    /**
+     * @todo Throw an exception like "operation not supported"
+     */
+    variable object::do_addition(gc_data* const gc,
+            const variable* left, const variable* right) const {
+        variable var = {0};
+        var.obj = get_empty_object();
+        return var;        
+    }
 }

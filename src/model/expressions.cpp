@@ -11,6 +11,24 @@
 
 namespace goat {
 
+    constant_string::constant_string(base_string *value) {
+        this->value = value;
+        value->add_reference();
+    }
+
+    constant_string::~constant_string() {
+        value->release();
+    }
+
+    variable constant_string::calc(scope *scope) {
+        value->add_reference();
+        variable var = {0};
+        var.obj = value;
+        return var;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
     constant_real_number::constant_real_number(double value) : value(value) {
     }
 
@@ -73,5 +91,32 @@ namespace goat {
         }
         func->exec(var_list, &ret_val);        
         return ret_val;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    binary_operation::binary_operation(expression *left, expression *right) {
+        this->left = left;
+        left->add_reference();
+        this->right = right;
+        right->add_reference();
+    }
+
+    binary_operation::~binary_operation() {
+        left->release();
+        right->release();
+    }
+
+    variable binary_operation::calc(scope *scope) {
+        variable left_value = left->calc(scope);
+        variable right_value = right->calc(scope);
+        variable result = calc(scope, &left_value, &right_value);
+        left_value.release();
+        right_value.release();
+        return result;
+    }
+
+    variable addition::calc(scope *scope, variable *left, variable *right) {
+        return left->obj->do_addition(scope->get_garbage_collector_data(), left, right);
     }
 }

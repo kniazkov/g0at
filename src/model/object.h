@@ -16,6 +16,7 @@ namespace goat {
 
     class object;
     class base_function;
+    class gc_data;
 
     /**
      * @brief Primitive data processed by the interpreter
@@ -145,11 +146,11 @@ namespace goat {
         virtual void release() = 0;
 
         /**
-         * @brief Determines if the object is static or not
-         * @return <code>true</code> if the object is static (i.e. not counted by any type of
-         * garbage collectors), or <code>false</code> otherwise
+         * @brief Returns the data required for the garbage collector
+         * @return Data required for the garbage collector or <code>nullptr</code> if the object
+         *   contains no such data (static object, for example)
          */
-        virtual bool is_static() = 0;
+        virtual gc_data * get_garbage_collector_data() const = 0;
 
         /**
          * @brief Returns the type of the object
@@ -268,6 +269,16 @@ namespace goat {
          * @return Pointer to a function object or <code>nullptr</code>
          */
         virtual base_function * to_function();
+
+        /**
+         * @brief Performs an addition operation
+         * @param gc Data required for the garbage collector
+         * @param left Pointer to left operand (only for objects that do not store data themselves)
+         * @param right Pointer to right operand
+         * @return Calculation result
+         */
+        virtual variable do_addition(gc_data* const gc,
+                const variable* left, const variable* right) const;
 
     private:
         /**

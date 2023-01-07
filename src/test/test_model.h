@@ -23,4 +23,5 @@ namespace goat {
     bool test_read_variable_expression();
     bool test_function_call_expression();
     bool test_function_print();
+    bool test_string_concatenation();
 }

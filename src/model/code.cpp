@@ -19,8 +19,8 @@ namespace goat {
         }
     }
 
-    bool element::is_static() {
-        return false;
+    gc_data * element::get_garbage_collector_data() const {
+        return nullptr;
     }
 
     object_type element::get_type() const {

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "generic_object.h"
+#include "dynamic_object.h"
 #include "built_in_functions.h"
 
 namespace goat {

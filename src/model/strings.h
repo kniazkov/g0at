@@ -34,6 +34,8 @@ namespace goat {
         std::wstring to_string(const variable* var) const override;
         std::wstring to_string_notation(const variable* var) const override;
         bool get_string_value(std::wstring* const value_ptr) const override;
+        variable do_addition(gc_data* const gc,
+            const variable* left, const variable* right) const override;
     };
 
     /**
