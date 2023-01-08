@@ -11,6 +11,7 @@
 #include "functions.h"
 #include "strings.h"
 #include "numbers.h"
+#include "exceptions.h"
 
 namespace goat {
 
@@ -19,6 +20,7 @@ namespace goat {
     static_string str_String(L"String");
     static_string str_Number(L"Number");
     static_string str_Real(L"Real");
+    static_string str_Exception(L"Exception");
 
     static_string str_print(L"print");
     static_string str_sqrt(L"sqrt");
@@ -37,6 +39,7 @@ namespace goat {
             write_static_attribute(&str_String, get_string_prototype());
             write_static_attribute(&str_Number, get_number_prototype());
             write_static_attribute(&str_Real, get_real_prototype());
+            write_static_attribute(&str_Exception, get_exception_prototype());
 
             write_static_attribute(&str_sqrt, get_sqrt_instance());
         }
