@@ -51,14 +51,16 @@ namespace goat {
     }
 
     const char * goat_exception_wrapper::what() const noexcept {
-        std::wstring info = data->obj->to_string(nullptr);
-        size_t size = info.size();
-        data->buff = new char[size + 1];
-        for (size_t i = 0; i < size; i++) {
-            wchar_t ch = info[i];
-            data->buff[i] = ch < 127 ? ch : '?';
+        if (!data->buff) {
+            std::wstring info = data->obj->to_string(nullptr);
+            size_t size = info.size();
+            data->buff = new char[size + 1];
+            for (size_t i = 0; i < size; i++) {
+                wchar_t ch = info[i];
+                data->buff[i] = ch < 127 ? ch : '?';
+            }
+            data->buff[size] = '\0';
         }
-        data->buff[size] = '\0';
         return data->buff;
     }
 
