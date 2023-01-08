@@ -105,4 +105,9 @@ namespace goat {
      * @return Pointer to the prototype of exception objects
      */
     object * get_exception_prototype();
+
+    /**
+     * @return Pointer to the illegal argument exception instance
+     */
+    object * get_illegal_agrument_exception();
 }

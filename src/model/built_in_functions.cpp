@@ -8,6 +8,7 @@
 #include <cassert>
 #include <cmath>
 #include "built_in_functions.h"
+#include "exceptions.h"
 
 namespace goat {
 
@@ -24,10 +25,14 @@ namespace goat {
     class function_sqrt : public static_function {
     public:
         void exec(std::vector<variable> &args, variable* ret_val) override {
-            assert(args.size() > 0);
+            if (args.size() < 1) {
+                throw goat_exception_wrapper(get_illegal_agrument_exception());
+            }
             double value;
             bool value_is_a_number = args[0].get_real_value(&value);
-            assert(value_is_a_number);
+            if (!value_is_a_number) {
+                throw new goat_exception_wrapper(get_illegal_agrument_exception());
+            }
             ret_val->set_real_value(std::sqrt(value));
         }
     };

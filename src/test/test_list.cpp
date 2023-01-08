@@ -19,13 +19,14 @@ namespace goat {
         { "'get_attribute' method, single inheritance", test_get_attribute },
         { "'get_attribute' method, multiple inheritance", test_get_attribute_multiple_inheritance },
         { "multiple threads create and delete objects", test_multithreaded_object_creation },
-        { "square root calcilation", test_square_root },
+        { "square root calculation", test_square_root },
         { "root scope", test_root_scope },
         { "main scope", test_main_scope },
         { "'read_variable' expression", test_read_variable_expression },
         { "'function_call' expression", test_function_call_expression },
         { "'print' function", test_function_print },
-        { "string concatenation", test_string_concatenation }
+        { "string concatenation", test_string_concatenation },
+        { "'sqrt' function with illegal arguments", test_sqrt_function_with_illegal_argument }
     };
 
     unsigned int get_number_of_tests() {

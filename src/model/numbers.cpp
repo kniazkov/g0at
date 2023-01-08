@@ -25,7 +25,7 @@ namespace goat {
     }
 
     /**
-     * Prototype object for objects storing or wrapping a number
+     * @brief Prototype object for objects storing or wrapping a number
      */
     class number_prototype : public generic_static_object {
     public:
@@ -43,7 +43,7 @@ namespace goat {
     }
 
     /**
-     * Prototype object for objects storing or wrapping a real number
+     * @brief Prototype object for objects storing or wrapping a real number
      */
     class real_prototype : public generic_static_object {
     public:

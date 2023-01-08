@@ -7,6 +7,7 @@
 
 #include <sstream>
 #include <thread>
+#include <cstring>
 #include "unit_testing.h"
 #include "model/object.h"
 #include "model/generic_object.h"
@@ -16,6 +17,7 @@
 #include "model/built_in_functions.h"
 #include "model/scope.h"
 #include "model/expressions.h"
+#include "model/exceptions.h"
 
 namespace goat {
 
@@ -437,6 +439,31 @@ namespace goat {
         assert_equals(std::wstring, L"it works.", result.to_string());
         result.release();
         expr->release();
+        main->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
+
+    bool test_sqrt_function_with_illegal_argument() {
+        gc_data gc;
+        dbg_printer printer;
+        scope *main = create_main_scope(&gc, &printer);
+        static_string key(L"sqrt");
+        base_string *name = &key;
+        std::vector<expression*> args;
+        function_call expr(name, args);
+        bool oops = false;
+        try {
+            variable result = expr.calc(main);
+        } 
+        catch (goat_exception_wrapper &ex) {
+            oops = true;
+            const char *expected = "Illegal argument";
+            const char *actual = ex.what();
+            int compare_result = std::strcmp(expected, actual);
+            assert_equals(int, 0, compare_result);
+        }
+        assert_equals(bool, true, oops);
         main->release();
         assert_equals(unsigned int, 0, gc.get_count());
         return true;

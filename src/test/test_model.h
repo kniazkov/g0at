@@ -24,4 +24,5 @@ namespace goat {
     bool test_function_call_expression();
     bool test_function_print();
     bool test_string_concatenation();
+    bool test_sqrt_function_with_illegal_argument();
 }

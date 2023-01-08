@@ -45,7 +45,7 @@ namespace goat {
     }
 
     goat_exception_wrapper::~goat_exception_wrapper() {
-        if (!(data->refs--)) {
+        if (!(--data->refs)) {
             delete data;
         }
     }
@@ -65,7 +65,7 @@ namespace goat {
     /* ----------------------------------------------------------------------------------------- */
 
     /**
-     * Prototype object for exceptions
+     * @brief Prototype object for exceptions
      */
     class exception_prototype : public generic_static_object {
     public:
@@ -79,5 +79,24 @@ namespace goat {
     static exception_prototype exception_proto_instance;
     object * get_exception_prototype() {
         return &exception_proto_instance;
+    }
+
+    /**
+     * @brief Illegal argument exception
+     */
+    class illegal_argument_exception : public generic_static_object {
+    public:
+        object * get_first_prototype() const override {
+            return &exception_proto_instance;
+        }
+
+        std::wstring to_string(const variable* var) const override {
+            return L"Illegal argument";
+        }
+    };
+
+    static illegal_argument_exception illegal_argument_instance;
+    object * get_illegal_agrument_exception() {
+        return &illegal_argument_instance;
     }
 }
