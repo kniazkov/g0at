@@ -8,7 +8,6 @@
 #include <cassert>
 #include <cwchar>
 #include "numbers.h"
-#include "static_object.h"
 #include "generic_object.h"
 
 namespace goat {
@@ -37,10 +36,11 @@ namespace goat {
     };
 
     static number_prototype number_proto_instance;
-
     object * get_number_prototype() {
         return &number_proto_instance;
     }
+
+    /* ----------------------------------------------------------------------------------------- */
 
     /**
      * @brief Prototype object for objects storing or wrapping a real number
@@ -59,22 +59,51 @@ namespace goat {
     };
 
     static real_prototype real_proto_instance;
-
     object * get_real_prototype() {
         return &real_proto_instance;
     }
+
+    /**
+     * @brief Base object for handling real numbers
+     */
+    class real_number_base : public virtual object {
+    public:
+        object_type get_type() const override {
+            return object_type::number;
+        }
+
+        object * get_first_prototype() const override {
+            return &real_proto_instance;
+        }
+        
+        std::wstring to_string_notation(const variable* var) const override {
+            return double_to_string(get_value(var));
+        }
+
+        bool get_real_value(const variable* var, double* const value_ptr) const override {
+            *value_ptr = get_value(var);
+            return true;
+        }
+    
+    protected:
+        /**
+         * @brief Returns the value handled by this object
+         * @param var Pointer to a variable to be handled (only for objects
+         *   that do not store data themselves)
+         * @return Real value
+         */
+        virtual double get_value(const variable* var) const = 0;
+    };
+
+    /* ----------------------------------------------------------------------------------------- */
 
     /**
      * @brief Static object that handles real values
      * 
      * The value itself is stored separately in a variable.
      */
-    class real_number_handler : public static_object {
+    class real_number_static : public static_object, public real_number_base {
     public:
-        object_type get_type() const override {
-            return object_type::number;
-        }
-
         bool less(const object* const others) const override {
             /*
                 This method should never be called for handler objects
@@ -83,53 +112,53 @@ namespace goat {
             return false;
         }
 
-        object * get_first_prototype() const override {
-            return &real_proto_instance;
-        }
-        
-        std::wstring to_string_notation(const variable* var) const override {
-            return double_to_string(var->data.double_value);
-        }
-
-        bool get_real_value(const variable* var, double* const value_ptr) const override {
-            *value_ptr = var->data.double_value;
-            return true;
+    protected:
+        double get_value(const variable* var) const override {
+            return var->data.double_value;
         }
     };
 
-    static real_number_handler real_handler_instance;
-
+    static real_number_static real_static_instance;
     object * get_real_handler() {
-        return &real_handler_instance;
+        return &real_static_instance;
     }
 
     /* ----------------------------------------------------------------------------------------- */
 
-    real_number::real_number(gc_data* const gc, const double value) 
+    /**
+     * @brief Object that stores a real number
+     */
+    class real_number_dynamic : public dynamic_object, public real_number_base {
+    private:
+        /**
+         * @brief The value
+         */
+        double value;
+
+    public:
+        /**
+         * @brief Constructor
+         * @param gc Data required for the garbage collector
+         * @param value The value
+         */
+        real_number_dynamic(gc_data* const gc, const double value) 
             : dynamic_object(gc), value(value) {
-    }
+        }
 
-    object_type real_number::get_type() const {
-        return object_type::number;
-    }
+        bool less(const object* const other) const override {
+            double other_value;
+            bool other_is_a_number = other->get_real_value(nullptr, &other_value);
+            assert(other_is_a_number);
+            return value < other_value;
+        };
 
-    bool real_number::less(const object* const other) const {
-        double other_value;
-        bool other_is_a_number = other->get_real_value(nullptr, &other_value);
-        assert(other_is_a_number);
-        return value < other_value;
-    }
-
-    object * real_number::get_first_prototype() const {
-        return &real_proto_instance;
-    }
-
-    std::wstring real_number::to_string_notation(const variable* var) const {
-        return double_to_string(value);
-    }
-
-    bool real_number::get_real_value(const variable* var, double* const value_ptr) const {
-        *value_ptr = value;
-        return true;
+    protected:
+        double get_value(const variable* var) const override {
+            return value;
+        }
+    };
+    
+    object * create_real_number(gc_data* const gc, const double value) {
+        return new real_number_dynamic(gc, value);
     }
 }

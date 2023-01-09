@@ -319,7 +319,7 @@ namespace goat {
         assert_equals(bool, true, result_is_real_value);
         assert_equals(double, 16, value);
         gc_data gc;
-        arg.obj = new real_number(&gc, 1024);
+        arg.obj = create_real_number(&gc, 1024);
         args.clear();
         args.push_back(arg);
         func->exec(args, &result);
