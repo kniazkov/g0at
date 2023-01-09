@@ -19,6 +19,14 @@ namespace goat {
     class gc_data;
 
     /**
+     * @brief Returns empty object instance
+     * @return Empty object instance
+     * 
+     * The empty object (containing nothing) is the default object in the Goat language.
+     */
+    object * get_empty_object();
+
+    /**
      * @brief Primitive data processed by the interpreter
      * 
      * Primitive data types, regardless of their size, always occupy one "cell" 
@@ -43,6 +51,14 @@ namespace goat {
     struct variable {
         object *obj;
         raw_data data;
+
+        /**
+         * @brief Constructor
+         */
+        variable() {
+            obj = get_empty_object();
+            data.int_value = 0;
+        }
 
         /**
          * @brief Increases the counter of objects referring to processing object
@@ -226,7 +242,7 @@ namespace goat {
          * @param value The value
          */
         inline void set_attribute(object *key, object* value) {
-            variable var = {0};
+            variable var;
             var.obj = value;
             set_attribute(key, var);
         }
@@ -319,6 +335,4 @@ namespace goat {
     base_function * variable::to_function() {
         return obj->to_function();
     }
-
-    object * get_empty_object();
 }

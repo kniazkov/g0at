@@ -308,10 +308,10 @@ namespace goat {
     }
 
     bool test_square_root() {
-        variable arg = {0};
+        variable arg;
         arg.set_real_value(256);
         std::vector<variable> args = { arg };
-        variable result = {0};
+        variable result;
         base_function *func = get_sqrt_instance()->to_function();
         func->exec(args, &result);
         double value = 0;
@@ -421,13 +421,13 @@ namespace goat {
         dbg_printer printer;
         scope *main = create_main_scope(&gc, &printer);
         dynamic_string *str = new dynamic_string(&gc, L"it");
-        constant_string *left = new constant_string(str);
+        expression_object *left = new expression_object(str);
         str->release();
         str = new dynamic_string(&gc, L" ");
-        constant_string *center = new constant_string(str);
+        expression_object *center = new expression_object(str);
         str->release();
         str = new dynamic_string(&gc, L"works.");
-        constant_string *right = new constant_string(str);
+        expression_object *right = new expression_object(str);
         str->release();
         expression *nested = new addition(left, center);
         left->release();
@@ -450,7 +450,7 @@ namespace goat {
         scope *main = create_main_scope(&gc, &printer);
         static_string key(L"sqrt");
         base_string *name = &key;
-        std::vector<expression*> args;
+        std::vector<expression*> args; // empty args list, should produce an exception
         function_call expr(name, args);
         bool oops = false;
         try {
@@ -464,6 +464,53 @@ namespace goat {
             assert_equals(int, 0, compare_result);
         }
         assert_equals(bool, true, oops);
+        main->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
+
+    bool test_sum_two_real_numbers() {
+        gc_data gc;
+        dbg_printer printer;
+        scope *main = create_main_scope(&gc, &printer);
+        object *obj = create_real_number(&gc, 2);
+        expression *left = new expression_object(obj);
+        obj->release();
+        expression *right = new constant_real_number(3);
+        expression *expr = new addition(left, right);
+        left->release();
+        right->release();
+        variable result = expr->calc(main);
+        assert_equals(double, 5, result.data.double_value);
+        expr->release();
+        main->release();
+        assert_equals(unsigned int, 0, gc.get_count());
+        return true;
+    }
+
+    bool test_sum_two_real_numbers_with_exception() {
+        gc_data gc;
+        dbg_printer printer;
+        scope *main = create_main_scope(&gc, &printer);
+        object *obj = create_real_number(&gc, 2);
+        expression *left = new expression_object(obj);
+        obj->release();
+        static_string key(L"sqrt");
+        base_string *name = &key;
+        std::vector<expression*> args; // empty args list, should produce an exception
+        expression *right = new function_call(name, args);
+        expression *expr = new addition(left, right);
+        left->release();
+        right->release();
+        bool oops = false;
+        try {
+            variable result = expr->calc(main);
+        }
+        catch (goat_exception_wrapper &ex) {
+            oops = true;
+        }
+        assert_equals(bool, true, oops);
+        expr->release();
         main->release();
         assert_equals(unsigned int, 0, gc.get_count());
         return true;

@@ -90,7 +90,7 @@ namespace goat {
      */
     variable object::do_addition(gc_data* const gc,
             const variable* left, const variable* right) const {
-        variable var = {0};
+        variable var;
         var.obj = get_empty_object();
         return var;        
     }

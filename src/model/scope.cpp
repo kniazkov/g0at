@@ -125,7 +125,7 @@ namespace goat {
         main_scope(gc_data *gc, function_print::printer *printer) :
                 scope_with_one_prototype(gc, &root_scope_instance) {
             function_print *fn = new function_print(gc, printer);
-            variable var = {0};
+            variable var;
             var.obj = fn;
             set_attribute(&str_print, var);
             fn->release();

@@ -8,22 +8,23 @@
 #include <cassert>
 #include "expressions.h"
 #include "functions.h"
+#include "exceptions.h"
 
 namespace goat {
 
-    constant_string::constant_string(base_string *value) {
-        this->value = value;
-        value->add_reference();
+    expression_object::expression_object(object *obj) {
+        this->obj = obj;
+        obj->add_reference();
     }
 
-    constant_string::~constant_string() {
-        value->release();
+    expression_object::~expression_object() {
+        obj->release();
     }
 
-    variable constant_string::calc(scope *scope) {
-        value->add_reference();
-        variable var = {0};
-        var.obj = value;
+    variable expression_object::calc(scope *scope) {
+        obj->add_reference();
+        variable var;
+        var.obj = obj;
         return var;
     }
 
@@ -83,8 +84,7 @@ namespace goat {
         assert(var != nullptr);
         base_function *func = var->to_function();
         assert(func != nullptr);
-        variable ret_val = {0};
-        ret_val.obj = get_empty_object();
+        variable ret_val;
         std::vector<variable> var_list;
         for (auto arg : args) {
             var_list.push_back(arg->calc(scope));
@@ -108,9 +108,21 @@ namespace goat {
     }
 
     variable binary_operation::calc(scope *scope) {
-        variable left_value = left->calc(scope);
-        variable right_value = right->calc(scope);
-        variable result = calc(scope, &left_value, &right_value);
+        variable left_value,
+            right_value,
+            result;
+        
+        try {
+            left_value = left->calc(scope);
+            right_value = right->calc(scope);
+            result = calc(scope, &left_value, &right_value);
+        }
+        catch(goat_exception_wrapper ex) {
+            left_value.release();
+            right_value.release();
+            throw;
+        }
+
         left_value.release();
         right_value.release();
         return result;

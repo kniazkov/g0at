@@ -69,7 +69,7 @@ namespace goat {
     variable base_string::do_addition(gc_data* const gc,
             const variable* left, const variable* right) const {
         std::wstring right_value = right->to_string();
-        variable var = {0};
+        variable var;
         var.obj = new dynamic_string(gc, value + right_value);
         return var;
     }    

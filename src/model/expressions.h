@@ -28,28 +28,30 @@ namespace goat {
     };
 
     /**
-     * @brief Expression representing a constant string
+     * @brief Expression representing an object (just returns this object)
+     * 
+     * In this way we can wrap any object, including strings, into an expression.
      */
-    class constant_string : public expression {
+    class expression_object : public expression {
     public:
         /**
          * @brief Constructor
          * @param value The value
          */
-        constant_string(base_string *value);
+        expression_object(object *obj);
 
         /**
          * @brief Destructor
          */
-        ~constant_string();
+        ~expression_object();
 
         variable calc(scope *scope) override;
 
     private:
         /**
-         * @brief The value
+         * @brief The object
          */
-        base_string *value;
+        object *obj;
     };
     
     /**

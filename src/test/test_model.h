@@ -25,4 +25,6 @@ namespace goat {
     bool test_function_print();
     bool test_string_concatenation();
     bool test_sqrt_function_with_illegal_argument();
+    bool test_sum_two_real_numbers();
+    bool test_sum_two_real_numbers_with_exception();
 }

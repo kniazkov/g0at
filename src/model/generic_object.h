@@ -35,7 +35,7 @@ namespace goat {
          * @param value The value
          */
         inline void write_static_attribute(object *key, object *value) {
-            variable var = {0};
+            variable var;
             var.obj = value;
             attributes[key] = var;
         }

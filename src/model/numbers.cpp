@@ -9,6 +9,7 @@
 #include <cwchar>
 #include "numbers.h"
 #include "generic_object.h"
+#include "exceptions.h"
 
 namespace goat {
 
@@ -83,6 +84,19 @@ namespace goat {
         bool get_real_value(const variable* var, double* const value_ptr) const override {
             *value_ptr = get_value(var);
             return true;
+        }
+
+        variable do_addition(gc_data* const gc,
+                const variable* left, const variable* right) const override {
+            double left_value = get_value(left);
+            double right_value;
+            bool right_is_a_real_number = right->get_real_value(&right_value);
+            if (!right_is_a_real_number) {
+                throw goat_exception_wrapper(get_illegal_agrument_exception());
+            }
+            variable result;
+            result.set_real_value(left_value + right_value);
+            return result;
         }
     
     protected:

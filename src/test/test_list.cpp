@@ -26,7 +26,9 @@ namespace goat {
         { "'function_call' expression", test_function_call_expression },
         { "'print' function", test_function_print },
         { "string concatenation", test_string_concatenation },
-        { "'sqrt' function with illegal arguments", test_sqrt_function_with_illegal_argument }
+        { "'sqrt' function with illegal arguments", test_sqrt_function_with_illegal_argument },
+        { "sum two real numbers", test_sum_two_real_numbers },
+        { "sum two real numbers with exception", test_sum_two_real_numbers_with_exception },
     };
 
     unsigned int get_number_of_tests() {
