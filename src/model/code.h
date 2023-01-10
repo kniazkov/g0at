@@ -22,8 +22,12 @@ namespace goat {
         /**
          * @brief Constructor
          */
-        element() : refs(1) {
-        }
+        element();
+
+        /**
+         * @brief Destructor
+         */
+        ~element();
         
         void add_reference() override;
         void release() override;
@@ -38,4 +42,16 @@ namespace goat {
          */
         unsigned int refs;
     };
+
+    /**
+     * @brief Returns the number of elements created during source code compilation.
+     *   Used for debugging purposes to look for memory leaks during unit testing
+     * @return Number of elements
+     */
+    unsigned int get_number_of_elements();
+
+    /**
+     * @brief Clears the element counter
+     */
+    void reset_number_of_elements();
 }

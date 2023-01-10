@@ -9,6 +9,28 @@
 
 namespace goat {
 
+    /**
+     * @brief The number of elements created during source code compilation.
+     *   Used for debugging purposes to look for memory leaks during unit testing
+     */
+    unsigned int elements_counter = 0;
+
+    unsigned int get_number_of_elements() {
+        return elements_counter;
+    }
+
+    void reset_number_of_elements() {
+        elements_counter = 0;
+    }
+
+    element::element() : refs(1) {
+        elements_counter++;
+    }
+
+    element::~element() {
+        elements_counter--;
+    }
+
     void element::add_reference() {
         refs++;
     }

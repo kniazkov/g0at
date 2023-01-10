@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include "test/unit_testing.h"
 #include "test/test_list.h"
+#include "model/code.h"
 
 namespace goat {
 
@@ -24,6 +25,13 @@ namespace goat {
             } catch (test_failed_exception ex) {
                 std::wcout << "Test '" << tests[i].name << "': " 
                     << ex.file << ", " << ex.line << ": " << ex.message << std::endl;
+            }
+            if (get_number_of_elements() != 0) {
+                result = false;
+                std::cout << "Test '" << tests[i].name 
+                    << "': memory leak, not all code objects (" << get_number_of_elements()
+                    << ") have been cleaned up." << std::endl;
+                reset_number_of_elements();
             }
             if (result) {
                 passed++;
