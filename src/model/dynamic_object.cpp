@@ -5,6 +5,7 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
+#include <mutex>
 #include "dynamic_object.h"
 
 namespace goat {
@@ -16,7 +17,7 @@ namespace goat {
     }
 
     void gc_data::add_object(dynamic_object* const obj) {
-        mutex.lock();
+        const std::lock_guard<spinlock> lock(mutex);
 
         obj->previous = last;
         obj->next = nullptr;
@@ -28,13 +29,9 @@ namespace goat {
         }
         last = obj;
         count++;
-
-        mutex.unlock();
     }
 
-    void gc_data::remove_object(dynamic_object* const obj) {
-        mutex.lock();
-
+    void gc_data::remove_object_unsafe(dynamic_object* const obj) {
         if (obj->previous) {
             obj->previous->next = obj->next;
         } else {
@@ -48,9 +45,35 @@ namespace goat {
         }
 
         count--;
-
-        mutex.unlock();
     }
+
+    void gc_data::remove_object(dynamic_object* const obj) {
+        const std::lock_guard<spinlock> lock(mutex);
+        remove_object_unsafe(obj);
+    }
+
+    void gc_data::sweep() {
+        /*
+            It is assumed that in addition some other mechanism (not a spinlock)
+            will be used to lock the threads during cleaning. But this is not certain
+        */
+        const std::lock_guard<spinlock> lock(mutex);
+
+        dynamic_object *obj = first;
+        while (obj) {
+            dynamic_object *next = obj->next;
+            if (obj->flags.is_marked()) {
+                obj->flags.reset_marked_flag();
+            }
+            else {
+                remove_object_unsafe(obj);
+                delete obj;
+            }
+            obj = next;
+        }
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
 
     dynamic_object::dynamic_object(gc_data* const gc_ptr) : gc(gc_ptr), refs(1) {
         gc->add_object(this);

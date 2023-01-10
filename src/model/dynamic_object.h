@@ -49,9 +49,16 @@ namespace goat {
         /**
          * @return Total number of dynamic objects
          */
-        unsigned int get_count() {
+        inline unsigned int get_count() {
             return count;
         }
+
+        /**
+         * @brief Removes from the object list and destroys all unmarked objects
+         * 
+         * See https://en.wikipedia.org/wiki/Tracing_garbage_collection for more details.
+         */
+        void sweep();
 
     private:
         /**
@@ -73,6 +80,12 @@ namespace goat {
          * @brief Last object in the object list
          */
         dynamic_object *last;
+
+        /**
+         * @brief Removes the object from the list of objects without thread locking 
+         * @param obj The object
+         */
+        void remove_object_unsafe(dynamic_object* const obj);
     };
 
     /**

@@ -108,21 +108,9 @@ namespace goat {
     }
 
     variable binary_operation::calc(scope *scope) {
-        variable left_value,
-            right_value,
-            result;
-        
-        try {
-            left_value = left->calc(scope);
-            right_value = right->calc(scope);
-            result = calc(scope, &left_value, &right_value);
-        }
-        catch(goat_exception_wrapper ex) {
-            left_value.release();
-            right_value.release();
-            throw;
-        }
-
+        variable left_value = left->calc(scope);
+        variable right_value = right->calc(scope);
+        variable result = calc(scope, &left_value, &right_value);
         left_value.release();
         right_value.release();
         return result;

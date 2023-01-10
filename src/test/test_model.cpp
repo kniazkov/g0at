@@ -512,6 +512,8 @@ namespace goat {
         assert_equals(bool, true, oops);
         expr->release();
         main->release();
+        assert_equals(unsigned int, 1, gc.get_count());
+        gc.sweep();
         assert_equals(unsigned int, 0, gc.get_count());
         return true;
     }
