@@ -11,6 +11,7 @@
 #include <vector>
 #include <map>
 #include <cstdint>
+#include "flags.h"
 
 namespace goat {
 
@@ -296,15 +297,21 @@ namespace goat {
         virtual variable do_addition(gc_data* const gc,
                 const variable* left, const variable* right) const;
 
+    protected:
+        /**
+         * @brief Flags
+         */
+        object_flags flags;
+
     private:
         /**
-         * @brief Privte copy constructor to prevent copying
+         * @brief Private copy constructor to prevent copying
          */
         object(const object &) {
         }
 
         /**
-         * @brief Privte assignment operator to prevent copying
+         * @brief Private assignment operator to prevent copying
          */
         void operator=(const object &) {
         }
