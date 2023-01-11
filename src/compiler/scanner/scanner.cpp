@@ -30,7 +30,7 @@ namespace goat {
         return c >= '0' && c <= '9';
     }
 
-    scanner::scanner(std::vector<token*> & tokens, const char *file_name,
+    scanner::scanner(std::vector<token*> *tokens, const char *file_name,
             const char *code, unsigned int length) : tokens(tokens) {
         b.type = token_type::unknown;
         b.file_name = file_name;
@@ -62,7 +62,7 @@ namespace goat {
             } while(is_letter(c) || is_digit(c));
 
             t->type = token_type::identifier;
-            tokens.push_back(t);
+            tokens->push_back(t);
             return t;
         }
 
@@ -79,7 +79,7 @@ namespace goat {
             if (b.code < code_end) {
                 char c = *(b.code);
                 if (c == '\n') {
-                    b.column = 1;
+                    b.column = 0;
                     b.line++;
                 } else {
                     b.column++;

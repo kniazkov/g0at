@@ -23,6 +23,12 @@ namespace goat {
      */
     struct token {
         /**
+         * @brief Virtual destructor for inheritors
+         */
+        virtual ~token() {
+        }
+
+        /**
          * @brief The type of the token
          */
         token_type type;

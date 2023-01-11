@@ -26,7 +26,7 @@ namespace goat {
          * @param code Source code
          * @param length Source code length
          */
-        scanner(std::vector<token*> & tokens, const char *file_name, 
+        scanner(std::vector<token*> *tokens, const char *file_name, 
             const char *code, unsigned int length);
 
         /**
@@ -39,7 +39,7 @@ namespace goat {
         /**
          * @brief An array to store all tokens (to free up memory after parsing)
          */
-        std::vector<token*> & tokens;
+        std::vector<token*> * tokens;
 
         /**
          * @brief Token blank from which the resulting tokens are made

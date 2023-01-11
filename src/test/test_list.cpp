@@ -7,6 +7,7 @@
 
 #include "test_list.h"
 #include "test_model.h"
+#include "test_scanner.h"
 
 namespace goat {
 
@@ -29,6 +30,9 @@ namespace goat {
         { "'sqrt' function with illegal arguments", test_sqrt_function_with_illegal_argument },
         { "sum two real numbers", test_sum_two_real_numbers },
         { "sum two real numbers with exception", test_sum_two_real_numbers_with_exception },
+
+        { "scanner: one identifier", test_scan_identifier },
+        { "scanner: new line (rows and columns counting)", test_scan_new_line }
     };
 
     unsigned int get_number_of_tests() {
