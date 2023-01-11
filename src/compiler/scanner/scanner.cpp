@@ -9,6 +9,27 @@
 
 namespace goat {
 
+    /**
+     * @brief Determines whether the symbol is a space
+     */
+    static inline bool is_space(char c) {
+        return c == ' ' || c == '\r' || c == '\n' || c == '\t';
+    }
+
+    /**
+     * @brief Determines whether the symbol is a letter
+     */
+    static inline bool is_letter(char c) {
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
+    }
+
+    /**
+     * @brief Determines whether the symbol is digit
+     */
+    static inline bool is_digit(char c) {
+        return c >= '0' && c <= '9';
+    }
+
     scanner::scanner(std::vector<token*> & tokens, const char *file_name,
             const char *code, unsigned int length) : tokens(tokens) {
         b.type = token_type::unknown;
@@ -22,6 +43,50 @@ namespace goat {
     }
 
     token * scanner::get_token() {
+        char c = get_char();
+
+        while (is_space(c)) {
+            c = next_char();
+        }
+
+        if (c == 0) {
+            return nullptr;
+        }
+
+        token *t = new token(b);
+
+        if (is_letter(c)) {
+            do {
+                t->length++;
+                c = next_char();                
+            } while(is_letter(c) || is_digit(c));
+
+            t->type = token_type::identifier;
+            tokens.push_back(t);
+            return t;
+        }
+
         return nullptr;
+    }
+
+    char scanner::get_char() {
+        return b.code < code_end ? *(b.code) : 0;
+    }
+
+    char scanner::next_char() {
+        if (b.code < code_end) {
+            b.code++;
+            if (b.code < code_end) {
+                char c = *(b.code);
+                if (c == '\n') {
+                    b.column = 1;
+                    b.line++;
+                } else {
+                    b.column++;
+                }
+                return c;
+            }
+        }
+        return 0;
     }
 }

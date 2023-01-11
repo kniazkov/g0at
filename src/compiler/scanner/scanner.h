@@ -50,5 +50,17 @@ namespace goat {
          * @brief Pointer to end of source code
          */
         const char * code_end;
+
+        /**
+         * @brief Returns the current character of the sequence
+         * @brief A character or 0 if the sequence contains no more characters
+         */
+        char get_char();
+
+        /**
+         * @brief Returns the next character from the sequence
+         * @brief A character or 0 if the sequence contains no more characters
+         */
+        char next_char();
     };
 }

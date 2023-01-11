@@ -13,7 +13,8 @@ namespace goat {
      * @brief All possible token types
      */
     enum class token_type {
-        unknown = 0
+        unknown = 0,
+        identifier
     };
 
     /**
