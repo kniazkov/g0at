@@ -122,7 +122,7 @@ namespace goat {
      * So we divide the objects into families, and inside the objects of the same type (family) we
      * can compare the contents.
      */
-    enum object_type {
+    enum class object_type {
         generic = 1,
         string,
         number,
