@@ -54,6 +54,7 @@ namespace goat {
         }
 
         token *t = new token(b);
+        tokens->push_back(t);
 
         if (is_letter(c)) {
             do {
@@ -62,10 +63,27 @@ namespace goat {
             } while(is_letter(c) || is_digit(c));
 
             t->type = token_type::identifier;
-            tokens->push_back(t);
             return t;
         }
 
+        t->length = 1;
+        switch(c) {
+            case '(':
+            case '[':
+            case '{':
+                next_char();
+                t->type = token_type::opening_bracket;
+                return t;
+            case ')':
+            case ']':
+            case '}':
+                next_char();
+                t->type = token_type::closing_bracket;
+                return t;
+        }
+
+        tokens->pop_back();
+        delete t;
         return nullptr;
     }
 

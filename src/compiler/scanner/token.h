@@ -14,7 +14,9 @@ namespace goat {
      */
     enum class token_type {
         unknown = 0,
-        identifier
+        identifier,
+        opening_bracket,
+        closing_bracket
     };
 
     /**
