@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <string>
+
 namespace goat {
 
     /**
@@ -15,8 +17,10 @@ namespace goat {
     enum class token_type {
         unknown = 0,
         identifier,
+        string,
         opening_bracket,
-        closing_bracket
+        closing_bracket,
+        semicolon
     };
 
     /**
@@ -59,5 +63,62 @@ namespace goat {
          * @brief Token length (in characters), always non-zero
          */
         unsigned int length;
+
+        void set(token &base) {
+            file_name = base.file_name;
+            line = base.line;
+            column = base.column;
+            code = base.code;
+            length = 0;
+        }
+    };
+
+    /**
+     * @brief Token representing a bracket
+     */
+    struct token_bracket : public token {
+        /**
+         * @brief Constructor
+         * @param base Base token
+         * @param type Type of token
+         * @param paired_bracket Paired bracket to this bracket
+         */
+        token_bracket(token &base, token_type type, char paired_bracket) {
+            set(base);
+            this->type = type;
+            this->length = 1;
+            this->bracket = *code;
+            this->paired_bracket = paired_bracket;
+        }
+
+        /**
+         * @brief This bracket
+         */
+        char bracket;
+
+        /**
+         * @brief Paired bracket to this bracket (to check that the brackets are correct)
+         */
+        char paired_bracket;
+    };
+
+    /**
+     * @brief Token representing string in quotes
+     */
+    struct token_string : public token {
+        /**
+         * @brief Constructor
+         * @param base Base token
+         */
+        token_string(token &base) {
+            set(base);
+            type = token_type::string;
+            length = 2; // token size - minimum 2 characters (2 quotes) 
+        }
+
+        /**
+         * @brief String data
+         */
+        std::wstring data;
     };
 };

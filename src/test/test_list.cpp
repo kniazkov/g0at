@@ -32,7 +32,8 @@ namespace goat {
         { "sum two real numbers with exception", test_sum_two_real_numbers_with_exception },
 
         { "scanner: one identifier", test_scan_identifier },
-        { "scanner: new line (rows and columns counting)", test_scan_new_line }
+        { "scanner: new line (rows and columns counting)", test_scan_new_line },
+        { "scanner: 'hello world' program", test_scan_hello_world }
     };
 
     unsigned int get_number_of_tests() {

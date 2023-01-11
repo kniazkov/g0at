@@ -11,4 +11,5 @@ namespace goat {
 
     bool test_scan_identifier();
     bool test_scan_new_line();
+    bool test_scan_hello_world();
 }
