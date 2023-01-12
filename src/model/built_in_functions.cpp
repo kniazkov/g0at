@@ -13,7 +13,9 @@
 namespace goat {
 
     void function_print::exec(std::vector<variable> &args, variable* ret_val) {
-        assert(args.size() > 0);
+        if (args.size() < 1) {
+            throw runtime_exception(get_illegal_agrument_exception());
+        }
         device->print(args[0].to_string());
     }
 

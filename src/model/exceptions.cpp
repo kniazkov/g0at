@@ -8,6 +8,7 @@
 #include <string>
 #include "generic_object.h"
 #include "exceptions.h"
+#include "resources/messages.h"
 
 namespace goat {
 
@@ -93,7 +94,7 @@ namespace goat {
         }
 
         std::wstring to_string(const variable* var) const override {
-            return L"Illegal argument";
+            return get_messages()->msg_illegal_argument();
         }
     };
 
