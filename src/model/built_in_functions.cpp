@@ -26,12 +26,12 @@ namespace goat {
     public:
         void exec(std::vector<variable> &args, variable* ret_val) override {
             if (args.size() < 1) {
-                throw goat_exception_wrapper(get_illegal_agrument_exception());
+                throw runtime_exception(get_illegal_agrument_exception());
             }
             double value;
             bool value_is_a_number = args[0].get_real_value(&value);
             if (!value_is_a_number) {
-                throw new goat_exception_wrapper(get_illegal_agrument_exception());
+                throw new runtime_exception(get_illegal_agrument_exception());
             }
             ret_val->set_real_value(std::sqrt(value));
         }

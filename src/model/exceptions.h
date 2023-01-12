@@ -16,20 +16,20 @@ namespace goat {
     /**
      * @brief Descriptor containing Goat exception data
      */
-    class goat_exception_data {
-        friend class goat_exception_wrapper;
+    class runtime_exception_data {
+        friend class runtime_exception;
 
     public:
         /**
          * @brief Constructor
          * @param obj Object thrown as an exception
          */
-        goat_exception_data(object *obj);
+        runtime_exception_data(object *obj);
 
         /**
          * @brief Destructor
          */
-        ~goat_exception_data();
+        ~runtime_exception_data();
 
     private:
         /**
@@ -50,43 +50,43 @@ namespace goat {
         /**
          * @brief Private copy constructor to prevent copying
          */
-        goat_exception_data(const goat_exception_data&) {
+        runtime_exception_data(const runtime_exception_data&) {
         }
 
         /**
          * @brief Private assigment operator to prevent copying
          */
-        void operator=(const goat_exception_data&) {
+        void operator=(const runtime_exception_data&) {
         }
     };
 
     /**
      * @brief A wrapper that allows a Goat exception object to be presented as a C++ exception
      */
-    class goat_exception_wrapper : public std::exception {
+    class runtime_exception : public std::exception {
     public:
         /**
          * @brief Constructor
          * @param obj Object thrown as an exception
          */
-        goat_exception_wrapper(object *obj);
+        runtime_exception(object *obj);
 
         /**
          * @brief Copy constructor
          * @param other Other wrapper
          */
-        goat_exception_wrapper(const goat_exception_wrapper &other);
+        runtime_exception(const runtime_exception &other);
 
         /**
          * @brief Assignment operator
          * @param other Other wrapper
          */
-        goat_exception_wrapper& operator=(const goat_exception_wrapper &other);
+        runtime_exception& operator=(const runtime_exception &other);
 
         /**
          * @brief Destructor
          */
-        ~goat_exception_wrapper();
+        ~runtime_exception();
 
         /**
          * @brief Returns the explanatory string
@@ -98,7 +98,7 @@ namespace goat {
         /**
          * @brief Descriptor containing Goat exception data
          */
-        goat_exception_data *data;
+        runtime_exception_data *data;
     };
 
     /**

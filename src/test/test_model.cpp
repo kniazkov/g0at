@@ -456,7 +456,7 @@ namespace goat {
         try {
             variable result = expr.calc(main);
         } 
-        catch (goat_exception_wrapper &ex) {
+        catch (runtime_exception &ex) {
             oops = true;
             const char *expected = "Illegal argument";
             const char *actual = ex.what();
@@ -506,7 +506,7 @@ namespace goat {
         try {
             variable result = expr->calc(main);
         }
-        catch (goat_exception_wrapper &ex) {
+        catch (runtime_exception &ex) {
             oops = true;
         }
         assert_equals(bool, true, oops);

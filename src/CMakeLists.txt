@@ -6,8 +6,19 @@
 project(goat)
 cmake_minimum_required(VERSION 3.6)
 include_directories(.)
-file(GLOB goat_exe main.cpp lib/*.cpp model/*.cpp compiler/scanner/*.cpp)
+
+file(GLOB core_sources
+  lib/*.cpp
+  resources/*.cpp
+  model/*.cpp
+  compiler/scanner/*.cpp
+)
+add_library(core STATIC ${core_sources})
+
+file(GLOB goat_exe main.cpp)
 add_executable(goat ${goat_exe})
-file(GLOB unit_testing_exe unit_testing.cpp lib/*.cpp test/*.cpp model/*.cpp compiler/scanner/*.cpp)
+target_link_libraries (goat core pthread)
+
+file(GLOB unit_testing_exe unit_testing.cpp test/*.cpp)
 add_executable(unit_testing ${unit_testing_exe})
-target_link_libraries (unit_testing pthread)
+target_link_libraries (unit_testing core pthread)

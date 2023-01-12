@@ -8,14 +8,9 @@
 #include "utf8_encoder.h"
 #include <cstdint>
 #include <sstream>
-#include <exception>
 
-
-namespace goat
-{
-    class bad_utf8 : public std::exception {
-    };
-
+namespace goat {
+    
     static int encode_utf8_char(wchar_t w, char *c) {
         if (w < 0x80) {
             c[0] = (char)w;
