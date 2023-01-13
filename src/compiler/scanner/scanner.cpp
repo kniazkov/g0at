@@ -7,45 +7,44 @@
 
 #include <sstream>
 #include "scanner.h"
-#include "lib/utf8_encoder.h"
 
 namespace goat {
 
     /**
      * @brief Determines whether the symbol is a space
      */
-    static inline bool is_space(char c) {
+    static inline bool is_space(wchar_t c) {
         return c == ' ' || c == '\r' || c == '\n' || c == '\t';
     }
 
     /**
      * @brief Determines whether the symbol is a letter
      */
-    static inline bool is_letter(char c) {
-        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
+    static inline bool is_letter(wchar_t c) {
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || c > 127;
     }
 
     /**
      * @brief Determines whether the symbol is digit
      */
-    static inline bool is_digit(char c) {
+    static inline bool is_digit(wchar_t c) {
         return c >= '0' && c <= '9';
     }
 
     scanner::scanner(std::vector<token*> *tokens, const char *file_name,
-            const char *code, unsigned int length) : tokens(tokens) {
+            std::wstring &code) : tokens(tokens) {
         b.type = token_type::unknown;
         b.file_name = file_name;
         b.line = 1;
         b.column = 1;
-        b.code = code;
+        b.code = code.c_str();
         b.length = 0;
 
-        code_end = code + length;
+        code_end = b.code + code.size();
     }
 
     token * scanner::get_token() {
-        char c = get_char();
+        wchar_t c = get_char();
 
         while (is_space(c)) {
             c = next_char();
@@ -66,17 +65,17 @@ namespace goat {
             return t;
         }
 
-        if (c == '\"') {
+        if (c == L'\"') {
             token_string *t = new token_string(b);
             c = next_char();
-            std::stringstream s;
+            std::wstringstream s;
             while (c != '\"') {
                 s << c;
                 t->length++;
                 c = next_char();
             }
             c = next_char();
-            t->data = decode_utf8(s.str());
+            t->data = s.str();
             tokens->push_back(t);
             return t;
         }

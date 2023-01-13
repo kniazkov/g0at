@@ -33,7 +33,8 @@ namespace goat {
 
         { "scanner: one identifier", test_scan_identifier },
         { "scanner: new line (rows and columns counting)", test_scan_new_line },
-        { "scanner: 'hello world' program", test_scan_hello_world }
+        { "scanner: 'hello world' program", test_scan_hello_world },
+        { "scanner: not-ASCII (cyrillic) identifier", test_scan_cyrillic_identifier }
     };
 
     unsigned int get_number_of_tests() {

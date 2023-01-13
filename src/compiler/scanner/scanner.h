@@ -24,10 +24,8 @@ namespace goat {
          * @param tokens An array to store all tokens (to free up memory after parsing)
          * @param file_name Source code file name
          * @param code Source code
-         * @param length Source code length
          */
-        scanner(std::vector<token*> *tokens, const char *file_name, 
-            const char *code, unsigned int length);
+        scanner(std::vector<token*> *tokens, const char *file_name, std::wstring &code);
 
         /**
          * @brief Returns the next token
@@ -49,7 +47,7 @@ namespace goat {
         /**
          * @brief Pointer to end of source code
          */
-        const char * code_end;
+        const wchar_t * code_end;
 
         /**
          * @brief Returns the current character of the sequence

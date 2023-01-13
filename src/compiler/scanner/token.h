@@ -57,7 +57,7 @@ namespace goat {
         /**
          * @brief Pointer to token source code
          */
-        const char * code;
+        const wchar_t * code;
 
         /**
          * @brief Token length (in characters), always non-zero
@@ -87,7 +87,7 @@ namespace goat {
             set(base);
             this->type = type;
             this->length = 1;
-            this->bracket = *code;
+            this->bracket = (char)*code;
             this->paired_bracket = paired_bracket;
         }
 
