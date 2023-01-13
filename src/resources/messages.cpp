@@ -12,6 +12,7 @@
 namespace goat {
 
     const std::wstring en_illegal_argument(L"Illegal argument");
+    const std::wstring en_unknown_symbol(L"Unknown symbol");
     
     /**
      * @brief Messages in English
@@ -20,10 +21,14 @@ namespace goat {
         const std::wstring & msg_illegal_argument() const override {
             return en_illegal_argument;
         }
+        const std::wstring & msg_unknown_symbol() const override {
+            return en_unknown_symbol;
+        }
     } messages_en_instance;
 
 
     const std::wstring ru_illegal_argument(L"Недопустимый аргумент");
+    const std::wstring ru_unknown_symbol(L"Неизвестный символ");
     
     /**
      * @brief Messages in Russian
@@ -31,6 +36,9 @@ namespace goat {
     static struct messages_ru : public messages {
         const std::wstring & msg_illegal_argument() const override {
             return ru_illegal_argument;
+        }
+        const std::wstring & msg_unknown_symbol() const override {
+            return ru_unknown_symbol;
         }
     } messages_ru_instance;
 

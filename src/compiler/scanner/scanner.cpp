@@ -7,6 +7,8 @@
 
 #include <sstream>
 #include "scanner.h"
+#include "compiler/common/exceptions.h"
+#include "resources/messages.h"
 
 namespace goat {
 
@@ -126,7 +128,9 @@ namespace goat {
             }
         }
 
-        return nullptr;
+        std::wstringstream error;
+        error << get_messages()->msg_unknown_symbol() << ": '" << c << '\'';
+        throw compiler_exception(&b, error.str());
     }
 
     char scanner::get_char() {

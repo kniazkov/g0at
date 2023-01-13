@@ -7,6 +7,7 @@
 
 #include <cstring>
 #include "unit_testing.h"
+#include "compiler/common/exceptions.h"
 #include "compiler/scanner/scanner.h"
 
 namespace goat {
@@ -96,6 +97,30 @@ namespace goat {
         assert_equals(unsigned int, 1, tok->line);
         assert_equals(unsigned int, 5, tok->column);
         assert_equals(int, 0, std::memcmp(L"счётчик", tok->code, tok->length * sizeof(wchar_t)));
+        for (token *tok : tokens) {
+            delete tok;
+        }
+        return true;
+    }
+
+    bool test_unknown_symbol_exception() {
+        std::vector<token*> tokens;
+        std::wstring code = L"abc`";
+        scanner scan(&tokens, "test.goat", code);
+        bool oops = false;
+        try {
+            scan.get_token();
+            scan.get_token();
+        }
+        catch (compiler_exception ex) {
+            oops = true;
+            int result = std::strcmp(
+                "test.goat, 1.4: Unknown symbol: '`'",
+                ex.what()
+            );
+            assert_equals(int, 0, result);
+        }
+        assert_equals(bool, true, oops);
         for (token *tok : tokens) {
             delete tok;
         }

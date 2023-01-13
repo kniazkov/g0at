@@ -8,7 +8,7 @@
 #pragma once
 
 #include <vector>
-#include "token.h"
+#include "tokens.h"
 
 namespace goat {
 

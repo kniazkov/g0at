@@ -17,6 +17,7 @@ namespace goat {
      */
     struct messages {
         virtual const std::wstring & msg_illegal_argument() const = 0;
+        virtual const std::wstring & msg_unknown_symbol() const = 0;
     };
 
     /**
