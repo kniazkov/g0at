@@ -8,6 +8,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include "compiler/common/position.h"
 
 namespace goat {
@@ -21,7 +22,8 @@ namespace goat {
         string,
         opening_bracket,
         closing_bracket,
-        semicolon
+        semicolon,
+        brackets_pair
     };
 
     /**
@@ -54,6 +56,59 @@ namespace goat {
     };
 
     /**
+     * @brief A list of tokens
+     */
+    struct token_list {
+        /**
+         * @brief Virtual destructor for inheritors
+         */
+        virtual ~token_list() {
+        }
+
+        /**
+         * @brief Returns the size of the list
+         * @return The size of the list
+         */
+        virtual unsigned int get_number_of_tokens() const = 0;
+
+        /**
+         * @brief Returns token by index
+         * @param index Index
+         * @return Token by index
+         */
+        virtual token * get_token(unsigned int index) const = 0;
+
+        /**
+         * @brief Adds token to the end of the token list
+         * @param tok Token
+         */
+        virtual void add_token(token *tok) = 0;
+    };
+
+    /**
+     * @brief A simple list of tokens (it is not itself a token)
+     */
+    struct simple_token_list : public token_list {
+        unsigned int get_number_of_tokens() const override {
+            return tokens.size();
+        }
+
+        token * get_token(unsigned int index) const override {
+            return tokens.at(index);
+        }
+
+        void add_token(token *tok) override {
+            tokens.push_back(tok);
+        }
+        
+    private:
+        /**
+         * @brief List of tokens
+         */
+        std::vector<token*> tokens;
+    };
+
+    /**
      * @brief Token representing a bracket
      */
     struct token_bracket : public token {
@@ -80,6 +135,46 @@ namespace goat {
          * @brief Paired bracket to this bracket (to check that the brackets are correct)
          */
         char paired_bracket;
+    };
+
+    /**
+     * @brief A token represents a pair of brackets, as well as all tokens within those brackets
+     */
+    struct token_brackets_pair : public token, public token_list {
+        /**
+         * @brief Constructor
+         * @param base Token describing opening bracket
+         */
+        token_brackets_pair(token_bracket *base) {
+            set(*base);
+            type = token_type::brackets_pair;
+            opening_bracket = base->bracket;
+            length = 2;
+        }
+
+        unsigned int get_number_of_tokens() const override {
+            return tokens.size();
+        }
+
+        token * get_token(unsigned int index) const override {
+            return tokens.at(index);
+        }
+
+        void add_token(token *tok) override {
+            tokens.push_back(tok);
+            length += tok->length;
+        }
+
+        /**
+         * @brief Opening bracket
+         */
+        char opening_bracket;
+        
+    private:
+        /**
+         * @brief List of tokens within brackets
+         */
+        std::vector<token*> tokens;
     };
 
     /**
