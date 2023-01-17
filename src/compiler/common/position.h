@@ -19,6 +19,11 @@ namespace goat {
         const char * file_name;
 
         /**
+         * @brief Offset from start of file
+         */
+        unsigned int offset;
+
+        /**
          * @brief Line number (starts from 1)
          */
         unsigned int line;

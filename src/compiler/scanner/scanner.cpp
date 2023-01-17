@@ -37,6 +37,7 @@ namespace goat {
             std::wstring &code) : tokens(tokens) {
         b.type = token_type::unknown;
         b.file_name = file_name;
+        b.offset = 0;
         b.line = 1;
         b.column = 1;
         b.code = code.c_str();
@@ -143,6 +144,7 @@ namespace goat {
                 b.column = 0;
                 b.line++;
             }
+            b.offset++;
             b.code++;
             if (b.code < code_end) {
                 b.column++;

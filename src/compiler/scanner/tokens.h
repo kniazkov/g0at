@@ -48,64 +48,12 @@ namespace goat {
          */
         void set(token &base) {
             file_name = base.file_name;
+            offset = base.offset;
             line = base.line;
             column = base.column;
             code = base.code;
             length = 0;
         }
-    };
-
-    /**
-     * @brief A list of tokens
-     */
-    struct token_list {
-        /**
-         * @brief Virtual destructor for inheritors
-         */
-        virtual ~token_list() {
-        }
-
-        /**
-         * @brief Returns the size of the list
-         * @return The size of the list
-         */
-        virtual unsigned int get_number_of_tokens() const = 0;
-
-        /**
-         * @brief Returns token by index
-         * @param index Index
-         * @return Token by index
-         */
-        virtual token * get_token(unsigned int index) const = 0;
-
-        /**
-         * @brief Adds token to the end of the token list
-         * @param tok Token
-         */
-        virtual void add_token(token *tok) = 0;
-    };
-
-    /**
-     * @brief A simple list of tokens (it is not itself a token)
-     */
-    struct simple_token_list : public token_list {
-        unsigned int get_number_of_tokens() const override {
-            return tokens.size();
-        }
-
-        token * get_token(unsigned int index) const override {
-            return tokens.at(index);
-        }
-
-        void add_token(token *tok) override {
-            tokens.push_back(tok);
-        }
-        
-    private:
-        /**
-         * @brief List of tokens
-         */
-        std::vector<token*> tokens;
     };
 
     /**
@@ -140,7 +88,7 @@ namespace goat {
     /**
      * @brief A token represents a pair of brackets, as well as all tokens within those brackets
      */
-    struct token_brackets_pair : public token, public token_list {
+    struct token_brackets_pair : public token {
         /**
          * @brief Constructor
          * @param base Token describing opening bracket
@@ -152,25 +100,19 @@ namespace goat {
             length = 2;
         }
 
-        unsigned int get_number_of_tokens() const override {
-            return tokens.size();
-        }
-
-        token * get_token(unsigned int index) const override {
-            return tokens.at(index);
-        }
-
-        void add_token(token *tok) override {
-            tokens.push_back(tok);
-            length += tok->length;
+        /**
+         * @brief Adds information from the closing bracket
+         * @param closing Token describing closing bracket
+         */
+        void set_closing_bracket(token_bracket *closing) {
+            length = closing->offset - offset + 1;
         }
 
         /**
          * @brief Opening bracket
          */
         char opening_bracket;
-        
-    private:
+
         /**
          * @brief List of tokens within brackets
          */
