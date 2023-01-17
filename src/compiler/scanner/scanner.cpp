@@ -54,7 +54,10 @@ namespace goat {
         }
 
         if (c == 0) {
-            return nullptr;
+            token *t = new token(b);
+            t->type = token_type::end;
+            tokens->push_back(t);
+            return t;
         }
 
         if (is_letter(c)) {
@@ -121,11 +124,11 @@ namespace goat {
             }
             case ';': {
                 token *t = new token(b);
+                next_char();
                 t->type = token_type::semicolon;
                 t->length = 1;
                 tokens->push_back(t);
                 return t;
-                next_char();
             }
         }
 

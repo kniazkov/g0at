@@ -23,6 +23,7 @@ namespace goat {
         opening_bracket,
         closing_bracket,
         semicolon,
+        end,
         brackets_pair
     };
 

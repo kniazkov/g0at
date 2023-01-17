@@ -39,7 +39,7 @@ namespace goat {
         const wchar_t * code;
 
         /**
-         * @brief The length of this entity (in characters), always non-zero
+         * @brief The length of this entity (in characters)
          */
         unsigned int length;
     };

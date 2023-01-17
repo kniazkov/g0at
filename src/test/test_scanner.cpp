@@ -9,6 +9,7 @@
 #include "unit_testing.h"
 #include "compiler/common/exceptions.h"
 #include "compiler/scanner/scanner.h"
+#include "compiler/scanner/brackets_processor.h"
 
 namespace goat {
 
@@ -121,6 +122,29 @@ namespace goat {
             assert_equals(int, 0, result);
         }
         assert_equals(bool, true, oops);
+        for (token *tok : tokens) {
+            delete tok;
+        }
+        return true;
+    }
+
+    bool test_scan_and_process_hello_world() {
+        std::vector<token*> tokens,
+            result;
+        std::wstring code = L"print( \"hello world\" );";
+        scanner scan(&tokens, nullptr, code);
+        process_brackets(&scan, &tokens, &result);
+        assert_equals(size_t, 3, result.size());
+        assert_equals(bool, true, token_type::identifier == result[0]->type);
+        assert_equals(unsigned int, 1, result[0]->line);
+        assert_equals(unsigned int, 1, result[0]->column);
+        assert_equals(int, 0, std::memcmp(L"print", result[0]->code, result[0]->length * sizeof(wchar_t)));
+        assert_equals(bool, true, token_type::brackets_pair == result[1]->type);
+        assert_equals(unsigned int, 1, result[1]->line);
+        assert_equals(unsigned int, 6, result[1]->column);
+        assert_equals(unsigned int, 17, result[1]->length);
+        token_brackets_pair *pair = (token_brackets_pair*)result[1];
+        assert_equals(char, '(', pair->opening_bracket);
         for (token *tok : tokens) {
             delete tok;
         }

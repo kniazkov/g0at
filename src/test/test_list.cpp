@@ -35,7 +35,8 @@ namespace goat {
         { "scanner: new line (rows and columns counting)", test_scan_new_line },
         { "scanner: 'hello world' program", test_scan_hello_world },
         { "scanner: not-ASCII (cyrillic) identifier", test_scan_cyrillic_identifier },
-        { "scanner: unknown symbol exception", test_unknown_symbol_exception }
+        { "scanner: unknown symbol exception", test_unknown_symbol_exception },
+        { "scanner: brackets processor with 'hello world' program", test_scan_and_process_hello_world },
     };
 
     unsigned int get_number_of_tests() {

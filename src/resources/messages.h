@@ -16,7 +16,10 @@ namespace goat {
      *   (mainly exceptions) occur
      */
     struct messages {
+        virtual const std::wstring & msg_brackets_do_not_match() const = 0;
+        virtual const std::wstring & msg_closing_bracket_without_opening() const = 0;
         virtual const std::wstring & msg_illegal_argument() const = 0;
+        virtual const std::wstring & msg_not_closed_bracket() const = 0;
         virtual const std::wstring & msg_unknown_symbol() const = 0;
     };
 
