@@ -42,7 +42,7 @@ namespace goat {
                 if (prev_opening_bracket) {
                     if (prev_opening_bracket->paired_bracket != closing_bracket->bracket) {
                         wchar_t buff[80];
-                        swprintf(buff, get_messages()->msg_brackets_do_not_match().c_str(),
+                        swprintf(buff, 80, get_messages()->msg_brackets_do_not_match().c_str(),
                             (wchar_t)closing_bracket->bracket,
                             (wchar_t)prev_opening_bracket->bracket);
                         throw compiler_exception(closing_bracket, buff);
@@ -50,7 +50,8 @@ namespace goat {
                 }
                 else {
                     wchar_t buff[80];
-                    swprintf(buff, get_messages()->msg_closing_bracket_without_opening().c_str(),
+                    swprintf(buff, 80, 
+                        get_messages()->msg_closing_bracket_without_opening().c_str(),
                         (wchar_t)closing_bracket->bracket);
                     throw compiler_exception(closing_bracket, buff);
                 }
@@ -63,7 +64,7 @@ namespace goat {
         }
         if (prev_opening_bracket) {
             wchar_t buff[80];
-            swprintf(buff, get_messages()->msg_not_closed_bracket().c_str(),
+            swprintf(buff, 80, get_messages()->msg_not_closed_bracket().c_str(),
                 (wchar_t)prev_opening_bracket->bracket);
             throw compiler_exception(prev_opening_bracket, buff);
         }
