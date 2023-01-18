@@ -37,6 +37,9 @@ namespace goat {
         { "scanner: not-ASCII (cyrillic) identifier", test_scan_cyrillic_identifier },
         { "scanner: unknown symbol exception", test_unknown_symbol_exception },
         { "scanner: brackets processor with 'hello world' program", test_scan_and_process_hello_world },
+        { "scanner: opening bracket without closing", test_opening_bracket_without_closing },
+        { "scanner: closing bracket without opening", test_closing_bracket_without_opening },
+        { "scanner: brackets do not match", test_brackets_do_not_match }
     };
 
     unsigned int get_number_of_tests() {

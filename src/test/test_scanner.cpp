@@ -145,6 +145,84 @@ namespace goat {
         assert_equals(unsigned int, 17, result[1]->length);
         token_brackets_pair *pair = (token_brackets_pair*)result[1];
         assert_equals(char, '(', pair->opening_bracket);
+        assert_equals(size_t, 1, pair->tokens.size());
+        assert_equals(bool, true, token_type::string == pair->tokens[0]->type);
+        assert_equals(bool, true, token_type::semicolon == result[2]->type);
+        assert_equals(unsigned int, 1, result[2]->line);
+        assert_equals(unsigned int, 23, result[2]->column);
+        assert_equals(unsigned int, 1, result[2]->length);
+        for (token *tok : tokens) {
+            delete tok;
+        }
+        return true;
+    }
+
+    bool test_opening_bracket_without_closing() {
+        std::vector<token*> tokens,
+            result;
+        std::wstring code = L"print(\"oops\" ;";
+        scanner scan(&tokens, "test.goat", code);
+        bool oops = false;
+        try {
+            process_brackets(&scan, &tokens, &result);
+        }
+        catch(compiler_exception ex) {
+            oops = true;
+            int result = std::strcmp(
+                "test.goat, 1.6: The bracket '(' was not closed",
+                ex.what()
+            );
+            assert_equals(int, 0, result);
+        }
+        assert_equals(bool, true, oops);
+        for (token *tok : tokens) {
+            delete tok;
+        }
+        return true;
+    }
+
+    bool test_closing_bracket_without_opening() {
+        std::vector<token*> tokens,
+            result;
+        std::wstring code = L"print \"oops\");";
+        scanner scan(&tokens, "test.goat", code);
+        bool oops = false;
+        try {
+            process_brackets(&scan, &tokens, &result);
+        }
+        catch(compiler_exception ex) {
+            oops = true;
+            int result = std::strcmp(
+                "test.goat, 1.13: The closing bracket ')' without opening one",
+                ex.what()
+            );
+            assert_equals(int, 0, result);
+        }
+        assert_equals(bool, true, oops);
+        for (token *tok : tokens) {
+            delete tok;
+        }
+        return true;
+    }
+
+    bool test_brackets_do_not_match() {
+        std::vector<token*> tokens,
+            result;
+        std::wstring code = L"print(\"oops\"};";
+        scanner scan(&tokens, "test.goat", code);
+        bool oops = false;
+        try {
+            process_brackets(&scan, &tokens, &result);
+        }
+        catch(compiler_exception ex) {
+            oops = true;
+            int result = std::strcmp(
+                "test.goat, 1.13: The closing bracket '}' does not match the opening bracket '('",
+                ex.what()
+            );
+            assert_equals(int, 0, result);
+        }
+        assert_equals(bool, true, oops);
         for (token *tok : tokens) {
             delete tok;
         }

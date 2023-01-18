@@ -15,4 +15,7 @@ namespace goat {
     bool test_scan_cyrillic_identifier();
     bool test_unknown_symbol_exception();
     bool test_scan_and_process_hello_world();
+    bool test_opening_bracket_without_closing();
+    bool test_closing_bracket_without_opening();
+    bool test_brackets_do_not_match();
 }

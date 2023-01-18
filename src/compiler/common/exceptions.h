@@ -32,16 +32,6 @@ namespace goat {
 
     private:
         /**
-         * @brief The position where the compilation error occurred
-         */
-        position *pos;
-
-        /**
-         * @brief Additional message
-         */
-        std::wstring message;
-
-        /**
          * @brief Buffer to store the explanatory string
          */
         std::string buff;
