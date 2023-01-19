@@ -8,6 +8,7 @@
 #include "test_list.h"
 #include "test_model.h"
 #include "test_scanner.h"
+#include "test_parser.h"
 
 namespace goat {
 
@@ -39,7 +40,9 @@ namespace goat {
         { "scanner: brackets processor with 'hello world' program", test_scan_and_process_hello_world },
         { "scanner: opening bracket without closing", test_opening_bracket_without_closing },
         { "scanner: closing bracket without opening", test_closing_bracket_without_opening },
-        { "scanner: brackets do not match", test_brackets_do_not_match }
+        { "scanner: brackets do not match", test_brackets_do_not_match },
+
+        { "parser: 'hello world' program", test_parsing_hello_world }
     };
 
     unsigned int get_number_of_tests() {

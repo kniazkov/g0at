@@ -58,7 +58,9 @@ namespace goat {
                         iter->next();
                     }
                 }
-                return new statement_expression(expr);
+                statement *result = new statement_expression(expr);
+                expr->release();
+                return result;
             }
         }
         throw compiler_exception(tok, get_messages()->msg_unable_to_parse_token_sequence());
@@ -70,6 +72,15 @@ namespace goat {
         if (first->type == token_type::identifier) {
             iter->next();
             return parse_expression_begins_with_identifier(data, iter, first);
+        }
+        if (first->type == token_type::string) {
+            iter->next();
+            token_string *str = (token_string*)first;
+            dynamic_string *obj = new dynamic_string(data->gc, str->data);
+            data->objects->push_back(obj);
+            expression *result = new expression_object(obj);
+            obj->release();
+            return result;
         }
         throw compiler_exception(first, get_messages()->msg_unable_to_parse_token_sequence());
     }
@@ -97,14 +108,14 @@ namespace goat {
              */
             std::wstring var_name(first->code, first->length);
             dynamic_string *obj = new dynamic_string(data->gc, var_name);
-            data->objects.push_back(obj);
+            data->objects->push_back(obj);
             expression *result = new read_variable(obj);
             obj->release();
             return result;
         }
 
-        if (first->type == token_type::brackets_pair) {
-            token_brackets_pair *pair = (token_brackets_pair*)first;
+        if (second->type == token_type::brackets_pair) {
+            token_brackets_pair *pair = (token_brackets_pair*)second;
             if(pair->opening_bracket == '(') {
                 /*
                     This is a function call:
@@ -115,9 +126,12 @@ namespace goat {
                 parse_function_call_arguments(data, &iter2, &args);
                 std::wstring func_name(first->code, first->length);
                 dynamic_string *obj = new dynamic_string(data->gc, func_name);
-                data->objects.push_back(obj);
+                data->objects->push_back(obj);
                 expression *result = new function_call(obj, args);
                 obj->release();
+                for (expression *expr : args) {
+                    expr->release();
+                }
                 return result;
             }
         }

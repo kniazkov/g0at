@@ -5,10 +5,10 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
-#include <sstream>
 #include <thread>
 #include <cstring>
 #include "unit_testing.h"
+#include "dbg_printer.h"
 #include "model/object.h"
 #include "model/generic_object.h"
 #include "model/root_object.h"
@@ -20,20 +20,6 @@
 #include "model/exceptions.h"
 
 namespace goat {
-
-    /**
-     * @brief Debug printer that prints to the buffer
-     */
-    struct dbg_printer : public function_print::printer {
-        /**
-         * The buffer
-         */
-        std::wstringstream stream;
-
-        void print(std::wstring str) override {
-            stream << str;
-        }
-    };
 
     bool test_empty_object() {
         return get_empty_object()->to_string(nullptr) == L"{}";

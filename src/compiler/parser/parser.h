@@ -23,7 +23,7 @@ namespace goat {
         /**
          * @brief List of objects that are created during parsing (needed to mark dynamic objects)
          */
-        std::vector<object*> objects;
+        std::vector<object*> *objects;
 
         /**
          * @brief Data required for the garbage collector (needed to create dynamic objects)

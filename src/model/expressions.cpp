@@ -86,10 +86,13 @@ namespace goat {
         assert(func != nullptr);
         variable ret_val;
         std::vector<variable> var_list;
-        for (auto arg : args) {
-            var_list.push_back(arg->calc(scope));
+        for (auto expr : args) {
+            var_list.push_back(expr->calc(scope));
         }
         func->exec(var_list, &ret_val);        
+        for (variable &arg : var_list) {
+            arg.release();
+        }
         return ret_val;
     }
 
