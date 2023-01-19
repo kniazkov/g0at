@@ -122,6 +122,14 @@ namespace goat {
                 tokens->push_back(t);
                 return t;
             }
+            case ',': {
+                token *t = new token(b);
+                next_char();
+                t->type = token_type::comma;
+                t->length = 1;
+                tokens->push_back(t);
+                return t;
+            }
             case ';': {
                 token *t = new token(b);
                 next_char();

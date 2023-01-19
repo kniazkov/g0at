@@ -22,6 +22,7 @@ namespace goat {
         string,
         opening_bracket,
         closing_bracket,
+        comma,
         semicolon,
         end,
         brackets_pair
