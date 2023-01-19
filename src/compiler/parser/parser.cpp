@@ -7,6 +7,8 @@
 
 #include "parser.h"
 #include "compiler/scanner/tokens.h"
+#include "compiler/common/exceptions.h"
+#include "resources/messages.h"
 #include "model/expressions.h"
 #include "model/statements.h"
 
@@ -26,12 +28,18 @@ namespace goat {
         }
         token *tok = iter->get();
         switch(tok->type) {
-            case token_type::identifier:
+            case token_type::identifier: {
                 iter->next();
-                return new statement_expression(
-                    parse_expression_begins_with_identifier(iter, tok)
-                );
+                expression *expr = parse_expression_begins_with_identifier(iter, tok);
+                if (iter->valid()) {
+                    tok = iter->get();
+                    if (tok->type == token_type::semicolon) {
+                        iter->next();
+                    }
+                }
+                return new statement_expression(expr);
+            }
         }
-        return nullptr;
+        throw compiler_exception(tok, get_messages()->msg_unable_to_parse_token_sequence());
     }
 }

@@ -15,6 +15,7 @@ namespace goat {
     const std::wstring en_closing_bracket_without_opening(L"The closing bracket '{0}' without opening one");
     const std::wstring en_illegal_argument(L"Illegal argument");
     const std::wstring en_not_closed_bracket(L"The bracket '{0}' was not closed");
+    const std::wstring en_unable_to_parse_token_sequence(L"Unable to parse the token sequence");
     const std::wstring en_unknown_symbol(L"Unknown symbol");
     
     /**
@@ -33,6 +34,9 @@ namespace goat {
         const std::wstring & msg_not_closed_bracket() const override {
             return en_not_closed_bracket;
         };
+        const std::wstring & msg_unable_to_parse_token_sequence() const override {
+            return en_unable_to_parse_token_sequence;
+        }
         const std::wstring & msg_unknown_symbol() const override {
             return en_unknown_symbol;
         }
@@ -43,6 +47,7 @@ namespace goat {
     const std::wstring ru_closing_bracket_without_opening(L"Закрывающая скобка '{0}' не имеет парной открывающей скобки");
     const std::wstring ru_illegal_argument(L"Недопустимый аргумент");
     const std::wstring ru_not_closed_bracket(L"Открывающая скобка '{0}' не имеет парной закрывающей скобки");
+    const std::wstring ru_unable_to_parse_token_sequence(L"Нераспознаваемая последовательность токенов");
     const std::wstring ru_unknown_symbol(L"Неизвестный символ");
     
     /**
@@ -61,6 +66,9 @@ namespace goat {
         const std::wstring & msg_not_closed_bracket() const override {
             return ru_not_closed_bracket;
         };
+        const std::wstring & msg_unable_to_parse_token_sequence() const override {
+            return ru_unable_to_parse_token_sequence;
+        }
         const std::wstring & msg_unknown_symbol() const override {
             return ru_unknown_symbol;
         }

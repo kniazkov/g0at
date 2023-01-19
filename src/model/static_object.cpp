@@ -17,6 +17,10 @@ namespace goat {
         // Since a static object is never deleted, reference counting is not needed for it
     }
 
+    bool static_object::is_static() const {
+        return true;
+    }
+
     gc_data * static_object::get_garbage_collector_data() const {
         return nullptr;
     }

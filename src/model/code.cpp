@@ -41,6 +41,10 @@ namespace goat {
         }
     }
 
+    bool element::is_static() const {
+        return false;
+    }
+
     gc_data * element::get_garbage_collector_data() const {
         return nullptr;
     }

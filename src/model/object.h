@@ -163,6 +163,12 @@ namespace goat {
         virtual void release() = 0;
 
         /**
+         * @brief Determines whether the object is static, that is, whether memory management
+         *   can be ignored for it (or the memory is controlled in some other way)
+         */
+        virtual bool is_static() const = 0;
+
+        /**
          * @brief Returns the data required for the garbage collector
          * @return Data required for the garbage collector or <code>nullptr</code> if the object
          *   contains no such data (static object, for example)
