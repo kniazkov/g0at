@@ -5,11 +5,11 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
-#include <cwchar>
 #include "brackets_processor.h"
 #include "scanner.h"
 #include "compiler/common/exceptions.h"
 #include "resources/messages.h"
+#include "lib/format_string.h"
 
 namespace goat {
 
@@ -41,19 +41,23 @@ namespace goat {
                 token_bracket *closing_bracket = (token_bracket*)tok;
                 if (prev_opening_bracket) {
                     if (prev_opening_bracket->paired_bracket != closing_bracket->bracket) {
-                        wchar_t buff[80];
-                        swprintf(buff, 80, get_messages()->msg_brackets_do_not_match().c_str(),
-                            (wchar_t)closing_bracket->bracket,
-                            (wchar_t)prev_opening_bracket->bracket);
-                        throw compiler_exception(closing_bracket, buff);
+                        wchar_t br0str[] = {(wchar_t)closing_bracket->bracket, 0};
+                        wchar_t br1str[] = {(wchar_t)prev_opening_bracket->bracket, 0};
+                        std::wstring message = format_string(
+                                get_messages()->msg_brackets_do_not_match(),
+                                br0str,
+                                br1str
+                            );
+                        throw compiler_exception(closing_bracket, message);
                     }
                 }
                 else {
-                    wchar_t buff[80];
-                    swprintf(buff, 80, 
-                        get_messages()->msg_closing_bracket_without_opening().c_str(),
-                        (wchar_t)closing_bracket->bracket);
-                    throw compiler_exception(closing_bracket, buff);
+                    wchar_t bracket[] = {(wchar_t)closing_bracket->bracket, 0};
+                    std::wstring message = format_string(
+                            get_messages()->msg_closing_bracket_without_opening(),
+                            bracket
+                        );
+                    throw compiler_exception(closing_bracket, message);
                 }
                 return closing_bracket;
             }
@@ -63,10 +67,12 @@ namespace goat {
             tok = scan->get_token();
         }
         if (prev_opening_bracket) {
-            wchar_t buff[80];
-            swprintf(buff, 80, get_messages()->msg_not_closed_bracket().c_str(),
-                (wchar_t)prev_opening_bracket->bracket);
-            throw compiler_exception(prev_opening_bracket, buff);
+            wchar_t bracket[] = {(wchar_t)prev_opening_bracket->bracket, 0};
+            std::wstring message = format_string(
+                    get_messages()->msg_not_closed_bracket(),
+                    bracket
+                );
+            throw compiler_exception(prev_opening_bracket, message);
         }
         return nullptr;
     }

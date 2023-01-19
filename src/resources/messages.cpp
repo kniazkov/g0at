@@ -11,10 +11,10 @@
 
 namespace goat {
 
-    const std::wstring en_brackets_do_not_match(L"The closing bracket '%c' does not match the opening bracket '%c'");
-    const std::wstring en_closing_bracket_without_opening(L"The closing bracket '%c' without opening one");
+    const std::wstring en_brackets_do_not_match(L"The closing bracket '{0}' does not match the opening bracket '{1}'");
+    const std::wstring en_closing_bracket_without_opening(L"The closing bracket '{0}' without opening one");
     const std::wstring en_illegal_argument(L"Illegal argument");
-    const std::wstring en_not_closed_bracket(L"The bracket '%c' was not closed");
+    const std::wstring en_not_closed_bracket(L"The bracket '{0}' was not closed");
     const std::wstring en_unknown_symbol(L"Unknown symbol");
     
     /**
@@ -39,10 +39,10 @@ namespace goat {
     } messages_en_instance;
 
 
-    const std::wstring ru_brackets_do_not_match(L"Закрывающая скобка '%c' не соответствует открывающей '%c'");
-    const std::wstring ru_closing_bracket_without_opening(L"Закрывающая скобка '%c' не имеет парной открывающей скобки");
+    const std::wstring ru_brackets_do_not_match(L"Закрывающая скобка '{0}' не соответствует открывающей '{1}'");
+    const std::wstring ru_closing_bracket_without_opening(L"Закрывающая скобка '{0}' не имеет парной открывающей скобки");
     const std::wstring ru_illegal_argument(L"Недопустимый аргумент");
-    const std::wstring ru_not_closed_bracket(L"Открывающая скобка '%c' не имеет парной закрывающей скобки");
+    const std::wstring ru_not_closed_bracket(L"Открывающая скобка '{0}' не имеет парной закрывающей скобки");
     const std::wstring ru_unknown_symbol(L"Неизвестный символ");
     
     /**
