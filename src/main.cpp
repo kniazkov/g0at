@@ -5,9 +5,8 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
-#include <iostream>
+#include "launcher/launcher.h"
 
 int main(int argc, char** argv) {
-    std::cout << "it works." << std::endl;
-    return 0;
+    return goat::run(argc, argv);
 }

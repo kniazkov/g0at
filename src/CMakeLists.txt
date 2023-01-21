@@ -14,6 +14,7 @@ file(GLOB core_sources
   compiler/common/*.cpp
   compiler/scanner/*.cpp
   compiler/parser/*.cpp
+  launcher/*.cpp
 )
 add_library(core STATIC ${core_sources})
 

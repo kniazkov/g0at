@@ -12,7 +12,7 @@ if exist unit_testing.exe del unit_testing.exe
 cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug ..\src
 
 make goat
-if exist build\goat.exe copy build\goat.exe .
+if exist goat.exe copy goat.exe ..
 
 make unit_testing
 echo.
