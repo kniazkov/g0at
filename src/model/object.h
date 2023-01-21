@@ -122,7 +122,7 @@ namespace goat {
      * So we divide the objects into families, and inside the objects of the same type (family) we
      * can compare the contents.
      */
-    enum object_type {
+    enum class object_type {
         generic = 1,
         string,
         number,
@@ -161,6 +161,12 @@ namespace goat {
          * This method is used by the garbage collector to count objects.
          */
         virtual void release() = 0;
+
+        /**
+         * @brief Determines whether the object is static, that is, whether memory management
+         *   can be ignored for it (or the memory is controlled in some other way)
+         */
+        virtual bool is_static() const = 0;
 
         /**
          * @brief Returns the data required for the garbage collector

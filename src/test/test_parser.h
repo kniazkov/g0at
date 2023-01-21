@@ -5,8 +5,9 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
-#include "launcher/launcher.h"
+#pragma once
 
-int main(int argc, char** argv) {
-    return goat::run(argc, argv);
+namespace goat {
+
+    bool test_parsing_hello_world();
 }

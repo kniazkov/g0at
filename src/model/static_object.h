@@ -19,6 +19,7 @@ namespace goat {
     public:
         void add_reference() override;
         void release() override;
+        bool is_static() const override;
         gc_data * get_garbage_collector_data() const override;
         void set_attribute(object *key, variable &value) override;
     };

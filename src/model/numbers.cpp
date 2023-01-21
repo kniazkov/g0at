@@ -92,7 +92,7 @@ namespace goat {
             double right_value;
             bool right_is_a_real_number = right->get_real_value(&right_value);
             if (!right_is_a_real_number) {
-                throw goat_exception_wrapper(get_illegal_agrument_exception());
+                throw runtime_exception(get_illegal_agrument_exception());
             }
             variable result;
             result.set_real_value(left_value + right_value);

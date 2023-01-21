@@ -97,6 +97,10 @@ namespace goat {
         }
     }
 
+    bool dynamic_object::is_static() const {
+        return false;
+    }
+
     gc_data * dynamic_object::get_garbage_collector_data() const {
         return gc;
     }

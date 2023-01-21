@@ -8,32 +8,33 @@
 #include <string>
 #include "generic_object.h"
 #include "exceptions.h"
+#include "resources/messages.h"
 
 namespace goat {
 
-    goat_exception_data::goat_exception_data(object *obj) {
+    runtime_exception_data::runtime_exception_data(object *obj) {
         this->obj = obj;
         obj->add_reference();
         refs = 1;
         buff = nullptr;
     }
 
-    goat_exception_data::~goat_exception_data() {
+    runtime_exception_data::~runtime_exception_data() {
         obj->release();
         delete[] buff;
     }
 
-    goat_exception_wrapper::goat_exception_wrapper(object *obj) {
-        data = new goat_exception_data(obj);
+    runtime_exception::runtime_exception(object *obj) {
+        data = new runtime_exception_data(obj);
     }
 
-    goat_exception_wrapper::goat_exception_wrapper(const goat_exception_wrapper &other) {
+    runtime_exception::runtime_exception(const runtime_exception &other) {
         data = other.data;
         data->refs++;
     }
 
-    goat_exception_wrapper& goat_exception_wrapper::operator=(
-            const goat_exception_wrapper &other) {
+    runtime_exception& runtime_exception::operator=(
+            const runtime_exception &other) {
         if (data != other.data) {
             if (!(data->refs--)) {
                 delete data;
@@ -44,13 +45,13 @@ namespace goat {
         return *this;
     }
 
-    goat_exception_wrapper::~goat_exception_wrapper() {
+    runtime_exception::~runtime_exception() {
         if (!(--data->refs)) {
             delete data;
         }
     }
 
-    const char * goat_exception_wrapper::what() const noexcept {
+    const char * runtime_exception::what() const noexcept {
         if (!data->buff) {
             std::wstring info = data->obj->to_string(nullptr);
             size_t size = info.size();
@@ -93,7 +94,7 @@ namespace goat {
         }
 
         std::wstring to_string(const variable* var) const override {
-            return L"Illegal argument";
+            return get_messages()->msg_illegal_argument();
         }
     };
 
