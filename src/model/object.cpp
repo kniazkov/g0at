@@ -12,6 +12,11 @@
 
 namespace goat {
 
+    void variable::set_integer_value(int64_t value) {
+        obj = get_integer_handler();
+        data.int_value = value;
+    }
+
     void variable::set_real_value(double value) {
         obj = get_real_handler();
         data.double_value = value;
@@ -74,6 +79,10 @@ namespace goat {
     }
 
     bool object::get_string_value(std::wstring* const value_ptr) const {
+        return false;
+    }
+
+    bool object::get_integer_value(const variable* var, int64_t* const value_ptr) const {
         return false;
     }
 

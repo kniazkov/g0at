@@ -71,6 +71,19 @@ namespace goat {
             return t;
         }
 
+        if (is_digit(c)) {
+            int64_t int_part = 0;
+            token_number *t = new token_number(b);
+            do {
+                int_part = int_part * 10 + c - '0';
+                t->length++;
+                c = next_char();
+            } while(is_digit(c));
+            t->data.int_value = int_part;
+            tokens->push_back(t);
+            return t;
+        }
+
         if (c == L'\"') {
             token_string *t = new token_string(b);
             c = next_char();

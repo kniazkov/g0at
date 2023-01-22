@@ -90,12 +90,26 @@ namespace goat {
         inline std::wstring to_string_notation() const;
 
         /**
+         * @brief Retrieves the integer value of the variable
+         * @param value_ptr Pointer to retrievable value
+         * @return <code>true</code> if the variable contains an integer
+         *   (value can be retrieved), or <code>false</code> otherwise
+         */
+        inline bool get_integer_value(int64_t* const value_ptr) const;
+
+        /**
          * @brief Retrieves the real value of the variable
          * @param value_ptr Pointer to retrievable value
          * @return <code>true</code> if the variable contains a real number
          *   (value can be retrieved), or <code>false</code> otherwise
          */
         inline bool get_real_value(double* const value_ptr) const;
+
+        /**
+         * @brief Sets an integer number as the value of this variable
+         * @param value The new value
+         */
+        void set_integer_value(int64_t value);
 
         /**
          * @brief Sets a real number as the value of this variable
@@ -278,6 +292,16 @@ namespace goat {
         virtual bool get_string_value(std::wstring* const value_ptr) const;
     
         /**
+         * @brief Retrieves the integer value of the object
+         * @param var Pointer to a variable to be handled (only for objects
+         *   that do not store data themselves)
+         * @param value_ptr Pointer to retrievable value
+         * @return <code>true</code> if the object is an integer (value can be retrieved),
+         *   or <code>false</code> otherwise
+         */
+        virtual bool get_integer_value(const variable* var, int64_t* const value_ptr) const;
+
+        /**
          * @brief Retrieves the real value of the object
          * @param var Pointer to a variable to be handled (only for objects
          *   that do not store data themselves)
@@ -339,6 +363,10 @@ namespace goat {
 
     std::wstring variable::to_string_notation() const {
         return obj->to_string_notation(this);
+    }
+
+    bool variable::get_integer_value(int64_t* const value_ptr) const {
+        return obj->get_integer_value(this, value_ptr);
     }
 
     bool variable::get_real_value(double* const value_ptr) const {

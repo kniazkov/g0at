@@ -228,4 +228,20 @@ namespace goat {
         }
         return true;
     }
+
+    bool test_scan_integer() {
+        std::vector<token*> tokens;
+        std::wstring code = L"  1024   ";
+        scanner scan(&tokens, nullptr, code);
+        token *tok = scan.get_token();
+        assert_equals(bool, true, token_type::integer == tok->type);
+        assert_equals(unsigned int, 1, tok->line);
+        assert_equals(unsigned int, 3, tok->column);
+        assert_equals(unsigned int, 4, tok->length);
+        assert_equals(int64_t, 1024, ((token_number*)tok)->data.int_value);
+        for (token *tok : tokens) {
+            delete tok;
+        }
+        return true;
+    }
 }

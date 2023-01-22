@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace goat {
 
     class object;
@@ -16,6 +18,24 @@ namespace goat {
      * @return Pointer to the prototype of number objects
      */
     object * get_number_prototype();
+
+    /**
+     * @return Pointer to the prototype of integer number objects
+     */
+    object * get_integer_prototype();
+
+    /**
+     * @return Pointer to the static object that handles integer values
+     */
+    object * get_integer_handler();
+
+    /**
+     * @brief Creates object containing integer
+     * @param gc Data required for the garbage collector
+     * @param value The value
+     * @return Object containing integer
+     */
+    object * create_integer_number(gc_data* const gc, const int64_t value);
 
     /**
      * @return Pointer to the prototype of real number objects

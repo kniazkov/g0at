@@ -41,6 +41,7 @@ namespace goat {
         { "scanner: opening bracket without closing", test_opening_bracket_without_closing },
         { "scanner: closing bracket without opening", test_closing_bracket_without_opening },
         { "scanner: brackets do not match", test_brackets_do_not_match },
+        { "scanner: integer numbers", test_scan_integer },
 
         { "parser: 'hello world' program", test_parsing_hello_world }
     };

@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <cwchar>
+#include <cmath>
 #include "numbers.h"
 #include "generic_object.h"
 #include "exceptions.h"
@@ -39,6 +40,155 @@ namespace goat {
     static number_prototype number_proto_instance;
     object * get_number_prototype() {
         return &number_proto_instance;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    /**
+     * @brief Prototype object for objects storing or wrapping an integer
+     */
+    class integer_prototype : public generic_static_object {
+    public:
+        /**
+         * @brief Constructor
+         */
+        integer_prototype() {
+        }
+
+        object * get_first_prototype() const override {
+            return &number_proto_instance;
+        }
+    };
+
+    static integer_prototype integer_proto_instance;
+    object * get_integer_prototype() {
+        return &integer_proto_instance;
+    }
+
+    /**
+     * @brief Base object for handling integers
+     */
+    class integer_number_base : public virtual object {
+    public:
+        object_type get_type() const override {
+            return object_type::number;
+        }
+
+        object * get_first_prototype() const override {
+            return &integer_proto_instance;
+        }
+        
+        std::wstring to_string_notation(const variable* var) const override {
+            return std::to_wstring(get_value(var));
+        }
+
+        bool get_integer_value(const variable* var, int64_t* const value_ptr) const override {
+            *value_ptr = get_value(var);
+            return true;
+        }
+
+        bool get_real_value(const variable* var, double* const value_ptr) const override {
+            *value_ptr = (double)get_value(var);
+            return true;
+        }
+
+        variable do_addition(gc_data* const gc,
+                const variable* left, const variable* right) const override {
+            int64_t left_value = get_value(left);
+            int64_t right_value_integer;
+            bool right_is_an_integer = right->get_integer_value(&right_value_integer);
+            if (right_is_an_integer) {
+                variable result;
+                result.set_integer_value(left_value + right_value_integer);
+                return result;
+            }
+            else {
+                double right_value_real;
+                bool right_is_a_real_number = right->get_real_value(&right_value_real);
+                if (!right_is_a_real_number) {
+                    throw runtime_exception(get_illegal_agrument_exception());
+                }
+                variable result;
+                result.set_real_value(left_value + right_value_real);
+                return result;
+            }
+        }
+    
+    protected:
+        /**
+         * @brief Returns the value handled by this object
+         * @param var Pointer to a variable to be handled (only for objects
+         *   that do not store data themselves)
+         * @return Integer value
+         */
+        virtual int64_t get_value(const variable* var) const = 0;
+    };
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    /**
+     * @brief Static object that handles integer values
+     * 
+     * The value itself is stored separately in a variable.
+     */
+    class integer_number_static : public static_object, public integer_number_base {
+    public:
+        bool less(const object* const others) const override {
+            /*
+                This method should never be called for handler objects
+            */
+            assert(false);
+            return false;
+        }
+
+    protected:
+        int64_t get_value(const variable* var) const override {
+            return var->data.int_value;
+        }
+    };
+
+    static integer_number_static integer_static_instance;
+    object * get_integer_handler() {
+        return &integer_static_instance;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    /**
+     * @brief Object that stores an integer
+     */
+    class integer_number_dynamic : public dynamic_object, public integer_number_base {
+    private:
+        /**
+         * @brief The value
+         */
+        int64_t value;
+
+    public:
+        /**
+         * @brief Constructor
+         * @param gc Data required for the garbage collector
+         * @param value The value
+         */
+        integer_number_dynamic(gc_data* const gc, const double value) 
+            : dynamic_object(gc), value(value) {
+        }
+
+        bool less(const object* const other) const override {
+            double other_value;
+            bool other_is_a_number = other->get_real_value(nullptr, &other_value);
+            assert(other_is_a_number);
+            return value < other_value;
+        };
+
+    protected:
+        int64_t get_value(const variable* var) const override {
+            return value;
+        }
+    };
+    
+    object * create_integer_number(gc_data* const gc, const int64_t value) {
+        return new integer_number_dynamic(gc, value);
     }
 
     /* ----------------------------------------------------------------------------------------- */
@@ -79,6 +229,15 @@ namespace goat {
         
         std::wstring to_string_notation(const variable* var) const override {
             return double_to_string(get_value(var));
+        }
+
+        bool get_integer_value(const variable* var, int64_t* const value_ptr) const override {
+            double value = get_value(var);
+            if (value == std::floor(value)) {
+                *value_ptr = (int64_t)value;
+                return true;
+            }
+            return false;
         }
 
         bool get_real_value(const variable* var, double* const value_ptr) const override {
