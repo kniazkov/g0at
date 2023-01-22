@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <vector>
+#include <unordered_set>
 #include "token_iterator.h"
 
 namespace goat {
@@ -23,7 +23,7 @@ namespace goat {
         /**
          * @brief List of objects that are created during parsing (needed to mark dynamic objects)
          */
-        std::vector<object*> *objects;
+        std::unordered_set<object*> *objects;
 
         /**
          * @brief Data required for the garbage collector (needed to create dynamic objects)

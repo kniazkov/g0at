@@ -77,7 +77,7 @@ namespace goat {
             iter->next();
             token_string *str = (token_string*)first;
             dynamic_string *obj = new dynamic_string(data->gc, str->data);
-            data->objects->push_back(obj);
+            data->objects->insert(obj);
             expression *result = new expression_object(obj);
             obj->release();
             return result;
@@ -113,7 +113,7 @@ namespace goat {
              */
             std::wstring var_name(first->code, first->length);
             dynamic_string *obj = new dynamic_string(data->gc, var_name);
-            data->objects->push_back(obj);
+            data->objects->insert(obj);
             expression *result = new read_variable(obj);
             obj->release();
             return result;
@@ -131,7 +131,7 @@ namespace goat {
                 parse_function_call_arguments(data, &iter2, &args);
                 std::wstring func_name(first->code, first->length);
                 dynamic_string *obj = new dynamic_string(data->gc, func_name);
-                data->objects->push_back(obj);
+                data->objects->insert(obj);
                 expression *result = new function_call(obj, args);
                 obj->release();
                 for (expression *expr : args) {

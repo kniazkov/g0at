@@ -32,7 +32,7 @@ namespace goat {
         try {
             scanner scan(&all_tokens, nullptr, code);
             process_brackets(&scan, &all_tokens, &root_token_list);
-            std::vector<object*> objects;
+            std::unordered_set<object*> objects;
             parser_data pdata;
             pdata.gc = &gc;
             pdata.objects = &objects;
