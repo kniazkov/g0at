@@ -55,6 +55,26 @@ namespace goat {
     };
     
     /**
+     * @brief Expression representing a constant integer number
+     */
+    class constant_integer_number : public expression {
+    public:
+        /**
+         * @brief Constructor
+         * @param value The value
+         */
+        constant_integer_number(int64_t value);
+
+        variable calc(scope *scope) override;
+
+    private:
+        /**
+         * @brief The value
+         */
+        int64_t value;
+    };
+    
+    /**
      * @brief Expression representing a constant real number
      */
     class constant_real_number : public expression {

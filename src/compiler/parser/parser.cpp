@@ -82,6 +82,11 @@ namespace goat {
             obj->release();
             return result;
         }
+        if (first->type == token_type::integer) {
+            iter->next();
+            token_number *num = (token_number*)first;
+            return new constant_integer_number(num->data.int_value);
+        }
         throw compiler_exception(first, get_messages()->msg_unable_to_parse_token_sequence());
     }
 

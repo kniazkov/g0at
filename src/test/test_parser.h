@@ -10,4 +10,5 @@
 namespace goat {
 
     bool test_parsing_hello_world();
+    bool test_parsing_integer();
 }

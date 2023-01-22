@@ -30,6 +30,17 @@ namespace goat {
 
     /* ----------------------------------------------------------------------------------------- */
 
+    constant_integer_number::constant_integer_number(int64_t value) : value(value) {
+    }
+
+    variable constant_integer_number::calc(scope *scope) {
+        variable var;
+        var.set_integer_value(value);
+        return var;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
     constant_real_number::constant_real_number(double value) : value(value) {
     }
 

@@ -63,4 +63,8 @@ namespace goat {
     bool test_parsing_hello_world() {
         return test_parsing_statement(L"print(\"it works.\");", L"it works.");
     }
+
+    bool test_parsing_integer() {
+        return test_parsing_statement(L"print(1024);", L"1024");
+    }
 }

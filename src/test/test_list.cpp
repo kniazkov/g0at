@@ -43,7 +43,8 @@ namespace goat {
         { "scanner: brackets do not match", test_brackets_do_not_match },
         { "scanner: integer numbers", test_scan_integer },
 
-        { "parser: 'hello world' program", test_parsing_hello_world }
+        { "parser: 'hello world' program", test_parsing_hello_world },
+        { "parser: integer number", test_parsing_integer }
     };
 
     unsigned int get_number_of_tests() {
