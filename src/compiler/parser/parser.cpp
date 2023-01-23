@@ -6,6 +6,8 @@
 */
 
 #include <cassert>
+#include <list>
+#include <variant>
 #include "parser.h"
 #include "compiler/scanner/tokens.h"
 #include "compiler/common/exceptions.h"
@@ -23,6 +25,14 @@ namespace goat {
      * @return An expression
      */
     expression * parse_expression(parser_data *data, token_iterator *iter);
+
+    /**
+     * @brief Parses the list of tokens as an expression, but does not process the operators
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @return An expression
+     */
+    expression * parse_expression_without_operators(parser_data *data, token_iterator *iter);
 
     /**
      * @brief Parses an expression that begins with an identifier
@@ -50,8 +60,7 @@ namespace goat {
         token *tok = iter->get();
         switch(tok->type) {
             case token_type::identifier: {
-                iter->next();
-                expression *expr = parse_expression_begins_with_identifier(data, iter, tok);
+                expression *expr = parse_expression(data, iter);
                 if (iter->valid()) {
                     tok = iter->get();
                     if (tok->type == token_type::comma || tok->type == token_type::semicolon) {
@@ -67,6 +76,10 @@ namespace goat {
     }
 
     expression * parse_expression(parser_data *data, token_iterator *iter) {
+        return parse_expression_without_operators(data, iter);
+    }
+
+    expression * parse_expression_without_operators(parser_data *data, token_iterator *iter) {
         assert(iter->valid());
         token *first = iter->get();
         if (first->type == token_type::identifier) {

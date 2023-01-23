@@ -19,4 +19,5 @@ namespace goat {
     bool test_closing_bracket_without_opening();
     bool test_brackets_do_not_match();
     bool test_scan_integer();
+    bool test_scan_operator();
 }

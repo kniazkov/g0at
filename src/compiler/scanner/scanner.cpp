@@ -33,6 +33,23 @@ namespace goat {
         return c >= '0' && c <= '9';
     }
 
+    /**
+     * @brief Determines whether a symbol belongs to an operator
+     */
+    static inline bool is_operator(wchar_t c) {
+        switch(c) {
+            case '+':
+            case '-':
+            case '*':
+            case '\\':
+            case '>':
+            case '<':
+                return true;
+            default:
+                return false;
+        }
+    }
+
     scanner::scanner(std::vector<token*> *tokens, const char *file_name,
             std::wstring &code) : tokens(tokens) {
         b.type = token_type::unknown;
@@ -95,6 +112,17 @@ namespace goat {
             }
             c = next_char();
             t->data = s.str();
+            tokens->push_back(t);
+            return t;
+        }
+
+        if (is_operator(c)) {
+            token *t = new token(b);
+            do {
+                t->length++;
+                c = next_char();                
+            } while(is_operator(c));
+            t->type = token_type::oper;
             tokens->push_back(t);
             return t;
         }
