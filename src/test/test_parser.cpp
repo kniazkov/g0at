@@ -67,4 +67,8 @@ namespace goat {
     bool test_parsing_integer() {
         return test_parsing_statement(L"print(1024);", L"1024");
     }
+
+    bool test_parsing_operator_plus() {
+        return test_parsing_statement(L"print(2 + 3);", L"5");
+    }
 }

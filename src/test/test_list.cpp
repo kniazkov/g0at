@@ -45,7 +45,8 @@ namespace goat {
         { "scanner: operators", test_scan_operator },
 
         { "parser: 'hello world' program", test_parsing_hello_world },
-        { "parser: integer number", test_parsing_integer }
+        { "parser: integer number", test_parsing_integer },
+        { "parser: operator plus", test_parsing_operator_plus }
     };
 
     unsigned int get_number_of_tests() {

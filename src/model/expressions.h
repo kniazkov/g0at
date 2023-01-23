@@ -203,6 +203,10 @@ namespace goat {
         addition(expression *left, expression *right) : binary_operation(left, right) {
         }
 
+    static binary_operation * creator(expression *left, expression *right) {
+        return new addition(left, right);
+    }
+
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;
     };

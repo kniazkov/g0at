@@ -6,6 +6,7 @@
 */
 
 #include <cassert>
+#include <cstring>
 #include <list>
 #include "parser.h"
 #include "compiler/scanner/tokens.h"
@@ -16,6 +17,28 @@
 #include "model/strings.h"
 
 namespace goat {
+
+    /**
+     * @brief Element of the chain, which contains both tokens and expressions
+     *   that have already been parsed
+     */
+    struct token_chain_item {
+        /**
+         * Type of element 
+         */
+        enum {
+            is_token,
+            is_expression
+        } type;
+
+        /**
+         * @brief Pointer to the corresponding entity
+         */
+        union {
+            token *tok;
+            expression *expr;
+        } ptr;
+    };
 
     /**
      * @brief Tries to parse the list of tokens as an expression
@@ -52,6 +75,19 @@ namespace goat {
     void parse_function_call_arguments(parser_data *data, token_iterator *iter,
         std::vector<expression*> *list);
 
+
+    typedef binary_operation * (*binary_operation_creator)(expression *left, expression *right);
+    
+    struct binary_operation_description {
+        const wchar_t *symbols;
+        binary_operation_creator creator;
+    };
+
+    void parse_binary_operators(std::list<token_chain_item> *chain, int count,
+        binary_operation_description *descr);
+
+    /* ----------------------------------------------------------------------------------------- */
+
     statement * parse_statement(parser_data *data, token_iterator *iter) {
         if (!iter->valid()) {
             return nullptr;
@@ -74,28 +110,6 @@ namespace goat {
         throw compiler_exception(tok, get_messages()->msg_unable_to_parse_token_sequence());
     }
 
-    /**
-     * @brief Element of the chain, which contains both tokens and expressions
-     *   that have already been parsed
-     */
-    struct token_chain_item {
-        /**
-         * Type of element 
-         */
-        enum {
-            is_token,
-            is_expression
-        } type;
-
-        /**
-         * @brief Pointer to the corresponding entity
-         */
-        union {
-            token *tok;
-            expression *expr;
-        } ptr;
-    };
-
     expression * parse_expression(parser_data *data, token_iterator *iter) {
         std::list<token_chain_item> chain;
 
@@ -105,9 +119,22 @@ namespace goat {
                 break;
             }
             token_chain_item item;
-            item.type = token_chain_item::is_expression;
-            item.ptr.expr = parse_expression_without_operators(data, iter);
+            if (tok->type == token_type::oper) {
+                item.type = token_chain_item::is_token;
+                item.ptr.tok = tok;
+                iter->next();
+            } else {
+                item.type = token_chain_item::is_expression;
+                item.ptr.expr = parse_expression_without_operators(data, iter);
+            }
             chain.push_back(item);
+        }
+
+        if (chain.size() > 1) {
+            binary_operation_description plus[] = {
+                { L"+", addition::creator }
+            };
+            parse_binary_operators(&chain, 1, plus);            
         }
 
         assert(chain.size() == 1 && chain.begin()->type == token_chain_item::is_expression);
@@ -198,6 +225,45 @@ namespace goat {
         while(iter->valid()) {
             expression *expr = parse_expression(data, iter);
             list->push_back(expr);
+        }
+    }
+
+    void parse_binary_operators(std::list<token_chain_item> *chain, int count,
+            binary_operation_description *descr) {
+        std::list<token_chain_item>::iterator iter = chain->begin();
+        iter++;
+        while(iter != chain->end()) {
+            bool found = false;
+            std::list<token_chain_item>::iterator left =  std::prev(iter);
+            std::list<token_chain_item>::iterator right =  std::next(iter);
+            if (iter->type == token_chain_item::is_token && right != chain->end() &&
+                    left->type == token_chain_item::is_expression &&
+                    right->type == token_chain_item::is_expression) {
+                int index = 0;
+                for (; index < count; index++) {
+                    if (0 == std::memcmp(descr[index].symbols, iter->ptr.tok->code,
+                                iter->ptr.tok->length * sizeof(wchar_t))) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    token_chain_item item;
+                    std::list<token_chain_item>::iterator next =  std::next(right);
+                    item.type = token_chain_item::is_expression;
+                    item.ptr.expr = descr[index].creator(left->ptr.expr, right->ptr.expr);
+                    chain->insert(left, item);
+                    left->ptr.expr->release();
+                    right->ptr.expr->release();
+                    chain->erase(left);
+                    chain->erase(right);
+                    chain->erase(iter);
+                    iter = next;
+                }
+            }
+            if (!found) {
+                iter++;
+            }
         }
     }
 }
