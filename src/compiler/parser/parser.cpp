@@ -7,7 +7,6 @@
 
 #include <cassert>
 #include <list>
-#include <variant>
 #include "parser.h"
 #include "compiler/scanner/tokens.h"
 #include "compiler/common/exceptions.h"
@@ -63,7 +62,7 @@ namespace goat {
                 expression *expr = parse_expression(data, iter);
                 if (iter->valid()) {
                     tok = iter->get();
-                    if (tok->type == token_type::comma || tok->type == token_type::semicolon) {
+                    if (tok->type == token_type::semicolon) {
                         iter->next();
                     }
                 }
@@ -75,8 +74,44 @@ namespace goat {
         throw compiler_exception(tok, get_messages()->msg_unable_to_parse_token_sequence());
     }
 
+    /**
+     * @brief Element of the chain, which contains both tokens and expressions
+     *   that have already been parsed
+     */
+    struct token_chain_item {
+        /**
+         * Type of element 
+         */
+        enum {
+            is_token,
+            is_expression
+        } type;
+
+        /**
+         * @brief Pointer to the corresponding entity
+         */
+        union {
+            token *tok;
+            expression *expr;
+        } ptr;
+    };
+
     expression * parse_expression(parser_data *data, token_iterator *iter) {
-        return parse_expression_without_operators(data, iter);
+        std::list<token_chain_item> chain;
+
+        while(iter->valid()) {
+            token *tok = iter->get();
+            if (tok->type == token_type::comma || tok->type == token_type::semicolon) {
+                break;
+            }
+            token_chain_item item;
+            item.type = token_chain_item::is_expression;
+            item.ptr.expr = parse_expression_without_operators(data, iter);
+            chain.push_back(item);
+        }
+
+        assert(chain.size() == 1 && chain.begin()->type == token_chain_item::is_expression);
+        return chain.begin()->ptr.expr;
     }
 
     expression * parse_expression_without_operators(parser_data *data, token_iterator *iter) {
@@ -111,7 +146,8 @@ namespace goat {
         token *second = nullptr;
         if (iter->valid()) {
             second = iter->get();
-            if (second->type == token_type::semicolon) {
+            iter->next();
+            if (second->type == token_type::comma || second->type == token_type::semicolon) {
                 end_of_sequence = true;
             }
         } else {
