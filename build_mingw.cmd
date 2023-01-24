@@ -19,4 +19,15 @@ echo.
 if exist unit_testing.exe unit_testing.exe
 cd ..
 echo.
+
+if not exist goat.exe goto skip_functional_testing
+gcc src\functional_testing.c -o functional_testing
+cd test
+..\functional_testing.exe ..\goat.exe list.txt
+cd ..
+del functional_testing.exe
+echo.
+:skip_functional_testing
+
+echo.
 echo Done.
