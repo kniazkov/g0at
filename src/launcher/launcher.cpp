@@ -141,7 +141,7 @@ namespace goat {
                 for (token *tok : all_tokens) {
                     delete tok;
                 }
-                std::cerr << exc.what() << std::endl;
+                std::cerr << exc.get_report() << std::endl;
             }
             catch (runtime_exception exr) {
                 std::cerr << exr.what() << std::endl;

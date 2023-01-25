@@ -100,6 +100,12 @@ namespace goat {
          */
         const char* what() const noexcept override;
 
+        /**
+         * @brief Returns the extended explanatory string
+         * @return String with explanatory information
+         */
+        std::string get_report() const;
+
     private:
         /**
          * @brief Descriptor containing Goat exception data

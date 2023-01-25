@@ -62,4 +62,22 @@ namespace goat {
         }
         return data->buff;
     }
+
+    std::string compiler_exception::get_report() const {
+        unsigned int i,
+            length;
+        std::wstringstream stream;
+        stream << "> " << data->pos.file_name << ", " << data->pos.line << '.' << data->pos.column  
+            << ": " << data->message << std::endl 
+            << data->pos.get_current_line_as_text() << std::endl;
+        for (i = 1; i < data->pos.column; i++) {
+            stream << ' ';
+        }
+        length = data->pos.length > 0 ? data->pos.length : 1;
+        for (i = 0; i < length; i++) {
+            stream << '^';
+        }
+        stream << std::endl;
+        return encode_utf8(stream.str());
+    }
 }
