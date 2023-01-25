@@ -14,4 +14,11 @@ namespace goat {
      * @param path The path
      */
     void convert_path_delimiters_to_unix(char *path);
+
+    /**
+     * @brief Loads file and returns its contents as a string
+     * @param file_name  The name of the file
+     * @param success Optional, flag is set to <code>true</code> if the operation was successful
+     */
+    std::string load_file_to_string(const char *file_name, bool *success);
 }

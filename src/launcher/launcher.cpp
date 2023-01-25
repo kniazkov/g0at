@@ -10,8 +10,6 @@
 #include <vector>
 #include <iostream>
 #include <string>
-#include <fstream>
-#include <streambuf>
 #include "lib/utf8_encoder.h"
 #include "lib/io.h"
 #include "compiler/scanner/scanner.h"
@@ -107,14 +105,13 @@ namespace goat {
             return 0;
         }
         if (cli.source_file_name != nullptr) {
-            std::ifstream stream(cli.source_file_name);
-            std::string raw;
-            stream.seekg(0, std::ios::end);   
-            raw.reserve(stream.tellg());
-            stream.seekg(0, std::ios::beg);
-            raw.assign((std::istreambuf_iterator<char>(stream)),
-                        std::istreambuf_iterator<char>());
-            std::wstring code = decode_utf8(raw);
+            bool loaded;
+            std::string content = load_file_to_string(cli.source_file_name, &loaded);
+            if (!loaded) {
+                std::cout << "File not found: '" << cli.source_file_name << '\'' << std::endl;
+                return -1;
+            }
+            std::wstring code = decode_utf8(content);
             std::vector<token*> all_tokens,
                 root_token_list;
             gc_data gc;
