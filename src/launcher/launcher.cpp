@@ -13,6 +13,7 @@
 #include <fstream>
 #include <streambuf>
 #include "lib/utf8_encoder.h"
+#include "lib/io.h"
 #include "compiler/scanner/scanner.h"
 #include "compiler/scanner/brackets_processor.h"
 #include "compiler/parser/parser.h"
@@ -75,6 +76,7 @@ namespace goat {
                     }
                 }
                 else {
+                    convert_path_delimiters_to_unix(arg);
                     cli->source_file_name = arg;
                 }
             }
