@@ -1,3 +1,9 @@
 hello_world
 addition_of_two_numbers
 string_concatenation
+
+# Errors:
+
+unknown_symbol
+opening_bracket_without_closing
+closing_bracket_without_opening

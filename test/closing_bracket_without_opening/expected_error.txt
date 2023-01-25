@@ -1,0 +1,3 @@
+> closing_bracket_without_opening\program.goat, 1.37: The closing bracket ')' without opening one
+print "must be, it will not compile")
+                                    ^

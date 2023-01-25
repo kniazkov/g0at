@@ -48,33 +48,61 @@ int compare_files(FILE *actual, FILE *expected) {
     return feof(expected);
 }
 
+int file_size(FILE *file) {
+    fseek(file, 0, SEEK_END);
+    int result = ftell(file);
+    rewind(file);
+    return result;
+}
+
 int do_test(char *interpreter, char *test_name) {
     int result = 0;
     
     char cmd[256],
         path_actual_output[128],
-        path_expected_output[128];
+        path_expected_output[128],
+        path_actual_error[128],
+        path_expected_error[128];
     snprintf(path_actual_output, 128, "%s%cactual_output.txt", test_name, path_separator());
     snprintf(path_expected_output, 128, "%s%cexpected_output.txt", test_name, path_separator());
-    snprintf(cmd, 256, "%s %s%cprogram.goat > %s",
-        interpreter, test_name, path_separator(), path_actual_output);
+    snprintf(path_actual_error, 128, "%s%cactual_error.txt", test_name, path_separator());
+    snprintf(path_expected_error, 128, "%s%cexpected_error.txt", test_name, path_separator());
+    snprintf(cmd, 256, "%s %s%cprogram.goat 1> %s 2> %s",
+        interpreter, test_name, path_separator(), path_actual_output, path_actual_error);
 
     system(cmd);
     
     FILE *actual_output = NULL, 
-        *expected_output = NULL;
+        *expected_output = NULL,
+        *actual_error = NULL,
+        *expected_error = NULL;
     actual_output = fopen(path_actual_output, "r");
-    if (!actual_output) return 0;
+    if (!actual_output) goto cleanup;
     expected_output = fopen(path_expected_output, "r");
-    if (!expected_output) goto cleanup;
+    if (!expected_output) {
+        if (file_size(actual_output) > 0) goto cleanup;
+    } else {
+        if (!compare_files(actual_output, expected_output)) goto cleanup;
+    }
+    actual_error = fopen(path_actual_error, "r");
+    if (!actual_error) goto cleanup;
+    expected_error = fopen(path_expected_error, "r");
+    if (!expected_error) {
+        if (file_size(actual_error) > 0) goto cleanup;
+    } else {
+        if (!compare_files(actual_error, expected_error)) goto cleanup;
+    }
     
-    result = compare_files(actual_output, expected_output);
+    result = 1;
 
 cleanup:
     if (actual_output) fclose(actual_output);
     if (expected_output) fclose(expected_output);
+    if (actual_error) fclose(actual_error);
+    if (expected_error) fclose(expected_error);
     if (result) {
         remove(path_actual_output);
+        remove(path_actual_error);        
     }
 
     return result;
@@ -99,7 +127,7 @@ int main(int argc, char** argv) {
     while (!feof(list)) {
         if (fgets(test_name, 128, list)) {
             char *test_name_trim = trim(test_name);
-            if (strlen(test_name_trim) > 0) {
+            if (strlen(test_name_trim) > 0 && test_name_trim[0] != '#') {
             int result = do_test(argv[1], test_name_trim);
                 if (result) {
                     printf("[ ok ]");
