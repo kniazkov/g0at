@@ -117,7 +117,7 @@ namespace goat {
                 root_token_list;
             gc_data gc;
             try {
-                scanner scan(&all_tokens, nullptr, code);
+                scanner scan(&all_tokens, cli.source_file_name, code);
                 process_brackets(&scan, &all_tokens, &root_token_list);
                 
                 std::unordered_set<object*> objects;

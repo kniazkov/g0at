@@ -48,7 +48,9 @@ namespace goat {
                                 br0str,
                                 br1str
                             );
-                        throw compiler_exception(closing_bracket, message);
+                        throw compiler_exception(new compiler_exception_data(
+                            closing_bracket, message)
+                        );
                     }
                 }
                 else {
@@ -57,7 +59,9 @@ namespace goat {
                             get_messages()->msg_closing_bracket_without_opening(),
                             bracket
                         );
-                    throw compiler_exception(closing_bracket, message);
+                    throw compiler_exception(new compiler_exception_data(
+                        closing_bracket, message)
+                    );
                 }
                 return closing_bracket;
             }
@@ -72,11 +76,12 @@ namespace goat {
                     get_messages()->msg_not_closed_bracket(),
                     bracket
                 );
-            throw compiler_exception(prev_opening_bracket, message);
+            throw compiler_exception(new compiler_exception_data(
+                prev_opening_bracket, message)
+            );
         }
         return nullptr;
     }
-
 
     void process_brackets(scanner *scan,
             std::vector<token*> *all_tokens, std::vector<token*> *result) {

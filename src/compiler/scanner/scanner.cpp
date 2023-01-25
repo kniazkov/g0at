@@ -183,7 +183,7 @@ namespace goat {
 
         std::wstringstream error;
         error << get_messages()->msg_unknown_symbol() << ": '" << c << '\'';
-        throw compiler_exception(&b, error.str());
+        throw compiler_exception(new compiler_exception_data(&b, error.str()));
     }
 
     char scanner::get_char() {

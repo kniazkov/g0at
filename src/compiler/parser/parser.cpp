@@ -107,7 +107,9 @@ namespace goat {
                 return result;
             }
         }
-        throw compiler_exception(tok, get_messages()->msg_unable_to_parse_token_sequence());
+        throw compiler_exception(new compiler_exception_data(
+            tok, get_messages()->msg_unable_to_parse_token_sequence())
+        );
     }
 
     expression * parse_expression(parser_data *data, token_iterator *iter) {
@@ -162,7 +164,9 @@ namespace goat {
             token_number *num = (token_number*)first;
             return new constant_integer_number(num->data.int_value);
         }
-        throw compiler_exception(first, get_messages()->msg_unable_to_parse_token_sequence());
+        throw compiler_exception(new compiler_exception_data(
+            first, get_messages()->msg_unable_to_parse_token_sequence())
+        );
     }
 
     expression * parse_expression_begins_with_identifier(
@@ -217,7 +221,9 @@ namespace goat {
             }
         }
 
-        throw compiler_exception(first, get_messages()->msg_unable_to_parse_token_sequence());
+        throw compiler_exception(new compiler_exception_data(
+            first, get_messages()->msg_unable_to_parse_token_sequence())
+        );
     }
 
     void parse_function_call_arguments(parser_data *data, token_iterator *iter,
