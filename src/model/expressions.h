@@ -231,4 +231,25 @@ namespace goat {
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;
     };
+
+    /**
+     * @brief Mutliplication
+     */
+    class multiplication : public binary_operation {
+    public:
+        /**
+         * @brief Constructor
+         * @param left Left operand
+         * @param right Right operand
+         */
+        multiplication(expression *left, expression *right) : binary_operation(left, right) {
+        }
+
+    static binary_operation * creator(expression *left, expression *right) {
+        return new multiplication(left, right);
+    }
+
+    protected:
+        variable calc(scope *scope, variable *left, variable *right) override;
+    };
 }

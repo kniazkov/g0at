@@ -137,4 +137,8 @@ namespace goat {
     variable subtraction::calc(scope *scope, variable *left, variable *right) {
         return left->obj->do_subtraction(scope->get_garbage_collector_data(), left, right);
     }
+
+    variable multiplication::calc(scope *scope, variable *left, variable *right) {
+        return left->obj->do_multiplication(scope->get_garbage_collector_data(), left, right);
+    }
 }

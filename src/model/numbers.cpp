@@ -268,6 +268,11 @@ namespace goat {
             return binary_math_operation<minus>(left, right);
         }
 
+        variable do_multiplication(gc_data* const gc,
+                const variable* left, const variable* right) const override {
+            return binary_math_operation<mul>(left, right);
+        }
+
     protected:
         /**
          * @brief Returns the value handled by this object

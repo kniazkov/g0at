@@ -112,6 +112,10 @@ namespace goat {
         );
     }
 
+    const binary_operation_description mul_div_mod[] = {
+        { L"*", multiplication::creator }
+    };
+
     const binary_operation_description plus_minus[] = {
         { L"+", addition::creator },
         { L"-", subtraction::creator },
@@ -138,6 +142,7 @@ namespace goat {
         }
 
         if (chain.size() > 1) {
+            parse_binary_operators(&chain, 1, mul_div_mod);            
             parse_binary_operators(&chain, 2, plus_minus);            
         }
 
