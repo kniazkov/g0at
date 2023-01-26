@@ -10,22 +10,20 @@
 namespace goat {
 
     std::wstring position::get_current_line_as_text() const {
-        const wchar_t *begin = code;
+        const wchar_t *start = code;
         unsigned int size = 0,
-            index = offset;
-        while(*begin != '\n' && index > 0) {
-            begin--;
+            index = offset + 1;
+        while(*start != '\n' && index > 0) {
+            start--;
             size++;
             index--;
         }
-        if (*begin == '\n') {
-            begin++;
-        }
+        start++;
         const wchar_t *end = code + 1;
         while (*end != '\r' && *end != '\n' && *end != 0) {
             end++;
             size++;
         }
-        return std::wstring(begin, size);
+        return std::wstring(start, size);
     }
 }
