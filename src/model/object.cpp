@@ -99,4 +99,9 @@ namespace goat {
             const variable* left, const variable* right) const {
         throw runtime_exception(get_operation_not_supported_exception());        
     }
+
+    variable object::do_subtraction(gc_data* const gc,
+            const variable* left, const variable* right) const {
+        throw runtime_exception(get_operation_not_supported_exception());        
+    }
 }

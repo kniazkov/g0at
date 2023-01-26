@@ -84,7 +84,7 @@ namespace goat {
     };
 
     void parse_binary_operators(std::list<token_chain_item> *chain, int count,
-        binary_operation_description *descr);
+        const binary_operation_description *descr);
 
     /* ----------------------------------------------------------------------------------------- */
 
@@ -112,6 +112,11 @@ namespace goat {
         );
     }
 
+    const binary_operation_description plus_minus[] = {
+        { L"+", addition::creator },
+        { L"-", subtraction::creator },
+    };
+
     expression * parse_expression(parser_data *data, token_iterator *iter) {
         std::list<token_chain_item> chain;
 
@@ -133,10 +138,7 @@ namespace goat {
         }
 
         if (chain.size() > 1) {
-            binary_operation_description plus[] = {
-                { L"+", addition::creator }
-            };
-            parse_binary_operators(&chain, 1, plus);            
+            parse_binary_operators(&chain, 2, plus_minus);            
         }
 
         assert(chain.size() == 1 && chain.begin()->type == token_chain_item::is_expression);
@@ -235,7 +237,7 @@ namespace goat {
     }
 
     void parse_binary_operators(std::list<token_chain_item> *chain, int count,
-            binary_operation_description *descr) {
+            const binary_operation_description *descr) {
         std::list<token_chain_item>::iterator iter = chain->begin();
         iter++;
         while(iter != chain->end()) {

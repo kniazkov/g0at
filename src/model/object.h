@@ -327,6 +327,16 @@ namespace goat {
         virtual variable do_addition(gc_data* const gc,
                 const variable* left, const variable* right) const;
 
+        /**
+         * @brief Performs a subtraction operation
+         * @param gc Data required for the garbage collector
+         * @param left Pointer to left operand (only for objects that do not store data themselves)
+         * @param right Pointer to right operand
+         * @return Calculation result
+         */
+        virtual variable do_subtraction(gc_data* const gc,
+                const variable* left, const variable* right) const;
+
     protected:
         /**
          * @brief Flags
