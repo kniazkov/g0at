@@ -7,3 +7,4 @@ string_concatenation
 unknown_symbol
 opening_bracket_without_closing
 closing_bracket_without_opening
+brackets_do_not_match
