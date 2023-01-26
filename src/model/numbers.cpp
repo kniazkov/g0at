@@ -11,6 +11,7 @@
 #include "numbers.h"
 #include "generic_object.h"
 #include "exceptions.h"
+#include "lib/functional.h"
 
 namespace goat {
 
@@ -24,144 +25,6 @@ namespace goat {
         std::swprintf(buff, 32, L"%g", value);
         return buff;
     }
-
-    template <typename R, typename A> struct unary {
-        typedef R ret_type;
-        typedef A arg_type;
-    };
-
-    template <typename R, typename A> struct pos : public unary <R, A> {
-        static R calculate(const A &a) {
-            return a;
-        }
-    };
-
-    template <typename R, typename A> struct neg : public unary <R, A> {
-        static R calculate(const A &a) {
-            return -a;
-        }
-    };
-
-    template <typename R, typename A> struct log_not : public unary <R, A> {
-        static R calculate(const A &a) {
-            return !a;
-        }
-    };
-
-    template <typename R, typename A> struct inv : public unary <R, A> {
-        static R calculate(const A &a) {
-            return ~a;
-        }
-    };
-
-    template <typename R, typename A> struct inc : public unary <R, A> {
-        static R calculate(const A &a) {
-            return a + 1;
-        }
-    };
-
-    template <typename R, typename A> struct dec : public unary <R, A> {
-        static R calculate(const A &a) {
-            return a - 1;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct binary {
-        typedef R ret_type;
-        typedef X left_type;
-        typedef Y right_type;
-    };
-
-    template <typename R, typename X, typename Y> struct plus : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x + y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct minus : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x - y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct mul : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x * y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct div : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x / y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct mod : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x % y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct exp : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return (R)pow(x, y);
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct equals : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x == y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct not_equal : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x != y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct less : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x < y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct less_or_equal : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x <= y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct greater : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y){
-            return x > y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct greater_or_equal 
-            : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x >= y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct bitwise_and : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x & y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct bitwise_or : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x | y;
-        }
-    };
-
-    template <typename R, typename X, typename Y> struct bitwise_xor : public binary <R, X, Y> {
-        static R calculate(const X &x, const Y &y) {
-            return x ^ y;
-        }
-    };
     
     /* ----------------------------------------------------------------------------------------- */
 
@@ -232,6 +95,13 @@ namespace goat {
             return true;
         }
 
+        /**
+         * @brief Performs a binary math operation such as addition, multiplication, etc
+         * @tparam F Functor
+         * @param left Pointer to left operand (only for objects that do not store data themselves)
+         * @param right Pointer to right operand
+         * @return Calculation result
+         */
         template <template<typename R, typename X, typename Y> class F>
         variable binary_math_operation(const variable* left, const variable* right) const {
             int64_t left_value = get_value(left);
@@ -260,17 +130,17 @@ namespace goat {
 
         variable do_addition(gc_data* const gc,
                 const variable* left, const variable* right) const override {
-            return binary_math_operation<plus>(left, right);
+            return binary_math_operation<fn_plus>(left, right);
         }
 
         variable do_subtraction(gc_data* const gc,
                 const variable* left, const variable* right) const override {
-            return binary_math_operation<minus>(left, right);
+            return binary_math_operation<fn_minus>(left, right);
         }
 
         variable do_multiplication(gc_data* const gc,
                 const variable* left, const variable* right) const override {
-            return binary_math_operation<mul>(left, right);
+            return binary_math_operation<fn_mul>(left, right);
         }
 
     protected:
