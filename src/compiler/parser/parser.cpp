@@ -41,6 +41,26 @@ namespace goat {
     };
 
     /**
+     * @brief A functor that creates a binary operation from two operands
+     */
+    typedef binary_operation * (*binary_operation_creator)(expression *left, expression *right);
+    
+    /**
+     * @brief Descriptor of a binary operation
+     */
+    struct binary_operation_description {
+        /**
+         * @brief Symbols denoting this operation
+         */
+        const wchar_t *symbols;
+
+        /**
+         * @brief Functor that creates a binary operation from two operands
+         */
+        binary_operation_creator creator;
+    };
+
+    /**
      * @brief Tries to parse the list of tokens as an expression
      * @param data Data needed for parsing
      * @param iter Iterator by token
@@ -75,14 +95,14 @@ namespace goat {
     void parse_function_call_arguments(parser_data *data, token_iterator *iter,
         std::vector<expression*> *list);
 
-
-    typedef binary_operation * (*binary_operation_creator)(expression *left, expression *right);
-    
-    struct binary_operation_description {
-        const wchar_t *symbols;
-        binary_operation_creator creator;
-    };
-
+    /**
+     * @brief Parses a chain of operators and expressions, 
+     *   and when specified operators are found, combines two expressions and one operator
+     *   into a binary operation
+     * @param chain Chain of operators and expressions
+     * @param count Number of operator descriptors
+     * @param descr Array of operator descriptors
+     */
     void parse_binary_operators(std::list<token_chain_item> *chain, int count,
         const binary_operation_description *descr);
 
@@ -112,10 +132,16 @@ namespace goat {
         );
     }
 
+    /**
+     * @brief Descriptors for operators *, /, %
+     */
     const binary_operation_description mul_div_mod[] = {
         { L"*", multiplication::creator }
     };
 
+    /**
+     * @brief Descriptors for operators +, -
+     */
     const binary_operation_description plus_minus[] = {
         { L"+", addition::creator },
         { L"-", subtraction::creator },
