@@ -18,7 +18,9 @@ namespace goat {
     struct messages {
         virtual const std::wstring & msg_brackets_do_not_match() const = 0;
         virtual const std::wstring & msg_closing_bracket_without_opening() const = 0;
+        virtual const std::wstring & msg_file_not_found() const = 0;
         virtual const std::wstring & msg_illegal_argument() const = 0;
+        virtual const std::wstring & msg_interpreter_description() const = 0;
         virtual const std::wstring & msg_not_closed_bracket() const = 0;
         virtual const std::wstring & msg_unable_to_parse_token_sequence() const = 0;
         virtual const std::wstring & msg_unknown_symbol() const = 0;

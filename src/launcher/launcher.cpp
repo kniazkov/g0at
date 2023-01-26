@@ -12,6 +12,7 @@
 #include <string>
 #include "lib/utf8_encoder.h"
 #include "lib/io.h"
+#include "resources/messages.h"
 #include "compiler/scanner/scanner.h"
 #include "compiler/scanner/brackets_processor.h"
 #include "compiler/parser/parser.h"
@@ -41,6 +42,20 @@ namespace goat {
          * @brief Show version of the Goat interpreter
          */
         bool show_version;
+
+        /**
+         * @brief Language in which messages are printed (e.g. for compilation errors)
+         */
+        const char *language;
+
+        /**
+         * @brief Constructor
+         */
+        command_line_interface() {
+            source_file_name = nullptr;
+            show_version = false;
+            language = nullptr;
+        }
     };
 
     /**
@@ -51,9 +66,6 @@ namespace goat {
      * @return Parsing result (<code>true</code> if successful)
      */
     bool parse_command_line_arguments(int argc, char** argv, command_line_interface *cli) {
-        cli->source_file_name = nullptr;
-        cli->show_version = false;
-
         int index = 1;
         while(index < argc) {
             char *arg = argv[index];
@@ -69,8 +81,11 @@ namespace goat {
                 }
                 else if (len > 2 && arg[0]== '-' && arg[1] == '-') {
                     arg += 2;
-                    if (0 == strcmp(arg, "version")) {
+                    if (0 == std::strcmp(arg, "version")) {
                         cli->show_version = true;
+                    }
+                    else if (0 == std::strncmp(arg, "lang=", 5)) {
+                        cli->language = arg + 5;
                     }
                 }
                 else {
@@ -100,15 +115,19 @@ namespace goat {
         if (false == parse_command_line_arguments(argc, argv, &cli)) {
             return -1;
         }
+        if (cli.language != nullptr) {
+            set_message_language(cli.language);
+        }
         if (cli.show_version) {
-            std::cout << "The Goat programming language interpreter, v. 0.0.1" << std::endl;
+            std::cout << encode_utf8(get_messages()->msg_interpreter_description())<< std::endl;
             return 0;
         }
         if (cli.source_file_name != nullptr) {
             bool loaded;
             std::string content = load_file_to_string(cli.source_file_name, &loaded);
             if (!loaded) {
-                std::cout << "File not found: '" << cli.source_file_name << '\'' << std::endl;
+                std::cout << encode_utf8(get_messages()->msg_file_not_found()) 
+                    << ": '" << cli.source_file_name << '\'' << std::endl;
                 return -1;
             }
             std::wstring code = decode_utf8(content);
