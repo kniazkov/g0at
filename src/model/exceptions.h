@@ -107,7 +107,12 @@ namespace goat {
     object * get_exception_prototype();
 
     /**
-     * @return Pointer to the illegal argument exception instance
+     * @return Pointer to the "illegal argument" exception instance
      */
     object * get_illegal_agrument_exception();
+
+    /**
+     * @return Pointer to the "operation not supported" exception instance
+     */
+    object * get_operation_not_supported_exception();
 }

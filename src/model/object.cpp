@@ -9,6 +9,7 @@
 #include "object.h"
 #include "root_object.h"
 #include "numbers.h"
+#include "exceptions.h"
 
 namespace goat {
 
@@ -94,13 +95,8 @@ namespace goat {
         return nullptr;
     }
 
-    /**
-     * @todo Throw an exception like "operation not supported"
-     */
     variable object::do_addition(gc_data* const gc,
             const variable* left, const variable* right) const {
-        variable var;
-        var.obj = get_empty_object();
-        return var;        
+        throw runtime_exception(get_operation_not_supported_exception());        
     }
 }
