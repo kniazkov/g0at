@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <vector>
+#include <unordered_set>
 #include "token_iterator.h"
 
 namespace goat {
@@ -15,21 +15,30 @@ namespace goat {
     class object;
     class gc_data;
     class statement;
+    class program;
 
     /**
      * @brief Data needed for parsing
      */
     struct parser_data {
         /**
-         * @brief List of objects that are created during parsing (needed to mark dynamic objects)
+         * @brief Set of objects that are created during parsing (needed to mark dynamic objects)
          */
-        std::vector<object*> *objects;
+        std::unordered_set<object*> *objects;
 
         /**
          * @brief Data required for the garbage collector (needed to create dynamic objects)
          */
         gc_data *gc;
     };
+
+    /**
+     * @brief Parses the whole program
+     * @param gc Data required for the garbage collector
+     * @param iter Iterator by token
+     * @return A parsed program ready for execution
+     */
+    program * parse_program(gc_data *gc, token_iterator *iter);
 
     /**
      * @brief Tries to parse the list of tokens as a statement

@@ -55,6 +55,26 @@ namespace goat {
     };
     
     /**
+     * @brief Expression representing a constant integer number
+     */
+    class constant_integer_number : public expression {
+    public:
+        /**
+         * @brief Constructor
+         * @param value The value
+         */
+        constant_integer_number(int64_t value);
+
+        variable calc(scope *scope) override;
+
+    private:
+        /**
+         * @brief The value
+         */
+        int64_t value;
+    };
+    
+    /**
      * @brief Expression representing a constant real number
      */
     class constant_real_number : public expression {
@@ -182,6 +202,52 @@ namespace goat {
          */
         addition(expression *left, expression *right) : binary_operation(left, right) {
         }
+
+    static binary_operation * creator(expression *left, expression *right) {
+        return new addition(left, right);
+    }
+
+    protected:
+        variable calc(scope *scope, variable *left, variable *right) override;
+    };
+
+    /**
+     * @brief Subtraction
+     */
+    class subtraction : public binary_operation {
+    public:
+        /**
+         * @brief Constructor
+         * @param left Left operand
+         * @param right Right operand
+         */
+        subtraction(expression *left, expression *right) : binary_operation(left, right) {
+        }
+
+    static binary_operation * creator(expression *left, expression *right) {
+        return new subtraction(left, right);
+    }
+
+    protected:
+        variable calc(scope *scope, variable *left, variable *right) override;
+    };
+
+    /**
+     * @brief Mutliplication
+     */
+    class multiplication : public binary_operation {
+    public:
+        /**
+         * @brief Constructor
+         * @param left Left operand
+         * @param right Right operand
+         */
+        multiplication(expression *left, expression *right) : binary_operation(left, right) {
+        }
+
+    static binary_operation * creator(expression *left, expression *right) {
+        return new multiplication(left, right);
+    }
 
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;

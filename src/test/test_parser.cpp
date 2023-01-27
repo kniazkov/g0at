@@ -32,7 +32,7 @@ namespace goat {
         try {
             scanner scan(&all_tokens, nullptr, code);
             process_brackets(&scan, &all_tokens, &root_token_list);
-            std::vector<object*> objects;
+            std::unordered_set<object*> objects;
             parser_data pdata;
             pdata.gc = &gc;
             pdata.objects = &objects;
@@ -62,5 +62,13 @@ namespace goat {
 
     bool test_parsing_hello_world() {
         return test_parsing_statement(L"print(\"it works.\");", L"it works.");
+    }
+
+    bool test_parsing_integer() {
+        return test_parsing_statement(L"print(1024);", L"1024");
+    }
+
+    bool test_parsing_operator_plus() {
+        return test_parsing_statement(L"print(2 + 3);", L"5");
     }
 }

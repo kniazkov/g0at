@@ -20,10 +20,13 @@ namespace goat {
         unknown = 0,
         identifier,
         string,
+        integer,
+        real,
         opening_bracket,
         closing_bracket,
         comma,
         semicolon,
+        oper,
         end,
         brackets_pair
     };
@@ -139,5 +142,34 @@ namespace goat {
          * @brief String data
          */
         std::wstring data;
+    };
+
+    /**
+     * @brief Token representing a number
+     */
+    struct token_number : public token {
+        /**
+         * @brief Constructor
+         * @param base Base token
+         */
+        token_number(token &base) {
+            set(base);
+            this->type = token_type::integer;
+        }
+
+        /**
+         * @brief Numeric data
+         */
+        union {
+            /**
+             * @brief Integer value
+             */
+            int64_t int_value;
+
+            /**
+             * @brief Real value
+             */
+            double real_value;
+        } data;
     };
 };

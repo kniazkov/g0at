@@ -1,0 +1,13 @@
+hello_world
+println
+addition_of_two_numbers
+string_concatenation
+subtraction_two_integers
+addition_and_multiplication
+
+# Errors:
+
+unknown_symbol
+opening_bracket_without_closing
+closing_bracket_without_opening
+brackets_do_not_match

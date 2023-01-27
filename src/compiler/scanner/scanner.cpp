@@ -33,6 +33,23 @@ namespace goat {
         return c >= '0' && c <= '9';
     }
 
+    /**
+     * @brief Determines whether a symbol belongs to an operator
+     */
+    static inline bool is_operator(wchar_t c) {
+        switch(c) {
+            case '+':
+            case '-':
+            case '*':
+            case '\\':
+            case '>':
+            case '<':
+                return true;
+            default:
+                return false;
+        }
+    }
+
     scanner::scanner(std::vector<token*> *tokens, const char *file_name,
             std::wstring &code) : tokens(tokens) {
         b.type = token_type::unknown;
@@ -71,6 +88,19 @@ namespace goat {
             return t;
         }
 
+        if (is_digit(c)) {
+            int64_t int_part = 0;
+            token_number *t = new token_number(b);
+            do {
+                int_part = int_part * 10 + c - '0';
+                t->length++;
+                c = next_char();
+            } while(is_digit(c));
+            t->data.int_value = int_part;
+            tokens->push_back(t);
+            return t;
+        }
+
         if (c == L'\"') {
             token_string *t = new token_string(b);
             c = next_char();
@@ -82,6 +112,17 @@ namespace goat {
             }
             c = next_char();
             t->data = s.str();
+            tokens->push_back(t);
+            return t;
+        }
+
+        if (is_operator(c)) {
+            token *t = new token(b);
+            do {
+                t->length++;
+                c = next_char();                
+            } while(is_operator(c));
+            t->type = token_type::oper;
             tokens->push_back(t);
             return t;
         }
@@ -142,7 +183,7 @@ namespace goat {
 
         std::wstringstream error;
         error << get_messages()->msg_unknown_symbol() << ": '" << c << '\'';
-        throw compiler_exception(&b, error.str());
+        throw compiler_exception(new compiler_exception_data(&b, error.str()));
     }
 
     char scanner::get_char() {

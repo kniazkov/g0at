@@ -12,6 +12,59 @@
 #include "position.h"
 
 namespace goat {
+    
+    /**
+     * @brief Descriptor containing compiler exception data
+     */
+    class compiler_exception_data {
+        friend class compiler_exception;
+
+    public:
+        /**
+         * @brief Constructor
+         * @param pos The position where the compilation error occurred
+         * @param message Additional message
+         */
+        compiler_exception_data(position *pos, std::wstring message);
+
+        /**
+         * @brief Destructor
+         */
+        ~compiler_exception_data();
+
+    private:
+        /**
+         * @brief The position where the compilation error occurred
+         */
+        position pos;
+
+        /**
+         * @brief Additional message
+         */
+        std::wstring message;
+
+        /**
+         * @brief Reference counter
+         */
+        unsigned int refs;
+
+        /**
+         * @brief Buffer containing explanatory string
+         */
+        char *buff;
+
+        /**
+         * @brief Private copy constructor to prevent copying
+         */
+        compiler_exception_data(const compiler_exception_data&) {
+        }
+
+        /**
+         * @brief Private assigment operator to prevent copying
+         */
+        void operator=(const compiler_exception_data&) {
+        }
+    };
 
     /**
      * @brief Exception thrown by the compiler in the case of a compilation error
@@ -20,20 +73,43 @@ namespace goat {
     public:
         /**
          * @brief Constructor
-         * @param pos The position where the compilation error occurred
-         * @param message Additional message
+         * @param data Descriptor containing compiler exception data
          */
-        compiler_exception(position *pos, std::wstring message);
+        compiler_exception(compiler_exception_data *data);
+
+        /**
+         * @brief Copy constructor
+         * @param other Other exception object
+         */
+        compiler_exception(const compiler_exception &other);
+
+        /**
+         * @brief Assignment operator
+         * @param other Other exception object
+         */
+        compiler_exception& operator=(const compiler_exception &other);
+
+        /**
+         * @brief Destructor
+         */
+        ~compiler_exception();
+
         /**
          * @brief Returns the explanatory string
          * @return Pointer to a null-terminated string with explanatory information
          */
         const char* what() const noexcept override;
 
+        /**
+         * @brief Returns the extended explanatory string
+         * @return String with explanatory information
+         */
+        std::string get_report() const;
+
     private:
         /**
-         * @brief Buffer to store the explanatory string
+         * @brief Descriptor containing Goat exception data
          */
-        std::string buff;
+        compiler_exception_data *data;
     };
 }

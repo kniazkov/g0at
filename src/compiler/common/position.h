@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <string>
+
 namespace goat {
 
     /**
@@ -42,5 +44,11 @@ namespace goat {
          * @brief The length of this entity (in characters)
          */
         unsigned int length;
+
+        /**
+         * @brief Returns the current line of code as text
+         * @return Source code
+         */
+        std::wstring get_current_line_as_text() const;
     };
 }

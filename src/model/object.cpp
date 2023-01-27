@@ -9,8 +9,14 @@
 #include "object.h"
 #include "root_object.h"
 #include "numbers.h"
+#include "exceptions.h"
 
 namespace goat {
+
+    void variable::set_integer_value(int64_t value) {
+        obj = get_integer_handler();
+        data.int_value = value;
+    }
 
     void variable::set_real_value(double value) {
         obj = get_real_handler();
@@ -77,6 +83,10 @@ namespace goat {
         return false;
     }
 
+    bool object::get_integer_value(const variable* var, int64_t* const value_ptr) const {
+        return false;
+    }
+
     bool object::get_real_value(const variable* var, double* const value_ptr) const {
         return false;
     }
@@ -85,13 +95,18 @@ namespace goat {
         return nullptr;
     }
 
-    /**
-     * @todo Throw an exception like "operation not supported"
-     */
     variable object::do_addition(gc_data* const gc,
             const variable* left, const variable* right) const {
-        variable var;
-        var.obj = get_empty_object();
-        return var;        
+        throw runtime_exception(get_operation_not_supported_exception());        
+    }
+
+    variable object::do_subtraction(gc_data* const gc,
+            const variable* left, const variable* right) const {
+        throw runtime_exception(get_operation_not_supported_exception());        
+    }
+
+    variable object::do_multiplication(gc_data* const gc,
+            const variable* left, const variable* right) const {
+        throw runtime_exception(get_operation_not_supported_exception());        
     }
 }

@@ -30,6 +30,17 @@ namespace goat {
 
     /* ----------------------------------------------------------------------------------------- */
 
+    constant_integer_number::constant_integer_number(int64_t value) : value(value) {
+    }
+
+    variable constant_integer_number::calc(scope *scope) {
+        variable var;
+        var.set_integer_value(value);
+        return var;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
     constant_real_number::constant_real_number(double value) : value(value) {
     }
 
@@ -121,5 +132,13 @@ namespace goat {
 
     variable addition::calc(scope *scope, variable *left, variable *right) {
         return left->obj->do_addition(scope->get_garbage_collector_data(), left, right);
+    }
+
+    variable subtraction::calc(scope *scope, variable *left, variable *right) {
+        return left->obj->do_subtraction(scope->get_garbage_collector_data(), left, right);
+    }
+
+    variable multiplication::calc(scope *scope, variable *left, variable *right) {
+        return left->obj->do_multiplication(scope->get_garbage_collector_data(), left, right);
     }
 }

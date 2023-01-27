@@ -228,4 +228,45 @@ namespace goat {
         }
         return true;
     }
+
+    bool test_scan_integer() {
+        std::vector<token*> tokens;
+        std::wstring code = L"  1024   ";
+        scanner scan(&tokens, nullptr, code);
+        token *tok = scan.get_token();
+        assert_equals(bool, true, token_type::integer == tok->type);
+        assert_equals(unsigned int, 1, tok->line);
+        assert_equals(unsigned int, 3, tok->column);
+        assert_equals(unsigned int, 4, tok->length);
+        assert_equals(int64_t, 1024, ((token_number*)tok)->data.int_value);
+        for (token *tok : tokens) {
+            delete tok;
+        }
+        return true;
+    }
+
+    bool test_scan_operator() {
+        std::vector<token*> tokens;
+        std::wstring code = L"a -> b";
+        scanner scan(&tokens, nullptr, code);
+        token *t1 = scan.get_token();
+        assert_equals(bool, true, token_type::identifier == t1->type);
+        assert_equals(unsigned int, 1, t1->line);
+        assert_equals(unsigned int, 1, t1->column);
+        assert_equals(int, 0, std::memcmp(L"a", t1->code, t1->length * sizeof(wchar_t)));
+        token *t2 = scan.get_token();
+        assert_equals(bool, true, token_type::oper == t2->type);
+        assert_equals(unsigned int, 1, t2->line);
+        assert_equals(unsigned int, 3, t2->column);
+        assert_equals(int, 0, std::memcmp(L"->", t2->code, t2->length * sizeof(wchar_t)));
+        token *t3 = scan.get_token();
+        assert_equals(bool, true, token_type::identifier == t3->type);
+        assert_equals(unsigned int, 1, t3->line);
+        assert_equals(unsigned int, 6, t3->column);
+        assert_equals(int, 0, std::memcmp(L"b", t3->code, t3->length * sizeof(wchar_t)));
+        for (token *tok : tokens) {
+            delete tok;
+        }
+        return true;
+    }
 }

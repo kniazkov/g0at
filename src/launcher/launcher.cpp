@@ -10,9 +10,9 @@
 #include <vector>
 #include <iostream>
 #include <string>
-#include <fstream>
-#include <streambuf>
 #include "lib/utf8_encoder.h"
+#include "lib/io.h"
+#include "resources/messages.h"
 #include "compiler/scanner/scanner.h"
 #include "compiler/scanner/brackets_processor.h"
 #include "compiler/parser/parser.h"
@@ -42,6 +42,20 @@ namespace goat {
          * @brief Show version of the Goat interpreter
          */
         bool show_version;
+
+        /**
+         * @brief Language in which messages are printed (e.g. for compilation errors)
+         */
+        const char *language;
+
+        /**
+         * @brief Constructor
+         */
+        command_line_interface() {
+            source_file_name = nullptr;
+            show_version = false;
+            language = nullptr;
+        }
     };
 
     /**
@@ -52,9 +66,6 @@ namespace goat {
      * @return Parsing result (<code>true</code> if successful)
      */
     bool parse_command_line_arguments(int argc, char** argv, command_line_interface *cli) {
-        cli->source_file_name = nullptr;
-        cli->show_version = false;
-
         int index = 1;
         while(index < argc) {
             char *arg = argv[index];
@@ -70,11 +81,15 @@ namespace goat {
                 }
                 else if (len > 2 && arg[0]== '-' && arg[1] == '-') {
                     arg += 2;
-                    if (0 == strcmp(arg, "version")) {
+                    if (0 == std::strcmp(arg, "version")) {
                         cli->show_version = true;
+                    }
+                    else if (0 == std::strncmp(arg, "lang=", 5)) {
+                        cli->language = arg + 5;
                     }
                 }
                 else {
+                    convert_path_delimiters_to_unix(arg);
                     cli->source_file_name = arg;
                 }
             }
@@ -100,40 +115,38 @@ namespace goat {
         if (false == parse_command_line_arguments(argc, argv, &cli)) {
             return -1;
         }
+        if (cli.language != nullptr) {
+            set_message_language(cli.language);
+        }
         if (cli.show_version) {
-            std::cout << "The Goat programming language interpreter, v. 0.0.1" << std::endl;
+            std::cout << encode_utf8(get_messages()->msg_interpreter_description())<< std::endl;
             return 0;
         }
         if (cli.source_file_name != nullptr) {
-            std::ifstream stream(cli.source_file_name);
-            std::string raw;
-            stream.seekg(0, std::ios::end);   
-            raw.reserve(stream.tellg());
-            stream.seekg(0, std::ios::beg);
-            raw.assign((std::istreambuf_iterator<char>(stream)),
-                        std::istreambuf_iterator<char>());
-            std::wstring code = decode_utf8(raw);
+            bool loaded;
+            std::string content = load_file_to_string(cli.source_file_name, &loaded);
+            if (!loaded) {
+                std::cout << encode_utf8(get_messages()->msg_file_not_found()) 
+                    << ": '" << cli.source_file_name << '\'' << std::endl;
+                return -1;
+            }
+            std::wstring code = decode_utf8(content);
             std::vector<token*> all_tokens,
                 root_token_list;
             gc_data gc;
             try {
-                scanner scan(&all_tokens, nullptr, code);
+                scanner scan(&all_tokens, cli.source_file_name, code);
                 process_brackets(&scan, &all_tokens, &root_token_list);
-                
-                std::vector<object*> objects;
-                parser_data pdata;
                 console con;
-                pdata.gc = &gc;
-                pdata.objects = &objects;
                 token_iterator_over_vector iter(root_token_list);
-                statement *stmt = parse_statement(&pdata, &iter);
+                program *prog = parse_program(&gc, &iter);
                 for (token *tok : all_tokens) {
                     delete tok;
                 }
                 all_tokens.clear();
                 scope *main = create_main_scope(&gc, &con);
-                stmt->exec(main);
-                stmt->release();
+                prog->exec(main);
+                prog->release();
                 main->release();
                 gc.sweep();
             }
@@ -141,7 +154,7 @@ namespace goat {
                 for (token *tok : all_tokens) {
                     delete tok;
                 }
-                std::cerr << exc.what() << std::endl;
+                std::cerr << exc.get_report() << std::endl;
             }
             catch (runtime_exception exr) {
                 std::cerr << exr.what() << std::endl;

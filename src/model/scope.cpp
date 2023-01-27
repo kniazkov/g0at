@@ -22,8 +22,10 @@ namespace goat {
     static_string str_Real(L"Real");
     static_string str_Exception(L"Exception");
     static_string str_IllegalArgument(L"IllegalArgument");
+    static_string str_OperationNotSupported(L"OperationNotSupported");
 
     static_string str_print(L"print");
+    static_string str_println(L"println");
     static_string str_sqrt(L"sqrt");
 
     /**
@@ -42,6 +44,8 @@ namespace goat {
             write_static_attribute(&str_Real, get_real_prototype());
             write_static_attribute(&str_Exception, get_exception_prototype());
             write_static_attribute(&str_IllegalArgument, get_illegal_agrument_exception());
+            write_static_attribute(&str_OperationNotSupported,
+                get_operation_not_supported_exception());
 
             write_static_attribute(&str_sqrt, get_sqrt_instance());
         }
@@ -124,11 +128,15 @@ namespace goat {
          */
         main_scope(gc_data *gc, function_print::printer *printer) :
                 scope_with_one_prototype(gc, &root_scope_instance) {
-            function_print *fn = new function_print(gc, printer);
             variable var;
-            var.obj = fn;
+            function_print *fn_print = new function_print(gc, printer);
+            var.obj = fn_print;
             set_attribute(&str_print, var);
-            fn->release();
+            fn_print->release();
+            function_println *fn_println = new function_println(gc, printer);
+            var.obj = fn_println;
+            set_attribute(&str_println, var);
+            fn_println->release();
         }
     };
 
