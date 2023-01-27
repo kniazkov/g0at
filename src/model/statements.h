@@ -27,6 +27,31 @@ namespace goat {
     };
 
     /**
+     * @brief Block statement, that is, one that consists of several statements
+     */
+    class statement_block : public statement {
+    public:
+        /**
+         * @brief Destructor
+         */
+        ~statement_block();
+
+        /**
+         * @brief Adds statement to the list
+         * @param stmt statement 
+         */
+        void add_statement(statement *stmt);
+
+        void exec(scope *scope) override;
+
+    private:
+        /**
+         * @brief List of statements
+         */
+        std::vector<statement*> list;
+    };
+
+    /**
      * @brief Statement that calculates an expression and then ignores the calculated value
      * 
      * This is the most commonly used statement.

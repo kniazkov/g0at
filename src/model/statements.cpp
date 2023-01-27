@@ -9,6 +9,23 @@
 
 namespace goat {
 
+    statement_block::~statement_block() {
+        for (statement *stmt : list) {
+            stmt->release();
+        }
+    }
+
+    void statement_block::add_statement(statement *stmt) {
+        list.push_back(stmt);
+        stmt->add_reference();
+    }
+
+    void statement_block::exec(scope *scope) {
+        for (statement *stmt : list) {
+            stmt->exec(scope);
+        }
+    }
+
     statement_expression::statement_expression(expression *expr) {
         this->expr = expr;
         expr->add_reference();
