@@ -137,21 +137,16 @@ namespace goat {
             try {
                 scanner scan(&all_tokens, cli.source_file_name, code);
                 process_brackets(&scan, &all_tokens, &root_token_list);
-                
-                std::unordered_set<object*> objects;
-                parser_data pdata;
                 console con;
-                pdata.gc = &gc;
-                pdata.objects = &objects;
                 token_iterator_over_vector iter(root_token_list);
-                statement *stmt = parse_statement(&pdata, &iter);
+                program *prog = parse_program(&gc, &iter);
                 for (token *tok : all_tokens) {
                     delete tok;
                 }
                 all_tokens.clear();
                 scope *main = create_main_scope(&gc, &con);
-                stmt->exec(main);
-                stmt->release();
+                prog->exec(main);
+                prog->release();
                 main->release();
                 gc.sweep();
             }

@@ -61,6 +61,14 @@ namespace goat {
     };
 
     /**
+     * @brief Tries to parse the list of tokens as a list of statements
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param block The object in which to put statements
+     */
+    void parse_statement_block(parser_data *data, token_iterator *iter, statement_block *block);
+
+    /**
      * @brief Tries to parse the list of tokens as an expression
      * @param data Data needed for parsing
      * @param iter Iterator by token
@@ -107,6 +115,23 @@ namespace goat {
         const binary_operation_description *descr);
 
     /* ----------------------------------------------------------------------------------------- */
+
+    program * parse_program(gc_data *gc, token_iterator *iter) {
+        program *prog = new program();
+        parser_data data;
+        data.gc = gc;
+        data.objects = prog->get_object_set();
+        parse_statement_block(&data, iter, prog);
+        return prog;
+    }
+
+    void parse_statement_block(parser_data *data, token_iterator *iter, statement_block *block) {
+        while (iter->valid()) {
+            statement *stmt = parse_statement(data, iter);
+            block->add_statement(stmt);
+            stmt->release();            
+        }
+    }
 
     statement * parse_statement(parser_data *data, token_iterator *iter) {
         if (!iter->valid()) {

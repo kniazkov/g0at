@@ -8,6 +8,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_set>
 #include "code.h"
 #include "scope.h"
 #include "expressions.h"
@@ -49,6 +50,26 @@ namespace goat {
          * @brief List of statements
          */
         std::vector<statement*> list;
+    };
+
+    /**
+     * @brief The entire program
+     */
+    class program : public statement_block {
+    public:
+        /**
+         * @brief Returns the pointer to the set of objects so that we can add objects there
+         *   while parsing
+         * @return Pointer to the set of objects
+         */
+        inline std::unordered_set<object*> * get_object_set() {
+            return &objects;
+        }
+
+        /**
+         * @brief Set of objects that are created during parsing (needed to mark dynamic objects)
+         */
+        std::unordered_set<object*> objects;
     };
 
     /**
