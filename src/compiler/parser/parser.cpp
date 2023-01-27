@@ -252,7 +252,7 @@ namespace goat {
             std::wstring var_name(first->code, first->length);
             dynamic_string *obj = new dynamic_string(data->gc, var_name);
             data->objects->insert(obj);
-            expression *result = new read_variable(obj);
+            expression *result = new expression_variable(obj);
             obj->release();
             return result;
         }

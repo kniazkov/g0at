@@ -28,6 +28,19 @@ namespace goat {
     };
 
     /**
+     * @brief An expression whose value can be changed (assigned a different value),
+     *   e.g. a variable
+     */
+    class assignable_expression : public expression {
+        /**
+         * @brief Assigns a new value to the expression
+         * @param scope The scope in which the expression is calculated
+         * @param value New value
+         */
+        virtual void assign(scope *scope, variable value) = 0;
+    };
+
+    /**
      * @brief Expression representing an object (just returns this object)
      * 
      * In this way we can wrap any object, including strings, into an expression.
@@ -95,22 +108,23 @@ namespace goat {
     };
 
     /**
-     * @brief Searches for a variable in scope and returns its value
+     * @brief An expression that represents accessing to a variable (i.e. reading and writing)
      */
-    class read_variable : public expression {
+    class expression_variable : public assignable_expression {
     public:
         /**
          * @brief Constructor
          * @param name The variable name
          */
-        read_variable(base_string *name);
+        expression_variable(base_string *name);
 
         /**
          * @brief Destructor
          */
-        ~read_variable();
+        ~expression_variable();
 
         variable calc(scope *scope) override;
+        void assign(scope *scope, variable value) override;
 
     private:
         /**

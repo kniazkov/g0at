@@ -350,7 +350,7 @@ namespace goat {
         return true;
     }
 
-    bool test_read_variable_expression() {
+    bool test_expression_variable_expression() {
         gc_data gc;
         dbg_printer printer;
         scope *main = create_main_scope(&gc, &printer);
@@ -359,7 +359,7 @@ namespace goat {
         value.set_real_value(7);
         main->set_attribute(&key, value);
         base_string *name = &key;
-        read_variable *expr = new read_variable(name);
+        expression_variable *expr = new expression_variable(name);
         variable result = expr->calc(main);
         assert_equals(double, 7, result.data.double_value);
         main->release();

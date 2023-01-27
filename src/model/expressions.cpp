@@ -52,20 +52,24 @@ namespace goat {
 
     /* ----------------------------------------------------------------------------------------- */
 
-    read_variable::read_variable(base_string *name) {
+    expression_variable::expression_variable(base_string *name) {
         this->name = name;
         name->add_reference();
     }
 
-    read_variable::~read_variable() {
+    expression_variable::~expression_variable() {
         name->release();
     }
 
     /**
      * @todo Exception if variable not found
      */
-    variable read_variable::calc(scope *scope) {
+    variable expression_variable::calc(scope *scope) {
         return *(scope->get_attribute(name));
+    }
+
+    void expression_variable::assign(scope *scope, variable value) {
+        scope->set_attribute(name, value);
     }
 
     /* ----------------------------------------------------------------------------------------- */
