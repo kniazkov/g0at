@@ -158,6 +158,7 @@ namespace goat {
             }
             catch (runtime_exception exr) {
                 std::cerr << exr.what() << std::endl;
+                gc.sweep();
             }
             assert(gc.get_count() == 0);
             assert(get_number_of_elements() == 0);

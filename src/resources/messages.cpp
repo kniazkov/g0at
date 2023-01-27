@@ -19,6 +19,7 @@ namespace goat {
     const std::wstring en_not_closed_bracket(L"The bracket '{0}' was not closed");
     const std::wstring en_operation_not_supported(L"Operation not supported");
     const std::wstring en_reference_error(L"Reference error");
+    const std::wstring en_reference_error_clarified(L"Reference error, '{0}' is not defined");
     const std::wstring en_unable_to_parse_token_sequence(L"Unable to parse the token sequence");
     const std::wstring en_unknown_symbol(L"Unknown symbol");
     
@@ -50,6 +51,9 @@ namespace goat {
         const std::wstring & msg_reference_error() const override {
             return en_reference_error;
         };
+        const std::wstring & msg_reference_error_clarified() const override {
+            return en_reference_error_clarified;
+        };
         const std::wstring & msg_unable_to_parse_token_sequence() const override {
             return en_unable_to_parse_token_sequence;
         }
@@ -67,6 +71,7 @@ namespace goat {
     const std::wstring ru_not_closed_bracket(L"Открывающая скобка '{0}' не имеет парной закрывающей скобки");
     const std::wstring ru_operation_not_supported(L"Операция не поддерживается");
     const std::wstring ru_reference_error(L"Ошибка при обращении по ссылке");
+    const std::wstring ru_reference_error_clarified(L"Ошибка при обращении по ссылке, имя '{0}' не определено");
     const std::wstring ru_unable_to_parse_token_sequence(L"Нераспознаваемая последовательность токенов");
     const std::wstring ru_unknown_symbol(L"Неизвестный символ");
     
@@ -97,6 +102,9 @@ namespace goat {
         };
         const std::wstring & msg_reference_error() const override {
             return ru_reference_error;
+        };
+        const std::wstring & msg_reference_error_clarified() const override {
+            return ru_reference_error_clarified;
         };
         const std::wstring & msg_unable_to_parse_token_sequence() const override {
             return ru_unable_to_parse_token_sequence;

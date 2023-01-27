@@ -8,6 +8,7 @@
 #include <string>
 #include "generic_object.h"
 #include "exceptions.h"
+#include "lib/format_string.h"
 #include "resources/messages.h"
 
 namespace goat {
@@ -139,5 +140,34 @@ namespace goat {
     static reference_error_exception reference_error_instance;
     object * get_reference_error_exception() {
         return &reference_error_instance;
+    }
+
+    /**
+     * @brief Reference error (clarified) exception
+     */
+    class reference_error_clarified_exception : public generic_dynamic_object {
+    public:
+        /**
+         * @brief Constructor
+         * @param gc Data required for the garbage collector
+         * @param name A name that is not defined
+         */
+        reference_error_clarified_exception(gc_data * const gc, std::wstring name) :
+            generic_dynamic_object(gc, &reference_error_instance), name(name) {
+        }
+
+        std::wstring to_string(const variable* var) const override {
+            return format_string(get_messages()->msg_reference_error_clarified(), name);
+        }
+    
+    private:
+        /**
+         * @brief A name that is not defined
+         */
+        std::wstring name;
+    };
+
+    object * create_reference_error_clarified_exception(gc_data * const gc, std::wstring name) {
+        return new reference_error_clarified_exception(gc, name);
     }
 }

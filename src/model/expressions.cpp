@@ -65,7 +65,15 @@ namespace goat {
      * @todo Exception if variable not found
      */
     variable expression_variable::calc(scope *scope) {
-        return *(scope->get_attribute(name));
+        variable *var = scope->get_attribute(name);
+        if (!var) {
+            object *ex_object = create_reference_error_clarified_exception(
+                scope->get_garbage_collector_data(), name->to_string(nullptr));
+            runtime_exception  ex(ex_object);
+            ex_object->release();
+            throw ex;
+        }
+        return *var;
     }
 
     void expression_variable::assign(scope *scope, variable value) {

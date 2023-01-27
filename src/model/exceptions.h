@@ -120,4 +120,11 @@ namespace goat {
      * @return Pointer to the "reference error" exception instance
      */
     object * get_reference_error_exception();
+
+    /**
+     * @brief Creates object describing clarified "reference error" exception
+     * @param gc Data required for the garbage collector
+     * @param name A name that is not defined
+     */
+    object * create_reference_error_clarified_exception(gc_data * const gc, std::wstring name);
 }
