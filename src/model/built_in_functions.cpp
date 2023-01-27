@@ -19,6 +19,16 @@ namespace goat {
         device->print(args[0].to_string());
     }
 
+    static std::wstring new_line(L"\n");
+
+    void function_println::exec(std::vector<variable> &args, variable* ret_val) {
+        if (args.size() < 1) {
+            throw runtime_exception(get_illegal_agrument_exception());
+        }
+        device->print(args[0].to_string());
+        device->print(new_line);
+    }
+
     /* ----------------------------------------------------------------------------------------- */
 
     /**

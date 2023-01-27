@@ -33,8 +33,7 @@ namespace goat {
          * @param gc Data required for the garbage collector
          * @param device The printer that actually does the printing
          */
-        function_print(gc_data *gc, printer *device) 
-                : dynamic_object(gc), device(device) {
+        function_print(gc_data *gc, printer *device) : dynamic_object(gc), device(device) {
         }
 
         void exec(std::vector<variable> &args, variable* ret_val) override;
@@ -44,6 +43,23 @@ namespace goat {
          * @brief The printer that actually does the printing
          */
         printer *device;
+    };
+
+    /**
+     * @brief Built-in function, prints a string to the console
+     *   and additionally adds a line feed character
+     */
+    class function_println : public function_print {
+    public:
+        /**
+         * @brief Constructor
+         * @param gc Data required for the garbage collector
+         * @param device The printer that actually does the printing
+         */
+        function_println(gc_data *gc, printer *device) : function_print(gc, device) {
+        }
+
+        void exec(std::vector<variable> &args, variable* ret_val) override;
     };
 
     /**
