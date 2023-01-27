@@ -115,4 +115,9 @@ namespace goat {
      * @return Pointer to the "operation not supported" exception instance
      */
     object * get_operation_not_supported_exception();
+
+    /**
+     * @return Pointer to the "reference error" exception instance
+     */
+    object * get_reference_error_exception();
 }

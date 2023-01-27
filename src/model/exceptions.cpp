@@ -121,4 +121,23 @@ namespace goat {
     object * get_operation_not_supported_exception() {
         return &operation_not_supported_instance;
     }
+
+    /**
+     * @brief Reference error exception
+     */
+    class reference_error_exception : public generic_static_object {
+    public:
+        object * get_first_prototype() const override {
+            return &exception_proto_instance;
+        }
+
+        std::wstring to_string(const variable* var) const override {
+            return get_messages()->msg_reference_error();
+        }
+    };
+
+    static reference_error_exception reference_error_instance;
+    object * get_reference_error_exception() {
+        return &reference_error_instance;
+    }
 }
