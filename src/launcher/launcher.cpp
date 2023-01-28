@@ -134,32 +134,33 @@ namespace goat {
             std::vector<token*> all_tokens,
                 root_token_list;
             gc_data gc;
+            program *prog = nullptr;
             try {
                 scanner scan(&all_tokens, cli.source_file_name, code);
                 process_brackets(&scan, &all_tokens, &root_token_list);
-                console con;
                 token_iterator_over_vector iter(root_token_list);
-                program *prog = parse_program(&gc, &iter);
-                for (token *tok : all_tokens) {
-                    delete tok;
-                }
-                all_tokens.clear();
-                scope *main = create_main_scope(&gc, &con);
-                prog->exec(main);
-                prog->release();
-                main->release();
-                gc.sweep();
+                prog = parse_program(&gc, &iter);
             }
             catch (compiler_exception exc) {
-                for (token *tok : all_tokens) {
-                    delete tok;
-                }
                 std::cerr << exc.get_report() << std::endl;
             }
-            catch (runtime_exception exr) {
-                std::cerr << exr.what() << std::endl;
-                gc.sweep();
+            for (token *tok : all_tokens) {
+                delete tok;
             }
+            all_tokens.clear();
+            if (prog) {
+                console con;
+                scope *main = create_main_scope(&gc, &con);
+                try {
+                    prog->exec(main);
+                }
+                catch (runtime_exception exr) {
+                    std::cerr << exr.what() << std::endl;
+                }
+                prog->release();
+                main->release();
+            }
+            gc.sweep();
             assert(gc.get_count() == 0);
             assert(get_number_of_elements() == 0);
         }
