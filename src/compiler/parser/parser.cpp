@@ -137,7 +137,13 @@ namespace goat {
         data.gc = gc;
         data.objects = prog->get_object_set();
         data.file_names_list = prog->get_file_names_list();
-        parse_statement_block(&data, iter, prog);
+        try {
+            parse_statement_block(&data, iter, prog);
+        }
+        catch (compiler_exception ex) {
+            prog->release();
+            throw;
+        }
         return prog;
     }
 
@@ -297,8 +303,9 @@ namespace goat {
             }
         }
 
+        position pos = first->merge_position(second);
         throw compiler_exception(new compiler_exception_data(
-            first, get_messages()->msg_unable_to_parse_token_sequence())
+            &pos, get_messages()->msg_unable_to_parse_token_sequence())
         );
     }
 

@@ -50,5 +50,12 @@ namespace goat {
          * @return Source code
          */
         std::wstring get_current_line_as_text() const;
+
+        /**
+         * @brief Merges two positions, so that the new position covers two elements
+         * @param other Another position
+         * @return Merged position
+         */
+        position merge_position(const position *other) const;
     };
 }

@@ -5,6 +5,7 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
+#include <cassert>
 #include "position.h"
 
 namespace goat {
@@ -25,5 +26,20 @@ namespace goat {
             size++;
         }
         return std::wstring(start, size);
+    }
+
+    position position::merge_position(const position *other) const {
+        assert(file_name == other->file_name);
+        const position *left, *right;
+        if (offset < other->offset) {
+            left = this;
+            right = other;
+        } else {
+            left = other;
+            right = this;
+        }
+        position result = *left;
+        result.length = right->offset - left->offset + right->length;
+        return result;
     }
 }
