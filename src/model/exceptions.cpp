@@ -5,10 +5,12 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
-#include <string>
+#include <cstring>
+#include <sstream>
 #include "generic_object.h"
 #include "exceptions.h"
 #include "lib/format_string.h"
+#include "lib/utf8_encoder.h"
 #include "resources/messages.h"
 
 namespace goat {
@@ -54,16 +56,25 @@ namespace goat {
 
     const char * runtime_exception::what() const noexcept {
         if (!data->buff) {
-            std::wstring info = data->obj->to_string(nullptr);
-            size_t size = info.size();
+            std::string message = encode_utf8(data->obj->to_string(nullptr));
+            size_t size = message.size();
             data->buff = new char[size + 1];
-            for (size_t i = 0; i < size; i++) {
-                wchar_t ch = info[i];
-                data->buff[i] = ch < 127 ? ch : '?';
-            }
-            data->buff[size] = '\0';
+            std::memcpy(data->buff, message.c_str(), (size + 1) * sizeof(char));
         }
         return data->buff;
+    }
+
+    void runtime_exception::add_stack_trace_data(stack_trace_data &item) {
+        data->stack_trace.push_back(item);
+    }
+
+    std::string runtime_exception::get_report() const {
+        std::stringstream stream;
+        stream << encode_utf8(data->obj->to_string(nullptr)) << std::endl;
+        for (stack_trace_data &item : data->stack_trace) {
+            stream << "  " << item.file_name << ", " << item.line << std::endl;
+        }
+        return stream.str();
     }
 
     /* ----------------------------------------------------------------------------------------- */

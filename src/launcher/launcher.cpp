@@ -142,7 +142,7 @@ namespace goat {
                 prog = parse_program(&gc, &iter);
             }
             catch (compiler_exception exc) {
-                std::cerr << exc.get_report() << std::endl;
+                std::cerr << exc.get_report();
             }
             for (token *tok : all_tokens) {
                 delete tok;
@@ -155,7 +155,7 @@ namespace goat {
                     prog->exec(main);
                 }
                 catch (runtime_exception exr) {
-                    std::cerr << exr.what() << std::endl;
+                    std::cerr << exr.get_report();
                 }
                 prog->release();
                 main->release();

@@ -33,7 +33,7 @@ namespace goat {
     }
 
     statement_expression::statement_expression(const char *file_name, unsigned int line,
-            expression *expr) : stack_trace_data(file_name, line) {
+            expression *expr) : trace_data(file_name, line) {
         this->expr = expr;
         expr->add_reference();
     }
@@ -43,7 +43,13 @@ namespace goat {
     }
 
     void statement_expression::exec(scope *scope) {
-        variable result = expr->calc(scope);
-        result.release();
+        try {
+            variable result = expr->calc(scope);
+            result.release();
+        }
+        catch(runtime_exception ex) {
+            ex.add_stack_trace_data(trace_data);
+            throw;
+        }
     }
 }

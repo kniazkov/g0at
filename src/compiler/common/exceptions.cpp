@@ -77,6 +77,7 @@ namespace goat {
         for (i = 0; i < length; i++) {
             stream << '^';
         }
+        stream << std::endl;
         return encode_utf8(stream.str());
     }
 }

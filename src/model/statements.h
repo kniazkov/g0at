@@ -12,6 +12,7 @@
 #include "code.h"
 #include "scope.h"
 #include "expressions.h"
+#include "exceptions.h"
 
 namespace goat {
 
@@ -25,32 +26,6 @@ namespace goat {
          * @param scope The scope in which an action is performed
          */
         virtual void exec(scope *scope) = 0;
-    };
-
-    /**
-     * @brief Data required when tracing the stack (e.g. when an exception occurs)
-     */
-    class stack_trace_data {
-    public:
-        /**
-         * @brief Constructor
-         * @param file_name The name of the file containing statement
-         * @param number The number of the line containing statement
-         */
-        stack_trace_data(const char *file_name, unsigned int line) 
-            : file_name(file_name), line(line) {
-        }
-
-    protected:
-        /**
-         * @brief The name of the file containing statement
-         */
-        const char *file_name;
-
-        /**
-         * @brief The number of the line containing statement
-         */
-        unsigned int line;
     };
 
     /**
@@ -127,7 +102,7 @@ namespace goat {
      * (namely, 1), but in the statement <code>"x = 1;"</code> this value is not used (ignored),
      * although the current scope changes.
      */
-    class statement_expression : public statement, public stack_trace_data {
+    class statement_expression : public statement {
     public:
         /**
          * @brief Constructor
@@ -149,5 +124,10 @@ namespace goat {
          * @brief An expression
          */
         expression *expr;
+
+        /**
+         * @brief Data required when tracing the stack (e.g. when an exception occurs)
+         */
+        stack_trace_data trace_data;
     };
 }
