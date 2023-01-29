@@ -18,6 +18,21 @@
 
 namespace goat {
 
+    const char * parser_data::copy_file_name(const char *name) {
+        auto pair = file_names_map.find(name);
+        if (pair != file_names_map.end()) {
+            size_t len = std::strlen(name);
+            char *copy = new char[len + 1];
+            std::memcpy(copy, name, (len + 1) * sizeof(char));
+            file_names_list->push_back(copy);
+            file_names_map[name] = copy;
+            return copy;
+        }
+        else {
+            return pair->second;
+        }
+    };
+
     /**
      * @brief Element of the chain, which contains both tokens and expressions
      *   that have already been parsed

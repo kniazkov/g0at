@@ -26,6 +26,12 @@ namespace goat {
         }
     }
 
+    program::~program() {
+        for (const char* name : file_names) {
+            delete[] name;
+        }
+    }
+
     statement_expression::statement_expression(expression *expr) {
         this->expr = expr;
         expr->add_reference();

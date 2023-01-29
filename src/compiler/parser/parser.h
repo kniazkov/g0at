@@ -7,7 +7,9 @@
 
 #pragma once
 
+#include <vector>
 #include <unordered_set>
+#include <unordered_map>
 #include "token_iterator.h"
 
 namespace goat {
@@ -22,14 +24,32 @@ namespace goat {
      */
     struct parser_data {
         /**
+         * @brief Data required for the garbage collector (needed to create dynamic objects)
+         */
+        gc_data *gc;
+
+        /**
          * @brief Set of objects that are created during parsing (needed to mark dynamic objects)
          */
         std::unordered_set<object*> *objects;
 
         /**
-         * @brief Data required for the garbage collector (needed to create dynamic objects)
+         * @brief Copies of the names of the source files from which the program is compiled
          */
-        gc_data *gc;
+        std::vector<const char*> *file_names_list;
+
+        /**
+         * @brief Map that keeps a match between the file names retrieved from the scanner
+         *   and the copies of the file names that are stored in the syntax tree after parsing
+         */
+        std::unordered_map<const char*, const char*> file_names_map;
+
+        /**
+         * @brief Copies the file name
+         * @param name The file name
+         * @return A copy of the file name
+         */
+        const char * copy_file_name(const char *name);
     };
 
     /**

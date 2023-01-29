@@ -58,6 +58,11 @@ namespace goat {
     class program : public statement_block {
     public:
         /**
+         * @brief Destructor
+         */
+        ~program();
+
+        /**
          * @brief Returns the pointer to the set of objects so that we can add objects there
          *   while parsing
          * @return Pointer to the set of objects
@@ -67,9 +72,24 @@ namespace goat {
         }
 
         /**
+         * @brief Returns the pointer to the vector that contains copies of the names of
+         *   the source files from which the program is compiled
+         * @return Pointer to the vector containing file names (C-style strings)
+         */
+        inline std::vector<const char*> * get_file_names_list() {
+            return &file_names;
+        }
+
+    private:
+        /**
          * @brief Set of objects that are created during parsing (needed to mark dynamic objects)
          */
         std::unordered_set<object*> objects;
+
+        /**
+         * @brief Copies of the names of the source files from which the program is compiled
+         */
+        std::vector<const char*> file_names;
     };
 
     /**
