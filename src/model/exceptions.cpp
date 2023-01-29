@@ -72,7 +72,7 @@ namespace goat {
         std::stringstream stream;
         stream << encode_utf8(data->obj->to_string(nullptr)) << std::endl;
         for (stack_trace_data &item : data->stack_trace) {
-            stream << "  " << item.file_name << ", " << item.line << std::endl;
+            stream << "  > " << item.file_name << ", " << item.line << std::endl;
         }
         return stream.str();
     }

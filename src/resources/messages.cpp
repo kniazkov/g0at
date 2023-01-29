@@ -21,6 +21,7 @@ namespace goat {
     const std::wstring en_reference_error(L"Reference error");
     const std::wstring en_reference_error_clarified(L"Reference error, '{0}' is not defined");
     const std::wstring en_unable_to_parse_token_sequence(L"Unable to parse the token sequence");
+    const std::wstring en_unhandled_exception(L"Unhandled exception");
     const std::wstring en_unknown_symbol(L"Unknown symbol");
     
     /**
@@ -57,6 +58,9 @@ namespace goat {
         const std::wstring & msg_unable_to_parse_token_sequence() const override {
             return en_unable_to_parse_token_sequence;
         }
+        const std::wstring & msg_unhandled_exception() const override {
+            return en_unhandled_exception;
+        }
         const std::wstring & msg_unknown_symbol() const override {
             return en_unknown_symbol;
         }
@@ -73,6 +77,7 @@ namespace goat {
     const std::wstring ru_reference_error(L"Ошибка при обращении по ссылке");
     const std::wstring ru_reference_error_clarified(L"Ошибка при обращении по ссылке, имя '{0}' не определено");
     const std::wstring ru_unable_to_parse_token_sequence(L"Нераспознаваемая последовательность токенов");
+    const std::wstring ru_unhandled_exception(L"Необработанное исключение");
     const std::wstring ru_unknown_symbol(L"Неизвестный символ");
     
     /**
@@ -108,6 +113,9 @@ namespace goat {
         };
         const std::wstring & msg_unable_to_parse_token_sequence() const override {
             return ru_unable_to_parse_token_sequence;
+        }
+        const std::wstring & msg_unhandled_exception() const override {
+            return ru_unhandled_exception;
         }
         const std::wstring & msg_unknown_symbol() const override {
             return ru_unknown_symbol;

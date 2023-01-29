@@ -26,6 +26,7 @@ namespace goat {
         virtual const std::wstring & msg_reference_error() const = 0;
         virtual const std::wstring & msg_reference_error_clarified() const = 0;
         virtual const std::wstring & msg_unable_to_parse_token_sequence() const = 0;
+        virtual const std::wstring & msg_unhandled_exception() const = 0;
         virtual const std::wstring & msg_unknown_symbol() const = 0;
     };
 

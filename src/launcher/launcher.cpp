@@ -155,7 +155,8 @@ namespace goat {
                     prog->exec(main);
                 }
                 catch (runtime_exception exr) {
-                    std::cerr << exr.get_report();
+                    std::cerr << encode_utf8(get_messages()->msg_unhandled_exception()) << ": "
+                        << exr.get_report();
                 }
                 prog->release();
                 main->release();
