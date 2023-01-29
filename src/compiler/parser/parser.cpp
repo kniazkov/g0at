@@ -20,7 +20,7 @@ namespace goat {
 
     const char * parser_data::copy_file_name(const char *name) {
         auto pair = file_names_map.find(name);
-        if (pair != file_names_map.end()) {
+        if (pair == file_names_map.end()) {
             size_t len = std::strlen(name);
             char *copy = new char[len + 1];
             std::memcpy(copy, name, (len + 1) * sizeof(char));
@@ -136,6 +136,7 @@ namespace goat {
         parser_data data;
         data.gc = gc;
         data.objects = prog->get_object_set();
+        data.file_names_list = prog->get_file_names_list();
         parse_statement_block(&data, iter, prog);
         return prog;
     }
@@ -156,14 +157,16 @@ namespace goat {
         switch(tok->type) {
             case token_type::identifier: {
                 expression *expr = parse_expression(data, iter);
+                statement *result = new statement_expression(
+                    data->copy_file_name(tok->file_name), tok->line, expr
+                );
+                expr->release();
                 if (iter->valid()) {
                     tok = iter->get();
                     if (tok->type == token_type::semicolon) {
                         iter->next();
                     }
                 }
-                statement *result = new statement_expression(expr);
-                expr->release();
                 return result;
             }
         }

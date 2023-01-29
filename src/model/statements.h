@@ -28,6 +28,32 @@ namespace goat {
     };
 
     /**
+     * @brief Data required when tracing the stack (e.g. when an exception occurs)
+     */
+    class stack_trace_data {
+    public:
+        /**
+         * @brief Constructor
+         * @param file_name The name of the file containing statement
+         * @param number The number of the line containing statement
+         */
+        stack_trace_data(const char *file_name, unsigned int line) 
+            : file_name(file_name), line(line) {
+        }
+
+    protected:
+        /**
+         * @brief The name of the file containing statement
+         */
+        const char *file_name;
+
+        /**
+         * @brief The number of the line containing statement
+         */
+        unsigned int line;
+    };
+
+    /**
      * @brief Block statement, that is, one that consists of several statements
      */
     class statement_block : public statement {
@@ -101,13 +127,15 @@ namespace goat {
      * (namely, 1), but in the statement <code>"x = 1;"</code> this value is not used (ignored),
      * although the current scope changes.
      */
-    class statement_expression : public statement {
+    class statement_expression : public statement, public stack_trace_data {
     public:
         /**
          * @brief Constructor
+         * @param file_name The name of the file containing this statement
+         * @param number The number of the line containing this statement
          * @param expr An expression
          */
-        statement_expression(expression *expr);
+        statement_expression(const char *file_name, unsigned int line, expression *expr);
 
         /**
          * @brief Destructor

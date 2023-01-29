@@ -32,7 +32,8 @@ namespace goat {
         }
     }
 
-    statement_expression::statement_expression(expression *expr) {
+    statement_expression::statement_expression(const char *file_name, unsigned int line,
+            expression *expr) : stack_trace_data(file_name, line) {
         this->expr = expr;
         expr->add_reference();
     }
