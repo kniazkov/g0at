@@ -25,7 +25,7 @@ namespace goat {
      * 
      * The empty object (containing nothing) is the default object in the Goat language.
      */
-    object * get_empty_object();
+    object * get_null_object();
 
     /**
      * @brief Primitive data processed by the interpreter
@@ -57,7 +57,7 @@ namespace goat {
          * @brief Constructor
          */
         variable() {
-            obj = get_empty_object();
+            obj = get_null_object();
             data.int_value = 0;
         }
 

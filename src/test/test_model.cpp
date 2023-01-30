@@ -22,7 +22,7 @@
 namespace goat {
 
     bool test_empty_object() {
-        return get_empty_object()->to_string(nullptr) == L"{}";
+        return get_null_object()->to_string(nullptr) == L"null";
     }
 
     bool test_dynamic_string() {
@@ -93,7 +93,7 @@ namespace goat {
         object *str = new dynamic_string(&gc, L"test");
         assert_equals(bool, true, str->is_instance_of(get_root_object()));
         assert_equals(bool, true, str->is_instance_of(get_string_prototype()));
-        assert_equals(bool, false, str->is_instance_of(get_empty_object()));
+        assert_equals(bool, false, str->is_instance_of(get_null_object()));
         str->release();
         object *A = new generic_dynamic_object(&gc, get_root_object());
         object *B = new generic_dynamic_object(&gc, A);
@@ -118,7 +118,7 @@ namespace goat {
         assert_equals(bool, true, E->is_instance_of(C));
         assert_equals(bool, true, E->is_instance_of(D));
         assert_equals(bool, true, E->is_instance_of(E));
-        assert_equals(bool, false, E->is_instance_of(get_empty_object()));
+        assert_equals(bool, false, E->is_instance_of(get_null_object()));
         A->release();
         B->release();
         C->release();

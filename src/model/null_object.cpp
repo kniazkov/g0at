@@ -9,23 +9,25 @@
 
 namespace goat {
     
-    /**
-     * @brief Empty object that contains no other objects
-     */
-    class empty_object : public static_object {
+    const std::wstring null_notation(L"null");
 
+    /**
+     * @brief Null object, meaning "nothing"
+     */
+    class null_object : public static_object {
+    public:
         object_type get_type() const override {
             return object_type::generic;
         }
 
         std::wstring to_string_notation(const variable* var) const override {
-            return L"{}";
+            return null_notation;
         }
     };
 
-    static empty_object instance;
+    static null_object instance;
 
-    object * get_empty_object() {
+    object * get_null_object() {
         return &instance;
     }
 }
