@@ -201,46 +201,67 @@ namespace goat {
             data->copy_file_name(keyword->file_name),
             keyword->line
         );
-        dynamic_string *name = nullptr;
-        if (iter->valid()) {
-            token *tok_name = iter->get();
-            if (tok_name->type == token_type::identifier) {
-                std::wstring str_name(tok_name->code, tok_name->length);
-                name = new dynamic_string(data->gc, str_name);
+        token *separator = keyword;
+        while(true) {
+            dynamic_string *name = nullptr;
+            if (iter->valid()) {
+                token *tok_name = iter->get();
+                if (tok_name->type == token_type::identifier) {
+                    std::wstring str_name(tok_name->code, tok_name->length);
+                    name = new dynamic_string(data->gc, str_name);
+                }
             }
-        }
-        if (!name) {
-            result->release();
-            throw compiler_exception(new compiler_exception_data(
-                keyword, get_messages()->msg_variable_name_is_expected())
-            );
-        }
-        token *tok = iter->next();
-        if (tok->type == token_type::semicolon) {
-            iter->next();
-            result->add_variable(name, nullptr);
-            name->release();
-            return result;
-        }
-        if (tok->type == token_type::assignment) {
-            iter->next();
-            try {
-                expression *init_value = parse_expression(data, iter);
-                result->add_variable(name, init_value);
-                name->release();
-                init_value->release();
-            }
-            catch (compiler_exception ex) {
-                name->release();
+            if (!name) {
                 result->release();
-                throw;
+                throw compiler_exception(new compiler_exception_data(
+                    separator, get_messages()->msg_variable_name_is_expected())
+                );
+            }
+            token *tok = iter->next();
+            if (!iter->valid()) {
+                result->add_variable(name, nullptr);
+                name->release();
+                return result;
+            }
+            if (tok->type == token_type::semicolon) {
+                iter->next();
+                result->add_variable(name, nullptr);
+                name->release();
+                return result;
+            }
+            if (tok->type == token_type::comma) {
+                separator = tok;
+                iter->next();
+                result->add_variable(name, nullptr);
+                name->release();
+            }
+            else if (tok->type == token_type::assignment) {
+                iter->next();
+                try {
+                    expression *init_value = parse_expression(data, iter);
+                    result->add_variable(name, init_value);
+                    name->release();
+                    init_value->release();
+                }
+                catch (compiler_exception ex) {
+                    name->release();
+                    result->release();
+                    throw;
+                }
+                if (!iter->valid()) {
+                    return result;
+                }
+                tok = iter->get();
+                if (tok->type == token_type::semicolon) {
+                    iter->next();
+                    return result;
+                }
+                if (tok->type == token_type::comma) {
+                    separator = tok;
+                    iter->next();
+                }
             }
         }
-        tok = iter->get();
-        if (tok->type == token_type::semicolon) {
-            iter->next();
-        }
-        return result;
     }
 
     /**
