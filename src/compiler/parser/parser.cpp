@@ -342,9 +342,14 @@ namespace goat {
         token *second = nullptr;
         if (iter->valid()) {
             second = iter->get();
-            iter->next();
-            if (second->type == token_type::comma || second->type == token_type::semicolon) {
-                end_of_sequence = true;
+            switch(second->type) {
+                case token_type::comma:
+                case token_type::semicolon:
+                case token_type::operato:
+                    end_of_sequence = true;
+                    break;
+                default:
+                    iter->next();
             }
         } else {
             end_of_sequence = true;
