@@ -23,6 +23,7 @@ namespace goat {
     const std::wstring en_unable_to_parse_token_sequence(L"Unable to parse the token sequence");
     const std::wstring en_unhandled_exception(L"Unhandled exception");
     const std::wstring en_unknown_symbol(L"Unknown symbol");
+    const std::wstring en_variable_name_is_expected(L"Variable name is expected");
     
     /**
      * @brief Messages in English
@@ -64,6 +65,9 @@ namespace goat {
         const std::wstring & msg_unknown_symbol() const override {
             return en_unknown_symbol;
         }
+        const std::wstring & msg_variable_name_is_expected() const override {
+            return en_variable_name_is_expected;
+        }
     } messages_en_instance;
 
 
@@ -79,6 +83,7 @@ namespace goat {
     const std::wstring ru_unable_to_parse_token_sequence(L"Нераспознаваемая последовательность токенов");
     const std::wstring ru_unhandled_exception(L"Необработанное исключение");
     const std::wstring ru_unknown_symbol(L"Неизвестный символ");
+    const std::wstring ru_variable_name_is_expected(L"Ожидается имя переменной");
     
     /**
      * @brief Messages in Russian
@@ -119,6 +124,9 @@ namespace goat {
         }
         const std::wstring & msg_unknown_symbol() const override {
             return ru_unknown_symbol;
+        }
+        const std::wstring & msg_variable_name_is_expected() const override {
+            return ru_variable_name_is_expected;
         }
     } messages_ru_instance;
 

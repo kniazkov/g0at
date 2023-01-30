@@ -84,6 +84,16 @@ namespace goat {
     void parse_statement_block(parser_data *data, token_iterator *iter, statement_block *block);
 
     /**
+     * @brief Tries to parse the list of tokens as a variable(s) declaration
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param keyword Token containing "var" keyword
+     * @return A statement
+     */
+    declare_variable * parse_variable_declaration(parser_data *data, token_iterator *iter,
+        token *keyword);
+            
+    /**
      * @brief Tries to parse the list of tokens as an expression
      * @param data Data needed for parsing
      * @param iter Iterator by token
@@ -175,10 +185,42 @@ namespace goat {
                 }
                 return result;
             }
+            case token_type::keyword_var:
+                iter->next();
+                return parse_variable_declaration(data, iter, tok);
         }
         throw compiler_exception(new compiler_exception_data(
             tok, get_messages()->msg_unable_to_parse_token_sequence())
         );
+    }
+
+    declare_variable * parse_variable_declaration(parser_data *data, token_iterator *iter,
+            token *keyword) {
+        assert(keyword->type == token_type::keyword_var);
+        declare_variable *result = new declare_variable(
+            data->copy_file_name(keyword->file_name),
+            keyword->line
+        );
+        dynamic_string *name = nullptr;
+        if (iter->valid()) {
+            token *tok_name = iter->get();
+            if (tok_name->type == token_type::identifier) {
+                std::wstring str_name(tok_name->code, tok_name->length);
+                name = new dynamic_string(data->gc, str_name);
+            }
+        }
+        if (!name) {
+            result->release();
+            throw compiler_exception(new compiler_exception_data(
+                keyword, get_messages()->msg_variable_name_is_expected())
+            );
+        }
+        result->add_variable(name, nullptr);
+        token *tok = iter->next();
+        if (tok->type == token_type::semicolon) {
+            iter->next();
+        }
+        return result;
     }
 
     /**
@@ -205,7 +247,7 @@ namespace goat {
                 break;
             }
             token_chain_item item;
-            if (tok->type == token_type::oper) {
+            if (tok->type == token_type::operato) {
                 item.type = token_chain_item::is_token;
                 item.ptr.tok = tok;
                 iter->next();

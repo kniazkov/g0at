@@ -4,6 +4,7 @@ addition_of_two_numbers
 string_concatenation
 subtraction_two_integers
 addition_and_multiplication
+declare_variable
 
 # Errors:
 

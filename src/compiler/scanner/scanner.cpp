@@ -6,6 +6,7 @@
 */
 
 #include <sstream>
+#include <cstring>
 #include "scanner.h"
 #include "compiler/common/exceptions.h"
 #include "resources/messages.h"
@@ -83,7 +84,10 @@ namespace goat {
                 t->length++;
                 c = next_char();                
             } while(is_letter(c) || is_digit(c));
-            t->type = token_type::identifier;
+            if (t->length == 3 && 0 == std::memcmp(t->code, L"var", 3 * sizeof(wchar_t)))
+                t->type = token_type::keyword_var;
+            else
+                t->type = token_type::identifier;
             tokens->push_back(t);
             return t;
         }
@@ -122,7 +126,7 @@ namespace goat {
                 t->length++;
                 c = next_char();                
             } while(is_operator(c));
-            t->type = token_type::oper;
+            t->type = token_type::operato;
             tokens->push_back(t);
             return t;
         }
