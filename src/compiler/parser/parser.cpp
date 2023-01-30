@@ -215,8 +215,28 @@ namespace goat {
                 keyword, get_messages()->msg_variable_name_is_expected())
             );
         }
-        result->add_variable(name, nullptr);
         token *tok = iter->next();
+        if (tok->type == token_type::semicolon) {
+            iter->next();
+            result->add_variable(name, nullptr);
+            name->release();
+            return result;
+        }
+        if (tok->type == token_type::assignment) {
+            iter->next();
+            try {
+                expression *init_value = parse_expression(data, iter);
+                result->add_variable(name, init_value);
+                name->release();
+                init_value->release();
+            }
+            catch (compiler_exception ex) {
+                name->release();
+                result->release();
+                throw;
+            }
+        }
+        tok = iter->get();
         if (tok->type == token_type::semicolon) {
             iter->next();
         }
