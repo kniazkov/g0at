@@ -26,6 +26,7 @@ namespace goat {
         closing_bracket,
         comma,
         semicolon,
+        dollar_sign,
         operato,
         assignment,
         keyword_var,

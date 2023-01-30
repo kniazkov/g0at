@@ -92,7 +92,18 @@ namespace goat {
      */
     declare_variable * parse_variable_declaration(parser_data *data, token_iterator *iter,
         token *keyword);
-            
+
+    /**
+     * @brief Tries to parse the list of tokens, started from the dollar sign, 
+     *   as a variable declaration
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param keyword Token containing dollar sign
+     * @return A statement
+     */
+    declare_variable * parse_variable_dollar_declaration(parser_data *data, token_iterator *iter,
+            token *dollar);
+
     /**
      * @brief Tries to parse the list of tokens as an expression
      * @param data Data needed for parsing
@@ -188,6 +199,9 @@ namespace goat {
             case token_type::keyword_var:
                 iter->next();
                 return parse_variable_declaration(data, iter, tok);
+            case token_type::dollar_sign:
+                iter->next();
+                return parse_variable_dollar_declaration(data, iter, tok);
         }
         throw compiler_exception(new compiler_exception_data(
             tok, get_messages()->msg_unable_to_parse_token_sequence())
@@ -262,6 +276,67 @@ namespace goat {
                 }
             }
         }
+    }
+
+    declare_variable * parse_variable_dollar_declaration(parser_data *data, token_iterator *iter,
+            token *dollar) {
+        assert(dollar->type == token_type::dollar_sign);
+        declare_variable *result = new declare_variable(
+            data->copy_file_name(dollar->file_name),
+            dollar->line
+        );
+        dynamic_string *name = nullptr;
+        if (iter->valid()) {
+            token *tok_name = iter->get();
+            if (tok_name->type == token_type::identifier) {
+                std::wstring str_name(tok_name->code, tok_name->length);
+                name = new dynamic_string(data->gc, str_name);
+            }
+        }
+        if (!name) {
+            result->release();
+            throw compiler_exception(new compiler_exception_data(
+                dollar, get_messages()->msg_variable_name_is_expected())
+            );
+        }
+        token *tok = iter->next();
+        if (!iter->valid()) {
+            result->add_variable(name, nullptr);
+            name->release();
+            return result;
+        }
+        if (tok->type == token_type::semicolon) {
+            iter->next();
+            result->add_variable(name, nullptr);
+            name->release();
+            return result;
+        }
+        if (tok->type == token_type::assignment) {
+            iter->next();
+            try {
+                expression *init_value = parse_expression(data, iter);
+                result->add_variable(name, init_value);
+                name->release();
+                init_value->release();
+            }
+            catch (compiler_exception ex) {
+                name->release();
+                result->release();
+                throw;
+            }
+            if (!iter->valid()) {
+                return result;
+            }
+            tok = iter->get();
+            if (tok->type == token_type::semicolon) {
+                iter->next();
+                return result;
+            }
+        }
+        result->release();
+        throw compiler_exception(new compiler_exception_data(
+            tok, get_messages()->msg_unable_to_parse_token_sequence())
+        );
     }
 
     /**
