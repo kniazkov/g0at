@@ -16,6 +16,8 @@
 
 namespace goat {
 
+    class base_string;
+
     /**
      * @brief A statement is a syntactic unit that expresses some action to be carried out
      */
@@ -124,6 +126,60 @@ namespace goat {
          * @brief An expression
          */
         expression *expr;
+
+        /**
+         * @brief Data required when tracing the stack (e.g. when an exception occurs)
+         */
+        stack_trace_data trace_data;
+    };
+
+    /**
+     * @brief Statement describing the declaration of variables
+     */
+    class declare_variable : public statement {
+    public:
+        /**
+         * @brief Constructor
+         * @param file_name The name of the file containing this statement
+         * @param number The number of the line containing this statement
+         */
+        declare_variable(const char *file_name, unsigned int line) : trace_data(file_name, line) {
+        }
+
+        /**
+         * @brief Destructor
+         */
+        ~declare_variable();
+
+        /**
+         * @brief Adds a variable to the list
+         * @param name Variable name
+         * @param init_value Initial value of the variable (can be <code>nullptr</code>)
+         */
+        void add_variable(base_string *name, expression *init_value);
+
+        void exec(scope *scope) override;
+
+    private:
+        /**
+         * @brief Descriptor of one variable
+         */
+        struct descriptor {
+            /**
+             * @brief Variable name
+             */
+            base_string *name;
+
+            /**
+             * @brief Initial value of the variable
+             */
+            expression *init_value;
+        };
+
+        /**
+         * @brief List containing variable descriptors
+         */
+        std::vector<descriptor> list;
 
         /**
          * @brief Data required when tracing the stack (e.g. when an exception occurs)

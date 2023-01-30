@@ -52,4 +52,41 @@ namespace goat {
             throw;
         }
     }
+
+    declare_variable::~declare_variable() {
+        for (descriptor &descr : list) {
+            descr.name->release();
+            if (descr.init_value) {
+                descr.init_value->release();
+            }
+        }
+    }
+
+    void declare_variable::add_variable(base_string *name, expression *init_value) {
+        descriptor descr = {name, init_value};
+        list.push_back(descr);
+        name->add_reference();
+        if (init_value) {
+            init_value->add_reference();
+        }
+    }
+
+    void declare_variable::exec(scope *scope) {
+        try {
+            for (descriptor &descr : list) {
+                if (descr.init_value) {
+                    variable value = descr.init_value->calc(scope);
+                    scope->set_attribute(descr.name, value);
+                    value.release();
+                }
+                else {
+                    scope->set_attribute(descr.name, get_null_object());
+                }
+            }
+        }
+        catch(runtime_exception ex) {
+            ex.add_stack_trace_data(trace_data);
+            throw;
+        }
+    }
 }
