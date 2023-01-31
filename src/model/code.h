@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <sstream>
 #include "object.h"
 
 namespace goat {
@@ -68,6 +69,23 @@ namespace goat {
         void set_attribute(object *key, variable &value) override;
         object_type get_type() const override;
         std::wstring to_string_notation(const variable* var) const override;
+
+        /**
+         * @brief Generates a graph (syntax tree) description in DOT format
+         * @return Graph description in DOT format
+         * 
+         * This allows the syntax tree to be visualized by different utilities (e.g. Graphviz).
+         */
+        std::string generate_graph_description();
+
+    protected:
+        /**
+         * @brief Generates a desription in DOT format for this element
+         * @param stream The stream in which to write the result
+         * @param counter The node counter
+         * @return The node index
+         */
+        unsigned int generate_node_description(std::stringstream &stream, unsigned int *counter);
 
     private:
         /**

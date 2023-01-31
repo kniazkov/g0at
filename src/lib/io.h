@@ -17,8 +17,15 @@ namespace goat {
 
     /**
      * @brief Loads file and returns its contents as a string
-     * @param file_name  The name of the file
+     * @param file_name   The file name
      * @param success Optional, flag is set to <code>true</code> if the operation was successful
      */
     std::string load_file_to_string(const char *file_name, bool *success);
+
+    /**
+     * @brief Writes a string to a file
+     * @param file_name  The file name
+     * @param data Content to be written
+     */
+    void write_string_to_file(const char *file_name, std::string data);
 }

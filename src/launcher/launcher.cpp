@@ -10,6 +10,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include "lib/utf8_encoder.h"
 #include "lib/io.h"
 #include "resources/messages.h"
@@ -49,12 +50,18 @@ namespace goat {
         const char *language;
 
         /**
+         * @brief Save the abstract syntax tree in DOT format
+         */
+        bool dump_ast;
+
+        /**
          * @brief Constructor
          */
         command_line_interface() {
             source_file_name = nullptr;
             show_version = false;
             language = nullptr;
+            dump_ast = false;
         }
     };
 
@@ -86,6 +93,9 @@ namespace goat {
                     }
                     else if (0 == std::strncmp(arg, "lang=", 5)) {
                         cli->language = arg + 5;
+                    }
+                    else if (0 == std::strcmp(arg, "dump-ast")) {
+                        cli->dump_ast = true;
                     }
                 }
                 else {
@@ -149,6 +159,11 @@ namespace goat {
             }
             all_tokens.clear();
             if (prog) {
+                if (cli.dump_ast) {
+                    std::stringstream name;
+                    name << cli.source_file_name << ".graph";
+                    write_string_to_file(name.str().c_str(), prog->generate_graph_description());                   
+                }
                 console con;
                 scope *main = create_main_scope(&gc, &con);
                 try {

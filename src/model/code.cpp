@@ -6,6 +6,7 @@
 */
 
 #include "code.h"
+#include "exceptions.h"
 
 namespace goat {
 
@@ -61,8 +62,34 @@ namespace goat {
     }
     
     void element::set_attribute(object *key, variable &value) {
-        /**
-         * @todo: Exception
-         */
+        throw runtime_exception(get_operation_not_supported_exception());
+    }
+
+    std::string element::generate_graph_description() {
+        std::stringstream stream;
+        stream << "digraph program {" << std::endl;
+        unsigned int counter = 0;
+        generate_node_description(stream, &counter);
+        stream << "}" << std::endl;
+        return stream.str();
+    }
+
+    unsigned int element::generate_node_description(std::stringstream &stream,
+            unsigned int *counter) {
+        unsigned int index = ++(*counter);
+        stream << "  node_" << index << " [label=\"" << get_class_name() << "\"];" << std::endl;
+        auto children = get_children();
+        for (unsigned int k = 0; k < children.size(); k++) {
+            auto child = children[k];
+            unsigned int child_index = child.obj->generate_node_description(stream, counter);
+            stream << "  node_" << index << " -> node_" << child_index << " [label=\"  ";
+            if (child.name) {
+                stream << child.name;
+            } else {
+                stream << k;
+            }
+            stream << "\"];" << std::endl;
+        }
+        return index;
     }
 }

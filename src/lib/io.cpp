@@ -12,6 +12,9 @@
 
 namespace goat {
 
+    /**
+     * @return System path separator
+     */
     inline char path_separator() {
     #ifdef _WIN32
         return '\\';
@@ -33,14 +36,24 @@ namespace goat {
         }
     }
 
-    std::string load_file_to_string(const char *file_name, bool *success) {
+    /**
+     * @brief Normalizes file name, sets path delimiters to match system path delimiters
+     * @param file_name The file name
+     * @return Normalized file name (must be freed)
+     */
+    static char * normalize_file_name(const char *file_name) {
         size_t len = std::strlen(file_name);
-        char *tmp = new char[len + 1];
+        char *result = new char[len + 1];
         for (size_t i = 0; i < len; i++) {
             char c = file_name[i];
-            tmp[i] = (c == '\\' || c == '/' ? path_separator() : c);
+            result[i] = (c == '\\' || c == '/' ? path_separator() : c);
         }
-        tmp[len] = 0;
+        result[len] = 0;
+        return result;
+    }
+
+    std::string load_file_to_string(const char *file_name, bool *success) {
+        char *tmp = normalize_file_name(file_name);
         std::ifstream stream(tmp);
         std::string buff = "";
         if (stream.fail()) {
@@ -60,5 +73,13 @@ namespace goat {
         }
         delete[] tmp;
         return buff;
+    }
+
+    void write_string_to_file(const char *file_name, std::string data) {
+        char *tmp = normalize_file_name(file_name);
+        std::ofstream stream(tmp);
+        stream << data;
+        stream.close();
+        delete[] tmp;
     }
 }
