@@ -46,6 +46,7 @@ namespace goat {
          */
         void add_statement(statement *stmt);
 
+        std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
 
     private:
@@ -119,6 +120,7 @@ namespace goat {
          */
         ~statement_expression();
 
+        std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
 
     private:
@@ -158,6 +160,7 @@ namespace goat {
          */
         void add_variable(base_string *name, expression *init_value);
 
+        std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
 
     private:

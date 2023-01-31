@@ -20,6 +20,14 @@ namespace goat {
         stmt->add_reference();
     }
 
+    std::vector<child_descriptor> statement_block::get_children() const {
+        std::vector<child_descriptor> result;
+        for (statement *stmt : list) {
+            result.push_back({ nullptr, stmt });
+        }
+        return result;
+    }
+    
     void statement_block::exec(scope *scope) {
         for (statement *stmt : list) {
             stmt->exec(scope);
@@ -40,6 +48,13 @@ namespace goat {
 
     statement_expression::~statement_expression() {
         expr->release();
+    }
+
+    std::vector<child_descriptor> statement_expression::get_children() const {
+        std::vector<child_descriptor> list = {
+            { "expression", expr }
+        };
+        return list;
     }
 
     void statement_expression::exec(scope *scope) {
@@ -69,6 +84,10 @@ namespace goat {
         if (init_value) {
             init_value->add_reference();
         }
+    }
+
+    std::vector<child_descriptor> declare_variable::get_children() const {
+        return {};
     }
 
     void declare_variable::exec(scope *scope) {

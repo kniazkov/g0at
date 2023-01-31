@@ -11,6 +11,25 @@
 
 namespace goat {
 
+    class element;
+
+    /**
+     * @brief Descriptor of child elements of objects
+     * 
+     * An element may contain other (child) elements. A set of such elements is a syntax tree.
+     */
+    struct child_descriptor {
+        /**
+         * @brief The name of the child
+         */
+        const char *name;
+
+        /**
+         * @brief The child element
+         */
+        element *obj;
+    };
+
     /**
      * @brief A code element representing a syntactic construct
      * 
@@ -28,6 +47,12 @@ namespace goat {
          * @brief Destructor
          */
         ~element();
+
+        /**
+         * @brief Forms a list of children to traverse the syntax tree
+         * @return A list of children
+         */
+        virtual std::vector<child_descriptor> get_children() const = 0;
         
         void add_reference() override;
         void release() override;

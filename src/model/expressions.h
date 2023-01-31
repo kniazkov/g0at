@@ -58,6 +58,7 @@ namespace goat {
          */
         ~expression_object();
 
+        std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
 
     private:
@@ -78,6 +79,7 @@ namespace goat {
          */
         constant_integer_number(int64_t value);
 
+        std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
 
     private:
@@ -98,6 +100,7 @@ namespace goat {
          */
         constant_real_number(double value);
 
+        std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
 
     private:
@@ -123,6 +126,7 @@ namespace goat {
          */
         ~expression_variable();
 
+        std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
         void assign(scope *scope, variable value) override;
 
@@ -149,6 +153,7 @@ namespace goat {
          */
         ~function_call();
 
+        std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
 
     private:
@@ -180,6 +185,7 @@ namespace goat {
          */
         ~binary_operation();
 
+        std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
 
     protected:
@@ -217,6 +223,12 @@ namespace goat {
         addition(expression *left, expression *right) : binary_operation(left, right) {
         }
 
+    /**
+     * @brief Functor that creates this object
+     * @param left Left operand
+     * @param right Right operand
+     * @return Binary operation object
+     */
     static binary_operation * creator(expression *left, expression *right) {
         return new addition(left, right);
     }
@@ -238,6 +250,12 @@ namespace goat {
         subtraction(expression *left, expression *right) : binary_operation(left, right) {
         }
 
+    /**
+     * @brief Functor that creates this object
+     * @param left Left operand
+     * @param right Right operand
+     * @return Binary operation object
+     */
     static binary_operation * creator(expression *left, expression *right) {
         return new subtraction(left, right);
     }
@@ -259,6 +277,12 @@ namespace goat {
         multiplication(expression *left, expression *right) : binary_operation(left, right) {
         }
 
+    /**
+     * @brief Functor that creates this object
+     * @param left Left operand
+     * @param right Right operand
+     * @return Binary operation object
+     */
     static binary_operation * creator(expression *left, expression *right) {
         return new multiplication(left, right);
     }

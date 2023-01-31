@@ -21,6 +21,10 @@ namespace goat {
         obj->release();
     }
 
+    std::vector<child_descriptor> expression_object::get_children() const {
+        return {};
+    }
+
     variable expression_object::calc(scope *scope) {
         obj->add_reference();
         variable var;
@@ -33,6 +37,10 @@ namespace goat {
     constant_integer_number::constant_integer_number(int64_t value) : value(value) {
     }
 
+    std::vector<child_descriptor> constant_integer_number::get_children() const {
+        return {};
+    }
+
     variable constant_integer_number::calc(scope *scope) {
         variable var;
         var.set_integer_value(value);
@@ -42,6 +50,10 @@ namespace goat {
     /* ----------------------------------------------------------------------------------------- */
 
     constant_real_number::constant_real_number(double value) : value(value) {
+    }
+
+    std::vector<child_descriptor> constant_real_number::get_children() const {
+        return {};
     }
 
     variable constant_real_number::calc(scope *scope) {
@@ -61,9 +73,10 @@ namespace goat {
         name->release();
     }
 
-    /**
-     * @todo Exception if variable not found
-     */
+    std::vector<child_descriptor> expression_variable::get_children() const {
+        return {};
+    }
+
     variable expression_variable::calc(scope *scope) {
         variable *var = scope->get_attribute(name);
         if (!var) {
@@ -99,6 +112,14 @@ namespace goat {
         }
     }
 
+    std::vector<child_descriptor> function_call::get_children() const {
+        std::vector<child_descriptor> list;
+        for (expression *arg : args) {
+            list.push_back({ nullptr, arg });
+        }
+        return list;
+    }
+
     /**
      * @todo Exception if function not found
      */
@@ -131,6 +152,14 @@ namespace goat {
     binary_operation::~binary_operation() {
         left->release();
         right->release();
+    }
+
+    std::vector<child_descriptor> binary_operation::get_children() const {
+        std::vector<child_descriptor> list = {
+            { "left", left },
+            { "right", right }
+        };
+        return list;
     }
 
     variable binary_operation::calc(scope *scope) {
