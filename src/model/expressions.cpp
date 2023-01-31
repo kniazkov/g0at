@@ -12,6 +12,16 @@
 
 namespace goat {
 
+    const char * expression::get_node_color() const {
+        return "darkgreen";
+    }
+
+    const char * assignable_expression::get_node_color() const {
+        return "olive";
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
     object_as_expression::object_as_expression(object *obj) {
         this->obj = obj;
         obj->add_reference();

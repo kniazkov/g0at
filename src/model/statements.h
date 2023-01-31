@@ -28,6 +28,8 @@ namespace goat {
          * @param scope The scope in which an action is performed
          */
         virtual void exec(scope *scope) = 0;
+        
+        const char * get_node_color() const override;
     };
 
     /**

@@ -9,6 +9,12 @@
 
 namespace goat {
 
+    const char * statement::get_node_color() const {
+        return "blue";
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
     statement_block::~statement_block() {
         for (statement *stmt : list) {
             stmt->release();

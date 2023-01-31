@@ -25,6 +25,8 @@ namespace goat {
          * @return Calculated expression
          */
         virtual variable calc(scope *scope) = 0;
+
+        const char * get_node_color() const override;
     };
 
     /**
@@ -38,6 +40,8 @@ namespace goat {
          * @param value New value
          */
         virtual void assign(scope *scope, variable value) = 0;
+        
+        const char * get_node_color() const override;
     };
 
     /**

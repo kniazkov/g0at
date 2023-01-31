@@ -65,6 +65,10 @@ namespace goat {
         throw runtime_exception(get_operation_not_supported_exception());
     }
 
+    const char * element::get_node_color() const {
+        return "black";
+    }
+
     std::string element::generate_graph_description() {
         std::stringstream stream;
         stream << "digraph program {" << std::endl;
@@ -77,7 +81,8 @@ namespace goat {
     unsigned int element::generate_node_description(std::stringstream &stream,
             unsigned int *counter) {
         unsigned int index = ++(*counter);
-        stream << "  node_" << index << " [label=\"" << get_class_name() << "\"];" << std::endl;
+        stream << "  node_" << index << " [label=\"" << get_class_name() << "\" color=\""
+            << get_node_color() << "\"];" << std::endl;
         auto children = get_children();
         for (unsigned int k = 0; k < children.size(); k++) {
             auto child = children[k];

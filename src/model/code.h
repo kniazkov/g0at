@@ -49,6 +49,14 @@ namespace goat {
          */
         ~element();
 
+        void add_reference() override;
+        void release() override;
+        bool is_static() const override;
+        gc_data * get_garbage_collector_data() const override;
+        void set_attribute(object *key, variable &value) override;
+        object_type get_type() const override;
+        std::wstring to_string_notation(const variable* var) const override;
+
         /**
          * @brief Returns the name of the element type.
          *   Using this name, the element can be constructed with the factory
@@ -61,15 +69,13 @@ namespace goat {
          * @return A list of children
          */
         virtual std::vector<child_descriptor> get_children() const = 0;
-        
-        void add_reference() override;
-        void release() override;
-        bool is_static() const override;
-        gc_data * get_garbage_collector_data() const override;
-        void set_attribute(object *key, variable &value) override;
-        object_type get_type() const override;
-        std::wstring to_string_notation(const variable* var) const override;
 
+        /**
+         * @brief Returns the color of the node when rendering the syntax tree
+         * @return The node color (bleck by default)
+         */
+        virtual const char * get_node_color() const;
+        
         /**
          * @brief Generates a graph (syntax tree) description in DOT format
          * @return Graph description in DOT format
