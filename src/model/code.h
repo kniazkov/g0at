@@ -49,6 +49,13 @@ namespace goat {
         ~element();
 
         /**
+         * @brief Returns the name of the element type.
+         *   Using this name, the element can be constructed with the factory
+         * @return The name of the type of the element
+         */
+        virtual const char * get_class_name() const = 0;
+
+        /**
          * @brief Forms a list of children to traverse the syntax tree
          * @return A list of children
          */

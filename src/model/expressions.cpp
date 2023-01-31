@@ -12,20 +12,24 @@
 
 namespace goat {
 
-    expression_object::expression_object(object *obj) {
+    object_as_expression::object_as_expression(object *obj) {
         this->obj = obj;
         obj->add_reference();
     }
 
-    expression_object::~expression_object() {
+    object_as_expression::~object_as_expression() {
         obj->release();
     }
 
-    std::vector<child_descriptor> expression_object::get_children() const {
+    const char * object_as_expression::get_class_name() const {
+        return "object as expression";
+    }
+
+    std::vector<child_descriptor> object_as_expression::get_children() const {
         return {};
     }
 
-    variable expression_object::calc(scope *scope) {
+    variable object_as_expression::calc(scope *scope) {
         obj->add_reference();
         variable var;
         var.obj = obj;
@@ -35,6 +39,10 @@ namespace goat {
     /* ----------------------------------------------------------------------------------------- */
 
     constant_integer_number::constant_integer_number(int64_t value) : value(value) {
+    }
+
+    const char * constant_integer_number::get_class_name() const {
+        return "integer";
     }
 
     std::vector<child_descriptor> constant_integer_number::get_children() const {
@@ -50,6 +58,10 @@ namespace goat {
     /* ----------------------------------------------------------------------------------------- */
 
     constant_real_number::constant_real_number(double value) : value(value) {
+    }
+
+    const char * constant_real_number::get_class_name() const {
+        return "real";
     }
 
     std::vector<child_descriptor> constant_real_number::get_children() const {
@@ -71,6 +83,10 @@ namespace goat {
 
     expression_variable::~expression_variable() {
         name->release();
+    }
+
+    const char * expression_variable::get_class_name() const {
+        return "variable";
     }
 
     std::vector<child_descriptor> expression_variable::get_children() const {
@@ -110,6 +126,10 @@ namespace goat {
         for (auto arg : args) {
             arg->release();
         }
+    }
+
+    const char * function_call::get_class_name() const {
+        return "function call";
     }
 
     std::vector<child_descriptor> function_call::get_children() const {
@@ -171,12 +191,24 @@ namespace goat {
         return result;
     }
 
+    const char * addition::get_class_name() const {
+        return "addition";
+    }
+
     variable addition::calc(scope *scope, variable *left, variable *right) {
         return left->obj->do_addition(scope->get_garbage_collector_data(), left, right);
     }
 
+    const char * subtraction::get_class_name() const {
+        return "subtraction";
+    }
+
     variable subtraction::calc(scope *scope, variable *left, variable *right) {
         return left->obj->do_subtraction(scope->get_garbage_collector_data(), left, right);
+    }
+
+    const char * multiplication::get_class_name() const {
+        return "multiplication";
     }
 
     variable multiplication::calc(scope *scope, variable *left, variable *right) {

@@ -46,6 +46,7 @@ namespace goat {
          */
         void add_statement(statement *stmt);
 
+        const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
 
@@ -84,6 +85,8 @@ namespace goat {
             return &file_names;
         }
 
+        const char * get_class_name() const override;
+        
     private:
         /**
          * @brief Set of objects that are created during parsing (needed to mark dynamic objects)
@@ -120,6 +123,7 @@ namespace goat {
          */
         ~statement_expression();
 
+        const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
 
@@ -160,6 +164,7 @@ namespace goat {
          */
         void add_variable(base_string *name, expression *init_value);
 
+        const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
 

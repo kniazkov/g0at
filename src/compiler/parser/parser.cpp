@@ -395,7 +395,7 @@ namespace goat {
             token_string *str = (token_string*)first;
             dynamic_string *obj = new dynamic_string(data->gc, str->data);
             data->objects->insert(obj);
-            expression *result = new expression_object(obj);
+            expression *result = new object_as_expression(obj);
             obj->release();
             return result;
         }

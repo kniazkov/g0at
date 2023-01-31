@@ -45,19 +45,20 @@ namespace goat {
      * 
      * In this way we can wrap any object, including strings, into an expression.
      */
-    class expression_object : public expression {
+    class object_as_expression : public expression {
     public:
         /**
          * @brief Constructor
          * @param value The value
          */
-        expression_object(object *obj);
+        object_as_expression(object *obj);
 
         /**
          * @brief Destructor
          */
-        ~expression_object();
+        ~object_as_expression();
 
+        const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
 
@@ -79,6 +80,7 @@ namespace goat {
          */
         constant_integer_number(int64_t value);
 
+        const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
 
@@ -100,6 +102,7 @@ namespace goat {
          */
         constant_real_number(double value);
 
+        const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
 
@@ -126,6 +129,7 @@ namespace goat {
          */
         ~expression_variable();
 
+        const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
         void assign(scope *scope, variable value) override;
@@ -153,6 +157,7 @@ namespace goat {
          */
         ~function_call();
 
+        const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
 
@@ -223,15 +228,17 @@ namespace goat {
         addition(expression *left, expression *right) : binary_operation(left, right) {
         }
 
-    /**
-     * @brief Functor that creates this object
-     * @param left Left operand
-     * @param right Right operand
-     * @return Binary operation object
-     */
-    static binary_operation * creator(expression *left, expression *right) {
-        return new addition(left, right);
-    }
+        /**
+         * @brief Functor that creates this object
+         * @param left Left operand
+         * @param right Right operand
+         * @return Binary operation object
+         */
+        static binary_operation * creator(expression *left, expression *right) {
+            return new addition(left, right);
+        }
+
+        const char * get_class_name() const override;
 
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;
@@ -250,15 +257,17 @@ namespace goat {
         subtraction(expression *left, expression *right) : binary_operation(left, right) {
         }
 
-    /**
-     * @brief Functor that creates this object
-     * @param left Left operand
-     * @param right Right operand
-     * @return Binary operation object
-     */
-    static binary_operation * creator(expression *left, expression *right) {
-        return new subtraction(left, right);
-    }
+        /**
+         * @brief Functor that creates this object
+         * @param left Left operand
+         * @param right Right operand
+         * @return Binary operation object
+         */
+        static binary_operation * creator(expression *left, expression *right) {
+            return new subtraction(left, right);
+        }
+
+        const char * get_class_name() const override;
 
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;
@@ -277,15 +286,17 @@ namespace goat {
         multiplication(expression *left, expression *right) : binary_operation(left, right) {
         }
 
-    /**
-     * @brief Functor that creates this object
-     * @param left Left operand
-     * @param right Right operand
-     * @return Binary operation object
-     */
-    static binary_operation * creator(expression *left, expression *right) {
-        return new multiplication(left, right);
-    }
+        /**
+         * @brief Functor that creates this object
+         * @param left Left operand
+         * @param right Right operand
+         * @return Binary operation object
+         */
+        static binary_operation * creator(expression *left, expression *right) {
+            return new multiplication(left, right);
+        }
+
+    const char * get_class_name() const override;
 
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;

@@ -407,13 +407,13 @@ namespace goat {
         dbg_printer printer;
         scope *main = create_main_scope(&gc, &printer);
         dynamic_string *str = new dynamic_string(&gc, L"it");
-        expression_object *left = new expression_object(str);
+        object_as_expression *left = new object_as_expression(str);
         str->release();
         str = new dynamic_string(&gc, L" ");
-        expression_object *center = new expression_object(str);
+        object_as_expression *center = new object_as_expression(str);
         str->release();
         str = new dynamic_string(&gc, L"works.");
-        expression_object *right = new expression_object(str);
+        object_as_expression *right = new object_as_expression(str);
         str->release();
         expression *nested = new addition(left, center);
         left->release();
@@ -460,7 +460,7 @@ namespace goat {
         dbg_printer printer;
         scope *main = create_main_scope(&gc, &printer);
         object *obj = create_real_number(&gc, 2);
-        expression *left = new expression_object(obj);
+        expression *left = new object_as_expression(obj);
         obj->release();
         expression *right = new constant_real_number(3);
         expression *expr = new addition(left, right);
@@ -479,7 +479,7 @@ namespace goat {
         dbg_printer printer;
         scope *main = create_main_scope(&gc, &printer);
         object *obj = create_real_number(&gc, 2);
-        expression *left = new expression_object(obj);
+        expression *left = new object_as_expression(obj);
         obj->release();
         static_string key(L"sqrt");
         base_string *name = &key;

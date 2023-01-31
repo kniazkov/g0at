@@ -20,6 +20,10 @@ namespace goat {
         stmt->add_reference();
     }
 
+    const char * statement_block::get_class_name() const {
+        return "block statement";
+    }
+
     std::vector<child_descriptor> statement_block::get_children() const {
         std::vector<child_descriptor> result;
         for (statement *stmt : list) {
@@ -34,11 +38,19 @@ namespace goat {
         }
     }
 
+    /* ----------------------------------------------------------------------------------------- */
+
     program::~program() {
         for (const char* name : file_names) {
             delete[] name;
         }
     }
+
+    const char * program::get_class_name() const {
+        return "program";
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
 
     statement_expression::statement_expression(const char *file_name, unsigned int line,
             expression *expr) : trace_data(file_name, line) {
@@ -48,6 +60,10 @@ namespace goat {
 
     statement_expression::~statement_expression() {
         expr->release();
+    }
+
+    const char * statement_expression::get_class_name() const {
+        return "statement expression";
     }
 
     std::vector<child_descriptor> statement_expression::get_children() const {
@@ -68,6 +84,8 @@ namespace goat {
         }
     }
 
+    /* ----------------------------------------------------------------------------------------- */
+
     declare_variable::~declare_variable() {
         for (descriptor &descr : list) {
             descr.name->release();
@@ -84,6 +102,11 @@ namespace goat {
         if (init_value) {
             init_value->add_reference();
         }
+    }
+
+
+    const char * declare_variable::get_class_name() const {
+        return "variable declaration";
     }
 
     std::vector<child_descriptor> declare_variable::get_children() const {
