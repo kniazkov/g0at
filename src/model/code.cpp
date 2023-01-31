@@ -7,6 +7,7 @@
 
 #include "code.h"
 #include "exceptions.h"
+#include "lib/utf8_encoder.h"
 
 namespace goat {
 
@@ -84,8 +85,12 @@ namespace goat {
     unsigned int element::generate_node_description(std::stringstream &stream,
             unsigned int *counter) {
         unsigned int index = ++(*counter);
-        stream << "  node_" << index << " [label=\"" << get_class_name() << "\" color=\""
-            << get_node_color() << "\"];" << std::endl;
+        stream << "  node_" << index << " [label=<<b>" << get_class_name() << "</b>";
+        for (auto item : get_data()) {
+            stream << "<br/>&nbsp;&nbsp;&nbsp;" << item.name << ": <font color=\"navy\">"
+                << encode_utf8(item.value.to_string_notation()) << "</font>";
+        }
+        stream << "> color=\"" << get_node_color() << "\"];" << std::endl;
         auto children = get_children();
         for (unsigned int k = 0; k < children.size(); k++) {
             auto child = children[k];

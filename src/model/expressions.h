@@ -40,7 +40,7 @@ namespace goat {
          * @param value New value
          */
         virtual void assign(scope *scope, variable value) = 0;
-        
+
         const char * get_node_color() const override;
     };
 
@@ -64,6 +64,7 @@ namespace goat {
 
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
         variable calc(scope *scope) override;
 
     private:
@@ -86,6 +87,7 @@ namespace goat {
 
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
         variable calc(scope *scope) override;
 
     private:
@@ -108,6 +110,7 @@ namespace goat {
 
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
         variable calc(scope *scope) override;
 
     private:
@@ -135,6 +138,7 @@ namespace goat {
 
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
         variable calc(scope *scope) override;
         void assign(scope *scope, variable value) override;
 
@@ -163,6 +167,7 @@ namespace goat {
 
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
         variable calc(scope *scope) override;
 
     private:
@@ -195,6 +200,7 @@ namespace goat {
         ~binary_operation();
 
         std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
         variable calc(scope *scope) override;
 
     protected:

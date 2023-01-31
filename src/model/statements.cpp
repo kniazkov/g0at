@@ -13,6 +13,10 @@ namespace goat {
         return "blue";
     }
 
+    std::vector<element_data_descriptor> statement::get_data() const {
+        return {};
+    }
+
     /* ----------------------------------------------------------------------------------------- */
 
     statement_block::~statement_block() {
