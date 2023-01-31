@@ -71,7 +71,10 @@ namespace goat {
 
     std::string element::generate_graph_description() {
         std::stringstream stream;
-        stream << "digraph program {" << std::endl;
+        stream << "digraph program {" << std::endl
+            << "  node [fontname=\"sans-serif\", fontsize=12 shape=box style=rounded penwidth=0.9]" 
+            << std::endl << "  edge [fontname=\"sans-serif\", fontsize=12 penwidth=0.7]" 
+            << std::endl << std::endl;
         unsigned int counter = 0;
         generate_node_description(stream, &counter);
         stream << "}" << std::endl;
