@@ -158,6 +158,8 @@ namespace goat {
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         std::vector<element_data_descriptor> get_data() const override;
+        void generate_additional_edges(std::stringstream &stream, unsigned int index,
+            std::unordered_map<element*, unsigned int> &all_indexes) override;
         variable calc(scope *scope) override;
         void assign(scope *scope, variable value) override;
 

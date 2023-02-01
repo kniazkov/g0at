@@ -165,8 +165,9 @@ namespace goat {
     }
 
     unsigned int variable_declaration::generate_node_description(std::stringstream &stream,
-            unsigned int *counter) {
+            unsigned int *counter, std::unordered_map<element*, unsigned int> &all_indexes) {
         unsigned int stmt_index = ++(*counter);
+        all_indexes[this] = stmt_index;
         stream << "  node_" << stmt_index << " [label=<<b>" << get_class_name() << "</b>" 
             << "> color=\"" << get_node_color() << "\"];" << std::endl;
         for (unsigned int k = 0; k < list.size(); k++) {
@@ -179,7 +180,7 @@ namespace goat {
                 << "\"];" << std::endl;
             if (item.init_value) {
                 unsigned int init_expr_index =
-                    item.init_value->generate_node_description(stream, counter);
+                    item.init_value->generate_node_description(stream, counter, all_indexes);
                 stream << "  node_" << var_index << " -> node_" << init_expr_index << std::endl;
             }            
         }

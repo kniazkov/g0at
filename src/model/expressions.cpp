@@ -9,6 +9,7 @@
 #include "expressions.h"
 #include "functions.h"
 #include "exceptions.h"
+#include "statements.h"
 
 namespace goat {
 
@@ -138,6 +139,17 @@ namespace goat {
         var.obj = name;
         list.push_back({ "name", var });
         return list;
+    }
+
+    void expression_variable::generate_additional_edges(std::stringstream &stream,
+            unsigned int index, std::unordered_map<element*, unsigned int> &all_indexes) {
+        if (declaration) {
+            auto pair = all_indexes.find(declaration);
+            if (pair != all_indexes.end()) {
+                stream << "  node_" << index << " -> node_" << pair->second << "  [style=dashed];"
+                    << std::endl;
+            }
+        }
     }
 
     variable expression_variable::calc(scope *scope) {

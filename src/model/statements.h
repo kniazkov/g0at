@@ -179,9 +179,8 @@ namespace goat {
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
-
-        unsigned int generate_node_description(std::stringstream &stream,
-            unsigned int *counter) override;
+        unsigned int generate_node_description(std::stringstream &stream, unsigned int *counter,
+            std::unordered_map<element*, unsigned int> &all_indexes) override;
 
     private:
         /**

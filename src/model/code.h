@@ -8,6 +8,7 @@
 #pragma once
 
 #include <sstream>
+#include <unordered_map>
 #include "object.h"
 
 namespace goat {
@@ -141,10 +142,21 @@ namespace goat {
          * @brief Generates a desription in DOT format for this element
          * @param stream The stream in which to write the result
          * @param counter The node counter
+         * @param all_indexes Correspondence between node indexes and elements
          * @return The node index
          */
         virtual unsigned int generate_node_description(std::stringstream &stream,
-            unsigned int *counter);
+            unsigned int *counter, std::unordered_map<element*, unsigned int> &all_indexes);
+
+        /**
+         * @brief Generates additional edges on the rendered graph for better visualisation
+         *   of links between nodes
+         * @param stream The stream in which to write the result
+         * @param index The current element index
+         * @param all_indexes Correspondence between node indexes and elements
+         */
+        virtual void generate_additional_edges(std::stringstream &stream,
+            unsigned int index, std::unordered_map<element*, unsigned int> &all_indexes);
 
     private:
         /**

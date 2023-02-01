@@ -91,14 +91,16 @@ namespace goat {
             << std::endl << "  edge [fontname=\"sans-serif\", fontsize=12 penwidth=0.7]" 
             << std::endl << std::endl;
         unsigned int counter = 0;
-        generate_node_description(stream, &counter);
+        std::unordered_map<element*, unsigned int> all_indexes;
+        generate_node_description(stream, &counter, all_indexes);
         stream << "}" << std::endl;
         return stream.str();
     }
 
     unsigned int element::generate_node_description(std::stringstream &stream,
-            unsigned int *counter) {
+            unsigned int *counter, std::unordered_map<element*, unsigned int> &all_indexes) {
         unsigned int index = ++(*counter);
+        all_indexes[this] = index;
         stream << "  node_" << index << " [label=<<b>" << get_class_name() << "</b>";
         for (auto item : get_data()) {
             stream << "<br/>" << item.name << ": <font color=\"mediumblue\">"
@@ -108,7 +110,8 @@ namespace goat {
         auto children = get_children();
         for (unsigned int k = 0; k < children.size(); k++) {
             auto child = children[k];
-            unsigned int child_index = child.obj->generate_node_description(stream, counter);
+            unsigned int child_index = 
+                child.obj->generate_node_description(stream, counter, all_indexes);
             stream << "  node_" << index << " -> node_" << child_index << " [label=\"  ";
             if (child.name) {
                 stream << child.name;
@@ -117,6 +120,12 @@ namespace goat {
             }
             stream << "\"];" << std::endl;
         }
+        generate_additional_edges(stream, index, all_indexes);
         return index;
+    }
+
+    void element::generate_additional_edges(std::stringstream &stream,
+            unsigned int index, std::unordered_map<element*, unsigned int> &all_indexes) {
+        // do nothing by default
     }
 }
