@@ -127,8 +127,7 @@ namespace goat {
                 t->length++;
                 c = next_char();                
             } while(is_operator(c));
-            t->type = (t->length == 1 && t->code[0] == L'=') ? token_type::assignment 
-                : token_type::operato;
+            t->type = token_type::operato;
             tokens->push_back(t);
             return t;
         }

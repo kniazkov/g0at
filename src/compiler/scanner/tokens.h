@@ -28,7 +28,6 @@ namespace goat {
         semicolon,
         dollar_sign,
         operato,
-        assignment,
         keyword_var,
         end,
         brackets_pair

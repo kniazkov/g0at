@@ -56,14 +56,11 @@ namespace goat {
     };
 
     /**
-     * @brief A functor that creates a binary operation from two operands
-     */
-    typedef binary_operation * (*binary_operation_creator)(expression *left, expression *right);
-    
-    /**
      * @brief Descriptor of a binary operation
+     * @tparam T Operation type
+     * @tparam L Left operand type
      */
-    struct binary_operation_description {
+    template <typename T, typename L> struct binary_operation_descriptor {
         /**
          * @brief Symbols denoting this operation
          */
@@ -72,7 +69,7 @@ namespace goat {
         /**
          * @brief Functor that creates a binary operation from two operands
          */
-        binary_operation_creator creator;
+        T * (*creator)(L *left, expression *right);
     };
 
     /**
@@ -143,12 +140,15 @@ namespace goat {
      * @brief Parses a chain of operators and expressions, 
      *   and when specified operators are found, combines two expressions and one operator
      *   into a binary operation
+     * @tparam T Operation type
+     * @tparam L Left operand type
      * @param chain Chain of operators and expressions
      * @param count Number of operator descriptors
      * @param descr Array of operator descriptors
      */
+    template <typename T, typename L>
     void parse_binary_operators(std::list<token_chain_item> *chain, int count,
-        const binary_operation_description *descr);
+        const binary_operation_descriptor<T, L> *descr);
 
     /* ----------------------------------------------------------------------------------------- */
 
@@ -249,7 +249,7 @@ namespace goat {
                 result->add_variable(name, nullptr);
                 name->release();
             }
-            else if (tok->type == token_type::assignment) {
+            else if (tok->type == token_type::operato && tok->length == 1 && tok->code[0] == '=') {
                 iter->next();
                 try {
                     expression *init_value = parse_expression(data, iter);
@@ -311,7 +311,7 @@ namespace goat {
             name->release();
             return result;
         }
-        if (tok->type == token_type::assignment) {
+        if (tok->type == token_type::operato && tok->length == 1 && tok->code[0] == '=') {
             iter->next();
             try {
                 expression *init_value = parse_expression(data, iter);
@@ -342,14 +342,14 @@ namespace goat {
     /**
      * @brief Descriptors for operators *, /, %
      */
-    const binary_operation_description mul_div_mod[] = {
+    const binary_operation_descriptor<binary_operation, expression> mul_div_mod[] = {
         { L"*", multiplication::creator }
     };
 
     /**
      * @brief Descriptors for operators +, -
      */
-    const binary_operation_description plus_minus[] = {
+    const binary_operation_descriptor<binary_operation, expression> plus_minus[] = {
         { L"+", addition::creator },
         { L"-", subtraction::creator },
     };
@@ -480,8 +480,9 @@ namespace goat {
         }
     }
 
+    template <typename T, typename L>
     void parse_binary_operators(std::list<token_chain_item> *chain, int count,
-            const binary_operation_description *descr) {
+            const binary_operation_descriptor<T, L> *descr) {
         std::list<token_chain_item>::iterator iter = chain->begin();
         iter++;
         while(iter != chain->end()) {
