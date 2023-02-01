@@ -13,6 +13,8 @@
 namespace goat {
 
     class element;
+    class expression_variable;
+    class declare_variable;
 
     /**
      * @brief Descriptor of child elements
@@ -47,6 +49,30 @@ namespace goat {
     };
 
     /**
+     * @brief A visitor whose methods are called when traversing the syntax tree
+     */
+    class element_visitor {
+    public:
+        /**
+         * @brief Virtual destructor
+         */
+        virtual ~element_visitor() {
+        }
+
+        /**
+         * @brief Visits an element that is an expression that represents accessing to a variable
+         * @param expr Element
+         */
+        virtual void visit(expression_variable *expr);
+
+        /**
+         * @brief Visits an element that is a statement describing the declaration of variables
+         * @param stmt Element
+         */
+        virtual void visit(declare_variable *stmt);
+    };
+
+    /**
      * @brief A code element representing a syntactic construct
      * 
      * These are not static objects, however, they controlled by the simplified
@@ -73,6 +99,12 @@ namespace goat {
         std::wstring to_string_notation(const variable* var) const override;
 
         /**
+         * @brief Traverses the syntax tree and calls the visitor's methods
+         * @param visitor A visitor whose methods are called when traversing the syntax tree
+         */
+        virtual void traverse_syntax_tree(element_visitor *visitor);
+
+        /**
          * @brief Returns the name of the element type.
          *   Using this name, the element can be constructed with the factory
          * @return The name of the type of the element
@@ -80,13 +112,13 @@ namespace goat {
         virtual const char * get_class_name() const = 0;
 
         /**
-         * @brief Forms a list of children to traverse the syntax tree
+         * @brief Forms a list of children elements
          * @return A list of children
          */
         virtual std::vector<child_descriptor> get_children() const = 0;
 
         /**
-         * @brief Forms a list of children to traverse the syntax tree
+         * @brief Forms a list containing descriptors of element data
          * @return A list containing descriptors of additional data
          */
         virtual std::vector<element_data_descriptor> get_data() const = 0;

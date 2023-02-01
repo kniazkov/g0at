@@ -31,6 +31,12 @@ namespace goat {
         stmt->add_reference();
     }
 
+    void statement_block::traverse_syntax_tree(element_visitor *visitor) {
+        for (statement *stmt : list) {
+            stmt->traverse_syntax_tree(visitor);
+        }
+    }
+
     const char * statement_block::get_class_name() const {
         return "block statement";
     }
@@ -71,6 +77,10 @@ namespace goat {
 
     statement_expression::~statement_expression() {
         expr->release();
+    }
+
+    void statement_expression::traverse_syntax_tree(element_visitor *visitor) {
+        expr->traverse_syntax_tree(visitor);
     }
 
     const char * statement_expression::get_class_name() const {
@@ -115,6 +125,9 @@ namespace goat {
         }
     }
 
+    void declare_variable::traverse_syntax_tree(element_visitor *visitor) {
+        visitor->visit(this);
+    }
 
     const char * declare_variable::get_class_name() const {
         return "variable declaration";

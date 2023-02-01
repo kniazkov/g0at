@@ -136,6 +136,7 @@ namespace goat {
          */
         ~expression_variable();
 
+        void traverse_syntax_tree(element_visitor *visitor) override;
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         std::vector<element_data_descriptor> get_data() const override;
@@ -165,6 +166,7 @@ namespace goat {
          */
         ~function_call();
 
+        void traverse_syntax_tree(element_visitor *visitor) override;
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         std::vector<element_data_descriptor> get_data() const override;
@@ -199,6 +201,7 @@ namespace goat {
          */
         ~binary_operation();
 
+        void traverse_syntax_tree(element_visitor *visitor) override;
         std::vector<child_descriptor> get_children() const override;
         std::vector<element_data_descriptor> get_data() const override;
         variable calc(scope *scope) override;

@@ -119,6 +119,10 @@ namespace goat {
         name->release();
     }
 
+    void expression_variable::traverse_syntax_tree(element_visitor *visitor) {
+        visitor->visit(this);
+    }
+
     const char * expression_variable::get_class_name() const {
         return "variable";
     }
@@ -167,6 +171,12 @@ namespace goat {
         name->release();
         for (auto arg : args) {
             arg->release();
+        }
+    }
+
+    void function_call::traverse_syntax_tree(element_visitor *visitor) {
+        for (auto arg : args) {
+            arg->traverse_syntax_tree(visitor);
         }
     }
 
@@ -222,6 +232,11 @@ namespace goat {
     binary_operation::~binary_operation() {
         left->release();
         right->release();
+    }
+
+    void binary_operation::traverse_syntax_tree(element_visitor *visitor) {
+        left->traverse_syntax_tree(visitor);
+        right->traverse_syntax_tree(visitor);
     }
 
     std::vector<child_descriptor> binary_operation::get_children() const {

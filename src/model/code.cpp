@@ -25,6 +25,16 @@ namespace goat {
         elements_counter = 0;
     }
 
+    /* ----------------------------------------------------------------------------------------- */
+
+    void element_visitor::visit(expression_variable *expr) {
+    }
+
+    void element_visitor::visit(declare_variable *stmt) {
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
     element::element() : refs(1) {
         elements_counter++;
     }
@@ -64,6 +74,10 @@ namespace goat {
     
     void element::set_attribute(object *key, variable &value) {
         throw runtime_exception(get_operation_not_supported_exception());
+    }
+
+    void element::traverse_syntax_tree(element_visitor *visitor) {
+        // Do nothing by default
     }
 
     const char * element::get_node_color() const {

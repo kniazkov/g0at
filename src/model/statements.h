@@ -49,6 +49,7 @@ namespace goat {
          */
         void add_statement(statement *stmt);
 
+        void traverse_syntax_tree(element_visitor *visitor) override;
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
@@ -126,6 +127,7 @@ namespace goat {
          */
         ~statement_expression();
 
+        void traverse_syntax_tree(element_visitor *visitor) override;
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
@@ -167,6 +169,7 @@ namespace goat {
          */
         void add_variable(base_string *name, expression *init_value);
 
+        void traverse_syntax_tree(element_visitor *visitor) override;
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
