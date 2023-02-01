@@ -18,6 +18,7 @@
 #include "compiler/scanner/brackets_processor.h"
 #include "compiler/parser/parser.h"
 #include "compiler/common/exceptions.h"
+#include "compiler/analyzer/analyzer.h"
 #include "model/built_in_functions.h"
 #include "model/scope.h"
 #include "model/statements.h"
@@ -159,6 +160,7 @@ namespace goat {
             }
             all_tokens.clear();
             if (prog) {
+                perform_a_program_analysis(prog);
                 if (cli.dump_ast) {
                     std::stringstream name;
                     name << cli.source_file_name << ".graph";

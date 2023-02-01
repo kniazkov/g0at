@@ -112,6 +112,7 @@ namespace goat {
 
     expression_variable::expression_variable(base_string *name) {
         this->name = name;
+        this->declaration = nullptr;
         name->add_reference();
     }
 

@@ -30,7 +30,7 @@ namespace goat {
     void element_visitor::visit(expression_variable *expr) {
     }
 
-    void element_visitor::visit(declare_variable *stmt) {
+    void element_visitor::visit(variable_declaration *stmt) {
     }
 
     /* ----------------------------------------------------------------------------------------- */

@@ -147,20 +147,20 @@ namespace goat {
     /**
      * @brief Statement describing the declaration of variables
      */
-    class declare_variable : public statement {
+    class variable_declaration : public statement {
     public:
         /**
          * @brief Constructor
          * @param file_name The name of the file containing this statement
          * @param number The number of the line containing this statement
          */
-        declare_variable(const char *file_name, unsigned int line) : trace_data(file_name, line) {
+        variable_declaration(const char *file_name, unsigned int line) : trace_data(file_name, line) {
         }
 
         /**
          * @brief Destructor
          */
-        ~declare_variable();
+        ~variable_declaration();
 
         /**
          * @brief Adds a variable to the list
@@ -168,6 +168,12 @@ namespace goat {
          * @param init_value Initial value of the variable (can be <code>nullptr</code>)
          */
         void add_variable(base_string *name, expression *init_value);
+
+        /**
+         * @brief Returns the list of declared variable names
+         * @return List of variable names
+         */
+        std::vector<std::wstring> get_list_of_variable_names() const;
 
         void traverse_syntax_tree(element_visitor *visitor) override;
         const char * get_class_name() const override;

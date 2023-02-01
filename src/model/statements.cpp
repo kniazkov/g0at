@@ -107,7 +107,7 @@ namespace goat {
 
     /* ----------------------------------------------------------------------------------------- */
 
-    declare_variable::~declare_variable() {
+    variable_declaration::~variable_declaration() {
         for (descriptor &descr : list) {
             descr.name->release();
             if (descr.init_value) {
@@ -116,7 +116,7 @@ namespace goat {
         }
     }
 
-    void declare_variable::add_variable(base_string *name, expression *init_value) {
+    void variable_declaration::add_variable(base_string *name, expression *init_value) {
         descriptor descr = {name, init_value};
         list.push_back(descr);
         name->add_reference();
@@ -125,19 +125,27 @@ namespace goat {
         }
     }
 
-    void declare_variable::traverse_syntax_tree(element_visitor *visitor) {
+    std::vector<std::wstring> variable_declaration::get_list_of_variable_names() const {
+        std::vector<std::wstring> result;
+        for (auto item : list) {
+            result.push_back(item.name->to_string(nullptr));
+        }
+        return result;
+    }
+
+    void variable_declaration::traverse_syntax_tree(element_visitor *visitor) {
         visitor->visit(this);
     }
 
-    const char * declare_variable::get_class_name() const {
+    const char * variable_declaration::get_class_name() const {
         return "variable declaration";
     }
 
-    std::vector<child_descriptor> declare_variable::get_children() const {
+    std::vector<child_descriptor> variable_declaration::get_children() const {
         return {};
     }
 
-    void declare_variable::exec(scope *scope) {
+    void variable_declaration::exec(scope *scope) {
         try {
             for (descriptor &descr : list) {
                 if (descr.init_value) {
@@ -156,7 +164,7 @@ namespace goat {
         }
     }
 
-    unsigned int declare_variable::generate_node_description(std::stringstream &stream,
+    unsigned int variable_declaration::generate_node_description(std::stringstream &stream,
             unsigned int *counter) {
         unsigned int stmt_index = ++(*counter);
         stream << "  node_" << stmt_index << " [label=<<b>" << get_class_name() << "</b>" 

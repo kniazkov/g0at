@@ -90,7 +90,7 @@ namespace goat {
      * @param keyword Token containing "var" keyword
      * @return A statement
      */
-    declare_variable * parse_variable_declaration(parser_data *data, token_iterator *iter,
+    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter,
         token *keyword);
 
     /**
@@ -101,7 +101,7 @@ namespace goat {
      * @param keyword Token containing dollar sign
      * @return A statement
      */
-    declare_variable * parse_variable_dollar_declaration(parser_data *data, token_iterator *iter,
+    variable_declaration * parse_variable_dollar_declaration(parser_data *data, token_iterator *iter,
             token *dollar);
 
     /**
@@ -208,10 +208,10 @@ namespace goat {
         );
     }
 
-    declare_variable * parse_variable_declaration(parser_data *data, token_iterator *iter,
+    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter,
             token *keyword) {
         assert(keyword->type == token_type::keyword_var);
-        declare_variable *result = new declare_variable(
+        variable_declaration *result = new variable_declaration(
             data->copy_file_name(keyword->file_name),
             keyword->line
         );
@@ -278,10 +278,10 @@ namespace goat {
         }
     }
 
-    declare_variable * parse_variable_dollar_declaration(parser_data *data, token_iterator *iter,
+    variable_declaration * parse_variable_dollar_declaration(parser_data *data, token_iterator *iter,
             token *dollar) {
         assert(dollar->type == token_type::dollar_sign);
-        declare_variable *result = new declare_variable(
+        variable_declaration *result = new variable_declaration(
             data->copy_file_name(dollar->file_name),
             dollar->line
         );

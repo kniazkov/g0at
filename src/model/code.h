@@ -14,7 +14,7 @@ namespace goat {
 
     class element;
     class expression_variable;
-    class declare_variable;
+    class variable_declaration;
 
     /**
      * @brief Descriptor of child elements
@@ -69,7 +69,7 @@ namespace goat {
          * @brief Visits an element that is a statement describing the declaration of variables
          * @param stmt Element
          */
-        virtual void visit(declare_variable *stmt);
+        virtual void visit(variable_declaration *stmt);
     };
 
     /**

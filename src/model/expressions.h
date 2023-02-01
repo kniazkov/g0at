@@ -14,6 +14,8 @@
 
 namespace goat {
 
+    class variable_declaration;
+
     /**
      * @brief An expression is a syntactic construction that returns (calculates) some value
      */
@@ -136,6 +138,22 @@ namespace goat {
          */
         ~expression_variable();
 
+        /**
+         * @brief Returns the name of the variable
+         * @return Variable name
+         */
+        std::wstring get_variable_name() const {
+            return name->to_string(nullptr);
+        }
+
+        /**
+         * @brief Sets the pointer to statement in which the variable has been declared
+         * @param stmt The statement
+         */
+        void set_declaration_statement(variable_declaration *stmt) {
+            declaration = stmt;
+        }
+
         void traverse_syntax_tree(element_visitor *visitor) override;
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
@@ -148,6 +166,11 @@ namespace goat {
          * @brief The variable name
          */
         base_string *name;
+
+        /**
+         * @brief Statement in which the variable has been declared
+         */
+        variable_declaration *declaration;
     };
 
     /**
