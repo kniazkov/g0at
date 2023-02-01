@@ -146,7 +146,8 @@ namespace goat {
         if (declaration) {
             auto pair = all_indexes.find(declaration);
             if (pair != all_indexes.end()) {
-                stream << "  node_" << index << " -> node_" << pair->second << "  [style=dashed];"
+                stream << "  node_" << pair->second << " -> node_" << index 
+                    << "  [style=dashed dir=back color=midnightblue];"
                     << std::endl;
             }
         }

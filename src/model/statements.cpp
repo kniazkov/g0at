@@ -135,6 +135,11 @@ namespace goat {
 
     void variable_declaration::traverse_syntax_tree(element_visitor *visitor) {
         visitor->visit(this);
+        for (auto item : list) {
+            if (item.init_value) {
+                item.init_value -> traverse_syntax_tree(visitor);
+            }
+        }
     }
 
     const char * variable_declaration::get_class_name() const {

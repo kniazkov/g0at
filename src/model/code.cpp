@@ -106,7 +106,7 @@ namespace goat {
             stream << "<br/>" << item.name << ": <font color=\"mediumblue\">"
                 << encode_utf8(item.value.to_string_notation()) << "</font>";
         }
-        stream << "> color=\"" << get_node_color() << "\"];" << std::endl;
+        stream << "> color=" << get_node_color() << "];" << std::endl;
         auto children = get_children();
         for (unsigned int k = 0; k < children.size(); k++) {
             auto child = children[k];
