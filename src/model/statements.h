@@ -171,6 +171,9 @@ namespace goat {
         std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
 
+        unsigned int generate_node_description(std::stringstream &stream,
+            unsigned int *counter) override;
+
     private:
         /**
          * @brief Descriptor of one variable

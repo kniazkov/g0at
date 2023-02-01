@@ -73,7 +73,7 @@ namespace goat {
     std::string element::generate_graph_description() {
         std::stringstream stream;
         stream << "digraph program {" << std::endl
-            << "  node [fontname=\"sans-serif\", fontsize=12 shape=box style=rounded penwidth=0.9]" 
+            << "  node [fontname=\"sans-serif\", fontsize=12 shape=box style=rounded penwidth=0.9 nojustify=true]" 
             << std::endl << "  edge [fontname=\"sans-serif\", fontsize=12 penwidth=0.7]" 
             << std::endl << std::endl;
         unsigned int counter = 0;
@@ -87,7 +87,7 @@ namespace goat {
         unsigned int index = ++(*counter);
         stream << "  node_" << index << " [label=<<b>" << get_class_name() << "</b>";
         for (auto item : get_data()) {
-            stream << "<br/>&nbsp;&nbsp;&nbsp;" << item.name << ": <font color=\"navy\">"
+            stream << "<br/>" << item.name << ": <font color=\"mediumblue\">"
                 << encode_utf8(item.value.to_string_notation()) << "</font>";
         }
         stream << "> color=\"" << get_node_color() << "\"];" << std::endl;

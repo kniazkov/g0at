@@ -6,6 +6,7 @@
 */
 
 #include "statements.h"
+#include "lib/utf8_encoder.h"
 
 namespace goat {
 
@@ -140,5 +141,27 @@ namespace goat {
             ex.add_stack_trace_data(trace_data);
             throw;
         }
+    }
+
+    unsigned int declare_variable::generate_node_description(std::stringstream &stream,
+            unsigned int *counter) {
+        unsigned int stmt_index = ++(*counter);
+        stream << "  node_" << stmt_index << " [label=<<b>" << get_class_name() << "</b>" 
+            << "> color=\"" << get_node_color() << "\"];" << std::endl;
+        for (unsigned int k = 0; k < list.size(); k++) {
+            descriptor &item = list[k];
+            unsigned int var_index = ++(*counter);
+            stream << "  node_" << var_index << " [shape=octagon style=\"\" label=<<b>" 
+                << encode_utf8(item.name->to_string(nullptr)) << "</b>" << "> color=\"black\"];"
+                << std::endl;
+            stream << "  node_" << stmt_index << " -> node_" << var_index << " [label=\"  " << k
+                << "\"];" << std::endl;
+            if (item.init_value) {
+                unsigned int init_expr_index =
+                    item.init_value->generate_node_description(stream, counter);
+                stream << "  node_" << var_index << " -> node_" << init_expr_index << std::endl;
+            }            
+        }
+        return stmt_index;
     }
 }
