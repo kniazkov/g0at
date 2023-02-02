@@ -21,6 +21,7 @@ namespace goat {
         virtual const std::wstring & msg_file_not_found() const = 0;
         virtual const std::wstring & msg_illegal_argument() const = 0;
         virtual const std::wstring & msg_interpreter_description() const = 0;
+        virtual const std::wstring & msg_multiple_declarations_are_not_allowed() const = 0;
         virtual const std::wstring & msg_not_closed_bracket() const = 0;
         virtual const std::wstring & msg_operation_not_supported() const = 0;
         virtual const std::wstring & msg_reference_error() const = 0;

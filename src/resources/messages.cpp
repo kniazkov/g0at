@@ -16,6 +16,7 @@ namespace goat {
     const std::wstring en_file_not_found(L"File not found");
     const std::wstring en_illegal_argument(L"Illegal argument");
     const std::wstring en_interpreter_description(L"The Goat programming language interpreter, v. 0");
+    const std::wstring en_multiple_declarations_are_not_allowed(L"Multiple declarations are not allowed");
     const std::wstring en_not_closed_bracket(L"The bracket '{0}' was not closed");
     const std::wstring en_operation_not_supported(L"Operation not supported");
     const std::wstring en_reference_error(L"Reference error");
@@ -44,6 +45,9 @@ namespace goat {
         const std::wstring & msg_interpreter_description() const override {
             return en_interpreter_description;
         }
+        const std::wstring & msg_multiple_declarations_are_not_allowed() const override {
+            return en_multiple_declarations_are_not_allowed;
+        };
         const std::wstring & msg_not_closed_bracket() const override {
             return en_not_closed_bracket;
         };
@@ -76,6 +80,7 @@ namespace goat {
     const std::wstring ru_file_not_found(L"Файл не найден");
     const std::wstring ru_illegal_argument(L"Недопустимый аргумент");
     const std::wstring ru_interpreter_description(L"Интерпретатор языка программирования Goat, v. 0");
+    const std::wstring ru_multiple_declarations_are_not_allowed(L"Множественные определения не допускаются");
     const std::wstring ru_not_closed_bracket(L"Открывающая скобка '{0}' не имеет парной закрывающей скобки");
     const std::wstring ru_operation_not_supported(L"Операция не поддерживается");
     const std::wstring ru_reference_error(L"Ошибка при обращении по ссылке");
@@ -104,6 +109,9 @@ namespace goat {
         const std::wstring & msg_interpreter_description() const override {
             return ru_interpreter_description;
         }
+        const std::wstring & msg_multiple_declarations_are_not_allowed() const override {
+            return ru_multiple_declarations_are_not_allowed;
+        };
         const std::wstring & msg_not_closed_bracket() const override {
             return ru_not_closed_bracket;
         };

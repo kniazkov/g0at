@@ -98,8 +98,19 @@ namespace goat {
      * @param keyword Token containing dollar sign
      * @return A statement
      */
-    variable_declaration * parse_variable_dollar_declaration(parser_data *data, token_iterator *iter,
-            token *dollar);
+    variable_declaration * parse_variable_dollar_declaration(parser_data *data,
+        token_iterator *iter, token *dollar);
+
+    /**
+     * @brief Tries to parse the list of tokens as a variable(s) declaration
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param first_token First token, containing "var" keyword or dollar sign
+     * @param multiple Multiple declarations are allowed
+     * @return A statement
+     */
+    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter,
+            token *first_token, bool multiple);
 
     /**
      * @brief Tries to parse the list of tokens as an expression
@@ -142,13 +153,16 @@ namespace goat {
      *   into a binary operation
      * @tparam T Operation type
      * @tparam L Left operand type
+     * @tparam I Type of iterator by items
      * @param chain Chain of operators and expressions
+     * @param iter Iterator that points to the beginning of the chain 
+     * @param end Iterator that points to the end of the chain 
      * @param count Number of operator descriptors
      * @param descr Array of operator descriptors
      */
-    template <typename T, typename L>
-    void parse_binary_operators(std::list<token_chain_item> *chain, int count,
-        const binary_operation_descriptor<T, L> *descr);
+    template <typename T, typename L, typename I>
+    void parse_binary_operators(std::list<token_chain_item> *chain, I iter, I end, int count,
+            const binary_operation_descriptor<T, L> *descr);
 
     /* ----------------------------------------------------------------------------------------- */
 
@@ -210,12 +224,23 @@ namespace goat {
 
     variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter,
             token *keyword) {
-        assert(keyword->type == token_type::keyword_var);
+        assert(keyword->type == token_type::keyword_var);\
+        return parse_variable_declaration(data, iter, keyword, true);
+   }
+
+    variable_declaration * parse_variable_dollar_declaration(parser_data *data,
+        token_iterator *iter, token *dollar) {
+        assert(dollar->type == token_type::dollar_sign);
+        return parse_variable_declaration(data, iter, dollar, false);
+    }
+
+    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter,
+            token *first_token, bool multiple) {
         variable_declaration *result = new variable_declaration(
-            data->copy_file_name(keyword->file_name),
-            keyword->line
+            data->copy_file_name(first_token->file_name),
+            first_token->line
         );
-        token *separator = keyword;
+        token *separator = first_token;
         while(true) {
             dynamic_string *name = nullptr;
             if (iter->valid()) {
@@ -244,10 +269,19 @@ namespace goat {
                 return result;
             }
             if (tok->type == token_type::comma) {
-                separator = tok;
-                iter->next();
-                result->add_variable(name, nullptr);
-                name->release();
+                if (multiple) {
+                    separator = tok;
+                    iter->next();
+                    result->add_variable(name, nullptr);
+                    name->release();
+                }
+                else {
+                    name->release();
+                    result->release();
+                    throw compiler_exception(new compiler_exception_data(
+                        tok, get_messages()->msg_multiple_declarations_are_not_allowed())
+                    );
+                }
             }
             else if (tok->type == token_type::operato && tok->length == 1 && tok->code[0] == '=') {
                 iter->next();
@@ -271,72 +305,19 @@ namespace goat {
                     return result;
                 }
                 if (tok->type == token_type::comma) {
-                    separator = tok;
-                    iter->next();
+                    if (multiple) {
+                        separator = tok;
+                        iter->next();
+                    }
+                    else {
+                        result->release();
+                        throw compiler_exception(new compiler_exception_data(
+                            tok, get_messages()->msg_multiple_declarations_are_not_allowed())
+                        );
+                    }
                 }
-            }
-        }
-    }
-
-    variable_declaration * parse_variable_dollar_declaration(parser_data *data, token_iterator *iter,
-            token *dollar) {
-        assert(dollar->type == token_type::dollar_sign);
-        variable_declaration *result = new variable_declaration(
-            data->copy_file_name(dollar->file_name),
-            dollar->line
-        );
-        dynamic_string *name = nullptr;
-        if (iter->valid()) {
-            token *tok_name = iter->get();
-            if (tok_name->type == token_type::identifier) {
-                std::wstring str_name(tok_name->code, tok_name->length);
-                name = new dynamic_string(data->gc, str_name);
-            }
-        }
-        if (!name) {
-            result->release();
-            throw compiler_exception(new compiler_exception_data(
-                dollar, get_messages()->msg_variable_name_is_expected())
-            );
-        }
-        token *tok = iter->next();
-        if (!iter->valid()) {
-            result->add_variable(name, nullptr);
-            name->release();
-            return result;
-        }
-        if (tok->type == token_type::semicolon) {
-            iter->next();
-            result->add_variable(name, nullptr);
-            name->release();
-            return result;
-        }
-        if (tok->type == token_type::operato && tok->length == 1 && tok->code[0] == '=') {
-            iter->next();
-            try {
-                expression *init_value = parse_expression(data, iter);
-                result->add_variable(name, init_value);
-                name->release();
-                init_value->release();
-            }
-            catch (compiler_exception ex) {
-                name->release();
-                result->release();
-                throw;
-            }
-            if (!iter->valid()) {
-                return result;
-            }
-            tok = iter->get();
-            if (tok->type == token_type::semicolon) {
-                iter->next();
-                return result;
-            }
-        }
-        result->release();
-        throw compiler_exception(new compiler_exception_data(
-            tok, get_messages()->msg_unable_to_parse_token_sequence())
-        );
+            } // declaration with initial value
+        } // while(true)
     }
 
     /**
@@ -374,10 +355,12 @@ namespace goat {
             chain.push_back(item);
         }
 
-        if (chain.size() > 1) {
-            parse_binary_operators(&chain, 1, mul_div_mod);            
-            parse_binary_operators(&chain, 2, plus_minus);            
-        }
+        do {
+            if (chain.size() == 1) break;
+            parse_binary_operators(&chain, chain.begin(), chain.end(), 1, mul_div_mod);            
+            if (chain.size() == 1) break;
+            parse_binary_operators(&chain, chain.begin(), chain.end(), 2, plus_minus);            
+        } while(false);
 
         assert(chain.size() == 1 && chain.begin()->type == token_chain_item::is_expression);
         return chain.begin()->ptr.expr;
@@ -480,16 +463,15 @@ namespace goat {
         }
     }
 
-    template <typename T, typename L>
-    void parse_binary_operators(std::list<token_chain_item> *chain, int count,
+    template <typename T, typename L, typename I>
+    void parse_binary_operators(std::list<token_chain_item> *chain, I iter, I end, int count,
             const binary_operation_descriptor<T, L> *descr) {
-        std::list<token_chain_item>::iterator iter = chain->begin();
         iter++;
-        while(iter != chain->end()) {
+        while(iter != end) {
             bool found = false;
-            std::list<token_chain_item>::iterator left =  std::prev(iter);
-            std::list<token_chain_item>::iterator right =  std::next(iter);
-            if (iter->type == token_chain_item::is_token && right != chain->end() &&
+            I left =  std::prev(iter);
+            I right =  std::next(iter);
+            if (iter->type == token_chain_item::is_token && right != end &&
                     left->type == token_chain_item::is_expression &&
                     right->type == token_chain_item::is_expression) {
                 int index = 0;
@@ -502,7 +484,7 @@ namespace goat {
                 }
                 if (found) {
                     token_chain_item item;
-                    std::list<token_chain_item>::iterator next =  std::next(right);
+                    I next =  std::next(right);
                     item.type = token_chain_item::is_expression;
                     item.ptr.expr = descr[index].creator(left->ptr.expr, right->ptr.expr);
                     chain->insert(left, item);
