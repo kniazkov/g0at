@@ -9,6 +9,8 @@
 
 namespace goat {
 
+    class base_string;
+
     /**
      * @brief A native C++ data type to which Goat expressions can be cast
      * 
@@ -44,7 +46,7 @@ namespace goat {
     /**
      * @brief Converts C++ type to string
      * @param cpp_type C++ type
-     * @return String representation of C++ type
+     * @return Goat string representing C++ type
      */
-    const char * cpp_type_to_string(cpp_type type);
+    base_string * cpp_type_to_string(cpp_type type);
 }

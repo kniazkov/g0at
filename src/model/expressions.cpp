@@ -33,6 +33,19 @@ namespace goat {
         return cpp_type::invalid;
     }
 
+    std::vector<element_data_descriptor> expression::get_common_data() const {
+        std::vector<element_data_descriptor> list;
+        cpp_type type = get_cpp_type();
+        variable var;
+        var.obj = cpp_type_to_string(type);
+        list.push_back({ "type", var });
+        return list;
+    }
+
+    std::vector<element_data_descriptor> expression::get_data() const {
+        return get_common_data();
+    }
+
     /* ----------------------------------------------------------------------------------------- */
 
     const char * assignable_expression::get_node_color() const {
@@ -63,7 +76,7 @@ namespace goat {
     }
 
     std::vector<element_data_descriptor> object_as_expression::get_data() const {
-        std::vector<element_data_descriptor> list;
+        std::vector<element_data_descriptor> list = get_common_data();
         variable var;
         var.obj = obj;
         list.push_back({ "object", var });
@@ -91,7 +104,7 @@ namespace goat {
     }
 
     std::vector<element_data_descriptor> constant_integer_number::get_data() const {
-        std::vector<element_data_descriptor> list;
+        std::vector<element_data_descriptor> list = get_common_data();
         variable var;
         var.set_integer_value(value);
         list.push_back({ "value", var });
@@ -126,7 +139,7 @@ namespace goat {
     }
 
     std::vector<element_data_descriptor> constant_real_number::get_data() const {
-        std::vector<element_data_descriptor> list;
+        std::vector<element_data_descriptor> list = get_common_data();
         variable var;
         var.set_real_value(value);
         list.push_back({ "value", var });
@@ -164,7 +177,7 @@ namespace goat {
     }
 
     std::vector<element_data_descriptor> expression_variable::get_data() const {
-        std::vector<element_data_descriptor> list;
+        std::vector<element_data_descriptor> list = get_common_data();
         variable var;
         var.obj = name;
         list.push_back({ "name", var });
@@ -238,7 +251,7 @@ namespace goat {
     }
 
     std::vector<element_data_descriptor> function_call::get_data() const {
-        std::vector<element_data_descriptor> list;
+        std::vector<element_data_descriptor> list = get_common_data();
         variable var;
         var.obj = name;
         list.push_back({ "name", var });
@@ -290,10 +303,6 @@ namespace goat {
             { "right", right }
         };
         return list;
-    }
-
-    std::vector<element_data_descriptor> binary_operation::get_data() const {
-        return {};
     }
 
     variable binary_operation::calc(scope *scope) {
@@ -358,10 +367,6 @@ namespace goat {
             { "right", right }
         };
         return list;
-    }
-
-    std::vector<element_data_descriptor> assignment::get_data() const {
-        return {};
     }
 
     variable assignment::calc(scope *scope) {

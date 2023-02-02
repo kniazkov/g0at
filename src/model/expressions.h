@@ -43,8 +43,15 @@ namespace goat {
          */
         virtual cpp_type get_cpp_type() const;
 
+        /**
+         * @brief Forms a list containing data descriptors that are in all expressions
+         * @return A list containing descriptors of additional data
+         */
+        std::vector<element_data_descriptor> get_common_data() const;
+
         const char * get_node_color() const override;
         const char * get_background_color() const override;
+        std::vector<element_data_descriptor> get_data() const override;
     };
 
     /**
@@ -248,7 +255,6 @@ namespace goat {
 
         void traverse_syntax_tree(element_visitor *visitor) override;
         std::vector<child_descriptor> get_children() const override;
-        std::vector<element_data_descriptor> get_data() const override;
         variable calc(scope *scope) override;
 
     protected:
@@ -380,7 +386,6 @@ namespace goat {
         void traverse_syntax_tree(element_visitor *visitor) override;
         const char * get_node_color() const override;
         std::vector<child_descriptor> get_children() const override;
-        std::vector<element_data_descriptor> get_data() const override;
         variable calc(scope *scope) override;
 
     protected:
