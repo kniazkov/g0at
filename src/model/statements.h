@@ -13,6 +13,7 @@
 #include "scope.h"
 #include "expressions.h"
 #include "exceptions.h"
+#include "compiler/analyzer/cpp_type.h"
 
 namespace goat {
 
@@ -150,6 +151,26 @@ namespace goat {
     class variable_declaration : public statement {
     public:
         /**
+         * @brief Descriptor of one variable
+         */
+        struct descriptor {
+            /**
+             * @brief Variable name
+             */
+            base_string *name;
+
+            /**
+             * @brief Initial value of the variable
+             */
+            expression *init_value;
+
+            /**
+             * @brief A native C++ data type to which variable can be cast
+             */
+            cpp_type type;
+        };
+
+        /**
          * @brief Constructor
          * @param file_name The name of the file containing this statement
          * @param number The number of the line containing this statement
@@ -175,6 +196,13 @@ namespace goat {
          */
         std::vector<std::wstring> get_list_of_variable_names() const;
 
+        /**
+         * @brief Returns descriptor by variable name
+         * @param name Variable name
+         * @return Descriptor
+         */
+        descriptor * get_descriptor_by_name(std::wstring name);
+
         void traverse_syntax_tree(element_visitor *visitor) override;
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
@@ -184,24 +212,14 @@ namespace goat {
 
     private:
         /**
-         * @brief Descriptor of one variable
-         */
-        struct descriptor {
-            /**
-             * @brief Variable name
-             */
-            base_string *name;
-
-            /**
-             * @brief Initial value of the variable
-             */
-            expression *init_value;
-        };
-
-        /**
          * @brief List containing variable descriptors
          */
         std::vector<descriptor> list;
+
+        /**
+         * @brief Mapping variable names to descriptors
+         */
+        std::map<std::wstring, descriptor*> map;
 
         /**
          * @brief Data required when tracing the stack (e.g. when an exception occurs)

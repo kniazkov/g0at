@@ -5,6 +5,7 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
+#include <cassert>
 #include "statements.h"
 #include "lib/utf8_encoder.h"
 
@@ -116,9 +117,17 @@ namespace goat {
         }
     }
 
+    /**
+     * @todo Check for duplicated names 
+     */
     void variable_declaration::add_variable(base_string *name, expression *init_value) {
-        descriptor descr = {name, init_value};
+        descriptor descr = {
+            name,
+            init_value,
+            cpp_type::unknown
+        };
         list.push_back(descr);
+        map[name->to_string(nullptr)] = &list[list.size() - 1];
         name->add_reference();
         if (init_value) {
             init_value->add_reference();
@@ -131,6 +140,13 @@ namespace goat {
             result.push_back(item.name->to_string(nullptr));
         }
         return result;
+    }
+
+    variable_declaration::descriptor * variable_declaration::get_descriptor_by_name(
+            std::wstring name) {
+        auto pair = map.find(name);
+        assert(pair != map.end());
+        return pair->second;
     }
 
     void variable_declaration::traverse_syntax_tree(element_visitor *visitor) {

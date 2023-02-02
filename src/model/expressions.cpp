@@ -20,7 +20,7 @@ namespace goat {
     const char * expression::get_background_color() const {
         cpp_type type = get_cpp_type();
         if (type != cpp_type::unknown && type != cpp_type::invalid) {
-            return "wheat";
+            return "greenyellow";
         }
         return nullptr;
     }
