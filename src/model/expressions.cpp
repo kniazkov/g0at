@@ -170,6 +170,7 @@ namespace goat {
             ex_object->release();
             throw ex;
         }
+        var->add_reference();
         return *var;
     }
 
@@ -321,8 +322,8 @@ namespace goat {
     }
 
     void assignment::traverse_syntax_tree(element_visitor *visitor) {
-        left->traverse_syntax_tree(visitor);
         right->traverse_syntax_tree(visitor);
+        left->traverse_syntax_tree(visitor);
     }
 
     const char * assignment::get_node_color() const {
