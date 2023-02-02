@@ -8,6 +8,8 @@ declare_variable
 declare_variable_with_init_value
 declare_two_variables
 declare_variables_one_dependent_on_other
+simple_assignment
+assignment_of_assignment
 
 # Errors:
 

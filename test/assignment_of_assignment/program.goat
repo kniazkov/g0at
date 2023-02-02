@@ -1,0 +1,4 @@
+var i, j;
+j = i = 1;
+println(i);
+print(j);
