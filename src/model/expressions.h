@@ -11,6 +11,7 @@
 #include "code.h"
 #include "scope.h"
 #include "strings.h"
+#include "compiler/analyzer/cpp_type.h"
 
 namespace goat {
 
@@ -36,7 +37,14 @@ namespace goat {
          */
         virtual assignable_expression * to_assignable_expression();
 
+        /**
+         * @brief Calculates a native C++ data type to which this expressions can be cast
+         * @return Native C++ data type
+         */
+        virtual cpp_type get_cpp_type() const;
+
         const char * get_node_color() const override;
+        const char * get_background_color() const override;
     };
 
     /**
@@ -100,6 +108,7 @@ namespace goat {
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         std::vector<element_data_descriptor> get_data() const override;
+        cpp_type get_cpp_type() const override;
         variable calc(scope *scope) override;
 
     private:
@@ -123,6 +132,7 @@ namespace goat {
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         std::vector<element_data_descriptor> get_data() const override;
+        cpp_type get_cpp_type() const override;
         variable calc(scope *scope) override;
 
     private:

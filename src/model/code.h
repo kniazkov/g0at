@@ -126,10 +126,16 @@ namespace goat {
 
         /**
          * @brief Returns the color of the node when rendering the syntax tree
-         * @return The node color (bleck by default)
+         * @return The node color (black by default)
          */
         virtual const char * get_node_color() const;
-        
+
+        /**
+         * @brief Returns the background color of the node when rendering the syntax tree
+         * @return The node background color (no filled by default)
+         */
+        virtual const char * get_background_color() const;
+
         /**
          * @brief Generates a graph (syntax tree) description in DOT format
          * @return Graph description in DOT format

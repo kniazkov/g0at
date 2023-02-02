@@ -17,9 +17,23 @@ namespace goat {
         return "darkgreen";
     }
 
+    const char * expression::get_background_color() const {
+        cpp_type type = get_cpp_type();
+        if (type != cpp_type::unknown && type != cpp_type::invalid) {
+            return "wheat";
+        }
+        return nullptr;
+    }
+
     assignable_expression * expression::to_assignable_expression() {
         return nullptr;
     }
+
+    cpp_type expression::get_cpp_type() const {
+        return cpp_type::invalid;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
 
     const char * assignable_expression::get_node_color() const {
         return "olive";
@@ -84,6 +98,10 @@ namespace goat {
         return list;
     }
 
+    cpp_type constant_integer_number::get_cpp_type() const {
+        return cpp_type::integer;
+    }
+
     variable constant_integer_number::calc(scope *scope) {
         variable var;
         var.set_integer_value(value);
@@ -101,6 +119,10 @@ namespace goat {
 
     std::vector<child_descriptor> constant_real_number::get_children() const {
         return {};
+    }
+
+    cpp_type constant_real_number::get_cpp_type() const {
+        return cpp_type::real;
     }
 
     std::vector<element_data_descriptor> constant_real_number::get_data() const {

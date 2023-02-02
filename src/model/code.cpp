@@ -84,10 +84,14 @@ namespace goat {
         return "black";
     }
 
+    const char * element::get_background_color() const {
+        return nullptr;
+    }
+
     std::string element::generate_graph_description() {
         std::stringstream stream;
         stream << "digraph program {" << std::endl
-            << "  node [fontname=\"sans-serif\", fontsize=12 shape=box style=rounded penwidth=0.9 nojustify=true]" 
+            << "  node [fontname=\"sans-serif\", fontsize=12 shape=box style=\"filled,rounded\" penwidth=0.9 nojustify=true fillcolor=white]" 
             << std::endl << "  edge [fontname=\"sans-serif\", fontsize=12 penwidth=0.7]" 
             << std::endl << std::endl;
         unsigned int counter = 0;
@@ -106,7 +110,12 @@ namespace goat {
             stream << "<br/>" << item.name << ": <font color=\"mediumblue\">"
                 << encode_utf8(item.value.to_string_notation()) << "</font>";
         }
-        stream << "> color=" << get_node_color() << "];" << std::endl;
+        stream << "> color=" << get_node_color();
+        const char *bgcolor = get_background_color();
+        if (bgcolor) {
+            stream << " fillcolor=" << bgcolor;            
+        }
+        stream << "];" << std::endl;
         auto children = get_children();
         for (unsigned int k = 0; k < children.size(); k++) {
             auto child = children[k];
