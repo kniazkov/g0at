@@ -57,10 +57,8 @@ namespace goat {
 
     /**
      * @brief Descriptor of a binary operation
-     * @tparam T Operation type
-     * @tparam L Left operand type
      */
-    template <typename T, typename L> struct binary_operation_descriptor {
+    struct binary_operation_descriptor {
         /**
          * @brief Symbols denoting this operation
          */
@@ -69,7 +67,22 @@ namespace goat {
         /**
          * @brief Functor that creates a binary operation from two operands
          */
-        T * (*creator)(L *left, expression *right);
+        binary_operation * (*creator)(expression *left, expression *right);
+    };
+
+    /**
+     * @brief Descriptor of a assignment operation
+     */
+    struct assignment_descriptor {
+        /**
+         * @brief Symbols denoting this operation
+         */
+        const wchar_t *symbols;
+
+        /**
+         * @brief Functor that creates a binary operation from two operands
+         */
+        assignment * (*creator)(assignable_expression *left, expression *right);
     };
 
     /**
@@ -151,18 +164,20 @@ namespace goat {
      * @brief Parses a chain of operators and expressions, 
      *   and when specified operators are found, combines two expressions and one operator
      *   into a binary operation
-     * @tparam T Operation type
-     * @tparam L Left operand type
-     * @tparam I Type of iterator by items
      * @param chain Chain of operators and expressions
-     * @param iter Iterator that points to the beginning of the chain 
-     * @param end Iterator that points to the end of the chain 
      * @param count Number of operator descriptors
      * @param descr Array of operator descriptors
      */
-    template <typename T, typename L, typename I>
-    void parse_binary_operators(std::list<token_chain_item> *chain, I iter, I end, int count,
-            const binary_operation_descriptor<T, L> *descr);
+    void parse_binary_operators(std::list<token_chain_item> *chain, int count,
+            const binary_operation_descriptor *descr);
+
+    /**
+     * @brief Parses a chain of operators and expressions, 
+     *   and when specified operators are found, combines two expressions and one operator
+     *   into an assignment operation
+     * @param chain Chain of operators and expressions
+     */
+    void parse_assignments(std::list<token_chain_item> *chain);
 
     /* ----------------------------------------------------------------------------------------- */
 
@@ -323,14 +338,14 @@ namespace goat {
     /**
      * @brief Descriptors for operators *, /, %
      */
-    const binary_operation_descriptor<binary_operation, expression> mul_div_mod[] = {
+    const binary_operation_descriptor mul_div_mod[] = {
         { L"*", multiplication::creator }
     };
 
     /**
      * @brief Descriptors for operators +, -
      */
-    const binary_operation_descriptor<binary_operation, expression> plus_minus[] = {
+    const binary_operation_descriptor plus_minus[] = {
         { L"+", addition::creator },
         { L"-", subtraction::creator },
     };
@@ -357,9 +372,11 @@ namespace goat {
 
         do {
             if (chain.size() == 1) break;
-            parse_binary_operators(&chain, chain.begin(), chain.end(), 1, mul_div_mod);            
+            parse_binary_operators(&chain, 1, mul_div_mod);
             if (chain.size() == 1) break;
-            parse_binary_operators(&chain, chain.begin(), chain.end(), 2, plus_minus);            
+            parse_binary_operators(&chain, 2, plus_minus);
+            if (chain.size() == 1) break;
+            parse_assignments(&chain);
         } while(false);
 
         assert(chain.size() == 1 && chain.begin()->type == token_chain_item::is_expression);
@@ -463,14 +480,15 @@ namespace goat {
         }
     }
 
-    template <typename T, typename L, typename I>
-    void parse_binary_operators(std::list<token_chain_item> *chain, I iter, I end, int count,
-            const binary_operation_descriptor<T, L> *descr) {
+    void parse_binary_operators(std::list<token_chain_item> *chain, int count,
+            const binary_operation_descriptor *descr) {
+        auto iter = chain->begin(),
+            end = chain->end();
         iter++;
         while(iter != end) {
             bool found = false;
-            I left =  std::prev(iter);
-            I right =  std::next(iter);
+            auto left =  std::prev(iter),
+                right =  std::next(iter);
             if (iter->type == token_chain_item::is_token && right != end &&
                     left->type == token_chain_item::is_expression &&
                     right->type == token_chain_item::is_expression) {
@@ -484,7 +502,7 @@ namespace goat {
                 }
                 if (found) {
                     token_chain_item item;
-                    I next =  std::next(right);
+                    auto next =  std::next(right);
                     item.type = token_chain_item::is_expression;
                     item.ptr.expr = descr[index].creator(left->ptr.expr, right->ptr.expr);
                     chain->insert(left, item);
@@ -500,5 +518,54 @@ namespace goat {
                 iter++;
             }
         }
+    }
+
+    /**
+     * @brief Descriptors for assignment operators
+     */
+    const assignment_descriptor assignments[] = {
+        { L"=", simple_assignment::creator }
+    };
+
+    void parse_assignments(std::list<token_chain_item> *chain) {
+        chain->reverse();
+        auto iter = chain->begin(),
+            end = chain->end();
+        iter++;
+        while(iter != end) {
+            bool found = false;
+            auto left =  std::prev(iter),
+                right =  std::next(iter);
+            if (iter->type == token_chain_item::is_token && right != end &&
+                    left->type == token_chain_item::is_expression &&
+                    right->type == token_chain_item::is_expression) {
+                int index = 0;
+                for (; index < sizeof(assignments) / sizeof(assignment_descriptor); index++) {
+                    if (0 == std::memcmp(assignments[index].symbols, iter->ptr.tok->code,
+                                iter->ptr.tok->length * sizeof(wchar_t))) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    token_chain_item item;
+                    auto next =  std::next(right);
+                    item.type = token_chain_item::is_expression;
+                    assignable_expression *right_expr = right->ptr.expr->to_assignable_expression();
+                    item.ptr.expr = assignments[index].creator(right_expr, left->ptr.expr);
+                    chain->insert(left, item);
+                    left->ptr.expr->release();
+                    right->ptr.expr->release();
+                    chain->erase(left);
+                    chain->erase(right);
+                    chain->erase(iter);
+                    iter = next;
+                }
+            }
+            if (!found) {
+                iter++;
+            }
+        }
+        chain->reverse();
     }
 }

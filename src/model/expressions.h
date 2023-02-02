@@ -14,6 +14,7 @@
 
 namespace goat {
 
+    class assignable_expression;
     class variable_declaration;
 
     /**
@@ -28,6 +29,13 @@ namespace goat {
          */
         virtual variable calc(scope *scope) = 0;
 
+        /**
+         * @brief Tries to cast an expression to assignable
+         * @return Pointer to assignable expression or <code>nullptr</code> if the expression
+         *   is not assignable
+         */
+        virtual assignable_expression * to_assignable_expression();
+
         const char * get_node_color() const override;
     };
 
@@ -36,6 +44,7 @@ namespace goat {
      *   e.g. a variable
      */
     class assignable_expression : public expression {
+    public:
         /**
          * @brief Assigns a new value to the expression
          * @param scope The scope in which the expression is calculated
@@ -43,6 +52,7 @@ namespace goat {
          */
         virtual void assign(scope *scope, variable value) = 0;
 
+        assignable_expression * to_assignable_expression() override;
         const char * get_node_color() const override;
     };
 
@@ -338,5 +348,80 @@ namespace goat {
 
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;
+    };
+
+    /**
+     * @brief Assignment operation
+     */
+    class assignment : public expression {
+    public:
+        /**
+         * @brief Constructor
+         * @param left Left operand
+         * @param right Right operand
+         */
+        assignment(assignable_expression *left, expression *right);
+
+        /**
+         * @brief Destructor
+         */
+        ~assignment();
+
+        void traverse_syntax_tree(element_visitor *visitor) override;
+        const char * get_node_color() const override;
+        std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
+        variable calc(scope *scope) override;
+
+    protected:
+        /**
+         * @brief Calculates the value of the expression
+         * @param scope The scope in which the expression is calculated
+         * @param left Left operand
+         * @param right Right operand
+         * @return Calculated expression
+         */
+        virtual variable calc(scope *scope, assignable_expression *left, variable *right) = 0;
+
+    private:
+        /**
+         * @brief Left operand
+         */
+        assignable_expression *left;
+
+        /**
+         * @brief Right operand
+         */
+        expression *right;
+    };
+
+    /**
+     * @brief Simple assignment
+     */
+    class simple_assignment : public assignment {
+    public:
+        /**
+         * @brief Constructor
+         * @param left Left operand
+         * @param right Right operand
+         */
+        simple_assignment(assignable_expression *left, expression *right) 
+                : assignment(left, right) {
+        }
+
+        /**
+         * @brief Functor that creates this object
+         * @param left Left operand
+         * @param right Right operand
+         * @return Binary operation object
+         */
+        static assignment * creator(assignable_expression *left, expression *right) {
+            return new simple_assignment(left, right);
+        }
+
+        const char * get_class_name() const override;
+
+    protected:
+        variable calc(scope *scope, assignable_expression *left, variable *right) override;
     };
 }

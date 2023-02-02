@@ -17,8 +17,16 @@ namespace goat {
         return "darkgreen";
     }
 
+    assignable_expression * expression::to_assignable_expression() {
+        return nullptr;
+    }
+
     const char * assignable_expression::get_node_color() const {
         return "olive";
+    }
+
+    assignable_expression * assignable_expression::to_assignable_expression() {
+        return this;
     }
 
     /* ----------------------------------------------------------------------------------------- */
@@ -296,5 +304,57 @@ namespace goat {
 
     variable multiplication::calc(scope *scope, variable *left, variable *right) {
         return left->obj->do_multiplication(scope->get_garbage_collector_data(), left, right);
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    assignment::assignment(assignable_expression *left, expression *right) {
+        this->left = left;
+        left->add_reference();
+        this->right = right;
+        right->add_reference();
+    }
+
+    assignment::~assignment() {
+        left->release();
+        right->release();
+    }
+
+    void assignment::traverse_syntax_tree(element_visitor *visitor) {
+        left->traverse_syntax_tree(visitor);
+        right->traverse_syntax_tree(visitor);
+    }
+
+    const char * assignment::get_node_color() const {
+        return "darkred";
+    }
+
+    std::vector<child_descriptor> assignment::get_children() const {
+        std::vector<child_descriptor> list = {
+            { "left", left },
+            { "right", right }
+        };
+        return list;
+    }
+
+    std::vector<element_data_descriptor> assignment::get_data() const {
+        return {};
+    }
+
+    variable assignment::calc(scope *scope) {
+        variable right_value = right->calc(scope);
+        variable result = calc(scope, left, &right_value);
+        right_value.release();
+        return right_value;
+    }
+
+    const char * simple_assignment::get_class_name() const {
+        return "simple assignment";
+    }
+
+    variable simple_assignment::calc(scope *scope, assignable_expression *left, variable *right) {
+        left->assign(scope, *right);
+        right->add_reference();
+        return *right;
     }
 }
