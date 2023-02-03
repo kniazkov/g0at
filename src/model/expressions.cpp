@@ -327,6 +327,18 @@ namespace goat {
         return result;
     }
 
+    cpp_type binary_operation::get_cpp_type() const {
+        cpp_type left_type = left->get_cpp_type();
+        cpp_type right_type = left->get_cpp_type();
+        if (left_type == cpp_type::invalid || right_type == cpp_type::invalid) {
+            return cpp_type::invalid;
+        }
+        if (left_type == cpp_type::unknown || right_type == cpp_type::unknown) {
+            return cpp_type::unknown;
+        }
+        return get_cpp_type(left_type, right_type);
+    }
+
     const char * addition::get_class_name() const {
         return "addition";
     }
@@ -334,6 +346,26 @@ namespace goat {
     variable addition::calc(scope *scope, variable *left, variable *right) {
         return left->obj->do_addition(scope->get_garbage_collector_data(), left, right);
     }
+
+    cpp_type addition::get_cpp_type(cpp_type left, cpp_type right) const {
+        if (left == cpp_type::string) {
+            return cpp_type::string;
+        }
+        else if (left == cpp_type::integer) {
+            if (right == cpp_type::integer) {
+                return cpp_type::integer;
+            }
+            else if (right == cpp_type::real) {
+                return cpp_type::real;
+            }
+        }
+        else if (left == cpp_type::real) {
+            if (right == cpp_type::integer || right == cpp_type::real) {
+                return cpp_type::real;
+            }
+        }
+        return cpp_type::invalid;
+    };
 
     const char * subtraction::get_class_name() const {
         return "subtraction";
@@ -343,6 +375,23 @@ namespace goat {
         return left->obj->do_subtraction(scope->get_garbage_collector_data(), left, right);
     }
 
+    cpp_type subtraction::get_cpp_type(cpp_type left, cpp_type right) const {
+        if (left == cpp_type::integer) {
+            if (right == cpp_type::integer) {
+                return cpp_type::integer;
+            }
+            else if (right == cpp_type::real) {
+                return cpp_type::real;
+            }
+        }
+        else if (left == cpp_type::real) {
+            if (right == cpp_type::integer || right == cpp_type::real) {
+                return cpp_type::real;
+            }
+        }
+        return cpp_type::invalid;
+    };
+
     const char * multiplication::get_class_name() const {
         return "multiplication";
     }
@@ -350,6 +399,23 @@ namespace goat {
     variable multiplication::calc(scope *scope, variable *left, variable *right) {
         return left->obj->do_multiplication(scope->get_garbage_collector_data(), left, right);
     }
+
+    cpp_type multiplication::get_cpp_type(cpp_type left, cpp_type right) const {
+        if (left == cpp_type::integer) {
+            if (right == cpp_type::integer) {
+                return cpp_type::integer;
+            }
+            else if (right == cpp_type::real) {
+                return cpp_type::real;
+            }
+        }
+        else if (left == cpp_type::real) {
+            if (right == cpp_type::integer || right == cpp_type::real) {
+                return cpp_type::real;
+            }
+        }
+        return cpp_type::invalid;
+    };
 
     /* ----------------------------------------------------------------------------------------- */
 

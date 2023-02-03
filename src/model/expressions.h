@@ -257,6 +257,7 @@ namespace goat {
         void traverse_syntax_tree(element_visitor *visitor) override;
         std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
+        cpp_type get_cpp_type() const override;
 
     protected:
         /**
@@ -267,6 +268,14 @@ namespace goat {
          * @return Calculated expression
          */
         virtual variable calc(scope *scope, variable *left, variable *right) = 0;
+
+        /**
+         * @brief Calculates a native C++ data type to which this bunary operation can be cast
+         * @param left The С++ type of the left operand
+         * @param right The С++ type of the right operand
+         * @return Native C++ data type
+         */
+        virtual cpp_type get_cpp_type(cpp_type left, cpp_type right) const = 0;
 
     private:
         /**
@@ -307,6 +316,7 @@ namespace goat {
 
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;
+        cpp_type get_cpp_type(cpp_type left, cpp_type right) const override;
     };
 
     /**
@@ -336,6 +346,7 @@ namespace goat {
 
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;
+        cpp_type get_cpp_type(cpp_type left, cpp_type right) const override;
     };
 
     /**
@@ -365,6 +376,7 @@ namespace goat {
 
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;
+        cpp_type get_cpp_type(cpp_type left, cpp_type right) const override;
     };
 
     /**
