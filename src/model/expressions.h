@@ -189,6 +189,7 @@ namespace goat {
             std::unordered_map<element*, unsigned int> &all_indexes) override;
         variable calc(scope *scope) override;
         void assign(scope *scope, variable value) override;
+        cpp_type get_cpp_type() const override;
 
     private:
         /**

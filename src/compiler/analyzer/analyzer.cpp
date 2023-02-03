@@ -10,8 +10,10 @@
 namespace goat {
 
     void bind_variables_to_their_declaration_locations(program *prog);
+    void perform_type_inference(program *prog);
 
     void perform_a_program_analysis(program *prog) {
         bind_variables_to_their_declaration_locations(prog);
+        perform_type_inference(prog);
     }
 }

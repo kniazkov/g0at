@@ -19,10 +19,15 @@ namespace goat {
 
     const char * expression::get_background_color() const {
         cpp_type type = get_cpp_type();
-        if (type != cpp_type::unknown && type != cpp_type::invalid) {
-            return "greenyellow";
+        switch(type) {
+            case cpp_type::unknown:
+                return "gold";
+            case cpp_type::invalid:
+                return nullptr;
+            default:
+                break;
         }
-        return nullptr;
+        return "greenyellow";
     }
 
     assignable_expression * expression::to_assignable_expression() {
@@ -36,9 +41,11 @@ namespace goat {
     std::vector<element_data_descriptor> expression::get_common_data() const {
         std::vector<element_data_descriptor> list;
         cpp_type type = get_cpp_type();
-        variable var;
-        var.obj = cpp_type_to_string(type);
-        list.push_back({ "type", var });
+        if (type != cpp_type::invalid) {
+            variable var;
+            var.obj = cpp_type_to_string(type);
+            list.push_back({ "ctype", var });
+        }
         return list;
     }
 
@@ -211,6 +218,12 @@ namespace goat {
 
     void expression_variable::assign(scope *scope, variable value) {
         scope->set_attribute(name, value);
+    }
+
+    cpp_type expression_variable::get_cpp_type() const {
+        return declaration ? 
+            declaration->get_descriptor_by_name(name->to_string(nullptr))->type :
+            cpp_type::invalid;
     }
 
     /* ----------------------------------------------------------------------------------------- */

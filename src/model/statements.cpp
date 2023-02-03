@@ -109,11 +109,12 @@ namespace goat {
     /* ----------------------------------------------------------------------------------------- */
 
     variable_declaration::~variable_declaration() {
-        for (descriptor &descr : list) {
-            descr.name->release();
-            if (descr.init_value) {
-                descr.init_value->release();
+        for (descriptor *descr : list) {
+            descr->name->release();
+            if (descr->init_value) {
+                descr->init_value->release();
             }
+            delete descr;
         }
     }
 
@@ -121,13 +122,13 @@ namespace goat {
      * @todo Check for duplicated names 
      */
     void variable_declaration::add_variable(base_string *name, expression *init_value) {
-        descriptor descr = {
+        descriptor *descr = new descriptor({
             name,
             init_value,
             cpp_type::unknown
-        };
+        });
         list.push_back(descr);
-        map[name->to_string(nullptr)] = &list[list.size() - 1];
+        map[name->to_string(nullptr)] = descr;
         name->add_reference();
         if (init_value) {
             init_value->add_reference();
@@ -137,7 +138,7 @@ namespace goat {
     std::vector<std::wstring> variable_declaration::get_list_of_variable_names() const {
         std::vector<std::wstring> result;
         for (auto item : list) {
-            result.push_back(item.name->to_string(nullptr));
+            result.push_back(item->name->to_string(nullptr));
         }
         return result;
     }
@@ -152,8 +153,8 @@ namespace goat {
     void variable_declaration::traverse_syntax_tree(element_visitor *visitor) {
         visitor->visit(this);
         for (auto item : list) {
-            if (item.init_value) {
-                item.init_value -> traverse_syntax_tree(visitor);
+            if (item->init_value) {
+                item->init_value -> traverse_syntax_tree(visitor);
             }
         }
     }
@@ -168,14 +169,14 @@ namespace goat {
 
     void variable_declaration::exec(scope *scope) {
         try {
-            for (descriptor &descr : list) {
-                if (descr.init_value) {
-                    variable value = descr.init_value->calc(scope);
-                    scope->set_attribute(descr.name, value);
+            for (auto descr : list) {
+                if (descr->init_value) {
+                    variable value = descr->init_value->calc(scope);
+                    scope->set_attribute(descr->name, value);
                     value.release();
                 }
                 else {
-                    scope->set_attribute(descr.name, get_null_object());
+                    scope->set_attribute(descr->name, get_null_object());
                 }
             }
         }
@@ -192,16 +193,16 @@ namespace goat {
         stream << "  node_" << stmt_index << " [label=<<b>" << get_class_name() << "</b>" 
             << "> color=\"" << get_node_color() << "\"];" << std::endl;
         for (unsigned int k = 0; k < list.size(); k++) {
-            descriptor &item = list[k];
+            descriptor *item = list[k];
             unsigned int var_index = ++(*counter);
             stream << "  node_" << var_index << " [shape=octagon style=\"\" label=<<b>" 
-                << encode_utf8(item.name->to_string(nullptr)) << "</b>" << "> color=\"black\"];"
+                << encode_utf8(item->name->to_string(nullptr)) << "</b>" << "> color=\"black\"];"
                 << std::endl;
             stream << "  node_" << stmt_index << " -> node_" << var_index << " [label=\"  " << k
                 << "\"];" << std::endl;
-            if (item.init_value) {
+            if (item->init_value) {
                 unsigned int init_expr_index =
-                    item.init_value->generate_node_description(stream, counter, all_indexes);
+                    item->init_value->generate_node_description(stream, counter, all_indexes);
                 stream << "  node_" << var_index << " -> node_" << init_expr_index << std::endl;
             }            
         }

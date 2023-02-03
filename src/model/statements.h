@@ -214,7 +214,7 @@ namespace goat {
         /**
          * @brief List containing variable descriptors
          */
-        std::vector<descriptor> list;
+        std::vector<descriptor*> list;
 
         /**
          * @brief Mapping variable names to descriptors
