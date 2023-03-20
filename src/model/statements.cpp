@@ -195,7 +195,7 @@ namespace goat {
         for (unsigned int k = 0; k < list.size(); k++) {
             descriptor *item = list[k];
             unsigned int var_index = ++(*counter);
-            stream << "  node_" << var_index << " [shape=octagon style=\"\" label=<<b>" 
+            stream << "  node_" << var_index << " [shape=circle style=\"\" label=<<b>" 
                 << encode_utf8(item->name->to_string(nullptr)) << "</b>" << "> color=\"black\"];"
                 << std::endl;
             stream << "  node_" << stmt_index << " -> node_" << var_index << " [label=\"  " << k

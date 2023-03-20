@@ -27,7 +27,7 @@ namespace goat {
             default:
                 break;
         }
-        return "greenyellow";
+        return "\"#eeffee\"";
     }
 
     assignable_expression * expression::to_assignable_expression() {
@@ -56,7 +56,7 @@ namespace goat {
     /* ----------------------------------------------------------------------------------------- */
 
     const char * assignable_expression::get_node_color() const {
-        return "olive";
+        return "green";
     }
 
     assignable_expression * assignable_expression::to_assignable_expression() {

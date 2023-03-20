@@ -91,8 +91,8 @@ namespace goat {
     std::string element::generate_graph_description() {
         std::stringstream stream;
         stream << "digraph program {" << std::endl
-            << "  node [fontname=\"sans-serif\", fontsize=12 shape=box style=\"filled,rounded\" penwidth=0.9 nojustify=true fillcolor=white]" 
-            << std::endl << "  edge [fontname=\"sans-serif\", fontsize=12 penwidth=0.7]" 
+            << "  node [shape=box style=\"filled,rounded\" penwidth=0.9 nojustify=true fillcolor=white]" 
+            << std::endl << "  edge [penwidth=0.7]" 
             << std::endl << std::endl;
         unsigned int counter = 0;
         std::unordered_map<element*, unsigned int> all_indexes;
