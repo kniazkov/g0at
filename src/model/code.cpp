@@ -61,7 +61,7 @@ namespace goat {
         return nullptr;
     }
 
-    object_type element::get_type() const {
+    object_type element::get_object_type() const {
         return object_type::code;
     }
 

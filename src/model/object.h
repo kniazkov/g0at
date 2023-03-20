@@ -193,7 +193,7 @@ namespace goat {
          * @brief Returns the type of the object
          * @return The type of the object
          */
-        virtual object_type get_type() const = 0;
+        virtual object_type get_object_type() const = 0;
 
         /**
          * @brief Compares the object to another

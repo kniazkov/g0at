@@ -27,7 +27,7 @@ namespace goat {
         return &proto_instance;
     }
 
-    object_type base_function::get_type() const {
+    object_type base_function::get_object_type() const {
         return object_type::generic;
     }
 

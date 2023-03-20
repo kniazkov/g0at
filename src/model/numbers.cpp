@@ -73,7 +73,7 @@ namespace goat {
      */
     class integer_number_base : public virtual object {
     public:
-        object_type get_type() const override {
+        object_type get_object_type() const override {
             return object_type::number;
         }
 
@@ -248,7 +248,7 @@ namespace goat {
      */
     class real_number_base : public virtual object {
     public:
-        object_type get_type() const override {
+        object_type get_object_type() const override {
             return object_type::number;
         }
 
