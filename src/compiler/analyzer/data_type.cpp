@@ -11,11 +11,37 @@
 namespace goat {
 
     /**
+     * @brief Ivalid data type descriptor
+     * 
+     * The invalid data type is used to generate errors in static code analysis
+     */
+    class invalid_data_type : public data_type {
+    public:
+        const data_type * merge(const data_type * right) const override {
+            return this;
+        }
+    };
+
+    static invalid_data_type _INVALID;
+    data_type * get_invalid_data_type() {
+        return &_INVALID;
+    }
+
+    /* ---------------------------------------------------------------------------------------- */
+
+    /**
      * @brief Descriptor of 'unknown' data type
      * 
      * The unknown data type is used for variables that have not been assigned a value
      */
     class unknown_data_type : public data_type {
+    public:
+        const data_type * merge(const data_type * right) const override {
+            if (right == &_INVALID) {
+                return &_INVALID;
+            }
+            return right;
+        }
     };
 
     static unknown_data_type _UNKNOWN;
@@ -26,16 +52,16 @@ namespace goat {
     /* ---------------------------------------------------------------------------------------- */
 
     /**
-     * @brief Ivalid data type descriptor
+     * @brief Variant data type descriptor
      * 
-     * The invalid data type is used to generate errors in static code analysis
+     * A variant data type means that a variable alternately contains values of different types
      */
-    class invalid_data_type : public data_type {
+    class variant_data_type : public data_type {
     };
 
-    static invalid_data_type _INVALID;
-    data_type * get_invalid_data_type() {
-        return &_INVALID;
+    static variant_data_type _VARIANT;
+    data_type * get_variant_data_type() {
+        return &_VARIANT;
     }
 
     /* ---------------------------------------------------------------------------------------- */
@@ -127,6 +153,19 @@ namespace goat {
     }
 
     /* ---------------------------------------------------------------------------------------- */
+
+    const data_type * data_type::merge(const data_type * right) const {
+        if (right == &_INVALID) {
+            return &_INVALID;
+        }
+        if (right == &_UNKNOWN) {
+            return this;
+        }
+        if (right != this) {
+            return &_VARIANT;
+        }
+        return this;
+    }
 
     const char * data_type::get_cpp_type() const {
         return nullptr;

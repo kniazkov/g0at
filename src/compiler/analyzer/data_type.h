@@ -16,6 +16,13 @@ namespace goat {
     class data_type {
     public:
         /**
+         * @brief Returns the data type if a variable that contains value with this data type 
+         *  is assigned a value with another data type
+         * @param right Another data type
+         */
+        virtual const data_type * merge(const data_type * right) const;
+
+        /**
          * @brief Returns a native C++ data type to which Goat expressions can be cast
          * @return Goat string representing C++ type
          */
@@ -31,7 +38,7 @@ namespace goat {
          * @brief Calculates the data type that will result from the addition of an expression
          *  that has this data type and an expression that has another data type
          * @param right Another data type
-         * @return 
+         * @return Resulting type
          */
         virtual const data_type * do_addition(const data_type * right) const;
 
@@ -39,7 +46,7 @@ namespace goat {
          * @brief Calculates the data type that will result from the subtraction of an expression
          *  that has this data type and an expression that has another data type
          * @param right Another data type
-         * @return 
+         * @return Resulting type
          */
         virtual const data_type * do_subtraction(const data_type * right) const;
 
@@ -47,7 +54,7 @@ namespace goat {
          * @brief Calculates the data type that will result from the multiplication of an
          *  expression that has this data type and an expression that has another data type
          * @param right Another data type
-         * @return 
+         * @return Resulting type
          */
         virtual const data_type * do_multiplication(const data_type * right) const;
     };
@@ -61,6 +68,11 @@ namespace goat {
      * @brief Returns pointer to invalid type descriptor
      */
     data_type * get_invalid_data_type();
+
+    /**
+     * @brief Returns pointer to variant type descriptor
+     */
+    data_type * get_variant_data_type();
 
     /**
      * @brief Returns pointer to integer type descriptor

@@ -227,7 +227,8 @@ namespace goat {
 
     void expression_variable::set_data_type(const data_type *type) {
         if (declaration) {
-            declaration->get_descriptor_by_name(get_variable_name())->type = type;
+            auto *descriptor = declaration->get_descriptor_by_name(get_variable_name());
+            descriptor->type = descriptor->type->merge(type);
         }
     }
 
