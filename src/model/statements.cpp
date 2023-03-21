@@ -125,7 +125,7 @@ namespace goat {
         descriptor *descr = new descriptor({
             name,
             init_value,
-            cpp_type::unknown
+            get_unknown_data_type()
         });
         list.push_back(descr);
         map[name->to_string(nullptr)] = descr;

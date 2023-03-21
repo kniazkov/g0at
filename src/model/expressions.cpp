@@ -18,32 +18,31 @@ namespace goat {
     }
 
     const char * expression::get_background_color() const {
-        cpp_type type = get_cpp_type();
-        switch(type) {
-            case cpp_type::unknown:
-                return "gold";
-            case cpp_type::invalid:
-                return nullptr;
-            default:
-                break;
+        const data_type *type = get_data_type();
+        if (type == get_unknown_data_type()) {
+            return "\"#ffffdd\"";
         }
-        return "\"#eeffee\"";
+        if (type->get_cpp_type() != nullptr) {
+            return "\"#eeffee\"";
+        }
+        return nullptr;
     }
 
     assignable_expression * expression::to_assignable_expression() {
         return nullptr;
     }
 
-    cpp_type expression::get_cpp_type() const {
-        return cpp_type::invalid;
+    const data_type * expression::get_data_type() const {
+        return get_invalid_data_type();
     }
 
     std::vector<element_data_descriptor> expression::get_common_data() const {
         std::vector<element_data_descriptor> list;
-        cpp_type type = get_cpp_type();
-        if (type != cpp_type::invalid) {
+        const data_type *type = get_data_type();
+        object *type_name = type->get_cpp_type_name();
+        if (type_name != nullptr) {
             variable var;
-            var.obj = cpp_type_to_string(type);
+            var.obj = type_name;
             list.push_back({ "ctype", var });
         }
         return list;
@@ -118,8 +117,8 @@ namespace goat {
         return list;
     }
 
-    cpp_type constant_integer_number::get_cpp_type() const {
-        return cpp_type::integer;
+    const data_type * constant_integer_number::get_data_type() const {
+        return get_integer_data_type();
     }
 
     variable constant_integer_number::calc(scope *scope) {
@@ -141,8 +140,8 @@ namespace goat {
         return {};
     }
 
-    cpp_type constant_real_number::get_cpp_type() const {
-        return cpp_type::real;
+    const data_type * constant_real_number::get_data_type() const {
+        return get_real_data_type();
     }
 
     std::vector<element_data_descriptor> constant_real_number::get_data() const {
@@ -220,10 +219,10 @@ namespace goat {
         scope->set_attribute(name, value);
     }
 
-    cpp_type expression_variable::get_cpp_type() const {
+    const data_type * expression_variable::get_data_type() const {
         return declaration ? 
             declaration->get_descriptor_by_name(name->to_string(nullptr))->type :
-            cpp_type::invalid;
+            get_invalid_data_type();
     }
 
     /* ----------------------------------------------------------------------------------------- */
@@ -327,16 +326,18 @@ namespace goat {
         return result;
     }
 
-    cpp_type binary_operation::get_cpp_type() const {
-        cpp_type left_type = left->get_cpp_type();
-        cpp_type right_type = left->get_cpp_type();
-        if (left_type == cpp_type::invalid || right_type == cpp_type::invalid) {
-            return cpp_type::invalid;
+    const data_type * binary_operation::get_data_type() const {
+        const data_type *left_type = left->get_data_type();
+        const data_type *right_type = left->get_data_type();
+        const data_type *invalid_type = get_invalid_data_type();
+        if (left_type == invalid_type || right_type == invalid_type) {
+            return invalid_type;
         }
-        if (left_type == cpp_type::unknown || right_type == cpp_type::unknown) {
-            return cpp_type::unknown;
+        const data_type *unknown_type = get_unknown_data_type();
+        if (left_type == unknown_type || right_type == unknown_type) {
+            return unknown_type;
         }
-        return get_cpp_type(left_type, right_type);
+        return get_data_type(left_type, right_type);
     }
 
     const char * addition::get_class_name() const {
@@ -347,24 +348,9 @@ namespace goat {
         return left->obj->do_addition(scope->get_garbage_collector_data(), left, right);
     }
 
-    cpp_type addition::get_cpp_type(cpp_type left, cpp_type right) const {
-        if (left == cpp_type::string) {
-            return cpp_type::string;
-        }
-        else if (left == cpp_type::integer) {
-            if (right == cpp_type::integer) {
-                return cpp_type::integer;
-            }
-            else if (right == cpp_type::real) {
-                return cpp_type::real;
-            }
-        }
-        else if (left == cpp_type::real) {
-            if (right == cpp_type::integer || right == cpp_type::real) {
-                return cpp_type::real;
-            }
-        }
-        return cpp_type::invalid;
+    const data_type * addition::get_data_type(
+            const data_type *left, const data_type *right) const {
+        return left->do_addition(right);
     };
 
     const char * subtraction::get_class_name() const {
@@ -375,21 +361,9 @@ namespace goat {
         return left->obj->do_subtraction(scope->get_garbage_collector_data(), left, right);
     }
 
-    cpp_type subtraction::get_cpp_type(cpp_type left, cpp_type right) const {
-        if (left == cpp_type::integer) {
-            if (right == cpp_type::integer) {
-                return cpp_type::integer;
-            }
-            else if (right == cpp_type::real) {
-                return cpp_type::real;
-            }
-        }
-        else if (left == cpp_type::real) {
-            if (right == cpp_type::integer || right == cpp_type::real) {
-                return cpp_type::real;
-            }
-        }
-        return cpp_type::invalid;
+    const data_type * subtraction::get_data_type(
+            const data_type *left, const data_type *right) const {
+        return left->do_subtraction(right);
     };
 
     const char * multiplication::get_class_name() const {
@@ -400,21 +374,9 @@ namespace goat {
         return left->obj->do_multiplication(scope->get_garbage_collector_data(), left, right);
     }
 
-    cpp_type multiplication::get_cpp_type(cpp_type left, cpp_type right) const {
-        if (left == cpp_type::integer) {
-            if (right == cpp_type::integer) {
-                return cpp_type::integer;
-            }
-            else if (right == cpp_type::real) {
-                return cpp_type::real;
-            }
-        }
-        else if (left == cpp_type::real) {
-            if (right == cpp_type::integer || right == cpp_type::real) {
-                return cpp_type::real;
-            }
-        }
-        return cpp_type::invalid;
+    const data_type * multiplication::get_data_type(const data_type *left,
+            const data_type *right) const {
+        return left->do_multiplication(right);
     };
 
     /* ----------------------------------------------------------------------------------------- */

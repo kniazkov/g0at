@@ -11,7 +11,7 @@
 #include "code.h"
 #include "scope.h"
 #include "strings.h"
-#include "compiler/analyzer/cpp_type.h"
+#include "compiler/analyzer/data_type.h"
 
 namespace goat {
 
@@ -38,10 +38,10 @@ namespace goat {
         virtual assignable_expression * to_assignable_expression();
 
         /**
-         * @brief Calculates a native C++ data type to which this expressions can be cast
-         * @return Native C++ data type
+         * @brief Calculates a Goat data type to which this expressions can be cast
+         * @return Goat data type
          */
-        virtual cpp_type get_cpp_type() const;
+        virtual const data_type * get_data_type() const;
 
         /**
          * @brief Forms a list containing data descriptors that are in all expressions
@@ -115,7 +115,7 @@ namespace goat {
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         std::vector<element_data_descriptor> get_data() const override;
-        cpp_type get_cpp_type() const override;
+        const data_type * get_data_type() const override;
         variable calc(scope *scope) override;
 
     private:
@@ -139,7 +139,7 @@ namespace goat {
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         std::vector<element_data_descriptor> get_data() const override;
-        cpp_type get_cpp_type() const override;
+        const data_type * get_data_type() const override;
         variable calc(scope *scope) override;
 
     private:
@@ -189,7 +189,7 @@ namespace goat {
             std::unordered_map<element*, unsigned int> &all_indexes) override;
         variable calc(scope *scope) override;
         void assign(scope *scope, variable value) override;
-        cpp_type get_cpp_type() const override;
+        const data_type * get_data_type() const override;
 
     private:
         /**
@@ -257,7 +257,7 @@ namespace goat {
         void traverse_syntax_tree(element_visitor *visitor) override;
         std::vector<child_descriptor> get_children() const override;
         variable calc(scope *scope) override;
-        cpp_type get_cpp_type() const override;
+        const data_type * get_data_type() const override;
 
     protected:
         /**
@@ -270,12 +270,13 @@ namespace goat {
         virtual variable calc(scope *scope, variable *left, variable *right) = 0;
 
         /**
-         * @brief Calculates a native C++ data type to which this bunary operation can be cast
-         * @param left The С++ type of the left operand
-         * @param right The С++ type of the right operand
+         * @brief Calculates a Goat data type to which this bunary operation can be cast
+         * @param left The type of the left operand
+         * @param right The type of the right operand
          * @return Native C++ data type
          */
-        virtual cpp_type get_cpp_type(cpp_type left, cpp_type right) const = 0;
+        virtual const data_type * get_data_type(
+            const data_type *left, const data_type *right) const = 0;
 
     private:
         /**
@@ -316,7 +317,8 @@ namespace goat {
 
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;
-        cpp_type get_cpp_type(cpp_type left, cpp_type right) const override;
+        const data_type * get_data_type(
+            const data_type *left, const data_type *right) const override;
     };
 
     /**
@@ -346,7 +348,8 @@ namespace goat {
 
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;
-        cpp_type get_cpp_type(cpp_type left, cpp_type right) const override;
+        const data_type * get_data_type(
+            const data_type *left, const data_type *right) const override;
     };
 
     /**
@@ -376,7 +379,8 @@ namespace goat {
 
     protected:
         variable calc(scope *scope, variable *left, variable *right) override;
-        cpp_type get_cpp_type(cpp_type left, cpp_type right) const override;
+        const data_type * get_data_type(
+            const data_type *left, const data_type *right) const override;
     };
 
     /**

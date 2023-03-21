@@ -13,7 +13,7 @@
 #include "scope.h"
 #include "expressions.h"
 #include "exceptions.h"
-#include "compiler/analyzer/cpp_type.h"
+#include "compiler/analyzer/data_type.h"
 
 namespace goat {
 
@@ -165,9 +165,9 @@ namespace goat {
             expression *init_value;
 
             /**
-             * @brief A native C++ data type to which variable can be cast
+             * @brief A Goat data type to which variable can be cast
              */
-            cpp_type type;
+            const data_type * type;
         };
 
         /**
