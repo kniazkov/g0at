@@ -1,0 +1,6 @@
+var i = 2,
+    j = i + 3;
+var k;
+k = j + 4;
+println(j);
+print(k);

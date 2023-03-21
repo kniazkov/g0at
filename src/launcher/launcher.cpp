@@ -10,6 +10,7 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include "lib/utf8_encoder.h"
 #include "lib/io.h"
 #include "resources/messages.h"
@@ -17,6 +18,7 @@
 #include "compiler/scanner/brackets_processor.h"
 #include "compiler/parser/parser.h"
 #include "compiler/common/exceptions.h"
+#include "compiler/analyzer/analyzer.h"
 #include "model/built_in_functions.h"
 #include "model/scope.h"
 #include "model/statements.h"
@@ -49,12 +51,18 @@ namespace goat {
         const char *language;
 
         /**
+         * @brief Save the abstract syntax tree in DOT format
+         */
+        bool dump_ast;
+
+        /**
          * @brief Constructor
          */
         command_line_interface() {
             source_file_name = nullptr;
             show_version = false;
             language = nullptr;
+            dump_ast = false;
         }
     };
 
@@ -86,6 +94,9 @@ namespace goat {
                     }
                     else if (0 == std::strncmp(arg, "lang=", 5)) {
                         cli->language = arg + 5;
+                    }
+                    else if (0 == std::strcmp(arg, "dump-ast")) {
+                        cli->dump_ast = true;
                     }
                 }
                 else {
@@ -134,31 +145,40 @@ namespace goat {
             std::vector<token*> all_tokens,
                 root_token_list;
             gc_data gc;
+            program *prog = nullptr;
             try {
                 scanner scan(&all_tokens, cli.source_file_name, code);
                 process_brackets(&scan, &all_tokens, &root_token_list);
-                console con;
                 token_iterator_over_vector iter(root_token_list);
-                program *prog = parse_program(&gc, &iter);
-                for (token *tok : all_tokens) {
-                    delete tok;
-                }
-                all_tokens.clear();
-                scope *main = create_main_scope(&gc, &con);
-                prog->exec(main);
-                prog->release();
-                main->release();
-                gc.sweep();
+                prog = parse_program(&gc, &iter);
             }
             catch (compiler_exception exc) {
-                for (token *tok : all_tokens) {
-                    delete tok;
+                std::cerr << exc.get_report();
+            }
+            for (token *tok : all_tokens) {
+                delete tok;
+            }
+            all_tokens.clear();
+            if (prog) {
+                perform_a_program_analysis(prog);
+                if (cli.dump_ast) {
+                    std::stringstream name;
+                    name << cli.source_file_name << ".graph";
+                    write_string_to_file(name.str().c_str(), prog->generate_graph_description());                   
                 }
-                std::cerr << exc.get_report() << std::endl;
+                console con;
+                scope *main = create_main_scope(&gc, &con);
+                try {
+                    prog->exec(main);
+                }
+                catch (runtime_exception exr) {
+                    std::cerr << encode_utf8(get_messages()->msg_unhandled_exception()) << ": "
+                        << exr.get_report();
+                }
+                prog->release();
+                main->release();
             }
-            catch (runtime_exception exr) {
-                std::cerr << exr.what() << std::endl;
-            }
+            gc.sweep();
             assert(gc.get_count() == 0);
             assert(get_number_of_elements() == 0);
         }

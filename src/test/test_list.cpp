@@ -24,7 +24,7 @@ namespace goat {
         { "model: square root calculation", test_square_root },
         { "model: root scope", test_root_scope },
         { "model: main scope", test_main_scope },
-        { "model: 'read_variable' expression", test_read_variable_expression },
+        { "model: 'expression_variable' expression", test_expression_variable_expression },
         { "model: 'function_call' expression", test_function_call_expression },
         { "model: 'print' function", test_function_print },
         { "model: string concatenation", test_string_concatenation },

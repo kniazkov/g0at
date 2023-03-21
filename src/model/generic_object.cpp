@@ -13,7 +13,7 @@
 
 namespace goat {
 
-    object_type generic_object::get_type() const {
+    object_type generic_object::get_object_type() const {
         return object_type::generic;
     }
 

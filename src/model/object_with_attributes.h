@@ -27,8 +27,8 @@ namespace goat {
          */
         struct object_comparator {
             bool operator()(const object *first, const object* second) const {
-                object_type first_type = first->get_type();
-                object_type second_type = second->get_type();
+                object_type first_type = first->get_object_type();
+                object_type second_type = second->get_object_type();
                 if (first_type == second_type) {
                     return first->less(second);
                 }

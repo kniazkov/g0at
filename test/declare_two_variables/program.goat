@@ -1,0 +1,3 @@
+var i, j = 0;
+println(i);
+print(j);

@@ -30,12 +30,14 @@ namespace goat {
         bool was_compiler_exception = false;
         bool was_runtime_exception = false;
         try {
-            scanner scan(&all_tokens, nullptr, code);
+            scanner scan(&all_tokens, "program.goat", code);
             process_brackets(&scan, &all_tokens, &root_token_list);
             std::unordered_set<object*> objects;
+            std::vector<const char*> file_names;
             parser_data pdata;
             pdata.gc = &gc;
             pdata.objects = &objects;
+            pdata.file_names_list = &file_names;
             token_iterator_over_vector iter(root_token_list);
             statement *stmt = parse_statement(&pdata, &iter);
             dbg_printer printer;
@@ -43,6 +45,9 @@ namespace goat {
             stmt->exec(main);
             stmt->release();
             main->release();
+            for (auto name : file_names) {
+                delete[] name;
+            }
             assert_equals(std::wstring, expected_result, printer.stream.str());
         }
         catch (compiler_exception exc) {

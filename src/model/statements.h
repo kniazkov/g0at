@@ -12,8 +12,12 @@
 #include "code.h"
 #include "scope.h"
 #include "expressions.h"
+#include "exceptions.h"
+#include "compiler/analyzer/data_type.h"
 
 namespace goat {
+
+    class base_string;
 
     /**
      * @brief A statement is a syntactic unit that expresses some action to be carried out
@@ -25,6 +29,9 @@ namespace goat {
          * @param scope The scope in which an action is performed
          */
         virtual void exec(scope *scope) = 0;
+
+        const char * get_node_color() const override;
+        std::vector<element_data_descriptor> get_data() const override;
     };
 
     /**
@@ -43,6 +50,9 @@ namespace goat {
          */
         void add_statement(statement *stmt);
 
+        void traverse_syntax_tree(element_visitor *visitor) override;
+        const char * get_class_name() const override;
+        std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
 
     private:
@@ -58,6 +68,11 @@ namespace goat {
     class program : public statement_block {
     public:
         /**
+         * @brief Destructor
+         */
+        ~program();
+
+        /**
          * @brief Returns the pointer to the set of objects so that we can add objects there
          *   while parsing
          * @return Pointer to the set of objects
@@ -67,9 +82,26 @@ namespace goat {
         }
 
         /**
+         * @brief Returns the pointer to the vector that contains copies of the names of
+         *   the source files from which the program is compiled
+         * @return Pointer to the vector containing file names (C-style strings)
+         */
+        inline std::vector<const char*> * get_file_names_list() {
+            return &file_names;
+        }
+
+        const char * get_class_name() const override;
+        
+    private:
+        /**
          * @brief Set of objects that are created during parsing (needed to mark dynamic objects)
          */
         std::unordered_set<object*> objects;
+
+        /**
+         * @brief Copies of the names of the source files from which the program is compiled
+         */
+        std::vector<const char*> file_names;
     };
 
     /**
@@ -85,15 +117,20 @@ namespace goat {
     public:
         /**
          * @brief Constructor
+         * @param file_name The name of the file containing this statement
+         * @param number The number of the line containing this statement
          * @param expr An expression
          */
-        statement_expression(expression *expr);
+        statement_expression(const char *file_name, unsigned int line, expression *expr);
 
         /**
          * @brief Destructor
          */
         ~statement_expression();
 
+        void traverse_syntax_tree(element_visitor *visitor) override;
+        const char * get_class_name() const override;
+        std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
 
     private:
@@ -101,5 +138,92 @@ namespace goat {
          * @brief An expression
          */
         expression *expr;
+
+        /**
+         * @brief Data required when tracing the stack (e.g. when an exception occurs)
+         */
+        stack_trace_data trace_data;
+    };
+
+    /**
+     * @brief Statement describing the declaration of variables
+     */
+    class variable_declaration : public statement {
+    public:
+        /**
+         * @brief Descriptor of one variable
+         */
+        struct descriptor {
+            /**
+             * @brief Variable name
+             */
+            base_string *name;
+
+            /**
+             * @brief Initial value of the variable
+             */
+            expression *init_value;
+
+            /**
+             * @brief A Goat data type to which variable can be cast
+             */
+            const data_type * type;
+        };
+
+        /**
+         * @brief Constructor
+         * @param file_name The name of the file containing this statement
+         * @param number The number of the line containing this statement
+         */
+        variable_declaration(const char *file_name, unsigned int line) : trace_data(file_name, line) {
+        }
+
+        /**
+         * @brief Destructor
+         */
+        ~variable_declaration();
+
+        /**
+         * @brief Adds a variable to the list
+         * @param name Variable name
+         * @param init_value Initial value of the variable (can be <code>nullptr</code>)
+         */
+        void add_variable(base_string *name, expression *init_value);
+
+        /**
+         * @brief Returns the list of declared variable names
+         * @return List of variable names
+         */
+        std::vector<std::wstring> get_list_of_variable_names() const;
+
+        /**
+         * @brief Returns descriptor by variable name
+         * @param name Variable name
+         * @return Descriptor
+         */
+        descriptor * get_descriptor_by_name(std::wstring name);
+
+        void traverse_syntax_tree(element_visitor *visitor) override;
+        const char * get_class_name() const override;
+        std::vector<child_descriptor> get_children() const override;
+        void exec(scope *scope) override;
+        unsigned int generate_node_description(std::stringstream &stream, unsigned int *counter,
+            std::unordered_map<element*, unsigned int> &all_indexes) override;
+
+    private:
+        /**
+         * @brief List containing variable descriptors
+         */
+        std::vector<descriptor*> list;
+
+        /**
+         * @brief Mapping variable names to descriptors
+         */
+        std::map<std::wstring, descriptor*> map;
+
+        /**
+         * @brief Data required when tracing the stack (e.g. when an exception occurs)
+         */
+        stack_trace_data trace_data;
     };
 }

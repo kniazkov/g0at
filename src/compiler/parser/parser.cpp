@@ -18,6 +18,21 @@
 
 namespace goat {
 
+    const char * parser_data::copy_file_name(const char *name) {
+        auto pair = file_names_map.find(name);
+        if (pair == file_names_map.end()) {
+            size_t len = std::strlen(name);
+            char *copy = new char[len + 1];
+            std::memcpy(copy, name, (len + 1) * sizeof(char));
+            file_names_list->push_back(copy);
+            file_names_map[name] = copy;
+            return copy;
+        }
+        else {
+            return pair->second;
+        }
+    };
+
     /**
      * @brief Element of the chain, which contains both tokens and expressions
      *   that have already been parsed
@@ -41,14 +56,9 @@ namespace goat {
     };
 
     /**
-     * @brief A functor that creates a binary operation from two operands
-     */
-    typedef binary_operation * (*binary_operation_creator)(expression *left, expression *right);
-    
-    /**
      * @brief Descriptor of a binary operation
      */
-    struct binary_operation_description {
+    struct binary_operation_descriptor {
         /**
          * @brief Symbols denoting this operation
          */
@@ -57,7 +67,22 @@ namespace goat {
         /**
          * @brief Functor that creates a binary operation from two operands
          */
-        binary_operation_creator creator;
+        binary_operation * (*creator)(expression *left, expression *right);
+    };
+
+    /**
+     * @brief Descriptor of a assignment operation
+     */
+    struct assignment_descriptor {
+        /**
+         * @brief Symbols denoting this operation
+         */
+        const wchar_t *symbols;
+
+        /**
+         * @brief Functor that creates a binary operation from two operands
+         */
+        assignment * (*creator)(assignable_expression *left, expression *right);
     };
 
     /**
@@ -67,6 +92,38 @@ namespace goat {
      * @param block The object in which to put statements
      */
     void parse_statement_block(parser_data *data, token_iterator *iter, statement_block *block);
+
+    /**
+     * @brief Tries to parse the list of tokens as a variable(s) declaration
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param keyword Token containing "var" keyword
+     * @return A statement
+     */
+    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter,
+        token *keyword);
+
+    /**
+     * @brief Tries to parse the list of tokens, started from the dollar sign, 
+     *   as a variable declaration
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param keyword Token containing dollar sign
+     * @return A statement
+     */
+    variable_declaration * parse_variable_dollar_declaration(parser_data *data,
+        token_iterator *iter, token *dollar);
+
+    /**
+     * @brief Tries to parse the list of tokens as a variable(s) declaration
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param first_token First token, containing "var" keyword or dollar sign
+     * @param multiple Multiple declarations are allowed
+     * @return A statement
+     */
+    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter,
+            token *first_token, bool multiple);
 
     /**
      * @brief Tries to parse the list of tokens as an expression
@@ -112,7 +169,15 @@ namespace goat {
      * @param descr Array of operator descriptors
      */
     void parse_binary_operators(std::list<token_chain_item> *chain, int count,
-        const binary_operation_description *descr);
+            const binary_operation_descriptor *descr);
+
+    /**
+     * @brief Parses a chain of operators and expressions, 
+     *   and when specified operators are found, combines two expressions and one operator
+     *   into an assignment operation
+     * @param chain Chain of operators and expressions
+     */
+    void parse_assignments(std::list<token_chain_item> *chain);
 
     /* ----------------------------------------------------------------------------------------- */
 
@@ -121,7 +186,14 @@ namespace goat {
         parser_data data;
         data.gc = gc;
         data.objects = prog->get_object_set();
-        parse_statement_block(&data, iter, prog);
+        data.file_names_list = prog->get_file_names_list();
+        try {
+            parse_statement_block(&data, iter, prog);
+        }
+        catch (compiler_exception ex) {
+            prog->release();
+            throw;
+        }
         return prog;
     }
 
@@ -141,33 +213,139 @@ namespace goat {
         switch(tok->type) {
             case token_type::identifier: {
                 expression *expr = parse_expression(data, iter);
+                statement *result = new statement_expression(
+                    data->copy_file_name(tok->file_name), tok->line, expr
+                );
+                expr->release();
                 if (iter->valid()) {
                     tok = iter->get();
                     if (tok->type == token_type::semicolon) {
                         iter->next();
                     }
                 }
-                statement *result = new statement_expression(expr);
-                expr->release();
                 return result;
             }
+            case token_type::keyword_var:
+                iter->next();
+                return parse_variable_declaration(data, iter, tok);
+            case token_type::dollar_sign:
+                iter->next();
+                return parse_variable_dollar_declaration(data, iter, tok);
         }
         throw compiler_exception(new compiler_exception_data(
             tok, get_messages()->msg_unable_to_parse_token_sequence())
         );
     }
 
+    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter,
+            token *keyword) {
+        assert(keyword->type == token_type::keyword_var);\
+        return parse_variable_declaration(data, iter, keyword, true);
+   }
+
+    variable_declaration * parse_variable_dollar_declaration(parser_data *data,
+        token_iterator *iter, token *dollar) {
+        assert(dollar->type == token_type::dollar_sign);
+        return parse_variable_declaration(data, iter, dollar, false);
+    }
+
+    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter,
+            token *first_token, bool multiple) {
+        variable_declaration *result = new variable_declaration(
+            data->copy_file_name(first_token->file_name),
+            first_token->line
+        );
+        token *separator = first_token;
+        while(true) {
+            dynamic_string *name = nullptr;
+            if (iter->valid()) {
+                token *tok_name = iter->get();
+                if (tok_name->type == token_type::identifier) {
+                    std::wstring str_name(tok_name->code, tok_name->length);
+                    name = new dynamic_string(data->gc, str_name);
+                }
+            }
+            if (!name) {
+                result->release();
+                throw compiler_exception(new compiler_exception_data(
+                    separator, get_messages()->msg_variable_name_is_expected())
+                );
+            }
+            token *tok = iter->next();
+            if (!iter->valid()) {
+                result->add_variable(name, nullptr);
+                name->release();
+                return result;
+            }
+            if (tok->type == token_type::semicolon) {
+                iter->next();
+                result->add_variable(name, nullptr);
+                name->release();
+                return result;
+            }
+            if (tok->type == token_type::comma) {
+                if (multiple) {
+                    separator = tok;
+                    iter->next();
+                    result->add_variable(name, nullptr);
+                    name->release();
+                }
+                else {
+                    name->release();
+                    result->release();
+                    throw compiler_exception(new compiler_exception_data(
+                        tok, get_messages()->msg_multiple_declarations_are_not_allowed())
+                    );
+                }
+            }
+            else if (tok->type == token_type::operato && tok->length == 1 && tok->code[0] == '=') {
+                iter->next();
+                try {
+                    expression *init_value = parse_expression(data, iter);
+                    result->add_variable(name, init_value);
+                    name->release();
+                    init_value->release();
+                }
+                catch (compiler_exception ex) {
+                    name->release();
+                    result->release();
+                    throw;
+                }
+                if (!iter->valid()) {
+                    return result;
+                }
+                tok = iter->get();
+                if (tok->type == token_type::semicolon) {
+                    iter->next();
+                    return result;
+                }
+                if (tok->type == token_type::comma) {
+                    if (multiple) {
+                        separator = tok;
+                        iter->next();
+                    }
+                    else {
+                        result->release();
+                        throw compiler_exception(new compiler_exception_data(
+                            tok, get_messages()->msg_multiple_declarations_are_not_allowed())
+                        );
+                    }
+                }
+            } // declaration with initial value
+        } // while(true)
+    }
+
     /**
      * @brief Descriptors for operators *, /, %
      */
-    const binary_operation_description mul_div_mod[] = {
+    const binary_operation_descriptor mul_div_mod[] = {
         { L"*", multiplication::creator }
     };
 
     /**
      * @brief Descriptors for operators +, -
      */
-    const binary_operation_description plus_minus[] = {
+    const binary_operation_descriptor plus_minus[] = {
         { L"+", addition::creator },
         { L"-", subtraction::creator },
     };
@@ -181,7 +359,7 @@ namespace goat {
                 break;
             }
             token_chain_item item;
-            if (tok->type == token_type::oper) {
+            if (tok->type == token_type::operato) {
                 item.type = token_chain_item::is_token;
                 item.ptr.tok = tok;
                 iter->next();
@@ -192,10 +370,14 @@ namespace goat {
             chain.push_back(item);
         }
 
-        if (chain.size() > 1) {
-            parse_binary_operators(&chain, 1, mul_div_mod);            
-            parse_binary_operators(&chain, 2, plus_minus);            
-        }
+        do {
+            if (chain.size() == 1) break;
+            parse_binary_operators(&chain, 1, mul_div_mod);
+            if (chain.size() == 1) break;
+            parse_binary_operators(&chain, 2, plus_minus);
+            if (chain.size() == 1) break;
+            parse_assignments(&chain);
+        } while(false);
 
         assert(chain.size() == 1 && chain.begin()->type == token_chain_item::is_expression);
         return chain.begin()->ptr.expr;
@@ -213,7 +395,7 @@ namespace goat {
             token_string *str = (token_string*)first;
             dynamic_string *obj = new dynamic_string(data->gc, str->data);
             data->objects->insert(obj);
-            expression *result = new expression_object(obj);
+            expression *result = new object_as_expression(obj);
             obj->release();
             return result;
         }
@@ -235,9 +417,14 @@ namespace goat {
         token *second = nullptr;
         if (iter->valid()) {
             second = iter->get();
-            iter->next();
-            if (second->type == token_type::comma || second->type == token_type::semicolon) {
-                end_of_sequence = true;
+            switch(second->type) {
+                case token_type::comma:
+                case token_type::semicolon:
+                case token_type::operato:
+                    end_of_sequence = true;
+                    break;
+                default:
+                    iter->next();
             }
         } else {
             end_of_sequence = true;
@@ -252,7 +439,7 @@ namespace goat {
             std::wstring var_name(first->code, first->length);
             dynamic_string *obj = new dynamic_string(data->gc, var_name);
             data->objects->insert(obj);
-            expression *result = new read_variable(obj);
+            expression *result = new expression_variable(obj);
             obj->release();
             return result;
         }
@@ -279,8 +466,9 @@ namespace goat {
             }
         }
 
+        position pos = first->merge_position(second);
         throw compiler_exception(new compiler_exception_data(
-            first, get_messages()->msg_unable_to_parse_token_sequence())
+            &pos, get_messages()->msg_unable_to_parse_token_sequence())
         );
     }
 
@@ -293,14 +481,15 @@ namespace goat {
     }
 
     void parse_binary_operators(std::list<token_chain_item> *chain, int count,
-            const binary_operation_description *descr) {
-        std::list<token_chain_item>::iterator iter = chain->begin();
+            const binary_operation_descriptor *descr) {
+        auto iter = chain->begin(),
+            end = chain->end();
         iter++;
-        while(iter != chain->end()) {
+        while(iter != end) {
             bool found = false;
-            std::list<token_chain_item>::iterator left =  std::prev(iter);
-            std::list<token_chain_item>::iterator right =  std::next(iter);
-            if (iter->type == token_chain_item::is_token && right != chain->end() &&
+            auto left =  std::prev(iter),
+                right =  std::next(iter);
+            if (iter->type == token_chain_item::is_token && right != end &&
                     left->type == token_chain_item::is_expression &&
                     right->type == token_chain_item::is_expression) {
                 int index = 0;
@@ -313,7 +502,7 @@ namespace goat {
                 }
                 if (found) {
                     token_chain_item item;
-                    std::list<token_chain_item>::iterator next =  std::next(right);
+                    auto next =  std::next(right);
                     item.type = token_chain_item::is_expression;
                     item.ptr.expr = descr[index].creator(left->ptr.expr, right->ptr.expr);
                     chain->insert(left, item);
@@ -329,5 +518,54 @@ namespace goat {
                 iter++;
             }
         }
+    }
+
+    /**
+     * @brief Descriptors for assignment operators
+     */
+    const assignment_descriptor assignments[] = {
+        { L"=", simple_assignment::creator }
+    };
+
+    void parse_assignments(std::list<token_chain_item> *chain) {
+        chain->reverse();
+        auto iter = chain->begin(),
+            end = chain->end();
+        iter++;
+        while(iter != end) {
+            bool found = false;
+            auto left =  std::prev(iter),
+                right =  std::next(iter);
+            if (iter->type == token_chain_item::is_token && right != end &&
+                    left->type == token_chain_item::is_expression &&
+                    right->type == token_chain_item::is_expression) {
+                int index = 0;
+                for (; index < sizeof(assignments) / sizeof(assignment_descriptor); index++) {
+                    if (0 == std::memcmp(assignments[index].symbols, iter->ptr.tok->code,
+                                iter->ptr.tok->length * sizeof(wchar_t))) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) {
+                    token_chain_item item;
+                    auto next =  std::next(right);
+                    item.type = token_chain_item::is_expression;
+                    assignable_expression *right_expr = right->ptr.expr->to_assignable_expression();
+                    item.ptr.expr = assignments[index].creator(right_expr, left->ptr.expr);
+                    chain->insert(left, item);
+                    left->ptr.expr->release();
+                    right->ptr.expr->release();
+                    chain->erase(left);
+                    chain->erase(right);
+                    chain->erase(iter);
+                    iter = next;
+                }
+            }
+            if (!found) {
+                iter++;
+            }
+        }
+        chain->reverse();
     }
 }

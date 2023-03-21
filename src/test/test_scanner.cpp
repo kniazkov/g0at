@@ -255,7 +255,7 @@ namespace goat {
         assert_equals(unsigned int, 1, t1->column);
         assert_equals(int, 0, std::memcmp(L"a", t1->code, t1->length * sizeof(wchar_t)));
         token *t2 = scan.get_token();
-        assert_equals(bool, true, token_type::oper == t2->type);
+        assert_equals(bool, true, token_type::operato == t2->type);
         assert_equals(unsigned int, 1, t2->line);
         assert_equals(unsigned int, 3, t2->column);
         assert_equals(int, 0, std::memcmp(L"->", t2->code, t2->length * sizeof(wchar_t)));

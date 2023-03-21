@@ -33,7 +33,7 @@ namespace goat {
         this->value = value;
     }
 
-    object_type base_string::get_type() const {
+    object_type base_string::get_object_type() const {
         return object_type::string;
     }
 
