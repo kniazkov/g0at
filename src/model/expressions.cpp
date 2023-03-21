@@ -225,6 +225,12 @@ namespace goat {
             get_invalid_data_type();
     }
 
+    void expression_variable::set_data_type(const data_type *type) {
+        if (declaration) {
+            declaration->get_descriptor_by_name(get_variable_name())->type = type;
+        }
+    }
+
     /* ----------------------------------------------------------------------------------------- */
 
     function_call::function_call(base_string *name, std::vector<expression*> &args) {
@@ -410,6 +416,10 @@ namespace goat {
         return list;
     }
 
+    const data_type * assignment::get_right_type() const {
+        return right->get_data_type();
+    }
+
     variable assignment::calc(scope *scope) {
         variable right_value = right->calc(scope);
         variable result = calc(scope, left, &right_value);
@@ -419,6 +429,12 @@ namespace goat {
 
     const char * simple_assignment::get_class_name() const {
         return "simple assignment";
+    }
+
+    const data_type * simple_assignment::get_data_type() const {
+        const data_type * right_type = get_right_type();
+        get_left_expression()->set_data_type(right_type);
+        return right_type;
     }
 
     variable simple_assignment::calc(scope *scope, assignable_expression *left, variable *right) {

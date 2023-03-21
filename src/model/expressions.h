@@ -67,6 +67,12 @@ namespace goat {
          */
         virtual void assign(scope *scope, variable value) = 0;
 
+        /**
+         * @brief Sets a new data type (usually when a variable is assigned)
+         * @param type Goat data type
+         */
+        virtual void set_data_type(const data_type *type) = 0;
+
         assignable_expression * to_assignable_expression() override;
         const char * get_node_color() const override;
     };
@@ -190,6 +196,7 @@ namespace goat {
         variable calc(scope *scope) override;
         void assign(scope *scope, variable value) override;
         const data_type * get_data_type() const override;
+        void set_data_type(const data_type *type) override;
 
     private:
         /**
@@ -407,6 +414,19 @@ namespace goat {
 
     protected:
         /**
+         * @return Left expression
+         */
+        assignable_expression * get_left_expression() const {
+            return left;
+        }
+
+        /**
+         * @brief Returns the type of the right operand
+         * @return Goat data type
+         */
+        const data_type * get_right_type() const;
+
+        /**
          * @brief Calculates the value of the expression
          * @param scope The scope in which the expression is calculated
          * @param left Left operand
@@ -452,6 +472,7 @@ namespace goat {
         }
 
         const char * get_class_name() const override;
+        const data_type * get_data_type() const override;
 
     protected:
         variable calc(scope *scope, assignable_expression *left, variable *right) override;
