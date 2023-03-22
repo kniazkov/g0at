@@ -55,7 +55,7 @@ namespace goat {
             : dynamic_object(gc), declaration(declaration) {
     }
 
-    void user_defined_function::exec(std::vector<variable> &args, variable* ret_val) {
-        declaration->body->exec(nullptr);
+    void user_defined_function::exec(scope *scope, std::vector<variable> &args, variable* ret_val) {
+        declaration->body->exec(scope);
     }
 }

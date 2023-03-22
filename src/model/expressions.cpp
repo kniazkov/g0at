@@ -293,7 +293,7 @@ namespace goat {
         for (auto expr : args) {
             var_list.push_back(expr->calc(scope));
         }
-        func->exec(var_list, &ret_val);        
+        func->exec(scope, var_list, &ret_val);        
         for (variable &arg : var_list) {
             arg.release();
         }

@@ -299,7 +299,7 @@ namespace goat {
         std::vector<variable> args = { arg };
         variable result;
         base_function *func = get_sqrt_instance()->to_function();
-        func->exec(args, &result);
+        func->exec(nullptr, args, &result);
         double value = 0;
         bool result_is_real_value = result.get_real_value(&value);
         assert_equals(bool, true, result_is_real_value);
@@ -308,7 +308,7 @@ namespace goat {
         arg.obj = create_real_number(&gc, 1024);
         args.clear();
         args.push_back(arg);
-        func->exec(args, &result);
+        func->exec(nullptr, args, &result);
         value = 0;
         result_is_real_value = result.get_real_value(&value);
         assert_equals(bool, true, result_is_real_value);

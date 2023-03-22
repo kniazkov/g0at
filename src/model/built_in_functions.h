@@ -36,7 +36,7 @@ namespace goat {
         function_print(gc_data *gc, printer *device) : dynamic_object(gc), device(device) {
         }
 
-        void exec(std::vector<variable> &args, variable* ret_val) override;
+        void exec(scope *scope, std::vector<variable> &args, variable* ret_val) override;
 
     protected:
         /**
@@ -59,7 +59,7 @@ namespace goat {
         function_println(gc_data *gc, printer *device) : function_print(gc, device) {
         }
 
-        void exec(std::vector<variable> &args, variable* ret_val) override;
+        void exec(scope *scope, std::vector<variable> &args, variable* ret_val) override;
     };
 
     /**

@@ -14,6 +14,7 @@
 namespace goat {
 
     class function_declaration;
+    class scope;
 
     /**
      * @brief A function is an object that, in addition to storing data, can perform some action
@@ -22,10 +23,11 @@ namespace goat {
     public:
         /**
          * @brief Execute function, i.e., perform some action
+         * @param scope The scope in which the function is called
          * @param args Arguments of the function
          * @param ret_val [out] Return value
          */
-        virtual void exec(std::vector<variable> &args, variable* ret_val) = 0;
+        virtual void exec(scope *scope, std::vector<variable> &args, variable* ret_val) = 0;
 
         object_type get_object_type() const override;
         object *get_first_prototype() const override;
@@ -51,7 +53,7 @@ namespace goat {
          */
         user_defined_function(gc_data* const gc, const function_declaration *declaration);
 
-        void exec(std::vector<variable> &args, variable* ret_val) override;
+        void exec(scope *scope, std::vector<variable> &args, variable* ret_val) override;
 
     private:
         /**

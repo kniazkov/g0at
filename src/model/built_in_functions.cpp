@@ -12,7 +12,7 @@
 
 namespace goat {
 
-    void function_print::exec(std::vector<variable> &args, variable* ret_val) {
+    void function_print::exec(scope *scope, std::vector<variable> &args, variable* ret_val) {
         if (args.size() < 1) {
             throw runtime_exception(get_illegal_agrument_exception());
         }
@@ -21,7 +21,7 @@ namespace goat {
 
     static std::wstring new_line(L"\n");
 
-    void function_println::exec(std::vector<variable> &args, variable* ret_val) {
+    void function_println::exec(scope *scope, std::vector<variable> &args, variable* ret_val) {
         if (args.size() < 1) {
             throw runtime_exception(get_illegal_agrument_exception());
         }
@@ -36,7 +36,7 @@ namespace goat {
      */
     class function_sqrt : public static_function {
     public:
-        void exec(std::vector<variable> &args, variable* ret_val) override {
+        void exec(scope *scope, std::vector<variable> &args, variable* ret_val) override {
             if (args.size() < 1) {
                 throw runtime_exception(get_illegal_agrument_exception());
             }
