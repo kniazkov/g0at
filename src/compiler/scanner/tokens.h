@@ -29,6 +29,7 @@ namespace goat {
         dollar_sign,
         operato,
         keyword_var,
+        keyword_function,
         end,
         brackets_pair
     };
