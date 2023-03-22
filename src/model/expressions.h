@@ -17,6 +17,7 @@ namespace goat {
 
     class assignable_expression;
     class variable_declaration;
+    class statement_block;
 
     /**
      * @brief An expression is a syntactic construction that returns (calculates) some value
@@ -476,5 +477,40 @@ namespace goat {
 
     protected:
         variable calc(scope *scope, assignable_expression *left, variable *right) override;
+    };
+
+    /**
+     * @brief Function declaration
+     */
+    class function_declaration : public expression {
+        friend class user_defined_function;
+    public:
+        /**
+         * @brief Constructor
+         * @param args Function arguments
+         * @param body Function body
+         */
+        function_declaration(std::vector<base_string*> args, statement_block *body);
+
+        /**
+         * @brief Destructor
+         */
+        ~function_declaration();
+
+        void traverse_syntax_tree(element_visitor *visitor) override;
+        std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
+        variable calc(scope *scope) override;
+
+    private:
+        /**
+         * @brief Function arguments
+         */
+        std::vector<base_string*> args;
+
+        /**
+         * @brief Function body
+         */
+        statement_block *body;
     };
 }

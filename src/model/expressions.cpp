@@ -10,6 +10,9 @@
 #include "functions.h"
 #include "exceptions.h"
 #include "statements.h"
+#include "functions.h"
+#include "scope.h"
+
 
 namespace goat {
 
@@ -442,5 +445,48 @@ namespace goat {
         left->assign(scope, *right);
         right->add_reference();
         return *right;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    function_declaration::function_declaration(
+            std::vector<base_string*> args, statement_block *body) {
+        this->args = args;
+        for (auto arg : args) {
+            arg->add_reference();
+        }
+        this->body = body;
+        body->add_reference();
+    }
+
+    function_declaration::~function_declaration() {
+        for (auto arg : args) {
+            arg->release();
+        }
+        body->release();
+    }
+
+    void function_declaration::traverse_syntax_tree(element_visitor *visitor) {
+        body->traverse_syntax_tree(visitor);
+    }
+
+    std::vector<child_descriptor> function_declaration::get_children() const {
+        std::vector<child_descriptor> list = {
+            { "body", body }
+        };
+        return list;
+    }
+    
+    /**
+     * @todo Print argument list
+     */
+    std::vector<element_data_descriptor> function_declaration::get_data() const {
+        return {};
+    }
+
+    variable function_declaration::calc(scope *scope) {
+        variable var;
+        var.obj = new user_defined_function(scope->get_garbage_collector_data(), this);
+        return var;
     }
 }
