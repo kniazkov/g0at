@@ -32,6 +32,20 @@ namespace goat {
     /* ----------------------------------------------------------------------------------------- */
 
     /**
+     * @brief Built-in function that does nothing
+     */
+    class function_that_does_nothing : public static_function {
+    public:
+        void exec(scope *scope, std::vector<variable> &args, variable* ret_val) override {
+        }
+    };
+
+    function_that_does_nothing function_that_does_nothing_instance;
+    object * get_function_that_does_nothing_instance() {
+        return &function_that_does_nothing_instance;
+    }
+    
+    /**
      * @brief Built-in function, compute square root
      */
     class function_sqrt : public static_function {

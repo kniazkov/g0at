@@ -66,6 +66,19 @@ namespace goat {
 
     /* ---------------------------------------------------------------------------------------- */
 
+    /**
+     * @brief Data type descriptor describing function type
+     */
+    class function_data_type : public data_type {
+    };
+
+    static function_data_type _FUNCTION;
+    data_type * get_function_data_type() {
+        return &_FUNCTION;
+    }
+
+    /* ---------------------------------------------------------------------------------------- */
+
     static_string integer_type_name(L"int64_t");
 
     /**

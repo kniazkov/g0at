@@ -63,6 +63,12 @@ namespace goat {
     };
 
     /**
+     * @return Pointer to the function that does nothing
+     */
+    object * get_function_that_does_nothing_instance();
+
+
+    /**
      * @return Pointer to the function that calculates square root
      */
     object * get_sqrt_instance();

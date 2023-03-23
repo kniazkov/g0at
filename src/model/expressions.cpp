@@ -466,6 +466,14 @@ namespace goat {
         body->release();
     }
 
+    const char * function_declaration::get_class_name() const {
+        return "function declaration";
+    } 
+
+    const data_type * function_declaration::get_data_type() const {
+        return get_function_data_type();
+    }
+
     void function_declaration::traverse_syntax_tree(element_visitor *visitor) {
         body->traverse_syntax_tree(visitor);
     }

@@ -75,6 +75,11 @@ namespace goat {
     data_type * get_variant_data_type();
 
     /**
+     * @brief Returns pointer to function type descriptor
+     */
+    data_type * get_function_data_type();
+
+    /**
      * @brief Returns pointer to integer type descriptor
      */
     data_type * get_integer_data_type();

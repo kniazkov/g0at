@@ -497,6 +497,8 @@ namespace goat {
          */
         ~function_declaration();
 
+        const char * get_class_name() const override;
+        const data_type * get_data_type() const override;
         void traverse_syntax_tree(element_visitor *visitor) override;
         std::vector<child_descriptor> get_children() const override;
         std::vector<element_data_descriptor> get_data() const override;

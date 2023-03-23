@@ -15,6 +15,7 @@
 #include "model/expressions.h"
 #include "model/statements.h"
 #include "model/strings.h"
+#include "model/built_in_functions.h"
 
 namespace goat {
 
@@ -178,6 +179,14 @@ namespace goat {
      * @param chain Chain of operators and expressions
      */
     void parse_assignments(std::list<token_chain_item> *chain);
+
+    /**
+     * @brief Tries to parse the list of tokens as a function declaration
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @return Expression
+     */
+    expression * parse_function_declaration(parser_data *data, token_iterator *iter);
 
     /* ----------------------------------------------------------------------------------------- */
 
@@ -404,6 +413,10 @@ namespace goat {
             token_number *num = (token_number*)first;
             return new constant_integer_number(num->data.int_value);
         }
+        if (first->type == token_type::keyword_function) {
+            iter->next();
+            return parse_function_declaration(data, iter);
+        }
         throw compiler_exception(new compiler_exception_data(
             first, get_messages()->msg_unable_to_parse_token_sequence())
         );
@@ -567,5 +580,21 @@ namespace goat {
             }
         }
         chain->reverse();
+    }
+
+    expression * parse_function_declaration(parser_data *data, token_iterator *iter) {
+        bool stub = false;
+        if (!iter->valid()) {
+            stub = true;
+        } else {
+        token *tok = iter->get();
+            if (tok->type == token_type::comma || tok->type == token_type::semicolon) {
+                stub = true;
+            }
+        }
+        if (stub) {
+            return new object_as_expression(get_function_that_does_nothing_instance());
+        }
+        return nullptr;
     }
 }
