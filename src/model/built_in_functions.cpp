@@ -38,6 +38,10 @@ namespace goat {
     public:
         void exec(scope *scope, std::vector<variable> &args, variable* ret_val) override {
         }
+
+        std::wstring to_string_notation(const variable* var) const override {
+            return L"${}";
+        }
     };
 
     function_that_does_nothing function_that_does_nothing_instance;
