@@ -1,0 +1,12 @@
+var x = 0;
+
+var f = function() {
+    var a = 2;
+    var b = 3;
+    x = a + b;
+    println(x);
+};
+
+println(x);
+f();
+println(x);

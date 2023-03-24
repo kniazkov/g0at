@@ -219,7 +219,14 @@ namespace goat {
     }
 
     void expression_variable::assign(scope *scope, variable value) {
-        scope->set_attribute(name, value);
+        variable *value_ptr = scope->get_attribute(name);
+        if (value_ptr != nullptr) {
+            value_ptr->release();
+            *value_ptr = value;
+            value.add_reference();
+        } else {
+            scope->set_attribute(name, value);
+        }
     }
 
     const data_type * expression_variable::get_data_type() const {
