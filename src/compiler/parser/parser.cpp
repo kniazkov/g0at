@@ -636,6 +636,7 @@ namespace goat {
                         }
                         body_token = pair;
                     }
+                    iter->next();
                 } else {
                     position pos = second->merge_position(third);
                     throw compiler_exception(new compiler_exception_data(
@@ -645,7 +646,6 @@ namespace goat {
             }
 
             if (body_token != nullptr) {
-                iter->next();
                 token_iterator_over_vector body_iterator(body_token->tokens);
                 statement_block *body = new statement_block();
                 parse_statement_block(data, &body_iterator, body);

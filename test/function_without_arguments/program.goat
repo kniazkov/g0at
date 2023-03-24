@@ -1,0 +1,5 @@
+var f = function {
+    println("it works.");
+};
+
+f();
