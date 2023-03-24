@@ -146,7 +146,7 @@ namespace goat {
      * @brief Parses an expression that begins with an identifier
      * @param data Data needed for parsing
      * @param iter Iterator by token
-     * @param ident First token (identifier)
+     * @param first First token (identifier)
      * @return An expression
      */
     expression * parse_expression_begins_with_identifier(parser_data *data, token_iterator *iter,
@@ -184,9 +184,10 @@ namespace goat {
      * @brief Tries to parse the list of tokens as a function declaration
      * @param data Data needed for parsing
      * @param iter Iterator by token
+     * @param first First token (keyword or dollar sign)
      * @return Expression
      */
-    expression * parse_function_declaration(parser_data *data, token_iterator *iter);
+    expression * parse_function_declaration(parser_data *data, token_iterator *iter, token *first);
 
     /* ----------------------------------------------------------------------------------------- */
 
@@ -415,7 +416,7 @@ namespace goat {
         }
         if (first->type == token_type::keyword_function) {
             iter->next();
-            return parse_function_declaration(data, iter);
+            return parse_function_declaration(data, iter, first);
         }
         throw compiler_exception(new compiler_exception_data(
             first, get_messages()->msg_unable_to_parse_token_sequence())
@@ -582,19 +583,78 @@ namespace goat {
         chain->reverse();
     }
 
-    expression * parse_function_declaration(parser_data *data, token_iterator *iter) {
-        bool stub = false;
-        if (!iter->valid()) {
-            stub = true;
-        } else {
-        token *tok = iter->get();
-            if (tok->type == token_type::comma || tok->type == token_type::semicolon) {
-                stub = true;
+    expression * parse_function_declaration(parser_data *data, token_iterator *iter,
+            token *first) {
+        do {
+            if (!iter->valid()) {
+                break;
             }
-        }
-        if (stub) {
-            return new object_as_expression(get_function_that_does_nothing_instance());
-        }
-        return nullptr;
+            
+            token *second = iter->get();
+            if (second->type == token_type::comma || second->type == token_type::semicolon) {
+                break;
+            }
+            token_brackets_pair *args_token = nullptr;
+            token_brackets_pair *body_token = nullptr;
+            if (second->type == token_type::brackets_pair) {
+                token_brackets_pair *pair = (token_brackets_pair*)second;
+                if (pair->opening_bracket == '(') {
+                    args_token = pair;
+
+                } else if (pair->opening_bracket == '{') {
+                    body_token = pair;
+                }
+            } else {
+                position pos = first->merge_position(second);
+                throw compiler_exception(new compiler_exception_data(
+                    &pos, get_messages()->msg_unable_to_parse_token_sequence())
+                );
+            }
+
+            token *third = iter->next();
+            if (third != nullptr &&
+                    third->type != token_type::comma && third->type != token_type::semicolon) {
+                if (third->type == token_type::brackets_pair) {
+                    token_brackets_pair *pair = (token_brackets_pair*)third;
+                    if (pair->opening_bracket == '(') {
+                        if (args_token != nullptr) {
+                            throw compiler_exception(new compiler_exception_data(
+                                pair, get_messages()->msg_function_arguments_already_defined())
+                            );
+                        }
+                        else if (body_token != nullptr) {
+                            throw compiler_exception(new compiler_exception_data(
+                                pair, get_messages()->msg_function_body_must_be_after_arguments())
+                            );
+                        }
+                        args_token = pair;
+                    } else if (pair->opening_bracket == '{') {
+                        if (body_token != nullptr) {
+                            throw compiler_exception(new compiler_exception_data(
+                                pair, get_messages()->msg_function_body_already_defined())
+                            );
+                        }
+                        body_token = pair;
+                    }
+                } else {
+                    position pos = second->merge_position(third);
+                    throw compiler_exception(new compiler_exception_data(
+                        &pos, get_messages()->msg_unable_to_parse_token_sequence())
+                    );
+                }
+            }
+
+            if (body_token != nullptr) {
+                iter->next();
+                token_iterator_over_vector body_iterator(body_token->tokens);
+                statement_block *body = new statement_block();
+                parse_statement_block(data, &body_iterator, body);
+                function_declaration *result = new function_declaration({}, body);
+                body->release();
+                return result;
+            }
+
+        } while(false);
+        return new object_as_expression(get_function_that_does_nothing_instance());
     }
 }
