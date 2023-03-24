@@ -13,6 +13,7 @@ assignment_of_assignment
 function_does_nothing
 built_in_function_as_object
 user_defined_function
+local_variables
 
 # Errors:
 

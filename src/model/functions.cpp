@@ -55,7 +55,10 @@ namespace goat {
             : dynamic_object(gc), declaration(declaration) {
     }
 
-    void user_defined_function::exec(scope *scope, std::vector<variable> &args, variable* ret_val) {
-        declaration->body->exec(scope);
+    void user_defined_function::exec(scope *external_scope, std::vector<variable> &args,
+            variable* ret_val) {
+        scope *internal_scope = external_scope->clone();
+        declaration->body->exec(internal_scope);
+        internal_scope->release();
     }
 }
