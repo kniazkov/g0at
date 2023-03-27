@@ -7,6 +7,7 @@
 
 #include <sstream>
 #include <cstring>
+#include <map>
 #include "scanner.h"
 #include "compiler/common/exceptions.h"
 #include "resources/messages.h"
@@ -51,6 +52,43 @@ namespace goat {
                 return false;
         }
     }
+
+    /**
+     * The list of single-character tokens
+     */
+    std::map<wchar_t, token_type> single_character_tokens = {
+        { '.', token_type::dot },
+        { ',', token_type::comma },
+        { ';', token_type::semicolon },
+        { '$', token_type::dollar_sign }
+    };
+
+    /**
+     * The structure that describes the bracket
+     */
+    struct bracket_descriptor {
+        /**
+         * The token type
+         */
+        token_type type;
+
+        /**
+         * @brief Paired bracket to this bracket (to check that the brackets are correct)
+         */
+        char paired_bracket;        
+    };
+
+    /**
+     * The list of tokens containing brackets
+     */
+    std::map<wchar_t, bracket_descriptor> brackets_list = {
+        { '(', { token_type::opening_bracket, ')' } },
+        { '{', { token_type::opening_bracket, '}' } },
+        { '[', { token_type::opening_bracket, ']' } },
+        { ')', { token_type::closing_bracket, '(' } },
+        { '}', { token_type::closing_bracket, '{' } },
+        { ']', { token_type::closing_bracket, '[' } }
+    };    
 
     scanner::scanner(std::vector<token*> *tokens, const char *file_name,
             std::wstring &code) : tokens(tokens) {
@@ -135,61 +173,26 @@ namespace goat {
         }
 
         switch(c) {
-            case '(': {
-                token_bracket *t = new token_bracket(b, token_type::opening_bracket, ')');
+            case '(':
+            case '{':
+            case '[':
+            case ')':
+            case '}':
+            case ']':
+            {
+                bracket_descriptor descriptor = brackets_list[c];
+                token_bracket *t = new token_bracket(b, descriptor.type, descriptor.paired_bracket);
                 next_char();
                 tokens->push_back(t);
                 return t;
             }
-            case '{': {
-                token_bracket *t = new token_bracket(b, token_type::opening_bracket, '}');
-                next_char();
-                tokens->push_back(t);
-                return t;
-            }
-            case '[': {
-                token_bracket *t = new token_bracket(b, token_type::opening_bracket, ']');
-                tokens->push_back(t);
-                return t;
-            }
-            case ')': {
-                token_bracket *t = new token_bracket(b, token_type::closing_bracket, '(');
-                next_char();
-                tokens->push_back(t);
-                return t;
-            }
-            case '}': {
-                token_bracket *t = new token_bracket(b, token_type::closing_bracket, '{');
-                next_char();
-                tokens->push_back(t);
-                return t;
-            }
-            case ']': {
-                token_bracket *t = new token_bracket(b, token_type::closing_bracket, '[');
-                next_char();
-                tokens->push_back(t);
-                return t;
-            }
-            case ',': {
-                token *t = new token(b);
-                next_char();
-                t->type = token_type::comma;
-                t->length = 1;
-                tokens->push_back(t);
-                return t;
-            }
-            case ';': {
-                token *t = new token(b);
-                next_char();
-                t->type = token_type::semicolon;
-                t->length = 1;
-                tokens->push_back(t);
-                return t;
-            }
+            case '.':
+            case ',':
+            case ';':
             case '$': {
                 token *t = new token(b);
                 next_char();
-                t->type = token_type::dollar_sign;
+                t->type = single_character_tokens[c];
                 t->length = 1;
                 tokens->push_back(t);
                 return t;

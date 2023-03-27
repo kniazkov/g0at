@@ -24,6 +24,7 @@ namespace goat {
         real,
         opening_bracket,
         closing_bracket,
+        dot,
         comma,
         semicolon,
         dollar_sign,
