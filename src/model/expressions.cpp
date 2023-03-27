@@ -244,6 +244,70 @@ namespace goat {
 
     /* ----------------------------------------------------------------------------------------- */
 
+    property_access::property_access(expression *obj, base_string *name) {
+        this->obj = obj;
+        obj->add_reference();
+        this->name = name;
+        name->add_reference();
+    }
+
+    property_access::~property_access() {
+        obj->release();
+        name->release();
+    }
+
+    void property_access::traverse_syntax_tree(element_visitor *visitor) {
+        obj->traverse_syntax_tree(visitor);
+    }
+
+    const char * property_access::get_class_name() const {
+        return "property";
+    }
+
+    std::vector<child_descriptor> property_access::get_children() const {
+        std::vector<child_descriptor> list;
+        list.push_back({ "object", obj });
+        return list;
+    }
+
+    std::vector<element_data_descriptor> property_access::get_data() const {
+        std::vector<element_data_descriptor> list = get_common_data();
+        variable var;
+        var.obj = name;
+        list.push_back({ "name", var });
+        return list;
+    }
+
+    void property_access::generate_additional_edges(std::stringstream &stream,
+            unsigned int index, std::unordered_map<element*, unsigned int> &all_indexes) {
+    }
+
+    variable property_access::calc(scope *scope) {
+        variable *var = obj->get_attribute(name);
+        if (!var) {
+            object *ex_object = create_reference_error_clarified_exception(
+                scope->get_garbage_collector_data(), name->to_string(nullptr));
+            runtime_exception  ex(ex_object);
+            ex_object->release();
+            throw ex;
+        }
+        var->add_reference();
+        return *var;
+    }
+
+    void property_access::assign(scope *scope, variable value) {
+        obj->set_attribute(name, value);
+    }
+
+    const data_type * property_access::get_data_type() const {
+        return get_invalid_data_type();
+    }
+
+    void property_access::set_data_type(const data_type *type) {
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
     function_call::function_call(base_string *name, std::vector<expression*> &args) {
         this->name = name;
         this->args = args;

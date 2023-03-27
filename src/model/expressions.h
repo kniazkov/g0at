@@ -212,6 +212,46 @@ namespace goat {
     };
 
     /**
+     * @brief An expression that represents accessing to a property (i.e. reading and writing)
+     */
+    class property_access : public assignable_expression {
+    public:
+        /**
+         * @brief Constructor
+         * @param obj The object whose property is accessed
+         * @param name The property name
+         */
+        property_access(expression *obj, base_string *name);
+
+        /**
+         * @brief Destructor
+         */
+        ~property_access();
+
+        void traverse_syntax_tree(element_visitor *visitor) override;
+        const char * get_class_name() const override;
+        std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
+        void generate_additional_edges(std::stringstream &stream, unsigned int index,
+            std::unordered_map<element*, unsigned int> &all_indexes) override;
+        variable calc(scope *scope) override;
+        void assign(scope *scope, variable value) override;
+        const data_type * get_data_type() const override;
+        void set_data_type(const data_type *type) override;
+
+    private:
+        /**
+         * The object whose property is accessed
+         */
+        expression *obj;
+
+        /**
+         * @brief The property name
+         */
+        base_string *name;
+    };
+
+    /**
      * @brief Searches for a function in scope and invokes it
      */
     class function_call : public expression {
