@@ -131,12 +131,18 @@ namespace goat {
             variable var;
             function_print *fn_print = new function_print(gc, printer);
             var.obj = fn_print;
-            set_attribute(&str_print, var);
+            write_attribute(&str_print, var);
             fn_print->release();
             function_println *fn_println = new function_println(gc, printer);
             var.obj = fn_println;
-            set_attribute(&str_println, var);
+            write_attribute(&str_println, var);
             fn_println->release();
+        }
+
+        void set_attribute(object *key, variable &value) override {
+            /**
+             * @todo: Exception
+             */
         }
     };
 

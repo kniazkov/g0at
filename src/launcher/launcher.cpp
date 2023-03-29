@@ -167,16 +167,18 @@ namespace goat {
                     write_string_to_file(name.str().c_str(), prog->generate_graph_description());                   
                 }
                 console con;
-                scope *main = create_main_scope(&gc, &con);
+                scope *main_scope = create_main_scope(&gc, &con);
+                scope *initial_scope = main_scope->clone();
                 try {
-                    prog->exec(main);
+                    prog->exec(initial_scope);
                 }
                 catch (runtime_exception exr) {
                     std::cerr << encode_utf8(get_messages()->msg_unhandled_exception()) << ": "
                         << exr.get_report();
                 }
                 prog->release();
-                main->release();
+                initial_scope->release();
+                main_scope->release();
             }
             gc.sweep();
             assert(gc.get_count() == 0);
