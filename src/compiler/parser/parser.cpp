@@ -189,6 +189,17 @@ namespace goat {
      */
     expression * parse_function_declaration(parser_data *data, token_iterator *iter, token *first);
 
+    /**
+     * @brief Tries to parse the list of tokens as a property acess
+     * @param left_part Left part of the property access (i.e. expression before the dot)
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param first First token (dot)
+     * @return Expression
+     */
+    property_access *parse_property_access(expression *left_part, parser_data *data,
+        token_iterator *iter, token *first);
+
     /* ----------------------------------------------------------------------------------------- */
 
     program * parse_program(gc_data *gc, token_iterator *iter) {
@@ -480,6 +491,28 @@ namespace goat {
             }
         }
 
+        if (second->type == token_type::dot) {
+            /*
+                This is a property access:
+                    obj.x
+            */
+            iter->next();
+            std::wstring var_name(first->code, first->length);
+            dynamic_string *obj = new dynamic_string(data->gc, var_name);
+            data->objects->insert(obj);
+            expression *left_part = new expression_variable(obj);
+            obj->release();
+            try {
+                property_access *result = parse_property_access(left_part, data, iter, second);
+                left_part->release();
+                return result;
+            }
+            catch(compiler_exception ex) {
+                left_part->release();
+                throw;
+            }
+        }
+
         position pos = first->merge_position(second);
         throw compiler_exception(new compiler_exception_data(
             &pos, get_messages()->msg_unable_to_parse_token_sequence())
@@ -656,5 +689,24 @@ namespace goat {
 
         } while(false);
         return new object_as_expression(get_function_that_does_nothing_instance());
+    }
+
+    property_access *parse_property_access(expression *left_part, parser_data *data,
+            token_iterator *iter, token *first) {
+        base_string *name = nullptr;
+        if (!iter->valid()) {
+            token *tok = iter->get();
+            if (tok->type == token_type::identifier) {
+                std::wstring str(tok->code, tok->length);
+                name = new dynamic_string(data->gc, str);
+                data->objects->insert(name);
+            }
+        }
+        if (name == nullptr) {
+            throw compiler_exception(new compiler_exception_data(
+                first, get_messages()->msg_expected_property_name())
+            );
+        }
+        return new property_access(left_part, name);
     }
 }
