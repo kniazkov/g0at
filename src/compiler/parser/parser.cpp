@@ -407,12 +407,11 @@ namespace goat {
     expression * parse_expression_without_operators(parser_data *data, token_iterator *iter) {
         assert(iter->valid());
         token *first = iter->get();
+        iter->next();
         if (first->type == token_type::identifier) {
-            iter->next();
             return parse_expression_begins_with_identifier(data, iter, first);
         }
         if (first->type == token_type::string) {
-            iter->next();
             token_string *str = (token_string*)first;
             dynamic_string *obj = new dynamic_string(data->gc, str->data);
             data->objects->insert(obj);
@@ -421,13 +420,16 @@ namespace goat {
             return result;
         }
         if (first->type == token_type::integer) {
-            iter->next();
             token_number *num = (token_number*)first;
             return new constant_integer_number(num->data.int_value);
         }
         if (first->type == token_type::keyword_function) {
-            iter->next();
             return parse_function_declaration(data, iter, first);
+        }
+        if (first->type == token_type::keyword_system) {
+            //if (iter->valid()) {
+            //}
+            return new system_object();
         }
         throw compiler_exception(new compiler_exception_data(
             first, get_messages()->msg_unable_to_parse_token_sequence())
@@ -496,7 +498,6 @@ namespace goat {
                 This is a property access:
                     obj.x
             */
-            iter->next();
             std::wstring var_name(first->code, first->length);
             dynamic_string *obj = new dynamic_string(data->gc, var_name);
             data->objects->insert(obj);
@@ -694,8 +695,9 @@ namespace goat {
     property_access *parse_property_access(expression *left_part, parser_data *data,
             token_iterator *iter, token *first) {
         base_string *name = nullptr;
-        if (!iter->valid()) {
+        if (iter->valid()) {
             token *tok = iter->get();
+            iter->next();
             if (tok->type == token_type::identifier) {
                 std::wstring str(tok->code, tok->length);
                 name = new dynamic_string(data->gc, str);

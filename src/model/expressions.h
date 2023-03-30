@@ -555,4 +555,13 @@ namespace goat {
          */
         statement_block *body;
     };
+
+    /**
+     * @brief The object that is located by the 'system' reference
+     */
+    class system_object : public expression {
+        const char * get_class_name() const override;
+        std::vector<child_descriptor> get_children() const override;
+        variable calc(scope *scope) override;
+    };
 }

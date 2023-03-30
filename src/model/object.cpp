@@ -91,6 +91,10 @@ namespace goat {
         return false;
     }
 
+    scope * object::to_scope() {
+        return nullptr;
+    }
+
     base_function * object::to_function() {
         return nullptr;
     }

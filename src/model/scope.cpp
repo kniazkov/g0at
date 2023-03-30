@@ -28,6 +28,10 @@ namespace goat {
     static_string str_println(L"println");
     static_string str_sqrt(L"sqrt");
 
+    scope * scope::to_scope() {
+        return this;
+    }
+
     /**
      * @brief Root scope, i.e. set of built-in objects
      */
@@ -57,6 +61,10 @@ namespace goat {
         scope * clone(object *proto) override {
             return this;
         }
+
+        scope * get_main_scope() override {
+            return nullptr;
+        }
     };
 
     root_scope root_scope_instance;
@@ -79,6 +87,13 @@ namespace goat {
 
         scope * clone() override;
         scope * clone(object *proto) override;
+
+        scope * get_main_scope() override {
+            /*
+                Since the prototype of such a scope is another scope, we have to look there
+            */
+            return get_first_prototype()->to_scope()->get_main_scope();
+        }
     };
 
     /**
@@ -98,6 +113,14 @@ namespace goat {
 
         scope * clone() override;
         scope * clone(object *proto) override;
+
+        scope * get_main_scope() override {
+            /*
+                In this case the second prototype (with index 1) is some other scope,
+                we have to look there
+            */
+            return get_prototype(1)->to_scope()->get_main_scope();
+        }
     };
 
     scope * scope_with_one_prototype::clone() {
@@ -143,6 +166,10 @@ namespace goat {
             /**
              * @todo: Exception
              */
+        }
+
+        scope * get_main_scope() override {
+            return this;
         }
     };
 

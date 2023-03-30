@@ -16,6 +16,7 @@
 namespace goat {
 
     class object;
+    class scope;
     class base_function;
     class gc_data;
 
@@ -311,6 +312,12 @@ namespace goat {
          */
         virtual bool get_real_value(const variable* var, double* const value_ptr) const;
         
+        /**
+         * @brief Converts pointer to object into a pointer to a scope, if possible
+         * @return Pointer to a scope or <code>nullptr</code>
+         */
+        virtual scope * to_scope();
+
         /**
          * @brief Converts pointer to object into a pointer to a function object, if possible
          * @return Pointer to a function object or <code>nullptr</code>

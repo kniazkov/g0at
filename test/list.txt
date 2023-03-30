@@ -16,6 +16,7 @@ user_defined_function
 function_without_arguments
 local_variables
 external_variables
+property_reading
 
 # Errors:
 

@@ -283,7 +283,8 @@ namespace goat {
     }
 
     variable property_access::calc(scope *scope) {
-        variable *var = obj->get_attribute(name);
+        variable left_value = obj->calc(scope);
+        variable *var = left_value.obj->get_attribute(name);
         if (!var) {
             object *ex_object = create_reference_error_clarified_exception(
                 scope->get_garbage_collector_data(), name->to_string(nullptr));
@@ -566,6 +567,22 @@ namespace goat {
     variable function_declaration::calc(scope *scope) {
         variable var;
         var.obj = new user_defined_function(scope->get_garbage_collector_data(), this);
+        return var;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    const char * system_object::get_class_name() const {
+        return "system";
+    }
+
+    std::vector<child_descriptor> system_object::get_children() const {
+        return {};
+    }
+
+    variable system_object::calc(scope *scope) {
+        variable var;
+        var.obj = scope->get_main_scope();
         return var;
     }
 }

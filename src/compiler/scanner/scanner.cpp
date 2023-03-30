@@ -127,6 +127,8 @@ namespace goat {
                 t->type = token_type::keyword_var;
             else if (t->length == 8 && 0 == std::memcmp(t->code, L"function", 8 * sizeof(wchar_t)))
                 t->type = token_type::keyword_function;
+            else if (t->length == 6 && 0 == std::memcmp(t->code, L"system", 6 * sizeof(wchar_t)))
+                t->type = token_type::keyword_system;
             else
                 t->type = token_type::identifier;
             tokens->push_back(t);

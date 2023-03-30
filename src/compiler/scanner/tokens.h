@@ -31,6 +31,7 @@ namespace goat {
         operato,
         keyword_var,
         keyword_function,
+        keyword_system,
         end,
         brackets_pair
     };

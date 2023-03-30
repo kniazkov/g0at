@@ -26,14 +26,21 @@ namespace goat {
          * @brief Creates a new instance of the scope, using this scope as a prototype
          * @return New scope
          */
-        virtual scope* clone() = 0;
+        virtual scope * clone() = 0;
 
         /**
          * @brief Creates a new instance of the scope, using some object and this scope
          *   as prototypes
          * @return New scope
          */
-        virtual scope* clone(object *proto) = 0;
+        virtual scope * clone(object *proto) = 0;
+
+        /**
+         * Returns pointer to the scope from which code execution begins
+         */
+        virtual scope * get_main_scope() = 0;
+
+        scope * to_scope() override;
     };
 
     /**
