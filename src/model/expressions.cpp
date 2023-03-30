@@ -230,16 +230,17 @@ namespace goat {
     }
 
     const data_type * expression_variable::get_data_type() const {
-        return declaration ? 
-            declaration->get_descriptor_by_name(name->to_string(nullptr))->type :
-            get_invalid_data_type();
+        //return declaration ? 
+        //    declaration->get_descriptor_by_name(name->to_string(nullptr))->type :
+        //    get_invalid_data_type();
+        return get_invalid_data_type();
     }
 
     void expression_variable::set_data_type(const data_type *type) {
-        if (declaration) {
-            auto *descriptor = declaration->get_descriptor_by_name(get_variable_name());
-            descriptor->type = descriptor->type->merge(type);
-        }
+        //if (declaration) {
+        //    auto *descriptor = declaration->get_descriptor_by_name(get_variable_name());
+        //    descriptor->type = descriptor->type->merge(type);
+        //}
     }
 
     /* ----------------------------------------------------------------------------------------- */

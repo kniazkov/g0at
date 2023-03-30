@@ -294,22 +294,28 @@ namespace goat {
             }
             token *tok = iter->next();
             if (!iter->valid()) {
-                result->add_variable(name, nullptr);
+                data_descriptor *descriptor = new data_descriptor(true, name, nullptr, nullptr);
                 name->release();
+                result->add_variable(descriptor);
+                descriptor->release();
                 return result;
             }
             if (tok->type == token_type::semicolon) {
                 iter->next();
-                result->add_variable(name, nullptr);
+                data_descriptor *descriptor = new data_descriptor(true, name, nullptr, nullptr);
                 name->release();
+                result->add_variable(descriptor);
+                descriptor->release();
                 return result;
             }
             if (tok->type == token_type::comma) {
                 if (multiple) {
                     separator = tok;
                     iter->next();
-                    result->add_variable(name, nullptr);
+                    data_descriptor *descriptor = new data_descriptor(true, name, nullptr, nullptr);
                     name->release();
+                    result->add_variable(descriptor);
+                    descriptor->release();
                 }
                 else {
                     name->release();
@@ -323,9 +329,12 @@ namespace goat {
                 iter->next();
                 try {
                     expression *init_value = parse_expression(data, iter);
-                    result->add_variable(name, init_value);
+                    data_descriptor *descriptor = new data_descriptor(
+                        true, name, nullptr, init_value);
                     name->release();
                     init_value->release();
+                    result->add_variable(descriptor);
+                    descriptor->release();
                 }
                 catch (compiler_exception ex) {
                     name->release();

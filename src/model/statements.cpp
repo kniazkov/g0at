@@ -108,43 +108,96 @@ namespace goat {
 
     /* ----------------------------------------------------------------------------------------- */
 
+    data_descriptor::data_descriptor(bool modifiable, base_string *name, base_string *proto_name,
+            expression *init_value) {
+        this->modifiable = modifiable;
+        this->name = name;
+        name->add_reference();
+        this->proto_name = proto_name;
+        if (proto_name) {
+            proto_name->add_reference();
+        }
+        this->init_value = init_value;
+        if (init_value) {
+            init_value->add_reference();
+        }
+        this->type = get_unknown_data_type();
+    }
+
+    data_descriptor::~data_descriptor() {
+        name->release();
+        if (proto_name) {
+            proto_name->release();
+        }
+        if (init_value) {
+            init_value->release();
+        }
+    }
+
+    void data_descriptor::initialize_data_in_the_scope(scope *scope) {
+        if (init_value) {
+            variable value = init_value->calc(scope);
+            scope->set_attribute(name, value);
+            value.release();
+        }
+        else {
+            scope->set_attribute(name, get_null_object());
+        }
+    }
+
+    void data_descriptor::traverse_syntax_tree(element_visitor *visitor) {
+        visitor->visit(this);
+        if (init_value) {
+            init_value->traverse_syntax_tree(visitor);
+        }
+    }
+
+    const char * data_descriptor::get_class_name() const {
+        return "data";
+    }
+
+    std::vector<child_descriptor> data_descriptor::get_children() const {
+        std::vector<child_descriptor> list;
+        if (init_value) {
+            list.push_back({"init value", init_value});
+        }
+        return list;
+    }
+
+    std::vector<element_data_descriptor> data_descriptor::get_data() const {
+        std::vector<element_data_descriptor> list;
+        variable var;
+        var.obj = name;
+        list.push_back({"name", var});
+        return list;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
     variable_declaration::~variable_declaration() {
-        for (descriptor *descr : list) {
-            descr->name->release();
-            if (descr->init_value) {
-                descr->init_value->release();
-            }
-            delete descr;
+        for (data_descriptor *descriptor : list) {
+            descriptor->release();
         }
     }
 
     /**
      * @todo Check for duplicated names 
      */
-    void variable_declaration::add_variable(base_string *name, expression *init_value) {
-        descriptor *descr = new descriptor({
-            name,
-            init_value,
-            get_unknown_data_type()
-        });
-        list.push_back(descr);
-        map[name->to_string(nullptr)] = descr;
-        name->add_reference();
-        if (init_value) {
-            init_value->add_reference();
-        }
+    void variable_declaration::add_variable(data_descriptor *descriptor) {
+        list.push_back(descriptor);
+        map[descriptor->get_name_as_string()] = descriptor;
+        descriptor->add_reference();
     }
 
     std::vector<std::wstring> variable_declaration::get_list_of_variable_names() const {
         std::vector<std::wstring> result;
-        for (auto item : list) {
-            result.push_back(item->name->to_string(nullptr));
+        for (auto descriptor : list) {
+            result.push_back(descriptor->get_name_as_string());
         }
         return result;
     }
 
-    variable_declaration::descriptor * variable_declaration::get_descriptor_by_name(
-            std::wstring name) {
+    data_descriptor * variable_declaration::get_descriptor_by_name(std::wstring name) {
         auto pair = map.find(name);
         assert(pair != map.end());
         return pair->second;
@@ -152,10 +205,8 @@ namespace goat {
 
     void variable_declaration::traverse_syntax_tree(element_visitor *visitor) {
         visitor->visit(this);
-        for (auto item : list) {
-            if (item->init_value) {
-                item->init_value -> traverse_syntax_tree(visitor);
-            }
+        for (auto descriptor : list) {
+            descriptor->traverse_syntax_tree(visitor);
         }
     }
 
@@ -169,43 +220,13 @@ namespace goat {
 
     void variable_declaration::exec(scope *scope) {
         try {
-            for (auto descr : list) {
-                if (descr->init_value) {
-                    variable value = descr->init_value->calc(scope);
-                    scope->set_attribute(descr->name, value);
-                    value.release();
-                }
-                else {
-                    scope->set_attribute(descr->name, get_null_object());
-                }
+            for (auto descriptor : list) {
+                descriptor->initialize_data_in_the_scope(scope);
             }
         }
         catch(runtime_exception ex) {
             ex.add_stack_trace_data(trace_data);
             throw;
         }
-    }
-
-    unsigned int variable_declaration::generate_node_description(std::stringstream &stream,
-            unsigned int *counter, std::unordered_map<element*, unsigned int> &all_indexes) {
-        unsigned int stmt_index = ++(*counter);
-        all_indexes[this] = stmt_index;
-        stream << "  node_" << stmt_index << " [label=<<b>" << get_class_name() << "</b>" 
-            << "> color=\"" << get_node_color() << "\"];" << std::endl;
-        for (unsigned int k = 0; k < list.size(); k++) {
-            descriptor *item = list[k];
-            unsigned int var_index = ++(*counter);
-            stream << "  node_" << var_index << " [shape=circle style=\"\" label=<<b>" 
-                << encode_utf8(item->name->to_string(nullptr)) << "</b>" << "> color=\"black\"];"
-                << std::endl;
-            stream << "  node_" << stmt_index << " -> node_" << var_index << " [label=\"  " << k
-                << "\"];" << std::endl;
-            if (item->init_value) {
-                unsigned int init_expr_index =
-                    item->init_value->generate_node_description(stream, counter, all_indexes);
-                stream << "  node_" << var_index << " -> node_" << init_expr_index << std::endl;
-            }            
-        }
-        return stmt_index;
     }
 }

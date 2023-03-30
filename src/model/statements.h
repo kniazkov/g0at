@@ -146,30 +146,78 @@ namespace goat {
     };
 
     /**
+     * @brief Data descriptor, that is, the descriptor of a variable,
+     *  constant or argument of a function
+     */
+    class data_descriptor : public element {
+    public:
+        /**
+         * @brief Constructor
+         * @param modifiable Flag indicating whether or not this data is modifiable
+         * @param name Name of the variable, constant, argument
+         * @param proto_name Prototype name
+         * @param init_value Initial value
+         */
+        data_descriptor(bool modifiable, base_string *name, base_string *proto_name,
+            expression *init_value);
+
+        /**
+         * @brief Destructor
+         */
+        ~data_descriptor();
+
+        /**
+         * @brief Returns data name (identifier) as a string
+         * @return Data name (identifier)
+         */
+        std::wstring get_name_as_string() {
+            return name->to_string(nullptr);
+        }
+
+        /**
+         * @brief Initializes data (that is, creates variables and constants
+         *  and assigns values to them) in the scope
+         * @param scope The scope
+         */
+        void initialize_data_in_the_scope(scope *scope);
+
+        void traverse_syntax_tree(element_visitor *visitor) override;
+        const char * get_class_name() const override;
+        std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
+
+    private:
+        /**
+         * @brief Flag indicating whether or not this data is modifiable
+         */
+        bool modifiable;
+
+        /**
+         * @brief Identifier of the data, that is, the name of the variable, constant, argument...
+         */
+        base_string *name;
+
+        /**
+         * @brief Prototype name
+         */
+        base_string *proto_name;
+
+        /**
+         * @brief Initial value
+         */
+        expression *init_value;
+
+        /**
+         * @brief A Goat data type to which data can be cast
+         */
+        const data_type *type;
+    };
+
+    /**
      * @brief Statement describing the declaration of variables
      */
     class variable_declaration : public statement {
     public:
-        /**
-         * @brief Descriptor of one variable
-         */
-        struct descriptor {
-            /**
-             * @brief Variable name
-             */
-            base_string *name;
-
-            /**
-             * @brief Initial value of the variable
-             */
-            expression *init_value;
-
-            /**
-             * @brief A Goat data type to which variable can be cast
-             */
-            const data_type * type;
-        };
-
         /**
          * @brief Constructor
          * @param file_name The name of the file containing this statement
@@ -185,10 +233,9 @@ namespace goat {
 
         /**
          * @brief Adds a variable to the list
-         * @param name Variable name
-         * @param init_value Initial value of the variable (can be <code>nullptr</code>)
+         * @param descriptor Variable descriptor
          */
-        void add_variable(base_string *name, expression *init_value);
+        void add_variable(data_descriptor *descriptor);
 
         /**
          * @brief Returns the list of declared variable names
@@ -201,25 +248,23 @@ namespace goat {
          * @param name Variable name
          * @return Descriptor
          */
-        descriptor * get_descriptor_by_name(std::wstring name);
+        data_descriptor * get_descriptor_by_name(std::wstring name);
 
         void traverse_syntax_tree(element_visitor *visitor) override;
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
-        unsigned int generate_node_description(std::stringstream &stream, unsigned int *counter,
-            std::unordered_map<element*, unsigned int> &all_indexes) override;
 
     private:
         /**
          * @brief List containing variable descriptors
          */
-        std::vector<descriptor*> list;
+        std::vector<data_descriptor*> list;
 
         /**
          * @brief Mapping variable names to descriptors
          */
-        std::map<std::wstring, descriptor*> map;
+        std::map<std::wstring, data_descriptor*> map;
 
         /**
          * @brief Data required when tracing the stack (e.g. when an exception occurs)

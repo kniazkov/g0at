@@ -30,6 +30,9 @@ namespace goat {
     void element_visitor::visit(expression_variable *expr) {
     }
 
+    void element_visitor::visit(data_descriptor *descriptor) {
+    }
+
     void element_visitor::visit(variable_declaration *stmt) {
     }
 
