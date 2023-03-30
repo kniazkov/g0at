@@ -215,7 +215,11 @@ namespace goat {
     }
 
     std::vector<child_descriptor> variable_declaration::get_children() const {
-        return {};
+        std::vector<child_descriptor> children;
+        for (auto descriptor : list) {
+            children.push_back({nullptr, descriptor});
+        }
+        return children;
     }
 
     void variable_declaration::exec(scope *scope) {
