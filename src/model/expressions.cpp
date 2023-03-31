@@ -165,7 +165,7 @@ namespace goat {
 
     expression_variable::expression_variable(base_string *name) {
         this->name = name;
-        this->declaration = nullptr;
+        this->descriptor = nullptr;
         name->add_reference();
     }
 
@@ -195,8 +195,8 @@ namespace goat {
 
     void expression_variable::generate_additional_edges(std::stringstream &stream,
             unsigned int index, std::unordered_map<element*, unsigned int> &all_indexes) {
-        if (declaration) {
-            auto pair = all_indexes.find(declaration);
+        if (descriptor) {
+            auto pair = all_indexes.find(descriptor);
             if (pair != all_indexes.end()) {
                 stream << "  node_" << pair->second << " -> node_" << index 
                     << "  [style=dashed dir=back color=midnightblue];"
@@ -230,17 +230,13 @@ namespace goat {
     }
 
     const data_type * expression_variable::get_data_type() const {
-        //return declaration ? 
-        //    declaration->get_descriptor_by_name(name->to_string(nullptr))->type :
-        //    get_invalid_data_type();
-        return get_invalid_data_type();
+        return descriptor ? descriptor->type : get_invalid_data_type();
     }
 
     void expression_variable::set_data_type(const data_type *type) {
-        //if (declaration) {
-        //    auto *descriptor = declaration->get_descriptor_by_name(get_variable_name());
-        //    descriptor->type = descriptor->type->merge(type);
-        //}
+        if (descriptor) {
+            descriptor->type = descriptor->type->merge(type);
+        }
     }
 
     /* ----------------------------------------------------------------------------------------- */

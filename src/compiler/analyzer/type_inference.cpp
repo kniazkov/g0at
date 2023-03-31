@@ -15,15 +15,11 @@ namespace goat {
      */
     class type_inference : public element_visitor {
 
-        void visit(variable_declaration *stmt) override {
-            /*
-            for (std::wstring name : stmt->get_list_of_variable_names()) {
-                auto descr = stmt->get_descriptor_by_name(name);
-                if (descr->init_value) {
-                    descr->type = descr->init_value->get_data_type();
-                }
-            }
-            */
+        void visit(data_descriptor *descriptor) override {
+            expression *init_value = descriptor->get_init_value();
+            if (init_value) {
+                descriptor->type = init_value->get_data_type();
+            } 
         }
     };
 

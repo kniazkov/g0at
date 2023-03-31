@@ -175,6 +175,13 @@ namespace goat {
         }
 
         /**
+         * @brief Returns initial value (if exists)
+         */
+        expression * get_init_value() {
+            return init_value;
+        }
+
+        /**
          * @brief Initializes data (that is, creates variables and constants
          *  and assigns values to them) in the scope
          * @param scope The scope
@@ -185,6 +192,11 @@ namespace goat {
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         std::vector<element_data_descriptor> get_data() const override;
+
+        /**
+         * @brief A Goat data type to which data can be cast
+         */
+        const data_type *type;
 
     private:
         /**
@@ -206,11 +218,6 @@ namespace goat {
          * @brief Initial value
          */
         expression *init_value;
-
-        /**
-         * @brief A Goat data type to which data can be cast
-         */
-        const data_type *type;
     };
 
     /**

@@ -16,7 +16,7 @@
 namespace goat {
 
     class assignable_expression;
-    class variable_declaration;
+    class data_descriptor;
     class statement_block;
 
     /**
@@ -181,11 +181,11 @@ namespace goat {
         }
 
         /**
-         * @brief Sets the pointer to statement in which the variable has been declared
-         * @param stmt The statement
+         * @brief Sets the relationship to the descriptor describing the variable
+         * @param descriptor The descriptor
          */
-        void set_declaration_statement(variable_declaration *stmt) {
-            declaration = stmt;
+        void set_descriptor(data_descriptor *descriptor) {
+            this->descriptor = descriptor;
         }
 
         void traverse_syntax_tree(element_visitor *visitor) override;
@@ -206,9 +206,9 @@ namespace goat {
         base_string *name;
 
         /**
-         * @brief Statement in which the variable has been declared
+         * @brief Descriptor describing the variable
          */
-        variable_declaration *declaration;
+        data_descriptor *descriptor;
     };
 
     /**

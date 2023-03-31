@@ -14,19 +14,16 @@ namespace goat {
      * @brief Element visitor that binds variables to their declaration locations
      */
     class variable_declaration_binder : public element_visitor {
-
         void visit(expression_variable *expr) override {
             std::wstring name = expr->get_variable_name();
-            auto pair = declarations.find(name);
-            if (pair != declarations.end()) {
-                expr->set_declaration_statement(pair->second);
+            auto pair = descriptors.find(name);
+            if (pair != descriptors.end()) {
+                expr->set_descriptor(pair->second);
             }
         }
 
-        void visit(variable_declaration *stmt) override {
-            for (std::wstring name : stmt->get_list_of_variable_names()) {
-                declarations[name] = stmt;
-            }
+        void visit(data_descriptor *descriptor) override {
+            descriptors[descriptor->get_name_as_string()] = descriptor;
         }
 
     private:
@@ -34,7 +31,7 @@ namespace goat {
          * @brief The relationship between statements in which variables are declared
          *   and variable names
          */
-        std::map<std::wstring, variable_declaration*> declarations;
+        std::map<std::wstring, data_descriptor*> descriptors;
     };
 
     /**
