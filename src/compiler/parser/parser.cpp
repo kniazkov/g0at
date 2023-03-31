@@ -12,6 +12,7 @@
 #include "compiler/scanner/tokens.h"
 #include "compiler/common/exceptions.h"
 #include "resources/messages.h"
+#include "model/data_description.h"
 #include "model/expressions.h"
 #include "model/statements.h"
 #include "model/strings.h"

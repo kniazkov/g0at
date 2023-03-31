@@ -6,6 +6,7 @@
 */
 
 #include "model/code.h"
+#include "model/data_description.h"
 #include "model/statements.h"
 
 namespace goat {

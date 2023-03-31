@@ -12,7 +12,7 @@
 #include "statements.h"
 #include "functions.h"
 #include "scope.h"
-
+#include "data_description.h"
 
 namespace goat {
 
