@@ -295,7 +295,7 @@ namespace goat {
             }
             token *tok = iter->next();
             if (!iter->valid()) {
-                data_descriptor *descriptor = new data_descriptor(true, name, nullptr, nullptr);
+                data_descriptor *descriptor = new data_descriptor(true, name, nullptr);
                 name->release();
                 result->add_variable(descriptor);
                 descriptor->release();
@@ -303,7 +303,7 @@ namespace goat {
             }
             if (tok->type == token_type::semicolon) {
                 iter->next();
-                data_descriptor *descriptor = new data_descriptor(true, name, nullptr, nullptr);
+                data_descriptor *descriptor = new data_descriptor(true, name, nullptr);
                 name->release();
                 result->add_variable(descriptor);
                 descriptor->release();
@@ -313,7 +313,7 @@ namespace goat {
                 if (multiple) {
                     separator = tok;
                     iter->next();
-                    data_descriptor *descriptor = new data_descriptor(true, name, nullptr, nullptr);
+                    data_descriptor *descriptor = new data_descriptor(true, name, nullptr);
                     name->release();
                     result->add_variable(descriptor);
                     descriptor->release();
@@ -330,8 +330,7 @@ namespace goat {
                 iter->next();
                 try {
                     expression *init_value = parse_expression(data, iter);
-                    data_descriptor *descriptor = new data_descriptor(
-                        true, name, nullptr, init_value);
+                    data_descriptor *descriptor = new data_descriptor(true, name, init_value);
                     name->release();
                     init_value->release();
                     result->add_variable(descriptor);

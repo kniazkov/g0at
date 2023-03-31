@@ -7,12 +7,32 @@
 
 #pragma once
 
+#include <vector>
 #include "code.h"
 #include "scope.h"
 #include "expressions.h"
 #include "compiler/analyzer/data_type.h"
 
 namespace goat {
+
+    /**
+     * @brief The descriptor of the prototype, that is, the part after the variable/constant name
+     */
+    class prototype_descriptor {
+    public:
+        /**
+         * @brief Virtual destructor.
+         */
+        virtual ~prototype_descriptor() {
+        }
+
+        /**
+         * @brief Represents the descriptor as a Goat object
+         * @param gc Data required for the garbage collector
+         * @return Descriptor as a Goat object
+         */
+        virtual object * to_object(gc_data* const gc) = 0;
+    };
 
     /**
      * @brief Data descriptor, that is, the descriptor of a variable,
@@ -24,11 +44,21 @@ namespace goat {
          * @brief Constructor
          * @param modifiable Flag indicating whether or not this data is modifiable
          * @param name Name of the variable, constant, argument
-         * @param proto_name Prototype name
+         * @param parent Prototype descriptor
          * @param init_value Initial value
          */
-        data_descriptor(bool modifiable, base_string *name, base_string *proto_name,
-            expression *init_value);
+        data_descriptor(bool modifiable, base_string *name, expression *init_value);
+
+        /**
+         * @brief Constructor
+         * @param modifiable Flag indicating whether or not this data is modifiable
+         * @param name Name of the variable, constant, argument
+         * @param parent Prototype descriptor
+         * @param init_value Initial value
+         * @param proto_list List of prototype names
+         */
+        data_descriptor(bool modifiable, base_string *name, expression *init_value,
+            std::vector<std::wstring> proto_list);
 
         /**
          * @brief Destructor
@@ -79,9 +109,9 @@ namespace goat {
         base_string *name;
 
         /**
-         * @brief Prototype name
+         * @brief Prototype descriptor
          */
-        base_string *proto_name;
+        prototype_descriptor *extends_from;
 
         /**
          * @brief Initial value

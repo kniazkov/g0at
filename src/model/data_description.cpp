@@ -5,30 +5,92 @@
     that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 */
 
+#include <cassert>
 #include "data_description.h"
 
 namespace goat {
 
-    data_descriptor::data_descriptor(bool modifiable, base_string *name, base_string *proto_name,
-            expression *init_value) {
+    /**
+     * @brief Simple descriptor that consists of only one identifier, for example:
+     *   'var i:Integer;' - here 'Integer' is a simple descriptor
+     */
+    class simple_prototype_descriptor : public prototype_descriptor {
+    public:
+        /**
+         * @brief Constructor.
+         * @param identifier Identifier representing the descriptor
+         */
+        simple_prototype_descriptor(std::wstring identifier) 
+                : identifier(identifier), obj(nullptr) {
+        }
+
+        /**
+         * Destructor.
+         */
+        ~simple_prototype_descriptor() {
+            if (obj) {
+                obj->release();
+            }
+        }
+
+        object * to_object(gc_data* const gc) override {
+            if (!obj) {
+                obj = new dynamic_string(gc, identifier);
+            } 
+            return obj;
+        }
+
+    private:
+        /**
+         * @brief Identifier representing the descriptor
+         */
+        std::wstring identifier;
+
+        /**
+         * @brief Cached representation of a descriptor as a Goat object
+         */
+        object *obj;
+    };
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    data_descriptor::data_descriptor(bool modifiable, base_string *name, expression *init_value) {
         this->modifiable = modifiable;
         this->name = name;
-        name->add_reference();
-        this->proto_name = proto_name;
-        if (proto_name) {
-            proto_name->add_reference();
-        }
+        this->extends_from = nullptr;
         this->init_value = init_value;
+        this->type = get_unknown_data_type();
+
+        name->add_reference();
         if (init_value) {
             init_value->add_reference();
         }
+    }
+
+    data_descriptor::data_descriptor(bool modifiable, base_string *name, expression *init_value,
+            std::vector<std::wstring> proto_list) {
+        this->modifiable = modifiable;
+        this->name = name;
+        if (proto_list.empty()) {
+            this->extends_from = nullptr;            
+        } else if (proto_list.size() == 1) {
+            this->extends_from = new simple_prototype_descriptor(proto_list[0]);
+        } else {
+            assert(false); // will be implemented
+        }
+        this->init_value = init_value;
         this->type = get_unknown_data_type();
+
+        name->add_reference();
+        if (init_value) {
+            init_value->add_reference();
+        }
     }
 
     data_descriptor::~data_descriptor() {
         name->release();
-        if (proto_name) {
-            proto_name->release();
+        if (extends_from) {
+            delete extends_from;
         }
         if (init_value) {
             init_value->release();
