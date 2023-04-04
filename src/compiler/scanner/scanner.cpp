@@ -60,6 +60,7 @@ namespace goat {
         { '.', token_type::dot },
         { ',', token_type::comma },
         { ';', token_type::semicolon },
+        { ':', token_type::colon },
         { '$', token_type::dollar_sign }
     };
 
@@ -174,31 +175,21 @@ namespace goat {
             return t;
         }
 
-        switch(c) {
-            case '(':
-            case '{':
-            case '[':
-            case ')':
-            case '}':
-            case ']':
-            {
-                bracket_descriptor descriptor = brackets_list[c];
-                token_bracket *t = new token_bracket(b, descriptor.type, descriptor.paired_bracket);
-                next_char();
-                tokens->push_back(t);
-                return t;
-            }
-            case '.':
-            case ',':
-            case ';':
-            case '$': {
-                token *t = new token(b);
-                next_char();
-                t->type = single_character_tokens[c];
-                t->length = 1;
-                tokens->push_back(t);
-                return t;
-            }
+        if (brackets_list.count(c) > 0) {
+            bracket_descriptor descriptor = brackets_list[c];
+            token_bracket *t = new token_bracket(b, descriptor.type, descriptor.paired_bracket);
+            next_char();
+            tokens->push_back(t);
+            return t;
+        }
+
+        if (single_character_tokens.count(c) > 0) {
+            token *t = new token(b);
+            next_char();
+            t->type = single_character_tokens[c];
+            t->length = 1;
+            tokens->push_back(t);
+            return t;
         }
 
         std::wstringstream error;

@@ -117,6 +117,18 @@ namespace goat {
         token_iterator *iter, token *dollar);
 
     /**
+     * @brief Tries to parse the list of tokens as a data declaration, i.e. such sequence:
+     *   <code>name:type</code>
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param name Pointer to variable name
+     * @param proto_list Pointer to a list containing prototype names
+     * @return Parsing result, <code>true</code> if token sequence contains data declaration
+     */
+    bool parse_data_declaration(parser_data *data, token_iterator *iter, dynamic_string **name,
+        std::vector<std::wstring> *proto_list);
+
+    /**
      * @brief Tries to parse the list of tokens as a variable(s) declaration
      * @param data Data needed for parsing
      * @param iter Iterator by token
@@ -271,7 +283,35 @@ namespace goat {
         return parse_variable_declaration(data, iter, dollar, false);
     }
 
-    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter,
+    bool parse_data_declaration(parser_data *data, token_iterator *iter, dynamic_string **name,
+            std::vector<std::wstring> *proto_list) {
+        if (!iter->valid()) {
+            return false;
+        }
+        token *tok_name = iter->get();
+        if (tok_name->type == token_type::identifier) {
+            std::wstring str_name(tok_name->code, tok_name->length);
+            *name = new dynamic_string(data->gc, str_name);
+        }
+        else {
+            return false;
+        }
+        token *tok = iter->next();
+        if (tok && tok->type == token_type::colon) {
+            token *next = iter->next();
+            if (!next || next->type != token_type::identifier) {
+                throw compiler_exception(new compiler_exception_data(
+                    tok, get_messages()->msg_expected_type_name())
+                );
+            }
+            iter->next();
+            std::wstring proto(next->code, next->length);
+            proto_list->push_back(proto);
+        }
+        return true;
+    }
+
+    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter, 
             token *first_token, bool multiple) {
         variable_declaration *result = new variable_declaration(
             data->copy_file_name(first_token->file_name),
@@ -280,22 +320,17 @@ namespace goat {
         token *separator = first_token;
         while(true) {
             dynamic_string *name = nullptr;
-            if (iter->valid()) {
-                token *tok_name = iter->get();
-                if (tok_name->type == token_type::identifier) {
-                    std::wstring str_name(tok_name->code, tok_name->length);
-                    name = new dynamic_string(data->gc, str_name);
-                }
-            }
-            if (!name) {
+            std::vector<std::wstring> proto_list;
+            bool has_name = parse_data_declaration(data, iter, &name, &proto_list);
+            if (!has_name) {
                 result->release();
                 throw compiler_exception(new compiler_exception_data(
                     separator, get_messages()->msg_variable_name_is_expected())
                 );
             }
-            token *tok = iter->next();
+            token *tok = iter->get();
             if (!iter->valid()) {
-                data_descriptor *descriptor = new data_descriptor(true, name, nullptr);
+                data_descriptor *descriptor = new data_descriptor(true, name, nullptr, proto_list);
                 name->release();
                 result->add_variable(descriptor);
                 descriptor->release();
@@ -303,7 +338,7 @@ namespace goat {
             }
             if (tok->type == token_type::semicolon) {
                 iter->next();
-                data_descriptor *descriptor = new data_descriptor(true, name, nullptr);
+                data_descriptor *descriptor = new data_descriptor(true, name, nullptr, proto_list);
                 name->release();
                 result->add_variable(descriptor);
                 descriptor->release();
@@ -313,7 +348,8 @@ namespace goat {
                 if (multiple) {
                     separator = tok;
                     iter->next();
-                    data_descriptor *descriptor = new data_descriptor(true, name, nullptr);
+                    data_descriptor *descriptor = new data_descriptor(true, name, nullptr,
+                        proto_list);
                     name->release();
                     result->add_variable(descriptor);
                     descriptor->release();
@@ -330,7 +366,8 @@ namespace goat {
                 iter->next();
                 try {
                     expression *init_value = parse_expression(data, iter);
-                    data_descriptor *descriptor = new data_descriptor(true, name, init_value);
+                    data_descriptor *descriptor = new data_descriptor(true, name, init_value,
+                        proto_list);
                     name->release();
                     init_value->release();
                     result->add_variable(descriptor);
