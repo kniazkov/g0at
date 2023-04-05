@@ -79,6 +79,12 @@ namespace goat {
         return nullptr;
     }
 
+    variable object::get_default_value() {
+        variable var;
+        var.obj = this;
+        return var;
+    }
+
     bool object::get_string_value(std::wstring* const value_ptr) const {
         return false;
     }

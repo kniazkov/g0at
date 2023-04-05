@@ -132,6 +132,10 @@ namespace goat {
         variable var;
         var.obj = name;
         list.push_back({"name", var});
+        if (extends_from) {
+            var.obj = extends_from->to_object(name->get_garbage_collector_data());
+            list.push_back({"extends", var});        
+        }
         return list;
     }
 }
