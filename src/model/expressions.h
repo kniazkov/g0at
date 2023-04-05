@@ -16,7 +16,8 @@
 namespace goat {
 
     class assignable_expression;
-    class variable_declaration;
+    class data_descriptor;
+    class statement_block;
 
     /**
      * @brief An expression is a syntactic construction that returns (calculates) some value
@@ -180,11 +181,11 @@ namespace goat {
         }
 
         /**
-         * @brief Sets the pointer to statement in which the variable has been declared
-         * @param stmt The statement
+         * @brief Sets the relationship to the descriptor describing the variable
+         * @param descriptor The descriptor
          */
-        void set_declaration_statement(variable_declaration *stmt) {
-            declaration = stmt;
+        void set_descriptor(data_descriptor *descriptor) {
+            this->descriptor = descriptor;
         }
 
         void traverse_syntax_tree(element_visitor *visitor) override;
@@ -205,9 +206,49 @@ namespace goat {
         base_string *name;
 
         /**
-         * @brief Statement in which the variable has been declared
+         * @brief Descriptor describing the variable
          */
-        variable_declaration *declaration;
+        data_descriptor *descriptor;
+    };
+
+    /**
+     * @brief An expression that represents accessing to a property (i.e. reading and writing)
+     */
+    class property_access : public assignable_expression {
+    public:
+        /**
+         * @brief Constructor
+         * @param obj The object whose property is accessed
+         * @param name The property name
+         */
+        property_access(expression *obj, base_string *name);
+
+        /**
+         * @brief Destructor
+         */
+        ~property_access();
+
+        void traverse_syntax_tree(element_visitor *visitor) override;
+        const char * get_class_name() const override;
+        std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
+        void generate_additional_edges(std::stringstream &stream, unsigned int index,
+            std::unordered_map<element*, unsigned int> &all_indexes) override;
+        variable calc(scope *scope) override;
+        void assign(scope *scope, variable value) override;
+        const data_type * get_data_type() const override;
+        void set_data_type(const data_type *type) override;
+
+    private:
+        /**
+         * The object whose property is accessed
+         */
+        expression *obj;
+
+        /**
+         * @brief The property name
+         */
+        base_string *name;
     };
 
     /**
@@ -476,5 +517,51 @@ namespace goat {
 
     protected:
         variable calc(scope *scope, assignable_expression *left, variable *right) override;
+    };
+
+    /**
+     * @brief Function declaration
+     */
+    class function_declaration : public expression {
+        friend class user_defined_function;
+    public:
+        /**
+         * @brief Constructor
+         * @param args Function arguments
+         * @param body Function body
+         */
+        function_declaration(std::vector<base_string*> args, statement_block *body);
+
+        /**
+         * @brief Destructor
+         */
+        ~function_declaration();
+
+        const char * get_class_name() const override;
+        const data_type * get_data_type() const override;
+        void traverse_syntax_tree(element_visitor *visitor) override;
+        std::vector<child_descriptor> get_children() const override;
+        std::vector<element_data_descriptor> get_data() const override;
+        variable calc(scope *scope) override;
+
+    private:
+        /**
+         * @brief Function arguments
+         */
+        std::vector<base_string*> args;
+
+        /**
+         * @brief Function body
+         */
+        statement_block *body;
+    };
+
+    /**
+     * @brief The object that is located by the 'system' reference
+     */
+    class system_object : public expression {
+        const char * get_class_name() const override;
+        std::vector<child_descriptor> get_children() const override;
+        variable calc(scope *scope) override;
     };
 }

@@ -7,6 +7,8 @@
 
 #include "functions.h"
 #include "generic_object.h"
+#include "expressions.h"
+#include "statements.h"
 
 namespace goat {
     /**
@@ -44,5 +46,19 @@ namespace goat {
 
     base_function * base_function::to_function() {
         return this;
-    }    
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    user_defined_function::user_defined_function(
+            gc_data* const gc, const function_declaration *declaration)
+            : dynamic_object(gc), declaration(declaration) {
+    }
+
+    void user_defined_function::exec(scope *external_scope, std::vector<variable> &args,
+            variable* ret_val) {
+        scope *internal_scope = external_scope->clone();
+        declaration->body->exec(internal_scope);
+        internal_scope->release();
+    }
 }

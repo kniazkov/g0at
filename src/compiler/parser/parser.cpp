@@ -12,9 +12,11 @@
 #include "compiler/scanner/tokens.h"
 #include "compiler/common/exceptions.h"
 #include "resources/messages.h"
+#include "model/data_description.h"
 #include "model/expressions.h"
 #include "model/statements.h"
 #include "model/strings.h"
+#include "model/built_in_functions.h"
 
 namespace goat {
 
@@ -115,6 +117,18 @@ namespace goat {
         token_iterator *iter, token *dollar);
 
     /**
+     * @brief Tries to parse the list of tokens as a data declaration, i.e. such sequence:
+     *   <code>name:type</code>
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param name Pointer to variable name
+     * @param proto_list Pointer to a list containing prototype names
+     * @return Parsing result, <code>true</code> if token sequence contains data declaration
+     */
+    bool parse_data_declaration(parser_data *data, token_iterator *iter, dynamic_string **name,
+        std::vector<std::wstring> *proto_list);
+
+    /**
      * @brief Tries to parse the list of tokens as a variable(s) declaration
      * @param data Data needed for parsing
      * @param iter Iterator by token
@@ -145,7 +159,7 @@ namespace goat {
      * @brief Parses an expression that begins with an identifier
      * @param data Data needed for parsing
      * @param iter Iterator by token
-     * @param ident First token (identifier)
+     * @param first First token (identifier)
      * @return An expression
      */
     expression * parse_expression_begins_with_identifier(parser_data *data, token_iterator *iter,
@@ -178,6 +192,26 @@ namespace goat {
      * @param chain Chain of operators and expressions
      */
     void parse_assignments(std::list<token_chain_item> *chain);
+
+    /**
+     * @brief Tries to parse the list of tokens as a function declaration
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param first First token (keyword or dollar sign)
+     * @return Expression
+     */
+    expression * parse_function_declaration(parser_data *data, token_iterator *iter, token *first);
+
+    /**
+     * @brief Tries to parse the list of tokens as a property acess
+     * @param left_part Left part of the property access (i.e. expression before the dot)
+     * @param data Data needed for parsing
+     * @param iter Iterator by token
+     * @param first First token (dot)
+     * @return Expression
+     */
+    property_access *parse_property_access(expression *left_part, parser_data *data,
+        token_iterator *iter, token *first);
 
     /* ----------------------------------------------------------------------------------------- */
 
@@ -249,7 +283,35 @@ namespace goat {
         return parse_variable_declaration(data, iter, dollar, false);
     }
 
-    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter,
+    bool parse_data_declaration(parser_data *data, token_iterator *iter, dynamic_string **name,
+            std::vector<std::wstring> *proto_list) {
+        if (!iter->valid()) {
+            return false;
+        }
+        token *tok_name = iter->get();
+        if (tok_name->type == token_type::identifier) {
+            std::wstring str_name(tok_name->code, tok_name->length);
+            *name = new dynamic_string(data->gc, str_name);
+        }
+        else {
+            return false;
+        }
+        token *tok = iter->next();
+        if (tok && tok->type == token_type::colon) {
+            token *next = iter->next();
+            if (!next || next->type != token_type::identifier) {
+                throw compiler_exception(new compiler_exception_data(
+                    tok, get_messages()->msg_expected_type_name())
+                );
+            }
+            iter->next();
+            std::wstring proto(next->code, next->length);
+            proto_list->push_back(proto);
+        }
+        return true;
+    }
+
+    variable_declaration * parse_variable_declaration(parser_data *data, token_iterator *iter, 
             token *first_token, bool multiple) {
         variable_declaration *result = new variable_declaration(
             data->copy_file_name(first_token->file_name),
@@ -258,37 +320,39 @@ namespace goat {
         token *separator = first_token;
         while(true) {
             dynamic_string *name = nullptr;
-            if (iter->valid()) {
-                token *tok_name = iter->get();
-                if (tok_name->type == token_type::identifier) {
-                    std::wstring str_name(tok_name->code, tok_name->length);
-                    name = new dynamic_string(data->gc, str_name);
-                }
-            }
-            if (!name) {
+            std::vector<std::wstring> proto_list;
+            bool has_name = parse_data_declaration(data, iter, &name, &proto_list);
+            if (!has_name) {
                 result->release();
                 throw compiler_exception(new compiler_exception_data(
                     separator, get_messages()->msg_variable_name_is_expected())
                 );
             }
-            token *tok = iter->next();
+            token *tok = iter->get();
             if (!iter->valid()) {
-                result->add_variable(name, nullptr);
+                data_descriptor *descriptor = new data_descriptor(true, name, nullptr, proto_list);
                 name->release();
+                result->add_variable(descriptor);
+                descriptor->release();
                 return result;
             }
             if (tok->type == token_type::semicolon) {
                 iter->next();
-                result->add_variable(name, nullptr);
+                data_descriptor *descriptor = new data_descriptor(true, name, nullptr, proto_list);
                 name->release();
+                result->add_variable(descriptor);
+                descriptor->release();
                 return result;
             }
             if (tok->type == token_type::comma) {
                 if (multiple) {
                     separator = tok;
                     iter->next();
-                    result->add_variable(name, nullptr);
+                    data_descriptor *descriptor = new data_descriptor(true, name, nullptr,
+                        proto_list);
                     name->release();
+                    result->add_variable(descriptor);
+                    descriptor->release();
                 }
                 else {
                     name->release();
@@ -302,9 +366,12 @@ namespace goat {
                 iter->next();
                 try {
                     expression *init_value = parse_expression(data, iter);
-                    result->add_variable(name, init_value);
+                    data_descriptor *descriptor = new data_descriptor(true, name, init_value,
+                        proto_list);
                     name->release();
                     init_value->release();
+                    result->add_variable(descriptor);
+                    descriptor->release();
                 }
                 catch (compiler_exception ex) {
                     name->release();
@@ -386,12 +453,11 @@ namespace goat {
     expression * parse_expression_without_operators(parser_data *data, token_iterator *iter) {
         assert(iter->valid());
         token *first = iter->get();
+        iter->next();
         if (first->type == token_type::identifier) {
-            iter->next();
             return parse_expression_begins_with_identifier(data, iter, first);
         }
         if (first->type == token_type::string) {
-            iter->next();
             token_string *str = (token_string*)first;
             dynamic_string *obj = new dynamic_string(data->gc, str->data);
             data->objects->insert(obj);
@@ -400,9 +466,16 @@ namespace goat {
             return result;
         }
         if (first->type == token_type::integer) {
-            iter->next();
             token_number *num = (token_number*)first;
             return new constant_integer_number(num->data.int_value);
+        }
+        if (first->type == token_type::keyword_function) {
+            return parse_function_declaration(data, iter, first);
+        }
+        if (first->type == token_type::keyword_system) {
+            //if (iter->valid()) {
+            //}
+            return new system_object();
         }
         throw compiler_exception(new compiler_exception_data(
             first, get_messages()->msg_unable_to_parse_token_sequence())
@@ -463,6 +536,27 @@ namespace goat {
                     expr->release();
                 }
                 return result;
+            }
+        }
+
+        if (second->type == token_type::dot) {
+            /*
+                This is a property access:
+                    obj.x
+            */
+            std::wstring var_name(first->code, first->length);
+            dynamic_string *obj = new dynamic_string(data->gc, var_name);
+            data->objects->insert(obj);
+            expression *left_part = new expression_variable(obj);
+            obj->release();
+            try {
+                property_access *result = parse_property_access(left_part, data, iter, second);
+                left_part->release();
+                return result;
+            }
+            catch(compiler_exception ex) {
+                left_part->release();
+                throw;
             }
         }
 
@@ -567,5 +661,100 @@ namespace goat {
             }
         }
         chain->reverse();
+    }
+
+    expression * parse_function_declaration(parser_data *data, token_iterator *iter,
+            token *first) {
+        do {
+            if (!iter->valid()) {
+                break;
+            }
+            
+            token *second = iter->get();
+            if (second->type == token_type::comma || second->type == token_type::semicolon) {
+                break;
+            }
+            token_brackets_pair *args_token = nullptr;
+            token_brackets_pair *body_token = nullptr;
+            if (second->type == token_type::brackets_pair) {
+                token_brackets_pair *pair = (token_brackets_pair*)second;
+                if (pair->opening_bracket == '(') {
+                    args_token = pair;
+
+                } else if (pair->opening_bracket == '{') {
+                    body_token = pair;
+                }
+            } else {
+                position pos = first->merge_position(second);
+                throw compiler_exception(new compiler_exception_data(
+                    &pos, get_messages()->msg_unable_to_parse_token_sequence())
+                );
+            }
+
+            token *third = iter->next();
+            if (third != nullptr &&
+                    third->type != token_type::comma && third->type != token_type::semicolon) {
+                if (third->type == token_type::brackets_pair) {
+                    token_brackets_pair *pair = (token_brackets_pair*)third;
+                    if (pair->opening_bracket == '(') {
+                        if (args_token != nullptr) {
+                            throw compiler_exception(new compiler_exception_data(
+                                pair, get_messages()->msg_function_arguments_already_defined())
+                            );
+                        }
+                        else if (body_token != nullptr) {
+                            throw compiler_exception(new compiler_exception_data(
+                                pair, get_messages()->msg_function_body_must_be_after_arguments())
+                            );
+                        }
+                        args_token = pair;
+                    } else if (pair->opening_bracket == '{') {
+                        if (body_token != nullptr) {
+                            throw compiler_exception(new compiler_exception_data(
+                                pair, get_messages()->msg_function_body_already_defined())
+                            );
+                        }
+                        body_token = pair;
+                    }
+                    iter->next();
+                } else {
+                    position pos = second->merge_position(third);
+                    throw compiler_exception(new compiler_exception_data(
+                        &pos, get_messages()->msg_unable_to_parse_token_sequence())
+                    );
+                }
+            }
+
+            if (body_token != nullptr) {
+                token_iterator_over_vector body_iterator(body_token->tokens);
+                statement_block *body = new statement_block();
+                parse_statement_block(data, &body_iterator, body);
+                function_declaration *result = new function_declaration({}, body);
+                body->release();
+                return result;
+            }
+
+        } while(false);
+        return new object_as_expression(get_function_that_does_nothing_instance());
+    }
+
+    property_access *parse_property_access(expression *left_part, parser_data *data,
+            token_iterator *iter, token *first) {
+        base_string *name = nullptr;
+        if (iter->valid()) {
+            token *tok = iter->get();
+            iter->next();
+            if (tok->type == token_type::identifier) {
+                std::wstring str(tok->code, tok->length);
+                name = new dynamic_string(data->gc, str);
+                data->objects->insert(name);
+            }
+        }
+        if (name == nullptr) {
+            throw compiler_exception(new compiler_exception_data(
+                first, get_messages()->msg_expected_property_name())
+            );
+        }
+        return new property_access(left_part, name);
     }
 }

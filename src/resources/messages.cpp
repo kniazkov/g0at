@@ -13,7 +13,12 @@ namespace goat {
 
     const std::wstring en_brackets_do_not_match(L"The closing bracket '{0}' does not match the opening bracket '{1}'");
     const std::wstring en_closing_bracket_without_opening(L"The closing bracket '{0}' without opening one");
+    const std::wstring en_expected_property_name(L"Еxpected a property name after the dot symbol");
+    const std::wstring en_expected_type_name(L"Еxpected a type name after the colon");
     const std::wstring en_file_not_found(L"File not found");
+    const std::wstring en_function_arguments_already_defined(L"Function arguments are already defined");
+    const std::wstring en_function_body_already_defined(L"Function body is already defined");
+    const std::wstring en_function_body_must_be_after_arguments(L"Function body must be declared after arguments");
     const std::wstring en_illegal_argument(L"Illegal argument");
     const std::wstring en_interpreter_description(L"The Goat programming language interpreter, v. 0");
     const std::wstring en_multiple_declarations_are_not_allowed(L"Multiple declarations are not allowed");
@@ -36,8 +41,23 @@ namespace goat {
         const std::wstring & msg_closing_bracket_without_opening() const override {
             return en_closing_bracket_without_opening;
         }
+        const std::wstring & msg_expected_property_name() const override {
+            return en_expected_property_name;
+        }
+        const std::wstring & msg_expected_type_name() const override {
+            return en_expected_type_name;
+        }
         const std::wstring & msg_file_not_found() const override {
             return en_file_not_found;
+        }
+        const std::wstring & msg_function_arguments_already_defined() const override {
+            return en_function_arguments_already_defined;
+        }
+        const std::wstring & msg_function_body_already_defined() const override {
+            return en_function_arguments_already_defined;
+        }
+        const std::wstring & msg_function_body_must_be_after_arguments() const override {
+            return en_function_body_must_be_after_arguments;
         }
         const std::wstring & msg_illegal_argument() const override {
             return en_illegal_argument;
@@ -77,7 +97,12 @@ namespace goat {
 
     const std::wstring ru_brackets_do_not_match(L"Закрывающая скобка '{0}' не соответствует открывающей '{1}'");
     const std::wstring ru_closing_bracket_without_opening(L"Закрывающая скобка '{0}' не имеет парной открывающей скобки");
+    const std::wstring ru_expected_property_nama(L"После точки ожидается имя свойства");
+    const std::wstring ru_expected_type_nama(L"После двоеточия ожидается имя типа");
     const std::wstring ru_file_not_found(L"Файл не найден");
+    const std::wstring ru_function_arguments_already_defined(L"Аргументы функции уже определены");
+    const std::wstring ru_function_body_already_defined(L"Тело функции уже определено");
+    const std::wstring ru_function_body_must_be_after_arguments(L"Тело функции должно быть определено после аргументов");
     const std::wstring ru_illegal_argument(L"Недопустимый аргумент");
     const std::wstring ru_interpreter_description(L"Интерпретатор языка программирования Goat, v. 0");
     const std::wstring ru_multiple_declarations_are_not_allowed(L"Множественные определения не допускаются");
@@ -100,8 +125,23 @@ namespace goat {
         const std::wstring & msg_closing_bracket_without_opening() const override {
             return ru_closing_bracket_without_opening;
         }
+        const std::wstring & msg_expected_property_name() const override {
+            return ru_expected_property_nama;
+        }
+        const std::wstring & msg_expected_type_name() const override {
+            return ru_expected_type_nama;
+        }
         const std::wstring & msg_file_not_found() const override {
             return ru_file_not_found;
+        }
+        const std::wstring & msg_function_arguments_already_defined() const override {
+            return ru_function_arguments_already_defined;
+        }
+        const std::wstring & msg_function_body_already_defined() const override {
+            return ru_function_body_already_defined;
+        }
+        const std::wstring & msg_function_body_must_be_after_arguments() const override {
+            return ru_function_body_must_be_after_arguments;
         }
         const std::wstring & msg_illegal_argument() const override {
             return ru_illegal_argument;

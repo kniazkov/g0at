@@ -12,7 +12,7 @@
 
 namespace goat {
 
-    void function_print::exec(std::vector<variable> &args, variable* ret_val) {
+    void function_print::exec(scope *scope, std::vector<variable> &args, variable* ret_val) {
         if (args.size() < 1) {
             throw runtime_exception(get_illegal_agrument_exception());
         }
@@ -21,7 +21,7 @@ namespace goat {
 
     static std::wstring new_line(L"\n");
 
-    void function_println::exec(std::vector<variable> &args, variable* ret_val) {
+    void function_println::exec(scope *scope, std::vector<variable> &args, variable* ret_val) {
         if (args.size() < 1) {
             throw runtime_exception(get_illegal_agrument_exception());
         }
@@ -32,11 +32,29 @@ namespace goat {
     /* ----------------------------------------------------------------------------------------- */
 
     /**
+     * @brief Built-in function that does nothing
+     */
+    class function_that_does_nothing : public static_function {
+    public:
+        void exec(scope *scope, std::vector<variable> &args, variable* ret_val) override {
+        }
+
+        std::wstring to_string_notation(const variable* var) const override {
+            return L"${}";
+        }
+    };
+
+    function_that_does_nothing function_that_does_nothing_instance;
+    object * get_function_that_does_nothing_instance() {
+        return &function_that_does_nothing_instance;
+    }
+    
+    /**
      * @brief Built-in function, compute square root
      */
     class function_sqrt : public static_function {
     public:
-        void exec(std::vector<variable> &args, variable* ret_val) override {
+        void exec(scope *scope, std::vector<variable> &args, variable* ret_val) override {
             if (args.size() < 1) {
                 throw runtime_exception(get_illegal_agrument_exception());
             }

@@ -10,14 +10,14 @@
 #include <vector>
 #include <unordered_set>
 #include "code.h"
-#include "scope.h"
 #include "expressions.h"
 #include "exceptions.h"
 #include "compiler/analyzer/data_type.h"
 
 namespace goat {
 
-    class base_string;
+    class scope;
+    class data_descriptor;
 
     /**
      * @brief A statement is a syntactic unit that expresses some action to be carried out
@@ -151,26 +151,6 @@ namespace goat {
     class variable_declaration : public statement {
     public:
         /**
-         * @brief Descriptor of one variable
-         */
-        struct descriptor {
-            /**
-             * @brief Variable name
-             */
-            base_string *name;
-
-            /**
-             * @brief Initial value of the variable
-             */
-            expression *init_value;
-
-            /**
-             * @brief A Goat data type to which variable can be cast
-             */
-            const data_type * type;
-        };
-
-        /**
          * @brief Constructor
          * @param file_name The name of the file containing this statement
          * @param number The number of the line containing this statement
@@ -185,10 +165,9 @@ namespace goat {
 
         /**
          * @brief Adds a variable to the list
-         * @param name Variable name
-         * @param init_value Initial value of the variable (can be <code>nullptr</code>)
+         * @param descriptor Variable descriptor
          */
-        void add_variable(base_string *name, expression *init_value);
+        void add_variable(data_descriptor *descriptor);
 
         /**
          * @brief Returns the list of declared variable names
@@ -201,25 +180,23 @@ namespace goat {
          * @param name Variable name
          * @return Descriptor
          */
-        descriptor * get_descriptor_by_name(std::wstring name);
+        data_descriptor * get_descriptor_by_name(std::wstring name);
 
         void traverse_syntax_tree(element_visitor *visitor) override;
         const char * get_class_name() const override;
         std::vector<child_descriptor> get_children() const override;
         void exec(scope *scope) override;
-        unsigned int generate_node_description(std::stringstream &stream, unsigned int *counter,
-            std::unordered_map<element*, unsigned int> &all_indexes) override;
 
     private:
         /**
          * @brief List containing variable descriptors
          */
-        std::vector<descriptor*> list;
+        std::vector<data_descriptor*> list;
 
         /**
          * @brief Mapping variable names to descriptors
          */
-        std::map<std::wstring, descriptor*> map;
+        std::map<std::wstring, data_descriptor*> map;
 
         /**
          * @brief Data required when tracing the stack (e.g. when an exception occurs)

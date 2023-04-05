@@ -15,6 +15,7 @@ namespace goat {
 
     class element;
     class expression_variable;
+    class data_descriptor;
     class variable_declaration;
 
     /**
@@ -65,6 +66,12 @@ namespace goat {
          * @param expr Element
          */
         virtual void visit(expression_variable *expr);
+
+        /**
+         * @brief Visits an element that is a data descriptor
+         * @param descriptor Element
+         */
+        virtual void visit(data_descriptor *descriptor);
 
         /**
          * @brief Visits an element that is a statement describing the declaration of variables

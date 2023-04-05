@@ -79,6 +79,12 @@ namespace goat {
         return nullptr;
     }
 
+    variable object::get_default_value() {
+        variable var;
+        var.obj = this;
+        return var;
+    }
+
     bool object::get_string_value(std::wstring* const value_ptr) const {
         return false;
     }
@@ -89,6 +95,10 @@ namespace goat {
 
     bool object::get_real_value(const variable* var, double* const value_ptr) const {
         return false;
+    }
+
+    scope * object::to_scope() {
+        return nullptr;
     }
 
     base_function * object::to_function() {

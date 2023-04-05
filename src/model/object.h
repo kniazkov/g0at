@@ -16,6 +16,7 @@
 namespace goat {
 
     class object;
+    class scope;
     class base_function;
     class gc_data;
 
@@ -284,6 +285,14 @@ namespace goat {
         virtual variable * get_own_attribute(object *key);
 
         /**
+         * @brief Returns a variable that contains an object inherited from this object,
+         *  which is used by default to initialize the variable if no initializing value
+         *  is specified
+         * @return The default successor of this object
+         */
+        virtual variable get_default_value();
+
+        /**
          * @brief Retrieves the string value of the object
          * @param value_ptr Pointer to retrievable value
          * @return <code>true</code> if the object is a string (value can be retrieved),
@@ -311,6 +320,12 @@ namespace goat {
          */
         virtual bool get_real_value(const variable* var, double* const value_ptr) const;
         
+        /**
+         * @brief Converts pointer to object into a pointer to a scope, if possible
+         * @return Pointer to a scope or <code>nullptr</code>
+         */
+        virtual scope * to_scope();
+
         /**
          * @brief Converts pointer to object into a pointer to a function object, if possible
          * @return Pointer to a function object or <code>nullptr</code>

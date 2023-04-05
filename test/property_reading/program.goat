@@ -1,0 +1,3 @@
+var obj = system;
+var fn = obj.println;
+fn("it works.");

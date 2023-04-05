@@ -1,0 +1,2 @@
+var f = print;
+f("it works.");

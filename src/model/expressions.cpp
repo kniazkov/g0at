@@ -10,6 +10,9 @@
 #include "functions.h"
 #include "exceptions.h"
 #include "statements.h"
+#include "functions.h"
+#include "scope.h"
+#include "data_description.h"
 
 namespace goat {
 
@@ -162,7 +165,7 @@ namespace goat {
 
     expression_variable::expression_variable(base_string *name) {
         this->name = name;
-        this->declaration = nullptr;
+        this->descriptor = nullptr;
         name->add_reference();
     }
 
@@ -192,8 +195,8 @@ namespace goat {
 
     void expression_variable::generate_additional_edges(std::stringstream &stream,
             unsigned int index, std::unordered_map<element*, unsigned int> &all_indexes) {
-        if (declaration) {
-            auto pair = all_indexes.find(declaration);
+        if (descriptor) {
+            auto pair = all_indexes.find(descriptor);
             if (pair != all_indexes.end()) {
                 stream << "  node_" << pair->second << " -> node_" << index 
                     << "  [style=dashed dir=back color=midnightblue];"
@@ -216,20 +219,89 @@ namespace goat {
     }
 
     void expression_variable::assign(scope *scope, variable value) {
-        scope->set_attribute(name, value);
+        variable *value_ptr = scope->get_attribute(name);
+        if (value_ptr != nullptr) {
+            value_ptr->release();
+            *value_ptr = value;
+            value.add_reference();
+        } else {
+            scope->set_attribute(name, value);
+        }
     }
 
     const data_type * expression_variable::get_data_type() const {
-        return declaration ? 
-            declaration->get_descriptor_by_name(name->to_string(nullptr))->type :
-            get_invalid_data_type();
+        return descriptor ? descriptor->type : get_invalid_data_type();
     }
 
     void expression_variable::set_data_type(const data_type *type) {
-        if (declaration) {
-            auto *descriptor = declaration->get_descriptor_by_name(get_variable_name());
+        if (descriptor) {
             descriptor->type = descriptor->type->merge(type);
         }
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    property_access::property_access(expression *obj, base_string *name) {
+        this->obj = obj;
+        obj->add_reference();
+        this->name = name;
+        name->add_reference();
+    }
+
+    property_access::~property_access() {
+        obj->release();
+        name->release();
+    }
+
+    void property_access::traverse_syntax_tree(element_visitor *visitor) {
+        obj->traverse_syntax_tree(visitor);
+    }
+
+    const char * property_access::get_class_name() const {
+        return "property";
+    }
+
+    std::vector<child_descriptor> property_access::get_children() const {
+        std::vector<child_descriptor> list;
+        list.push_back({ "object", obj });
+        return list;
+    }
+
+    std::vector<element_data_descriptor> property_access::get_data() const {
+        std::vector<element_data_descriptor> list = get_common_data();
+        variable var;
+        var.obj = name;
+        list.push_back({ "name", var });
+        return list;
+    }
+
+    void property_access::generate_additional_edges(std::stringstream &stream,
+            unsigned int index, std::unordered_map<element*, unsigned int> &all_indexes) {
+    }
+
+    variable property_access::calc(scope *scope) {
+        variable left_value = obj->calc(scope);
+        variable *var = left_value.obj->get_attribute(name);
+        if (!var) {
+            object *ex_object = create_reference_error_clarified_exception(
+                scope->get_garbage_collector_data(), name->to_string(nullptr));
+            runtime_exception  ex(ex_object);
+            ex_object->release();
+            throw ex;
+        }
+        var->add_reference();
+        return *var;
+    }
+
+    void property_access::assign(scope *scope, variable value) {
+        obj->set_attribute(name, value);
+    }
+
+    const data_type * property_access::get_data_type() const {
+        return get_invalid_data_type();
+    }
+
+    void property_access::set_data_type(const data_type *type) {
     }
 
     /* ----------------------------------------------------------------------------------------- */
@@ -290,7 +362,7 @@ namespace goat {
         for (auto expr : args) {
             var_list.push_back(expr->calc(scope));
         }
-        func->exec(var_list, &ret_val);        
+        func->exec(scope, var_list, &ret_val);        
         for (variable &arg : var_list) {
             arg.release();
         }
@@ -442,5 +514,72 @@ namespace goat {
         left->assign(scope, *right);
         right->add_reference();
         return *right;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    function_declaration::function_declaration(
+            std::vector<base_string*> args, statement_block *body) {
+        this->args = args;
+        for (auto arg : args) {
+            arg->add_reference();
+        }
+        this->body = body;
+        body->add_reference();
+    }
+
+    function_declaration::~function_declaration() {
+        for (auto arg : args) {
+            arg->release();
+        }
+        body->release();
+    }
+
+    const char * function_declaration::get_class_name() const {
+        return "function declaration";
+    } 
+
+    const data_type * function_declaration::get_data_type() const {
+        return get_function_data_type();
+    }
+
+    void function_declaration::traverse_syntax_tree(element_visitor *visitor) {
+        body->traverse_syntax_tree(visitor);
+    }
+
+    std::vector<child_descriptor> function_declaration::get_children() const {
+        std::vector<child_descriptor> list = {
+            { "body", body }
+        };
+        return list;
+    }
+    
+    /**
+     * @todo Print argument list
+     */
+    std::vector<element_data_descriptor> function_declaration::get_data() const {
+        return {};
+    }
+
+    variable function_declaration::calc(scope *scope) {
+        variable var;
+        var.obj = new user_defined_function(scope->get_garbage_collector_data(), this);
+        return var;
+    }
+
+    /* ----------------------------------------------------------------------------------------- */
+
+    const char * system_object::get_class_name() const {
+        return "system";
+    }
+
+    std::vector<child_descriptor> system_object::get_children() const {
+        return {};
+    }
+
+    variable system_object::calc(scope *scope) {
+        variable var;
+        var.obj = scope->get_main_scope();
+        return var;
     }
 }

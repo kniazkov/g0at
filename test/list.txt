@@ -10,6 +10,13 @@ declare_two_variables
 declare_variables_one_dependent_on_other
 simple_assignment
 assignment_of_assignment
+function_does_nothing
+built_in_function_as_object
+user_defined_function
+function_without_arguments
+local_variables
+external_variables
+property_reading
 
 # Errors:
 

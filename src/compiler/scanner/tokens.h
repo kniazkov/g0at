@@ -24,11 +24,15 @@ namespace goat {
         real,
         opening_bracket,
         closing_bracket,
+        dot,
         comma,
         semicolon,
+        colon,
         dollar_sign,
         operato,
         keyword_var,
+        keyword_function,
+        keyword_system,
         end,
         brackets_pair
     };
