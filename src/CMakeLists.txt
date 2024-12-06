@@ -4,7 +4,7 @@
 # that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 
 project(goat)
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.10)
 include_directories(.)
 
 file(GLOB core_sources
