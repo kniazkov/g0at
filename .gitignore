@@ -3,4 +3,4 @@ build
 goat
 goat.exe
 functional_testing.exe
-src/doxygen
+doxygen

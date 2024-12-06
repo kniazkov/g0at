@@ -1,11 +1,12 @@
-/*
-    Copyright 2025 Ivan Kniazkov
-
-    Use of this source code is governed by an MIT-style license
-    that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
-*/
+/**
+ * @file allocate.h
+ * @copyright 2025 Ivan Kniazkov
+ * @brief Memory allocation utility for the project.
+ */
 
 #pragma once
+
+#include <stdlib.h>
 
 /**
  * @brief Allocates memory of the given size and handles out-of-memory situations.

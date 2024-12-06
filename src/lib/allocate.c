@@ -1,12 +1,10 @@
-/*
-    Copyright 2025 Ivan Kniazkov
-
-    Use of this source code is governed by an MIT-style license
-    that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
-*/
+/**
+ * @file allocate.c
+ * @copyright 2025 Ivan Kniazkov
+ * @brief Memory allocation utility for the project.
+ */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include "allocate.h"
 
 void *allocate(int size) {

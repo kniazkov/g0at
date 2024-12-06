@@ -1,9 +1,8 @@
-/*
-    Copyright 2025 Ivan Kniazkov
-
-    Use of this source code is governed by an MIT-style license
-    that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
-*/
+/**
+ * @file test_list.c
+ * @copyright 2025 Ivan Kniazkov
+ * @brief Source file for managing and retrieving unit tests
+ */
 
 #include "test_list.h"
 
