@@ -1,5 +1,0 @@
-var i = 7,
-    j = i + 4;
-
-println(i);
-print(j);

@@ -1,4 +1,4 @@
-# Copyright 2023 Ivan Kniazkov
+# Copyright 2025 Ivan Kniazkov
 
 # Use of this source code is governed by an MIT-style license
 # that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
@@ -8,21 +8,14 @@ cmake_minimum_required(VERSION 3.6)
 include_directories(.)
 
 file(GLOB core_sources
-  lib/*.cpp
-  resources/*.cpp
-  model/*.cpp
-  compiler/common/*.cpp
-  compiler/scanner/*.cpp
-  compiler/parser/*.cpp
-  compiler/analyzer/*.cpp
-  launcher/*.cpp
+  lib/*.c
 )
 add_library(core STATIC ${core_sources})
 
-file(GLOB goat_exe main.cpp)
+file(GLOB goat_exe main.c)
 add_executable(goat ${goat_exe})
 target_link_libraries (goat core pthread)
 
-file(GLOB unit_testing_exe unit_testing.cpp test/*.cpp)
+file(GLOB unit_testing_exe unit_testing.c test/*.c)
 add_executable(unit_testing ${unit_testing_exe})
 target_link_libraries (unit_testing core pthread)

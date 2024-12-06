@@ -1,3 +1,0 @@
-> brackets_do_not_match/program.goat, 1.39: The closing bracket ']' does not match the opening bracket '('
- print ("must be, it will not compile"];  
-                                      ^

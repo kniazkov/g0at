@@ -1,3 +1,0 @@
-> opening_bracket_without_closing/program.goat, 1.6: The bracket '(' was not closed
-print("must be, it will not compile";
-     ^

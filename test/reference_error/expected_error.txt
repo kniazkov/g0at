@@ -1,2 +1,0 @@
-Unhandled exception: Reference error, 'abc' is not defined
-  > reference_error/program.goat, 2
