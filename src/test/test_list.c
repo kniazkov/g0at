@@ -13,6 +13,7 @@ static bool stub() {
 
 static test_description_t test_list[] = {
     { "memory allocation", test_memory_allocation }
+    , { "AVL tree", test_avl_tree }
 };
 
 int get_number_of_tests() {

@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 /**
  * @struct avl_node_t
  * @brief A node in the AVL tree.
@@ -42,3 +44,96 @@ typedef struct avl_tree_t {
     avl_node_t *root;                /**< Pointer to the root node of the tree. */
     int (*comparator)(void*, void*); /**< Comparator function to compare keys in the tree. */
 } avl_tree_t;
+
+/**
+ * @brief Creates an empty AVL tree.
+ * 
+ * This function allocates memory for an AVL tree structure, initializes it with
+ * the provided comparator function, and sets the root pointer to NULL, as the tree
+ * is initially empty.
+ * 
+ * The comparator function is used to compare keys within the tree, determining the
+ * order of nodes. The tree's memory is managed using the ALLOC function, which ensures
+ * that memory allocation failures are handled by terminating the program.
+ * 
+ * @param comparator A pointer to the comparator function that compares keys in the tree.
+ *                   The function should return a negative value if the first key is less,
+ *                   zero if they are equal, and a positive value if the first key is greater.
+ * 
+ * @return A pointer to the newly created AVL tree structure. The root of the tree is
+ *         initially set to NULL.
+ */
+avl_tree_t *avl_tree_create(int (*comparator)(void*, void*));
+
+/**
+ * @brief Inserts a key-value pair into the AVL tree or updates the value if the key exists.
+ * 
+ * This function attempts to insert a new key-value pair into the AVL tree. If the key already
+ * exists in the tree, the function updates the corresponding value and returns the old value.
+ * If the key does not exist, the function inserts the new pair and returns `NULL`.
+ * 
+ * The function uses the AVL tree's comparator to find the correct position of the key.
+ * The tree is balanced after the insertion or update to ensure optimal search times.
+ * 
+ * @param tree A pointer to the AVL tree where the key-value pair is inserted or updated.
+ * @param key A pointer to the key to insert or update in the tree.
+ * @param value A pointer to the value associated with the key.
+ * 
+ * @return If the key already exists, the function returns the old value associated with the key.
+ *         If the key is new, the function returns `NULL`.
+ */
+void *avl_tree_set(avl_tree_t *tree, void *key, void *value);
+
+/**
+ * @brief Checks if the AVL tree contains a node with the specified key.
+ * 
+ * This function searches the AVL tree for a node with the given key. It uses
+ * the tree's comparator function to compare the key with the nodes in the tree.
+ * If a node with the specified key is found, the function returns `true`; otherwise,
+ * it returns `false`.
+ * 
+ * @param tree A pointer to the AVL tree to search.
+ * @param key A pointer to the key to search for in the tree.
+ * 
+ * @return `true` if the tree contains a node with the specified key, otherwise `false`.
+ */
+bool avl_tree_contains(avl_tree_t *tree, void *key);
+
+/**
+ * @brief Retrieves the value associated with the specified key in the AVL tree.
+ * 
+ * This function searches the AVL tree for a node containing the specified key. If the key
+ * is found, the function returns the corresponding value. If the key is not found, the function
+ * returns `NULL`.
+ * 
+ * @param tree A pointer to the AVL tree to search.
+ * @param key A pointer to the key whose associated value is to be retrieved.
+ * 
+ * @return The value associated with the specified key, or `NULL` if the key is not found
+ *         in the tree.
+ */
+void *avl_tree_get(avl_tree_t *tree, void *key);
+
+/**
+ * @brief Applies a function to each key-value pair in the AVL tree.
+ * 
+ * This function performs an in-order traversal of the AVL tree, applying the provided
+ * function to each key-value pair. The function is called for each node in the tree
+ * with the key and value of that node as arguments.
+ * 
+ * @param tree A pointer to the AVL tree to traverse.
+ * @param func A pointer to the function to apply to each key-value pair. The function
+ *             should have the signature `void func(void* key, void* value)`.
+ */
+void avl_tree_for_each(avl_tree_t *tree, void(*func)(void*, void*));
+
+/**
+ * @brief Destroys the AVL tree and frees all allocated memory.
+ * 
+ * This function recursively frees all nodes in the AVL tree and then frees the memory
+ * allocated for the tree structure itself. After this function is called, the tree is no longer
+ * usable, and all memory associated with it is deallocated.
+ * 
+ * @param tree A pointer to the AVL tree to destroy.
+ */
+void avl_tree_destroy(avl_tree_t *tree);

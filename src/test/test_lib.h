@@ -14,3 +14,5 @@
  *         pass successfully, `false` if any of the tests fail.
  */
 bool test_memory_allocation();
+
+bool test_avl_tree();
