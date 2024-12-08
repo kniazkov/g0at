@@ -22,3 +22,5 @@ file(GLOB unit_testing_exe unit_testing.c test/*.c)
 message(STATUS "Found unit testing sources: ${unit_testing_exe}")
 add_executable(unit_testing ${unit_testing_exe})
 target_link_libraries (unit_testing core pthread)
+
+add_definitions(-DMEMORY_DEBUG)

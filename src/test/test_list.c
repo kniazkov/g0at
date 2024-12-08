@@ -5,13 +5,14 @@
  */
 
 #include "test_list.h"
+#include "test_lib.h"
 
 static bool stub() {
     return true;
 }
 
 static test_description_t test_list[] = {
-    { "nothing", stub }
+    { "memory allocation", test_memory_allocation }
 };
 
 int get_number_of_tests() {
