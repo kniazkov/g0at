@@ -9,6 +9,7 @@ include_directories(.)
 
 file(GLOB core_sources
   lib/*.c
+  model/*.c
 )
 add_library(core STATIC ${core_sources})
 message(STATUS "Found core sources: ${core_sources}")
