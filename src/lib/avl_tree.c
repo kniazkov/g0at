@@ -133,25 +133,30 @@ static avl_node_t *balance(avl_tree_t *tree, avl_node_t *node) {
  * @param node A pointer to the current node in the tree.
  * @param key A pointer to the key to insert.
  * @param value A pointer to the value associated with the key.
+ * @param value A pointer to pointer to the previous value associated with the key.
  * 
  * @return The node where the key-value pair was inserted or `NULL` if the key already exists.
  */
-static avl_node_t *avl_tree_insert(avl_tree_t *tree, avl_node_t *node, void *key, void *value) {
+static avl_node_t *avl_tree_insert(avl_tree_t *tree, avl_node_t *node, void *key,
+        void *value, void **old_value) {
     if (!node) {
         avl_node_t *new_node = (avl_node_t *)CALLOC(sizeof(avl_node_t));
         new_node->key = key;
         new_node->value = value;
         new_node->height = 1;
+        *old_value = NULL;
         return new_node;
     }
 
     int cmp = tree->comparator(key, node->key);
     
     if (cmp < 0) {
-        node->left = avl_tree_insert(tree, node->left, key, value);
+        node->left = avl_tree_insert(tree, node->left, key, value, old_value);
     } else if (cmp > 0) {
-        node->right = avl_tree_insert(tree, node->right, key, value);
+        node->right = avl_tree_insert(tree, node->right, key, value, old_value);
     } else {
+        *old_value = node->value;
+        node->value = value;
         return node;
     }
 
@@ -229,15 +234,9 @@ avl_tree_t *avl_tree_create(int (*comparator)(void*, void*)) {
 }
 
 void *avl_tree_set(avl_tree_t *tree, void *key, void *value) {
-    avl_node_t *node = avl_tree_insert(tree, tree->root, key, value);
-    
-    if (node) {
-        void *old_value = node->value;
-        node->value = value;
-        return old_value;
-    }
-    
-    return NULL;
+    void *old_value;
+    tree->root = avl_tree_insert(tree, tree->root, key, value, &old_value);
+    return old_value;
 }
 
 bool avl_tree_contains(avl_tree_t *tree, void *key) {

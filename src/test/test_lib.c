@@ -32,9 +32,11 @@ static int wcscmp_comparator(void *first, void *second) {
 bool test_avl_tree() {
     avl_tree_t *tree = avl_tree_create(wcscmp_comparator);
     avl_tree_set(tree, L"gamma", L"third");
-    avl_tree_set(tree, L"alpha", L"first");
+    wchar_t *previous = (wchar_t *)avl_tree_set(tree, L"alpha", L"first");
+    ASSERT(previous == NULL);
     avl_tree_set(tree, L"beta", L"second");
     ASSERT(avl_tree_contains(tree, L"alpha"));
+    ASSERT(false == avl_tree_contains(tree, L"delta"));
     avl_tree_destroy(tree);
     return true;
 }
