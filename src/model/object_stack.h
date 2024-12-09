@@ -4,6 +4,19 @@
  * @brief Defines the stack structure for managing Goat objects.
  *
  * This file describes the structure and operations for a stack of Goat objects.
+ *
+ * The object stack stores objects based on the Last-In-First-Out (LIFO) principle.
+ * This means that the most recently added object is the first one to be removed.
+ * 
+ * The object stack is a fundamental data structure in a stack-based virtual machine. 
+ * It holds all the execution thread data, including intermediate results, local variables, 
+ * and return addresses. All operations in such a virtual machine are performed on the stack, 
+ * making it the central mechanism for function calls, parameter passing, and expression evaluation.
+ *
+ * Each instruction in the virtual machine typically operates by pushing operands onto the stack 
+ * and popping results from it, creating a simple and efficient execution model. This design 
+ * minimizes the need for complex data structures and allows for a compact and easy-to-implement 
+ * instruction set.
  */
 
 #pragma once
