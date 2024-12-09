@@ -17,4 +17,5 @@ bool test_integer_object() {
     ASSERT(wcscmp(L"-1024", str) == 0);
     FREE(str);
     obj->vtbl->release(obj);
+    return true;
 }
