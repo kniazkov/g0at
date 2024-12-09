@@ -13,6 +13,7 @@
 #pragma once
 
 #include <wchar.h>
+#include <stdint.h>
 
 /**
  * @typedef object_t
@@ -37,11 +38,17 @@ typedef struct object_list_t object_list_t;
  */
 typedef struct {
     /**
+     * @brief Function pointer for releasing (destroying) an object.
+     * @param obj The object to release.
+     */
+    void (*release)(object_t *obj);
+
+    /**
      * @brief Function pointer for converting an object to its string representation.
      * @param obj The object to convert to a string.
      * @return The string representation of the object.
      */
-    wchar_t (*to_string)(object_t *obj);
+    wchar_t* (*to_string)(object_t *obj);
 } object_vtbl_t;
 
 /**
@@ -84,3 +91,10 @@ struct object_t {
      */
     object_t *next;    
 };
+
+/**
+ * @brief Creates a new integer object.
+ * @param value The integer value to store in the object.
+ * @return A pointer to the newly created object, which is of type `object_t`.
+ */
+object_t *object_integer_create(int64_t value);

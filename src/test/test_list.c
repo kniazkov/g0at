@@ -6,6 +6,7 @@
 
 #include "test_list.h"
 #include "test_lib.h"
+#include "test_model.h"
 
 static bool stub() {
     return true;
@@ -14,6 +15,8 @@ static bool stub() {
 static test_description_t test_list[] = {
     { "memory allocation", test_memory_allocation }
     , { "AVL tree", test_avl_tree }
+
+    , {"integer object", test_integer_object}
 };
 
 int get_number_of_tests() {
