@@ -40,7 +40,7 @@ typedef struct avl_node_t {
  * function. The comparator function is used to compare keys and determine the order of nodes
  * within the tree.
  */
-typedef struct avl_tree_t {
+typedef struct {
     avl_node_t *root;                /**< Pointer to the root node of the tree. */
     int (*comparator)(void*, void*); /**< Comparator function to compare keys in the tree. */
 } avl_tree_t;
@@ -115,17 +115,20 @@ bool avl_tree_contains(avl_tree_t *tree, void *key);
 void *avl_tree_get(avl_tree_t *tree, void *key);
 
 /**
- * @brief Applies a function to each key-value pair in the AVL tree.
+ * @brief Applies a function to each key-value pair in the AVL tree, with user data.
  * 
  * This function performs an in-order traversal of the AVL tree, applying the provided
  * function to each key-value pair. The function is called for each node in the tree
- * with the key and value of that node as arguments.
+ * with the key, value, and user data as arguments. This allows the user to pass
+ * additional context (user data) to the callback function.
  * 
  * @param tree A pointer to the AVL tree to traverse.
  * @param func A pointer to the function to apply to each key-value pair. The function
- *             should have the signature `void func(void* key, void* value)`.
+ *             should have the signature `void func(void* user_data, void* key, void* value)`.
+ * @param user_data A pointer to user data that will be passed to the callback function.
  */
-void avl_tree_for_each(avl_tree_t *tree, void(*func)(void*, void*));
+void avl_tree_for_each(avl_tree_t *tree,
+    void (*func)(void* user_data, void* key, void* value), void *user_data);
 
 /**
  * @brief Destroys the AVL tree and frees all allocated memory.

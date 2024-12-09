@@ -15,4 +15,8 @@
  */
 bool test_memory_allocation();
 
+/**
+ * @brief Unit test for AVL tree implementation.
+ * @return `true` if the test passes, `false` if any assertion fails.
+ */
 bool test_avl_tree();

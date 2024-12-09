@@ -196,16 +196,18 @@ static avl_node_t *avl_tree_find(avl_tree_t *tree, avl_node_t *node, void *key) 
  * @brief Recursively performs an in-order traversal of the AVL tree.
  * 
  * This is a helper function that recursively traverses the AVL tree in an in-order
- * manner and applies the provided function to each key-value pair.
+ * manner and applies the provided function to each key-value pair, passing the user data.
  * 
  * @param node The current node to process.
  * @param func A pointer to the function to apply to each key-value pair.
+ * @param user_data A pointer to user data that will be passed to the callback function.
  */
-static void avl_tree_inorder_traversal(avl_node_t *node, void(*func)(void*, void*)) {
+static void avl_tree_inorder_traversal(avl_node_t *node,
+        void (*func)(void* user_data, void* key, void* value), void *user_data) {
     if (node) {
-        avl_tree_inorder_traversal(node->left, func);
-        func(node->key, node->value);
-        avl_tree_inorder_traversal(node->right, func);
+        avl_tree_inorder_traversal(node->left, func, user_data);
+        func(user_data, node->key, node->value);
+        avl_tree_inorder_traversal(node->right, func, user_data);
     }
 }
 
@@ -249,9 +251,10 @@ void *avl_tree_get(avl_tree_t *tree, void *key) {
     return node ? node->value : NULL;
 }
 
-void avl_tree_for_each(avl_tree_t *tree, void(*func)(void*, void*)) {
+void avl_tree_for_each(avl_tree_t *tree,
+    void (*func)(void* user_data, void* key, void* value), void *user_data) {
     if (tree && tree->root) {
-        avl_tree_inorder_traversal(tree->root, func);
+        avl_tree_inorder_traversal(tree->root, func, user_data);
     }
 }
 
