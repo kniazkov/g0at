@@ -25,9 +25,9 @@
 #define INITIAL_DATA_ARRAY_CAPACITY 256
 
 data_builder_t *data_builder_create(void) {
-    data_builder_t *builder = (data_builder_t*)ALLOC(sizeof(data_builder_t));
-    builder->descriptors = (data_descriptor_t*)ALLOC(INITIAL_DESCRIPTORS_LIST_CAPACITY * sizeof(data_descriptor_t));
-    builder->data = (uint8_t*)ALLOC(INITIAL_DATA_ARRAY_CAPACITY * sizeof(uint8_t));
+    data_builder_t *builder = (data_builder_t *)ALLOC(sizeof(data_builder_t));
+    builder->descriptors = (data_descriptor_t *)ALLOC(INITIAL_DESCRIPTORS_LIST_CAPACITY * sizeof(data_descriptor_t));
+    builder->data = (uint8_t *)ALLOC(INITIAL_DATA_ARRAY_CAPACITY * sizeof(uint8_t));
     builder->data_size = 0;
     builder->data_capacity = INITIAL_DATA_ARRAY_CAPACITY;
     builder->descriptors_count = 0;
@@ -45,7 +45,7 @@ uint32_t data_builder_add(data_builder_t *builder, void *data, size_t size) {
             new_capacity = new_size;
         }
         builder->data_capacity = new_capacity;
-        uint8_t *new_data = (uint8_t*)ALLOC(new_size);
+        uint8_t *new_data = (uint8_t *)ALLOC(new_size);
         memcpy(new_data, builder->data, builder->data_size);
         FREE(builder->data);
         builder->data = new_data;
@@ -68,7 +68,6 @@ uint32_t data_builder_add(data_builder_t *builder, void *data, size_t size) {
     }
     uint32_t index = (uint32_t)builder->descriptors_count++;
     data_descriptor_t descriptor = {
-        .index = index,
         .offset = (uint64_t)offset,
         .size = (uint32_t)aligned_size
     };
@@ -77,20 +76,30 @@ uint32_t data_builder_add(data_builder_t *builder, void *data, size_t size) {
 }
 
 uint32_t data_builder_add_string(data_builder_t *builder, wchar_t *string) {
-    uint32_t *old_index = (uint32_t*)avl_tree_get(builder->strings, string);
-    if (old_index) {
-        return *old_index;
+    uint32_t *index_ptr = (uint32_t *)avl_tree_get(builder->strings, string);
+    if (index_ptr) {
+        return *index_ptr;
     }
     size_t len = (wcslen(string) + 1) * sizeof(wchar_t);
     uint32_t index = data_builder_add(builder, (void*)string, len);
+    index_ptr = (uint32_t *)ALLOC(sizeof(uint32_t));
+    *index_ptr = index;
     data_descriptor_t *descriptor = &builder->descriptors[index];
-    avl_tree_set(builder->strings, &builder->data[descriptor->offset], &descriptor->index);
+    avl_tree_set(builder->strings, &builder->data[descriptor->offset],index_ptr);
     return index;
+}
+
+/**
+ * @brief Releases the data of the tree node storing the strings
+ */
+static void strings_node_destroy(void *data, void *key, void *value) {
+    FREE(value);
 }
 
 void data_builder_destroy(data_builder_t *builder) {
     FREE(builder->descriptors);
     FREE(builder->data);
+    avl_tree_for_each(builder->strings, strings_node_destroy, NULL);
     avl_tree_destroy(builder->strings);
     FREE(builder);
 }

@@ -83,20 +83,13 @@ typedef struct {
  * @brief Structure representing a descriptor that addresses data within a segment.
  *
  * This structure describes the location and size of a data block within a data segment.
- * - The `index` specifies the index (sequence number) of this descriptor
- *   in the list of descriptors.
  * - The `offset` specifies the offset (in bytes) from the beginning of the data segment
  *   to the start of the data block.
  * - The `size` specifies the size (in bytes) of the data block.
  *
- * The structure is packed to ensure it occupies exactly 16 bytes with 4-byte alignment.
+ * The structure is packed to ensure it occupies exactly 12 bytes with 4-byte alignment.
  */
 typedef struct {
-    /**
-     * @brief Index of this descriptor.
-     */
-    uint32_t index;
-    
     /**
      * @brief Offset (8 bytes) from the beginning of the data segment to the start
      *        of the data block.
