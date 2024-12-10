@@ -22,18 +22,12 @@
 
 #include <stdint.h>
 
+#include "opcodes.h"
+
 /**
- * @enum opcode_t
- * @brief Enumeration of available opcodes for the Goat virtual machine.
- *
- * Each opcode corresponds to a specific instruction that can be executed by the virtual machine.
- * These opcodes define the operations that can be performed by the virtual machine, such as 
- * arithmetic operations and control flow operations.
+ * @brief Signature added to the beginning of each binary file.
  */
-typedef enum {
-    NOP = 0x00, /**< No operation - does nothing. */
-    ADD = 0x01, /**< Add operation - adds two operands from the stack. */
-} opcode_t;
+#define BINARY_FILE_SIGNATURE "goat v.1"
 
 #pragma pack(push, 1)
 
@@ -156,6 +150,13 @@ typedef struct {
     void *buffer;
 
     /**
+     * @brief The buffer (file) size in bytes.
+     * 
+     * Used when writing a buffer to a file.
+     */
+    size_t buffer_size;
+
+    /**
      * @brief Pointer to the list of instructions (type: instruction_t*).
      * 
      * Points to the first instruction in the bytecode file.
@@ -176,3 +177,13 @@ typedef struct {
      */
     uint8_t *data;
 } bytecode_t;
+
+/**
+ * @brief Frees the memory allocated by the bytecode structure.
+ *
+ * This function frees the memory used by the `bytecode_t` structure, which includes the entire
+ * binary file (instructions, data, and descriptors).
+ *
+ * @param code A pointer to the `bytecode_t` structure to be freed.
+ */
+void free_bytecode(bytecode_t *code);
