@@ -26,7 +26,9 @@
 
 data_builder_t *data_builder_create(void) {
     data_builder_t *builder = (data_builder_t *)ALLOC(sizeof(data_builder_t));
-    builder->descriptors = (data_descriptor_t *)ALLOC(INITIAL_DESCRIPTORS_LIST_CAPACITY * sizeof(data_descriptor_t));
+    builder->descriptors = (data_descriptor_t *)ALLOC(
+        INITIAL_DESCRIPTORS_LIST_CAPACITY * sizeof(data_descriptor_t)
+    );
     builder->data = (uint8_t *)ALLOC(INITIAL_DATA_ARRAY_CAPACITY * sizeof(uint8_t));
     builder->data_size = 0;
     builder->data_capacity = INITIAL_DATA_ARRAY_CAPACITY;
