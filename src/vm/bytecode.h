@@ -35,48 +35,151 @@ typedef enum {
     ADD = 0x01, /**< Add operation - adds two operands from the stack. */
 } opcode_t;
 
+#pragma pack(push, 1)
+
 /**
  * @struct instruction_t
  * @brief Structure representing a single bytecode instruction.
  *
- * Each instruction in the Goat virtual machine consists of three parts: the opcode,
- * flags, and data.
- * - The `opcode` indicates the operation to be performed.
- * - The `flags` provide additional options or settings that may influence the execution of
- *   the operation.
- * - The `data` field is a union that can represent different types of operands or parameters,
- *   depending on the instruction.
+ * Each instruction in the Goat virtual machine consists of four fields: the opcode, flags, 
+ * and two arguments (`arg0` and `arg1`).
+ * - The `opcode` field specifies the operation to be performed.
+ * - The `flags` field provides additional options or settings that may influence the execution 
+ *   of the operation.
+ * - The `arg0` field represents a 16-bit operand or parameter.
+ * - The `arg1` field represents a 32-bit operand or parameter.
  *
- * This design allows the virtual machine to handle a variety of instructions efficiently
- * and flexibly.
+ * This structure is packed to ensure it occupies exactly 8 bytes, making it highly efficient 
+ * for use in memory-constrained environments and ensuring compatibility across different platforms.
  */
 typedef struct {
     /**
      * @brief The opcode (1 byte) specifies the type of operation to be performed.
      */
     uint8_t opcode;
+
     /**
-     * @brief Flags (3 bytes) that modify the behavior of the instruction.
+     * @brief Flags (1 byte) that modify the behavior of the instruction.
      */
-    uint8_t flags[3];
+    uint8_t flags;
+
     /**
-     * @brief Union representing the operand or parameter for the instruction. The specific type 
-              used depends on the instruction's opcode and context.
+     * @brief First argument (16 bits, 2 bytes).
      */
-    union {
-        /**
-         * @brief Two 32-bit addresses, typically used for instructions requiring memory
-         *        or branch targets.
-         */
-        uint32_t address[2];
-        /**
-         * @brief A 64-bit signed integer, used for instructions involving integer arithmetic.
-         */
-        int64_t integer;
-        /**
-         * @brief A 64-bit floating-point value, used for instructions involving floating-point
-         *        operations.
-         */
-        double real;
-    } data;
+    uint16_t arg0;
+
+    /**
+     * @brief Second argument (32 bits, 4 bytes).
+     */
+    uint32_t arg1;
 } instruction_t;
+
+#pragma pack(pop)
+
+#pragma pack(push, 4)
+
+/**
+ * @struct data_descriptor_t
+ * @brief Structure representing a descriptor that addresses data within a segment.
+ *
+ * This structure describes the location and size of a data block within a data segment.
+ * - The `index` specifies the index (sequence number) of this descriptor
+ *   in the list of descriptors.
+ * - The `offset` specifies the offset (in bytes) from the beginning of the data segment
+ *   to the start of the data block.
+ * - The `size` specifies the size (in bytes) of the data block.
+ *
+ * The structure is packed to ensure it occupies exactly 16 bytes with 4-byte alignment.
+ */
+typedef struct {
+    /**
+     * @brief Index of this descriptor.
+     */
+    uint32_t index;
+    
+    /**
+     * @brief Offset (8 bytes) from the beginning of the data segment to the start
+     *        of the data block.
+     */
+    uint64_t offset;
+
+    /**
+     * @brief Size (4 bytes) of the data block.
+     */
+    uint32_t size;
+} data_descriptor_t;
+
+#pragma pack(pop)
+
+#pragma pack(push, 8)
+
+/**
+ * @struct goat_binary_header_t
+ * @brief Structure representing the header of the Goat binary file.
+ *
+ * This structure describes the layout of a binary file containing bytecode for the
+ * Goat virtual machine. It includes offsets to various sections within the file, such as
+ * the list of instructions and data descriptors.
+ */
+typedef struct {
+    /**
+     * @brief 8-byte signature that uniquely identifies the file format.
+     */
+    uint8_t signature[8];
+
+    /**
+     * @brief 8-byte offset from the beginning of the file to the list of instructions.
+     */
+    uint64_t instructions_offset;
+
+    /**
+     * @brief 8-byte offset from the beginning of the file to the list of data descriptors.
+     */
+    uint64_t data_descriptors_offset;
+
+    /**
+     * @brief 8-byte offset from the beginning of the file to the actual data.
+     */
+    uint64_t data_offset;
+} goat_binary_header_t;
+
+#pragma pack(pop)
+
+/**
+ * @struct bytecode_t
+ * @brief Structure representing a loaded bytecode file in memory.
+ *
+ * This structure holds the addresses for various parts of the loaded bytecode file.
+ * It includes pointers to the bytecode itself, the list of instructions, the list
+ * of data descriptors, and the actual data, allowing easy access by index.
+ */
+typedef struct {
+    /**
+     * @brief Pointer to the entire loaded bytecode file in memory.
+     * 
+     * This is a void pointer to avoid type-casting.
+     * Used for memory cleanup at the end of execution.
+     */
+    void *buffer;
+
+    /**
+     * @brief Pointer to the list of instructions (type: instruction_t*).
+     * 
+     * Points to the first instruction in the bytecode file.
+     */
+    instruction_t *instructions;
+
+    /**
+     * @brief Pointer to the list of data descriptors (type: data_descriptor_t*).
+     * 
+     * Points to the first data descriptor in the bytecode file.
+     */
+    data_descriptor_t *data_descriptors;
+
+    /**
+     * @brief Pointer to the actual data (type: uint8_t*).
+     * 
+     * Points to the first byte of the data section in the bytecode file.
+     */
+    uint8_t *data;
+} bytecode_t;
