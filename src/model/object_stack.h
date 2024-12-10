@@ -30,7 +30,7 @@
 typedef struct object_t object_t;
 
 /**
- * @struct object_stack
+ * @struct object_stack_t
  * @brief Stack structure for storing Goat objects.
  */
 typedef struct {

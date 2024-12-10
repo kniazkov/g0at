@@ -39,20 +39,44 @@ typedef enum {
  * @struct instruction_t
  * @brief Structure representing a single bytecode instruction.
  *
- * Each instruction in the Goat virtual machine consists of three parts: the opcode, flags, and data.
+ * Each instruction in the Goat virtual machine consists of three parts: the opcode,
+ * flags, and data.
  * - The `opcode` indicates the operation to be performed.
- * - The `flags` provide additional options or settings that may influence the execution of the operation.
- * - The `data` field is a union that can represent different types of operands or parameters, depending on the instruction.
+ * - The `flags` provide additional options or settings that may influence the execution of
+ *   the operation.
+ * - The `data` field is a union that can represent different types of operands or parameters,
+ *   depending on the instruction.
  *
- * This design allows the virtual machine to handle a variety of instructions efficiently and flexibly.
+ * This design allows the virtual machine to handle a variety of instructions efficiently
+ * and flexibly.
  */
 typedef struct {
-    uint8_t opcode; /**< The opcode (1 byte) specifies the type of operation to be performed. */
-    uint8_t flags[3]; /**< Flags (3 bytes) that modify the behavior of the instruction. */
+    /**
+     * @brief The opcode (1 byte) specifies the type of operation to be performed.
+     */
+    uint8_t opcode;
+    /**
+     * @brief Flags (3 bytes) that modify the behavior of the instruction.
+     */
+    uint8_t flags[3];
+    /**
+     * @brief Union representing the operand or parameter for the instruction. The specific type 
+              used depends on the instruction's opcode and context.
+     */
     union {
-        uint32_t address[2]; /**< Two 32-bit addresses, typically used for instructions requiring memory or branch targets. */
-        int64_t int_value;   /**< A 64-bit signed integer, used for instructions involving integer arithmetic or data storage. */
-        double real_value;   /**< A 64-bit floating-point value, used for instructions involving floating-point operations. */
-    } data; /**< Union representing the operand or parameter for the instruction. The specific type 
-                 used depends on the instruction's opcode and context. */
+        /**
+         * @brief Two 32-bit addresses, typically used for instructions requiring memory
+         *        or branch targets.
+         */
+        uint32_t address[2];
+        /**
+         * @brief A 64-bit signed integer, used for instructions involving integer arithmetic.
+         */
+        int64_t integer;
+        /**
+         * @brief A 64-bit floating-point value, used for instructions involving floating-point
+         *        operations.
+         */
+        double real;
+    } data;
 } instruction_t;
