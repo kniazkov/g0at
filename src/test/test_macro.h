@@ -1,7 +1,7 @@
 /**
  * @file test_macro.h
  * @copyright 2025 Ivan Kniazkov
- * @brief A set of macros to facilitate writing unit tests
+ * @brief A set of macros to facilitate writing unit tests.
  */
 
 #pragma once

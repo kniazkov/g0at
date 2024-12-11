@@ -1,7 +1,7 @@
 /**
  * @file test_lib.c
  * @copyright 2025 Ivan Kniazkov
- * @brief A set of tests for testing extensions to the С standard library
+ * @brief A set of tests for testing extensions to the С standard library.
  */
 
 #include <stdint.h>

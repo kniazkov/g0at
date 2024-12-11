@@ -71,22 +71,22 @@ uint32_t data_builder_add(data_builder_t *builder, void *data, size_t size) {
     uint32_t index = (uint32_t)builder->descriptors_count++;
     data_descriptor_t descriptor = {
         .offset = (uint64_t)offset,
-        .size = (uint32_t)aligned_size
+        .size = (uint32_t)size
     };
     builder->descriptors[index] = descriptor;
     return index;
 }
 
 uint32_t data_builder_add_string(data_builder_t *builder, wchar_t *string) {
-    uint32_t *old_index = avl_tree_get(builder->strings, string).uint32_val;
+    uint32_t old_index = avl_tree_get(builder->strings, string).uint32_val;
     if (old_index) {
-        return *old_index;
+        return old_index - 1;
     }
     size_t len = (wcslen(string) + 1) * sizeof(wchar_t);
     uint32_t index = data_builder_add(builder, (void*)string, len);
     data_descriptor_t *descriptor = &builder->descriptors[index];
     avl_tree_set(builder->strings, &builder->data[descriptor->offset],
-        (value_t){.uint32_val = index});
+        (value_t){.uint32_val = index + 1});
     return index;
 }
 

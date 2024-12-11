@@ -1,7 +1,7 @@
 /**
  * @file test_list.h
  * @copyright 2025 Ivan Kniazkov
- * @brief Header file for managing and retrieving unit tests
+ * @brief Header file for managing and retrieving unit tests.
  */
 
 #pragma once

@@ -1,7 +1,7 @@
 /**
  * @file test_model.c
  * @copyright 2025 Ivan Kniazkov
- * @brief A set of tests for testing object model
+ * @brief A set of tests for testing object model.
  */
 
 #include <stdio.h>
