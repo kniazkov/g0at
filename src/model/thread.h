@@ -99,3 +99,25 @@ struct thread_t {
      */
     instr_index_t current_instruction;
 };
+
+/**
+ * @brief Creates a new thread within the given process.
+ * 
+ * This function initializes a new thread for the specified process. The thread is added
+ * to the process's circular linked list of threads. It also initializes the data stack for the
+ * thread and sets the instruction pointer to the starting position.
+ * 
+ * @param process The process to which the new thread will belong.
+ * @return A pointer to the newly created thread.
+ */
+thread_t *create_thread(process_t *process);
+
+/**
+ * @brief Destroys a thread and frees its resources.
+ * 
+ * This function cleans up the memory used by a thread. It removes the thread from the
+ * process's thread list, destroys its data stack, and frees the memory allocated for the thread.
+ * 
+ * @param thread The thread to destroy.
+ */
+void destroy_thread(thread_t *thread);

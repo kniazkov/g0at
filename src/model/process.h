@@ -61,3 +61,24 @@ struct process_t {
      */
     object_list_t objects;
 };
+
+/**
+ * @brief Creates a new process.
+ * 
+ * This function initializes a new process, sets its unique ID, initializes an empty object list, 
+ * and creates the main thread for the process.
+ * 
+ * @return A pointer to the newly created process.
+ */
+process_t *create_process();
+
+/**
+ * @brief Destroys a process and frees all its resources, including threads and objects.
+ * 
+ * This function destroys all threads associated with the process, calls the `release` 
+ * function for each object in the process's object list, and then deallocates the memory 
+ * used by the process itself.
+ * 
+ * @param process The process to be destroyed.
+ */
+void destroy_process(process_t *process);
