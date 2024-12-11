@@ -78,30 +78,21 @@ uint32_t data_builder_add(data_builder_t *builder, void *data, size_t size) {
 }
 
 uint32_t data_builder_add_string(data_builder_t *builder, wchar_t *string) {
-    uint32_t *index_ptr = (uint32_t *)avl_tree_get(builder->strings, string);
-    if (index_ptr) {
-        return *index_ptr;
+    uint32_t *old_index = avl_tree_get(builder->strings, string).uint32_val;
+    if (old_index) {
+        return *old_index;
     }
     size_t len = (wcslen(string) + 1) * sizeof(wchar_t);
     uint32_t index = data_builder_add(builder, (void*)string, len);
-    index_ptr = (uint32_t *)ALLOC(sizeof(uint32_t));
-    *index_ptr = index;
     data_descriptor_t *descriptor = &builder->descriptors[index];
-    avl_tree_set(builder->strings, &builder->data[descriptor->offset],index_ptr);
+    avl_tree_set(builder->strings, &builder->data[descriptor->offset],
+        (value_t){.uint32_val = index});
     return index;
-}
-
-/**
- * @brief Releases the data of the tree node storing the strings
- */
-static void strings_node_destroy(void *data, void *key, void *value) {
-    FREE(value);
 }
 
 void data_builder_destroy(data_builder_t *builder) {
     FREE(builder->descriptors);
     FREE(builder->data);
-    avl_tree_for_each(builder->strings, strings_node_destroy, NULL);
     avl_tree_destroy(builder->strings);
     FREE(builder);
 }

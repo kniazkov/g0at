@@ -9,6 +9,8 @@
  * function.
  */
 
+#include <memory.h>
+
 #include "avl_tree.h"
 #include "lib/allocate.h"
 
@@ -138,13 +140,13 @@ static avl_node_t *balance(avl_tree_t *tree, avl_node_t *node) {
  * @return The node where the key-value pair was inserted or `NULL` if the key already exists.
  */
 static avl_node_t *avl_tree_insert(avl_tree_t *tree, avl_node_t *node, void *key,
-        void *value, void **old_value) {
+        value_t value, value_t *old_value) {
     if (!node) {
         avl_node_t *new_node = (avl_node_t *)CALLOC(sizeof(avl_node_t));
         new_node->key = key;
         new_node->value = value;
         new_node->height = 1;
-        *old_value = NULL;
+        memset(old_value, 0, sizeof(value_t));
         return new_node;
     }
 
@@ -203,7 +205,7 @@ static avl_node_t *avl_tree_find(avl_tree_t *tree, avl_node_t *node, void *key) 
  * @param user_data A pointer to user data that will be passed to the callback function.
  */
 static void avl_tree_inorder_traversal(avl_node_t *node,
-        void (*func)(void* user_data, void* key, void* value), void *user_data) {
+        void (*func)(void* user_data, void* key, value_t value), void *user_data) {
     if (node) {
         avl_tree_inorder_traversal(node->left, func, user_data);
         func(user_data, node->key, node->value);
@@ -228,15 +230,13 @@ static void avl_tree_destroy_nodes(avl_node_t *node) {
 
 avl_tree_t *avl_tree_create(int (*comparator)(void*, void*)) {
     avl_tree_t *tree = (avl_tree_t *)ALLOC(sizeof(avl_tree_t));
-
     tree->root = NULL; 
     tree->comparator = comparator;
-    
     return tree;
 }
 
-void *avl_tree_set(avl_tree_t *tree, void *key, void *value) {
-    void *old_value;
+value_t avl_tree_set(avl_tree_t *tree, void *key, value_t value) {
+    value_t old_value;
     tree->root = avl_tree_insert(tree, tree->root, key, value, &old_value);
     return old_value;
 }
@@ -246,13 +246,17 @@ bool avl_tree_contains(avl_tree_t *tree, void *key) {
     return node != NULL;
 }
 
-void *avl_tree_get(avl_tree_t *tree, void *key) {
+value_t avl_tree_get(avl_tree_t *tree, void *key) {
+    value_t value = {0};
     avl_node_t *node = avl_tree_find(tree, tree->root, key);
-    return node ? node->value : NULL;
+    if (node) {
+        value = node->value;
+    }
+    return value;
 }
 
 void avl_tree_for_each(avl_tree_t *tree,
-    void (*func)(void* user_data, void* key, void* value), void *user_data) {
+    void (*func)(void* user_data, void* key, value_t value), void *user_data) {
     if (tree && tree->root) {
         avl_tree_inorder_traversal(tree->root, func, user_data);
     }

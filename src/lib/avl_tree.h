@@ -13,6 +13,8 @@
 
 #include <stdbool.h>
 
+#include "value.h"
+
 /**
  * @struct avl_node_t
  * @brief A node in the AVL tree.
@@ -20,13 +22,15 @@
  * This structure represents a single node in the AVL tree, which contains a key-value pair,
  * height information, and pointers to its left and right children.
  *
- * The `key` and `value` are stored as `void *`, which allows the tree to store any type of data.
+ * The `key` is stored as a `void *`, which allows the tree to store any type of data.
+ * The `value` is stored as a `value_t`, which can either hold a `void *` pointer to any type
+ * of data or an primitive type.
  * The `height` is used to maintain the balance of the tree, ensuring that operations on the tree
  * can be performed in logarithmic time.
  */
 typedef struct avl_node_t {
     void *key;                /**< Pointer to the key stored in the node. */
-    void *value;              /**< Pointer to the value associated with the key. */
+    value_t value;            /**< Value associated with the key. */
     int height;               /**< Height of the node, used for balancing. */
     struct avl_node_t *left;  /**< Pointer to the left child node. */
     struct avl_node_t *right; /**< Pointer to the right child node. */
@@ -70,19 +74,19 @@ avl_tree_t *avl_tree_create(int (*comparator)(void*, void*));
  * 
  * This function attempts to insert a new key-value pair into the AVL tree. If the key already
  * exists in the tree, the function updates the corresponding value and returns the old value.
- * If the key does not exist, the function inserts the new pair and returns `NULL`.
+ * If the key does not exist, the function inserts the new pair and returns zeros.
  * 
  * The function uses the AVL tree's comparator to find the correct position of the key.
  * The tree is balanced after the insertion or update to ensure optimal search times.
  * 
  * @param tree A pointer to the AVL tree where the key-value pair is inserted or updated.
  * @param key A pointer to the key to insert or update in the tree.
- * @param value A pointer to the value associated with the key.
+ * @param value Value associated with the key.
  * 
  * @return If the key already exists, the function returns the old value associated with the key.
- *         If the key is new, the function returns `NULL`.
+ *         If the key is new, the function returns default value (filled with zeros).
  */
-void *avl_tree_set(avl_tree_t *tree, void *key, void *value);
+value_t avl_tree_set(avl_tree_t *tree, void *key, value_t value);
 
 /**
  * @brief Checks if the AVL tree contains a node with the specified key.
@@ -104,15 +108,15 @@ bool avl_tree_contains(avl_tree_t *tree, void *key);
  * 
  * This function searches the AVL tree for a node containing the specified key. If the key
  * is found, the function returns the corresponding value. If the key is not found, the function
- * returns `NULL`.
+ * returns zeros.
  * 
  * @param tree A pointer to the AVL tree to search.
  * @param key A pointer to the key whose associated value is to be retrieved.
  * 
- * @return The value associated with the specified key, or `NULL` if the key is not found
- *         in the tree.
+ * @return The value associated with the specified key, or default value (filled with zeros)
+ *         if the key is not found in the tree.
  */
-void *avl_tree_get(avl_tree_t *tree, void *key);
+value_t avl_tree_get(avl_tree_t *tree, void *key);
 
 /**
  * @brief Applies a function to each key-value pair in the AVL tree, with user data.
@@ -124,11 +128,11 @@ void *avl_tree_get(avl_tree_t *tree, void *key);
  * 
  * @param tree A pointer to the AVL tree to traverse.
  * @param func A pointer to the function to apply to each key-value pair. The function
- *             should have the signature `void func(void* user_data, void* key, void* value)`.
+ *             should have the signature `void func(void* user_data, void* key, value_t value)`.
  * @param user_data A pointer to user data that will be passed to the callback function.
  */
 void avl_tree_for_each(avl_tree_t *tree,
-    void (*func)(void* user_data, void* key, void* value), void *user_data);
+    void (*func)(void* user_data, void* key, value_t value), void *user_data);
 
 /**
  * @brief Destroys the AVL tree and frees all allocated memory.

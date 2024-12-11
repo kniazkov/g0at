@@ -51,21 +51,21 @@ static int wcscmp_comparator(void *first, void *second) {
  * 
  * @param user_data A pointer to user-specific data, in this case, a pointer to a vector.
  * @param key A pointer to the key of the current node in the AVL tree.
- * @param value A pointer to the value associated with the key in the AVL tree.
+ * @param value Value associated with the key in the AVL tree.
  * 
  * @note The function adds each key to the vector passed via `user_data`.
  */
-static void avl_callback(void *user_data, void *key, void *value) {
+static void avl_callback(void *user_data, void *key, value_t value) {
     vector_t *keys = (vector_t *)user_data;
     vector_add(keys, WSTRDUP((wchar_t *)key));
 }
 
 bool test_avl_tree() {
     avl_tree_t *tree = avl_tree_create(wcscmp_comparator);
-    avl_tree_set(tree, L"gamma", L"third");
-    wchar_t *previous = (wchar_t *)avl_tree_set(tree, L"alpha", L"first");
-    ASSERT(previous == NULL);
-    avl_tree_set(tree, L"beta", L"second");
+    avl_tree_set(tree, L"gamma", (value_t){.ptr = L"third"});
+    value_t previous = avl_tree_set(tree, L"alpha", (value_t){.ptr = L"first"});
+    ASSERT(previous.ptr == NULL);
+    avl_tree_set(tree, L"beta", (value_t){.ptr = L"second"});
     ASSERT(avl_tree_contains(tree, L"alpha"));
     ASSERT(false == avl_tree_contains(tree, L"delta"));
     vector_t *keys = vector_create();
@@ -75,13 +75,13 @@ bool test_avl_tree() {
     ASSERT(wcscmp(L"beta", (wchar_t *)keys->data[1]) == 0);
     ASSERT(wcscmp(L"gamma", (wchar_t *)keys->data[2]) == 0);
     vector_destroy_ex(keys, FREE);
-    ASSERT(wcscmp(L"first", (wchar_t *)avl_tree_get(tree, L"alpha")) == 0);
-    ASSERT(wcscmp(L"second", (wchar_t *)avl_tree_get(tree, L"beta")) == 0);
-    ASSERT(wcscmp(L"third", (wchar_t *)avl_tree_get(tree, L"gamma")) == 0);
-    ASSERT(avl_tree_get(tree, L"delta") == NULL);
-    previous = (wchar_t *)avl_tree_set(tree, L"alpha", L"primary");
-    ASSERT(wcscmp(L"first", previous) == 0);
-    ASSERT(wcscmp(L"primary", (wchar_t *)avl_tree_get(tree, L"alpha")) == 0);
+    ASSERT(wcscmp(L"first", (wchar_t *)avl_tree_get(tree, L"alpha").ptr) == 0);
+    ASSERT(wcscmp(L"second", (wchar_t *)avl_tree_get(tree, L"beta").ptr) == 0);
+    ASSERT(wcscmp(L"third", (wchar_t *)avl_tree_get(tree, L"gamma").ptr) == 0);
+    ASSERT(avl_tree_get(tree, L"delta").ptr == NULL);
+    previous = avl_tree_set(tree, L"alpha", (value_t){.ptr = L"primary"});
+    ASSERT(wcscmp(L"first", previous.ptr) == 0);
+    ASSERT(wcscmp(L"primary", (wchar_t *)avl_tree_get(tree, L"alpha").ptr) == 0);
     avl_tree_destroy(tree);
     return true;
 }
