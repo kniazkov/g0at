@@ -14,6 +14,16 @@
 #include "lib/allocate.h"
 
 /**
+ * @def POOL_CAPACITY
+ * @brief Defines the maximum capacity of the object pool.
+ * 
+ * This macro sets the maximum number of objects that can be stored in the object pool 
+ * before it reaches its capacity. Once the pool is full, any swept objects are destroyed 
+ * instead of being added to the pool.
+ */
+#define POOL_CAPACITY 1024
+
+/**
  * @struct object_integer_t
  * @brief Structure representing an integer object.
  */
@@ -41,10 +51,14 @@ static void sweep(object_t *obj) {
     object_integer_t *iobj = (object_integer_t *)obj;
     assert(iobj->state != ZOMBIE);
     if (iobj->state == UNMARKED) {
-        iobj->state = ZOMBIE;
-        iobj->value = 0;
         remove_object_from_list(&obj->process->objects, obj);
-        add_object_to_list(&obj->process->integers, obj);
+        if (obj->process->integers.size == POOL_CAPACITY) {
+            FREE(obj);
+        } else {
+            iobj->state = ZOMBIE;
+            iobj->value = 0;
+            add_object_to_list(&obj->process->integers, obj);
+        }
     } else {
         iobj->state = UNMARKED;
     }

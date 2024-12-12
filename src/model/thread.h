@@ -39,6 +39,15 @@ typedef struct thread_t thread_t;
 typedef size_t instr_index_t;
 
 /**
+ * @def ARGS_CAPACITY
+ * @brief Defines the maximum number of arguments that can be stored in the argument array.
+ * 
+ * This macro sets the maximum number of arguments that can be stored in the `args` array of
+ * a thread during the execution of instructions.
+ */
+#define ARGS_CAPACITY 3
+
+/**
  * @struct thread_t
  * @brief Represents a thread in Goat.
  * 
@@ -97,7 +106,24 @@ struct thread_t {
      * to be executed by the virtual machine. The thread uses this index to fetch and execute
      * instructions sequentially.
      */
-    instr_index_t current_instruction;
+    instr_index_t instr_id;
+
+    /**
+     * @brief Array of arguments used during instruction execution.
+     * 
+     * This array stores the arguments pushed onto the argument stack during the execution of
+     * instructions. This is used for `ARG` opcode that pushing additional arguments beyond
+     * the standard two available in each instruction.
+     */
+    uint32_t args[ARGS_CAPACITY];
+
+    /**
+     * @brief The number of arguments currently stored in the `args` array.
+     * 
+     * This field keeps track of how many arguments have been pushed onto the `args` array during
+     * the execution of instructions. 
+     */
+    int args_count;
 };
 
 /**

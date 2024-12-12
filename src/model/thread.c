@@ -36,7 +36,7 @@ thread_t *create_thread(process_t *process) {
         process->main_thread->previous = thread;
     }
     thread->data_stack = create_object_stack();
-    thread->current_instruction = 0;
+    thread->instr_id = 0;
     return thread;
 }
 
