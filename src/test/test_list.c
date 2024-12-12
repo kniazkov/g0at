@@ -18,6 +18,8 @@ static test_description_t test_list[] = {
     , { "AVL tree", test_avl_tree }
 
     , {"integer object", test_integer_object}
+    , {"addition of two integers", test_addition_of_two_integers}
+    , {"subtraction of two integers", test_subtraction_of_two_integers}
 
     , {"data builder", test_data_builder}
     , {"linker", test_linker}

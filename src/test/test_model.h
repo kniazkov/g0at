@@ -13,3 +13,10 @@
  * @return True if the test passes, false otherwise.
  */
 bool test_integer_object();
+
+/**
+ * 
+ */
+bool test_addition_of_two_integers();
+
+bool test_subtraction_of_two_integers();

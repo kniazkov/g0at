@@ -7,7 +7,6 @@
 #include <stdbool.h>
 
 #include "vm.h"
-#include "model/process.h"
 #include "model/thread.h"
 #include "lib/split64.h"
 
@@ -138,41 +137,64 @@ static bool exec_ILOAD64(bytecode_t *code, instruction_t instr, thread_t *thread
     s.parts[0] = thread->args[0];
     s.parts[1] = instr.arg1;
     push_object_onto_stack(thread->data_stack, create_integer_object(thread->process, s.int_value));
+    thread->args_count = 0;
     thread->instr_id++;
     return true;
 }
 
 /**
- * @brief Executes the ADD instruction.
+ * @brief Executes the `ADD` instruction.
  * 
  * The `ADD` opcode performs an addition operation on the top two objects on the data stack.
- * It pops the top two objects, adds them, and pushes the result back onto the stack.
- * The operation is not yet implemented.
+ * It pops the top two objects from the stack, adds them using their respective `add` methods,
+ * and pushes the result back onto the stack. If either of the objects cannot be added, the
+ * operation fails.
  * 
- * @param bytecode The bytecode that contains the instructions and static data.
+ * @param code The bytecode containing the instructions and static data.
  * @param instr The instruction to execute.
  * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `false` for now.
+ * @return Returns `true` if the addition was successful and the result was pushed onto the stack,
+ *  or `false` if the addition failed (e.g., due to invalid object types).
  */
 static bool exec_ADD(bytecode_t *code, instruction_t instr, thread_t *thread) {
-    // to be implemented
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        object_t *result = first->vtbl->add(first, second);
+        if (result) {
+            push_object_onto_stack(thread->data_stack, result);
+            thread->instr_id++;
+            return true;
+        }
+    }
     return false;
 }
 
 /**
- * @brief Executes the SUB instruction.
+ * @brief Executes the `SUB` instruction.
  * 
  * The `SUB` opcode performs a subtraction operation on the top two objects on the data stack.
- * It pops the top two objects, subtracts the second operand from the first, and pushes the result
- * back onto the stack. The operation is not yet implemented.
+ * It pops the top two objects from the stack, subtracts the second operand from the first using
+ * their respective `sub` methods, and pushes the result back onto the stack. If either of the
+ * objects cannot be subtracted, the operation fails.
  * 
- * @param bytecode The bytecode that contains the instructions and static data.
+ * @param code The bytecode containing the instructions and static data.
  * @param instr The instruction to execute.
  * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `false` for now.
+ * @return Returns `true` if the subtraction was successful and the result was pushed onto the
+ *  stack, or `false` if the subtraction failed (e.g., due to invalid object types).
  */
 static bool exec_SUB(bytecode_t *code, instruction_t instr, thread_t *thread) {
-    // to be implemented
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        object_t *result = first->vtbl->sub(first, second);
+        if (result) {
+            push_object_onto_stack(thread->data_stack, result);
+            thread->instr_id++;
+            return true;
+        }
+    }
     return false;
 }
 
@@ -198,15 +220,13 @@ static instr_executor_t executors[] = {
     // Additional opcodes can be added here in the future...
 };
 
-int run(bytecode_t *code) {
-    process_t *proc = create_process();
+int run(process_t *main_proc, bytecode_t *code) {
     bool flag = true;
-    thread_t *thread = proc->main_thread;
+    thread_t *thread = main_proc->main_thread;
     while (flag) {
         instruction_t instr = code->instructions[thread->instr_id];
         flag =  executors[instr.opcode](code, instr, thread);
         thread = thread->next;
     }
-    destroy_process(proc);
     return 0;
 }

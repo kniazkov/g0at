@@ -21,7 +21,7 @@
 static uint64_t last_thread_id = 0;
 
 thread_t *create_thread(process_t *process) {
-    thread_t *thread = (thread_t *)ALLOC(sizeof(thread_t));
+    thread_t *thread = (thread_t *)CALLOC(sizeof(thread_t));
     thread->id = ++last_thread_id;
     thread->process = process;
     if (process->main_thread == NULL) {
@@ -36,7 +36,6 @@ thread_t *create_thread(process_t *process) {
         process->main_thread->previous = thread;
     }
     thread->data_stack = create_object_stack();
-    thread->instr_id = 0;
     return thread;
 }
 

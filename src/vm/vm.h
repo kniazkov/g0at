@@ -15,17 +15,27 @@
 #pragma once
 
 #include "bytecode.h"
+#include "model/process.h"
 
 /**
- * @brief Executes the Goat bytecode.
+ * @brief Executes the bytecode in the specified process.
  * 
- * This function runs the provided bytecode in the Goat virtual machine. It interprets and executes
- * the instructions encoded in the bytecode, performing the operations defined by the Goat
- * language. The function initializes the virtual machine state, executes the bytecode, and handles
- * any runtime errors or exceptions that may occur during execution.
+ * This function runs the bytecode provided to the virtual machine, executing the instructions
+ * in the bytecode for the given process. It starts execution with the main thread of the process
+ * and proceeds through the instructions until either the bytecode finishes or a halting condition
+ * is met. During execution, the state of the process, including the stack and threads, is
+ * modified. Any data left in the process after execution can be extracted for further use.
  * 
- * @param code Bytecode to be executed.
- * @return An integer status code indicating the result of the execution. Typically, a non-zero
- * value indicates an error, while zero means successful execution.
+ * The function returns a status code to indicate the result of the execution. A return value of 
+ * `0` typically indicates successful execution, while non-zero values may represent errors or
+ * abnormal terminations.
+ * 
+ * @param main_proc The process to run. The process is initialized before being passed
+ *  to this function, and its state will be modified during execution.
+ * @param code The bytecode to execute. The bytecode contains the list of instructions to be
+ *  processed.
+ * @return An integer status code representing the result of the execution:
+ *         - `0` indicates successful execution.
+ *         - Non-zero values may indicate errors or abnormal termination.
  */
-int run(bytecode_t *code);
+int run(process_t *main_proc, bytecode_t *code);

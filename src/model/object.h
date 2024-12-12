@@ -80,6 +80,43 @@ typedef struct {
      * @return The Goat notation string representation of the object.
      */
     wchar_t* (*to_string_notation)(object_t *obj);
+
+    /**
+     * @brief Function pointer for adding two objects.
+     * 
+     * The `add` function is used for executing the `ADD` operation, which adds the values
+     * of two objects and returns a new object representing the result.
+     * 
+     * @param obj1 Pointer to the first object to add.
+     * @param obj2 Pointer to the second object to add.
+     * @return A pointer to the resulting object of the addition.
+     */
+    object_t* (*add)(object_t *obj1, object_t *obj2);
+
+    /**
+     * @brief Function pointer for subtracting two objects.
+     * 
+     * The `sub` function is used for executing the `SUB` operation, which subtracts the value
+     * of the second object from the first and returns a new object representing the result.
+     * 
+     * @param obj1 Pointer to the first object (minuend).
+     * @param obj2 Pointer to the second object (subtrahend).
+     * @return A pointer to the resulting object of the subtraction.
+     */
+    object_t* (*sub)(object_t *obj1, object_t *obj2);
+
+    /**
+     * @brief Function pointer for retrieving the integer value of an object.
+     * 
+     * The `get_integer_value` function is used to retrieve the integer value of an object, 
+     * if the object can be logically represented as an integer. If the object cannot be converted
+     * to an integer, this function returns `NULL`.
+     * 
+     * @param obj The object from which to retrieve the integer value.
+     * @return A pointer to the integer value, or `NULL` if the object cannot be interpreted
+     *  as an integer.
+     */
+    const int64_t* (*get_integer_value)(object_t *obj);
 } object_vtbl_t;
 
 /**
