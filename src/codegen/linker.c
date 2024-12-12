@@ -2,7 +2,7 @@
  * @file linker.c
  * @copyright 2025 Ivan Kniazkov
  * @brief Functions implementation for linking bytecode and static data into a single binary file
- *        for the Goat virtual machine.
+ *  for the Goat virtual machine.
  */
 
 #include <memory.h>

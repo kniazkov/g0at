@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 #include "vm.h"
+#include "gc.h"
 #include "model/thread.h"
 #include "lib/split64.h"
 
@@ -24,7 +25,7 @@
  * @param instr The instruction to execute.
  * @param thread Pointer to the thread that is executing the instruction.
  * @return A boolean value indicating whether the virtual machine should continue 
- * executing the next instruction (`true`), or halt (`false`).
+ *  executing the next instruction (`true`), or halt (`false`).
  */
 typedef bool (*instr_executor_t)(bytecode_t *code, instruction_t instr, thread_t *thread);
 
@@ -127,7 +128,7 @@ static bool exec_ILOAD32(bytecode_t *code, instruction_t instr, thread_t *thread
  * @param instr The instruction to execute.
  * @param thread Pointer to the thread that is executing the instruction.
  * @return `true` if the value was successfully pushed, `false` if the argument stack is not
- * properly set up.
+ *  properly set up.
  */
 static bool exec_ILOAD64(bytecode_t *code, instruction_t instr, thread_t *thread) {
     if (thread->args_count != 1) {
@@ -228,5 +229,6 @@ int run(process_t *main_proc, bytecode_t *code) {
         flag =  executors[instr.opcode](code, instr, thread);
         thread = thread->next;
     }
+    collect_garbage(main_proc);
     return 0;
 }

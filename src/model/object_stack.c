@@ -17,7 +17,7 @@
 
 object_stack_t *create_object_stack() {
     object_stack_t *stack = (object_stack_t *)CALLOC(sizeof(object_stack_t));
-    stack->data = (object_t **)ALLOC(DEFAULT_CAPACITY * sizeof(object_t *));
+    stack->objects = (object_t **)ALLOC(DEFAULT_CAPACITY * sizeof(object_t *));
     stack->capacity = DEFAULT_CAPACITY;
     stack->size = 0;
     return stack;
@@ -28,32 +28,32 @@ void push_object_onto_stack(object_stack_t *stack, object_t *object) {
         size_t new_capacity = stack->capacity * 2;
         object_t **new_data = (object_t **)ALLOC(new_capacity * sizeof(object_t *));
         for (size_t i = 0; i < stack->size; i++) {
-            new_data[i] = stack->data[i];
+            new_data[i] = stack->objects[i];
         }
-        FREE(stack->data);
-        stack->data = new_data;
+        FREE(stack->objects);
+        stack->objects = new_data;
         stack->capacity = new_capacity;
     }
-    stack->data[stack->size++] = object;
+    stack->objects[stack->size++] = object;
 }
 
 object_t *pop_object_from_stack(object_stack_t *stack) {
     if (stack->size == 0) {
         return NULL;
     }
-    return stack->data[--stack->size];
+    return stack->objects[--stack->size];
 }
 
 object_t *peek_object_from_stack(object_stack_t *stack, int index) {
     if (index < 0 || (size_t)index >= stack->size) {
         return NULL;
     }
-    return stack->data[stack->size - 1 - index];
+    return stack->objects[stack->size - 1 - index];
 }
 
 void destroy_object_stack(object_stack_t *stack) {
-    if (stack->data != NULL) {
-        FREE(stack->data);
+    if (stack->objects != NULL) {
+        FREE(stack->objects);
     }
     FREE(stack);
 }

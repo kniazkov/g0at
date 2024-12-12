@@ -2,7 +2,7 @@
  * @file code_builder.h
  * @copyright 2025 Ivan Kniazkov
  * @brief Defines structures and functions for building and managing a list of
- * bytecode instructions.
+ *  bytecode instructions.
  *
  * This file contains the declarations for a set of structures and functions that help in building
  * and managing the list of bytecode instructions. It provides mechanisms to add, modify, and
@@ -26,7 +26,7 @@
 typedef struct {
     /**
      * @brief Pointer to the list of instructions.
-     * This is dynamically allocated and resized as new instructions are added.
+     *  This is dynamically allocated and resized as new instructions are added.
      */
     instruction_t *instructions;
 
@@ -37,7 +37,7 @@ typedef struct {
 
     /**
      * @brief The maximum capacity of the instructions list.
-     * If the size exceeds this value, the list will be resized.
+     *  If the size exceeds this value, the list will be resized.
      */
     size_t capacity;
 } code_builder_t;

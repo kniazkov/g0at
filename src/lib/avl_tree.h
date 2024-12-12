@@ -65,7 +65,7 @@ typedef struct {
  *                   zero if they are equal, and a positive value if the first key is greater.
  * 
  * @return A pointer to the newly created AVL tree structure. The root of the tree is
- *         initially set to NULL.
+ *  initially set to NULL.
  */
 avl_tree_t *create_avl_tree(int (*comparator)(void*, void*));
 
@@ -84,7 +84,7 @@ avl_tree_t *create_avl_tree(int (*comparator)(void*, void*));
  * @param value Value associated with the key.
  * 
  * @return If the key already exists, the function returns the old value associated with the key.
- *         If the key is new, the function returns default value (filled with zeros).
+ *  If the key is new, the function returns default value (filled with zeros).
  */
 value_t set_in_avl_tree(avl_tree_t *tree, void *key, value_t value);
 
@@ -114,7 +114,7 @@ bool avl_tree_contains(avl_tree_t *tree, void *key);
  * @param key A pointer to the key whose associated value is to be retrieved.
  * 
  * @return The value associated with the specified key, or default value (filled with zeros)
- *         if the key is not found in the tree.
+ *  if the key is not found in the tree.
  */
 value_t get_from_avl_tree(avl_tree_t *tree, void *key);
 
@@ -128,7 +128,7 @@ value_t get_from_avl_tree(avl_tree_t *tree, void *key);
  * 
  * @param tree A pointer to the AVL tree to traverse.
  * @param func A pointer to the function to apply to each key-value pair. The function
- *             should have the signature `void func(void* user_data, void* key, value_t value)`.
+ *  should have the signature `void func(void* user_data, void* key, value_t value)`.
  * @param user_data A pointer to user data that will be passed to the callback function.
  */
 void avl_tree_for_each(avl_tree_t *tree,

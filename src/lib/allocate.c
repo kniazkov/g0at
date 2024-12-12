@@ -12,7 +12,7 @@
 
 /**
  * @brief The extra number of debug bytes added to the allocated block size 
- *        when MEMORY_DEBUG is enabled.
+ *  when MEMORY_DEBUG is enabled.
  */
 #ifdef MEMORY_DEBUG
     #define EXTRA_DEBUG_BYTES 8

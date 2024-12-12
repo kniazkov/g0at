@@ -18,6 +18,6 @@
  * 
  * @param wstr The wide character string to duplicate.
  * @return A pointer to the newly allocated wide character string. 
- *         If the input string is NULL, an empty string is returned.
+ *  If the input string is NULL, an empty string is returned.
  */
 wchar_t *WSTRDUP(const wchar_t *wstr);

@@ -87,7 +87,7 @@ typedef struct {
 typedef struct {
     /**
      * @brief Offset (8 bytes) from the beginning of the data segment to the start
-     *        of the data block.
+     *  of the data block.
      */
     uint64_t offset;
 

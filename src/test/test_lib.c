@@ -37,7 +37,7 @@ bool test_memory_allocation() {
  * @param second A pointer to the second wide-character string.
  * 
  * @return A negative value if `first` is less than `second`, 
- *         zero if they are equal, and a positive value if `first` is greater than `second`.
+ *  zero if they are equal, and a positive value if `first` is greater than `second`.
  */
 static int wcscmp_comparator(void *first, void *second) {
     return wcscmp((wchar_t *)first, (wchar_t *)second);

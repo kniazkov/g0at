@@ -39,7 +39,7 @@ void *ALLOC(size_t size);
  * 
  * @param size The size of the memory block to allocate and zero out (in bytes).
  * @return A pointer to the allocated and zero-initialized memory block. 
- *         This pointer is guaranteed to be non-NULL.
+ *  This pointer is guaranteed to be non-NULL.
  */
 void *CALLOC(size_t size);
 
@@ -50,10 +50,10 @@ void *CALLOC(size_t size);
  * It also performs a check for memory corruption if debugging is enabled.
  * 
  * @param ptr A pointer to the memory block to be freed. If the pointer is NULL, 
- *            the function will do nothing.
+ *  the function will do nothing.
  * 
  * @note If the memory block has been corrupted (in debugging mode), the program 
- *       will print an error message and exit.
+ *  will print an error message and exit.
  */
 void FREE(void *ptr);
 

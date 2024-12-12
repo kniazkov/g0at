@@ -2,14 +2,14 @@
  * @file linker.h
  * @copyright 2025 Ivan Kniazkov
  * @brief Provides the functions for linking bytecode and static data into a single binary file
- *        for the Goat virtual machine.
+ *  for the Goat virtual machine.
  *
  * This file defines the necessary functions to combine bytecode instructions and static data
  * into one unified  structure. It allows the creation of a complete binary file that can be
  * executed by the Goat virtual machine.
  *
  * @note Ensure that all memory allocated during the linking process is freed
- *       when no longer needed.
+ *  when no longer needed.
  */
 
 #pragma once
@@ -29,9 +29,9 @@
  * @param code_builder A pointer to the code builder containing the instructions.
  * @param data_builder A pointer to the data builder containing the data and data descriptors.
  * @return A `bytecode_t` structure that contains the combined bytecode, with pointers
- *         to the instructions, data descriptors, and data in the binary file.
+ *  to the instructions, data descriptors, and data in the binary file.
  *
  * @note The function dynamically allocates memory for the binary file.
- *       It is the caller's responsibility to free this memory once it is no longer needed.
+ *  It is the caller's responsibility to free this memory once it is no longer needed.
  */
 bytecode_t *link_code_and_data(code_builder_t *code_builder, data_builder_t *data_builder);

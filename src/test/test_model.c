@@ -55,6 +55,8 @@ bool test_addition_of_two_integers() {
     bytecode_t *code = create_test_bytecode(list, 4);
     process_t *proc = create_process();
     run(proc, code);
+    ASSERT(proc->objects.size == 1);
+    ASSERT(proc->integers.size == 2);
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
     const int64_t *value = result->vtbl->get_integer_value(result);
