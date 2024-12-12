@@ -37,3 +37,18 @@ void remove_object_from_list(object_list_t *list, object_t *obj) {
     obj->previous = obj->next = NULL;
     list->size--;
 }
+
+object_t *remove_first_object_from_list(object_list_t *list) {
+    object_t *obj = list->head;
+    if (obj == NULL) {
+        return NULL;
+    }
+    list->head = obj->next;
+    if (obj->next) {
+        obj->next->previous = NULL;
+    } else {
+        list->tail = NULL;
+    }
+    list->size--;
+    return obj;
+}

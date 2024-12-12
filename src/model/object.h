@@ -38,26 +38,6 @@ typedef struct process_t process_t;
  */
 typedef struct {
     /**
-     * @brief Function pointer for releasing (destroying) an object.
-     * @param obj The object to release.
-     */
-    void (*release)(object_t *obj);
-
-    /**
-     * @brief Function pointer for converting an object to its string representation.
-     * @param obj The object to convert to a string.
-     * @return The string representation of the object.
-     */
-    wchar_t* (*to_string)(object_t *obj);
-
-    /**
-     * @brief Function pointer for converting an object to its Goat notation representation.
-     * @param obj The object to convert to Goat notation.
-     * @return The Goat notation string representation of the object.
-     */
-    wchar_t* (*to_string_notation)(object_t *obj);
-
-    /**
      * @brief Function pointer for marking an object during garbage collection.
      * 
      * The `mark` function is used during the garbage collection process to identify
@@ -80,6 +60,26 @@ typedef struct {
      * @param obj The object to sweep.
      */
     void (*sweep)(object_t *obj);
+
+    /**
+     * @brief Function pointer for releasing (destroying) an object.
+     * @param obj The object to release.
+     */
+    void (*release)(object_t *obj);
+
+    /**
+     * @brief Function pointer for converting an object to its string representation.
+     * @param obj The object to convert to a string.
+     * @return The string representation of the object.
+     */
+    wchar_t* (*to_string)(object_t *obj);
+
+    /**
+     * @brief Function pointer for converting an object to its Goat notation representation.
+     * @param obj The object to convert to Goat notation.
+     * @return The Goat notation string representation of the object.
+     */
+    wchar_t* (*to_string_notation)(object_t *obj);
 } object_vtbl_t;
 
 /**

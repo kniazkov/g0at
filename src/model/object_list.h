@@ -76,3 +76,14 @@ void add_object_to_list(object_list_t *list, object_t *obj);
  * @param obj The object to remove from the list.
  */
 void remove_object_from_list(object_list_t *list, object_t *obj);
+
+/**
+ * @brief Removes and returns the first object from the given list.
+ * 
+ * This function removes the first object from the list and returns it. If the list 
+ * is empty, it returns `NULL`. The list is updated to reflect the removal of the object.
+ * 
+ * @param list The list from which the object is removed.
+ * @return A pointer to the first object in the list, or `NULL` if the list is empty.
+ */
+object_t *remove_first_object_from_list(object_list_t *list);
