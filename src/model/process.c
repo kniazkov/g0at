@@ -22,6 +22,7 @@ process_t *create_process() {
     process_t *process = (process_t *)CALLOC(sizeof(process_t));
     process->id = ++last_process_id;
     init_object_list(&process->objects);
+    init_object_list(&process->integers);
     create_thread(process);
     return process;
 }
@@ -48,5 +49,6 @@ void destroy_process(process_t *process) {
         destroy_thread(process->main_thread);
     }
     destroy_all_objects_in_the_list(&process->objects);
+    destroy_all_objects_in_the_list(&process->integers);
     FREE(process);
 }

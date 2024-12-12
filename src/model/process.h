@@ -60,6 +60,15 @@ struct process_t {
      * uses this list to identify and clean up unused objects.
      */
     object_list_t objects;
+
+    /**
+     * @brief Pool of integer objects managed by the process.
+     * 
+     * This list contains objects of type `object_integer_t` that were removed by the garbage
+     * collector. Instead of releasing their memory back to the heap, these objects are stored
+     * here for reuse, allowing faster allocation of new integer objects.
+     */
+    object_list_t integers;
 };
 
 /**

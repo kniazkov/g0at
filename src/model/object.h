@@ -49,6 +49,37 @@ typedef struct {
      * @return The string representation of the object.
      */
     wchar_t* (*to_string)(object_t *obj);
+
+    /**
+     * @brief Function pointer for converting an object to its Goat notation representation.
+     * @param obj The object to convert to Goat notation.
+     * @return The Goat notation string representation of the object.
+     */
+    wchar_t* (*to_string_notation)(object_t *obj);
+
+    /**
+     * @brief Function pointer for marking an object during garbage collection.
+     * 
+     * The `mark` function is used during the garbage collection process to identify
+     * objects that are still in use. This function typically sets a flag or performs
+     * some other operation to indicate that the object is reachable from the root set
+     * or another marked object.
+     * 
+     * @param obj The object to mark.
+     */
+    void (*mark)(object_t *obj);
+
+    /**
+     * @brief Function pointer for sweeping (cleaning up) an object during garbage collection.
+     * 
+     * The `sweep` function is responsible for cleaning up objects that are no longer
+     * marked as in use. If an object is determined to be unreachable, this function
+     * handles its destruction, releasing any resources it holds. This method ensures
+     * that objects are properly finalized and removed from memory.
+     * 
+     * @param obj The object to sweep.
+     */
+    void (*sweep)(object_t *obj);
 } object_vtbl_t;
 
 /**

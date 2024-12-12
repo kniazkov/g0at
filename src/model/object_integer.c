@@ -43,12 +43,22 @@ static wchar_t *to_string(object_t *obj) {
 }
 
 /**
+ * @brief Converts an integer object to a Goat notation string representation.
+ * @param obj The object to convert to a string in Goat notation.
+ * @return A wide-character string (wchar_t) that represents the object as a string.
+ */
+static wchar_t *to_string_notation(object_t *obj) {
+    return to_string(obj);
+}
+
+/**
  * @var vtbl
  * @brief This virtual table defines the behavior of the integer object.
  */
 static object_vtbl_t vtbl = {
     .release = release,
-    .to_string = to_string
+    .to_string = to_string,
+    .to_string_notation = to_string_notation
 };
 
 object_t *create_integer_object(process_t *process, int64_t value) {
