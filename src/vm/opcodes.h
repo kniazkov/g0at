@@ -12,8 +12,8 @@
  * arguments, which are either pushed onto the argument stack or directly used in the instruction.
  *
  * @note Modifying the opcodes in this file may affect the virtual machine's instruction set and 
- *       the bytecode format. Changes should be made carefully and with consideration for backward 
- *       compatibility with existing bytecode files.
+ *  the bytecode format. Changes should be made carefully and with consideration for backward 
+ *  compatibility with existing bytecode files.
  *
  * @see bytecode.h for bytecode structure definitions.
  */
