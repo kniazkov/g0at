@@ -52,4 +52,5 @@ bool test_linker() {
             code->data_descriptors[1].size) == 0
     );
     free_bytecode(code);
+    return true;
 }
