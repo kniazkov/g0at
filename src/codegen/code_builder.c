@@ -17,7 +17,7 @@
  */
 #define INITIAL_CAPACITY 128
 
-code_builder_t *code_builder_create(void) {
+code_builder_t *create_code_builder(void) {
     code_builder_t *builder = (code_builder_t *)ALLOC(sizeof(code_builder_t));
     builder->size = 0;
     builder->capacity = INITIAL_CAPACITY;
@@ -25,7 +25,7 @@ code_builder_t *code_builder_create(void) {
     return builder;
 }
 
-instruction_t *code_builder_add(code_builder_t *builder, instruction_t instruction) {
+instruction_t *add_instruction(code_builder_t *builder, instruction_t instruction) {
     if (builder->size >= builder->capacity) {
         builder->capacity *= 2;
         instruction_t *new_instructions =
@@ -40,7 +40,7 @@ instruction_t *code_builder_add(code_builder_t *builder, instruction_t instructi
     return &builder->instructions[builder->size++];
 }
 
-void code_builder_destroy(code_builder_t *builder) {
+void destroy_code_builder(code_builder_t *builder) {
     FREE(builder->instructions);
     FREE(builder);
 }

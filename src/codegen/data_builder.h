@@ -74,7 +74,7 @@ typedef struct {
  *
  * @return A pointer to the created data builder.
  */
-data_builder_t *data_builder_create(void);
+data_builder_t *create_data_builder(void);
 
 /**
  * @brief Adds a piece of data to the builder.
@@ -89,20 +89,20 @@ data_builder_t *data_builder_create(void);
  * @param size The size of the data in bytes.
  * @return The index of the added data descriptor.
  */
-uint32_t data_builder_add(data_builder_t *builder, void *data, size_t size);
+uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t size);
 
 /**
  * @brief Adds a string to the builder.
  *
  * This function adds a string (wide-character) to the builder.
- * It internally calls `data_builder_add` to handle the data and prevent duplicate entries
+ * It internally calls `add_data_to_data_segment` to handle the data and prevent duplicate entries
  * by using the AVL tree.
  *
  * @param builder The data builder to which the string will be added.
  * @param string The wide-character string to be added.
  * @return The index of the added data descriptor.
  */
-uint32_t data_builder_add_string(data_builder_t *builder, wchar_t *string);
+uint32_t add_string_to_data_segment(data_builder_t *builder, wchar_t *string);
 
 /**
  * @brief Destroys the data builder and frees its memory.
@@ -113,4 +113,4 @@ uint32_t data_builder_add_string(data_builder_t *builder, wchar_t *string);
  *
  * @param builder The data builder to be destroyed.
  */
-void data_builder_destroy(data_builder_t *builder);
+void destroy_data_builder(data_builder_t *builder);

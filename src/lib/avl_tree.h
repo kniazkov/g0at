@@ -67,7 +67,7 @@ typedef struct {
  * @return A pointer to the newly created AVL tree structure. The root of the tree is
  *         initially set to NULL.
  */
-avl_tree_t *avl_tree_create(int (*comparator)(void*, void*));
+avl_tree_t *create_avl_tree(int (*comparator)(void*, void*));
 
 /**
  * @brief Inserts a key-value pair into the AVL tree or updates the value if the key exists.
@@ -86,7 +86,7 @@ avl_tree_t *avl_tree_create(int (*comparator)(void*, void*));
  * @return If the key already exists, the function returns the old value associated with the key.
  *         If the key is new, the function returns default value (filled with zeros).
  */
-value_t avl_tree_set(avl_tree_t *tree, void *key, value_t value);
+value_t set_in_avl_tree(avl_tree_t *tree, void *key, value_t value);
 
 /**
  * @brief Checks if the AVL tree contains a node with the specified key.
@@ -116,7 +116,7 @@ bool avl_tree_contains(avl_tree_t *tree, void *key);
  * @return The value associated with the specified key, or default value (filled with zeros)
  *         if the key is not found in the tree.
  */
-value_t avl_tree_get(avl_tree_t *tree, void *key);
+value_t get_from_avl_tree(avl_tree_t *tree, void *key);
 
 /**
  * @brief Applies a function to each key-value pair in the AVL tree, with user data.
@@ -143,4 +143,4 @@ void avl_tree_for_each(avl_tree_t *tree,
  * 
  * @param tree A pointer to the AVL tree to destroy.
  */
-void avl_tree_destroy(avl_tree_t *tree);
+void destroy_avl_tree(avl_tree_t *tree);

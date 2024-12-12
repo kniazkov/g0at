@@ -14,7 +14,7 @@
 
 bool test_integer_object() {
     process_t *proc = create_process();
-    object_t *obj = object_integer_create(proc, -1024);
+    object_t *obj = create_integer_object(proc, -1024);
     wchar_t *str = obj->vtbl->to_string(obj);
     ASSERT(wcscmp(L"-1024", str) == 0);
     FREE(str);

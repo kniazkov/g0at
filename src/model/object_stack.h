@@ -43,7 +43,7 @@ typedef struct {
  * @brief Creates a new object stack.
  * @return Pointer to the newly created stack.
  */
-object_stack_t *object_stack_create();
+object_stack_t *create_object_stack();
 
 /**
  * @brief Pushes an object onto the stack.
@@ -54,7 +54,7 @@ object_stack_t *object_stack_create();
  * @param stack A pointer to the stack.
  * @param object A pointer to the object to push onto the stack.
  */
-void object_stack_push(object_stack_t *stack, object_t *object);
+void push_object_onto_stack(object_stack_t *stack, object_t *object);
 
 /**
  * @brief Pops the top object from the stack.
@@ -65,7 +65,7 @@ void object_stack_push(object_stack_t *stack, object_t *object);
  * @param stack A pointer to the stack.
  * @return Pointer to the popped object, or NULL if the stack is empty.
  */
-object_t *object_stack_pop(object_stack_t *stack);
+object_t *pop_object_from_stack(object_stack_t *stack);
 
 /**
  * @brief Retrieves an object at a specific index from the stack without removing it.
@@ -77,10 +77,10 @@ object_t *object_stack_pop(object_stack_t *stack);
  * @param index The index of the object (0 is the top of the stack).
  * @return Pointer to the object at the specified index, or NULL if the index is invalid.
  */
-object_t *object_stack_peek(object_stack_t *stack, int index);
+object_t *peek_object_from_stack(object_stack_t *stack, int index);
 
 /**
  * @brief Destroys the stack and frees its resources.
  * @param stack A pointer to the stack.
  */
-void object_stack_destroy(object_stack_t *stack);
+void destroy_object_stack(object_stack_t *stack);

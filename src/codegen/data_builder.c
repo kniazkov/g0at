@@ -24,7 +24,7 @@
  */
 #define INITIAL_DATA_ARRAY_CAPACITY 256
 
-data_builder_t *data_builder_create(void) {
+data_builder_t *create_data_builder(void) {
     data_builder_t *builder = (data_builder_t *)ALLOC(sizeof(data_builder_t));
     builder->descriptors = (data_descriptor_t *)ALLOC(
         INITIAL_DESCRIPTORS_LIST_CAPACITY * sizeof(data_descriptor_t)
@@ -34,11 +34,11 @@ data_builder_t *data_builder_create(void) {
     builder->data_capacity = INITIAL_DATA_ARRAY_CAPACITY;
     builder->descriptors_count = 0;
     builder->descriptors_capacity = INITIAL_DESCRIPTORS_LIST_CAPACITY;
-    builder->strings = avl_tree_create((int(*)(void*, void*))wcscmp);
+    builder->strings = create_avl_tree((int(*)(void*, void*))wcscmp);
     return builder;
 }
 
-uint32_t data_builder_add(data_builder_t *builder, void *data, size_t size) {
+uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t size) {
     size_t aligned_size = (size + 3) & ~3;
     size_t new_size = builder->data_size + aligned_size;
     if (new_size > builder->data_capacity) {
@@ -77,22 +77,22 @@ uint32_t data_builder_add(data_builder_t *builder, void *data, size_t size) {
     return index;
 }
 
-uint32_t data_builder_add_string(data_builder_t *builder, wchar_t *string) {
-    uint32_t old_index = avl_tree_get(builder->strings, string).uint32_val;
+uint32_t add_string_to_data_segment(data_builder_t *builder, wchar_t *string) {
+    uint32_t old_index = get_from_avl_tree(builder->strings, string).uint32_val;
     if (old_index) {
         return old_index - 1;
     }
     size_t len = (wcslen(string) + 1) * sizeof(wchar_t);
-    uint32_t index = data_builder_add(builder, (void*)string, len);
+    uint32_t index = add_data_to_data_segment(builder, (void*)string, len);
     data_descriptor_t *descriptor = &builder->descriptors[index];
-    avl_tree_set(builder->strings, &builder->data[descriptor->offset],
+    set_in_avl_tree(builder->strings, &builder->data[descriptor->offset],
         (value_t){.uint32_val = index + 1});
     return index;
 }
 
-void data_builder_destroy(data_builder_t *builder) {
+void destroy_data_builder(data_builder_t *builder) {
     FREE(builder->descriptors);
     FREE(builder->data);
-    avl_tree_destroy(builder->strings);
+    destroy_avl_tree(builder->strings);
     FREE(builder);
 }

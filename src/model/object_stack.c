@@ -15,7 +15,7 @@
  */
 #define DEFAULT_CAPACITY 128
 
-object_stack_t *object_stack_create() {
+object_stack_t *create_object_stack() {
     object_stack_t *stack = (object_stack_t *)CALLOC(sizeof(object_stack_t));
     stack->data = (object_t **)ALLOC(DEFAULT_CAPACITY * sizeof(object_t *));
     stack->capacity = DEFAULT_CAPACITY;
@@ -23,7 +23,7 @@ object_stack_t *object_stack_create() {
     return stack;
 }
 
-void object_stack_push(object_stack_t *stack, object_t *object) {
+void push_object_onto_stack(object_stack_t *stack, object_t *object) {
     if (stack->size == stack->capacity) {
         size_t new_capacity = stack->capacity * 2;
         object_t **new_data = (object_t **)ALLOC(new_capacity * sizeof(object_t *));
@@ -37,21 +37,21 @@ void object_stack_push(object_stack_t *stack, object_t *object) {
     stack->data[stack->size++] = object;
 }
 
-object_t *object_stack_pop(object_stack_t *stack) {
+object_t *pop_object_from_stack(object_stack_t *stack) {
     if (stack->size == 0) {
         return NULL;
     }
     return stack->data[--stack->size];
 }
 
-object_t *object_stack_peek(object_stack_t *stack, int index) {
+object_t *peek_object_from_stack(object_stack_t *stack, int index) {
     if (index < 0 || (size_t)index >= stack->size) {
         return NULL;
     }
     return stack->data[stack->size - 1 - index];
 }
 
-void object_stack_destroy(object_stack_t *stack) {
+void destroy_object_stack(object_stack_t *stack) {
     if (stack->data != NULL) {
         FREE(stack->data);
     }

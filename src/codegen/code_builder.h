@@ -50,7 +50,7 @@ typedef struct {
  *
  * @return A pointer to the created code builder.
  */
-code_builder_t *code_builder_create();
+code_builder_t *create_code_builder();
 
 /**
  * @brief Adds a new instruction to the builder's list of instructions.
@@ -63,7 +63,7 @@ code_builder_t *code_builder_create();
  * @param instruction The instruction to be added.
  * @return A pointer to the added instruction.
  */
-instruction_t *code_builder_add(code_builder_t *builder, instruction_t instruction);
+instruction_t *add_instruction(code_builder_t *builder, instruction_t instruction);
 
 /**
  * @brief Destroys the code builder and frees its memory.
@@ -73,4 +73,4 @@ instruction_t *code_builder_add(code_builder_t *builder, instruction_t instructi
  *
  * @param builder The code builder to be destroyed.
  */
-void code_builder_destroy(code_builder_t *builder);
+void destroy_code_builder(code_builder_t *builder);

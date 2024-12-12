@@ -6,13 +6,13 @@
 
 #include "object_list.h"
 
-void object_list_init(object_list_t *list) {
+void init_object_list(object_list_t *list) {
     list->head = NULL;
     list->tail = NULL;
     list->size = 0;
 }
 
-void object_list_add(object_list_t *list, object_t *obj) {
+void add_object_to_list(object_list_t *list, object_t *obj) {
     if (list->tail) {
         list->tail->next = obj;
         obj->previous = list->tail;
@@ -23,7 +23,7 @@ void object_list_add(object_list_t *list, object_t *obj) {
     list->size++;
 }
 
-void object_list_remove(object_list_t *list, object_t *obj) {
+void remove_object_from_list(object_list_t *list, object_t *obj) {
     if (obj->previous) {
         obj->previous->next = obj->next;
     } else {

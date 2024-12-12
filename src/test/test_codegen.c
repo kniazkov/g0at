@@ -14,14 +14,14 @@
 #include "codegen/linker.h"
 
 bool test_data_builder() {
-    data_builder_t *builder = data_builder_create();
-    uint32_t index = data_builder_add_string(builder, L"alpha");
+    data_builder_t *builder = create_data_builder();
+    uint32_t index = add_string_to_data_segment(builder, L"alpha");
     ASSERT(index == 0);
-    index = data_builder_add_string(builder, L"beta");
+    index = add_string_to_data_segment(builder, L"beta");
     ASSERT(index == 1);
-    index = data_builder_add_string(builder, L"gamma");
+    index = add_string_to_data_segment(builder, L"gamma");
     ASSERT(index == 2);
-    index = data_builder_add_string(builder, L"alpha");
+    index = add_string_to_data_segment(builder, L"alpha");
     ASSERT(index == 0);
     ASSERT(builder->data_size % 4 == 0);
     ASSERT(builder->descriptors[1].size == sizeof(wchar_t) * 5);
@@ -31,21 +31,21 @@ bool test_data_builder() {
     ASSERT(
         memcmp(builder->data + builder->descriptors[2].offset, L"gamma", sizeof(wchar_t) * 6) == 0
     );
-    data_builder_destroy(builder);
+    destroy_data_builder(builder);
     return true;
 }
 
 bool test_linker() {
-    code_builder_t *code_builder = code_builder_create();
-    code_builder_add(code_builder, (instruction_t){ .opcode = ILOAD32, .arg1 = 1024 });
-    code_builder_add(code_builder, (instruction_t){ .opcode = POP });
-    code_builder_add(code_builder, (instruction_t){ .opcode = END });
-    data_builder_t *data_builder = data_builder_create();
-    data_builder_add_string(data_builder, L"abc");
-    data_builder_add_string(data_builder, L"0123456789");
+    code_builder_t *code_builder = create_code_builder();
+    add_instruction(code_builder, (instruction_t){ .opcode = ILOAD32, .arg1 = 1024 });
+    add_instruction(code_builder, (instruction_t){ .opcode = POP });
+    add_instruction(code_builder, (instruction_t){ .opcode = END });
+    data_builder_t *data_builder = create_data_builder();
+    add_string_to_data_segment(data_builder, L"abc");
+    add_string_to_data_segment(data_builder, L"0123456789");
     bytecode_t *code = link_code_and_data(code_builder, data_builder);
-    code_builder_destroy(code_builder);
-    data_builder_destroy(data_builder);
+    destroy_code_builder(code_builder);
+    destroy_data_builder(data_builder);
     ASSERT(code->instructions[2].opcode == END);
     ASSERT(
         memcmp(code->data + code->data_descriptors[1].offset, L"0123456789",

@@ -54,7 +54,7 @@ struct object_list_t {
  * 
  * @param list The object list to initialize.
  */
-void object_list_init(object_list_t *list);
+void init_object_list(object_list_t *list);
 
 /**
  * @brief Adds an object to the end of the list.
@@ -64,7 +64,7 @@ void object_list_init(object_list_t *list);
  * @param list The object list to which the object should be added.
  * @param obj The object to add to the list.
  */
-void object_list_add(object_list_t *list, object_t *obj);
+void add_object_to_list(object_list_t *list, object_t *obj);
 
 /**
  * @brief Removes an object from the list.
@@ -75,4 +75,4 @@ void object_list_add(object_list_t *list, object_t *obj);
  * @param list The object list from which to remove the object.
  * @param obj The object to remove from the list.
  */
-void object_list_remove(object_list_t *list, object_t *obj);
+void remove_object_from_list(object_list_t *list, object_t *obj);

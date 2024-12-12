@@ -139,7 +139,7 @@ static avl_node_t *balance(avl_tree_t *tree, avl_node_t *node) {
  * 
  * @return The node where the key-value pair was inserted or `NULL` if the key already exists.
  */
-static avl_node_t *avl_tree_insert(avl_tree_t *tree, avl_node_t *node, void *key,
+static avl_node_t *insert(avl_tree_t *tree, avl_node_t *node, void *key,
         value_t value, value_t *old_value) {
     if (!node) {
         avl_node_t *new_node = (avl_node_t *)CALLOC(sizeof(avl_node_t));
@@ -153,9 +153,9 @@ static avl_node_t *avl_tree_insert(avl_tree_t *tree, avl_node_t *node, void *key
     int cmp = tree->comparator(key, node->key);
     
     if (cmp < 0) {
-        node->left = avl_tree_insert(tree, node->left, key, value, old_value);
+        node->left = insert(tree, node->left, key, value, old_value);
     } else if (cmp > 0) {
-        node->right = avl_tree_insert(tree, node->right, key, value, old_value);
+        node->right = insert(tree, node->right, key, value, old_value);
     } else {
         *old_value = node->value;
         node->value = value;
@@ -180,15 +180,15 @@ static avl_node_t *avl_tree_insert(avl_tree_t *tree, avl_node_t *node, void *key
  * 
  * @return A pointer to the node with the specified key, or `NULL` if no such node is found.
  */
-static avl_node_t *avl_tree_find(avl_tree_t *tree, avl_node_t *node, void *key) {
+static avl_node_t *find(avl_tree_t *tree, avl_node_t *node, void *key) {
     if (!node) return NULL;
 
     int cmp = tree->comparator(key, node->key);
     
     if (cmp < 0) {
-        return avl_tree_find(tree, node->left, key);
+        return find(tree, node->left, key);
     } else if (cmp > 0) {
-        return avl_tree_find(tree, node->right, key);
+        return find(tree, node->right, key);
     } else {
         return node;
     }
@@ -204,12 +204,12 @@ static avl_node_t *avl_tree_find(avl_tree_t *tree, avl_node_t *node, void *key) 
  * @param func A pointer to the function to apply to each key-value pair.
  * @param user_data A pointer to user data that will be passed to the callback function.
  */
-static void avl_tree_inorder_traversal(avl_node_t *node,
+static void inorder_traversal(avl_node_t *node,
         void (*func)(void* user_data, void* key, value_t value), void *user_data) {
     if (node) {
-        avl_tree_inorder_traversal(node->left, func, user_data);
+        inorder_traversal(node->left, func, user_data);
         func(user_data, node->key, node->value);
-        avl_tree_inorder_traversal(node->right, func, user_data);
+        inorder_traversal(node->right, func, user_data);
     }
 }
 
@@ -220,35 +220,35 @@ static void avl_tree_inorder_traversal(avl_node_t *node,
  * 
  * @param node The current node to destroy.
  */
-static void avl_tree_destroy_nodes(avl_node_t *node) {
+static void destroy_nodes(avl_node_t *node) {
     if (node) {
-        avl_tree_destroy_nodes(node->left);
-        avl_tree_destroy_nodes(node->right);
+        destroy_nodes(node->left);
+        destroy_nodes(node->right);
         FREE(node);
     }
 }
 
-avl_tree_t *avl_tree_create(int (*comparator)(void*, void*)) {
+avl_tree_t *create_avl_tree(int (*comparator)(void*, void*)) {
     avl_tree_t *tree = (avl_tree_t *)ALLOC(sizeof(avl_tree_t));
     tree->root = NULL; 
     tree->comparator = comparator;
     return tree;
 }
 
-value_t avl_tree_set(avl_tree_t *tree, void *key, value_t value) {
+value_t set_in_avl_tree(avl_tree_t *tree, void *key, value_t value) {
     value_t old_value;
-    tree->root = avl_tree_insert(tree, tree->root, key, value, &old_value);
+    tree->root = insert(tree, tree->root, key, value, &old_value);
     return old_value;
 }
 
 bool avl_tree_contains(avl_tree_t *tree, void *key) {
-    avl_node_t *node = avl_tree_find(tree, tree->root, key);
+    avl_node_t *node = find(tree, tree->root, key);
     return node != NULL;
 }
 
-value_t avl_tree_get(avl_tree_t *tree, void *key) {
+value_t get_from_avl_tree(avl_tree_t *tree, void *key) {
     value_t value = {0};
-    avl_node_t *node = avl_tree_find(tree, tree->root, key);
+    avl_node_t *node = find(tree, tree->root, key);
     if (node) {
         value = node->value;
     }
@@ -258,13 +258,13 @@ value_t avl_tree_get(avl_tree_t *tree, void *key) {
 void avl_tree_for_each(avl_tree_t *tree,
     void (*func)(void* user_data, void* key, value_t value), void *user_data) {
     if (tree && tree->root) {
-        avl_tree_inorder_traversal(tree->root, func, user_data);
+        inorder_traversal(tree->root, func, user_data);
     }
 }
 
-void avl_tree_destroy(avl_tree_t *tree) {
+void destroy_avl_tree(avl_tree_t *tree) {
     if (tree) {
-        avl_tree_destroy_nodes(tree->root);
+        destroy_nodes(tree->root);
         FREE(tree);
     }
 }

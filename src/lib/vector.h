@@ -31,7 +31,7 @@ typedef struct {
  * 
  * @return A pointer to the created vector.
  */
-vector_t *vector_create();
+vector_t *create_vector();
 
 /**
  * @brief Creates a new vector with a specified initial capacity.
@@ -42,7 +42,7 @@ vector_t *vector_create();
  * @param init_capacity Initial capacity of the vector.
  * @return A pointer to the created vector.
  */
-vector_t *vector_create_ex(size_t init_capacity);
+vector_t *create_vector_ex(size_t init_capacity);
 
 /**
  * @brief Adds an item to the vector.
@@ -53,7 +53,7 @@ vector_t *vector_create_ex(size_t init_capacity);
  * @param vector A pointer to the vector to which the item will be added.
  * @param item The item to be added to the vector.
  */
-void vector_add(vector_t *vector, void *item);
+void append_to_vector(vector_t *vector, void *item);
 
 /**
  * @brief Destroys the vector and frees all associated memory.
@@ -63,7 +63,7 @@ void vector_add(vector_t *vector, void *item);
  * 
  * @param vector A pointer to the vector to be destroyed.
  */
-void vector_destroy(vector_t *vector);
+void destroy_vector(vector_t *vector);
 
 /**
  * @brief Destroys the vector and frees all associated memory, including the items.
@@ -74,4 +74,4 @@ void vector_destroy(vector_t *vector);
  * @param vector A pointer to the vector to be destroyed.
  * @param item_dtor A function pointer that will be called to destroy each item.
  */
-void vector_destroy_ex(vector_t *vector, void (*item_dtor)());
+void destroy_vector_ex(vector_t *vector, void (*item_dtor)());

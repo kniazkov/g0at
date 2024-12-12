@@ -12,7 +12,7 @@
 #include "vector.h"
 #include "allocate.h"
 
-vector_t *vector_create() {
+vector_t *create_vector() {
     vector_t *vector = (vector_t *)ALLOC(sizeof(vector_t));
     vector->data = NULL;
     vector->size = 0;
@@ -20,7 +20,7 @@ vector_t *vector_create() {
     return vector;
 }
 
-vector_t *vector_create_ex(size_t init_capacity) {
+vector_t *create_vector_ex(size_t init_capacity) {
     vector_t *vector = (vector_t *)ALLOC(sizeof(vector_t));
     vector->data = (void **)ALLOC(init_capacity * sizeof(void *));
     vector->size = 0;
@@ -28,7 +28,7 @@ vector_t *vector_create_ex(size_t init_capacity) {
     return vector;
 }
 
-void vector_add(vector_t *vector, void *item) {
+void append_to_vector(vector_t *vector, void *item) {
     if (vector->size >= vector->capacity) {
         vector->capacity = (vector->capacity == 0) ? 1 : vector->capacity * 2;
         void **new_data = (void **)ALLOC(vector->capacity * sizeof(void *));
@@ -41,12 +41,12 @@ void vector_add(vector_t *vector, void *item) {
     vector->data[vector->size++] = item;
 }
 
-void vector_destroy(vector_t *vector) {
+void destroy_vector(vector_t *vector) {
     FREE(vector->data);
     FREE(vector);
 }
 
-void vector_destroy_ex(vector_t *vector, void (*item_dtor)()) {
+void destroy_vector_ex(vector_t *vector, void (*item_dtor)()) {
     for (size_t i = 0; i < vector->size; i++) {
         item_dtor(vector->data[i]);
     }

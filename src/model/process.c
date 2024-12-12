@@ -21,7 +21,7 @@ static uint64_t last_process_id = 0;
 process_t *create_process() {
     process_t *process = (process_t *)CALLOC(sizeof(process_t));
     process->id = ++last_process_id;
-    object_list_init(&process->objects);
+    init_object_list(&process->objects);
     create_thread(process);
     return process;
 }

@@ -35,7 +35,7 @@ thread_t *create_thread(process_t *process) {
         thread->next = process->main_thread;
         process->main_thread->previous = thread;
     }
-    thread->data_stack = object_stack_create();
+    thread->data_stack = create_object_stack();
     thread->current_instruction = 0;
     return thread;
 }
@@ -47,6 +47,6 @@ void destroy_thread(thread_t *thread) {
         thread->previous->next = thread->next;
         thread->next->previous = thread->previous;
     }
-    object_stack_destroy(thread->data_stack);
+    destroy_object_stack(thread->data_stack);
     FREE(thread);
 }

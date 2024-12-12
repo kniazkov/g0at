@@ -97,4 +97,4 @@ struct object_t {
  * @param value The integer value to store in the object.
  * @return A pointer to the newly created object, which is of type `object_t`.
  */
-object_t *object_integer_create(process_t *process, int64_t value);
+object_t *create_integer_object(process_t *process, int64_t value);
