@@ -16,6 +16,12 @@
 #include "object.h"
 
 /**
+ * @typedef object_list_t
+ * @brief Forward declaration for the object list structure.
+ */
+typedef struct object_list_t object_list_t;
+
+/**
  * @struct object_list_t
  * @brief Structure representing a doubly linked list of objects.
  * 

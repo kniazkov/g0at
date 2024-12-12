@@ -8,6 +8,7 @@
 #include <inttypes.h>
 
 #include "object.h"
+#include "process.h"
 #include "lib/allocate.h"
 
 /**
@@ -24,6 +25,7 @@ typedef struct {
  * @param obj The object to release.
  */
 static void object_integer_release(object_t *obj) {
+    object_list_remove(&obj->process->objects, obj);
     FREE(obj);
 }
 
@@ -49,9 +51,11 @@ static object_vtbl_t vtbl = {
     .to_string = object_integer_to_string
 };
 
-object_t *object_integer_create(int64_t value) {
+object_t *object_integer_create(process_t *process, int64_t value) {
     object_integer_t *obj = (object_integer_t *)CALLOC(sizeof(object_integer_t));
     obj->base.vtbl = &vtbl;
+    obj->base.process = process;
     obj->value = value;
+    object_list_add(&process->objects, &obj->base);
     return &obj->base;
 }

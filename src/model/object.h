@@ -22,10 +22,10 @@
 typedef struct object_t object_t;
 
 /**
- * @typedef object_list_t
- * @brief Forward declaration for the object list structure.
+ * @typedef process_t
+ * @brief Forward declaration for the process structure.
  */
-typedef struct object_list_t object_list_t;
+typedef struct process_t process_t;
 
 /**
  * @struct object_vtbl_t
@@ -67,13 +67,12 @@ struct object_t {
     object_vtbl_t *vtbl;
 
     /**
-     * @brief Pointer to the list that contains this object.
+     * @brief Pointer to the process that owns this object.
      * 
-     * Each object can belong to a list of objects, which is implemented as a
-     * doubly linked list. This pointer holds a reference to that list, allowing
-     * traversal of the list and manipulation of its elements.
+     * Each object is associated with a process that manages its lifetime. The process is 
+     * responsible for memory management, including garbage collection and object destruction.
      */
-    object_list_t *list;
+    process_t *process;
 
     /**
      * @brief Pointer to the previous object in the list.
@@ -94,7 +93,8 @@ struct object_t {
 
 /**
  * @brief Creates a new integer object.
+ * @param process The process to which the object will belong.
  * @param value The integer value to store in the object.
  * @return A pointer to the newly created object, which is of type `object_t`.
  */
-object_t *object_integer_create(int64_t value);
+object_t *object_integer_create(process_t *process, int64_t value);
