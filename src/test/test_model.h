@@ -15,8 +15,13 @@
 bool test_integer_object();
 
 /**
- * 
+ * @brief Tests addition of two integers in the virtual machine.
+ * @return `true` if the test passes, `false` if it fails.
  */
 bool test_addition_of_two_integers();
 
+/**
+ * @brief Tests subtraction of two integers in the virtual machine.
+ * @return `true` if the test passes, `false` if it fails.
+ */
 bool test_subtraction_of_two_integers();
