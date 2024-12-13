@@ -16,6 +16,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <wchar.h>
 
 /**
  * @union value_t
@@ -55,3 +56,30 @@ typedef struct {
      */
     int64_t value;
 } int_value_t;
+
+/**
+ * @struct string_value_t
+ * @brief Structure to represent a string value with a memory management flag.
+ * 
+ * This structure is used to represent a string value, along with a flag indicating whether the
+ * calling method is responsible for freeing the allocated memory.
+ * If the `wstr` field is `NULL`, it indicates that the object does not have a valid string value.
+ */
+typedef struct {
+    /**
+     * @brief A pointer to the string value.
+     * 
+     * This field holds a pointer to a wide-character string (`wchar_t*`). If the string is `NULL`, 
+     * it indicates the absence of a valid string value.
+     */
+    wchar_t *wstr;
+
+    /**
+     * @brief A flag indicating whether the caller is responsible for freeing the allocated memory.
+     * 
+     * If this flag is set to `true`, the caller must free the string memory using `FREE` when
+     * it is no longer needed. If the flag is `false`, the string memory is managed elsewhere,
+     * and the caller should not free it.
+     */
+    bool should_free;
+} string_value_t;

@@ -12,9 +12,6 @@
 
 #pragma once
 
-#include <wchar.h>
-#include <stdint.h>
-
 #include "lib/value.h"
 
 /**
@@ -146,20 +143,22 @@ typedef struct {
     /**
      * @brief Function pointer for converting an object to its string representation.
      * @param obj The object to convert to a string.
-     * @return The string representation of the object.
-     * @note The returned string is allocated dynamically, and the caller must ensure that
-     *  the memory is freed after use to avoid memory leaks.
+     * @return The string representation of the object as a `string_value_t`.
+     * @note The returned string is dynamically allocated, and the caller must ensure that
+     *  the memory is freed after use to avoid memory leaks. The `should_free` flag in the 
+     *  `string_value_t` structure indicates whether the caller should free the memory.
      */
-    wchar_t* (*to_string)(object_t *obj);
+    string_value_t (*to_string)(object_t *obj);
 
     /**
      * @brief Function pointer for converting an object to its Goat notation representation.
      * @param obj The object to convert to Goat notation.
-     * @return The Goat notation string representation of the object.
-     * @note The returned string is allocated dynamically, and the caller must ensure that
-     *  the memory is freed after use to avoid memory leaks.
+     * @return The Goat notation string representation of the object as a `string_value_t`.
+     * @note The returned string is dynamically allocated, and the caller must ensure that
+     *  the memory is freed after use to avoid memory leaks. The `should_free` flag in the 
+     *  `string_value_t` structure indicates whether the caller should free the memory.
      */
-    wchar_t* (*to_string_notation)(object_t *obj);
+    string_value_t (*to_string_notation)(object_t *obj);
 
     /**
      * @brief Function pointer for adding two objects.

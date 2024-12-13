@@ -115,22 +115,24 @@ static void release(object_t *obj) {
 /**
  * @brief Converts an integer object to a string representation.
  * @param obj The object to convert to a string.
- * @return A wide-character string (wchar_t) that represents the object as a string.
+ * @return A `string_value_t` structure containing the string representation of the object.
+ *  The string is dynamically allocated and the caller must free it using `FREE`.
  */
-static wchar_t *to_string(object_t *obj) {
+static string_value_t to_string(object_t *obj) {
     object_integer_t *iobj = (object_integer_t *)obj;
     size_t buf_size = 24; // max 20 digits + sign + null terminator
     wchar_t *wstr = (wchar_t *)ALLOC(buf_size * sizeof(wchar_t));
     swprintf(wstr, buf_size, L"%" PRId64, iobj->value);
-    return wstr;
+    return (string_value_t){ wstr, true };
 }
 
 /**
  * @brief Converts an integer object to a Goat notation string representation.
  * @param obj The object to convert to a string in Goat notation.
- * @return A wide-character string (wchar_t) that represents the object as a string.
+ * @return A `string_value_t` structure containing the Goat notation string representation.
+ *  The string is dynamically allocated and the caller must free it using `FREE`.
  */
-static wchar_t *to_string_notation(object_t *obj) {
+static string_value_t to_string_notation(object_t *obj) {
     return to_string(obj);
 }
 

@@ -37,9 +37,10 @@ static bytecode_t *create_test_bytecode(instruction_t *list, int count) {
 bool test_integer_object() {
     process_t *proc = create_process();
     object_t *obj = create_integer_object(proc, -1024);
-    wchar_t *str = obj->vtbl->to_string(obj);
-    ASSERT(wcscmp(L"-1024", str) == 0);
-    FREE(str);
+    string_value_t value = obj->vtbl->to_string(obj);
+    ASSERT(wcscmp(L"-1024", value.wstr) == 0);
+    ASSERT(value.should_free);
+    FREE(value.wstr);
     destroy_process(proc);
     return true;
 }
