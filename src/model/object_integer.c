@@ -169,6 +169,16 @@ static object_t *sub(object_t *obj1, object_t *obj2) {
 }
 
 /**
+ * @brief Retrieves the boolean representation of an object.
+ * @param obj The object from which to retrieve the boolean value.
+ * @return Boolean representation of the object.
+ */
+static bool get_boolean_value(object_t *obj) {
+    object_integer_t *iobj = (object_integer_t *)obj;
+    return iobj->value != 0;
+}
+
+/**
  * @brief Retrieves the integer value of an object.
  * @param obj The object from which to retrieve the integer value.
  * @return An `int_value_t` structure containing the integer value.
@@ -176,6 +186,16 @@ static object_t *sub(object_t *obj1, object_t *obj2) {
 static int_value_t get_integer_value(object_t *obj) {
     object_integer_t *iobj = (object_integer_t *)obj;
     return (int_value_t){ true, iobj->value };
+}
+
+/**
+ * @brief Retrieves value of an object casted to real.
+ * @param obj The object from which to retrieve the real value.
+ * @return A `real_value_t` structure containing the real value.
+ */
+static real_value_t get_real_value(object_t *obj) {
+    object_integer_t *iobj = (object_integer_t *)obj;
+    return (real_value_t){ true, (double)iobj->value };
 }
 
 /**
@@ -193,7 +213,9 @@ static object_vtbl_t vtbl = {
     .to_string_notation = to_string_notation,
     .add = add,
     .sub = sub,
-    .get_integer_value = get_integer_value
+    .get_boolean_value = get_boolean_value,
+    .get_integer_value = get_integer_value,
+    .get_real_value = get_real_value
 };
 
 object_t *create_integer_object(process_t *process, int64_t value) {

@@ -185,6 +185,18 @@ typedef struct {
     object_t* (*sub)(object_t *obj1, object_t *obj2);
 
     /**
+     * @brief Function pointer for retrieving the boolean value of an object.
+     * 
+     * The `get_boolean_value` function retrieves the boolean representation of an object. 
+     * Every object in the system can be converted to a boolean value. For example, zero, 
+     * `null`, or empty values might be considered `false`, while others are `true`.
+     * 
+     * @param obj The object to convert to a boolean value.
+     * @return Boolean representation of the object.
+     */
+    bool (*get_boolean_value)(object_t *obj);
+
+    /**
      * @brief Function pointer for retrieving the integer value of an object.
      * 
      * The `get_integer_value` function is used to retrieve the integer value of an object, 
@@ -197,6 +209,20 @@ typedef struct {
      *  value is not available if `has_value` is `false`.
      */
     int_value_t (*get_integer_value)(object_t *obj);
+
+    /**
+     * @brief Function pointer for retrieving the floating-point value of an object.
+     * 
+     * The `get_real_value` function retrieves the floating-point (real) value of an object, 
+     * if the object can be logically represented as a real number. If the object cannot be 
+     * converted to a real number, this function returns a `real_value_t` with `has_value` set 
+     * to `false` and `value` set to an undefined state.
+     * 
+     * @param obj The object from which to retrieve the floating-point value.
+     * @return A `real_value_t` structure containing the floating-point value, or indicating 
+     *  that the value is not available if `has_value` is `false`.
+     */
+    real_value_t (*get_real_value)(object_t *obj);
 } object_vtbl_t;
 
 /**

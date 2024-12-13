@@ -58,6 +58,32 @@ typedef struct {
 } int_value_t;
 
 /**
+ * @struct real_value_t
+ * @brief Represents a floating-point (real) value with a presence flag.
+ * 
+ * This structure is used to represent a double-precision floating-point value, along with 
+ * a flag indicating whether the value is present or not. It provides a flexible way to handle 
+ * cases where an object may or may not have a valid real value.
+ */
+typedef struct {
+    /**
+     * @brief Flag indicating whether the real value is present.
+     * 
+     * This boolean flag signifies whether the `value` field contains a valid floating-point number.
+     * If `has_value` is `false`, the `value` field should be considered invalid.
+     */
+    bool has_value;
+
+    /**
+     * @brief The floating-point value.
+     * 
+     * This field holds the double-precision floating-point value of the object if `has_value` 
+     * is `true`. If `has_value` is `false`, the `value` field should be ignored.
+     */
+    double value;
+} real_value_t;
+
+/**
  * @struct string_value_t
  * @brief Structure to represent a string value with a memory management flag.
  * 
