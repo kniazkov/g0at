@@ -142,12 +142,12 @@ static wchar_t *to_string_notation(object_t *obj) {
  *  cannot be interpreted as an integer.
  */
 static object_t *add(object_t *obj1, object_t *obj2) {
-    const int64_t *value2_ptr = obj2->vtbl->get_integer_value(obj2);
-    if (!value2_ptr) {
+    int_value_t second = obj2->vtbl->get_integer_value(obj2);
+    if (!second.has_value) {
         return NULL;
     }
-    object_integer_t *iobj1 = (object_integer_t *)obj1;
-    return create_integer_object(obj1->process, iobj1->value + *value2_ptr);
+    object_integer_t *first = (object_integer_t *)obj1;
+    return create_integer_object(obj1->process, first->value + second.value);
 }
 
 /**
@@ -158,22 +158,22 @@ static object_t *add(object_t *obj1, object_t *obj2) {
  *  cannot be interpreted as an integer.
  */
 static object_t *sub(object_t *obj1, object_t *obj2) {
-    const int64_t *value2_ptr = obj2->vtbl->get_integer_value(obj2);
-    if (!value2_ptr) {
+    int_value_t second = obj2->vtbl->get_integer_value(obj2);
+    if (!second.has_value) {
         return NULL;
     }
-    object_integer_t *iobj1 = (object_integer_t *)obj1;
-    return create_integer_object(obj1->process, iobj1->value - *value2_ptr);
+    object_integer_t *first = (object_integer_t *)obj1;
+    return create_integer_object(obj1->process, first->value - second.value);
 }
 
 /**
- * @brief Retrieves the pointer to integer value of an object.
- * @param obj The object to retrieve the integer value from.
- * @return A pointer to the integer value stored within the object.
+ * @brief Retrieves the integer value of an object.
+ * @param obj The object from which to retrieve the integer value.
+ * @return An `int_value_t` structure containing the integer value.
  */
-static const int64_t *get_integer_value(object_t *obj) {
+static int_value_t get_integer_value(object_t *obj) {
     object_integer_t *iobj = (object_integer_t *)obj;
-    return &iobj->value;
+    return (int_value_t){ true, iobj->value };
 }
 
 /**
@@ -181,6 +181,7 @@ static const int64_t *get_integer_value(object_t *obj) {
  * @brief This virtual table defines the behavior of the integer object.
  */
 static object_vtbl_t vtbl = {
+    .type = TYPE_NUMBER,
     .inc_ref = inc_ref,
     .dec_ref = dec_ref,
     .mark = mark,

@@ -59,9 +59,9 @@ bool test_addition_of_two_integers() {
     ASSERT(proc->integers.size == 2);
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
-    const int64_t *value = result->vtbl->get_integer_value(result);
-    ASSERT(value != NULL);
-    ASSERT(*value == 5);
+    int_value_t int_val = result->vtbl->get_integer_value(result);
+    ASSERT(int_val.has_value);
+    ASSERT(int_val.value == 5);
     destroy_process(proc);
     free_bytecode(code);
     return true;
@@ -82,9 +82,9 @@ bool test_subtraction_of_two_integers() {
     run(proc, code);
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
-    const int64_t *value = result->vtbl->get_integer_value(result);
-    ASSERT(value != NULL);
-    ASSERT(*value == 9999999999);
+    int_value_t int_val = result->vtbl->get_integer_value(result);
+    ASSERT(int_val.has_value);
+    ASSERT(int_val.value == 9999999999);
     destroy_process(proc);
     free_bytecode(code);
     return true;

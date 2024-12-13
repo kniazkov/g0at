@@ -15,6 +15,8 @@
 #include <wchar.h>
 #include <stdint.h>
 
+#include "lib/value.h"
+
 /**
  * @typedef object_t
  * @brief Forward declaration for the object structure.
@@ -28,6 +30,44 @@ typedef struct object_t object_t;
 typedef struct process_t process_t;
 
 /**
+ * @enum object_type_t
+ * @brief Enumeration of object types in the Goat virtual machine.
+ *
+ * Each object type represents a category of objects that may be used by the virtual machine.
+ * The types are utilized in comparison operations to determine the relative ordering of objects
+ * and ensure correct behavior in data structures like the AVL tree.
+ *
+ * Types are used to compare objects in the `compare_objects` function. The comparison first
+ * checks the type, and if the types are equal, it compares the content of the objects.
+ */
+typedef enum {
+    /**
+     * @brief Boolean type (true/false).
+     */
+    TYPE_BOOLEAN = 0,
+
+    /**
+     * @brief Numeric type (integer or floating-point numbers).
+     */
+    TYPE_NUMBER = 1,
+
+    /**
+     * @brief String type (sequence of characters).
+     */
+    TYPE_STRING = 2,
+
+    /**
+     * @brief User-defined object type (for objects created by the user).
+     */
+    TYPE_USER_DEFINED_OBJECT = 3,
+
+    /**
+     * @brief User-defined object type (for objects created by the user).
+     */
+    TYPE_OTHER = 4
+} object_type_t;
+
+/**
  * @struct object_vtbl_t
  * @brief The virtual table structure for objects in Goat.
  * 
@@ -37,6 +77,20 @@ typedef struct process_t process_t;
  * implementations for certain operations.
  */
 typedef struct {
+    /**
+     * @brief The type of the object.
+     * 
+     * This field specifies the type of the object. It is used to differentiate between
+     * different object types in the virtual machine.
+     * Since the type is consistent across all objects of a given type, it is included in the
+     * virtual table rather than in each individual object. This approach allows for a more
+     * compact memory layout without adding redundant fields to each object.
+     * 
+     * @note This is not a function pointer, but is included in the virtual table to align with
+     *  the overall structure and avoid adding redundant type fields to each object.
+     */    
+    object_type_t type;
+
     /**
      * @brief Function pointer for adding a reference to an object (incrementing its
      *  reference count).
@@ -93,6 +147,8 @@ typedef struct {
      * @brief Function pointer for converting an object to its string representation.
      * @param obj The object to convert to a string.
      * @return The string representation of the object.
+     * @note The returned string is allocated dynamically, and the caller must ensure that
+     *  the memory is freed after use to avoid memory leaks.
      */
     wchar_t* (*to_string)(object_t *obj);
 
@@ -100,6 +156,8 @@ typedef struct {
      * @brief Function pointer for converting an object to its Goat notation representation.
      * @param obj The object to convert to Goat notation.
      * @return The Goat notation string representation of the object.
+     * @note The returned string is allocated dynamically, and the caller must ensure that
+     *  the memory is freed after use to avoid memory leaks.
      */
     wchar_t* (*to_string_notation)(object_t *obj);
 
@@ -132,13 +190,14 @@ typedef struct {
      * 
      * The `get_integer_value` function is used to retrieve the integer value of an object, 
      * if the object can be logically represented as an integer. If the object cannot be converted
-     * to an integer, this function returns `NULL`.
+     * to an integer, this function returns an `int_value_t` with `has_value` set to `false` 
+     * and `value` set to an undefined state.
      * 
      * @param obj The object from which to retrieve the integer value.
-     * @return A pointer to the integer value, or `NULL` if the object cannot be interpreted
-     *  as an integer.
+     * @return An `int_value_t` structure containing the integer value, or indicating that the 
+     *  value is not available if `has_value` is `false`.
      */
-    const int64_t* (*get_integer_value)(object_t *obj);
+    int_value_t (*get_integer_value)(object_t *obj);
 } object_vtbl_t;
 
 /**
