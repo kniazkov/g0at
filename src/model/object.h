@@ -38,6 +38,28 @@ typedef struct process_t process_t;
  */
 typedef struct {
     /**
+     * @brief Function pointer for adding a reference to an object (incrementing its
+     *  reference count).
+     * 
+     * This function increments the reference count of the object to indicate that
+     * it is being referenced by another part of the program.
+     * 
+     * @param obj The object to add a reference to.
+     */
+    void (*inc_ref)(object_t *obj);
+
+    /**
+     * @brief Function pointer for removing a reference from an object (decrementing its
+     *  reference count).
+     * 
+     * This function decrements the reference count of the object. When the reference count
+     * reaches zero, the object is eligible immediate destruction.
+     * 
+     * @param obj The object to remove a reference from.
+     */
+    void (*dec_ref)(object_t *obj);
+
+    /**
      * @brief Function pointer for marking an object during garbage collection.
      * 
      * The `mark` function is used during the garbage collection process to identify
@@ -158,6 +180,27 @@ struct object_t {
      */
     object_t *next;    
 };
+
+/**
+ * @brief Macro to increment the reference count of an object.
+ * 
+ * This macro increments the reference count of the object by calling the
+ * `inc_ref` function through the object's virtual table.
+ * 
+ * @param obj The object whose reference count is to be incremented.
+ */
+#define INCREF(obj)  ((obj)->vtbl->inc_ref(obj))
+
+/**
+ * @brief Macro to decrement the reference count of an object.
+ * 
+ * This macro decrements the reference count of the object by calling the
+ * `dec_ref` function through the object's virtual table. If the reference
+ * count reaches zero, the object is released or cleared.
+ * 
+ * @param obj The object whose reference count is to be decremented.
+ */
+#define DECREF(obj)  ((obj)->vtbl->dec_ref(obj))
 
 /**
  * @brief Creates a new integer object.

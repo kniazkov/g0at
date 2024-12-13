@@ -29,9 +29,52 @@
  */
 typedef struct {
     object_t base; ///< The base object that provides common functionality.
+    int refs; ///< Reference count.
     object_state_t state; ///< The state of the object (e.g., unmarked, marked, or zombie).
     int64_t value; ///< The integer value of the object.
 } object_integer_t;
+
+/**
+ * @brief Releases or clears an integer object.
+ * 
+ * This function either frees the object or resets its state and moves it to a list of reusable
+ * objects, depending on the number of objects in the pool.
+ * 
+ * @param iobj The integer object to release or clear.
+ */
+static void release_or_clear(object_integer_t *iobj) {
+    remove_object_from_list(&iobj->base.process->objects, &iobj->base);
+    if (iobj->base.process->integers.size == POOL_CAPACITY) {
+        FREE(iobj);
+    } else {
+        iobj->refs = 0;
+        iobj->state = ZOMBIE;
+        iobj->value = 0;
+        add_object_to_list(&iobj->base.process->integers, &iobj->base);
+    }
+}
+
+/**
+ * @brief Increments the reference count of an object.
+ * @param obj The object whose reference count is to be incremented.
+ */
+static void inc_ref(object_t *obj) {
+    object_integer_t *iobj = (object_integer_t *)obj;
+    assert(iobj->state != ZOMBIE);
+    iobj->refs++;
+}
+
+/**
+ * @brief Decrements the reference count of an object.
+ * @param obj The object whose reference count is to be decremented.
+ */
+static void dec_ref(object_t *obj) {
+    object_integer_t *iobj = (object_integer_t *)obj;
+    assert(iobj->state != ZOMBIE);
+    if (!(--iobj->refs)) {
+        release_or_clear(iobj);
+    }
+}
 
 /**
  * @brief Marks an object as reachable during garbage collection.
@@ -51,14 +94,7 @@ static void sweep(object_t *obj) {
     object_integer_t *iobj = (object_integer_t *)obj;
     assert(iobj->state != ZOMBIE);
     if (iobj->state == UNMARKED) {
-        remove_object_from_list(&obj->process->objects, obj);
-        if (obj->process->integers.size == POOL_CAPACITY) {
-            FREE(obj);
-        } else {
-            iobj->state = ZOMBIE;
-            iobj->value = 0;
-            add_object_to_list(&obj->process->integers, obj);
-        }
+        release_or_clear(iobj);
     } else {
         iobj->state = UNMARKED;
     }
@@ -145,6 +181,8 @@ static const int64_t *get_integer_value(object_t *obj) {
  * @brief This virtual table defines the behavior of the integer object.
  */
 static object_vtbl_t vtbl = {
+    .inc_ref = inc_ref,
+    .dec_ref = dec_ref,
     .mark = mark,
     .sweep = sweep,
     .release = release,
@@ -164,6 +202,7 @@ object_t *create_integer_object(process_t *process, int64_t value) {
         obj->base.vtbl = &vtbl;
         obj->base.process = process;
     }
+    obj->refs = 1;
     obj->state = UNMARKED;
     obj->value = value;
     add_object_to_list(&process->objects, &obj->base);

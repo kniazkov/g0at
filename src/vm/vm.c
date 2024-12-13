@@ -163,6 +163,8 @@ static bool exec_ADD(bytecode_t *code, instruction_t instr, thread_t *thread) {
     if (first && second) {
         object_t *result = first->vtbl->add(first, second);
         if (result) {
+            DECREF(first);
+            DECREF(second);
             push_object_onto_stack(thread->data_stack, result);
             thread->instr_id++;
             return true;
@@ -191,6 +193,8 @@ static bool exec_SUB(bytecode_t *code, instruction_t instr, thread_t *thread) {
     if (first && second) {
         object_t *result = first->vtbl->sub(first, second);
         if (result) {
+            DECREF(first);
+            DECREF(second);
             push_object_onto_stack(thread->data_stack, result);
             thread->instr_id++;
             return true;
