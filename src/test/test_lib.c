@@ -85,3 +85,16 @@ bool test_avl_tree() {
     destroy_avl_tree(tree);
     return true;
 }
+
+bool test_string_builder() {
+    string_builder_t sb;
+    init_string_builder(&sb);
+    wchar_t *result = append_string(&sb, L"it");
+    ASSERT(wcscmp(L"it", result) == 0);
+    result = append_char(&sb, L' ');
+    ASSERT(wcscmp(L"it ", result) == 0);
+    result = append_string(&sb, L"works");
+    ASSERT(wcscmp(L"it works", result) == 0);
+    FREE(result);
+    return true;
+}

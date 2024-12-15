@@ -20,3 +20,9 @@ bool test_memory_allocation();
  * @return `true` if the test passes, `false` if any assertion fails.
  */
 bool test_avl_tree();
+
+/**
+ * @brief Unit test covering the string builder.
+ * @return `true` if the test passes, `false` if any assertion fails.
+ */
+bool test_string_builder();
