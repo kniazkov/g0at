@@ -287,6 +287,13 @@ struct object_t {
 #define DECREF(obj)  ((obj)->vtbl->dec_ref(obj))
 
 /**
+ * @brief Retrieves the singleton instance for a given boolean value.
+ * @param value The boolean value.
+ * @return A pointer to the singleton object representing `true` or `false`.
+ */
+object_t *get_boolean_object(bool value);
+
+/**
  * @brief Creates a new integer object.
  * @param process The process to which the object will belong.
  * @param value The integer value to store in the object.

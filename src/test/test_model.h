@@ -9,6 +9,12 @@
 #include <stdbool.h>
 
 /**
+ * @brief Tests the behavior of the boolean object in the Goat language.
+ * @return True if the test passes, false otherwise.
+ */
+bool test_boolean_object();
+
+/**
  * @brief Tests the behavior of the integer object in the Goat language.
  * @return True if the test passes, false otherwise.
  */

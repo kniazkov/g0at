@@ -34,6 +34,18 @@ static bytecode_t *create_test_bytecode(instruction_t *list, int count) {
     return code;
 }
 
+bool test_boolean_object() {
+    object_t *obj1 = get_boolean_object(true);
+    string_value_t value = obj1->vtbl->to_string(obj1);
+    ASSERT(wcscmp(L"true", value.wstr) == 0);
+    ASSERT(value.should_free == false);
+    object_t *obj2 = get_boolean_object(false);
+    value = obj2->vtbl->to_string(obj1);
+    ASSERT(wcscmp(L"false", value.wstr) == 0);
+    ASSERT(value.should_free == false);
+    return true;
+}
+
 bool test_integer_object() {
     process_t *proc = create_process();
     object_t *obj = create_integer_object(proc, -1024);
