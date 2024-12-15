@@ -117,7 +117,7 @@ static real_value_t get_real_value(object_t *obj) {
  * @brief Virtual table defining the behavior of the `false` object.
  */
 static object_vtbl_t false_vtbl = {
-    .type = TYPE_NUMBER,
+    .type = TYPE_BOOLEAN,
     .inc_ref = memory_function_stub,
     .dec_ref = memory_function_stub,
     .mark = memory_function_stub,
@@ -144,7 +144,7 @@ static object_t false_object = {
  * @brief Virtual table defining the behavior of the `true` object.
  */
 static object_vtbl_t true_vtbl = {
-    .type = TYPE_NUMBER,
+    .type = TYPE_BOOLEAN,
     .inc_ref = memory_function_stub,
     .dec_ref = memory_function_stub,
     .mark = memory_function_stub,
