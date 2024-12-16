@@ -89,12 +89,15 @@ bool test_avl_tree() {
 bool test_string_builder() {
     string_builder_t sb;
     init_string_builder(&sb);
-    wchar_t *result = append_string(&sb, L"it");
-    ASSERT(wcscmp(L"it", result) == 0);
+    string_value_t result = append_string(&sb, L"it");
+    ASSERT(wcscmp(L"it", result.data) == 0);
+    ASSERT(result.length == 2);
     result = append_char(&sb, L' ');
-    ASSERT(wcscmp(L"it ", result) == 0);
+    ASSERT(wcscmp(L"it ", result.data) == 0);
+    ASSERT(result.length == 3);
     result = append_string(&sb, L"works");
-    ASSERT(wcscmp(L"it works", result) == 0);
-    FREE(result);
+    ASSERT(wcscmp(L"it works", result.data) == 0);
+    ASSERT(result.length == 8);
+    FREE(result.data);
     return true;
 }

@@ -11,7 +11,6 @@
  *    - They can also be strings loaded from bytecode.
  *    - Static strings only store a reference to their data, which exists for the duration of the
  *      program's execution. These strings are not managed by the garbage collector.
- * 
  * 2. Dynamic strings:
  *    - These are created as a result of string operations at runtime.
  *    - They internally store their own data array and are subject to garbage collection
@@ -44,8 +43,8 @@
  */
 typedef struct {
     object_t base; ///< The base object that provides common functionality.
-    const wchar_t *data; ///< Pointer to the string data (wide character array).
-    const size_t length; ///< Length of the string (number of characters).
+    wchar_t *data; ///< Pointer to the string data (wide character array).
+    size_t length; ///< Length of the string (number of characters).
 } object_static_string_t;
 
 /**
@@ -155,4 +154,26 @@ static void release(object_t *obj) {
     );
     FREE(dsobj->data);
     FREE(obj);
+}
+
+/**
+ * @brief Returns the string data of the static string object.
+ * @param obj The static string object to convert to a string.
+ * @return A `string_value_t` structure containing the string data and a `false` flag
+ *  (indicating the string is not dynamically allocated).
+ */
+static string_value_t static_to_string(object_t *obj) {
+    object_static_string_t *stsobj = (object_static_string_t *)obj;
+    return (string_value_t){ stsobj->data, stsobj->length, false };
+}
+
+/**
+ * @brief Returns the string data of the dynamic string object.
+ * @param obj The dynamic string object to convert to a string.
+ * @return A `string_value_t` structure containing the string data and a `false` flag
+ *  (indicating the string is not dynamically allocated).
+ */
+static string_value_t dynamic_to_string(object_t *obj) {
+    object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
+    return (string_value_t){ dsobj->data, dsobj->length, false };
 }

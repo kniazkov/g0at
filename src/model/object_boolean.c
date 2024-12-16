@@ -24,7 +24,7 @@ static void memory_function_stub(object_t *obj) {
  * @return A `string_value_t` containing the string "false".
  */
 static string_value_t false_to_string(object_t *obj) {
-    return (string_value_t){ L"false", false };
+    return (string_value_t){ L"false", 5, false };
 }
 
 /**
@@ -42,7 +42,7 @@ static string_value_t false_to_string_notation(object_t *obj) {
  * @return A `string_value_t` containing the string "true".
  */
 static string_value_t true_to_string(object_t *obj) {
-    return (string_value_t){ L"true", false };
+    return (string_value_t){ L"true", 4, false };
 }
 
 /**

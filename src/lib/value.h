@@ -85,10 +85,11 @@ typedef struct {
 
 /**
  * @struct string_value_t
- * @brief Structure to represent a string value with a memory management flag.
+ * @brief Structure to represent a string value with a memory management flag and length.
  * 
  * This structure is used to represent a string value, along with a flag indicating whether the
- * calling method is responsible for freeing the allocated memory.
+ * calling method is responsible for freeing the allocated memory. It also stores the length
+ * of the string for convenience, so the caller doesn't need to calculate it every time.
  * If the `wstr` field is `NULL`, it indicates that the object does not have a valid string value.
  */
 typedef struct {
@@ -98,7 +99,16 @@ typedef struct {
      * This field holds a pointer to a wide-character string (`wchar_t*`). If the string is `NULL`, 
      * it indicates the absence of a valid string value.
      */
-    wchar_t *wstr;
+    wchar_t *data;
+
+    /**
+     * @brief The length of the string.
+     * 
+     * This field holds the length of the string (number of characters). It is useful to avoid 
+     * recomputing the length each time and can be used for efficient string manipulation.
+     * If `data` is `NULL`, `length` is typically zero.
+     */
+    size_t length;
 
     /**
      * @brief A flag indicating whether the caller is responsible for freeing the allocated memory.

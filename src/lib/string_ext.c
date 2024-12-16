@@ -40,17 +40,17 @@ void resize_string_builder(string_builder_t *builder, size_t new_capacity) {
     builder->capacity = new_capacity;
 }
 
-wchar_t *append_char(string_builder_t *builder, wchar_t symbol) {
+string_value_t append_char(string_builder_t *builder, wchar_t symbol) {
     if (builder->length == builder->capacity) {
         resize_string_builder(builder,
             builder->capacity > 0 ? builder->capacity * 3 / 2 : INITIAL_STRING_BUILDER_CAPACITY);
     }
     builder->data[builder->length++] = symbol;
     builder->data[builder->length] = 0;
-    return builder->data;
+    return (string_value_t){ builder->data, builder->length, true };
 }
 
-wchar_t *append_string(string_builder_t *builder, wchar_t *wstr) {
+string_value_t append_string(string_builder_t *builder, wchar_t *wstr) {
     size_t str_length = wcslen(wstr);
     if (str_length != 0) {
         size_t new_length = builder->length + str_length;
@@ -60,5 +60,5 @@ wchar_t *append_string(string_builder_t *builder, wchar_t *wstr) {
         memcpy(builder->data + builder->length, wstr, (str_length + 1) * sizeof(wchar_t));
         builder->length += str_length;
     }
-    return builder->data;
+    return (string_value_t){ builder->data, builder->length, true };
 }

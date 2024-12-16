@@ -123,7 +123,7 @@ static string_value_t to_string(object_t *obj) {
     size_t buf_size = 24; // max 20 digits + sign + null terminator
     wchar_t *wstr = (wchar_t *)ALLOC(buf_size * sizeof(wchar_t));
     swprintf(wstr, buf_size, L"%" PRId64, iobj->value);
-    return (string_value_t){ wstr, true };
+    return (string_value_t){ wstr, wcslen(wstr), true };
 }
 
 /**

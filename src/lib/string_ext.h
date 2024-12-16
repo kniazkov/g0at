@@ -9,6 +9,8 @@
 #include <string.h>
 #include <wchar.h>
 
+#include "value.h"
+
 /**
  * @brief Duplicates a wide character string.
  * 
@@ -62,9 +64,9 @@ void resize_string_builder(string_builder_t *builder, size_t new_capacity);
  * 
  * @param builder A pointer to the string_builder_t instance.
  * @param symbol The wide character to append.
- * @return A pointer to the internal string buffer after the character is appended.
+ * @return A `string_value_t` structure containing the updated string buffer and its length.
  */
-wchar_t *append_char(string_builder_t *builder, wchar_t symbol);
+string_value_t append_char(string_builder_t *builder, wchar_t symbol);
 
 /**
  * @brief Appends a wide-character string to the string builder.
@@ -74,6 +76,6 @@ wchar_t *append_char(string_builder_t *builder, wchar_t symbol);
  * 
  * @param builder A pointer to the string_builder_t instance.
  * @param wstr A pointer to the wide-character string to append.
- * @return A pointer to the internal string buffer after the string is appended.
+ * @return A `string_value_t` structure containing the updated string buffer and its length.
  */
-wchar_t *append_string(string_builder_t *builder, wchar_t *wstr);
+string_value_t append_string(string_builder_t *builder, wchar_t *wstr);
