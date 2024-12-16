@@ -166,11 +166,12 @@ typedef struct {
      * The `add` function is used for executing the `ADD` operation, which adds the values
      * of two objects and returns a new object representing the result.
      * 
+     * @param process Pointer to the process that will own the resulting object.
      * @param obj1 Pointer to the first object to add.
      * @param obj2 Pointer to the second object to add.
      * @return A pointer to the resulting object of the addition.
      */
-    object_t* (*add)(object_t *obj1, object_t *obj2);
+    object_t* (*add)(process_t *process, object_t *obj1, object_t *obj2);
 
     /**
      * @brief Function pointer for subtracting two objects.
@@ -178,11 +179,12 @@ typedef struct {
      * The `sub` function is used for executing the `SUB` operation, which subtracts the value
      * of the second object from the first and returns a new object representing the result.
      * 
+     * @param process Pointer to the process that will own the resulting object.
      * @param obj1 Pointer to the first object (minuend).
      * @param obj2 Pointer to the second object (subtrahend).
      * @return A pointer to the resulting object of the subtraction.
      */
-    object_t* (*sub)(object_t *obj1, object_t *obj2);
+    object_t* (*sub)(process_t *process, object_t *obj1, object_t *obj2);
 
     /**
      * @brief Function pointer for retrieving the boolean value of an object.

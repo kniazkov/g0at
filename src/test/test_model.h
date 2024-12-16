@@ -31,3 +31,9 @@ bool test_addition_of_two_integers();
  * @return `true` if the test passes, `false` if it fails.
  */
 bool test_subtraction_of_two_integers();
+
+/**
+ * @brief Tests the concatenation of three strings.
+ * @return `true` if the test passes, `false` if it fails.
+ */
+bool test_strings_concatenation();

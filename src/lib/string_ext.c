@@ -23,7 +23,7 @@ wchar_t *WSTRDUP(const wchar_t *wstr) {
 
 void init_string_builder(string_builder_t *builder, size_t capacity) {
     if (capacity > 0) {
-        builder->data = (wchar_t *)ALLOC(sizeof(wchar_t) * capacity);
+        builder->data = (wchar_t *)ALLOC(sizeof(wchar_t) * (capacity + 1));
         builder->data[0] = 0;
     } else {
         builder->data = NULL;

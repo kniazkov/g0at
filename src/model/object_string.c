@@ -228,20 +228,23 @@ static string_value_t to_string_notation(object_t *obj) {
  * returned as the result. If both objects have non-empty string representations, their strings are
  * concatenated into a new dynamic string object.
  * 
+ * @param process Pointer to the process that will own the resulting object.
  * @param obj1 The first object to add (string, static or dynamic).
  * @param obj2 The second object to add (converted to string).
  * @return A pointer to the resulting object after concatenation.
  */
-static object_t *add(object_t *obj1, object_t *obj2) {
+static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
     string_value_t first = obj1->vtbl->to_string(obj1);
     if (first.length == 0) {
         if (obj2->vtbl->type == TYPE_STRING) {
+            INCREF(obj2);
             return obj2;
         }
-        return create_dynamic_string_object(obj1->process, obj2->vtbl->to_string(obj2));
+        return create_dynamic_string_object(process, obj2->vtbl->to_string(obj2));
     }
     string_value_t second = obj2->vtbl->to_string(obj2);
     if (second.length == 0) {
+        INCREF(obj1);
         return obj1;
     }
     string_builder_t builder;
@@ -251,16 +254,17 @@ static object_t *add(object_t *obj1, object_t *obj2) {
     if (second.should_free) {
         FREE(second.data);
     }
-    return create_dynamic_string_object(obj1->process, result);
+    return create_dynamic_string_object(process, result);
 }
 
 /**
  * @brief Subtracts one object from another.
+ * @param process Pointer to the process that will own the resulting object.
  * @param obj1 The first object (minuend).
  * @param obj2 The second object (subtrahend).
  * @return Always returns `false`, indicating that subtraction is not supported.
  */
-static object_t *sub(object_t *obj1, object_t *obj2) {
+static object_t *sub(process_t *process, object_t *obj1, object_t *obj2) {
     return false;
 }
 
@@ -323,7 +327,7 @@ object_t *create_static_string_object(wchar_t *data, size_t length) {
     object_static_string_t *obj = (object_static_string_t *)CALLOC(sizeof(object_static_string_t));
     obj->base.vtbl = &static_string_vtbl;
     obj->data = data;
-    obj->length;
+    obj->length = length;
     return &obj->base;
 }
 

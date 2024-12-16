@@ -45,6 +45,7 @@ bytecode_t *link_code_and_data(code_builder_t *code_builder, data_builder_t *dat
     result->buffer_size = total_size;
     result->instructions = instructions_start;
     result->data_descriptors = descriptors_start;
+    result->data_descriptor_count = descriptors_size / sizeof(data_descriptor_t);
     result->data = data_start;
     return result;
 }

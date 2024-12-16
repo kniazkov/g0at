@@ -172,6 +172,11 @@ typedef struct {
     data_descriptor_t *data_descriptors;
 
     /**
+     * @brief The number of data descriptors in the bytecode.
+     */
+    size_t data_descriptor_count;
+
+    /**
      * @brief Pointer to the actual data (type: uint8_t*).
      * 
      * Points to the first byte of the data section in the bytecode file.

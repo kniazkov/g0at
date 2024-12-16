@@ -23,6 +23,7 @@ process_t *create_process() {
     process->id = ++last_process_id;
     init_object_list(&process->objects);
     init_object_list(&process->integers);
+    init_object_list(&process->dynamic_strings);
     create_thread(process);
     return process;
 }
@@ -50,5 +51,6 @@ void destroy_process(process_t *process) {
     }
     destroy_all_objects_in_the_list(&process->objects);
     destroy_all_objects_in_the_list(&process->integers);
+    destroy_all_objects_in_the_list(&process->dynamic_strings);
     FREE(process);
 }

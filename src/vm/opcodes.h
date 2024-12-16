@@ -86,6 +86,15 @@ typedef enum {
     ILOAD64 = 0x05, /**< Pushes a 64-bit integer onto the data stack. */
 
     /**
+     * @brief Loads a static string onto the data stack.
+     *
+     * The `SLOAD` opcode pushes a static string object onto the data stack. Static strings are
+     * predefined and have a fixed memory location (in the bytecode), meaning they are not subject
+     * to garbage collection. 
+     */
+    SLOAD = 0x06, /**< Loads a static string onto the data stack. */
+
+    /**
      * @brief Adds the top two objects of the stack.
      *
      * The `ADD` opcode performs an addition operation on the two topmost objects on the data stack. 
@@ -93,7 +102,7 @@ typedef enum {
      * operation can be used for both numerical and non-numerical objects, depending on the virtual 
      * machine's behavior.
      */
-    ADD = 0x06, /**< Adds the top two objects on the data stack. */
+    ADD = 0x07, /**< Adds the top two objects on the data stack. */
 
     /**
      * @brief Subtracts the top two objects of the stack.
@@ -103,5 +112,5 @@ typedef enum {
      * and then pushes the result back onto the stack. This operation can be used for numerical
      * objects or other types that support subtraction.
      */
-    SUB = 0x07, /**< Subtracts the top two objects on the data stack. */
+    SUB = 0x08, /**< Subtracts the top two objects on the data stack. */
 } opcode_t;
