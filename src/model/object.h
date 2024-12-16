@@ -300,3 +300,39 @@ object_t *get_boolean_object(bool value);
  * @return A pointer to the newly created object, which is of type `object_t`.
  */
 object_t *create_integer_object(process_t *process, int64_t value);
+
+/**
+ * @brief Creates a new static string object.
+ * 
+ * This function creates a new string object with the provided string data. The object is
+ * dynamically allocated but is not managed by the garbage collector. The memory for the object
+ * is expected to be manually freed when the process ends.
+ * 
+ * @param data The string data for the static string.
+ * @param length The length of the string.
+ * @return A pointer to the newly created static string object.
+ * @note The memory for the static string object is allocated dynamically, but it is not
+ *       managed by the garbage collector and must be manually freed when the process terminates.
+ */
+object_t *create_static_string_object(wchar_t *data, size_t length);
+
+/**
+ * @brief Creates a dynamic string object from a string value.
+ * @param process The process in which the object is created.
+ * @param value The string value to use for creating the dynamic string.
+ * @return A pointer to the created dynamic string object.
+ */
+object_t *create_dynamic_string_object(process_t *process, string_value_t value);
+
+/**
+ * @brief Macro to declare a getter function for a static object.
+ * @param name The name of the static object for which the getter is generated.
+ */
+#define DECLARE_STATIC_OBJECT_GETTER(name) \
+    object_t *get_##name();
+
+/**
+ * @brief Declares getter functions for common static string objects.
+ */
+DECLARE_STATIC_OBJECT_GETTER(empty_string)
+DECLARE_STATIC_OBJECT_GETTER(string_print)

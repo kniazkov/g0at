@@ -23,6 +23,7 @@
 #include "object_state.h"
 #include "process.h"
 #include "lib/allocate.h"
+#include "lib/string_ext.h"
 
 /**
  * @def POOL_CAPACITY
@@ -176,4 +177,216 @@ static string_value_t static_to_string(object_t *obj) {
 static string_value_t dynamic_to_string(object_t *obj) {
     object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
     return (string_value_t){ dsobj->data, dsobj->length, false };
+}
+
+/**
+ * @brief Converts a string object to a Goat notation string representation.
+ * 
+ * This function converts the object into a string formatted in Goat notation,
+ * escaping special characters like newline, carriage return, tab, quote, and backslash.
+ * The resulting string is dynamically allocated and the caller must free it using `FREE`.
+ * 
+ * @param obj The object to convert to a string in Goat notation.
+ * @return A `string_value_t` structure containing the Goat notation string representation.
+ *         The string is dynamically allocated, and the caller must free it using `FREE`.
+ */
+static string_value_t to_string_notation(object_t *obj) {
+    string_value_t value = obj->vtbl->to_string(obj);
+    string_builder_t builder;
+    init_string_builder(&builder, value.length + 2);
+    append_char(&builder, '"');
+    for (size_t i = 0; i < value.length; i++) {
+        wchar_t ch = value.data[i];
+        switch (ch) {
+            case '\r':
+                append_substring(&builder, L"\\r", 2);
+                break;
+            case '\n':
+                append_substring(&builder, L"\\n", 2);
+                break;
+            case '\t':
+                append_substring(&builder, L"\\t", 2);
+                break;
+            case '"':
+                append_substring(&builder, L"\\\"", 2);
+                break;
+            case '\\':
+                append_substring(&builder, L"\\\\", 2);
+                break;
+            default:
+                append_char(&builder, ch);
+        }
+    }
+    return append_char(&builder, '"');
+}
+
+/**
+ * @brief Adds two objects together, concatenating their string representations.
+ * 
+ * This function converts the two objects to their string representations and concatenates them
+ * into a new string object. If either of the objects is an empty string, the other object is
+ * returned as the result. If both objects have non-empty string representations, their strings are
+ * concatenated into a new dynamic string object.
+ * 
+ * @param obj1 The first object to add (string, static or dynamic).
+ * @param obj2 The second object to add (converted to string).
+ * @return A pointer to the resulting object after concatenation.
+ */
+static object_t *add(object_t *obj1, object_t *obj2) {
+    string_value_t first = obj1->vtbl->to_string(obj1);
+    if (first.length == 0) {
+        if (obj2->vtbl->type == TYPE_STRING) {
+            return obj2;
+        }
+        return create_dynamic_string_object(obj1->process, obj2->vtbl->to_string(obj2));
+    }
+    string_value_t second = obj2->vtbl->to_string(obj2);
+    if (second.length == 0) {
+        return obj1;
+    }
+    string_builder_t builder;
+    init_string_builder(&builder, first.length + second.length);
+    append_substring(&builder, first.data, first.length);
+    string_value_t result = append_substring(&builder, second.data, second.length);
+    if (second.should_free) {
+        FREE(second.data);
+    }
+    return create_dynamic_string_object(obj1->process, result);
+}
+
+/**
+ * @brief Subtracts one object from another.
+ * @param obj1 The first object (minuend).
+ * @param obj2 The second object (subtrahend).
+ * @return Always returns `false`, indicating that subtraction is not supported.
+ */
+static object_t *sub(object_t *obj1, object_t *obj2) {
+    return false;
+}
+
+/**
+ * @brief Retrieves the boolean representation of a string object.
+ * 
+ * This function converts the string object to its string representation and returns `true` if the 
+ * string is non-empty, and `false` otherwise. An empty string is considered as a falsy value.
+ * 
+ * @param obj The object from which to retrieve the boolean value.
+ * @return `true` if the string is non-empty, `false` if the string is empty.
+ */
+
+static bool get_boolean_value(object_t *obj) {
+    string_value_t value = obj->vtbl->to_string(obj);
+    return value.length > 0;
+}
+
+/**
+ * @brief Retrieves the integer value of a string object.
+ * @param obj The string object.
+ * @return An invalid `int_value_t` indicating that string objects cannot be converted
+ *  to integers.
+ */
+static int_value_t get_integer_value(object_t *obj) {
+    return (int_value_t){ false, 0 };
+}
+
+/**
+ * @brief Retrieves the real value of a string object.
+ * @param obj The string object.
+ * @return An invalid `real_value_t` indicating that string objects cannot be converted
+ *  to real numbers.
+ */
+static real_value_t get_real_value(object_t *obj) {
+    return (real_value_t){ false, 0.0 };
+}
+
+/**
+ * @var static_string_vtbl
+ * @brief Virtual table defining the behavior of the static string object.
+ */
+static object_vtbl_t static_string_vtbl = {
+    .type = TYPE_STRING,
+    .inc_ref = memory_function_stub,
+    .dec_ref = memory_function_stub,
+    .mark = memory_function_stub,
+    .sweep = memory_function_stub,
+    .release = memory_function_stub,
+    .to_string = static_to_string,
+    .to_string_notation = to_string_notation,
+    .add = add,
+    .sub = sub,
+    .get_boolean_value = get_boolean_value,
+    .get_integer_value = get_integer_value,
+    .get_real_value = get_real_value
+};
+
+object_t *create_static_string_object(wchar_t *data, size_t length) {
+    object_static_string_t *obj = (object_static_string_t *)CALLOC(sizeof(object_static_string_t));
+    obj->base.vtbl = &static_string_vtbl;
+    obj->data = data;
+    obj->length;
+    return &obj->base;
+}
+
+/**
+ * @brief Macro to declare a static string object and provide access to it.
+ * 
+ * This macro defines a static string object with a specified name and string value. It also
+ * provides a function to retrieve the object. The string is stored as a constant literal, and
+ * the object is initialized with the appropriate virtual table.
+ * 
+ * @param name The name of the static string object.
+ * @param string The wide-character string literal.
+ */
+#define DECLARE_STATIC_STRING(name, string) \
+    static object_static_string_t name = \
+        { { &static_string_vtbl, NULL, NULL, NULL }, (string), sizeof(string) - 1 }; \
+    object_t *get_##name() { return &name.base; }
+
+/**
+ * @brief Declares some common static string objects.
+ */
+DECLARE_STATIC_STRING(empty_string, L"")
+DECLARE_STATIC_STRING(string_print, L"print")
+
+/**
+ * @var dynamic_string_vtbl
+ * @brief Virtual table defining the behavior of the dynamic string object.
+ */
+static object_vtbl_t dynamic_string_vtbl = {
+    .type = TYPE_STRING,
+    .inc_ref = inc_ref,
+    .dec_ref = dec_ref,
+    .mark = mark,
+    .sweep = sweep,
+    .release = release,
+    .to_string = dynamic_to_string,
+    .to_string_notation = to_string_notation,
+    .add = add,
+    .sub = sub,
+    .get_boolean_value = get_boolean_value,
+    .get_integer_value = get_integer_value,
+    .get_real_value = get_real_value
+};
+
+object_t *create_dynamic_string_object(process_t *process, string_value_t value) {
+    if (value.length == 0) {
+        if (value.should_free) {
+            FREE(value.data);
+        }
+        return get_empty_string();
+    }
+    object_dynamic_string_t *obj;
+    if (process->dynamic_strings.size > 0) {
+        obj = (object_dynamic_string_t *)remove_first_object_from_list(&process->dynamic_strings);
+    } else {
+        obj = (object_dynamic_string_t *)CALLOC(sizeof(object_dynamic_string_t));
+        obj->base.vtbl = &dynamic_string_vtbl;
+        obj->base.process = process;
+    }
+    obj->refs = 1;
+    obj->state = UNMARKED;
+    obj->data = value.should_free ? value.data : WSTRDUP(value.data);
+    obj->length = value.length;
+    add_object_to_list(&process->objects, &obj->base);
+    return &obj->base;
 }

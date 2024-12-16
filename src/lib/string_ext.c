@@ -21,10 +21,15 @@ wchar_t *WSTRDUP(const wchar_t *wstr) {
     return new_str;
 }
 
-void init_string_builder(string_builder_t *builder) {
-    builder->data = NULL;
+void init_string_builder(string_builder_t *builder, size_t capacity) {
+    if (capacity > 0) {
+        builder->data = (wchar_t *)ALLOC(sizeof(wchar_t) * capacity);
+        builder->data[0] = 0;
+    } else {
+        builder->data = NULL;
+    }
     builder->length = 0;
-    builder->capacity = 0;
+    builder->capacity = capacity;
 }
 
 void resize_string_builder(string_builder_t *builder, size_t new_capacity) {
@@ -50,15 +55,18 @@ string_value_t append_char(string_builder_t *builder, wchar_t symbol) {
     return (string_value_t){ builder->data, builder->length, true };
 }
 
-string_value_t append_string(string_builder_t *builder, wchar_t *wstr) {
-    size_t str_length = wcslen(wstr);
-    if (str_length != 0) {
-        size_t new_length = builder->length + str_length;
+string_value_t append_substring(string_builder_t *builder, wchar_t *wstr, size_t wstr_length) {
+    if (wstr_length != 0) {
+        size_t new_length = builder->length + wstr_length;
         if (new_length > builder->capacity) {
             resize_string_builder(builder, new_length);
         }
-        memcpy(builder->data + builder->length, wstr, (str_length + 1) * sizeof(wchar_t));
-        builder->length += str_length;
+        memcpy(builder->data + builder->length, wstr, (wstr_length + 1) * sizeof(wchar_t));
+        builder->length += wstr_length;
     }
     return (string_value_t){ builder->data, builder->length, true };
+}
+
+string_value_t append_string(string_builder_t *builder, wchar_t *wstr) {
+    return append_substring(builder, wstr, wcslen(wstr));
 }

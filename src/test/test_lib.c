@@ -88,7 +88,7 @@ bool test_avl_tree() {
 
 bool test_string_builder() {
     string_builder_t sb;
-    init_string_builder(&sb);
+    init_string_builder(&sb, 0);
     string_value_t result = append_string(&sb, L"it");
     ASSERT(wcscmp(L"it", result.data) == 0);
     ASSERT(result.length == 2);
