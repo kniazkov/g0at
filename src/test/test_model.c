@@ -114,6 +114,7 @@ bool test_strings_concatenation() {
     add_instruction(code_bulder, (instruction_t){ .opcode = SLOAD, .arg1 = first });
     add_instruction(code_bulder, (instruction_t){ .opcode = ADD } );
     add_instruction(code_bulder, (instruction_t){ .opcode = ADD } );
+    add_instruction(code_bulder, (instruction_t){ .opcode = END } );
     bytecode_t *code = link_code_and_data(code_bulder, data_builder);
     destroy_code_builder(code_bulder);
     destroy_data_builder(data_builder);
