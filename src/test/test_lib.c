@@ -14,6 +14,7 @@
 #include "lib/avl_tree.h"
 #include "lib/vector.h"
 #include "lib/string_ext.h"
+#include "lib/pair.h"
 
 bool test_memory_allocation() {
     int i;
@@ -39,7 +40,7 @@ bool test_memory_allocation() {
  * @return A negative value if `first` is less than `second`, 
  *  zero if they are equal, and a positive value if `first` is greater than `second`.
  */
-static int wcscmp_comparator(void *first, void *second) {
+static int string_comparator(void *first, void *second) {
     return wcscmp((wchar_t *)first, (wchar_t *)second);
 }
 
@@ -61,7 +62,7 @@ static void avl_callback(void *user_data, void *key, value_t value) {
 }
 
 bool test_avl_tree() {
-    avl_tree_t *tree = create_avl_tree(wcscmp_comparator);
+    avl_tree_t *tree = create_avl_tree(string_comparator);
     set_in_avl_tree(tree, L"gamma", (value_t){.ptr = L"third"});
     value_t previous = set_in_avl_tree(tree, L"alpha", (value_t){.ptr = L"first"});
     ASSERT(previous.ptr == NULL);
@@ -99,5 +100,22 @@ bool test_string_builder() {
     ASSERT(wcscmp(L"it works", result.data) == 0);
     ASSERT(result.length == 8);
     FREE(result.data);
+    return true;
+}
+
+bool test_binary_search() {
+    pair_t pairs[] = {
+        { L"fifth", L"five" },
+        { L"first", L"one" },
+        { L"fourth", L"four" },
+        { L"second", L"two" },
+        { L"third", L"three" }
+    };
+    ASSERT(wcscmp(L"one", (wchar_t *)binary_search(pairs, 5, L"first", string_comparator)) == 0);
+    ASSERT(wcscmp(L"two", (wchar_t *)binary_search(pairs, 5, L"second", string_comparator)) == 0);
+    ASSERT(wcscmp(L"three", (wchar_t *)binary_search(pairs, 5, L"third", string_comparator)) == 0);
+    ASSERT(wcscmp(L"four", (wchar_t *)binary_search(pairs, 5, L"fourth", string_comparator)) == 0);
+    ASSERT(wcscmp(L"five", (wchar_t *)binary_search(pairs, 5, L"fifth", string_comparator)) == 0);
+    ASSERT(binary_search(pairs, 5, L"sixth", string_comparator) == NULL);
     return true;
 }

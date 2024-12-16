@@ -26,3 +26,9 @@ bool test_avl_tree();
  * @return `true` if the test passes, `false` if any assertion fails.
  */
 bool test_string_builder();
+
+/**
+ * @brief Unit test covering the binary search algorithm.
+ * @return `true` if the test passes, `false` if any assertion fails.
+ */
+bool test_binary_search();
