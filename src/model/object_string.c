@@ -158,12 +158,29 @@ static void release(object_t *obj) {
 }
 
 /**
+ * @brief Compares two string objects based on their values.
+ * @param obj1 The first object to compare.
+ * @param obj2 The second object to compare.
+ * @return An integer indicating the relative order: positive if obj1 > obj2,
+ *  negative if obj1 < obj2, 0 if equal.
+ */
+static int compare(const object_t *obj1, const object_t *obj2) {
+    string_value_t first = obj1->vtbl->to_string(obj1);
+    string_value_t second = obj2->vtbl->to_string(obj2);
+    int result = wcscmp(first.data, second.data);
+    if (second.should_free) {
+        FREE(second.data);
+    }
+    return result;
+}
+
+/**
  * @brief Returns the string data of the static string object.
  * @param obj The static string object to convert to a string.
  * @return A `string_value_t` structure containing the string data and a `false` flag
  *  (indicating the string is not dynamically allocated).
  */
-static string_value_t static_to_string(object_t *obj) {
+static string_value_t static_to_string(const object_t *obj) {
     object_static_string_t *stsobj = (object_static_string_t *)obj;
     return (string_value_t){ stsobj->data, stsobj->length, false };
 }
@@ -174,7 +191,7 @@ static string_value_t static_to_string(object_t *obj) {
  * @return A `string_value_t` structure containing the string data and a `false` flag
  *  (indicating the string is not dynamically allocated).
  */
-static string_value_t dynamic_to_string(object_t *obj) {
+static string_value_t dynamic_to_string(const object_t *obj) {
     object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
     return (string_value_t){ dsobj->data, dsobj->length, false };
 }
@@ -190,7 +207,7 @@ static string_value_t dynamic_to_string(object_t *obj) {
  * @return A `string_value_t` structure containing the Goat notation string representation.
  *         The string is dynamically allocated, and the caller must free it using `FREE`.
  */
-static string_value_t to_string_notation(object_t *obj) {
+static string_value_t to_string_notation(const object_t *obj) {
     string_value_t value = obj->vtbl->to_string(obj);
     string_builder_t builder;
     init_string_builder(&builder, value.length + 2);
@@ -278,7 +295,7 @@ static object_t *sub(process_t *process, object_t *obj1, object_t *obj2) {
  * @return `true` if the string is non-empty, `false` if the string is empty.
  */
 
-static bool get_boolean_value(object_t *obj) {
+static bool get_boolean_value(const object_t *obj) {
     string_value_t value = obj->vtbl->to_string(obj);
     return value.length > 0;
 }
@@ -289,7 +306,7 @@ static bool get_boolean_value(object_t *obj) {
  * @return An invalid `int_value_t` indicating that string objects cannot be converted
  *  to integers.
  */
-static int_value_t get_integer_value(object_t *obj) {
+static int_value_t get_integer_value(const object_t *obj) {
     return (int_value_t){ false, 0 };
 }
 
@@ -299,7 +316,7 @@ static int_value_t get_integer_value(object_t *obj) {
  * @return An invalid `real_value_t` indicating that string objects cannot be converted
  *  to real numbers.
  */
-static real_value_t get_real_value(object_t *obj) {
+static real_value_t get_real_value(const object_t *obj) {
     return (real_value_t){ false, 0.0 };
 }
 
@@ -314,6 +331,7 @@ static object_vtbl_t static_string_vtbl = {
     .mark = memory_function_stub,
     .sweep = memory_function_stub,
     .release = memory_function_stub,
+    .compare = compare,
     .to_string = static_to_string,
     .to_string_notation = to_string_notation,
     .add = add,
@@ -363,6 +381,7 @@ static object_vtbl_t dynamic_string_vtbl = {
     .mark = mark,
     .sweep = sweep,
     .release = release,
+    .compare = compare,
     .to_string = dynamic_to_string,
     .to_string_notation = to_string_notation,
     .add = add,

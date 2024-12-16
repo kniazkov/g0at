@@ -113,12 +113,31 @@ static void release(object_t *obj) {
 }
 
 /**
+ * @brief Compares integer object and other numeric object based on their values.
+ * @param obj1 The first object to compare.
+ * @param obj2 The second object to compare.
+ * @return An integer indicating the relative order: positive if obj1 > obj2,
+ *  negative if obj1 < obj2, 0 if equal.
+ */
+static int compare(const object_t *obj1, const object_t *obj2) {
+    object_integer_t *iobj1 = (object_integer_t *)obj1;
+    double diff = iobj1->value - obj2->vtbl->get_real_value(obj2).value;
+    if (diff > 0) {
+        return 1;
+    } else if (diff < 0) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+/**
  * @brief Converts an integer object to a string representation.
  * @param obj The object to convert to a string.
  * @return A `string_value_t` structure containing the string representation of the object.
  *  The string is dynamically allocated and the caller must free it using `FREE`.
  */
-static string_value_t to_string(object_t *obj) {
+static string_value_t to_string(const object_t *obj) {
     object_integer_t *iobj = (object_integer_t *)obj;
     size_t buf_size = 24; // max 20 digits + sign + null terminator
     wchar_t *wstr = (wchar_t *)ALLOC(buf_size * sizeof(wchar_t));
@@ -132,7 +151,7 @@ static string_value_t to_string(object_t *obj) {
  * @return A `string_value_t` structure containing the Goat notation string representation.
  *  The string is dynamically allocated and the caller must free it using `FREE`.
  */
-static string_value_t to_string_notation(object_t *obj) {
+static string_value_t to_string_notation(const object_t *obj) {
     return to_string(obj);
 }
 
@@ -175,7 +194,7 @@ static object_t *sub(process_t *process, object_t *obj1, object_t *obj2) {
  * @param obj The object from which to retrieve the boolean value.
  * @return Boolean representation of the object.
  */
-static bool get_boolean_value(object_t *obj) {
+static bool get_boolean_value(const object_t *obj) {
     object_integer_t *iobj = (object_integer_t *)obj;
     return iobj->value != 0;
 }
@@ -185,7 +204,7 @@ static bool get_boolean_value(object_t *obj) {
  * @param obj The object from which to retrieve the integer value.
  * @return An `int_value_t` structure containing the integer value.
  */
-static int_value_t get_integer_value(object_t *obj) {
+static int_value_t get_integer_value(const object_t *obj) {
     object_integer_t *iobj = (object_integer_t *)obj;
     return (int_value_t){ true, iobj->value };
 }
@@ -195,7 +214,7 @@ static int_value_t get_integer_value(object_t *obj) {
  * @param obj The object from which to retrieve the real value.
  * @return A `real_value_t` structure containing the real value.
  */
-static real_value_t get_real_value(object_t *obj) {
+static real_value_t get_real_value(const object_t *obj) {
     object_integer_t *iobj = (object_integer_t *)obj;
     return (real_value_t){ true, (double)iobj->value };
 }
@@ -211,6 +230,7 @@ static object_vtbl_t vtbl = {
     .mark = mark,
     .sweep = sweep,
     .release = release,
+    .compare = compare,
     .to_string = to_string,
     .to_string_notation = to_string_notation,
     .add = add,

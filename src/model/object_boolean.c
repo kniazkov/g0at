@@ -19,11 +19,23 @@ static void memory_function_stub(object_t *obj) {
 }
 
 /**
+ * @brief Compares two boolean objects based on their boolean values.
+ * @param obj1 The first object to compare.
+ * @param obj2 The second object to compare.
+ * @return An integer indicating the relative order: positive if obj1 > obj2,
+ *  negative if obj1 < obj2, 0 if equal.
+ */
+static int compare(const object_t *obj1, const object_t *obj2) {
+    return (obj1->vtbl->get_boolean_value(obj1) ? 1 : 0) 
+        - (obj2->vtbl->get_boolean_value(obj2) ? 1 : 0);
+}
+
+/**
  * @brief Converts the `false` object to a string representation.
  * @param obj The object to convert to a string.
  * @return A `string_value_t` containing the string "false".
  */
-static string_value_t false_to_string(object_t *obj) {
+static string_value_t false_to_string(const object_t *obj) {
     return (string_value_t){ L"false", 5, false };
 }
 
@@ -32,7 +44,7 @@ static string_value_t false_to_string(object_t *obj) {
  * @param obj The object to convert to a Goat notation string.
  * @return A `string_value_t` containing the string "false".
  */
-static string_value_t false_to_string_notation(object_t *obj) {
+static string_value_t false_to_string_notation(const object_t *obj) {
     return false_to_string(obj);
 }
 
@@ -41,7 +53,7 @@ static string_value_t false_to_string_notation(object_t *obj) {
  * @param obj The object to convert to a string.
  * @return A `string_value_t` containing the string "true".
  */
-static string_value_t true_to_string(object_t *obj) {
+static string_value_t true_to_string(const object_t *obj) {
     return (string_value_t){ L"true", 4, false };
 }
 
@@ -50,7 +62,7 @@ static string_value_t true_to_string(object_t *obj) {
  * @param obj The object to convert to a Goat notation string.
  * @return A `string_value_t` containing the string "true".
  */
-static string_value_t true_to_string_notation(object_t *obj) {
+static string_value_t true_to_string_notation(const object_t *obj) {
     return true_to_string(obj);
 }
 
@@ -81,7 +93,7 @@ static object_t *sub(process_t *process, object_t *obj1, object_t *obj2) {
  * @param obj The `false` object.
  * @return Always returns `false`.
  */
-static bool false_get_boolean_value(object_t *obj) {
+static bool false_get_boolean_value(const object_t *obj) {
     return false;
 }
 
@@ -90,7 +102,7 @@ static bool false_get_boolean_value(object_t *obj) {
  * @param obj The `true` object.
  * @return Always returns `true`.
  */
-static bool true_get_boolean_value(object_t *obj) {
+static bool true_get_boolean_value(const object_t *obj) {
     return true;
 }
 
@@ -100,7 +112,7 @@ static bool true_get_boolean_value(object_t *obj) {
  * @return An invalid `int_value_t` indicating that boolean objects cannot be converted
  *  to integers.
  */
-static int_value_t get_integer_value(object_t *obj) {
+static int_value_t get_integer_value(const object_t *obj) {
     return (int_value_t){ false, 0 };
 }
 
@@ -110,7 +122,7 @@ static int_value_t get_integer_value(object_t *obj) {
  * @return An invalid `real_value_t` indicating that boolean objects cannot be converted
  *  to real numbers.
  */
-static real_value_t get_real_value(object_t *obj) {
+static real_value_t get_real_value(const object_t *obj) {
     return (real_value_t){ false, 0.0 };
 }
 
@@ -125,6 +137,7 @@ static object_vtbl_t false_vtbl = {
     .mark = memory_function_stub,
     .sweep = memory_function_stub,
     .release = memory_function_stub,
+    .compare = compare,
     .to_string = false_to_string,
     .to_string_notation = false_to_string_notation,
     .add = add,
@@ -152,6 +165,7 @@ static object_vtbl_t true_vtbl = {
     .mark = memory_function_stub,
     .sweep = memory_function_stub,
     .release = memory_function_stub,
+    .compare = compare,
     .to_string = true_to_string,
     .to_string_notation = true_to_string_notation,
     .add = add,

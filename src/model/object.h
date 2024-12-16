@@ -141,6 +141,27 @@ typedef struct {
     void (*release)(object_t *obj);
 
     /**
+     * @brief Function pointer for comparing two objects.
+     * 
+     * This function compares two objects and determines their relative ordering. It is used
+     * in data structures such as AVL trees to maintain proper ordering of objects based on
+     * user-defined criteria.
+     * 
+     * The function returns:
+     * - A negative integer if `obj1` is less than `obj2`.
+     * - Zero if `obj1` is equal to `obj2`.
+     * - A positive integer if `obj1` is greater than `obj2`.
+     * 
+     * @param obj1 The first object to compare.
+     * @param obj2 The second object to compare.
+     * @return An integer indicating the relative order of the two objects.
+     * 
+     * @note The comparison criteria should be consistent and transitive to ensure correctness
+     *  of data structures like AVL trees that rely on this function.
+     */
+    int (*compare)(const object_t *obj1, const object_t *obj2);
+
+    /**
      * @brief Function pointer for converting an object to its string representation.
      * @param obj The object to convert to a string.
      * @return The string representation of the object as a `string_value_t`.
@@ -148,7 +169,7 @@ typedef struct {
      *  the memory is freed after use to avoid memory leaks. The `should_free` flag in the 
      *  `string_value_t` structure indicates whether the caller should free the memory.
      */
-    string_value_t (*to_string)(object_t *obj);
+    string_value_t (*to_string)(const object_t *obj);
 
     /**
      * @brief Function pointer for converting an object to its Goat notation representation.
@@ -158,7 +179,7 @@ typedef struct {
      *  the memory is freed after use to avoid memory leaks. The `should_free` flag in the 
      *  `string_value_t` structure indicates whether the caller should free the memory.
      */
-    string_value_t (*to_string_notation)(object_t *obj);
+    string_value_t (*to_string_notation)(const object_t *obj);
 
     /**
      * @brief Function pointer for adding two objects.
@@ -196,7 +217,7 @@ typedef struct {
      * @param obj The object to convert to a boolean value.
      * @return Boolean representation of the object.
      */
-    bool (*get_boolean_value)(object_t *obj);
+    bool (*get_boolean_value)(const object_t *obj);
 
     /**
      * @brief Function pointer for retrieving the integer value of an object.
@@ -210,7 +231,7 @@ typedef struct {
      * @return An `int_value_t` structure containing the integer value, or indicating that the 
      *  value is not available if `has_value` is `false`.
      */
-    int_value_t (*get_integer_value)(object_t *obj);
+    int_value_t (*get_integer_value)(const object_t *obj);
 
     /**
      * @brief Function pointer for retrieving the floating-point value of an object.
@@ -224,7 +245,7 @@ typedef struct {
      * @return A `real_value_t` structure containing the floating-point value, or indicating 
      *  that the value is not available if `has_value` is `false`.
      */
-    real_value_t (*get_real_value)(object_t *obj);
+    real_value_t (*get_real_value)(const object_t *obj);
 } object_vtbl_t;
 
 /**
