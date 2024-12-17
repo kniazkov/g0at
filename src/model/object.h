@@ -59,7 +59,7 @@ typedef enum {
     TYPE_USER_DEFINED_OBJECT = 3,
 
     /**
-     * @brief User-defined object type (for objects created by the user).
+     * @brief Other object type.
      */
     TYPE_OTHER = 4
 } object_type_t;
