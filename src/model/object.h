@@ -162,6 +162,21 @@ typedef struct {
     int (*compare)(const object_t *obj1, const object_t *obj2);
 
     /**
+     * @brief Creates a clone of the given object.
+     * 
+     * This function creates a new object that is a clone of the provided one. It is used to
+     * create an independent copy of an object, owned by the given process.
+     * 
+     * @param process The process that will own the cloned object.
+     * @param obj The object to be cloned.
+     * @return A pointer to the newly created clone of the object.
+     * 
+     * @note The cloned object should be independent of the original. Depending on the type of
+     *  object, additional cloning operations may be implemented.
+     */
+    object_t* (*clone)(process_t *process, object_t *obj);
+
+    /**
      * @brief Function pointer for converting an object to its string representation.
      * @param obj The object to convert to a string.
      * @return The string representation of the object as a `string_value_t`.

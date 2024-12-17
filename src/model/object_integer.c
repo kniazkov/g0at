@@ -132,6 +132,21 @@ static int compare(const object_t *obj1, const object_t *obj2) {
 }
 
 /**
+ * @brief Clones an integer object.
+ * @param process The process that will own the cloned object.
+ * @param obj The integer object to be cloned.
+ * @return A pointer to the cloned integer object. If the process is the same, the original object
+ *  is returned; otherwise, a new object is created.
+ */
+static object_t *clone(process_t *process, object_t *obj) {
+    if (process == obj->process) {
+        return obj;
+    }
+    object_integer_t *iobj = (object_integer_t *)obj;
+    return create_integer_object(process, iobj->value);
+}
+
+/**
  * @brief Converts an integer object to a string representation.
  * @param obj The object to convert to a string.
  * @return A `string_value_t` structure containing the string representation of the object.
@@ -231,6 +246,7 @@ static object_vtbl_t vtbl = {
     .sweep = sweep,
     .release = release,
     .compare = compare,
+    .clone = clone,
     .to_string = to_string,
     .to_string_notation = to_string_notation,
     .add = add,

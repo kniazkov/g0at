@@ -31,6 +31,20 @@ static int compare(const object_t *obj1, const object_t *obj2) {
 }
 
 /**
+ * @brief Clones a boolean object.
+ * 
+ * Since boolean objects are singletons, the clone function simply returns
+ * the same object without creating a new instance.
+ * 
+ * @param process The process that will own the cloned object (not used in this case).
+ * @param obj The boolean object to be cloned.
+ * @return A pointer to the original boolean object (since it's a singleton).
+ */
+static object_t *clone(process_t *process, object_t *obj) {
+    return obj;
+}
+
+/**
  * @brief Converts the `false` object to a string representation.
  * @param obj The object to convert to a string.
  * @return A `string_value_t` containing the string "false".
@@ -138,6 +152,7 @@ static object_vtbl_t false_vtbl = {
     .sweep = memory_function_stub,
     .release = memory_function_stub,
     .compare = compare,
+    .clone = clone,
     .to_string = false_to_string,
     .to_string_notation = false_to_string_notation,
     .add = add,
@@ -166,6 +181,7 @@ static object_vtbl_t true_vtbl = {
     .sweep = memory_function_stub,
     .release = memory_function_stub,
     .compare = compare,
+    .clone = clone,
     .to_string = true_to_string,
     .to_string_notation = true_to_string_notation,
     .add = add,

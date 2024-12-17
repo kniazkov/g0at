@@ -175,6 +175,21 @@ static int compare(const object_t *obj1, const object_t *obj2) {
 }
 
 /**
+ * @brief Clones a string object.
+ * @param process The process that will own the cloned object.
+ * @param obj The string object to be cloned.
+ * @return A pointer to the cloned string object. If the process is the same, the original object
+ *  is returned; otherwise, a new object is created.
+ */
+static object_t *clone(process_t *process, object_t *obj) {
+    if (process == obj->process) {
+        return obj;
+    }
+    string_value_t value = obj->vtbl->to_string(obj);
+    return create_dynamic_string_object(process, value);
+}
+
+/**
  * @brief Returns the string data of the static string object.
  * @param obj The static string object to convert to a string.
  * @return A `string_value_t` structure containing the string data and a `false` flag
@@ -332,6 +347,7 @@ static object_vtbl_t static_string_vtbl = {
     .sweep = memory_function_stub,
     .release = memory_function_stub,
     .compare = compare,
+    .clone = clone,
     .to_string = static_to_string,
     .to_string_notation = to_string_notation,
     .add = add,
@@ -382,6 +398,7 @@ static object_vtbl_t dynamic_string_vtbl = {
     .sweep = sweep,
     .release = release,
     .compare = compare,
+    .clone = clone,
     .to_string = dynamic_to_string,
     .to_string_notation = to_string_notation,
     .add = add,
