@@ -157,7 +157,7 @@ static string_value_t to_string_notation(const object_t *obj) {
 
 /**
  * @brief Adds two objects and returns the result as a new object.
- * @param process Pointer to the process that will own the resulting object.
+ * @param process Process that will own the resulting object.
  * @param obj1 The first object to add.
  * @param obj2 The second object to add.
  * @return A pointer to the resulting object of the addition, or `NULL` if the second object 
@@ -174,7 +174,7 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
 
 /**
  * @brief Subtracts the value of the second object from the first object.
- * @param process Pointer to the process that will own the resulting object.
+ * @param process Process that will own the resulting object.
  * @param obj1 The first object (minuend).
  * @param obj2 The second object (subtrahend).
  * @return A pointer to the resulting object of the subtraction, or `NULL` if the second object 

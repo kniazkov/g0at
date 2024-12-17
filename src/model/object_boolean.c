@@ -68,7 +68,7 @@ static string_value_t true_to_string_notation(const object_t *obj) {
 
 /**
  * @brief Adds two objects and returns the result.
- * @param process Pointer to the process that will own the resulting object.
+ * @param process Process that will own the resulting object.
  * @param obj1 The first object.
  * @param obj2 The second object.
  * @return Always returns `false` because addition is not supported for boolean objects.
@@ -79,7 +79,7 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
 
 /**
  * @brief Subtracts one object from another.
- * @param process Pointer to the process that will own the resulting object.
+ * @param process Process that will own the resulting object.
  * @param obj1 The first object (minuend).
  * @param obj2 The second object (subtrahend).
  * @return Always returns `false` because subtraction is not supported for boolean objects.
