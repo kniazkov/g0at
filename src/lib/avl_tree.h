@@ -135,6 +135,18 @@ void avl_tree_for_each(avl_tree_t *tree,
     void (*func)(void* user_data, void* key, value_t value), void *user_data);
 
 /**
+ * @brief Clears all nodes in the AVL tree without deallocating the tree structure.
+ * 
+ * This function removes all nodes from the AVL tree and deallocates the memory associated 
+ * with them. However, the memory allocated for the tree structure itself remains intact, 
+ * allowing the tree to be reused. After this function is called, the tree will be empty but 
+ * still valid for further operations.
+ * 
+ * @param tree A pointer to the AVL tree to clear.
+ */
+void clear_avl_tree(avl_tree_t *tree);
+
+/**
  * @brief Destroys the AVL tree and frees all allocated memory.
  * 
  * This function recursively frees all nodes in the AVL tree and then frees the memory

@@ -80,6 +80,17 @@ struct process_t {
      * string objects.
      */
     object_list_t dynamic_strings;
+
+    /**
+     * @brief Pool of user-defined objects managed by the process.
+     * 
+     * This list contains objects of type `object_user_defined_t` that were removed by the
+     * garbage collector. When a user-defined object is cleaned up, its collection of child 
+     * objects (key-value pairs) and list of prototypes are cleared. However, the object itself 
+     * is retained in the pool for reuse, avoiding the overhead of allocating new memory for 
+     * user-defined objects during future object creation.
+     */
+    object_list_t user_defined_objects;
 };
 
 /**

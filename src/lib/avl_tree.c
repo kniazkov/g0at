@@ -262,6 +262,11 @@ void avl_tree_for_each(avl_tree_t *tree,
     }
 }
 
+void clear_avl_tree(avl_tree_t *tree) {
+    destroy_nodes(tree->root);
+    tree->root = NULL;
+}
+
 void destroy_avl_tree(avl_tree_t *tree) {
     if (tree) {
         destroy_nodes(tree->root);
