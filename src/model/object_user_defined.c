@@ -304,6 +304,43 @@ static string_value_t to_string(const object_t *obj) {
 }
 
 /**
+ * @brief Retrieves a property value from a user-defined object.
+ * 
+ * This function looks up the specified `key` in the `children` collection of the user-defined
+ * object. If the key exists, the corresponding value is returned. If the key does not exist,
+ * `NULL` is returned.
+ * 
+ * @param obj The user-defined object from which the property is being retrieved.
+ * @param key The key for the property to retrieve.
+ * @return A pointer to the value associated with the key, or NULL if the key is not found.
+ */
+static object_t *get_property(object_t *obj, object_t *key) {
+    object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    return get_from_avl_tree(uobj->children, key).ptr;
+}
+
+/**
+ * @brief Sets a property value in a user-defined object.
+ * 
+ * This function adds or updates a property in the `children` collection of the user-defined
+ * object. If the key already exists, its value is updated. If the key does not exist, a new
+ * key-value pair is added. The reference count of the value is incremented and the count of the
+ * previous value (if any) is decremented. 
+ * 
+ * @param obj The user-defined object to which the property is being set.
+ * @param key The key for the property.
+ * @param value The value to associate with the key.
+ * @return Always returns true, as the property is successfully set or updated.
+ */
+static bool set_property(object_t *obj, object_t *key, object_t *value) {
+    object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    INCREF(value);
+    value_t old_value = set_in_avl_tree(uobj->children, key, (value_t){ .ptr = value });
+    DECREFIF((object_t *)old_value.ptr);
+    return true;
+}
+
+/**
  * @brief Adds two objects and returns the result.
  * @param process Process that will own the resulting object.
  * @param obj1 The first object.
@@ -376,6 +413,8 @@ static object_vtbl_t vtbl = {
     .clone = clone,
     .to_string = to_string,
     .to_string_notation = to_string_notation,
+    .get_property = get_property,
+    .set_property = set_property,
     .add = add,
     .sub = sub,
     .get_boolean_value = get_boolean_value,

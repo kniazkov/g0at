@@ -197,6 +197,40 @@ typedef struct {
     string_value_t (*to_string_notation)(const object_t *obj);
 
     /**
+     * @brief Retrieves the value of a property from an object.
+     * 
+     * This function retrieves the value associated with the given key in the properties
+     * of the object. The key is typically a string, but can be any object.
+     * If the property does not exist, the function returns NULL.
+     * 
+     * @param obj The object from which to retrieve the property.
+     * @param key The key of the property to retrieve.
+     * @return A pointer to the value of the property, or NULL if the property does not exist.
+     * 
+     * @note The behavior of this function depends on the underlying property storage and retrieval
+     *  mechanism.
+     */
+    object_t* (*get_property)(object_t *obj, object_t *key);
+
+    /**
+     * @brief Sets a property on an object.
+     * 
+     * This function sets the value of a property for a given object. The property is 
+     * associated with a key (which can be any object, though typically a string).
+     * If the property cannot be set (e.g., due to constraints on the object), 
+     * the function returns `false`. Otherwise, it returns `true`.
+     * 
+     * @param obj The object on which to set the property.
+     * @param key The key of the property to set.
+     * @param value The value to assign to the property.
+     * @return `true` if the property was successfully set, `false` otherwise.
+     * 
+     * @note The implementation of this function may vary depending on the specific object type and 
+     *  constraints imposed on the properties of the object.
+     */
+    bool (*set_property)(object_t *obj, object_t *key, object_t *value);
+
+    /**
      * @brief Function pointer for adding two objects.
      * 
      * The `add` function is used for executing the `ADD` operation, which adds the values
@@ -306,8 +340,8 @@ struct object_t {
 /**
  * @brief Macro to increment the reference count of an object.
  * 
- * This macro increments the reference count of the object by calling the
- * `inc_ref` function through the object's virtual table.
+ * This macro increments the reference count of the object by calling the `inc_ref` function
+ * through the object's virtual table.
  * 
  * @param obj The object whose reference count is to be incremented.
  */
@@ -316,13 +350,24 @@ struct object_t {
 /**
  * @brief Macro to decrement the reference count of an object.
  * 
- * This macro decrements the reference count of the object by calling the
- * `dec_ref` function through the object's virtual table. If the reference
- * count reaches zero, the object is released or cleared.
+ * This macro decrements the reference count of the object by calling the `dec_ref` function
+ * through the object's virtual table. If the reference count reaches zero, the object is released or cleared.
  * 
  * @param obj The object whose reference count is to be decremented.
  */
 #define DECREF(obj)  ((obj)->vtbl->dec_ref(obj))
+
+/**
+ * @brief Macro to conditionally decrement the reference count of an object.
+ * 
+ * This macro first checks if the object is not NULL before calling the `dec_ref` function
+ * through the object's virtual table. If the object is not NULL, its reference count is
+ * decremented. If the reference count reaches zero, the object is released or cleared.
+ * 
+ * @param obj The object whose reference count is to be decremented if not NULL.
+ */
+#define DECREFIF(obj)  if ((obj) != NULL) { (obj)->vtbl->dec_ref(obj); }
+
 
 /**
  * @brief Retrieves the singleton instance for a given boolean value.

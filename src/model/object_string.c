@@ -253,6 +253,36 @@ static string_value_t to_string_notation(const object_t *obj) {
 }
 
 /**
+ * @brief Retrieves the value of a property from an object (stub implementation).
+ * 
+ * This is a stub implementation of the function to retrieve the value of a property from
+ * an object. Currently, it returns `NULL` as a placeholder.
+ * 
+ * @param obj The object from which to retrieve the property.
+ * @param key The key of the property to retrieve.
+ * @return Always returns `NULL` (placeholder implementation).
+ */
+static object_t *get_property(object_t *obj, object_t *key) {
+    return NULL;
+}
+
+/**
+ * @brief Attempts to set a property on an object.
+ * 
+ * This function is used to set a property on an object. However, since the object is
+ * immutable, no property can be added or modified. Therefore, the function always
+ * returns `false`.
+ * 
+ * @param obj The immutable object on which to set the property.
+ * @param key The key of the property to set.
+ * @param value The value to assign to the property.
+ * @return Always returns `false` because the object is immutable.
+ */
+static bool set_property(object_t *obj, object_t *key, object_t *value) {
+    return false;
+}
+
+/**
  * @brief Adds two objects together, concatenating their string representations.
  * 
  * This function converts the two objects to their string representations and concatenates them
@@ -350,6 +380,8 @@ static object_vtbl_t static_string_vtbl = {
     .clone = clone,
     .to_string = static_to_string,
     .to_string_notation = to_string_notation,
+    .get_property = get_property,
+    .set_property = set_property,
     .add = add,
     .sub = sub,
     .get_boolean_value = get_boolean_value,
@@ -401,6 +433,8 @@ static object_vtbl_t dynamic_string_vtbl = {
     .clone = clone,
     .to_string = dynamic_to_string,
     .to_string_notation = to_string_notation,
+    .get_property = get_property,
+    .set_property = set_property,
     .add = add,
     .sub = sub,
     .get_boolean_value = get_boolean_value,
