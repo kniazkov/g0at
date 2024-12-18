@@ -363,6 +363,13 @@ object_t *create_static_string_object(wchar_t *data, size_t length);
 object_t *create_dynamic_string_object(process_t *process, string_value_t value);
 
 /**
+ * @brief Creates a new user-defined object.
+ * @param process The process that will own the created object.
+ * @return A pointer to the created user-defined object.
+ */
+object_t *create_user_defined_object(process_t* process);
+
+/**
  * @brief Macro to declare a getter function for a static object.
  * @param name The name of the static object for which the getter is generated.
  */

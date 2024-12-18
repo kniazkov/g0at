@@ -162,3 +162,143 @@ static void release(object_t *obj) {
     destroy_avl_tree(uobj->children);
     FREE(obj);
 }
+
+/**
+ * @brief Compares two user-defined objects by their memory addresses.
+ * 
+ * This function compares the memory addresses of two user-defined objects. The comparison 
+ * is based solely on the addresses, not the content of the objects. This ensures a consistent 
+ * ordering of user-defined objects in collections, such as AVL trees, where memory address 
+ * serves as the criterion for placement.
+ * 
+ * @param obj1 The first object to compare.
+ * @param obj2 The second object to compare.
+ * @return An integer indicating the result of the comparison.
+ */
+static int compare(const object_t *obj1, const object_t *obj2) {
+    if (obj1 > obj2) {
+        return 1;
+    } else if (obj1 > obj2) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+/**
+ * @brief Creates an empty user-defined object.
+ * 
+ * This function initializes an empty user-defined object. If there are recycled objects 
+ * available in the process's pool, one of them is reused. Otherwise, a new object is allocated. 
+ * The object is added to the process's object list and initialized with default settings, 
+ * including an empty AVL tree for storing key-value pairs.
+ * 
+ * @param process The process that will own the created object.
+ * @return A pointer to the newly created or recycled user-defined object.
+ */
+static object_user_defined_t *create_empty_user_defined_object(process_t* process);
+
+/**
+ * @brief Copies a key-value pair from one AVL tree to another.
+ * 
+ * This function is used during the cloning of a user-defined object. It increments the reference
+ * count of both the key and the value, then inserts the key-value pair into the target AVL tree.
+ * 
+ * @param collection The target AVL tree to insert the cloned key-value pair.
+ * @param key The key of the key-value pair to be cloned.
+ * @param value The value of the key-value pair to be cloned.
+ */
+static void copy_child_pair(void *collection, void *key, value_t value) {
+    avl_tree_t *tree = (avl_tree_t *)collection;
+    INCREF((object_t *)key);
+    INCREF((object_t *)value.ptr);
+    set_in_avl_tree(tree, key, value);
+}
+
+/**
+ * @brief Clones a user-defined object.
+ * 
+ * This function creates a deep copy of the given user-defined object. All key-value pairs 
+ * in the original object's children AVL tree are copied into the new object's AVL tree. 
+ * The reference count of each key and value is incremented.
+ * 
+ * @param process The process that will own the cloned object.
+ * @param obj The user-defined object to be cloned.
+ * @return A pointer to the cloned object.
+ */
+static object_t *clone(process_t *process, object_t *obj) {
+    object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    object_user_defined_t *copy = create_empty_user_defined_object(process);
+    avl_tree_for_each(uobj->children, copy_child_pair, copy->children);
+    return &copy->base;
+}
+
+/**
+ * @var dynamic_string_vtbl
+ * @brief Virtual table defining the behavior of the user-defined object.
+ */
+static object_vtbl_t vtbl = {
+    .type = TYPE_STRING,
+    .inc_ref = inc_ref,
+    .dec_ref = dec_ref,
+    .mark = mark,
+    .sweep = sweep,
+    .release = release,
+    .compare = compare,
+    .clone = clone,
+    .to_string = NULL,
+    .to_string_notation = NULL,
+    .add = NULL,
+    .sub = NULL,
+    .get_boolean_value = NULL,
+    .get_integer_value = NULL,
+    .get_real_value = NULL
+};
+
+/**
+ * @brief Compares two keys for use in the user-defined object's AVL tree.
+ * 
+ * This comparator is used to order keys in the AVL tree of a user-defined object. Keys are first
+ * compared by their type (using `vtbl->type`). If the types are equal, the objects are compared
+ * using their type-specific `compare` function.
+ * 
+ * @param first The first key to compare.
+ * @param second The second key to compare.
+ * @return An integer indicating the result of the comparison:
+ *         - `1` if `first` is greater than `second`.
+ *         - `-1` if `first` is less than `second`.
+ *         - `0` if `first` and `second` are equal.
+ */
+static int key_comparator(void *first, void *second) {
+    object_t *obj1 = (object_t *)first;
+    object_t *obj2 = (object_t *)second;
+    if (obj1->vtbl->type > obj2->vtbl->type) {
+        return 1;
+    } else if (obj1->vtbl->type < obj2->vtbl->type) {
+        return -1;
+    } else {
+        return obj1->vtbl->compare(obj1, obj2);
+    }
+}
+
+static object_user_defined_t *create_empty_user_defined_object(process_t* process) {
+    object_user_defined_t *uobj;
+    if (process->user_defined_objects.size > 0) {
+        uobj = (object_user_defined_t *)remove_first_object_from_list(
+            &process->user_defined_objects
+        );
+    } else {
+        uobj = (object_user_defined_t *)CALLOC(sizeof(object_user_defined_t));
+        uobj->base.vtbl = &vtbl;
+        uobj->base.process = process;
+        uobj->children = create_avl_tree(key_comparator);
+    }
+    uobj->refs = 1;
+    uobj->state = UNMARKED;
+    add_object_to_list(&process->objects, &uobj->base);
+    return uobj;
+}
+
+object_t *create_user_defined_object(process_t* process) {
+    return &create_empty_user_defined_object(process)->base;
+}
