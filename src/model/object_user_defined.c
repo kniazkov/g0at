@@ -15,6 +15,7 @@
 #include "process.h"
 #include "lib/allocate.h"
 #include "lib/avl_tree.h"
+#include "lib/string_ext.h"
 
 /**
  * @def POOL_CAPACITY
@@ -51,6 +52,19 @@ typedef struct {
      */
     avl_tree_t *children;
 } object_user_defined_t;
+
+/**
+ * @brief Creates an empty user-defined object.
+ * 
+ * This function initializes an empty user-defined object. If there are recycled objects 
+ * available in the process's pool, one of them is reused. Otherwise, a new object is allocated. 
+ * The object is added to the process's object list and initialized with default settings, 
+ * including an empty AVL tree for storing key-value pairs.
+ * 
+ * @param process The process that will own the created object.
+ * @return A pointer to the newly created or recycled user-defined object.
+ */
+static object_user_defined_t *create_empty_user_defined_object(process_t* process);
 
 /**
  * @brief Decrements the reference count of a key-value pair in the user-defined object's children.
@@ -186,19 +200,6 @@ static int compare(const object_t *obj1, const object_t *obj2) {
 }
 
 /**
- * @brief Creates an empty user-defined object.
- * 
- * This function initializes an empty user-defined object. If there are recycled objects 
- * available in the process's pool, one of them is reused. Otherwise, a new object is allocated. 
- * The object is added to the process's object list and initialized with default settings, 
- * including an empty AVL tree for storing key-value pairs.
- * 
- * @param process The process that will own the created object.
- * @return A pointer to the newly created or recycled user-defined object.
- */
-static object_user_defined_t *create_empty_user_defined_object(process_t* process);
-
-/**
  * @brief Copies a key-value pair from one AVL tree to another.
  * 
  * This function is used during the cloning of a user-defined object. It increments the reference
@@ -218,7 +219,7 @@ static void copy_child_pair(void *collection, void *key, value_t value) {
 /**
  * @brief Clones a user-defined object.
  * 
- * This function creates a deep copy of the given user-defined object. All key-value pairs 
+ * This function creates a copy of the given user-defined object. All key-value pairs 
  * in the original object's children AVL tree are copied into the new object's AVL tree. 
  * The reference count of each key and value is incremented.
  * 
@@ -234,6 +235,133 @@ static object_t *clone(process_t *process, object_t *obj) {
 }
 
 /**
+ * @brief Converts a key-value pair into a Goat notation string and appends it to the string
+ *  builder.
+ * 
+ * This function processes a single key-value pair from the children of a user-defined object. 
+ * It converts both the key and the value to their Goat notation string representations using 
+ * their respective `to_string_notation` methods. The resulting key-value pair is appended to 
+ * the provided string builder in the format `"key:value"`. If the builder already contains data, 
+ * a comma is inserted before appending the new pair.
+ * 
+ * @param data A pointer to the `string_builder_t` used for constructing the string.
+ * @param key The key of the key-value pair, cast to an object.
+ * @param value The value of the key-value pair, stored as a `value_t` type.
+ */
+static void child_pair_to_string(void *data, void *key, value_t value) {
+    string_builder_t *builder = (string_builder_t *)data;
+    if (builder->length > 1) {
+        append_char(builder, ',');
+    }
+    object_t *key_obj = (object_t *)key;
+    string_value_t key_str = key_obj->vtbl->to_string_notation(key_obj);
+    append_substring(builder, key_str.data, key_str.length);
+    if (key_str.should_free) {
+        FREE(key_str.data);
+    }
+    append_char(builder, ':');
+    object_t *value_obj = (object_t *)value.ptr;
+    string_value_t value_str = value_obj->vtbl->to_string_notation(value_obj);
+    append_substring(builder, value_str.data, value_str.length);
+    if (value_str.should_free) {
+        FREE(value_str.data);
+    }
+}
+
+/**
+ * @brief Converts a user-defined object to a Goat notation string representation.
+ * 
+ * This function generates a string representation of a user-defined object in Goat notation, 
+ * where each child key-value pair is represented as `"key:value"`. The key-value pairs are 
+ * separated by commas and enclosed in curly braces `{}`. The string is constructed dynamically 
+ * and must be freed by the caller using `FREE`.
+
+ * @param obj The user-defined object to convert to a string in Goat notation.
+ * @return A `string_value_t` structure containing the dynamically allocated string 
+ *  representation. The caller is responsible for freeing the memory if `should_free` is true.
+ */
+static string_value_t to_string_notation(const object_t *obj) {
+    object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    string_builder_t builder;
+    init_string_builder(&builder, 2);
+    append_char(&builder, '{');
+    avl_tree_for_each(uobj->children, child_pair_to_string, &builder);
+    return append_char(&builder, '}');
+}
+
+/**
+ * @brief Converts a user-defined object to a general string representation.
+ * 
+ * This function returns a string representation of the user-defined object. 
+ * It delegates to the `to_string_notation` function, which formats the object using Goat notation.
+ * 
+ * @param obj The user-defined object to convert to a string.
+ * @return A `string_value_t` structure containing the dynamically allocated string 
+ *  representation of the object.
+ */
+static string_value_t to_string(const object_t *obj) {
+    return to_string_notation(obj);
+}
+
+/**
+ * @brief Adds two objects and returns the result.
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object.
+ * @param obj2 The second object.
+ * @return Always returns `false` because addition is not supported for user-defined objects.
+ */
+static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
+    return false;
+}
+
+/**
+ * @brief Subtracts one object from another.
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (minuend).
+ * @param obj2 The second object (subtrahend).
+ * @return Always returns `false` because subtraction is not supported for user-defined objects.
+ */
+static object_t *sub(process_t *process, object_t *obj1, object_t *obj2) {
+    return false;
+}
+
+/**
+ * @brief Retrieves the boolean representation of a user-defined object.
+ * 
+ * This function converts the user-defined object to its string representation and returns
+ * `true` if the object is non-empty, and `false` otherwise.
+ * 
+ * @param obj The object from which to retrieve the boolean value.
+ * @return `true` if the string is non-empty, `false` if the string is empty.
+ */
+
+static bool get_boolean_value(const object_t *obj) {
+    object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    return uobj->children->root != NULL;
+}
+
+/**
+ * @brief Retrieves the integer value of a user-defined object.
+ * @param obj The user-defined object.
+ * @return An invalid `int_value_t` indicating that user-defined objects cannot be converted
+ *  to integers.
+ */
+static int_value_t get_integer_value(const object_t *obj) {
+    return (int_value_t){ false, 0 };
+}
+
+/**
+ * @brief Retrieves the real value of a user-defined object.
+ * @param obj The user-defined object.
+ * @return An invalid `real_value_t` indicating that user-defined objects cannot be converted
+ *  to real numbers.
+ */
+static real_value_t get_real_value(const object_t *obj) {
+    return (real_value_t){ false, 0.0 };
+}
+
+
+/**
  * @var dynamic_string_vtbl
  * @brief Virtual table defining the behavior of the user-defined object.
  */
@@ -246,13 +374,13 @@ static object_vtbl_t vtbl = {
     .release = release,
     .compare = compare,
     .clone = clone,
-    .to_string = NULL,
-    .to_string_notation = NULL,
-    .add = NULL,
-    .sub = NULL,
-    .get_boolean_value = NULL,
-    .get_integer_value = NULL,
-    .get_real_value = NULL
+    .to_string = to_string,
+    .to_string_notation = to_string_notation,
+    .add = add,
+    .sub = sub,
+    .get_boolean_value = get_boolean_value,
+    .get_integer_value = get_integer_value,
+    .get_real_value = get_real_value
 };
 
 /**
