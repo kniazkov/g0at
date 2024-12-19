@@ -65,6 +65,33 @@ typedef enum {
 } object_type_t;
 
 /**
+ * @struct object_array_t
+ * @brief Represents a constant array of object pointers.
+ * 
+ * This structure is used to store a list of constant object pointers (`object_t*`), 
+ * along with the count of objects in the list. The array itself is immutable, ensuring 
+ * that its contents cannot be modified after creation.
+ * 
+ * It is primarily used to manage collections of objects such as prototypes or topology chains.
+ */
+typedef struct {
+    /**
+     * @brief Pointer to an array of constant object pointers.
+     * 
+     * Each element in the array is a pointer to an object. The array itself is immutable,
+     * but the objects it points to can be mutable based on their individual types.
+     */
+    const object_t **items;
+
+    /**
+     * @brief The number of objects in the array.
+     * 
+     * This field specifies the total number of object pointers in the `items` array. 
+     */
+    size_t count;
+} object_array_t;
+
+/**
  * @struct object_vtbl_t
  * @brief The virtual table structure for objects in Goat.
  * 
@@ -195,6 +222,41 @@ typedef struct {
      *  `string_value_t` structure indicates whether the caller should free the memory.
      */
     string_value_t (*to_string_notation)(const object_t *obj);
+
+    /**
+     * @brief Function pointer for retrieving the prototypes of an object.
+     * 
+     * This function returns a constant array of prototypes associated with the object.
+     * Goat is a prototype-oriented language, meaning that objects inherit behavior and
+     * properties directly from other objects rather than from fixed classes. This allows
+     * for dynamic and flexible object creation and modification.
+     * 
+     * In Goat, an object may have more than one prototype, enabling multiple inheritance.
+     * The list of prototypes returned by this function represents the immediate prototypes
+     * of the object.
+     * 
+     * @param obj The object whose prototypes are to be retrieved.
+     * @return A constant array of prototypes (`const object_array_t`) associated with the object.
+     */
+    const object_array_t (*get_prototypes)(const object_t *obj);
+
+    /**
+     * @brief Function pointer for retrieving the full prototype topology of an object.
+     * 
+     * This function returns the complete chain of prototypes associated with the object,
+     * sorted using a topological sorting algorithm. The result represents the inheritance
+     * hierarchy from the closest prototype to the most distant one. Topological sorting is used
+     * to resolve the order of traversal in the case of multiple inheritance, addressing issues
+     * such as the "diamond problem."
+     * 
+     * For objects with simple single inheritance, the topological sort reduces to a 
+     * straightforward linear vector of prototypes.
+     * 
+     * @param obj The object whose prototype topology is to be retrieved.
+     * @return A constant array of prototypes (`const object_array_t`) representing the full
+     *  prototype chain of the object, sorted topologically.
+     */
+    const object_array_t (*get_topology)(const object_t *obj);
 
     /**
      * @brief Retrieves the value of a property from an object.
