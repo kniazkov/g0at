@@ -130,3 +130,47 @@ bool test_strings_concatenation() {
     free_bytecode(code);
     return true;
 }
+
+bool test_properties() {
+    process_t *process = create_process();
+    object_t *obj = create_user_defined_object(process);
+    obj->vtbl->set_property(
+        obj,
+        create_dynamic_string_object(process, STATIC_STRING(L"first")),
+        create_dynamic_string_object(process, STATIC_STRING(L"one"))
+    );
+    obj->vtbl->set_property(
+        obj,
+        create_dynamic_string_object(process, STATIC_STRING(L"second")),
+        create_dynamic_string_object(process, STATIC_STRING(L"two"))
+    );
+    obj->vtbl->set_property(
+        obj,
+        create_integer_object(process, 3),
+        create_dynamic_string_object(process, STATIC_STRING(L"three"))
+    );
+    obj->vtbl->set_property(
+        obj,
+        get_boolean_object(true),
+        create_dynamic_string_object(process, STATIC_STRING(L"boolean"))
+    );
+    string_value_t str = obj->vtbl->to_string(obj);
+    ASSERT(
+        0 == wcscmp(
+            str.data,
+            L"{true:\"boolean\",3:\"three\",\"first\":\"one\",\"second\":\"two\"}"
+        )
+    );
+    if (str.should_free) FREE(str.data);
+    object_t *key = create_dynamic_string_object(process, STATIC_STRING(L"first"));
+    object_t *value = obj->vtbl->get_property(obj, key);
+    ASSERT(value != NULL);
+    str = value->vtbl->to_string(value);
+    ASSERT(0 == wcscmp(str.data, L"one"));
+    if (str.should_free) FREE(str.data);
+    key = create_dynamic_string_object(process, STATIC_STRING(L"third"));
+    value = obj->vtbl->get_property(obj, key);
+    ASSERT(value == NULL);
+    destroy_process(process);
+    return true;
+}

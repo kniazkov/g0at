@@ -119,3 +119,21 @@ typedef struct {
      */
     bool should_free;
 } string_value_t;
+
+/**
+ * @brief Macro to create a `string_value_t` from a static string literal.
+ * 
+ * This macro creates a `string_value_t` structure from a wide-character string literal.
+ * The resulting structure will have the string's data, its length, and the `should_free` flag
+ * set to `false` (indicating that the string memory is managed statically and does not need
+ * to be freed).
+ * 
+ * @param str The wide-character string literal.
+ * @return A `string_value_t` structure with the data, length, and `should_free` flag.
+ */
+#define STATIC_STRING(str) \
+    (string_value_t){ \
+        .data = (wchar_t *)(str), \
+        .length = sizeof(str) / sizeof(wchar_t) - 1, \
+        .should_free = false \
+    }
