@@ -36,9 +36,11 @@ void stub_memory_function(object_t *obj);
  */
 int compare_object_addresses(const object_t *obj1, const object_t *obj2);
 
-string_value_t common_to_string(object_t *obj);
+object_t *clone_singleton(process_t *process, object_t *obj);
 
-string_value_t common_to_string_notation(object_t *obj);
+string_value_t common_to_string(const object_t *obj);
+
+string_value_t common_to_string_notation(const object_t *obj);
 
 /**
  * @brief Attempts to set a property on an immutable object.

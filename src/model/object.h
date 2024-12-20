@@ -444,6 +444,17 @@ struct object_t {
  */
 #define DECREFIF(obj)  if ((obj) != NULL) { (obj)->vtbl->dec_ref(obj); }
 
+/**
+ * @brief Retrieves the root object of the Goat programming language.
+ * 
+ * This function returns a pointer to the root object, which serves as the singleton 
+ * at the top of the prototype chain for all objects in the language. The root object 
+ * has no prototype of its own and defines the base methods and properties shared 
+ * by all other objects.
+ * 
+ * @return A pointer to the root object.
+ */
+object_t *get_root_object();
 
 /**
  * @brief Retrieves the singleton instance for a given boolean value.

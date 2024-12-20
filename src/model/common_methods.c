@@ -26,11 +26,15 @@ int compare_object_addresses(const object_t *obj1, const object_t *obj2) {
     }
 }
 
-string_value_t common_to_string(object_t *obj) {
+object_t *clone_singleton(process_t *process, object_t *obj) {
+    return obj;
+}
+
+string_value_t common_to_string(const object_t *obj) {
     return common_to_string_notation(obj);
 }
 
-string_value_t common_to_string_notation(object_t *obj) {
+string_value_t common_to_string_notation(const object_t *obj) {
     string_builder_t builder;
     init_string_builder(&builder, 2);
     append_char(&builder, '{');

@@ -11,6 +11,7 @@
  */
 
 #include "object.h"
+#include "common_methods.h"
 
 /**
  * @brief Retrieves all property keys from an object (stub implementation).
@@ -37,4 +38,40 @@ static object_array_t get_keys(const object_t *obj) {
  */
 static object_t *get_property(const object_t *obj, const object_t *key) {
     return NULL;
+}
+
+/**
+ * @var vtbl
+ * @brief Virtual table defining the behavior of the root object.
+ */
+static object_vtbl_t vtbl = {
+    .type = TYPE_BOOLEAN,
+    .inc_ref = stub_memory_function,
+    .dec_ref = stub_memory_function,
+    .mark = stub_memory_function,
+    .sweep = stub_memory_function,
+    .release = stub_memory_function,
+    .compare = compare_object_addresses,
+    .clone = clone_singleton,
+    .to_string = common_to_string,
+    .to_string_notation = common_to_string_notation,
+    .get_keys = get_keys,
+    .get_property = get_property,
+    .set_property = set_property_on_immutable,
+    .add = stub_add,
+    .sub = stub_sub,
+    .get_boolean_value = common_get_boolean_value,
+    .get_integer_value = stub_get_integer_value,
+    .get_real_value = stub_get_real_value
+};
+
+/**
+ * @brief The singleton instance of root object.
+ */
+static object_t root_object = {
+    .vtbl = &vtbl
+};
+
+object_t *get_root_object() {
+    return &root_object;
 }
