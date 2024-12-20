@@ -7,16 +7,7 @@
 
 #include "object.h"
 #include "process.h"
-
-/**
- * @brief A stub memory management function for singleton objects.
- * @param obj The object. This parameter is unused.
- * @note This function does nothing because boolean objects are singletons and do not require
- *  memory management.
- */
-static void memory_function_stub(object_t *obj) {
-    return;
-}
+#include "common_methods.h"
 
 /**
  * @brief Compares two boolean objects based on their boolean values.
@@ -78,6 +69,19 @@ static string_value_t true_to_string(const object_t *obj) {
  */
 static string_value_t true_to_string_notation(const object_t *obj) {
     return true_to_string(obj);
+}
+
+/**
+ * @brief Retrieves all property keys from an object (stub implementation).
+ * 
+ * This is a stub implementation of the function to retrieve all keys of the properties 
+ * defined on an object. Currently, it returns an empty `object_array_t` as a placeholder.
+ * 
+ * @param obj The object from which to retrieve the keys.
+ * @return An empty `object_array_t` (placeholder implementation).
+ */
+static object_array_t get_keys(object_t *obj) {
+    return (object_array_t){ NULL, 0 };
 }
 
 /**
@@ -185,6 +189,7 @@ static object_vtbl_t false_vtbl = {
     .clone = clone,
     .to_string = false_to_string,
     .to_string_notation = false_to_string_notation,
+    .get_keys = get_keys,
     .get_property = get_property,
     .set_property = set_property,
     .add = add,
@@ -216,6 +221,7 @@ static object_vtbl_t true_vtbl = {
     .clone = clone,
     .to_string = true_to_string,
     .to_string_notation = true_to_string_notation,
+    .get_keys = get_keys,
     .get_property = get_property,
     .set_property = set_property,
     .add = add,

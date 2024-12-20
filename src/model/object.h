@@ -76,12 +76,12 @@ typedef enum {
  */
 typedef struct {
     /**
-     * @brief Pointer to an array of constant object pointers.
+     * @brief Pointer to a constant array of object pointers.
      * 
      * Each element in the array is a pointer to an object. The array itself is immutable,
      * but the objects it points to can be mutable based on their individual types.
      */
-    const object_t **items;
+    object_t *const *items;
 
     /**
      * @brief The number of objects in the array.
@@ -257,6 +257,20 @@ typedef struct {
      *  prototype chain of the object, sorted topologically.
      */
     const object_array_t (*get_topology)(const object_t *obj);
+
+    /**
+     * @brief Retrieves all property keys from an object.
+     * 
+     * This function returns an array containing references to all keys of the properties 
+     * defined on the given object. The keys are typically strings, but may be any type 
+     * of object. 
+     * 
+     * @param obj The object from which to retrieve the keys.
+     * @return An object array containing all property keys.
+     * @note The memory for the returned array is managed internally by the object, and the caller
+     *  must not attempt to free or modify it.
+     */
+    object_array_t (*get_keys)(object_t *obj);
 
     /**
      * @brief Retrieves the value of a property from an object.

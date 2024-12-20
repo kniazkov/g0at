@@ -41,6 +41,10 @@ void append_to_vector(vector_t *vector, void *item) {
     vector->data[vector->size++] = item;
 }
 
+void clear_vector(vector_t *vector) {
+    vector->size = 0;
+}
+
 void destroy_vector(vector_t *vector) {
     FREE(vector->data);
     FREE(vector);

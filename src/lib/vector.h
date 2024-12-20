@@ -56,6 +56,16 @@ vector_t *create_vector_ex(size_t init_capacity);
 void append_to_vector(vector_t *vector, void *item);
 
 /**
+ * @brief Clears the contents of a vector without deallocating it.
+ * 
+ * This function resets the size of the vector to zero, effectively clearing its contents.
+ * The allocated memory and capacity remain unchanged.
+ * 
+ * @param vector The vector to clear.
+ */
+void clear_vector(vector_t *vector);
+
+/**
  * @brief Destroys the vector and frees all associated memory.
  * 
  * This function frees the memory used by the vector itself, but does not 

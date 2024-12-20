@@ -171,6 +171,19 @@ static string_value_t to_string_notation(const object_t *obj) {
 }
 
 /**
+ * @brief Retrieves all property keys from an object (stub implementation).
+ * 
+ * This is a stub implementation of the function to retrieve all keys of the properties 
+ * defined on an object. Currently, it returns an empty `object_array_t` as a placeholder.
+ * 
+ * @param obj The object from which to retrieve the keys.
+ * @return An empty `object_array_t` (placeholder implementation).
+ */
+static object_array_t get_keys(object_t *obj) {
+    return (object_array_t){ NULL, 0 };
+}
+
+/**
  * @brief Retrieves the value of a property from an object (stub implementation).
  * 
  * This is a stub implementation of the function to retrieve the value of a property from
@@ -279,6 +292,7 @@ static object_vtbl_t vtbl = {
     .clone = clone,
     .to_string = to_string,
     .to_string_notation = to_string_notation,
+    .get_keys = get_keys,
     .get_property = get_property,
     .set_property = set_property,
     .add = add,

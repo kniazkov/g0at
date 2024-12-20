@@ -13,8 +13,10 @@
 #include "object.h"
 #include "object_state.h"
 #include "process.h"
+#include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/avl_tree.h"
+#include "lib/vector.h"
 #include "lib/string_ext.h"
 
 /**
@@ -48,9 +50,15 @@ typedef struct {
     object_state_t state;
 
     /**
-     * @brief AVL tree storing key-value pairs, where both keys and values are objects.
+     * @brief A vector storing keys for all properties of the object.
      */
-    avl_tree_t *children;
+    vector_t *keys;
+
+    /**
+     * @brief AVL tree storing properties, which are key-value pairs where both 
+     *  keys and values are objects.
+     */
+    avl_tree_t *properties;
 } object_user_defined_t;
 
 /**
@@ -83,20 +91,6 @@ static void clear_child_pair(void *unused, void *key, value_t value) {
 }
 
 /**
- * @brief Clears a user-defined object.
- * 
- * This function iterates through all key-value pairs stored in the children AVL tree of 
- * a user-defined object, decrementing their reference counts and freeing associated memory. 
- * After clearing the contents, it empties the AVL tree but does not deallocate the tree structure.
- * 
- * @param uobj A pointer to the user-defined object to clear.
- */
-static void clear(object_user_defined_t *uobj) {
-    avl_tree_for_each(uobj->children, clear_child_pair, NULL);
-    clear_avl_tree(uobj->children);
-}
-
-/**
  * @brief Releases or clears a user-defined object.
  * 
  * This function either frees the object or resets its state and moves it to a list of reusable
@@ -105,12 +99,15 @@ static void clear(object_user_defined_t *uobj) {
  * @param iobj The user-defined object to release or clear.
  */
 static void release_or_clear(object_user_defined_t *uobj) {
-    clear(uobj);
     remove_object_from_list(&uobj->base.process->objects, &uobj->base);
     if (uobj->base.process->user_defined_objects.size == POOL_CAPACITY) {
-        destroy_avl_tree(uobj->children);
+        destroy_vector(uobj->keys);
+        destroy_avl_tree(uobj->properties);
         FREE(uobj);
     } else {
+        clear_vector(uobj->keys);
+        avl_tree_for_each(uobj->properties, clear_child_pair, NULL);
+        clear_avl_tree(uobj->properties);
         uobj->refs = 0;
         uobj->state = ZOMBIE;
         add_object_to_list(&uobj->base.process->user_defined_objects, &uobj->base);
@@ -172,48 +169,29 @@ static void release(object_t *obj) {
     remove_object_from_list(
         uobj->state == ZOMBIE ? &obj->process->user_defined_objects : &obj->process->objects, obj
     );
-    clear(uobj);
-    destroy_avl_tree(uobj->children);
+    destroy_vector(uobj->keys);
+    destroy_avl_tree(uobj->properties);
     FREE(obj);
 }
 
 /**
- * @brief Compares two user-defined objects by their memory addresses.
+ * @brief Copies a key-value pair from one AVL tree to another during object cloning.
  * 
- * This function compares the memory addresses of two user-defined objects. The comparison 
- * is based solely on the addresses, not the content of the objects. This ensures a consistent 
- * ordering of user-defined objects in collections, such as AVL trees, where memory address 
- * serves as the criterion for placement.
+ * This function is used when cloning a user-defined object. It performs the following steps:
+ * 1. Increments the reference count of both the key and the value.
+ * 2. Adds the key to the `keys` vector of the target object.
+ * 3. Inserts the key-value pair into the target object's `properties` AVL tree.
  * 
- * @param obj1 The first object to compare.
- * @param obj2 The second object to compare.
- * @return An integer indicating the result of the comparison.
- */
-static int compare(const object_t *obj1, const object_t *obj2) {
-    if (obj1 > obj2) {
-        return 1;
-    } else if (obj1 > obj2) {
-        return -1;
-    } else {
-        return 0;
-    }
-}
-
-/**
- * @brief Copies a key-value pair from one AVL tree to another.
- * 
- * This function is used during the cloning of a user-defined object. It increments the reference
- * count of both the key and the value, then inserts the key-value pair into the target AVL tree.
- * 
- * @param collection The target AVL tree to insert the cloned key-value pair.
+ * @param data A pointer to the target user-defined object being cloned.
  * @param key The key of the key-value pair to be cloned.
  * @param value The value of the key-value pair to be cloned.
  */
-static void copy_child_pair(void *collection, void *key, value_t value) {
-    avl_tree_t *tree = (avl_tree_t *)collection;
+static void copy_child_pair(void *data, void *key, value_t value) {
+    object_user_defined_t *copy = (object_user_defined_t *)data;
     INCREF((object_t *)key);
     INCREF((object_t *)value.ptr);
-    set_in_avl_tree(tree, key, value);
+    append_to_vector(copy->keys, key);
+    set_in_avl_tree(copy->properties, key, value);
 }
 
 /**
@@ -230,7 +208,7 @@ static void copy_child_pair(void *collection, void *key, value_t value) {
 static object_t *clone(process_t *process, object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     object_user_defined_t *copy = create_empty_user_defined_object(process);
-    avl_tree_for_each(uobj->children, copy_child_pair, copy->children);
+    avl_tree_for_each(uobj->properties, copy_child_pair, copy);
     return &copy->base;
 }
 
@@ -285,7 +263,7 @@ static string_value_t to_string_notation(const object_t *obj) {
     string_builder_t builder;
     init_string_builder(&builder, 2);
     append_char(&builder, '{');
-    avl_tree_for_each(uobj->children, child_pair_to_string, &builder);
+    avl_tree_for_each(uobj->properties, child_pair_to_string, &builder);
     return append_char(&builder, '}');
 }
 
@@ -304,6 +282,22 @@ static string_value_t to_string(const object_t *obj) {
 }
 
 /**
+ * @brief Retrieves all property keys from a user-defined object.
+ * 
+ * This implementation of `get_keys` for user-defined objects returns an array containing
+ * references to all keys stored in the object's `keys` vector. The size of the array is
+ * determined by the number of keys currently in the vector.
+ * 
+ * @param obj The user-defined object from which to retrieve the keys.
+ * @return An `object_array_t` containing pointers to all property keys and the total 
+ *         number of keys.
+ */
+static object_array_t get_keys(object_t *obj) {
+    object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    return (object_array_t){ (object_t *const *)uobj->keys->data, uobj->keys->size };
+}
+
+/**
  * @brief Retrieves a property value from a user-defined object.
  * 
  * This function looks up the specified `key` in the `children` collection of the user-defined
@@ -316,7 +310,7 @@ static string_value_t to_string(const object_t *obj) {
  */
 static object_t *get_property(object_t *obj, object_t *key) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    return get_from_avl_tree(uobj->children, key).ptr;
+    return get_from_avl_tree(uobj->properties, key).ptr;
 }
 
 /**
@@ -335,8 +329,13 @@ static object_t *get_property(object_t *obj, object_t *key) {
 static bool set_property(object_t *obj, object_t *key, object_t *value) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     INCREF(value);
-    value_t old_value = set_in_avl_tree(uobj->children, key, (value_t){ .ptr = value });
-    DECREFIF((object_t *)old_value.ptr);
+    value_t old_value = set_in_avl_tree(uobj->properties, key, (value_t){ .ptr = value });
+    if (old_value.ptr) {
+        DECREF((object_t *)old_value.ptr);
+    } else {
+        INCREF(key);
+        append_to_vector(uobj->keys, key);
+    }
     return true;
 }
 
@@ -374,7 +373,7 @@ static object_t *sub(process_t *process, object_t *obj1, object_t *obj2) {
 
 static bool get_boolean_value(const object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    return uobj->children->root != NULL;
+    return uobj->properties->root != NULL;
 }
 
 /**
@@ -409,10 +408,11 @@ static object_vtbl_t vtbl = {
     .mark = mark,
     .sweep = sweep,
     .release = release,
-    .compare = compare,
+    .compare = compare_object_addresses,
     .clone = clone,
     .to_string = to_string,
     .to_string_notation = to_string_notation,
+    .get_keys = get_keys,
     .get_property = get_property,
     .set_property = set_property,
     .add = add,
@@ -458,7 +458,8 @@ static object_user_defined_t *create_empty_user_defined_object(process_t* proces
         uobj = (object_user_defined_t *)CALLOC(sizeof(object_user_defined_t));
         uobj->base.vtbl = &vtbl;
         uobj->base.process = process;
-        uobj->children = create_avl_tree(key_comparator);
+        uobj->keys = create_vector();
+        uobj->properties = create_avl_tree(key_comparator);
     }
     uobj->refs = 1;
     uobj->state = UNMARKED;

@@ -154,13 +154,13 @@ bool test_properties() {
         get_boolean_object(true),
         create_dynamic_string_object(process, STATIC_STRING(L"boolean"))
     );
+    object_t *clone = obj->vtbl->clone(process, obj);
+    const wchar_t *expected = L"{true:\"boolean\",3:\"three\",\"first\":\"one\",\"second\":\"two\"}";
     string_value_t str = obj->vtbl->to_string(obj);
-    ASSERT(
-        0 == wcscmp(
-            str.data,
-            L"{true:\"boolean\",3:\"three\",\"first\":\"one\",\"second\":\"two\"}"
-        )
-    );
+    ASSERT(0 == wcscmp(str.data, expected));
+    if (str.should_free) FREE(str.data);
+    str = clone->vtbl->to_string(clone);
+    ASSERT(0 == wcscmp(str.data, expected));
     if (str.should_free) FREE(str.data);
     object_t *key = create_dynamic_string_object(process, STATIC_STRING(L"first"));
     object_t *value = obj->vtbl->get_property(obj, key);
@@ -171,6 +171,11 @@ bool test_properties() {
     key = create_dynamic_string_object(process, STATIC_STRING(L"third"));
     value = obj->vtbl->get_property(obj, key);
     ASSERT(value == NULL);
+    object_array_t keys = obj->vtbl->get_keys(obj);
+    ASSERT(keys.count == 4);
+    for (size_t i = 0; i < keys.count; i++) {
+        ASSERT(clone->vtbl->get_property(clone, keys.items[i]) != NULL);
+    }
     destroy_process(process);
     return true;
 }

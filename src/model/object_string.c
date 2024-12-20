@@ -22,6 +22,7 @@
 #include "object.h"
 #include "object_state.h"
 #include "process.h"
+#include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 
@@ -63,15 +64,6 @@ typedef struct {
     wchar_t *data; ///< Pointer to the string data (wide character array).
     size_t length; ///< Length of the string (number of characters).
 } object_dynamic_string_t;
-
-/**
- * @brief A stub memory management function for static strings.
- * @param obj The object. This parameter is unused.
- * @note This function does nothing because static strings do not require memory management.
- */
-static void memory_function_stub(object_t *obj) {
-    return;
-}
 
 /**
  * @brief Releases or clears a dynamic string object.
@@ -253,6 +245,19 @@ static string_value_t to_string_notation(const object_t *obj) {
 }
 
 /**
+ * @brief Retrieves all property keys from an object (stub implementation).
+ * 
+ * This is a stub implementation of the function to retrieve all keys of the properties 
+ * defined on an object. Currently, it returns an empty `object_array_t` as a placeholder.
+ * 
+ * @param obj The object from which to retrieve the keys.
+ * @return An empty `object_array_t` (placeholder implementation).
+ */
+static object_array_t get_keys(object_t *obj) {
+    return (object_array_t){ NULL, 0 };
+}
+
+/**
  * @brief Retrieves the value of a property from an object (stub implementation).
  * 
  * This is a stub implementation of the function to retrieve the value of a property from
@@ -380,6 +385,7 @@ static object_vtbl_t static_string_vtbl = {
     .clone = clone,
     .to_string = static_to_string,
     .to_string_notation = to_string_notation,
+    .get_keys = get_keys,
     .get_property = get_property,
     .set_property = set_property,
     .add = add,
@@ -433,6 +439,7 @@ static object_vtbl_t dynamic_string_vtbl = {
     .clone = clone,
     .to_string = dynamic_to_string,
     .to_string_notation = to_string_notation,
+    .get_keys = get_keys,
     .get_property = get_property,
     .set_property = set_property,
     .add = add,
