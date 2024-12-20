@@ -270,7 +270,7 @@ typedef struct {
      * @note The memory for the returned array is managed internally by the object, and the caller
      *  must not attempt to free or modify it.
      */
-    object_array_t (*get_keys)(object_t *obj);
+    object_array_t (*get_keys)(const object_t *obj);
 
     /**
      * @brief Retrieves the value of a property from an object.
@@ -286,7 +286,7 @@ typedef struct {
      * @note The behavior of this function depends on the underlying property storage and retrieval
      *  mechanism.
      */
-    object_t* (*get_property)(object_t *obj, object_t *key);
+    object_t* (*get_property)(const object_t *obj, const object_t *key);
 
     /**
      * @brief Sets a property on an object.

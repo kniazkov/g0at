@@ -180,7 +180,7 @@ static avl_node_t *insert(avl_tree_t *tree, avl_node_t *node, void *key,
  * 
  * @return A pointer to the node with the specified key, or `NULL` if no such node is found.
  */
-static avl_node_t *find(avl_tree_t *tree, avl_node_t *node, void *key) {
+static avl_node_t *find(const avl_tree_t *tree, avl_node_t *node, const void *key) {
     if (!node) return NULL;
 
     int cmp = tree->comparator(key, node->key);
@@ -228,7 +228,7 @@ static void destroy_nodes(avl_node_t *node) {
     }
 }
 
-avl_tree_t *create_avl_tree(int (*comparator)(void*, void*)) {
+avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*)) {
     avl_tree_t *tree = (avl_tree_t *)ALLOC(sizeof(avl_tree_t));
     tree->root = NULL; 
     tree->comparator = comparator;
@@ -241,12 +241,12 @@ value_t set_in_avl_tree(avl_tree_t *tree, void *key, value_t value) {
     return old_value;
 }
 
-bool avl_tree_contains(avl_tree_t *tree, void *key) {
+bool avl_tree_contains(const avl_tree_t *tree, const void *key) {
     avl_node_t *node = find(tree, tree->root, key);
     return node != NULL;
 }
 
-value_t get_from_avl_tree(avl_tree_t *tree, void *key) {
+value_t get_from_avl_tree(const avl_tree_t *tree, const void *key) {
     value_t value = {0};
     avl_node_t *node = find(tree, tree->root, key);
     if (node) {
@@ -255,7 +255,7 @@ value_t get_from_avl_tree(avl_tree_t *tree, void *key) {
     return value;
 }
 
-void avl_tree_for_each(avl_tree_t *tree,
+void avl_tree_for_each(const avl_tree_t *tree,
     void (*func)(void* user_data, void* key, value_t value), void *user_data) {
     if (tree && tree->root) {
         inorder_traversal(tree->root, func, user_data);

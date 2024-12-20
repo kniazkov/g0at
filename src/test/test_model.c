@@ -155,7 +155,7 @@ bool test_properties() {
         create_dynamic_string_object(process, STATIC_STRING(L"boolean"))
     );
     object_t *clone = obj->vtbl->clone(process, obj);
-    const wchar_t *expected = L"{true:\"boolean\",3:\"three\",\"first\":\"one\",\"second\":\"two\"}";
+    const wchar_t *expected = L"{true=\"boolean\";3=\"three\";\"first\"=\"one\";\"second\"=\"two\"}";
     string_value_t str = obj->vtbl->to_string(obj);
     ASSERT(0 == wcscmp(str.data, expected));
     if (str.should_free) FREE(str.data);

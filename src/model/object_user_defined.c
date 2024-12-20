@@ -219,8 +219,8 @@ static object_t *clone(process_t *process, object_t *obj) {
  * This function processes a single key-value pair from the children of a user-defined object. 
  * It converts both the key and the value to their Goat notation string representations using 
  * their respective `to_string_notation` methods. The resulting key-value pair is appended to 
- * the provided string builder in the format `"key:value"`. If the builder already contains data, 
- * a comma is inserted before appending the new pair.
+ * the provided string builder in the format `"key=value"`. If the builder already contains data, 
+ * a semicolon is inserted before appending the new pair.
  * 
  * @param data A pointer to the `string_builder_t` used for constructing the string.
  * @param key The key of the key-value pair, cast to an object.
@@ -229,7 +229,7 @@ static object_t *clone(process_t *process, object_t *obj) {
 static void child_pair_to_string(void *data, void *key, value_t value) {
     string_builder_t *builder = (string_builder_t *)data;
     if (builder->length > 1) {
-        append_char(builder, ',');
+        append_char(builder, ';');
     }
     object_t *key_obj = (object_t *)key;
     string_value_t key_str = key_obj->vtbl->to_string_notation(key_obj);
@@ -237,7 +237,7 @@ static void child_pair_to_string(void *data, void *key, value_t value) {
     if (key_str.should_free) {
         FREE(key_str.data);
     }
-    append_char(builder, ':');
+    append_char(builder, '=');
     object_t *value_obj = (object_t *)value.ptr;
     string_value_t value_str = value_obj->vtbl->to_string_notation(value_obj);
     append_substring(builder, value_str.data, value_str.length);
@@ -292,7 +292,7 @@ static string_value_t to_string(const object_t *obj) {
  * @return An `object_array_t` containing pointers to all property keys and the total 
  *         number of keys.
  */
-static object_array_t get_keys(object_t *obj) {
+static object_array_t get_keys(const object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     return (object_array_t){ (object_t *const *)uobj->keys->data, uobj->keys->size };
 }
@@ -308,7 +308,7 @@ static object_array_t get_keys(object_t *obj) {
  * @param key The key for the property to retrieve.
  * @return A pointer to the value associated with the key, or NULL if the key is not found.
  */
-static object_t *get_property(object_t *obj, object_t *key) {
+static object_t *get_property(const object_t *obj, const object_t *key) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     return get_from_avl_tree(uobj->properties, key).ptr;
 }
@@ -344,10 +344,10 @@ static bool set_property(object_t *obj, object_t *key, object_t *value) {
  * @param process Process that will own the resulting object.
  * @param obj1 The first object.
  * @param obj2 The second object.
- * @return Always returns `false` because addition is not supported for user-defined objects.
+ * @return Always returns `NULL` because addition is not supported for user-defined objects.
  */
 static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
-    return false;
+    return NULL;
 }
 
 /**
@@ -355,10 +355,10 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
  * @param process Process that will own the resulting object.
  * @param obj1 The first object (minuend).
  * @param obj2 The second object (subtrahend).
- * @return Always returns `false` because subtraction is not supported for user-defined objects.
+ * @return Always returns `NULL` because subtraction is not supported for user-defined objects.
  */
 static object_t *sub(process_t *process, object_t *obj1, object_t *obj2) {
-    return false;
+    return NULL;
 }
 
 /**
@@ -375,27 +375,6 @@ static bool get_boolean_value(const object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     return uobj->properties->root != NULL;
 }
-
-/**
- * @brief Retrieves the integer value of a user-defined object.
- * @param obj The user-defined object.
- * @return An invalid `int_value_t` indicating that user-defined objects cannot be converted
- *  to integers.
- */
-static int_value_t get_integer_value(const object_t *obj) {
-    return (int_value_t){ false, 0 };
-}
-
-/**
- * @brief Retrieves the real value of a user-defined object.
- * @param obj The user-defined object.
- * @return An invalid `real_value_t` indicating that user-defined objects cannot be converted
- *  to real numbers.
- */
-static real_value_t get_real_value(const object_t *obj) {
-    return (real_value_t){ false, 0.0 };
-}
-
 
 /**
  * @var dynamic_string_vtbl
@@ -418,8 +397,8 @@ static object_vtbl_t vtbl = {
     .add = add,
     .sub = sub,
     .get_boolean_value = get_boolean_value,
-    .get_integer_value = get_integer_value,
-    .get_real_value = get_real_value
+    .get_integer_value = stub_get_integer_value,
+    .get_real_value = stub_get_real_value
 };
 
 /**
@@ -436,7 +415,7 @@ static object_vtbl_t vtbl = {
  *         - `-1` if `first` is less than `second`.
  *         - `0` if `first` and `second` are equal.
  */
-static int key_comparator(void *first, void *second) {
+static int key_comparator(const void *first, const void *second) {
     object_t *obj1 = (object_t *)first;
     object_t *obj2 = (object_t *)second;
     if (obj1->vtbl->type > obj2->vtbl->type) {

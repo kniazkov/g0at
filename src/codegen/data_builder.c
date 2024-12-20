@@ -34,7 +34,7 @@ data_builder_t *create_data_builder(void) {
     builder->data_capacity = INITIAL_DATA_ARRAY_CAPACITY;
     builder->descriptors_count = 0;
     builder->descriptors_capacity = INITIAL_DESCRIPTORS_LIST_CAPACITY;
-    builder->strings = create_avl_tree((int(*)(void*, void*))wcscmp);
+    builder->strings = create_avl_tree((int(*)(const void*, const void*))wcscmp);
     return builder;
 }
 

@@ -11,6 +11,7 @@
 #include "object.h"
 #include "object_state.h"
 #include "process.h"
+#include "common_methods.h"
 #include "lib/allocate.h"
 
 /**
@@ -179,7 +180,7 @@ static string_value_t to_string_notation(const object_t *obj) {
  * @param obj The object from which to retrieve the keys.
  * @return An empty `object_array_t` (placeholder implementation).
  */
-static object_array_t get_keys(object_t *obj) {
+static object_array_t get_keys(const object_t *obj) {
     return (object_array_t){ NULL, 0 };
 }
 
@@ -193,24 +194,8 @@ static object_array_t get_keys(object_t *obj) {
  * @param key The key of the property to retrieve.
  * @return Always returns `NULL` (placeholder implementation).
  */
-static object_t *get_property(object_t *obj, object_t *key) {
+static object_t *get_property(const object_t *obj, const object_t *key) {
     return NULL;
-}
-
-/**
- * @brief Attempts to set a property on an object.
- * 
- * This function is used to set a property on an object. However, since the object is
- * immutable, no property can be added or modified. Therefore, the function always
- * returns `false`.
- * 
- * @param obj The immutable object on which to set the property.
- * @param key The key of the property to set.
- * @param value The value to assign to the property.
- * @return Always returns `false` because the object is immutable.
- */
-static bool set_property(object_t *obj, object_t *key, object_t *value) {
-    return false;
 }
 
 /**
@@ -294,7 +279,7 @@ static object_vtbl_t vtbl = {
     .to_string_notation = to_string_notation,
     .get_keys = get_keys,
     .get_property = get_property,
-    .set_property = set_property,
+    .set_property = set_property_on_immutable,
     .add = add,
     .sub = sub,
     .get_boolean_value = get_boolean_value,

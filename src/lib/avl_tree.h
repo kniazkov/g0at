@@ -45,8 +45,15 @@ typedef struct avl_node_t {
  * within the tree.
  */
 typedef struct {
-    avl_node_t *root;                /**< Pointer to the root node of the tree. */
-    int (*comparator)(void*, void*); /**< Comparator function to compare keys in the tree. */
+    /**
+     * @brief Pointer to the root node of the tree.
+     */
+    avl_node_t *root;
+
+    /**
+     * @brief Comparator function to compare keys in the tree.
+     */
+    int (*comparator)(const void*, const void*);
 } avl_tree_t;
 
 /**
@@ -67,7 +74,7 @@ typedef struct {
  * @return A pointer to the newly created AVL tree structure. The root of the tree is
  *  initially set to NULL.
  */
-avl_tree_t *create_avl_tree(int (*comparator)(void*, void*));
+avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*));
 
 /**
  * @brief Inserts a key-value pair into the AVL tree or updates the value if the key exists.
@@ -101,7 +108,7 @@ value_t set_in_avl_tree(avl_tree_t *tree, void *key, value_t value);
  * 
  * @return `true` if the tree contains a node with the specified key, otherwise `false`.
  */
-bool avl_tree_contains(avl_tree_t *tree, void *key);
+bool avl_tree_contains(const avl_tree_t *tree, const void *key);
 
 /**
  * @brief Retrieves the value associated with the specified key in the AVL tree.
@@ -116,7 +123,7 @@ bool avl_tree_contains(avl_tree_t *tree, void *key);
  * @return The value associated with the specified key, or default value (filled with zeros)
  *  if the key is not found in the tree.
  */
-value_t get_from_avl_tree(avl_tree_t *tree, void *key);
+value_t get_from_avl_tree(const avl_tree_t *tree, const void *key);
 
 /**
  * @brief Applies a function to each key-value pair in the AVL tree, with user data.
@@ -131,7 +138,7 @@ value_t get_from_avl_tree(avl_tree_t *tree, void *key);
  *  should have the signature `void func(void* user_data, void* key, value_t value)`.
  * @param user_data A pointer to user data that will be passed to the callback function.
  */
-void avl_tree_for_each(avl_tree_t *tree,
+void avl_tree_for_each(const avl_tree_t *tree,
     void (*func)(void* user_data, void* key, value_t value), void *user_data);
 
 /**

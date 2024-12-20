@@ -253,7 +253,7 @@ static string_value_t to_string_notation(const object_t *obj) {
  * @param obj The object from which to retrieve the keys.
  * @return An empty `object_array_t` (placeholder implementation).
  */
-static object_array_t get_keys(object_t *obj) {
+static object_array_t get_keys(const object_t *obj) {
     return (object_array_t){ NULL, 0 };
 }
 
@@ -267,24 +267,8 @@ static object_array_t get_keys(object_t *obj) {
  * @param key The key of the property to retrieve.
  * @return Always returns `NULL` (placeholder implementation).
  */
-static object_t *get_property(object_t *obj, object_t *key) {
+static object_t *get_property(const object_t *obj, const object_t *key) {
     return NULL;
-}
-
-/**
- * @brief Attempts to set a property on an object.
- * 
- * This function is used to set a property on an object. However, since the object is
- * immutable, no property can be added or modified. Therefore, the function always
- * returns `false`.
- * 
- * @param obj The immutable object on which to set the property.
- * @param key The key of the property to set.
- * @param value The value to assign to the property.
- * @return Always returns `false` because the object is immutable.
- */
-static bool set_property(object_t *obj, object_t *key, object_t *value) {
-    return false;
 }
 
 /**
@@ -325,17 +309,6 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
 }
 
 /**
- * @brief Subtracts one object from another.
- * @param process Process that will own the resulting object.
- * @param obj1 The first object (minuend).
- * @param obj2 The second object (subtrahend).
- * @return Always returns `false`, indicating that subtraction is not supported.
- */
-static object_t *sub(process_t *process, object_t *obj1, object_t *obj2) {
-    return false;
-}
-
-/**
  * @brief Retrieves the boolean representation of a string object.
  * 
  * This function converts the string object to its string representation and returns `true` if the 
@@ -351,48 +324,28 @@ static bool get_boolean_value(const object_t *obj) {
 }
 
 /**
- * @brief Retrieves the integer value of a string object.
- * @param obj The string object.
- * @return An invalid `int_value_t` indicating that string objects cannot be converted
- *  to integers.
- */
-static int_value_t get_integer_value(const object_t *obj) {
-    return (int_value_t){ false, 0 };
-}
-
-/**
- * @brief Retrieves the real value of a string object.
- * @param obj The string object.
- * @return An invalid `real_value_t` indicating that string objects cannot be converted
- *  to real numbers.
- */
-static real_value_t get_real_value(const object_t *obj) {
-    return (real_value_t){ false, 0.0 };
-}
-
-/**
  * @var static_string_vtbl
  * @brief Virtual table defining the behavior of the static string object.
  */
 static object_vtbl_t static_string_vtbl = {
     .type = TYPE_STRING,
-    .inc_ref = memory_function_stub,
-    .dec_ref = memory_function_stub,
-    .mark = memory_function_stub,
-    .sweep = memory_function_stub,
-    .release = memory_function_stub,
+    .inc_ref = stub_memory_function,
+    .dec_ref = stub_memory_function,
+    .mark = stub_memory_function,
+    .sweep = stub_memory_function,
+    .release = stub_memory_function,
     .compare = compare,
     .clone = clone,
     .to_string = static_to_string,
     .to_string_notation = to_string_notation,
     .get_keys = get_keys,
     .get_property = get_property,
-    .set_property = set_property,
+    .set_property = set_property_on_immutable,
     .add = add,
-    .sub = sub,
+    .sub = stub_sub,
     .get_boolean_value = get_boolean_value,
-    .get_integer_value = get_integer_value,
-    .get_real_value = get_real_value
+    .get_integer_value = stub_get_integer_value,
+    .get_real_value = stub_get_real_value
 };
 
 object_t *create_static_string_object(wchar_t *data, size_t length) {
@@ -441,12 +394,12 @@ static object_vtbl_t dynamic_string_vtbl = {
     .to_string_notation = to_string_notation,
     .get_keys = get_keys,
     .get_property = get_property,
-    .set_property = set_property,
+    .set_property = set_property_on_immutable,
     .add = add,
-    .sub = sub,
+    .sub = stub_sub,
     .get_boolean_value = get_boolean_value,
-    .get_integer_value = get_integer_value,
-    .get_real_value = get_real_value
+    .get_integer_value = stub_get_integer_value,
+    .get_real_value = stub_get_real_value
 };
 
 object_t *create_dynamic_string_object(process_t *process, string_value_t value) {

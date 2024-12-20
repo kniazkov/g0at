@@ -37,4 +37,5 @@ typedef struct {
  * @return A pointer to the corresponding value if the key is found, or NULL if the key
  *  is not found.
  */
-void *binary_search(pair_t *pairs, size_t size, void *key, int (*comparator)(void*, void*));
+void *binary_search(pair_t *pairs, size_t size, void *key,
+    int (*comparator)(const void*, const void*));

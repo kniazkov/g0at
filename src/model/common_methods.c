@@ -9,8 +9,10 @@
  */
 
 #include "common_methods.h"
+#include "lib/allocate.h"
+#include "lib/string_ext.h"
 
-void memory_function_stub(object_t *obj) {
+void stub_memory_function(object_t *obj) {
     return;
 }
 
@@ -22,4 +24,58 @@ int compare_object_addresses(const object_t *obj1, const object_t *obj2) {
     } else {
         return 0;
     }
+}
+
+string_value_t common_to_string(object_t *obj) {
+    return common_to_string_notation(obj);
+}
+
+string_value_t common_to_string_notation(object_t *obj) {
+    string_builder_t builder;
+    init_string_builder(&builder, 2);
+    append_char(&builder, '{');
+    object_array_t keys = obj->vtbl->get_keys(obj);
+    for (size_t i = 0; i < keys.count; i++) {
+        if (i > 0) {
+            append_char(&builder, ';');
+        }
+        object_t *key = keys.items[i];
+        string_value_t key_str = key->vtbl->to_string_notation(key);
+        append_substring(&builder, key_str.data, key_str.length);
+        if (key_str.should_free) {
+            FREE(key_str.data);
+        }
+        append_char(&builder, '=');
+        object_t *value = obj->vtbl->get_property(obj, key);
+        string_value_t value_str = value->vtbl->to_string_notation(value);
+        append_substring(&builder, value_str.data, value_str.length);
+        if (value_str.should_free) {
+            FREE(value_str.data);
+        }
+    }
+    return append_char(&builder, '}');
+}
+
+bool set_property_on_immutable(object_t *obj, object_t *key, object_t *value) {
+    return false;
+}
+
+object_t *stub_add(process_t *process, object_t *obj1, object_t *obj2) {
+    return NULL;
+}
+
+object_t *stub_sub(process_t *process, object_t *obj1, object_t *obj2) {
+    return NULL;
+}
+
+bool common_get_boolean_value(const object_t *obj) {
+    return obj->vtbl->get_keys(obj).count > 0;
+}
+
+int_value_t stub_get_integer_value(const object_t *obj) {
+    return (int_value_t){ false, 0 };
+}
+
+real_value_t stub_get_real_value(const object_t *obj) {
+    return (real_value_t){ false, 0.0 };
 }
