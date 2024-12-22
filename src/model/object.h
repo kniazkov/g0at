@@ -511,5 +511,7 @@ object_t *create_user_defined_object(process_t* process);
 /**
  * @brief Declares getter functions for common static string objects.
  */
+DECLARE_STATIC_OBJECT_GETTER(integer_zero)
 DECLARE_STATIC_OBJECT_GETTER(empty_string)
 DECLARE_STATIC_OBJECT_GETTER(string_print)
+DECLARE_STATIC_OBJECT_GETTER(string_length)

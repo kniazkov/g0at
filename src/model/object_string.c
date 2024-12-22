@@ -245,16 +245,20 @@ static string_value_t to_string_notation(const object_t *obj) {
 }
 
 /**
- * @brief Retrieves all property keys from an object (stub implementation).
+ * @brief Retrieves all property keys from a string object.
  * 
- * This is a stub implementation of the function to retrieve all keys of the properties 
- * defined on an object. Currently, it returns an empty `object_array_t` as a placeholder.
+ * This function returns a static array containing the property keys associated with a string
+ * object. The array is initialized lazily during the first invocation of the function.
  * 
  * @param obj The object from which to retrieve the keys.
- * @return An empty `object_array_t` (placeholder implementation).
+ * @return An object array containing all property keys.
  */
 static object_array_t get_keys(const object_t *obj) {
-    return (object_array_t){ NULL, 0 };
+    static object_t *keys[1] = { NULL };
+    if (keys[0] == NULL) {
+        keys[0] = get_string_length();
+    }
+    return (object_array_t){ keys, sizeof(keys) / sizeof(object_t*) };
 }
 
 /**
@@ -376,6 +380,7 @@ object_t *create_static_string_object(wchar_t *data, size_t length) {
  */
 DECLARE_STATIC_STRING(empty_string, L"")
 DECLARE_STATIC_STRING(string_print, L"print")
+DECLARE_STATIC_STRING(string_length, L"length")
 
 /**
  * @var dynamic_string_vtbl
@@ -423,4 +428,25 @@ object_t *create_dynamic_string_object(process_t *process, string_value_t value)
     obj->length = value.length;
     add_object_to_list(&process->objects, &obj->base);
     return &obj->base;
+}
+/**
+ * @brief Retrieves a property value from the prototype of a string object.
+ * 
+ * This function checks if the given `key` corresponds to a known property of the string object 
+ * prototype. Currently, it only supports the `length` property, which returns a static integer 
+ * object representing zero. If the key is not recognized or does not match the `length` property,
+ * the function returns `NULL`.
+ * 
+ * @param obj The string object whose prototype property is being retrieved.
+ * @param key The key of the property to retrieve.
+ * @return A pointer to the value of the property, or `NULL` if the key is not recognized.
+ */
+static object_t *proto_get_property(object_t *obj, const object_t *key) {
+    if (key->vtbl->type == TYPE_STRING) {
+        string_value_t key_str = key->vtbl->to_string(key);
+        if (wcscmp(L"length", key_str.data) == 0) {
+            return get_integer_zero();
+        }
+    }
+    return NULL;
 }
