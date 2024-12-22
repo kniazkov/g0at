@@ -464,10 +464,46 @@ object_t *get_root_object();
 object_t *get_boolean_object(bool value);
 
 /**
- * @brief Creates a new integer object.
- * @param process The process to which the object will belong.
- * @param value The integer value to store in the object.
- * @return A pointer to the newly created object, which is of type `object_t`.
+ * @brief The minimum static integer value.
+ */
+#define MIN_STATIC_INTEGER -1
+
+/**
+ * @brief The maximum static integer value.
+ */
+#define MAX_STATIC_INTEGER 127
+
+/**
+ * @brief Retrieves a static integer object.
+ * 
+ * This function returns a pointer to the static object representing the specified integer value.
+ * The input value must be within the range `MIN_STATIC_INTEGER` to `MAX_STATIC_INTEGER`;
+ * otherwise, an assertion will fail.
+ * 
+ * Static integers only store a reference to their value, which exists for the duration
+ * of the program's execution. These integers are not managed by the garbage collector.
+ * 
+ * @param value The integer value for which to retrieve the static object.
+ * @return A pointer to the static object representing the integer.
+ */
+object_t *get_static_integer_object(int value);
+
+/**
+ * @brief Retrieves a static object representing the integer value `0`.
+ * @return A pointer to the static object representing `0`.
+ */
+object_t *get_integer_zero();
+
+/**
+ * @brief Creates or retrieves an integer object.
+ * 
+ * This function creates a dynamic integer object if the value is outside the range of static
+ * integers. If the value falls within the range of statically pre-initialized integers, the
+ * corresponding static object is returned.
+ * 
+ * @param process The process that will own the integer object.
+ * @param value The integer value to represent.
+ * @return A pointer to the object representing the integer value.
  */
 object_t *create_integer_object(process_t *process, int64_t value);
 
@@ -511,7 +547,6 @@ object_t *create_user_defined_object(process_t* process);
 /**
  * @brief Declares getter functions for common static string objects.
  */
-DECLARE_STATIC_OBJECT_GETTER(integer_zero)
 DECLARE_STATIC_OBJECT_GETTER(empty_string)
 DECLARE_STATIC_OBJECT_GETTER(string_print)
 DECLARE_STATIC_OBJECT_GETTER(string_length)

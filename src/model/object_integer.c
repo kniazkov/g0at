@@ -326,23 +326,51 @@ static object_vtbl_t static_vtbl = {
 };
 
 /**
- * @brief Macro to declare a static integer object and provide access to it.
- * 
- * This macro defines a static integer object with a specified name and value. It also
- * provides a function to retrieve the object.
- * 
- * @param name The name of the static integer object.
- * @param string The value of the object.
+ * @brief The total number of static integer objects.
  */
-#define DECLARE_STATIC_INTEGER(name, value) \
-    static object_static_integer_t name = \
-        { { &static_vtbl, NULL, NULL, NULL }, value }; \
-    object_t *get_##name() { return &name.base; }
+#define STATIC_INTEGER_RANGE (MAX_STATIC_INTEGER - MIN_STATIC_INTEGER + 1)
 
 /**
- * @brief Declares some common static integer objects.
+ * @brief Static array of objects representing static integer values.
+ * 
+ * This array holds objects corresponding to integers in the range defined by
+ * `MIN_STATIC_INTEGER` to `MAX_STATIC_INTEGER`.
  */
-DECLARE_STATIC_INTEGER(integer_zero, 0)
+static object_static_integer_t static_integers[STATIC_INTEGER_RANGE];
+
+/**
+ * @brief Flag to indicate whether the static integers array has been initialized.
+ */
+static bool is_static_integers_initialized = false;
+
+/**
+ * @brief Initializes the static integer objects array.
+ * 
+ * This function initializes the static array of integer objects for the range
+ * `MIN_STATIC_INTEGER` to `MAX_STATIC_INTEGER`. It is automatically invoked during the
+ * first call to `get_static_integer_object()`.
+ */
+static void initialize_static_integers() {
+    for (int i = MIN_STATIC_INTEGER; i <= MAX_STATIC_INTEGER; ++i) {
+        static_integers[i - MIN_STATIC_INTEGER] = (object_static_integer_t){
+            { &static_vtbl, NULL, NULL, NULL },
+            i
+        };
+    }
+    is_static_integers_initialized = true;
+}
+
+object_t *get_static_integer_object(int value) {
+    assert(value >= MIN_STATIC_INTEGER && value <= MAX_STATIC_INTEGER);
+    if (!is_static_integers_initialized) {
+        initialize_static_integers();
+    }
+    return &static_integers[value - MIN_STATIC_INTEGER].base;
+}
+
+object_t *get_integer_zero() {
+    return get_static_integer_object(0);
+}
 
 /**
  * @var vtbl
@@ -370,8 +398,8 @@ static object_vtbl_t dynamic_vtbl = {
 };
 
 object_t *create_integer_object(process_t *process, int64_t value) {
-    if (value == 0) {
-        return get_integer_zero();
+    if (value >= MIN_STATIC_INTEGER && value <= MAX_STATIC_INTEGER) {
+        return get_static_integer_object((int)value);
     }
     object_dynamic_integer_t *obj;
     if (process->integers.size > 0) {

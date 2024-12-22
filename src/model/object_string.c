@@ -429,6 +429,7 @@ object_t *create_dynamic_string_object(process_t *process, string_value_t value)
     add_object_to_list(&process->objects, &obj->base);
     return &obj->base;
 }
+
 /**
  * @brief Retrieves a property value from the prototype of a string object.
  * 
