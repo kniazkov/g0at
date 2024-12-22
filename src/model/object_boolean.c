@@ -124,7 +124,8 @@ static object_vtbl_t false_vtbl = {
     .sub = stub_sub,
     .get_boolean_value = false_get_boolean_value,
     .get_integer_value = stub_get_integer_value,
-    .get_real_value = stub_get_real_value
+    .get_real_value = stub_get_real_value,
+    .call = stub_call
 };
 
 /**
@@ -156,7 +157,8 @@ static object_vtbl_t true_vtbl = {
     .sub = stub_sub,
     .get_boolean_value = true_get_boolean_value,
     .get_integer_value = stub_get_integer_value,
-    .get_real_value = stub_get_real_value
+    .get_real_value = stub_get_real_value,
+    .call = stub_call
 };
 
 /**

@@ -27,6 +27,12 @@ typedef struct object_t object_t;
 typedef struct process_t process_t;
 
 /**
+ * @typedef thread_t
+ * @brief Forward declaration for the thread structure.
+ */
+typedef struct thread_t thread_t;
+
+/**
  * @enum object_type_t
  * @brief Enumeration of object types in the Goat virtual machine.
  *
@@ -371,6 +377,23 @@ typedef struct {
      *  that the value is not available if `has_value` is `false`.
      */
     real_value_t (*get_real_value)(const object_t *obj);
+
+    /**
+     * @brief Function pointer for invoking a function object.
+     *
+     * The `call` function executes a function object. It retrieves arguments from the data stack,
+     * executes the function, and pushes the return value back onto the stack.
+     *
+     * For user-defined functions, this method optionally modifies the call stack and updates the
+     * instruction pointer to indicate the next instruction to execute.
+     *
+     * @param obj Pointer to the function object being invoked.
+     * @param arg_count The number of arguments being passed to the function.
+     * @param thread Pointer to the thread in which the function is executed.
+     * @return `true` if the object is a functional object and the call was performed,
+     *  `false` otherwise.
+     */
+    bool (*call)(object_t *obj, uint16_t arg_count, thread_t *thread);
 } object_vtbl_t;
 
 /**

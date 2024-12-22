@@ -370,7 +370,8 @@ static object_vtbl_t static_string_vtbl = {
     .sub = stub_sub,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = stub_get_integer_value,
-    .get_real_value = stub_get_real_value
+    .get_real_value = stub_get_real_value,
+    .call = stub_call
 };
 
 object_t *create_static_string_object(wchar_t *data, size_t length) {
@@ -425,7 +426,8 @@ static object_vtbl_t dynamic_string_vtbl = {
     .sub = stub_sub,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = stub_get_integer_value,
-    .get_real_value = stub_get_real_value
+    .get_real_value = stub_get_real_value,
+    .call = stub_call
 };
 
 object_t *create_dynamic_string_object(process_t *process, string_value_t value) {

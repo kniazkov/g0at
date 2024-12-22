@@ -322,7 +322,8 @@ static object_vtbl_t static_vtbl = {
     .sub = sub,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = static_get_integer_value,
-    .get_real_value = static_get_real_value
+    .get_real_value = static_get_real_value,
+    .call = stub_call
 };
 
 /**
@@ -394,7 +395,8 @@ static object_vtbl_t dynamic_vtbl = {
     .sub = sub,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = dynamic_get_integer_value,
-    .get_real_value = dynamic_get_real_value
+    .get_real_value = dynamic_get_real_value,
+    .call = stub_call
 };
 
 object_t *create_integer_object(process_t *process, int64_t value) {

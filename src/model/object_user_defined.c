@@ -398,7 +398,8 @@ static object_vtbl_t vtbl = {
     .sub = sub,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = stub_get_integer_value,
-    .get_real_value = stub_get_real_value
+    .get_real_value = stub_get_real_value,
+    .call = stub_call
 };
 
 /**

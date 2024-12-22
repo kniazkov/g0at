@@ -152,3 +152,16 @@ int_value_t stub_get_integer_value(const object_t *obj);
  * @return A `real_value_t` structure with `has_value` set to `false`.
  */
 real_value_t stub_get_real_value(const object_t *obj);
+
+/**
+ * @brief Stub implementation of the `call` function for non-functional objects.
+ *
+ * This function acts as a placeholder for objects that do not support the `call` operation.
+ * It always returns `false`, indicating that the object is not a functional object.
+ *
+ * @param obj Pointer to the object being invoked.
+ * @param arg_count The number of arguments passed to the function (ignored in this implementation).
+ * @param thread Pointer to the thread in which the function was supposed to be executed (ignored).
+ * @return `false`, as the object is not a functional object.
+ */
+bool stub_call(object_t *obj, uint16_t arg_count, thread_t *thread);
