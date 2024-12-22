@@ -166,6 +166,10 @@ bool test_properties() {
     str = value->vtbl->to_string(value);
     ASSERT(0 == wcscmp(str.data, L"one"));
     if (str.should_free) FREE(str.data);
+    key = create_dynamic_string_object(process, STATIC_STRING(L"length"));
+    value = value->vtbl->get_property(value, key);
+    ASSERT(value != NULL);
+    ASSERT(value->vtbl->get_integer_value(value).value == 3);
     key = create_dynamic_string_object(process, STATIC_STRING(L"third"));
     value = obj->vtbl->get_property(obj, key);
     ASSERT(value == NULL);

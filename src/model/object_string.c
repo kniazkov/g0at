@@ -262,16 +262,37 @@ static object_array_t get_keys(const object_t *obj) {
 }
 
 /**
- * @brief Retrieves the value of a property from an object (stub implementation).
- * 
- * This is a stub implementation of the function to retrieve the value of a property from
- * an object. Currently, it returns `NULL` as a placeholder.
- * 
- * @param obj The object from which to retrieve the property.
+ * @brief Retrieves the value of a property from a static string object.
+ * @param obj The static string object whose property is being accessed.
  * @param key The key of the property to retrieve.
- * @return Always returns `NULL` (placeholder implementation).
+ * @return A pointer to the value of the property, or `NULL` if the key is not recognized.
+ * @note A static string has only static properties.
  */
-static object_t *get_property(const object_t *obj, const object_t *key) {
+static object_t *static_get_property(const object_t *obj, const object_t *key) {
+    if (key->vtbl->type == TYPE_STRING) {
+        object_static_string_t *stsobj = (object_static_string_t *)obj;
+        string_value_t key_str = key->vtbl->to_string(key);
+        if (wcscmp(L"length", key_str.data) == 0) {
+            return get_static_integer_object((int)stsobj->length);
+        }
+    }
+    return NULL;
+}
+
+/**
+ * @brief Retrieves the value of a property from a dynamic string object.
+ * @param obj The static string object whose property is being accessed.
+ * @param key The key of the property to retrieve.
+ * @return A pointer to the value of the property, or `NULL` if the key is not recognized.
+ */
+static object_t *dynamic_get_property(const object_t *obj, const object_t *key) {
+    if (key->vtbl->type == TYPE_STRING) {
+        object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
+        string_value_t key_str = key->vtbl->to_string(key);
+        if (wcscmp(L"length", key_str.data) == 0) {
+            return create_integer_object(obj->process, (int64_t)dsobj->length);
+        }
+    }
     return NULL;
 }
 
@@ -343,7 +364,7 @@ static object_vtbl_t static_string_vtbl = {
     .to_string = static_to_string,
     .to_string_notation = to_string_notation,
     .get_keys = get_keys,
-    .get_property = get_property,
+    .get_property = static_get_property,
     .set_property = set_property_on_immutable,
     .add = add,
     .sub = stub_sub,
@@ -398,7 +419,7 @@ static object_vtbl_t dynamic_string_vtbl = {
     .to_string = dynamic_to_string,
     .to_string_notation = to_string_notation,
     .get_keys = get_keys,
-    .get_property = get_property,
+    .get_property = dynamic_get_property,
     .set_property = set_property_on_immutable,
     .add = add,
     .sub = stub_sub,
@@ -442,7 +463,7 @@ object_t *create_dynamic_string_object(process_t *process, string_value_t value)
  * @param key The key of the property to retrieve.
  * @return A pointer to the value of the property, or `NULL` if the key is not recognized.
  */
-static object_t *proto_get_property(object_t *obj, const object_t *key) {
+static object_t *proto_get_property(const object_t *obj, const object_t *key) {
     if (key->vtbl->type == TYPE_STRING) {
         string_value_t key_str = key->vtbl->to_string(key);
         if (wcscmp(L"length", key_str.data) == 0) {
