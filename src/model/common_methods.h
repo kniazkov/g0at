@@ -130,6 +130,18 @@ object_t *stub_sub(process_t *process, object_t *obj1, object_t *obj2);
 bool common_get_boolean_value(const object_t *obj);
 
 /**
+ * @brief Stub implementation for retrieving the boolean value of an object.
+ *
+ * This function is the default implementation of the `get_boolean_value` method.
+ * By default, any object is considered a "some entity" and is interpreted as `true` in boolean
+ * contexts, since it exists and holds a valid state.
+ *
+ * @param obj Pointer to the object being evaluated.
+ * @return `true`, indicating the object exists and is considered truthy.
+ */
+bool stub_get_boolean_value(const object_t *obj);
+
+/**
  * @brief Stub implementation for retrieving the integer value of an object.
  * 
  * This function serves as a placeholder for the `get_integer_value` method in cases where 

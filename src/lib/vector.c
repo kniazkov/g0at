@@ -22,7 +22,7 @@ vector_t *create_vector() {
 
 vector_t *create_vector_ex(size_t init_capacity) {
     vector_t *vector = (vector_t *)ALLOC(sizeof(vector_t));
-    vector->data = (void **)ALLOC(init_capacity * sizeof(void *));
+    vector->data = init_capacity > 0 ? (void **)ALLOC(init_capacity * sizeof(void *)) : NULL;
     vector->size = 0;
     vector->capacity = init_capacity;
     return vector;

@@ -573,3 +573,5 @@ object_t *create_user_defined_object(process_t* process);
 DECLARE_STATIC_OBJECT_GETTER(empty_string)
 DECLARE_STATIC_OBJECT_GETTER(string_print)
 DECLARE_STATIC_OBJECT_GETTER(string_length)
+
+DECLARE_STATIC_OBJECT_GETTER(function_sign)

@@ -76,6 +76,10 @@ bool common_get_boolean_value(const object_t *obj) {
     return obj->vtbl->get_keys(obj).count > 0;
 }
 
+bool stub_get_boolean_value(const object_t *obj) {
+    return true;
+}
+
 int_value_t stub_get_integer_value(const object_t *obj) {
     return (int_value_t){ false, 0 };
 }
