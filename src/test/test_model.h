@@ -43,3 +43,9 @@ bool test_strings_concatenation();
  * @return `true` if the test passes, `false` if it fails.
  */
 bool test_properties();
+
+/**
+ * @brief Gets the topology of the string object and the properties of its first prototype.
+ * @return `true` if the test passes, `false` if it fails.
+ */
+bool test_string_topology();

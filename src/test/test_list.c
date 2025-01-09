@@ -14,8 +14,7 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
-    {"properties", test_properties}
-    , { "memory allocation", test_memory_allocation }
+      { "memory allocation", test_memory_allocation }
     , { "AVL tree", test_avl_tree }
     , { "string builder", test_string_builder }
     , { "binary search", test_binary_search }
@@ -25,6 +24,8 @@ static test_description_t test_list[] = {
     , {"addition of two integers", test_addition_of_two_integers}
     , {"subtraction of two integers", test_subtraction_of_two_integers}
     , {"string concatenation", test_strings_concatenation}
+    , {"properties", test_properties}
+    , {"string topology", test_string_topology}
 
     , {"data builder", test_data_builder}
     , {"linker", test_linker}

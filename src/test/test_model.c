@@ -174,10 +174,23 @@ bool test_properties() {
     value = obj->vtbl->get_property(obj, key);
     ASSERT(value == NULL);
     object_array_t keys = obj->vtbl->get_keys(obj);
-    ASSERT(keys.count == 4);
-    for (size_t i = 0; i < keys.count; i++) {
+    ASSERT(keys.size == 4);
+    for (size_t i = 0; i < keys.size; i++) {
         ASSERT(clone->vtbl->get_property(clone, keys.items[i]) != NULL);
     }
     destroy_process(process);
     return true;
+}
+
+bool test_string_topology() {
+    process_t *process = create_process();
+    object_t *obj = create_dynamic_string_object(process, STATIC_STRING(L"test"));
+    object_array_t topology = obj->vtbl->get_topology(obj);
+    ASSERT(topology.size = 2);
+    const wchar_t *expected = L"{\"length\"=0}";
+    string_value_t str = topology.items[0]->vtbl->to_string(topology.items[0]);
+    ASSERT(0 == wcscmp(str.data, expected));
+    if (str.should_free) FREE(str.data);
+    destroy_process(process);
+    return true;    
 }

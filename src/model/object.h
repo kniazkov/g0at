@@ -94,7 +94,7 @@ typedef struct {
      * 
      * This field specifies the total number of object pointers in the `items` array. 
      */
-    size_t count;
+    size_t size;
 } object_array_t;
 
 /**
@@ -242,9 +242,9 @@ typedef struct {
      * of the object.
      * 
      * @param obj The object whose prototypes are to be retrieved.
-     * @return A constant array of prototypes (`const object_array_t`) associated with the object.
+     * @return An array of prototypes (`const object_array_t`) associated with the object.
      */
-    const object_array_t (*get_prototypes)(const object_t *obj);
+    object_array_t (*get_prototypes)(const object_t *obj);
 
     /**
      * @brief Function pointer for retrieving the full prototype topology of an object.
@@ -259,10 +259,10 @@ typedef struct {
      * straightforward linear vector of prototypes.
      * 
      * @param obj The object whose prototype topology is to be retrieved.
-     * @return A constant array of prototypes (`const object_array_t`) representing the full
+     * @return An array of prototypes (`const object_array_t`) representing the full
      *  prototype chain of the object, sorted topologically.
      */
-    const object_array_t (*get_topology)(const object_t *obj);
+    object_array_t (*get_topology)(const object_t *obj);
 
     /**
      * @brief Retrieves all property keys from an object.

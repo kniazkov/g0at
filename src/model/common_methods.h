@@ -86,7 +86,7 @@ string_value_t common_to_string_notation(const object_t *obj);
  * @param obj The object whose prototypes or topology are to be retrieved.
  * @return An object_array_t containing the root object.
  */
-const object_array_t common_get_prototypes(const object_t *obj);
+object_array_t common_get_prototypes(const object_t *obj);
 
 /**
  * @brief Common function to retrieve the full prototype topology for most objects.
@@ -97,7 +97,7 @@ const object_array_t common_get_prototypes(const object_t *obj);
  * @param obj The object whose prototype topology is to be retrieved.
  * @return An object_array_t containing the root object, representing the full prototype topology.
  */
-const object_array_t common_get_topology(const object_t *obj);
+object_array_t common_get_topology(const object_t *obj);
 
 /**
  * @brief Stub for setting a property on an immutable object.

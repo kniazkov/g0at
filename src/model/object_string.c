@@ -345,10 +345,10 @@ static object_t* prototypes[] = {
  * @param obj The object whose prototypes are to be retrieved.
  * @return An object_array_t containing the prototypes of the string object.
  */
-static const object_array_t get_prototypes(const object_t *obj) {
+static object_array_t get_prototypes(const object_t *obj) {
     object_array_t result = {
         .items = prototypes,
-        .count = 1
+        .size = 1
     };
     return result;
 }
@@ -362,7 +362,7 @@ static const object_array_t get_prototypes(const object_t *obj) {
  * @param obj The object whose prototype topology is to be retrieved.
  * @return An object_array_t containing the full prototype chain.
  */
-static const object_array_t get_topology(const object_t *obj) {
+static object_array_t get_topology(const object_t *obj) {
     static object_t* topology[2] = {0};
     if (topology[0] == NULL) {
         topology[0] = &string_proto;
@@ -370,7 +370,7 @@ static const object_array_t get_topology(const object_t *obj) {
     }
     object_array_t result = {
         .items = topology,
-        .count = 2
+        .size = 2
     };
     return result;
 }
@@ -510,7 +510,7 @@ object_t *create_static_string_object(wchar_t *data, size_t length) {
  */
 #define DECLARE_STATIC_STRING(name, string) \
     static object_static_string_t name = \
-        { { &static_string_vtbl, NULL, NULL, NULL }, (string), sizeof(string) - 1 }; \
+        { { &static_string_vtbl, NULL, NULL, NULL }, (string), sizeof(string) / sizeof(wchar_t) - 1 }; \
     object_t *get_##name() { return &name.base; }
 
 /**
