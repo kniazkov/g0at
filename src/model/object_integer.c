@@ -56,6 +56,117 @@ typedef struct {
 } object_dynamic_integer_t;
 
 /**
+ * @brief Retrieves the prototypes of the integer prototype object.
+ * 
+ * This function returns an array of prototypes the integer prototype object.
+ * 
+ * @param obj The object whose prototypes are to be retrieved.
+ * @return An object_array_t containing the prototypes of the integer prototype object.
+ */
+static object_array_t proto_get_prototypes(const object_t *obj) {
+    static object_t *proto = NULL;
+    if (!proto) {
+        proto = get_numeric_proto();
+    }
+    object_array_t result = {
+        .items = &proto,
+        .size = 1
+    };
+    return result;
+}
+
+/**
+ * @brief Retrieves the full prototype topology of the integer prototype object.
+ * 
+ * This function returns the full prototype chain (topology) of the integer prototype object. 
+ * 
+ * @param obj The object whose prototype topology is to be retrieved.
+ * @return An object_array_t containing the full prototype chain.
+ */
+static object_array_t proto_get_topology(const object_t *obj) {
+    static object_t* topology[2] = {0};
+    if (topology[0] == NULL) {
+        topology[0] = get_numeric_proto();
+        topology[1] = get_root_object();
+    }
+    object_array_t result = {
+        .items = topology,
+        .size = 2
+    };
+    return result;
+}
+
+/**
+ * @brief Retrieves all property keys from an object (stub implementation).
+ * 
+ * This is a stub implementation of the function to retrieve all keys of the properties 
+ * defined on an object. Currently, it returns an empty `object_array_t` as a placeholder.
+ * 
+ * @param obj The object from which to retrieve the keys.
+ * @return An empty `object_array_t` (placeholder implementation).
+ */
+static object_array_t get_keys(const object_t *obj) {
+    return (object_array_t){ NULL, 0 };
+}
+
+/**
+ * @brief Retrieves the value of a property from an object (stub implementation).
+ * 
+ * This is a stub implementation of the function to retrieve the value of a property from
+ * an object. Currently, it returns `NULL` as a placeholder.
+ * 
+ * @param obj The object from which to retrieve the property.
+ * @param key The key of the property to retrieve.
+ * @return Always returns `NULL` (placeholder implementation).
+ */
+static object_t *get_property(const object_t *obj, const object_t *key) {
+    return NULL;
+}
+
+/**
+ * @var integer_proto_vtbl
+ * @brief Virtual table defining the behavior of the integer prototype object.
+ */
+static object_vtbl_t integer_proto_vtbl = {
+    .type = TYPE_STRING,
+    .inc_ref = stub_memory_function,
+    .dec_ref = stub_memory_function,
+    .mark = stub_memory_function,
+    .sweep = stub_memory_function,
+    .release = stub_memory_function,
+    .compare = compare_object_addresses,
+    .clone = clone_singleton,
+    .to_string = common_to_string,
+    .to_string_notation = common_to_string_notation,
+    .get_prototypes = proto_get_prototypes,
+    .get_topology = proto_get_topology,
+    .get_keys = get_keys,
+    .get_property = get_property,
+    .set_property = set_property_on_immutable,
+    .add = stub_add,
+    .sub = stub_sub,
+    .get_boolean_value = stub_get_boolean_value,
+    .get_integer_value = stub_get_integer_value,
+    .get_real_value = stub_get_real_value,
+    .call = stub_call
+};
+
+/**
+ * @var integer_proto
+ * @brief The integer prototype object.
+ * 
+ * This is the integer prototype object, which is the instance that serves as the 
+ * prototype for all integer objects.
+ */
+static object_t integer_proto = {
+    .vtbl = &integer_proto_vtbl
+};
+
+object_t *get_integer_proto() {
+    return &integer_proto;
+}
+
+/**
  * @brief Releases or clears a dynamic integer object.
  * 
  * This function either frees the object or resets its state and moves it to a list of reusable
@@ -191,30 +302,53 @@ static string_value_t to_string_notation(const object_t *obj) {
 }
 
 /**
- * @brief Retrieves all property keys from an object (stub implementation).
+ * @var prototypes
+ * @brief Array of prototypes for the integer object.
  * 
- * This is a stub implementation of the function to retrieve all keys of the properties 
- * defined on an object. Currently, it returns an empty `object_array_t` as a placeholder.
- * 
- * @param obj The object from which to retrieve the keys.
- * @return An empty `object_array_t` (placeholder implementation).
+ * It contains only the `integer_proto` prototype.
  */
-static object_array_t get_keys(const object_t *obj) {
-    return (object_array_t){ NULL, 0 };
+static object_t* prototypes[] = {
+    &integer_proto
+};
+
+/**
+ * @brief Retrieves the prototypes of an integer object.
+ * 
+ * This function returns an array of prototypes for an integer object.
+ * In this case, it contains only the integer prototype.
+ * 
+ * @param obj The object whose prototypes are to be retrieved.
+ * @return An object_array_t containing the prototypes of the integer object.
+ */
+static object_array_t get_prototypes(const object_t *obj) {
+    object_array_t result = {
+        .items = prototypes,
+        .size = 1
+    };
+    return result;
 }
 
 /**
- * @brief Retrieves the value of a property from an object (stub implementation).
+ * @brief Retrieves the full prototype topology of an integer object.
  * 
- * This is a stub implementation of the function to retrieve the value of a property from
- * an object. Currently, it returns `NULL` as a placeholder.
+ * This function returns the full prototype chain (topology) of an integer object.
+ * The topology includes the `integer_proto` prototype, numeric prototype and the root object.
  * 
- * @param obj The object from which to retrieve the property.
- * @param key The key of the property to retrieve.
- * @return Always returns `NULL` (placeholder implementation).
+ * @param obj The object whose prototype topology is to be retrieved.
+ * @return An object_array_t containing the full prototype chain.
  */
-static object_t *get_property(const object_t *obj, const object_t *key) {
-    return NULL;
+static object_array_t get_topology(const object_t *obj) {
+    static object_t* topology[3] = {0};
+    if (topology[0] == NULL) {
+        topology[0] = &integer_proto;
+        topology[1] = get_numeric_proto();
+        topology[2] = get_root_object();
+    }
+    object_array_t result = {
+        .items = topology,
+        .size = 3
+    };
+    return result;
 }
 
 /**
@@ -315,6 +449,8 @@ static object_vtbl_t static_vtbl = {
     .clone = clone,
     .to_string = to_string,
     .to_string_notation = to_string_notation,
+    .get_prototypes = get_prototypes,
+    .get_topology = get_topology,
     .get_keys = get_keys,
     .get_property = get_property,
     .set_property = set_property_on_immutable,
@@ -388,6 +524,8 @@ static object_vtbl_t dynamic_vtbl = {
     .clone = clone,
     .to_string = to_string,
     .to_string_notation = to_string_notation,
+    .get_prototypes = get_prototypes,
+    .get_topology = get_topology,
     .get_keys = get_keys,
     .get_property = get_property,
     .set_property = set_property_on_immutable,

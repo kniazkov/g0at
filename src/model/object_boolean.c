@@ -38,7 +38,7 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
 
 /**
  * @var boolean_proto_vtbl
- * @brief Virtual table defining the behavior of the prototype boolean object.
+ * @brief Virtual table defining the behavior of the boolean prototype object.
  */
 static object_vtbl_t boolean_proto_vtbl = {
     .type = TYPE_STRING,
@@ -66,9 +66,9 @@ static object_vtbl_t boolean_proto_vtbl = {
 
 /**
  * @var boolean_proto
- * @brief The prototype boolean object.
+ * @brief The boolean prototype object.
  * 
- * This is the prototype boolean object, which is the instance that serves as the 
+ * This is the boolean prototype object, which is the instance that serves as the 
  * prototype for all boolean objects.
  */
 static object_t boolean_proto = {

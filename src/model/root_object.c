@@ -14,6 +14,32 @@
 #include "common_methods.h"
 
 /**
+ * @brief Retrieves the prototypes of the root object.
+ * 
+ * This function returns an empty array of prototypes because the root object
+ * does not have any prototypes.
+ * 
+ * @param obj The object whose prototypes are to be retrieved.
+ * @return An object_array_t containing zero prototypes.
+ */
+static object_array_t get_prototypes(const object_t *obj) {
+    return (object_array_t){ NULL, 0 };
+}
+
+/**
+ * @brief Retrieves the full prototype topology of the root object.
+ * 
+ * This function returns an empty array because the root object does not have
+ * any prototypes in its inheritance chain.
+ * 
+ * @param obj The object whose prototype topology is to be retrieved.
+ * @return An object_array_t containing zero prototypes in the chain.
+ */
+static object_array_t get_topology(const object_t *obj) {
+    return (object_array_t){ NULL, 0 };
+}
+
+/**
  * @brief Retrieves all property keys from an object (stub implementation).
  * 
  * This is a stub implementation of the function to retrieve all keys of the properties 
@@ -55,6 +81,8 @@ static object_vtbl_t vtbl = {
     .clone = clone_singleton,
     .to_string = common_to_string,
     .to_string_notation = common_to_string_notation,
+    .get_prototypes = get_prototypes,
+    .get_topology = get_topology,
     .get_keys = get_keys,
     .get_property = get_property,
     .set_property = set_property_on_immutable,

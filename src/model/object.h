@@ -503,6 +503,18 @@ object_t *get_boolean_object(bool value);
 #define MAX_STATIC_INTEGER 127
 
 /**
+ * @brief Retrieves the prototype for numeric objects (integer and float).
+ * @return A pointer to the numeric prototype object.
+ */
+object_t *get_numeric_proto();
+
+/**
+ * @brief Retrieves the integer prototype object.
+ * @return A pointer to the integer prototype object.
+ */
+object_t *get_integer_proto();
+
+/**
  * @brief Retrieves a static integer object.
  * 
  * This function returns a pointer to the static object representing the specified integer value.
