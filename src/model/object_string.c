@@ -327,6 +327,55 @@ static string_value_t to_string_notation(const object_t *obj) {
 }
 
 /**
+ * @var prototypes
+ * @brief Array of prototypes for the string object.
+ * 
+ * It contains only the `string_proto` prototype.
+ */
+static object_t* prototypes[] = {
+    &string_proto
+};
+
+/**
+ * @brief Retrieves the prototypes of a string object.
+ * 
+ * This function returns an array of prototypes for a string object.
+ * In this case, it contains only the string prototype.
+ * 
+ * @param obj The object whose prototypes are to be retrieved.
+ * @return An object_array_t containing the prototypes of the string object.
+ */
+static const object_array_t get_prototypes(const object_t *obj) {
+    object_array_t result = {
+        .items = prototypes,
+        .count = 1
+    };
+    return result;
+}
+
+/**
+ * @brief Retrieves the full prototype topology of a string object.
+ * 
+ * This function returns the full prototype chain (topology) of a string object.
+ * The topology includes the `string_proto` prototype and the root object.
+ * 
+ * @param obj The object whose prototype topology is to be retrieved.
+ * @return An object_array_t containing the full prototype chain.
+ */
+static const object_array_t get_topology(const object_t *obj) {
+    static object_t* topology[2] = {0};
+    if (topology[0] == NULL) {
+        topology[0] = &string_proto;
+        topology[1] = get_root_object();
+    }
+    object_array_t result = {
+        .items = topology,
+        .count = 2
+    };
+    return result;
+}
+
+/**
  * @brief Retrieves the value of a property from a static string object.
  * @param obj The static string object whose property is being accessed.
  * @param key The key of the property to retrieve.
@@ -428,6 +477,8 @@ static object_vtbl_t static_string_vtbl = {
     .clone = clone,
     .to_string = static_to_string,
     .to_string_notation = to_string_notation,
+    .get_prototypes = get_prototypes,
+    .get_topology = get_topology,
     .get_keys = get_keys,
     .get_property = static_get_property,
     .set_property = set_property_on_immutable,
@@ -484,6 +535,8 @@ static object_vtbl_t dynamic_string_vtbl = {
     .clone = clone,
     .to_string = dynamic_to_string,
     .to_string_notation = to_string_notation,
+    .get_prototypes = get_prototypes,
+    .get_topology = get_topology,
     .get_keys = get_keys,
     .get_property = dynamic_get_property,
     .set_property = set_property_on_immutable,
