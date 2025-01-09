@@ -580,9 +580,11 @@ object_t *create_dynamic_string_object(process_t *process, string_value_t value)
 /**
  * @brief Creates a new user-defined object.
  * @param process The process that will own the created object.
+ * @param prototypes An array of prototypes that will be associated with the object.
+ *  This list defines the inheritance chain and the topology of the object.
  * @return A pointer to the created user-defined object.
  */
-object_t *create_user_defined_object(process_t* process);
+object_t *create_user_defined_object(process_t* process, object_array_t prototypes);
 
 /**
  * @brief Macro to declare a getter function for a static object.

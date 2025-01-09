@@ -131,7 +131,8 @@ bool test_strings_concatenation() {
 
 bool test_properties() {
     process_t *process = create_process();
-    object_t *obj = create_user_defined_object(process);
+    object_t *root_object = get_root_object();
+    object_t *obj = create_user_defined_object(process, (object_array_t){&root_object, 1});
     obj->vtbl->set_property(
         obj,
         create_dynamic_string_object(process, STATIC_STRING(L"first")),

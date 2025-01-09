@@ -50,6 +50,16 @@ typedef struct {
     object_state_t state;
 
     /**
+     * @brief A vector storing the prototypes of the object.
+     */
+    vector_t *prototypes;
+
+    /**
+     * @brief A vector storing the topology of the object.
+     */
+    vector_t *topology;
+
+    /**
      * @brief A vector storing keys for all properties of the object.
      */
     vector_t *keys;
@@ -70,9 +80,12 @@ typedef struct {
  * including an empty AVL tree for storing key-value pairs.
  * 
  * @param process The process that will own the created object.
+ * @param prototypes An array of prototypes that will be associated with the object.
+ *  This list defines the inheritance chain and the topology of the object.
  * @return A pointer to the newly created or recycled user-defined object.
  */
-static object_user_defined_t *create_empty_user_defined_object(process_t* process);
+static object_user_defined_t *create_empty_user_defined_object(process_t* process,
+        object_array_t prototypes);
 
 /**
  * @brief Decrements the reference count of a key-value pair in the user-defined object's children.
@@ -99,14 +112,18 @@ static void clear_child_pair(void *unused, void *key, value_t value) {
  * @param iobj The user-defined object to release or clear.
  */
 static void release_or_clear(object_user_defined_t *uobj) {
+    avl_tree_for_each(uobj->properties, clear_child_pair, NULL);
     remove_object_from_list(&uobj->base.process->objects, &uobj->base);
     if (uobj->base.process->user_defined_objects.size == POOL_CAPACITY) {
+        destroy_vector(uobj->prototypes);
+        destroy_vector(uobj->topology);
         destroy_vector(uobj->keys);
         destroy_avl_tree(uobj->properties);
         FREE(uobj);
     } else {
+        clear_vector(uobj->prototypes);
+        clear_vector(uobj->topology);
         clear_vector(uobj->keys);
-        avl_tree_for_each(uobj->properties, clear_child_pair, NULL);
         clear_avl_tree(uobj->properties);
         uobj->refs = 0;
         uobj->state = ZOMBIE;
@@ -137,13 +154,37 @@ static void dec_ref(object_t *obj) {
 }
 
 /**
+ * @brief Marks the key-value pair in the user-defined object's children for garbage collection.
+ * 
+ * This function is called for each key-value pair in the AVL tree of a user-defined object. 
+ * It marks both the key and the value of the pair, indicating that they are still in use 
+ * and should not be collected by the garbage collector. Marking is typically part of 
+ * the garbage collection process to ensure objects are properly retained as long as they 
+ * are reachable.
+ * 
+ * @param unused Unused parameter, included for compatibility with the AVL tree traversal function.
+ * @param key The key of the key-value pair, cast to an object. 
+ *  This key is marked for garbage collection.
+ * @param value The value of the key-value pair.  This value is also marked.
+ */
+static void mark_child_pair(void *unused, void *key, value_t value) {
+    object_t *key_obj = (object_t *)key;
+    object_t *value_obj = (object_t *)value.ptr;
+    key_obj->vtbl->mark(key_obj);
+    value_obj->vtbl->mark(value_obj);
+}
+
+/**
  * @brief Marks an object as reachable during garbage collection.
  * @param obj The object to mark as reachable.
  */
 static void mark(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     assert(uobj->state != ZOMBIE);
-    uobj->state = MARKED;
+    if (uobj->state == UNMARKED) {
+        uobj->state = MARKED;
+        avl_tree_for_each(uobj->properties, mark_child_pair, NULL);
+    }
 }
 
 /**
@@ -169,6 +210,8 @@ static void release(object_t *obj) {
     remove_object_from_list(
         uobj->state == ZOMBIE ? &obj->process->user_defined_objects : &obj->process->objects, obj
     );
+    destroy_vector(uobj->prototypes);
+    destroy_vector(uobj->topology);
     destroy_vector(uobj->keys);
     destroy_avl_tree(uobj->properties);
     FREE(obj);
@@ -207,7 +250,10 @@ static void copy_child_pair(void *data, void *key, value_t value) {
  */
 static object_t *clone(process_t *process, object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    object_user_defined_t *copy = create_empty_user_defined_object(process);
+    object_user_defined_t *copy = create_empty_user_defined_object(
+        process,
+        (object_array_t){ (object_t *const *)uobj->prototypes->data, uobj->prototypes->size }
+    );
     avl_tree_for_each(uobj->properties, copy_child_pair, copy);
     return &copy->base;
 }
@@ -428,7 +474,8 @@ static int key_comparator(const void *first, const void *second) {
     }
 }
 
-static object_user_defined_t *create_empty_user_defined_object(process_t* process) {
+static object_user_defined_t *create_empty_user_defined_object(process_t* process,
+        object_array_t prototypes) {
     object_user_defined_t *uobj;
     if (process->user_defined_objects.size > 0) {
         uobj = (object_user_defined_t *)remove_first_object_from_list(
@@ -438,6 +485,8 @@ static object_user_defined_t *create_empty_user_defined_object(process_t* proces
         uobj = (object_user_defined_t *)CALLOC(sizeof(object_user_defined_t));
         uobj->base.vtbl = &vtbl;
         uobj->base.process = process;
+        uobj->prototypes = create_vector_ex(prototypes.size);
+        uobj->topology = create_vector();
         uobj->keys = create_vector();
         uobj->properties = create_avl_tree(key_comparator);
     }
@@ -447,6 +496,6 @@ static object_user_defined_t *create_empty_user_defined_object(process_t* proces
     return uobj;
 }
 
-object_t *create_user_defined_object(process_t* process) {
-    return &create_empty_user_defined_object(process)->base;
+object_t *create_user_defined_object(process_t* process, object_array_t prototypes) {
+    return &create_empty_user_defined_object(process, prototypes)->base;
 }
