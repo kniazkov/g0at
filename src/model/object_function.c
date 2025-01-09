@@ -67,25 +67,6 @@ typedef struct {
 } object_static_function_t;
 
 /**
- * @brief Converts the static function object to a string representation.
- * @param obj The object to convert to a string.
- * @return A `string_value_t` containing the function name.
- */
-static string_value_t static_to_string(const object_t *obj) {
-    object_static_function_t *sfobj = (object_static_function_t *)obj;
-    return (string_value_t){ sfobj->name, wcslen(sfobj->name), false };
-}
-
-/**
- * @brief Converts the static function object to a Goat notation string representation.
- * @param obj The object to convert to a Goat notation string.
- * @return A `string_value_t` containing the function name.
- */
-static string_value_t static_to_string_notation(const object_t *obj) {
-    return static_to_string(obj);
-}
-
-/**
  * @brief Retrieves all property keys from an object (stub implementation).
  * 
  * This is a stub implementation of the function to retrieve all keys of the properties 
@@ -110,6 +91,117 @@ static object_array_t get_keys(const object_t *obj) {
  */
 static object_t *get_property(const object_t *obj, const object_t *key) {
     return NULL;
+}
+
+/**
+ * @var function_proto_vtbl
+ * @brief Virtual table defining the behavior of the prototype function object.
+ */
+static object_vtbl_t function_proto_vtbl = {
+    .type = TYPE_STRING,
+    .inc_ref = stub_memory_function,
+    .dec_ref = stub_memory_function,
+    .mark = stub_memory_function,
+    .sweep = stub_memory_function,
+    .release = stub_memory_function,
+    .compare = compare_object_addresses,
+    .clone = clone_singleton,
+    .to_string = common_to_string,
+    .to_string_notation = common_to_string_notation,
+    .get_prototypes = common_get_prototypes,
+    .get_topology = common_get_topology,
+    .get_keys = get_keys,
+    .get_property = get_property,
+    .set_property = set_property_on_immutable,
+    .add = stub_add,
+    .sub = stub_sub,
+    .get_boolean_value = stub_get_boolean_value,
+    .get_integer_value = stub_get_integer_value,
+    .get_real_value = stub_get_real_value,
+    .call = stub_call
+};
+
+/**
+ * @var function_proto
+ * @brief The prototype function object.
+ * 
+ * This is the prototype function object, which is the instance that serves as the 
+ * prototype for all function objects.
+ */
+static object_t function_proto = {
+    .vtbl = &function_proto_vtbl
+};
+
+object_t *get_function_proto() {
+    return &function_proto;
+}
+
+/**
+ * @brief Converts the static function object to a string representation.
+ * @param obj The object to convert to a string.
+ * @return A `string_value_t` containing the function name.
+ */
+static string_value_t static_to_string(const object_t *obj) {
+    object_static_function_t *sfobj = (object_static_function_t *)obj;
+    return (string_value_t){ sfobj->name, wcslen(sfobj->name), false };
+}
+
+/**
+ * @brief Converts the static function object to a Goat notation string representation.
+ * @param obj The object to convert to a Goat notation string.
+ * @return A `string_value_t` containing the function name.
+ */
+static string_value_t static_to_string_notation(const object_t *obj) {
+    return static_to_string(obj);
+}
+
+/**
+ * @var prototypes
+ * @brief Array of prototypes for the function object.
+ * 
+ * It contains only the `function_proto` prototype.
+ */
+static object_t* prototypes[] = {
+    &function_proto
+};
+
+/**
+ * @brief Retrieves the prototypes of a function object.
+ * 
+ * This function returns an array of prototypes for a function object.
+ * In this case, it contains only the function prototype.
+ * 
+ * @param obj The object whose prototypes are to be retrieved.
+ * @return An object_array_t containing the prototypes of the function object.
+ */
+static object_array_t get_prototypes(const object_t *obj) {
+    object_array_t result = {
+        .items = prototypes,
+        .size = 1
+    };
+    return result;
+}
+
+/**
+ * @brief Retrieves the full prototype topology of a function object.
+ * 
+ * This function returns the full prototype chain (topology) of a function object.
+ * The topology includes the `function_proto` prototype and the root object.
+ * 
+ * @param obj The object whose prototype topology is to be retrieved.
+ * @return An object_array_t containing the full prototype chain.
+ */
+static object_array_t get_topology(const object_t *obj) {
+    static object_t* topology[2] = {0};
+    if (topology[0] == NULL) {
+        topology[0] = &function_proto;
+        topology[1] = get_root_object();
+    }
+    object_array_t result = {
+        .items = topology,
+        .size = 2
+    };
+    return result;
 }
 
 /**
@@ -156,6 +248,8 @@ static object_vtbl_t static_vtbl = {
     .clone = clone_singleton,
     .to_string = static_to_string,
     .to_string_notation = static_to_string_notation,
+    .get_prototypes = get_prototypes,
+    .get_topology = get_topology,
     .get_keys = get_keys,
     .get_property = get_property,
     .set_property = set_property_on_immutable,

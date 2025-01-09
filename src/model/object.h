@@ -480,6 +480,12 @@ struct object_t {
 object_t *get_root_object();
 
 /**
+ * @brief Retrieves the boolean prototype object.
+ * @return A pointer to the boolean prototype object.
+ */
+object_t *get_boolean_proto();
+
+/**
  * @brief Retrieves the singleton instance for a given boolean value.
  * @param value The boolean value.
  * @return A pointer to the singleton object representing `true` or `false`.
@@ -579,5 +585,11 @@ object_t *create_user_defined_object(process_t* process);
 DECLARE_STATIC_OBJECT_GETTER(empty_string)
 DECLARE_STATIC_OBJECT_GETTER(string_print)
 DECLARE_STATIC_OBJECT_GETTER(string_length)
+
+/**
+ * @brief Retrieves the function prototype object.
+ * @return A pointer to the function prototype object.
+ */
+object_t *get_function_proto();
 
 DECLARE_STATIC_OBJECT_GETTER(function_sign)
