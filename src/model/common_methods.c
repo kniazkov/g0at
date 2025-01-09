@@ -60,6 +60,22 @@ string_value_t common_to_string_notation(const object_t *obj) {
     return append_char(&builder, '}');
 }
 
+const object_array_t common_get_prototypes(const object_t *obj) {
+    static object_t *root_obj = NULL;
+    if (!root_obj) {
+        root_obj = get_root_object();
+    }
+    object_array_t result = {
+        .items = &root_obj,
+        .count = 1
+    };
+    return result;
+}
+
+const object_array_t common_get_topology(const object_t *obj) {
+    return common_get_prototypes(obj);
+}
+
 bool set_property_on_immutable(object_t *obj, object_t *key, object_t *value) {
     return false;
 }

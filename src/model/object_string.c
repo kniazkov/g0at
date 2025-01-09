@@ -66,6 +66,88 @@ typedef struct {
 } object_dynamic_string_t;
 
 /**
+ * @brief Retrieves all property keys from a string object.
+ * 
+ * This function returns a static array containing the property keys associated with a string
+ * object. The array is initialized lazily during the first invocation of the function.
+ * 
+ * @param obj The object from which to retrieve the keys.
+ * @return An object array containing all property keys.
+ */
+static object_array_t get_keys(const object_t *obj) {
+    static object_t *keys[1] = { NULL };
+    if (keys[0] == NULL) {
+        keys[0] = get_string_length();
+    }
+    return (object_array_t){ keys, sizeof(keys) / sizeof(object_t*) };
+}
+
+/**
+ * @brief Retrieves a property value from the prototype of a string object.
+ * 
+ * This function checks if the given `key` corresponds to a known property of the string object 
+ * prototype. Currently, it only supports the `length` property, which returns a static integer 
+ * object representing zero. If the key is not recognized or does not match the `length` property,
+ * the function returns `NULL`.
+ * 
+ * @param obj The string object whose prototype property is being retrieved.
+ * @param key The key of the property to retrieve.
+ * @return A pointer to the value of the property, or `NULL` if the key is not recognized.
+ */
+static object_t *proto_get_property(const object_t *obj, const object_t *key) {
+    if (key->vtbl->type == TYPE_STRING) {
+        string_value_t key_str = key->vtbl->to_string(key);
+        if (wcscmp(L"length", key_str.data) == 0) {
+            return get_integer_zero();
+        }
+    }
+    return NULL;
+}
+
+/**
+ * @var string_proto_vtbl
+ * @brief Virtual table defining the behavior of the prototype string object.
+ */
+static object_vtbl_t string_proto_vtbl = {
+    .type = TYPE_STRING,
+    .inc_ref = stub_memory_function,
+    .dec_ref = stub_memory_function,
+    .mark = stub_memory_function,
+    .sweep = stub_memory_function,
+    .release = stub_memory_function,
+    .compare = compare_object_addresses,
+    .clone = clone_singleton,
+    .to_string = common_to_string,
+    .to_string_notation = common_to_string_notation,
+    .get_prototypes = common_get_prototypes,
+    .get_topology = common_get_topology,
+    .get_keys = get_keys,
+    .get_property = proto_get_property,
+    .set_property = set_property_on_immutable,
+    .add = stub_add,
+    .sub = stub_sub,
+    .get_boolean_value = stub_get_boolean_value,
+    .get_integer_value = stub_get_integer_value,
+    .get_real_value = stub_get_real_value,
+    .call = stub_call
+};
+
+/**
+ * @var string_proto
+ * @brief The prototype string object.
+ * 
+ * This is the prototype string object, which is the instance that serves as the 
+ * prototype for all string objects.
+ */
+static object_t string_proto = {
+    .vtbl = &string_proto_vtbl
+};
+
+object_t *get_string_proto() {
+    return &string_proto;
+}
+
+/**
  * @brief Releases or clears a dynamic string object.
  * 
  * This function manages the lifecycle of a dynamic string object. If the pool of reusable 
@@ -242,23 +324,6 @@ static string_value_t to_string_notation(const object_t *obj) {
         }
     }
     return append_char(&builder, '"');
-}
-
-/**
- * @brief Retrieves all property keys from a string object.
- * 
- * This function returns a static array containing the property keys associated with a string
- * object. The array is initialized lazily during the first invocation of the function.
- * 
- * @param obj The object from which to retrieve the keys.
- * @return An object array containing all property keys.
- */
-static object_array_t get_keys(const object_t *obj) {
-    static object_t *keys[1] = { NULL };
-    if (keys[0] == NULL) {
-        keys[0] = get_string_length();
-    }
-    return (object_array_t){ keys, sizeof(keys) / sizeof(object_t*) };
 }
 
 /**
@@ -451,26 +516,4 @@ object_t *create_dynamic_string_object(process_t *process, string_value_t value)
     obj->length = value.length;
     add_object_to_list(&process->objects, &obj->base);
     return &obj->base;
-}
-
-/**
- * @brief Retrieves a property value from the prototype of a string object.
- * 
- * This function checks if the given `key` corresponds to a known property of the string object 
- * prototype. Currently, it only supports the `length` property, which returns a static integer 
- * object representing zero. If the key is not recognized or does not match the `length` property,
- * the function returns `NULL`.
- * 
- * @param obj The string object whose prototype property is being retrieved.
- * @param key The key of the property to retrieve.
- * @return A pointer to the value of the property, or `NULL` if the key is not recognized.
- */
-static object_t *proto_get_property(const object_t *obj, const object_t *key) {
-    if (key->vtbl->type == TYPE_STRING) {
-        string_value_t key_str = key->vtbl->to_string(key);
-        if (wcscmp(L"length", key_str.data) == 0) {
-            return get_integer_zero();
-        }
-    }
-    return NULL;
 }

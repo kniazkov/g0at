@@ -77,6 +77,29 @@ string_value_t common_to_string(const object_t *obj);
 string_value_t common_to_string_notation(const object_t *obj);
 
 /**
+ * @brief Common function to retrieve prototypes for most objects.
+ * 
+ * This function returns an array containing a single object — the root object.
+ * It serves as a common implementation for both `get_prototypes` and `get_topology` methods.
+ * This will work for most objects, where only the root object is part of their prototype chain.
+ * 
+ * @param obj The object whose prototypes or topology are to be retrieved.
+ * @return An object_array_t containing the root object.
+ */
+const object_array_t common_get_prototypes(const object_t *obj);
+
+/**
+ * @brief Common function to retrieve the full prototype topology for most objects.
+ * 
+ * This function returns the same result as `common_get_prototypes` by providing
+ * an array containing a single object — the root object.
+ * 
+ * @param obj The object whose prototype topology is to be retrieved.
+ * @return An object_array_t containing the root object, representing the full prototype topology.
+ */
+const object_array_t common_get_topology(const object_t *obj);
+
+/**
  * @brief Stub for setting a property on an immutable object.
  * 
  * This function attempts to set a property on an immutable object, such as a singleton. 

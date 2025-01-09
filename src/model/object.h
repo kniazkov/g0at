@@ -531,6 +531,12 @@ object_t *get_integer_zero();
 object_t *create_integer_object(process_t *process, int64_t value);
 
 /**
+ * @brief Retrieves the string prototype object.
+ * @return A pointer to the string prototype object.
+ */
+object_t *get_string_proto();
+
+/**
  * @brief Creates a new static string object.
  * 
  * This function creates a new string object with the provided string data. The object is
