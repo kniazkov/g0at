@@ -4,10 +4,9 @@
  * @brief Defines the base structure for all objects in the Goat programming language.
  * 
  * This file describes the general framework for objects in the Goat language. 
- * In Goat, all entities, including primitive types like strings and numbers, 
- * as well as functions, are considered objects. The specific characteristics of 
- * each object type differ, but here we define the common structure that all 
- * objects in the language will share.
+ * In Goat, all entities, including primitive types like strings and numbers, as well as functions,
+ * are considered objects. The specific characteristics of each object type differ, but here we
+ * define the common structure that all objects in the language will share.
  */
 
 #pragma once
