@@ -56,6 +56,18 @@ vector_t *create_vector_ex(size_t init_capacity);
 void append_to_vector(vector_t *vector, void *item);
 
 /**
+ * @brief Reverses the order of elements in a vector.
+ * 
+ * This function reverses the order of elements in the vector by swapping
+ * the elements at symmetric positions from the beginning and the end of the vector.
+ * After the operation, the first element becomes the last, the second becomes the second-to-last,
+ * and so on. The function operates in-place and does not require additional memory allocation.
+ * 
+ * @param vec A pointer to the vector (`vector_t`), whose elements will be reversed.
+ */
+void reverse_vector(vector_t *vector);
+
+/**
  * @brief Clears the contents of a vector without deallocating it.
  * 
  * This function resets the size of the vector to zero, effectively clearing its contents.

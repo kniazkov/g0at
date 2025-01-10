@@ -41,6 +41,23 @@ void append_to_vector(vector_t *vector, void *item) {
     vector->data[vector->size++] = item;
 }
 
+void reverse_vector(vector_t *vector) {
+    if (vector->size < 2) {
+        return;
+    }
+
+    size_t left = 0;
+    size_t right = vector->size - 1;
+
+    while (left < right) {
+        void *temp = vector->data[left];
+        vector->data[left] = vector->data[right];
+        vector->data[right] = temp;
+        left++;
+        right--;
+    }
+}
+
 void clear_vector(vector_t *vector) {
     vector->size = 0;
 }

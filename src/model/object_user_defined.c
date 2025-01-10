@@ -52,7 +52,7 @@ typedef struct {
     /**
      * @brief A vector storing the prototypes of the object.
      */
-    vector_t *prototypes;
+    vector_t *proto;
 
     /**
      * @brief A vector storing the topology of the object.
@@ -113,15 +113,18 @@ static void clear_child_pair(void *unused, void *key, value_t value) {
  */
 static void release_or_clear(object_user_defined_t *uobj) {
     avl_tree_for_each(uobj->properties, clear_child_pair, NULL);
+    for (size_t i = 0; i < uobj->proto->size; i++) {
+        DECREF((object_t *)uobj->proto->data[i]);
+    }
     remove_object_from_list(&uobj->base.process->objects, &uobj->base);
     if (uobj->base.process->user_defined_objects.size == POOL_CAPACITY) {
-        destroy_vector(uobj->prototypes);
+        destroy_vector(uobj->proto);
         destroy_vector(uobj->topology);
         destroy_vector(uobj->keys);
         destroy_avl_tree(uobj->properties);
         FREE(uobj);
     } else {
-        clear_vector(uobj->prototypes);
+        clear_vector(uobj->proto);
         clear_vector(uobj->topology);
         clear_vector(uobj->keys);
         clear_avl_tree(uobj->properties);
@@ -210,7 +213,7 @@ static void release(object_t *obj) {
     remove_object_from_list(
         uobj->state == ZOMBIE ? &obj->process->user_defined_objects : &obj->process->objects, obj
     );
-    destroy_vector(uobj->prototypes);
+    destroy_vector(uobj->proto);
     destroy_vector(uobj->topology);
     destroy_vector(uobj->keys);
     destroy_avl_tree(uobj->properties);
@@ -252,7 +255,7 @@ static object_t *clone(process_t *process, object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     object_user_defined_t *copy = create_empty_user_defined_object(
         process,
-        (object_array_t){ (object_t *const *)uobj->prototypes->data, uobj->prototypes->size }
+        (object_array_t){ (object_t *const *)uobj->proto->data, uobj->proto->size }
     );
     avl_tree_for_each(uobj->properties, copy_child_pair, copy);
     return &copy->base;
@@ -474,8 +477,68 @@ static int key_comparator(const void *first, const void *second) {
     }
 }
 
+/**
+ * @brief Recursively performs a topological sorting of an object's prototype chain.
+ * 
+ * This function performs a depth-first traversal of an object's prototype chain, adding each
+ * object to the resulting vector in topological order. The function avoids revisiting already
+ * processed objects by using an AVL tree to track them.
+ * 
+ * @param obj A pointer to the object whose prototype chain is to be traversed and sorted.
+ * @param processed An AVL tree used to track objects that have already been processed.
+ * @param topology A pointer to the vector that will store the topologically sorted objects.
+ */
+static void topological_sorting(object_t *obj, avl_tree_t *processed, vector_t *topology) {
+    if (avl_tree_contains(processed, obj)) {
+        return;
+    }
+    object_array_t proto = obj->vtbl->get_prototypes(obj);
+    for (size_t i = proto.size - 1; i >= 0; i--) {
+        topological_sorting(proto.items[i], processed, topology);
+    }
+    append_to_vector(topology, obj);
+    set_in_avl_tree(processed, obj, (value_t){ .ptr = obj } );
+}
+
+/**
+ * @brief Builds the topological order of an object's prototype chain.
+ * 
+ * This function creates the topological sorting for an object's prototype chain, handling both
+ * single and multiple inheritance. If the object has multiple prototypes (i.e., multiple
+ * inheritance), it performs a depth-first traversal for each prototype and ensures that the order
+ * respects the inheritance hierarchy. For single inheritance, it directly appends the object and
+ * its prototypes to the topology (it's faster).
+ * 
+ * @param proto An array of prototypes that should be sorted in topological order.
+ * @param topology A pointer to the vector that will store the resulting topological order.
+ */
+static void build_topology(object_array_t proto, vector_t *topology) {
+    assert(topology->size == 0);
+    size_t i;
+    if (proto.size > 1) {
+        // multiple inheritance
+        avl_tree_t *processed = create_avl_tree(
+            (int (*)(const void *, const void *))compare_object_addresses
+        );
+        for (i = proto.size - 1; i >= 0; i--) {
+            topological_sorting(proto.items[i], processed, topology);
+        }
+        destroy_avl_tree(processed);
+        reverse_vector(topology);
+    } else {
+        // single prototype
+        object_t *single = proto.items[0];
+        append_to_vector(topology, single);
+        object_array_t parents = single->vtbl->get_topology(single);
+        for (i = 0; i < parents.size; i++) {
+            append_to_vector(topology, parents.items[i]);
+        }        
+    }
+}
+
 static object_user_defined_t *create_empty_user_defined_object(process_t* process,
-        object_array_t prototypes) {
+        object_array_t proto) {
+    assert(proto.size > 0);
     object_user_defined_t *uobj;
     if (process->user_defined_objects.size > 0) {
         uobj = (object_user_defined_t *)remove_first_object_from_list(
@@ -485,13 +548,18 @@ static object_user_defined_t *create_empty_user_defined_object(process_t* proces
         uobj = (object_user_defined_t *)CALLOC(sizeof(object_user_defined_t));
         uobj->base.vtbl = &vtbl;
         uobj->base.process = process;
-        uobj->prototypes = create_vector_ex(prototypes.size);
+        uobj->proto = create_vector_ex(proto.size);
         uobj->topology = create_vector();
         uobj->keys = create_vector();
         uobj->properties = create_avl_tree(key_comparator);
     }
     uobj->refs = 1;
     uobj->state = UNMARKED;
+    for (size_t i = 0; i < proto.size; i++) {
+        INCREF(proto.items[i]);
+        append_to_vector(uobj->proto, proto.items[i]);
+    }
+    build_topology(proto, uobj->topology);
     add_object_to_list(&process->objects, &uobj->base);
     return uobj;
 }
