@@ -590,7 +590,7 @@ object_t *create_user_defined_object(process_t* process, object_array_t proto);
  * @param name The name of the static object for which the getter is generated.
  */
 #define DECLARE_STATIC_OBJECT(name) \
-    extern object_t *name;
+    object_t *get_##name();
 
 /**
  * @brief Declares getter functions for common static string objects.
@@ -605,4 +605,4 @@ DECLARE_STATIC_OBJECT(string_length)
  */
 object_t *get_function_proto();
 
-//DECLARE_STATIC_OBJECT(function_sign)
+DECLARE_STATIC_OBJECT(function_sign)

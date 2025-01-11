@@ -77,7 +77,7 @@ typedef struct {
 static object_array_t get_keys(const object_t *obj) {
     static object_t *keys[1] = { NULL };
     if (keys[0] == NULL) {
-        keys[0] = string_length;
+        keys[0] = get_string_length();
     }
     return (object_array_t){ keys, sizeof(keys) / sizeof(object_t*) };
 }
@@ -509,9 +509,9 @@ object_t *create_static_string_object(wchar_t *data, size_t length) {
  * @param string The wide-character string literal.
  */
 #define DECLARE_STATIC_STRING(name, string) \
-    static object_static_string_t _##name = \
+    static object_static_string_t name = \
         { { &static_string_vtbl, NULL, NULL, NULL }, (string), sizeof(string) / sizeof(wchar_t) - 1 }; \
-    object_t *name = &_##name.base; 
+    object_t *get_##name() { return &name.base; } 
 
 /**
  * @brief Declares some common static string objects.
@@ -553,7 +553,7 @@ object_t *create_dynamic_string_object(process_t *process, string_value_t value)
         if (value.should_free) {
             FREE(value.data);
         }
-        return empty_string;
+        return get_empty_string();
     }
     object_dynamic_string_t *obj;
     if (process->dynamic_strings.size > 0) {
