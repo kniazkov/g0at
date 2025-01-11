@@ -1,5 +1,5 @@
 /**
- * @file object_function.c
+ * @file function.c
  * @copyright 2025 Ivan Kniazkov
  * @brief Implementations of an object representing a function.
  *

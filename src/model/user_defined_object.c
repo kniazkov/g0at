@@ -1,5 +1,5 @@
 /**
- * @file object_user_defined.c
+ * @file user_defined_object.c
  * @copyright 2025 Ivan Kniazkov
  * @brief Definitions and methods for user-defined objects in the Goat programming language.
  * 

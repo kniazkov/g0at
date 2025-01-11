@@ -1,5 +1,5 @@
 /**
- * @file object_integer.h
+ * @file integer.c
  * @copyright 2025 Ivan Kniazkov
  * @brief Implementations of an object representing an integer.
  *

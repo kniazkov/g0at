@@ -1,5 +1,5 @@
 /**
- * @file object_number.c
+ * @file number.c
  * @copyright 2025 Ivan Kniazkov
  * @brief Implementations of a prototype for numeric objects (integer and float).
  *

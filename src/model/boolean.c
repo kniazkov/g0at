@@ -1,5 +1,5 @@
 /**
- * @file object_boolean.c
+ * @file boolean.c
  * @copyright 2025 Ivan Kniazkov
  * @brief Implementations of two singleton objects representing the boolean values
  *  `true` and `false`.

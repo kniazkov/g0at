@@ -589,15 +589,15 @@ object_t *create_user_defined_object(process_t* process, object_array_t proto);
  * @brief Macro to declare a getter function for a static object.
  * @param name The name of the static object for which the getter is generated.
  */
-#define DECLARE_STATIC_OBJECT_GETTER(name) \
-    object_t *get_##name();
+#define DECLARE_STATIC_OBJECT(name) \
+    extern object_t *name;
 
 /**
  * @brief Declares getter functions for common static string objects.
  */
-DECLARE_STATIC_OBJECT_GETTER(empty_string)
-DECLARE_STATIC_OBJECT_GETTER(string_print)
-DECLARE_STATIC_OBJECT_GETTER(string_length)
+DECLARE_STATIC_OBJECT(empty_string)
+DECLARE_STATIC_OBJECT(string_print)
+DECLARE_STATIC_OBJECT(string_length)
 
 /**
  * @brief Retrieves the function prototype object.
@@ -605,4 +605,4 @@ DECLARE_STATIC_OBJECT_GETTER(string_length)
  */
 object_t *get_function_proto();
 
-DECLARE_STATIC_OBJECT_GETTER(function_sign)
+//DECLARE_STATIC_OBJECT(function_sign)
