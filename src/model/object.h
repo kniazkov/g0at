@@ -449,7 +449,8 @@ struct object_t {
  * @brief Macro to decrement the reference count of an object.
  * 
  * This macro decrements the reference count of the object by calling the `dec_ref` function
- * through the object's virtual table. If the reference count reaches zero, the object is released or cleared.
+ * through the object's virtual table. If the reference count reaches zero, the object is released
+ * or cleared.
  * 
  * @param obj The object whose reference count is to be decremented.
  */
@@ -465,6 +466,20 @@ struct object_t {
  * @param obj The object whose reference count is to be decremented if not NULL.
  */
 #define DECREFIF(obj)  if ((obj) != NULL) { (obj)->vtbl->dec_ref(obj); }
+
+/**
+ * @typedef static_object_getter_t
+ * @brief Typedef for a function that retrieves a static object.
+ * 
+ * Functions with this signature are used as getters to retrieve pointers to specific static
+ * objects. These objects are immutable and exist for the lifetime of the program.
+ * 
+ * Such functions are typically used to retrieve globally defined, pre-initialized objects
+ * like built-in functions, constants, or prototypes.
+ * 
+ * @return A pointer to the requested static object.
+ */
+typedef object_t *(*static_object_getter_t)(void);
 
 /**
  * @brief Retrieves the root object of the Goat programming language.
@@ -596,8 +611,9 @@ object_t *create_user_defined_object(process_t* process, object_array_t proto);
  * @brief Declares getter functions for common static string objects.
  */
 DECLARE_STATIC_OBJECT(empty_string)
-DECLARE_STATIC_OBJECT(string_print)
 DECLARE_STATIC_OBJECT(string_length)
+DECLARE_STATIC_OBJECT(string_print)
+DECLARE_STATIC_OBJECT(string_sign)
 
 /**
  * @brief Retrieves the function prototype object.

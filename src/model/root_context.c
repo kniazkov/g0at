@@ -20,16 +20,20 @@
 #include "common_methods.h"
 
 /**
- * @brief Retrieves all property keys from an object (stub implementation).
+ * @brief Retrieves all property keys from the root context.
  * 
- * This is a stub implementation of the function to retrieve all keys of the properties 
- * defined on an object. Currently, it returns an empty `object_array_t` as a placeholder.
+ * This function returns a static array containing the property keys associated with the root
+ * context. The array is initialized lazily during the first invocation of the function.
  * 
- * @param obj The object from which to retrieve the keys.
- * @return An empty `object_array_t` (placeholder implementation).
+ * @param obj The object from which to retrieve the keys (ignored).
+ * @return An object array containing all property keys.
  */
 static object_array_t get_keys(const object_t *obj) {
-    return (object_array_t){ NULL, 0 };
+    static object_t *keys[1] = { NULL };
+    if (keys[0] == NULL) {
+        keys[0] = get_string_sign();
+    }
+    return (object_array_t){ keys, sizeof(keys) / sizeof(object_t*) };
 }
 
 /**

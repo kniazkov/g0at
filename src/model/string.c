@@ -517,8 +517,9 @@ object_t *create_static_string_object(wchar_t *data, size_t length) {
  * @brief Declares some common static string objects.
  */
 DECLARE_STATIC_STRING(empty_string, L"")
-DECLARE_STATIC_STRING(string_print, L"print")
 DECLARE_STATIC_STRING(string_length, L"length")
+DECLARE_STATIC_STRING(string_print, L"print")
+DECLARE_STATIC_STRING(string_sign, L"sign")
 
 /**
  * @var dynamic_string_vtbl
