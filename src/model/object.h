@@ -494,6 +494,12 @@ typedef object_t *(*static_object_getter_t)(void);
 object_t *get_root_object();
 
 /**
+ * @brief Retrieves the singleton instance of the `null` object.
+ * @return A pointer to the singleton `null` object.
+ */
+object_t *get_null_object();
+
+/**
  * @brief Retrieves the boolean prototype object.
  * @return A pointer to the boolean prototype object.
  */
