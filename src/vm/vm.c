@@ -279,6 +279,8 @@ static instr_executor_t executors[] = {
     exec_ILOAD32, /**< Pushes a 32-bit integer onto the data stack. */
     exec_ILOAD64, /**< Pushes a 64-bit integer onto the data stack. */
     exec_SLOAD,   /**< Pushes a static string onto the data stack. */
+    NULL,
+    NULL,
     exec_ADD,     /**< Adds the top two objects of the stack. */
     exec_SUB,     /**< Subtracts the top two objects of the stack. */
     // Additional opcodes can be added here in the future...

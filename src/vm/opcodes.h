@@ -95,6 +95,25 @@ typedef enum {
     SLOAD = 0x06, /**< Loads a static string onto the data stack. */
 
     /**
+     * @brief Loads the value of a variable from the current context onto the data stack.
+     * 
+     * The `VLOAD` opcode retrieves the value of a variable from the current execution context, 
+     * identified by its name (static string), and pushes it onto the data stack. If the variable 
+     * does not exist in the current context, the constant `null` is loaded instead.
+     */
+    VLOAD = 0x07, /**< Loads a variable value onto the data stack or `null` if undefined. */
+
+     /**
+     * @brief Stores the top value from the data stack into the current context.
+     * 
+     * The `STORE` opcode pops the top value from the data stack and assigns it to a variable in
+     * the current execution context, identified by its name (static string). If the variable
+     * does not exist in the current context, it is created. This operation updates the context's
+     * data with the new value.
+     */
+    STORE = 0x08, /**< Stores a value from the data stack into the current context. */
+
+   /**
      * @brief Adds the top two objects of the stack.
      *
      * The `ADD` opcode performs an addition operation on the two topmost objects on the data stack. 
@@ -102,7 +121,7 @@ typedef enum {
      * operation can be used for both numerical and non-numerical objects, depending on the virtual 
      * machine's behavior.
      */
-    ADD = 0x07, /**< Adds the top two objects on the data stack. */
+    ADD = 0x09, /**< Adds the top two objects on the data stack. */
 
     /**
      * @brief Subtracts the top two objects of the stack.
@@ -112,5 +131,5 @@ typedef enum {
      * and then pushes the result back onto the stack. This operation can be used for numerical
      * objects or other types that support subtraction.
      */
-    SUB = 0x08, /**< Subtracts the top two objects on the data stack. */
+    SUB = 0x0A, /**< Subtracts the top two objects on the data stack. */
 } opcode_t;
