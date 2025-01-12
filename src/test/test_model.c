@@ -58,7 +58,6 @@ bool test_integer_object() {
 }
 
 bool test_addition_of_two_integers() {
-
     instruction_t list[] = {
         { .opcode = ILOAD32, .arg1 = 2 },
         { .opcode = ILOAD32, .arg1 = 3 },

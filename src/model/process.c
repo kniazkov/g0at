@@ -10,6 +10,7 @@
 
 #include "process.h"
 #include "thread.h"
+#include "context.h"
 #include "lib/allocate.h"
 #include "object_list.h"
 
@@ -25,7 +26,7 @@ process_t *create_process() {
     init_object_list(&process->integers);
     init_object_list(&process->dynamic_strings);
     init_object_list(&process->user_defined_objects);
-    create_thread(process);
+    create_thread(process, create_context(process, get_root_context()));
     return process;
 }
 

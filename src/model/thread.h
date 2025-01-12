@@ -24,6 +24,12 @@
 typedef struct process_t process_t;
 
 /**
+ * @typedef context_t
+ * @brief Forward declaration for the context structure.
+ */
+typedef struct context_t context_t;
+
+/**
  * @typedef thread_t
  * @brief Forward declaration for the thread structure.
  */
@@ -66,7 +72,7 @@ struct thread_t {
     uint64_t id;
 
     /**
-     * @brief Pointer to the process that owns this thread.
+     * @brief The process that owns this thread.
      * 
      * Each thread belongs to a process. This pointer allows the thread to interact with its
      * parent process, access shared resources, and be managed by the process.
@@ -74,7 +80,7 @@ struct thread_t {
     process_t *process;
 
     /**
-     * @brief Pointer to the previous thread in the circular linked list.
+     * @brief The previous thread in the circular linked list.
      * 
      * This pointer references the thread that precedes the current thread in the circular list
      * of threads within the process. If the thread is the only one in the process, it points
@@ -83,7 +89,7 @@ struct thread_t {
     thread_t *previous;
 
     /**
-     * @brief Pointer to the next thread in the circular linked list.
+     * @brief The next thread in the circular linked list.
      * 
      * This pointer references the thread that follows the current thread in the circular list.
      * If the thread is the only one in the process, it points to itself.
@@ -91,7 +97,16 @@ struct thread_t {
     thread_t *next;
 
     /**
-     * @brief Pointer to the data stack used by the thread.
+     * @brief The current execution context of the thread.
+     * 
+     * This pointer references the `context_t` structure that represents the current 
+     * execution context of the thread. The context is used to maintain the execution state of the 
+     * thread, allowing the system to manage execution flow, function calls, and variable scopes.
+     */
+    context_t *context;
+
+    /**
+     * @brief The data stack used by the thread.
      * 
      * The data stack is used by the virtual machine to store temporary data during execution,
      * such as local variables, function arguments, and return addresses. It supports the
@@ -127,16 +142,19 @@ struct thread_t {
 };
 
 /**
- * @brief Creates a new thread within the given process.
+ * @brief Creates a new thread within the given process with an initial context.
  * 
- * This function initializes a new thread for the specified process. The thread is added
- * to the process's circular linked list of threads. It also initializes the data stack for the
- * thread and sets the instruction pointer to the starting position.
+ * This function initializes a new thread for the specified process and sets up the execution
+ * context for the thread. The thread is added to the process's circular linked list of threads.
+ * It also initializes the data stack for the thread and sets the instruction pointer to the
+ * starting position. The initial context is set for the thread, which holds the 
+ * data and control information needed for execution.
  * 
  * @param process The process to which the new thread will belong.
+ * @param context The execution context to be assigned to the new thread.
  * @return A pointer to the newly created thread.
  */
-thread_t *create_thread(process_t *process);
+thread_t *create_thread(process_t *process, context_t *context);
 
 /**
  * @brief Destroys a thread and frees its resources.

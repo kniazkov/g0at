@@ -10,15 +10,19 @@
 #include "gc.h"
 #include "model/object.h"
 #include "model/thread.h"
+#include "model/context.h"
 
 /**
- * @brief Marks the objects on a thread's data stack.
+ * @brief Marks the objects on a thread's data stack and context data.
  * 
- * This function marks the objects on the thread's data stack as reachable.
+ * This function marks the objects on the thread's data stack as reachable, as well as the 
+ * object associated with the thread's execution context. This helps in identifying the objects
+ * that are still in use and ensures they are not collected during garbage collection.
  * 
- * @param thread A pointer to the thread whose stack is to be processed.
+ * @param thread A pointer to the thread whose stack and context data are to be processed.
  */
-static void mark_objects_on_stack(thread_t *thread) {
+static void mark_objects_in_context_and_stack(thread_t *thread) {
+    thread->context->data->vtbl->mark(thread->context->data);
     for (size_t i = 0; i < thread->data_stack->size; i++) {
         object_t *obj = thread->data_stack->objects[i];
         obj->vtbl->mark(obj);
@@ -35,7 +39,7 @@ static void mark_objects_on_stack(thread_t *thread) {
 static void mark_reachable_objects(process_t *proc) {
     thread_t *thread = proc->main_thread;
     do {
-        mark_objects_on_stack(thread);
+        mark_objects_in_context_and_stack(thread);
         thread = thread->next;
     } while (thread != proc->main_thread);
 }

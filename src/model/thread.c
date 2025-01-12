@@ -12,6 +12,7 @@
 
 #include "thread.h"
 #include "process.h"
+#include "context.h"
 #include "object_stack.h"
 #include "lib/allocate.h"
 
@@ -20,7 +21,7 @@
  */
 static uint64_t last_thread_id = 0;
 
-thread_t *create_thread(process_t *process) {
+thread_t *create_thread(process_t *process, context_t *context) {
     thread_t *thread = (thread_t *)CALLOC(sizeof(thread_t));
     thread->id = ++last_thread_id;
     thread->process = process;
@@ -35,6 +36,7 @@ thread_t *create_thread(process_t *process) {
         thread->next = process->main_thread;
         process->main_thread->previous = thread;
     }
+    thread->context = context;
     thread->data_stack = create_object_stack();
     return thread;
 }
@@ -45,6 +47,11 @@ void destroy_thread(thread_t *thread) {
     } else {
         thread->previous->next = thread->next;
         thread->next->previous = thread->previous;
+    }
+    context_t *root_context = get_root_context();
+    context_t *context = thread->context;
+    while (context != NULL && context != root_context) {
+        context = destroy_context(context);
     }
     destroy_object_stack(thread->data_stack);
     FREE(thread);
