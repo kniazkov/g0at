@@ -25,6 +25,21 @@
 wchar_t *WSTRDUP(const wchar_t *wstr);
 
 /**
+ * @brief Comparator function for wide strings (wchar_t*).
+ * 
+ * This function compares two wide-character strings (`wchar_t *`) using the `wcscmp` function. 
+ * It can be used as a comparator in any algorithm or data structure that requires ordering 
+ * or comparison logic, such as AVL trees, sorting algorithms, or hash maps.
+ * 
+ * @param first A pointer to the first wide-character string.
+ * @param second A pointer to the second wide-character string.
+ * 
+ * @return A negative value if `first` is less than `second`, 
+ *  zero if they are equal, and a positive value if `first` is greater than `second`.
+ */
+int string_comparator(const void *first, const void *second);
+
+/**
  * @brief Represents a dynamic string builder for wide-character strings.
  * 
  * This structure allows constructing strings by dynamically resizing an internal buffer as needed.

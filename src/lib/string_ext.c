@@ -21,6 +21,10 @@ wchar_t *WSTRDUP(const wchar_t *wstr) {
     return new_str;
 }
 
+int string_comparator(const void *first, const void *second) {
+    return wcscmp((wchar_t *)first, (wchar_t *)second);
+}
+
 void init_string_builder(string_builder_t *builder, size_t capacity) {
     if (capacity > 0) {
         builder->data = (wchar_t *)ALLOC(sizeof(wchar_t) * (capacity + 1));

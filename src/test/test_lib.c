@@ -29,22 +29,6 @@ bool test_memory_allocation() {
 }
 
 /**
- * @brief Comparator function for wide strings (wchar_t*).
- * 
- * This function compares two wide-character strings (`wchar_t *`) using the `wcscmp` function,
- * making it suitable for use as a comparator in an AVL tree.
- * 
- * @param first A pointer to the first wide-character string.
- * @param second A pointer to the second wide-character string.
- * 
- * @return A negative value if `first` is less than `second`, 
- *  zero if they are equal, and a positive value if `first` is greater than `second`.
- */
-static int string_comparator(const void *first, const void *second) {
-    return wcscmp((wchar_t *)first, (wchar_t *)second);
-}
-
-/**
  * @brief Callback function for iterating over the AVL tree.
  * 
  * This function is used as a callback for `avl_tree_for_each`. It adds each key from the AVL

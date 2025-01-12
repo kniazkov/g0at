@@ -13,6 +13,7 @@
 
 #include "data_builder.h"
 #include "lib/allocate.h"
+#include "lib/string_ext.h"
 
 /**
  * @brief Initial capacity for the descriptors list
@@ -34,7 +35,7 @@ data_builder_t *create_data_builder(void) {
     builder->data_capacity = INITIAL_DATA_ARRAY_CAPACITY;
     builder->descriptors_count = 0;
     builder->descriptors_capacity = INITIAL_DESCRIPTORS_LIST_CAPACITY;
-    builder->strings = create_avl_tree((int(*)(const void*, const void*))wcscmp);
+    builder->strings = create_avl_tree(string_comparator);
     return builder;
 }
 

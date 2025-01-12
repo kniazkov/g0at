@@ -18,6 +18,8 @@
 #include "context.h"
 #include "object.h"
 #include "common_methods.h"
+#include "lib/pair.h"
+#include "lib/string_ext.h"
 
 /**
  * @brief Retrieves all property keys from the root context.
@@ -37,17 +39,27 @@ static object_array_t get_keys(const object_t *obj) {
 }
 
 /**
- * @brief Retrieves the value of a property from an object (stub implementation).
- * 
- * This is a stub implementation of the function to retrieve the value of a property from
- * an object. Currently, it returns `NULL` as a placeholder.
- * 
- * @param obj The object from which to retrieve the property.
+ * @brief Retrieves the value of a property from the root context.
+ * @param obj The root context object (unused in this implementation).
  * @param key The key of the property to retrieve.
- * @return Always returns `NULL` (placeholder implementation).
- */
+ * @return The value of the property if found, otherwise `NULL`.
+*/
 static object_t *get_property(const object_t *obj, const object_t *key) {
-    return NULL;
+    object_t *value = NULL;
+    if (key->vtbl->type == TYPE_STRING) {
+        string_value_t key_str = key->vtbl->to_string(key);
+        static pair_t properties[] = { 
+            { L"sign", get_function_sign }
+            // ... add other properties later
+        };
+        static_object_getter_t getter = (static_object_getter_t)binary_search(
+            properties, sizeof(properties) / sizeof(pair_t), key_str.data, string_comparator
+        );
+        if (getter) {
+            value = getter();
+        }
+    }
+    return value;
 }
 
 /**

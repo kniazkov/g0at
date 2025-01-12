@@ -95,13 +95,14 @@ static object_array_t get_keys(const object_t *obj) {
  * @return A pointer to the value of the property, or `NULL` if the key is not recognized.
  */
 static object_t *proto_get_property(const object_t *obj, const object_t *key) {
+    object_t *value = NULL;
     if (key->vtbl->type == TYPE_STRING) {
         string_value_t key_str = key->vtbl->to_string(key);
         if (wcscmp(L"length", key_str.data) == 0) {
-            return get_integer_zero();
+            value = get_integer_zero();
         }
     }
-    return NULL;
+    return value;
 }
 
 /**
