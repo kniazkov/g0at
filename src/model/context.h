@@ -25,6 +25,18 @@
 typedef struct object_t object_t;
 
 /**
+ * @typedef context_t
+ * @brief Forward declaration for the context structure.
+ */
+typedef struct context_t context_t;
+
+/**
+ * @typedef process_t
+ * @brief Forward declaration for the process structure.
+ */
+typedef struct process_t process_t;
+
+/**
  * @struct context_t
  * @brief Represents the execution context in the Goat programming language.
  * 
@@ -33,14 +45,23 @@ typedef struct object_t object_t;
  * and any additional control information, such as function return addresses, that may be required
  * for managing program flow.
  */
-typedef struct {
+struct context_t {
     /**
      * @brief A data associated with the current execution context.
      */
     object_t *data;
 
+   /**
+     * @brief A pointer to the previous context in the stack.
+     * 
+     * This field allows the formation of a stack of contexts, where each context references
+     * the context from which it was created. When the current context is no longer needed,
+     * the previous context can be restored.
+     */
+    context_t *previous;    
+
     // Other fields (such as program counter, return address, etc.) can be added later.
-} context_t;
+};
 
 /**
  * @brief Retrieves the singleton instance of the root context.
@@ -52,3 +73,37 @@ typedef struct {
  * @return A pointer to the singleton instance of the root context.
  */
 context_t *get_root_context();
+
+/**
+ * @brief Creates a new execution context and links it to the previous context.
+ * 
+ * This function allocates memory for a new execution context and initializes it.
+ * The data for the new context is represented as an object whose prototype is the data object
+ * of the previous context. This establishes a hierarchical relationship between the contexts,
+ * allowing the new context to inherit properties from the previous one.
+ * 
+ * The new context is also linked to the provided previous context, forming a chain of contexts
+ * that represents the execution stack.
+ * 
+ * @param process A pointer to the process structure managing the execution state.
+ * @param previous A pointer to the previous execution context, which becomes the parent
+ *  of the newly created context.
+ * 
+ * @return A pointer to the newly created execution context.
+ */
+context_t *create_context(process_t *process, context_t *previous);
+
+/**
+ * @brief Destroys an execution context and returns the previous context.
+ * 
+ * This function deallocates the memory associated with the given execution context. It also
+ * decrements the reference count of the context's data, freeing it if no longer in use.
+ * The data object of the destroyed context is no longer available, but the previous context
+ * (from which the current context inherited) is returned, allowing the caller to restore it
+ * as the active context.
+ * 
+ * @param context A pointer to the execution context to be destroyed.
+ * 
+ * @return A pointer to the previous execution context.
+ */
+context_t *destroy_context(context_t *context);
