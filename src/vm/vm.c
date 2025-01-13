@@ -54,6 +54,62 @@ typedef struct {
  */
 typedef bool (*instr_executor_t)(runtime_t *runtime, instruction_t instr, thread_t *thread);
 
+/**
+ * @brief Retrieves the value of a property from an object or its prototypes.
+ * 
+ * This function attempts to retrieve the value of a property identified by the `key` from
+ * the specified `obj`. If the property is not found directly on the object, it will search through
+ * the object's prototypes (as defined by the object's prototype chain) until the property is found
+ * or the end of the chain is reached.
+ * 
+ * If the property is not found in the object or any of its prototypes, the function will return
+ * the `null` object.
+ * 
+ * @param obj The object from which to retrieve the property.
+ * @param key The key identifying the property to retrieve.
+ * @return The value of the property, or the `null` object if the property was not found.
+ */
+static object_t *get_property_from_object_or_its_prototypes(object_t *obj, object_t *key) {
+    object_t *value = obj->vtbl->get_property(obj, key);
+    if (value == NULL) {
+        object_array_t proto = obj->vtbl->get_topology(obj);
+        size_t i = 0;
+        do {
+            value = proto.items[i]->vtbl->get_property(proto.items[i], key);
+            i++;
+        } while (value == NULL);
+    }
+    if (value == NULL) {
+        value = get_null_object();
+    }
+    return value;
+}
+
+/**
+ * @brief Loads a static string from the bytecode or retrieves it from the cache.
+ * 
+ * This function either retrieves a static string from the cache (if it has already been loaded),
+ * or loads it from the bytecode using its `string_id`. Static strings are predefined in the 
+ * bytecode, and they are stored in a cache for efficient reuse. The string data is located 
+ * in the bytecode at the position specified by the `data_descriptors`, and it is lazily loaded 
+ * the first time it is accessed.
+ * 
+ * @param runtime The runtime environment containing the static data cache and bytecode.
+ * @param string_id The identifier of the static string to load.
+ * @return A pointer to the `object_t` representing the static string.
+ */
+static object_t *load_static_string(runtime_t *runtime, uint32_t string_id) {
+    object_t *string = runtime->static_data[string_id];
+    if (string == NULL) {
+        data_descriptor_t descriptor = runtime->code->data_descriptors[string_id];
+        string = create_static_string_object(
+            (wchar_t*)(runtime->code->data + descriptor.offset),
+            descriptor.size / sizeof(wchar_t) - 1
+        );
+        runtime->static_data[string_id] = string;
+    }
+    return string;
+}
 
 /**
  * @brief Executes the NOP instruction.
@@ -168,19 +224,6 @@ static bool exec_ILOAD64(runtime_t *runtime, instruction_t instr, thread_t *thre
     return true;
 }
 
-static object_t *load_static_string(runtime_t *runtime, uint32_t string_id) {
-    object_t *string = runtime->static_data[string_id];
-    if (string == NULL) {
-        data_descriptor_t descriptor = runtime->code->data_descriptors[string_id];
-        string = create_static_string_object(
-            (wchar_t*)(runtime->code->data + descriptor.offset),
-            descriptor.size / sizeof(wchar_t) - 1
-        );
-        runtime->static_data[string_id] = string;
-    }
-    return string;
-}
-
 /**
  * @brief Executes the SLOAD opcode to load a static string into the stack.
  *
@@ -208,18 +251,46 @@ static bool exec_SLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
+/**
+ * @brief Executes the VLOAD opcode to load a variable value from the context.
+ * 
+ * The `VLOAD` opcode loads a variable value from the current context based on the `string_id`,
+ * which corresponds to the variable's name. The function retrieves the property identified by 
+ * the `string_id` from the context's data object. If the property does not exist, it loads 
+ * `null` as a placeholder. The value is then pushed onto the stack.
+ * 
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread Pointer to the thread that is executing the instruction.
+ * @return `true` if the variable value was successfully loaded and pushed onto the stack,
+ *  `false` if there is an error (e.g., invalid string id or bytecode corruption).
+ */
 static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
     if (string_id >= runtime->code->data_descriptor_count) {
         return false; // bad bytecode
     }
     object_t *key = load_static_string(runtime, string_id);
-    object_t *value = thread->context->data->vtbl->get_property(thread->context->data, key);
-    push_object_onto_stack(thread->data_stack, value ? value : get_null_object());
+    object_t *value = get_property_from_object_or_its_prototypes(thread->context->data, key);
+    push_object_onto_stack(thread->data_stack, value);
     thread->instr_id++;
     return true;
 }
 
+/**
+ * @brief Executes the STORE opcode to store a value in the current context.
+ * 
+ * The `STORE` opcode stores a value from the stack into the current context's data object,
+ * associating it with the property identified by `string_id`. The value is popped from the stack,
+ * and the property is set in the context's data object. If the stack is empty or the property
+ * cannot be set, the operation will fail.
+ * 
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread Pointer to the thread that is executing the instruction.
+ * @return `true` if the value was successfully stored in the context, `false` if there
+ *  is an error (e.g., empty stack or bytecode corruption).
+ */
 static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
     if (string_id >= runtime->code->data_descriptor_count) {
