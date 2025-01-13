@@ -8,8 +8,10 @@
 
 #include "vm.h"
 #include "gc.h"
+#include "model/context.h"
 #include "model/thread.h"
 #include "lib/allocate.h"
+#include "lib/avl_tree.h"
 #include "lib/split64.h"
 
 /**
@@ -166,6 +168,19 @@ static bool exec_ILOAD64(runtime_t *runtime, instruction_t instr, thread_t *thre
     return true;
 }
 
+static object_t *load_static_string(runtime_t *runtime, uint32_t string_id) {
+    object_t *string = runtime->static_data[string_id];
+    if (string == NULL) {
+        data_descriptor_t descriptor = runtime->code->data_descriptors[string_id];
+        string = create_static_string_object(
+            (wchar_t*)(runtime->code->data + descriptor.offset),
+            descriptor.size / sizeof(wchar_t) - 1
+        );
+        runtime->static_data[string_id] = string;
+    }
+    return string;
+}
+
 /**
  * @brief Executes the SLOAD opcode to load a static string into the stack.
  *
@@ -187,16 +202,35 @@ static bool exec_SLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     if (string_id >= runtime->code->data_descriptor_count) {
         return false; // bad bytecode
     }
-    object_t *string = runtime->static_data[string_id];
-    if (string == NULL) {
-        data_descriptor_t descriptor = runtime->code->data_descriptors[string_id];
-        string = create_static_string_object(
-            (wchar_t*)(runtime->code->data + descriptor.offset),
-            descriptor.size / sizeof(wchar_t) - 1
-        );
-        runtime->static_data[string_id] = string;
-    }
+    object_t *string = load_static_string(runtime, string_id);
     push_object_onto_stack(thread->data_stack, string);
+    thread->instr_id++;
+    return true;
+}
+
+static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    uint32_t string_id = instr.arg1;
+    if (string_id >= runtime->code->data_descriptor_count) {
+        return false; // bad bytecode
+    }
+    object_t *key = load_static_string(runtime, string_id);
+    object_t *value = thread->context->data->vtbl->get_property(thread->context->data, key);
+    push_object_onto_stack(thread->data_stack, value ? value : get_null_object());
+    thread->instr_id++;
+    return true;
+}
+
+static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    uint32_t string_id = instr.arg1;
+    if (string_id >= runtime->code->data_descriptor_count) {
+        return false; // bad bytecode
+    }
+    object_t *key = load_static_string(runtime, string_id);
+    object_t *value = pop_object_from_stack(thread->data_stack);
+    if (value == NULL) {
+        return false; // empty stack
+    }
+    thread->context->data->vtbl->set_property(thread->context->data, key, value);
     thread->instr_id++;
     return true;
 }
@@ -279,8 +313,8 @@ static instr_executor_t executors[] = {
     exec_ILOAD32, /**< Pushes a 32-bit integer onto the data stack. */
     exec_ILOAD64, /**< Pushes a 64-bit integer onto the data stack. */
     exec_SLOAD,   /**< Pushes a static string onto the data stack. */
-    NULL,
-    NULL,
+    exec_VLOAD,   /**< Loads a variable value onto the data stack or `null` if undefined. */
+    exec_STORE,   /**< Stores a value from the data stack into the current context. */
     exec_ADD,     /**< Adds the top two objects of the stack. */
     exec_SUB,     /**< Subtracts the top two objects of the stack. */
     // Additional opcodes can be added here in the future...
