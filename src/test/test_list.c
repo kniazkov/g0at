@@ -14,6 +14,7 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    //  {"store and load", test_store_and_load}
       { "memory allocation", test_memory_allocation }
     , { "AVL tree", test_avl_tree }
     , { "string builder", test_string_builder }

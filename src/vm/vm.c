@@ -175,7 +175,8 @@ static bool exec_END(runtime_t *runtime, instruction_t instr, thread_t *thread) 
  * @return Always returns `true` to continue executing the next instruction.
  */
 static bool exec_POP(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    pop_object_from_stack(thread->data_stack);
+    object_t *obj = pop_object_from_stack(thread->data_stack);
+    DECREFIF(obj);
     thread->instr_id++;
     return true;
 }
@@ -302,6 +303,7 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
         return false; // empty stack
     }
     thread->context->data->vtbl->set_property(thread->context->data, key, value);
+    DECREF(value);
     thread->instr_id++;
     return true;
 }

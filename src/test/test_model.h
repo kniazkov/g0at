@@ -49,3 +49,9 @@ bool test_properties();
  * @return `true` if the test passes, `false` if it fails.
  */
 bool test_string_topology();
+
+/**
+ * @brief Tests the `STORE` and `VLOAD` opcodes by verifying data persistence and retrieval.
+ * @return `true` if the test passes, `false` if it fails.
+ */
+bool test_store_and_load();
