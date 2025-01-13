@@ -30,7 +30,7 @@
  * `0` typically indicates successful execution, while non-zero values may represent errors or
  * abnormal terminations.
  * 
- * @param main_proc The process to run. The process is initialized before being passed
+ * @param proc The process to run. The process is initialized before being passed
  *  to this function, and its state will be modified during execution.
  * @param code The bytecode to execute. The bytecode contains the list of instructions to be
  *  processed.
@@ -38,4 +38,4 @@
  *         - `0` indicates successful execution.
  *         - Non-zero values may indicate errors or abnormal termination.
  */
-int run(process_t *main_proc, bytecode_t *code);
+int run(process_t *proc, bytecode_t *code);

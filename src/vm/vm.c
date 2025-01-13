@@ -19,21 +19,14 @@
  * @brief Structure to represent the runtime environment for the Goat virtual machine.
  * 
  * This structure holds all the data and state required for the execution of the bytecode 
- * within the virtual machine. It includes the bytecode, static data objects, and other 
- * runtime-related information necessary for the program's execution.
+ * within the virtual machine. It includes the bytecode and other runtime-related information
+ * necessary for the program's execution.
  */
 typedef struct {
     /**
      * @brief Pointer to the bytecode being executed.
      */
     bytecode_t *code;
-
-    /**
-     * @brief Cache of static objects.
-     * @note Static data objects are not managed by the garbage collector and should 
-     * be manually cleaned up when the process ends.
-     */
-    object_t **static_data;
 } runtime_t;
 
 /**
@@ -98,15 +91,19 @@ static object_t *get_property_from_object_or_its_prototypes(object_t *obj, objec
  * @param string_id The identifier of the static string to load.
  * @return A pointer to the `object_t` representing the static string.
  */
-static object_t *load_static_string(runtime_t *runtime, uint32_t string_id) {
-    object_t *string = runtime->static_data[string_id];
+static object_t *load_string(runtime_t *runtime, process_t *process, uint32_t string_id) {
+    object_t *string = process->string_cache[string_id];
     if (string == NULL) {
         data_descriptor_t descriptor = runtime->code->data_descriptors[string_id];
-        string = create_static_string_object(
-            (wchar_t*)(runtime->code->data + descriptor.offset),
-            descriptor.size / sizeof(wchar_t) - 1
+        string = create_string_object(
+            process,
+            (string_value_t) {
+                (wchar_t*)(runtime->code->data + descriptor.offset),
+                descriptor.size / sizeof(wchar_t) - 1,
+                false
+            }
         );
-        runtime->static_data[string_id] = string;
+        process->string_cache[string_id] = string;
     }
     return string;
 }
@@ -246,8 +243,9 @@ static bool exec_SLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     if (string_id >= runtime->code->data_descriptor_count) {
         return false; // bad bytecode
     }
-    object_t *string = load_static_string(runtime, string_id);
+    object_t *string = load_string(runtime, thread->process, string_id);
     push_object_onto_stack(thread->data_stack, string);
+    INCREF(string);
     thread->instr_id++;
     return true;
 }
@@ -271,9 +269,10 @@ static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     if (string_id >= runtime->code->data_descriptor_count) {
         return false; // bad bytecode
     }
-    object_t *key = load_static_string(runtime, string_id);
+    object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = get_property_from_object_or_its_prototypes(thread->context->data, key);
     push_object_onto_stack(thread->data_stack, value);
+    INCREF(value);
     thread->instr_id++;
     return true;
 }
@@ -297,7 +296,7 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     if (string_id >= runtime->code->data_descriptor_count) {
         return false; // bad bytecode
     }
-    object_t *key = load_static_string(runtime, string_id);
+    object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = pop_object_from_stack(thread->data_stack);
     if (value == NULL) {
         return false; // empty stack
@@ -393,25 +392,32 @@ static instr_executor_t executors[] = {
     // Additional opcodes can be added here in the future...
 };
 
-int run(process_t *main_proc, bytecode_t *code) {
-    bool flag = true;
-    thread_t *thread = main_proc->main_thread;
+int run(process_t *proc, bytecode_t *code) {
+
+    // preparing the environment     
     runtime_t runtime;
     runtime.code = code;
-    if (code->data_descriptor_count > 0) {
-        runtime.static_data = CALLOC(code->data_descriptor_count * sizeof(object_t*));
-    } else {
-        runtime.static_data = NULL;
+    if ((proc->string_cache_size = code->data_descriptor_count) > 0) {
+        proc->string_cache = CALLOC(code->data_descriptor_count * sizeof(object_t*));
     }
+
+    // execution
+    bool flag = true;
+    thread_t *thread = proc->main_thread;
     while (flag) {
         instruction_t instr = code->instructions[thread->instr_id];
-        flag =  executors[instr.opcode](&runtime, instr, thread);
+        instr_executor_t exec = executors[instr.opcode];
+        flag =  exec(&runtime, instr, thread);
         thread = thread->next;
     }
-    collect_garbage(main_proc);
+
+    // cleanup
     for (size_t i = 0; i < code->data_descriptor_count; i++) {
-        FREE(runtime.static_data[i]);
+        DECREF(proc->string_cache[i]);
     }
-    FREE(runtime.static_data);
+    FREE(proc->string_cache);
+    proc->string_cache = NULL;
+    proc->string_cache_size = 0;
+    collect_garbage(proc);
     return 0;
 }

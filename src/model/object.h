@@ -575,27 +575,12 @@ object_t *create_integer_object(process_t *process, int64_t value);
 object_t *get_string_proto();
 
 /**
- * @brief Creates a new static string object.
- * 
- * This function creates a new string object with the provided string data. The object is
- * dynamically allocated but is not managed by the garbage collector. The memory for the object
- * is expected to be manually freed when the process ends.
- * 
- * @param data The string data for the static string.
- * @param length The length of the string.
- * @return A pointer to the newly created static string object.
- * @note The memory for the static string object is allocated dynamically, but it is not
- *       managed by the garbage collector and must be manually freed when the process terminates.
- */
-object_t *create_static_string_object(wchar_t *data, size_t length);
-
-/**
  * @brief Creates a dynamic string object from a string value.
  * @param process The process in which the object is created.
  * @param value The string value to use for creating the dynamic string.
  * @return A pointer to the created dynamic string object.
  */
-object_t *create_dynamic_string_object(process_t *process, string_value_t value);
+object_t *create_string_object(process_t *process, string_value_t value);
 
 /**
  * @brief Creates a new user-defined object.

@@ -44,7 +44,7 @@ static void destroy_all_objects_in_the_list(object_list_t *list) {
         object_t *next = object->next;
         object->vtbl->release(object);
         object = next;
-    } 
+    }
 }
 
 void destroy_process(process_t *process) {
@@ -55,5 +55,6 @@ void destroy_process(process_t *process) {
     destroy_all_objects_in_the_list(&process->integers);
     destroy_all_objects_in_the_list(&process->dynamic_strings);
     destroy_all_objects_in_the_list(&process->user_defined_objects);
+    FREE(process->string_cache);
     FREE(process);
 }

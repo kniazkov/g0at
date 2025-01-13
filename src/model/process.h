@@ -91,6 +91,21 @@ struct process_t {
      * user-defined objects during future object creation.
      */
     object_list_t user_defined_objects;
+
+    /**
+     * @brief Cache of strings used during the execution of the process.
+     * 
+     * This array holds pointers to string objects that are created during the execution
+     * of the process. When a string is created from bytecode data, it is stored in this cache.
+     * If the same string is encountered again, it is retrieved from the cache instead of being
+     * recreated.
+     */
+    object_t **string_cache;
+
+    /**
+     * @brief The size of the string cache.
+     */
+    size_t string_cache_size;
 };
 
 /**

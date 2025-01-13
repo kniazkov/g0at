@@ -261,7 +261,7 @@ static object_t *clone(process_t *process, object_t *obj) {
         return obj;
     }
     string_value_t value = obj->vtbl->to_string(obj);
-    return create_dynamic_string_object(process, value);
+    return create_string_object(process, value);
 }
 
 /**
@@ -431,7 +431,7 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
             INCREF(obj2);
             return obj2;
         }
-        return create_dynamic_string_object(process, obj2->vtbl->to_string(obj2));
+        return create_string_object(process, obj2->vtbl->to_string(obj2));
     }
     string_value_t second = obj2->vtbl->to_string(obj2);
     if (second.length == 0) {
@@ -445,7 +445,7 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
     if (second.should_free) {
         FREE(second.data);
     }
-    return create_dynamic_string_object(process, result);
+    return create_string_object(process, result);
 }
 
 /**
@@ -490,14 +490,6 @@ static object_vtbl_t static_string_vtbl = {
     .get_real_value = stub_get_real_value,
     .call = stub_call
 };
-
-object_t *create_static_string_object(wchar_t *data, size_t length) {
-    object_static_string_t *obj = (object_static_string_t *)CALLOC(sizeof(object_static_string_t));
-    obj->base.vtbl = &static_string_vtbl;
-    obj->data = data;
-    obj->length = length;
-    return &obj->base;
-}
 
 /**
  * @brief Macro to declare a static string object and provide access to it.
@@ -550,7 +542,7 @@ static object_vtbl_t dynamic_string_vtbl = {
     .call = stub_call
 };
 
-object_t *create_dynamic_string_object(process_t *process, string_value_t value) {
+object_t *create_string_object(process_t *process, string_value_t value) {
     if (value.length == 0) {
         if (value.should_free) {
             FREE(value.data);

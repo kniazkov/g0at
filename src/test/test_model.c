@@ -134,23 +134,23 @@ bool test_properties() {
     object_t *obj = create_user_defined_object(process, (object_array_t){&root_object, 1});
     obj->vtbl->set_property(
         obj,
-        create_dynamic_string_object(process, STATIC_STRING(L"first")),
-        create_dynamic_string_object(process, STATIC_STRING(L"one"))
+        create_string_object(process, STATIC_STRING(L"first")),
+        create_string_object(process, STATIC_STRING(L"one"))
     );
     obj->vtbl->set_property(
         obj,
-        create_dynamic_string_object(process, STATIC_STRING(L"second")),
-        create_dynamic_string_object(process, STATIC_STRING(L"two"))
+        create_string_object(process, STATIC_STRING(L"second")),
+        create_string_object(process, STATIC_STRING(L"two"))
     );
     obj->vtbl->set_property(
         obj,
         create_integer_object(process, 3),
-        create_dynamic_string_object(process, STATIC_STRING(L"three"))
+        create_string_object(process, STATIC_STRING(L"three"))
     );
     obj->vtbl->set_property(
         obj,
         get_boolean_object(true),
-        create_dynamic_string_object(process, STATIC_STRING(L"boolean"))
+        create_string_object(process, STATIC_STRING(L"boolean"))
     );
     object_t *clone = obj->vtbl->clone(process, obj);
     const wchar_t *expected = L"{true=\"boolean\";3=\"three\";\"first\"=\"one\";\"second\"=\"two\"}";
@@ -160,17 +160,17 @@ bool test_properties() {
     str = clone->vtbl->to_string(clone);
     ASSERT(0 == wcscmp(str.data, expected));
     if (str.should_free) FREE(str.data);
-    object_t *key = create_dynamic_string_object(process, STATIC_STRING(L"first"));
+    object_t *key = create_string_object(process, STATIC_STRING(L"first"));
     object_t *value = obj->vtbl->get_property(obj, key);
     ASSERT(value != NULL);
     str = value->vtbl->to_string(value);
     ASSERT(0 == wcscmp(str.data, L"one"));
     if (str.should_free) FREE(str.data);
-    key = create_dynamic_string_object(process, STATIC_STRING(L"length"));
+    key = create_string_object(process, STATIC_STRING(L"length"));
     value = value->vtbl->get_property(value, key);
     ASSERT(value != NULL);
     ASSERT(value->vtbl->get_integer_value(value).value == 3);
-    key = create_dynamic_string_object(process, STATIC_STRING(L"third"));
+    key = create_string_object(process, STATIC_STRING(L"third"));
     value = obj->vtbl->get_property(obj, key);
     ASSERT(value == NULL);
     object_array_t keys = obj->vtbl->get_keys(obj);
@@ -184,7 +184,7 @@ bool test_properties() {
 
 bool test_string_topology() {
     process_t *process = create_process();
-    object_t *obj = create_dynamic_string_object(process, STATIC_STRING(L"test"));
+    object_t *obj = create_string_object(process, STATIC_STRING(L"test"));
     object_array_t topology = obj->vtbl->get_topology(obj);
     ASSERT(topology.size = 2);
     const wchar_t *expected = L"{\"length\"=0}";
