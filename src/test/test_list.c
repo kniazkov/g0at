@@ -27,6 +27,7 @@ static test_description_t test_list[] = {
     , {"properties", test_properties}
     , {"string topology", test_string_topology}
     , {"store and load", test_store_and_load}
+    , {"'sign' function", test_sign_function}
 
     , {"data builder", test_data_builder}
     , {"linker", test_linker}

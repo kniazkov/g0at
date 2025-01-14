@@ -132,4 +132,25 @@ typedef enum {
      * objects or other types that support subtraction.
      */
     SUB = 0x0A, /**< Subtracts the top two objects on the data stack. */
+
+    /**
+     * @brief Calls a function with arguments from the data stack.
+     *
+     * The `CALL` opcode interprets the object at the top of the stack as a function and invokes it.
+     * Before calling, it expects the arguments for the function to be already present on the stack
+     * in the correct order. The number of arguments is specified as the parameter to the `CALL`
+     * instruction.
+     * 
+     * Upon execution, the `CALL` instruction:
+     * - Pops the specified number of arguments from the stack.
+     * - Pops the function object to be invoked.
+     * - Calls the function with the provided arguments.
+     * - Pushes the result of the function onto the stack.
+     * 
+     * If the function does not return a value, a `null` object is pushed onto the stack instead.
+     *
+     * This opcode facilitates invoking callable objects within the virtual machine, allowing
+     * for dynamic function calls and composition.
+     */
+    CALL = 0x0B, /**< Calls a function with arguments from the data stack. */
 } opcode_t;

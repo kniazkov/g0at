@@ -55,3 +55,9 @@ bool test_string_topology();
  * @return `true` if the test passes, `false` if it fails.
  */
 bool test_store_and_load();
+
+/**
+ * @brief Tests the `CALL` opcode with the built-in `sign` function.
+ * @return Returns `true` if the test passes, or `false` if it fails.
+ */
+bool test_sign_function();

@@ -79,14 +79,7 @@ static object_t *get_property_from_object_or_its_prototypes(object_t *obj, objec
 }
 
 /**
- * @brief Loads a static string from the bytecode or retrieves it from the cache.
- * 
- * This function either retrieves a static string from the cache (if it has already been loaded),
- * or loads it from the bytecode using its `string_id`. Static strings are predefined in the 
- * bytecode, and they are stored in a cache for efficient reuse. The string data is located 
- * in the bytecode at the position specified by the `data_descriptors`, and it is lazily loaded 
- * the first time it is accessed.
- * 
+ * @brief Loads a string from the bytecode or retrieves it from the cache.
  * @param runtime The runtime environment containing the static data cache and bytecode.
  * @param string_id The identifier of the static string to load.
  * @return A pointer to the `object_t` representing the static string.
@@ -368,6 +361,40 @@ static bool exec_SUB(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 }
 
 /**
+ * @brief Executes the `CALL` instruction.
+ * 
+ * The `CALL` opcode interprets the object at the top of the data stack as a function and invokes
+ * it. It expects the specified number of arguments (provided in the `arg0` field of the
+ * instruction) to already be present on the stack in the correct order.
+ * 
+ * Upon execution, this function:
+ * - Pops the function object from the data stack.
+ * - Invokes the function using its `call` method, passing the specified number of arguments
+ *   from the stack and the current thread as parameters.
+ * - Handles the result of the function invocation:
+ *   - If the function returns a value, the result is pushed onto the data stack.
+ *   - If the function does not return a value, a `null` object is pushed onto the stack.
+ * 
+ * If the function cannot be invoked (e.g., the object is not callable, insufficient arguments
+ * are on the stack, or other runtime errors occur), the operation fails, and the instruction
+ * is not marked as successfully executed.
+ * 
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute. The `arg0` field specifies the number of arguments
+ *  to pass to the function.
+ * @param thread Pointer to the thread that is executing the instruction.
+ * @return Returns `true` if the function was successfully invoked and the result was pushed onto
+ *  the stack, or `false` if the invocation failed (e.g., invalid function object, runtime error).
+ */
+static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *func = pop_object_from_stack(thread->data_stack);
+    bool result = func->vtbl->call(func, instr.arg0, thread);
+    DECREF(func);
+    thread->instr_id++;
+    return result;
+}
+
+/**
  * @brief Array of instruction execution functions for the Goat virtual machine.
  * 
  * This array stores function pointers corresponding to each available opcode in the
@@ -389,6 +416,7 @@ static instr_executor_t executors[] = {
     exec_STORE,   /**< Stores a value from the data stack into the current context. */
     exec_ADD,     /**< Adds the top two objects of the stack. */
     exec_SUB,     /**< Subtracts the top two objects of the stack. */
+    exec_CALL     /**< Calls a function with arguments from the data stack. */
     // Additional opcodes can be added here in the future...
 };
 

@@ -223,10 +223,14 @@ static bool static_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
         ret_val = sfobj->exec(NULL, 0, thread);
     } else {
         object_t **args = ALLOC(arg_count * sizeof(object_t*));
-        for (uint16_t i = 0; i < arg_count; i++) {
+        uint16_t i;
+        for (i = 0; i < arg_count; i++) {
             args[i] = pop_object_from_stack(thread->data_stack);
         }
         ret_val = sfobj->exec(args, arg_count, thread);
+        for (i = 0; i < arg_count; i++) {
+            DECREF(args[i]);
+        }
         FREE(args);
     }
     push_object_onto_stack(thread->data_stack, ret_val);

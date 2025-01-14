@@ -331,6 +331,26 @@ static string_value_t to_string(const object_t *obj) {
 }
 
 /**
+ * @brief Retrieves the prototypes of a user-defined object object.
+ * @param obj The object whose prototypes are to be retrieved.
+ * @return An object_array_t containing the prototypes of the user-defined object.
+ */
+static object_array_t get_prototypes(const object_t *obj) {
+    object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    return (object_array_t){ (object_t **)uobj->proto->data, uobj->proto->size };
+}
+
+/**
+ * @brief Retrieves the full prototype topology of a user-defined object.
+ * @param obj The object whose prototype topology is to be retrieved.
+ * @return An object_array_t containing the full prototype chain.
+ */
+static object_array_t get_topology(const object_t *obj) {
+    object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    return (object_array_t){ (object_t **)uobj->topology->data, uobj->topology->size };
+}
+
+/**
  * @brief Retrieves all property keys from a user-defined object.
  * 
  * This implementation of `get_keys` for user-defined objects returns an array containing
@@ -430,7 +450,7 @@ static bool get_boolean_value(const object_t *obj) {
  * @brief Virtual table defining the behavior of the user-defined object.
  */
 static object_vtbl_t vtbl = {
-    .type = TYPE_STRING,
+    .type = TYPE_USER_DEFINED_OBJECT,
     .inc_ref = inc_ref,
     .dec_ref = dec_ref,
     .mark = mark,
@@ -440,6 +460,8 @@ static object_vtbl_t vtbl = {
     .clone = clone,
     .to_string = to_string,
     .to_string_notation = to_string_notation,
+    .get_prototypes = get_prototypes,
+    .get_topology = get_topology,
     .get_keys = get_keys,
     .get_property = get_property,
     .set_property = set_property,

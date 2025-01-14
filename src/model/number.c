@@ -43,7 +43,7 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
  * @brief Virtual table defining the behavior of the numeric prototype object.
  */
 static object_vtbl_t numeric_proto_vtbl = {
-    .type = TYPE_STRING,
+    .type = TYPE_OTHER,
     .inc_ref = stub_memory_function,
     .dec_ref = stub_memory_function,
     .mark = stub_memory_function,
