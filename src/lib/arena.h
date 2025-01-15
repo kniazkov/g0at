@@ -1,0 +1,165 @@
+/**
+ * @file arena.h
+ * @copyright 2025 Ivan Kniazkov
+ * @brief Definitions of structures and function prototypes for a memory arena.
+ *
+ * A memory arena is a memory allocation scheme where memory is allocated in large chunks,
+ * and small portions are then allocated from these chunks. Memory cannot be freed individually;
+ * instead, all memory allocated within the arena is freed at once when the arena is destroyed.
+ * This approach can lead to improved performance in cases where many small allocations are made
+ * and freeing memory individually is not needed.
+ */
+
+#pragma once
+
+#include <stddef.h>
+
+/**
+ * @struct chunk_t
+ * @brief Forward declaration for chunk of memory in the memory arena.
+ */
+typedef struct chunk_t chunk_t;
+
+/**
+ * @struct chunk_t
+ * @brief The memory chunk structure.
+ *
+ * This structure holds information about a single chunk in the arena's memory pool.
+ * Each chunk contains a pointer to the next chunk, its size, and the pointer to the allocated
+ * memory block. Chunks are linked together to form a chain within the arena, allowing for
+ * efficient memory allocation and deallocation in bulk.
+ */
+/**
+ * @struct chunk_t
+ * @brief The memory chunk structure.
+ *
+ * This structure holds information about a single chunk in the arena's memory pool.
+ * Each chunk contains a pointer to the next chunk, and the `begin` and `end` pointers 
+ * define the range of memory in this chunk. The chunks are linked together to form a chain 
+ * within the arena, allowing for efficient memory allocation and deallocation in bulk.
+ */
+struct chunk_t {
+    /**
+     * @brief Pointer to the next chunk in the chain.
+     * 
+     * This pointer is used to link chunks together. If this chunk is the last in the chain,
+     * this pointer will be `NULL`.
+     */
+    struct chunk_t* next;
+
+    /**
+     * @brief Pointer to the first byte of allocated memory in this chunk.
+     * 
+     * This pointer points to the beginning of the memory block allocated for this chunk.
+     */
+    char* begin;
+
+    /**
+     * @brief Remaining unused memory size in the current chunk.
+     * 
+     * This field tracks how much space is available in the current chunk. It is decremented
+     * every time memory is allocated from the chunk. When `unized_size` reaches 0, it indicates
+     * that the chunk is fully used, and a new chunk should be allocated.
+     */
+    size_t unized_size;
+};
+
+/**
+ * @struct arena_t
+ * @brief Represents the memory arena that manages memory allocation.
+ *
+ * The arena is a memory pool that consists of one or more chunks of memory. It manages memory
+ * allocations by dividing each chunk into smaller pieces, allocating memory from these chunks
+ * without freeing them individually. The arena will free all memory when it is destroyed.
+ */
+typedef struct {
+    /**
+     * @brief Pointer to the first chunk in the memory arena.
+     * 
+     * This pointer points to the first chunk in the arena. The chunks are linked together
+     * in a chain, and the arena allocates memory from these chunks. If the arena is empty,
+     * this pointer will be NULL.
+     */
+    chunk_t* first_chunk;
+
+    /**
+     * @brief Pointer to the current position in the current chunk.
+     * 
+     * This pointer indicates the current position within the current chunk where the next 
+     * memory allocation will occur. When the end of the current chunk is reached, the arena
+     * will allocate a new chunk.
+     */
+    char* ptr;
+} arena_t;
+
+/**
+ * @def CHUNK_SIZE
+ * @brief Size of a chunk in the memory arena.
+ * 
+ * The default chunk size is set to be slightly less than a megabyte to account for memory
+ * alignment and header overhead. This ensures that the chunk size fits more efficiently
+ * within memory page boundaries, avoiding wasted space.
+ */
+#define CHUNK_SIZE (1024 * 1024 - sizeof(chunk_t) - 256)
+
+/**
+ * @def BIG_OBJECT_SIZE
+ * @brief The threshold size for a "big object" in the memory arena.
+ * 
+ * Objects larger than this size (in bytes) will cause the arena to allocate a separate chunk
+ * for the object, instead of using the current chunk. This ensures that large objects are handled
+ * correctly, even if they exceed the default chunk size.
+ */
+#define BIG_OBJECT_SIZE 256
+
+/**
+ * @brief Creates and initializes a memory arena with a default chunk size.
+ * 
+ * This function initializes a memory arena by allocating a large block of memory 
+ * (a "chunk") using the `ALLOC` function. The arena structure is then initialized 
+ * with the first chunk and the starting pointer (`ptr`), which will be used 
+ * for future memory allocations within the arena.
+ * 
+ * If memory allocation fails, the program will terminate with a failure exit code.
+ * 
+ * @return A pointer to the initialized arena structure.
+ */
+arena_t* create_arena();
+
+/**
+ * @brief Allocates memory from the specified memory arena's chunk,
+ *  handling small and large objects.
+ * 
+ * This function attempts to allocate memory from the specified arena. It handles three
+ * cases:
+ * 1. If the requested memory size exceeds the `BIG_OBJECT_SIZE` threshold, a new chunk is created
+ *    specifically for this allocation, and it is inserted into the chain of chunks.
+ * 2. If the requested size is less than 1 byte, 1 byte is allocated to ensure the pointer returned
+ *    is valid.
+ * 3. If there is insufficient space left in the current chunk, a new chunk of the default size
+ *    is allocated, and the memory is taken from there.
+ * 4. Otherwise, memory is allocated from the current chunk if there is enough space left.
+ * 
+ * The allocated memory will be aligned and returned as a pointer to the beginning of the allocated 
+ * block. The function ensures that the memory is properly managed and the arena remains
+ * in a consistent state.
+ * 
+ * @param arena A pointer to the arena from which memory should be allocated.
+ * @param size The size of the memory block to allocate (in bytes).
+ * @return A pointer to the allocated memory block.
+ */
+void* alloc_from_chunk(arena_t* arena, size_t size);
+
+/**
+ * @brief Destroys the memory arena and frees all allocated memory.
+ * 
+ * This function deallocates all memory chunks associated with the arena. It traverses through
+ * the list of chunks and frees each chunk's memory, including the arena structure itself.
+ * After calling this function, the arena and its memory are no longer valid, and all memory
+ * is returned to the system.
+ * 
+ * If the pointer to the arena is `NULL`, the function does nothing.
+ * 
+ * @param arena A pointer to the arena to be destroyed.
+ */
+void destroy_arena(arena_t* arena);
