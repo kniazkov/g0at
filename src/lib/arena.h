@@ -127,8 +127,7 @@ typedef struct {
 arena_t* create_arena();
 
 /**
- * @brief Allocates memory from the specified memory arena's chunk,
- *  handling small and large objects.
+ * @brief Allocates memory from the specified memory arena, handling small and large objects.
  * 
  * This function attempts to allocate memory from the specified arena. It handles three
  * cases:
@@ -148,7 +147,19 @@ arena_t* create_arena();
  * @param size The size of the memory block to allocate (in bytes).
  * @return A pointer to the allocated memory block.
  */
-void* alloc_from_chunk(arena_t* arena, size_t size);
+void* alloc_from_arena(arena_t* arena, size_t size);
+
+/**
+ * @brief Allocates a zero-initialized memory block from the arena.
+ * 
+ * This function combines memory allocation with zeroing the allocated memory, which is useful
+ * when you need to ensure that the allocated block starts in a clean state.
+ * 
+ * @param arena A pointer to the arena from which memory should be allocated.
+ * @param size The size of the memory block to allocate (in bytes).
+ * @return A pointer to the zero-initialized memory block.
+ */
+void* alloc_zeroed_from_arena(arena_t* arena, size_t size);
 
 /**
  * @brief Destroys the memory arena and frees all allocated memory.

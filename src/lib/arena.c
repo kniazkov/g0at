@@ -13,6 +13,8 @@
  * multiple allocation requests.
  */
 
+#include <memory.h>
+
 #include "arena.h"
 #include "allocate.h"
 
@@ -30,7 +32,7 @@ arena_t* create_arena() {
     return arena;
 }
 
-void* alloc_from_chunk(arena_t* arena, size_t size) {
+void* alloc_from_arena(arena_t* arena, size_t size) {
     if (size == 0) {
         size = 1;
     }
@@ -58,6 +60,12 @@ void* alloc_from_chunk(arena_t* arena, size_t size) {
         arena->ptr = chunk->begin + size;
         return chunk->begin;
     }
+}
+
+void* alloc_zeroed_from_arena(arena_t* arena, size_t size) {
+    void *ptr = alloc_from_arena(arena, size);
+    memset(ptr, 0, size);
+    return ptr;
 }
 
 void destroy_arena(arena_t* arena) {

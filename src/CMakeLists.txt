@@ -9,6 +9,7 @@ include_directories(.)
 
 file(GLOB core_sources
   lib/*.c
+  scanner/*.c
   codegen/*.c
   model/*.c
   vm/*.c
