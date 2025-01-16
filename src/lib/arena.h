@@ -15,6 +15,12 @@
 #include <stddef.h>
 
 /**
+ * @struct arena_t
+ * @brief Forward declaration for memory arena structure.
+ */
+typedef struct arena_t arena_t;
+
+/**
  * @struct chunk_t
  * @brief Forward declaration for chunk of memory in the memory arena.
  */
@@ -72,7 +78,7 @@ struct chunk_t {
  * allocations by dividing each chunk into smaller pieces, allocating memory from these chunks
  * without freeing them individually. The arena will free all memory when it is destroyed.
  */
-typedef struct {
+struct arena_t {
     /**
      * @brief Pointer to the first chunk in the memory arena.
      * 
@@ -90,7 +96,7 @@ typedef struct {
      * will allocate a new chunk.
      */
     char* ptr;
-} arena_t;
+};
 
 /**
  * @def CHUNK_SIZE

@@ -33,9 +33,15 @@ typedef struct node_t node_t;
  * types that may be defined as the language evolves.
  */
 typedef enum {
-    TOKEN_IDENTIFIER, /**< An identifier (variable, function name, etc.) */
-    TOKEN_BRACKET,    /**< A bracket (e.g., '(', ')', '{', '}', etc.) */
-    TOKEN_STATIC_STRING, /**< A static string (e.g., a literal string in the source code) */
+    TOKEN_IDENTIFIER,         /**< An identifier (variable, function name, etc.) */
+    TOKEN_NUMBER,             /**< A numeric value (integer, floating-point, etc.) */
+    TOKEN_OPERATOR,           /**< An operator (e.g., '+', '-', '*', '/', '=', etc.) */
+    TOKEN_KEYWORD,            /**< A keyword (e.g., 'if', 'else', 'while', etc.) */
+    TOKEN_STRING,             /**< A string literal (e.g., "Hello, World!") */
+    TOKEN_CHAR,               /**< A character literal (e.g., 'a', '1', etc.) */
+    TOKEN_BRACKET,            /**< A bracket (e.g., '(', ')', '{', '}', '[', ']', etc.) */
+    TOKEN_STATIC_STRING,      /**< A static string (e.g., a literal string in the source code) */
+    TOKEN_ERROR,              /**< An invalid token (error case) */
     // Other token types can be added here in the future
 } token_type_t;
 
