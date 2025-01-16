@@ -14,6 +14,8 @@
 #include <stddef.h>
 #include <wchar.h>
 
+#include "position.h"
+
 /**
  * @brief Forward declaration of token structure.
  */
@@ -85,15 +87,16 @@ typedef struct {
  * @brief Structure to represent a token (lexeme) in the source code.
  * 
  * This structure holds the metadata for a token (or lexeme) in the source code, including
- * its type, position, neighboring tokens in a doubly linked list, and additional attributes
- * related to the token's role in the lexical analysis or syntax tree.
+ * its type, position (begin and end), neighboring tokens in a doubly linked list, and additional
+ * attributes related to the token's role in the lexical analysis or syntax tree.
  */
 struct token_t {
     /**
      * @brief The type of the token.
      * 
-     * This field stores the type of the token, such as whether it is an identifier, bracket,
-     * or static string. The token type helps determine the token's role in the source code.
+     * This field stores the type of the token, such as whether it is an identifier, operator,
+     * number, or static string. The token type helps determine the token's role in the source code
+     * and how it should be processed.
      */
     token_type_t type;
 
@@ -111,7 +114,7 @@ struct token_t {
      * This pointer links to the previous token in the doubly linked list, allowing traversal
      * of the list in reverse order.
      */
-    struct token_t *previous;
+    token_t *previous;
 
     /**
      * @brief Pointer to the next token in the list.
@@ -119,37 +122,54 @@ struct token_t {
      * This pointer links to the next token in the doubly linked list, allowing traversal
      * of the list in forward order.
      */
-    struct token_t *next;
+    token_t *next;
 
     /**
-     * @brief Pointer to the position of the token in the source code.
+     * @brief The position where the token starts in the source code.
      * 
-     * This field stores the position of the token (file, row, column) within the source code.
-     * It helps for error reporting and debugging.
+     * This field stores the starting position of the token in the source code, represented
+     * as a `position_t` structure that contains the file name, row, and column of the beginning
+     * of the token.
      */
-    const struct position_t *position;
+    position_t begin;
 
     /**
-     * @brief Pointer to the first character of the token in the source code.
+     * @brief The position of the character following the token in the source code.
      * 
-     * This pointer points to the beginning of the token's text in the source code, which
-     * is represented as a wide-character string.
+     * This field stores the position immediately **after** the token in the source code,
+     * represented as a `position_t` structure. It includes the file name, row, and column
+     * of the character **following** the last character of the token.
+     * 
+     * This is commonly used to mark the boundary of the token, indicating where the
+     * token ends and the next part of the code begins.
+     */
+    position_t end;
+
+    /**
+     * @brief The text of the token.
+     * 
+     * This field contains a wide-character string representing the token's text.
+     * The text is independent from the source code, meaning it can be generated, copied,
+     * or statically defined. For example, in the case of a `STATIC_STRING` token, the quotes and
+     * escape sequences (like `\n`, `\t`, etc.) are removed and replaced with corresponding
+     * entities.
      */
     wchar_t *text;
 
     /**
-     * @brief The length of the token in characters.
+     * @brief The length of the token's text.
      * 
-     * This field stores the number of characters (wchar_t) that the token occupies in the
-     * source code.
+     * This field stores the number of characters (`wchar_t`) in the `text` field, which represents
+     * the token's actual content.
      */
     size_t length;
 
     /**
      * @brief Pointer to the corresponding node in the syntax tree.
      * 
-     * This field points to the `node_t` structure that represents the corresponding syntax
-     * tree node for the token, if applicable.
+     * This field points to the `node_t` structure that represents the corresponding syntax tree
+     * node for the token, if applicable. This allows the token to be associated with its
+     * corresponding node in the abstract syntax tree.
      */
     node_t *node;
 
@@ -158,10 +178,11 @@ struct token_t {
      * 
      * This field stores a list of tokens that are considered children of the current token.
      * This is used for tokens that are part of more complex structures (e.g., parentheses
-     * around expressions).
+     * around expressions or nested blocks).
      */
     token_list_t child_tokens;
 };
+
 
 /**
  * @brief Adds a token to the end of a token list.

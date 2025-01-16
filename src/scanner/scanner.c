@@ -17,6 +17,7 @@
 
 #include "scanner.h"
 #include "lib/arena.h"
+#include "lib/string_ext.h"
 
 /**
  * @brief The size of a tabulation (in columns).
@@ -176,12 +177,12 @@ token_t *get_token(scanner_t *scan) {
         return NULL;
     }
 
-    token_t *token = alloc_from_arena(scan->arena, sizeof(token_t));
+    token_t *token = alloc_zeroed_from_arena(scan->arena, sizeof(token_t));
+    token->begin = scan->position;
 
     if (is_letter(ch)) {
         token->type = TOKEN_IDENTIFIER;
-        token->text = scan->ptr - 1;
-        token->length = 1;
+
 
         while (iswalpha(ch) || iswdigit(ch) || ch == L'_') {
             ch = next_char(scan);
@@ -191,28 +192,5 @@ token_t *get_token(scanner_t *scan) {
         return token;
     }
 
-    if (iswdigit(ch)) {
-        token->type = TOKEN_NUMBER;
-        token->text = scan->ptr - 1;
-        token->length = 1;
-
-        while (iswdigit(ch)) {
-            ch = next_char(scan);
-            token->length++;
-        }
-
-        return token;
-    }
-
-    if (ch == L'+' || ch == L'-' || ch == L'*' || ch == L'/' || ch == L'=' || ch == L'<' || ch == L'>') {
-        token->type = TOKEN_OPERATOR;
-        token->text = scan->ptr - 1;
-        token->length = 1;
-        return token;
-    }
-
-    token->type = TOKEN_ERROR;
-    token->text = scan->ptr - 1;
-    token->length = 1;
-    return token;
+    return NULL; // here we add some
 }
