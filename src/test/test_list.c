@@ -6,6 +6,7 @@
 
 #include "test_list.h"
 #include "test_lib.h"
+#include "test_scanner.h"
 #include "test_model.h"
 #include "test_codegen.h"
 
@@ -14,7 +15,9 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
-      {"memory allocation", test_memory_allocation }
+      {"parsing identifier", test_identifier }
+      
+    , {"memory allocation", test_memory_allocation }
     , {"AVL tree", test_avl_tree }
     , {"string builder", test_string_builder }
     , {"binary search", test_binary_search }

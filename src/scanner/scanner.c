@@ -14,6 +14,7 @@
  */
 
 #include <stdbool.h>
+#include <memory.h>
 
 #include "scanner.h"
 #include "lib/arena.h"
@@ -73,19 +74,6 @@ static void remove_comments_and_carriage_returns(wchar_t *code) {
 }
 
 /**
- * @brief Gets the current character from the scanner.
- * 
- * This function returns the current character the scanner is pointing to. It does not advance
- * the pointer or update the position in the source code.
- * 
- * @param scan The scanner instance from which to get the current character.
- * @return The current character being pointed to by the scanner.
- */
-static inline wchar_t get_char(scanner_t *scan) {
-    return *scan->ptr;
-}
-
-/**
  * @brief Returns the next character and updates the position of the scanner.
  * 
  * This function advances the scanner to the next character in the source code.
@@ -99,7 +87,7 @@ static inline wchar_t get_char(scanner_t *scan) {
  * @return The next character in the source code.
  */
 static wchar_t next_char(scanner_t *scan) {
-    wchar_t current = get_char(scan);
+    wchar_t current = *scan->ptr;
     if (current == L'\n') {
         scan->position.row++;
         scan->position.column = 1;
@@ -110,7 +98,7 @@ static wchar_t next_char(scanner_t *scan) {
     else {
         scan->position.column++;
     }
-    return *scan->ptr++;
+    return *(++scan->ptr);
 }
 
 /**
@@ -168,7 +156,8 @@ scanner_t *create_scanner(const char *file_name, wchar_t *code, arena_t *arena) 
 }
 
 token_t *get_token(scanner_t *scan) {
-    wchar_t ch = get_char(scan);
+    wchar_t ch = *scan->ptr;
+
     while (iswspace(ch)) {
         ch = next_char(scan);
     }
@@ -177,20 +166,28 @@ token_t *get_token(scanner_t *scan) {
         return NULL;
     }
 
+    wchar_t *first_byte = scan->ptr;
     token_t *token = alloc_zeroed_from_arena(scan->arena, sizeof(token_t));
     token->begin = scan->position;
 
     if (is_letter(ch)) {
         token->type = TOKEN_IDENTIFIER;
-
-
-        while (iswalpha(ch) || iswdigit(ch) || ch == L'_') {
+        do {
             ch = next_char(scan);
-            token->length++;
-        }
-
-        return token;
+        } while(is_letter(ch) || iswdigit(ch));
+    } else {
+        token->type = TOKEN_ERROR;
+    }
+    
+    token->end = scan->position;
+    if (token->text == NULL) {
+        size_t length = scan->ptr - first_byte;
+        wchar_t *text = alloc_from_arena(scan->arena, sizeof(wchar_t) * (length + 1));
+        memcpy(text, first_byte, sizeof(wchar_t) * length);
+        text[length] = L'\0';
+        token->text = text;
+        token->length = length;
     }
 
-    return NULL; // here we add some
+    return token;
 }
