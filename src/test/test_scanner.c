@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "test_scanner.h"
 #include "test_macro.h"
@@ -13,11 +14,37 @@
 
 bool test_identifier() {
     arena_t *arena = create_arena();
-    scanner_t *scan = create_scanner("program.goat", L"  test  ", arena);
+    scanner_t *scan = create_scanner("program.goat", L"  test \n abc123  ", arena);
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_IDENTIFIER);
     ASSERT(wcscmp(L"test", tok->text) == 0);
     ASSERT(tok->length == 4);
+    ASSERT(strcmp("program.goat", tok->begin.file_name) == 0);
+    ASSERT(tok->begin.row == 1);
+    ASSERT(tok->begin.column == 3);
+    ASSERT(tok->end.row == 1);
+    ASSERT(tok->end.column == 7);
+    tok = get_token(scan);
+    ASSERT(tok->type == TOKEN_IDENTIFIER);
+    ASSERT(wcscmp(L"abc123", tok->text) == 0);
+    ASSERT(tok->length == 6);
+    ASSERT(tok->begin.row == 2);
+    ASSERT(tok->begin.column == 2);
+    ASSERT(tok->end.row == 2);
+    ASSERT(tok->end.column == 8);
+    tok = get_token(scan);
+    ASSERT(tok == NULL);
+    destroy_arena(arena);
+    return true;
+}
+
+bool test_bracket() {
+    arena_t *arena = create_arena();
+    scanner_t *scan = create_scanner("program.goat", L"  )  ", arena);
+    token_t *tok = get_token(scan);
+    ASSERT(tok->type == TOKEN_BRACKET);
+    ASSERT(wcscmp(L")", tok->text) == 0);
+    ASSERT(tok->length == 1);
     destroy_arena(arena);
     return true;
 }

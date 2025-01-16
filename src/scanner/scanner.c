@@ -175,6 +175,10 @@ token_t *get_token(scanner_t *scan) {
         do {
             ch = next_char(scan);
         } while(is_letter(ch) || iswdigit(ch));
+    }
+    else if (ch == L'{' || ch == L'}' || ch == L'(' || ch == L')' || ch == L'[' || ch == L']') {
+        token->type = TOKEN_BRACKET;
+        next_char(scan);
     } else {
         token->type = TOKEN_ERROR;
     }

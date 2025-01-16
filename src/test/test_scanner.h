@@ -13,3 +13,9 @@
  * @return True if the test passes, false otherwise.
  */
 bool test_identifier();
+
+/**
+ * @brief Tests the scanner with a bracket token.
+ * @return True if the test passes, false otherwise.
+ */
+bool test_bracket();

@@ -16,6 +16,7 @@ static bool stub() {
 
 static test_description_t test_list[] = {
       {"parsing identifier", test_identifier }
+    , {"parsing bracket", test_bracket }
       
     , {"memory allocation", test_memory_allocation }
     , {"AVL tree", test_avl_tree }
