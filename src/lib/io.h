@@ -15,32 +15,41 @@
 #include <stdbool.h>
 #include <wchar.h>
 
+#include "value.h"
+
 /**
  * @brief Initializes the input-output system.
  * 
- * This function initializes the input-output system by setting the locale for handling
- * multi-byte character encodings (UTF-8). On platforms with GPIO support, this function
- * may also initialize necessary libraries or configurations for GPIO access (e.g., WiringPi
- * for Raspberry Pi or Arduino). It should be called at the beginning of the application to 
- * ensure proper initialization.
+ * This function initializes the input-output system by setting up platform-specific components, 
+ * such as GPIO libraries or configurations. On platforms with GPIO support, it will initialize 
+ * the necessary libraries. This function should be called at the beginning of the application
+ * to ensure proper initialization of the I/O system.
  * 
  * @return `true` if initialization is successful, `false` otherwise.
  */
 bool init_io(void);
 
 /**
- * @brief Reads the contents of a UTF-8 encoded text file and returns it as a
- *  wide-character string.
+ * @brief Reads a UTF-8 encoded file and returns the decoded string.
  * 
- * This function attempts to read a file with the specified name, decode its contents from UTF-8
- * into a wide-character string (`wchar_t*`), and returns it. If the file cannot be opened,
- * read, or the contents are not valid UTF-8, the function will return NULL.
+ * This function opens a UTF-8 encoded file, reads its contents into a buffer, and decodes the 
+ * buffer into a wide-character string (`wchar_t*`). The result is returned as a `string_value_t` 
+ * structure, which contains the decoded string, its length, and a flag indicating whether the 
+ * calling method is responsible for freeing the allocated memory.
  * 
- * @param filename The name of the file to be read.
- * @return A wide-character string (`wchar_t*`) containing the decoded content of the file, or
- *  NULL if the file cannot be read or the content is not a valid UTF-8 encoding.
+ * If the file cannot be opened, read, or decoded, the returned structure will contain a `NULL` 
+ * string and a length of `0`. If the file contains valid UTF-8 data, the returned structure will 
+ * contain the decoded string and its length.
+ * 
+ * @param filename The name of the file to read (UTF-8 encoded).
+ * @return A `string_value_t` structure containing the decoded wide-character string, its length, 
+ *  and a flag indicating whether the memory should be freed by the caller. If the function fails
+ *  to read or decode the file, the structure will contain a `NULL` string.
+ * 
+ * @note This function does not check the validity of the UTF-8 content in detail — if the content
+ *  is invalid, it will return a `NULL` string, and the `should_free` flag will be `false`.
  */
-wchar_t* read_utf8_file(const char* filename);
+string_value_t read_utf8_file(const char *filename);
 
 /**
  * @brief Writes a wide-character string to a file as UTF-8 encoded text.
@@ -54,7 +63,7 @@ wchar_t* read_utf8_file(const char* filename);
  * @param content The wide-character string to be written to the file.
  * @return `true` if the file was written successfully, `false` if an error occurred.
  */
-bool write_utf8_file(const char* filename, const wchar_t* content);
+bool write_utf8_file(const char *filename, const wchar_t *content);
 
 /**
  * @brief Prints a wide-character string to the standard output as UTF-8 encoded text.
@@ -65,7 +74,32 @@ bool write_utf8_file(const char* filename, const wchar_t* content);
  * 
  * @param content The wide-character string to be printed.
  */
-void print_utf8(const wchar_t* content);
+void print_utf8(const wchar_t *content);
+
+/**
+ * @brief Prints a formatted wide-character string to the standard output as UTF-8 encoded text.
+ * 
+ * This function behaves like `printf`, but it converts the format string from wide-character 
+ * (`wchar_t*`) to UTF-8 encoding before printing it to the standard output (console). The function 
+ * ensures that the output is correctly encoded in UTF-8.
+ * 
+ * @param format The wide-character format string to be printed.
+ * @param ... The arguments to be formatted and printed along with the format string.
+ */
+void printf_utf8(const wchar_t *format, ...);
+
+/**
+ * @brief Prints a formatted wide-character string to the standard error output
+ *  as UTF-8 encoded text.
+ * 
+ * This function behaves like `printf_utf8`, but it prints to the standard error stream
+ * (`stderr`) after converting the format string from wide-character (`wchar_t*`)
+ * to UTF-8 encoding.
+ * 
+ * @param format The wide-character format string to be printed.
+ * @param ... The arguments to be formatted and printed along with the format string.
+ */
+void err_printf_utf8(const wchar_t *format, ...);
 
 /**
  * @brief Reads a digital input from a specified GPIO pin.

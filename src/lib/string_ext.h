@@ -112,3 +112,48 @@ string_value_t append_substring(string_builder_t *builder, wchar_t *wstr, size_t
  * @return A `string_value_t` structure containing the updated string buffer and its length.
  */
 string_value_t append_string(string_builder_t *builder, wchar_t *wstr);
+
+/**
+ * @brief Encodes a wide-character string (`wchar_t*`) into a UTF-8 encoded string.
+ * 
+ * This function takes a wide-character string (`wchar_t*`) and encodes it into a UTF-8
+ * encoded string. It processes each wide-character symbol in the input string and converts it
+ * to the corresponding UTF-8 bytes. The resulting string is dynamically allocated,
+ * and it is null-terminated.
+ * 
+ * @param wstr The wide-character string (`wchar_t*`) to encode.
+ * @return A dynamically allocated UTF-8 encoded string (`char*`).
+ * @note The caller is responsible for freeing the memory allocated for the UTF-8 encoded string.
+ */
+char *encode_utf8(const wchar_t *wstr);
+
+/**
+ * @brief Encodes a wide-character string (`wchar_t*`) into a UTF-8 encoded string
+ *  and returns its size.
+ * 
+ * This function takes a wide-character string (`wchar_t*`) and encodes it into a UTF-8
+ * encoded string. The resulting UTF-8 string is dynamically allocated and null-terminated.
+ * Additionally, the size of the encoded string (in bytes) is returned via the `size_ptr`
+ * parameter, allowing the caller to avoid recalculating the size when it is needed immediately.
+ * 
+ * @param wstr The wide-character string (`wchar_t*`) to encode.
+ * @param size_ptr A pointer to a `size_t` variable where the size of the UTF-8 encoded string
+ *  (in bytes) will be stored.
+ * @return A dynamically allocated UTF-8 encoded string (`char*`).
+ * @note The caller must free the memory allocated for the UTF-8 encoded string after use.
+ */
+char *encode_utf8_ex(const wchar_t *wstr, size_t *size_ptr);
+
+/**
+ * @brief Decodes a UTF-8 encoded string into a wide-character string.
+ * 
+ * This function decodes a UTF-8 encoded string (`char*`) into a wide-character string (`wchar_t*`).
+ * The function processes the string byte-by-byte and handles characters encoded with 1 to 4 bytes, 
+ * according to the UTF-8 encoding scheme. If any invalid byte sequences are detected, the function
+ * will return an empty result (i.e., a failed string).
+ * 
+ * @param str A pointer to the UTF-8 encoded string (`char*`) to decode.
+ * @return A `string_value_t` structure containing the decoded wide-character string.
+ * @note The caller is responsible for managing the memory of the decoded string.
+ */
+string_value_t decode_utf8(const char *str);
