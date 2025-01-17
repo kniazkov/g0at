@@ -14,6 +14,8 @@
  */
 
 #include <memory.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 #include "arena.h"
 #include "allocate.h"
@@ -66,6 +68,29 @@ void* alloc_zeroed_from_arena(arena_t* arena, size_t size) {
     void *ptr = alloc_from_arena(arena, size);
     memset(ptr, 0, size);
     return ptr;
+}
+
+wchar_t *printf_arena(arena_t *arena, size_t *size_ptr, const wchar_t *format, ...) {
+    va_list args;
+    
+    va_start(args, format);
+    int size = vswprintf(NULL, 0, format, args);
+    va_end(args);
+
+    if (size < 0) {
+        return NULL;
+    }
+
+    if (size_ptr != NULL) {
+        *size_ptr = (size_t)size;
+    }
+
+    wchar_t *buffer = (wchar_t *)alloc_from_arena(arena, (size + 1) * sizeof(wchar_t));
+    va_start(args, format);
+    vswprintf(buffer, size + 1, format, args);
+    va_end(args);
+
+    return buffer;
 }
 
 void destroy_arena(arena_t* arena) {

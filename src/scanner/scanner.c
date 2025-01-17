@@ -19,6 +19,7 @@
 #include "scanner.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "resources/messages.h"
 
 /**
  * @brief The size of a tabulation (in columns).
@@ -181,6 +182,7 @@ token_t *get_token(scanner_t *scan) {
         next_char(scan);
     } else {
         token->type = TOKEN_ERROR;
+        token->text = printf_arena(scan->arena, &token->length, get_messages()->unknown_symbol, ch);
     }
     
     token->end = scan->position;

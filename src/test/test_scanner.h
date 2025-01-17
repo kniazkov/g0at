@@ -19,3 +19,9 @@ bool test_identifier();
  * @return True if the test passes, false otherwise.
  */
 bool test_bracket();
+
+/**
+ * @brief Tests the scanner with invalid symbol.
+ * @return True if the test passes, false otherwise.
+ */
+bool test_uknown_symbol();

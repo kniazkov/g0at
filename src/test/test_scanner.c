@@ -48,3 +48,13 @@ bool test_bracket() {
     destroy_arena(arena);
     return true;
 }
+
+bool test_uknown_symbol() {
+    arena_t *arena = create_arena();
+    scanner_t *scan = create_scanner("program.goat", L"  `  ", arena);
+    token_t *tok = get_token(scan);
+    ASSERT(tok->type == TOKEN_ERROR);
+    ASSERT(wcscmp(L"unknown symbol '`'", tok->text) == 0);
+    destroy_arena(arena);
+    return true;
+}

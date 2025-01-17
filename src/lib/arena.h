@@ -13,6 +13,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <wchar.h>
 
 /**
  * @struct arena_t
@@ -102,11 +103,11 @@ struct arena_t {
  * @def CHUNK_SIZE
  * @brief Size of a chunk in the memory arena.
  * 
- * The default chunk size is set to be slightly less than a megabyte to account for memory
+ * The default chunk size is set to be slightly less than a 128k to account for memory
  * alignment and header overhead. This ensures that the chunk size fits more efficiently
  * within memory page boundaries, avoiding wasted space.
  */
-#define CHUNK_SIZE (1024 * 1024 - sizeof(chunk_t) - 256)
+#define CHUNK_SIZE (128 * 1024 - sizeof(chunk_t) - 64)
 
 /**
  * @def BIG_OBJECT_SIZE
@@ -166,6 +167,24 @@ void* alloc_from_arena(arena_t* arena, size_t size);
  * @return A pointer to the zero-initialized memory block.
  */
 void* alloc_zeroed_from_arena(arena_t* arena, size_t size);
+
+/**
+ * @brief Formats a string using the memory arena and returns it.
+ * 
+ * This function allocates the required amount of memory from the arena, formats the string
+ * using the provided arguments, and returns a pointer to the resulting string. If the
+ * `size_ptr` is not `NULL`, it will store the size of the formatted string
+ * (excluding the null terminator).
+ * 
+ * @param arena A pointer to the arena from which memory should be allocated.
+ * @param size_ptr A pointer to a `size_t` variable that will store the size of the formatted
+ *  string (excluding the null terminator). If `NULL`, the size is not returned.
+ * @param format A format string.
+ * @param ... Arguments for formatting.
+ * @return A pointer to the formatted string allocated from the arena. 
+ *  The caller is responsible for freeing the memory when no longer needed.
+ */
+wchar_t *printf_arena(arena_t *arena, size_t *size_ptr, const wchar_t *format, ...);
 
 /**
  * @brief Destroys the memory arena and frees all allocated memory.

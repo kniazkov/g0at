@@ -1,0 +1,47 @@
+/**
+ * @file messages.h
+ * @copyright 2025 Ivan Kniazkov
+ * @brief Definitions for localized error messages.
+ * 
+ * This file defines the structure for holding localized error messages used during the parsing
+ * of source code and the compilation to bytecode. It supports multiple languages by storing
+ * different sets of messages.
+ */
+
+#pragma once
+
+#include <wchar.h>
+
+/**
+ * @struct messages_t
+ * @brief Structure to hold localized error messages.
+ * 
+ * This structure contains pointers to localized error messages, which are used during
+ * the parsing and compilation process. Each message is a wide-character string. The messages
+ * include various error messages related to symbol recognition, and more can be added as needed.
+ */
+typedef struct {
+    const wchar_t const *unknown_symbol;
+    // add other
+} messages_t;
+
+/**
+ * @brief Returns the current set of messages based on the selected language.
+ * 
+ * This function returns a pointer to the `messages_t` structure, which contains 
+ * the localized error messages used during the parsing of source code and 
+ * compilation to bytecode, for the selected language.
+ * 
+ * @return A pointer to the current `messages_t` structure.
+ */
+const messages_t *get_messages();
+
+/**
+ * @brief Sets the language for error messages.
+ * 
+ * This function selects the language for error messages based on the provided language code.
+ * The language code is compared case-insensitively.
+ * 
+ * @param lang The language code (for now, "en" for English, "ru" for Russian).
+ */
+void set_language(const char *lang);
