@@ -216,3 +216,33 @@ error:
     FREE(builder.data);
     return (string_value_t){ NULL, 0, false };
 }
+
+string_value_t string_to_string_notation(const wchar_t *prefix, const string_value_t str) {
+    string_builder_t builder;
+    init_string_builder(&builder, str.length + 2 + wcslen(prefix));
+    append_string(&builder, prefix);
+    append_char(&builder, '"');
+    for (size_t i = 0; i < str.length; i++) {
+        wchar_t ch = str.data[i];
+        switch (ch) {
+            case '\r':
+                append_substring(&builder, L"\\r", 2);
+                break;
+            case '\n':
+                append_substring(&builder, L"\\n", 2);
+                break;
+            case '\t':
+                append_substring(&builder, L"\\t", 2);
+                break;
+            case '"':
+                append_substring(&builder, L"\\\"", 2);
+                break;
+            case '\\':
+                append_substring(&builder, L"\\\\", 2);
+                break;
+            default:
+                append_char(&builder, ch);
+        }
+    }
+    return append_char(&builder, '"');
+}

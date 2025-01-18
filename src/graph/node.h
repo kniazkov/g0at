@@ -10,13 +10,19 @@
 
 #pragma once
 
-#include "value.h"
+#include "lib/value.h"
 
 /**
  * @typedef node_t
  * @brief Forward declaration for the node structure.
  */
 typedef struct node_t node_t;
+
+/**
+ * @typedef node_t
+ * @brief Forward declaration for the arena memory allocator.
+ */
+typedef struct arena_t arena_t;
 
 /**
  * @enum node_type_t

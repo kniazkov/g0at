@@ -157,3 +157,20 @@ char *encode_utf8_ex(const wchar_t *wstr, size_t *size_ptr);
  * @note The caller is responsible for managing the memory of the decoded string.
  */
 string_value_t decode_utf8(const char *str);
+
+/**
+ * @brief Converts a string to its notation representation with escape sequences.
+ * 
+ * This function converts the given string to its string notation representation by escaping
+ * special characters (such as newline, carriage return, tab, quotes, and backslashes) and
+ * surrounding the string with double quotes. It also prepends a given prefix to the string, 
+ * which can be used for code generation in different programming languages.
+ * 
+ * For example, when generating code in C, the prefix `L` may be used to generate wide string
+ * literals like `L"hello"`.
+ * 
+ * @param prefix A prefix string to prepend to the string notation.
+ * @param str The original string value to convert to its string notation.
+ * @return A `string_value_t` structure containing the escaped string representation.
+ */
+string_value_t string_to_string_notation(const wchar_t *prefix, const string_value_t str);

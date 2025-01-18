@@ -299,32 +299,7 @@ static string_value_t dynamic_to_string(const object_t *obj) {
  */
 static string_value_t to_string_notation(const object_t *obj) {
     string_value_t value = obj->vtbl->to_string(obj);
-    string_builder_t builder;
-    init_string_builder(&builder, value.length + 2);
-    append_char(&builder, '"');
-    for (size_t i = 0; i < value.length; i++) {
-        wchar_t ch = value.data[i];
-        switch (ch) {
-            case '\r':
-                append_substring(&builder, L"\\r", 2);
-                break;
-            case '\n':
-                append_substring(&builder, L"\\n", 2);
-                break;
-            case '\t':
-                append_substring(&builder, L"\\t", 2);
-                break;
-            case '"':
-                append_substring(&builder, L"\\\"", 2);
-                break;
-            case '\\':
-                append_substring(&builder, L"\\\\", 2);
-                break;
-            default:
-                append_char(&builder, ch);
-        }
-    }
-    return append_char(&builder, '"');
+    return string_to_string_notation(L"", value);
 }
 
 /**
