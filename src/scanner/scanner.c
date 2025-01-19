@@ -15,6 +15,7 @@
 
 #include <stdbool.h>
 #include <memory.h>
+#include <wctype.h>
 
 #include "scanner.h"
 #include "lib/arena.h"

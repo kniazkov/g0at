@@ -99,7 +99,7 @@ string_value_t append_char(string_builder_t *builder, wchar_t symbol);
  * @param wstr_length The length of the substring to append.
  * @return A `string_value_t` structure containing the updated string buffer and its length.
  */
-string_value_t append_substring(string_builder_t *builder, wchar_t *wstr, size_t wstr_length);
+string_value_t append_substring(string_builder_t *builder, const wchar_t *wstr, size_t wstr_length);
 
 /**
  * @brief Appends a wide-character string to the string builder.
@@ -111,7 +111,7 @@ string_value_t append_substring(string_builder_t *builder, wchar_t *wstr, size_t
  * @param wstr A pointer to the wide-character string to append.
  * @return A `string_value_t` structure containing the updated string buffer and its length.
  */
-string_value_t append_string(string_builder_t *builder, wchar_t *wstr);
+string_value_t append_string(string_builder_t *builder, const wchar_t *wstr);
 
 /**
  * @brief Encodes a wide-character string (`wchar_t*`) into a UTF-8 encoded string.
