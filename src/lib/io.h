@@ -95,31 +95,6 @@ void print_utf8(const wchar_t *content);
 void fprintf_utf8(FILE *file, const wchar_t *format, ...);
 
 /**
- * @brief Prints a formatted wide-character string to the standard output as UTF-8 encoded text.
- * 
- * This function behaves like `printf`, but it converts the format string from wide-character 
- * (`wchar_t*`) to UTF-8 encoding before printing it to the standard output (console). The function 
- * ensures that the output is correctly encoded in UTF-8.
- * 
- * @param format The wide-character format string to be printed.
- * @param ... The arguments to be formatted and printed along with the format string.
- */
-void printf_utf8(const wchar_t *format, ...);
-
-/**
- * @brief Prints a formatted wide-character string to the standard error output
- *  as UTF-8 encoded text.
- * 
- * This function behaves like `printf_utf8`, but it prints to the standard error stream
- * (`stderr`) after converting the format string from wide-character (`wchar_t*`)
- * to UTF-8 encoding.
- * 
- * @param format The wide-character format string to be printed.
- * @param ... The arguments to be formatted and printed along with the format string.
- */
-void err_printf_utf8(const wchar_t *format, ...);
-
-/**
  * @brief Reads a digital input from a specified GPIO pin.
  * 
  * This function reads a digital input (either `0` or `1`) from the specified GPIO pin (index).

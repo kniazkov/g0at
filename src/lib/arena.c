@@ -76,9 +76,14 @@ wchar_t *printf_arena(arena_t *arena, size_t *size_ptr, const wchar_t *format, .
     va_start(args, format);
     int size = vswprintf(NULL, 0, format, args);
     va_end(args);
-
     if (size < 0) {
-        return NULL;
+        wchar_t temp[1];
+        va_start(args, format);
+        size = vswprintf(temp, 0, format, args);
+        va_end(args);
+        if (size < 0) {
+            return NULL;
+        }
     }
 
     if (size_ptr != NULL) {

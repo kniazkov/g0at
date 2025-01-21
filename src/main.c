@@ -21,8 +21,7 @@ int main(int argc, char** argv) {
 
     string_value_t wstr2 = read_utf8_file("test.txt");
     
-    //print_utf8(L"оно работает.");
-    printf_utf8(wstr2.data, 1024);
+    fprintf_utf8(stdout, wstr2.data, 1024);
 
     FREE(str);
     FREE(wstr.data);
