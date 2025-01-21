@@ -28,6 +28,6 @@ int main(int argc, char** argv) {
     FREE(wstr.data);
     FREE(wstr2.data);
 
-    printf("\n\n%d", get_allocated_memory_size());
+    printf("\n\n%zu", get_allocated_memory_size());
     return 0;
 }

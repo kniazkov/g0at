@@ -59,22 +59,36 @@ void print_utf8(const wchar_t *content) {
     FREE(buffer);
 }
 
-void printf_utf8(const wchar_t *format, ...) {
-    char* utf8_format = encode_utf8(format);
+void fprintf_utf8(FILE *file, const wchar_t *format, ...) {
     va_list args;
     va_start(args, format);
-    vprintf(utf8_format, args);
+    int size = vswprintf(NULL, 0, format, args);
     va_end(args);
-    FREE(utf8_format);
+    if (size < 0) {
+        return;
+    }
+    wchar_t *buffer = (wchar_t *)ALLOC((size + 1) * sizeof(wchar_t));
+    va_start(args, format);
+    vswprintf(buffer, size + 1, format, args);
+    va_end(args);
+    char* encoded_buffer = encode_utf8(buffer);
+    vfprintf(file, encoded_buffer, args);
+    FREE(encoded_buffer);
+    FREE(buffer);
+}
+
+void printf_utf8(const wchar_t *format, ...) {
+    va_list args;
+    va_start(args, format);
+    fprintf_utf8(stdout, format, args);
+    va_end(args);
 }
 
 void err_printf_utf8(const wchar_t *format, ...) {
-    char* utf8_format = encode_utf8(format);
     va_list args;
     va_start(args, format);
-    vfprintf(stderr, utf8_format, args);
+    fprintf_utf8(stderr, format, args);
     va_end(args);
-    FREE(utf8_format);
 }
 
 bool read_digital_input(int index) {

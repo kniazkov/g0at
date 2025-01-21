@@ -77,6 +77,24 @@ bool write_utf8_file(const char *filename, const wchar_t *content);
 void print_utf8(const wchar_t *content);
 
 /**
+ * @brief Prints a formatted wide-character string to a specified file as UTF-8 encoded text.
+ * 
+ * This function behaves like `vfprintf`, but it first converts the wide-character format string 
+ * (`wchar_t*`) into a UTF-8 encoded string before printing it to the specified output file.
+ * It ensures that the output is correctly encoded in UTF-8.
+ * 
+ * The function first calculates the necessary buffer size to store the wide-character string, then 
+ * allocates memory for the buffer and the UTF-8 encoded result. After formatting the string,
+ * it encodes it into UTF-8 and writes it to the specified file stream.
+ * 
+ * @param file The file stream where the formatted string should be printed
+ *  (e.g., `stdout` or `stderr`).
+ * @param format The wide-character format string to be printed.
+ * @param ... The arguments to be formatted and printed along with the format string.
+ */
+void fprintf_utf8(FILE *file, const wchar_t *format, ...);
+
+/**
  * @brief Prints a formatted wide-character string to the standard output as UTF-8 encoded text.
  * 
  * This function behaves like `printf`, but it converts the format string from wide-character 
