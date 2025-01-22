@@ -30,6 +30,9 @@ int string_comparator(const void *first, const void *second) {
 
 void init_string_builder(string_builder_t *builder, size_t capacity) {
     if (capacity > 0) {
+        if (capacity < INITIAL_STRING_BUILDER_CAPACITY) {
+            capacity = INITIAL_STRING_BUILDER_CAPACITY;
+        }
         builder->data = (wchar_t *)ALLOC(sizeof(wchar_t) * (capacity + 1));
         builder->data[0] = 0;
     } else {
@@ -62,7 +65,8 @@ string_value_t append_char(string_builder_t *builder, wchar_t symbol) {
     return (string_value_t){ builder->data, builder->length, true };
 }
 
-string_value_t append_substring(string_builder_t *builder, const wchar_t *wstr, size_t wstr_length) {
+string_value_t append_substring(string_builder_t *builder, const wchar_t *wstr,
+        size_t wstr_length) {
     if (wstr_length != 0) {
         size_t new_length = builder->length + wstr_length;
         if (new_length > builder->capacity) {
@@ -70,12 +74,31 @@ string_value_t append_substring(string_builder_t *builder, const wchar_t *wstr, 
         }
         memcpy(builder->data + builder->length, wstr, (wstr_length + 1) * sizeof(wchar_t));
         builder->length += wstr_length;
+        builder->data[builder->length] = 0;
     }
     return (string_value_t){ builder->data, builder->length, true };
 }
 
 string_value_t append_string(string_builder_t *builder, const wchar_t *wstr) {
     return append_substring(builder, wstr, wcslen(wstr));
+}
+
+string_value_t append_ascii_string(string_builder_t *builder, const char *str) {
+    size_t str_length = strlen(str);
+    if (str_length != 0) {
+        size_t new_length = builder->length + str_length;
+        if (new_length > builder->capacity) {
+            resize_string_builder(builder, new_length);
+        }
+        wchar_t *dst = builder->data + builder->length;
+        const char *src = str;
+        while (*src) {
+            *dst++ = (wchar_t)*src++;
+        }
+        builder->length += str_length;
+        builder->data[builder->length] = 0;
+    }
+    return (string_value_t){ builder->data, builder->length, true };
 }
 
 /**
@@ -268,4 +291,92 @@ void double_to_string(double value, char *buffer, size_t buffer_size) {
     } else {
         snprintf(buffer, buffer_size, "%g", value);
     }
+}
+
+string_value_t format_string_vargs(const wchar_t *format, va_list args) {
+    const wchar_t *ch = format;
+    size_t size = 0;
+    while (*ch != L'\0' && *ch != L'%') {
+        size++;
+        ch++;
+    }
+    if (*ch == L'\0') {
+        // no control symbols
+        return (string_value_t) { (wchar_t*)format, size, false };
+    }
+    string_builder_t builder;
+    init_string_builder(&builder, size < INITIAL_STRING_BUILDER_CAPACITY ? INITIAL_STRING_BUILDER_CAPACITY : size);
+    append_substring(&builder, format, size);
+    while(*ch != L'\0') {
+        if (*ch == L'%') {
+            switch(*(++ch)) {
+                case L'%' :
+                    append_char(&builder, L'%');
+                    break;
+                case L'c': {
+                    wchar_t arg_char = (wchar_t)va_arg(args, int);
+                    append_char(&builder, arg_char);
+                    break;
+                }
+                case L's': {
+                    const wchar_t *arg_str = va_arg(args, const wchar_t *);
+                    append_string(&builder, arg_str);
+                    break;
+                }
+                case L'd':
+                case L'i': {
+                    int arg_int = va_arg(args, int);
+                    char buffer[16];
+                    sprintf(buffer, "%d", arg_int);
+                    append_ascii_string(&builder, buffer);
+                    break;
+                }
+                case L'u': {
+                    unsigned int arg_uint = va_arg(args, unsigned int);
+                    char buffer[16];
+                    sprintf(buffer, "%u", arg_uint);
+                    append_ascii_string(&builder, buffer);
+                    break;
+                }
+                case L'l': {
+                    ch++;
+                    if (*ch == 'i' || *ch == 'd') {
+                        int64_t arg_long = va_arg(args, int64_t);
+                        char buffer[32];
+                        sprintf(buffer, "%lli", arg_long);
+                        append_ascii_string(&builder, buffer);
+                    } else {
+                        append_char(&builder, L'?');
+                    }
+                    break;
+                }
+                case L'z': {
+                    ch++;
+                    if (*ch == L'u') {
+                        size_t arg_size = va_arg(args, size_t);
+                        char buffer[32];
+                        sprintf(buffer, "%zu", arg_size);
+                        append_ascii_string(&builder, buffer);
+                    } else {
+                        append_char(&builder, L'?');
+                    }
+                    break;
+                }
+                case L'f': {
+                    double arg_double = va_arg(args, double);
+                    char buffer[32];
+                    double_to_string(arg_double, buffer, sizeof(buffer));
+                    append_ascii_string(&builder, buffer);
+                    break;
+                }
+                default:
+                    append_char(&builder, L'?');
+                    break;
+            }            
+        } else {
+            append_char(&builder, *ch);
+        }
+        ch++;
+    }
+    return (string_value_t) { builder.data, builder.length, true };
 }

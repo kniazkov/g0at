@@ -120,3 +120,44 @@ bool test_double_to_string() {
     ASSERT(strcmp("-1e-012", buffer) == 0);
     return true;
 }
+
+bool test_format_string() {
+    string_value_t value = format_string(L"test");
+    ASSERT(wcscmp(L"test", value.data) == 0);
+    ASSERT(value.length == 4);
+    ASSERT(value.should_free == false);
+    value = format_string(L"a%cb", L'c');
+    ASSERT(wcscmp(L"acb", value.data) == 0);
+    ASSERT(value.length == 3);
+    ASSERT(value.should_free == true);
+    FREE(value.data);
+    value = format_string(L"aaa%sbbb", L"ccc");
+    ASSERT(wcscmp(L"aaacccbbb", value.data) == 0);
+    ASSERT(value.length == 9);
+    ASSERT(value.should_free == true);
+    FREE(value.data);
+    value = format_string(L"value = %f%%;", (double)-1.024);
+    ASSERT(wcscmp(L"value = -1.024%;", value.data) == 0);
+    ASSERT(value.length == 16);
+    ASSERT(value.should_free == true);
+    FREE(value.data);
+    value = format_string(L"value = %d;", -1);
+    ASSERT(wcscmp(L"value = -1;", value.data) == 0);
+    ASSERT(value.should_free == true);
+    FREE(value.data);
+    value = format_string(L"value = %u;", 777);
+    ASSERT(wcscmp(L"value = 777;", value.data) == 0);
+    ASSERT(value.should_free == true);
+    FREE(value.data);
+    int64_t l = 1000000000000L;
+    value = format_string(L"value = %li;", l);
+    ASSERT(wcscmp(L"value = 1000000000000;", value.data) == 0);
+    ASSERT(value.should_free == true);
+    FREE(value.data);
+    size_t s = 17;
+    value = format_string(L"size = %zu;", s);
+    ASSERT(wcscmp(L"size = 17;", value.data) == 0);
+    ASSERT(value.should_free == true);
+    FREE(value.data);
+    return true;
+}

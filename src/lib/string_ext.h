@@ -8,6 +8,7 @@
 
 #include <string.h>
 #include <wchar.h>
+#include <stdarg.h>
 
 #include "value.h"
 
@@ -114,6 +115,19 @@ string_value_t append_substring(string_builder_t *builder, const wchar_t *wstr, 
 string_value_t append_string(string_builder_t *builder, const wchar_t *wstr);
 
 /**
+ * @brief Appends an ASCII string to the string builder.
+ * 
+ * Adds the specified null-terminated ASCII string to the end of the builder's string,
+ * resizing the buffer if necessary. The appended string is automatically converted to 
+ * a wide-character string during the operation. The resulting string remains null-terminated.
+ * 
+ * @param builder A pointer to the `string_builder_t` instance to which the string will be appended.
+ * @param str A pointer to the null-terminated ASCII string to append.
+ * @return A `string_value_t` structure containing the updated string buffer and its length.
+ */
+string_value_t append_ascii_string(string_builder_t *builder, const char *str);
+
+/**
  * @brief Encodes a wide-character string (`wchar_t*`) into a UTF-8 encoded string.
  * 
  * This function takes a wide-character string (`wchar_t*`) and encodes it into a UTF-8
@@ -195,3 +209,59 @@ string_value_t string_to_string_notation(const wchar_t *prefix, const string_val
  *  the output string does not exceed this size, including the null terminator.
  */
 void double_to_string(double value, char *buffer, size_t buffer_size);
+
+/**
+ * @brief Formats a wide-character string with the specified arguments.
+ * 
+ * This function formats a wide-character string based on the provided format string and 
+ * arguments. It supports a subset of standard `printf`-style format specifiers and allocates 
+ * memory for the resulting formatted string. The goal of this implementation is to provide 
+ * a cross-platform, reliable way to format wide-character strings without surprises or/and
+ * platform-specific behavior.
+ * 
+ * ### Supported Format Specifiers:
+ * - **`%c`**: Inserts a single wide character (`wchar_t`).
+ * - **`%s`**: Inserts a wide-character string (`wchar_t*`).
+ * - **`%d`, `%i`**: Inserts a signed integer (`int`).
+ * - **`%u`**: Inserts an unsigned integer (`unsigned int`).
+ * - **`%zu`**: Inserts an unsigned size (`size_t`).
+ * - **`%ld`, `%li`**: Inserts a 64-bit signed integer (`int64_t`).
+ * - **`%f`**: Inserts a double, formatted using `double_to_string`.
+ * - **`%%`**: Inserts a literal `%`.
+ * 
+ * ### Features:
+ * - Dynamically allocates memory for the resulting wide-character string.
+ * - Ensures compatibility across platforms by avoiding platform-specific quirks of standard
+ *   wide-character formatting functions.
+ * - Trims down to the essential functionality needed for a reliable implementation.
+ * 
+ * @param format The wide-character format string containing placeholders for the arguments.
+ * @param args A `va_list` containing the arguments to substitute into the format string.
+ * @return A `string_value_t` structure containing the formatted string, its length, and a flag 
+ *  indicating ownership of the buffer.
+ * 
+ * @note If no format specifiers are found, the function directly returns the original format
+ *  string without allocating memory. If an unsupported format specifier is encountered,
+ *  the function replaces it with `?`.
+ */
+string_value_t format_string_vargs(const wchar_t *format, va_list args);
+
+/**
+ * @brief Formats a wide-character string with a variable number of arguments.
+ * 
+ * This function is a wrapper around `format_string_vargs` that simplifies its use by taking
+ * a variable number of arguments directly. It supports the same subset of format specifiers
+ * and behaves identically in all other respects.
+ * 
+ * @param format The wide-character format string containing placeholders for the arguments.
+ * @param ... The variable arguments to substitute into the format string.
+ * @return A `string_value_t` structure containing the formatted string, its length, and a flag 
+ *         indicating ownership of the buffer.
+ */
+static inline string_value_t format_string(const wchar_t *format, ...) {
+    va_list args;
+    va_start(args, format);
+    string_value_t value = format_string_vargs(format, args);
+    va_end(args);
+    return value;
+}

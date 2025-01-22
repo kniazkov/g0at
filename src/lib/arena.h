@@ -184,7 +184,7 @@ void* alloc_zeroed_from_arena(arena_t* arena, size_t size);
  * @return A pointer to the formatted string allocated from the arena. 
  *  The caller is responsible for freeing the memory when no longer needed.
  */
-wchar_t *printf_arena(arena_t *arena, size_t *size_ptr, const wchar_t *format, ...);
+wchar_t *format_string_to_arena(arena_t *arena, size_t *size_ptr, const wchar_t *format, ...);
 
 /**
  * @brief Destroys the memory arena and frees all allocated memory.

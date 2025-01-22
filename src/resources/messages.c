@@ -22,7 +22,7 @@
  * are used during the parsing and compilation process.
  */
 static messages_t english = {
-    .unknown_symbol = L"unknown symbol '%lc'"
+    .unknown_symbol = L"unknown symbol '%c'"
 };
 
 /**
@@ -33,7 +33,7 @@ static messages_t english = {
  * are used during the parsing and compilation process.
  */
 static messages_t russian = {
-    .unknown_symbol = L"неизвестный символ '%lc'"
+    .unknown_symbol = L"неизвестный символ '%c'"
 };
 
 /**

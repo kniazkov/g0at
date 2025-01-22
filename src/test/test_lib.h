@@ -38,3 +38,9 @@ bool test_binary_search();
  * @return `true` if the test passes, `false` if any assertion fails.
  */
 bool test_double_to_string();
+
+/**
+ * @brief Unit test covering string formatting.
+ * @return `true` if the test passes, `false` if any assertion fails.
+ */
+bool test_format_string();

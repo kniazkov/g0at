@@ -19,6 +19,7 @@
 
 #include "arena.h"
 #include "allocate.h"
+#include "string_ext.h"
 
 arena_t* create_arena() {
     arena_t* arena = (arena_t*)ALLOC(sizeof(arena_t));
@@ -70,31 +71,20 @@ void* alloc_zeroed_from_arena(arena_t* arena, size_t size) {
     return ptr;
 }
 
-wchar_t *printf_arena(arena_t *arena, size_t *size_ptr, const wchar_t *format, ...) {
+wchar_t *format_string_to_arena(arena_t *arena, size_t *size_ptr, const wchar_t *format, ...) {
     va_list args;
-    
     va_start(args, format);
-    int size = vswprintf(NULL, 0, format, args);
+    string_value_t value = format_string_vargs(format, args);
     va_end(args);
-    if (size < 0) {
-        wchar_t temp[1];
-        va_start(args, format);
-        size = vswprintf(temp, 0, format, args);
-        va_end(args);
-        if (size < 0) {
-            return NULL;
-        }
-    }
-
+    size_t data_length = (value.length + 1) * sizeof(wchar_t*);
+    wchar_t *buffer = alloc_from_arena(arena, data_length);
+    memcpy(buffer, value.data, data_length);
     if (size_ptr != NULL) {
-        *size_ptr = (size_t)size;
+        *size_ptr = value.length;
     }
-
-    wchar_t *buffer = (wchar_t *)alloc_from_arena(arena, (size + 1) * sizeof(wchar_t));
-    va_start(args, format);
-    vswprintf(buffer, size + 1, format, args);
-    va_end(args);
-
+    if (value.should_free) {
+        FREE(value.data);
+    }
     return buffer;
 }
 

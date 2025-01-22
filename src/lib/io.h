@@ -79,18 +79,24 @@ void print_utf8(const wchar_t *content);
 /**
  * @brief Prints a formatted wide-character string to a specified file as UTF-8 encoded text.
  * 
- * This function behaves like `vfprintf`, but it first converts the wide-character format string 
- * (`wchar_t*`) into a UTF-8 encoded string before printing it to the specified output file.
- * It ensures that the output is correctly encoded in UTF-8.
+ * This function formats a wide-character string using a subset of `printf`-style format specifiers 
+ * and prints the resulting text to the specified file stream as UTF-8 encoded text. It combines 
+ * the functionality of `format_string` for formatting and UTF-8 encoding with file output.
  * 
- * The function first calculates the necessary buffer size to store the wide-character string, then 
- * allocates memory for the buffer and the UTF-8 encoded result. After formatting the string,
- * it encodes it into UTF-8 and writes it to the specified file stream.
+ * The function supports the following format specifiers:
+ * - **`%c`**: Inserts a single wide character (`wchar_t`).
+ * - **`%s`**: Inserts a wide-character string (`wchar_t*`).
+ * - **`%d`, `%i`**: Inserts a signed integer (`int`).
+ * - **`%u`**: Inserts an unsigned integer (`unsigned int`).
+ * - **`%zu`**: Inserts an unsigned size (`size_t`).
+ * - **`%ld`, `%li`**: Inserts a 64-bit signed integer (`int64_t`).
+ * - **`%f`**: Inserts a double, formatted according to `double_to_string`.
+ * - **`%%`**: Inserts a literal `%`.
  * 
  * @param file The file stream where the formatted string should be printed
  *  (e.g., `stdout` or `stderr`).
- * @param format The wide-character format string to be printed.
- * @param ... The arguments to be formatted and printed along with the format string.
+ * @param format The wide-character format string containing placeholders for the arguments.
+ * @param ... The variable arguments to substitute into the format string.
  */
 void fprintf_utf8(FILE *file, const wchar_t *format, ...);
 

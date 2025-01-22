@@ -183,7 +183,7 @@ token_t *get_token(scanner_t *scan) {
         next_char(scan);
     } else {
         token->type = TOKEN_ERROR;
-        token->text = printf_arena(scan->arena, &token->length, get_messages()->unknown_symbol, ch);
+        token->text = format_string_to_arena(scan->arena, &token->length, get_messages()->unknown_symbol, ch);
     }
     
     token->end = scan->position;
