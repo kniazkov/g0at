@@ -32,3 +32,9 @@ bool test_string_builder();
  * @return `true` if the test passes, `false` if any assertion fails.
  */
 bool test_binary_search();
+
+/**
+ * @brief Unit test covering real value to string transformation.
+ * @return `true` if the test passes, `false` if any assertion fails.
+ */
+bool test_double_to_string();

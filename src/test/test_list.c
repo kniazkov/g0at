@@ -15,7 +15,8 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
-      {"parsing identifier", test_identifier }
+      {"double to string", test_double_to_string }
+    , {"parsing identifier", test_identifier }
     , {"parsing bracket", test_bracket }
     , {"unknown symbol", test_uknown_symbol}
       

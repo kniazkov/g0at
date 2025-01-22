@@ -103,3 +103,20 @@ bool test_binary_search() {
     ASSERT(binary_search(pairs, 5, L"sixth", string_comparator) == NULL);
     return true;
 }
+
+bool test_double_to_string() {
+    char buffer[32];
+    double_to_string(1.0, buffer, sizeof(buffer));
+    ASSERT(strcmp("1.0", buffer) == 0);
+    double_to_string(-1.024, buffer, sizeof(buffer));
+    ASSERT(strcmp("-1.024", buffer) == 0);
+    double_to_string(1.0 / 3, buffer, sizeof(buffer));
+    ASSERT(strcmp("0.333333333333333", buffer) == 0);
+    double_to_string(2.0 / 3, buffer, sizeof(buffer));
+    ASSERT(strcmp("0.666666666666667", buffer) == 0);
+    double_to_string(1e+12, buffer, sizeof(buffer));
+    ASSERT(strcmp("1e+012", buffer) == 0);
+    double_to_string(-1e-12, buffer, sizeof(buffer));
+    ASSERT(strcmp("-1e-012", buffer) == 0);
+    return true;
+}

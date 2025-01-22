@@ -174,3 +174,24 @@ string_value_t decode_utf8(const char *str);
  * @return A `string_value_t` structure containing the escaped string representation.
  */
 string_value_t string_to_string_notation(const wchar_t *prefix, const string_value_t str);
+
+/**
+ * @brief Converts a double value to a string representation with specific formatting rules.
+ * 
+ * This function formats a `double` value as a string, adhering to the following rules:
+ * - For values within the range \([10^{-10}, 10^{10}]\) (inclusive), the function:
+ *   - Displays up to 15 digits after the decimal point if necessary.
+ *   - Removes trailing zeros after the decimal point but ensures at least one digit remains 
+ *     after the decimal (e.g., `1.0` instead of `1`).
+ * - For values outside this range, the function uses scientific (exponential) notation with
+ *   up to 15 significant digits (e.g., `1.024e+11`).
+ * 
+ * The resulting string is written to the provided buffer, ensuring that it does not exceed
+ * the specified buffer size.
+ * 
+ * @param value The double value to convert to a string.
+ * @param buffer A pointer to the buffer where the resulting string will be stored.
+ * @param buffer_size The size of the provided buffer in bytes. The function ensures that 
+ *  the output string does not exceed this size, including the null terminator.
+ */
+void double_to_string(double value, char *buffer, size_t buffer_size);
