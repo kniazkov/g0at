@@ -17,103 +17,146 @@
 
 #include "token.h"
 
-void append_token_to_list(token_list_t *list, token_t *token) {
-    assert(list != NULL);
+void append_token_to_neighbors(token_list_t *neighbors, token_t *token) {
+    assert(neighbors != NULL);
     assert(token != NULL);
-    assert(token->list == NULL);
-    assert(token->previous == NULL);
-    assert(token->next == NULL);
+    assert(token->neighbors == NULL);
+    assert(token->left_neighbor == NULL);
+    assert(token->right_neighbor == NULL);
 
-    if (list->size == 0) {
-        list->head = token;
+    if (neighbors->size == 0) {
+        neighbors->head = token;
     } else {
-        assert(list->tail != NULL);
-        token->previous = list->tail;
-        list->tail->next = token;
+        assert(neighbors->tail != NULL);
+        token->left_neighbor = neighbors->tail;
+        neighbors->tail->right_neighbor = token;
     }
-    list->tail = token;
-    token->list = list;
-    list->size++;
+    neighbors->tail = token;
+    token->neighbors = neighbors;
+    neighbors->size++;
 }
 
-void prepend_token_to_list(token_list_t *list, token_t *token) {
-    assert(list != NULL);
+void append_token_to_group(token_list_t *group, token_t *token) {
+    assert(group != NULL);
     assert(token != NULL);
-    assert(token->list == NULL);
-    assert(token->previous == NULL);
-    assert(token->next == NULL);
+    assert(token->group == NULL);
+    assert(token->previous_in_group == NULL);
+    assert(token->next_in_group == NULL);
 
-    if (list->size == 0) {
-        list->tail = token;
+    if (group->size == 0) {
+        group->head = token;
     } else {
-        assert(list->head != NULL);
-        token->next = list->head;
-        list->head->previous = token;
+        assert(group->tail != NULL);
+        token->previous_in_group = group->tail;
+        group->tail->next_in_group = token;
     }
-    list->head = token;
-    token->list = list;
-    list->size++;
+    group->tail = token;
+    token->group = group;
+    group->size++;
+}
+
+void prepend_token_to_neighbors(token_list_t *neighbors, token_t *token) {
+    assert(neighbors != NULL);
+    assert(token != NULL);
+    assert(token->neighbors == NULL);
+    assert(token->left_neighbor == NULL);
+    assert(token->right_neighbor == NULL);
+
+    if (neighbors->size == 0) {
+        neighbors->tail = token;
+    } else {
+        assert(neighbors->head != NULL);
+        token->right_neighbor = neighbors->head;
+        neighbors->head->left_neighbor = token;
+    }
+    neighbors->head = token;
+    token->neighbors = neighbors;
+    neighbors->size++;
 }
 
 void remove_token(token_t *token) {
     assert(token != NULL);
-    assert(token->list != NULL);
+    assert(token->neighbors != NULL);
 
-    token_list_t *list = token->list;
+    token_list_t *neighbors = token->neighbors;
 
-    if (list->size == 1) {
-        list->head = NULL;
-        list->tail = NULL;
+    if (neighbors->size == 1) {
+        neighbors->head = NULL;
+        neighbors->tail = NULL;
     } else {
-        if (token == list->head) {
-            list->head = token->next;
-            list->head->previous = NULL;
-        }
-        else if (token == list->tail) {
-            list->tail = token->previous;
-            list->tail->next = NULL;
-        }
-        else {
-            token->previous->next = token->next;
-            token->next->previous = token->previous;
+        if (token == neighbors->head) {
+            neighbors->head = token->right_neighbor;
+            neighbors->head->left_neighbor = NULL;
+        } else if (token == neighbors->tail) {
+            neighbors->tail = token->left_neighbor;
+            neighbors->tail->right_neighbor = NULL;
+        } else {
+            token->left_neighbor->right_neighbor = token->right_neighbor;
+            token->right_neighbor->left_neighbor = token->left_neighbor;
         }
     }
-    token->list = NULL;
-    token->previous = NULL;
-    token->next = NULL;
-    list->size--;
+    token->neighbors = NULL;
+    token->left_neighbor = NULL;
+    token->right_neighbor = NULL;
+    neighbors->size--;
+
+    if (token->group != NULL) {
+        token_list_t *group = token->group;
+
+        if (group->size == 1) {
+            group->head = NULL;
+            group->tail = NULL;
+        } else {
+            if (token == group->head) {
+                group->head = token->next_in_group;
+                group->head->previous_in_group = NULL;
+            } else if (token == group->tail) {
+                group->tail = token->previous_in_group;
+                group->tail->next_in_group = NULL;
+            } else {
+                token->previous_in_group->next_in_group = token->next_in_group;
+                token->next_in_group->previous_in_group = token->previous_in_group;
+            }
+        }
+        token->group = NULL;
+        token->previous_in_group = NULL;
+        token->next_in_group = NULL;
+        group->size--;
+    }
 }
 
-void replace_token(token_t *old_token, token_t *new_token) {
+void replace_token_in_neighbors(token_t *old_token, token_t *new_token) {
     assert(old_token != NULL);
     assert(new_token != NULL);
-    assert(old_token->list != NULL);
-    assert(new_token->list == NULL);
-    assert(new_token->previous == NULL);
-    assert(new_token->next == NULL);
+    assert(old_token->neighbors != NULL);
+    assert(new_token->neighbors == NULL);
+    assert(new_token->left_neighbor == NULL);
+    assert(new_token->right_neighbor == NULL);
 
-    token_list_t *list = old_token->list;
-    assert(list->head != NULL);
-    assert(list->tail != NULL);
+    token_list_t *neighbors = old_token->neighbors;
+    assert(neighbors->head != NULL);
+    assert(neighbors->tail != NULL);
 
-    if (old_token == list->head) {
-        new_token->next = list->head->next;
-        if (list->head->next) {
-            list->head->next->previous = new_token;
+    if (old_token == neighbors->head) {
+        new_token->right_neighbor = neighbors->head->right_neighbor;
+        if (neighbors->head->right_neighbor) {
+            neighbors->head->right_neighbor->left_neighbor = new_token;
         }
-        list->head = new_token;
-    } else if (old_token == list->tail) {
-        new_token->previous = list->tail->previous;
-        list->tail->previous->next = new_token;
-        list->tail = new_token;
+        neighbors->head = new_token;
+    } else if (old_token == neighbors->tail) {
+        new_token->left_neighbor = neighbors->tail->left_neighbor;
+        neighbors->tail->left_neighbor->right_neighbor = new_token;
+        neighbors->tail = new_token;
     } else {
-        old_token->previous->next = new_token;
-        old_token->next->previous = new_token;
-        new_token->previous = old_token->previous;
-        new_token->next = old_token->next;
+        old_token->left_neighbor->right_neighbor = new_token;
+        old_token->right_neighbor->left_neighbor = new_token;
+        new_token->left_neighbor = old_token->left_neighbor;
+        new_token->right_neighbor = old_token->right_neighbor;
     }
-    old_token->list = NULL;
-    old_token->previous = NULL;
-    old_token->next = NULL;
-    new_token->list = list;
+
+    old_token->neighbors = NULL;
+    old_token->left_neighbor = NULL;
+    old_token->right_neighbor = NULL;
+
+    new_token->neighbors = neighbors;
 }

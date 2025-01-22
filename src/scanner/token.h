@@ -80,145 +80,168 @@ typedef struct {
 /**
  * @struct token_t
  * @brief Structure to represent a token (lexeme) in the source code.
- * 
- * This structure holds the metadata for a token (or lexeme) in the source code, including
- * its type, position (begin and end), neighboring tokens in a doubly linked list, and additional
- * attributes related to the token's role in the lexical analysis or syntax tree.
+ *
+ * This structure holds the metadata for a token (or lexeme) in the source code. It includes:
+ * - The type of the token.
+ * - Its position in the source code (start and end).
+ * - Links to other tokens in two separate doubly linked lists:
+ *   1. **Neighbors list:** Tokens are linked in the order they appear in the source code.
+ *      This preserves the original sequence of tokens for further analysis.
+ *   2. **Group list:** Tokens are grouped by specific criteria, allowing for efficient
+ *      selection and processing of tokens that share common characteristics.
+ * - Additional metadata, such as the token's text, length, and a corresponding syntax tree node.
  */
 struct token_t {
     /**
      * @brief The type of the token.
-     * 
+     *
      * This field stores the type of the token, such as whether it is an identifier, operator,
-     * number, or static string. The token type helps determine the token's role in the source code
-     * and how it should be processed.
+     * number, or static string.
      */
     token_type_t type;
 
     /**
-     * @brief Pointer to the token's list in the doubly linked list.
-     * 
-     * This pointer refers to the `token_list_t` that contains this token. It helps in the
-     * organization of tokens in a linked list structure.
+     * @brief Pointer to the `token_list_t` representing the neighbors list.
+     *
+     * Tokens in this list are ordered exactly as they appear in the source code.
      */
-    token_list_t *list;
+    token_list_t *neighbors;
 
     /**
-     * @brief Pointer to the previous token in the list.
-     * 
-     * This pointer links to the previous token in the doubly linked list, allowing traversal
-     * of the list in reverse order.
+     * @brief Pointer to the previous token in the neighbors list.
+     *
+     * Links to the token that appears immediately before this token in the source code.
      */
-    token_t *previous;
+    token_t *left_neighbor;
 
     /**
-     * @brief Pointer to the next token in the list.
-     * 
-     * This pointer links to the next token in the doubly linked list, allowing traversal
-     * of the list in forward order.
+     * @brief Pointer to the next token in the neighbors list.
+     *
+     * Links to the token that appears immediately after this token in the source code.
      */
-    token_t *next;
+    token_t *right_neighbor;
+
+    /**
+     * @brief Pointer to the `token_list_t` representing the group list.
+     *
+     * Tokens in this list are grouped based on specific criteria. This allows for
+     * efficient operations on all tokens within a group, such as applying a transformation
+     * or processing a subset of tokens.
+     */
+    token_list_t *group;
+
+    /**
+     * @brief Pointer to the previous token in the group list.
+     *
+     * Links to the previous token in the group, based on the grouping criteria.
+     */
+    token_t *previous_in_group;
+
+    /**
+     * @brief Pointer to the next token in the group list.
+     *
+     * Links to the next token in the group, based on the grouping criteria.
+     */
+    token_t *next_in_group;
 
     /**
      * @brief The position where the token starts in the source code.
-     * 
-     * This field stores the starting position of the token in the source code, represented
-     * as a `full_position_t` structure that contains the file name, offset, row, and column
-     * of the beginning of the token.
+     *
+     * Includes the file name, row, column, and offset.
      */
     full_position_t begin;
 
     /**
      * @brief The position of the character following the token in the source code.
-     * 
-     * This field stores the position immediately **after** the token in the source code,
-     * represented as a `short_position_t` structure. It includes the offset, row, and column
-     * of the character **following** the last character of the token.
-     * 
-     * This is commonly used to mark the boundary of the token, indicating where the
-     * token ends and the next part of the code begins.
+     *
+     * Includes the row and column of the character immediately after the token.
      */
     short_position_t end;
 
     /**
      * @brief The text of the token.
-     * 
-     * This field contains a wide-character string representing the token's text.
-     * The text is independent from the source code, meaning it can be generated, copied,
-     * or statically defined. For example, in the case of a `STATIC_STRING` token, the quotes and
-     * escape sequences (like `\n`, `\t`, etc.) are removed and replaced with corresponding
-     * entities.
+     *
+     * A wide-character string representing the token's content, after necessary transformations
+     * (e.g., unescaping strings or processing literals).
      */
     const wchar_t const *text;
 
     /**
      * @brief The length of the token's text.
-     * 
-     * This field stores the number of characters (`wchar_t`) in the `text` field, which represents
-     * the token's actual content.
+     *
+     * The number of characters (`wchar_t`) in the `text` field.
      */
     size_t length;
 
     /**
      * @brief Pointer to the corresponding node in the syntax tree.
-     * 
-     * This field points to the `node_t` structure that represents the corresponding syntax tree
-     * node for the token, if applicable. This allows the token to be associated with its
-     * corresponding node in the abstract syntax tree.
+     *
+     * This field links the token to a node in the abstract syntax tree, if applicable.
      */
     node_t *node;
 
     /**
      * @brief The list of child tokens (if any).
-     * 
-     * This field stores a list of tokens that are considered children of the current token.
-     * This is used for tokens that are part of more complex structures (e.g., parentheses
-     * around expressions or nested blocks).
+     *
+     * Tokens that are considered children of this token (e.g., tokens enclosed within
+     * parentheses or part of a complex structure).
      */
     token_list_t child_tokens;
 };
 
-
 /**
- * @brief Adds a token to the end of a token list.
+ * @brief Adds a token to the end of a neighbors list.
  * 
- * This function adds a token to the end of an existing doubly linked list of tokens.
+ * This function adds a token to the end of an existing neighbors list of tokens.
  * If the list is empty, the token becomes the head and tail of the list.
  *
- * @param list The token list to which the token should be added.
- * @param token The token to add to the list.
+ * @param neighbors The neighbors list to which the token should be added.
+ * @param token The token to add to the neighbors list.
  */
-void append_token_to_list(token_list_t *list, token_t *token);
+void append_token_to_neighbors(token_list_t *neighbors, token_t *token);
 
 /**
- * @brief Adds a token to the beginning of a token list.
+ * @brief Adds a token to the end of a group list.
  * 
- * This function adds a token to the beginning of an existing doubly linked list of tokens.
+ * This function adds a token to the end of an existing group list of tokens.
+ * If the group is empty, the token becomes the head and tail of the group.
+ *
+ * @param group The group list to which the token should be added.
+ * @param token The token to add to the group.
+ */
+void append_token_to_group(token_list_t *group, token_t *token);
+
+/**
+ * @brief Adds a token to the beginning of a neighbors list.
+ * 
+ * This function adds a token to the beginning of an existing neighbors list of tokens.
  * If the list is empty, the token becomes the head and tail of the list.
  *
- * @param list The token list to which the token should be added.
- * @param token The token to add to the list.
+ * @param neighbors The neighbors list to which the token should be added.
+ * @param token The token to add to the neighbors list.
  */
-void prepend_token_to_list(token_list_t *list, token_t *token);
+void prepend_token_to_neighbors(token_list_t *neighbors, token_t *token);
 
 /**
- * @brief Removes a token from its list.
+ * @brief Removes a token from its neighbors and group lists.
  * 
- * This function removes the specified token [from its list]. The token is unlinked from the list,
- * and the neighboring tokens' pointers are updated accordingly.
+ * This function removes the specified token from its neighbors list and, if present,
+ * also from its group list. The token is unlinked from both lists, and the neighboring
+ * tokens' pointers are updated accordingly. The token itself is not freed, as memory
+ * management is handled by arenas.
  *
  * @param token The token to remove.
  */
 void remove_token(token_t *token);
 
 /**
- * @brief Replaces a token in its list with another token.
+ * @brief Replaces a token in the neighbors list with another token.
  * 
- * This function replaces the specified token in the list with another token.
+ * This function replaces the specified token in the neighbors list with another token.
  * The old token is removed from the list, and the new token is inserted in its place.
- * The size of the list remains unchanged.
+ * The size of the neighbors list remains unchanged.
  *
- * @param old_token The token to remove from the list.
+ * @param old_token The token to remove from the neighbors list.
  * @param new_token The token to insert in place of the old token.
  */
-void replace_token(token_t *old_token, token_t *new_token);
+void replace_token_in_neighbors(token_t *old_token, token_t *new_token);
