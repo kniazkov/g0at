@@ -123,22 +123,22 @@ struct token_t {
      * @brief The position where the token starts in the source code.
      * 
      * This field stores the starting position of the token in the source code, represented
-     * as a `position_t` structure that contains the file name, row, and column of the beginning
-     * of the token.
+     * as a `full_position_t` structure that contains the file name, offset, row, and column
+     * of the beginning of the token.
      */
-    position_t begin;
+    full_position_t begin;
 
     /**
      * @brief The position of the character following the token in the source code.
      * 
      * This field stores the position immediately **after** the token in the source code,
-     * represented as a `position_t` structure. It includes the file name, row, and column
+     * represented as a `short_position_t` structure. It includes the offset, row, and column
      * of the character **following** the last character of the token.
      * 
      * This is commonly used to mark the boundary of the token, indicating where the
      * token ends and the next part of the code begins.
      */
-    position_t end;
+    short_position_t end;
 
     /**
      * @brief The text of the token.

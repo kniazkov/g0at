@@ -79,6 +79,21 @@ static void remove_comments_and_carriage_returns(wchar_t *code) {
 }
 
 /**
+ * @brief Retrieves the current character from the scanner's position.
+ *
+ * This inline function returns the character currently pointed to by the scanner
+ * without advancing the position. It is useful for inspecting the current character
+ * in the source code during lexical analysis.
+ * 
+ * @param scan The scanner instance that tracks the current position in the source code.
+ * @return The current character in the source code.
+ */
+
+static inline wchar_t get_char(scanner_t *scan) {
+    return *scan->position.code;
+}
+
+/**
  * @brief Returns the next character and updates the position of the scanner.
  * 
  * This function advances the scanner to the next character in the source code.
@@ -92,7 +107,7 @@ static void remove_comments_and_carriage_returns(wchar_t *code) {
  * @return The next character in the source code.
  */
 static wchar_t next_char(scanner_t *scan) {
-    wchar_t current = *scan->ptr;
+    wchar_t current = *scan->position.code;
     if (current == L'\n') {
         scan->position.row++;
         scan->position.column = 1;
@@ -103,7 +118,8 @@ static wchar_t next_char(scanner_t *scan) {
     else {
         scan->position.column++;
     }
-    return *(++scan->ptr);
+    scan->position.offset++;
+    return *(++scan->position.code);
 }
 
 /**
@@ -162,7 +178,7 @@ static bool is_letter(wchar_t c) {
  * @param token The token to store the parsed string or error message.
  */
 static void parse_string(scanner_t *scan, token_t *token) {
-    assert(*scan->ptr == L'"');
+    assert(get_char(scan) == L'"');
     wchar_t ch = next_char(scan);
     string_builder_t builder;
     init_string_builder(&builder, 0);
@@ -227,15 +243,14 @@ scanner_t *create_scanner(const char *file_name, wchar_t *code, arena_t *tokens_
         arena_t *graph_memory) {
     remove_comments_and_carriage_returns(code);
     scanner_t *scan = alloc_from_arena(tokens_memory, sizeof(scanner_t));
-    scan->ptr = code;
-    scan->position = (position_t){ file_name, 1, 1 };
+    scan->position = (full_position_t){ file_name, 1, 1, code, 0 };
     scan->tokens_memory = tokens_memory;
     scan->graph_memory = graph_memory;
     return scan;
 }
 
 token_t *get_token(scanner_t *scan) {
-    wchar_t ch = *scan->ptr;
+    wchar_t ch = get_char(scan);
 
     while (iswspace(ch)) {
         ch = next_char(scan);
@@ -245,7 +260,6 @@ token_t *get_token(scanner_t *scan) {
         return NULL;
     }
 
-    wchar_t *first_byte = scan->ptr;
     token_t *token = alloc_zeroed_from_arena(scan->tokens_memory, sizeof(token_t));
     token->begin = scan->position;
 
@@ -269,11 +283,11 @@ token_t *get_token(scanner_t *scan) {
         next_char(scan);
     }
     
-    token->end = scan->position;
+    token->end = full_to_short_position(&scan->position);
     if (token->text == NULL) {
-        size_t length = scan->ptr - first_byte;
+        size_t length = scan->position.code - token->begin.code;
         wchar_t *text = alloc_from_arena(scan->tokens_memory, sizeof(wchar_t) * (length + 1));
-        memcpy(text, first_byte, sizeof(wchar_t) * length);
+        memcpy(text, token->begin.code, sizeof(wchar_t) * length);
         text[length] = L'\0';
         token->text = text;
         token->length = length;

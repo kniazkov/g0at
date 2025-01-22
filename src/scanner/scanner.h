@@ -31,20 +31,12 @@ typedef struct arena_t arena_t;
  */
 typedef struct {
     /**
-     * @brief Pointer to the current character in the source code.
-     * 
-     * This pointer points to the current character being analyzed in the source code.
-     * It is updated as the scanner moves through the source code character by character.
-     */
-    wchar_t *ptr;
-
-    /**
      * @brief The current position in the source code.
      * 
      * This structure holds the current position of the scanner in the source code,
-     * including the file name, row (line), and column number.
+     * including the file name, offset, row (line), and column number.
      */
-    position_t position;
+    full_position_t position;
 
     /**
      * @brief Pointer to the memory arena used for token allocation.
