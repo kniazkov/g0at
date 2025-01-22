@@ -21,6 +21,12 @@ bool test_identifier();
 bool test_bracket();
 
 /**
+ * @brief Tests the scanner with a string token.
+ * @return True if the test passes, false otherwise.
+ */
+bool test_static_string();
+
+/**
  * @brief Tests the scanner with invalid symbol.
  * @return True if the test passes, false otherwise.
  */

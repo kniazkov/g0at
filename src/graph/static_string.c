@@ -23,8 +23,19 @@
  * and its length.
  */
 typedef struct {
+    /**
+     * @brief Base expression structure from which static_string_t inherits.
+     */
     expression_t base;
-    wchar_t *value;
+
+    /**
+     * @brief Pointer to the wide-character string data.
+     */
+    wchar_t *data;
+
+    /**
+     * @brief Length of the string in characters (not including the null terminator).
+     */
     size_t length;
 } static_string_t;
 
@@ -41,7 +52,7 @@ typedef struct {
  */
 static string_value_t to_string(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
-    return string_to_string_notation(L"", (string_value_t){ expr->value, expr->length, false });
+    return string_to_string_notation(L"", (string_value_t){ expr->data, expr->length, false });
 }
 
 /**
@@ -55,12 +66,12 @@ static node_vtbl_t static_string_vtbl = {
     .to_string = to_string
 };
 
-node_t *create_static_string_node(arena_t *arena, const wchar_t *value, size_t length) {
+node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length) {
     static_string_t *expr = (static_string_t *)alloc_from_arena(arena, sizeof(static_string_t));
     expr->base.base.vtbl = &static_string_vtbl;
     size_t data_size = (length + 1) * sizeof(wchar_t);
-    expr->value = (wchar_t *)alloc_from_arena(arena, data_size);
+    expr->data = (wchar_t *)alloc_from_arena(arena, data_size);
     expr->length = length;
-    memcpy(expr->value, value, data_size);
+    memcpy(expr->data, data, data_size);
     return &expr->base.base;
 }

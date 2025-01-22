@@ -149,7 +149,7 @@ struct token_t {
      * escape sequences (like `\n`, `\t`, etc.) are removed and replaced with corresponding
      * entities.
      */
-    wchar_t *text;
+    const wchar_t const *text;
 
     /**
      * @brief The length of the token's text.

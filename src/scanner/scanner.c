@@ -13,14 +13,17 @@
  * the lexical analysis phase, making it well-suited for performance-critical applications.
  */
 
-#include <stdbool.h>
+#include <assert.h>
 #include <memory.h>
+#include <stdbool.h>
 #include <wctype.h>
 
 #include "scanner.h"
+#include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 #include "resources/messages.h"
+#include "graph/expression.h"
 
 /**
  * @brief The size of a tabulation (in columns).
@@ -148,12 +151,86 @@ static bool is_letter(wchar_t c) {
         (c >= 0xA840 && c <= 0xA87F);    // Phags-pa
 }
 
-scanner_t *create_scanner(const char *file_name, wchar_t *code, arena_t *arena) {
+/**
+ * @brief Parses a string literal in the source code.
+ *
+ * This function parses a string literal starting with a double quote (`"`) and handles
+ * escape sequences inside the string. It updates the provided token with the parsed
+ * string or sets it as an error if the string is malformed.
+ *
+ * @param scan The scanner instance used for lexical analysis.
+ * @param token The token to store the parsed string or error message.
+ */
+static void parse_string(scanner_t *scan, token_t *token) {
+    assert(*scan->ptr == L'"');
+    wchar_t ch = next_char(scan);
+    string_builder_t builder;
+    init_string_builder(&builder, 0);
+    while (ch != '"') {
+        if (ch == L'\0') {
+            token->type = TOKEN_ERROR;
+            token->text = get_messages()->unclosed_quotation_mark;
+            goto cleanup;
+        }
+        if (ch == L'\\') {
+            ch = next_char(scan);
+            switch(ch) {
+                case L'\0':
+                    token->type = TOKEN_ERROR;
+                    token->text = get_messages()->unclosed_quotation_mark;
+                    goto cleanup;
+                case L'r':
+                    append_char(&builder, '\r');
+                    break;
+                case L'n':
+                    append_char(&builder, '\n');
+                    break;
+                case L'b':
+                    append_char(&builder, '\b');
+                    break;
+                case L't':
+                    append_char(&builder, '\t');
+                    break;
+                case L'\\':
+                case L'\'':
+                case L'\"':
+                    append_char(&builder, ch);
+                    break;
+                default:
+                    token->type = TOKEN_ERROR;
+                    token->text = format_string_to_arena(scan->tokens_memory, &token->length,
+                        get_messages()->invalid_escape_sequence, ch);
+                    goto cleanup;
+            }
+        } else {
+            append_char(&builder, ch);
+        }
+        ch = next_char(scan);
+    }
+    token->type = TOKEN_STRING;
+    if (builder.length > 0) {
+        size_t data_size = (builder.length + 1) * sizeof(wchar_t);
+        wchar_t *buffer = alloc_from_arena(scan->tokens_memory, data_size);
+        memcpy(buffer, builder.data, data_size);
+        token->text = buffer;
+        token->length = builder.length;
+        token->node = create_static_string_node(scan->graph_memory, builder.data, builder.length);
+    } else {
+        token->text = L"";
+    }
+    next_char(scan);
+cleanup:
+    FREE(builder.data);
+}
+
+scanner_t *create_scanner(const char *file_name, wchar_t *code, arena_t *tokens_memory,
+        arena_t *graph_memory) {
     remove_comments_and_carriage_returns(code);
-    scanner_t *scan = alloc_from_arena(arena, sizeof(scanner_t));
+    scanner_t *scan = alloc_from_arena(tokens_memory, sizeof(scanner_t));
     scan->ptr = code;
     scan->position = (position_t){ file_name, 1, 1 };
-    scan->arena = arena;
+    scan->tokens_memory = tokens_memory;
+    scan->graph_memory = graph_memory;
     return scan;
 }
 
@@ -169,7 +246,7 @@ token_t *get_token(scanner_t *scan) {
     }
 
     wchar_t *first_byte = scan->ptr;
-    token_t *token = alloc_zeroed_from_arena(scan->arena, sizeof(token_t));
+    token_t *token = alloc_zeroed_from_arena(scan->tokens_memory, sizeof(token_t));
     token->begin = scan->position;
 
     if (is_letter(ch)) {
@@ -181,19 +258,27 @@ token_t *get_token(scanner_t *scan) {
     else if (ch == L'{' || ch == L'}' || ch == L'(' || ch == L')' || ch == L'[' || ch == L']') {
         token->type = TOKEN_BRACKET;
         next_char(scan);
-    } else {
+    }
+    else if (ch == L'"') {
+        parse_string(scan, token);
+    }
+    else {
         token->type = TOKEN_ERROR;
-        token->text = format_string_to_arena(scan->arena, &token->length, get_messages()->unknown_symbol, ch);
+        token->text = format_string_to_arena(scan->tokens_memory, &token->length,
+            get_messages()->unknown_symbol, ch);
+        next_char(scan);
     }
     
     token->end = scan->position;
     if (token->text == NULL) {
         size_t length = scan->ptr - first_byte;
-        wchar_t *text = alloc_from_arena(scan->arena, sizeof(wchar_t) * (length + 1));
+        wchar_t *text = alloc_from_arena(scan->tokens_memory, sizeof(wchar_t) * (length + 1));
         memcpy(text, first_byte, sizeof(wchar_t) * length);
         text[length] = L'\0';
         token->text = text;
         token->length = length;
+    } else if (token->length == 0) {
+        token->length = wcslen(token->text);
     }
 
     return token;

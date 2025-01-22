@@ -17,14 +17,15 @@
 #include "lib/pair.h"
 
 bool test_memory_allocation() {
+    size_t allocated_before = get_allocated_memory_size();
     int i;
     int32_t *array = (int32_t *)CALLOC(sizeof(int32_t) * 16);
     for (i = 0; i < 16; i++) {
         ASSERT(array[i] == 0);
     }
-    ASSERT(get_allocated_memory_size() == sizeof(int32_t) * 16);
+    ASSERT(get_allocated_memory_size() - allocated_before == sizeof(int32_t) * 16);
     FREE(array);
-    ASSERT(get_allocated_memory_size() == 0);
+    ASSERT(get_allocated_memory_size() - allocated_before == 0);
     return true;
 }
 

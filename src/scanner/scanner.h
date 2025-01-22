@@ -47,22 +47,34 @@ typedef struct {
     position_t position;
 
     /**
-     * @brief Pointer to the memory arena used for memory allocation.
-     * 
-     * The scanner uses this arena to allocate memory for tokens and other intermediate
-     * data structures. The memory is freed in bulk when the arena is destroyed.
+     * @brief Pointer to the memory arena used for token allocation.
+     *
+     * The token arena is used for allocating memory for tokens during lexical analysis.
+     * This memory can be freed once the lexical analysis is complete, as tokens are
+     * no longer needed.
      */
-    arena_t *arena;
+    arena_t *tokens_memory;
+
+    /**
+     * @brief Pointer to the memory arena used for syntax tree node allocation.
+     *
+     * The syntax tree arena is used for allocating memory for nodes in the syntax tree
+     * during parsing. This arena retains the memory for the tree after parsing, as the
+     * syntax tree is used for further stages like bytecode generation.
+     */
+    arena_t *graph_memory;
 } scanner_t;
 
 /**
  * @brief Creates a new scanner for lexical analysis.
  * @param file_name The name of the file being scanned.
  * @param code The source code to be analyzed. It is a wide-character string.
- * @param arena The memory arena used for allocating memory for the scanner.
+ * @param tokens_memory The memory arena used for allocating memory for tokens.
+ * @param graph_memory The memory arena used for allocating memory for the syntax tree nodes.
  * @return A pointer to the newly created `scanner_t` structure.
  */
-scanner_t *create_scanner(const char *file_name, wchar_t *code, arena_t *arena);
+scanner_t *create_scanner(const char *file_name, wchar_t *code, arena_t *tokens_memory,
+        arena_t *graph_memory);
 
 /**
  * @brief Extracts the next token from the source code.

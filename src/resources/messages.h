@@ -22,6 +22,8 @@
  */
 typedef struct {
     const wchar_t const *unknown_symbol;
+    const wchar_t const *unclosed_quotation_mark;
+    const wchar_t const *invalid_escape_sequence;
     // add other
 } messages_t;
 
