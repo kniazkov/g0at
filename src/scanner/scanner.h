@@ -26,8 +26,8 @@ typedef struct arena_t arena_t;
  * @brief Structure to represent the scanner for lexical analysis.
  *
  * This structure holds the necessary state for performing lexical analysis, including
- * the current character in the source code, the current position in the file, and
- * the memory arena used for efficient memory allocation.
+ * the current character in the source code, the current position in the file, memory
+ * arenas for efficient memory allocation, and token groups for organizing tokens by type or role.
  */
 typedef struct {
     /**
@@ -51,11 +51,20 @@ typedef struct {
      * @brief Pointer to the memory arena used for syntax tree node allocation.
      *
      * The syntax tree arena is used for allocating memory for nodes in the syntax tree
-     * during parsing. This arena retains the memory for the tree after parsing, as the
-     * syntax tree is used for further stages like bytecode generation.
+     * during parsing. This arena retains the memory for the tree after parsing, as the syntax tree
+     * is used for further stages like bytecode generation.
      */
     arena_t *graph_memory;
+
+    /**
+     * @brief Groups of tokens organized by type or role.
+     * 
+     * This structure contains lists of tokens grouped based on specific criteria,
+     * such as identifiers and operators.
+     */
+    token_groups_t groups;
 } scanner_t;
+
 
 /**
  * @brief Creates a new scanner for lexical analysis.

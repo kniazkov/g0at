@@ -242,7 +242,7 @@ cleanup:
 scanner_t *create_scanner(const char *file_name, wchar_t *code, arena_t *tokens_memory,
         arena_t *graph_memory) {
     remove_comments_and_carriage_returns(code);
-    scanner_t *scan = alloc_from_arena(tokens_memory, sizeof(scanner_t));
+    scanner_t *scan = alloc_zeroed_from_arena(tokens_memory, sizeof(scanner_t));
     scan->position = (full_position_t){ file_name, 1, 1, code, 0 };
     scan->tokens_memory = tokens_memory;
     scan->graph_memory = graph_memory;
@@ -265,6 +265,7 @@ token_t *get_token(scanner_t *scan) {
 
     if (is_letter(ch)) {
         token->type = TOKEN_IDENTIFIER;
+        append_token_to_group(&scan->groups.identifiers, token);
         do {
             ch = next_char(scan);
         } while(is_letter(ch) || iswdigit(ch));

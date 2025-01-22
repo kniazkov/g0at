@@ -190,6 +190,25 @@ struct token_t {
 };
 
 /**
+ * @struct token_groups_t
+ * @brief Structure to hold various groups of tokens.
+ * 
+ * This structure organizes tokens into different groups based on their types or roles.
+ * Groups are represented as `token_list_t`, allowing efficient operations on subsets of tokens.
+ */
+typedef struct {
+    /**
+     * @brief Group for identifier tokens.
+     */
+    token_list_t identifiers;
+
+    /**
+     * @brief Group for additive operators ("plus" and "minus").
+     */
+    token_list_t additive_operators;
+} token_groups_t;
+
+/**
  * @brief Adds a token to the end of a neighbors list.
  * 
  * This function adds a token to the end of an existing neighbors list of tokens.
