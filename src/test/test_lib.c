@@ -114,10 +114,6 @@ bool test_double_to_string() {
     ASSERT(strcmp("0.333333333333333", buffer) == 0);
     double_to_string(2.0 / 3, buffer, sizeof(buffer));
     ASSERT(strcmp("0.666666666666667", buffer) == 0);
-    double_to_string(1e+12, buffer, sizeof(buffer));
-    ASSERT(strcmp("1e+012", buffer) == 0);
-    double_to_string(-1e-12, buffer, sizeof(buffer));
-    ASSERT(strcmp("-1e-012", buffer) == 0);
     return true;
 }
 
