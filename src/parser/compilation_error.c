@@ -9,14 +9,39 @@
  */
 
 #include "compilation_error.h"
+#include "lib/allocate.h"
 #include "lib/arena.h"
+#include "lib/string_ext.h"
 #include "scanner/token.h"
 
-compilation_error_t *create_error_from_token(arena_t *arena, const token_t *token) {
+
+compilation_error_t *create_error_from_token(arena_t *arena, const token_t *token,
+        const wchar_t *format, ...) {
     compilation_error_t *error = (compilation_error_t *)alloc_from_arena(
             arena, sizeof(compilation_error_t));
     error->begin = token->begin;
     error->end = token->end;
-    error->message = token->text;
-    error->message_length = token->length;
+    if (format == NULL) {
+        error->message = token->text;
+        error->message_length = token->length;
+    } else {
+        va_list args;
+        va_start(args, format);
+        string_value_t value = format_string_vargs(format, args);
+        va_end(args);
+        if (value.data != NULL) {
+            size_t data_size = (value.length + 1) * sizeof(wchar_t);
+            wchar_t *message = (wchar_t *)alloc_from_arena(arena, data_size);
+            memcpy(message, value.data, data_size);
+            error->message = message;
+            error->message_length = value.length;
+            if (value.should_free) {
+                FREE(value.data);
+            }
+        } else {
+            error->message = L"";
+            error->message_length = 0;
+        }
+    }
+    return error;
 }

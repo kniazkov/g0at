@@ -25,7 +25,9 @@ static messages_t english = {
     .unknown_symbol = L"unknown symbol '%c'",
     .unclosed_quotation_mark = L"unmatched quote found in string literal; expected closing quote",
     .invalid_escape_sequence = L"invalid escape sequence '\\%c' in string literal",
-    .unclosed_opening_bracket = L"unclosed opening bracket: expected a closing bracket to match '%c'"
+    .unclosed_opening_bracket = L"unclosed opening bracket: expected a closing bracket to match '%c'",
+    .missing_opening_bracket = L"missing opening bracket corresponding to '%c'",
+    .brackets_do_not_match = L"closing bracket '%c' does not match the opening bracket '%c'",
 };
 
 /**
@@ -39,7 +41,9 @@ static messages_t russian = {
     .unknown_symbol = L"неизвестный символ '%c'",
     .unclosed_quotation_mark = L"в строковом литерале пропущена закрывающая кавычка",
     .invalid_escape_sequence = L"неправильная управляющая последовательность '\\%c' в строковом литерале",
-    .unclosed_opening_bracket = L"нет закрывающей скобки, соответствующей '%c'"
+    .unclosed_opening_bracket = L"нет закрывающей скобки, соответствующей '%c'",
+    .missing_opening_bracket = L"нет открывающей скобки, соответствующей '%c'",
+    .brackets_do_not_match = L"закрывающая скобка '%c' не соответствует открывающей '%c'",
 };
 
 /**

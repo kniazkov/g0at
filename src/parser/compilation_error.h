@@ -9,7 +9,14 @@
  * compilation errors in the compiler or interpreter.
  */
 
+#pragma once
+
 #include "scanner/position.h"
+
+/**
+ * @brief Forward declaration of compilation error structure.
+ */
+typedef struct compilation_error_t compilation_error_t;
 
 /**
  * @brief Forward declaration of token structure.
@@ -30,7 +37,7 @@ typedef struct arena_t arena_t;
  * position in the source code, the error message, and the length of the message. It is used for
  * reporting issues encountered during the lexical, syntactical, or semantic analysis stages.
  */
-typedef struct {
+struct compilation_error_t {
     /**
      * @brief The full position of the error's beginning in the source code.
      * 
@@ -59,16 +66,22 @@ typedef struct {
      * @brief The length of the error message.
      */
     size_t message_length;
-} compilation_error_t;
+};
 
 /**
- * @brief Creates a compilation error from a token.
+ * @brief Creates a compilation error from a token with optional formatted message.
  * 
- * This function creates a `compilation_error_t` from a token, copying the token's position
- * and message (text).
+ * This function creates a `compilation_error_t` based on a given token.
+ * It copies the token's position (begin and end), and depending on the presence of a
+ * format string, it either uses the token's text or generates a new message
+ * using the specified format and arguments.
  * 
  * @param arena The memory arena for allocating the error descriptor.
  * @param token The token from which to create the error descriptor.
- * @return A pointer to the created `compilation_error_t` structure.
+ * @param format A format string to generate a custom error message (optional).
+ * @param ... The arguments to be used with the format string (if provided).
+ * 
+ * @return A pointer to the created `compilation_error_t` structure, containing the error details.
  */
-compilation_error_t *create_error_from_token(arena_t *arena, const token_t *token);
+compilation_error_t *create_error_from_token(arena_t *arena, const token_t *token,
+    const wchar_t *format, ...);

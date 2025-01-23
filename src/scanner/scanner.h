@@ -17,6 +17,11 @@
 #include "position.h"
 
 /**
+ * @brief Forward declaration of scanner structure.
+ */
+typedef struct scanner_t scanner_t;
+
+/**
  * @brief Forward declaration of arena memory allocator to be used in the scanner.
  */
 typedef struct arena_t arena_t;
@@ -29,7 +34,7 @@ typedef struct arena_t arena_t;
  * the current character in the source code, the current position in the file, memory
  * arenas for efficient memory allocation, and token groups for organizing tokens by type or role.
  */
-typedef struct {
+struct scanner_t {
     /**
      * @brief The current position in the source code.
      * 
@@ -63,7 +68,7 @@ typedef struct {
      * such as identifiers and operators.
      */
     token_groups_t groups;
-} scanner_t;
+};
 
 
 /**

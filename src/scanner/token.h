@@ -22,6 +22,12 @@
 typedef struct token_t token_t;
 
 /**
+ * @struct arena_t
+ * @brief Forward declaration of list of tokens.
+ */
+typedef struct token_list_t token_list_t;
+
+/**
  * @brief Forward declaration of AST node.
  */
 typedef struct node_t node_t;
@@ -53,7 +59,7 @@ typedef enum {
  * the list. This structure is used to organize tokens during the lexical analysis phase, and it
  * allows efficient traversal and modification of the list as tokens are processed.
  */
-typedef struct {
+struct token_list_t {
     /**
      * @brief Pointer to the first token in the list.
      * 
@@ -77,7 +83,7 @@ typedef struct {
      * to efficiently manage and track the size of the token list.
      */
     size_t size;
-} token_list_t;
+};
 
 /**
  * @struct token_t
