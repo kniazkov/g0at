@@ -39,6 +39,8 @@ typedef enum {
     TOKEN_STRING,             /**< A string literal (e.g., "Hello, World!") */
     TOKEN_BRACKET,            /**< A bracket (e.g., '(', ')', '{', '}', '[', ']', etc.) */
     TOKEN_ERROR,              /**< An invalid token (error case) */
+
+    TOKEN_BRACKET_PAIR,       /**< A pair of brackets and all tokens between them */
     // Other token types can be added here in the future
 } token_type_t;
 

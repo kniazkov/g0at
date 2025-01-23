@@ -11,6 +11,7 @@ file(GLOB core_sources
   lib/*.c
   resources/*.c
   scanner/*.c
+  parser/*.c
   graph/*.c
   codegen/*.c
   model/*.c
