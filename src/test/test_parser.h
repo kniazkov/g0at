@@ -13,3 +13,9 @@
  * @return True if the test passes, false otherwise.
  */
 bool test_brackets_one_level_nesting();
+
+/**
+ * @brief Tests parsing of brackets with two levels of nesting.
+ * @return True if the test passes, false otherwise.
+ */
+bool test_brackets_two_levels_nesting();
