@@ -37,16 +37,15 @@ typedef struct node_t node_t;
  * @brief Enum for different token types.
  * 
  * This enum represents the different types of tokens (lexemes) that can be encountered
- * during lexical analysis. A token can be an identifier, bracket, static string, or other
- * types that may be defined as the language evolves.
+ * during lexical analysis.
  */
 typedef enum {
-    TOKEN_IDENTIFIER,         /**< An identifier (variable, function name, etc.) */
-    TOKEN_STRING,             /**< A string literal (e.g., "Hello, World!") */
-    TOKEN_BRACKET,            /**< A bracket (e.g., '(', ')', '{', '}', '[', ']', etc.) */
-    TOKEN_ERROR,              /**< An invalid token (error case) */
+    TOKEN_IDENTIFIER,       /**< An identifier (variable, function name, etc.) */
+    TOKEN_BRACKET,          /**< A bracket (e.g., '(', ')', '{', '}', '[', ']', etc.) */
+    TOKEN_ERROR,            /**< An invalid token (error case) */
 
-    TOKEN_BRACKET_PAIR,       /**< A pair of brackets and all tokens between them */
+    TOKEN_BRACKET_PAIR,     /**< A pair of brackets and all tokens between them */
+    TOKEN_EXPRESSION,       /**< An expression token, which contains an attached syntax tree node */
     // Other token types can be added here in the future
 } token_type_t;
 

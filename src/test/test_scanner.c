@@ -58,13 +58,13 @@ bool test_static_string() {
         L" \"test\" \"new\\nline\" \"\" \"not closed ",
         tokens, graph);
     token_t *tok = get_token(scan);
-    ASSERT(tok->type == TOKEN_STRING);
-    ASSERT(wcscmp(L"test", tok->text) == 0);
-    ASSERT(tok->length == 4);
+    ASSERT(tok->type == TOKEN_EXPRESSION);
+    ASSERT(wcscmp(L"\"test\"", tok->text) == 0);
+    ASSERT(tok->length == 6);
     tok = get_token(scan);
-    ASSERT(tok->type == TOKEN_STRING);
-    ASSERT(wcscmp(L"new\nline", tok->text) == 0);
-    ASSERT(tok->length == 8);
+    ASSERT(tok->type == TOKEN_EXPRESSION);
+    ASSERT(wcscmp(L"\"new\\nline\"", tok->text) == 0);
+    ASSERT(tok->length == 11);
     ASSERT(tok->node != NULL);
     ASSERT(tok->node->vtbl->type == NODE_STATIC_STRING);
     string_value_t value = tok->node->vtbl->to_string(tok->node);
@@ -73,9 +73,9 @@ bool test_static_string() {
         FREE(value.data);
     }
     tok = get_token(scan);
-    ASSERT(tok->type == TOKEN_STRING);
-    ASSERT(wcscmp(L"", tok->text) == 0);
-    ASSERT(tok->length == 0);
+    ASSERT(tok->type == TOKEN_EXPRESSION);
+    ASSERT(wcscmp(L"\"\"", tok->text) == 0);
+    ASSERT(tok->length == 2);
     tok = get_token(scan);
     ASSERT(tok->type == TOKEN_ERROR);
     ASSERT(tok->text != NULL && tok->length != 0);

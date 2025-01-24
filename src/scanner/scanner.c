@@ -223,17 +223,8 @@ static void parse_string(scanner_t *scan, token_t *token) {
         }
         ch = next_char(scan);
     }
-    token->type = TOKEN_STRING;
-    if (builder.length > 0) {
-        size_t data_size = (builder.length + 1) * sizeof(wchar_t);
-        wchar_t *buffer = alloc_from_arena(scan->tokens_memory, data_size);
-        memcpy(buffer, builder.data, data_size);
-        token->text = buffer;
-        token->length = builder.length;
-        token->node = create_static_string_node(scan->graph_memory, builder.data, builder.length);
-    } else {
-        token->text = L"";
-    }
+    token->type = TOKEN_EXPRESSION;
+    token->node = create_static_string_node(scan->graph_memory, builder.data, builder.length);
     next_char(scan);
 cleanup:
     FREE(builder.data);
