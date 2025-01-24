@@ -65,7 +65,7 @@ struct token_list_t {
      * This pointer points to the head (first) token in the doubly linked list. If the
      * list is empty, this pointer will be NULL.
      */
-    token_t *head;
+    token_t *first;
 
     /**
      * @brief Pointer to the last token in the list.
@@ -73,7 +73,7 @@ struct token_list_t {
      * This pointer points to the tail (last) token in the doubly linked list. If the
      * list is empty, this pointer will be NULL.
      */
-    token_t *tail;
+    token_t *last;
 
     /**
      * @brief The number of tokens in the list.
@@ -81,7 +81,7 @@ struct token_list_t {
      * This field stores the total number of tokens currently in the list. It is used
      * to efficiently manage and track the size of the token list.
      */
-    size_t size;
+    size_t count;
 };
 
 /**
@@ -119,14 +119,14 @@ struct token_t {
      *
      * Links to the token that appears immediately before this token in the source code.
      */
-    token_t *left_neighbor;
+    token_t *left;
 
     /**
      * @brief Pointer to the next token in the neighbors list.
      *
      * Links to the token that appears immediately after this token in the source code.
      */
-    token_t *right_neighbor;
+    token_t *right;
 
     /**
      * @brief Pointer to the `token_list_t` representing the group list.
@@ -193,7 +193,7 @@ struct token_t {
      * Tokens that are considered children of this token (e.g., tokens enclosed within
      * parentheses or part of a complex structure).
      */
-    token_list_t child_tokens;
+    token_list_t children;
 };
 
 /**

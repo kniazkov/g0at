@@ -60,7 +60,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
                 pair->type = TOKEN_BRACKET_PAIR;
                 pair->begin = token->begin;
                 compilation_error_t *error = scan_and_analyze_for_brackets(arena, scan,
-                    &pair->child_tokens, token, &previous);
+                    &pair->children, token, &previous);
                 if (error != NULL) {
                     return error;
                 }
