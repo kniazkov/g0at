@@ -11,6 +11,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <memory.h>
 
 #include "parser.h"
 #include "compilation_error.h"
@@ -58,32 +59,32 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
                 token_t *pair = (token_t *)alloc_zeroed_from_arena(arena, sizeof(token_t));
                 pair->type = TOKEN_BRACKET_PAIR;
                 pair->begin = token->begin;
-                const token_t *last_token;
                 compilation_error_t *error = scan_and_analyze_for_brackets(arena, scan,
-                    &pair->child_tokens, token, &last_token);
+                    &pair->child_tokens, token, &previous);
                 if (error != NULL) {
                     return error;
                 }
-                pair->end = last_token->end;
+                pair->end = previous->end;
                 wchar_t *text = (wchar_t *)alloc_from_arena(arena, sizeof(wchar_t) * 3);
                 text[0] = bracket;
-                text[1] = last_token->text[0];
+                text[1] = previous->text[0];
                 text[2] = L'\0';
                 pair->text = text;
                 pair->length = 2;
                 append_token_to_neighbors(list, pair);
             } else {
+                *closing_token = token;
                 if (opening_token == NULL) {
                     return create_error_from_token(arena, token,
                         get_messages()->missing_opening_bracket, bracket);
                 }
                 wchar_t opening_bracket = L'\0';
-                if (bracket == ')') {
-                    opening_bracket == '(';
-                } else if (bracket == ']') {
-                    opening_bracket == '[';
-                } else if (bracket == '}') {
-                    opening_bracket == '{';
+                if (bracket == L')') {
+                    opening_bracket = L'(';
+                } else if (bracket == L']') {
+                    opening_bracket = L'[';
+                } else if (bracket == L'}') {
+                    opening_bracket = L'{';
                 }
                 assert(opening_bracket != L'\0');
                 if (opening_token->text[0] != opening_bracket) {
@@ -94,14 +95,13 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
             }
         } else {
             append_token_to_neighbors(list, token);
+            previous = token;
         }
     }
     return NULL;
 }
 
-compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t **tokens) {
-    token_list_t *list = (token_list_t *)alloc_zeroed_from_arena(scan->tokens_memory,
-        sizeof(token_list_t));
-    *tokens = list;
-    return scan_and_analyze_for_brackets(arena, scan, list, NULL, NULL);
+compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens) {
+    memset(tokens, 0, sizeof(token_list_t));
+    return scan_and_analyze_for_brackets(arena, scan, tokens, NULL, NULL);
 }

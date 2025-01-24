@@ -33,18 +33,18 @@ typedef struct token_list_t token_list_t;
 
 /**
  * @brief Processes tokens and analyzes bracket pairs, storing the result in the provided
- *  pointer to token list.
+ *  token list.
  * 
  * This function creates a list of tokens and processes them using `scan_and_analyze_for_brackets`, 
  * transforming balanced bracket pairs into special `TOKEN_BRACKET_PAIR` tokens. The resulting
- * list of tokens is stored in the location pointed to by `tokens`. If any errors are encountered
+ * tokens are stored in the lists pointed to by `tokens`. If any errors are encountered
  * during the scanning process, they are returned.
  * 
  * @param arena The memory arena for allocating tokens.
  * @param scan The scanner used to get the tokens.
- * @param tokens A pointer to a variable where the processed token list will be stored.
+ * @param tokens A pointer to token list where the processed tokens will be stored.
  * 
  * @return A `compilation_error_t` pointer if an error is detected (e.g., mismatched brackets),
  *  or NULL if no errors.
  */
-compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t **tokens);
+compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens);

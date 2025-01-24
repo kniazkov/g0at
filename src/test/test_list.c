@@ -7,6 +7,7 @@
 #include "test_list.h"
 #include "test_lib.h"
 #include "test_scanner.h"
+#include "test_parser.h"
 #include "test_model.h"
 #include "test_codegen.h"
 
@@ -15,7 +16,8 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
-      { "parsing static string", test_static_string }
+      { "parsing of brackets with one level of nesting", test_brackets_one_level_nesting }
+    , { "parsing static string", test_static_string }
     , { "parsing identifier", test_identifier }
     , { "parsing bracket", test_bracket }
     , { "unknown symbol", test_uknown_symbol }
