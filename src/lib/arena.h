@@ -131,7 +131,7 @@ struct arena_t {
  * 
  * @return A pointer to the initialized arena structure.
  */
-arena_t* create_arena();
+arena_t *create_arena();
 
 /**
  * @brief Allocates memory from the specified memory arena, handling small and large objects.
@@ -154,7 +154,7 @@ arena_t* create_arena();
  * @param size The size of the memory block to allocate (in bytes).
  * @return A pointer to the allocated memory block.
  */
-void* alloc_from_arena(arena_t* arena, size_t size);
+void *alloc_from_arena(arena_t* arena, size_t size);
 
 /**
  * @brief Allocates a zero-initialized memory block from the arena.
@@ -166,7 +166,37 @@ void* alloc_from_arena(arena_t* arena, size_t size);
  * @param size The size of the memory block to allocate (in bytes).
  * @return A pointer to the zero-initialized memory block.
  */
-void* alloc_zeroed_from_arena(arena_t* arena, size_t size);
+void *alloc_zeroed_from_arena(arena_t* arena, size_t size);
+
+/**
+ * @brief Copies an object to the specified memory arena.
+ * 
+ * This function creates a copy of the given object by allocating memory for it in the specified
+ * arena and copying the contents of the object into the newly allocated memory block.
+ * 
+ * @param arena A pointer to the memory arena where the object will be copied.
+ * @param object A pointer to the object to be copied.
+ * @param size The size of the object in bytes.
+ * @return A pointer to the copied object in the arena's memory.
+ */
+void *copy_object_to_arena(arena_t* arena, const void* object, size_t size);
+
+/**
+ * @brief Copies a wide-character string to the specified memory arena.
+ * 
+ * This function creates a copy of the given wide-character string by allocating memory for it
+ * in the specified arena and copying the contents of the string into the newly allocated
+ * memory block. The resulting string is null-terminated. If the length of the string is zero,
+ * the function returns a constant pointer to an empty string (L"").
+ * 
+ * @param arena A pointer to the memory arena where the string will be copied.
+ * @param string A pointer to the wide-character string to be copied.
+ * @param length The length of the string (excluding the null terminator).
+ * 
+ * @return A pointer to the copied string in the arena's memory, or a constant empty string
+ *  if length is 0.
+ */
+wchar_t *copy_string_to_arena(arena_t* arena, const wchar_t* string, size_t length);
 
 /**
  * @brief Formats a string using the memory arena and returns it.

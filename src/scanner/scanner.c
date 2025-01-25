@@ -278,10 +278,7 @@ token_t *get_token(scanner_t *scan) {
     token->end = full_to_short_position(&scan->position);
     if (token->text == NULL) {
         size_t length = scan->position.code - token->begin.code;
-        wchar_t *text = alloc_from_arena(scan->tokens_memory, sizeof(wchar_t) * (length + 1));
-        memcpy(text, token->begin.code, sizeof(wchar_t) * length);
-        text[length] = L'\0';
-        token->text = text;
+        token->text = copy_string_to_arena(scan->tokens_memory, token->begin.code, length);
         token->length = length;
     } else if (token->length == 0) {
         token->length = wcslen(token->text);

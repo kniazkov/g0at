@@ -30,10 +30,7 @@ compilation_error_t *create_error_from_token(arena_t *arena, const token_t *toke
         string_value_t value = format_string_vargs(format, args);
         va_end(args);
         if (value.data != NULL) {
-            size_t data_size = (value.length + 1) * sizeof(wchar_t);
-            wchar_t *message = (wchar_t *)alloc_from_arena(arena, data_size);
-            memcpy(message, value.data, data_size);
-            error->message = message;
+            error->message = copy_string_to_arena(arena, value.data, value.length);
             error->message_length = value.length;
             if (value.should_free) {
                 FREE(value.data);

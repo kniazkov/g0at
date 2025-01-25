@@ -21,7 +21,7 @@
 #include "allocate.h"
 #include "string_ext.h"
 
-arena_t* create_arena() {
+arena_t *create_arena() {
     arena_t* arena = (arena_t*)ALLOC(sizeof(arena_t));
     chunk_t* chunk = (chunk_t*)ALLOC(sizeof(chunk_t) + CHUNK_SIZE);
     
@@ -35,7 +35,7 @@ arena_t* create_arena() {
     return arena;
 }
 
-void* alloc_from_arena(arena_t* arena, size_t size) {
+void *alloc_from_arena(arena_t* arena, size_t size) {
     if (size == 0) {
         size = 1;
     }
@@ -65,10 +65,26 @@ void* alloc_from_arena(arena_t* arena, size_t size) {
     }
 }
 
-void* alloc_zeroed_from_arena(arena_t* arena, size_t size) {
+void *alloc_zeroed_from_arena(arena_t* arena, size_t size) {
     void *ptr = alloc_from_arena(arena, size);
     memset(ptr, 0, size);
     return ptr;
+}
+
+void *copy_object_to_arena(arena_t* arena, const void* object, size_t size) {
+    void* copied_object = alloc_from_arena(arena, size);
+    memcpy(copied_object, object, size);
+    return copied_object;
+}
+
+wchar_t *copy_string_to_arena(arena_t* arena, const wchar_t* string, size_t length) {
+    if (length == 0) {
+        return L"";
+    }
+    wchar_t* copied_string = (wchar_t*)alloc_from_arena(arena, (length + 1) * sizeof(wchar_t));
+    memcpy(copied_string, string, length * sizeof(wchar_t));
+    copied_string[length] = L'\0';
+    return copied_string;
 }
 
 wchar_t *format_string_to_arena(arena_t *arena, size_t *size_ptr, const wchar_t *format, ...) {
