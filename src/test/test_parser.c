@@ -55,3 +55,54 @@ bool test_brackets_two_levels_nesting() {
     destroy_arena(arena);
     return true;
 }
+
+bool test_unclosed_bracket() {
+    arena_t *arena = create_arena();
+    scanner_t *scan = create_scanner("program.goat", L"aaa ( bbb", arena, arena);
+    token_list_t tokens;
+    compilation_error_t *error = process_brackets(arena, scan, &tokens);
+    ASSERT(error != NULL);
+    ASSERT(strcmp("program.goat", error->begin.file_name) == 0);
+    ASSERT(error->begin.row == 1);
+    ASSERT(error->begin.column == 5);
+    ASSERT(error->begin.code[0] == L'(');
+    ASSERT(error->end.row == 1);
+    ASSERT(error->end.column == 10);
+    ASSERT(wcscmp(L"unclosed opening bracket: expected a closing bracket to match '('",
+        error->message) == 0);
+    destroy_arena(arena);
+    return true;
+}
+
+bool test_missing_opening_bracket() {
+    arena_t *arena = create_arena();
+    scanner_t *scan = create_scanner("program.goat", L"aaa \n bbb ] ccc", arena, arena);
+    token_list_t tokens;
+    compilation_error_t *error = process_brackets(arena, scan, &tokens);
+    ASSERT(error != NULL);
+    ASSERT(error->begin.row == 2);
+    ASSERT(error->begin.column == 6);
+    ASSERT(error->begin.code[0] == L']');
+    ASSERT(error->end.row == 2);
+    ASSERT(error->end.column == 7);
+    ASSERT(wcscmp(L"missing opening bracket corresponding to ']'", error->message) == 0);
+    destroy_arena(arena);
+    return true;
+}
+
+bool test_closing_bracket_does_not_match_opening() {
+    arena_t *arena = create_arena();
+    scanner_t *scan = create_scanner("program.goat", L"aaa { bbb \n ccc ] ddd", arena, arena);
+    token_list_t tokens;
+    compilation_error_t *error = process_brackets(arena, scan, &tokens);
+    ASSERT(error != NULL);
+    ASSERT(error->begin.row == 1);
+    ASSERT(error->begin.column == 5);
+    ASSERT(error->begin.code[0] == L'{');
+    ASSERT(error->end.row == 2);
+    ASSERT(error->end.column == 7);
+    ASSERT(wcscmp(L"closing bracket ']' does not match the opening bracket '{'",
+        error->message) == 0);
+    destroy_arena(arena);
+    return true;
+}

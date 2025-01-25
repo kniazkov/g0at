@@ -88,8 +88,10 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
                 }
                 assert(opening_bracket != L'\0');
                 if (opening_token->text[0] != opening_bracket) {
-                    return create_error_from_token(arena, token,
+                    compilation_error_t *error = create_error_from_token(arena, opening_token,
                         get_messages()->brackets_do_not_match, bracket, opening_token->text[0]);
+                    error->end = token->end;
+                    return error;
                 }
                 return NULL;
             }
@@ -103,5 +105,6 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
 
 compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens) {
     memset(tokens, 0, sizeof(token_list_t));
-    return scan_and_analyze_for_brackets(arena, scan, tokens, NULL, NULL);
+    const token_t *last_token;
+    return scan_and_analyze_for_brackets(arena, scan, tokens, NULL, &last_token);
 }
