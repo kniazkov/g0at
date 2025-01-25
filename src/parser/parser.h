@@ -27,9 +27,33 @@ typedef struct scanner_t scanner_t;
 
 /**
  * @struct arena_t
+ * @brief Forward declaration for token structure.
+ */
+typedef struct token_t token_t;
+
+/**
+ * @struct arena_t
  * @brief Forward declaration for list of tokens.
  */
 typedef struct token_list_t token_list_t;
+
+/**
+ * @typedef reduce_rule_t
+ * @brief Function pointer type for token reduction rules in a bottom-up parser.
+ * 
+ * A reduction rule is a function that performs a reduction operation in a bottom-up parser. 
+ * It processes tokens starting from a given token and may create new tokens and syntax tree 
+ * nodes during the reduction process.
+ * 
+ * The function does not return a value, but it modifies the provided token list and allocates
+ * memory for new tokens and syntax tree nodes using the specified arenas.
+ * 
+ * @param start_token The token where the reduction starts.
+ * @param tokens_memory The memory arena for allocating new tokens during the reduction.
+ * @param graph_memory The memory arena for allocating syntax tree nodes during the reduction.
+ */
+typedef void (*reduce_rule_t)(token_t *start_token, arena_t *tokens_memory, arena_t *graph_memory);
+
 
 /**
  * @brief Processes tokens and analyzes bracket pairs, storing the result in the provided
@@ -48,3 +72,4 @@ typedef struct token_list_t token_list_t;
  *  or NULL if no errors.
  */
 compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens);
+
