@@ -1,5 +1,6 @@
 /**
  * @file expression.h
+ * @copyright 2025 Ivan Kniazkov
  * @brief Definition of the expression structure.
  * 
  * This file defines the `expression_t` structure, which represents an expression node in

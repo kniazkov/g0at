@@ -72,7 +72,7 @@ static string_value_t function_call_to_string(const node_t *node) {
     init_string_builder(&builder, 0);
 
     string_value_t func_object_as_string =
-        expr->base.base.vtbl->to_string(&expr->func_object->base);
+        expr->func_object->base.vtbl->to_string(&expr->func_object->base);
     append_substring(&builder, func_object_as_string.data, func_object_as_string.length);
     if (func_object_as_string.should_free) {
         FREE(func_object_as_string.data);
