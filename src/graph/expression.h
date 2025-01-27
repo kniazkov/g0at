@@ -39,3 +39,17 @@ struct expression_t {
  * @return A pointer to the newly created static string node, represented as a `node_t`.
  */
 node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length);
+
+/**
+ * @brief Creates a new variable expression node.
+ * 
+ * This function allocates and initializes a new variable expression node in the syntax tree.
+ * The node represents a variable identified by its name.
+ * 
+ * @param arena The memory arena for allocating the variable node.
+ * @param name A pointer to the wide-character string representing the variable's name.
+ * @param name_length The length of the variable's name in characters (not including the null
+ *  terminator).
+ * @return A pointer to the newly created variable expression node.
+ */
+node_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length);

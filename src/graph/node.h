@@ -43,7 +43,16 @@ typedef enum {
      * This node type represents a static string literal in the source code.
      * It stores the string content as a part of the AST.
      */
-    NODE_STATIC_STRING = 0
+    NODE_STATIC_STRING = 0,
+
+    /**
+     * @brief Variable node type.
+     * 
+     * This node type represents a variable expression in the source code.
+     * It stores the name of the variable, and can be used to represent variables
+     * or other named entities (e.g., constants).
+     */
+    NODE_VARIABLE
 } node_type_t;
 
 /**
