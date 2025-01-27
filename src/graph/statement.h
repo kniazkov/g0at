@@ -22,12 +22,6 @@
 #include "node.h"
 
 /**
- * @typedef statement_t
- * @brief Forward declaration for the statement structure.
- */
-typedef struct statement_t statement_t;
-
-/**
  * @typedef expression_t
  * @brief Forward declaration for the expression structure.
  */

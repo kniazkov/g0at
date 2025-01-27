@@ -19,6 +19,12 @@
 typedef struct node_t node_t;
 
 /**
+ * @typedef statement_t
+ * @brief Forward declaration for the statement structure.
+ */
+typedef struct statement_t statement_t;
+
+/**
  * @typedef node_t
  * @brief Forward declaration for the arena memory allocator.
  */
@@ -149,3 +155,16 @@ struct node_t {
      */
     node_vtbl_t *vtbl;
 };
+
+/**
+ * @brief Creates a new root node.
+ * 
+ * This function allocates memory for a new root node, copies the provided statement list into
+ * the node, and returns a pointer to the newly created node.
+ * 
+ * @param arena A pointer to the memory arena for memory allocation.
+ * @param stmt_list A list of statements to be included in the root node.
+ * @param stmt_count The number of statements in the list.
+ * @return A pointer to the newly created root node.
+ */
+node_t *create_root_node(arena_t *arena, statement_t **stmt_list, size_t stmt_count);
