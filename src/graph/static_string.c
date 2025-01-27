@@ -51,20 +51,46 @@ typedef struct {
  * @param node A pointer to the static string expression node.
  * @return A `string_value_t` containing the formatted string representation.
  */
-static string_value_t to_string(const node_t *node) {
+static string_value_t static_string_to_string(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
     return string_to_string_notation(L"", (string_value_t){ expr->data, expr->length, false });
 }
 
 /**
+ * @brief Converts a static string node to a statement.
+ * @param node A pointer to the static string node to be converted.
+ * @return `NULL`, as a static string does not represent a statement.
+ */
+static statement_t *static_string_to_statement(node_t *node) {
+    return NULL;
+}
+
+/**
+ * @brief Converts a static string node to an expression.
+ * @param node A pointer to the static string node to be converted.
+ * @return A `expression_t*` representing the static string node as an expression.
+ */
+static expression_t *static_string_to_expression(node_t *node) {
+    return (expression_t *)node;
+}
+
+/**
  * @brief Virtual table for static string expressions.
  * 
- * Provides the implementation of operations specific to static string expressions,
- * including converting the expression to a string representation.
+ * This virtual table provides the implementation of operations specific to static string
+ * expressions, such as converting the static string expression to a string representation,
+ * and handling the conversion of the node to both a statement and an expression.
+ * 
+ * The table includes function pointers for:
+ * - `to_string`: Converts the static string expression node to a string.
+ * - `to_statement`: Returns `NULL`, as a static string cannot be used as a statement.
+ * - `to_expression`: Converts the static string node to an expression.
  */
 static node_vtbl_t static_string_vtbl = {
     .type = NODE_STATIC_STRING,
-    .to_string = to_string
+    .to_string = static_string_to_string,
+    .to_statement = static_string_to_statement,
+    .to_expression = static_string_to_expression
 };
 
 node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length) {

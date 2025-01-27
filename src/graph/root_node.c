@@ -77,15 +77,45 @@ static string_value_t root_node_to_string(const node_t *node) {
 }
 
 /**
+ * @brief Converts a root node to a statement.
+ * @param node A pointer to the root node that should be converted to a statement.
+ * @return `NULL` since root node cannot be treated as statement.
+ */
+static statement_t *root_node_to_statement(node_t *node) {
+    return NULL;
+}
+
+/**
+ * @brief Converts a root node to an expression.
+ * @param node A pointer to the root node that should be converted to an expression.
+ * @return `NULL` since root node cannot be treated as expression.
+ */
+static expression_t *root_node_to_expression(node_t *node) {
+    return NULL;
+}
+
+/**
  * @brief Virtual table for root node operations.
  * 
- * This virtual table provides the implementation of operations specific to  root nodes,
- * including converting the root node to a string representation.
+ * This virtual table provides the implementation of operations specific to root nodes in the
+ * abstract syntax tree (AST). Root nodes typically represent the entry point or the top-level
+ * structure of a program.
+ * 
+ * The virtual table includes the following function pointers:
+ * - `to_string`: Converts the root node to its string representation.
+ * - `to_statement`: Converts the root node to a statement (returns `NULL`).
+ * - `to_expression`: Converts the root node to an expression (returns `NULL`).
+ * 
+ * This virtual table enables polymorphic behavior for root nodes, allowing specific operations
+ * to be applied to root nodes in the AST, such as string conversion and casting to other node types.
  */
 static node_vtbl_t root_node_vtbl = {
     .type = NODE_ROOT,
-    .to_string = root_node_to_string
+    .to_string = root_node_to_string,
+    .to_statement = root_node_to_statement,
+    .to_expression = root_node_to_expression
 };
+
 
 node_t *create_root_node(arena_t *arena, statement_t **stmt_list, size_t stmt_count) {
     root_node_t *root = (root_node_t *)alloc_from_arena(arena, sizeof(root_node_t));

@@ -52,14 +52,40 @@ static string_value_t variable_to_string(const node_t *node) {
 }
 
 /**
+ * @brief Converts a variable node to a statement.
+ * @param node A pointer to the variable node to be converted.
+ * @return `NULL`, as a variable does not represent a statement.
+ */
+static statement_t *variable_to_statement(node_t *node) {
+    return NULL;
+}
+
+/**
+ * @brief Converts a variable node to an expression.
+ * @param node A pointer to the variable node to be converted.
+ * @return A `expression_t*` representing the variable node as an expression.
+ */
+static expression_t *variable_to_expression(node_t *node) {
+    return (expression_t *)node;
+}
+
+/**
  * @brief Virtual table for variable expressions.
  * 
- * Provides the implementation of operations specific to variable expressions,
- * including converting the expression to a string representation.
+ * This virtual table provides the implementation of operations specific to variable expressions,
+ * such as converting the variable expression to a string representation, and handling the
+ * conversion of the node to both a statement and an expression.
+ * 
+ * The table includes function pointers for:
+ * - `to_string`: Converts the variable expression node to a string.
+ * - `to_statement`: Returns `NULL`, as a variable cannot be used as a statement.
+ * - `to_expression`: Converts the variable node to an expression.
  */
 static node_vtbl_t variable_vtbl = {
     .type = NODE_VARIABLE,
-    .to_string = variable_to_string
+    .to_string = variable_to_string,
+    .to_statement = variable_to_statement,
+    .to_expression = variable_to_expression
 };
 
 node_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length) {

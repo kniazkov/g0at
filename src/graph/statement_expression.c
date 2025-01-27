@@ -65,14 +65,40 @@ static string_value_t statement_expression_to_string(const node_t *node) {
 }
 
 /**
+ * @brief Converts a statement expression node to a statement.
+ * @param node A pointer to the statement expression node to be converted.
+ * @return A `statement_t*` representing the statement expression node as a statement.
+ */
+static statement_t *statement_expression_to_statement(node_t *node) {
+    return (statement_t *)node;
+}
+
+/**
+ * @brief Converts a statement expression node to an expression.
+ * @param node A pointer to the statement expression node to be converted.
+ * @return `NULL`, since a statement expression does not represent a valid expression.
+ */
+static expression_t *statement_expression_to_expression(node_t *node) {
+    return NULL;
+}
+
+/**
  * @brief Virtual table for statement expression operations.
  * 
- * Provides the implementation of operations specific to statement expressions,
- * including converting the statement expression to a string representation.
+ * This virtual table provides the implementation of operations specific to statement expression
+ * nodes, such as converting the statement expression to its string representation, and handling
+ * the conversion of the node to both a statement and an expression.
+ * 
+ * The table includes function pointers for:
+ * - `to_string`: Converts the statement expression node to a string.
+ * - `to_statement`: Converts the node to a statement.
+ * - `to_expression`: Returns `NULL` as statement expressions cannot be used as regular expressions.
  */
 static node_vtbl_t statement_expression_vtbl = {
     .type = NODE_STATEMENT_EXPRESSION,
-    .to_string = statement_expression_to_string
+    .to_string = statement_expression_to_string,
+    .to_statement = statement_expression_to_statement,
+    .to_expression = statement_expression_to_expression
 };
 
 node_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped) {

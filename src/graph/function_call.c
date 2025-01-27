@@ -95,14 +95,40 @@ static string_value_t function_call_to_string(const node_t *node) {
 }
 
 /**
+ * @brief Converts a node representing a function call into a statement.
+ * @param node A pointer to the node to be converted.
+ * @return `NULL` since function calls cannot be treated as statements.
+ */
+static statement_t *function_call_to_statement(node_t *node) {
+    return NULL;
+}
+
+/**
+ * @brief Converts a node representing a function call into an expression.
+ * @param node A pointer to the node to be converted.
+ * @return The node casted as an `expression_t*`.
+ */
+static expression_t *function_call_to_expression(node_t *node) {
+    return (expression_t *)node;
+}
+
+/**
  * @brief Virtual table for function call expressions.
  * 
  * This virtual table provides the implementation of operations specific to function call
- * expressions, such as converting the expression to its string representation.
+ * expressions. It includes function pointers for common operations such as:
+ * - Converting the expression to its string representation.
+ * - Casting the function call to a statement (currently returns `NULL`).
+ * - Casting the function call to an expression (returns the node as an expression).
+ * 
+ * This virtual table allows function call nodes to handle specific behavior for the
+ * function call type within the abstract syntax tree.
  */
 static node_vtbl_t function_call_vtbl = {
     .type = NODE_FUNCTION_CALL,
-    .to_string = function_call_to_string
+    .to_string = function_call_to_string,
+    .to_statement = function_call_to_statement,
+    .to_expression = function_call_to_expression
 };
 
 node_t *create_function_call_node(arena_t *arena, expression_t *func_object, expression_t **args,

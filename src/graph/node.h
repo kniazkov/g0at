@@ -25,7 +25,13 @@ typedef struct node_t node_t;
 typedef struct statement_t statement_t;
 
 /**
- * @typedef node_t
+ * @typedef expression_t
+ * @brief Forward declaration for the expression structure.
+ */
+typedef struct expression_t expression_t;
+
+/**
+ * @typedef arena_t
  * @brief Forward declaration for the arena memory allocator.
  */
 typedef struct arena_t arena_t;
@@ -128,6 +134,30 @@ typedef struct {
      *  approximation of the original entity.
      */
     string_value_t (*to_string)(const node_t *node);
+
+    /**
+     * @brief Converts a node to a statement type.
+     * 
+     * This function safely casts a node to a `statement_t *`. It is used when you know that
+     * the node represents a statement and want to work with it as a specific type.
+     * 
+     * @param node A pointer to the base node.
+     * @return A pointer to the statement representation of the node, or NULL if the node
+     *  is not a statement.
+     */
+    statement_t *(*to_statement)(node_t *node);
+
+    /**
+     * @brief Converts a node to an expression type.
+     * 
+     * This function safely casts a node to an `expression_t *`. It is used when you know that
+     * the node represents an expression and want to work with it as a specific type.
+     * 
+     * @param node A pointer to the base node.
+     * @return A pointer to the expression representation of the node, or NULL if the node
+     *  is not an expression.
+     */
+    expression_t *(*to_expression)(node_t *node);
 } node_vtbl_t;
 
 /**
