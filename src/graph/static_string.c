@@ -1,5 +1,6 @@
 /**
  * @file static_string.c
+ * @copyright 2025 Ivan Kniazkov
  * @brief Implementation of the static string expression.
  * 
  * This file defines the behavior of the static string expression, which represents a literal

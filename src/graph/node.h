@@ -38,12 +38,20 @@ typedef struct arena_t arena_t;
  */
 typedef enum {
     /**
+     * @brief Root node type.
+     * 
+     * This node type represents the root of the abstract syntax tree (AST). It serves as the
+     * entry point to the AST, containing the main structure of the parsed source code.
+     */
+    NODE_ROOT = 0,
+    
+    /**
      * @brief Static string node type.
      * 
      * This node type represents a static string literal in the source code.
      * It stores the string content as a part of the AST.
      */
-    NODE_STATIC_STRING = 0,
+    NODE_STATIC_STRING,
 
     /**
      * @brief Variable node type.
@@ -52,7 +60,26 @@ typedef enum {
      * It stores the name of the variable, and can be used to represent variables
      * or other named entities (e.g., constants).
      */
-    NODE_VARIABLE
+    NODE_VARIABLE,
+
+    /**
+     * @brief Function call node type.
+     * 
+     * This node type represents a function call expression in the source code.
+     * It stores information about the function being called, including the function object
+     * expression and the arguments passed to the function.
+     */
+    NODE_FUNCTION_CALL,
+
+    /**
+     * @brief Statement expression node type.
+     * 
+     * This node type represents a statement expression, which contains an expression
+     * whose result is evaluated but ignored. It is used to represent statements
+     * where an expression is evaluated solely for its side effects, such as a function call.
+     * The result of the expression is not used further in the program.
+     */
+    NODE_STATEMENT_EXPRESSION,
 } node_type_t;
 
 /**

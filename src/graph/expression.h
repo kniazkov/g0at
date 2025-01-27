@@ -53,3 +53,18 @@ node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t le
  * @return A pointer to the newly created variable expression node.
  */
 node_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length);
+
+/**
+ * @brief Creates a function call expression node.
+ * 
+ * This function creates a new node representing a function call expression
+ * in the AST.
+ * 
+ * @param arena The memory arena to allocate the node and arguments from.
+ * @param func_object The function object being called.
+ * @param args An array of arguments to be passed to the function.
+ * @param args_count The number of arguments in the array.
+ * @return A pointer to the created function call node.
+ */
+node_t *create_function_call_node(arena_t *arena, expression_t *func_object, expression_t **args,
+        size_t args_count);
