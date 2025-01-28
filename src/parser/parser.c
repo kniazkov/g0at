@@ -19,6 +19,7 @@
 #include "scanner/scanner.h"
 #include "scanner/token.h"
 #include "resources/messages.h"
+#include "graph/node.h"
 
 /**
  * @brief Rule for handling an identifier followed by parentheses (function call).
@@ -224,7 +225,8 @@ token_t *collapse_tokens_to_token(arena_t *arena, token_t *first, token_t *last,
 statement_list_processing_result_t process_statement_list(parser_memory_t *memory,
         token_list_t *tokens) {
     statement_list_processing_result_t result = {0};
-    result.list = (statement_t **)alloc_from_arena(memory->tokens, tokens->count);
+    result.list = (statement_t **)alloc_from_arena(memory->tokens,
+        tokens->count * sizeof(statement_t *));
     token_t *token = tokens->first;
     while (token != NULL) {
         if (token->type == TOKEN_STATEMENT) {
@@ -255,3 +257,14 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     return error;
 }
 
+root_token_list_processing_result_t process_root_token_list(parser_memory_t *memory,
+        token_list_t *tokens) {
+    root_token_list_processing_result_t result = {0};     
+    statement_list_processing_result_t stmt = process_statement_list(memory, tokens);
+    if (stmt.error != NULL) {
+        result.error = stmt.error;
+    } else {
+        result.root_node = create_root_node(memory->graph, stmt.list, stmt.count);
+    }
+    return result;
+}

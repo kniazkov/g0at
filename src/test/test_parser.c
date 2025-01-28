@@ -139,6 +139,15 @@ bool test_parsing_function_calls() {
     if (code2.should_free) {
         FREE(code2.data);
     }
+    root_token_list_processing_result_t rtlpr = process_root_token_list(&memory, &tokens);
+    ASSERT(rtlpr.error == NULL);
+    ASSERT(rtlpr.root_node != NULL);
+    ASSERT(rtlpr.root_node->vtbl->type == NODE_ROOT);
+    code2 = rtlpr.root_node->vtbl->to_string(rtlpr.root_node);
+    ASSERT(wcscmp(L"print(\"test\");", code2.data) == 0);
+    if (code2.should_free) {
+        FREE(code2.data);
+    }
     destroy_arena(arena);
     return true;
 }

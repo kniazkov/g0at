@@ -150,3 +150,44 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
  *       handling or logging each error as needed.
  */
 compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory);
+
+/**
+ * @struct root_token_list_processing_result_t
+ * @brief A structure representing the result of processing the root-level token list.
+ * 
+ * This structure contains the root node of the syntax tree and any error that
+ * may have occurred during processing.
+ */
+typedef struct {
+    /**
+     * @brief The root node of the syntax tree.
+     * 
+     * This node represents the top-level structure of the syntax tree.
+     * It is NULL if an error occurs during processing.
+     */
+    node_t *root_node;
+
+    /**
+     * @brief A pointer to a compilation error, if any.
+     * 
+     * If an error occurs while processing the root token list, this field
+     * contains the error details. Otherwise, it is NULL.
+     */
+    compilation_error_t *error;
+} root_token_list_processing_result_t;
+
+/**
+ * @brief Processes the root-level token list and constructs a syntax tree root node.
+ * 
+ * This function takes a list of tokens, processes it to extract statements, and creates
+ * a root node for the syntax tree. If an error occurs while processing the token list, it is
+ * captured in the result.
+ * 
+ * @param memory A pointer to the parser's memory structure, used for memory allocation.
+ * @param tokens A pointer to the list of tokens to be processed at the root level.
+ * 
+ * @return A `root_token_list_processing_result_t` structure containing the root node
+ *  of the syntax tree and any compilation error encountered.
+ */
+root_token_list_processing_result_t process_root_token_list(parser_memory_t *memory,
+        token_list_t *tokens);
