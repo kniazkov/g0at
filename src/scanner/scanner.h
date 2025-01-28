@@ -22,17 +22,17 @@
 typedef struct scanner_t scanner_t;
 
 /**
- * @brief Forward declaration of arena memory allocator to be used in the scanner.
+ * Forward declaration for parser memory structure.
  */
-typedef struct arena_t arena_t;
+typedef struct parser_memory_t parser_memory_t;
 
 /**
  * @struct scanner_t
  * @brief Structure to represent the scanner for lexical analysis.
  *
  * This structure holds the necessary state for performing lexical analysis, including
- * the current character in the source code, the current position in the file, memory
- * arenas for efficient memory allocation, and token groups for organizing tokens by type or role.
+ * the current character in the source code, the current position in the file, a memory
+ * manager for tokens and syntax tree nodes, and a pointer to token groups organized by type or role.
  */
 struct scanner_t {
     /**
@@ -44,43 +44,36 @@ struct scanner_t {
     full_position_t position;
 
     /**
-     * @brief Pointer to the memory arena used for token allocation.
-     *
-     * The token arena is used for allocating memory for tokens during lexical analysis.
-     * This memory can be freed once the lexical analysis is complete, as tokens are
-     * no longer needed.
-     */
-    arena_t *tokens_memory;
-
-    /**
-     * @brief Pointer to the memory arena used for syntax tree node allocation.
-     *
-     * The syntax tree arena is used for allocating memory for nodes in the syntax tree
-     * during parsing. This arena retains the memory for the tree after parsing, as the syntax tree
-     * is used for further stages like bytecode generation.
-     */
-    arena_t *graph_memory;
-
-    /**
-     * @brief Groups of tokens organized by type or role.
+     * @brief Pointer to the memory manager used for token and syntax tree node allocation.
      * 
-     * This structure contains lists of tokens grouped based on specific criteria,
-     * such as identifiers and operators.
+     * This memory manager consolidates memory arenas for tokens and syntax tree nodes,
+     * simplifying function signatures and improving code maintainability.
      */
-    token_groups_t groups;
-};
+    parser_memory_t *memory;
 
+    /**
+     * @brief Pointer to token groups organized by type or role.
+     * 
+     * This pointer refers to token groups that are partially populated by the scanner.
+     * The groups are typically created outside the scanner and passed to it for filling
+     * during lexical analysis.
+     */
+    token_groups_t *groups;
+};
 
 /**
  * @brief Creates a new scanner for lexical analysis.
  * @param file_name The name of the file being scanned.
- * @param code The source code to be analyzed. It is a wide-character string.
- * @param tokens_memory The memory arena used for allocating memory for tokens.
- * @param graph_memory The memory arena used for allocating memory for the syntax tree nodes.
+ * @param code The source code to be analyzed, represented as a wide-character string.
+ * @param memory A pointer to the `parser_memory_t` structure, which manages memory
+ *  allocation for tokens and syntax tree nodes.
+ * @param groups A pointer to the `token_groups_t` structure, which organizes tokens
+ *  by type or role. The scanner populates these groups during lexical analysis.
  * @return A pointer to the newly created `scanner_t` structure.
  */
-scanner_t *create_scanner(const char *file_name, wchar_t *code, arena_t *tokens_memory,
-        arena_t *graph_memory);
+scanner_t *create_scanner(const char *file_name, wchar_t *code, parser_memory_t *memory,
+        token_groups_t *groups);
+
 
 /**
  * @brief Extracts the next token from the source code.

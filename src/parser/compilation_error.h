@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 #include "scanner/position.h"
 
 /**
@@ -36,6 +38,8 @@ typedef struct arena_t arena_t;
  * This structure holds information about a specific compilation error, including its
  * position in the source code, the error message, and the length of the message. It is used for
  * reporting issues encountered during the lexical, syntactical, or semantic analysis stages.
+ * When multiple errors occur, they can be linked together in a chain using the `next` field,
+ * forming a linked list of errors.
  */
 struct compilation_error_t {
     /**
@@ -66,6 +70,23 @@ struct compilation_error_t {
      * @brief The length of the error message.
      */
     size_t message_length;
+
+    /**
+     * @brief Indicates whether the error is critical.
+     * 
+     * If this field is set to `true`, the error is considered critical, and parsing should
+     * stop immediately. Non-critical errors allow the parser to continue processing tokens,
+     * potentially detecting additional errors in the same pass.
+     */
+    bool critical;
+
+    /**
+     * @brief Pointer to the next error in the chain.
+     * 
+     * This field links to the next `compilation_error_t` in the list of errors.
+     * If there are no additional errors, this field is set to `NULL`.
+     */
+    compilation_error_t *next;
 };
 
 /**

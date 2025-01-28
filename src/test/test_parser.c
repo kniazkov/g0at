@@ -17,7 +17,9 @@
 
 bool test_brackets_one_level_nesting() {
     arena_t *arena = create_arena();
-    scanner_t *scan = create_scanner("program.goat", L"aaa ( \"bbb\" ccc ) ddd ", arena, arena);
+    parser_memory_t memory = { arena, arena };
+    token_groups_t groups;
+    scanner_t *scan = create_scanner("program.goat", L"aaa ( \"bbb\" ccc ) ddd ", &memory, &groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error == NULL);
@@ -36,8 +38,10 @@ bool test_brackets_one_level_nesting() {
 
 bool test_brackets_two_levels_nesting() {
     arena_t *arena = create_arena();
+    parser_memory_t memory = { arena, arena };
+    token_groups_t groups;
     scanner_t *scan = create_scanner("program.goat", L"aaa ( \"bbb\" [ ccc ddd ] ) eee ",
-        arena, arena);
+        &memory, &groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error == NULL);
@@ -52,14 +56,16 @@ bool test_brackets_two_levels_nesting() {
     ASSERT(token->right->children.first->right->type == TOKEN_BRACKET_PAIR);
     ASSERT(wcscmp(token->right->children.first->right->text, L"[]") == 0);
     ASSERT(token->right->children.first->right->children.count == 2);
-    ASSERT(scan->groups.identifiers.count == 4);
+    ASSERT(groups.identifiers.count == 4);
     destroy_arena(arena);
     return true;
 }
 
 bool test_unclosed_bracket() {
     arena_t *arena = create_arena();
-    scanner_t *scan = create_scanner("program.goat", L"aaa ( bbb", arena, arena);
+    parser_memory_t memory = { arena, arena };
+    token_groups_t groups;
+    scanner_t *scan = create_scanner("program.goat", L"aaa ( bbb", &memory, &groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error != NULL);
@@ -77,7 +83,9 @@ bool test_unclosed_bracket() {
 
 bool test_missing_opening_bracket() {
     arena_t *arena = create_arena();
-    scanner_t *scan = create_scanner("program.goat", L"aaa \n bbb ] ccc", arena, arena);
+    parser_memory_t memory = { arena, arena };
+    token_groups_t groups;
+    scanner_t *scan = create_scanner("program.goat", L"aaa \n bbb ] ccc", &memory, &groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error != NULL);
@@ -93,7 +101,9 @@ bool test_missing_opening_bracket() {
 
 bool test_closing_bracket_does_not_match_opening() {
     arena_t *arena = create_arena();
-    scanner_t *scan = create_scanner("program.goat", L"aaa { bbb \n ccc ] ddd", arena, arena);
+    parser_memory_t memory = { arena, arena };
+    token_groups_t groups;
+    scanner_t *scan = create_scanner("program.goat", L"aaa { bbb \n ccc ] ddd",  &memory, &groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error != NULL);
@@ -110,16 +120,19 @@ bool test_closing_bracket_does_not_match_opening() {
 
 bool test_parsing_function_calls() {
     arena_t *arena = create_arena();
+    parser_memory_t memory = { arena, arena };
+    token_groups_t groups;
     wchar_t *code = L"print(\"test\")";
-    scanner_t *scan = create_scanner("program.goat", code, arena, arena);
+    scanner_t *scan = create_scanner("program.goat", code, &memory, &groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error == NULL);
     ASSERT(tokens.count == 2);
-    ASSERT(scan->groups.identifiers.count == 1);
-    apply_reduction_rules(&scan->groups, arena, arena);
+    ASSERT(groups.identifiers.count == 1);
+    error = apply_reduction_rules(&groups, &memory);
+    ASSERT(error == NULL);
     ASSERT(tokens.count == 1);
-    ASSERT(scan->groups.identifiers.count == 0);
+    ASSERT(groups.identifiers.count == 0);
     ASSERT(tokens.first->node->vtbl->type == NODE_FUNCTION_CALL);
     string_value_t code2 = tokens.first->node->vtbl->to_string(tokens.first->node);
     ASSERT(wcscmp(code, code2.data) == 0);

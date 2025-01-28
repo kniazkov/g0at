@@ -16,7 +16,9 @@
 
 bool test_identifier() {
     arena_t *arena = create_arena();
-    scanner_t *scan = create_scanner("program.goat", L"  test \n abc123  ", arena, NULL);
+    parser_memory_t memory = { arena, arena };
+    token_groups_t groups;
+    scanner_t *scan = create_scanner("program.goat", L"  test \n abc123  ", &memory, &groups);
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_IDENTIFIER);
     ASSERT(wcscmp(L"test", tok->text) == 0);
@@ -42,7 +44,9 @@ bool test_identifier() {
 
 bool test_bracket() {
     arena_t *arena = create_arena();
-    scanner_t *scan = create_scanner("program.goat", L"  )  ", arena, NULL);
+    parser_memory_t memory = { arena, arena };
+    token_groups_t groups;
+    scanner_t *scan = create_scanner("program.goat", L"  )  ", &memory, &groups);
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_BRACKET);
     ASSERT(wcscmp(L")", tok->text) == 0);
@@ -52,11 +56,12 @@ bool test_bracket() {
 }
 
 bool test_static_string() {
-    arena_t *tokens = create_arena();
-    arena_t *graph = create_arena();
+    arena_t *arena = create_arena();
+    parser_memory_t memory = { arena, arena };
+    token_groups_t groups;
     scanner_t *scan = create_scanner("program.goat", 
         L" \"test\" \"new\\nline\" \"\" \"not closed ",
-        tokens, graph);
+        &memory, &groups);
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_EXPRESSION);
     ASSERT(wcscmp(L"\"test\"", tok->text) == 0);
@@ -79,14 +84,15 @@ bool test_static_string() {
     tok = get_token(scan);
     ASSERT(tok->type == TOKEN_ERROR);
     ASSERT(tok->text != NULL && tok->length != 0);
-    destroy_arena(tokens);
-    destroy_arena(graph);
+    destroy_arena(arena);
     return true;
 }
 
 bool test_uknown_symbol() {
     arena_t *arena = create_arena();
-    scanner_t *scan = create_scanner("program.goat", L"  `  ", arena, NULL);
+    parser_memory_t memory = { arena, arena };
+    token_groups_t groups;
+    scanner_t *scan = create_scanner("program.goat", L"  `  ", &memory, &groups);
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_ERROR);
     ASSERT(wcscmp(L"unknown symbol '`'", tok->text) == 0);

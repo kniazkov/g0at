@@ -20,17 +20,21 @@
  * 
  * A reduction rule is a function that performs a reduction operation in a bottom-up parser. 
  * It processes tokens starting from a given token and may create new tokens and syntax tree 
- * nodes during the reduction process.
+ * nodes during the reduction process. If a syntax error occurs during the reduction, the 
+ * function returns a pointer to a `compilation_error_t` structure describing the error.
  * 
- * The function does not return a value, but it modifies the provided token list and allocates
- * memory for new tokens and syntax tree nodes using the specified arenas.
+ * The memory for the `compilation_error_t` structures is allocated from the same memory 
+ * arena used for tokens (`memory->tokens`). This ensures that memory management is centralized 
+ * and efficient. Errors can be linked together to form a chain using the `next` field, and 
+ * the entire chain is deallocated automatically when the token memory arena is destroyed.
  * 
  * @param start_token The token where the reduction starts.
- * @param tokens_memory The memory arena for allocating new tokens during the reduction.
- * @param graph_memory The memory arena for allocating syntax tree nodes during the reduction.
+ * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
+ *  for tokens and syntax tree nodes.
+ * @return A pointer to a `compilation_error_t` if a syntax error occurs, or `NULL` if the rule 
+ *  was successfully applied.
  */
-typedef void (*reduce_rule_t)(token_t *start_token, arena_t *tokens_memory, arena_t *graph_memory);
-
+typedef compilation_error_t* (*reduce_rule_t)(token_t *start_token, parser_memory_t *memory);
 
 /**
  * @brief Processes tokens and analyzes bracket pairs, storing the result in the provided
@@ -44,7 +48,9 @@ typedef void (*reduce_rule_t)(token_t *start_token, arena_t *tokens_memory, aren
  * @param arena The memory arena for allocating tokens.
  * @param scan The scanner used to get the tokens.
  * @param tokens A pointer to token list where the processed tokens will be stored.
- * 
+ * @note Any error returned by this function is considered critical and prevents further parsing.
+ *  For example, unmatched brackets or invalid tokens within brackets are treated as structural
+ *  issues that require immediate attention.
  * @return A `compilation_error_t` pointer if an error is detected (e.g., mismatched brackets),
  *  or NULL if no errors.
  */
@@ -61,7 +67,7 @@ compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_lis
  * After collapsing the tokens, the old tokens are removed from the token list, and the new token
  * is inserted in their place, maintaining the linkage of surrounding tokens.
  * 
- * @param tokens_memory The memory arena to allocate the new token.
+ * @param arena The memory arena to allocate the new token.
  * @param first The first token in the sequence to collapse.
  * @param last The last token in the sequence to collapse.
  * @param type The type of the new token.
@@ -72,21 +78,33 @@ compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_lis
  *  from the token list during the collapse process. The new token will replace the sequence
  *  of tokens in the list.
  */
-token_t *collapse_tokens_to_token(arena_t *tokens_memory, token_t *first, token_t *last,
+token_t *collapse_tokens_to_token(arena_t *arena, token_t *first, token_t *last,
         token_type_t type, node_t *node);
 
 /**
  * @brief Applies reduction rules to a sequence of token groups.
  * 
- * This function processes a set of token groups and applies the appropriate reduction rules.
- * Each token group is passed through a series of reduction rules.
+ * This function processes a set of token groups and applies the appropriate reduction rules 
+ * to transform token sequences into more abstract representations, such as syntax tree (AST)
+ * nodes. Each token group is passed through a series of reduction rules, which reduce the tokens 
+ * to higher-level constructs.
  * 
- * The function iterates over token groups and applies each reduction rule to transform the 
- * token sequence into more abstract representations, ultimately building the abstract 
- * syntax tree (AST).
+ * The function iterates over all token groups and applies each reduction rule in sequence.
+ * If any syntax errors are encountered, they are accumulated into a linked list of 
+ * `compilation_error_t` structures. The function does not always stop processing after the 
+ * first error; instead, it attempts to continue applying reduction rules to find and report 
+ * as many errors as possible in a single pass.
  * 
- * @param groups The token groups to which the reduction rules will be applied.
- * @param tokens_memory The memory arena used for allocating new tokens during reductions.
- * @param graph_memory The memory arena used for allocating new syntax tree nodes during reductions.
+ * @param groups A pointer to the token groups to which the reduction rules will be applied.
+ * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
+ *  for tokens and syntax tree nodes.
+ * @return A pointer to the last `compilation_error_t` in the chain of errors, or `NULL`
+ *  if no errors occurred. The returned error points to the head of the linked list of errors via
+ *  its `next` field.
+ * 
+ * @note This function assumes that the token groups have been initialized and populated
+ *       during the lexical analysis phase.
+ * @note The caller is responsible for iterating through the linked list of errors and 
+ *       handling or logging each error as needed.
  */
-void apply_reduction_rules(token_groups_t *groups, arena_t *tokens_memory, arena_t *graph_memory);
+compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory);

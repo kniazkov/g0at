@@ -229,3 +229,29 @@ wchar_t *format_string_to_arena(arena_t *arena, size_t *size_ptr, const wchar_t 
  * @param arena A pointer to the arena to be destroyed.
  */
 void destroy_arena(arena_t* arena);
+
+/**
+ * Forward declaration for parser memory structure.
+ */
+typedef struct parser_memory_t parser_memory_t;
+
+/**
+ * @struct parser_memory_t
+ * @brief Structure for managing parser memory arenas.
+ * 
+ * This structure combines two memory arenas used during the parsing process:
+ * one for allocating tokens (`tokens`) and another for constructing the abstract syntax tree
+ * (`graph`). It simplifies function signatures by encapsulating these arenas into a single
+ * structure, reducing the number of arguments passed to parsing-related functions.
+ */
+struct parser_memory_t {
+    /**
+     * @brief Memory arena used for allocating tokens during parsing and reduction.
+     */
+    arena_t *tokens; /**< Memory arena for tokens. */
+
+    /**
+     * @brief Memory arena used for allocating nodes in the abstract syntax tree (AST).
+     */
+    arena_t *graph;  /**< Memory arena for AST nodes. */
+};

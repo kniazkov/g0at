@@ -40,5 +40,7 @@ compilation_error_t *create_error_from_token(arena_t *arena, const token_t *toke
             error->message_length = 0;
         }
     }
+    error->critical = false;
+    error->next = NULL;
     return error;
 }

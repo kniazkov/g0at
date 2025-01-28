@@ -23,8 +23,7 @@
 /**
  * @brief Rule for handling an identifier followed by parentheses (function call).
  */
-void identifier_and_parentheses(token_t *start_token, arena_t *tokens_memory,
-        arena_t *graph_memory);
+compilation_error_t *identifier_and_parentheses(token_t *identifier, parser_memory_t *memory);
 
 /**
  * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into
@@ -115,42 +114,81 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
  * 
  * This function traverses the token list from the first token to the last, applying
  * the provided reduction rule to each token in the list. The reduction rule may modify
- * the token list and the syntax tree by creating new nodes or tokens.
+ * the token list and the syntax tree by creating new nodes or tokens. If a reduction
+ * rule encounters an error, it is added to a linked list of errors, which the function
+ * returns as its result. If a critical error is encountered, the function stops processing
+ * immediately.
  * 
  * @param list A pointer to the token list to which the reduction rule will be applied.
  * @param rule The reduction rule function that will be applied to the tokens.
- * @param tokens_memory The memory arena for allocating new tokens during reduction.
- * @param graph_memory The memory arena for allocating new syntax tree nodes during reduction.
+ * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
+ *  for tokens and syntax tree nodes.
+ * @param error A pointer to an existing linked list of errors. Any new errors found during
+ *  the reduction process will be added to this list.
+ * @return A pointer to the updated linked list of `compilation_error_t` structures. If no
+ *  errors were encountered, the function returns the original `error` pointer (unchanged).
+ * 
+ * @note The function maintains the order of errors by prepending new errors to the front
+ *  of the list. The most recent error will be at the head of the returned list.
+ * @note If a critical error is encountered, the function stops processing immediately and 
+ *  returns the updated error list.
  */
-static void apply_reduction_rule_forward(token_list_t *list, reduce_rule_t rule,
-                                  arena_t *tokens_memory, arena_t *graph_memory) {
+static compilation_error_t * apply_reduction_rule_forward(token_list_t *list, reduce_rule_t rule,
+        parser_memory_t *memory, compilation_error_t *error) {
     token_t *token = list->first;
     while (token != NULL) {
         token_t *next = token->next_in_group;
-        rule(token, tokens_memory, graph_memory);
+        compilation_error_t *new_error = rule(token, memory);
+        if (new_error != NULL) {
+            new_error->next = error;
+            error = new_error;
+            if (error->critical) {
+                break;
+            }
+        }
         token = next;
     }
+    return error;
 }
 
 /**
  * @brief Applies a reduction rule to the token list from the last to the first token.
  * 
- * This function traverses the token list from the last token to the first, applying
- * the provided reduction rule to each token in the list. The reduction rule may modify
- * the token list and the syntax tree by creating new nodes or tokens.
+ * This function traverses the token list in reverse order, starting from the last token and
+ * moving to the first, applying the provided reduction rule to each token. The reduction rule
+ * may modify the token list and the syntax tree by creating new nodes or tokens. If a reduction
+ * rule encounters an error, it is added to a linked list of errors, which the function updates.
+ * If a critical error is encountered, the function stops processing immediately.
  * 
  * @param list A pointer to the token list to which the reduction rule will be applied.
  * @param rule The reduction rule function that will be applied to the tokens.
- * @param tokens_memory The memory arena for allocating new tokens during reduction.
- * @param graph_memory The memory arena for allocating new syntax tree nodes during reduction.
+ * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
+ *  for tokens, syntax tree nodes, and errors.
+ * @param error A pointer to an existing linked list of errors. Any new errors found during
+ *  the reduction process will be added to this list.
+ * @return A pointer to the updated linked list of `compilation_error_t` structures. If no
+ *  errors were encountered, the function returns the original `error` pointer (unchanged).
+ * 
+ * @note The function maintains the order of errors by prepending new errors to the front
+ *  of the list. The most recent error will be at the head of the returned list.
+ * @note If a critical error is encountered, the function stops processing immediately and 
+ *  returns the updated error list.
+ * @note Memory for error structures is allocated from the same arena as tokens (`memory->tokens`), 
+ *  ensuring centralized memory management.
  */
 static void apply_reduction_rule_backward(token_list_t *list, reduce_rule_t rule,
-                                   arena_t *tokens_memory, arena_t *graph_memory) {
+        parser_memory_t *memory, compilation_error_t *error) {
     token_t *token = list->last;
-
     while (token != NULL) {
-        token_t *previous= token->previous_in_group;
-        rule(token, tokens_memory, graph_memory);
+        token_t *previous = token->previous_in_group;
+        compilation_error_t *new_error = rule(token, memory);
+        if (new_error != NULL) {
+            new_error->next = error;
+            error = new_error;
+            if (error->critical) {
+                break;
+            }
+        }
         token = previous;
     }
 }
@@ -158,12 +196,17 @@ static void apply_reduction_rule_backward(token_list_t *list, reduce_rule_t rule
 compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens) {
     memset(tokens, 0, sizeof(token_list_t));
     const token_t *last_token;
-    return scan_and_analyze_for_brackets(arena, scan, tokens, NULL, &last_token);
+    compilation_error_t *error = scan_and_analyze_for_brackets(arena, scan, tokens, NULL,
+        &last_token);
+    if (error != NULL) {
+        error->critical = true;
+    }
+    return error;
 }
 
-token_t *collapse_tokens_to_token(arena_t *tokens_memory, token_t *first, token_t *last,
+token_t *collapse_tokens_to_token(arena_t *arena, token_t *first, token_t *last,
         token_type_t type, node_t *node) {
-    token_t *new_token = (token_t *)alloc_zeroed_from_arena(tokens_memory, sizeof(token_t));
+    token_t *new_token = (token_t *)alloc_zeroed_from_arena(arena, sizeof(token_t));
     new_token->type = type;
     new_token->begin = first->begin;
     new_token->end = last->end;
@@ -178,8 +221,13 @@ token_t *collapse_tokens_to_token(arena_t *tokens_memory, token_t *first, token_
     return new_token;
 }
 
-void apply_reduction_rules(token_groups_t *groups, arena_t *tokens_memory, arena_t *graph_memory) {
-    apply_reduction_rule_forward(&groups->identifiers, identifier_and_parentheses,
-            tokens_memory, graph_memory);
+compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory) {
+    compilation_error_t *error = NULL;
+    error = apply_reduction_rule_forward(&groups->identifiers, identifier_and_parentheses,
+        memory, error);
+    if (error != NULL && error->critical) {
+        return error;
+    }
     // add other rules...
+    return error;
 }

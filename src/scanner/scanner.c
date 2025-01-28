@@ -214,7 +214,7 @@ static void parse_string(scanner_t *scan, token_t *token) {
                     break;
                 default:
                     token->type = TOKEN_ERROR;
-                    token->text = format_string_to_arena(scan->tokens_memory, &token->length,
+                    token->text = format_string_to_arena(scan->memory->tokens, &token->length,
                         get_messages()->invalid_escape_sequence, ch);
                     goto cleanup;
             }
@@ -224,19 +224,20 @@ static void parse_string(scanner_t *scan, token_t *token) {
         ch = next_char(scan);
     }
     token->type = TOKEN_EXPRESSION;
-    token->node = create_static_string_node(scan->graph_memory, builder.data, builder.length);
+    token->node = create_static_string_node(scan->memory->graph, builder.data, builder.length);
     next_char(scan);
 cleanup:
     FREE(builder.data);
 }
 
-scanner_t *create_scanner(const char *file_name, wchar_t *code, arena_t *tokens_memory,
-        arena_t *graph_memory) {
+scanner_t *create_scanner(const char *file_name, wchar_t *code, parser_memory_t *memory,
+        token_groups_t *groups) {
     remove_comments_and_carriage_returns(code);
-    scanner_t *scan = alloc_zeroed_from_arena(tokens_memory, sizeof(scanner_t));
+    memset(groups, 0, sizeof(token_groups_t));
+    scanner_t *scan = alloc_zeroed_from_arena(memory->tokens, sizeof(scanner_t));
     scan->position = (full_position_t){ file_name, 1, 1, code, 0 };
-    scan->tokens_memory = tokens_memory;
-    scan->graph_memory = graph_memory;
+    scan->memory = memory;
+    scan->groups = groups;
     return scan;
 }
 
@@ -251,12 +252,12 @@ token_t *get_token(scanner_t *scan) {
         return NULL;
     }
 
-    token_t *token = alloc_zeroed_from_arena(scan->tokens_memory, sizeof(token_t));
+    token_t *token = alloc_zeroed_from_arena(scan->memory->tokens, sizeof(token_t));
     token->begin = scan->position;
 
     if (is_letter(ch)) {
         token->type = TOKEN_IDENTIFIER;
-        append_token_to_group(&scan->groups.identifiers, token);
+        append_token_to_group(&scan->groups->identifiers, token);
         do {
             ch = next_char(scan);
         } while(is_letter(ch) || iswdigit(ch));
@@ -270,7 +271,7 @@ token_t *get_token(scanner_t *scan) {
     }
     else {
         token->type = TOKEN_ERROR;
-        token->text = format_string_to_arena(scan->tokens_memory, &token->length,
+        token->text = format_string_to_arena(scan->memory->tokens, &token->length,
             get_messages()->unknown_symbol, ch);
         next_char(scan);
     }
@@ -278,7 +279,7 @@ token_t *get_token(scanner_t *scan) {
     token->end = full_to_short_position(&scan->position);
     if (token->text == NULL) {
         size_t length = scan->position.code - token->begin.code;
-        token->text = copy_string_to_arena(scan->tokens_memory, token->begin.code, length);
+        token->text = copy_string_to_arena(scan->memory->tokens, token->begin.code, length);
         token->length = length;
     } else if (token->length == 0) {
         token->length = wcslen(token->text);
