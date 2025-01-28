@@ -53,4 +53,4 @@ struct statement_t {
  * @param wrapped The expression to wrap in the statement expression.
  * @return A pointer to the newly created statement expression node.
  */
-node_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped);
+statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped);

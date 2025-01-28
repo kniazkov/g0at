@@ -12,6 +12,7 @@
 #pragma once
 
 #include "scanner/scanner.h"
+#include "graph/statement.h"
 #include "compilation_error.h"
 
 /**
@@ -80,6 +81,47 @@ compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_lis
  */
 token_t *collapse_tokens_to_token(arena_t *arena, token_t *first, token_t *last,
         token_type_t type, node_t *node);
+
+/**
+ * @struct statement_list_processing_result_t
+ * @brief A structure representing the result of processing a list of statements.
+ * 
+ * This structure holds the processed statements, the number of statements,
+ * and any error that may have occurred during the processing.
+ */
+typedef struct {
+    /**
+     * @brief An array of statement nodes.
+     */
+    statement_t **list;
+
+    /**
+     * @brief The number of statements in the list.
+     */
+    size_t count;
+
+    /**
+     * @brief A pointer to a compilation error, if any.
+     */
+    compilation_error_t *error;
+} statement_list_processing_result_t;
+
+/**
+ * @brief Processes a list of tokens and attempts to create statements from them.
+ * 
+ * This function iterates over a list of tokens, identifies statement tokens, and converts
+ * them into a list of statements. If an expression token is encountered, it is wrapped as
+ * a statement. If any error occurs (e.g., invalid token), the process stops and the error
+ * is stored in the result.
+ * 
+ * @param memory A pointer to the parser's memory structure, used for memory allocation.
+ * @param tokens A pointer to the list of tokens to be processed.
+ * 
+ * @return A `statement_list_processing_result_t` structure containing the processed
+ *  statements, the total count of statements, and any compilation error encountered.
+ */
+statement_list_processing_result_t process_statement_list(parser_memory_t *memory,
+        token_list_t *tokens);
 
 /**
  * @brief Applies reduction rules to a sequence of token groups.

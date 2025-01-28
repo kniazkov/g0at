@@ -101,10 +101,10 @@ static node_vtbl_t statement_expression_vtbl = {
     .to_expression = statement_expression_to_expression
 };
 
-node_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped) {
+statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped) {
     statement_expression_t *expr = 
         (statement_expression_t *)alloc_from_arena(arena, sizeof(statement_expression_t));
     expr->base.base.vtbl = &statement_expression_vtbl;
     expr->wrapped = wrapped;
-    return &expr->base.base;
+    return &expr->base;
 }

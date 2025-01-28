@@ -45,6 +45,7 @@ typedef enum {
 
     TOKEN_BRACKET_PAIR,     /**< A pair of brackets and all tokens between them */
     TOKEN_EXPRESSION,       /**< An expression token, which contains an attached syntax tree node */
+    TOKEN_STATEMENT,        /**< A statement (e.g., assignment, control structures, etc.) */
     // Other token types can be added here in the future
 } token_type_t;
 

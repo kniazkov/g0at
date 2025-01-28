@@ -28,6 +28,7 @@ static messages_t english = {
     .unclosed_opening_bracket = L"unclosed opening bracket: expected a closing bracket to match '%c'",
     .missing_opening_bracket = L"missing opening bracket corresponding to '%c'",
     .brackets_do_not_match = L"closing bracket '%c' does not match the opening bracket '%c'",
+    .not_a_statement = L"token '%s' is not a statement allowed here",
 };
 
 /**
@@ -44,6 +45,7 @@ static messages_t russian = {
     .unclosed_opening_bracket = L"нет закрывающей скобки, соответствующей '%c'",
     .missing_opening_bracket = L"нет открывающей скобки, соответствующей '%c'",
     .brackets_do_not_match = L"закрывающая скобка '%c' не соответствует открывающей '%c'",
+    .not_a_statement = L"токен '%s' здесь недопустим, ожидается инструкция языка",
 };
 
 /**

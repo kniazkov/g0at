@@ -221,6 +221,29 @@ token_t *collapse_tokens_to_token(arena_t *arena, token_t *first, token_t *last,
     return new_token;
 }
 
+statement_list_processing_result_t process_statement_list(parser_memory_t *memory,
+        token_list_t *tokens) {
+    statement_list_processing_result_t result = {0};
+    result.list = (statement_t **)alloc_from_arena(memory->tokens, tokens->count);
+    token_t *token = tokens->first;
+    while (token != NULL) {
+        if (token->type == TOKEN_STATEMENT) {
+            result.list[result.count++] = (statement_t *)token->node;
+        }
+        else if (token->type == TOKEN_EXPRESSION) {
+            result.list[result.count++] = create_statement_expression_node(memory->graph,
+                (expression_t*)token->node);
+        }
+        else {
+            result.error = create_error_from_token(memory->tokens, token,
+                get_messages()->not_a_statement, token->text);
+            break;
+        }
+        token = token->right;
+    }
+    return result;
+}
+
 compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory) {
     compilation_error_t *error = NULL;
     error = apply_reduction_rule_forward(&groups->identifiers, identifier_and_parentheses,
@@ -231,3 +254,4 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     // add other rules...
     return error;
 }
+
