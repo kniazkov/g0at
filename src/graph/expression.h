@@ -47,7 +47,7 @@ node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t le
  *  terminator).
  * @return A pointer to the newly created variable expression node.
  */
-node_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length);
+expression_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length);
 
 /**
  * @brief Creates a function call expression node.

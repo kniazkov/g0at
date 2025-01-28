@@ -37,3 +37,9 @@ bool test_missing_opening_bracket();
  * @return True if the test passes, false otherwise.
  */
 bool test_closing_bracket_does_not_match_opening();
+
+/**
+ * @brief Tests parsing function calls.
+ * @return True if the test passes, false otherwise.
+ */
+bool test_parsing_function_calls();

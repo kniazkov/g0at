@@ -17,7 +17,14 @@
 #include "compilation_error.h"
 #include "lib/arena.h"
 #include "scanner/scanner.h"
+#include "scanner/token.h"
 #include "resources/messages.h"
+
+/**
+ * @brief Rule for handling an identifier followed by parentheses (function call).
+ */
+void identifier_and_parentheses(token_t *start_token, arena_t *tokens_memory,
+        arena_t *graph_memory);
 
 /**
  * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into
@@ -103,8 +110,76 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
     return NULL;
 }
 
+/**
+ * @brief Applies a reduction rule to the token list from the first to the last token.
+ * 
+ * This function traverses the token list from the first token to the last, applying
+ * the provided reduction rule to each token in the list. The reduction rule may modify
+ * the token list and the syntax tree by creating new nodes or tokens.
+ * 
+ * @param list A pointer to the token list to which the reduction rule will be applied.
+ * @param rule The reduction rule function that will be applied to the tokens.
+ * @param tokens_memory The memory arena for allocating new tokens during reduction.
+ * @param graph_memory The memory arena for allocating new syntax tree nodes during reduction.
+ */
+static void apply_reduction_rule_forward(token_list_t *list, reduce_rule_t rule,
+                                  arena_t *tokens_memory, arena_t *graph_memory) {
+    token_t *token = list->first;
+    while (token != NULL) {
+        token_t *next = token->next_in_group;
+        rule(token, tokens_memory, graph_memory);
+        token = next;
+    }
+}
+
+/**
+ * @brief Applies a reduction rule to the token list from the last to the first token.
+ * 
+ * This function traverses the token list from the last token to the first, applying
+ * the provided reduction rule to each token in the list. The reduction rule may modify
+ * the token list and the syntax tree by creating new nodes or tokens.
+ * 
+ * @param list A pointer to the token list to which the reduction rule will be applied.
+ * @param rule The reduction rule function that will be applied to the tokens.
+ * @param tokens_memory The memory arena for allocating new tokens during reduction.
+ * @param graph_memory The memory arena for allocating new syntax tree nodes during reduction.
+ */
+static void apply_reduction_rule_backward(token_list_t *list, reduce_rule_t rule,
+                                   arena_t *tokens_memory, arena_t *graph_memory) {
+    token_t *token = list->last;
+
+    while (token != NULL) {
+        token_t *previous= token->previous_in_group;
+        rule(token, tokens_memory, graph_memory);
+        token = previous;
+    }
+}
+
 compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens) {
     memset(tokens, 0, sizeof(token_list_t));
     const token_t *last_token;
     return scan_and_analyze_for_brackets(arena, scan, tokens, NULL, &last_token);
+}
+
+token_t *collapse_tokens_to_token(arena_t *tokens_memory, token_t *first, token_t *last,
+        token_type_t type, node_t *node) {
+    token_t *new_token = (token_t *)alloc_zeroed_from_arena(tokens_memory, sizeof(token_t));
+    new_token->type = type;
+    new_token->begin = first->begin;
+    new_token->end = last->end;
+    new_token->node = node;
+    token_t *old_token = first;
+    while(old_token != last) {
+        token_t *next = old_token->right;
+        remove_token(old_token);
+        old_token = next;
+    }
+    replace_token(old_token, new_token);
+    return new_token;
+}
+
+void apply_reduction_rules(token_groups_t *groups, arena_t *tokens_memory, arena_t *graph_memory) {
+    apply_reduction_rule_forward(&groups->identifiers, identifier_and_parentheses,
+            tokens_memory, graph_memory);
+    // add other rules...
 }

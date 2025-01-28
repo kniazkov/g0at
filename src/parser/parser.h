@@ -11,31 +11,8 @@
 
 #pragma once
 
+#include "scanner/scanner.h"
 #include "compilation_error.h"
-
-/**
- * @struct arena_t
- * @brief Forward declaration for memory arena structure.
- */
-typedef struct arena_t arena_t;
-
-/**
- * @struct arena_t
- * @brief Forward declaration for scanner.
- */
-typedef struct scanner_t scanner_t;
-
-/**
- * @struct arena_t
- * @brief Forward declaration for token structure.
- */
-typedef struct token_t token_t;
-
-/**
- * @struct arena_t
- * @brief Forward declaration for list of tokens.
- */
-typedef struct token_list_t token_list_t;
 
 /**
  * @typedef reduce_rule_t
@@ -73,3 +50,43 @@ typedef void (*reduce_rule_t)(token_t *start_token, arena_t *tokens_memory, aren
  */
 compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens);
 
+/**
+ * @brief Collapses a sequence of tokens into a single token.
+ * 
+ * This function takes a sequence of tokens, specified by the `first` and `last` tokens, and merges
+ * them into a single token of the specified type. The new token will span the range of positions
+ * from the `begin` position of the `first` token to the `end` position of the `last` token.
+ * The function also associates the new token with the provided abstract syntax tree node (`node`).
+ * 
+ * After collapsing the tokens, the old tokens are removed from the token list, and the new token
+ * is inserted in their place, maintaining the linkage of surrounding tokens.
+ * 
+ * @param tokens_memory The memory arena to allocate the new token.
+ * @param first The first token in the sequence to collapse.
+ * @param last The last token in the sequence to collapse.
+ * @param type The type of the new token.
+ * @param node The AST node associated with the new token.
+ * @return A pointer to the newly created token that represents the collapsed sequence.
+ * 
+ * @note The `first` and `last` tokens must belong to the same sequence and will be removed 
+ *  from the token list during the collapse process. The new token will replace the sequence
+ *  of tokens in the list.
+ */
+token_t *collapse_tokens_to_token(arena_t *tokens_memory, token_t *first, token_t *last,
+        token_type_t type, node_t *node);
+
+/**
+ * @brief Applies reduction rules to a sequence of token groups.
+ * 
+ * This function processes a set of token groups and applies the appropriate reduction rules.
+ * Each token group is passed through a series of reduction rules.
+ * 
+ * The function iterates over token groups and applies each reduction rule to transform the 
+ * token sequence into more abstract representations, ultimately building the abstract 
+ * syntax tree (AST).
+ * 
+ * @param groups The token groups to which the reduction rules will be applied.
+ * @param tokens_memory The memory arena used for allocating new tokens during reductions.
+ * @param graph_memory The memory arena used for allocating new syntax tree nodes during reductions.
+ */
+void apply_reduction_rules(token_groups_t *groups, arena_t *tokens_memory, arena_t *graph_memory);

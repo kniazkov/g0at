@@ -22,7 +22,6 @@
 typedef struct token_t token_t;
 
 /**
- * @struct arena_t
  * @brief Forward declaration of list of tokens.
  */
 typedef struct token_list_t token_list_t;
@@ -264,10 +263,11 @@ void remove_token(token_t *token);
  * @brief Replaces a token in the neighbors list with another token.
  * 
  * This function replaces the specified token in the neighbors list with another token.
- * The old token is removed from the list, and the new token is inserted in its place.
- * The size of the neighbors list remains unchanged.
- *
- * @param old_token The token to remove from the neighbors list.
+ * The old token is removed from the list and from its group, as it is considered processed 
+ * (i.e., collapsed or transformed). The new token is inserted in its place, and the size 
+ * of the neighbors list remains unchanged.
+ * 
+ * @param old_token The token to remove from the neighbors list and its group.
  * @param new_token The token to insert in place of the old token.
  */
-void replace_token_in_neighbors(token_t *old_token, token_t *new_token);
+void replace_token(token_t *old_token, token_t *new_token);

@@ -13,6 +13,7 @@
 #include "lib/arena.h"
 #include "scanner/scanner.h"
 #include "parser/parser.h"
+#include "graph/node.h"
 
 bool test_brackets_one_level_nesting() {
     arena_t *arena = create_arena();
@@ -103,6 +104,28 @@ bool test_closing_bracket_does_not_match_opening() {
     ASSERT(error->end.column == 7);
     ASSERT(wcscmp(L"closing bracket ']' does not match the opening bracket '{'",
         error->message) == 0);
+    destroy_arena(arena);
+    return true;
+}
+
+bool test_parsing_function_calls() {
+    arena_t *arena = create_arena();
+    wchar_t *code = L"print(\"test\")";
+    scanner_t *scan = create_scanner("program.goat", code, arena, arena);
+    token_list_t tokens;
+    compilation_error_t *error = process_brackets(arena, scan, &tokens);
+    ASSERT(error == NULL);
+    ASSERT(tokens.count == 2);
+    ASSERT(scan->groups.identifiers.count == 1);
+    apply_reduction_rules(&scan->groups, arena, arena);
+    ASSERT(tokens.count == 1);
+    ASSERT(scan->groups.identifiers.count == 0);
+    ASSERT(tokens.first->node->vtbl->type == NODE_FUNCTION_CALL);
+    string_value_t code2 = tokens.first->node->vtbl->to_string(tokens.first->node);
+    ASSERT(wcscmp(code, code2.data) == 0);
+    if (code2.should_free) {
+        FREE(code2.data);
+    }
     destroy_arena(arena);
     return true;
 }

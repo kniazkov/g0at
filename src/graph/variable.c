@@ -88,10 +88,10 @@ static node_vtbl_t variable_vtbl = {
     .to_expression = variable_to_expression
 };
 
-node_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length) {
+expression_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length) {
     variable_t *expr = (variable_t *)alloc_from_arena(arena, sizeof(variable_t));
     expr->base.base.vtbl = &variable_vtbl;
     expr->name = copy_string_to_arena(arena, name, name_length);
     expr->name_length = name_length;
-    return &expr->base.base;
+    return &expr->base;
 }

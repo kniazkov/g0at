@@ -16,7 +16,8 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
-      { "unclosed bracket", test_unclosed_bracket }
+      { "parsing function calls", test_parsing_function_calls }
+    , { "unclosed bracket", test_unclosed_bracket }
     , { "missing opening bracket", test_missing_opening_bracket }
     , { "closing bracket does not match opening", test_closing_bracket_does_not_match_opening }
     , { "parsing of brackets with one level of nesting", test_brackets_one_level_nesting }
