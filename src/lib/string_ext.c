@@ -248,8 +248,8 @@ string_value_t string_to_string_notation(const wchar_t *prefix, const string_val
     init_string_builder(&builder, str.length + 2 + wcslen(prefix));
     append_string(&builder, prefix);
     append_char(&builder, '"');
-    for (size_t i = 0; i < str.length; i++) {
-        wchar_t ch = str.data[i];
+    for (size_t index = 0; index < str.length; index++) {
+        wchar_t ch = str.data[index];
         switch (ch) {
             case '\r':
                 append_substring(&builder, L"\\r", 2);

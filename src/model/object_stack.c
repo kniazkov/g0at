@@ -27,8 +27,8 @@ void push_object_onto_stack(object_stack_t *stack, object_t *object) {
     if (stack->size == stack->capacity) {
         size_t new_capacity = stack->capacity * 2;
         object_t **new_data = (object_t **)ALLOC(new_capacity * sizeof(object_t *));
-        for (size_t i = 0; i < stack->size; i++) {
-            new_data[i] = stack->objects[i];
+        for (size_t index = 0; index < stack->size; index++) {
+            new_data[index] = stack->objects[index];
         }
         FREE(stack->objects);
         stack->objects = new_data;

@@ -175,8 +175,8 @@ bool test_properties() {
     ASSERT(value == NULL);
     object_array_t keys = obj->vtbl->get_keys(obj);
     ASSERT(keys.size == 4);
-    for (size_t i = 0; i < keys.size; i++) {
-        ASSERT(clone->vtbl->get_property(clone, keys.items[i]) != NULL);
+    for (size_t index = 0; index < keys.size; index++) {
+        ASSERT(clone->vtbl->get_property(clone, keys.items[index]) != NULL);
     }
     destroy_process(process);
     return true;

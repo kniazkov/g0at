@@ -113,8 +113,8 @@ static void clear_child_pair(void *unused, void *key, value_t value) {
  */
 static void release_or_clear(object_user_defined_t *uobj) {
     avl_tree_for_each(uobj->properties, clear_child_pair, NULL);
-    for (size_t i = 0; i < uobj->proto->size; i++) {
-        DECREF((object_t *)uobj->proto->data[i]);
+    for (size_t index = 0; index < uobj->proto->size; index++) {
+        DECREF((object_t *)uobj->proto->data[index]);
     }
     remove_object_from_list(&uobj->base.process->objects, &uobj->base);
     if (uobj->base.process->user_defined_objects.size == POOL_CAPACITY) {
@@ -515,8 +515,12 @@ static void topological_sorting(object_t *obj, avl_tree_t *processed, vector_t *
         return;
     }
     object_array_t proto = obj->vtbl->get_prototypes(obj);
-    for (size_t i = proto.size - 1; i >= 0; i--) {
-        topological_sorting(proto.items[i], processed, topology);
+    if (proto.size > 0) {
+        size_t index = proto.size;
+        do {
+            index--;
+            topological_sorting(proto.items[index], processed, topology);
+        } while (index > 0);
     }
     append_to_vector(topology, obj);
     set_in_avl_tree(processed, obj, (value_t){ .ptr = obj } );
@@ -536,15 +540,17 @@ static void topological_sorting(object_t *obj, avl_tree_t *processed, vector_t *
  */
 static void build_topology(object_array_t proto, vector_t *topology) {
     assert(topology->size == 0);
-    size_t i;
+    size_t index;
     if (proto.size > 1) {
         // multiple inheritance
         avl_tree_t *processed = create_avl_tree(
             (int (*)(const void *, const void *))compare_object_addresses
         );
-        for (i = proto.size - 1; i >= 0; i--) {
-            topological_sorting(proto.items[i], processed, topology);
-        }
+        index = proto.size;
+        do {
+            index--;
+            topological_sorting(proto.items[index], processed, topology);
+        } while (index > 0);
         destroy_avl_tree(processed);
         reverse_vector(topology);
     } else {
@@ -552,8 +558,8 @@ static void build_topology(object_array_t proto, vector_t *topology) {
         object_t *single = proto.items[0];
         append_to_vector(topology, single);
         object_array_t parents = single->vtbl->get_topology(single);
-        for (i = 0; i < parents.size; i++) {
-            append_to_vector(topology, parents.items[i]);
+        for (index = 0; index < parents.size; index++) {
+            append_to_vector(topology, parents.items[index]);
         }        
     }
 }
@@ -577,9 +583,9 @@ static object_user_defined_t *create_empty_user_defined_object(process_t* proces
     }
     uobj->refs = 1;
     uobj->state = UNMARKED;
-    for (size_t i = 0; i < proto.size; i++) {
-        INCREF(proto.items[i]);
-        append_to_vector(uobj->proto, proto.items[i]);
+    for (size_t index = 0; index < proto.size; index++) {
+        INCREF(proto.items[index]);
+        append_to_vector(uobj->proto, proto.items[index]);
     }
     build_topology(proto, uobj->topology);
     add_object_to_list(&process->objects, &uobj->base);

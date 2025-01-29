@@ -14,6 +14,8 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "codegen/code_builder.h"
+#include "codegen/data_builder.h"
 
 /**
  * @struct statement_expression_t
@@ -53,9 +55,9 @@ typedef struct {
  * @return A `string_value_t` containing the formatted string representation of the statement.
  */
 static string_value_t statement_expression_to_string(const node_t *node) {
-    const statement_expression_t *expr = (const statement_expression_t *)node;
+    const statement_expression_t *stmt = (const statement_expression_t *)node;
     string_builder_t builder;
-    string_value_t expr_as_string = expr->wrapped->base.vtbl->to_string(&expr->wrapped->base);
+    string_value_t expr_as_string = stmt->wrapped->base.vtbl->to_string(&stmt->wrapped->base);
     init_string_builder(&builder, expr_as_string.length + 1);  // +1 for the semicolon
     append_substring(&builder, expr_as_string.data, expr_as_string.length);
     if (expr_as_string.should_free) {
@@ -65,40 +67,39 @@ static string_value_t statement_expression_to_string(const node_t *node) {
 }
 
 /**
- * @brief Converts a statement expression node to a statement.
- * @param node A pointer to the statement expression node to be converted.
- * @return A `statement_t*` representing the statement expression node as a statement.
+ * @brief Generates bytecode for a statement expression node.
+ * 
+ * This function generates bytecode for a statement expression node by first generating
+ * bytecode for the wrapped expression. After the expression bytecode is generated, a `POP`
+ * instruction is added to remove the result from the evaluation stack, as the result of a
+ * statement expression is not needed after execution.
+ * 
+ * @param node A pointer to the node representing a statement expression.
+ * @param code A pointer to the `code_builder_t` structure used for generating instructions.
+ * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
  */
-static statement_t *statement_expression_to_statement(node_t *node) {
-    return (statement_t *)node;
-}
-
-/**
- * @brief Converts a statement expression node to an expression.
- * @param node A pointer to the statement expression node to be converted.
- * @return `NULL`, since a statement expression does not represent a valid expression.
- */
-static expression_t *statement_expression_to_expression(node_t *node) {
-    return NULL;
+static void gen_bytecode_for_statement_expression(const node_t *node, code_builder_t *code,
+        data_builder_t *data) {
+    const statement_expression_t *stmt = (const statement_expression_t *)node;
+    stmt->wrapped->base.vtbl->gen_bytecode(&stmt->wrapped->base, code, data);
+    add_instruction(code, (instruction_t){ .opcode = POP });
 }
 
 /**
  * @brief Virtual table for statement expression operations.
  * 
  * This virtual table provides the implementation of operations specific to statement expression
- * nodes, such as converting the statement expression to its string representation, and handling
- * the conversion of the node to both a statement and an expression.
+ * nodes.
  * 
- * The table includes function pointers for:
- * - `to_string`: Converts the statement expression node to a string.
- * - `to_statement`: Converts the node to a statement.
- * - `to_expression`: Returns `NULL` as statement expressions cannot be used as regular expressions.
+ * The table includes the following function pointers:
+ * - `to_string`: Converts the statement expression node to a string representation.
+ * - `gen_bytecode`: Generates the bytecode for the statement expression. The wrapped expression's
+ *   bytecode is generated first, followed by a `POP` instruction to discard the result.
  */
 static node_vtbl_t statement_expression_vtbl = {
     .type = NODE_STATEMENT_EXPRESSION,
     .to_string = statement_expression_to_string,
-    .to_statement = statement_expression_to_statement,
-    .to_expression = statement_expression_to_expression
+    .gen_bytecode = gen_bytecode_for_statement_expression,
 };
 
 statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped) {

@@ -66,10 +66,10 @@ static object_t *get_property_from_object_or_its_prototypes(object_t *obj, objec
     object_t *value = obj->vtbl->get_property(obj, key);
     if (value == NULL) {
         object_array_t proto = obj->vtbl->get_topology(obj);
-        size_t i = 0;
+        size_t index = 0;
         do {
-            value = proto.items[i]->vtbl->get_property(proto.items[i], key);
-            i++;
+            value = proto.items[index]->vtbl->get_property(proto.items[index], key);
+            index++;
         } while (value == NULL);
     }
     if (value == NULL) {
@@ -440,8 +440,8 @@ int run(process_t *proc, bytecode_t *code) {
     }
 
     // cleanup
-    for (size_t i = 0; i < code->data_descriptor_count; i++) {
-        DECREF(proc->string_cache[i]);
+    for (size_t index = 0; index < code->data_descriptor_count; index++) {
+        DECREF(proc->string_cache[index]);
     }
     FREE(proc->string_cache);
     proc->string_cache = NULL;

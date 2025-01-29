@@ -32,8 +32,8 @@ void append_to_vector(vector_t *vector, void *item) {
     if (vector->size >= vector->capacity) {
         vector->capacity = (vector->capacity == 0) ? 1 : vector->capacity * 2;
         void **new_data = (void **)ALLOC(vector->capacity * sizeof(void *));
-        for (size_t i = 0; i < vector->size; i++) {
-            new_data[i] = vector->data[i];
+        for (size_t index = 0; index < vector->size; index++) {
+            new_data[index] = vector->data[index];
         }
         FREE(vector->data);
         vector->data = new_data;
@@ -68,8 +68,8 @@ void destroy_vector(vector_t *vector) {
 }
 
 void destroy_vector_ex(vector_t *vector, void (*item_dtor)()) {
-    for (size_t i = 0; i < vector->size; i++) {
-        item_dtor(vector->data[i]);
+    for (size_t index = 0; index < vector->size; index++) {
+        item_dtor(vector->data[index]);
     }
     FREE(vector->data);
     FREE(vector);

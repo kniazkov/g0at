@@ -39,11 +39,11 @@ string_value_t common_to_string_notation(const object_t *obj) {
     init_string_builder(&builder, 2);
     append_char(&builder, '{');
     object_array_t keys = obj->vtbl->get_keys(obj);
-    for (size_t i = 0; i < keys.size; i++) {
-        if (i > 0) {
+    for (size_t index = 0; index < keys.size; index++) {
+        if (index > 0) {
             append_char(&builder, ';');
         }
-        object_t *key = keys.items[i];
+        object_t *key = keys.items[index];
         string_value_t key_str = key->vtbl->to_string_notation(key);
         append_substring(&builder, key_str.data, key_str.length);
         if (key_str.should_free) {

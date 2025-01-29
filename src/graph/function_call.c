@@ -9,10 +9,13 @@
  * The arguments are evaluated and passed to the function when invoked.
  */
 
+#include <assert.h>
+
 #include "expression.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "codegen/code_builder.h"
 
 /**
  * @struct function_call_t
@@ -79,11 +82,11 @@ static string_value_t function_call_to_string(const node_t *node) {
     }
 
     append_char(&builder, L'(');
-    for (size_t i = 0; i < expr->args_count; i++) {
-        if (i > 0) {
+    for (size_t index = 0; index < expr->args_count; index++) {
+        if (index > 0) {
             append_substring(&builder, L", ", 2);
         }
-        expression_t *arg = expr->args[i];
+        expression_t *arg = expr->args[index];
         string_value_t arg_as_string = arg->base.vtbl->to_string(&arg->base);
         append_substring(&builder, arg_as_string.data, arg_as_string.length);
         if (arg_as_string.should_free) {
@@ -95,40 +98,53 @@ static string_value_t function_call_to_string(const node_t *node) {
 }
 
 /**
- * @brief Converts a node representing a function call into a statement.
- * @param node A pointer to the node to be converted.
- * @return `NULL` since function calls cannot be treated as statements.
+ * @brief Generates bytecode for a function call expression.
+ * 
+ * This function generates the bytecode for a function call expression. It processes the arguments
+ * of the function call first, generating the bytecode for each argument by iterating through the
+ * list of arguments in reverse order. Then, it generates the bytecode for the function object
+ * itself. Finally, it adds a `CALL` instruction to the bytecode, with the argument count.
+ * 
+ * @param node A pointer to the function call node in the abstract syntax tree.
+ * @param code A pointer to the `code_builder_t` structure, which is used to build the instructions.
+ * @param data A pointer to the `data_builder_t` used to manage static data.
+ * 
+ * @note This function assumes that the number of arguments for the function call does not exceed
+ *  `UINT16_MAX` (the 16-bit unsigned integer limit).
  */
-static statement_t *function_call_to_statement(node_t *node) {
-    return NULL;
-}
-
-/**
- * @brief Converts a node representing a function call into an expression.
- * @param node A pointer to the node to be converted.
- * @return The node casted as an `expression_t*`.
- */
-static expression_t *function_call_to_expression(node_t *node) {
-    return (expression_t *)node;
+static void gen_bytecode_for_function_call(const node_t *node, code_builder_t *code,
+        data_builder_t *data) {
+    const function_call_t *expr = (const function_call_t *)node;
+    assert(expr->args_count < UINT16_MAX);
+    if (expr->args_count > 0) {
+        size_t index = expr->args_count;
+        do {
+            index--;
+            expression_t *arg = expr->args[index];
+            arg->base.vtbl->gen_bytecode(&arg->base, code, data);
+        } while (index > 0);
+    }
+    expr->func_object->base.vtbl->gen_bytecode(&expr->func_object->base, code, data);
+    add_instruction(code, (instruction_t){ .opcode = CALL, .arg0 = (uint16_t)expr->args_count });
 }
 
 /**
  * @brief Virtual table for function call expressions.
  * 
  * This virtual table provides the implementation of operations specific to function call
- * expressions. It includes function pointers for common operations such as:
- * - Converting the expression to its string representation.
- * - Casting the function call to a statement (currently returns `NULL`).
- * - Casting the function call to an expression (returns the node as an expression).
+ * expressions within the abstract syntax tree (AST). Function calls in the AST consist of a
+ * function object and its arguments, and this virtual table defines how to handle those
+ * specific operations.
  * 
- * This virtual table allows function call nodes to handle specific behavior for the
- * function call type within the abstract syntax tree.
+ * The table includes the following function pointers:
+ * - `to_string`: Converts the function call node to its string representation.
+ * - `gen_bytecode`: Generates the bytecode for the function call, including the bytecode for
+ *   each argument and the function object itself, followed by the `CALL` instruction.
  */
 static node_vtbl_t function_call_vtbl = {
     .type = NODE_FUNCTION_CALL,
     .to_string = function_call_to_string,
-    .to_statement = function_call_to_statement,
-    .to_expression = function_call_to_expression
+    .gen_bytecode = gen_bytecode_for_function_call,
 };
 
 node_t *create_function_call_node(arena_t *arena, expression_t *func_object, expression_t **args,

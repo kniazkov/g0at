@@ -62,11 +62,11 @@ static string_value_t root_node_to_string(const node_t *node) {
     string_builder_t builder;
     init_string_builder(&builder, 0);
     string_value_t result = { L"", 0, false };
-    for (size_t i = 0; i < root->stmt_count; i++) {
-        if (i > 0) {
+    for (size_t index = 0; index < root->stmt_count; index++) {
+        if (index > 0) {
             append_char(&builder, L' ');
         }
-        statement_t *stmt = root->stmt_list[i];
+        statement_t *stmt = root->stmt_list[index];
         string_value_t stmt_as_string = stmt->base.vtbl->to_string(&stmt->base);
         result = append_substring(&builder, stmt_as_string.data, stmt_as_string.length);
         if (stmt_as_string.should_free) {
@@ -77,43 +77,44 @@ static string_value_t root_node_to_string(const node_t *node) {
 }
 
 /**
- * @brief Converts a root node to a statement.
- * @param node A pointer to the root node that should be converted to a statement.
- * @return `NULL` since root node cannot be treated as statement.
+ * @brief Generates bytecode for a root node.
+ * 
+ * This function generates bytecode for a root node by iterating through all the statements
+ * in the `stmt_list` of the root node. For each statement, it calls the `gen_bytecode` function
+ * for that statement to generate the corresponding bytecode. The bytecode generation is done
+ * for all statements in the list, which represent the top-level operations of the program.
+ * 
+ * @param node A pointer to the node representing the root node of the AST.
+ * @param code A pointer to the `code_builder_t` structure used for generating instructions.
+ * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
  */
-static statement_t *root_node_to_statement(node_t *node) {
-    return NULL;
-}
-
-/**
- * @brief Converts a root node to an expression.
- * @param node A pointer to the root node that should be converted to an expression.
- * @return `NULL` since root node cannot be treated as expression.
- */
-static expression_t *root_node_to_expression(node_t *node) {
-    return NULL;
+static void gen_bytecode_for_root_node(const node_t *node, code_builder_t *code,
+        data_builder_t *data) {
+    const root_node_t *root = (const root_node_t *)node;
+    for (size_t index = 0; index < root->stmt_count; index++) {
+        statement_t *stmt = root->stmt_list[index];
+        stmt->base.vtbl->gen_bytecode(&stmt->base, code, data);
+    }
 }
 
 /**
  * @brief Virtual table for root node operations.
  * 
  * This virtual table provides the implementation of operations specific to root nodes in the
- * abstract syntax tree (AST). Root nodes typically represent the entry point or the top-level
- * structure of a program.
+ * abstract syntax tree (AST). A root node typically represents the entry point or top-level
+ * structure of a program. It often holds the main statements or expressions that will be executed
+ * in the program.
  * 
- * The virtual table includes the following function pointers:
- * - `to_string`: Converts the root node to its string representation.
- * - `to_statement`: Converts the root node to a statement (returns `NULL`).
- * - `to_expression`: Converts the root node to an expression (returns `NULL`).
- * 
- * This virtual table enables polymorphic behavior for root nodes, allowing specific operations
- * to be applied to root nodes in the AST, such as string conversion and casting to other node types.
+ * The table includes the following function pointers:
+ * - `to_string`: Converts the root node to a string representation. This operation is typically
+ *   used for debugging.
+ * - `gen_bytecode`: This function generates bytecode for the root node by processing its list
+ *   of statements.
  */
 static node_vtbl_t root_node_vtbl = {
     .type = NODE_ROOT,
     .to_string = root_node_to_string,
-    .to_statement = root_node_to_statement,
-    .to_expression = root_node_to_expression
+    .gen_bytecode = gen_bytecode_for_root_node,
 };
 
 

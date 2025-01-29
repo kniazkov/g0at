@@ -63,8 +63,8 @@ uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t si
         builder->descriptors_capacity *= 2;
         data_descriptor_t *new_descriptors = 
             (data_descriptor_t *)ALLOC(builder->descriptors_capacity * sizeof(data_descriptor_t));
-        for (size_t i = 0; i < builder->descriptors_count; ++i) {
-            new_descriptors[i] = builder->descriptors[i];
+        for (size_t descr_idx = 0; descr_idx < builder->descriptors_count; ++descr_idx) {
+            new_descriptors[descr_idx] = builder->descriptors[descr_idx];
         }
         FREE(builder->descriptors);
         builder->descriptors = new_descriptors;
@@ -84,6 +84,20 @@ uint32_t add_string_to_data_segment(data_builder_t *builder, wchar_t *string) {
         return old_index - 1;
     }
     size_t len = (wcslen(string) + 1) * sizeof(wchar_t);
+    uint32_t index = add_data_to_data_segment(builder, (void*)string, len);
+    data_descriptor_t *descriptor = &builder->descriptors[index];
+    set_in_avl_tree(builder->strings, &builder->data[descriptor->offset],
+        (value_t){.uint32_val = index + 1});
+    return index;
+}
+
+uint32_t add_string_to_data_segment_ex(data_builder_t *builder, wchar_t *string,
+        size_t str_length) {
+    uint32_t old_index = get_from_avl_tree(builder->strings, string).uint32_val;
+    if (old_index) {
+        return old_index - 1;
+    }
+    size_t len = (str_length + 1) * sizeof(wchar_t);
     uint32_t index = add_data_to_data_segment(builder, (void*)string, len);
     data_descriptor_t *descriptor = &builder->descriptors[index];
     set_in_avl_tree(builder->strings, &builder->data[descriptor->offset],

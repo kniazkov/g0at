@@ -31,6 +31,18 @@ typedef struct statement_t statement_t;
 typedef struct expression_t expression_t;
 
 /**
+ * @typedef code_builder_t
+ * @brief Forward declaration for the code builder structure.
+ */
+typedef struct code_builder_t code_builder_t;
+
+/**
+ * @typedef data_builder_t
+ * @brief Forward declaration for the data builder structure.
+ */
+typedef struct data_builder_t data_builder_t;
+
+/**
  * @typedef arena_t
  * @brief Forward declaration for the arena memory allocator.
  */
@@ -136,28 +148,18 @@ typedef struct {
     string_value_t (*to_string)(const node_t *node);
 
     /**
-     * @brief Converts a node to a statement type.
+     * @brief Generates bytecode for the given node.
      * 
-     * This function safely casts a node to a `statement_t *`. It is used when you know that
-     * the node represents a statement and want to work with it as a specific type.
+     * This function generates the bytecode instructions for a node in the syntax tree. It takes
+     * two additional arguments, `code_builder_t` and `data_builder_t`, which are used to manage
+     * the bytecode instructions and static data respectively. The node's specific implementation
+     * will determine how it contributes to the final bytecode output.
      * 
-     * @param node A pointer to the base node.
-     * @return A pointer to the statement representation of the node, or NULL if the node
-     *  is not a statement.
+     * @param node A pointer to the node for which bytecode is being generated.
+     * @param code A pointer to the `code_builder_t` used to add bytecode instructions.
+     * @param data A pointer to the `data_builder_t` used to manage static data.
      */
-    statement_t *(*to_statement)(node_t *node);
-
-    /**
-     * @brief Converts a node to an expression type.
-     * 
-     * This function safely casts a node to an `expression_t *`. It is used when you know that
-     * the node represents an expression and want to work with it as a specific type.
-     * 
-     * @param node A pointer to the base node.
-     * @return A pointer to the expression representation of the node, or NULL if the node
-     *  is not an expression.
-     */
-    expression_t *(*to_expression)(node_t *node);
+    void (*gen_bytecode)(const node_t *node, code_builder_t *code, data_builder_t *data);
 } node_vtbl_t;
 
 /**

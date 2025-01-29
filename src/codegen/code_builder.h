@@ -16,6 +16,12 @@
 #include "vm/bytecode.h"
 
 /**
+ * @typedef code_builder_t
+ * @brief Forward declaration for the code builder structure.
+ */
+typedef struct code_builder_t code_builder_t;
+
+/**
  * @struct code_builder_t
  * @brief Structure for building a list of instructions in a bytecode file.
  *
@@ -23,7 +29,7 @@
  * to add new instructions and manage their memory. The list is dynamically resized as
  * new instructions are added.
  */
-typedef struct {
+struct code_builder_t {
     /**
      * @brief Pointer to the list of instructions.
      *  This is dynamically allocated and resized as new instructions are added.
@@ -40,7 +46,7 @@ typedef struct {
      *  If the size exceeds this value, the list will be resized.
      */
     size_t capacity;
-} code_builder_t;
+};
 
 /**
  * @brief Creates a new code builder with a default initial capacity.

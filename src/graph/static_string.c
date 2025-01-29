@@ -13,6 +13,8 @@
 #include "expression.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "codegen/code_builder.h"
+#include "codegen/data_builder.h"
 
 /**
  * @struct static_string_t
@@ -57,40 +59,38 @@ static string_value_t static_string_to_string(const node_t *node) {
 }
 
 /**
- * @brief Converts a static string node to a statement.
- * @param node A pointer to the static string node to be converted.
- * @return `NULL`, as a static string does not represent a statement.
+ * @brief Generates bytecode for a static string node.
+ * 
+ * This function generates bytecode for a static string node by first adding the string
+ * to the data segment, and then generating a `SLOAD` instruction with the index of the
+ * string in the data segment. 
+ * @param node A pointer to the node representing a static string.
+ * @param code A pointer to the `code_builder_t` structure used for generating instructions.
+ * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
  */
-static statement_t *static_string_to_statement(node_t *node) {
-    return NULL;
-}
-
-/**
- * @brief Converts a static string node to an expression.
- * @param node A pointer to the static string node to be converted.
- * @return A `expression_t*` representing the static string node as an expression.
- */
-static expression_t *static_string_to_expression(node_t *node) {
-    return (expression_t *)node;
+static void gen_bytecode_for_static_string(const node_t *node, code_builder_t *code,
+        data_builder_t *data) {
+    const static_string_t *expr = (const static_string_t *)node;
+    uint32_t index = add_string_to_data_segment_ex(data, expr->data, expr->length);
+    add_instruction(code, (instruction_t){ .opcode = SLOAD, .arg1 = index });
 }
 
 /**
  * @brief Virtual table for static string expressions.
  * 
  * This virtual table provides the implementation of operations specific to static string
- * expressions, such as converting the static string expression to a string representation,
- * and handling the conversion of the node to both a statement and an expression.
+ * expressions. It contains function pointers for operations such as converting the static string
+ * to a string representation and generating the corresponding bytecode.
  * 
- * The table includes function pointers for:
- * - `to_string`: Converts the static string expression node to a string.
- * - `to_statement`: Returns `NULL`, as a static string cannot be used as a statement.
- * - `to_expression`: Converts the static string node to an expression.
+ * The table includes the following function pointers:
+ * - `to_string`: Converts the static string expression node to a string representation.
+ * - `gen_bytecode`: Generates the bytecode for the static string expression, using `SLOAD` 
+ *   and adding the string to the data segment.
  */
 static node_vtbl_t static_string_vtbl = {
     .type = NODE_STATIC_STRING,
     .to_string = static_string_to_string,
-    .to_statement = static_string_to_statement,
-    .to_expression = static_string_to_expression
+    .gen_bytecode = gen_bytecode_for_static_string,
 };
 
 node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length) {

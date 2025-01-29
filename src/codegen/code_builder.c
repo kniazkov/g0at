@@ -30,8 +30,8 @@ instruction_t *add_instruction(code_builder_t *builder, instruction_t instructio
         builder->capacity *= 2;
         instruction_t *new_instructions =
             (instruction_t *)ALLOC(builder->capacity * sizeof(instruction_t));
-        for (size_t i = 0; i < builder->size; ++i) {
-            new_instructions[i] = builder->instructions[i];
+        for (size_t index = 0; index < builder->size; ++index) {
+            new_instructions[index] = builder->instructions[index];
         }
         FREE(builder->instructions);
         builder->instructions = new_instructions;

@@ -23,8 +23,8 @@
  */
 static void mark_objects_in_context_and_stack(thread_t *thread) {
     thread->context->data->vtbl->mark(thread->context->data);
-    for (size_t i = 0; i < thread->data_stack->size; i++) {
-        object_t *obj = thread->data_stack->objects[i];
+    for (size_t index = 0; index < thread->data_stack->size; index++) {
+        object_t *obj = thread->data_stack->objects[index];
         obj->vtbl->mark(obj);
     }
 }
@@ -37,8 +37,8 @@ static void mark_objects_in_context_and_stack(thread_t *thread) {
  * @param proc A pointer to the process whose objects will be marked.
  */
 static void mark_reachable_objects(process_t *proc) {
-    for (size_t i = 0; i < proc->string_cache_size; i++) {
-        proc->string_cache[i]->vtbl->mark(proc->string_cache[i]);
+    for (size_t index = 0; index < proc->string_cache_size; index++) {
+        proc->string_cache[index]->vtbl->mark(proc->string_cache[index]);
     }
     thread_t *thread = proc->main_thread;
     do {
