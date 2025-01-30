@@ -12,6 +12,7 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "codegen/code_builder.h"
 
 /**
  * @struct root_node_t
@@ -95,6 +96,7 @@ static void gen_bytecode_for_root_node(const node_t *node, code_builder_t *code,
         statement_t *stmt = root->stmt_list[index];
         stmt->base.vtbl->gen_bytecode(&stmt->base, code, data);
     }
+    add_instruction(code, (instruction_t){ .opcode = END });
 }
 
 /**

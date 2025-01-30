@@ -17,7 +17,7 @@
 
 bool parse_options(int argc, char** argv, options_t *opt) {
     memset(opt, 0, sizeof(options_t));
-    int index = 0;
+    int index = 1;
     while(index < argc) {
         char *arg = argv[index];
         if (arg[0] == '-') {
