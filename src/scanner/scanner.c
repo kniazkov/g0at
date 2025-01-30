@@ -168,6 +168,19 @@ static bool is_letter(wchar_t c) {
 }
 
 /**
+ * @brief Checks if a wide character is considered an operator.
+ * 
+ * This function checks whether the given wide character `c` is considered an operator.
+ * 
+ * @param c The character to check.
+ * @return `true` if the character is an operator, `false` otherwise.
+ */
+static bool is_operator(wchar_t c) {
+    const wchar_t *operators = L"+-*/%=!<>^&|~";
+    return wcschr(operators, c) != NULL;
+}
+
+/**
  * @brief Parses a string literal in the source code.
  *
  * This function parses a string literal starting with a double quote (`"`) and handles
@@ -261,6 +274,12 @@ token_t *get_token(scanner_t *scan) {
         do {
             ch = next_char(scan);
         } while(is_letter(ch) || iswdigit(ch));
+    }
+    else if (is_operator(ch)) {
+        token->type = TOKEN_OPERATOR;
+        do {
+            ch = next_char(scan);
+        } while(is_operator(ch));
     }
     else if (ch == L'{' || ch == L'}' || ch == L'(' || ch == L')' || ch == L'[' || ch == L']') {
         token->type = TOKEN_BRACKET;

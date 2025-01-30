@@ -8,10 +8,13 @@
  * systems. They work with command-line options and interact with other components of the project.
  */
 
+#include <stdio.h>
+
 #include "launcher.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/io.h"
+#include "resources/messages.h"
 #include "scanner/scanner.h"
 #include "parser/parser.h"
 #include "codegen/linker.h"
@@ -24,6 +27,7 @@ int go(options_t *opt) {
     */
     string_value_t code = read_utf8_file(opt->input_file);
     if (code.data == NULL) {
+        fprintf_utf8(stderr, get_messages()->cannot_read_source_file, opt->input_file);
         return -1;
     }
 
@@ -57,9 +61,9 @@ int go(options_t *opt) {
             break;
         }
 
-        root_token_list_processing_result_t rtlpr = process_root_token_list(&memory, &tokens);
-        if (rtlpr.error != NULL) {
-            error = rtlpr.error;
+        node_t *root_node;
+        error = process_root_token_list(&memory, &tokens, &root_node);
+        if (error != NULL) {
             break;
         }
 
@@ -74,7 +78,7 @@ int go(options_t *opt) {
         */
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
-        rtlpr.root_node->vtbl->gen_bytecode(rtlpr.root_node, code_builder, data_builder);
+        root_node->vtbl->gen_bytecode(root_node, code_builder, data_builder);
         bytecode_t *bytecode = link_code_and_data(code_builder, data_builder);
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);
@@ -103,7 +107,20 @@ int go(options_t *opt) {
     } while(false);
 
     /*
-        10. free the memory used by the compiler if it is not free yet
+        10. print error messages (if any)
+    */
+    if (error != NULL) {
+        const wchar_t const *error_msg_format = get_messages()->compilation_error;
+        while (error != NULL) {
+            fprintf_utf8(stderr, error_msg_format, error->begin.file_name, error->begin.row,
+                error->begin.column, error->message);
+            fprintf(stderr, "\n");
+            error = error->next;
+        }
+    }
+
+    /*
+        11. free the memory used by the compiler if it is not free yet
     */
     if (graph_memory != NULL) {
         destroy_arena(graph_memory);
@@ -115,7 +132,12 @@ int go(options_t *opt) {
         FREE(code.data);
     }
 
-    if (get_allocated_memory_size() > 0) {
+    /*
+        12. check for memory leaks
+    */
+    size_t leaked_memory_size = get_allocated_memory_size();
+    if (leaked_memory_size > 0) {
+        fprintf_utf8(stderr, get_messages()->memory_leak, leaked_memory_size);
         return -1;
     }
 

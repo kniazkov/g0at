@@ -41,6 +41,7 @@ typedef struct node_t node_t;
 typedef enum {
     TOKEN_IDENTIFIER,       /**< An identifier (variable, function name, etc.) */
     TOKEN_BRACKET,          /**< A bracket (e.g., '(', ')', '{', '}', '[', ']', etc.) */
+    TOKEN_OPERATOR,         /**< An operator (e.g., '+', '-', '*', '/', '=', '==', etc.) */
     TOKEN_ERROR,            /**< An invalid token (error case) */
 
     TOKEN_BRACKET_PAIR,     /**< A pair of brackets and all tokens between them */

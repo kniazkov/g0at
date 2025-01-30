@@ -21,8 +21,11 @@
  * include various error messages related to symbol recognition, and more can be added as needed.
  */
 typedef struct {
+    const wchar_t const *memory_leak;
     const wchar_t const *no_input_file;
     const wchar_t const *unknown_option;
+    const wchar_t const *cannot_read_source_file;
+    const wchar_t const *compilation_error;
     const wchar_t const *unknown_symbol;
     const wchar_t const *unclosed_quotation_mark;
     const wchar_t const *invalid_escape_sequence;

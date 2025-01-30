@@ -257,14 +257,14 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     return error;
 }
 
-root_token_list_processing_result_t process_root_token_list(parser_memory_t *memory,
-        token_list_t *tokens) {
-    root_token_list_processing_result_t result = {0};     
+compilation_error_t *process_root_token_list(parser_memory_t *memory,
+        token_list_t *tokens, node_t **root_node) {
     statement_list_processing_result_t stmt = process_statement_list(memory, tokens);
     if (stmt.error != NULL) {
-        result.error = stmt.error;
+        *root_node = NULL;
+        return stmt.error;
     } else {
-        result.root_node = create_root_node(memory->graph, stmt.list, stmt.count);
+        *root_node = create_root_node(memory->graph, stmt.list, stmt.count);
+        return NULL;
     }
-    return result;
 }

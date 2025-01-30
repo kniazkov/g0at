@@ -23,15 +23,18 @@
  * are used during the parsing and compilation process.
  */
 static messages_t english = {
-    .no_input_file = L"input file not specified",
-    .unknown_option = L"unknown option: '%a'",
-    .unknown_symbol = L"unknown symbol '%c'",
-    .unclosed_quotation_mark = L"unmatched quote found in string literal; expected closing quote",
-    .invalid_escape_sequence = L"invalid escape sequence '\\%c' in string literal",
-    .unclosed_opening_bracket = L"unclosed opening bracket: expected a closing bracket to match '%c'",
-    .missing_opening_bracket = L"missing opening bracket corresponding to '%c'",
-    .brackets_do_not_match = L"closing bracket '%c' does not match the opening bracket '%c'",
-    .not_a_statement = L"token '%s' is not a statement allowed here",
+    .memory_leak = L"Memory leak of %zu bytes detected",
+    .no_input_file = L"Input file not specified",
+    .unknown_option = L"Unknown option: '%a'",
+    .cannot_read_source_file = L"Could not read the source code file at '%a'",
+    .compilation_error = L"Compilation error in '%a', %zu.%zu: %s",
+    .unknown_symbol = L"Unknown symbol '%c'",
+    .unclosed_quotation_mark = L"Unmatched quote found in string literal; expected closing quote",
+    .invalid_escape_sequence = L"Invalid escape sequence '\\%c' in string literal",
+    .unclosed_opening_bracket = L"Unclosed opening bracket: expected a closing bracket to match '%c'",
+    .missing_opening_bracket = L"Missing opening bracket corresponding to '%c'",
+    .brackets_do_not_match = L"Closing bracket '%c' does not match the opening bracket '%c'",
+    .not_a_statement = L"Token '%s' is not a statement allowed here",
 };
 
 /**
@@ -42,15 +45,18 @@ static messages_t english = {
  * are used during the parsing and compilation process.
  */
 static messages_t russian = {
-    .no_input_file = L"не указан входной файл",
-    .unknown_option = L"неизвестный параметр командной строки: '%a'",
-    .unknown_symbol = L"неизвестный символ '%c'",
-    .unclosed_quotation_mark = L"в строковом литерале пропущена закрывающая кавычка",
-    .invalid_escape_sequence = L"неправильная управляющая последовательность '\\%c' в строковом литерале",
-    .unclosed_opening_bracket = L"нет закрывающей скобки, соответствующей '%c'",
-    .missing_opening_bracket = L"нет открывающей скобки, соответствующей '%c'",
-    .brackets_do_not_match = L"закрывающая скобка '%c' не соответствует открывающей '%c'",
-    .not_a_statement = L"токен '%s' здесь недопустим, ожидается инструкция языка",
+    .memory_leak = L"Обнаружена утечка памяти в %zu байт",
+    .no_input_file = L"Не указан входной файл",
+    .unknown_option = L"Неизвестный параметр командной строки: '%a'",
+    .cannot_read_source_file = L"Не удалось прочесть исходный файл '%a'",
+    .compilation_error = L"Ошибка компиляции в файле '%a', %zu.%zu: %s",
+    .unknown_symbol = L"Неизвестный символ '%c'",
+    .unclosed_quotation_mark = L"В строковом литерале пропущена закрывающая кавычка",
+    .invalid_escape_sequence = L"Неправильная управляющая последовательность '\\%c' в строковом литерале",
+    .unclosed_opening_bracket = L"Нет закрывающей скобки, соответствующей '%c'",
+    .missing_opening_bracket = L"Нет открывающей скобки, соответствующей '%c'",
+    .brackets_do_not_match = L"Закрывающая скобка '%c' не соответствует открывающей '%c'",
+    .not_a_statement = L"Токен '%s' здесь недопустим, ожидается инструкция языка",
 };
 
 /**
@@ -72,8 +78,8 @@ const messages_t *get_messages() {
 void set_language(const char *lang) {
     char buff[MAX_LANG_NAME_LEN];
     int i;
-    for (i = 0; i < MAX_LANG_NAME_LEN - 1; i++) {
-        buff[i] == tolower(lang[i]);
+    for (i = 0; i < MAX_LANG_NAME_LEN - 1 && lang[i] != '\0'; i++) {
+        buff[i] = tolower(lang[i]);
     }
     buff[i] = '\0';
     

@@ -75,7 +75,7 @@ bool test_unclosed_bracket() {
     ASSERT(error->begin.code[0] == L'(');
     ASSERT(error->end.row == 1);
     ASSERT(error->end.column == 10);
-    ASSERT(wcscmp(L"unclosed opening bracket: expected a closing bracket to match '('",
+    ASSERT(wcscmp(L"Unclosed opening bracket: expected a closing bracket to match '('",
         error->message) == 0);
     destroy_arena(arena);
     return true;
@@ -94,7 +94,7 @@ bool test_missing_opening_bracket() {
     ASSERT(error->begin.code[0] == L']');
     ASSERT(error->end.row == 2);
     ASSERT(error->end.column == 7);
-    ASSERT(wcscmp(L"missing opening bracket corresponding to ']'", error->message) == 0);
+    ASSERT(wcscmp(L"Missing opening bracket corresponding to ']'", error->message) == 0);
     destroy_arena(arena);
     return true;
 }
@@ -112,7 +112,7 @@ bool test_closing_bracket_does_not_match_opening() {
     ASSERT(error->begin.code[0] == L'{');
     ASSERT(error->end.row == 2);
     ASSERT(error->end.column == 7);
-    ASSERT(wcscmp(L"closing bracket ']' does not match the opening bracket '{'",
+    ASSERT(wcscmp(L"Closing bracket ']' does not match the opening bracket '{'",
         error->message) == 0);
     destroy_arena(arena);
     return true;
@@ -139,11 +139,12 @@ bool test_parsing_function_calls() {
     if (code2.should_free) {
         FREE(code2.data);
     }
-    root_token_list_processing_result_t rtlpr = process_root_token_list(&memory, &tokens);
-    ASSERT(rtlpr.error == NULL);
-    ASSERT(rtlpr.root_node != NULL);
-    ASSERT(rtlpr.root_node->vtbl->type == NODE_ROOT);
-    code2 = rtlpr.root_node->vtbl->to_string(rtlpr.root_node);
+    node_t *root_node;
+    error = process_root_token_list(&memory, &tokens, &root_node);
+    ASSERT(error == NULL);
+    ASSERT(root_node != NULL);
+    ASSERT(root_node->vtbl->type == NODE_ROOT);
+    code2 = root_node->vtbl->to_string(root_node);
     ASSERT(wcscmp(L"print(\"test\");", code2.data) == 0);
     if (code2.should_free) {
         FREE(code2.data);

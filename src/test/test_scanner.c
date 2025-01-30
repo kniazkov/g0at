@@ -95,7 +95,7 @@ bool test_uknown_symbol() {
     scanner_t *scan = create_scanner("program.goat", L"  `  ", &memory, &groups);
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_ERROR);
-    ASSERT(wcscmp(L"unknown symbol '`'", tok->text) == 0);
+    ASSERT(wcscmp(L"Unknown symbol '`'", tok->text) == 0);
     destroy_arena(arena);
     return true;
 }
