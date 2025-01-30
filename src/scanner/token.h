@@ -214,6 +214,11 @@ typedef struct {
      * @brief Group for additive operators ("plus" and "minus").
      */
     token_list_t additive_operators;
+
+    /**
+     * @brief Group for multiplicative operators ("multiply", "divide", and "modulus").
+     */
+    token_list_t multiplicative_operators;
 } token_groups_t;
 
 /**

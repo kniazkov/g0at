@@ -300,6 +300,17 @@ token_t *get_token(scanner_t *scan) {
         size_t length = scan->position.code - token->begin.code;
         token->text = copy_string_to_arena(scan->memory->tokens, token->begin.code, length);
         token->length = length;
+
+        if (token->type == TOKEN_OPERATOR) {
+            if (length == 1) {
+                if (token->text[0] == '+' || token->text[0] == '-') {
+                    append_token_to_group(&scan->groups->additive_operators, token);
+                }
+                else if (token->text[0] == '*' || token->text[0] == '/' || token->text[0] == '%') {
+                    append_token_to_group(&scan->groups->multiplicative_operators, token);
+                }
+            }
+        }
     } else if (token->length == 0) {
         token->length = wcslen(token->text);
     }

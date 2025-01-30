@@ -14,6 +14,7 @@
 #include "parser.h"
 #include "graph/expression.h"
 #include "lib/arena.h"
+#include "resources/messages.h"
 
 /**
  * @brief Rule for handling an identifier followed by parentheses (function call).
@@ -51,7 +52,7 @@ compilation_error_t *identifier_and_parentheses(token_t *identifier, parser_memo
                 args[args_count++] = (expression_t *)token->node;
             } else {
                 compilation_error_t *error = create_error_from_token(memory->tokens, token,
-                    L"unexpected token");
+                    get_messages()->expected_expression, token->text);
                 return error;
             }
             token = token->right;
