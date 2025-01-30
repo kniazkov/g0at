@@ -11,6 +11,7 @@
 
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "messages.h"
 
@@ -22,6 +23,8 @@
  * are used during the parsing and compilation process.
  */
 static messages_t english = {
+    .no_input_file = L"input file not specified",
+    .unknown_option = L"unknown option: '%a'",
     .unknown_symbol = L"unknown symbol '%c'",
     .unclosed_quotation_mark = L"unmatched quote found in string literal; expected closing quote",
     .invalid_escape_sequence = L"invalid escape sequence '\\%c' in string literal",
@@ -39,6 +42,8 @@ static messages_t english = {
  * are used during the parsing and compilation process.
  */
 static messages_t russian = {
+    .no_input_file = L"не указан входной файл",
+    .unknown_option = L"неизвестный параметр командной строки: '%a'",
     .unknown_symbol = L"неизвестный символ '%c'",
     .unclosed_quotation_mark = L"в строковом литерале пропущена закрывающая кавычка",
     .invalid_escape_sequence = L"неправильная управляющая последовательность '\\%c' в строковом литерале",
@@ -76,5 +81,12 @@ void set_language(const char *lang) {
         messages = &russian;
     } else {
         messages = &english;
+    }
+}
+
+void init_messages() {
+    const char *lang = getenv("GOAT_LANGUAGE");
+    if (lang != NULL) {
+        set_language(lang);
     }
 }

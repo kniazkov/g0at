@@ -4,29 +4,36 @@
  * @brief Main entry point of the Goat interpreter.
  */
 
-#include "lib/allocate.h"
 #include "lib/io.h"
-#include "lib/string_ext.h"
-#include <stdio.h>
+#include "resources/messages.h"
+#include "cli/launcher.h"
 
+/**
+ * @brief Main entry point of the program.
+ * 
+ * This is the main entry point of the Goat interpreter. It initializes the message system,
+ * parses command-line options, sets up input/output, and then launches the appropriate 
+ * program components (compiler and/or virtual machine) using the `go` function.
+ * 
+ * @param argc The number of command-line arguments.
+ * @param argv The array of command-line arguments.
+ * 
+ * @return An exit code:
+ *         - `0` on success.
+ *         - A non-zero value on failure (e.g., invalid options, initialization errors).
+ */
 int main(int argc, char** argv) {
-    if (!init_io()) {
+    init_messages();
+
+    options_t opt;
+    if (!parse_options(argc, argv, &opt)) {
         return -1;
     }
 
-    char *str = encode_utf8(L"оно работает it works. %d");
-    string_value_t wstr = decode_utf8(str);
+    if (!init_io()) {
+        // @todo message here
+        return -1;
+    }
 
-    write_utf8_file("test.txt", wstr.data);
-
-    string_value_t wstr2 = read_utf8_file("test.txt");
-    
-    fprintf_utf8(stdout, wstr2.data, 1024);
-
-    FREE(str);
-    FREE(wstr.data);
-    FREE(wstr2.data);
-
-    printf("\n\n%zu", get_allocated_memory_size());
-    return 0;
+    return go(&opt);
 }

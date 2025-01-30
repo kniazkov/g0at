@@ -323,6 +323,11 @@ string_value_t format_string_vargs(const wchar_t *format, va_list args) {
                     append_string(&builder, arg_str);
                     break;
                 }
+                case L'a': {
+                    const char *arg_str = va_arg(args, const char *);
+                    append_ascii_string(&builder, arg_str);
+                    break;
+                }
                 case L'd':
                 case L'i': {
                     int arg_int = va_arg(args, int);

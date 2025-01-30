@@ -30,6 +30,7 @@
 #include "thread.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
+#include "lib/io.h"
 
 /**
  * @brief Structure representing a static function object.
@@ -312,3 +313,32 @@ START_FUNCTION(function_sign)
     }
     return get_static_integer_object(sign);
 END_FUNCTION(function_sign, L"sign");
+
+/**
+ * @brief Built-in function: prints the string representation of an object.
+ * 
+ * This function converts the first argument to its string representation and then prints it
+ * to the standard output.
+ * 
+ * @param args An array of object pointers, where args[0] is the object to print.
+ * @param arg_count The number of arguments passed to the function.
+ * @param thread The current thread executing the function.
+ * @return A `null` object after the string is printed.
+ * 
+ * @note The function assumes that the object passed as the first argument has a valid
+ *  string representation (i.e., that `to_string` can be called successfully).
+ *  If no arguments are provided, the function returns `NULL` without performing any actions.
+ */
+START_FUNCTION(function_print)
+    if (arg_count < 1) {
+        return NULL;
+    }
+    string_value_t str = args[0]->vtbl->to_string(args[0]);
+    if (str.data) {
+        print_utf8(str.data);
+        if (str.should_free) {
+            FREE(str.data);
+        }
+    }
+    return get_null_object();
+END_FUNCTION(function_print, L"print");

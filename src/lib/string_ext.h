@@ -222,6 +222,7 @@ void double_to_string(double value, char *buffer, size_t buffer_size);
  * ### Supported Format Specifiers:
  * - **`%c`**: Inserts a single wide character (`wchar_t`).
  * - **`%s`**: Inserts a wide-character string (`wchar_t*`).
+ * - **`%a`**: Inserts an ASCII string (`char*`).
  * - **`%d`, `%i`**: Inserts a signed integer (`int`).
  * - **`%u`**: Inserts an unsigned integer (`unsigned int`).
  * - **`%zu`**: Inserts an unsigned size (`size_t`).

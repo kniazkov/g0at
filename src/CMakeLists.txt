@@ -16,6 +16,7 @@ file(GLOB core_sources
   codegen/*.c
   model/*.c
   vm/*.c
+  cli/*.c
 )
 add_library(core STATIC ${core_sources})
 message(STATUS "Found core sources: ${core_sources}")

@@ -21,6 +21,8 @@
  * include various error messages related to symbol recognition, and more can be added as needed.
  */
 typedef struct {
+    const wchar_t const *no_input_file;
+    const wchar_t const *unknown_option;
     const wchar_t const *unknown_symbol;
     const wchar_t const *unclosed_quotation_mark;
     const wchar_t const *invalid_escape_sequence;
@@ -51,3 +53,16 @@ const messages_t *get_messages();
  * @param lang The language code (for now, "en" for English, "ru" for Russian).
  */
 void set_language(const char *lang);
+
+/**
+ * @brief Initializes the message structure based on the environment variable.
+ * 
+ * This function reads the `GOAT_LANGUAGE` environment variable and, if set, uses its value
+ * to set the language for error and informational messages.
+ * 
+ * If the environment variable is not set, the default language will be English.
+ * 
+ * @note This function is called automatically at program startup to ensure the correct
+ *  language is used based on the environment settings.
+ */
+void init_messages();
