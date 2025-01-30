@@ -37,7 +37,8 @@
  *  tokens, syntax tree nodes, and errors.
  * @return A pointer to a `compilation_error_t` if an error occurs, or `NULL` if no error.
  */
-compilation_error_t *identifier_and_parentheses(token_t *identifier, parser_memory_t *memory) {
+compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
+        parser_memory_t *memory) {
     assert(identifier->type == TOKEN_IDENTIFIER);
     if (identifier->right && identifier->right->type == TOKEN_BRACKET_PAIR
             && identifier->right->text[0] == '(') {

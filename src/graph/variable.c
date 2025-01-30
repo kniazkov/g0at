@@ -7,7 +7,7 @@
  * a variable by its name in the syntax tree. 
  */
 
-#include "expression.h"
+#include "assignable_expression.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 #include "codegen/code_builder.h"
@@ -19,13 +19,13 @@
  * 
  * This structure defines a variable expression in the syntax tree. A variable refers
  * to a named entity, such as a variable or constant in the source code. The structure
- * extends `expression_t` and includes a field for storing the variable's name.
+ * extends `assignable_expression_t` and includes a field for storing the variable's name.
  */
 typedef struct {
     /**
      * @brief Base expression structure from which variable_t inherits.
      */
-    expression_t base;
+    assignable_expression_t base;
 
     /**
      * @brief Pointer to the wide-character string representing the variable's name.
@@ -91,8 +91,8 @@ static node_vtbl_t variable_vtbl = {
 
 expression_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length) {
     variable_t *expr = (variable_t *)alloc_from_arena(arena, sizeof(variable_t));
-    expr->base.base.vtbl = &variable_vtbl;
+    expr->base.base.base.vtbl = &variable_vtbl;
     expr->name = copy_string_to_arena(arena, name, name_length);
     expr->name_length = name_length;
-    return &expr->base;
+    return &expr->base.base;
 }

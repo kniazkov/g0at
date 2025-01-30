@@ -96,6 +96,22 @@ typedef enum {
     NODE_FUNCTION_CALL,
 
     /**
+     * @brief Addition operation node type.
+     * 
+     * This node type represents a binary addition operation in the source code.
+     * It stores the left and right operands of the addition.
+     */
+    NODE_ADDITION,
+
+    /**
+     * @brief Subtraction operation node type.
+     * 
+     * This node type represents a binary subtraction operation in the source code.
+     * It stores the left and right operands of the subtraction.
+     */
+    NODE_SUBTRACTION,
+
+    /**
      * @brief Statement expression node type.
      * 
      * This node type represents a statement expression, which contains an expression

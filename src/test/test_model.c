@@ -81,9 +81,9 @@ bool test_subtraction_of_two_integers() {
     split64_t s;
     s.int_value = 10000000000;
     instruction_t list[] = {
-        { .opcode = ILOAD32, .arg1 = 1 },
         { .opcode = ARG, .arg1 = s.parts[0] },
         { .opcode = ILOAD64, .arg1 = s.parts[1] },
+        { .opcode = ILOAD32, .arg1 = 1 },
         { .opcode = SUB },
         { .opcode = END }
     };
@@ -106,9 +106,9 @@ bool test_strings_concatenation() {
     uint32_t second = add_string_to_data_segment(data_builder, L" ");
     uint32_t third = add_string_to_data_segment(data_builder, L"works.");
     code_builder_t *code_bulder = create_code_builder();
-    add_instruction(code_bulder, (instruction_t){ .opcode = SLOAD, .arg1 = third });
-    add_instruction(code_bulder, (instruction_t){ .opcode = SLOAD, .arg1 = second });
     add_instruction(code_bulder, (instruction_t){ .opcode = SLOAD, .arg1 = first });
+    add_instruction(code_bulder, (instruction_t){ .opcode = SLOAD, .arg1 = second });
+    add_instruction(code_bulder, (instruction_t){ .opcode = SLOAD, .arg1 = third });
     add_instruction(code_bulder, (instruction_t){ .opcode = ADD } );
     add_instruction(code_bulder, (instruction_t){ .opcode = ADD } );
     add_instruction(code_bulder, (instruction_t){ .opcode = END } );

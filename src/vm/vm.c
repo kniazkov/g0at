@@ -315,8 +315,8 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
  *  or `false` if the addition failed (e.g., due to invalid object types).
  */
 static bool exec_ADD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *first = pop_object_from_stack(thread->data_stack);
     object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
         object_t *result = first->vtbl->add(thread->process, first, second);
         if (result) {
@@ -345,8 +345,8 @@ static bool exec_ADD(runtime_t *runtime, instruction_t instr, thread_t *thread) 
  *  stack, or `false` if the subtraction failed (e.g., due to invalid object types).
  */
 static bool exec_SUB(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *first = pop_object_from_stack(thread->data_stack);
     object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
         object_t *result = first->vtbl->sub(thread->process, first, second);
         if (result) {

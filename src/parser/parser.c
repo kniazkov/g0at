@@ -22,9 +22,16 @@
 #include "graph/node.h"
 
 /**
+ * @brief Rule for handling an additive operator (`+` or `-`), followed by expressions
+ *  on both sides.
+ */
+compilation_error_t *parsing_additive_operators(token_t *operator, parser_memory_t *memory);
+
+/**
  * @brief Rule for handling an identifier followed by parentheses (function call).
  */
-compilation_error_t *identifier_and_parentheses(token_t *identifier, parser_memory_t *memory);
+compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
+    parser_memory_t *memory);
 
 /**
  * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into
@@ -248,7 +255,12 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
 
 compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory) {
     compilation_error_t *error = NULL;
-    error = apply_reduction_rule_forward(&groups->identifiers, identifier_and_parentheses,
+    error = apply_reduction_rule_forward(&groups->additive_operators, parsing_additive_operators,
+        memory, error);
+    if (error != NULL && error->critical) {
+        return error;
+    }
+    error = apply_reduction_rule_forward(&groups->identifiers, parsing_identifier_and_parentheses,
         memory, error);
     if (error != NULL && error->critical) {
         return error;
