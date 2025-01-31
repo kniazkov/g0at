@@ -9,20 +9,38 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <memory.h>
 
 #include "options.h"
 #include "lib/io.h"
 #include "resources/messages.h"
 
-bool parse_options(int argc, char** argv, options_t *opt) {
+bool parse_options(int argc, char **argv, options_t *opt) {
     memset(opt, 0, sizeof(options_t));
     int index = 1;
     while(index < argc) {
         char *arg = argv[index];
         if (arg[0] == '-') {
-            fprintf_utf8(stderr, get_messages()->unknown_option, arg);
-            return false;
+            if (index + 1 == argc || argv[index + 1][0] == '-') {
+                fprintf_utf8(stderr, get_messages()->missing_specification, arg);
+                return false;
+            }
+            index++;
+            char *value = argv[index];
+            if (strcmp(arg, "-l") == 0 || strcmp(arg, "--lang") == 0
+                    || strcmp(arg, "-language") == 0) {
+                if (opt->language == NULL) {
+                    opt->language = value;
+                } else {
+                    fprintf_utf8(stderr, get_messages()->duplicate_parameter, arg);
+                    return false;
+                }
+            }
+            else {
+                fprintf_utf8(stderr, get_messages()->unknown_option, arg);
+                return false;
+            }
         }
         else {
             if (opt->input_file != NULL) {

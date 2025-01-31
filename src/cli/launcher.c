@@ -23,16 +23,27 @@
 
 int go(options_t *opt) {
     /*
-        1. read source file
+        1. set options
     */
-    string_value_t code = read_utf8_file(opt->input_file);
+    if (opt->language) {
+        set_language(opt->language);
+    }
+
+    /*
+        2. read source file
+    */
+    char *file_name = normalize_path(opt->input_file);
+    string_value_t code = read_utf8_file(file_name);
     if (code.data == NULL) {
-        fprintf_utf8(stderr, get_messages()->cannot_read_source_file, opt->input_file);
+        fprintf_utf8(stderr, get_messages()->cannot_read_source_file, file_name);
+    }
+    FREE(file_name);
+    if (code.data == NULL) {
         return -1;
     }
 
     /*
-        2. allocate memory for the parser
+        3. allocate memory for the parser
     */
     arena_t *tokens_memory = create_arena();
     arena_t *graph_memory = create_arena();
@@ -43,7 +54,7 @@ int go(options_t *opt) {
     
     do {
         /*
-            3. scan (split code into tokens)
+            4. scan (split code into tokens)
         */
         token_groups_t groups;
         scanner_t *scan = create_scanner(opt->input_file, code.data, &memory, &groups);
@@ -54,7 +65,7 @@ int go(options_t *opt) {
         }
 
         /*
-            4. build a syntax tree
+            5. build a syntax tree
         */
         error = apply_reduction_rules(&groups, &memory);
         if (error != NULL) {
@@ -68,13 +79,13 @@ int go(options_t *opt) {
         }
 
         /*
-            5. from now on we don't need tokens anymore, we can free this part of memory
+            6. from now on we don't need tokens anymore, we can free this part of memory
         */
         destroy_arena(tokens_memory);
         tokens_memory = NULL;
 
         /*
-            6. compile the syntax tree into bytecode
+            7. compile the syntax tree into bytecode
         */
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
@@ -84,7 +95,7 @@ int go(options_t *opt) {
         destroy_data_builder(data_builder);
         
         /*
-            7. destroy the syntax tree, since the bytecode exists
+            8. destroy the syntax tree, since the bytecode exists
         */
         destroy_arena(graph_memory);
         graph_memory = NULL;
@@ -94,20 +105,20 @@ int go(options_t *opt) {
         }
 
         /*
-            8. run the virtual machine
+            9. run the virtual machine
         */
         process_t *process = create_process();
         ret_code = run(process, bytecode);
         destroy_process(process);
 
         /*
-            9. destroy bytecode
+            10. destroy bytecode
         */
         free_bytecode(bytecode);
     } while(false);
 
     /*
-        10. print error messages (if any)
+        11. print error messages (if any)
     */
     if (error != NULL) {
         const wchar_t const *error_msg_format = get_messages()->compilation_error;
@@ -120,7 +131,7 @@ int go(options_t *opt) {
     }
 
     /*
-        11. free the memory used by the compiler if it is not free yet
+        12. free the memory used by the compiler if it is not free yet
     */
     if (graph_memory != NULL) {
         destroy_arena(graph_memory);
@@ -133,7 +144,7 @@ int go(options_t *opt) {
     }
 
     /*
-        12. check for memory leaks
+        13. check for memory leaks
     */
     size_t leaked_memory_size = get_allocated_memory_size();
     if (leaked_memory_size > 0) {

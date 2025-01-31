@@ -24,6 +24,14 @@ typedef struct {
      * @brief Path to the input file.
      */
     const char *input_file;
+
+    /**
+     * @brief Language for the command-line interface (CLI) error messages.
+     * 
+     * This option specifies the language in which errors and messages
+     * should be displayed in the command-line interface.
+     */
+    const char *language;
 } options_t;
 
 /**
@@ -44,4 +52,4 @@ typedef struct {
  * @return `true` if the parsing was successful, `false` if an error occurred (e.g., unknown option,
  *         missing input file).
  */
-bool parse_options(int argc, char** argv, options_t *opt);
+bool parse_options(int argc, char **argv, options_t *opt);

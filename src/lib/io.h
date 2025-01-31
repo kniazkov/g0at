@@ -30,6 +30,22 @@
 bool init_io(void);
 
 /**
+ * @brief Function to normalize slashes in file paths based on the current operating system.
+ * 
+ * This function creates a copy of the input string and replaces all slashes with the
+ * correct ones depending on the operating system:
+ * - For Windows: `/` and `\\` are replaced with `\`
+ * - For Linux/macOS: `\` is replaced with `/`
+ * 
+ * @param path The original file path string.
+ * @return A new string with the slashes normalized according to the OS.
+ * 
+ * @note The returned string is dynamically allocated. It is the caller's responsibility to
+ *  free the memory when it is no longer needed to avoid memory leaks.
+ */
+char *normalize_path(const char* path);
+
+/**
  * @brief Reads a UTF-8 encoded file and returns the decoded string.
  * 
  * This function opens a UTF-8 encoded file, reads its contents into a buffer, and decodes the 

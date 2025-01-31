@@ -134,7 +134,7 @@ int do_test(char *interpreter, char *test_name) {
     snprintf(path_expected_output, 128, "%s%cexpected_output.txt", test_name, path_separator());
     snprintf(path_actual_error, 128, "%s%cactual_error.txt", test_name, path_separator());
     snprintf(path_expected_error, 128, "%s%cexpected_error.txt", test_name, path_separator());
-    snprintf(cmd, 256, "%s %s%cprogram.goat 1> %s 2> %s",
+    snprintf(cmd, 256, "%s --lang en %s%cprogram.goat 1> %s 2> %s",
         interpreter, test_name, path_separator(), path_actual_output, path_actual_error);
 
     system(cmd);

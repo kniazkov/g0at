@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "io.h"
 #include "allocate.h"
@@ -16,6 +17,29 @@
 bool init_io(void) {
     // platform-specific GPIO initialization...
     return true;
+}
+
+#ifdef _WIN32
+#define PATH_SEPARATOR '\\'
+#else
+#define PATH_SEPARATOR '/'
+#endif
+
+char *normalize_path(const char* path) {
+    if (path == NULL) {
+        return NULL;
+    }
+    size_t len = strlen(path);
+    char* normalized = (char*)ALLOC(len + 1);
+    for (size_t index = 0; index < len; index++) {
+        if (path[index] == '/' || path[index] == '\\') {
+            normalized[index] = PATH_SEPARATOR;
+        } else {
+            normalized[index] = path[index];
+        }
+    }
+    normalized[len] = '\0';
+    return normalized;
 }
 
 string_value_t read_utf8_file(const char *filename) {

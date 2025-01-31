@@ -24,6 +24,8 @@ typedef struct {
     const wchar_t const *memory_leak;
     const wchar_t const *no_input_file;
     const wchar_t const *unknown_option;
+    const wchar_t const *missing_specification;
+    const wchar_t const *duplicate_parameter;
     const wchar_t const *cannot_read_source_file;
     const wchar_t const *compilation_error;
     const wchar_t const *unknown_symbol;
