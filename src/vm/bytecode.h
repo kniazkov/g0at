@@ -24,6 +24,7 @@
 #include <stddef.h>
 
 #include "opcodes.h"
+#include "lib/value.h"
 
 /**
  * @brief Signature added to the beginning of each binary file.
@@ -165,6 +166,11 @@ typedef struct {
     instruction_t *instructions;
 
     /**
+     * @brief The number of instructions in the bytecode.
+     */
+    size_t instructions_count;
+
+    /**
      * @brief Pointer to the list of data descriptors (type: data_descriptor_t*).
      * 
      * Points to the first data descriptor in the bytecode file.
@@ -183,6 +189,8 @@ typedef struct {
      */
     uint8_t *data;
 } bytecode_t;
+
+string_value_t bytecode_to_text(const bytecode_t *code);
 
 /**
  * @brief Frees the memory allocated by the bytecode structure.

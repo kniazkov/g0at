@@ -266,3 +266,11 @@ static inline string_value_t format_string(const wchar_t *format, ...) {
     va_end(args);
     return value;
 }
+
+typedef enum {
+    ALIGN_LEFT,
+    ALIGN_CENTER,
+    ALIGN_RIGHT
+} alignment_t;
+
+string_value_t align_text(string_value_t text, size_t size, alignment_t alignment);

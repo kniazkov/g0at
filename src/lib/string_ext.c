@@ -385,3 +385,37 @@ string_value_t format_string_vargs(const wchar_t *format, va_list args) {
     }
     return (string_value_t) { builder.data, builder.length, true };
 }
+
+string_value_t align_text(string_value_t text, size_t size, alignment_t alignment) {
+    if (text.data == NULL || text.length == 0) {
+        return (string_value_t){ L"", 0, false };
+    }
+    wchar_t *buff = ALLOC((size + 1) * sizeof(wchar_t));
+    if (text.length > size) {
+        memcpy(buff, text.data, sizeof(wchar_t) * size);
+    } else {
+        size_t offset;
+        switch (alignment) {
+            case ALIGN_CENTER:
+                offset = (size - text.length) / 2;
+                break;
+            case ALIGN_RIGHT:
+                offset = size - text.length;
+                break;
+            default:
+                offset = 0;
+        }
+        size_t dst_index;
+        for (dst_index = 0; dst_index < offset; dst_index++) {
+            buff[dst_index] = L' ';            
+        }
+        for (size_t src_index = 0; src_index < text.length; src_index++, dst_index++) {
+            buff[dst_index] = text.data[src_index];            
+        }
+        for (; dst_index < size; dst_index++) {
+            buff[dst_index] = L' ';            
+        }
+    }
+    buff[size] = L'\0';
+    return (string_value_t){ buff, size, true };
+}

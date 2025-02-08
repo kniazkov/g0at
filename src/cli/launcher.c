@@ -93,9 +93,20 @@ int go(options_t *opt) {
         bytecode_t *bytecode = link_code_and_data(code_builder, data_builder);
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);
+
+        /*
+            8. print bytecode (if needed)
+        */
+        if (opt->print_bytecode) {
+            string_value_t text = bytecode_to_text(bytecode);
+            print_utf8(text.data);
+            if (text.should_free) {
+                FREE(text.data);
+            }
+        }
         
         /*
-            8. destroy the syntax tree, since the bytecode exists
+            9. destroy the syntax tree, since the bytecode exists
         */
         destroy_arena(graph_memory);
         graph_memory = NULL;
@@ -105,20 +116,20 @@ int go(options_t *opt) {
         }
 
         /*
-            9. run the virtual machine
+            10. run the virtual machine
         */
         process_t *process = create_process();
         ret_code = run(process, bytecode);
         destroy_process(process);
 
         /*
-            10. destroy bytecode
+            11. destroy bytecode
         */
         free_bytecode(bytecode);
     } while(false);
 
     /*
-        11. print error messages (if any)
+        12. print error messages (if any)
     */
     if (error != NULL) {
         const wchar_t const *error_msg_format = get_messages()->compilation_error;
@@ -131,7 +142,7 @@ int go(options_t *opt) {
     }
 
     /*
-        12. free the memory used by the compiler if it is not free yet
+        13. free the memory used by the compiler if it is not free yet
     */
     if (graph_memory != NULL) {
         destroy_arena(graph_memory);
@@ -144,7 +155,7 @@ int go(options_t *opt) {
     }
 
     /*
-        13. check for memory leaks
+        14. check for memory leaks
     */
     size_t leaked_memory_size = get_allocated_memory_size();
     if (leaked_memory_size > 0) {

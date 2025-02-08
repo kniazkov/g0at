@@ -44,3 +44,5 @@ bool test_double_to_string();
  * @return `true` if the test passes, `false` if any assertion fails.
  */
 bool test_format_string();
+
+bool test_align_text();

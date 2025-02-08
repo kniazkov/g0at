@@ -22,24 +22,28 @@ bool parse_options(int argc, char **argv, options_t *opt) {
     while(index < argc) {
         char *arg = argv[index];
         if (arg[0] == '-') {
-            if (index + 1 == argc || argv[index + 1][0] == '-') {
-                fprintf_utf8(stderr, get_messages()->missing_specification, arg);
-                return false;
-            }
-            index++;
-            char *value = argv[index];
-            if (strcmp(arg, "-l") == 0 || strcmp(arg, "--lang") == 0
-                    || strcmp(arg, "-language") == 0) {
-                if (opt->language == NULL) {
-                    opt->language = value;
-                } else {
-                    fprintf_utf8(stderr, get_messages()->duplicate_parameter, arg);
+            if (strcmp(arg, "--print-bytecode") == 0) {
+                opt->print_bytecode = true;
+            } else {
+                if (index + 1 == argc || argv[index + 1][0] == '-') {
+                    fprintf_utf8(stderr, get_messages()->missing_specification, arg);
                     return false;
                 }
-            }
-            else {
-                fprintf_utf8(stderr, get_messages()->unknown_option, arg);
-                return false;
+                index++;
+                char *value = argv[index];
+                if (strcmp(arg, "-l") == 0 || strcmp(arg, "--lang") == 0
+                        || strcmp(arg, "-language") == 0) {
+                    if (opt->language == NULL) {
+                        opt->language = value;
+                    } else {
+                        fprintf_utf8(stderr, get_messages()->duplicate_parameter, arg);
+                        return false;
+                    }
+                }
+                else {
+                    fprintf_utf8(stderr, get_messages()->unknown_option, arg);
+                    return false;
+                }
             }
         }
         else {

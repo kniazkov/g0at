@@ -32,6 +32,8 @@ typedef struct {
      * should be displayed in the command-line interface.
      */
     const char *language;
+
+    bool print_bytecode;
 } options_t;
 
 /**
