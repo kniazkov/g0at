@@ -76,7 +76,7 @@ string_value_t append_substring(string_builder_t *builder, const wchar_t *wstr,
         builder->length += wstr_length;
         builder->data[builder->length] = 0;
     }
-    return (string_value_t){ builder->data, builder->length, true };
+    return (string_value_t){ builder->data, builder->length, builder->data != NULL };
 }
 
 string_value_t append_string(string_builder_t *builder, const wchar_t *wstr) {
@@ -98,7 +98,21 @@ string_value_t append_ascii_string(string_builder_t *builder, const char *str) {
         builder->length += str_length;
         builder->data[builder->length] = 0;
     }
-    return (string_value_t){ builder->data, builder->length, true };
+    return (string_value_t){ builder->data, builder->length, builder->data != NULL };
+}
+
+string_value_t append_repeated_char(string_builder_t *builder, wchar_t symbol, size_t count) {
+    if (count > 0) {
+        size_t new_length = builder->length + count;
+        if (new_length > builder->capacity) {
+            resize_string_builder(builder, new_length);
+        }
+        for (size_t index = 0; index < count; index++) {
+            builder->data[builder->length++] = symbol;
+        }
+        builder->data[builder->length] = 0;
+    }
+    return (string_value_t){ builder->data, builder->length, builder->data != NULL };
 }
 
 /**

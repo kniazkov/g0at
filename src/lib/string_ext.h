@@ -128,6 +128,20 @@ string_value_t append_string(string_builder_t *builder, const wchar_t *wstr);
 string_value_t append_ascii_string(string_builder_t *builder, const char *str);
 
 /**
+ * @brief Appends a specified number of identical wide characters to the string builder.
+ * 
+ * This function adds a given number of the same wide character (`symbol`) to the end of the 
+ * string builder's buffer, resizing it if necessary. The string remains null-terminated 
+ * after the operation.
+ * 
+ * @param builder A pointer to the `string_builder_t` instance.
+ * @param symbol The wide character to append multiple times.
+ * @param count The number of times to append the character.
+ * @return A `string_value_t` structure containing the updated string buffer and its length.
+ */
+string_value_t append_repeated_char(string_builder_t *builder, wchar_t symbol, size_t count);
+
+/**
  * @brief Encodes a wide-character string (`wchar_t*`) into a UTF-8 encoded string.
  * 
  * This function takes a wide-character string (`wchar_t*`) and encodes it into a UTF-8
@@ -267,10 +281,30 @@ static inline string_value_t format_string(const wchar_t *format, ...) {
     return value;
 }
 
+/**
+ * @brief Specifies text alignment options.
+ * 
+ * This enumeration defines possible text alignment modes when formatting
+ * strings to a fixed width.
+ */
 typedef enum {
-    ALIGN_LEFT,
-    ALIGN_CENTER,
-    ALIGN_RIGHT
+    ALIGN_LEFT,   /**< Align text to the left (padding added to the right). */
+    ALIGN_CENTER, /**< Center text within the given width (padding on both sides). */
+    ALIGN_RIGHT   /**< Align text to the right (padding added to the left). */
 } alignment_t;
 
+/**
+ * @brief Aligns a given text within a fixed width using the specified alignment mode.
+ * 
+ * This function formats a string to fit within a specified width by adding
+ * padding characters as needed. The string can be left-aligned, right-aligned,
+ * or center-aligned within the given width.
+ * 
+ * If the input text is longer than the specified size, it will be truncated.
+ * 
+ * @param text The input text to align.
+ * @param size The total width to align the text within.
+ * @param alignment The desired alignment mode (`ALIGN_LEFT`, `ALIGN_CENTER`, `ALIGN_RIGHT`).
+ * @return A `string_value_t` structure containing the aligned string and its length.
+ */
 string_value_t align_text(string_value_t text, size_t size, alignment_t alignment);

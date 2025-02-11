@@ -190,6 +190,18 @@ typedef struct {
     uint8_t *data;
 } bytecode_t;
 
+/**
+ * @brief Converts a sequence of bytecode instructions into a formatted text representation.
+ * 
+ * This function iterates over a bytecode sequence and generates a human-readable
+ * representation of each instruction, including its opcode, arguments, and flags.
+ * 
+ * The output is formatted in columns for readability, with aligned numbers, opcodes,
+ * and argument values.
+ * 
+ * @param code A pointer to the `bytecode_t` structure containing the bytecode instructions.
+ * @return A `string_value_t` containing the formatted text representation of the bytecode.
+ */
 string_value_t bytecode_to_text(const bytecode_t *code);
 
 /**
