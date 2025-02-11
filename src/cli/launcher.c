@@ -23,8 +23,9 @@
 
 int go(options_t *opt) {
     /*
-        1. set options
+        1. setup
     */
+    long previously_allocated = get_allocated_memory_size();
     if (opt->language) {
         set_language(opt->language);
     }
@@ -157,7 +158,7 @@ int go(options_t *opt) {
     /*
         14. check for memory leaks
     */
-    size_t leaked_memory_size = get_allocated_memory_size();
+    size_t leaked_memory_size = get_allocated_memory_size() - previously_allocated;
     if (leaked_memory_size > 0) {
         fprintf_utf8(stderr, get_messages()->memory_leak, leaked_memory_size);
         return -1;
