@@ -48,7 +48,7 @@ typedef struct {
  * @param node A pointer to the variable expression node.
  * @return A `string_value_t` containing the formatted string representation.
  */
-static string_value_t variable_to_string(const node_t *node) {
+static string_value_t generate_goat_code(const node_t *node) {
     const variable_t *expr = (const variable_t *)node;
     return (string_value_t){ expr->name, expr->name_length, false };
 }
@@ -64,7 +64,7 @@ static string_value_t variable_to_string(const node_t *node) {
  * @param code A pointer to the `code_builder_t` structure used for generating instructions.
  * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
  */
-static void gen_bytecode_for_variable(const node_t *node, code_builder_t *code,
+static void generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const variable_t *expr = (const variable_t *)node;
     uint32_t index = add_string_to_data_segment_ex(data, expr->name, expr->name_length);
@@ -77,16 +77,11 @@ static void gen_bytecode_for_variable(const node_t *node, code_builder_t *code,
  * This virtual table provides the implementation of operations specific to variable expressions.
  * It includes function pointers for operations such as converting the variable expression to
  * a string representation and generating the corresponding bytecode.
- * 
- * The table includes the following function pointers:
- * - `to_string`: Converts the variable expression node to a string representation.
- * - `gen_bytecode`: Generates the bytecode for the variable expression, using `VLOAD` and
- *   adding the variable name to the data segment.
  */
 static node_vtbl_t variable_vtbl = {
     .type = NODE_VARIABLE,
-    .to_string = variable_to_string,
-    .gen_bytecode = gen_bytecode_for_variable
+    .generate_goat_code = generate_goat_code,
+    .generate_bytecode = generate_bytecode
 };
 
 expression_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length) {

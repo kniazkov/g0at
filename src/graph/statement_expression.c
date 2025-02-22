@@ -54,10 +54,11 @@ typedef struct {
  * @param node A pointer to the statement expression node.
  * @return A `string_value_t` containing the formatted string representation of the statement.
  */
-static string_value_t statement_expression_to_string(const node_t *node) {
+static string_value_t generate_goat_code(const node_t *node) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
     string_builder_t builder;
-    string_value_t expr_as_string = stmt->wrapped->base.vtbl->to_string(&stmt->wrapped->base);
+    string_value_t expr_as_string =
+        stmt->wrapped->base.vtbl->generate_goat_code(&stmt->wrapped->base);
     init_string_builder(&builder, expr_as_string.length + 1);  // +1 for the semicolon
     append_substring(&builder, expr_as_string.data, expr_as_string.length);
     if (expr_as_string.should_free) {
@@ -78,10 +79,10 @@ static string_value_t statement_expression_to_string(const node_t *node) {
  * @param code A pointer to the `code_builder_t` structure used for generating instructions.
  * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
  */
-static void gen_bytecode_for_statement_expression(const node_t *node, code_builder_t *code,
+static void generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
-    stmt->wrapped->base.vtbl->gen_bytecode(&stmt->wrapped->base, code, data);
+    stmt->wrapped->base.vtbl->generate_bytecode(&stmt->wrapped->base, code, data);
     add_instruction(code, (instruction_t){ .opcode = POP });
 }
 
@@ -90,16 +91,11 @@ static void gen_bytecode_for_statement_expression(const node_t *node, code_build
  * 
  * This virtual table provides the implementation of operations specific to statement expression
  * nodes.
- * 
- * The table includes the following function pointers:
- * - `to_string`: Converts the statement expression node to a string representation.
- * - `gen_bytecode`: Generates the bytecode for the statement expression. The wrapped expression's
- *   bytecode is generated first, followed by a `POP` instruction to discard the result.
  */
 static node_vtbl_t statement_expression_vtbl = {
     .type = NODE_STATEMENT_EXPRESSION,
-    .to_string = statement_expression_to_string,
-    .gen_bytecode = gen_bytecode_for_statement_expression,
+    .generate_goat_code = generate_goat_code,
+    .generate_bytecode = generate_bytecode,
 };
 
 statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped) {

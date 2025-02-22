@@ -53,7 +53,7 @@ typedef struct {
  * @param node A pointer to the static string expression node.
  * @return A `string_value_t` containing the formatted string representation.
  */
-static string_value_t static_string_to_string(const node_t *node) {
+static string_value_t generate_goat_code(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
     return string_to_string_notation(L"", (string_value_t){ expr->data, expr->length, false });
 }
@@ -68,7 +68,7 @@ static string_value_t static_string_to_string(const node_t *node) {
  * @param code A pointer to the `code_builder_t` structure used for generating instructions.
  * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
  */
-static void gen_bytecode_for_static_string(const node_t *node, code_builder_t *code,
+static void generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const static_string_t *expr = (const static_string_t *)node;
     uint32_t index = add_string_to_data_segment_ex(data, expr->data, expr->length);
@@ -81,16 +81,11 @@ static void gen_bytecode_for_static_string(const node_t *node, code_builder_t *c
  * This virtual table provides the implementation of operations specific to static string
  * expressions. It contains function pointers for operations such as converting the static string
  * to a string representation and generating the corresponding bytecode.
- * 
- * The table includes the following function pointers:
- * - `to_string`: Converts the static string expression node to a string representation.
- * - `gen_bytecode`: Generates the bytecode for the static string expression, using `SLOAD` 
- *   and adding the string to the data segment.
  */
 static node_vtbl_t static_string_vtbl = {
     .type = NODE_STATIC_STRING,
-    .to_string = static_string_to_string,
-    .gen_bytecode = gen_bytecode_for_static_string,
+    .generate_goat_code = generate_goat_code,
+    .generate_bytecode = generate_bytecode,
 };
 
 node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length) {

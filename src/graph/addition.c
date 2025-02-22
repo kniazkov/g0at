@@ -39,12 +39,12 @@ typedef struct {
  * @param node A pointer to the addition expression node.
  * @return A `string_value_t` containing the formatted string representation.
  */
-static string_value_t addition_to_string(const node_t *node) {
+static string_value_t generate_goat_code(const node_t *node) {
     const addition_t *expr = (const addition_t *)node;
     string_value_t left =
-        expr->base.left_operand->base.vtbl->to_string(&expr->base.left_operand->base);
+        expr->base.left_operand->base.vtbl->generate_goat_code(&expr->base.left_operand->base);
     string_value_t right =
-        expr->base.right_operand->base.vtbl->to_string(&expr->base.right_operand->base);
+        expr->base.right_operand->base.vtbl->generate_goat_code(&expr->base.right_operand->base);
     string_value_t result = format_string(L"%s + %s", left.data, right.data);
     if (left.should_free) {
         FREE(left.data);
@@ -65,11 +65,13 @@ static string_value_t addition_to_string(const node_t *node) {
  * @param code A pointer to the `code_builder_t` structure used for generating instructions.
  * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
  */
-static void gen_bytecode_for_addition(const node_t *node, code_builder_t *code,
+static void generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const addition_t *expr = (const addition_t *)node;
-    expr->base.left_operand->base.vtbl->gen_bytecode(&expr->base.left_operand->base, code, data);
-    expr->base.right_operand->base.vtbl->gen_bytecode(&expr->base.right_operand->base, code, data);
+    expr->base.left_operand->base.vtbl->generate_bytecode(
+        &expr->base.left_operand->base, code, data);
+    expr->base.right_operand->base.vtbl->generate_bytecode(
+        &expr->base.right_operand->base, code, data);
     add_instruction(code, (instruction_t){ .opcode = ADD });
 }
 
@@ -79,15 +81,11 @@ static void gen_bytecode_for_addition(const node_t *node, code_builder_t *code,
  * This virtual table provides the implementation of operations specific to addition expressions.
  * It includes function pointers for operations such as converting the addition expression to
  * a string representation and generating the corresponding bytecode.
- * 
- * The table includes the following function pointers:
- * - `to_string`: Converts the addition expression node to a string representation.
- * - `gen_bytecode`: Generates the bytecode for the addition expression, using `ADD`.
  */
 static node_vtbl_t addition_vtbl = {
     .type = NODE_ADDITION,
-    .to_string = addition_to_string,
-    .gen_bytecode = gen_bytecode_for_addition
+    .generate_goat_code = generate_goat_code,
+    .generate_bytecode = generate_bytecode
 };
 
 expression_t *create_addition_node(arena_t *arena, expression_t *left_operand,

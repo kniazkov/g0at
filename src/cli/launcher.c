@@ -90,7 +90,7 @@ int go(options_t *opt) {
         */
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
-        root_node->vtbl->gen_bytecode(root_node, code_builder, data_builder);
+        root_node->vtbl->generate_bytecode(root_node, code_builder, data_builder);
         bytecode_t *bytecode = link_code_and_data(code_builder, data_builder);
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);

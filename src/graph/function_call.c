@@ -69,13 +69,13 @@ typedef struct {
  * @return A `string_value_t` containing the formatted string representation of
  *  the function call, including the function name and arguments.
  */
-static string_value_t function_call_to_string(const node_t *node) {
+static string_value_t generate_goat_code(const node_t *node) {
     const function_call_t *expr = (const function_call_t *)node;
     string_builder_t builder;
     init_string_builder(&builder, 0);
 
     string_value_t func_object_as_string =
-        expr->func_object->base.vtbl->to_string(&expr->func_object->base);
+        expr->func_object->base.vtbl->generate_goat_code(&expr->func_object->base);
     append_substring(&builder, func_object_as_string.data, func_object_as_string.length);
     if (func_object_as_string.should_free) {
         FREE(func_object_as_string.data);
@@ -87,7 +87,7 @@ static string_value_t function_call_to_string(const node_t *node) {
             append_substring(&builder, L", ", 2);
         }
         expression_t *arg = expr->args[index];
-        string_value_t arg_as_string = arg->base.vtbl->to_string(&arg->base);
+        string_value_t arg_as_string = arg->base.vtbl->generate_goat_code(&arg->base);
         append_substring(&builder, arg_as_string.data, arg_as_string.length);
         if (arg_as_string.should_free) {
             FREE(arg_as_string.data);
@@ -112,7 +112,7 @@ static string_value_t function_call_to_string(const node_t *node) {
  * @note This function assumes that the number of arguments for the function call does not exceed
  *  `UINT16_MAX` (the 16-bit unsigned integer limit).
  */
-static void gen_bytecode_for_function_call(const node_t *node, code_builder_t *code,
+static void generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const function_call_t *expr = (const function_call_t *)node;
     assert(expr->args_count < UINT16_MAX);
@@ -121,10 +121,10 @@ static void gen_bytecode_for_function_call(const node_t *node, code_builder_t *c
         do {
             index--;
             expression_t *arg = expr->args[index];
-            arg->base.vtbl->gen_bytecode(&arg->base, code, data);
+            arg->base.vtbl->generate_bytecode(&arg->base, code, data);
         } while (index > 0);
     }
-    expr->func_object->base.vtbl->gen_bytecode(&expr->func_object->base, code, data);
+    expr->func_object->base.vtbl->generate_bytecode(&expr->func_object->base, code, data);
     add_instruction(code, (instruction_t){ .opcode = CALL, .arg0 = (uint16_t)expr->args_count });
 }
 
@@ -135,16 +135,11 @@ static void gen_bytecode_for_function_call(const node_t *node, code_builder_t *c
  * expressions within the abstract syntax tree (AST). Function calls in the AST consist of a
  * function object and its arguments, and this virtual table defines how to handle those
  * specific operations.
- * 
- * The table includes the following function pointers:
- * - `to_string`: Converts the function call node to its string representation.
- * - `gen_bytecode`: Generates the bytecode for the function call, including the bytecode for
- *   each argument and the function object itself, followed by the `CALL` instruction.
  */
 static node_vtbl_t function_call_vtbl = {
     .type = NODE_FUNCTION_CALL,
-    .to_string = function_call_to_string,
-    .gen_bytecode = gen_bytecode_for_function_call,
+    .generate_goat_code = generate_goat_code,
+    .generate_bytecode = generate_bytecode,
 };
 
 node_t *create_function_call_node(arena_t *arena, expression_t *func_object, expression_t **args,
