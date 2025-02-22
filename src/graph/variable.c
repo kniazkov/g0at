@@ -8,6 +8,7 @@
  */
 
 #include "assignable_expression.h"
+#include "common_methods.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 #include "codegen/code_builder.h"
@@ -81,6 +82,7 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
 static node_vtbl_t variable_vtbl = {
     .type = NODE_VARIABLE,
     .generate_goat_code = generate_goat_code,
+    .generate_indented_goat_code = stub_indented_goat_code_generator,
     .generate_bytecode = generate_bytecode
 };
 

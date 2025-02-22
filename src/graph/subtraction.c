@@ -8,6 +8,7 @@
  */
 
 #include "binary_operation.h"
+#include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
@@ -85,6 +86,7 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
 static node_vtbl_t subtraction_vtbl = {
     .type = NODE_SUBTRACTION,
     .generate_goat_code = generate_goat_code,
+    .generate_indented_goat_code = stub_indented_goat_code_generator,
     .generate_bytecode = generate_bytecode
 };
 

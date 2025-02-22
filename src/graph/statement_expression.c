@@ -14,6 +14,7 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "codegen/source_builder.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 
@@ -68,6 +69,26 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /**
+ * @brief Generates indented Goat source code for the statement expression.
+ * 
+ * This function produces formatted Goat source code with proper indentation.
+ * 
+ * @param node A pointer to the node.
+ * @param builder A pointer to the `source_builder_t` to store the generated output.
+ * @param indent The number of tabs used for indentation.
+ * @return This implementation always returns `true`.
+ */
+static bool generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+       size_t indent) {
+    string_value_t code = node->vtbl->generate_goat_code(node);
+    add_line_of_source_code(builder, indent, code.data);
+    if (code.should_free) {
+        FREE(code.data);
+    }
+    return true;
+}
+
+/**
  * @brief Generates bytecode for a statement expression node.
  * 
  * This function generates bytecode for a statement expression node by first generating
@@ -95,6 +116,7 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
 static node_vtbl_t statement_expression_vtbl = {
     .type = NODE_STATEMENT_EXPRESSION,
     .generate_goat_code = generate_goat_code,
+    .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
 };
 

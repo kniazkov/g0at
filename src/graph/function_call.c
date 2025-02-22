@@ -12,6 +12,7 @@
 #include <assert.h>
 
 #include "expression.h"
+#include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
@@ -139,6 +140,7 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
 static node_vtbl_t function_call_vtbl = {
     .type = NODE_FUNCTION_CALL,
     .generate_goat_code = generate_goat_code,
+    .generate_indented_goat_code = stub_indented_goat_code_generator,
     .generate_bytecode = generate_bytecode,
 };
 

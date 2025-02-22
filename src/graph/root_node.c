@@ -78,6 +78,27 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /**
+ * @brief Generates indented Goat source code for the root node.
+ * 
+ * This function produces formatted Goat source code with proper indentation.
+ * 
+ * @param node A pointer to the node.
+ * @param builder A pointer to the `source_builder_t` to store the generated output.
+ * @param indent The number of tabs used for indentation.
+ * @return `true` if generation was successful, `false` otherwise.
+ */
+static bool generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+        size_t indent) {
+    const root_node_t *root = (const root_node_t *)node;
+    bool result = true;
+    for (size_t index = 0; result && index < root->stmt_count; index++) {
+        statement_t *stmt = root->stmt_list[index];
+        result = stmt->base.vtbl->generate_indented_goat_code(&stmt->base, builder, indent);
+    }
+    return result;
+}
+
+/**
  * @brief Generates bytecode for a root node.
  * 
  * This function generates bytecode for a root node by iterating through all the statements
@@ -110,6 +131,7 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
 static node_vtbl_t root_node_vtbl = {
     .type = NODE_ROOT,
     .generate_goat_code = generate_goat_code,
+    .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
 };
 
