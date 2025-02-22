@@ -40,6 +40,11 @@ options_t *parse_options(int argc, char **argv) {
                 continue;
             }
 
+            if (strcmp(arg, "--print-source-code") == 0) {
+                opt->print_source_code = true;
+                continue;
+            }
+
             if (strcmp(arg, "-l") == 0 || strcmp(arg, "--lang") == 0
                     || strcmp(arg, "-language") == 0) {
                 if (index + 1 >= argc || argv[index + 1][0] == '-') {
