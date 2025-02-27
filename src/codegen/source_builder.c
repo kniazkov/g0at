@@ -28,10 +28,8 @@ source_builder_t *create_source_builder() {
     return builder;
 }
 
-void add_line_of_source_code(source_builder_t *builder, size_t indent, const wchar_t *format, ...) {
-    va_list args;
-    va_start(args, format);
-    string_value_t formatted_line = format_string_vargs(format, args);
+void add_formatted_line_of_source_code(source_builder_t *builder, size_t indent,
+        string_value_t line) {
     if (builder->count == builder->capacity) {
         builder->capacity *= 2;
         line_of_code_t *new_lines = (line_of_code_t *)ALLOC(
@@ -41,8 +39,15 @@ void add_line_of_source_code(source_builder_t *builder, size_t indent, const wch
         builder->lines = new_lines;
     }
     builder->lines[builder->count].indent = indent;
-    builder->lines[builder->count].text = formatted_line;
+    builder->lines[builder->count].text = line;
     builder->count++;
+}
+
+void add_line_of_source_code(source_builder_t *builder, size_t indent, const wchar_t *format, ...) {
+    va_list args;
+    va_start(args, format);
+    string_value_t formatted_line = format_string_vargs(format, args);
+    add_formatted_line_of_source_code(builder, indent, formatted_line);
     va_end(args);
 }
 

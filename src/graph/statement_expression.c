@@ -81,10 +81,7 @@ static string_value_t generate_goat_code(const node_t *node) {
 static bool generate_indented_goat_code(const node_t *node, source_builder_t *builder,
        size_t indent) {
     string_value_t code = node->vtbl->generate_goat_code(node);
-    add_line_of_source_code(builder, indent, code.data);
-    if (code.should_free) {
-        FREE(code.data);
-    }
+    add_formatted_line_of_source_code(builder, indent, code);
     return true;
 }
 

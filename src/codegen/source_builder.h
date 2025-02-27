@@ -110,6 +110,19 @@ struct source_builder_t {
 source_builder_t *create_source_builder();
 
 /**
+ * @brief Adds a pre-formatted line of source code with a specified indentation.
+ * 
+ * This function adds a new line to the source code being built. The source code builder became
+ * the new owner of the line.
+ * 
+ * @param builder A pointer to the `source_builder_t` structure where the line will be added.
+ * @param indent The number of spaces to use for indenting the line.
+ * @param line The wide-character pre-formatted string.
+ */
+void add_formatted_line_of_source_code(source_builder_t *builder, size_t indent,
+        string_value_t line);
+
+/**
  * @brief Adds a line of source code with a specified indentation.
  * 
  * This function adds a new line to the source code being built. The line is formatted using the
