@@ -33,6 +33,7 @@ static test_description_t test_list[] = {
     , { "binary search", test_binary_search }
     , { "double to string", test_double_to_string }
     , { "format string", test_format_string }
+    , { "text alignment", test_align_text }
 
     , { "boolean object", test_boolean_object }
     , { "integer object", test_integer_object }

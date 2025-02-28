@@ -25,8 +25,8 @@
 int main(int argc, char** argv) {
     init_messages();
 
-    options_t opt;
-    if (!parse_options(argc, argv, &opt)) {
+    options_t *opt = parse_options(argc, argv);
+    if (opt == NULL) {
         return -1;
     }
 
@@ -35,5 +35,9 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    return go(&opt);
+    int ret_val = go(opt);
+
+    destroy_options(opt);
+
+    return ret_val;
 }

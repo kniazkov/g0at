@@ -18,13 +18,15 @@
 #include "scanner/scanner.h"
 #include "parser/parser.h"
 #include "codegen/linker.h"
+#include "codegen/source_builder.h"
 #include "graph/node.h"
 #include "vm/vm.h"
 
 int go(options_t *opt) {
     /*
-        1. set options
+        1. setup
     */
+    long previously_allocated = get_allocated_memory_size();
     if (opt->language) {
         set_language(opt->language);
     }
@@ -85,17 +87,44 @@ int go(options_t *opt) {
         tokens_memory = NULL;
 
         /*
-            7. compile the syntax tree into bytecode
+            7. print source code (if needed)
+        */
+        if (opt->print_source_code) {
+            source_builder_t *source_builder = create_source_builder();
+            root_node->vtbl->generate_indented_goat_code(root_node, source_builder, 0);
+            string_value_t source_code = build_source_code(source_builder);
+            if (source_code.data) {
+                print_utf8(source_code.data);
+                if (source_code.should_free) {
+                    FREE(source_code.data);
+                }
+            }
+            destroy_source_builder(source_builder);
+        }
+
+        /*
+            8. compile the syntax tree into bytecode
         */
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
-        root_node->vtbl->gen_bytecode(root_node, code_builder, data_builder);
+        root_node->vtbl->generate_bytecode(root_node, code_builder, data_builder);
         bytecode_t *bytecode = link_code_and_data(code_builder, data_builder);
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);
+
+        /*
+            9. print bytecode (if needed)
+        */
+        if (opt->print_bytecode) {
+            string_value_t text = bytecode_to_text(bytecode);
+            print_utf8(text.data);
+            if (text.should_free) {
+                FREE(text.data);
+            }
+        }
         
         /*
-            8. destroy the syntax tree, since the bytecode exists
+            10. destroy the syntax tree, since the bytecode exists
         */
         destroy_arena(graph_memory);
         graph_memory = NULL;
@@ -105,20 +134,20 @@ int go(options_t *opt) {
         }
 
         /*
-            9. run the virtual machine
+            11. run the virtual machine
         */
         process_t *process = create_process();
         ret_code = run(process, bytecode);
         destroy_process(process);
 
         /*
-            10. destroy bytecode
+            12. destroy bytecode
         */
         free_bytecode(bytecode);
     } while(false);
 
     /*
-        11. print error messages (if any)
+        13. print error messages (if any)
     */
     if (error != NULL) {
         const wchar_t const *error_msg_format = get_messages()->compilation_error;
@@ -131,7 +160,7 @@ int go(options_t *opt) {
     }
 
     /*
-        12. free the memory used by the compiler if it is not free yet
+        14. free the memory used by the compiler if it is not free yet
     */
     if (graph_memory != NULL) {
         destroy_arena(graph_memory);
@@ -144,9 +173,9 @@ int go(options_t *opt) {
     }
 
     /*
-        13. check for memory leaks
+        15. check for memory leaks
     */
-    size_t leaked_memory_size = get_allocated_memory_size();
+    size_t leaked_memory_size = get_allocated_memory_size() - previously_allocated;
     if (leaked_memory_size > 0) {
         fprintf_utf8(stderr, get_messages()->memory_leak, leaked_memory_size);
         return -1;

@@ -158,3 +158,34 @@ bool test_format_string() {
     FREE(value.data);
     return true;
 }
+
+bool test_align_text() {
+    string_value_t text = align_text((string_value_t){ NULL, 0, false }, 7, ALIGN_CENTER);
+    ASSERT(text.length == 0);
+    ASSERT(text.should_free == false);
+    text = align_text(STATIC_STRING(L"abc"), 9, ALIGN_LEFT);
+    ASSERT(text.length == 9);
+    ASSERT(wcscmp(L"abc      ", text.data) == 0);
+    if (text.should_free) {
+        FREE(text.data);
+    }
+    text = align_text(STATIC_STRING(L"abc"), 11, ALIGN_CENTER);
+    ASSERT(text.length == 11);
+    ASSERT(wcscmp(L"    abc    ", text.data) == 0);
+    if (text.should_free) {
+        FREE(text.data);
+    }
+    text = align_text(STATIC_STRING(L"abc"), 13, ALIGN_RIGHT);
+    ASSERT(text.length == 13);
+    ASSERT(wcscmp(L"          abc", text.data) == 0);
+    if (text.should_free) {
+        FREE(text.data);
+    }
+    text = align_text(STATIC_STRING(L"abcdef"), 3, ALIGN_LEFT);
+    ASSERT(text.length == 3);
+    ASSERT(wcscmp(L"abc", text.data) == 0);
+    if (text.should_free) {
+        FREE(text.data);
+    }
+    return true;
+}

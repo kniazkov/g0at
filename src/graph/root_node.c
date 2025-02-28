@@ -58,7 +58,7 @@ typedef struct {
  * @param node A pointer to the root node.
  * @return A `string_value_t` containing the formatted string representation of the root node.
  */
-static string_value_t root_node_to_string(const node_t *node) {
+static string_value_t generate_goat_code(const node_t *node) {
     const root_node_t *root = (const root_node_t *)node;
     string_builder_t builder;
     init_string_builder(&builder, 0);
@@ -68,11 +68,32 @@ static string_value_t root_node_to_string(const node_t *node) {
             append_char(&builder, L' ');
         }
         statement_t *stmt = root->stmt_list[index];
-        string_value_t stmt_as_string = stmt->base.vtbl->to_string(&stmt->base);
+        string_value_t stmt_as_string = stmt->base.vtbl->generate_goat_code(&stmt->base);
         result = append_substring(&builder, stmt_as_string.data, stmt_as_string.length);
         if (stmt_as_string.should_free) {
             FREE(stmt_as_string.data);
         }
+    }
+    return result;
+}
+
+/**
+ * @brief Generates indented Goat source code for the root node.
+ * 
+ * This function produces formatted Goat source code with proper indentation.
+ * 
+ * @param node A pointer to the node.
+ * @param builder A pointer to the `source_builder_t` to store the generated output.
+ * @param indent The number of tabs used for indentation.
+ * @return `true` if generation was successful, `false` otherwise.
+ */
+static bool generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+        size_t indent) {
+    const root_node_t *root = (const root_node_t *)node;
+    bool result = true;
+    for (size_t index = 0; result && index < root->stmt_count; index++) {
+        statement_t *stmt = root->stmt_list[index];
+        result = stmt->base.vtbl->generate_indented_goat_code(&stmt->base, builder, indent);
     }
     return result;
 }
@@ -89,12 +110,12 @@ static string_value_t root_node_to_string(const node_t *node) {
  * @param code A pointer to the `code_builder_t` structure used for generating instructions.
  * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
  */
-static void gen_bytecode_for_root_node(const node_t *node, code_builder_t *code,
+static void generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const root_node_t *root = (const root_node_t *)node;
     for (size_t index = 0; index < root->stmt_count; index++) {
         statement_t *stmt = root->stmt_list[index];
-        stmt->base.vtbl->gen_bytecode(&stmt->base, code, data);
+        stmt->base.vtbl->generate_bytecode(&stmt->base, code, data);
     }
     add_instruction(code, (instruction_t){ .opcode = END });
 }
@@ -106,17 +127,12 @@ static void gen_bytecode_for_root_node(const node_t *node, code_builder_t *code,
  * abstract syntax tree (AST). A root node typically represents the entry point or top-level
  * structure of a program. It often holds the main statements or expressions that will be executed
  * in the program.
- * 
- * The table includes the following function pointers:
- * - `to_string`: Converts the root node to a string representation. This operation is typically
- *   used for debugging.
- * - `gen_bytecode`: This function generates bytecode for the root node by processing its list
- *   of statements.
  */
 static node_vtbl_t root_node_vtbl = {
     .type = NODE_ROOT,
-    .to_string = root_node_to_string,
-    .gen_bytecode = gen_bytecode_for_root_node,
+    .generate_goat_code = generate_goat_code,
+    .generate_indented_goat_code = generate_indented_goat_code,
+    .generate_bytecode = generate_bytecode,
 };
 
 

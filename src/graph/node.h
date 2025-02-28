@@ -31,6 +31,12 @@ typedef struct statement_t statement_t;
 typedef struct expression_t expression_t;
 
 /**
+ * @typedef source_builder_t
+ * @brief Forward declaration for the source code builder structure.
+ */
+typedef struct source_builder_t source_builder_t;
+
+/**
  * @typedef code_builder_t
  * @brief Forward declaration for the code builder structure.
  */
@@ -134,34 +140,90 @@ typedef struct {
     /**
      * @brief The type of the node.
      * 
-     * This field specifies the type of the node. It is used to differentiate between different
-     * node types in the syntax tree. The node type is critical for safe casting of the generic
-     * `node_t` to the specific type of node it represents.
+     * Identifies the specific type of the syntax tree node. Used for distinguishing between
+     * different node implementations.
      */
     node_type_t type;
 
     /**
-     * @brief Function pointer for converting a node to its string representation.
+     * @brief Generates a single-line Goat source code representation of the node.
      * 
-     * The `to_string` function converts the node into a string that closely resembles
-     * the original source code representation of the entity. While the string may not 
-     * exactly match the source code (due to optimizations or transformations made during
-     * parsing and processing), it will represent the entity in a manner that is functionally
-     * equivalent to the original code.
+     * This function returns a compact Goat source code representation of the node
+     * without indentation.
+     * While the generated code is functionally equivalent to the original source from which 
+     * the syntax tree was created, it may not be a literal reproduction due to optimizations 
+     * or transformations applied during parsing and processing.
      * 
-     * This function is typically used for debugging, logging, or pretty-printing the node 
-     * in a format that is human-readable and indicative of the original source code.
-     * 
-     * @param node A pointer to the node that should be converted to a string.
-     * @return The string representation of the node as a `string_value_t`.
-     * 
-     * @note The returned string is dynamically allocated, and the caller is responsible
-     *  for freeing the memory when it is no longer needed.
-     * @note Although the string representation may not match the original code exactly
-     *  (due to possible optimizations), it will provide a syntactically equivalent or close
-     *  approximation of the original entity.
+     * @param node A pointer to the node.
+     * @return A `string_value_t` containing the generated Goat code.
      */
-    string_value_t (*to_string)(const node_t *node);
+    string_value_t (*generate_goat_code)(const node_t *node);
+
+    /**
+     * @brief Generates indented Goat source code for the node, if applicable.
+     * 
+     * This function produces formatted Goat source code with proper indentation.
+     * It applies only to node types that logically support indentation (e.g., blocks, functions).
+     * The generated code is functionally equivalent to the original, but may differ in formatting 
+     * and structure due to optimizations or transformations.
+     * 
+     * @param node A pointer to the node.
+     * @param builder A pointer to the `source_builder_t` to store the generated output.
+     * @param indent The number of tabs used for indentation.
+     * @return `true` if generation was successful, `false` otherwise.
+     */
+    bool (*generate_indented_goat_code)(const node_t *node, source_builder_t *builder,
+            size_t indent);
+
+    /**
+     * @brief Checks if C code generation is possible for this node.
+     * 
+     * This function determines whether the node has a valid representation in C.
+     * If `true`, `to_c()` and `to_c_indent()` will return meaningful output.
+     * 
+     * @param node A pointer to the node.
+     * @return `true` if C generation is supported, `false` otherwise.
+     */
+    bool (*can_generate_c_code)(const node_t *node);
+
+    /**
+     * @brief Generates a single-line C source code representation of the node, if possible.
+     * 
+     * This function attempts to produce an equivalent C representation of the node without
+     * indentation. If the node cannot be represented in C, it returns NULL string.
+     * 
+     * @param node A pointer to the node.
+     * @return A `string_value_t` containing the generated C code or NULL string if conversion
+     *  is not possible.
+     */
+    string_value_t (*generate_c_code)(const node_t *node);
+
+    /**
+     * @brief Generates indented C source code for the node, if applicable.
+     * 
+     * This function attempts to generate formatted C code with proper indentation.
+     * It applies only to nodes that have a valid C equivalent and require indentation
+     * (e.g., function bodies, loops).
+     * 
+     * @param node A pointer to the node.
+     * @param builder A pointer to the `source_builder_t` to store the generated output.
+     * @param indent The number of tabs used for indentation.
+     * @return `true` if generation was successful, `false` otherwise.
+     */
+    bool (*generate_indented_c_code)(const node_t *node, source_builder_t *builder, size_t indent);
+
+    /**
+     * @brief Generates a DOT representation of the syntax tree for visualization.
+     * 
+     * This function produces a DOT graph description of the syntax tree, which can be used 
+     * with GraphViz to generate a graphical representation of the tree structure.
+     * Each node type implements this function to output its specific representation.
+     * 
+     * @param node A pointer to the node for which the DOT representation is being generated.
+     * @param builder A pointer to the `source_builder_t` that accumulates the DOT output.
+     * @param indent The number of tabs used for indentation.
+     */
+    void (*generate_dot_description)(const node_t *node, source_builder_t *builder, size_t indent);
 
     /**
      * @brief Generates bytecode for the given node.
@@ -175,7 +237,7 @@ typedef struct {
      * @param code A pointer to the `code_builder_t` used to add bytecode instructions.
      * @param data A pointer to the `data_builder_t` used to manage static data.
      */
-    void (*gen_bytecode)(const node_t *node, code_builder_t *code, data_builder_t *data);
+    void (*generate_bytecode)(const node_t *node, code_builder_t *code, data_builder_t *data);
 } node_vtbl_t;
 
 /**
