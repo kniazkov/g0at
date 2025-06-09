@@ -35,11 +35,11 @@ typedef struct {
 static instruction_descriptor_t descriptors[] =
 {
       { .code = L"NOP" }
-    , { .code = L"ARG" }
+    , { .code = L"ARG", .arg_1_is_unsigned_integer = true }
     , { .code = L"END" }
     , { .code = L"POP" }
-    , { .code = L"ILOAD32" }
-    , { .code = L"ILOAD64" }
+    , { .code = L"ILOAD32", .arg_1_is_signed_integer = true }
+    , { .code = L"ILOAD64", .arg_1_is_unsigned_integer = true }
     , { .code = L"SLOAD", .arg_1_is_string = true }
     , { .code = L"VLOAD", .arg_1_is_string = true }
     , { .code = L"STORE" }
@@ -143,6 +143,14 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
                 append_substring(&builder, str.data, str.length);
                 FREE(str.data);
             }
+        }
+        else if (descr.arg_1_is_signed_integer) {
+            string_value_t value = format_string(L"%i", instr.arg1);
+            string_value_t aligned = align_text(value, ARG1_COLUMN_SIZE - 1, ALIGN_RIGHT);
+            append_substring(&builder, aligned.data, aligned.length);
+            append_char(&builder, L' ');
+            FREE(aligned.data);
+            FREE(value.data);
         }
 
         append_char(&builder, L'\n');

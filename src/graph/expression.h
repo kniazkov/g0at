@@ -36,6 +36,18 @@ struct expression_t {
 node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length);
 
 /**
+ * @brief Creates a new integer literal node.
+ * 
+ * Allocates and initializes a new integer literal node in the specified arena.
+ * The node will contain the provided 64-bit integer value.
+ * 
+ * @param arena Memory arena for node allocation.
+ * @param value The integer value to store in the node.
+ * @return A pointer to the newly created integer node, represented as a `node_t`.
+ */
+node_t *create_integer_node(arena_t *arena, int64_t value);
+
+/**
  * @brief Creates a new variable expression node.
  * 
  * This function allocates and initializes a new variable expression node in the syntax tree.

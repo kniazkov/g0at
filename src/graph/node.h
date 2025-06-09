@@ -84,6 +84,14 @@ typedef enum {
     NODE_STATIC_STRING,
 
     /**
+     * @brief Integer literal node type.
+     * 
+     * This node type represents a 64-bit integer literal in the source code.
+     * It stores the integer value as part of the AST.
+     */
+    NODE_INTEGER,
+
+    /**
      * @brief Variable node type.
      * 
      * This node type represents a variable expression in the source code.

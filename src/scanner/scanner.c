@@ -192,6 +192,7 @@ static bool is_operator(wchar_t c) {
  */
 static void parse_string(scanner_t *scan, token_t *token) {
     assert(get_char(scan) == L'"');
+    token->type = TOKEN_EXPRESSION;
     wchar_t ch = next_char(scan);
     string_builder_t builder;
     init_string_builder(&builder, 0);
@@ -236,11 +237,41 @@ static void parse_string(scanner_t *scan, token_t *token) {
         }
         ch = next_char(scan);
     }
-    token->type = TOKEN_EXPRESSION;
     token->node = create_static_string_node(scan->memory->graph, builder.data, builder.length);
     next_char(scan);
 cleanup:
     FREE(builder.data);
+}
+
+/**
+ * @brief Parses a numeric literal in the source code.
+ *
+ * This function parses a sequence of digits representing an integer literal,
+ * optionally applying a negative sign. It constructs a signed 64-bit integer
+ * value and creates an AST node for the parsed number.
+ *
+ * @param scan The scanner instance used for lexical analysis.
+ * @param token The token to store the parsed integer or error message.
+ * @param negative Flag indicating whether the number should be negated
+ *        (true if preceded by a minus sign).
+ *
+ * @note The function assumes the current character is a digit (0-9) when called.
+ *       Overflow checking is not performed - values exceeding INT64_MAX/MIN will wrap.
+ */
+static void parse_number(scanner_t *scan, token_t *token, bool negative) {
+    wchar_t ch = get_char(scan);
+    assert(iswdigit(ch));
+    token->type = TOKEN_EXPRESSION;
+    int64_t int_part = 0;
+    while(iswdigit(ch)) {
+        int_part = int_part * 10 + ch - '0';
+        ch = next_char(scan);
+    }
+    if (negative) {
+        token->node = create_integer_node(scan->memory->graph, -int_part);
+    } else {
+        token->node = create_integer_node(scan->memory->graph, int_part);
+    }
 }
 
 scanner_t *create_scanner(const char *file_name, wchar_t *code, parser_memory_t *memory,
@@ -287,6 +318,9 @@ token_t *get_token(scanner_t *scan) {
     }
     else if (ch == L'"') {
         parse_string(scan, token);
+    }
+    else if (iswdigit(ch)) {
+        parse_number(scan, token, false);
     }
     else {
         token->type = TOKEN_ERROR;
