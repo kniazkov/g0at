@@ -4,4 +4,5 @@
 #  that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 
 string_concatenation
-integer_literal
+long_integer
+addition_and_subtraction_of_integers
