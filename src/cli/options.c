@@ -17,6 +17,32 @@
 #include "lib/io.h"
 #include "resources/messages.h"
 
+/**
+ * @brief Checks if the graph output filename has a valid extension and format.
+ * This function validates that the provided filename:
+ * - Ends with either .png or .svg extension
+ * - Is not an empty string
+ * @param filename The filename to validate
+ * @return true if filename is valid, false otherwise
+ */
+static bool check_graph_file(const char *filename) {
+    if (filename == NULL || *filename == '\0') {
+        return false;
+    }
+
+    const char *dot = strrchr(filename, '.');
+    if (dot == NULL) {
+        return false;
+    }
+
+    const char *ext = dot + 1;
+    if (strcasecmp(ext, "png") == 0 || strcasecmp(ext, "svg") == 0) {
+        return true;
+    }
+
+    return false;
+}
+
 options_t *create_options() {
     options_t *opt = (options_t *)CALLOC(sizeof(options_t));
     opt->script_args = create_vector();
@@ -45,20 +71,32 @@ options_t *parse_options(int argc, char **argv) {
                 continue;
             }
 
-            if (strcmp(arg, "-l") == 0 || strcmp(arg, "--lang") == 0
-                    || strcmp(arg, "-language") == 0) {
+            if (strcmp(arg, "--print-graph") == 0) {
                 if (index + 1 >= argc || argv[index + 1][0] == '-') {
                     fprintf_utf8(stderr, get_messages()->missing_specification, arg);
-                    destroy_options(opt);
-                    return NULL;
+                    goto error;
+                }
+                const char *filename = argv[++index];
+                if (!check_graph_file(filename)) {
+                    fprintf_utf8(stderr, get_messages()->bad_graph_file);
+                    goto error;
+                }
+                opt->graph_output_file = filename;
+                continue;
+            }
+
+            if (strcmp(arg, "-l") == 0 || strcmp(arg, "--lang") == 0
+                    || strcmp(arg, "--language") == 0) {
+                if (index + 1 >= argc || argv[index + 1][0] == '-') {
+                    fprintf_utf8(stderr, get_messages()->missing_specification, arg);
+                    goto error;
                 }
                 opt->language = argv[++index];
                 continue;
             }
 
             fprintf_utf8(stderr, get_messages()->unknown_option, arg);
-            destroy_options(opt);
-            return NULL;
+            goto error;
         }
 
         if (!input_file_found) {
@@ -71,11 +109,14 @@ options_t *parse_options(int argc, char **argv) {
 
     if (!opt->input_file) {
         fprintf_utf8(stderr, get_messages()->no_input_file);
-        destroy_options(opt);
-        return NULL;
+        goto error;
     }
 
     return opt;
+
+error:
+    destroy_options(opt);
+    return NULL;
 }
 
 void destroy_options(options_t *opt) {

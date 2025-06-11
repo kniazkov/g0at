@@ -55,6 +55,15 @@ typedef struct {
     bool print_bytecode;
 
     /**
+     * @brief Path to the output file for graph visualization (DOT/GraphViz).
+     * 
+     * If non-NULL, specifies the file where the program should save
+     * the generated graph representation.
+     * If NULL, graph visualization is disabled.
+     */
+    const char *graph_output_file;
+
+    /**
      * @brief Arguments to be passed to the script.
      * 
      * This dynamic array stores all arguments that follow the input file
