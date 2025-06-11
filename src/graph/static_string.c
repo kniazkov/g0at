@@ -44,6 +44,58 @@ typedef struct {
 } static_string_t;
 
 /**
+ * @brief Gets the string data of a static string node.
+ * 
+ * Returns the string value contained in the static string node.
+ * The returned string_value_t shares the same memory and doesn't need freeing.
+ * 
+ * @param node Pointer to the node.
+ * @return `string_value_t` containing the string data.
+ */
+static string_value_t get_data(const node_t *node) {
+    const static_string_t *expr = (const static_string_t *)node;
+    return (string_value_t){ expr->data, expr->length, false };
+}
+
+/**
+ * @brief Gets the child count for a static string node.
+ * 
+ * Static string nodes are leaf nodes and never have children.
+ * 
+ * @param node Pointer to the node (unused).
+ * @return Always returns 0 (no children).
+ */
+static size_t get_child_count(const node_t *node) {
+    return 0;
+}
+
+/**
+ * @brief Gets a child node of static string.
+ * 
+ * Since static string nodes are leaf nodes, this always returns NULL.
+ * 
+ * @param node Pointer to the parent node (unused).
+ * @param index Child index (unused).
+ * @return Always returns NULL.
+ */
+static node_t* get_child(const node_t *node, size_t index) {
+    return NULL;
+}
+
+/**
+ * @brief Gets child tag for static string (always NULL).
+ * 
+ * StaticString nodes have no children and thus no child tags.
+ * 
+ * @param node Pointer to the parent node (unused).
+ * @param index Child index (unused).ADD
+ * @return Always returns NULL.
+ */
+static const wchar_t* get_child_tag(const node_t *node, size_t index) {
+    return NULL;
+}
+
+/**
  * @brief Converts a static string expression to its string representation.
  * 
  * This function converts the given static string expression to its representation as it would
@@ -85,6 +137,11 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
  */
 static node_vtbl_t static_string_vtbl = {
     .type = NODE_STATIC_STRING,
+    .type_name = L"static string",
+    .get_data = get_data,
+    .get_child_count = get_child_count,
+    .get_child = get_child,
+    .get_child_tag = get_child_tag,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = stub_indented_goat_code_generator,
     .generate_bytecode = generate_bytecode,

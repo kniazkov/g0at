@@ -13,6 +13,13 @@
 #include "node.h"
 
 /**
+ * @brief Universal "no data" stub function for nodes without data.
+ * @param node A pointer to the node (maintains signature compatibility).
+ * @return Empty `string_value_t`.
+ */
+string_value_t no_data(const node_t *node);
+
+/**
  * @brief A stub generator of Goat code with indentations. Does nothing
  * @param node A pointer to the node.
  * @param builder A pointer to the `source_builder_t` to store the generated output.

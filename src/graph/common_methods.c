@@ -10,6 +10,10 @@
 
 #include "common_methods.h"
 
+string_value_t no_data(const node_t *node) {
+    return (string_value_t) { NULL, 0, false };
+};
+
 bool stub_indented_goat_code_generator(const node_t *node, source_builder_t *builder,
         size_t indent) {
     return false;

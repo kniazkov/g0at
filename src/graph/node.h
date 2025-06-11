@@ -154,6 +154,63 @@ typedef struct {
     node_type_t type;
 
     /**
+     * @brief Human-readable type name of the node.
+     * 
+     * A wide character string representing the type name of the node
+     * (e.g., "function declaration", "addition", "variable").
+     */
+    const wchar_t* type_name;
+
+    /**
+     * @brief Gets the string representation of the node's data.
+     * 
+     * Returns the primary data associated with the node in string form.
+     * For example:
+     * - For an identifier node: the identifier name
+     * - For a literal node: the literal value
+     * - For operators: the operator symbol
+     * 
+     * @param node A pointer to the node.
+     * @return A `string_value_t` containing the node's data or empty value if none.
+     */
+    string_value_t (*get_data)(const node_t *node);
+
+    /**
+     * @brief Gets the number of child nodes.
+     * 
+     * Returns the count of direct child nodes for this syntax tree node.
+     * 
+     * @param node A pointer to the node.
+     * @return Number of child nodes (0 for leaf nodes).
+     */
+    size_t (*get_child_count)(const node_t *node);
+
+    /**
+     * @brief Gets a child node by index.
+     * 
+     * Retrieves a specific child node from the syntax tree.
+     * 
+     * @param node A pointer to the parent node.
+     * @param index Zero-based index of the child node.
+     * @return Pointer to the child node or NULL if index is out of range.
+     */
+    node_t* (*get_child)(const node_t *node, size_t index);
+
+    /**
+     * @brief Gets the tag/label for a child node.
+     * 
+     * Returns a descriptive wide character string that labels the relationship
+     * between the parent node and the specified child node (e.g., "left", "right", 
+     * "condition", "body", "parameters").
+     * 
+     * @param node A pointer to the parent node.
+     * @param index Zero-based index of the child node.
+     * @return Wide character string (const wchar_t*) with the child's tag or NULL
+     * if not applicable.
+     */
+    const wchar_t* (*get_child_tag)(const node_t *node, size_t index);
+
+    /**
      * @brief Generates a single-line Goat source code representation of the node.
      * 
      * This function returns a compact Goat source code representation of the node
@@ -219,19 +276,6 @@ typedef struct {
      * @return `true` if generation was successful, `false` otherwise.
      */
     bool (*generate_indented_c_code)(const node_t *node, source_builder_t *builder, size_t indent);
-
-    /**
-     * @brief Generates a DOT representation of the syntax tree for visualization.
-     * 
-     * This function produces a DOT graph description of the syntax tree, which can be used 
-     * with GraphViz to generate a graphical representation of the tree structure.
-     * Each node type implements this function to output its specific representation.
-     * 
-     * @param node A pointer to the node for which the DOT representation is being generated.
-     * @param builder A pointer to the `source_builder_t` that accumulates the DOT output.
-     * @param indent The number of tabs used for indentation.
-     */
-    void (*generate_dot_description)(const node_t *node, source_builder_t *builder, size_t indent);
 
     /**
      * @brief Generates bytecode for the given node.
