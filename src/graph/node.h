@@ -194,7 +194,7 @@ typedef struct {
      * @param index Zero-based index of the child node.
      * @return Pointer to the child node or NULL if index is out of range.
      */
-    node_t* (*get_child)(const node_t *node, size_t index);
+    const node_t* (*get_child)(const node_t *node, size_t index);
 
     /**
      * @brief Gets the tag/label for a child node.

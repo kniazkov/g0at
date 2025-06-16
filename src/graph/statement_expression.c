@@ -11,6 +11,7 @@
 
 #include "statement.h"
 #include "expression.h"
+#include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
@@ -44,6 +45,45 @@ typedef struct {
      */
     expression_t *wrapped;
 } statement_expression_t;
+
+/**
+ * @brief Gets the child count for statement expression node.
+ * @param node Pointer to the statement expression node (unused).
+ * @return Constant value 1 (single wrapped expression).
+ */
+static size_t get_child_count(const node_t *node) {
+    return 1;
+}
+
+/**
+ * @brief Retrieves the wrapped expression node.
+ * 
+ * Provides access to the underlying expression that this statement contains.
+ * 
+ * @param node Pointer to the statement expression node.
+ * @param index Must be 0 to get the wrapped expression.
+ * @return Pointer to the wrapped expression node or NULL.
+ */
+static const node_t* get_child(const node_t *node, size_t index) {
+    const statement_expression_t* expr = (const statement_expression_t*)node;
+    if (index == 0) {
+        return &expr->wrapped->base;
+    }
+    return NULL;
+}
+
+/**
+ * @brief Gets child tag for statement expression.
+ * @param node Pointer to the node (unused).
+ * @param index Must be 0 to get tag.
+ * @return Static wide string "expression" or NULL if index != 0.
+ */
+static const wchar_t* get_child_tag(const node_t *node, size_t index) {
+    if (index == 0) {
+        return L"expression";
+    }
+    return NULL;
+}
 
 /**
  * @brief Converts the statement expression to its string representation.
@@ -112,6 +152,11 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
  */
 static node_vtbl_t statement_expression_vtbl = {
     .type = NODE_STATEMENT_EXPRESSION,
+    .type_name = L"statement expression",
+    .get_data = no_data,
+    .get_child_count = get_child_count,
+    .get_child = get_child,
+    .get_child_tag = get_child_tag,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,

@@ -9,6 +9,7 @@
  */
 
 #include "statement.h"
+#include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
@@ -46,6 +47,34 @@ typedef struct {
      */
     size_t stmt_count;
 } root_node_t;
+
+/**
+ * @brief Gets the number of child statements in root node.
+ * @param node Pointer to the root node (automatically cast to root_node_t*).
+ * @return Number of child statements (0 for empty programs).
+ */
+static size_t get_child_count(const node_t *node) {
+    const root_node_t* root = (const root_node_t*)node;
+    return root->stmt_count;
+}
+
+/**
+ * @brief Retrieves a specific child statement from root node.
+ * 
+ * Safely accesses the statement list with bounds checking.
+ * Valid indices range from 0 to stmt_count-1.
+ * 
+ * @param node Pointer to the root node.
+ * @param index Zero-based statement position.
+ * @return Pointer to statement node or NULL.
+ */
+static const node_t* get_child(const node_t *node, size_t index) {
+    const root_node_t* root = (const root_node_t*)node;
+    if (index < 0 || index >= root->stmt_count) {
+        return NULL;
+    }
+    return &root->stmt_list[index]->base;
+}
 
 /**
  * @brief Converts the root node to its string representation.
@@ -130,11 +159,15 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
  */
 static node_vtbl_t root_node_vtbl = {
     .type = NODE_ROOT,
+    .type_name = L"root",
+    .get_data = no_data,
+    .get_child_count = get_child_count,
+    .get_child = get_child,
+    .get_child_tag = no_tags,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
 };
-
 
 node_t *create_root_node(arena_t *arena, statement_t **stmt_list, size_t stmt_count) {
     root_node_t *root = (root_node_t *)alloc_from_arena(arena, sizeof(root_node_t));

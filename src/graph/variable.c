@@ -50,44 +50,6 @@ static string_value_t get_data(const node_t *node) {
 }
 
 /**
- * @brief Gets the child count for a variable node.
- * 
- * Variable nodes are leaf nodes and never have children.
- * 
- * @param node Pointer to the node (unused).
- * @return Always returns 0 (no children).
- */
-static size_t get_child_count(const node_t *node) {
-    return 0;
-}
-
-/**
- * @brief Gets a child node of variable.
- * 
- * Since variable nodes are leaf nodes, this always returns NULL.
- * 
- * @param node Pointer to the parent node (unused).
- * @param index Child index (unused).
- * @return Always returns NULL.
- */
-static node_t* get_child(const node_t *node, size_t index) {
-    return NULL;
-}
-
-/**
- * @brief Gets child tag for variable (always NULL).
- * 
- * Varuable nodes have no children and thus no child tags.
- * 
- * @param node Pointer to the parent node (unused).
- * @param index Child index (unused).ADD
- * @return Always returns NULL.
- */
-static const wchar_t* get_child_tag(const node_t *node, size_t index) {
-    return NULL;
-}
-
-/**
  * @brief Converts a variable expression to its string representation.
  * 
  * This function converts the given variable expression to its representation as it would
@@ -131,9 +93,9 @@ static node_vtbl_t variable_vtbl = {
     .type = NODE_VARIABLE,
     .type_name = L"variable",
     .get_data = get_data,
-    .get_child_count = get_child_count,
-    .get_child = get_child,
-    .get_child_tag = get_child_tag,
+    .get_child_count = no_children,
+    .get_child = no_child,
+    .get_child_tag = no_tags,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = stub_indented_goat_code_generator,
     .generate_bytecode = generate_bytecode

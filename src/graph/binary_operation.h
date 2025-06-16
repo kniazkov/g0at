@@ -43,6 +43,48 @@ struct binary_operation_t {
 };
 
 /**
+ * @brief Gets the number of child nodes for binary operation.
+ * 
+ * Binary operations always have exactly two children:
+ * - Left operand (index 0)
+ * - Right operand (index 1)
+ * 
+ * @param node Pointer to binary operation node (unused, type safety).
+ * @return Constant value 2 for all binary operations.
+ */
+size_t binop_get_child_count(const node_t *node);
+
+/**
+ * @brief Retrieves child nodes of binary operation.
+ * 
+ * Returns:
+ * - index 0: left operand node
+ * - index 1: right operand node
+ * - other indices: NULL
+ * 
+ * @param node Pointer to binary operation node.
+ * @param index Zero-based child position:
+ *              - 0: left operand
+ *              - 1: right operand
+ * @return Pointer to child node or NULL if index invalid.
+ */
+const node_t* binop_get_child(const node_t *node, size_t index);
+
+/**
+ * @brief Gets relationship tags for binary operation children.
+ * 
+ * Returns standardized tags for visualization and debugging:
+ * - index 0: "left" operand tag
+ * - index 1: "right" operand tag
+ * - other indices: NULL
+ * 
+ * @param node Pointer to parent node (unused, interface consistency).
+ * @param index Zero-based child position.
+ * @return Static wide string literal or NULL.
+ */
+const wchar_t* binop_get_tag(const node_t *node, size_t index);
+
+/**
  * @brief Creates a new addition operation node.
  * 
  * This function creates a new addition node by allocating memory for it and initializing

@@ -60,6 +60,64 @@ typedef struct {
 } function_call_t;
 
 /**
+ * @brief Gets the child count for function call node.
+ * 
+ * Function call nodes contain:
+ * - 1 child for the function object being called (index 0)
+ * - N children for arguments (indices 1..N)
+ * 
+ * @param node Pointer to function call node.
+ * @return Total child count (1 + number of arguments).
+ */
+static size_t get_child_count(const node_t *node) {
+    const function_call_t* expr = (const function_call_t*)node;
+    return 1 + expr->args_count;
+}
+
+/**
+ * @brief Retrieves specific child node of function call.
+ * 
+ * Child nodes are organized as:
+ * - index 0: function object (callee)
+ * - indices 1..N: arguments
+ * 
+ * @param node Pointer to function call node.
+ * @param index Zero-based child position.
+ * @return Pointer to child node or NULL.
+ */
+static const node_t* get_child(const node_t *node, size_t index) {
+    const function_call_t* expr = (const function_call_t*)node;
+    if (index < 0) {
+        return NULL;
+    }
+    if (index == 0) {
+        return &expr->func_object->base;
+    }
+    if (index > expr->args_count) {
+        return NULL;
+    }
+    return &expr->args[index - 1]->base;
+}
+
+/**
+ * @brief Gets relationship tags for function call children.
+ * 
+ * Provides semantic labels for:
+ * - index 0: "object" (function being called)
+ * - indices 1..N: NULL (arguments have no special tags)
+ * 
+ * @param node Unused (interface consistency).
+ * @param index Child position.
+ * @return "object" for index 0, NULL otherwise.
+ */
+static const wchar_t* get_child_tag(const node_t *node, size_t index) {
+    if (index == 0) {
+        return L"object";
+    }
+    return NULL;
+}
+
+/**
  * @brief Converts a function call expression to its string representation.
  * 
  * This function converts the given function call expression to a string that represents how the
@@ -139,6 +197,11 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
  */
 static node_vtbl_t function_call_vtbl = {
     .type = NODE_FUNCTION_CALL,
+    .type_name = L"function call",
+    .get_data = no_data,
+    .get_child_count = get_child_count,
+    .get_child = get_child,
+    .get_child_tag = get_child_tag,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = stub_indented_goat_code_generator,
     .generate_bytecode = generate_bytecode,

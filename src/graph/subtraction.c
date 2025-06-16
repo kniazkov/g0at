@@ -85,6 +85,11 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
  */
 static node_vtbl_t subtraction_vtbl = {
     .type = NODE_SUBTRACTION,
+    .type_name = L"subtraction",
+    .get_data = no_data,
+    .get_child_count = binop_get_child_count,
+    .get_child = binop_get_child,
+    .get_child_tag = binop_get_tag,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = stub_indented_goat_code_generator,
     .generate_bytecode = generate_bytecode

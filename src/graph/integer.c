@@ -45,7 +45,7 @@ typedef struct {
  * @param node A pointer to the integer expression node.
  * @return A `string_value_t` containing the formatted decimal string.
  */
-static string_value_t generate_goat_code(const node_t *node) {
+static string_value_t get_data_and_generate_goat_code(const node_t *node) {
     const integer_t *expr = (const integer_t *)node;
     return format_string(L"%ld", expr->value);
 }
@@ -83,7 +83,12 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
  */
 static node_vtbl_t integer_vtbl = {
     .type = NODE_INTEGER,
-    .generate_goat_code = generate_goat_code,
+    .type_name = L"integer",
+    .get_data = get_data_and_generate_goat_code,
+    .get_child_count = no_children,
+    .get_child = no_child,
+    .get_child_tag = no_tags,
+    .generate_goat_code = get_data_and_generate_goat_code,
     .generate_indented_goat_code = stub_indented_goat_code_generator,
     .generate_bytecode = generate_bytecode,
 };

@@ -14,6 +14,19 @@ string_value_t no_data(const node_t *node) {
     return (string_value_t) { NULL, 0, false };
 };
 
+
+size_t no_children(const node_t *node) {
+    return 0;
+}
+
+const node_t* no_child(const node_t *node, size_t index) {
+    return NULL;
+}
+
+const wchar_t* no_tags(const node_t *node, size_t index) {
+    return NULL;
+}
+
 bool stub_indented_goat_code_generator(const node_t *node, source_builder_t *builder,
         size_t indent) {
     return false;
