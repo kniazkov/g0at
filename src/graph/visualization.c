@@ -49,7 +49,7 @@ string_value_t trim_and_escape_html_entities(string_value_t input) {
     bool truncated = false;
     size_t remaining = MAX_LENGTH;
 
-    for (size_t index = 0; index < input.length && remaining > 0; index++) {
+    for (size_t index = 0; index < input.length; index++) {
         wchar_t c = input.data[index];
         
         size_t char_len = 1;
