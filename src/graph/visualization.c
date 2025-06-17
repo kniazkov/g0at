@@ -140,6 +140,9 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
             )
         );
     }
+    if (value.should_free) {
+        FREE(value.data);
+    }
     size_t count = node->vtbl->get_child_count(node);
     for (size_t index = 0; index < count; index++) {
         int child_id = node_to_dot(node->vtbl->get_child(node, index), last_node_id, builder);
