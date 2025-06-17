@@ -20,6 +20,7 @@
 #include "codegen/linker.h"
 #include "codegen/source_builder.h"
 #include "graph/node.h"
+#include "graph/visualization.h"
 #include "vm/vm.h"
 
 int go(options_t *opt) {
@@ -103,7 +104,23 @@ int go(options_t *opt) {
         }
 
         /*
-            8. compile the syntax tree into bytecode
+            8. visualization (if needed)
+        */
+        if (opt->graph_output_file != NULL) {
+            if (is_graphviz_available()) {
+                bool image_generated = generate_image(root_node, opt->graph_output_file);
+                if (!image_generated) {
+                    fprintf_utf8(stderr, get_messages()->graphviz_failed);
+                    fprintf(stderr, "\n");
+                }
+            } else {
+                fprintf_utf8(stderr, get_messages()->no_graphviz);
+                fprintf(stderr, "\n");
+            }
+        }
+
+        /*
+            9. compile the syntax tree into bytecode
         */
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
@@ -113,7 +130,7 @@ int go(options_t *opt) {
         destroy_data_builder(data_builder);
 
         /*
-            9. print bytecode (if needed)
+            10. print bytecode (if needed)
         */
         if (opt->print_bytecode) {
             string_value_t text = bytecode_to_text(bytecode);
@@ -124,7 +141,7 @@ int go(options_t *opt) {
         }
         
         /*
-            10. destroy the syntax tree, since the bytecode exists
+            11. destroy the syntax tree, since the bytecode exists
         */
         destroy_arena(graph_memory);
         graph_memory = NULL;
@@ -134,20 +151,20 @@ int go(options_t *opt) {
         }
 
         /*
-            11. run the virtual machine
+            12. run the virtual machine
         */
         process_t *process = create_process();
         ret_code = run(process, bytecode);
         destroy_process(process);
 
         /*
-            12. destroy bytecode
+            13. destroy bytecode
         */
         free_bytecode(bytecode);
     } while(false);
 
     /*
-        13. print error messages (if any)
+        14. print error messages (if any)
     */
     if (error != NULL) {
         const wchar_t const *error_msg_format = get_messages()->compilation_error;
@@ -160,7 +177,7 @@ int go(options_t *opt) {
     }
 
     /*
-        14. free the memory used by the compiler if it is not free yet
+        15. free the memory used by the compiler if it is not free yet
     */
     if (graph_memory != NULL) {
         destroy_arena(graph_memory);
@@ -173,11 +190,13 @@ int go(options_t *opt) {
     }
 
     /*
-        15. check for memory leaks
+        16. check for memory leaks
     */
     size_t leaked_memory_size = get_allocated_memory_size() - previously_allocated;
     if (leaked_memory_size > 0) {
+        fprintf(stderr, "\n");
         fprintf_utf8(stderr, get_messages()->memory_leak, leaked_memory_size);
+        fprintf(stderr, "\n");
         return -1;
     }
 
