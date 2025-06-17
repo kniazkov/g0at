@@ -222,7 +222,7 @@ bool generate_image(const node_t* root_node, const char *graph_output_file) {
 cleanup:
 
     FREE(command);
-    unlink(dot_file);
+    remove(dot_file);
     FREE(dot_file);
     FREE(dot_code.data);
  
