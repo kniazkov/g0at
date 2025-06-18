@@ -74,7 +74,15 @@ typedef enum {
      * entry point to the AST, containing the main structure of the parsed source code.
      */
     NODE_ROOT = 0,
-    
+
+    /**
+     * @brief Null literal node type.
+     * 
+     * This node type represents a null literal in the source code, indicating the absence
+     * of a value. The node contains no additional data as null is a singleton value.
+     */
+    NODE_NULL,
+
     /**
      * @brief Static string node type.
      * 

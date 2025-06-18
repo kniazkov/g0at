@@ -300,11 +300,24 @@ token_t *get_token(scanner_t *scan) {
     token->begin = scan->position;
 
     if (is_letter(ch)) {
-        token->type = TOKEN_IDENTIFIER;
-        append_token_to_group(&scan->groups->identifiers, token);
+        bool predefined = false;
         do {
             ch = next_char(scan);
         } while(is_letter(ch) || iswdigit(ch));
+        size_t length = scan->position.code - token->begin.code;
+        if (length == 4) {
+            if (wcsncmp(token->begin.code, L"null", 4) == 0) {
+                predefined = true;
+                token->type = TOKEN_EXPRESSION;
+                token->text = L"null";
+                token->length = 4;
+                token->node = get_null_node_instance();
+            }
+        }
+        if (!predefined) {
+            token->type = TOKEN_IDENTIFIER;
+            append_token_to_group(&scan->groups->identifiers, token);
+        }
     }
     else if (is_operator(ch)) {
         token->type = TOKEN_OPERATOR;

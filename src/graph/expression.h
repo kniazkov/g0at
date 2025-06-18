@@ -23,6 +23,16 @@ struct expression_t {
 };
 
 /**
+ * @brief Gets the singleton instance of the null expression node.
+ * 
+ * Returns the shared instance of the null expression node. This function
+ * provides global access to the null node without requiring allocation.
+ * 
+ * @return Pointer to the singleton null node instance.
+ */
+node_t *get_null_node_instance();
+
+/**
  * @brief Creates a new static string expression node.
  * 
  * This function initializes a static string expression node with the given string value

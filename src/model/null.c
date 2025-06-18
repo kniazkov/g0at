@@ -71,7 +71,7 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
  * @return A `string_value_t` containing the string "null".
  */
 static string_value_t to_string(const object_t *obj) {
-    return (string_value_t){ L"null", 5, false };
+    return (string_value_t){ L"null", 4, false };
 }
 
 /**

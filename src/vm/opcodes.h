@@ -68,12 +68,21 @@ typedef enum {
     POP = 0x03, /**< Removes the top object from the data stack. */
 
     /**
+     * @brief Pushes a null object onto the data stack.
+     *
+     * The `NIL` opcode pushes a null object onto the data stack. This is used to represent
+     * the absence of a value or as a default placeholder. The name `NIL` is used instead of
+     * `NULL` to avoid confusion with the C language's NULL macro.
+     */
+    NIL = 0x04, /**< Pushes a null object onto the data stack. */
+
+    /**
      * @brief Pushes a 32-bit integer onto the data stack.
      *
      * The `ILOAD32` opcode pushes a 32-bit integer onto the data stack. This is used for loading
      * integer values into the virtual machine's stack for further operations.
      */
-    ILOAD32 = 0x04, /**< Pushes a 32-bit integer onto the data stack. */
+    ILOAD32 = 0x05, /**< Pushes a 32-bit integer onto the data stack. */
 
     /**
      * @brief Pushes a 64-bit integer onto the data stack.
@@ -83,7 +92,7 @@ typedef enum {
      * two parts: the lower 32 bits can be pushed with `ILOAD32`, and the upper 32 bits are loaded 
      * separately using the `ARG` instruction.
      */
-    ILOAD64 = 0x05, /**< Pushes a 64-bit integer onto the data stack. */
+    ILOAD64 = 0x06, /**< Pushes a 64-bit integer onto the data stack. */
 
     /**
      * @brief Loads a static string onto the data stack.
@@ -92,7 +101,7 @@ typedef enum {
      * predefined and have a fixed memory location (in the bytecode), meaning they are not subject
      * to garbage collection. 
      */
-    SLOAD = 0x06, /**< Loads a static string onto the data stack. */
+    SLOAD = 0x07, /**< Loads a static string onto the data stack. */
 
     /**
      * @brief Loads the value of a variable from the current context onto the data stack.
@@ -101,7 +110,7 @@ typedef enum {
      * identified by its name (static string), and pushes it onto the data stack. If the variable 
      * does not exist in the current context, the constant `null` is loaded instead.
      */
-    VLOAD = 0x07, /**< Loads a variable value onto the data stack or `null` if undefined. */
+    VLOAD = 0x08, /**< Loads a variable value onto the data stack or `null` if undefined. */
 
      /**
      * @brief Stores the top value from the data stack into the current context.
@@ -111,7 +120,7 @@ typedef enum {
      * does not exist in the current context, it is created. This operation updates the context's
      * data with the new value.
      */
-    STORE = 0x08, /**< Stores a value from the data stack into the current context. */
+    STORE = 0x09, /**< Stores a value from the data stack into the current context. */
 
    /**
      * @brief Adds the top two objects of the stack.
@@ -121,7 +130,7 @@ typedef enum {
      * operation can be used for both numerical and non-numerical objects, depending on the virtual 
      * machine's behavior.
      */
-    ADD = 0x09, /**< Adds the top two objects on the data stack. */
+    ADD = 0x0A, /**< Adds the top two objects on the data stack. */
 
     /**
      * @brief Subtracts the top two objects of the stack.
@@ -131,7 +140,7 @@ typedef enum {
      * and then pushes the result back onto the stack. This operation can be used for numerical
      * objects or other types that support subtraction.
      */
-    SUB = 0x0A, /**< Subtracts the top two objects on the data stack. */
+    SUB = 0x0B, /**< Subtracts the top two objects on the data stack. */
 
     /**
      * @brief Calls a function with arguments from the data stack.
@@ -152,5 +161,5 @@ typedef enum {
      * This opcode facilitates invoking callable objects within the virtual machine, allowing
      * for dynamic function calls and composition.
      */
-    CALL = 0x0B, /**< Calls a function with arguments from the data stack. */
+    CALL = 0x0C, /**< Calls a function with arguments from the data stack. */
 } opcode_t;

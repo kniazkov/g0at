@@ -172,6 +172,24 @@ static bool exec_POP(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 }
 
 /**
+ * @brief Executes the NIL instruction.
+ * 
+ * The `NIL` opcode pushes a null object onto the data stack. This is used to represent
+ * the absence of a value or as a default placeholder. The null object is a singleton
+ * instance that can be referenced multiple times without needing additional allocations.
+ * 
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute (unused in this operation).
+ * @param thread Pointer to the thread that is executing the instruction.
+ * @return Always returns `true` to continue executing the next instruction.
+ */
+static bool exec_NIL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    push_object_onto_stack(thread->data_stack, get_null_object());
+    thread->instr_id++;
+    return true;
+}
+
+/**
  * @brief Executes the ILOAD32 instruction.
  * 
  * The `ILOAD32` opcode pushes a 32-bit integer onto the data stack. This operation loads a
@@ -409,6 +427,7 @@ static instr_executor_t executors[] = {
     exec_ARG,     /**< Argument push onto the argument stack. */
     exec_END,     /**< Ends the program immediately. */
     exec_POP,     /**< Pops an object off the data stack. */
+    exec_NIL,     /**< Pushes a null object onto the data stack. */
     exec_ILOAD32, /**< Pushes a 32-bit integer onto the data stack. */
     exec_ILOAD64, /**< Pushes a 64-bit integer onto the data stack. */
     exec_SLOAD,   /**< Pushes a static string onto the data stack. */
