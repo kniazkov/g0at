@@ -70,7 +70,7 @@ static object_t *get_property_from_object_or_its_prototypes(object_t *obj, objec
         do {
             value = proto.items[index]->vtbl->get_property(proto.items[index], key);
             index++;
-        } while (value == NULL);
+        } while (value == NULL && index < proto.size);
     }
     if (value == NULL) {
         value = get_null_object();

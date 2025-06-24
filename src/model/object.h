@@ -626,6 +626,7 @@ object_t *create_user_defined_object(process_t* process, object_array_t proto);
  */
 DECLARE_STATIC_OBJECT(empty_string)
 DECLARE_STATIC_OBJECT(string_length)
+DECLARE_STATIC_OBJECT(string_pi)
 DECLARE_STATIC_OBJECT(string_print)
 DECLARE_STATIC_OBJECT(string_sign)
 

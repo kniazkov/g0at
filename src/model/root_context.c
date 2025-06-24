@@ -31,10 +31,11 @@
  * @return An object array containing all property keys.
  */
 static object_array_t get_keys(const object_t *obj) {
-    static object_t *keys[2] = { NULL };
+    static object_t *keys[3] = { NULL };
     if (keys[0] == NULL) {
-        keys[0] = get_string_print();
-        keys[1] = get_string_sign();
+        keys[0] = get_string_pi();
+        keys[1] = get_string_print();
+        keys[2] = get_string_sign();
     }
     return (object_array_t){ keys, sizeof(keys) / sizeof(object_t*) };
 }

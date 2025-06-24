@@ -486,6 +486,7 @@ static object_vtbl_t static_string_vtbl = {
  */
 DECLARE_STATIC_STRING(empty_string, L"")
 DECLARE_STATIC_STRING(string_length, L"length")
+DECLARE_STATIC_STRING(string_pi, L"pi")
 DECLARE_STATIC_STRING(string_print, L"print")
 DECLARE_STATIC_STRING(string_sign, L"sign")
 
