@@ -64,11 +64,20 @@ struct process_t {
     /**
      * @brief Pool of integer objects managed by the process.
      * 
-     * This list contains objects of type `object_integer_t` that were removed by the garbage
-     * collector. Instead of releasing their memory back to the heap, these objects are stored
-     * here for reuse, allowing faster allocation of new integer objects.
+     * This list contains objects of type `object_dynamic_integer_t` that were removed by the
+     * garbage collector. Instead of releasing their memory back to the heap, these objects are
+     * stored here for reuse, allowing faster allocation of new integer objects.
      */
     object_list_t integers;
+
+    /**
+     * @brief Pool of real number objects managed by the process.
+     * 
+     * This list contains objects of type `object_dynamic_real_t` that were collected
+     * by the garbage collector. Rather than immediately freeing their memory, these
+     * objects are retained in this pool for potential reuse.
+     */
+    object_list_t real_numbers;
 
     /**
      * @brief Pool of dynamic string objects managed by the process.

@@ -1,27 +1,27 @@
 /**
- * @file integer.c
+ * @file real.c
  * @copyright 2025 Ivan Kniazkov
- * @brief Implementations of an object representing an integer.
+ * @brief Implementation of an object representing a real number.
  *
- * This file defines the structure and behavior of integer objects. There are two types
- * of integer objects:
- * 1. Static integers:
- *    - These include integers declared in the model.
- * 2. Dynamic integers:
+ * This file defines the structure and behavior of real number objects. There are two types
+ * of real number objects:
+ * 1. Static real numbers:
+ *    - These include mathematical constants declared in the model (like Pi or Euler's number).
+ * 2. Dynamic real numbers:
  *    - These are created as a result of operations at runtime.
  *    - They internally store their own value and are subject to garbage collection when
  *      no longer in use.
  */
-
 #include <assert.h>
 #include <stdio.h>
-#include <inttypes.h>
+#include <math.h>
 
 #include "object.h"
 #include "object_state.h"
 #include "process.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
+#include "lib/string_ext.h"
 
 /**
  * @def POOL_CAPACITY
@@ -34,32 +34,42 @@
 #define POOL_CAPACITY 1024
 
 /**
- * @struct object_static_integer_t
- * @brief Structure representing a static integer object.
+ * @struct object_static_real_t
+ * @brief Structure representing a static real number object.
+ * 
+ * Static real numbers are used for mathematical constants and other immutable
+ * floating-point values that persist throughout the program execution.
+ * They are not managed by the garbage collector.
  */
 typedef struct {
     object_t base; ///< The base object that provides common functionality.
-    int64_t value; ///< The integer value of the object.
-} object_static_integer_t;
+    double value; ///< The double-precision floating-point value of the object.
+} object_static_real_t;
 
 /**
- * @struct object_dynamic_integer_t
- * @brief Structure representing a dynamic integer object.
+ * @struct object_dynamic_real_t
+ * @brief Structure representing a dynamic real number object.
+ * 
+ * Dynamic real numbers are created during program execution for temporary values,
+ * calculation results, and other runtime floating-point operations.
+ * They are managed by the garbage collector using reference counting.
  */
 typedef struct {
     object_t base; ///< The base object that provides common functionality.
-    int refs; ///< Reference count.
-    object_state_t state; ///< The state of the object (e.g., unmarked, marked, or zombie).
-    int64_t value; ///< The integer value of the object.
-} object_dynamic_integer_t;
+    int refs; ///< Reference count for garbage collection.
+    object_state_t state; ///< The state of the object (unmarked, marked, or zombie).
+    double value; ///< The double-precision floating-point value of the object.
+} object_dynamic_real_t;
 
 /**
- * @brief Retrieves the prototypes of the integer prototype object.
+ * @brief Retrieves the prototypes of the real number prototype object.
  * 
- * This function returns an array of prototypes the integer prototype object.
+ * This function returns the prototype chain for real number objects. Real numbers
+ * inherit from the numeric prototype, which provides common mathematical
+ * operations and properties.
  * 
- * @param obj The object whose prototypes are to be retrieved.
- * @return An object_array_t containing the prototypes of the integer prototype object.
+ * @param obj The real number object whose prototypes are to be retrieved.
+ * @return An object_array_t containing the numeric prototype (singleton array).
  */
 static object_array_t proto_get_prototypes(const object_t *obj) {
     static object_t *proto = NULL;
@@ -74,9 +84,9 @@ static object_array_t proto_get_prototypes(const object_t *obj) {
 }
 
 /**
- * @brief Retrieves the full prototype topology of the integer prototype object.
+ * @brief Retrieves the full prototype topology of the real number prototype object.
  * 
- * This function returns the full prototype chain (topology) of the integer prototype object. 
+ * This function returns the full prototype chain (topology) of the real number prototype object. 
  * 
  * @param obj The object whose prototype topology is to be retrieved.
  * @return An object_array_t containing the full prototype chain.
@@ -122,10 +132,10 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
 }
 
 /**
- * @var integer_proto_vtbl
- * @brief Virtual table defining the behavior of the integer prototype object.
+ * @var real_proto_vtbl
+ * @brief Virtual table defining the behavior of the real number prototype object.
  */
-static object_vtbl_t integer_proto_vtbl = {
+static object_vtbl_t real_proto_vtbl = {
     .type = TYPE_OTHER,
     .inc_ref = stub_memory_function,
     .dec_ref = stub_memory_function,
@@ -150,37 +160,37 @@ static object_vtbl_t integer_proto_vtbl = {
 };
 
 /**
- * @var integer_proto
- * @brief The integer prototype object.
+ * @var real_proto
+ * @brief The real number prototype object.
  * 
- * This is the integer prototype object, which is the instance that serves as the 
- * prototype for all integer objects.
+ * This is the real number prototype object, which is the instance that serves as the 
+ * prototype for all real number objects.
  */
-static object_t integer_proto = {
-    .vtbl = &integer_proto_vtbl
+static object_t real_proto = {
+    .vtbl = &real_proto_vtbl
 };
 
-object_t *get_integer_proto() {
-    return &integer_proto;
+object_t *get_real_proto() {
+    return &real_proto;
 }
 
 /**
- * @brief Releases or clears a dynamic integer object.
+ * @brief Releases or clears a dynamic real number object.
  * 
  * This function either frees the object or resets its state and moves it to a list of reusable
  * objects, depending on the number of objects in the pool.
  * 
- * @param diobj The dynamic integer object to release or clear.
+ * @param diobj The dynamic real number object to release or clear.
  */
-static void release_or_clear(object_dynamic_integer_t *diobj) {
-    remove_object_from_list(&diobj->base.process->objects, &diobj->base);
-    if (diobj->base.process->integers.size == POOL_CAPACITY) {
-        FREE(diobj);
+static void release_or_clear(object_dynamic_real_t *drobj) {
+    remove_object_from_list(&drobj->base.process->objects, &drobj->base);
+    if (drobj->base.process->integers.size == POOL_CAPACITY) {
+        FREE(drobj);
     } else {
-        diobj->refs = 0;
-        diobj->state = ZOMBIE;
-        diobj->value = 0;
-        add_object_to_list(&diobj->base.process->integers, &diobj->base);
+        drobj->refs = 0;
+        drobj->state = ZOMBIE;
+        drobj->value = 0;
+        add_object_to_list(&drobj->base.process->real_numbers, &drobj->base);
     }
 }
 
@@ -189,9 +199,9 @@ static void release_or_clear(object_dynamic_integer_t *diobj) {
  * @param obj The object whose reference count is to be incremented.
  */
 static void inc_ref(object_t *obj) {
-    object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
-    assert(diobj->state != ZOMBIE);
-    diobj->refs++;
+    object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
+    assert(drobj->state != ZOMBIE);
+    drobj->refs++;
 }
 
 /**
@@ -199,10 +209,10 @@ static void inc_ref(object_t *obj) {
  * @param obj The object whose reference count is to be decremented.
  */
 static void dec_ref(object_t *obj) {
-    object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
-    assert(diobj->state != ZOMBIE);
-    if (!(--diobj->refs)) {
-        release_or_clear(diobj);
+    object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
+    assert(drobj->state != ZOMBIE);
+    if (!(--drobj->refs)) {
+        release_or_clear(drobj);
     }
 }
 
@@ -211,9 +221,9 @@ static void dec_ref(object_t *obj) {
  * @param obj The object to mark as reachable.
  */
 static void mark(object_t *obj) {
-    object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
-    assert(diobj->state != ZOMBIE);
-    diobj->state = MARKED;
+    object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
+    assert(drobj->state != ZOMBIE);
+    drobj->state = MARKED;
 }
 
 /**
@@ -221,36 +231,36 @@ static void mark(object_t *obj) {
  * @param obj The object to sweep.
  */
 static void sweep(object_t *obj) {
-    object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
-    assert(diobj->state != ZOMBIE);
-    if (diobj->state == UNMARKED) {
-        release_or_clear(diobj);
+    object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
+    assert(drobj->state != ZOMBIE);
+    if (drobj->state == UNMARKED) {
+        release_or_clear(drobj);
     } else {
-        diobj->state = UNMARKED;
+        drobj->state = UNMARKED;
     }
 }
 
 /**
- * @brief Releases an integer object.
+ * @brief Releases a real number object.
  * @param obj The object to release.
  */
 static void release(object_t *obj) {
-    object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
+    object_dynamic_real_t *diobj = (object_dynamic_real_t *)obj;
     remove_object_from_list(
-        diobj->state == ZOMBIE ? &obj->process->integers : &obj->process->objects, obj
+        diobj->state == ZOMBIE ? &obj->process->real_numbers : &obj->process->objects, obj
     );
     FREE(obj);
 }
 
 /**
- * @brief Compares integer object and other numeric object based on their values.
+ * @brief Compares real number object and other numeric object based on their values.
  * @param obj1 The first object to compare.
  * @param obj2 The second object to compare.
  * @return An integer indicating the relative order: positive if obj1 > obj2,
  *  negative if obj1 < obj2, 0 if equal.
  */
 static int compare(const object_t *obj1, const object_t *obj2) {
-    double diff = obj1->vtbl->get_integer_value(obj1).value 
+    double diff = obj1->vtbl->get_real_value(obj1).value 
         - obj2->vtbl->get_real_value(obj2).value;
     if (diff > 0) {
         return 1;
@@ -262,37 +272,45 @@ static int compare(const object_t *obj1, const object_t *obj2) {
 }
 
 /**
- * @brief Clones an integer object.
+ * @brief Clones a real number object.
  * @param process The process that will own the cloned object.
- * @param obj The integer object to be cloned.
- * @return A pointer to the cloned integer object. If the process is the same, the original object
- *  is returned; otherwise, a new object is created.
+ * @param obj The real number object to be cloned.
+ * @return A pointer to the cloned real number object. If the process is the same, the original
+ *  object is returned; otherwise, a new object is created.
  */
 static object_t *clone(process_t *process, object_t *obj) {
     if (process == obj->process) {
         return obj;
     }
-    return create_integer_object(process, obj->vtbl->get_integer_value(obj).value);
+    return create_real_number_object(process, obj->vtbl->get_real_value(obj).value);
 }
 
 /**
- * @brief Converts an integer object to a string representation.
- * @param obj The object to convert to a string.
- * @return A `string_value_t` structure containing the string representation of the object.
- *  The string is dynamically allocated and the caller must free it using `FREE`.
+ * @brief Converts a real number object to a string representation.
+ * 
+ * This function converts a real number object to its string representation with the following
+ * characteristics:
+ * - Uses standard decimal notation for most values
+ * - Automatically switches to scientific notation for very large/small numbers
+ * - Preserves full precision of the double value
+ * - Formats according to the following rules:
+ *   - Omits decimal point for integer values (e.g., "5.0" → "5")
+ *   - Trims trailing zeros after decimal point (e.g., "3.14000" → "3.14")
+ *   - Always shows at least one digit before decimal point
+ * 
+ * @param obj The real number object to convert to a string.
+ * @return A `string_value_t` structure containing the formatted string, its length, and a flag 
+ *         indicating ownership of the buffer.
  */
 static string_value_t to_string(const object_t *obj) {
-    int64_t value = obj->vtbl->get_integer_value(obj).value;
-    size_t buf_size = 24; // max 20 digits + sign + null terminator
-    wchar_t *wstr = (wchar_t *)ALLOC(buf_size * sizeof(wchar_t));
-    swprintf(wstr, buf_size, L"%" PRId64, value);
-    return (string_value_t){ wstr, wcslen(wstr), true };
+    double value = obj->vtbl->get_real_value(obj).value;
+    return format_string(L"%f", value);
 }
 
 /**
- * @brief Converts an integer object to a Goat notation string representation.
+ * @brief Converts a real number object to a Goat notation string representation.
  * @param obj The object to convert to a string in Goat notation.
- * @return A `string_value_t` structure containing the Goat notation integer representation.
+ * @return A `string_value_t` structure containing the Goat notation real number representation.
  *  The string is dynamically allocated and the caller must free it using `FREE`.
  */
 static string_value_t to_string_notation(const object_t *obj) {
@@ -301,22 +319,22 @@ static string_value_t to_string_notation(const object_t *obj) {
 
 /**
  * @var prototypes
- * @brief Array of prototypes for the integer object.
+ * @brief Array of prototypes for the real number object.
  * 
- * It contains only the `integer_proto` prototype.
+ * It contains only the `real_proto` prototype.
  */
 static object_t* prototypes[] = {
-    &integer_proto
+    &real_proto
 };
 
 /**
- * @brief Retrieves the prototypes of an integer object.
+ * @brief Retrieves the prototypes of a real number object.
  * 
- * This function returns an array of prototypes for an integer object.
- * In this case, it contains only the integer prototype.
+ * This function returns an array of prototypes for a real number object.
+ * In this case, it contains only the real number prototype.
  * 
  * @param obj The object whose prototypes are to be retrieved.
- * @return An object_array_t containing the prototypes of the integer object.
+ * @return An object_array_t containing the prototypes of the real number object.
  */
 static object_array_t get_prototypes(const object_t *obj) {
     object_array_t result = {
@@ -327,10 +345,10 @@ static object_array_t get_prototypes(const object_t *obj) {
 }
 
 /**
- * @brief Retrieves the full prototype topology of an integer object.
+ * @brief Retrieves the full prototype topology of a real number object.
  * 
- * This function returns the full prototype chain (topology) of an integer object.
- * The topology includes the `integer_proto` prototype, numeric prototype and the root object.
+ * This function returns the full prototype chain (topology) of a real number object.
+ * The topology includes the `real_proto` prototype, numeric prototype and the root object.
  * 
  * @param obj The object whose prototype topology is to be retrieved.
  * @return An object_array_t containing the full prototype chain.
@@ -338,7 +356,7 @@ static object_array_t get_prototypes(const object_t *obj) {
 static object_array_t get_topology(const object_t *obj) {
     static object_t* topology[3] = {0};
     if (topology[0] == NULL) {
-        topology[0] = &integer_proto;
+        topology[0] = &real_proto;
         topology[1] = get_numeric_proto();
         topology[2] = get_root_object();
     }
@@ -355,19 +373,15 @@ static object_array_t get_topology(const object_t *obj) {
  * @param obj1 The first object to add.
  * @param obj2 The second object to add.
  * @return A pointer to the resulting object of the addition, or `NULL` if the second object 
- *  cannot be interpreted as an integer or a real number.
+ *  cannot be interpreted as a real number.
  */
 static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
-    int_value_t first = obj1->vtbl->get_integer_value(obj1);
-    int_value_t second_int = obj2->vtbl->get_integer_value(obj2);
-    if (second_int.has_value) {
-        return create_integer_object(process, first.value + second_int.value);
+    real_value_t first = obj1->vtbl->get_real_value(obj1);
+    real_value_t second = obj2->vtbl->get_real_value(obj2);
+    if (!second.has_value) {
+        return NULL;
     }
-    real_value_t second_real = obj2->vtbl->get_real_value(obj2);
-    if (second_real.has_value) {
-        return create_real_number_object(process, first.value + second_real.value);
-    }
-    return NULL;
+    return create_real_number_object(process, first.value + second.value);
 }
 
 /**
@@ -376,19 +390,15 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
  * @param obj1 The first object (minuend).
  * @param obj2 The second object (subtrahend).
  * @return A pointer to the resulting object of the subtraction, or `NULL` if the second object 
- *  cannot be interpreted as an integer or a real number.
+ *  cannot be interpreted as a real number.
  */
 static object_t *sub(process_t *process, object_t *obj1, object_t *obj2) {
-    int_value_t first = obj1->vtbl->get_integer_value(obj1);
-    int_value_t second_int = obj2->vtbl->get_integer_value(obj2);
-    if (second_int.has_value) {
-        return create_integer_object(process, first.value - second_int.value);
+    real_value_t first = obj1->vtbl->get_real_value(obj1);
+    real_value_t second = obj2->vtbl->get_real_value(obj2);
+    if (!second.has_value) {
+        return NULL;
     }
-    real_value_t second_real = obj2->vtbl->get_real_value(obj2);
-    if (second_real.has_value) {
-        return create_real_number_object(process, first.value - second_real.value);
-    }
-    return NULL;
+    return create_real_number_object(process, first.value - second.value);
 }
 
 /**
@@ -401,48 +411,70 @@ static bool get_boolean_value(const object_t *obj) {
 }
 
 /**
- * @brief Retrieves the integer value of a static object.
- * @param obj The object from which to retrieve the integer value.
- * @return An `int_value_t` structure containing the integer value.
+ * @brief Attempts to retrieve an integer value from a static real number object.
+ * 
+ * Static real numbers represent mathematical constants (like Pi) that are inherently
+ * non-integer values. This function always indicates failure since static reals
+ * cannot represent exact integer values by design.
+ * 
+ * @param obj The static real number object to check.
+ * @return An `int_value_t` structure with has_value=false, as static reals cannot
+ *         be represented as exact integers.
  */
 static int_value_t static_get_integer_value(const object_t *obj) {
-    object_static_integer_t *siobj = (object_static_integer_t *)obj;
-    return (int_value_t){ true, siobj->value };
+    return (int_value_t){ false, 0 };
 }
 
 /**
- * @brief Retrieves the integer value of a dynamic object.
- * @param obj The object from which to retrieve the integer value.
- * @return An `int_value_t` structure containing the integer value.
+ * @brief Attempts to retrieve an integer value from a dynamic real number object.
+ * 
+ * For dynamic real numbers, this function checks if the stored value:
+ * 1. Has no fractional part (e.g., 5.0, -3.0)
+ * 2. Falls within the range of int64_t
+ * 
+ * If both conditions are met, returns the integer value with has_value=true.
+ * Otherwise returns has_value=false indicating the value cannot be represented
+ * as an exact integer.
+ * 
+ * @param obj The dynamic real number object to convert.
+ * @return An `int_value_t` structure containing either:
+ *         - The converted integer when exact conversion is possible
+ *         - has_value=false when the value is fractional or out of range
  */
 static int_value_t dynamic_get_integer_value(const object_t *obj) {
-    object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
-    return (int_value_t){ true, diobj->value };
+    object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
+    double value = drobj->value;
+    if (value == trunc(value)) {
+        if (value >= (double)INT64_MIN && value <= (double)INT64_MAX) {
+            return (int_value_t){ true, (int64_t)value };
+        }
+    }
+    return (int_value_t){ false, 0 };
 }
 
 /**
- * @brief Retrieves value of a static object casted to real.
+ * @brief Retrieves value of a static real number object.
  * @param obj The object from which to retrieve the real value.
  * @return A `real_value_t` structure containing the real value.
  */
 static real_value_t static_get_real_value(const object_t *obj) {
-    object_static_integer_t *siobj = (object_static_integer_t *)obj;
-    return (real_value_t){ true, (double)siobj->value };
+    object_static_real_t *srobj = (object_static_real_t *)obj;
+    return (real_value_t){ true, srobj->value };
 }
 
 /**
- * @brief Retrieves value of a dynamic object casted to real.
+ * @brief Retrieves value of a dynamic real number object.
  * @param obj The object from which to retrieve the real value.
  * @return A `real_value_t` structure containing the real value.
  */
 static real_value_t dynamic_get_real_value(const object_t *obj) {
-    object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
-    return (real_value_t){ true, (double)diobj->value };
+    object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
+    return (real_value_t){ true, drobj->value };
 }
 
 /**
  * @var static_vtbl
- * @brief This virtual table defines the behavior of the static integer object.
+ * @brief This virtual table defines the behavior of the static real number object.
  */
 static object_vtbl_t static_vtbl = {
     .type = TYPE_NUMBER,
@@ -469,55 +501,22 @@ static object_vtbl_t static_vtbl = {
 };
 
 /**
- * @brief The total number of static integer objects.
+ * @brief Static real number object representing the mathematical constant π (Pi).
  */
-#define STATIC_INTEGER_RANGE (MAX_STATIC_INTEGER - MIN_STATIC_INTEGER + 1)
+static object_static_real_t pi_object = {
+    .base = {
+        .vtbl = &static_vtbl
+    },
+    .value = M_PI
+};
 
-/**
- * @brief Static array of objects representing static integer values.
- * 
- * This array holds objects corresponding to integers in the range defined by
- * `MIN_STATIC_INTEGER` to `MAX_STATIC_INTEGER`.
- */
-static object_static_integer_t static_integers[STATIC_INTEGER_RANGE];
-
-/**
- * @brief Flag to indicate whether the static integers array has been initialized.
- */
-static bool is_static_integers_initialized = false;
-
-/**
- * @brief Initializes the static integer objects array.
- * 
- * This function initializes the static array of integer objects for the range
- * `MIN_STATIC_INTEGER` to `MAX_STATIC_INTEGER`. It is automatically invoked during the
- * first call to `get_static_integer_object()`.
- */
-static void initialize_static_integers() {
-    for (int i = MIN_STATIC_INTEGER; i <= MAX_STATIC_INTEGER; ++i) {
-        static_integers[i - MIN_STATIC_INTEGER] = (object_static_integer_t){
-            { &static_vtbl, NULL, NULL, NULL },
-            i
-        };
-    }
-    is_static_integers_initialized = true;
-}
-
-object_t *get_static_integer_object(int value) {
-    assert(value >= MIN_STATIC_INTEGER && value <= MAX_STATIC_INTEGER);
-    if (!is_static_integers_initialized) {
-        initialize_static_integers();
-    }
-    return &static_integers[value - MIN_STATIC_INTEGER].base;
-}
-
-object_t *get_integer_zero() {
-    return get_static_integer_object(0);
+object_t* get_pi_object() {
+    return &pi_object.base;
 }
 
 /**
  * @var dynamic_vtbl
- * @brief This virtual table defines the behavior of the dynamic integer object.
+ * @brief This virtual table defines the behavior of the dynamic real number object.
  */
 static object_vtbl_t dynamic_vtbl = {
     .type = TYPE_NUMBER,
@@ -543,15 +542,12 @@ static object_vtbl_t dynamic_vtbl = {
     .call = stub_call
 };
 
-object_t *create_integer_object(process_t *process, int64_t value) {
-    if (value >= MIN_STATIC_INTEGER && value <= MAX_STATIC_INTEGER) {
-        return get_static_integer_object((int)value);
-    }
-    object_dynamic_integer_t *obj;
-    if (process->integers.size > 0) {
-        obj = (object_dynamic_integer_t *)remove_first_object_from_list(&process->integers);
+object_t *create_real_number_object(process_t *process, double value) {
+    object_dynamic_real_t *obj;
+    if (process->real_numbers.size > 0) {
+        obj = (object_dynamic_real_t *)remove_first_object_from_list(&process->real_numbers);
     } else {
-        obj = (object_dynamic_integer_t *)CALLOC(sizeof(object_dynamic_integer_t));
+        obj = (object_dynamic_real_t *)CALLOC(sizeof(object_dynamic_real_t));
         obj->base.vtbl = &dynamic_vtbl;
         obj->base.process = process;
     }

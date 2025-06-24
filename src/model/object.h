@@ -535,6 +535,12 @@ object_t *get_numeric_proto();
 object_t *get_integer_proto();
 
 /**
+ * @brief Retrieves the real number prototype object.
+ * @return A pointer to the real number prototype object.
+ */
+object_t *get_real_proto();
+
+/**
  * @brief Retrieves a static integer object.
  * 
  * This function returns a pointer to the static object representing the specified integer value.
@@ -567,6 +573,23 @@ object_t *get_integer_zero();
  * @return A pointer to the object representing the integer value.
  */
 object_t *create_integer_object(process_t *process, int64_t value);
+
+/**
+ * @brief Gets the singleton instance of the Pi constant object.
+ * @return A pointer to the static object representing Pi.
+ */
+object_t *get_pi_object();
+
+/**
+ * @brief Creates a real number object.
+ * 
+ * This function creates a new dynamic real number object for the given value.
+ * 
+ * @param process The process that will own the real number object.
+ * @param value The double-precision floating-point value to represent.
+ * @return A pointer to the newly created object representing the real number.
+ */
+object_t *create_real_number_object(process_t *process, double value);
 
 /**
  * @brief Retrieves the string prototype object.
