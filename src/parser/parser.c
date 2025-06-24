@@ -34,6 +34,12 @@ compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
     parser_memory_t *memory);
 
 /**
+ * @brief Rule for handling single (isolated) identifiers as variables.
+ */
+compilation_error_t *parsing_single_identifiers(token_t *identifier,
+    parser_memory_t *memory);
+
+/**
  * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into
  *  a special token.
  * 
@@ -253,18 +259,38 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
     return result;
 }
 
+/**
+ * @brief Applies a reduction rule forward and checks for critical errors
+ * @param group_name Group name
+ * @param rule_func Function implementing the reduction rule
+ */
+#define APPLY_FORWARD(group_name, rule_func) \
+    do { \
+        error = apply_reduction_rule_forward(&groups->group_name, rule_func, memory, error); \
+        if (error != NULL && error->critical) { \
+            return error; \
+        } \
+    } while(0)
+
+/**
+ * @brief Applies a reduction rule backward and checks for critical errors  
+ * @param group_name Group name
+ * @param rule_func Function implementing the reduction rule
+ */
+#define APPLY_BACKWARD(group_name, rule_func) \
+    do { \
+        error = apply_reduction_rule_backward(&groups->group_name, rule_func, memory, error); \
+        if (error != NULL && error->critical) { \
+            return error; \
+        } \
+    } while(0)
+
+
 compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory) {
     compilation_error_t *error = NULL;
-    error = apply_reduction_rule_forward(&groups->additive_operators, parsing_additive_operators,
-        memory, error);
-    if (error != NULL && error->critical) {
-        return error;
-    }
-    error = apply_reduction_rule_forward(&groups->identifiers, parsing_identifier_and_parentheses,
-        memory, error);
-    if (error != NULL && error->critical) {
-        return error;
-    }
+    APPLY_FORWARD(identifiers, parsing_single_identifiers);
+    APPLY_FORWARD(additive_operators, parsing_additive_operators);
+    APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
     // add other rules...
     return error;
 }

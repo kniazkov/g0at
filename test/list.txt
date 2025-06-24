@@ -7,3 +7,4 @@ string_concatenation
 long_integer
 addition_and_subtraction_of_integers
 null
+pi

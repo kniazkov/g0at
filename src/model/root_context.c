@@ -50,6 +50,7 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
     if (key->vtbl->type == TYPE_STRING) {
         string_value_t key_str = key->vtbl->to_string(key);
         static pair_t properties[] = { 
+            { L"pi", get_pi_object },
             { L"print", get_function_print },
             { L"sign", get_function_sign }
             // ... add other properties later
