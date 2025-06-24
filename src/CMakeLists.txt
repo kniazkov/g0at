@@ -24,11 +24,11 @@ message(STATUS "Found core sources: ${core_sources}")
 file(GLOB goat_exe main.c)
 message(STATUS "Found interpreter sources: ${goat_exe}")
 add_executable(goat ${goat_exe})
-target_link_libraries (goat core pthread)
+target_link_libraries (goat core pthread m)
 
 file(GLOB unit_testing_exe unit_testing.c test/*.c)
 message(STATUS "Found unit testing sources: ${unit_testing_exe}")
 add_executable(unit_testing ${unit_testing_exe})
-target_link_libraries (unit_testing core pthread)
+target_link_libraries (unit_testing core pthread m)
 
 add_definitions(-DMEMORY_DEBUG)
