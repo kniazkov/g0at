@@ -4,6 +4,7 @@
  * @brief Main entry point of the Goat interpreter.
  */
 
+#include "lib/allocate.h"
 #include "lib/io.h"
 #include "resources/messages.h"
 #include "cli/launcher.h"
@@ -38,6 +39,7 @@ int main(int argc, char** argv) {
     int ret_val = go(opt);
 
     destroy_options(opt);
+    print_list_of_memory_blocks();
 
     return ret_val;
 }
