@@ -234,8 +234,8 @@ static void release(object_t *obj) {
  */
 static void copy_child_pair(void *data, void *key, value_t value) {
     object_user_defined_t *copy = (object_user_defined_t *)data;
-    INCREF((object_t *)key);
-    INCREF((object_t *)value.ptr);
+    INCREF(key);
+    INCREF(value.ptr);
     append_to_vector(copy->keys, key);
     set_in_avl_tree(copy->properties, key, value);
 }

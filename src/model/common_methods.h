@@ -100,6 +100,21 @@ object_array_t common_get_prototypes(const object_t *obj);
 object_array_t common_get_topology(const object_t *obj);
 
 /**
+ * @brief Stub for adding a property to an immutable object.
+ * 
+ * This function attempts to add a property to an immutable object, such as a singleton.
+ * Since immutable objects cannot have new properties added or existing ones modified,
+ * the function always fails and returns `false`, regardless of the `constant` parameter.
+ * 
+ * @param obj The immutable object on which the property addition was attempted.
+ * @param key The key of the property to add.
+ * @param value The value to assign to the property.
+ * @param constant Whether the property should be constant (ignored for immutable objects).
+ * @return Always returns `false`, indicating that the operation is not supported.
+ */
+bool add_property_on_immutable(object_t *obj, object_t *key, object_t *value, bool constant);
+
+/**
  * @brief Stub for setting a property on an immutable object.
  * 
  * This function attempts to set a property on an immutable object, such as a singleton. 

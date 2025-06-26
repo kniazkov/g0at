@@ -76,6 +76,10 @@ object_array_t common_get_topology(const object_t *obj) {
     return common_get_prototypes(obj);
 }
 
+bool add_property_on_immutable(object_t *obj, object_t *key, object_t *value, bool constant) {
+    return false;
+}
+
 bool set_property_on_immutable(object_t *obj, object_t *key, object_t *value) {
     return false;
 }

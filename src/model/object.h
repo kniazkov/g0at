@@ -294,12 +294,30 @@ typedef struct {
     object_t* (*get_property)(const object_t *obj, const object_t *key);
 
     /**
+     * @brief Adds a new property to an object.
+     * 
+     * This function adds a new property to the object with the given key and value.
+     * The property can be marked as constant, which means it cannot be modified
+     * once set. 
+     * 
+     * @param obj The object to which the property will be added.
+     * @param key The key of the property to add.
+     * @param value The value to assign to the property.
+     * @param constant If `true`, the property will be marked as constant and
+     *        cannot be modified after creation.
+     * @return `true` if the property was successfully added, `false` if the
+     *         property already exists as a constant or couldn't be added for
+     *         other reasons.
+     */
+    bool (*add_property)(object_t *obj, object_t *key, object_t *value, bool constant);
+
+    /**
      * @brief Sets a property on an object.
      * 
      * This function sets the value of a property for a given object. The property is 
      * associated with a key (which can be any object, though typically a string).
-     * If the property cannot be set (e.g., due to constraints on the object), 
-     * the function returns `false`. Otherwise, it returns `true`.
+     * If the property is marked as constant or cannot be set (e.g., due to constraints 
+     * on the object), the function returns `false`. Otherwise, it returns `true`.
      * 
      * @param obj The object on which to set the property.
      * @param key The key of the property to set.
@@ -443,7 +461,7 @@ struct object_t {
  * 
  * @param obj The object whose reference count is to be incremented.
  */
-#define INCREF(obj)  ((obj)->vtbl->inc_ref(obj))
+#define INCREF(obj)  (((object_t*)(obj))->vtbl->inc_ref((object_t*)(obj)))
 
 /**
  * @brief Macro to decrement the reference count of an object.
@@ -454,7 +472,7 @@ struct object_t {
  * 
  * @param obj The object whose reference count is to be decremented.
  */
-#define DECREF(obj)  ((obj)->vtbl->dec_ref(obj))
+#define DECREF(obj)  (((object_t*)(obj))->vtbl->dec_ref((object_t*)(obj)))
 
 /**
  * @brief Macro to conditionally decrement the reference count of an object.
@@ -465,7 +483,7 @@ struct object_t {
  * 
  * @param obj The object whose reference count is to be decremented if not NULL.
  */
-#define DECREFIF(obj)  if ((obj) != NULL) { (obj)->vtbl->dec_ref(obj); }
+#define DECREFIF(obj)  if ((obj) != NULL) { ((object_t*)(obj))->vtbl->dec_ref((object_t*)(obj)); }
 
 /**
  * @typedef static_object_getter_t
