@@ -72,6 +72,22 @@ typedef struct {
 } object_user_defined_t;
 
 /**
+ * @struct property_value_t
+ * @brief The value of the object property, namely some other object and flags.
+ */
+typedef struct {
+    /**
+     * @brief Object which is the value of the property.
+     */
+    object_t *object;
+
+    /**
+     * @brief Flag indicating that the property value is constant (immutable).
+     */
+    bool is_constant;
+} property_value_t;
+
+/**
  * @brief Creates an empty user-defined object.
  * 
  * This function initializes an empty user-defined object. If there are recycled objects 
@@ -99,8 +115,10 @@ static object_user_defined_t *create_empty_user_defined_object(process_t* proces
  * @param value The value of the key-value pair, stored as a `value_t` type.
  */
 static void clear_child_pair(void *unused, void *key, value_t value) {
-    DECREF((object_t *)key);
-    DECREF((object_t *)value.ptr);
+    DECREF(key);
+    property_value_t *ref = (property_value_t *)value.ptr;
+    DECREF(ref->object);
+    FREE(ref);
 }
 
 /**
@@ -172,9 +190,9 @@ static void dec_ref(object_t *obj) {
  */
 static void mark_child_pair(void *unused, void *key, value_t value) {
     object_t *key_obj = (object_t *)key;
-    object_t *value_obj = (object_t *)value.ptr;
+    property_value_t *ref = (property_value_t *)value.ptr;
     key_obj->vtbl->mark(key_obj);
-    value_obj->vtbl->mark(value_obj);
+    ref->object->vtbl->mark(ref->object);
 }
 
 /**
@@ -205,6 +223,21 @@ static void sweep(object_t *obj) {
 }
 
 /**
+ * @brief Clearing the memory occupied by properties.
+ * 
+ * This function is called for each key-value pair in the AVL tree of a user-defined object. 
+ * The memory occupied by the value is cleared.
+ * 
+ * @param unused Unused parameter, included for compatibility with the AVL tree traversal function.
+ * @param key The key of the key-value pair, cast to an object.
+ * @param value The value of the key-value pair, stored as a `value_t` type.
+ */
+static void clear_properties(void *unused, void *key, value_t value) {
+    property_value_t *ref = (property_value_t *)value.ptr;
+    FREE(ref);
+}
+
+/**
  * @brief Releases a user-defined object.
  * @param obj The object to release.
  */
@@ -216,6 +249,7 @@ static void release(object_t *obj) {
     destroy_vector(uobj->proto);
     destroy_vector(uobj->topology);
     destroy_vector(uobj->keys);
+    avl_tree_for_each(uobj->properties, clear_properties, NULL);
     destroy_avl_tree(uobj->properties);
     FREE(obj);
 }
@@ -234,10 +268,13 @@ static void release(object_t *obj) {
  */
 static void copy_child_pair(void *data, void *key, value_t value) {
     object_user_defined_t *copy = (object_user_defined_t *)data;
+    property_value_t *ref = (property_value_t *)value.ptr;
     INCREF(key);
-    INCREF(value.ptr);
+    INCREF(ref->object);
     append_to_vector(copy->keys, key);
-    set_in_avl_tree(copy->properties, key, value);
+    property_value_t *copy_ref = (property_value_t *)ALLOC(sizeof(property_value_t));
+    memcpy(copy_ref, ref, sizeof(property_value_t));
+    set_in_avl_tree(copy->properties, key, (value_t){ .ptr = copy_ref });
 }
 
 /**
@@ -281,14 +318,14 @@ static void child_pair_to_string(void *data, void *key, value_t value) {
         append_char(builder, ';');
     }
     object_t *key_obj = (object_t *)key;
+    property_value_t *ref = (property_value_t *)value.ptr;
     string_value_t key_str = key_obj->vtbl->to_string_notation(key_obj);
     append_substring(builder, key_str.data, key_str.length);
     if (key_str.should_free) {
         FREE(key_str.data);
     }
     append_char(builder, '=');
-    object_t *value_obj = (object_t *)value.ptr;
-    string_value_t value_str = value_obj->vtbl->to_string_notation(value_obj);
+    string_value_t value_str = ref->object->vtbl->to_string_notation(ref->object);
     append_substring(builder, value_str.data, value_str.length);
     if (value_str.should_free) {
         FREE(value_str.data);
@@ -379,7 +416,8 @@ static object_array_t get_keys(const object_t *obj) {
  */
 static object_t *get_property(const object_t *obj, const object_t *key) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    return get_from_avl_tree(uobj->properties, key).ptr;
+    property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
+    return ref ? ref->object : NULL;
 }
 
 /**
@@ -398,12 +436,20 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
 static bool set_property(object_t *obj, object_t *key, object_t *value) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     INCREF(value);
-    value_t old_value = set_in_avl_tree(uobj->properties, key, (value_t){ .ptr = value });
-    if (old_value.ptr) {
-        DECREF((object_t *)old_value.ptr);
+    property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
+    if (ref) {
+        if (ref->is_constant) {
+            return false;
+        }
+        DECREF(ref->object);
+        ref->object = value;
     } else {
         INCREF(key);
         append_to_vector(uobj->keys, key);
+        ref = (property_value_t*)ALLOC(sizeof(property_value_t));
+        ref->object = value;
+        ref->is_constant = false;
+        set_in_avl_tree(uobj->properties, key, (value_t){ .ptr = ref });
     }
     return true;
 }
