@@ -421,6 +421,36 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
 }
 
 /**
+ * @brief Adds a new property to a user-defined object.
+ * 
+ * This function adds a new property to a user-defined object with the specified key and value.
+ * The property can be marked as constant (immutable). If a property with the same key already
+ * exists, the function will fail.
+ * 
+ * @param obj The user-defined object to which the property is being set.
+ * @param key The key for the property.
+ * @param value The value to associate with the key.
+ * @param constant If `true`, marks the property as immutable (cannot be modified later).
+ * @return `true` if the property was successfully added, `false` if a property with this key
+ *         already exists or if parameters are invalid.
+ */
+static bool add_property(object_t *obj, object_t *key, object_t *value, bool constant) {
+    object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
+    if (ref) {
+        return false;
+    }
+    INCREF(key);
+    INCREF(value);
+    append_to_vector(uobj->keys, key);
+    ref = (property_value_t*)ALLOC(sizeof(property_value_t));
+    ref->object = value;
+    ref->is_constant = constant;
+    set_in_avl_tree(uobj->properties, key, (value_t){ .ptr = ref });
+    return true;
+}
+
+/**
  * @brief Sets a property value in a user-defined object.
  * 
  * This function adds or updates a property in the `children` collection of the user-defined
@@ -431,11 +461,11 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
  * @param obj The user-defined object to which the property is being set.
  * @param key The key for the property.
  * @param value The value to associate with the key.
- * @return Always returns true, as the property is successfully set or updated.
+ * @return `true` if the property was successfully set, `false` if a property with this key
+ *         already exists and it is immutable.
  */
 static bool set_property(object_t *obj, object_t *key, object_t *value) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    INCREF(value);
     property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
     if (ref) {
         if (ref->is_constant) {
@@ -451,6 +481,7 @@ static bool set_property(object_t *obj, object_t *key, object_t *value) {
         ref->is_constant = false;
         set_in_avl_tree(uobj->properties, key, (value_t){ .ptr = ref });
     }
+    INCREF(value);
     return true;
 }
 
@@ -510,6 +541,7 @@ static object_vtbl_t vtbl = {
     .get_topology = get_topology,
     .get_keys = get_keys,
     .get_property = get_property,
+    .add_property = add_property,
     .set_property = set_property,
     .add = add,
     .sub = sub,
