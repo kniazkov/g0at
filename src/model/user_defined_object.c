@@ -431,14 +431,13 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
  * @param key The key for the property.
  * @param value The value to associate with the key.
  * @param constant If `true`, marks the property as immutable (cannot be modified later).
- * @return `true` if the property was successfully added, `false` if a property with this key
- *         already exists or if parameters are invalid.
+ * @return Status of the operation performed.
  */
-static bool add_property(object_t *obj, object_t *key, object_t *value, bool constant) {
+static model_status_t add_property(object_t *obj, object_t *key, object_t *value, bool constant) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
     if (ref) {
-        return false;
+        return MSTAT_PROPERTY_ALREADY_EXISTS;
     }
     INCREF(key);
     INCREF(value);
@@ -447,42 +446,33 @@ static bool add_property(object_t *obj, object_t *key, object_t *value, bool con
     ref->object = value;
     ref->is_constant = constant;
     set_in_avl_tree(uobj->properties, key, (value_t){ .ptr = ref });
-    return true;
+    return MSTAT_OK;
 }
 
 /**
  * @brief Sets a property value in a user-defined object.
  * 
- * This function adds or updates a property in the `children` collection of the user-defined
- * object. If the key already exists, its value is updated. If the key does not exist, a new
- * key-value pair is added. The reference count of the value is incremented and the count of the
- * previous value (if any) is decremented. 
+ * This function modifies an existing property's value in a user-defined object. 
+ * The operation will fail if the property doesn't exist or is marked as constant.
  * 
  * @param obj The user-defined object to which the property is being set.
  * @param key The key for the property.
  * @param value The value to associate with the key.
- * @return `true` if the property was successfully set, `false` if a property with this key
- *         already exists and it is immutable.
+ * @return Status of the operation performed.
  */
-static bool set_property(object_t *obj, object_t *key, object_t *value) {
+static model_status_t set_property(object_t *obj, object_t *key, object_t *value) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
-    if (ref) {
-        if (ref->is_constant) {
-            return false;
-        }
-        DECREF(ref->object);
-        ref->object = value;
-    } else {
-        INCREF(key);
-        append_to_vector(uobj->keys, key);
-        ref = (property_value_t*)ALLOC(sizeof(property_value_t));
-        ref->object = value;
-        ref->is_constant = false;
-        set_in_avl_tree(uobj->properties, key, (value_t){ .ptr = ref });
+    if (!ref) {
+        return MSTAT_PROPERTY_NOT_FOUND;
     }
+    if (ref->is_constant) {
+        return MSTAT_PROPERTY_IS_CONSTANT;
+    }
+    DECREF(ref->object);
+    ref->object = value;
     INCREF(value);
-    return true;
+    return MSTAT_OK;
 }
 
 /**

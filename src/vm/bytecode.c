@@ -43,7 +43,9 @@ static instruction_descriptor_t descriptors[] =
     , { .code = L"ILOAD64", .arg_1_is_unsigned_integer = true }
     , { .code = L"SLOAD", .arg_1_is_string = true }
     , { .code = L"VLOAD", .arg_1_is_string = true }
-    , { .code = L"STORE" }
+    , { .code = L"VAR", .arg_1_is_string = true }
+    , { .code = L"CONST", .arg_1_is_string = true }
+    , { .code = L"STORE", .arg_1_is_string = true }
     , { .code = L"ADD" }
     , { .code = L"SUB" }
     , { .code = L"CALL", .has_arg_0 = true }

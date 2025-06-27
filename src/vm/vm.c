@@ -4,6 +4,7 @@
  * @brief Goat virtual machine.
  */
 
+#include <assert.h>
 #include <stdbool.h>
 
 #include "vm.h"
@@ -289,18 +290,90 @@ static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
 }
 
 /**
- * @brief Executes the STORE opcode to store a value in the current context.
- * 
- * The `STORE` opcode stores a value from the stack into the current context's data object,
- * associating it with the property identified by `string_id`. The value is popped from the stack,
- * and the property is set in the context's data object. If the stack is empty or the property
- * cannot be set, the operation will fail.
- * 
+ * @brief Executes the VAR opcode to declare a mutable variable in current context.
+ *
+ * The `VAR` opcode declares a new mutable variable in the current execution context.
+ * It pops the initial value from the stack and associates it with the variable name.
+ * The operation will fail if:
+ * - The string_id is invalid (bytecode corruption)
+ * - The stack is empty
+ * - A variable or constant with this name already exists in current context
+ *
  * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return `true` if the value was successfully stored in the context, `false` if there
- *  is an error (e.g., empty stack or bytecode corruption).
+ * @param instr The instruction containing the string_id argument.
+ * @param thread The thread executing the instruction.
+ * @return `true` if variable was successfully declared, `false` on any error.
+ */
+static bool exec_VAR(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    uint32_t string_id = instr.arg1;
+    if (string_id >= runtime->code->data_descriptor_count) {
+        return false; // bad bytecode
+    }
+    object_t *key = load_string(runtime, thread->process, string_id);
+    object_t *value = pop_object_from_stack(thread->data_stack);
+    if (value == NULL) {
+        return false; // empty stack
+    }
+    model_status_t result = thread->context->data->vtbl->add_property(thread->context->data,
+            key, value, false);
+    if (result != MSTAT_OK) {
+        return false; // already exists
+    }
+    DECREF(value);
+    thread->instr_id++;
+    return true;
+}
+
+/**
+ * @brief Executes the CONST opcode to declare an immutable constant in current context.
+ *
+ * The `CONST` opcode declares a new immutable constant in the current execution context.
+ * It pops the initial value from the stack and associates it with the constant name.
+ * The operation will fail if:
+ * - The string_id is invalid (bytecode corruption)
+ * - The stack is empty
+ * - A variable or constant with this name already exists in current context
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction containing the string_id argument.
+ * @param thread The thread executing the instruction.
+ * @return `true` if variable was successfully declared, `false` on any error.
+ */
+static bool exec_CONST(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    uint32_t string_id = instr.arg1;
+    if (string_id >= runtime->code->data_descriptor_count) {
+        return false; // bad bytecode
+    }
+    object_t *key = load_string(runtime, thread->process, string_id);
+    object_t *value = pop_object_from_stack(thread->data_stack);
+    if (value == NULL) {
+        return false; // empty stack
+    }
+    model_status_t result = thread->context->data->vtbl->add_property(thread->context->data,
+            key, value, true);
+    if (result != MSTAT_OK) {
+        return false; // already exists
+    }
+    DECREF(value);
+    thread->instr_id++;
+    return true;
+}
+
+/**
+ * @brief Executes the STORE opcode to update a variable value.
+ *
+ * The `STORE` opcode updates an existing variable's value by searching through:
+ * 1. Current context's variables
+ * 2. Prototype chain (parent contexts)
+ * If the variable is not found, it creates a new mutable variable in current context.
+ * The operation will fail if:
+ * - The string_id is invalid
+ * - The stack is empty
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction containing the string_id argument.
+ * @param thread The thread executing the instruction.
+ * @return `true` if variable was successfully declared, `false` on any error.
  */
 static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
@@ -312,7 +385,31 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     if (value == NULL) {
         return false; // empty stack
     }
-    thread->context->data->vtbl->set_property(thread->context->data, key, value);
+    object_t *context = thread->context->data;
+    bool was_changes = false;
+    model_status_t result = context->vtbl->set_property(context, key, value);
+    assert(result != MSTAT_IMMUTABLE_OBJECT);
+    if (result == MSTAT_PROPERTY_NOT_FOUND) {
+        object_array_t proto = context->vtbl->get_topology(context);
+        size_t index = 0;
+        do {
+            result = proto.items[index]->vtbl->set_property(proto.items[index], key, value);
+            if (result == MSTAT_IMMUTABLE_OBJECT) {
+                break;
+            }
+            if (result == MSTAT_OK) {
+                was_changes = true;
+                break;
+            }
+            index++;
+        } while (index < proto.size);
+    }
+    if (!was_changes) {
+        result = context->vtbl->add_property(context, key, value, false);
+        if (result != MSTAT_OK) {
+            return false;
+        }
+    }
     DECREF(value);
     thread->instr_id++;
     return true;
@@ -432,7 +529,9 @@ static instr_executor_t executors[] = {
     exec_ILOAD64, /**< Pushes a 64-bit integer onto the data stack. */
     exec_SLOAD,   /**< Pushes a static string onto the data stack. */
     exec_VLOAD,   /**< Loads a variable value onto the data stack or `null` if undefined. */
-    exec_STORE,   /**< Stores a value from the data stack into the current context. */
+    exec_VAR,     /**< Declares a new mutable variable in current context. */
+    exec_CONST,   /**< Declares a new immutable constant in current context. */
+    exec_STORE,   /**< Stores to existing variable or creates new if not found. */
     exec_ADD,     /**< Adds the top two objects of the stack. */
     exec_SUB,     /**< Subtracts the top two objects of the stack. */
     exec_CALL     /**< Calls a function with arguments from the data stack. */
