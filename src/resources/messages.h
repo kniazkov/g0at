@@ -39,6 +39,7 @@ typedef struct {
     const wchar_t const *brackets_do_not_match;
     const wchar_t const *not_a_statement;
     const wchar_t const *expected_expression;
+    const wchar_t const *expected_lvalue;
     // add other
 } messages_t;
 

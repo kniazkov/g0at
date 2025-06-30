@@ -28,6 +28,12 @@
 compilation_error_t *parsing_additive_operators(token_t *operator, parser_memory_t *memory);
 
 /**
+ * @brief Rule for handling an assignment operator, with assignable expression on the left side
+ *  and expression on the right side.
+ */
+compilation_error_t *parsing_assignment_operators(token_t *operator, parser_memory_t *memory);
+
+/**
  * @brief Rule for handling an identifier followed by parentheses (function call).
  */
 compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
@@ -147,7 +153,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
  * @note If a critical error is encountered, the function stops processing immediately and 
  *  returns the updated error list.
  */
-static compilation_error_t * apply_reduction_rule_forward(token_list_t *list, reduce_rule_t rule,
+static compilation_error_t *apply_reduction_rule_forward(token_list_t *list, reduce_rule_t rule,
         parser_memory_t *memory, compilation_error_t *error) {
     token_t *token = list->first;
     while (token != NULL) {
@@ -190,7 +196,7 @@ static compilation_error_t * apply_reduction_rule_forward(token_list_t *list, re
  * @note Memory for error structures is allocated from the same arena as tokens (`memory->tokens`), 
  *  ensuring centralized memory management.
  */
-static void apply_reduction_rule_backward(token_list_t *list, reduce_rule_t rule,
+static compilation_error_t *apply_reduction_rule_backward(token_list_t *list, reduce_rule_t rule,
         parser_memory_t *memory, compilation_error_t *error) {
     token_t *token = list->last;
     while (token != NULL) {
@@ -205,6 +211,7 @@ static void apply_reduction_rule_backward(token_list_t *list, reduce_rule_t rule
         }
         token = previous;
     }
+    return error;
 }
 
 compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens) {
@@ -291,6 +298,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_FORWARD(identifiers, parsing_single_identifiers);
     APPLY_FORWARD(additive_operators, parsing_additive_operators);
     APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
+    APPLY_BACKWARD(assignment_operators, parsing_assignment_operators);
     // add other rules...
     return error;
 }

@@ -8,3 +8,5 @@ long_integer
 addition_and_subtraction_of_integers
 null
 pi
+simple_assignment
+chain_assignment

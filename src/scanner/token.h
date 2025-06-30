@@ -219,6 +219,11 @@ typedef struct {
      * @brief Group for multiplicative operators ("multiply", "divide", and "modulus").
      */
     token_list_t multiplicative_operators;
+
+    /**
+     * @brief Group for assignment operators.
+     */
+    token_list_t assignment_operators;
 } token_groups_t;
 
 /**

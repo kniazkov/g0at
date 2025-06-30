@@ -381,7 +381,7 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
         return false; // bad bytecode
     }
     object_t *key = load_string(runtime, thread->process, string_id);
-    object_t *value = pop_object_from_stack(thread->data_stack);
+    object_t *value = peek_object_from_stack(thread->data_stack, 0);
     if (value == NULL) {
         return false; // empty stack
     }
@@ -410,7 +410,6 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
             return false;
         }
     }
-    DECREF(value);
     thread->instr_id++;
     return true;
 }

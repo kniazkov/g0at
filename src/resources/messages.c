@@ -41,6 +41,7 @@ static messages_t english = {
     .brackets_do_not_match = L"Closing bracket '%c' does not match the opening bracket '%c'",
     .not_a_statement = L"Token '%s' is not a statement allowed here",
     .expected_expression = L"Unexpected token '%s', expression expected at this position",
+    .expected_lvalue = L"Left-hand side expression expected, got '%s' instead",
 };
 
 /**
@@ -69,6 +70,7 @@ static messages_t russian = {
     .brackets_do_not_match = L"Закрывающая скобка '%c' не соответствует открывающей '%c'",
     .not_a_statement = L"Токен '%s' здесь недопустим, ожидается инструкция языка",
     .expected_expression = L"Токен '%s' здесь недопустим, в этом месте ожидается выражение",
+    .expected_lvalue = L"Ожидается левостороннее выражение, но получено '%s'",
 };
 
 /**

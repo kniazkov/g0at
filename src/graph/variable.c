@@ -83,6 +83,24 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
 }
 
 /**
+ * @brief Generates bytecode for storing a value into a variable.
+ * 
+ * This function implements the assignment operation for variable nodes by:
+ * 1. Adding the variable's name to the data segment (if not already present)
+ * 2. Generating a STORE instruction with the variable's data segment index
+ * 
+ * @param node A pointer to the variable node (must be of variable type)
+ * @param code Code builder for instruction generation
+ * @param data Data builder for string management
+ */
+static void generate_bytecode_assign(const node_t *node, code_builder_t *code,
+        data_builder_t *data) {
+    const variable_t *expr = (const variable_t *)node;
+    uint32_t index = add_string_to_data_segment_ex(data, expr->name, expr->name_length);
+    add_instruction(code, (instruction_t){ .opcode = STORE, .arg1 = index });
+}
+
+/**
  * @brief Virtual table for variable expressions.
  * 
  * This virtual table provides the implementation of operations specific to variable expressions.
@@ -92,13 +110,15 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
 static node_vtbl_t variable_vtbl = {
     .type = NODE_VARIABLE,
     .type_name = L"variable",
+    .is_assignable_expression = true,
     .get_data = get_data,
     .get_child_count = no_children,
     .get_child = no_child,
     .get_child_tag = no_tags,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = stub_indented_goat_code_generator,
-    .generate_bytecode = generate_bytecode
+    .generate_bytecode = generate_bytecode,
+    .generate_bytecode_assign = generate_bytecode_assign
 };
 
 expression_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length) {

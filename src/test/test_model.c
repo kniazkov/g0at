@@ -205,6 +205,7 @@ bool test_store_and_load() {
     code_builder_t *code_bulder = create_code_builder();
     add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 1024 });
     add_instruction(code_bulder, (instruction_t){ .opcode = STORE, .arg1 = name_idx });
+    add_instruction(code_bulder, (instruction_t){ .opcode = POP });
     add_instruction(code_bulder, (instruction_t){ .opcode = VLOAD, .arg1 = name_idx });
     add_instruction(code_bulder, (instruction_t){ .opcode = END } );
     bytecode_t *code = link_code_and_data(code_bulder, data_builder);

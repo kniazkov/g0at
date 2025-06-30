@@ -356,6 +356,9 @@ token_t *get_token(scanner_t *scan) {
                 else if (token->text[0] == '*' || token->text[0] == '/' || token->text[0] == '%') {
                     append_token_to_group(&scan->groups->multiplicative_operators, token);
                 }
+                else if (token->text[0] == '=') {
+                    append_token_to_group(&scan->groups->assignment_operators, token);
+                }
             }
         }
     } else if (token->length == 0) {

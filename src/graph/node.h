@@ -118,6 +118,14 @@ typedef enum {
     NODE_FUNCTION_CALL,
 
     /**
+     * @brief Simple assignment operation node type.
+     * 
+     * This node type represents a simple assignment operation in the source code.
+     * It stores the left-hand side (target variable) and right-hand side (assigned value).
+     */
+    NODE_SIMPLE_ASSIGNMENT,
+
+    /**
      * @brief Addition operation node type.
      * 
      * This node type represents a binary addition operation in the source code.
@@ -168,6 +176,16 @@ typedef struct {
      * (e.g., "function declaration", "addition", "variable").
      */
     const wchar_t* type_name;
+
+    /**
+     * @brief Flag indicating whether the node represents an assignable expression (lvalue).
+     * 
+     * When true, indicates that:
+     * - The node can appear on the left-hand side of an assignment
+     * - The `generate_bytecode_assign` method must be implemented
+     * - The node represents a valid storage location (variable, array access, etc.)
+     */
+    bool is_assignable_expression;
 
     /**
      * @brief Gets the string representation of the node's data.
@@ -298,6 +316,20 @@ typedef struct {
      * @param data A pointer to the `data_builder_t` used to manage static data.
      */
     void (*generate_bytecode)(const node_t *node, code_builder_t *code, data_builder_t *data);
+
+    /**
+     * @brief Generates bytecode for storing a value into this expression.
+     * 
+     * This method generates the bytecode needed to store a value (expected to be
+     * on top of the stack) into the location represented by this expression.
+     * Should only be implemented for assignable expressions (lvalues).
+     * 
+     * @param node A pointer to the target node.
+     * @param code A pointer to the code builder for bytecode generation.
+     * @param data A pointer to the data builder for static data management.
+     */
+    void (*generate_bytecode_assign)(const node_t *node, code_builder_t *code,
+        data_builder_t *data);
 } node_vtbl_t;
 
 /**
