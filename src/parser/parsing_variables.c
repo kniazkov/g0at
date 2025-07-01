@@ -39,7 +39,8 @@ compilation_error_t *parsing_single_identifiers(token_t *identifier,
         if (!identifier->left) {
             break;
         }
-        if (identifier->left->type == TOKEN_OPERATOR) {
+        if (identifier->left->type == TOKEN_OPERATOR
+                || identifier->left->type == TOKEN_EXPRESSION) {
             break;
         }
         return NULL;
@@ -48,7 +49,9 @@ compilation_error_t *parsing_single_identifiers(token_t *identifier,
         if (!identifier->right) {
             break;
         }
-        if (identifier->right->type == TOKEN_OPERATOR) {
+        if (identifier->right->type == TOKEN_OPERATOR
+                || identifier->right->type == TOKEN_EXPRESSION
+                || identifier->right->type == TOKEN_IDENTIFIER) {
             break;
         }
         return NULL;
