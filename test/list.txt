@@ -10,3 +10,4 @@ null
 pi
 simple_assignment
 chain_assignment
+several_variables
