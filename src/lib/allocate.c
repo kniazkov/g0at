@@ -144,7 +144,7 @@ void print_list_of_memory_blocks() {
 #ifdef MEMORY_DEBUG
     memory_header_t *header = first_block;
     while(header) {
-        fprintf(stderr, "%s, %d: %d byte%s\n", header->file_name, header->line, header->size,
+        fprintf(stderr, "%s, %d: %zu byte%s\n", header->file_name, header->line, header->size,
                 header->size == 1 ? "" : "s");
         header = header->next;
     }

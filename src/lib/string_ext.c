@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "string_ext.h"
 #include "allocate.h"
@@ -362,7 +363,7 @@ string_value_t format_string_vargs(const wchar_t *format, va_list args) {
                     if (*ch == 'i' || *ch == 'd') {
                         int64_t arg_long = va_arg(args, int64_t);
                         char buffer[32];
-                        sprintf(buffer, "%lli", arg_long);
+                        sprintf(buffer, "%" PRId64, arg_long);
                         append_ascii_string(&builder, buffer);
                     } else {
                         append_char(&builder, L'?');
