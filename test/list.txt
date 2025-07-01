@@ -12,3 +12,4 @@ simple_assignment
 chain_assignment
 several_variables
 separated_by_semicolons 
+sign_of_positive 

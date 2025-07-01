@@ -1,0 +1,3 @@
+x = 10;
+y = sign(x);
+print(y);
