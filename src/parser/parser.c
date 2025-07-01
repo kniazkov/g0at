@@ -297,7 +297,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     compilation_error_t *error = NULL;
     APPLY_FORWARD(identifiers, parsing_single_identifiers);
     APPLY_FORWARD(additive_operators, parsing_additive_operators);
-    APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
+    APPLY_BACKWARD(identifiers, parsing_identifier_and_parentheses);
     APPLY_BACKWARD(assignment_operators, parsing_assignment_operators);
     // add other rules...
     return error;
