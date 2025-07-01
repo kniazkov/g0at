@@ -58,8 +58,11 @@ void resize_string_builder(string_builder_t *builder, size_t new_capacity) {
 
 string_value_t append_char(string_builder_t *builder, wchar_t symbol) {
     if (builder->length == builder->capacity) {
-        resize_string_builder(builder,
-            builder->capacity > 0 ? builder->capacity * 3 / 2 : INITIAL_STRING_BUILDER_CAPACITY);
+        resize_string_builder(
+            builder,
+            builder->capacity < INITIAL_STRING_BUILDER_CAPACITY ? INITIAL_STRING_BUILDER_CAPACITY :
+                builder->capacity * 3 / 2
+        );
     }
     builder->data[builder->length++] = symbol;
     builder->data[builder->length] = 0;
