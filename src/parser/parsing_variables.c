@@ -17,10 +17,10 @@
 
 /**
  * @brief Converts single (isolated) identifiers or identifiers surrounded by operators
- * into variable references.
+ * or other symbols into variable references.
  * 
  * Examples where rule applies:
- * - `+var+`   → converts `var`
+ * - `+ var +`   → converts `var`
  * - `var + 1` → converts `var` (if at start)
  * - `1 + var` → converts `var` (if at end)
  * 
@@ -32,37 +32,45 @@
  * @param memory Parser memory context.
  * @return NULL on success, error if conversion fails.
  */
-compilation_error_t *parsing_single_identifiers(token_t *identifier,
-        parser_memory_t *memory) {
+compilation_error_t *parsing_single_identifiers(token_t *identifier, parser_memory_t *memory) {
     assert(identifier->type == TOKEN_IDENTIFIER);
-    do {
-        if (!identifier->left) {
-            break;
+    
+    if (identifier->left != NULL) {
+        bool valid_left = identifier->left->type == TOKEN_OPERATOR 
+                       || identifier->left->type == TOKEN_EXPRESSION
+                       || identifier->left->type == TOKEN_COMMA
+                       || identifier->left->type == TOKEN_SEMICOLON
+                       ;
+        if (!valid_left) {
+            return NULL;
         }
-        if (identifier->left->type == TOKEN_OPERATOR
-                || identifier->left->type == TOKEN_EXPRESSION) {
-            break;
+    }
+    
+    if (identifier->right != NULL) {
+        bool valid_right = identifier->right->type == TOKEN_OPERATOR 
+                        || identifier->right->type == TOKEN_EXPRESSION 
+                        || identifier->right->type == TOKEN_IDENTIFIER
+                        || identifier->right->type == TOKEN_COMMA
+                        || identifier->right->type == TOKEN_SEMICOLON
+                        ;
+        if (!valid_right) {
+            return NULL;
         }
-        return NULL;
-    } while(false);
-    do {
-        if (!identifier->right) {
-            break;
-        }
-        if (identifier->right->type == TOKEN_OPERATOR
-                || identifier->right->type == TOKEN_EXPRESSION
-                || identifier->right->type == TOKEN_IDENTIFIER) {
-            break;
-        }
-        return NULL;
-    } while(false);
+    }
     
     node_t *variable = (node_t*)create_variable_node(
         memory->graph,
         identifier->text,
         identifier->length
     );
-    collapse_tokens_to_token(memory->tokens, identifier, identifier,
-        TOKEN_EXPRESSION, variable);
+    
+    collapse_tokens_to_token(
+        memory->tokens, 
+        identifier, 
+        identifier,
+        TOKEN_EXPRESSION, 
+        variable
+    );
+    
     return NULL;
 }

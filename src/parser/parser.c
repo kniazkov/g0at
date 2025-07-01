@@ -256,7 +256,7 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
             result.list[result.count++] = create_statement_expression_node(memory->graph,
                 (expression_t*)token->node);
         }
-        else {
+        else if (token->type != TOKEN_COMMA && token->type != TOKEN_SEMICOLON) {
             result.error = create_error_from_token(memory->tokens, token,
                 get_messages()->not_a_statement, token->text);
             break;

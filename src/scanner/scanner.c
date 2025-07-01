@@ -335,6 +335,18 @@ token_t *get_token(scanner_t *scan) {
     else if (iswdigit(ch)) {
         parse_number(scan, token, false);
     }
+    else if (ch == L',') {
+        token->type = TOKEN_COMMA;
+        token->text = L",";
+        token->length = 1;
+        next_char(scan);
+    }
+    else if (ch == L';') {
+        token->type = TOKEN_SEMICOLON;
+        token->text = L";";
+        token->length = 1;
+        next_char(scan);
+    }
     else {
         token->type = TOKEN_ERROR;
         token->text = format_string_to_arena(scan->memory->tokens, &token->length,
