@@ -207,14 +207,20 @@ static node_vtbl_t function_call_vtbl = {
     .generate_bytecode = generate_bytecode,
 };
 
-node_t *create_function_call_node(arena_t *arena, expression_t *func_object, expression_t **args,
-        size_t args_count) {
-    function_call_t *expr = (function_call_t *)alloc_from_arena(arena, sizeof(function_call_t));
+node_t *create_function_call_node_without_args(arena_t *arena, expression_t *func_object) {
+    function_call_t *expr = (function_call_t *)alloc_zeroed_from_arena(
+        arena, sizeof(function_call_t));
     expr->base.base.vtbl = &function_call_vtbl;
     expr->func_object = func_object;
-    size_t data_size = args_count * sizeof(expression_t *);
-    expr->args = (expression_t **)alloc_from_arena(arena, data_size);
-    memcpy(expr->args, args, data_size);
-    expr->args_count = args_count;
     return &expr->base.base;
+}
+
+void set_function_call_arguments(node_t *node, arena_t *arena, 
+        expression_t **args, size_t args_count) {
+    assert(node->vtbl->type == NODE_FUNCTION_CALL);
+    function_call_t *expr = (function_call_t *)node;
+    assert(expr->args == NULL);
+    expr->args = (expression_t **)alloc_from_arena(arena, args_count * sizeof(expression_t *));
+    memcpy(expr->args, args, args_count * sizeof(expression_t *));
+    expr->args_count = args_count;
 }

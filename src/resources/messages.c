@@ -42,6 +42,8 @@ static messages_t english = {
     .not_a_statement = L"Token '%s' is not a statement allowed here",
     .expected_expression = L"Unexpected token '%s', expression expected at this position",
     .expected_lvalue = L"Left-hand side expression expected, got '%s' instead",
+    .expected_comma_between_args = L"Expected comma between function arguments",
+    .expected_expr_after_comma = L"Expected expression after comma in argument list",
 };
 
 /**
@@ -71,6 +73,8 @@ static messages_t russian = {
     .not_a_statement = L"Токен '%s' здесь недопустим, ожидается инструкция языка",
     .expected_expression = L"Токен '%s' здесь недопустим, в этом месте ожидается выражение",
     .expected_lvalue = L"Ожидается левостороннее выражение, но получено '%s'",
+    .expected_comma_between_args = L"Ожидается запятая между аргументами функции",
+    .expected_expr_after_comma = L"Ожидается выражение после запятой в списке аргументов",
 };
 
 /**

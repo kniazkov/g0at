@@ -72,16 +72,36 @@ node_t *create_integer_node(arena_t *arena, int64_t value);
 expression_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length);
 
 /**
- * @brief Creates a function call expression node.
+ * @brief Creates a function call expression node with empty arguments.
  * 
- * This function creates a new node representing a function call expression
- * in the AST.
+ * This function initializes a function call node without arguments, which is useful when:
+ * - The function call syntax is recognized early in parsing (high precedence)
+ * - The arguments contain complex expressions that need to be parsed later
+ * - The function object is known but arguments require additional processing
  * 
- * @param arena The memory arena to allocate the node and arguments from.
- * @param func_object The function object being called.
- * @param args An array of arguments to be passed to the function.
- * @param args_count The number of arguments in the array.
- * @return A pointer to the created function call node.
+ * @param arena Memory arena for allocation.
+ * @param func_object The callable expression (function object).
+ * @return Pointer to the created function call node.
+ * 
+ * @note The arguments must be set later using set_function_call_arguments()
+ * @see set_function_call_arguments
  */
-node_t *create_function_call_node(arena_t *arena, expression_t *func_object, expression_t **args,
-        size_t args_count);
+node_t *create_function_call_node_without_args(arena_t *arena, expression_t *func_object);
+
+/**
+ * @brief Sets arguments for a previously created function call node.
+ * 
+ * This function completes the initialization of a function call node by setting its arguments.
+ * 
+ * @param node Function call node created with create_function_call_node_without_args().
+ * @param arena Memory arena for argument array allocation.
+ * @param args Array of argument expressions.abort
+ * @param args_count Number of arguments.
+ * 
+ * @pre The node must be of function call type (`NODE_FUNCTION_CALL`)
+ * @pre The node must not have arguments already set
+ * 
+ * @note This operation cannot be undone - arguments can only be set once.
+ */
+void set_function_call_arguments(node_t *node, arena_t *arena, 
+        expression_t **args, size_t args_count);

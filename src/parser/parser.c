@@ -25,25 +25,33 @@
  * @brief Rule for handling an additive operator (`+` or `-`), followed by expressions
  *  on both sides.
  */
-compilation_error_t *parsing_additive_operators(token_t *operator, parser_memory_t *memory);
+compilation_error_t *parsing_additive_operators(token_t *operator, parser_memory_t *memory,
+    token_groups_t *groups);
 
 /**
  * @brief Rule for handling an assignment operator, with assignable expression on the left side
  *  and expression on the right side.
  */
-compilation_error_t *parsing_assignment_operators(token_t *operator, parser_memory_t *memory);
+compilation_error_t *parsing_assignment_operators(token_t *operator, parser_memory_t *memory,
+    token_groups_t *groups);
 
 /**
  * @brief Rule for handling an identifier followed by parentheses (function call).
  */
 compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
-    parser_memory_t *memory);
+    parser_memory_t *memory, token_groups_t *groups);
+
+/**
+ * @brief Rule for handling function calls arguments.
+ */
+compilation_error_t *parsing_function_call_args(token_t *identifier,
+    parser_memory_t *memory, token_groups_t *groups);
 
 /**
  * @brief Rule for handling single (isolated) identifiers as variables.
  */
 compilation_error_t *parsing_single_identifiers(token_t *identifier,
-    parser_memory_t *memory);
+    parser_memory_t *memory, token_groups_t *groups);
 
 /**
  * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into
@@ -143,6 +151,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
  * @param rule The reduction rule function that will be applied to the tokens.
  * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
  *  for tokens and syntax tree nodes.
+ * @param groups Token classification groups that may be updated during reduction.
  * @param error A pointer to an existing linked list of errors. Any new errors found during
  *  the reduction process will be added to this list.
  * @return A pointer to the updated linked list of `compilation_error_t` structures. If no
@@ -154,11 +163,11 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
  *  returns the updated error list.
  */
 static compilation_error_t *apply_reduction_rule_forward(token_list_t *list, reduce_rule_t rule,
-        parser_memory_t *memory, compilation_error_t *error) {
+        parser_memory_t *memory, token_groups_t *groups, compilation_error_t *error) {
     token_t *token = list->first;
     while (token != NULL) {
         token_t *next = token->next_in_group;
-        compilation_error_t *new_error = rule(token, memory);
+        compilation_error_t *new_error = rule(token, memory, groups);
         if (new_error != NULL) {
             new_error->next = error;
             error = new_error;
@@ -184,6 +193,7 @@ static compilation_error_t *apply_reduction_rule_forward(token_list_t *list, red
  * @param rule The reduction rule function that will be applied to the tokens.
  * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
  *  for tokens, syntax tree nodes, and errors.
+ * @param groups Token classification groups that may be updated during reduction.
  * @param error A pointer to an existing linked list of errors. Any new errors found during
  *  the reduction process will be added to this list.
  * @return A pointer to the updated linked list of `compilation_error_t` structures. If no
@@ -197,11 +207,11 @@ static compilation_error_t *apply_reduction_rule_forward(token_list_t *list, red
  *  ensuring centralized memory management.
  */
 static compilation_error_t *apply_reduction_rule_backward(token_list_t *list, reduce_rule_t rule,
-        parser_memory_t *memory, compilation_error_t *error) {
+        parser_memory_t *memory, token_groups_t *groups, compilation_error_t *error) {
     token_t *token = list->last;
     while (token != NULL) {
         token_t *previous = token->previous_in_group;
-        compilation_error_t *new_error = rule(token, memory);
+        compilation_error_t *new_error = rule(token, memory, groups);
         if (new_error != NULL) {
             new_error->next = error;
             error = new_error;
@@ -273,7 +283,7 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
  */
 #define APPLY_FORWARD(group_name, rule_func) \
     do { \
-        error = apply_reduction_rule_forward(&groups->group_name, rule_func, memory, error); \
+        error = apply_reduction_rule_forward(&groups->group_name, rule_func, memory, groups, error); \
         if (error != NULL && error->critical) { \
             return error; \
         } \
@@ -286,7 +296,7 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
  */
 #define APPLY_BACKWARD(group_name, rule_func) \
     do { \
-        error = apply_reduction_rule_backward(&groups->group_name, rule_func, memory, error); \
+        error = apply_reduction_rule_backward(&groups->group_name, rule_func, memory, groups, error); \
         if (error != NULL && error->critical) { \
             return error; \
         } \
@@ -295,10 +305,11 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
 
 compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory) {
     compilation_error_t *error = NULL;
+    APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
     APPLY_FORWARD(identifiers, parsing_single_identifiers);
     APPLY_FORWARD(additive_operators, parsing_additive_operators);
-    APPLY_BACKWARD(identifiers, parsing_identifier_and_parentheses);
     APPLY_BACKWARD(assignment_operators, parsing_assignment_operators);
+    APPLY_FORWARD(function_arguments, parsing_function_call_args);
     // add other rules...
     return error;
 }

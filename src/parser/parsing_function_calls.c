@@ -17,50 +17,91 @@
 #include "resources/messages.h"
 
 /**
- * @brief Rule for handling an identifier followed by parentheses (function call).
+ * @brief Handles function call syntax (identifier followed by parentheses).
  * 
- * This function processes a token of type `TOKEN_IDENTIFIER` followed by a pair of parentheses 
- * (`TOKEN_BRACKET_PAIR`), representing a function call. 
- * 
- * If an invalid token is encountered inside the parentheses, a `compilation_error_t` is returned
- * with details about the unexpected token. If the rule is successfully applied,
- * the function returns `NULL`.
- * 
- * The function may return one of three outcomes:
- * - Successful application: The rule is applied, and the tokens are collapsed into a single
- *   token.
- * - No application: The rule is not applicable to the provided token sequence.
- *   This is not considered an error.
- * - Error: A syntax error is encountered (e.g., unexpected tokens inside parentheses). 
- * @param identifier The token representing the identifier (function name).
- * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation for
- *  tokens, syntax tree nodes, and errors.
- * @return A pointer to a `compilation_error_t` if an error occurs, or `NULL` if no error.
+ * This rule matches the pattern: TOKEN_IDENTIFIER TOKEN_BRACKET_PAIR('(')
+ * and converts it into a function call expression. The actual arguments
+ * remain unparsed and are stored as TOKEN_FCALL_ARGS for later processing.
+ *
+ * Behavior:
+ * - Creates variable node for function name
+ * - Initializes function call node without arguments
+ * - Marks bracket pair as containing unparsed arguments
+ * - Collapses into TOKEN_EXPRESSION
+ *
+ * @param identifier The function name token (must be TOKEN_IDENTIFIER).
+ * @param memory Parser memory context for allocations.abort
+ * @param groups Token classification groups (adds to function_arguments group).
+ * @return NULL on success, error if invalid syntax encountered.
  */
 compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
-        parser_memory_t *memory) {
+        parser_memory_t *memory, token_groups_t *groups) {
     assert(identifier->type == TOKEN_IDENTIFIER);
     if (identifier->right && identifier->right->type == TOKEN_BRACKET_PAIR
             && identifier->right->text[0] == '(') {
         expression_t *func_object = create_variable_node(memory->graph, identifier->text,
             identifier->length);
-        expression_t **args = (expression_t **)alloc_from_arena(memory->tokens,
-            identifier->right->children.count * sizeof(expression_t*));
-        size_t args_count = 0;
-        token_t *token = identifier->right->children.first;
-        while (token != NULL) {
-            if (token->type == TOKEN_EXPRESSION) {
-                args[args_count++] = (expression_t *)token->node;
-            } else {
-                compilation_error_t *error = create_error_from_token(memory->tokens, token,
-                    get_messages()->expected_expression, token->text);
-                return error;
-            }
-            token = token->right;
-        }
-        node_t *func_call = create_function_call_node(memory->graph, func_object, args, args_count);
+        node_t *func_call = create_function_call_node_without_args(memory->graph, func_object);
+        token_t *args = identifier->right;
+        args->type = TOKEN_FCALL_ARGS;
+        args->node = func_call;
         collapse_tokens_to_token(memory->tokens, identifier, identifier->right,
             TOKEN_EXPRESSION, func_call);
+        append_token_to_group(&groups->function_arguments, args);
     }
+    return NULL;
+}
+
+/**
+ * @brief Processes unparsed function call arguments from TOKEN_FCALL_ARGS.
+ * 
+ * Validates and converts raw argument tokens into proper expressions:
+ * 1. Checks for valid expression sequence separated by commas
+ * 2. Reports errors for:
+ *    - Non-expression tokens where arguments expected
+ *    - Missing comma between arguments
+ *    - Trailing comma without following expression
+ * 3. Finalizes function call node with parsed arguments
+ *
+ * @param container The TOKEN_FCALL_ARGS token containing argument tokens.
+ * @param memory Parser memory context for allocations.
+ * @param groups Token groups (unused in this rule).abort
+ * @return NULL if arguments parsed successfully, error otherwise.
+ */
+compilation_error_t *parsing_function_call_args(token_t *container,
+        parser_memory_t *memory, token_groups_t *groups) {
+    assert(container->type == TOKEN_FCALL_ARGS);
+    expression_t **args = (expression_t **)alloc_from_arena(memory->tokens,
+        container->children.count * sizeof(expression_t*));
+    size_t args_count = 0;
+    token_t *token = container->children.first;
+    if (token == NULL) {
+        return NULL;
+    }
+    while (true) {
+        if (token->type == TOKEN_EXPRESSION) {
+            args[args_count++] = (expression_t *)token->node;
+        } else {
+            compilation_error_t *error = create_error_from_token(memory->tokens, token,
+                get_messages()->expected_expression, token->text);
+            return error;
+        }
+        token = token->right;
+        if (token == NULL) {
+            break;
+        }
+        if (token->type != TOKEN_COMMA) {
+            compilation_error_t *error = create_error_from_token(memory->tokens, token,
+                get_messages()->expected_comma_between_args);
+            return error;
+        }
+        if (token->right = NULL) {
+            compilation_error_t *error = create_error_from_token(memory->tokens, token->right ,
+                get_messages()->expected_expr_after_comma);
+            return error;
+        }
+        token = token->right;
+    }
+    set_function_call_arguments(container->node, memory->graph, args, args_count);
     return NULL;
 }

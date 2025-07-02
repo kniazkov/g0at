@@ -74,7 +74,7 @@ void prepend_token_to_neighbors(token_list_t *neighbors, token_t *token) {
     neighbors->count++;
 }
 
-static void remove_token_from_group(token_t *token) {
+void remove_token_from_group(token_t *token) {
     if (token->group != NULL) {
         token_list_t *group = token->group;
 
@@ -100,18 +100,6 @@ static void remove_token_from_group(token_t *token) {
     }
 }
 
-/**
- * @brief Removes a token from its group.
- * 
- * This function removes the specified token from the group it belongs to, updating 
- * the group's list of tokens and maintaining the integrity of the list. If the group 
- * becomes empty after removal, the first and last pointers of the group are set to NULL. 
- * If the token is somewhere in the middle of the group, the neighboring tokens' 
- * pointers are updated accordingly. The token is also unlinked from the group by setting 
- * its `group`, `previous_in_group`, and `next_in_group` pointers to NULL.
- * 
- * @param token The token to remove from its group.
- */
 void remove_token(token_t *token) {
     assert(token != NULL);
     assert(token->neighbors != NULL);

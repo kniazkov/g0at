@@ -26,9 +26,11 @@
  * @param identifier The token representing the operator.
  * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
  *  for tokens, syntax tree nodes, and errors.
+ * @param groups Token classification groups that may be updated during reduction.
  * @return A pointer to a `compilation_error_t` if an error occurs, or `NULL` if no error.
  */
-compilation_error_t *parsing_assignment_operators(token_t *operator, parser_memory_t *memory) {
+compilation_error_t *parsing_assignment_operators(token_t *operator, parser_memory_t *memory,
+        token_groups_t *groups) {
     assert(operator->type == TOKEN_OPERATOR && operator->text[0] == L'=');
     
     token_t *left_token = operator->left;

@@ -40,6 +40,8 @@ typedef struct {
     const wchar_t const *not_a_statement;
     const wchar_t const *expected_expression;
     const wchar_t const *expected_lvalue;
+    const wchar_t const *expected_comma_between_args;
+    const wchar_t const *expected_expr_after_comma;
     // add other
 } messages_t;
 

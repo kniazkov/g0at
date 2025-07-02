@@ -32,10 +32,13 @@
  * @param start_token The token where the reduction starts.
  * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
  *  for tokens and syntax tree nodes.
+ * @param groups Token classification groups that may be updated during reduction.
+ * 
  * @return A pointer to a `compilation_error_t` if a syntax error occurs, or `NULL` if the rule 
  *  was successfully applied.
  */
-typedef compilation_error_t* (*reduce_rule_t)(token_t *start_token, parser_memory_t *memory);
+typedef compilation_error_t* (*reduce_rule_t)(token_t *start_token, parser_memory_t *memory,
+        token_groups_t *groups);
 
 /**
  * @brief Processes tokens and analyzes bracket pairs, storing the result in the provided
