@@ -26,6 +26,8 @@
  *      they are no longer in scope when the function is executed.
  */
 
+#include <math.h>
+
 #include "object.h"
 #include "thread.h"
 #include "common_methods.h"
@@ -290,31 +292,39 @@ static object_vtbl_t static_vtbl = {
     object_t *get_##func_name() { return &func_name.base; }
 
 /**
- * @brief Built-in function: determines the sign of a given number.
+ * @brief Built-in function: calculates the arc tangent of two values (atan2).
  * 
- * This function computes the sign of a real number passed as an argument.
- * It returns 1 if the number is positive, -1 if it is negative, and 0 if it is zero.
+ * This function computes the angle in radians between the positive X-axis 
+ * and the point (x, y) using the standard math function atan2(y, x).
  * 
- * @param args An array of object pointers, where args[0] is the number to evaluate.
+ * @param args An array of object pointers, where:
+ *             - args[0] is the Y coordinate (must be a real number)
+ *             - args[1] is the X coordinate (must be a real number)
  * @param arg_count The number of arguments passed to the function.
  * @param thread The current thread executing the function.
- * @return A static integer object representing the sign of the input number.
+ * @return A new real number object containing the result in radians, or:
+ *         - NULL if fewer than 2 arguments provided
+ *         - NULL if either argument is not a real number
+ * @note The result is in the range [-π, π] radians.
+ * @note Special cases are handled according to IEEE 754:
+ *       - If Y is ±0 and X is negative, returns ±π
+ *       - If Y is ±0 and X is positive, returns ±0
+ *       - If Y is positive and X is ±0, returns +π/2
+ *       - If Y is negative and X is ±0, returns -π/2
+ *       - If either argument is NaN, returns NaN
  */
-START_FUNCTION(function_sign)
-    if (arg_count < 1) {
+START_FUNCTION(function_atan)
+    if (arg_count < 2) {
         return NULL;
     }
-    double value = args[0]->vtbl->get_real_value(args[0]).value;
-    int sign;
-    if (value > 0) {
-        sign = 1;
-    } else if (value < 0) {
-        sign = -1;
-    } else {
-        sign = 0;
+    real_value_t y = args[0]->vtbl->get_real_value(args[0]);
+    real_value_t x = args[1]->vtbl->get_real_value(args[1]);
+    if (!x.has_value || !y.has_value) {
+        return NULL;
     }
-    return get_static_integer_object(sign);
-END_FUNCTION(function_sign, L"sign");
+    double result = atan2(y.value, x.value);
+    return create_real_number_object(thread->process, result);
+END_FUNCTION(function_atan, L"atan");
 
 /**
  * @brief Built-in function: prints the string representation of an object.
@@ -344,3 +354,30 @@ START_FUNCTION(function_print)
     }
     return get_null_object();
 END_FUNCTION(function_print, L"print");
+
+/**
+ * @brief Built-in function: determines the sign of a given number.
+ * 
+ * This function computes the sign of a real number passed as an argument.
+ * It returns 1 if the number is positive, -1 if it is negative, and 0 if it is zero.
+ * 
+ * @param args An array of object pointers, where args[0] is the number to evaluate.
+ * @param arg_count The number of arguments passed to the function.
+ * @param thread The current thread executing the function.
+ * @return A static integer object representing the sign of the input number.
+ */
+START_FUNCTION(function_sign)
+    if (arg_count < 1) {
+        return NULL;
+    }
+    double value = args[0]->vtbl->get_real_value(args[0]).value;
+    int sign;
+    if (value > 0) {
+        sign = 1;
+    } else if (value < 0) {
+        sign = -1;
+    } else {
+        sign = 0;
+    }
+    return get_static_integer_object(sign);
+END_FUNCTION(function_sign, L"sign");

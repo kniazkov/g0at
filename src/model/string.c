@@ -487,6 +487,7 @@ static object_vtbl_t static_string_vtbl = {
  * @brief Declares some common static string objects.
  */
 DECLARE_STATIC_STRING(empty_string, L"")
+DECLARE_STATIC_STRING(string_atan, L"atan")
 DECLARE_STATIC_STRING(string_length, L"length")
 DECLARE_STATIC_STRING(string_pi, L"pi")
 DECLARE_STATIC_STRING(string_print, L"print")

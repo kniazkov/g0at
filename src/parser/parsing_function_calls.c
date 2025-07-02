@@ -13,6 +13,7 @@
 
 #include "parser.h"
 #include "graph/expression.h"
+#include "lib/allocate.h"
 #include "lib/arena.h"
 #include "resources/messages.h"
 
@@ -71,37 +72,39 @@ compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
 compilation_error_t *parsing_function_call_args(token_t *container,
         parser_memory_t *memory, token_groups_t *groups) {
     assert(container->type == TOKEN_FCALL_ARGS);
-    expression_t **args = (expression_t **)alloc_from_arena(memory->tokens,
-        container->children.count * sizeof(expression_t*));
+    expression_t **args = (expression_t **)ALLOC(container->children.count * sizeof(expression_t*));
     size_t args_count = 0;
     token_t *token = container->children.first;
     if (token == NULL) {
         return NULL;
     }
+    compilation_error_t *error = NULL;
     while (true) {
         if (token->type == TOKEN_EXPRESSION) {
             args[args_count++] = (expression_t *)token->node;
         } else {
-            compilation_error_t *error = create_error_from_token(memory->tokens, token,
+            error = create_error_from_token(memory->tokens, token,
                 get_messages()->expected_expression, token->text);
-            return error;
+            goto cleanup;
         }
         token = token->right;
         if (token == NULL) {
             break;
         }
         if (token->type != TOKEN_COMMA) {
-            compilation_error_t *error = create_error_from_token(memory->tokens, token,
+            error = create_error_from_token(memory->tokens, token,
                 get_messages()->expected_comma_between_args);
-            return error;
+            goto cleanup;
         }
-        if (token->right = NULL) {
-            compilation_error_t *error = create_error_from_token(memory->tokens, token->right ,
+        if (token->right == NULL) {
+            error = create_error_from_token(memory->tokens, token->right ,
                 get_messages()->expected_expr_after_comma);
-            return error;
+            goto cleanup;
         }
         token = token->right;
     }
     set_function_call_arguments(container->node, memory->graph, args, args_count);
-    return NULL;
+cleanup:
+    FREE(args);
+    return error;
 }

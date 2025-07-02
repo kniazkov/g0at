@@ -641,6 +641,7 @@ object_t *create_user_defined_object(process_t* process, object_array_t proto);
  * @brief Declares getter functions for common static string objects.
  */
 DECLARE_STATIC_OBJECT(empty_string)
+DECLARE_STATIC_OBJECT(string_atan)
 DECLARE_STATIC_OBJECT(string_length)
 DECLARE_STATIC_OBJECT(string_pi)
 DECLARE_STATIC_OBJECT(string_print)
@@ -652,5 +653,6 @@ DECLARE_STATIC_OBJECT(string_sign)
  */
 object_t *get_function_proto();
 
+DECLARE_STATIC_OBJECT(function_atan)
 DECLARE_STATIC_OBJECT(function_sign)
 DECLARE_STATIC_OBJECT(function_print)
