@@ -51,6 +51,7 @@ int go(options_t *opt) {
     arena_t *tokens_memory = create_arena();
     arena_t *graph_memory = create_arena();
     parser_memory_t memory = { tokens_memory, graph_memory };
+    token_groups_t *groups = (token_groups_t*)ALLOC(sizeof(token_groups_t));
 
     compilation_error_t *error = NULL;
     int ret_code = -1;
@@ -59,8 +60,7 @@ int go(options_t *opt) {
         /*
             4. scan (split code into tokens)
         */
-        token_groups_t groups;
-        scanner_t *scan = create_scanner(opt->input_file, code.data, &memory, &groups);
+        scanner_t *scan = create_scanner(opt->input_file, code.data, &memory, groups);
         token_list_t tokens;
         error = process_brackets(tokens_memory, scan, &tokens);
         if (error != NULL) {
@@ -70,7 +70,7 @@ int go(options_t *opt) {
         /*
             5. build a syntax tree
         */
-        error = apply_reduction_rules(&groups, &memory);
+        error = apply_reduction_rules(groups, &memory);
         if (error != NULL) {
             break;
         }
@@ -84,6 +84,8 @@ int go(options_t *opt) {
         /*
             6. from now on we don't need tokens anymore, we can free this part of memory
         */
+        FREE(groups);
+        groups = NULL;
         destroy_arena(tokens_memory);
         tokens_memory = NULL;
 
@@ -182,6 +184,7 @@ int go(options_t *opt) {
     if (graph_memory != NULL) {
         destroy_arena(graph_memory);
     }
+    FREE(groups);
     if (tokens_memory != NULL) {
         destroy_arena(tokens_memory);
     }

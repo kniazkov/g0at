@@ -17,6 +17,7 @@
 #include <memory.h>
 #include <stdbool.h>
 #include <wctype.h>
+#include <stddef.h>
 
 #include "scanner.h"
 #include "lib/allocate.h"
@@ -181,6 +182,61 @@ static bool is_operator(wchar_t c) {
 }
 
 /**
+ * @struct keyword_lookup_t
+ * @brief Structure for keyword to token type mapping
+ */
+typedef struct {
+    const wchar_t* keyword;    /**< Keyword string */
+    size_t length;             /**< Length of keyword */
+    token_type_t type;         /**< Corresponding token type */
+    node_t* (*node_factory)(); /**< Optional AST node factory (NULL for simple keywords) */
+    size_t group_offset;       /**< Optional group offset in the group structure */
+} keyword_lookup_t;
+
+/**
+ * @brief Keyword lookup table
+ */
+static const keyword_lookup_t keywords[] = {
+    { 
+        L"var",
+        3,
+        TOKEN_VAR,
+        NULL,
+        offsetof(token_groups_t, var_keywords)
+    },
+    {
+        L"const",
+        5,
+        TOKEN_CONST,
+        NULL,
+        offsetof(token_groups_t, const_keywords)
+    },
+    {
+        L"null",
+        4,
+        TOKEN_EXPRESSION,
+        get_null_node_instance,
+        SIZE_MAX
+    },
+    /* Add new keywords here */
+};
+
+typedef struct {
+    const wchar_t *oper; /**< Operator string */
+    size_t group_offset; /**< Group offset in the group structure */
+} operator_mapping_t;
+
+static const operator_mapping_t operator_mappings[] = {
+    {L"+", offsetof(token_groups_t, additive_operators) },
+    {L"-", offsetof(token_groups_t, additive_operators) },
+    {L"*", offsetof(token_groups_t, multiplicative_operators) },
+    {L"/", offsetof(token_groups_t, multiplicative_operators) },
+    {L"%", offsetof(token_groups_t, multiplicative_operators) },
+    {L"=", offsetof(token_groups_t, assignment_operators) },
+    /* Add new operators here */
+};
+
+/**
  * @brief Parses a string literal in the source code.
  *
  * This function parses a string literal starting with a double quote (`"`) and handles
@@ -305,13 +361,22 @@ token_t *get_token(scanner_t *scan) {
             ch = next_char(scan);
         } while(is_letter(ch) || iswdigit(ch));
         size_t length = scan->position.code - token->begin.code;
-        if (length == 4) {
-            if (wcsncmp(token->begin.code, L"null", 4) == 0) {
+        for (size_t index = 0; index < sizeof(keywords) / sizeof(keyword_lookup_t); index++) {
+            const keyword_lookup_t* kw = &keywords[index];
+            if (length == kw->length && 
+                    wcsncmp(token->begin.code, kw->keyword, kw->length) == 0) {
                 predefined = true;
-                token->type = TOKEN_EXPRESSION;
-                token->text = L"null";
-                token->length = 4;
-                token->node = get_null_node_instance();
+                token->type = kw->type;
+                token->text = kw->keyword;
+                token->length = kw->length;
+                if (kw->node_factory) {
+                    token->node = kw->node_factory();
+                }
+                if (kw->group_offset != SIZE_MAX) {
+                    token_list_t* group = (token_list_t*)((char*)(scan->groups) + kw->group_offset);
+                    append_token_to_group(group, token);
+                }
+                break;
             }
         }
         if (!predefined) {
@@ -359,22 +424,20 @@ token_t *get_token(scanner_t *scan) {
         size_t length = scan->position.code - token->begin.code;
         token->text = copy_string_to_arena(scan->memory->tokens, token->begin.code, length);
         token->length = length;
-
-        if (token->type == TOKEN_OPERATOR) {
-            if (length == 1) {
-                if (token->text[0] == '+' || token->text[0] == '-') {
-                    append_token_to_group(&scan->groups->additive_operators, token);
-                }
-                else if (token->text[0] == '*' || token->text[0] == '/' || token->text[0] == '%') {
-                    append_token_to_group(&scan->groups->multiplicative_operators, token);
-                }
-                else if (token->text[0] == '=') {
-                    append_token_to_group(&scan->groups->assignment_operators, token);
-                }
-            }
-        }
     } else if (token->length == 0) {
         token->length = wcslen(token->text);
+    }
+
+    if (token->type == TOKEN_OPERATOR) {
+        for (size_t index = 0; index < sizeof(operator_mappings)/sizeof(operator_mapping_t);
+                index++) {
+            if (wcscmp(operator_mappings[index].oper, token->text) == 0) {
+                token_list_t* group = (token_list_t*)((char*)(scan->groups)
+                    + operator_mappings[index].group_offset);
+                append_token_to_group(group, token);
+                break;
+            }
+        }
     }
 
     return token;

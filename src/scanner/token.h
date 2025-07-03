@@ -46,6 +46,9 @@ typedef enum {
     TOKEN_SEMICOLON,        /**< Semicolon ';' used as statement terminator */
     TOKEN_ERROR,            /**< An invalid token (error case) */
 
+    TOKEN_VAR,              /**< The 'var' keyword for variable declarations */
+    TOKEN_CONST,            /**< The 'const' keyword for constant declarations */
+
     TOKEN_BRACKET_PAIR,     /**< A pair of brackets and all tokens between them */
     TOKEN_EXPRESSION,       /**< An expression token, which contains an attached syntax tree node */
     TOKEN_STATEMENT,        /**< A statement (e.g., assignment, control structures, etc.) */
@@ -232,6 +235,16 @@ typedef struct {
      * @brief Unprocessed function call arguments.
      */
     token_list_t function_arguments;
+
+    /**
+     * @brief Group for 'var' keyword tokens.
+     */
+    token_list_t var_keywords;
+
+    /**
+     * @brief Group for 'const' keyword tokens.
+     */
+    token_list_t const_keywords;
 } token_groups_t;
 
 /**
