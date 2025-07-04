@@ -70,7 +70,7 @@ static size_t get_child_count(const node_t *node) {
  */
 static const node_t* get_child(const node_t *node, size_t index) {
     const root_node_t* root = (const root_node_t*)node;
-    if (index < 0 || index >= root->stmt_count) {
+    if (index >= root->stmt_count) {
         return NULL;
     }
     return &root->stmt_list[index]->base;

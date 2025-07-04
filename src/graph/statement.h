@@ -54,3 +54,30 @@ struct statement_t {
  * @return A pointer to the newly created statement expression node.
  */
 statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped);
+
+/**
+ * @struct declarator_t
+ * @brief Represents a single declaration (variable or constant) in an AST.
+ *
+ * This structure encapsulates the common properties of both variable and constant
+ * declarations, including the identifier name and [optional] initializer expression.
+ */
+typedef struct {
+    /**
+     * @brief The name of the declared identifier.
+     */
+    wchar_t *name;
+
+    /**
+     * @brief Length of the name in characters.
+     */
+    size_t name_length;
+
+    /**
+     * @brief The initializer expression for the declaration.
+     *
+     * - For variables: Optional (may be NULL)
+     * - For constants: Required (must be non-NULL)
+     */
+    expression_t *initial;
+} declarator_t;
