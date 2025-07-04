@@ -150,6 +150,44 @@ typedef enum {
      * The result of the expression is not used further in the program.
      */
     NODE_STATEMENT_EXPRESSION,
+
+    /**
+     * @brief Variable declaration statement node type.
+     * 
+     * This node represents a variable declaration statement (e.g., "var x = 1, y, z = 2 + 3").
+     * Contains child nodes of type NODE_VARIABLE_DECLARATOR for each declared variable.
+     * The node itself serves as a container and doesn't store specific values.
+     */
+    NODE_VARIABLE_DECLARATION,
+
+    /**
+     * @brief Variable declarator node type.
+     * 
+     * Represents a single variable declarator in a declaration statement.
+     * Contains:
+     * - Identifier node (required)
+     * - Initializer expression node (optional)
+     */
+    NODE_VARIABLE_DECLARATOR,
+
+    /**
+     * @brief Constant declaration statement node type.
+     * 
+     * This node represents a constant declaration statement (e.g., "const pi = 3.14").
+     * Contains child nodes of type NODE_CONSTANT_DECLARATOR for each declared constant.
+     * The node itself serves as a container and doesn't store specific values.
+     */
+    NODE_CONSTANT_DECLARATION,
+
+    /**
+     * @brief Constant declarator node type.
+     * 
+     * Represents a single constant declarator in a declaration statement.
+     * Contains:
+     * - Identifier node (required)
+     * - Initializer expression node (required)
+     */
+    NODE_CONSTANT_DECLARATOR
 } node_type_t;
 
 /**
