@@ -203,7 +203,7 @@ static node_vtbl_t vdeclr_vtbl = {
  * @param spec Declarator specification.
  * @return Pointer to the newly created variable declarator node.
  */
-variable_declarator_t *create_variable_declarator_node(arena_t *arena,
+static variable_declarator_t *create_variable_declarator_node(arena_t *arena,
         const declarator_t *spec) {
     variable_declarator_t *decl = 
         (variable_declarator_t *)alloc_from_arena(arena, sizeof(variable_declarator_t));
@@ -272,11 +272,11 @@ static size_t vdecln_get_child_count(const node_t *node) {
  * @return Pointer to the requested declarator node, or NULL if index is out of bounds.
  */
 static const node_t* vdecln_get_child(const node_t *node, size_t index) {
-    const variable_declaration_t* root = (const variable_declaration_t*)node;
-    if (index >= root->decl_count) {
+    const variable_declaration_t* decl = (const variable_declaration_t*)node;
+    if (index >= decl->decl_count) {
         return NULL;
     }
-    return &root->decl_list[index]->base;
+    return &decl->decl_list[index]->base;
 }
 
 /**
@@ -300,7 +300,7 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
             append_substring(&builder, L", ", 2);
         }
         variable_declarator_t *vdr = decl->decl_list[index];
-        string_value_t vdr_as_string = vdr->base.vtbl->generate_goat_code(&vdr->base);
+        string_value_t vdr_as_string = vdeclr_generate_goat_code(&vdr->base);
         result = append_substring(&builder, vdr_as_string.data, vdr_as_string.length);
         if (vdr_as_string.should_free) {
             FREE(vdr_as_string.data);
@@ -347,7 +347,7 @@ static void vdecln_generate_bytecode(const node_t *node,
     const variable_declaration_t* decl = (const variable_declaration_t*)node;
     for (size_t index = 0; index < decl->decl_count; index++) {
         variable_declarator_t *vdr = decl->decl_list[index];
-        vdr->base.vtbl->generate_bytecode(&vdr->base, code, data);
+        vdeclr_generate_bytecode(&vdr->base, code, data);
     }
 }
 
@@ -563,7 +563,7 @@ static node_vtbl_t cdeclr_vtbl = {
  *             - Mandatory initializer expression
  * @return Pointer to newly created constant_declarator_t node.
  */
-constant_declarator_t *create_constant_declarator_node(arena_t *arena,
+static constant_declarator_t *create_constant_declarator_node(arena_t *arena,
         const declarator_t *spec) {
     assert(spec->initial != NULL);
     
@@ -574,4 +574,177 @@ constant_declarator_t *create_constant_declarator_node(arena_t *arena,
     decl->name_length = spec->name_length;
     decl->initial = spec->initial;
     return decl;
+}
+
+/**
+ * @struct constant_declaration_t
+ * @brief Represents a constant declaration statement in the abstract syntax tree.
+ *
+ * This structure defines a node that represents a complete constant declaration
+ * statement (e.g., "const pi = 3.14, tau = 6.28"). It serves as a container for
+ * one or more constant declarators and handles their collective behavior.
+ * Unlike variables, all constants must be initialized at declaration time.
+ */
+typedef struct {
+    /**
+     * @brief Base statement structure.
+     * 
+     * Provides common statement functionality and allows this structure to be treated
+     * as a statement node in the abstract syntax tree.
+     */
+    statement_t base;
+
+    /**
+     * @brief Array of constant declarators.
+     * 
+     * An arena-allocated array of pointers to constant_declarator_t nodes,
+     * each representing a single constant declaration within this statement.
+     * The array always contains at least one element.
+     */
+    constant_declarator_t **decl_list;
+
+    /**
+     * @brief Count of constant declarators.
+     * 
+     * Specifies the number of constant declarators in the `decl_list` array.
+     * The count is always positive (empty declarations are syntactically invalid).
+     */
+    size_t decl_count;
+} constant_declaration_t;
+
+/**
+ * @brief Gets the child count for a constant declaration node.
+ * 
+ * Returns the number of constant declarators contained in this declaration.
+ * 
+ * @param node Pointer to the constant declaration node.
+ * @return The count of child declarator nodes (always >= 1).
+ */
+static size_t cdecln_get_child_count(const node_t *node) {
+    const constant_declaration_t* root = (const constant_declaration_t*)node;
+    return root->decl_count;
+}
+
+/**
+ * @brief Retrieves a specific constant declarator child node.
+ * 
+ * Provides access to individual constant declarators within this declaration.
+ * 
+ * @param node Pointer to the constant declaration node.
+ * @param index Zero-based index of the declarator to retrieve.
+ * @return Pointer to the constant declarator node, or NULL if index is invalid.
+ */
+static const node_t* cdecln_get_child(const node_t *node, size_t index) {
+    const constant_declaration_t* decl = (const constant_declaration_t*)node;
+    if (index >= decl->decl_count) {
+        return NULL;
+    }
+    return &decl->decl_list[index]->base;
+}
+
+/**
+ * @brief Generates Goat source code for a constant declaration.
+ * 
+ * Produces the textual representation of a constant declaration including all
+ * its declarators (e.g., "const pi = 3.14, tau = 6.28").
+ * 
+ * @param node Pointer to the constant declaration node.
+ * @return string_value_t containing the generated code. The caller is responsible
+ *         for freeing the memory if should_free is true.
+ */
+static string_value_t cdecln_generate_goat_code(const node_t *node) {
+    const constant_declaration_t* decl = (const constant_declaration_t*)node;
+    string_builder_t builder;
+    init_string_builder(&builder, 0);
+    string_value_t result = { L"", 0, false };
+    append_substring(&builder, L"const ", 6);
+    for (size_t index = 0; index < decl->decl_count; index++) {
+        if (index > 0) {
+            append_substring(&builder, L", ", 2);
+        }
+        constant_declarator_t *cdr = decl->decl_list[index];
+        string_value_t cdr_as_string = cdr->base.vtbl->generate_goat_code(&cdr->base);
+        result = append_substring(&builder, cdr_as_string.data, cdr_as_string.length);
+        if (cdr_as_string.should_free) {
+            FREE(cdr_as_string.data);
+        }
+    }
+    return result;
+}
+
+/**
+ * @brief Generates indented Goat source code for constant declarations.
+ * 
+ * Produces properly formatted source code with correct indentation for constant
+ * declaration statements, including all declarators.
+ * 
+ * @param node Pointer to the constant declaration node.
+ * @param builder Pointer to the source builder for output.
+ * @param indent Number of indentation tabs to apply.
+ * @return true if code was successfully generated, false on error.
+ */
+static bool cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+        size_t indent) {
+    string_value_t line = cdecln_generate_goat_code(node);
+    if (line.length == 0) {
+        return false;
+    }
+    add_formatted_line_of_source_code(builder, indent, line);
+    return true;
+}
+
+/**
+ * @brief Generates bytecode for constant declarations.
+ * 
+ * Emits bytecode that:
+ * 1. Evaluates initializer expressions
+ * 2. Declares constants in current scope
+ * 3. Ensures immutability of declared values
+ * 
+ * @param node Pointer to the constant declaration node.
+ * @param code Pointer to the code builder for bytecode output.
+ * @param data Pointer to the data builder for string storage.
+ */
+static void cdecln_generate_bytecode(const node_t *node, 
+        code_builder_t *code, data_builder_t *data) {
+    const constant_declaration_t* decl = (const constant_declaration_t*)node;
+    for (size_t index = 0; index < decl->decl_count; index++) {
+        constant_declarator_t *cdr = decl->decl_list[index];
+        cdr->base.vtbl->generate_bytecode(&cdr->base, code, data);
+    }
+}
+
+/**
+ * @brief Virtual table for constant declaration nodes.
+ * 
+ * Contains function pointers implementing all operations for constant declaration
+ * statements in the abstract syntax tree.
+ */
+static node_vtbl_t cdecln_vtbl = {
+    .type = NODE_CONSTANT_DECLARATION,
+    .type_name = L"constant declaration",
+    .get_data = no_data,
+    .get_child_count = cdecln_get_child_count,
+    .get_child = cdecln_get_child,
+    .get_child_tag = no_tags,
+    .generate_goat_code = cdecln_generate_goat_code,
+    .generate_indented_goat_code = cdecln_generate_indented_goat_code,
+    .generate_bytecode = cdecln_generate_bytecode,
+};
+
+node_t *create_constant_declaration_node(arena_t *arena, declarator_t **decl_list,
+        size_t decl_count) {
+    assert(decl_count > 0);
+    constant_declaration_t *node = (constant_declaration_t *)alloc_from_arena(
+            arena, sizeof(constant_declaration_t));
+    node->base.base.vtbl = &cdecln_vtbl;
+    node->decl_list = (constant_declarator_t **)alloc_from_arena(arena,
+            decl_count * sizeof(constant_declarator_t *));
+    node->decl_count = decl_count;
+    
+    for (size_t index = 0; index < decl_count; index++) {
+        node->decl_list[index] = create_constant_declarator_node(arena, decl_list[index]);
+    }
+    
+    return &node->base.base;
 }

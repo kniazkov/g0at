@@ -97,3 +97,20 @@ typedef struct {
  */
 node_t *create_variable_declaration_node(arena_t *arena, declarator_t **decl_list,
         size_t decl_count);
+
+/**
+ * @brief Creates a new constant declaration AST node.
+ * 
+ * Constructs a complete constant declaration statement node containing one or more
+ * constant declarators. The node owns the declarator list and its contents.
+ * 
+ * @param arena Arena allocator for memory management.
+ * @param decl_list Array of declarator specifications.
+ * @param decl_count Number of declarators (must be > 0).
+ * @return Pointer to the newly created constant declaration node.
+ * 
+ * @note The created node takes ownership of the declarator list and its contents.
+ * @warning All declarators must have non-NULL initializers.
+ */
+node_t *create_constant_declaration_node(arena_t *arena, declarator_t **decl_list,
+        size_t decl_count);
