@@ -81,3 +81,19 @@ typedef struct {
      */
     expression_t *initial;
 } declarator_t;
+
+/**
+ * @brief Creates a new variable declaration AST node.
+ * 
+ * Constructs a complete variable declaration statement node containing one or more
+ * variable declarators. The node owns the declarator list and its contents.
+ * 
+ * @param arena Arena allocator for memory management.
+ * @param decl_list Array of declarator specifications.
+ * @param decl_count Number of declarators (must be > 0).
+ * @return Pointer to the newly created variable declaration node.
+ * 
+ * @note The created node takes ownership of the declarator list and its contents.
+ */
+node_t *create_variable_declaration_node(arena_t *arena, declarator_t **decl_list,
+        size_t decl_count);

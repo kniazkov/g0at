@@ -294,7 +294,7 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
     string_builder_t builder;
     init_string_builder(&builder, 0);
     string_value_t result = { L"", 0, false };
-    
+    append_substring(&builder, L"var ", 4);
     for (size_t index = 0; index < decl->decl_count; index++) {
         if (index > 0) {
             append_substring(&builder, L", ", 2);
@@ -369,21 +369,8 @@ static node_vtbl_t vdecln_vtbl = {
     .generate_bytecode = vdecln_generate_bytecode,
 };
 
-/**
- * @brief Creates a new variable declaration AST node.
- * 
- * Constructs a complete variable declaration statement node containing one or more
- * variable declarators. The node owns the declarator list and its contents.
- * 
- * @param arena Arena allocator for memory management.
- * @param decl_list Array of declarator specifications.
- * @param decl_count Number of declarators (must be > 0).
- * @return Pointer to the newly created variable declaration node.
- * 
- * @note The created node takes ownership of the declarator list and its contents.
- */
-node_t *create_variable_declaration_node(arena_t *arena, 
-        declarator_t **decl_list, size_t decl_count) {
+node_t *create_variable_declaration_node(arena_t *arena, declarator_t **decl_list,
+        size_t decl_count) {
     assert(decl_count > 0);
     variable_declaration_t *node = (variable_declaration_t *)alloc_from_arena(
             arena, sizeof(variable_declaration_t));
@@ -397,4 +384,194 @@ node_t *create_variable_declaration_node(arena_t *arena,
     }
     
     return &node->base.base;
+}
+
+/**
+ * @struct constant_declarator_t
+ * @brief Represents a constant declaration in the abstract syntax tree.
+ *
+ * This structure defines a node for constant declarations (e.g., "const pi = 3.14").
+ * Unlike variables, constants must be initialized at declaration time and cannot be
+ * modified afterward. The node stores both the constant name and its initializer
+ * expression.
+ */
+typedef struct {
+    /**
+     * @brief Base node structure.
+     * 
+     * Provides common node functionality and allows this structure to be treated
+     * as a node in the abstract syntax tree.
+     */
+    node_t base;
+
+    /**
+     * @brief The name of the constant being declared.
+     * 
+     * Stored as an arena-allocated wide character string. Must be a valid identifier
+     * following the language's naming rules.
+     */
+    wchar_t *name;
+
+    /**
+     * @brief The length of the constant name in characters.
+     * 
+     * Specifies the exact length of the name string, which may differ from what
+     * would be reported by null-terminated string functions.
+     */
+    size_t name_length;
+
+    /**
+     * @brief Initializer expression for the constant.
+     * 
+     * Must be non-NULL as constants require initialization. The expression is
+     * evaluated once at declaration time and its result becomes the immutable
+     * value of the constant.
+     */
+    expression_t *initial;
+} constant_declarator_t;
+
+/**
+ * @brief Gets the constant name as string data.
+ * 
+ * Provides access to the constant name stored in the declarator node.
+ * 
+ * @param node Pointer to the constant declarator node.
+ * @return string_value_t containing the constant name.
+ */
+static string_value_t cdeclr_get_data(const node_t *node) {
+    const constant_declarator_t *decl = (const constant_declarator_t *)node;
+    return (string_value_t){ decl->name, decl->name_length, false };
+}
+
+/**
+ * @brief Gets the child count for constant declarator node.
+ * 
+ * Returns 1 as constants always have an initializer expression.
+ * 
+ * @param node Pointer to the constant declarator node.
+ * @return Always returns 1 (constant declarations require initializers).
+ */
+static size_t cdeclr_get_child_count(const node_t *node) {
+    return 1;
+}
+
+/**
+ * @brief Retrieves the initializer expression node.
+ * 
+ * Provides access to the constant's initializer expression.
+ * 
+ * @param node Pointer to the constant declarator node.
+ * @param index Must be 0 to get the initializer expression.
+ * @return Pointer to the initializer expression node or NULL if index != 0.
+ */
+static const node_t* cdeclr_get_child(const node_t *node, size_t index) {
+    const constant_declarator_t* decl = (const constant_declarator_t*)node;
+    if (index == 0) {
+        return &decl->initial->base;
+    }
+    return NULL;
+}
+
+/**
+ * @brief Gets child tag for constant declarator.
+ * 
+ * Returns "initial" for the initializer expression.
+ * 
+ * @param node Pointer to the node (unused).
+ * @param index Must be 0 to get tag.
+ * @return Static wide string "initial" or NULL if index != 0.
+ */
+static const wchar_t* cdeclr_get_child_tag(const node_t *node, size_t index) {
+    if (index == 0) {
+        return L"initial";
+    }
+    return NULL;
+}
+
+/**
+ * @brief Generates Goat source code for a constant declarator.
+ * 
+ * Produces the textual representation of a constant declaration in the format
+ * "name = value" (e.g., "pi = 3.14").
+ * 
+ * @param node Pointer to the constant declarator node.
+ * @return string_value_t containing the generated code. The caller is responsible
+ *         for freeing the memory if `should_free` is true.
+ */
+static string_value_t cdeclr_generate_goat_code(const node_t *node) {
+    const constant_declarator_t* decl = (const constant_declarator_t*)node;
+    string_builder_t builder;
+    string_value_t initial_as_string =
+        decl->initial->base.vtbl->generate_goat_code(&decl->initial->base);
+    init_string_builder(&builder, decl->name_length + 3 + initial_as_string.length);
+    append_substring(&builder, decl->name, decl->name_length);
+    append_substring(&builder, L" = ", 3);
+    string_value_t value = append_substring(&builder, initial_as_string.data,
+            initial_as_string.length);
+    if (initial_as_string.should_free) {
+        FREE(initial_as_string.data);
+    }
+    return value;
+}
+
+/**
+ * @brief Generates bytecode for a constant declarator.
+ * 
+ * Produces bytecode that:
+ * 1. Evaluates the initializer expression
+ * 2. Pops the value from stack (handled by declaration statement)
+ * 3. Declares the constant in current scope
+ * 
+ * @param node Pointer to the constant declarator node.
+ * @param code Pointer to the code builder for bytecode output.
+ * @param data Pointer to the data builder for string storage.
+ */
+static void cdeclr_generate_bytecode(const node_t *node, code_builder_t *code,
+        data_builder_t *data) {
+    const constant_declarator_t* decl = (const constant_declarator_t*)node;
+    decl->initial->base.vtbl->generate_bytecode(&decl->initial->base, code, data);
+    add_instruction(code, (instruction_t){ .opcode = POP });
+    uint32_t index = add_string_to_data_segment_ex(data, decl->name, decl->name_length);
+    add_instruction(code, (instruction_t){ .opcode = CONST, .arg1 = index });
+}
+
+/**
+ * @brief Virtual table for constant declarator operations.
+ * 
+ * Provides implementations of operations specific to constant declarator nodes.
+ */
+static node_vtbl_t cdeclr_vtbl = {
+    .type = NODE_CONSTANT_DECLARATOR,
+    .type_name = L"constant declarator",
+    .get_data = cdeclr_get_data,
+    .get_child_count = cdeclr_get_child_count,
+    .get_child = cdeclr_get_child,
+    .get_child_tag = cdeclr_get_child_tag,
+    .generate_goat_code = cdeclr_generate_goat_code,
+    .generate_indented_goat_code = stub_indented_goat_code_generator,
+    .generate_bytecode = cdeclr_generate_bytecode,
+};
+
+/**
+ * @brief Creates a new constant declarator AST node.
+ * 
+ * Constructs a complete constant declarator node from a declarator specification.
+ * 
+ * @param arena Arena allocator for node allocation.
+ * @param spec Pointer to declarator specification containing:
+ *             - Name and length
+ *             - Mandatory initializer expression
+ * @return Pointer to newly created constant_declarator_t node.
+ */
+constant_declarator_t *create_constant_declarator_node(arena_t *arena,
+        const declarator_t *spec) {
+    assert(spec->initial != NULL);
+    
+    constant_declarator_t *decl = 
+        (constant_declarator_t *)alloc_from_arena(arena, sizeof(constant_declarator_t));
+    decl->base.vtbl = &cdeclr_vtbl;
+    decl->name = copy_string_to_arena(arena, spec->name, spec->name_length);
+    decl->name_length = spec->name_length;
+    decl->initial = spec->initial;
+    return decl;
 }
