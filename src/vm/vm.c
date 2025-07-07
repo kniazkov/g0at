@@ -386,10 +386,13 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
         return false; // empty stack
     }
     object_t *context = thread->context->data;
-    bool was_changes = false;
+    bool changed = false;
     model_status_t result = context->vtbl->set_property(context, key, value);
     assert(result != MSTAT_IMMUTABLE_OBJECT);
-    if (result == MSTAT_PROPERTY_NOT_FOUND) {
+    if (result == MSTAT_OK) {
+        changed = true;
+    }
+    else if (result == MSTAT_PROPERTY_NOT_FOUND) {
         object_array_t proto = context->vtbl->get_topology(context);
         size_t index = 0;
         do {
@@ -398,13 +401,13 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
                 break;
             }
             if (result == MSTAT_OK) {
-                was_changes = true;
+                changed = true;
                 break;
             }
             index++;
         } while (index < proto.size);
     }
-    if (!was_changes) {
+    if (!changed) {
         result = context->vtbl->add_property(context, key, value, false);
         if (result != MSTAT_OK) {
             return false;
@@ -552,13 +555,13 @@ int run(process_t *proc, bytecode_t *code) {
     while (flag) {
         instruction_t instr = code->instructions[thread->instr_id];
         instr_executor_t exec = executors[instr.opcode];
-        flag =  exec(&runtime, instr, thread);
+        flag = exec(&runtime, instr, thread);
         thread = thread->next;
     }
 
     // cleanup
     for (size_t index = 0; index < code->data_descriptor_count; index++) {
-        DECREF(proc->string_cache[index]);
+        DECREFIF(proc->string_cache[index]);
     }
     FREE(proc->string_cache);
     proc->string_cache = NULL;

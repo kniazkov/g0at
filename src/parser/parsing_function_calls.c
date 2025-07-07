@@ -66,7 +66,7 @@ compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
  *
  * @param container The TOKEN_FCALL_ARGS token containing argument tokens.
  * @param memory Parser memory context for allocations.
- * @param groups Token groups (unused in this rule).abort
+ * @param groups Token groups (unused in this rule).
  * @return NULL if arguments parsed successfully, error otherwise.
  */
 compilation_error_t *parsing_function_call_args(token_t *container,

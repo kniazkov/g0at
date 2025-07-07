@@ -44,6 +44,9 @@ static messages_t english = {
     .expected_lvalue = L"Left-hand side expression expected, got '%s' instead",
     .expected_comma_between_args = L"Expected comma between function arguments",
     .expected_expr_after_comma = L"Expected expression after comma in argument list",
+    .expected_var_declaration = L"Variable declaration expected after 'var' keyword",
+    .expected_const_declaration = L"Constant declaration expected after 'const' keyword",
+    .invalid_variable_declaration_syntax = L"Expected either variable name or name with value assignment, but got '%s'",
 };
 
 /**
@@ -75,6 +78,9 @@ static messages_t russian = {
     .expected_lvalue = L"Ожидается левостороннее выражение, но получено '%s'",
     .expected_comma_between_args = L"Ожидается запятая между аргументами функции",
     .expected_expr_after_comma = L"Ожидается выражение после запятой в списке аргументов",
+    .expected_var_declaration = L"После ключевого слова 'var' ожидается определение переменной",
+    .expected_const_declaration = L"После ключевого слова 'const' ожидается определение константы",
+    .invalid_variable_declaration_syntax = L"Ожидается либо имя переменной, либо имя с присваиванием значения, но получено '%s'",
 };
 
 /**

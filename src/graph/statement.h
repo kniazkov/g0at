@@ -66,7 +66,7 @@ typedef struct {
     /**
      * @brief The name of the declared identifier.
      */
-    wchar_t *name;
+    const wchar_t *name;
 
     /**
      * @brief Length of the name in characters.

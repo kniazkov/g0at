@@ -171,7 +171,6 @@ static void vdeclr_generate_bytecode(const node_t *node, code_builder_t *code,
     } else {
         add_instruction(code, (instruction_t){ .opcode = NIL });
     }
-    add_instruction(code, (instruction_t){ .opcode = POP });
     uint32_t index = add_string_to_data_segment_ex(data, decl->name, decl->name_length);
     add_instruction(code, (instruction_t){ .opcode = VAR, .arg1 = index });
 }
@@ -293,7 +292,6 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
     const variable_declaration_t* decl = (const variable_declaration_t*)node;
     string_builder_t builder;
     init_string_builder(&builder, 0);
-    string_value_t result = { L"", 0, false };
     append_substring(&builder, L"var ", 4);
     for (size_t index = 0; index < decl->decl_count; index++) {
         if (index > 0) {
@@ -301,12 +299,12 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
         }
         variable_declarator_t *vdr = decl->decl_list[index];
         string_value_t vdr_as_string = vdeclr_generate_goat_code(&vdr->base);
-        result = append_substring(&builder, vdr_as_string.data, vdr_as_string.length);
+        append_substring(&builder, vdr_as_string.data, vdr_as_string.length);
         if (vdr_as_string.should_free) {
             FREE(vdr_as_string.data);
         }
     }
-    return result;
+    return append_char(&builder, L';');
 }
 
 /**
@@ -530,7 +528,6 @@ static void cdeclr_generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
     decl->initial->base.vtbl->generate_bytecode(&decl->initial->base, code, data);
-    add_instruction(code, (instruction_t){ .opcode = POP });
     uint32_t index = add_string_to_data_segment_ex(data, decl->name, decl->name_length);
     add_instruction(code, (instruction_t){ .opcode = CONST, .arg1 = index });
 }
@@ -656,7 +653,6 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
     const constant_declaration_t* decl = (const constant_declaration_t*)node;
     string_builder_t builder;
     init_string_builder(&builder, 0);
-    string_value_t result = { L"", 0, false };
     append_substring(&builder, L"const ", 6);
     for (size_t index = 0; index < decl->decl_count; index++) {
         if (index > 0) {
@@ -664,12 +660,12 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
         }
         constant_declarator_t *cdr = decl->decl_list[index];
         string_value_t cdr_as_string = cdr->base.vtbl->generate_goat_code(&cdr->base);
-        result = append_substring(&builder, cdr_as_string.data, cdr_as_string.length);
+        append_substring(&builder, cdr_as_string.data, cdr_as_string.length);
         if (cdr_as_string.should_free) {
             FREE(cdr_as_string.data);
         }
     }
-    return result;
+    return append_char(&builder, L';');
 }
 
 /**

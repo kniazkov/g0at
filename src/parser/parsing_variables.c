@@ -30,9 +30,11 @@
  * 
  * @param identifier The identifier token to process.
  * @param memory Parser memory context.
+ * @param groups Token groups (unused in this rule).
  * @return NULL on success, error if conversion fails.
  */
-compilation_error_t *parsing_single_identifiers(token_t *identifier, parser_memory_t *memory) {
+compilation_error_t *parsing_single_identifiers(token_t *identifier, parser_memory_t *memory,
+        token_groups_t *groups) {
     assert(identifier->type == TOKEN_IDENTIFIER);
     
     if (identifier->left != NULL) {
