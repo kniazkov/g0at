@@ -17,3 +17,4 @@ function_as_variable
 nested_call_expr 
 complex_argument 
 atan 
+var_decl_wo_initial 
