@@ -42,6 +42,8 @@ compilation_error_t *parsing_single_identifiers(token_t *identifier, parser_memo
                        || identifier->left->type == TOKEN_EXPRESSION
                        || identifier->left->type == TOKEN_COMMA
                        || identifier->left->type == TOKEN_SEMICOLON
+                       || identifier->left->type == TOKEN_VAR
+                       || identifier->left->type == TOKEN_CONST
                        ;
         if (!valid_left) {
             return NULL;
@@ -54,6 +56,8 @@ compilation_error_t *parsing_single_identifiers(token_t *identifier, parser_memo
                         || identifier->right->type == TOKEN_IDENTIFIER
                         || identifier->right->type == TOKEN_COMMA
                         || identifier->right->type == TOKEN_SEMICOLON
+                        || identifier->right->type == TOKEN_VAR
+                        || identifier->right->type == TOKEN_CONST
                         ;
         if (!valid_right) {
             return NULL;

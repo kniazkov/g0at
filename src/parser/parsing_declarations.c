@@ -44,19 +44,37 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
     token_t *token = keyword->right;
     token_t *last_token = token;
     do {
-        if (token->type != TOKEN_IDENTIFIER) {
-            error = create_error_from_token(
-                memory->tokens,
-                keyword,
-                get_messages()->invalid_variable_declaration_syntax,
-                token->text
-            );
+        if (token->type != TOKEN_EXPRESSION || !token->node || (
+                token->node->vtbl->type != NODE_VARIABLE &&
+                token->node->vtbl->type != NODE_SIMPLE_ASSIGNMENT)) {
+            if (token->node) {
+                string_value_t str = token->node->vtbl->generate_goat_code(token->node);
+                error = create_error_from_token(
+                    memory->tokens,
+                    keyword,
+                    get_messages()->invalid_variable_declaration_syntax,
+                    str.data
+                );
+                if (str.should_free) {
+                    FREE(str.data);
+                }
+            } else {
+                error = create_error_from_token(
+                    memory->tokens,
+                    keyword,
+                    get_messages()->invalid_variable_declaration_syntax,
+                    token->text
+                );
+            }
             goto cleanup;
         }
         declarator_t *item = ALLOC(sizeof(declarator_t));
-        item->name = token->text;
-        item->name_length = token->length;
-        item->initial = NULL;
+        if (token->node->vtbl->type == NODE_VARIABLE) {
+            string_value_t name = token->node->vtbl->generate_goat_code(token->node);
+            item->name = name.data;
+            item->name_length = name.length;
+            item->initial = NULL;
+        }
         append_to_vector(vector, item);
         token = token->right;
         if (!token) {
@@ -65,7 +83,7 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
         if (token->type == TOKEN_COMMA) {
             token = token->right;
         } else if (token->type == TOKEN_OPERATOR) {
-            
+
         } else {
             break;
         }

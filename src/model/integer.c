@@ -22,6 +22,7 @@
 #include "process.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
+#include "lib/string_ext.h"
 
 /**
  * @def POOL_CAPACITY
@@ -284,10 +285,7 @@ static object_t *clone(process_t *process, object_t *obj) {
  */
 static string_value_t to_string(const object_t *obj) {
     int64_t value = obj->vtbl->get_integer_value(obj).value;
-    size_t buf_size = 24; // max 20 digits + sign + null terminator
-    wchar_t *wstr = (wchar_t *)ALLOC(buf_size * sizeof(wchar_t));
-    swprintf(wstr, buf_size, L"%" PRId64, value);
-    return (string_value_t){ wstr, wcslen(wstr), true };
+    return format_string(L"%ld", value);
 }
 
 /**
