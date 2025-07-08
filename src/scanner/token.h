@@ -15,6 +15,7 @@
 #include <wchar.h>
 
 #include "position.h"
+#include "lib/value.h"
 
 /**
  * @brief Forward declaration of token structure.
@@ -246,6 +247,19 @@ typedef struct {
      */
     token_list_t const_keywords;
 } token_groups_t;
+
+/**
+ * @brief Gets the textual representation of a token.
+ * 
+ * Returns the appropriate string representation based on the token type:
+ * - For non-terminal tokens (those associated with AST nodes): Returns the text 
+ *   generated from the corresponding syntax tree node
+ * - For terminal tokens: Returns the original source text of the token itself
+ *
+ * @param token Pointer to the token to convert.
+ * @return Textual representation of the token.
+ */
+string_value_t token_to_string(const token_t *token);
 
 /**
  * @brief Adds a token to the end of a neighbors list.

@@ -47,24 +47,15 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
         if (token->type != TOKEN_EXPRESSION || !token->node || (
                 token->node->vtbl->type != NODE_VARIABLE &&
                 token->node->vtbl->type != NODE_SIMPLE_ASSIGNMENT)) {
-            if (token->node) {
-                string_value_t str = token->node->vtbl->generate_goat_code(token->node);
-                error = create_error_from_token(
-                    memory->tokens,
-                    keyword,
-                    get_messages()->invalid_variable_declaration_syntax,
-                    str.data
-                );
-                if (str.should_free) {
-                    FREE(str.data);
-                }
-            } else {
-                error = create_error_from_token(
-                    memory->tokens,
-                    keyword,
-                    get_messages()->invalid_variable_declaration_syntax,
-                    token->text
-                );
+            string_value_t str = token_to_string(token);
+            error = create_error_from_token(
+                memory->tokens,
+                keyword,
+                get_messages()->invalid_variable_declaration_syntax,
+                str.data
+            );
+            if (str.should_free) {
+                FREE(str.data);
             }
             goto cleanup;
         }
