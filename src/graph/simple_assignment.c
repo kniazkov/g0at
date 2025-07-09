@@ -7,7 +7,10 @@
  * the '=' operation in the syntax tree.
  */
 
+#include <assert.h>
+
 #include "assignment.h"
+#include "statement.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
@@ -96,4 +99,15 @@ expression_t *create_simple_assignment_node(arena_t *arena, assignable_expressio
     expr->base.left_operand = left_operand;
     expr->base.right_operand = right_operand;
     return &expr->base.base;
+}
+
+declarator_t *create_declarator_from_simple_assignment(const node_t *expr) {
+    assert(expr->vtbl->type == NODE_SIMPLE_ASSIGNMENT);
+    const simple_assignment_t *assign = (simple_assignment_t *)expr;
+    if (assign->base.left_operand->base.base.vtbl->type != NODE_VARIABLE) {
+        return NULL;
+    }
+    declarator_t *decl = create_declarator_from_variable(&assign->base.left_operand->base.base);
+    decl->initial = assign->base.right_operand;
+    return decl;
 }

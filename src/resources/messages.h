@@ -44,6 +44,8 @@ typedef struct {
     const wchar_t const *expected_expr_after_comma;
     const wchar_t const *expected_var_declaration;
     const wchar_t const *expected_const_declaration;
+    const wchar_t const *expected_var_after_comma;
+    const wchar_t const *expected_const_after_comma;
     const wchar_t const *invalid_variable_declaration_syntax;
     // add other
 } messages_t;

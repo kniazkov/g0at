@@ -95,3 +95,20 @@ const wchar_t* assignment_get_tag(const node_t *node, size_t index);
  */
 expression_t *create_simple_assignment_node(arena_t *arena, assignable_expression_t *left_operand,
         expression_t *right_operand);
+
+/**
+ * @brief Creates a declarator from a simple assignment expression.
+ * 
+ * Constructs a declarator_t structure by extracting the variable and value
+ * from a simple assignment expression (e.g., converts `x = 42` into a declarator
+ * that can be used in a variable/constant declaration).
+ *
+ * @param expr Pointer to the assignment node.
+ * @return Pointer to newly allocated declarator_t with:
+ *         - name from the left-hand side variable
+ *         - initializer from the right-hand side expression
+ *         - NULL if the left-hand side is not a variable
+ *
+ * @warning The returned declarator is heap-allocated and must be freed by the caller.
+ */
+declarator_t *create_declarator_from_simple_assignment(const node_t *expr);

@@ -8,7 +8,7 @@
 #include <assert.h>
 
 #include "parser.h"
-#include "graph/expression.h"
+#include "graph/assignment.h"
 #include "graph/statement.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
@@ -42,36 +42,39 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
     }
     vector = create_vector_ex(AVERAGE_NUMBER_OF_VARIABLES_PER_STATEMENT);
     token_t *token = keyword->right;
-    token_t *last_token = token;
+    token_t *last_token;
     do {
+        last_token = token;
         if (token->type != TOKEN_EXPRESSION || !token->node || (
                 token->node->vtbl->type != NODE_VARIABLE &&
                 token->node->vtbl->type != NODE_SIMPLE_ASSIGNMENT)) {
-            string_value_t str = token_to_string(token);
-            error = create_error_from_token(
-                memory->tokens,
-                keyword,
-                get_messages()->invalid_variable_declaration_syntax,
-                str.data
-            );
-            if (str.should_free) {
-                FREE(str.data);
-            }
-            goto cleanup;
+            goto invalid_declaration;
         }
         declarator_t *item = NULL;
         if (token->node->vtbl->type == NODE_VARIABLE) {
             item = create_declarator_from_variable(token->node);
+        } else {
+            item = create_declarator_from_simple_assignment(token->node);
+            if (item == NULL) {
+                goto invalid_declaration;
+            }
         }
+        assert(item != NULL);
         append_to_vector(vector, item);
         token = token->right;
         if (!token) {
             break;
         }
         if (token->type == TOKEN_COMMA) {
+            if (!token->right) {
+                error = create_error_from_token(
+                    memory->tokens,
+                    token,
+                    get_messages()->expected_var_after_comma
+                );
+                goto cleanup;
+            }
             token = token->right;
-        } else if (token->type == TOKEN_OPERATOR) {
-
         } else {
             break;
         }
@@ -88,6 +91,22 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
         TOKEN_STATEMENT, 
         declaration
     );
+    goto cleanup;
+
+invalid_declaration:
+    {
+        string_value_t last_token_str = token_to_string(last_token);
+        error = create_error_from_token(
+            memory->tokens,
+            keyword,
+            get_messages()->invalid_variable_declaration_syntax,
+            last_token_str.data
+        );
+        if (last_token_str.should_free) {
+            FREE(last_token_str.data);
+        }
+    }
+
 cleanup:
     if (vector) {
         destroy_vector_ex(vector, FREE);
