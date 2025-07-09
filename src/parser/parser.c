@@ -60,6 +60,12 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
     token_groups_t *groups);
 
 /**
+ * @brief Rule for handling constant declarations.
+ */
+compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memory_t *memory, 
+    token_groups_t *groups);
+
+/**
  * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into
  *  a special token.
  * 
@@ -317,6 +323,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_BACKWARD(assignment_operators, parsing_assignment_operators);
     APPLY_FORWARD(function_arguments, parsing_function_call_args);
     APPLY_FORWARD(var_keywords, parsing_variable_declarations);
+    APPLY_FORWARD(const_keywords, parsing_constant_declarations);
     // add other rules...
     return error;
 }

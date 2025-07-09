@@ -48,7 +48,8 @@ static messages_t english = {
     .expected_const_declaration = L"Constant declaration expected after 'const' keyword",
     .expected_var_after_comma = L"Expected another variable declaration after comma",
     .expected_const_after_comma = L"Expected another constant declaration after comma",
-    .invalid_variable_declaration_syntax = L"Expected either variable name or name with value assignment, but got '%s'",
+    .invalid_var_declaration_syntax = L"Expected either variable name or name with value assignment, but got '%s'",
+    .invalid_const_declaration_syntax = L"Expected name with value assignment, but got '%s'",
 };
 
 /**
@@ -84,7 +85,8 @@ static messages_t russian = {
     .expected_const_declaration = L"После ключевого слова 'const' ожидается определение константы",
     .expected_var_after_comma = L"После запятой ожидается определение следующей переменной",
     .expected_const_after_comma = L"После запятой ожидается определение следующей константы",
-    .invalid_variable_declaration_syntax = L"Ожидается либо имя переменной, либо имя с присваиванием значения, но получено '%s'",
+    .invalid_var_declaration_syntax = L"Ожидается либо имя переменной, либо имя с присваиванием значения, но получено '%s'",
+    .invalid_const_declaration_syntax = L"Ожидается имя с присваиванием значения, но получено '%s'",
 };
 
 /**
