@@ -46,8 +46,8 @@ static messages_t english = {
     .expected_expr_after_comma = L"Expected expression after comma in argument list",
     .expected_var_declaration = L"Variable declaration expected after 'var' keyword",
     .expected_const_declaration = L"Constant declaration expected after 'const' keyword",
-    .expected_var_after_comma = L"После запятой ожидается определение следующей переменной",
-    .expected_const_after_comma = L"После запятой ожидается определение следующей константы",
+    .expected_var_after_comma = L"Expected another variable declaration after comma",
+    .expected_const_after_comma = L"Expected another constant declaration after comma",
     .invalid_variable_declaration_syntax = L"Expected either variable name or name with value assignment, but got '%s'",
 };
 

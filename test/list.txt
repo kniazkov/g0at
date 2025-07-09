@@ -20,3 +20,5 @@ atan
 var_decl_wo_initial 
 var_decl_w_initial 
 var_decl_complex_case 
+bad_var_decl 
+bad_decl_after_comma 
