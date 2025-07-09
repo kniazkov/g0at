@@ -1,9 +1,11 @@
 /**
  * @file parsing_declarations.c
  * @copyright 2025 Ivan Kniazkov
- * @brief Defines reduction rules for ....
+ * @brief Defines reduction rules for variable and constant declarations.
  *
- * This file contains the implementation of reduction rules specific to ....
+ * This file contains the implementation of reduction rules specific to processing
+ * variable and constant declarations in the source code. It handles the conversion
+ * of declaration statements into appropriate AST nodes.
  */
 #include <assert.h>
 
@@ -18,14 +20,21 @@
 #define AVERAGE_NUMBER_OF_VARIABLES_PER_STATEMENT 3
 
 /**
- * @brief Converts ....
+ * @brief Processes variable declaration statements.
  * 
- * Examples where rule applies:
- * 
- * @param keyword The keyword token to process.
- * @param memory Parser memory context.
- * @param groups Token groups (unused in this rule).
- * @return NULL on success, error if conversion fails.
+ * Converts a sequence of tokens starting with 'var' into a variable declaration AST node.
+ * Handles both simple declarations and initialized variables, including multiple
+ * declarations separated by commas.
+ *
+ * @param keyword The 'var' keyword token that starts the declaration.
+ * @param memory Parser memory context containing tokens and graph.
+ * @param groups Token groups (unused in this implementation).
+ * @return NULL on successful parsing, or a compilation error if parsing fails.
+ *
+ * @note Handles cases like:
+ *       - var x
+ *       - var x = 1
+ *       - var x, y = 2, z
  */
 compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memory_t *memory,
         token_groups_t *groups) {
