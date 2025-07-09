@@ -12,6 +12,11 @@
 #include "node.h"
 
 /**
+ * @brief Forward declaration of declarator structure (needed for variable & constant declaration).
+ */
+typedef struct declarator_t declarator_t;
+
+/**
  * @struct expression_t
  * @brief The structure representing an expression node.
  */
@@ -70,6 +75,23 @@ node_t *create_integer_node(arena_t *arena, int64_t value);
  * @return A pointer to the newly created variable expression node.
  */
 expression_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length);
+
+/**
+ * @brief Creates a declarator from an existing variable expression.
+ * 
+ * Constructs a new declarator structure to represent the declaration of
+ * an existing variable. The resulting declarator can be used in declaration
+ * nodes (like variable_declaration_t) to formally declare the variable.
+ * 
+ * @param expr Pointer to the variable expression to convert.
+ * @return Pointer to newly allocated declarator_t with name copied from the variable and no
+ *  initializer.
+ * @warning The returned declarator is heap-allocated and must be freed by the caller
+ *  when no longer needed.
+ * @note The created declarator will have no initializer (NULL), which is valid for
+ *  variable declarations but invalid for constant declarations.
+ */
+declarator_t *create_declarator_from_variable(const node_t *expr);
 
 /**
  * @brief Creates a function call expression node with empty arguments.

@@ -59,12 +59,9 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
             }
             goto cleanup;
         }
-        declarator_t *item = ALLOC(sizeof(declarator_t));
+        declarator_t *item = NULL;
         if (token->node->vtbl->type == NODE_VARIABLE) {
-            string_value_t name = token->node->vtbl->generate_goat_code(token->node);
-            item->name = name.data;
-            item->name_length = name.length;
-            item->initial = NULL;
+            item = create_declarator_from_variable(token->node);
         }
         append_to_vector(vector, item);
         token = token->right;

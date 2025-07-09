@@ -7,8 +7,12 @@
  * a variable by its name in the syntax tree. 
  */
 
+#include <assert.h>
+
 #include "assignable_expression.h"
 #include "common_methods.h"
+#include "statement.h"
+#include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 #include "codegen/code_builder.h"
@@ -127,4 +131,14 @@ expression_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t n
     expr->name = copy_string_to_arena(arena, name, name_length);
     expr->name_length = name_length;
     return &expr->base.base;
+}
+
+declarator_t *create_declarator_from_variable(const node_t *expr) {
+    assert(expr->vtbl->type == NODE_VARIABLE);
+    const variable_t *var = (variable_t *)expr;
+    declarator_t *decl = (declarator_t*)ALLOC(sizeof(declarator_t));
+    decl->name = var->name;
+    decl->name_length = var->name_length;
+    decl->initial = NULL;
+    return decl;
 }

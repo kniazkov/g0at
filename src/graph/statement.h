@@ -22,6 +22,11 @@
 #include "node.h"
 
 /**
+ * @brief Forward declaration of declarator structure (needed for variable & constant declaration).
+ */
+typedef struct declarator_t declarator_t;
+
+/**
  * @struct statement_t
  * @brief The structure representing a statement node.
  * 
@@ -62,11 +67,11 @@ statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrap
  * This structure encapsulates the common properties of both variable and constant
  * declarations, including the identifier name and [optional] initializer expression.
  */
-typedef struct {
+struct declarator_t {
     /**
      * @brief The name of the declared identifier.
      */
-    const wchar_t *name;
+    wchar_t *name;
 
     /**
      * @brief Length of the name in characters.
@@ -80,7 +85,7 @@ typedef struct {
      * - For constants: Required (must be non-NULL)
      */
     expression_t *initial;
-} declarator_t;
+};
 
 /**
  * @brief Creates a new variable declaration AST node.

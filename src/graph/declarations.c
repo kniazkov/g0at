@@ -207,7 +207,7 @@ static variable_declarator_t *create_variable_declarator_node(arena_t *arena,
     variable_declarator_t *decl = 
         (variable_declarator_t *)alloc_from_arena(arena, sizeof(variable_declarator_t));
     decl->base.vtbl = &vdeclr_vtbl;
-    decl->name = copy_string_to_arena(arena, spec->name, spec->name_length);
+    decl->name = spec->name;
     decl->name_length = spec->name_length;
     decl->initial = spec->initial;
     return decl;
@@ -567,7 +567,7 @@ static constant_declarator_t *create_constant_declarator_node(arena_t *arena,
     constant_declarator_t *decl = 
         (constant_declarator_t *)alloc_from_arena(arena, sizeof(constant_declarator_t));
     decl->base.vtbl = &cdeclr_vtbl;
-    decl->name = copy_string_to_arena(arena, spec->name, spec->name_length);
+    decl->name = spec->name;
     decl->name_length = spec->name_length;
     decl->initial = spec->initial;
     return decl;
