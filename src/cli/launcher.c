@@ -38,8 +38,6 @@ int go(options_t *opt) {
     string_value_t code = read_utf8_file(opt->input_file->full_path);
     if (code.data == NULL) {
         fprintf_utf8(stderr, get_messages()->cannot_read_source_file, opt->input_file->normal_path);
-    }
-    if (code.data == NULL) {
         return -1;
     }
 
@@ -170,7 +168,7 @@ int go(options_t *opt) {
         const wchar_t const *error_msg_format = get_messages()->compilation_error;
         while (error != NULL) {
             fprintf_utf8(stderr, error_msg_format, error->begin.file_name, error->begin.row,
-                error->begin.column, error->message);
+                error->begin.column, error->message.data);
             fprintf(stderr, "\n");
             error = error->next;
         }
