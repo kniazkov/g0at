@@ -137,3 +137,39 @@ typedef struct {
         .length = sizeof(str) / sizeof(wchar_t) - 1, \
         .should_free = false \
     }
+
+/**
+ * @struct string_view_t
+ * @brief A non-owning view of a null-terminated wide-character string.
+ *
+ * This structure provides a lightweight way to examine and pass string data without
+ * memory ownership.
+ * - NULL `data` indicates the absence of a string (no answer, uninitialized field)
+ * - Non-NULL `data` always points to a valid null-terminated string (which may be empty)
+ */
+typedef struct {
+    /**
+     * @brief Pointer to a null-terminated wide-character string or NULL.
+     * 
+     * When NULL, indicates the string doesn't exist.
+     * When non-NULL, must point to a valid null-terminated string which may be empty.
+     */
+    wchar_t* data;
+
+    /**
+     * @brief Length of the string in characters (excluding null terminator).
+     * 
+     * When data is NULL, this must be 0. For non-NULL data, this equals wcslen(data).
+     * Provides O(1) access to string length without computation.
+     */
+    size_t length;
+} string_view_t;
+
+/**
+ * @def STRING_VALUE_TO_VIEW(sv)
+ * @brief Safely converts a string_value_t to a string_view_t.
+ * @param sv The string_value_t to convert (must have valid invariants)
+ * @return A string_view_t with matching null/non-null semantics
+ */
+#define STRING_VALUE_TO_VIEW(sv) \
+    ((string_view_t){ .data = (sv).data, .length = (sv).data ? (sv).length : 0 })
