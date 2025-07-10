@@ -15,6 +15,8 @@
 #include <stddef.h>
 #include <wchar.h>
 
+#include "value.h"
+
 /**
  * @struct arena_t
  * @brief Forward declaration for memory arena structure.
@@ -182,21 +184,19 @@ void *alloc_zeroed_from_arena(arena_t* arena, size_t size);
 void *copy_object_to_arena(arena_t* arena, const void* object, size_t size);
 
 /**
- * @brief Copies a wide-character string to the specified memory arena.
+ * @brief Copies a wide-character string to the specified memory arena and returns as string view.
  * 
  * This function creates a copy of the given wide-character string by allocating memory for it
- * in the specified arena and copying the contents of the string into the newly allocated
- * memory block. The resulting string is null-terminated. If the length of the string is zero,
- * the function returns a constant pointer to an empty string (L"").
+ * in the specified arena and returns a `string_view_t` containing the copied string.
  * 
  * @param arena A pointer to the memory arena where the string will be copied.
  * @param string A pointer to the wide-character string to be copied.
  * @param length The length of the string (excluding the null terminator).
  * 
- * @return A pointer to the copied string in the arena's memory, or a constant empty string
- *  if length is 0.
+ * @return A string_view_t containing either the copied string in arena memory or empty
+ *  string view.
  */
-wchar_t *copy_string_to_arena(arena_t* arena, const wchar_t* string, size_t length);
+string_view_t copy_string_to_arena(arena_t* arena, const wchar_t* string, size_t length);
 
 /**
  * @brief Formats a string using the memory arena and returns it.
@@ -207,14 +207,11 @@ wchar_t *copy_string_to_arena(arena_t* arena, const wchar_t* string, size_t leng
  * (excluding the null terminator).
  * 
  * @param arena A pointer to the arena from which memory should be allocated.
- * @param size_ptr A pointer to a `size_t` variable that will store the size of the formatted
- *  string (excluding the null terminator). If `NULL`, the size is not returned.
  * @param format A format string.
  * @param ... Arguments for formatting.
- * @return A pointer to the formatted string allocated from the arena. 
- *  The caller is responsible for freeing the memory when no longer needed.
+ * @return String view containing formatted string allocated from the arena. 
  */
-wchar_t *format_string_to_arena(arena_t *arena, size_t *size_ptr, const wchar_t *format, ...);
+string_view_t format_string_to_arena(arena_t *arena, const wchar_t *format, ...);
 
 /**
  * @brief Destroys the memory arena and frees all allocated memory.

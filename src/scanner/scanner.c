@@ -255,7 +255,7 @@ static void parse_string(scanner_t *scan, token_t *token) {
     while (ch != '"') {
         if (ch == L'\0') {
             token->type = TOKEN_ERROR;
-            token->text = get_messages()->unclosed_quotation_mark;
+            token->text.data = get_messages()->unclosed_quotation_mark;
             goto cleanup;
         }
         if (ch == L'\\') {
@@ -263,7 +263,7 @@ static void parse_string(scanner_t *scan, token_t *token) {
             switch(ch) {
                 case L'\0':
                     token->type = TOKEN_ERROR;
-                    token->text = get_messages()->unclosed_quotation_mark;
+                    token->text.data = get_messages()->unclosed_quotation_mark;
                     goto cleanup;
                 case L'r':
                     append_char(&builder, '\r');
@@ -284,8 +284,11 @@ static void parse_string(scanner_t *scan, token_t *token) {
                     break;
                 default:
                     token->type = TOKEN_ERROR;
-                    token->text = format_string_to_arena(scan->memory->tokens, &token->length,
-                        get_messages()->invalid_escape_sequence, ch);
+                    token->text = format_string_to_arena(
+                        scan->memory->tokens,
+                        get_messages()->invalid_escape_sequence,
+                        ch
+                    );
                     goto cleanup;
             }
         } else {
@@ -367,8 +370,7 @@ token_t *get_token(scanner_t *scan) {
                     wcsncmp(token->begin.code, kw->keyword, kw->length) == 0) {
                 predefined = true;
                 token->type = kw->type;
-                token->text = kw->keyword;
-                token->length = kw->length;
+                token->text = (string_view_t){ kw->keyword, kw->length };
                 if (kw->node_factory) {
                     token->node = kw->node_factory();
                 }
@@ -402,36 +404,36 @@ token_t *get_token(scanner_t *scan) {
     }
     else if (ch == L',') {
         token->type = TOKEN_COMMA;
-        token->text = L",";
-        token->length = 1;
+        token->text = (string_view_t){ L",", 1 };
         next_char(scan);
     }
     else if (ch == L';') {
         token->type = TOKEN_SEMICOLON;
-        token->text = L";";
-        token->length = 1;
+        token->text = (string_view_t){ L";", 1 };
         next_char(scan);
     }
     else {
         token->type = TOKEN_ERROR;
-        token->text = format_string_to_arena(scan->memory->tokens, &token->length,
-            get_messages()->unknown_symbol, ch);
+        token->text = format_string_to_arena(
+            scan->memory->tokens,
+            get_messages()->unknown_symbol,
+            ch
+        );
         next_char(scan);
     }
     
     token->end = full_to_short_position(&scan->position);
-    if (token->text == NULL) {
+    if (token->text.data == NULL) {
         size_t length = scan->position.code - token->begin.code;
         token->text = copy_string_to_arena(scan->memory->tokens, token->begin.code, length);
-        token->length = length;
-    } else if (token->length == 0) {
-        token->length = wcslen(token->text);
+    } else if (token->text.length == 0) {
+        token->text.length = wcslen(token->text.data);
     }
 
     if (token->type == TOKEN_OPERATOR) {
         for (size_t index = 0; index < sizeof(operator_mappings)/sizeof(operator_mapping_t);
                 index++) {
-            if (wcscmp(operator_mappings[index].oper, token->text) == 0) {
+            if (wcscmp(operator_mappings[index].oper, token->text.data) == 0) {
                 token_list_t* group = (token_list_t*)((char*)(scan->groups)
                     + operator_mappings[index].group_offset);
                 append_token_to_group(group, token);

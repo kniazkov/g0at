@@ -166,10 +166,19 @@ typedef struct {
 } string_view_t;
 
 /**
- * @def STRING_VALUE_TO_VIEW(sv)
+ * @def STRING_VALUE_TO_VIEW(s)
  * @brief Safely converts a string_value_t to a string_view_t.
- * @param sv The string_value_t to convert (must have valid invariants)
+ * @param s The string_value_t to convert (must have valid invariants)
  * @return A string_view_t with matching null/non-null semantics
  */
-#define STRING_VALUE_TO_VIEW(sv) \
-    ((string_view_t){ .data = (sv).data, .length = (sv).data ? (sv).length : 0 })
+#define STRING_VALUE_TO_VIEW(s) \
+    ((string_view_t){ .data = (s).data, .length = (s).data ? (s).length : 0 })
+
+/**
+ * @def STRING_VIEW_TO_VALUE(s)
+ * @brief Safely converts a string_view_t to a string_value_t.
+ * @param sv The string_view_t to convert (must have valid invariants)
+ * @return A string_value_t with matching null/non-null semantics and false should_free flag
+ */
+#define STRING_VIEW_TO_VALUE(s) \
+    ((string_value_t){ .data = (s).data, .length = (s).data ? (s).length : 0, .should_free = false })

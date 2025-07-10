@@ -64,11 +64,7 @@ compilation_error_t *parsing_single_identifiers(token_t *identifier, parser_memo
         }
     }
     
-    node_t *variable = (node_t*)create_variable_node(
-        memory->graph,
-        identifier->text,
-        identifier->length
-    );
+    node_t *variable = (node_t*)create_variable_node(memory->graph, identifier->text);
     
     collapse_tokens_to_token(
         memory->tokens, 

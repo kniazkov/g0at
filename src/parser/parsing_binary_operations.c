@@ -32,7 +32,7 @@
 compilation_error_t *parsing_additive_operators(token_t *operator, parser_memory_t *memory,
         token_groups_t *groups) {
     assert(operator->type == TOKEN_OPERATOR &&
-        (operator->text[0] == L'+' || operator->text[0] == L'-'));
+        (operator->text.data[0] == L'+' || operator->text.data[0] == L'-'));
     
     token_t *left_token = operator->left;
     if (left_token == NULL) {
@@ -61,7 +61,7 @@ compilation_error_t *parsing_additive_operators(token_t *operator, parser_memory
     expression_t *left_operand = (expression_t *)left_token->node;
     expression_t *right_operand = (expression_t *)right_token->node;
     expression_t *operation;
-    if (operator->text[0] == L'+') {
+    if (operator->text.data[0] == L'+') {
         operation = create_addition_node(memory->graph, left_operand, right_operand);
     } else {
         operation = create_subtraction_node(memory->graph, left_operand, right_operand);

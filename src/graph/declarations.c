@@ -46,12 +46,7 @@ typedef struct {
     /**
      * @brief The name of the variable being declared.
      */
-    wchar_t *name;
-
-    /**
-     * @brief The length of the variable name in characters.
-     */
-    size_t name_length;
+    string_view_t name;
 
     /**
      * @brief Optional initializer expression for the variable.
@@ -72,7 +67,7 @@ typedef struct {
  */
 static string_value_t vdeclr_get_data(const node_t *node) {
     const variable_declarator_t *decl = (const variable_declarator_t *)node;
-    return (string_value_t){ decl->name, decl->name_length, false };
+    return STRING_VIEW_TO_VALUE(decl->name);
 }
 
 /**
@@ -137,8 +132,8 @@ static string_value_t vdeclr_generate_goat_code(const node_t *node) {
         string_builder_t builder;
         string_value_t initial_as_string =
             decl->initial->base.vtbl->generate_goat_code(&decl->initial->base);
-        init_string_builder(&builder, decl->name_length + 3 + initial_as_string.length);
-        append_substring(&builder, decl->name, decl->name_length);
+        init_string_builder(&builder, decl->name.length + 3 + initial_as_string.length);
+        append_substring(&builder, decl->name.data, decl->name.length);
         append_substring(&builder, L" = ", 3);
         string_value_t value = append_substring(&builder, initial_as_string.data,
                initial_as_string.length);
@@ -147,7 +142,7 @@ static string_value_t vdeclr_generate_goat_code(const node_t *node) {
         }
         return value;
     } else {
-        return (string_value_t){ decl->name, decl->name_length, false };
+        return STRING_VIEW_TO_VALUE(decl->name);
     }
 }
 
@@ -171,7 +166,7 @@ static void vdeclr_generate_bytecode(const node_t *node, code_builder_t *code,
     } else {
         add_instruction(code, (instruction_t){ .opcode = NIL });
     }
-    uint32_t index = add_string_to_data_segment_ex(data, decl->name, decl->name_length);
+    uint32_t index = add_string_to_data_segment_ex(data, decl->name.data, decl->name.length);
     add_instruction(code, (instruction_t){ .opcode = VAR, .arg1 = index });
 }
 
@@ -208,7 +203,6 @@ static variable_declarator_t *create_variable_declarator_node(arena_t *arena,
         (variable_declarator_t *)alloc_from_arena(arena, sizeof(variable_declarator_t));
     decl->base.vtbl = &vdeclr_vtbl;
     decl->name = spec->name;
-    decl->name_length = spec->name_length;
     decl->initial = spec->initial;
     return decl;
 }
@@ -404,19 +398,8 @@ typedef struct {
 
     /**
      * @brief The name of the constant being declared.
-     * 
-     * Stored as an arena-allocated wide character string. Must be a valid identifier
-     * following the language's naming rules.
      */
-    wchar_t *name;
-
-    /**
-     * @brief The length of the constant name in characters.
-     * 
-     * Specifies the exact length of the name string, which may differ from what
-     * would be reported by null-terminated string functions.
-     */
-    size_t name_length;
+    string_view_t name;
 
     /**
      * @brief Initializer expression for the constant.
@@ -438,7 +421,7 @@ typedef struct {
  */
 static string_value_t cdeclr_get_data(const node_t *node) {
     const constant_declarator_t *decl = (const constant_declarator_t *)node;
-    return (string_value_t){ decl->name, decl->name_length, false };
+    return STRING_VIEW_TO_VALUE(decl->name);
 }
 
 /**
@@ -501,8 +484,8 @@ static string_value_t cdeclr_generate_goat_code(const node_t *node) {
     string_builder_t builder;
     string_value_t initial_as_string =
         decl->initial->base.vtbl->generate_goat_code(&decl->initial->base);
-    init_string_builder(&builder, decl->name_length + 3 + initial_as_string.length);
-    append_substring(&builder, decl->name, decl->name_length);
+    init_string_builder(&builder, decl->name.length + 3 + initial_as_string.length);
+    append_substring(&builder, decl->name.data, decl->name.length);
     append_substring(&builder, L" = ", 3);
     string_value_t value = append_substring(&builder, initial_as_string.data,
             initial_as_string.length);
@@ -528,7 +511,7 @@ static void cdeclr_generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
     decl->initial->base.vtbl->generate_bytecode(&decl->initial->base, code, data);
-    uint32_t index = add_string_to_data_segment_ex(data, decl->name, decl->name_length);
+    uint32_t index = add_string_to_data_segment_ex(data, decl->name.data, decl->name.length);
     add_instruction(code, (instruction_t){ .opcode = CONST, .arg1 = index });
 }
 
@@ -568,7 +551,6 @@ static constant_declarator_t *create_constant_declarator_node(arena_t *arena,
         (constant_declarator_t *)alloc_from_arena(arena, sizeof(constant_declarator_t));
     decl->base.vtbl = &cdeclr_vtbl;
     decl->name = spec->name;
-    decl->name_length = spec->name_length;
     decl->initial = spec->initial;
     return decl;
 }

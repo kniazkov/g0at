@@ -69,12 +69,10 @@ node_t *create_integer_node(arena_t *arena, int64_t value);
  * The node represents a variable identified by its name.
  * 
  * @param arena The memory arena for allocating the variable node.
- * @param name A pointer to the wide-character string representing the variable's name.
- * @param name_length The length of the variable's name in characters (not including the null
- *  terminator).
+ * @param name String representing the variable's name.
  * @return A pointer to the newly created variable expression node.
  */
-expression_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length);
+expression_t *create_variable_node(arena_t *arena, string_view_t name);
 
 /**
  * @brief Creates a declarator from an existing variable expression.

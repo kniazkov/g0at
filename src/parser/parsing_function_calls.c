@@ -39,9 +39,8 @@ compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
         parser_memory_t *memory, token_groups_t *groups) {
     assert(identifier->type == TOKEN_IDENTIFIER);
     if (identifier->right && identifier->right->type == TOKEN_BRACKET_PAIR
-            && identifier->right->text[0] == '(') {
-        expression_t *func_object = create_variable_node(memory->graph, identifier->text,
-            identifier->length);
+            && identifier->right->text.data[0] == '(') {
+        expression_t *func_object = create_variable_node(memory->graph, identifier->text);
         node_t *func_call = create_function_call_node_without_args(memory->graph, func_object);
         token_t *args = identifier->right;
         args->type = TOKEN_FCALL_ARGS;

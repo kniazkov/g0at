@@ -45,8 +45,7 @@
  */
 typedef struct {
     object_t base; ///< The base object that provides common functionality.
-    wchar_t *data; ///< Pointer to the string data (wide character array).
-    size_t length; ///< Length of the string (number of characters).
+    string_view_t string; ///< The string.
 } object_static_string_t;
 
 /**
@@ -61,8 +60,7 @@ typedef struct {
     object_t base; ///< The base object that provides common functionality.
     int refs; ///< Reference count used for garbage collection.
     object_state_t state; ///< The state of the object (e.g., unmarked, marked, or zombie).
-    wchar_t *data; ///< Pointer to the string data (wide character array).
-    size_t length; ///< Length of the string (number of characters).
+    string_view_t string; ///< The string.
 } object_dynamic_string_t;
 
 /**
@@ -161,15 +159,14 @@ object_t *get_string_proto() {
  * @param dsobj The dynamic string object to release or clear.
  */
 static void release_or_clear(object_dynamic_string_t *dsobj) {
-    FREE(dsobj->data);
+    FREE(dsobj->string.data);
     remove_object_from_list(&dsobj->base.process->objects, &dsobj->base);
     if (dsobj->base.process->dynamic_strings.size == POOL_CAPACITY) {
         FREE(dsobj);
     } else {
         dsobj->refs = 0;
         dsobj->state = ZOMBIE;
-        dsobj->data = NULL;
-        dsobj->length = 0;
+        dsobj->string = ( string_view_t ){ NULL, 0 };
         add_object_to_list(&dsobj->base.process->dynamic_strings, &dsobj->base);
     }
 }
@@ -229,7 +226,7 @@ static void release(object_t *obj) {
     remove_object_from_list(
         dsobj->state == ZOMBIE ? &obj->process->dynamic_strings : &obj->process->objects, obj
     );
-    FREE(dsobj->data);
+    FREE(dsobj->string.data);
     FREE(obj);
 }
 
@@ -273,7 +270,7 @@ static object_t *clone(process_t *process, object_t *obj) {
  */
 static string_value_t static_to_string(const object_t *obj) {
     object_static_string_t *stsobj = (object_static_string_t *)obj;
-    return (string_value_t){ stsobj->data, stsobj->length, false };
+    return STRING_VIEW_TO_VALUE(stsobj->string);
 }
 
 /**
@@ -284,7 +281,7 @@ static string_value_t static_to_string(const object_t *obj) {
  */
 static string_value_t dynamic_to_string(const object_t *obj) {
     object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
-    return (string_value_t){ dsobj->data, dsobj->length, false };
+    return STRING_VIEW_TO_VALUE(dsobj->string);
 }
 
 /**
@@ -364,7 +361,7 @@ static object_t *static_get_property(const object_t *obj, const object_t *key) {
         object_static_string_t *stsobj = (object_static_string_t *)obj;
         string_value_t key_str = key->vtbl->to_string(key);
         if (wcscmp(L"length", key_str.data) == 0) {
-            return get_static_integer_object((int)stsobj->length);
+            return get_static_integer_object((int)stsobj->string.length);
         }
     }
     return NULL;
@@ -381,7 +378,7 @@ static object_t *dynamic_get_property(const object_t *obj, const object_t *key) 
         object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
         string_value_t key_str = key->vtbl->to_string(key);
         if (wcscmp(L"length", key_str.data) == 0) {
-            return create_integer_object(obj->process, (int64_t)dsobj->length);
+            return create_integer_object(obj->process, (int64_t)dsobj->string.length);
         }
     }
     return NULL;
@@ -480,7 +477,7 @@ static object_vtbl_t static_string_vtbl = {
  */
 #define DECLARE_STATIC_STRING(name, string) \
     static object_static_string_t name = \
-        { { &static_string_vtbl, NULL, NULL, NULL }, (string), sizeof(string) / sizeof(wchar_t) - 1 }; \
+        { { &static_string_vtbl, NULL, NULL, NULL }, { (string), sizeof(string) / sizeof(wchar_t) - 1 } }; \
     object_t *get_##name() { return &name.base; } 
 
 /**
@@ -539,8 +536,8 @@ object_t *create_string_object(process_t *process, string_value_t value) {
     }
     obj->refs = 1;
     obj->state = UNMARKED;
-    obj->data = value.should_free ? value.data : WSTRDUP(value.data);
-    obj->length = value.length;
+    obj->string.data = value.should_free ? value.data : WSTRDUP(value.data);
+    obj->string.length = value.length;
     add_object_to_list(&process->objects, &obj->base);
     return &obj->base;
 }

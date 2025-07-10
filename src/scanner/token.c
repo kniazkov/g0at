@@ -11,5 +11,5 @@ string_value_t token_to_string(const token_t *token) {
     if (token->node) {
         return token->node->vtbl->generate_goat_code(token->node);
     }
-    return (string_value_t){ (wchar_t*)token->text, token->length, false };
+    return STRING_VIEW_TO_VALUE(token->text);
 }

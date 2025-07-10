@@ -92,7 +92,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
                 return NULL; // no opening bracket - no error
             }
             compilation_error_t *error = create_error_from_token(arena, opening_token,
-                get_messages()->unclosed_opening_bracket, opening_token->text[0]);
+                get_messages()->unclosed_opening_bracket, opening_token->text.data[0]);
             error->end = previous->end;
             return error;
         }
@@ -100,7 +100,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
             return create_error_from_token(arena, token, NULL);
         }
         if (token->type == TOKEN_BRACKET) {
-            wchar_t bracket = token->text[0];
+            wchar_t bracket = token->text.data[0];
             if (bracket == L'(' || bracket == L'{' || bracket == '[') {
                 token_t *pair = (token_t *)alloc_zeroed_from_arena(arena, sizeof(token_t));
                 pair->type = TOKEN_BRACKET_PAIR;
@@ -113,16 +113,19 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
                 pair->end = previous->end;
                 wchar_t *text = (wchar_t *)alloc_from_arena(arena, sizeof(wchar_t) * 3);
                 text[0] = bracket;
-                text[1] = previous->text[0];
+                text[1] = previous->text.data[0];
                 text[2] = L'\0';
-                pair->text = text;
-                pair->length = 2;
+                pair->text = (string_view_t){ text, 2 };
                 append_token_to_neighbors(list, pair);
             } else {
                 *closing_token = token;
                 if (opening_token == NULL) {
-                    return create_error_from_token(arena, token,
-                        get_messages()->missing_opening_bracket, bracket);
+                    return create_error_from_token(
+                        arena,
+                        token,
+                        get_messages()->missing_opening_bracket,
+                        bracket
+                    );
                 }
                 wchar_t opening_bracket = L'\0';
                 if (bracket == L')') {
@@ -133,9 +136,14 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
                     opening_bracket = L'{';
                 }
                 assert(opening_bracket != L'\0');
-                if (opening_token->text[0] != opening_bracket) {
-                    compilation_error_t *error = create_error_from_token(arena, opening_token,
-                        get_messages()->brackets_do_not_match, bracket, opening_token->text[0]);
+                if (opening_token->text.data[0] != opening_bracket) {
+                    compilation_error_t *error = create_error_from_token(
+                        arena,
+                        opening_token,
+                        get_messages()->brackets_do_not_match,
+                        bracket,
+                        opening_token->text.data[0]
+                    );
                     error->end = token->end;
                     return error;
                 }

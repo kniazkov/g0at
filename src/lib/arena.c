@@ -77,17 +77,17 @@ void *copy_object_to_arena(arena_t* arena, const void* object, size_t size) {
     return copied_object;
 }
 
-wchar_t *copy_string_to_arena(arena_t* arena, const wchar_t* string, size_t length) {
+string_view_t copy_string_to_arena(arena_t* arena, const wchar_t* string, size_t length) {
     if (length == 0) {
-        return L"";
+        return (string_view_t){ L"", 0 };
     }
     wchar_t* copied_string = (wchar_t*)alloc_from_arena(arena, (length + 1) * sizeof(wchar_t));
     memcpy(copied_string, string, length * sizeof(wchar_t));
     copied_string[length] = L'\0';
-    return copied_string;
+    return (string_view_t){ copied_string, length };
 }
 
-wchar_t *format_string_to_arena(arena_t *arena, size_t *size_ptr, const wchar_t *format, ...) {
+string_view_t format_string_to_arena(arena_t *arena, const wchar_t *format, ...) {
     va_list args;
     va_start(args, format);
     string_value_t value = format_string_vargs(format, args);
@@ -95,13 +95,10 @@ wchar_t *format_string_to_arena(arena_t *arena, size_t *size_ptr, const wchar_t 
     size_t data_length = (value.length + 1) * sizeof(wchar_t*);
     wchar_t *buffer = alloc_from_arena(arena, data_length);
     memcpy(buffer, value.data, data_length);
-    if (size_ptr != NULL) {
-        *size_ptr = value.length;
-    }
     if (value.should_free) {
         FREE(value.data);
     }
-    return buffer;
+    return (string_view_t){ buffer, value.length };
 }
 
 void destroy_arena(arena_t* arena) {

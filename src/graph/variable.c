@@ -33,14 +33,9 @@ typedef struct {
     assignable_expression_t base;
 
     /**
-     * @brief Pointer to the wide-character string representing the variable's name.
+     * @brief String representing the variable's name.
      */
-    wchar_t *name;
-
-    /**
-     * @brief Length of the variable's name in characters (not including the null terminator).
-     */
-    size_t name_length;
+    string_view_t name;
 } variable_t;
 
 /**
@@ -50,7 +45,7 @@ typedef struct {
  */
 static string_value_t get_data(const node_t *node) {
     const variable_t *expr = (const variable_t *)node;
-    return (string_value_t){ expr->name, expr->name_length, false };
+    return STRING_VIEW_TO_VALUE(expr->name);
 }
 
 /**
@@ -65,7 +60,7 @@ static string_value_t get_data(const node_t *node) {
  */
 static string_value_t generate_goat_code(const node_t *node) {
     const variable_t *expr = (const variable_t *)node;
-    return (string_value_t){ expr->name, expr->name_length, false };
+    return STRING_VIEW_TO_VALUE(expr->name);
 }
 
 /**
@@ -82,7 +77,7 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const variable_t *expr = (const variable_t *)node;
-    uint32_t index = add_string_to_data_segment_ex(data, expr->name, expr->name_length);
+    uint32_t index = add_string_to_data_segment_ex(data, expr->name.data, expr->name.length);
     add_instruction(code, (instruction_t){ .opcode = VLOAD, .arg1 = index });
 }
 
@@ -100,7 +95,7 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
 static void generate_bytecode_assign(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const variable_t *expr = (const variable_t *)node;
-    uint32_t index = add_string_to_data_segment_ex(data, expr->name, expr->name_length);
+    uint32_t index = add_string_to_data_segment_ex(data, expr->name.data, expr->name.length);
     add_instruction(code, (instruction_t){ .opcode = STORE, .arg1 = index });
 }
 
@@ -125,11 +120,10 @@ static node_vtbl_t variable_vtbl = {
     .generate_bytecode_assign = generate_bytecode_assign
 };
 
-expression_t *create_variable_node(arena_t *arena, const wchar_t *name, size_t name_length) {
+expression_t *create_variable_node(arena_t *arena, string_view_t name) {
     variable_t *expr = (variable_t *)alloc_from_arena(arena, sizeof(variable_t));
     expr->base.base.base.vtbl = &variable_vtbl;
-    expr->name = copy_string_to_arena(arena, name, name_length);
-    expr->name_length = name_length;
+    expr->name = copy_string_to_arena(arena, name.data, name.length);
     return &expr->base.base;
 }
 
@@ -138,7 +132,6 @@ declarator_t *create_declarator_from_variable(const node_t *expr) {
     const variable_t *var = (variable_t *)expr;
     declarator_t *decl = (declarator_t*)ALLOC(sizeof(declarator_t));
     decl->name = var->name;
-    decl->name_length = var->name_length;
     decl->initial = NULL;
     return decl;
 }

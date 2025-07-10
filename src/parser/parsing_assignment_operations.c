@@ -31,7 +31,7 @@
  */
 compilation_error_t *parsing_assignment_operators(token_t *operator, parser_memory_t *memory,
         token_groups_t *groups) {
-    assert(operator->type == TOKEN_OPERATOR && operator->text[0] == L'=');
+    assert(operator->type == TOKEN_OPERATOR && operator->text.data[0] == L'=');
     
     token_t *left_token = operator->left;
     if (left_token == NULL) {
@@ -60,7 +60,7 @@ compilation_error_t *parsing_assignment_operators(token_t *operator, parser_memo
     assignable_expression_t *left_operand = (assignable_expression_t *)left_token->node;
     expression_t *right_operand = (expression_t *)right_token->node;
     expression_t *operation = NULL;
-    if (operator->text[0] == L'=') {
+    if (operator->text.data[0] == L'=') {
         operation = create_simple_assignment_node(memory->graph, left_operand, right_operand);
     }
     collapse_tokens_to_token(memory->tokens, left_token, right_token, TOKEN_EXPRESSION,

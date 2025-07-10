@@ -28,7 +28,7 @@ bool test_brackets_one_level_nesting() {
     ASSERT(token->type == TOKEN_IDENTIFIER);
     ASSERT(token->right->type == TOKEN_BRACKET_PAIR);
     ASSERT(token->right->right->type == TOKEN_IDENTIFIER);
-    ASSERT(wcscmp(token->right->text, L"()") == 0);
+    ASSERT(wcscmp(token->right->text.data, L"()") == 0);
     ASSERT(token->right->children.count == 2);
     ASSERT(token->right->children.first->type == TOKEN_EXPRESSION);
     ASSERT(token->right->children.first->right->type == TOKEN_IDENTIFIER);
@@ -50,11 +50,11 @@ bool test_brackets_two_levels_nesting() {
     ASSERT(token->type == TOKEN_IDENTIFIER);
     ASSERT(token->right->type == TOKEN_BRACKET_PAIR);
     ASSERT(token->right->right->type == TOKEN_IDENTIFIER);
-    ASSERT(wcscmp(token->right->text, L"()") == 0);
+    ASSERT(wcscmp(token->right->text.data, L"()") == 0);
     ASSERT(token->right->children.count == 2);
     ASSERT(token->right->children.first->type == TOKEN_EXPRESSION);
     ASSERT(token->right->children.first->right->type == TOKEN_BRACKET_PAIR);
-    ASSERT(wcscmp(token->right->children.first->right->text, L"[]") == 0);
+    ASSERT(wcscmp(token->right->children.first->right->text.data, L"[]") == 0);
     ASSERT(token->right->children.first->right->children.count == 2);
     ASSERT(groups.identifiers.count == 4);
     destroy_arena(arena);
@@ -76,7 +76,7 @@ bool test_unclosed_bracket() {
     ASSERT(error->end.row == 1);
     ASSERT(error->end.column == 10);
     ASSERT(wcscmp(L"Unclosed opening bracket: expected a closing bracket to match '('",
-        error->message) == 0);
+        error->message.data) == 0);
     destroy_arena(arena);
     return true;
 }
@@ -94,7 +94,7 @@ bool test_missing_opening_bracket() {
     ASSERT(error->begin.code[0] == L']');
     ASSERT(error->end.row == 2);
     ASSERT(error->end.column == 7);
-    ASSERT(wcscmp(L"Missing opening bracket corresponding to ']'", error->message) == 0);
+    ASSERT(wcscmp(L"Missing opening bracket corresponding to ']'", error->message.data) == 0);
     destroy_arena(arena);
     return true;
 }
@@ -113,7 +113,7 @@ bool test_closing_bracket_does_not_match_opening() {
     ASSERT(error->end.row == 2);
     ASSERT(error->end.column == 7);
     ASSERT(wcscmp(L"Closing bracket ']' does not match the opening bracket '{'",
-        error->message) == 0);
+        error->message.data) == 0);
     destroy_arena(arena);
     return true;
 }

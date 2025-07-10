@@ -71,12 +71,7 @@ struct declarator_t {
     /**
      * @brief The name of the declared identifier.
      */
-    wchar_t *name;
-
-    /**
-     * @brief Length of the name in characters.
-     */
-    size_t name_length;
+    string_view_t name;
 
     /**
      * @brief The initializer expression for the declaration.

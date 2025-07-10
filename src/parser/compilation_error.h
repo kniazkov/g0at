@@ -13,6 +13,7 @@
 
 #include <stdbool.h>
 
+#include "lib/value.h"
 #include "scanner/position.h"
 
 /**
@@ -64,12 +65,7 @@ struct compilation_error_t {
      * This field contains a string describing the error. For example, it might contain
      * messages like "Unexpected token", "Syntax error", etc.
      */
-    const wchar_t const *message;
-
-    /**
-     * @brief The length of the error message.
-     */
-    size_t message_length;
+    string_view_t message;
 
     /**
      * @brief Indicates whether the error is critical.

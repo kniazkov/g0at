@@ -33,14 +33,9 @@ typedef struct {
     expression_t base;
 
     /**
-     * @brief Pointer to the wide-character string data.
+     * @brief String data.
      */
-    wchar_t *data;
-
-    /**
-     * @brief Length of the string in characters (not including the null terminator).
-     */
-    size_t length;
+    string_view_t string;
 } static_string_t;
 
 /**
@@ -54,7 +49,7 @@ typedef struct {
  */
 static string_value_t get_data(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
-    return (string_value_t){ expr->data, expr->length, false };
+    return STRING_VIEW_TO_VALUE(expr->string);
 }
 
 /**
@@ -70,7 +65,7 @@ static string_value_t get_data(const node_t *node) {
  */
 static string_value_t generate_goat_code(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
-    return string_to_string_notation(L"", (string_value_t){ expr->data, expr->length, false });
+    return string_to_string_notation(L"", STRING_VIEW_TO_VALUE(expr->string));
 }
 
 /**
@@ -86,7 +81,7 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const static_string_t *expr = (const static_string_t *)node;
-    uint32_t index = add_string_to_data_segment_ex(data, expr->data, expr->length);
+    uint32_t index = add_string_to_data_segment_ex(data, expr->string.data, expr->string.length);
     add_instruction(code, (instruction_t){ .opcode = SLOAD, .arg1 = index });
 }
 
@@ -112,7 +107,6 @@ static node_vtbl_t static_string_vtbl = {
 node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length) {
     static_string_t *expr = (static_string_t *)alloc_from_arena(arena, sizeof(static_string_t));
     expr->base.base.vtbl = &static_string_vtbl;
-    expr->data = copy_string_to_arena(arena, data, length);
-    expr->length = length;
+    expr->string = copy_string_to_arena(arena, data, length);
     return &expr->base.base;
 }

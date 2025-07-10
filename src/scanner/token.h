@@ -176,17 +176,10 @@ struct token_t {
     /**
      * @brief The text of the token.
      *
-     * A wide-character string representing the token's content, after necessary transformations
+     * A string representing the token's content, after necessary transformations
      * (e.g., unescaping strings or processing literals).
      */
-    const wchar_t const *text;
-
-    /**
-     * @brief The length of the token's text.
-     *
-     * The number of characters (`wchar_t`) in the `text` field.
-     */
-    size_t length;
+    string_view_t text;
 
     /**
      * @brief Pointer to the corresponding node in the syntax tree.
