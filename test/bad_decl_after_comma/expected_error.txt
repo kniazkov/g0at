@@ -1,1 +1,1 @@
-Compilation error in 'bad_decl_after_comma\program.goat', 1.6: Expected another variable declaration after comma
+Compilation error in 'program.goat', 1.6: Expected another variable declaration after comma

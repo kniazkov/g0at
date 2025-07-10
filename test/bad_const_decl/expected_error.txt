@@ -1,2 +1,2 @@
-Compilation error in 'bad_const_decl\program.goat', 2.1: Expected name with value assignment, but got 'a'
-Compilation error in 'bad_const_decl\program.goat', 1.1: Expected name with value assignment, but got 'y'
+Compilation error in 'program.goat', 2.1: Expected name with value assignment, but got 'a'
+Compilation error in 'program.goat', 1.1: Expected name with value assignment, but got 'y'

@@ -35,12 +35,10 @@ int go(options_t *opt) {
     /*
         2. read source file
     */
-    char *file_name = normalize_path(opt->input_file);
-    string_value_t code = read_utf8_file(file_name);
+    string_value_t code = read_utf8_file(opt->input_file->full_path);
     if (code.data == NULL) {
-        fprintf_utf8(stderr, get_messages()->cannot_read_source_file, file_name);
+        fprintf_utf8(stderr, get_messages()->cannot_read_source_file, opt->input_file->normal_path);
     }
-    FREE(file_name);
     if (code.data == NULL) {
         return -1;
     }
@@ -60,7 +58,7 @@ int go(options_t *opt) {
         /*
             4. scan (split code into tokens)
         */
-        scanner_t *scan = create_scanner(opt->input_file, code.data, &memory, groups);
+        scanner_t *scan = create_scanner(opt->input_file->file_name, code.data, &memory, groups);
         token_list_t tokens;
         error = process_brackets(tokens_memory, scan, &tokens);
         if (error != NULL) {
@@ -110,7 +108,7 @@ int go(options_t *opt) {
         */
         if (opt->graph_output_file != NULL) {
             if (is_graphviz_available()) {
-                bool image_generated = generate_image(root_node, opt->graph_output_file);
+                bool image_generated = generate_image(root_node, opt->graph_output_file->full_path);
                 if (!image_generated) {
                     fprintf_utf8(stderr, get_messages()->graphviz_failed);
                     fprintf(stderr, "\n");

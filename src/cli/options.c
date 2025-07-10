@@ -56,7 +56,6 @@ options_t *parse_options(int argc, char **argv) {
     }
 
     options_t *opt = create_options();
-    bool input_file_found = false;
 
     for (int index = 1; index < argc; index++) {
         char *arg = argv[index];
@@ -76,12 +75,12 @@ options_t *parse_options(int argc, char **argv) {
                     fprintf_utf8(stderr, get_messages()->missing_specification, arg);
                     goto error;
                 }
-                const char *filename = argv[++index];
-                if (!check_graph_file(filename)) {
+                opt->graph_output_file = create_path(argv[++index]);
+                if (strcasecmp(opt->graph_output_file->extension, "png") != 0 
+                        && strcasecmp(opt->graph_output_file->extension, "svg") != 0) {
                     fprintf_utf8(stderr, get_messages()->bad_graph_file);
                     goto error;
                 }
-                opt->graph_output_file = filename;
                 continue;
             }
 
@@ -99,9 +98,8 @@ options_t *parse_options(int argc, char **argv) {
             goto error;
         }
 
-        if (!input_file_found) {
-            opt->input_file = arg;
-            input_file_found = true;
+        if (!opt->input_file) {
+            opt->input_file = create_path(arg);
         } else {
             append_to_vector(opt->script_args, arg);
         }
@@ -120,6 +118,8 @@ error:
 }
 
 void destroy_options(options_t *opt) {
+    free_path(opt->input_file);
+    free_path(opt->graph_output_file);
     destroy_vector(opt->script_args);
     FREE(opt);
 }

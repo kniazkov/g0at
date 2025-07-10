@@ -12,6 +12,7 @@
 
 #include <stdbool.h>
 
+#include "lib/path.h"
 #include "lib/vector.h"
 
 /**
@@ -28,7 +29,7 @@ typedef struct {
      * 
      * Specifies the file that contains the input data to be processed.
      */
-    const char *input_file;
+    path_t *input_file;
 
     /**
      * @brief Language for the command-line interface (CLI) error messages.
@@ -61,7 +62,7 @@ typedef struct {
      * the generated graph representation.
      * If NULL, graph visualization is disabled.
      */
-    const char *graph_output_file;
+    path_t *graph_output_file;
 
     /**
      * @brief Arguments to be passed to the script.

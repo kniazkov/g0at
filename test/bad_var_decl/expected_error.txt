@@ -1,1 +1,1 @@
-Compilation error in 'bad_var_decl\program.goat', 1.1: Expected either variable name or name with value assignment, but got '3'
+Compilation error in 'program.goat', 1.1: Expected either variable name or name with value assignment, but got '3'
