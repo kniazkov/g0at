@@ -117,12 +117,10 @@ uint32_t add_string_to_data_segment(data_builder_t *builder, const wchar_t *stri
  * the string (in bytes) as an argument instead of calculating it with `wcslen`.
  * 
  * @param builder The data builder to which the string will be added.
- * @param string The wide-character string to be added.
- * @param str_length The length of the string in symbols, excluding the null terminator.
+ * @param string The string view to be added.
  * @return The index of the added data descriptor.
  */
-uint32_t add_string_to_data_segment_ex(data_builder_t *builder, const wchar_t *string,
-        size_t str_length);
+uint32_t add_string_to_data_segment_ex(data_builder_t *builder, string_view_t string);
 
 /**
  * @brief Destroys the data builder and frees its memory.

@@ -89,7 +89,7 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
         if (index % 5 == 0) {
             string_value_t number = format_string(L"%zu", index);
             string_value_t aligned = align_text(number, NUMBER_COLUMN_SIZE - 1, ALIGN_RIGHT);
-            append_substring(&builder, aligned.data, aligned.length);
+            append_string_value(&builder, aligned);
             append_char(&builder, L' ');
             FREE_STRING(aligned);
             FREE_STRING(number);
@@ -116,7 +116,7 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
         if (descr.has_arg_0) {
             string_value_t value = format_string(L"%zu", instr.arg0);
             string_value_t aligned = align_text(value, ARG0_COLUMN_SIZE - 1, ALIGN_RIGHT);
-            append_substring(&builder, aligned.data, aligned.length);
+            append_string_value(&builder, aligned);
             append_char(&builder, L' ');
             FREE_STRING(aligned);
             FREE_STRING(value);
@@ -128,7 +128,7 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
         if (descr.arg_1_is_unsigned_integer || descr.arg_1_is_string) {
             string_value_t value = format_string(L"%zu", instr.arg1);
             string_value_t aligned = align_text(value, ARG1_COLUMN_SIZE - 1, ALIGN_RIGHT);
-            append_substring(&builder, aligned.data, aligned.length);
+            append_string_value(&builder, aligned);
             append_char(&builder, L' ');
             FREE_STRING(aligned);
             FREE_STRING(value);
@@ -143,14 +143,14 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
                     }
                 );
                 append_char(&builder, L' ');
-                append_substring(&builder, str.data, str.length);
+                append_string_value(&builder, str);
                 FREE_STRING(str);
             }
         }
         else if (descr.arg_1_is_signed_integer) {
             string_value_t value = format_string(L"%i", instr.arg1);
             string_value_t aligned = align_text(value, ARG1_COLUMN_SIZE - 1, ALIGN_RIGHT);
-            append_substring(&builder, aligned.data, aligned.length);
+            append_string_value(&builder, aligned);
             append_char(&builder, L' ');
             FREE_STRING(aligned);
             FREE_STRING(value);

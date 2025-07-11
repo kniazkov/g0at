@@ -81,7 +81,7 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const static_string_t *expr = (const static_string_t *)node;
-    uint32_t index = add_string_to_data_segment_ex(data, expr->string.data, expr->string.length);
+    uint32_t index = add_string_to_data_segment_ex(data, expr->string);
     add_instruction(code, (instruction_t){ .opcode = SLOAD, .arg1 = index });
 }
 

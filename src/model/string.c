@@ -411,8 +411,8 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
     }
     string_builder_t builder;
     init_string_builder(&builder, first.length + second.length);
-    append_substring(&builder, first.data, first.length);
-    string_value_t result = append_substring(&builder, second.data, second.length);
+    append_string_value(&builder, first);
+    string_value_t result = append_string_value(&builder, second);
     FREE_STRING(second);
     return create_string_object(process, result);
 }

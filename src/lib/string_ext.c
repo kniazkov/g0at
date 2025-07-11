@@ -83,6 +83,14 @@ string_value_t append_substring(string_builder_t *builder, const wchar_t *wstr,
     return (string_value_t){ builder->data, builder->length, builder->data != NULL };
 }
 
+string_value_t append_string_value(string_builder_t *builder, string_value_t value) {
+    return append_substring(builder, value.data, value.length);
+}
+
+string_value_t append_string_view(string_builder_t *builder, string_view_t view) {
+    return append_substring(builder, view.data, view.length);
+}
+
 string_value_t append_string(string_builder_t *builder, const wchar_t *wstr) {
     return append_substring(builder, wstr, wcslen(wstr));
 }

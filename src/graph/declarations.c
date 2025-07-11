@@ -133,10 +133,9 @@ static string_value_t vdeclr_generate_goat_code(const node_t *node) {
         string_value_t initial_as_string =
             decl->initial->base.vtbl->generate_goat_code(&decl->initial->base);
         init_string_builder(&builder, decl->name.length + 3 + initial_as_string.length);
-        append_substring(&builder, decl->name.data, decl->name.length);
-        append_substring(&builder, L" = ", 3);
-        string_value_t value = append_substring(&builder, initial_as_string.data,
-               initial_as_string.length);
+        append_string_view(&builder, decl->name);
+        append_static_string(&builder, L" = ");
+        string_value_t value = append_string_value(&builder, initial_as_string);
         FREE_STRING(initial_as_string);
         return value;
     } else {
@@ -164,7 +163,7 @@ static void vdeclr_generate_bytecode(const node_t *node, code_builder_t *code,
     } else {
         add_instruction(code, (instruction_t){ .opcode = NIL });
     }
-    uint32_t index = add_string_to_data_segment_ex(data, decl->name.data, decl->name.length);
+    uint32_t index = add_string_to_data_segment_ex(data, decl->name);
     add_instruction(code, (instruction_t){ .opcode = VAR, .arg1 = index });
 }
 
@@ -284,14 +283,14 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
     const variable_declaration_t* decl = (const variable_declaration_t*)node;
     string_builder_t builder;
     init_string_builder(&builder, 0);
-    append_substring(&builder, L"var ", 4);
+    append_static_string(&builder, L"var ");
     for (size_t index = 0; index < decl->decl_count; index++) {
         if (index > 0) {
-            append_substring(&builder, L", ", 2);
+            append_static_string(&builder, L", ");
         }
         variable_declarator_t *vdr = decl->decl_list[index];
         string_value_t vdr_as_string = vdeclr_generate_goat_code(&vdr->base);
-        append_substring(&builder, vdr_as_string.data, vdr_as_string.length);
+        append_string_value(&builder, vdr_as_string);
         FREE_STRING(vdr_as_string);
     }
     return append_char(&builder, L';');
@@ -481,10 +480,9 @@ static string_value_t cdeclr_generate_goat_code(const node_t *node) {
     string_value_t initial_as_string =
         decl->initial->base.vtbl->generate_goat_code(&decl->initial->base);
     init_string_builder(&builder, decl->name.length + 3 + initial_as_string.length);
-    append_substring(&builder, decl->name.data, decl->name.length);
-    append_substring(&builder, L" = ", 3);
-    string_value_t value = append_substring(&builder, initial_as_string.data,
-            initial_as_string.length);
+    append_string_view(&builder, decl->name);
+    append_static_string(&builder, L" = ");
+    string_value_t value = append_string_value(&builder, initial_as_string);
     FREE_STRING(initial_as_string);
     return value;
 }
@@ -505,7 +503,7 @@ static void cdeclr_generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
     decl->initial->base.vtbl->generate_bytecode(&decl->initial->base, code, data);
-    uint32_t index = add_string_to_data_segment_ex(data, decl->name.data, decl->name.length);
+    uint32_t index = add_string_to_data_segment_ex(data, decl->name);
     add_instruction(code, (instruction_t){ .opcode = CONST, .arg1 = index });
 }
 
@@ -629,14 +627,14 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
     const constant_declaration_t* decl = (const constant_declaration_t*)node;
     string_builder_t builder;
     init_string_builder(&builder, 0);
-    append_substring(&builder, L"const ", 6);
+    append_static_string(&builder, L"const ");
     for (size_t index = 0; index < decl->decl_count; index++) {
         if (index > 0) {
-            append_substring(&builder, L", ", 2);
+            append_static_string(&builder, L", ");
         }
         constant_declarator_t *cdr = decl->decl_list[index];
         string_value_t cdr_as_string = cdr->base.vtbl->generate_goat_code(&cdr->base);
-        append_substring(&builder, cdr_as_string.data, cdr_as_string.length);
+        append_string_value(&builder, cdr_as_string);
         FREE_STRING(cdr_as_string);
     }
     return append_char(&builder, L';');

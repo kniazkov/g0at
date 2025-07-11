@@ -91,14 +91,13 @@ uint32_t add_string_to_data_segment(data_builder_t *builder, const wchar_t *stri
     return index;
 }
 
-uint32_t add_string_to_data_segment_ex(data_builder_t *builder, const wchar_t *string,
-        size_t str_length) {
-    uint32_t old_index = get_from_avl_tree(builder->strings, string).uint32_val;
+uint32_t add_string_to_data_segment_ex(data_builder_t *builder, string_view_t string) {
+    uint32_t old_index = get_from_avl_tree(builder->strings, string.data).uint32_val;
     if (old_index) {
         return old_index - 1;
     }
-    size_t len = (str_length + 1) * sizeof(wchar_t);
-    uint32_t index = add_data_to_data_segment(builder, (void*)string, len);
+    size_t len = (string.length + 1) * sizeof(wchar_t);
+    uint32_t index = add_data_to_data_segment(builder, (void*)string.data, len);
     data_descriptor_t *descriptor = &builder->descriptors[index];
     set_in_avl_tree(builder->strings, &builder->data[descriptor->offset],
         (value_t){.uint32_val = index + 1});

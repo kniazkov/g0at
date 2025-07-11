@@ -101,7 +101,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_value_t expr_as_string =
         stmt->wrapped->base.vtbl->generate_goat_code(&stmt->wrapped->base);
     init_string_builder(&builder, expr_as_string.length + 1);  // +1 for the semicolon
-    append_substring(&builder, expr_as_string.data, expr_as_string.length);
+    append_string_value(&builder, expr_as_string);
     FREE_STRING(expr_as_string);
     return append_char(&builder, L';');
 }

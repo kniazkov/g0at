@@ -135,17 +135,17 @@ static string_value_t generate_goat_code(const node_t *node) {
 
     string_value_t func_object_as_string =
         expr->func_object->base.vtbl->generate_goat_code(&expr->func_object->base);
-    append_substring(&builder, func_object_as_string.data, func_object_as_string.length);
+    append_string_value(&builder, func_object_as_string);
     FREE_STRING(func_object_as_string);
 
     append_char(&builder, L'(');
     for (size_t index = 0; index < expr->args_count; index++) {
         if (index > 0) {
-            append_substring(&builder, L", ", 2);
+            append_static_string(&builder, L", ");
         }
         expression_t *arg = expr->args[index];
         string_value_t arg_as_string = arg->base.vtbl->generate_goat_code(&arg->base);
-        append_substring(&builder, arg_as_string.data, arg_as_string.length);
+        append_string_value(&builder, arg_as_string);
         FREE_STRING(arg_as_string);
     }
 

@@ -103,6 +103,31 @@ string_value_t append_char(string_builder_t *builder, wchar_t symbol);
 string_value_t append_substring(string_builder_t *builder, const wchar_t *wstr, size_t wstr_length);
 
 /**
+ * @brief Appends a string value to the string builder.
+ * 
+ * Appends the contents of a string_value_t to the end of the builder's string,
+ * resizing the buffer if necessary. The string remains null-terminated after the operation.
+
+ * @param builder A pointer to the string_builder_t instance.
+ * @param view String view to append.
+ * @return A `string_value_t` structure containing the updated string buffer and its length.
+ */
+string_value_t append_string_value(string_builder_t *builder, string_value_t value);
+
+
+/**
+ * @brief Appends a string view to the string builder.
+ * 
+ * Appends the contents of a string_view_t to the end of the builder's string,
+ * resizing the buffer if necessary. The string remains null-terminated after the operation.
+
+ * @param builder A pointer to the string_builder_t instance.
+ * @param view String view to append.
+ * @return A `string_value_t` structure containing the updated string buffer and its length.
+ */
+string_value_t append_string_view(string_builder_t *builder, string_view_t view);
+
+/**
  * @brief Appends a wide-character string to the string builder.
  * 
  * Adds the specified wide-character string to the end of the builder's string,
@@ -113,6 +138,15 @@ string_value_t append_substring(string_builder_t *builder, const wchar_t *wstr, 
  * @return A `string_value_t` structure containing the updated string buffer and its length.
  */
 string_value_t append_string(string_builder_t *builder, const wchar_t *wstr);
+
+/**
+ * @def append_static_string(builder, str)
+ * @brief Appends a static wide string literal to the string builder.
+ * @param builder Pointer to the string_builder_t instance
+ * @param str Wide string literal to append (e.g., L"test")
+ * @return A `string_value_t` structure containing the updated string buffer and its length.
+ */
+#define append_static_string(builder, str) append_substring(builder, (str), sizeof(str) / sizeof(wchar_t) - 1)
 
 /**
  * @brief Appends an ASCII string to the string builder.

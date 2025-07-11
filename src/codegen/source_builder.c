@@ -70,7 +70,7 @@ string_value_t build_source_code(source_builder_t *builder) {
         for (size_t indent = 0; indent < line.indent; indent++) {
             append_substring(&code_builder, tabulation, TAB_SIZE);
         }
-        append_substring(&code_builder, line.text.data, line.text.length);
+        append_string_value(&code_builder, line.text);
         result = append_char(&code_builder, L'\n');
     }
     return result;

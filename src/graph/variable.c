@@ -77,7 +77,7 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const variable_t *expr = (const variable_t *)node;
-    uint32_t index = add_string_to_data_segment_ex(data, expr->name.data, expr->name.length);
+    uint32_t index = add_string_to_data_segment_ex(data, expr->name);
     add_instruction(code, (instruction_t){ .opcode = VLOAD, .arg1 = index });
 }
 
@@ -95,7 +95,7 @@ static void generate_bytecode(const node_t *node, code_builder_t *code,
 static void generate_bytecode_assign(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const variable_t *expr = (const variable_t *)node;
-    uint32_t index = add_string_to_data_segment_ex(data, expr->name.data, expr->name.length);
+    uint32_t index = add_string_to_data_segment_ex(data, expr->name);
     add_instruction(code, (instruction_t){ .opcode = STORE, .arg1 = index });
 }
 
