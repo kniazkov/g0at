@@ -76,6 +76,13 @@ typedef enum {
     NODE_ROOT = 0,
 
     /**
+     * @brief Scope node type.
+     * 
+     * This node represents a set of instructions executing in some scope.
+     */
+    NODE_SCOPE,
+
+    /**
      * @brief Null literal node type.
      * 
      * This node type represents a null literal in the source code, indicating the absence

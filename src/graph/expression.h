@@ -125,3 +125,16 @@ node_t *create_function_call_node_without_args(arena_t *arena, expression_t *fun
  */
 void set_function_call_arguments(node_t *node, arena_t *arena, 
         expression_t **args, size_t args_count);
+
+/**
+ * @brief Creates a new scope node.
+ * 
+ * This function allocates and initializes a new scope node containing the specified
+ * list of statements.
+ * 
+ * @param arena Memory arena to allocate the node from.
+ * @param stmt_list Array of statements that comprise the scope body.
+ * @param stmt_count Number of statements in the array.
+ * @return Pointer to the newly created node structure.
+ */
+node_t *create_scope_node(arena_t *arena, statement_t **stmt_list, size_t stmt_count);
