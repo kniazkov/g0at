@@ -108,7 +108,7 @@ uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t si
  * @param string The wide-character string to be added.
  * @return The index of the added data descriptor.
  */
-uint32_t add_string_to_data_segment(data_builder_t *builder, wchar_t *string);
+uint32_t add_string_to_data_segment(data_builder_t *builder, const wchar_t *string);
 
 /**
  * @brief Adds a string to the data segment, using a pre-calculated length.
@@ -121,7 +121,7 @@ uint32_t add_string_to_data_segment(data_builder_t *builder, wchar_t *string);
  * @param str_length The length of the string in symbols, excluding the null terminator.
  * @return The index of the added data descriptor.
  */
-uint32_t add_string_to_data_segment_ex(data_builder_t *builder, wchar_t *string,
+uint32_t add_string_to_data_segment_ex(data_builder_t *builder, const wchar_t *string,
         size_t str_length);
 
 /**

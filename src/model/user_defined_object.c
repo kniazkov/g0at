@@ -321,15 +321,11 @@ static void child_pair_to_string(void *data, void *key, value_t value) {
     property_value_t *ref = (property_value_t *)value.ptr;
     string_value_t key_str = key_obj->vtbl->to_string_notation(key_obj);
     append_substring(builder, key_str.data, key_str.length);
-    if (key_str.should_free) {
-        FREE(key_str.data);
-    }
+    FREE_STRING(key_str);
     append_char(builder, '=');
     string_value_t value_str = ref->object->vtbl->to_string_notation(ref->object);
     append_substring(builder, value_str.data, value_str.length);
-    if (value_str.should_free) {
-        FREE(value_str.data);
-    }
+    FREE_STRING(value_str);
 }
 
 /**

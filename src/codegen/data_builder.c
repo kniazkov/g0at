@@ -78,7 +78,7 @@ uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t si
     return index;
 }
 
-uint32_t add_string_to_data_segment(data_builder_t *builder, wchar_t *string) {
+uint32_t add_string_to_data_segment(data_builder_t *builder, const wchar_t *string) {
     uint32_t old_index = get_from_avl_tree(builder->strings, string).uint32_val;
     if (old_index) {
         return old_index - 1;
@@ -91,7 +91,7 @@ uint32_t add_string_to_data_segment(data_builder_t *builder, wchar_t *string) {
     return index;
 }
 
-uint32_t add_string_to_data_segment_ex(data_builder_t *builder, wchar_t *string,
+uint32_t add_string_to_data_segment_ex(data_builder_t *builder, const wchar_t *string,
         size_t str_length) {
     uint32_t old_index = get_from_avl_tree(builder->strings, string).uint32_val;
     if (old_index) {

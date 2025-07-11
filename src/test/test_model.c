@@ -52,7 +52,7 @@ bool test_integer_object() {
     string_value_t value = obj->vtbl->to_string(obj);
     ASSERT(wcscmp(L"-1024", value.data) == 0);
     ASSERT(value.should_free);
-    FREE(value.data);
+    FREE_STRING(value);
     destroy_process(proc);
     return true;
 }
@@ -160,16 +160,16 @@ bool test_properties() {
     const wchar_t *expected = L"{true=\"boolean\";3=\"three\";\"first\"=\"one\";\"second\"=\"two\"}";
     string_value_t str = obj->vtbl->to_string(obj);
     ASSERT(0 == wcscmp(str.data, expected));
-    if (str.should_free) FREE(str.data);
+    FREE_STRING(str);
     str = clone->vtbl->to_string(clone);
     ASSERT(0 == wcscmp(str.data, expected));
-    if (str.should_free) FREE(str.data);
+    FREE_STRING(str);
     object_t *key = create_string_object(process, STATIC_STRING(L"first"));
     object_t *value = obj->vtbl->get_property(obj, key);
     ASSERT(value != NULL);
     str = value->vtbl->to_string(value);
     ASSERT(0 == wcscmp(str.data, L"one"));
-    if (str.should_free) FREE(str.data);
+    FREE_STRING(str);
     key = create_string_object(process, STATIC_STRING(L"length"));
     value = value->vtbl->get_property(value, key);
     ASSERT(value != NULL);
@@ -194,7 +194,7 @@ bool test_string_topology() {
     const wchar_t *expected = L"{\"length\"=0}";
     string_value_t str = topology.items[0]->vtbl->to_string(topology.items[0]);
     ASSERT(0 == wcscmp(str.data, expected));
-    if (str.should_free) FREE(str.data);
+    FREE_STRING(str);
     destroy_process(process);
     return true;    
 }

@@ -84,7 +84,7 @@ bool test_string_builder() {
     result = append_string(&sb, L"works");
     ASSERT(wcscmp(L"it works", result.data) == 0);
     ASSERT(result.length == 8);
-    FREE(result.data);
+    FREE_STRING(result);
     return true;
 }
 
@@ -127,35 +127,35 @@ bool test_format_string() {
     ASSERT(wcscmp(L"acb", value.data) == 0);
     ASSERT(value.length == 3);
     ASSERT(value.should_free == true);
-    FREE(value.data);
+    FREE_STRING(value);
     value = format_string(L"aaa%sbbb", L"ccc");
     ASSERT(wcscmp(L"aaacccbbb", value.data) == 0);
     ASSERT(value.length == 9);
     ASSERT(value.should_free == true);
-    FREE(value.data);
+    FREE_STRING(value);
     value = format_string(L"value = %f%%;", (double)-1.024);
     ASSERT(wcscmp(L"value = -1.024%;", value.data) == 0);
     ASSERT(value.length == 16);
     ASSERT(value.should_free == true);
-    FREE(value.data);
+    FREE_STRING(value);
     value = format_string(L"value = %d;", -1);
     ASSERT(wcscmp(L"value = -1;", value.data) == 0);
     ASSERT(value.should_free == true);
-    FREE(value.data);
+    FREE_STRING(value);
     value = format_string(L"value = %u;", 777);
     ASSERT(wcscmp(L"value = 777;", value.data) == 0);
     ASSERT(value.should_free == true);
-    FREE(value.data);
+    FREE_STRING(value);
     int64_t l = 1000000000000L;
     value = format_string(L"value = %li;", l);
     ASSERT(wcscmp(L"value = 1000000000000;", value.data) == 0);
     ASSERT(value.should_free == true);
-    FREE(value.data);
+    FREE_STRING(value);
     size_t s = 17;
     value = format_string(L"size = %zu;", s);
     ASSERT(wcscmp(L"size = 17;", value.data) == 0);
     ASSERT(value.should_free == true);
-    FREE(value.data);
+    FREE_STRING(value);
     return true;
 }
 
@@ -166,26 +166,18 @@ bool test_align_text() {
     text = align_text(STATIC_STRING(L"abc"), 9, ALIGN_LEFT);
     ASSERT(text.length == 9);
     ASSERT(wcscmp(L"abc      ", text.data) == 0);
-    if (text.should_free) {
-        FREE(text.data);
-    }
+    FREE_STRING(text);
     text = align_text(STATIC_STRING(L"abc"), 11, ALIGN_CENTER);
     ASSERT(text.length == 11);
     ASSERT(wcscmp(L"    abc    ", text.data) == 0);
-    if (text.should_free) {
-        FREE(text.data);
-    }
+    FREE_STRING(text);
     text = align_text(STATIC_STRING(L"abc"), 13, ALIGN_RIGHT);
     ASSERT(text.length == 13);
     ASSERT(wcscmp(L"          abc", text.data) == 0);
-    if (text.should_free) {
-        FREE(text.data);
-    }
+    FREE_STRING(text);
     text = align_text(STATIC_STRING(L"abcdef"), 3, ALIGN_LEFT);
     ASSERT(text.length == 3);
     ASSERT(wcscmp(L"abc", text.data) == 0);
-    if (text.should_free) {
-        FREE(text.data);
-    }
+    FREE_STRING(text);
     return true;
 }

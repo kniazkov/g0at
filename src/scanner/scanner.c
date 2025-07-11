@@ -333,14 +333,17 @@ static void parse_number(scanner_t *scan, token_t *token, bool negative) {
     }
 }
 
-scanner_t *create_scanner(const char *file_name, wchar_t *code, parser_memory_t *memory,
+scanner_t *create_scanner(const char *file_name, string_value_t code, parser_memory_t *memory,
         token_groups_t *groups) {
-    remove_comments_and_carriage_returns(code);
-    memset(groups, 0, sizeof(token_groups_t));
     scanner_t *scan = alloc_zeroed_from_arena(memory->tokens, sizeof(scanner_t));
-    scan->position = (full_position_t){ file_name, 1, 1, code, 0 };
+    size_t code_size = sizeof(wchar_t) * (code.length + 1);
+    scan->code = alloc_from_arena(memory->tokens, code_size);
+    memcpy(scan->code, code.data, code_size);
+    remove_comments_and_carriage_returns(scan->code);
+    scan->position = (full_position_t){ file_name, 1, 1, scan->code, 0 };
     scan->memory = memory;
     scan->groups = groups;
+    memset(groups, 0, sizeof(token_groups_t));
     return scan;
 }
 

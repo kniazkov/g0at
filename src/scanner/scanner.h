@@ -36,6 +36,14 @@ typedef struct parser_memory_t parser_memory_t;
  */
 struct scanner_t {
     /**
+     * @brief code processed by the scanner.
+     * 
+     * Source code as-is.
+     * Not constant, since changes like deleting comments may be made to it.
+     */
+    wchar_t* code;
+
+    /**
      * @brief The current position in the source code.
      * 
      * This structure holds the current position of the scanner in the source code,
@@ -64,14 +72,14 @@ struct scanner_t {
 /**
  * @brief Creates a new scanner for lexical analysis.
  * @param file_name The name of the file being scanned.
- * @param code The source code to be analyzed, represented as a wide-character string.
+ * @param code The source code to be analyzed.
  * @param memory A pointer to the `parser_memory_t` structure, which manages memory
  *  allocation for tokens and syntax tree nodes.
  * @param groups A pointer to the `token_groups_t` structure, which organizes tokens
  *  by type or role. The scanner populates these groups during lexical analysis.
  * @return A pointer to the newly created `scanner_t` structure.
  */
-scanner_t *create_scanner(const char *file_name, wchar_t *code, parser_memory_t *memory,
+scanner_t *create_scanner(const char *file_name, string_value_t code, parser_memory_t *memory,
         token_groups_t *groups);
 
 

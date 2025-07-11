@@ -91,8 +91,8 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
             string_value_t aligned = align_text(number, NUMBER_COLUMN_SIZE - 1, ALIGN_RIGHT);
             append_substring(&builder, aligned.data, aligned.length);
             append_char(&builder, L' ');
-            FREE(aligned.data);
-            FREE(number.data);
+            FREE_STRING(aligned);
+            FREE_STRING(number);
         } else {
             append_repeated_char(&builder, L' ', NUMBER_COLUMN_SIZE);
         }
@@ -118,8 +118,8 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
             string_value_t aligned = align_text(value, ARG0_COLUMN_SIZE - 1, ALIGN_RIGHT);
             append_substring(&builder, aligned.data, aligned.length);
             append_char(&builder, L' ');
-            FREE(aligned.data);
-            FREE(value.data);
+            FREE_STRING(aligned);
+            FREE_STRING(value);
         } else {
             append_repeated_char(&builder, L' ', ARG0_COLUMN_SIZE);
         }
@@ -130,8 +130,8 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
             string_value_t aligned = align_text(value, ARG1_COLUMN_SIZE - 1, ALIGN_RIGHT);
             append_substring(&builder, aligned.data, aligned.length);
             append_char(&builder, L' ');
-            FREE(aligned.data);
-            FREE(value.data);
+            FREE_STRING(aligned);
+            FREE_STRING(value);
             if (descr.arg_1_is_string) {
                 data_descriptor_t data = code->data_descriptors[instr.arg1];
                 string_value_t str = string_to_string_notation(
@@ -144,7 +144,7 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
                 );
                 append_char(&builder, L' ');
                 append_substring(&builder, str.data, str.length);
-                FREE(str.data);
+                FREE_STRING(str);
             }
         }
         else if (descr.arg_1_is_signed_integer) {
@@ -152,8 +152,8 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
             string_value_t aligned = align_text(value, ARG1_COLUMN_SIZE - 1, ALIGN_RIGHT);
             append_substring(&builder, aligned.data, aligned.length);
             append_char(&builder, L' ');
-            FREE(aligned.data);
-            FREE(value.data);
+            FREE_STRING(aligned);
+            FREE_STRING(value);
         }
 
         append_char(&builder, L'\n');

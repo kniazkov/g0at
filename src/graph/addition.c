@@ -47,12 +47,8 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_value_t right =
         expr->base.right_operand->base.vtbl->generate_goat_code(&expr->base.right_operand->base);
     string_value_t result = format_string(L"%s + %s", left.data, right.data);
-    if (left.should_free) {
-        FREE(left.data);
-    }
-    if (right.should_free) {
-        FREE(right.data);
-    }
+    FREE_STRING(left);
+    FREE_STRING(right);
     return result;
 }
 

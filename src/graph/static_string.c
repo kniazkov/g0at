@@ -49,7 +49,7 @@ typedef struct {
  */
 static string_value_t get_data(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
-    return STRING_VIEW_TO_VALUE(expr->string);
+    return VIEW_TO_VALUE(expr->string);
 }
 
 /**
@@ -65,7 +65,7 @@ static string_value_t get_data(const node_t *node) {
  */
 static string_value_t generate_goat_code(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
-    return string_to_string_notation(L"", STRING_VIEW_TO_VALUE(expr->string));
+    return string_to_string_notation(L"", VIEW_TO_VALUE(expr->string));
 }
 
 /**

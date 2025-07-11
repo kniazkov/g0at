@@ -111,9 +111,7 @@ invalid_declaration:
             get_messages()->invalid_var_declaration_syntax,
             last_token_str.data
         );
-        if (last_token_str.should_free) {
-            FREE(last_token_str.data);
-        }
+        FREE_STRING(last_token_str);
     }
 
 cleanup:
@@ -203,9 +201,7 @@ invalid_declaration:
             get_messages()->invalid_const_declaration_syntax,
             last_token_str.data
         );
-        if (last_token_str.should_free) {
-            FREE(last_token_str.data);
-        }
+        FREE_STRING(last_token_str);
     }
 
 cleanup:

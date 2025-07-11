@@ -95,9 +95,7 @@ string_view_t format_string_to_arena(arena_t *arena, const wchar_t *format, ...)
     size_t data_length = (value.length + 1) * sizeof(wchar_t*);
     wchar_t *buffer = alloc_from_arena(arena, data_length);
     memcpy(buffer, value.data, data_length);
-    if (value.should_free) {
-        FREE(value.data);
-    }
+    FREE_STRING(value);
     return (string_view_t){ buffer, value.length };
 }
 

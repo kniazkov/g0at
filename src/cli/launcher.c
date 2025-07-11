@@ -56,7 +56,7 @@ int go(options_t *opt) {
         /*
             4. scan (split code into tokens)
         */
-        scanner_t *scan = create_scanner(opt->input_file->file_name, code.data, &memory, groups);
+        scanner_t *scan = create_scanner(opt->input_file->file_name, code, &memory, groups);
         token_list_t tokens;
         error = process_brackets(tokens_memory, scan, &tokens);
         if (error != NULL) {
@@ -94,9 +94,7 @@ int go(options_t *opt) {
             string_value_t source_code = build_source_code(source_builder);
             if (source_code.data) {
                 print_utf8(source_code.data);
-                if (source_code.should_free) {
-                    FREE(source_code.data);
-                }
+                FREE_STRING(source_code);
             }
             destroy_source_builder(source_builder);
         }
@@ -133,9 +131,7 @@ int go(options_t *opt) {
         if (opt->print_bytecode) {
             string_value_t text = bytecode_to_text(bytecode);
             print_utf8(text.data);
-            if (text.should_free) {
-                FREE(text.data);
-            }
+            FREE_STRING(text);
         }
         
         /*
@@ -143,10 +139,8 @@ int go(options_t *opt) {
         */
         destroy_arena(graph_memory);
         graph_memory = NULL;
-        if (code.should_free) {
-            FREE(code.data);
-            code.data = NULL;
-        }
+        FREE_STRING(code);
+        code = (string_value_t){ NULL, 0, false };
 
         /*
             12. run the virtual machine
@@ -184,9 +178,7 @@ int go(options_t *opt) {
     if (tokens_memory != NULL) {
         destroy_arena(tokens_memory);
     }
-    if (code.data != NULL && code.should_free) {
-        FREE(code.data);
-    }
+    FREE_STRING(code);
 
     /*
         16. check for memory leaks

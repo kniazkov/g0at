@@ -99,9 +99,7 @@ static string_value_t generate_goat_code(const node_t *node) {
         statement_t *stmt = root->stmt_list[index];
         string_value_t stmt_as_string = stmt->base.vtbl->generate_goat_code(&stmt->base);
         result = append_substring(&builder, stmt_as_string.data, stmt_as_string.length);
-        if (stmt_as_string.should_free) {
-            FREE(stmt_as_string.data);
-        }
+        FREE_STRING(stmt_as_string);
     }
     return result;
 }

@@ -67,7 +67,7 @@ typedef struct {
  */
 static string_value_t vdeclr_get_data(const node_t *node) {
     const variable_declarator_t *decl = (const variable_declarator_t *)node;
-    return STRING_VIEW_TO_VALUE(decl->name);
+    return VIEW_TO_VALUE(decl->name);
 }
 
 /**
@@ -137,12 +137,10 @@ static string_value_t vdeclr_generate_goat_code(const node_t *node) {
         append_substring(&builder, L" = ", 3);
         string_value_t value = append_substring(&builder, initial_as_string.data,
                initial_as_string.length);
-        if (initial_as_string.should_free) {
-            FREE(initial_as_string.data);
-        }
+        FREE_STRING(initial_as_string);
         return value;
     } else {
-        return STRING_VIEW_TO_VALUE(decl->name);
+        return VIEW_TO_VALUE(decl->name);
     }
 }
 
@@ -294,9 +292,7 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
         variable_declarator_t *vdr = decl->decl_list[index];
         string_value_t vdr_as_string = vdeclr_generate_goat_code(&vdr->base);
         append_substring(&builder, vdr_as_string.data, vdr_as_string.length);
-        if (vdr_as_string.should_free) {
-            FREE(vdr_as_string.data);
-        }
+        FREE_STRING(vdr_as_string);
     }
     return append_char(&builder, L';');
 }
@@ -421,7 +417,7 @@ typedef struct {
  */
 static string_value_t cdeclr_get_data(const node_t *node) {
     const constant_declarator_t *decl = (const constant_declarator_t *)node;
-    return STRING_VIEW_TO_VALUE(decl->name);
+    return VIEW_TO_VALUE(decl->name);
 }
 
 /**
@@ -489,9 +485,7 @@ static string_value_t cdeclr_generate_goat_code(const node_t *node) {
     append_substring(&builder, L" = ", 3);
     string_value_t value = append_substring(&builder, initial_as_string.data,
             initial_as_string.length);
-    if (initial_as_string.should_free) {
-        FREE(initial_as_string.data);
-    }
+    FREE_STRING(initial_as_string);
     return value;
 }
 
@@ -643,9 +637,7 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
         constant_declarator_t *cdr = decl->decl_list[index];
         string_value_t cdr_as_string = cdr->base.vtbl->generate_goat_code(&cdr->base);
         append_substring(&builder, cdr_as_string.data, cdr_as_string.length);
-        if (cdr_as_string.should_free) {
-            FREE(cdr_as_string.data);
-        }
+        FREE_STRING(cdr_as_string);
     }
     return append_char(&builder, L';');
 }

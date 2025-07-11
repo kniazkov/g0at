@@ -12,7 +12,7 @@
 
 #include "pair.h"
 
-void *binary_search(pair_t *pairs, size_t size, void *key,
+void *binary_search(pair_t *pairs, size_t size, const void *key,
         int (*comparator)(const void*, const void*)) {
     size_t low = 0;
     size_t high = size - 1;

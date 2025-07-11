@@ -69,9 +69,7 @@ void fprintf_utf8(FILE *file, const wchar_t *format, ...) {
         char* encoded_buffer = encode_utf8(value.data);
         vfprintf(file, encoded_buffer, args);
         FREE(encoded_buffer);
-        if (value.should_free) {
-            FREE(value.data);
-        }
+        FREE_STRING(value);
     }
 }
 

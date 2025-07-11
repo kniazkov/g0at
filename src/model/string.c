@@ -159,7 +159,7 @@ object_t *get_string_proto() {
  * @param dsobj The dynamic string object to release or clear.
  */
 static void release_or_clear(object_dynamic_string_t *dsobj) {
-    FREE(dsobj->string.data);
+    FREE((wchar_t*)(dsobj->string.data));
     remove_object_from_list(&dsobj->base.process->objects, &dsobj->base);
     if (dsobj->base.process->dynamic_strings.size == POOL_CAPACITY) {
         FREE(dsobj);
@@ -226,7 +226,7 @@ static void release(object_t *obj) {
     remove_object_from_list(
         dsobj->state == ZOMBIE ? &obj->process->dynamic_strings : &obj->process->objects, obj
     );
-    FREE(dsobj->string.data);
+    FREE((wchar_t*)(dsobj->string.data));
     FREE(obj);
 }
 
@@ -241,9 +241,7 @@ static int compare(const object_t *obj1, const object_t *obj2) {
     string_value_t first = obj1->vtbl->to_string(obj1);
     string_value_t second = obj2->vtbl->to_string(obj2);
     int result = wcscmp(first.data, second.data);
-    if (second.should_free) {
-        FREE(second.data);
-    }
+    FREE_STRING(second);
     return result;
 }
 
@@ -270,7 +268,7 @@ static object_t *clone(process_t *process, object_t *obj) {
  */
 static string_value_t static_to_string(const object_t *obj) {
     object_static_string_t *stsobj = (object_static_string_t *)obj;
-    return STRING_VIEW_TO_VALUE(stsobj->string);
+    return VIEW_TO_VALUE(stsobj->string);
 }
 
 /**
@@ -281,7 +279,7 @@ static string_value_t static_to_string(const object_t *obj) {
  */
 static string_value_t dynamic_to_string(const object_t *obj) {
     object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
-    return STRING_VIEW_TO_VALUE(dsobj->string);
+    return VIEW_TO_VALUE(dsobj->string);
 }
 
 /**
@@ -415,9 +413,7 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
     init_string_builder(&builder, first.length + second.length);
     append_substring(&builder, first.data, first.length);
     string_value_t result = append_substring(&builder, second.data, second.length);
-    if (second.should_free) {
-        FREE(second.data);
-    }
+    FREE_STRING(second);
     return create_string_object(process, result);
 }
 
@@ -521,9 +517,7 @@ static object_vtbl_t dynamic_string_vtbl = {
 
 object_t *create_string_object(process_t *process, string_value_t value) {
     if (value.length == 0) {
-        if (value.should_free) {
-            FREE(value.data);
-        }
+        FREE_STRING(value);
         return get_empty_string();
     }
     object_dynamic_string_t *obj;

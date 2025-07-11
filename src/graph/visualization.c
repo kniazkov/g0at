@@ -126,9 +126,7 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
                 formatted_value.data
             )
         );
-        if (formatted_value.should_free) {
-            FREE(formatted_value.data);
-        }
+        FREE_STRING(formatted_value);
     } else {
         add_formatted_line_of_source_code(
             builder,
@@ -140,9 +138,7 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
             )
         );
     }
-    if (value.should_free) {
-        FREE(value.data);
-    }
+    FREE_STRING(value);
     size_t count = node->vtbl->get_child_count(node);
     for (size_t index = 0; index < count; index++) {
         int child_id = node_to_dot(node->vtbl->get_child(node, index), last_node_id, builder);
@@ -224,7 +220,7 @@ cleanup:
     FREE(command);
     remove(dot_file);
     FREE(dot_file);
-    FREE(dot_code.data);
+    FREE_STRING(dot_code);
  
     return result;
 }

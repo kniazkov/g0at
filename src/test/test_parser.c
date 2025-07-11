@@ -19,7 +19,12 @@ bool test_brackets_one_level_nesting() {
     arena_t *arena = create_arena();
     parser_memory_t memory = { arena, arena };
     token_groups_t groups;
-    scanner_t *scan = create_scanner("program.goat", L"aaa ( \"bbb\" ccc ) ddd ", &memory, &groups);
+    scanner_t *scan = create_scanner(
+        "program.goat", 
+        STATIC_STRING(L"aaa ( \"bbb\" ccc ) ddd "), 
+        &memory, 
+        &groups
+    );
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error == NULL);
@@ -40,8 +45,12 @@ bool test_brackets_two_levels_nesting() {
     arena_t *arena = create_arena();
     parser_memory_t memory = { arena, arena };
     token_groups_t groups;
-    scanner_t *scan = create_scanner("program.goat", L"aaa ( \"bbb\" [ ccc ddd ] ) eee ",
-        &memory, &groups);
+    scanner_t *scan = create_scanner(
+        "program.goat", 
+        STATIC_STRING(L"aaa ( \"bbb\" [ ccc ddd ] ) eee "),
+        &memory,
+        &groups
+    );
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error == NULL);
@@ -65,7 +74,12 @@ bool test_unclosed_bracket() {
     arena_t *arena = create_arena();
     parser_memory_t memory = { arena, arena };
     token_groups_t groups;
-    scanner_t *scan = create_scanner("program.goat", L"aaa ( bbb", &memory, &groups);
+    scanner_t *scan = create_scanner(
+        "program.goat", 
+        STATIC_STRING(L"aaa ( bbb"), 
+        &memory, 
+        &groups
+    );
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error != NULL);
@@ -85,7 +99,12 @@ bool test_missing_opening_bracket() {
     arena_t *arena = create_arena();
     parser_memory_t memory = { arena, arena };
     token_groups_t groups;
-    scanner_t *scan = create_scanner("program.goat", L"aaa \n bbb ] ccc", &memory, &groups);
+    scanner_t *scan = create_scanner(
+        "program.goat", 
+        STATIC_STRING(L"aaa \n bbb ] ccc"), 
+        &memory, 
+        &groups
+    );
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error != NULL);
@@ -103,7 +122,12 @@ bool test_closing_bracket_does_not_match_opening() {
     arena_t *arena = create_arena();
     parser_memory_t memory = { arena, arena };
     token_groups_t groups;
-    scanner_t *scan = create_scanner("program.goat", L"aaa { bbb \n ccc ] ddd",  &memory, &groups);
+    scanner_t *scan = create_scanner(
+        "program.goat", 
+        STATIC_STRING(L"aaa { bbb \n ccc ] ddd"),
+        &memory,
+        &groups
+    );
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error != NULL);
@@ -123,7 +147,12 @@ bool test_parsing_function_calls() {
     parser_memory_t memory = { arena, arena };
     token_groups_t groups;
     wchar_t *code = L"print(\"test\")";
-    scanner_t *scan = create_scanner("program.goat", code, &memory, &groups);
+    scanner_t *scan = create_scanner(
+        "program.goat",
+        (string_value_t){ code, wcslen(code), false },
+        &memory,
+        &groups
+    );
     token_list_t tokens;
     compilation_error_t *error = process_brackets(arena, scan, &tokens);
     ASSERT(error == NULL);
@@ -136,9 +165,7 @@ bool test_parsing_function_calls() {
     ASSERT(tokens.first->node->vtbl->type == NODE_FUNCTION_CALL);
     string_value_t code2 = tokens.first->node->vtbl->generate_goat_code(tokens.first->node);
     ASSERT(wcscmp(code, code2.data) == 0);
-    if (code2.should_free) {
-        FREE(code2.data);
-    }
+    FREE_STRING(code2);
     node_t *root_node;
     error = process_root_token_list(&memory, &tokens, &root_node);
     ASSERT(error == NULL);
@@ -146,9 +173,7 @@ bool test_parsing_function_calls() {
     ASSERT(root_node->vtbl->type == NODE_ROOT);
     code2 = root_node->vtbl->generate_goat_code(root_node);
     ASSERT(wcscmp(L"print(\"test\");", code2.data) == 0);
-    if (code2.should_free) {
-        FREE(code2.data);
-    }
+    FREE_STRING(code2);
     destroy_arena(arena);
     return true;
 }

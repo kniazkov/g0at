@@ -30,9 +30,7 @@ compilation_error_t *create_error_from_token(arena_t *arena, const token_t *toke
     va_end(args);
     if (value.data != NULL) {
         error->message = copy_string_to_arena(arena, value.data, value.length);
-        if (value.should_free) {
-            FREE(value.data);
-        }
+        FREE_STRING(value);
     } else {
         error->message = (string_view_t){ L"", 0 };
     }

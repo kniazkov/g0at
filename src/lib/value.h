@@ -85,37 +85,42 @@ typedef struct {
 
 /**
  * @struct string_value_t
- * @brief Structure to represent a string value with a memory management flag and length.
- * 
- * This structure is used to represent a string value, along with a flag indicating whether the
- * calling method is responsible for freeing the allocated memory. It also stores the length
- * of the string for convenience, so the caller doesn't need to calculate it every time.
- * If the `wstr` field is `NULL`, it indicates that the object does not have a valid string value.
+ * @brief A string with explicit ownership semantics (for function returns).
+ *
+ * This is the primary type for returning strings from functions, especially when
+ * the ownership semantics are unknown at compile time. It solves the "who should
+ * free this?" problem by carrying an explicit ownership flag.
+ *
+ * Key properties:
+ * - Immutable content (const) to prevent action-at-a-distance bugs
+ * - Length cached for O(1) access
+ * - Ownership flag indicates if receiver must FREE_STRING()
+ * - Compatible with both static and dynamic strings
+ *
+ * Usage patterns:
+ * - Return from functions that might allocate
+ * - Receive strings from virtual methods
+ * - Pass through string processing pipelines
+ *
+ * @invariant If data is NULL, length must be 0.
+ * @invariant `should_free == true` implies data was dynamically allocated.
  */
 typedef struct {
     /**
-     * @brief A pointer to the string value.
-     * 
-     * This field holds a pointer to a wide-character string (`wchar_t*`). If the string is `NULL`, 
-     * it indicates the absence of a valid string value.
+     * @brief Pointer to immutable string data (or NULL).
+     * @warning Never modify through this pointer - use `string_builder_t` for mutation.
      */
-    wchar_t *data;
+    const wchar_t *data;
 
     /**
-     * @brief The length of the string.
-     * 
-     * This field holds the length of the string (number of characters). It is useful to avoid 
-     * recomputing the length each time and can be used for efficient string manipulation.
-     * If `data` is `NULL`, `length` is typically zero.
+     * @brief Precomputed string length (excluding null terminator).
+     * @details Saves O(n) strlen calls in processing pipelines.
      */
     size_t length;
 
     /**
-     * @brief A flag indicating whether the caller is responsible for freeing the allocated memory.
-     * 
-     * If this flag is set to `true`, the caller must free the string memory using `FREE` when
-     * it is no longer needed. If the flag is `false`, the string memory is managed elsewhere,
-     * and the caller should not free it.
+     * @brief Ownership flag
+     * @warning Caller must use `FREE_STRING()` when done
      */
     bool should_free;
 } string_value_t;
@@ -133,52 +138,61 @@ typedef struct {
  */
 #define STATIC_STRING(str) \
     (string_value_t){ \
-        .data = (wchar_t *)(str), \
+        .data = (str), \
         .length = sizeof(str) / sizeof(wchar_t) - 1, \
         .should_free = false \
     }
 
 /**
+ * @brief Macro to clear the memory of a string if it needs to be cleared.
+ */
+#define FREE_STRING(v) if ((v).should_free) FREE((wchar_t*)((v).data))
+
+/**
  * @struct string_view_t
- * @brief A non-owning view of a null-terminated wide-character string.
+ * @brief A non-owning string reference (for function parameters and storage).
  *
- * This structure provides a lightweight way to examine and pass string data without
- * memory ownership.
- * - NULL `data` indicates the absence of a string (no answer, uninitialized field)
- * - Non-NULL `data` always points to a valid null-terminated string (which may be empty)
+ * Lightweight view into a string managed elsewhere. Used when:
+ * - The lifetime is clearly managed by other means
+ * - Passing strings to functions that shouldn't assume ownership
+ * - Storing string references in data structures
+ *
+ * Design advantages:
+ * - No allocation overhead
+ * - Works with any string source (static, arena, heap)
+ * - Still provides O(1) length access
+ *
+ * @invariant If data is NULL, length must be 0.
+ * @invariant Non-NULL data must point to valid null-terminated string.
  */
 typedef struct {
     /**
-     * @brief Pointer to a null-terminated wide-character string or NULL.
-     * 
-     * When NULL, indicates the string doesn't exist.
-     * When non-NULL, must point to a valid null-terminated string which may be empty.
+     * @brief Pointer to immutable string data (or NULL).
+     * @note Unlike string_value_t, views never own their data.
      */
-    wchar_t* data;
+    const wchar_t* data;
 
     /**
-     * @brief Length of the string in characters (excluding null terminator).
-     * 
-     * When data is NULL, this must be 0. For non-NULL data, this equals wcslen(data).
-     * Provides O(1) access to string length without computation.
+     * @brief Precomputed length (excluding null terminator).
+     * @details Matches wcslen(data) but computed once.
      */
     size_t length;
 } string_view_t;
 
 /**
- * @def STRING_VALUE_TO_VIEW(s)
+ * @def VALUE_TO_VIEW(v)
  * @brief Safely converts a string_value_t to a string_view_t.
- * @param s The string_value_t to convert (must have valid invariants)
+ * @param v The string_value_t to convert (must have valid invariants)
  * @return A string_view_t with matching null/non-null semantics
  */
-#define STRING_VALUE_TO_VIEW(s) \
-    ((string_view_t){ .data = (s).data, .length = (s).data ? (s).length : 0 })
+#define VALUE_TO_VIEW(v) \
+    ((string_view_t){ .data = (v).data, .length = (v).length })
 
 /**
- * @def STRING_VIEW_TO_VALUE(s)
+ * @def VIEW_TO_VALUE(v)
  * @brief Safely converts a string_view_t to a string_value_t.
  * @param sv The string_view_t to convert (must have valid invariants)
  * @return A string_value_t with matching null/non-null semantics and false should_free flag
  */
-#define STRING_VIEW_TO_VALUE(s) \
-    ((string_value_t){ .data = (s).data, .length = (s).data ? (s).length : 0, .should_free = false })
+#define VIEW_TO_VALUE(v) \
+    ((string_value_t){ .data = (v).data, .length = (v).length, .should_free = false })

@@ -348,9 +348,7 @@ START_FUNCTION(function_print)
     string_value_t str = args[0]->vtbl->to_string(args[0]);
     if (str.data) {
         print_utf8(str.data);
-        if (str.should_free) {
-            FREE(str.data);
-        }
+        FREE_STRING(str);
     }
     return get_null_object();
 END_FUNCTION(function_print, L"print");

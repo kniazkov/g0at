@@ -78,9 +78,7 @@ string_value_t build_source_code(source_builder_t *builder) {
 
 void destroy_source_builder(source_builder_t *builder) {
     for (size_t index = 0; index < builder->count; index++) {
-        if (builder->lines[index].text.should_free) {
-            FREE(builder->lines[index].text.data);            
-        }
+        FREE_STRING(builder->lines[index].text);            
     }
     FREE(builder->lines);
     FREE(builder);

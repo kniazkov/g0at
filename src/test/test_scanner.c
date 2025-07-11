@@ -18,7 +18,12 @@ bool test_identifier() {
     arena_t *arena = create_arena();
     parser_memory_t memory = { arena, arena };
     token_groups_t groups;
-    scanner_t *scan = create_scanner("program.goat", L"  test \n abc123  ", &memory, &groups);
+    scanner_t *scan = create_scanner(
+        "program.goat",
+        STATIC_STRING(L"  test \n abc123  "),
+        &memory,
+        &groups
+    );
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_IDENTIFIER);
     ASSERT(wcscmp(L"test", tok->text.data) == 0);
@@ -46,7 +51,12 @@ bool test_bracket() {
     arena_t *arena = create_arena();
     parser_memory_t memory = { arena, arena };
     token_groups_t groups;
-    scanner_t *scan = create_scanner("program.goat", L"  )  ", &memory, &groups);
+    scanner_t *scan = create_scanner(
+        "program.goat",
+        STATIC_STRING(L"  )  "),
+        &memory,
+        &groups
+    );
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_BRACKET);
     ASSERT(wcscmp(L")", tok->text.data) == 0);
@@ -59,9 +69,12 @@ bool test_static_string() {
     arena_t *arena = create_arena();
     parser_memory_t memory = { arena, arena };
     token_groups_t groups;
-    scanner_t *scan = create_scanner("program.goat", 
-        L" \"test\" \"new\\nline\" \"\" \"not closed ",
-        &memory, &groups);
+    scanner_t *scan = create_scanner(
+        "program.goat", 
+        STATIC_STRING(L" \"test\" \"new\\nline\" \"\" \"not closed "),
+        &memory,
+        &groups
+    );
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_EXPRESSION);
     ASSERT(wcscmp(L"\"test\"", tok->text.data) == 0);
@@ -74,9 +87,7 @@ bool test_static_string() {
     ASSERT(tok->node->vtbl->type == NODE_STATIC_STRING);
     string_value_t value = tok->node->vtbl->generate_goat_code(tok->node);
     ASSERT(wcscmp(L"\"new\\nline\"", value.data) == 0);
-    if (value.should_free) {
-        FREE(value.data);
-    }
+    FREE_STRING(value);
     tok = get_token(scan);
     ASSERT(tok->type == TOKEN_EXPRESSION);
     ASSERT(wcscmp(L"\"\"", tok->text.data) == 0);
@@ -92,7 +103,12 @@ bool test_uknown_symbol() {
     arena_t *arena = create_arena();
     parser_memory_t memory = { arena, arena };
     token_groups_t groups;
-    scanner_t *scan = create_scanner("program.goat", L"  `  ", &memory, &groups);
+    scanner_t *scan = create_scanner(
+        "program.goat", 
+        STATIC_STRING(L"  `  "), 
+        &memory, 
+        &groups
+    );
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_ERROR);
     ASSERT(wcscmp(L"Unknown symbol '`'", tok->text.data) == 0);

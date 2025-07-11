@@ -46,16 +46,12 @@ string_value_t common_to_string_notation(const object_t *obj) {
         object_t *key = keys.items[index];
         string_value_t key_str = key->vtbl->to_string_notation(key);
         append_substring(&builder, key_str.data, key_str.length);
-        if (key_str.should_free) {
-            FREE(key_str.data);
-        }
+        FREE_STRING(key_str);
         append_char(&builder, '=');
         object_t *value = obj->vtbl->get_property(obj, key);
         string_value_t value_str = value->vtbl->to_string_notation(value);
         append_substring(&builder, value_str.data, value_str.length);
-        if (value_str.should_free) {
-            FREE(value_str.data);
-        }
+        FREE_STRING(value_str);
     }
     return append_char(&builder, '}');
 }
