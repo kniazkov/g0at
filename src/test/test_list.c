@@ -44,6 +44,7 @@ static test_description_t test_list[] = {
     , { "string topology", test_string_topology }
     , { "store and load", test_store_and_load }
     , { "'sign' function", test_sign_function }
+    , { "context cloning", test_context_cloning }
 
     , { "data builder", test_data_builder }
     , { "linker", test_linker }

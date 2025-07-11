@@ -192,4 +192,23 @@ typedef enum {
      * for dynamic function calls and composition.
      */
     CALL = 0x0E, /**< Calls a function with arguments from the data stack. */
+
+    /**
+     * @brief Creates a new execution context using the current context as a prototype.
+     *
+     * The `ENTER` opcode establishes a new execution context, inheriting variables and constants
+     * from the current context (prototype). All subsequent variable/constant operations
+     * (`VAR`, `CONST`, `STORE`, `VLOAD`) will refer to this new context. The previous context is
+     * preserved and can be restored with `LEAVE`.
+     */
+    ENTER = 0x0F, /**< Creates a new context, inheriting from the current one. */
+
+    /**
+     * @brief Restores the previous execution context.
+     *
+     * The `LEAVE` opcode exits the current context, reverting to the previous one. The abandoned
+     * context remains on the stack (unless explicitly popped), allowing it to be stored
+     * for later use.
+     */
+    LEAVE = 0x10, /**< Restores the parent context, leaving the current one on the stack. */
 } opcode_t;

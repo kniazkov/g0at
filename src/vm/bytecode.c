@@ -49,6 +49,8 @@ static instruction_descriptor_t descriptors[] =
     , { .code = L"ADD" }
     , { .code = L"SUB" }
     , { .code = L"CALL", .has_arg_0 = true }
+    , { .code = L"ENTER" }
+    , { .code = L"LEAVE" }
 };
 
 /**

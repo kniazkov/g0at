@@ -61,3 +61,9 @@ bool test_store_and_load();
  * @return Returns `true` if the test passes, or `false` if it fails.
  */
 bool test_sign_function();
+
+/**
+ * @brief Tests `ENTER` and `LEAVE` opcodes with execution of some code inside a new context.
+ * @return Returns `true` if the test passes, or `false` if it fails.
+ */
+bool test_context_cloning();

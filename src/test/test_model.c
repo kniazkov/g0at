@@ -245,3 +245,35 @@ bool test_sign_function() {
     free_bytecode(code);
     return true;
 }
+
+bool test_context_cloning() {
+    data_builder_t *data_builder = create_data_builder();
+    uint32_t name_x_idx = add_string_to_data_segment(data_builder, L"x");
+    uint32_t name_y_idx = add_string_to_data_segment(data_builder, L"y");
+    code_builder_t *code_bulder = create_code_builder();
+    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 2 });
+    add_instruction(code_bulder, (instruction_t){ .opcode = VAR, .arg1 = name_x_idx });
+    add_instruction(code_bulder, (instruction_t){ .opcode = ENTER });
+    add_instruction(code_bulder, (instruction_t){ .opcode = VLOAD, .arg1 = name_x_idx });
+    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 3 });
+    add_instruction(code_bulder, (instruction_t){ .opcode = ADD });
+    add_instruction(code_bulder, (instruction_t){ .opcode = VAR, .arg1 = name_y_idx });
+    add_instruction(code_bulder, (instruction_t){ .opcode = LEAVE });   
+    add_instruction(code_bulder, (instruction_t){ .opcode = END } );
+    bytecode_t *code = link_code_and_data(code_bulder, data_builder);
+    destroy_code_builder(code_bulder);
+    destroy_data_builder(data_builder);
+    process_t *proc = create_process();
+    run(proc, code);
+    ASSERT(proc->main_thread->data_stack->size == 1);
+    object_t *obj = peek_object_from_stack(proc->main_thread->data_stack, 0);
+    object_t *key = create_string_object(proc, STATIC_STRING(L"y"));
+    object_t *value = obj->vtbl->get_property(obj, key);
+    ASSERT(value != NULL);
+    string_value_t str = value->vtbl->to_string(value);
+    ASSERT(0 == wcscmp(str.data, L"5"));
+    FREE_STRING(str);
+    destroy_process(proc);
+    free_bytecode(code);
+    return true;
+}

@@ -512,6 +512,55 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
 }
 
 /**
+ * @brief Executes the `ENTER` instruction.
+ * 
+ * The `ENTER` opcode creates a new execution context using the current context as a prototype.
+ * This establishes a new variable scope while maintaining access to variables
+ * from the parent scope.
+ * 
+ * Upon execution, this function:
+ * - Creates a new context using the current thread's context as prototype
+ * - Sets the thread's current context to the newly created one
+ * - All subsequent variable operations will refer to this new context
+ * 
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread Pointer to the thread that is executing the instruction.
+ * @return Always returns `true` as context creation cannot fail in current implementation.
+ *         The instruction pointer is always advanced.
+ */
+static bool exec_ENTER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    thread->context = create_context(thread->process, thread->context);
+    thread->instr_id++;
+    return true;
+}
+
+/**
+ * @brief Executes the `LEAVE` instruction.
+ * 
+ * The `LEAVE` opcode restores the previous execution context while preserving the current one.
+ * 
+ * Upon execution, this function:
+ * - Captures the current context's data object and pushes it onto the data stack
+ * - Destroys the current context and restores the parent context
+ * 
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread Pointer to the thread that is executing the instruction.
+ * @return Always returns `true` as context restoration cannot fail in current implementation.
+ *         The instruction pointer is always advanced.
+ */
+static bool exec_LEAVE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    context_t *context = thread->context;
+    object_t *object = context->data;
+    INCREF(object);
+    thread->context = destroy_context(context);
+    push_object_onto_stack(thread->data_stack, object);
+    thread->instr_id++;
+    return true;
+}
+
+/**
  * @brief Array of instruction execution functions for the Goat virtual machine.
  * 
  * This array stores function pointers corresponding to each available opcode in the
@@ -536,7 +585,9 @@ static instr_executor_t executors[] = {
     exec_STORE,   /**< Stores to existing variable or creates new if not found. */
     exec_ADD,     /**< Adds the top two objects of the stack. */
     exec_SUB,     /**< Subtracts the top two objects of the stack. */
-    exec_CALL     /**< Calls a function with arguments from the data stack. */
+    exec_CALL,    /**< Calls a function with arguments from the data stack. */
+    exec_ENTER,   /**< Creates a new context, inheriting from the current one. */
+    exec_LEAVE    /**< Restores the parent context, leaving the current one on the stack. */
     // Additional opcodes can be added here in the future...
 };
 
