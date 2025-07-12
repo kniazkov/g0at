@@ -127,14 +127,21 @@ void set_function_call_arguments(node_t *node, arena_t *arena,
         expression_t **args, size_t args_count);
 
 /**
- * @brief Creates a new scope node.
+ * @brief Creates an empty scope node.
+ *  * 
+ * The created node should be populated using `fill_scope_node()` before use.
  * 
- * This function allocates and initializes a new scope node containing the specified
- * list of statements.
- * 
- * @param arena Memory arena to allocate the node from.
- * @param stmt_list Array of statements that comprise the scope body.
- * @param stmt_count Number of statements in the array.
- * @return Pointer to the newly created node structure.
+ * @param arena Memory arena to allocate from.
+ * @return Pointer to newly created empty scope node.
  */
-node_t *create_scope_node(arena_t *arena, statement_t **stmt_list, size_t stmt_count);
+node_t *create_scope_node(arena_t *arena);
+
+/**
+ * @brief Populates a scope node with statements.
+ *  * 
+ * @param node Scope node to populate. Must be NODE_SCOPE type.
+ * @param arena Memory arena for allocations. Must match node's arena.
+ * @param stmt_list Array of statements to copy.
+ * @param stmt_count Number of statements.
+ */
+void fill_scope_node(node_t *node, arena_t *arena, statement_t **stmt_list, size_t stmt_count);

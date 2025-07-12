@@ -24,3 +24,4 @@ bad_var_decl
 bad_decl_after_comma 
 bad_const_decl 
 const_decl 
+empty_object 

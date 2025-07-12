@@ -66,6 +66,18 @@ compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memo
     token_groups_t *groups);
 
 /**
+ * @brief Rule for handling scope blocks (curly brace pairs) and functon declarations.
+ */
+compilation_error_t *parsing_scopes_and_functions(token_t *token, parser_memory_t *memory,
+    token_groups_t *groups);
+
+/**
+ * @brief Rule for handling statements within a scope block.
+ */
+compilation_error_t *parsing_scope_bodies(token_t *token, parser_memory_t *memory,
+    token_groups_t *groups);
+
+/**
  * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into
  *  a special token.
  * 
@@ -331,6 +343,7 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
 
 compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory) {
     compilation_error_t *error = NULL;
+    APPLY_FORWARD(scope_blocks, parsing_scopes_and_functions);
     APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
     APPLY_FORWARD(identifiers, parsing_single_identifiers);
     APPLY_FORWARD(additive_operators, parsing_additive_operators);
@@ -338,6 +351,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_FORWARD(function_arguments, parsing_function_call_args);
     APPLY_FORWARD(var_keywords, parsing_variable_declarations);
     APPLY_FORWARD(const_keywords, parsing_constant_declarations);
+    APPLY_FORWARD(scope_objects, parsing_scope_bodies);
     // add other rules...
     return error;
 }

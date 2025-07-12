@@ -9,6 +9,8 @@
  * block scoping, control structures, and functions in the language.
  */
 
+#include <assert.h>
+
 #include "common_methods.h"
 #include "expression.h"
 #include "statement.h"
@@ -189,12 +191,17 @@ static node_vtbl_t scope_vtbl = {
     .generate_bytecode = generate_bytecode
 };
 
-node_t *create_scope_node(arena_t *arena, statement_t **stmt_list, size_t stmt_count) {
-    scope_t *scope = (scope_t *)alloc_from_arena(arena, sizeof(scope_t));
+node_t *create_scope_node(arena_t *arena) {
+    scope_t *scope = (scope_t *)alloc_zeroed_from_arena(arena, sizeof(scope_t));
     scope->base.base.vtbl = &scope_vtbl;
+    return &scope->base.base;
+}
+
+void fill_scope_node(node_t *node, arena_t *arena, statement_t **stmt_list, size_t stmt_count) {
+    assert(node->vtbl->type == NODE_SCOPE);
+    scope_t *scope = (scope_t *)node;
     size_t data_size = stmt_count * sizeof(statement_t *);
     scope->stmt_list = (statement_t **)alloc_from_arena(arena, data_size);
     memcpy(scope->stmt_list, stmt_list, data_size);
     scope->stmt_count = stmt_count;
-    return &scope->base.base;
 }

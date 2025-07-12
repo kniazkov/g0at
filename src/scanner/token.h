@@ -244,6 +244,11 @@ typedef struct {
      * @brief Group for tokens within curly braces (scope blocks).
      */
     token_list_t scope_blocks;
+
+    /**
+     * @brief Tokens containing scope objects whose bodies have not yet been processed.
+     */
+    token_list_t scope_objects;
 } token_groups_t;
 
 /**
