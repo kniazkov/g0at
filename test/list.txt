@@ -25,3 +25,4 @@ bad_decl_after_comma
 bad_const_decl 
 const_decl 
 empty_object 
+object_with_3_properties 
