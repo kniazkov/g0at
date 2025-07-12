@@ -54,6 +54,7 @@ typedef enum {
     TOKEN_EXPRESSION,       /**< An expression token, which contains an attached syntax tree node */
     TOKEN_STATEMENT,        /**< A statement (e.g., assignment, control structures, etc.) */
     TOKEN_FCALL_ARGS,       /**< Unprocessed function call arguments */
+    TOKEN_SCOPE_BODY,       /**< Unprocessed scope body */
     // Other token types can be added here in the future
 } token_type_t;
 

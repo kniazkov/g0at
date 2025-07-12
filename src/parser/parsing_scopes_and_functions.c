@@ -32,9 +32,17 @@ compilation_error_t *parsing_scopes_and_functions(token_t *token, parser_memory_
     /**
      * @todo processing for functions, if not a function declaration then:
      */
+    node_t *node = create_scope_node(memory->graph); 
+    token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
+    expr->type = TOKEN_EXPRESSION;
+    expr->begin = token->begin;
+    expr->end = token->end;
+    expr->text = token->text;
+    expr->node = node;
+    replace_token(token, expr);
+    token->type = TOKEN_SCOPE_BODY;
+    token->node = node;
     remove_token_from_group(token);
-    token->type = TOKEN_EXPRESSION;
-    token->node = create_scope_node(memory->graph);
     append_token_to_group(&groups->scope_objects, token);
     return NULL;
 }
@@ -55,7 +63,7 @@ compilation_error_t *parsing_scopes_and_functions(token_t *token, parser_memory_
  */
 compilation_error_t *parsing_scope_bodies(token_t *token, parser_memory_t *memory,
         token_groups_t *groups) {
-    assert(token->type == TOKEN_EXPRESSION && token->node && token->node->vtbl->type == NODE_SCOPE);
+    assert(token->type == TOKEN_SCOPE_BODY && token->node && token->node->vtbl->type == NODE_SCOPE);
     statement_list_processing_result_t result = process_statement_list(memory, &token->children);
     if (result.error) {
         return result.error;
