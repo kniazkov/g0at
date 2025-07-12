@@ -239,6 +239,11 @@ typedef struct {
      * @brief Group for 'const' keyword tokens.
      */
     token_list_t const_keywords;
+
+    /**
+     * @brief Group for tokens within curly braces (scope blocks).
+     */
+    token_list_t scope_blocks;
 } token_groups_t;
 
 /**

@@ -52,13 +52,15 @@ typedef compilation_error_t* (*reduce_rule_t)(token_t *start_token, parser_memor
  * @param arena The memory arena for allocating tokens.
  * @param scan The scanner used to get the tokens.
  * @param tokens A pointer to token list where the processed tokens will be stored.
+ * @param groups Token classification groups that may be updated during processing.
  * @note Any error returned by this function is considered critical and prevents further parsing.
  *  For example, unmatched brackets or invalid tokens within brackets are treated as structural
  *  issues that require immediate attention.
  * @return A `compilation_error_t` pointer if an error is detected (e.g., mismatched brackets),
  *  or NULL if no errors.
  */
-compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens);
+compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens,
+        token_groups_t *groups);
 
 /**
  * @brief Collapses a sequence of tokens into a single token.

@@ -78,12 +78,14 @@ compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memo
  * @param list The list to which the resulting tokens will be added.
  * @param opening_token The token representing the opening bracket (used to track errors).
  * @param closing_token A pointer to where the closing token will be stored if found.
+ * @param groups Token classification groups
  * 
  * @return A `compilation_error_t` pointer if an error is detected (e.g., mismatched brackets),
  *  or NULL if no errors.
  */
 static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanner_t *scan,
-        token_list_t *list, const token_t *opening_token, const token_t **closing_token) {
+        token_list_t *list, const token_t *opening_token, const token_t **closing_token,
+        token_groups_t *groups) {
     const token_t *previous = opening_token;
     while(true) {
         token_t *token = get_token(scan);
@@ -106,7 +108,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
                 pair->type = TOKEN_BRACKET_PAIR;
                 pair->begin = token->begin;
                 compilation_error_t *error = scan_and_analyze_for_brackets(arena, scan,
-                    &pair->children, token, &previous);
+                    &pair->children, token, &previous, groups);
                 if (error != NULL) {
                     return error;
                 }
@@ -117,6 +119,9 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
                 text[2] = L'\0';
                 pair->text = (string_view_t){ text, 2 };
                 append_token_to_neighbors(list, pair);
+                if (bracket == '{') {
+                    append_token_to_group(&groups->scope_blocks, pair);
+                }
             } else {
                 *closing_token = token;
                 if (opening_token == NULL) {
@@ -244,11 +249,12 @@ static compilation_error_t *apply_reduction_rule_backward(token_list_t *list, re
     return error;
 }
 
-compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens) {
+compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens,
+        token_groups_t *groups) {
     memset(tokens, 0, sizeof(token_list_t));
     const token_t *last_token;
     compilation_error_t *error = scan_and_analyze_for_brackets(arena, scan, tokens, NULL,
-        &last_token);
+        &last_token, groups);
     if (error != NULL) {
         error->critical = true;
     }

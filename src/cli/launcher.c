@@ -58,7 +58,7 @@ int go(options_t *opt) {
         */
         scanner_t *scan = create_scanner(opt->input_file->file_name, code, &memory, groups);
         token_list_t tokens;
-        error = process_brackets(tokens_memory, scan, &tokens);
+        error = process_brackets(tokens_memory, scan, &tokens, groups);
         if (error != NULL) {
             break;
         }
