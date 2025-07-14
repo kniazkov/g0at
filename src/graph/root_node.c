@@ -116,7 +116,6 @@ static string_value_t generate_goat_code(const node_t *node) {
  */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
-    append_formatted_line_of_source(builder, STATIC_STRING(L""));
     const root_node_t *root = (const root_node_t *)node;
     for (size_t index = 0; index < root->stmt_count; index++) {
         statement_t *stmt = root->stmt_list[index];
