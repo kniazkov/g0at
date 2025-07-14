@@ -96,6 +96,19 @@ struct source_builder_t {
      * If `count` exceeds this value, the array will be resized to accommodate additional lines.
      */
     size_t capacity;
+
+    /**
+     * @brief Flag indicating whether the next line should be appended to the previous one.
+     * 
+     * When this flag is set to true, the next call to `add_formatted_line_of_source_code` or
+     * `add_line_of_source_code` will concatenate the new content to the last line in the buffer
+     * instead of creating a new line. This is useful for constructs that span multiple logical
+     * additions but should appear on the same physical line in the output (e.g., if statements
+     * with opening braces).
+     * 
+     * The flag is automatically reset to false after each append operation.
+     */
+    bool append_next;
 };
 
 /**
