@@ -15,6 +15,7 @@
 #include "lib/split64.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 
 /**
  * @struct integer_t
@@ -51,6 +52,23 @@ static string_value_t get_data_and_generate_goat_code(const node_t *node) {
 }
 
 /**
+ * @brief Generates indented Goat source code for an integer literal expression.
+ *
+ * This function implements the virtual method for generating Goat source code that represents
+ * an integer literal. It converts the integer value to its string representation and outputs
+ * it directly without any additional formatting or decorations.
+
+ * @param node Pointer to the AST node representing the integer literal.
+ * @param builder Pointer to the source builder where generated code will be stored.
+ * @param indent The current indentation level (in tabs) for code generation.
+ */
+static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+            size_t indent) {
+    const integer_t *expr = (const integer_t *)node;
+    append_formatted_line_of_source(builder, format_string(L"%ld", expr->value));
+}
+
+/**
  * @brief Generates bytecode for an integer node.
  * 
  * This function generates bytecode for an integer node by emitting either:
@@ -63,7 +81,6 @@ static string_value_t get_data_and_generate_goat_code(const node_t *node) {
  */
 static void generate_bytecode(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
-    (void)data; // Explicitly mark as unused
     const integer_t *expr = (const integer_t *)node;
     if (expr->value > INT32_MAX || expr->value < INT32_MIN) {
         split64_t s;
@@ -89,7 +106,7 @@ static node_vtbl_t integer_vtbl = {
     .get_child = no_child,
     .get_child_tag = no_tags,
     .generate_goat_code = get_data_and_generate_goat_code,
-    .generate_indented_goat_code = stub_indented_goat_code_generator,
+    .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
 };
 

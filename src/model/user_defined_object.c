@@ -342,6 +342,9 @@ static void child_pair_to_string(void *data, void *key, value_t value) {
  */
 static string_value_t to_string_notation(const object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    if (uobj->properties->root == NULL) {
+        return STATIC_STRING(L"{ }");
+    }
     string_builder_t builder;
     init_string_builder(&builder, 2);
     append_char(&builder, '{');

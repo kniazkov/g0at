@@ -41,13 +41,3 @@ const node_t* no_child(const node_t *node, size_t index);
  * @return Always returns NULL (no relationship tags available).
  */
 const wchar_t* no_tags(const node_t *node, size_t index);
-
-/**
- * @brief A stub generator of Goat code with indentations. Does nothing
- * @param node A pointer to the node.
- * @param builder A pointer to the `source_builder_t` to store the generated output.
- * @param indent The number of tabs used for indentation.
- * @return Always returns `false`.
- */
-bool stub_indented_goat_code_generator(const node_t *node, source_builder_t *builder,
-    size_t indent);

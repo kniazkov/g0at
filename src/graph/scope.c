@@ -98,8 +98,11 @@ static const node_t* get_child(const node_t *node, size_t index) {
  */
 static string_value_t generate_goat_code(const node_t *node) {
     const scope_t* scope = (const scope_t*)node;
+    if (scope->stmt_count == 0) {
+        return STATIC_STRING(L"{ }");
+    }
     string_builder_t builder;
-    init_string_builder(&builder, 2); // for empty scope: {}
+    init_string_builder(&builder, 16);
     append_char(&builder, L'{');
     for (size_t index = 0; index < scope->stmt_count; index++) {
         if (index > 0) {
@@ -129,20 +132,20 @@ static string_value_t generate_goat_code(const node_t *node) {
  * @param node Pointer to the scope node to format..
  * @param builder Pointer to source builder accumulating the output.
  * @param indent Base indentation level (number of tabs) for this scope.
- * @return bool True if all statements generated successfully, false if any
- *  statement generation failed.
  */
-static bool generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
     const scope_t* scope = (const scope_t*)node;
-    bool result = true;
-    add_line_of_source_code(builder, indent, L"{");
-    for (size_t index = 0; result && index < scope->stmt_count; index++) {
-        statement_t *stmt = scope->stmt_list[index];
-        result = stmt->base.vtbl->generate_indented_goat_code(&stmt->base, builder, indent + 1);
+    if (scope->stmt_count == 0) {
+        append_formatted_line_of_source(builder, STATIC_STRING(L"{ }"));
+        return;
     }
-    add_line_of_source_code(builder, indent, L"}");
-    return result;
+    append_formatted_line_of_source(builder, STATIC_STRING(L"{"));
+    for (size_t index = 0; index < scope->stmt_count; index++) {
+        statement_t *stmt = scope->stmt_list[index];
+        stmt->base.vtbl->generate_indented_goat_code(&stmt->base, builder, indent + 1);
+    }
+    add_line_of_source(builder, indent, L"}");
 }
 
 /**
@@ -187,7 +190,7 @@ static node_vtbl_t scope_vtbl = {
     .get_child = get_child,
     .get_child_tag = no_tags,
     .generate_goat_code = generate_goat_code,
-    .generate_indented_goat_code = stub_indented_goat_code_generator,
+    .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode
 };
 

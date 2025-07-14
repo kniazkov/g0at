@@ -114,13 +114,13 @@ static string_value_t generate_goat_code(const node_t *node) {
  * @param node A pointer to the node.
  * @param builder A pointer to the `source_builder_t` to store the generated output.
  * @param indent The number of tabs used for indentation.
- * @return This implementation always returns `true`.
  */
-static bool generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
        size_t indent) {
-    string_value_t code = node->vtbl->generate_goat_code(node);
-    add_formatted_line_of_source_code(builder, indent, code);
-    return true;
+    append_formatted_line_of_source(builder, STATIC_STRING(L""));
+    const statement_expression_t *stmt = (const statement_expression_t *)node;
+    stmt->wrapped->base.vtbl->generate_indented_goat_code(&stmt->wrapped->base, builder, indent);
+    append_formatted_line_of_source(builder, STATIC_STRING(L";"));
 }
 
 /**

@@ -144,6 +144,29 @@ static string_value_t vdeclr_generate_goat_code(const node_t *node) {
 }
 
 /**
+ * @brief Generates indented Goat source code for a variable declarator expression.
+ *
+ * This function handles the generation of variable declaration syntax, including:
+ * - The variable name
+ * - Optional initialization with ' = ' operator
+ * - The initializer expression (if present)
+ *
+ * @param node Pointer to the AST node representing the variable declarator.
+ * @param builder Pointer to the source builder where generated code will be stored.
+ * @param indent The current indentation level (in tabs) for code generation.
+ */
+static void vdeclr_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+            size_t indent) {
+    const variable_declarator_t* decl = (const variable_declarator_t*)node;
+    append_formatted_line_of_source(builder, VIEW_TO_VALUE(decl->name));
+    if (decl->initial) {
+        append_formatted_line_of_source(builder, STATIC_STRING(L" = "));
+        decl->initial->base.vtbl->generate_indented_goat_code(&decl->initial->base,
+            builder, indent);
+    }
+}
+
+/**
  * @brief Generates bytecode for a variable declarator.
  * 
  * Produces bytecode that:
@@ -180,7 +203,7 @@ static node_vtbl_t vdeclr_vtbl = {
     .get_child = vdeclr_get_child,
     .get_child_tag = vdeclr_get_child_tag,
     .generate_goat_code = vdeclr_generate_goat_code,
-    .generate_indented_goat_code = stub_indented_goat_code_generator,
+    .generate_indented_goat_code = vdeclr_generate_indented_goat_code,
     .generate_bytecode = vdeclr_generate_bytecode,
 };
 
@@ -305,16 +328,18 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
  * @param node Pointer to the variable declaration node.
  * @param builder Pointer to the source builder for output.
  * @param indent Number of indentation tabs to apply.
- * @return true if code was successfully generated, false otherwise.
  */
-static bool vdecln_generate_indented_goat_code(const node_t *node, 
+static void vdecln_generate_indented_goat_code(const node_t *node, 
         source_builder_t *builder, size_t indent) {
-    string_value_t line = vdecln_generate_goat_code(node);
-    if (line.length == 0) {
-        return false;
+    const variable_declaration_t* decl = (const variable_declaration_t*)node;
+    append_formatted_line_of_source(builder, STATIC_STRING(L"var "));
+    for (size_t index = 0; index < decl->decl_count; index++) {
+        if (index > 0) {
+            append_formatted_line_of_source(builder, STATIC_STRING(L", "));
+        }
+        variable_declarator_t *vdr = decl->decl_list[index];
+        vdeclr_generate_indented_goat_code(&vdr->base, builder, indent);
     }
-    add_formatted_line_of_source_code(builder, indent, line);
-    return true;
 }
 
 /**
@@ -488,6 +513,26 @@ static string_value_t cdeclr_generate_goat_code(const node_t *node) {
 }
 
 /**
+ * @brief Generates indented Goat source code for a constant declarator expression.
+ *
+ * This function handles the generation of constant declaration syntax, including:
+ * - The constant name
+ * - Initialization with ' = ' operator
+ * - The initializer expression
+ *
+ * @param node Pointer to the AST node representing the constant declarator.
+ * @param builder Pointer to the source builder where generated code will be stored.
+ * @param indent The current indentation level (in tabs) for code generation.
+ */
+static void cdeclr_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+            size_t indent) {
+    const constant_declarator_t* decl = (const constant_declarator_t*)node;
+    append_formatted_line_of_source(builder, VIEW_TO_VALUE(decl->name));
+    append_formatted_line_of_source(builder, STATIC_STRING(L" = "));
+    decl->initial->base.vtbl->generate_indented_goat_code(&decl->initial->base, builder, indent);
+}
+
+/**
  * @brief Generates bytecode for a constant declarator.
  * 
  * Produces bytecode that:
@@ -520,7 +565,7 @@ static node_vtbl_t cdeclr_vtbl = {
     .get_child = cdeclr_get_child,
     .get_child_tag = cdeclr_get_child_tag,
     .generate_goat_code = cdeclr_generate_goat_code,
-    .generate_indented_goat_code = stub_indented_goat_code_generator,
+    .generate_indented_goat_code = cdeclr_generate_indented_goat_code,
     .generate_bytecode = cdeclr_generate_bytecode,
 };
 
@@ -649,16 +694,18 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
  * @param node Pointer to the constant declaration node.
  * @param builder Pointer to the source builder for output.
  * @param indent Number of indentation tabs to apply.
- * @return true if code was successfully generated, false on error.
  */
-static bool cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+static void cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
-    string_value_t line = cdecln_generate_goat_code(node);
-    if (line.length == 0) {
-        return false;
+    const constant_declaration_t* decl = (const constant_declaration_t*)node;
+    append_formatted_line_of_source(builder, STATIC_STRING(L"const "));
+    for (size_t index = 0; index < decl->decl_count; index++) {
+        if (index > 0) {
+            append_formatted_line_of_source(builder, STATIC_STRING(L", "));
+        }
+        constant_declarator_t *cdr = decl->decl_list[index];
+        cdeclr_generate_indented_goat_code(&cdr->base, builder, indent);
     }
-    add_formatted_line_of_source_code(builder, indent, line);
-    return true;
 }
 
 /**

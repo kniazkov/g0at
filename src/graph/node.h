@@ -306,9 +306,8 @@ typedef struct {
      * @param node A pointer to the node.
      * @param builder A pointer to the `source_builder_t` to store the generated output.
      * @param indent The number of tabs used for indentation.
-     * @return `true` if generation was successful, `false` otherwise.
      */
-    bool (*generate_indented_goat_code)(const node_t *node, source_builder_t *builder,
+    void (*generate_indented_goat_code)(const node_t *node, source_builder_t *builder,
             size_t indent);
 
     /**
@@ -344,9 +343,8 @@ typedef struct {
      * @param node A pointer to the node.
      * @param builder A pointer to the `source_builder_t` to store the generated output.
      * @param indent The number of tabs used for indentation.
-     * @return `true` if generation was successful, `false` otherwise.
      */
-    bool (*generate_indented_c_code)(const node_t *node, source_builder_t *builder, size_t indent);
+    void (*generate_indented_c_code)(const node_t *node, source_builder_t *builder, size_t indent);
 
     /**
      * @brief Generates bytecode for the given node.

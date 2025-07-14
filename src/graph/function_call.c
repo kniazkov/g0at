@@ -17,6 +17,7 @@
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 #include "codegen/code_builder.h"
+#include "codegen/source_builder.h"
 
 /**
  * @struct function_call_t
@@ -153,6 +154,35 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /**
+ * @brief Generates indented Goat source code for a function call expression.
+ *
+ * This function implements the virtual method for generating Goat source code that represents
+ * a function call. It handles the complete syntax including:
+ * - The function name/expression
+ * - Parentheses around arguments
+ * - Comma-separated argument list
+ *
+ * @param node Pointer to the AST node representing the function call.
+ * @param builder Pointer to the source builder where generated code will be stored.
+ * @param indent The current indentation level (in tabs) for code generation.
+ */
+static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+            size_t indent) {
+    const function_call_t *expr = (const function_call_t *)node;
+    expr->func_object->base.vtbl->generate_indented_goat_code(&expr->func_object->base,
+        builder, indent);
+    append_formatted_line_of_source(builder, STATIC_STRING(L"("));
+    for (size_t index = 0; index < expr->args_count; index++) {
+        if (index > 0) {
+            append_formatted_line_of_source(builder, STATIC_STRING(L", "));
+        }
+        expression_t *arg = expr->args[index];
+        arg->base.vtbl->generate_indented_goat_code(&arg->base, builder, indent);
+    }
+    append_formatted_line_of_source(builder, STATIC_STRING(L")"));
+}
+
+/**
  * @brief Generates bytecode for a function call expression.
  * 
  * This function generates the bytecode for a function call expression. It processes the arguments
@@ -199,7 +229,7 @@ static node_vtbl_t function_call_vtbl = {
     .get_child = get_child,
     .get_child_tag = get_child_tag,
     .generate_goat_code = generate_goat_code,
-    .generate_indented_goat_code = stub_indented_goat_code_generator,
+    .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
 };
 

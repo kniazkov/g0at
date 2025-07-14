@@ -17,6 +17,7 @@
 #include "lib/string_ext.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 
 /**
  * @struct null_t
@@ -45,7 +46,19 @@ typedef struct {
  * @return A `string_value_t` containing the literal string "null".
  */
 static string_value_t generate_goat_code(const node_t *node) {
-    return (string_value_t){ L"null", 4, false }; 
+    return STATIC_STRING(L"null"); 
+}
+
+/**
+ * @brief Generates indented Goat source code for a null expression.
+ *
+ * @param node Pointer to the AST node representing the null expression.
+ * @param builder Pointer to the source builder where generated code will be stored.
+ * @param indent The current indentation level (in tabs) for code generation (unused).
+ */
+static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+            size_t indent) {
+    append_formatted_line_of_source(builder, STATIC_STRING(L"null"));
 }
 
 /**
@@ -80,7 +93,7 @@ static node_vtbl_t null_vtbl = {
     .get_child = no_child,
     .get_child_tag = no_tags,
     .generate_goat_code = generate_goat_code,
-    .generate_indented_goat_code = stub_indented_goat_code_generator,
+    .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
 };
 

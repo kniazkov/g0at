@@ -91,7 +91,7 @@ int go(options_t *opt) {
         if (opt->print_source_code) {
             source_builder_t *source_builder = create_source_builder();
             root_node->vtbl->generate_indented_goat_code(root_node, source_builder, 0);
-            string_value_t source_code = build_source_code(source_builder);
+            string_value_t source_code = build_source(source_builder);
             if (source_code.data) {
                 print_utf8(source_code.data);
                 FREE_STRING(source_code);

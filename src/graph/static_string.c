@@ -16,6 +16,7 @@
 #include "lib/string_ext.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 
 /**
  * @struct static_string_t
@@ -69,6 +70,26 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /**
+ * @brief Generates indented Goat source code for a static string literal expression.
+ * 
+ * This function implements the virtual method for generating Goat source code that represents
+ * a string literal. It outputs the string in proper Goat syntax, including escaping special
+ * characters and wrapping the content in quotation marks.
+ *
+ * @param node Pointer to the AST node representing the string literal.
+ * @param builder Pointer to the source builder where generated code will be stored.
+ * @param indent The current indentation level (in tabs) for code generation.
+ */
+static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+        size_t indent) {
+    const static_string_t *expr = (const static_string_t *)node;
+    append_formatted_line_of_source(
+        builder,
+        string_to_string_notation(L"", VIEW_TO_VALUE(expr->string))
+    );
+}
+
+/**
  * @brief Generates bytecode for a static string node.
  * 
  * This function generates bytecode for a static string node by first adding the string
@@ -100,7 +121,7 @@ static node_vtbl_t static_string_vtbl = {
     .get_child = no_child,
     .get_child_tag = no_tags,
     .generate_goat_code = generate_goat_code,
-    .generate_indented_goat_code = stub_indented_goat_code_generator,
+    .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
 };
 

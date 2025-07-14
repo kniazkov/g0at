@@ -17,6 +17,7 @@
 #include "lib/string_ext.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 
 /**
  * @struct variable_t
@@ -61,6 +62,23 @@ static string_value_t get_data(const node_t *node) {
 static string_value_t generate_goat_code(const node_t *node) {
     const variable_t *expr = (const variable_t *)node;
     return VIEW_TO_VALUE(expr->name);
+}
+
+/**
+ * @brief Generates indented Goat source code for a variable reference expression.
+ *
+ * This function implements the virtual method for generating Goat source code that represents
+ * a variable reference. It outputs the variable's name directly without any additional
+ * formatting or operators, as a variable reference is a terminal expression in the syntax tree.
+ *
+ * @param node Pointer to the AST node representing the variable reference.
+ * @param builder Pointer to the source builder where generated code will be stored.
+ * @param indent The current indentation level (in tabs) for code generation (unused).
+ */
+static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+            size_t indent) {
+    const variable_t *expr = (const variable_t *)node;
+    append_formatted_line_of_source(builder, VIEW_TO_VALUE(expr->name));
 }
 
 /**
@@ -115,7 +133,7 @@ static node_vtbl_t variable_vtbl = {
     .get_child = no_child,
     .get_child_tag = no_tags,
     .generate_goat_code = generate_goat_code,
-    .generate_indented_goat_code = stub_indented_goat_code_generator,
+    .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
     .generate_bytecode_assign = generate_bytecode_assign
 };

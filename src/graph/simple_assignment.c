@@ -17,6 +17,7 @@
 #include "lib/string_ext.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 
 /**
  * @struct simple_assignment_t
@@ -52,6 +53,27 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /**
+ * @brief Generates indented Goat source code for a simple assignment operation node.
+ * 
+ * This function implements the virtual method for generating Goat source code for a simple
+ * assignment expression (`=` operator). It recursively generates code for both left and right
+ * operands, combining them with the assignment operator in between.
+ * 
+ * @param node Pointer to the assignment node to generate code for.
+ * @param builder Pointer to the source builder where generated code will be stored.
+ * @param indent The current indentation level (in tabs) for code generation.
+ */
+static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+            size_t indent) {
+    const simple_assignment_t *expr = (const simple_assignment_t *)node;
+    expr->base.left_operand->base.base.vtbl->generate_indented_goat_code(
+        &expr->base.left_operand->base.base, builder, indent);
+    append_formatted_line_of_source(builder, STATIC_STRING(L" = "));
+    expr->base.right_operand->base.vtbl->generate_indented_goat_code(
+        &expr->base.right_operand->base, builder, indent);
+}
+
+/**
  * @brief Generates bytecode for simple assignment operation.
  * @param node A pointer to the node representing the addition operation.
  * @param code A pointer to the `code_builder_t` structure used for generating instructions.
@@ -81,7 +103,7 @@ static node_vtbl_t simple_assignment_vtbl = {
     .get_child = assignment_get_child,
     .get_child_tag = assignment_get_tag,
     .generate_goat_code = generate_goat_code,
-    .generate_indented_goat_code = stub_indented_goat_code_generator,
+    .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode
 };
 

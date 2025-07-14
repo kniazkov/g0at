@@ -118,10 +118,22 @@ source_builder_t *create_source_builder();
  * 
  * @param builder Pointer to the `source_builder_t` structure where the line will be added.
  * @param indent Number of spaces to use for indentation.
- * @param line Pre-formatted wide-character string to be added.
+ * @param text Pre-formatted wide-character string to be added.
  */
-void add_formatted_line_of_source_code(source_builder_t *builder, size_t indent,
-    string_value_t line);
+void add_formatted_line_of_source(source_builder_t *builder, size_t indent,
+    string_value_t text);
+
+/**
+ * @brief Appends text to the last line of source code without adding a new line.
+ * 
+ * This function concatenates the given pre-formatted text to the text of the last line
+ * in the source builder. If no lines exist yet, it creates a new line with zero indentation.
+ * The text is appended exactly as provided, without any additional formatting.
+ * 
+ * @param builder Pointer to the `source_builder_t` structure to modify.
+ * @param text Pre-formatted wide-character string to be appended.
+ */
+void append_formatted_line_of_source(source_builder_t *builder, string_value_t text);
 
 /**
  * @brief Adds a line of source code with a specified indentation.
@@ -135,7 +147,20 @@ void add_formatted_line_of_source_code(source_builder_t *builder, size_t indent,
  * @param format The wide-character format string containing placeholders for the arguments.
  * @param ... A variable number of arguments to be substituted into the format string.
  */
-void add_line_of_source_code(source_builder_t *builder, size_t indent, const wchar_t *format, ...);
+void add_line_of_source(source_builder_t *builder, size_t indent, const wchar_t *format, ...);
+
+/**
+ * @brief Appends text to the last line of source code.
+ * 
+ * This function formats the given arguments according to the format string and appends
+ * the result to the text of the last line in the source builder. If no lines exist yet,
+ * it creates a new line with zero indentation.
+ * 
+ * @param builder Pointer to the `source_builder_t` structure to modify.
+ * @param format The wide-character format string containing placeholders for the arguments.
+ * @param ... A variable number of arguments to be substituted into the format string.
+ */
+void append_line_of_source(source_builder_t *builder, const wchar_t *format, ...);
 
 /**
  * @brief Builds the complete source code from the lines stored in the source builder.
@@ -152,7 +177,7 @@ void add_line_of_source_code(source_builder_t *builder, size_t indent, const wch
  * @return A `string_value_t` structure containing the final source code as a wide-character
  *  string.
  */
-string_value_t build_source_code(source_builder_t *builder);
+string_value_t build_source(source_builder_t *builder);
 
 /**
  * @brief Destroys a source builder.

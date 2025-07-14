@@ -28,8 +28,8 @@ source_builder_t *create_source_builder() {
     return builder;
 }
 
-void add_formatted_line_of_source_code(source_builder_t *builder, size_t indent,
-        string_value_t line) {
+void add_formatted_line_of_source(source_builder_t *builder, size_t indent,
+        string_value_t text) {
     if (builder->count == builder->capacity) {
         builder->capacity *= 2;
         line_of_code_t *new_lines = (line_of_code_t *)ALLOC(
@@ -39,15 +39,38 @@ void add_formatted_line_of_source_code(source_builder_t *builder, size_t indent,
         builder->lines = new_lines;
     }
     builder->lines[builder->count].indent = indent;
-    builder->lines[builder->count].text = line;
+    builder->lines[builder->count].text = text;
     builder->count++;
 }
 
-void add_line_of_source_code(source_builder_t *builder, size_t indent, const wchar_t *format, ...) {
+void append_formatted_line_of_source(source_builder_t *builder, string_value_t text) {
+    if(builder->count == 0) {
+        add_formatted_line_of_source(builder, 0, text);
+        return;
+    }
+    line_of_code_t *line = &builder->lines[builder->count - 1];
+    string_builder_t concat;
+    init_string_builder(&concat, line->text.length + text.length);
+    append_string_value(&concat, line->text);
+    string_value_t new_text = append_string_value(&concat, text);
+    FREE_STRING(line->text);
+    FREE_STRING(text);
+    line->text = new_text;
+};
+
+void add_line_of_source(source_builder_t *builder, size_t indent, const wchar_t *format, ...) {
     va_list args;
     va_start(args, format);
     string_value_t formatted_line = format_string_vargs(format, args);
-    add_formatted_line_of_source_code(builder, indent, formatted_line);
+    add_formatted_line_of_source(builder, indent, formatted_line);
+    va_end(args);
+}
+
+void append_line_of_source(source_builder_t *builder, const wchar_t *format, ...) {
+    va_list args;
+    va_start(args, format);
+    string_value_t formatted_line = format_string_vargs(format, args);
+    append_formatted_line_of_source(builder, formatted_line);
     va_end(args);
 }
 
@@ -61,7 +84,7 @@ void add_line_of_source_code(source_builder_t *builder, size_t indent, const wch
  */
 static wchar_t *tabulation = L"    ";
 
-string_value_t build_source_code(source_builder_t *builder) {
+string_value_t build_source(source_builder_t *builder) {
     string_builder_t code_builder;
     string_value_t result = { NULL, 0, false };
     init_string_builder(&code_builder, 0);

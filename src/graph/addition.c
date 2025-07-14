@@ -14,6 +14,7 @@
 #include "lib/string_ext.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 
 /**
  * @struct addition_t
@@ -53,6 +54,27 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /**
+ * @brief Generates indented Goat source code for an addition operation node.
+ * 
+ * This function implements the virtual method for generating Goat source code for an addition
+ * expression (`+` operator). It recursively generates code for both left and right operands,
+ * combining them with the addition operator in between.
+ * 
+ * @param node Pointer to the addition node to generate code for.
+ * @param builder Pointer to the source builder where generated code will be stored.
+ * @param indent The current indentation level (in tabs) for code generation.
+ */
+static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+            size_t indent) {
+    const addition_t *expr = (const addition_t *)node;
+    expr->base.left_operand->base.vtbl->generate_indented_goat_code(&expr->base.left_operand->base,
+        builder, indent);
+    append_formatted_line_of_source(builder, STATIC_STRING(L" + "));
+    expr->base.right_operand->base.vtbl->generate_indented_goat_code(
+        &expr->base.right_operand->base, builder, indent);
+}
+
+/**
  * @brief Generates bytecode for an addition operation node.
  * 
  * This function generates bytecode for an addition operation by first generating the bytecode
@@ -87,7 +109,7 @@ static node_vtbl_t addition_vtbl = {
     .get_child = binop_get_child,
     .get_child_tag = binop_get_tag,
     .generate_goat_code = generate_goat_code,
-    .generate_indented_goat_code = stub_indented_goat_code_generator,
+    .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode
 };
 

@@ -116,7 +116,7 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
     string_value_t value = node->vtbl->get_data(node);
     if (value.length > 0) {
         string_value_t formatted_value = trim_and_escape_html_entities(value);
-        add_formatted_line_of_source_code(
+        add_formatted_line_of_source(
             builder,
             1,
             format_string(
@@ -128,7 +128,7 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
         );
         FREE_STRING(formatted_value);
     } else {
-        add_formatted_line_of_source_code(
+        add_formatted_line_of_source(
             builder,
             1,
             format_string(
@@ -144,7 +144,7 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
         int child_id = node_to_dot(node->vtbl->get_child(node, index), last_node_id, builder);
         const wchar_t* tag = node->vtbl->get_child_tag(node, index);
         if (tag == NULL) {
-            add_formatted_line_of_source_code(
+            add_formatted_line_of_source(
                 builder,
                 1,
                 format_string(
@@ -155,7 +155,7 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
                 )
             );
         } else {
-            add_formatted_line_of_source_code(
+            add_formatted_line_of_source(
                 builder,
                 1,
                 format_string(
@@ -174,19 +174,19 @@ bool generate_image(const node_t* root_node, const char *graph_output_file) {
     bool result = false;
 
     source_builder_t *builder = create_source_builder();
-    add_line_of_source_code(builder, 0, L"digraph AST {");
-    add_line_of_source_code(
+    add_line_of_source(builder, 0, L"digraph AST {");
+    add_line_of_source(
         builder,
         1,
         L"node [shape=box, style=\"rounded\", fontname=\"serif\", fontsize=\"11\", penwidth=\"0.7\"];"
     );
-    add_line_of_source_code(builder, 1,
+    add_line_of_source(builder, 1,
         L"edge [fontname=\"serif\", fontsize=\"11\", penwidth=\"0.7\"];");
-    add_line_of_source_code(builder, 1, L"graph [fontname=\"serif\", fontsize=\"11\"];");
+    add_line_of_source(builder, 1, L"graph [fontname=\"serif\", fontsize=\"11\"];");
     int last_node_id = 0;
     node_to_dot(root_node, &last_node_id, builder);
-    add_line_of_source_code(builder, 0, L"}");
-    string_value_t dot_code = build_source_code(builder);
+    add_line_of_source(builder, 0, L"}");
+    string_value_t dot_code = build_source(builder);
     destroy_source_builder(builder);
 
     size_t file_name_len = strlen(graph_output_file);

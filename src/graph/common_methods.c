@@ -26,8 +26,3 @@ const node_t* no_child(const node_t *node, size_t index) {
 const wchar_t* no_tags(const node_t *node, size_t index) {
     return NULL;
 }
-
-bool stub_indented_goat_code_generator(const node_t *node, source_builder_t *builder,
-        size_t indent) {
-    return false;
-}
