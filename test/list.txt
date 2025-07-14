@@ -26,3 +26,4 @@ bad_const_decl
 const_decl 
 empty_object 
 object_with_3_properties 
+nested_object 

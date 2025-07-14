@@ -1,0 +1,9 @@
+const obj = {
+    y = 20;
+    x = 10;
+    z = x + y;
+    q = {
+        n = null
+    }
+};
+print(obj);
