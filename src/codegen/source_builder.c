@@ -25,24 +25,11 @@ source_builder_t *create_source_builder() {
     builder->count = 0;
     builder->capacity = INITIAL_CAPACITY;
     builder->lines = (line_of_code_t *)ALLOC(builder->capacity * sizeof(line_of_code_t));
-    builder->append_next = false;
     return builder;
 }
 
 void add_formatted_line_of_source_code(source_builder_t *builder, size_t indent,
         string_value_t line) {
-    if (builder->append_next && builder->count > 0) {
-        line_of_code_t *existing_line = &builder->lines[builder->count-1];
-        string_builder_t concat;
-        init_string_builder(&concat, existing_line->text.length + line.length);
-        append_string_value(&concat, existing_line->text);
-        string_value_t new_text = append_string_value(&concat, line);
-        FREE_STRING(existing_line->text);
-        FREE_STRING(line);
-        existing_line->text = new_text;
-        builder->append_next = false;
-        return;
-    }
     if (builder->count == builder->capacity) {
         builder->capacity *= 2;
         line_of_code_t *new_lines = (line_of_code_t *)ALLOC(
