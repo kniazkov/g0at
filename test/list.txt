@@ -28,3 +28,4 @@ empty_object
 object_with_3_properties 
 nested_object 
 temp_nested_object 
+external_scope_changing 

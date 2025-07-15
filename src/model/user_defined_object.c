@@ -122,21 +122,54 @@ static void clear_child_pair(void *unused, void *key, value_t value) {
 }
 
 /**
- * @brief Releases or clears a user-defined object.
+ * @brief Removes a reference to a property value without reference counting.
  * 
- * This function either frees the object or resets its state and moves it to a list of reusable
- * objects, depending on the number of objects in the pool.
+ * This function is used during shallow cleaning to simply free the property value
+ * storage without affecting reference counts of referenced objects.
  * 
- * @param iobj The user-defined object to release or clear.
+ * @param unused Unused parameter (required by AVL tree traversal interface).
+ * @param key The property key (not used in this operation).
+ * @param value The property value storage to be freed.
  */
-static void release_or_clear(object_user_defined_t *uobj) {
+static void remove_reference(void *unused, void *key, value_t value) {
+    FREE(value.ptr);
+}
+
+/**
+ * @brief Releases or clears a user-defined object with optional deep cleaning.
+ * 
+ * This function handles both destruction and recycling of user-defined objects,
+ * with two distinct cleaning modes:
+ * 
+ * Deep cleaning (used by `dec_ref`):
+ * - Recursively decrements references of all child objects and prototypes
+ * - May trigger cascading destruction of unreferenced objects
+ * 
+ * Shallow cleaning (used by `sweep`):
+ * - Only frees immediate object resources
+ * - Preserves child objects for garbage collector to handle
+ * - Lets GC manage reference counts in its own order
+ * 
+ * In both cases, the object is either:
+ * - Fully destroyed if object pool is full, or
+ * - Reset and moved to zombie pool for reuse
+ * 
+ * @param uobj The user-defined object to process
+ * @param deep_cleaning true for recursive reference counting cleanup,
+ *  false for immediate resource-only cleanup
+ */
+static void release_or_clear(object_user_defined_t *uobj, bool deep_cleaning) {
     if (uobj->state == DYING) {
         return;
     }
-    uobj->state = DYING;
-    avl_tree_for_each(uobj->properties, clear_child_pair, NULL);
-    for (size_t index = 0; index < uobj->proto->size; index++) {
-        DECREF((object_t *)uobj->proto->data[index]);
+    if (deep_cleaning) {
+        uobj->state = DYING;
+        avl_tree_for_each(uobj->properties, clear_child_pair, NULL);
+        for (size_t index = 0; index < uobj->proto->size; index++) {
+            DECREF((object_t *)uobj->proto->data[index]);
+        }
+    } else {
+        avl_tree_for_each(uobj->properties, remove_reference, NULL);
     }
     remove_object_from_list(&uobj->base.process->objects, &uobj->base);
     if (uobj->base.process->user_defined_objects.size == POOL_CAPACITY) {
@@ -174,7 +207,7 @@ static void dec_ref(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     assert(uobj->state != ZOMBIE);
     if (!(--uobj->refs)) {
-        release_or_clear(uobj);
+        release_or_clear(uobj, true);
     }
 }
 
@@ -222,7 +255,7 @@ static bool sweep(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     assert(uobj->state != ZOMBIE);
     if (uobj->state == UNMARKED) {
-        release_or_clear(uobj);
+        release_or_clear(uobj, false);
         return true;
     } else {
         uobj->state = UNMARKED;
