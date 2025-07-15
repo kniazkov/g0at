@@ -323,14 +323,14 @@ static object_t *clone(process_t *process, object_t *obj) {
 static void child_pair_to_string(void *data, void *key, value_t value) {
     string_builder_t *builder = (string_builder_t *)data;
     if (builder->length > 1) {
-        append_char(builder, ';');
+        append_char(builder, ',');
     }
     object_t *key_obj = (object_t *)key;
     property_value_t *ref = (property_value_t *)value.ptr;
     string_value_t key_str = key_obj->vtbl->to_string_notation(key_obj);
     append_string_value(builder, key_str);
     FREE_STRING(key_str);
-    append_char(builder, '=');
+    append_char(builder, ':');
     string_value_t value_str = ref->object->vtbl->to_string_notation(ref->object);
     append_string_value(builder, value_str);
     FREE_STRING(value_str);
