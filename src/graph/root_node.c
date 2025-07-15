@@ -92,7 +92,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     const root_node_t *root = (const root_node_t *)node;
     string_builder_t builder;
     init_string_builder(&builder, 0);
-    string_value_t result = { L"", 0, false };
+    string_value_t result = EMPTY_STRING_VALUE;
     for (size_t index = 0; index < root->stmt_count; index++) {
         if (index > 0) {
             append_char(&builder, L' ');

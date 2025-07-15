@@ -171,15 +171,15 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     const function_call_t *expr = (const function_call_t *)node;
     expr->func_object->base.vtbl->generate_indented_goat_code(&expr->func_object->base,
         builder, indent);
-    append_formatted_line_of_source(builder, STATIC_STRING(L"("));
+    append_formatted_source(builder, STATIC_STRING(L"("));
     for (size_t index = 0; index < expr->args_count; index++) {
         if (index > 0) {
-            append_formatted_line_of_source(builder, STATIC_STRING(L", "));
+            append_formatted_source(builder, STATIC_STRING(L", "));
         }
         expression_t *arg = expr->args[index];
         arg->base.vtbl->generate_indented_goat_code(&arg->base, builder, indent);
     }
-    append_formatted_line_of_source(builder, STATIC_STRING(L")"));
+    append_formatted_source(builder, STATIC_STRING(L")"));
 }
 
 /**

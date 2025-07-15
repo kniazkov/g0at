@@ -137,15 +137,15 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
         size_t indent) {
     const scope_t* scope = (const scope_t*)node;
     if (scope->stmt_count == 0) {
-        append_formatted_line_of_source(builder, STATIC_STRING(L"{ }"));
+        append_formatted_source(builder, STATIC_STRING(L"{ }"));
         return;
     }
-    append_formatted_line_of_source(builder, STATIC_STRING(L"{"));
+    append_formatted_source(builder, STATIC_STRING(L"{"));
     for (size_t index = 0; index < scope->stmt_count; index++) {
         statement_t *stmt = scope->stmt_list[index];
         stmt->base.vtbl->generate_indented_goat_code(&stmt->base, builder, indent + 1);
     }
-    add_line_of_source(builder, indent, L"}");
+    add_source(builder, indent, L"}");
 }
 
 /**

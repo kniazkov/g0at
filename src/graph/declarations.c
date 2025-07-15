@@ -158,9 +158,9 @@ static string_value_t vdeclr_generate_goat_code(const node_t *node) {
 static void vdeclr_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const variable_declarator_t* decl = (const variable_declarator_t*)node;
-    append_formatted_line_of_source(builder, VIEW_TO_VALUE(decl->name));
+    append_formatted_source(builder, VIEW_TO_VALUE(decl->name));
     if (decl->initial) {
-        append_formatted_line_of_source(builder, STATIC_STRING(L" = "));
+        append_formatted_source(builder, STATIC_STRING(L" = "));
         decl->initial->base.vtbl->generate_indented_goat_code(&decl->initial->base,
             builder, indent);
     }
@@ -332,15 +332,15 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
 static void vdecln_generate_indented_goat_code(const node_t *node, 
         source_builder_t *builder, size_t indent) {
     const variable_declaration_t* decl = (const variable_declaration_t*)node;
-    add_formatted_line_of_source(builder, indent, STATIC_STRING(L"var "));
+    add_formatted_source(builder, indent, STATIC_STRING(L"var "));
     for (size_t index = 0; index < decl->decl_count; index++) {
         if (index > 0) {
-            append_formatted_line_of_source(builder, STATIC_STRING(L", "));
+            append_formatted_source(builder, STATIC_STRING(L", "));
         }
         variable_declarator_t *vdr = decl->decl_list[index];
         vdeclr_generate_indented_goat_code(&vdr->base, builder, indent);
     }
-    append_formatted_line_of_source(builder, STATIC_STRING(L";"));
+    append_formatted_source(builder, STATIC_STRING(L";"));
 }
 
 /**
@@ -528,8 +528,8 @@ static string_value_t cdeclr_generate_goat_code(const node_t *node) {
 static void cdeclr_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
-    append_formatted_line_of_source(builder, VIEW_TO_VALUE(decl->name));
-    append_formatted_line_of_source(builder, STATIC_STRING(L" = "));
+    append_formatted_source(builder, VIEW_TO_VALUE(decl->name));
+    append_formatted_source(builder, STATIC_STRING(L" = "));
     decl->initial->base.vtbl->generate_indented_goat_code(&decl->initial->base, builder, indent);
 }
 
@@ -699,15 +699,15 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
 static void cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
     const constant_declaration_t* decl = (const constant_declaration_t*)node;
-    add_formatted_line_of_source(builder, indent, STATIC_STRING(L"const "));
+    add_formatted_source(builder, indent, STATIC_STRING(L"const "));
     for (size_t index = 0; index < decl->decl_count; index++) {
         if (index > 0) {
-            append_formatted_line_of_source(builder, STATIC_STRING(L", "));
+            append_formatted_source(builder, STATIC_STRING(L", "));
         }
         constant_declarator_t *cdr = decl->decl_list[index];
         cdeclr_generate_indented_goat_code(&cdr->base, builder, indent);
     }
-    append_formatted_line_of_source(builder, STATIC_STRING(L";"));
+    append_formatted_source(builder, STATIC_STRING(L";"));
 }
 
 /**

@@ -79,7 +79,7 @@ void *copy_object_to_arena(arena_t* arena, const void* object, size_t size) {
 
 string_view_t copy_string_to_arena(arena_t* arena, const wchar_t* string, size_t length) {
     if (length == 0) {
-        return (string_view_t){ L"", 0 };
+        return EMPTY_STRING_VIEW;
     }
     wchar_t* copied_string = (wchar_t*)alloc_from_arena(arena, (length + 1) * sizeof(wchar_t));
     memcpy(copied_string, string, length * sizeof(wchar_t));

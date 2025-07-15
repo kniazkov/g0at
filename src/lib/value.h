@@ -144,6 +144,16 @@ typedef struct {
     }
 
 /**
+ * @brief Macro to create empty string value.
+ */
+#define EMPTY_STRING_VALUE (string_value_t){ L"", 0, false }
+
+/**
+ * @brief Macro for creating a null (non-existing) string value.
+ */
+#define NULL_STRING_VALUE (string_value_t){ NULL, 0, false }
+
+/**
  * @brief Macro to clear the memory of a string if it needs to be cleared.
  */
 #define FREE_STRING(v) if ((v).should_free) FREE((wchar_t*)((v).data))
@@ -178,6 +188,11 @@ typedef struct {
      */
     size_t length;
 } string_view_t;
+
+/**
+ * @brief Macro to create empty string view.
+ */
+#define EMPTY_STRING_VIEW (string_view_t){ L"", 0 }
 
 /**
  * @def VALUE_TO_VIEW(v)

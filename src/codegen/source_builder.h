@@ -120,8 +120,21 @@ source_builder_t *create_source_builder();
  * @param indent Number of spaces to use for indentation.
  * @param text Pre-formatted wide-character string to be added.
  */
-void add_formatted_line_of_source(source_builder_t *builder, size_t indent,
-    string_value_t text);
+void add_formatted_source(source_builder_t *builder, size_t indent, string_value_t text);
+
+/**
+ * @brief Convenience macro for adding static string literals as source lines.
+ * 
+ * This macro automatically converts a string literal to a `string_value_t` and calls
+ * `add_formatted_source()` with the given indentation. The string is statically allocated
+ * and doesn't require manual memory management.
+ * 
+ * @param builder Pointer to the source builder structure.
+ * @param indent Indentation level (in spaces) for the new line.
+ * @param text String literal to be added (automatically converted to `string_value_t` format).
+ */
+#define add_static_source(builder, indent, text) \
+    add_formatted_source(builder, indent, STATIC_STRING(text))
 
 /**
  * @brief Appends text to the last line of source code without adding a new line.
@@ -133,7 +146,21 @@ void add_formatted_line_of_source(source_builder_t *builder, size_t indent,
  * @param builder Pointer to the `source_builder_t` structure to modify.
  * @param text Pre-formatted wide-character string to be appended.
  */
-void append_formatted_line_of_source(source_builder_t *builder, string_value_t text);
+void append_formatted_source(source_builder_t *builder, string_value_t text);
+
+/**
+ * @brief Convenience macro for appending static string literals to source lines.
+ * 
+ * This macro automatically converts a string literal to a `string_value_t` and calls
+ * `append_formatted_source()` to append it to the last line. The string is statically
+ * allocated and doesn't require manual memory management.
+ * 
+ * @param builder Pointer to the source builder structure.
+ * @param text String literal to be appended (automatically converted to `string_value_t` format).
+ * 
+ * @see append_formatted_source()
+ */
+#define append_static_source(builder, text) append_formatted_source(builder, STATIC_STRING(text))
 
 /**
  * @brief Adds a line of source code with a specified indentation.
@@ -147,7 +174,7 @@ void append_formatted_line_of_source(source_builder_t *builder, string_value_t t
  * @param format The wide-character format string containing placeholders for the arguments.
  * @param ... A variable number of arguments to be substituted into the format string.
  */
-void add_line_of_source(source_builder_t *builder, size_t indent, const wchar_t *format, ...);
+void add_source(source_builder_t *builder, size_t indent, const wchar_t *format, ...);
 
 /**
  * @brief Appends text to the last line of source code.
@@ -160,7 +187,7 @@ void add_line_of_source(source_builder_t *builder, size_t indent, const wchar_t 
  * @param format The wide-character format string containing placeholders for the arguments.
  * @param ... A variable number of arguments to be substituted into the format string.
  */
-void append_line_of_source(source_builder_t *builder, const wchar_t *format, ...);
+void append_source(source_builder_t *builder, const wchar_t *format, ...);
 
 /**
  * @brief Builds the complete source code from the lines stored in the source builder.

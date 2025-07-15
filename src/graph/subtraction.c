@@ -69,7 +69,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     const subtraction_t *expr = (const subtraction_t *)node;
     expr->base.left_operand->base.vtbl->generate_indented_goat_code(&expr->base.left_operand->base,
         builder, indent);
-    append_formatted_line_of_source(builder, STATIC_STRING(L" - "));
+    append_formatted_source(builder, STATIC_STRING(L" - "));
     expr->base.right_operand->base.vtbl->generate_indented_goat_code(
         &expr->base.right_operand->base, builder, indent);
 }

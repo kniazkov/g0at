@@ -160,7 +160,7 @@ bool test_format_string() {
 }
 
 bool test_align_text() {
-    string_value_t text = align_text((string_value_t){ NULL, 0, false }, 7, ALIGN_CENTER);
+    string_value_t text = align_text(NULL_STRING_VALUE, 7, ALIGN_CENTER);
     ASSERT(text.length == 0);
     ASSERT(text.should_free == false);
     text = align_text(STATIC_STRING(L"abc"), 9, ALIGN_LEFT);

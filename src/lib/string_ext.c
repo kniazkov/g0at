@@ -206,7 +206,7 @@ char *encode_utf8(const wchar_t *wstr) {
 string_value_t decode_utf8(const char *str) {
     string_builder_t builder;
     init_string_builder(&builder, 16);
-    string_value_t result = { L"", 0, false };
+    string_value_t result = EMPTY_STRING_VALUE;
     while (*str) {
         unsigned char c0 = (unsigned char)*str++;
         wchar_t w = 0;
@@ -266,7 +266,7 @@ string_value_t decode_utf8(const char *str) {
 
 error:
     FREE(builder.data);
-    return (string_value_t){ NULL, 0, false };
+    return NULL_STRING_VALUE;
 }
 
 string_value_t string_to_string_notation(const wchar_t *prefix, const string_value_t str) {
@@ -414,7 +414,7 @@ string_value_t format_string_vargs(const wchar_t *format, va_list args) {
 
 string_value_t align_text(string_value_t text, size_t size, alignment_t alignment) {
     if (text.data == NULL || text.length == 0) {
-        return (string_value_t){ L"", 0, false };
+        return EMPTY_STRING_VALUE;
     }
     wchar_t *buff = ALLOC((size + 1) * sizeof(wchar_t));
     if (text.length > size) {

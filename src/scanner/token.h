@@ -49,6 +49,7 @@ typedef enum {
 
     TOKEN_VAR,              /**< The 'var' keyword for variable declarations */
     TOKEN_CONST,            /**< The 'const' keyword for constant declarations */
+    TOKEN_FUNC,             /**< The 'func' keyword for function declarations */
 
     TOKEN_BRACKET_PAIR,     /**< A pair of brackets and all tokens between them */
     TOKEN_EXPRESSION,       /**< An expression token, which contains an attached syntax tree node */

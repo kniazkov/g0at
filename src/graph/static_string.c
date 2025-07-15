@@ -83,7 +83,7 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
     const static_string_t *expr = (const static_string_t *)node;
-    append_formatted_line_of_source(
+    append_formatted_source(
         builder,
         string_to_string_notation(L"", VIEW_TO_VALUE(expr->string))
     );

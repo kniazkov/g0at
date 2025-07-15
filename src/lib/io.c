@@ -22,14 +22,14 @@ bool init_io(void) {
 string_value_t read_utf8_file(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
-        return (string_value_t){ NULL, 0, false };
+        return NULL_STRING_VALUE;
     }
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
     fseek(file, 0, SEEK_SET);
     if (file_size < 0) {
         fclose(file);
-        return (string_value_t){ NULL, 0, false };
+        return NULL_STRING_VALUE;
     }
     char *buffer = (char*)ALLOC(file_size + 1);
     size_t bytes_read = fread(buffer, 1, file_size, file);

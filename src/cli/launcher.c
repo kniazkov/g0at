@@ -140,7 +140,7 @@ int go(options_t *opt) {
         destroy_arena(graph_memory);
         graph_memory = NULL;
         FREE_STRING(code);
-        code = (string_value_t){ NULL, 0, false };
+        code = NULL_STRING_VALUE;
 
         /*
             12. run the virtual machine

@@ -220,6 +220,13 @@ static const keyword_lookup_t keywords[] = {
         get_null_node_instance,
         SIZE_MAX
     },
+    {
+        L"func",
+        4,
+        TOKEN_FUNC,
+        NULL,
+        SIZE_MAX
+    },
     /* Add new keywords here */
 };
 
