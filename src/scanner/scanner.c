@@ -63,6 +63,8 @@ static void remove_comments_and_carriage_returns(wchar_t *code) {
             }
         }
         else if (code[i] == L'/' && code[i + 1] == L'*') {
+            code[i] = L' ';
+            code[i + 1] = L' ';
             i += 2;
             while (code[i] != L'\0' && !(code[i] == L'*' && code[i + 1] == L'/')) {
                 code[i] = L' ';
