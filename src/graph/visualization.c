@@ -174,18 +174,18 @@ bool generate_image(const node_t* root_node, const char *graph_output_file) {
     bool result = false;
 
     source_builder_t *builder = create_source_builder();
-    add_source(builder, 0, L"digraph AST {");
-    add_source(
+    add_static_source(builder, 0, L"digraph AST {");
+    add_static_source(
         builder,
         1,
         L"node [shape=box, style=\"rounded\", fontname=\"serif\", fontsize=\"11\", penwidth=\"0.7\"];"
     );
-    add_source(builder, 1,
+    add_static_source(builder, 1,
         L"edge [fontname=\"serif\", fontsize=\"11\", penwidth=\"0.7\"];");
-    add_source(builder, 1, L"graph [fontname=\"serif\", fontsize=\"11\"];");
+    add_static_source(builder, 1, L"graph [fontname=\"serif\", fontsize=\"11\"];");
     int last_node_id = 0;
     node_to_dot(root_node, &last_node_id, builder);
-    add_source(builder, 0, L"}");
+    add_static_source(builder, 0, L"}");
     string_value_t dot_code = build_source(builder);
     destroy_source_builder(builder);
 

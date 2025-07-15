@@ -117,10 +117,10 @@ static string_value_t generate_goat_code(const node_t *node) {
  */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
        size_t indent) {
-    add_formatted_source(builder, indent, STATIC_STRING(L""));
+    add_static_source(builder, indent, L"");
     const statement_expression_t *stmt = (const statement_expression_t *)node;
     stmt->wrapped->base.vtbl->generate_indented_goat_code(&stmt->wrapped->base, builder, indent);
-    append_formatted_source(builder, STATIC_STRING(L";"));
+    append_static_source(builder, L";");
 }
 
 /**
