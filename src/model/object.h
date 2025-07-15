@@ -159,14 +159,15 @@ typedef struct {
      * @brief Function pointer for sweeping (cleaning up) an object during garbage collection.
      * 
      * The `sweep` function is responsible for cleaning up objects that are no longer
-     * marked as in use. If an object is determined to be unreachable, this function
-     * handles its destruction, releasing any resources it holds. This method ensures
-     * that objects are properly finalized and removed from memory.
+     * marked as in use. This includes either complete destruction or preparing the object
+     * for reuse (moving to object pool and marking as ZOMBIE).
      * 
      * @param obj The object to sweep.
+     * @return true if the object was either destroyed or moved to object pool (ZOMBIE),
+     *         false if the object was marked (still alive) and shouldn't be processed.
      */
-    void (*sweep)(object_t *obj);
-
+    bool (*sweep)(object_t *obj);
+    
     /**
      * @brief Function pointer for releasing (destroying) an object.
      * @param obj The object to release.

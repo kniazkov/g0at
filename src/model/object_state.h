@@ -37,10 +37,19 @@ typedef enum {
     MARKED = 1,
 
     /**
+     * @brief The object is in the process of being destroyed or cleaned up.
+     * 
+     * This state indicates that the object's destruction or cleanup process has begun but hasn't
+     * completed yet. This prevents recursive destruction attempts that could lead to segmentation
+     * faults or other issues if the object is encountered again during the cleanup process.
+     */
+    DYING = 2,
+
+    /**
      * @brief The object has been moved to the object pool.
      * 
      * This state means the object has been removed from active use but instead of being destroyed,
      * it has been placed in the object pool for potential reuse.
      */
-    ZOMBIE = 2
+    ZOMBIE = 3
 } object_state_t;

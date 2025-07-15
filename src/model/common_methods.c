@@ -16,6 +16,10 @@ void stub_memory_function(object_t *obj) {
     return;
 }
 
+bool no_sweep(object_t *obj) {
+    return false;
+}
+
 int compare_object_addresses(const object_t *obj1, const object_t *obj2) {
     if (obj1 > obj2) {
         return 1;

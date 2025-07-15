@@ -20,6 +20,15 @@
 void stub_memory_function(object_t *obj);
 
 /**
+ * @brief A stub sweep function for objects that should never be swept (like singletons).
+ * @param obj The object. This parameter is unused.
+ * @return Always returns false since the object should never be collected.
+ * @note This function is used for permanent objects that should never participate
+ *       in garbage collection (e.g., singletons, global constants).
+ */
+bool no_sweep(object_t *obj);
+
+/**
  * @brief Compares the memory addresses of two objects.
  * 
  * This function compares the memory addresses of two objects. The comparison is based solely on

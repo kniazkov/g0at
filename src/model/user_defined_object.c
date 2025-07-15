@@ -130,6 +130,10 @@ static void clear_child_pair(void *unused, void *key, value_t value) {
  * @param iobj The user-defined object to release or clear.
  */
 static void release_or_clear(object_user_defined_t *uobj) {
+    if (uobj->state == DYING) {
+        return;
+    }
+    uobj->state = DYING;
     avl_tree_for_each(uobj->properties, clear_child_pair, NULL);
     for (size_t index = 0; index < uobj->proto->size; index++) {
         DECREF((object_t *)uobj->proto->data[index]);
@@ -211,14 +215,18 @@ static void mark(object_t *obj) {
 /**
  * @brief Sweeps the object, cleaning it up or moving it to the object pool.
  * @param obj The object to sweep.
+ * @return true if the object was either destroyed or moved to object pool (ZOMBIE),
+ *         false if the object was marked (still alive) and shouldn't be processed.
  */
-static void sweep(object_t *obj) {
+static bool sweep(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     assert(uobj->state != ZOMBIE);
     if (uobj->state == UNMARKED) {
         release_or_clear(uobj);
+        return true;
     } else {
         uobj->state = UNMARKED;
+        return false;
     }
 }
 

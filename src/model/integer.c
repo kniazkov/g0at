@@ -131,7 +131,7 @@ static object_vtbl_t integer_proto_vtbl = {
     .inc_ref = stub_memory_function,
     .dec_ref = stub_memory_function,
     .mark = stub_memory_function,
-    .sweep = stub_memory_function,
+    .sweep = no_sweep,
     .release = stub_memory_function,
     .compare = compare_object_addresses,
     .clone = clone_singleton,
@@ -221,14 +221,18 @@ static void mark(object_t *obj) {
 /**
  * @brief Sweeps the object, cleaning it up or moving it to the object pool.
  * @param obj The object to sweep.
+ * @return true if the object was either destroyed or moved to object pool (ZOMBIE),
+ *         false if the object was marked (still alive) and shouldn't be processed.
  */
-static void sweep(object_t *obj) {
+static bool sweep(object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
     assert(diobj->state != ZOMBIE);
     if (diobj->state == UNMARKED) {
         release_or_clear(diobj);
+        return true;
     } else {
         diobj->state = UNMARKED;
+        return false;
     }
 }
 
@@ -448,7 +452,7 @@ static object_vtbl_t static_vtbl = {
     .inc_ref = stub_memory_function,
     .dec_ref = stub_memory_function,
     .mark = stub_memory_function,
-    .sweep = stub_memory_function,
+    .sweep = no_sweep,
     .release = stub_memory_function,
     .compare = compare,
     .clone = clone,

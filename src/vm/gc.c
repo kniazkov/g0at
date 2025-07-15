@@ -56,11 +56,15 @@ static void mark_reachable_objects(process_t *proc) {
  * @param proc A pointer to the process whose objects will be swept.
  */
 static void sweep_unreachable_objects(process_t *proc) {
+    object_t *last_live = NULL;
     object_t *obj = proc->objects.head;
     while (obj != NULL) {
-        object_t *next = obj->next;
-        obj->vtbl->sweep(obj);
-        obj = next;
+        if (obj->vtbl->sweep(obj)) {
+            obj = last_live ? last_live->next : proc->objects.head;
+        } else {
+            last_live = obj;
+            obj = obj->next;
+        }
     }
 }
 
