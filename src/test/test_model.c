@@ -157,7 +157,7 @@ bool test_properties() {
         true
     );
     object_t *clone = obj->vtbl->clone(process, obj);
-    const wchar_t *expected = L"{true=\"boolean\";3=\"three\";\"first\"=\"one\";\"second\"=\"two\"}";
+    const wchar_t *expected = L"{true:\"boolean\",3:\"three\",\"first\":\"one\",\"second\":\"two\"}";
     string_value_t str = obj->vtbl->to_string(obj);
     ASSERT(0 == wcscmp(str.data, expected));
     FREE_STRING(str);
