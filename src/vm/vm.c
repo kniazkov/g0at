@@ -478,6 +478,33 @@ static bool exec_SUB(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 }
 
 /**
+ * @brief Executes the `FUNC` instruction.
+ * 
+ * The `FUNC` opcode creates a new function object using arguments:
+ * - Immediate 16-bit argument count (instr.arg0)
+ * - 32-bit argument names reference (instr.arg1)
+ * - 32-bit entry point address (from argument stack)
+ * 
+ * Upon execution, this function:
+ * - Pops the entry point address from the argument stack
+ * - Creates a new function object with:
+ *   - Specified parameter count
+ *   - Argument names from data segment
+ *   - Entry point for execution
+ * - Pushes the created function object onto the data stack
+ * 
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute. The `arg0` field contains the argument count,
+ *              and `arg1` contains the argument names reference.
+ * @param thread Pointer to the executing thread.
+ * @return Returns `true` if the function object was successfully created and pushed,
+ *         or `false` if creation failed (e.g., invalid arguments).
+ */
+static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return false;
+}
+
+/**
  * @brief Executes the `CALL` instruction.
  * 
  * The `CALL` opcode interprets the object at the top of the data stack as a function and invokes
@@ -509,6 +536,22 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
     DECREF(func);
     thread->instr_id++;
     return result;
+}
+
+/**
+ * @brief Executes the `RET` instruction.
+ * 
+ * The `RET` opcode terminates execution of the current function and returns control
+ * to the caller.
+ * 
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute (unused parameter).
+ * @param thread Pointer to the executing thread.
+ * @return Returns `true` if the return was successfully processed,
+ *         or `false` if context restoration failed (should never occur in valid programs).
+ */
+static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return false;
 }
 
 /**
@@ -585,7 +628,9 @@ static instr_executor_t executors[] = {
     exec_STORE,   /**< Stores to existing variable or creates new if not found. */
     exec_ADD,     /**< Adds the top two objects of the stack. */
     exec_SUB,     /**< Subtracts the top two objects of the stack. */
+    exec_FUNC,    /**< Creates a new function object. */
     exec_CALL,    /**< Calls a function with arguments from the data stack. */
+    exec_RET,     /**< Returns from current function. */
     exec_ENTER,   /**< Creates a new context, inheriting from the current one. */
     exec_LEAVE    /**< Restores the parent context, leaving the current one on the stack. */
     // Additional opcodes can be added here in the future...

@@ -173,6 +173,18 @@ typedef enum {
     SUB = 0x0D, /**< Subtracts the top two objects on the data stack. */
 
     /**
+     * @brief Creates a new function object.
+     *
+     * The `FUNC` opcode constructs a new callable function object. It requires three arguments:
+     * 1. 16-bit argument count (immediate value)
+     * 2. 32-bit reference to argument names array (in data segment)
+     * 3. 32-bit entry point address (passed via ARG instruction)
+     *
+     * Usage in bytecode always appears as an ARG+FUNC pair.
+     */
+    FUNC = 0x0E, /**< Creates a new function object. */
+
+    /**
      * @brief Calls a function with arguments from the data stack.
      *
      * The `CALL` opcode interprets the object at the top of the stack as a function and invokes it.
@@ -191,7 +203,17 @@ typedef enum {
      * This opcode facilitates invoking callable objects within the virtual machine, allowing
      * for dynamic function calls and composition.
      */
-    CALL = 0x0E, /**< Calls a function with arguments from the data stack. */
+    CALL = 0x0F, /**< Calls a function with arguments from the data stack. */
+
+    /**
+     * @brief Returns from the current function.
+     *
+     * The `RET` opcode terminates execution of the current function and returns control
+     * to the caller. It expects the return value (or `null` as a value) to be on top of the stack.
+     *
+     * Every function implicitly ends with RET if no explicit return exists.
+     */
+    RET = 0x10, /**< Returns from current function. */
 
     /**
      * @brief Creates a new execution context using the current context as a prototype.
@@ -201,7 +223,7 @@ typedef enum {
      * (`VAR`, `CONST`, `STORE`, `VLOAD`) will refer to this new context. The previous context is
      * preserved and can be restored with `LEAVE`.
      */
-    ENTER = 0x0F, /**< Creates a new context, inheriting from the current one. */
+    ENTER = 0x11, /**< Creates a new context, inheriting from the current one. */
 
     /**
      * @brief Restores the previous execution context.
@@ -210,5 +232,5 @@ typedef enum {
      * context remains on the stack (unless explicitly popped), allowing it to be stored
      * for later use.
      */
-    LEAVE = 0x10, /**< Restores the parent context, leaving the current one on the stack. */
+    LEAVE = 0x12, /**< Restores the parent context, leaving the current one on the stack. */
 } opcode_t;
