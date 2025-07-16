@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include "common_types.h"
+
 /**
  * @typedef object_t
  * @brief Forward declaration for the object structure.
@@ -58,9 +60,17 @@ struct context_t {
      * the context from which it was created. When the current context is no longer needed,
      * the previous context can be restored.
      */
-    context_t *previous;    
+    context_t *previous;
 
-    // Other fields (such as program counter, return address, etc.) can be added later.
+    /**
+     * @brief The instruction address to return to after context completion.
+     * 
+     * For function calls, stores the location in the bytecode where execution
+     * should resume after the function returns. Zero address meaning either:
+     *   - This is a top-level context (global scope)
+     *   - The return address is stored in the previous contexts
+     */
+    instr_index_t ret_address;
 };
 
 /**

@@ -16,6 +16,7 @@
 #include <stddef.h>
 
 #include "object_stack.h"
+#include "common_types.h"
 
 /**
  * @typedef process_t
@@ -34,15 +35,6 @@ typedef struct context_t context_t;
  * @brief Forward declaration for the thread structure.
  */
 typedef struct thread_t thread_t;
-
-/**
- * @typedef instr_index_t
- * @brief Type for indexing the instruction list.
- * 
- * The instruction index is used to keep track of the current instruction that the thread
- * is executing.
- */
-typedef size_t instr_index_t;
 
 /**
  * @def ARGS_CAPACITY
