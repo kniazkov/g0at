@@ -29,45 +29,12 @@
 #include <math.h>
 
 #include "object.h"
+#include "object_state.h"
 #include "thread.h"
+#include "process.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/io.h"
-
-/**
- * @brief Structure representing a static function object.
- *
- * This structure defines a static function object in the Goat programming language.
- * Static functions are predefined as part of the language model and are always available during
- * the program's execution.
- * 
- * The `exec` function is responsible for executing the logic of the static function.
- * It operates as follows:
- * - Takes an array of arguments, already extracted from the stack (`args`).
- * - Accepts the count of arguments (`arg_count`) as a 16-bit unsigned integer.
- * - Receives a reference to the thread (`thread`) for accessing thread-specific resources or
- *   managing complex operations.
- * 
- * The function returns an `object_t*` representing the result of the execution:
- * - The returned object cannot be `NULL`.
- * - If the function has no return value, a special `null` object is returned.
- */
-typedef struct {
-    /**
-     * @brief The base object that provides common functionality.
-     */
-    object_t base;
-
-    /**
-     * @brief A wide-character string representing the name of the function.
-     */
-    wchar_t *name;
-
-    /**
-     * @brief The wrapped executor function for the static function.
-     */
-    object_t* (*exec)(object_t** args, uint16_t arg_count, thread_t *thread);
-} object_static_function_t;
 
 /**
  * @brief Retrieves all property keys from an object (stub implementation).
@@ -139,6 +106,41 @@ static object_t function_proto = {
 object_t *get_function_proto() {
     return &function_proto;
 }
+
+/**
+ * @brief Structure representing a static function object.
+ *
+ * This structure defines a static function object in the Goat programming language.
+ * Static functions are predefined as part of the language model and are always available during
+ * the program's execution.
+ * 
+ * The `exec` function is responsible for executing the logic of the static function.
+ * It operates as follows:
+ * - Takes an array of arguments, already extracted from the stack (`args`).
+ * - Accepts the count of arguments (`arg_count`) as a 16-bit unsigned integer.
+ * - Receives a reference to the thread (`thread`) for accessing thread-specific resources or
+ *   managing complex operations.
+ * 
+ * The function returns an `object_t*` representing the result of the execution:
+ * - The returned object cannot be `NULL`.
+ * - If the function has no return value, a special `null` object is returned.
+ */
+typedef struct {
+    /**
+     * @brief The base object that provides common functionality.
+     */
+    object_t base;
+
+    /**
+     * @brief A wide-character string representing the name of the function.
+     */
+    wchar_t *name;
+
+    /**
+     * @brief The wrapped executor function for the static function.
+     */
+    object_t* (*exec)(object_t** args, uint16_t arg_count, thread_t *thread);
+} object_static_function_t;
 
 /**
  * @brief Converts the static function object to a string representation.
@@ -379,3 +381,181 @@ START_FUNCTION(function_sign)
     }
     return get_static_integer_object(sign);
 END_FUNCTION(function_sign, L"sign");
+
+/**
+ * @brief Structure representing a dynamic function object.
+ *
+ * This structure defines a dynamically created function in the Goat programming language.
+ * Dynamic functions are created during program execution (via the FUNC opcode) and contain:
+ * - Their own argument definitions
+ * - A reference to their starting instruction
+ * - Full garbage collection support
+ * - Lexical closure environment
+ * 
+ * The function's execution is handled by the virtual machine's call mechanism:
+ * - Arguments are passed via the data stack
+ * - The function creates its own execution context
+ * - Return values are pushed to the caller's stack
+ */
+typedef struct {
+    /**
+     * @brief The base object that provides common functionality.
+     */
+    object_t base;
+
+    /**
+     * @brief Reference count used for garbage collection.
+     */
+    int refs;
+
+    /**
+     * @brief The state of the object (unmarked, marked, zombie, or dying).
+     */
+    object_state_t state;
+
+    /**
+     * @brief Array of argument name objects.
+     */
+    object_t **arg_names;
+
+    /**
+     * @brief The number of arguments the function accepts.
+     */
+    size_t arg_count;
+
+    /**
+     * @brief The starting instruction ID for this function.
+     */
+    instr_index_t first_instr_id;
+
+    /**
+     * @brief The lexical closure environment of the function.
+     * 
+     * Contains variables from the function's creation scope that are
+     * accessible within the function body. When the function is called,
+     * a new context is created using this object as a prototype,
+     * allowing the function to access both its arguments and outer scope
+     * variables.
+     */
+    object_t *closure;
+} object_dynamic_function_t;
+
+/**
+ * @brief Releases or clears a dynamic function object.
+ * 
+ * This function handles cleanup of dynamic function objects with two modes:
+ * 
+ * Deep cleaning (used by `dec_ref`):
+ * - Decrements references for all argument name objects
+ * - Ensures proper cleanup of referenced resources
+ * 
+ * Shallow cleaning (used by `sweep`):
+ * - Only frees immediate object memory
+ * - Leaves argument names for garbage collector to handle
+ * 
+ * Unlike other objects, dynamic functions are always immediately destroyed (no zombie state),
+ * don't utilize an object pool (destruction is infrequent).
+ * 
+ * @param dfobj The dynamic function object to process
+ * @param deep_cleaning true to recursively clean argument names,
+ *                      false for immediate memory-only cleanup
+ */
+static void clear(object_dynamic_function_t *dfobj, bool deep_cleaning) {
+    remove_object_from_list(&dfobj->base.process->objects, &dfobj->base);
+    if (deep_cleaning) {
+        for (size_t index = 0; index < dfobj->arg_count; index++) {
+            DECREF(dfobj->arg_names[index]);
+        }
+        DECREF(dfobj->closure);
+    }
+    FREE(dfobj->arg_names);
+    FREE(dfobj);
+}
+
+/**
+ * @brief Increments the reference count of an object.
+ * @param obj The object whose reference count is to be incremented.
+ */
+static void inc_ref(object_t *obj) {
+    object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
+    dfobj->refs++;
+}
+
+/**
+ * @brief Decrements the reference count of an object.
+ * @param obj The object whose reference count is to be decremented.
+ */
+static void dec_ref(object_t *obj) {
+    object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
+    if (!(--dfobj->refs)) {
+        clear(dfobj, true);
+    }
+}
+
+/**
+ * @brief Marks an object as reachable during garbage collection.
+ * @param obj The object to mark as reachable.
+ */
+static void mark(object_t *obj) {
+    object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
+    dfobj->state = MARKED;
+}
+
+/**
+ * @brief Sweeps the object (cleaning it up).
+ * @param obj The object to sweep.
+ * @return true if the object was destroyed,
+ *         false if the object was marked (still alive) and shouldn't be processed.
+ */
+static bool sweep(object_t *obj) {
+    object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
+    if (dfobj->state == UNMARKED) {
+        clear(dfobj, false);
+        return true;
+    } else {
+        dfobj->state = UNMARKED;
+        return false;
+    }
+}
+
+/**
+ * @brief Releases a dynamic function object.
+ * @param obj The object to release.
+ */
+static void release(object_t *obj) {
+    object_dynamic_function_t *dfobj = (object_dynamic_function_t *)dfobj;
+    clear(dfobj, false);
+}
+
+/**
+ * @brief Converts the dynamic function object to a string representation.
+ * @param obj The object to convert to a string.
+ * @return A `string_value_t` containing the function name.
+ */
+static string_value_t dynamic_to_string(const object_t *obj) {
+    return STATIC_STRING(L"func");
+}
+
+/**
+ * @brief Converts the dynamic function object to a Goat notation string representation.
+ * @param obj The object to convert to a Goat notation string.
+ * @return A `string_value_t` containing the function name.
+ */
+static string_value_t dynamic_to_string_notation(const object_t *obj) {
+    return dynamic_to_string(obj);
+}
+
+/**
+ * @brief Executes a dynamic function object.
+ *
+ * This function is the implementation of the `call` method for dynamic function objects...
+ *
+ * @param obj Pointer to the dynamic function object.
+ * @param arg_count The number of arguments passed to the function.
+ * @param thread Pointer to the thread in which the function is executed.
+ * @return `true` indicating the call was successful.
+ */
+static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
+    object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
+    return true;
+}
