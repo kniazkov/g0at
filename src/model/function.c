@@ -577,3 +577,48 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     thread->instr_id = dfobj->first_instr_id;
     return true;
 }
+
+/**
+ * @var dynamic_vtbl
+ * @brief Virtual table defining the behavior of the dynamic functional object.
+ */
+static object_vtbl_t dynamic_vtbl = {
+    .type = TYPE_OTHER,
+    .inc_ref = inc_ref,
+    .dec_ref = dec_ref,
+    .mark = mark,
+    .sweep = sweep,
+    .release = release,
+    .compare = compare_object_addresses,
+    .clone = clone_singleton,
+    .to_string = dynamic_to_string,
+    .to_string_notation = dynamic_to_string_notation,
+    .get_prototypes = get_prototypes,
+    .get_topology = get_topology,
+    .get_keys = get_keys,
+    .get_property = get_property,
+    .add_property = add_property_on_immutable,
+    .set_property = set_property_on_immutable,
+    .add = stub_add,
+    .sub = stub_sub,
+    .get_boolean_value = stub_get_boolean_value,
+    .get_integer_value = stub_get_integer_value,
+    .get_real_value = stub_get_real_value,
+    .call = dynamic_call
+};
+
+object_t *create_function_object(process_t *process, object_t **arg_names, size_t arg_count,
+        instr_index_t first_instr_id, object_t *closure) {
+    object_dynamic_function_t *obj = (object_dynamic_function_t *)ALLOC(
+        sizeof(object_dynamic_function_t));
+    obj->base.vtbl = &dynamic_vtbl;
+    obj->base.process = process;
+    obj->refs = 1;
+    obj->state = UNMARKED;
+    obj->arg_names = arg_names;
+    obj->arg_count = arg_count;
+    obj->first_instr_id = first_instr_id;
+    obj->closure = closure;
+    add_object_to_list(&process->objects, &obj->base);
+    return &obj->base;
+}

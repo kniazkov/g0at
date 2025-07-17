@@ -480,28 +480,58 @@ static bool exec_SUB(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 /**
  * @brief Executes the `FUNC` instruction.
  * 
- * The `FUNC` opcode creates a new function object using arguments:
- * - Immediate 16-bit argument count (instr.arg0)
- * - 32-bit argument names reference (instr.arg1)
- * - 32-bit entry point address (from argument stack)
+ * The `FUNC` opcode creates a new dynamic function object. It uses:
+ * - `instr.arg0` — the number of function parameters (argument count)
+ * - `instr.arg1` — index into the data segment for the list of argument names
+ * - Top of the argument stack — the instruction index where function execution begins
  * 
- * Upon execution, this function:
- * - Pops the entry point address from the argument stack
- * - Creates a new function object with:
- *   - Specified parameter count
- *   - Argument names from data segment
- *   - Entry point for execution
- * - Pushes the created function object onto the data stack
+ * Execution steps:
+ * - Pops the entry point address (instruction index) from the argument stack
+ * - Loads argument name strings from the data segment using the descriptor at `instr.arg1`
+ * - Allocates and fills an array of argument name objects
+ * - Creates a function object using the entry point, argument names, and current closure
+ * - Pushes the resulting function object onto the thread’s data stack
+ * 
+ * The argument name array is allocated in this function and passed to the function object,
+ * which takes ownership and frees it during destruction.
  * 
  * @param runtime The runtime environment.
- * @param instr The instruction to execute. The `arg0` field contains the argument count,
- *              and `arg1` contains the argument names reference.
+ * @param instr The instruction to execute: `arg0` = argument count, `arg1` = data segment index.
  * @param thread Pointer to the executing thread.
- * @return Returns `true` if the function object was successfully created and pushed,
- *         or `false` if creation failed (e.g., invalid arguments).
+ * 
+ * @return `true` if the function object was successfully created and pushed onto the stack,
+ *         `false` if an error occurred (e.g., malformed bytecode or memory failure).
  */
 static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return false;
+    object_t *closure = thread->context->data;
+    if (thread->args_count < 1) {
+        return false; // bad bytecode, no ARG before
+    }
+    instr_index_t first_instr_id = (instr_index_t)thread->args[0];
+    uint16_t arg_count = instr.arg0;
+    object_t **arg_names = NULL;
+    if (arg_count > 0) {
+        data_descriptor_t descriptor = runtime->code->data_descriptors[instr.arg1];
+        if (arg_count * sizeof(uint32_t) != descriptor.size) {
+            return false; // bad bytecode
+        }
+        uint32_t *strings = (uint32_t*)(runtime->code->data + descriptor.offset);
+        arg_names = ALLOC(arg_count * sizeof(object_t*));
+        for (uint16_t index = 0; index < arg_count; index++) {
+            arg_names[index] = load_string(runtime, thread->process, strings[index]);
+        }
+    }
+    object_t *function = create_function_object(
+        thread->process,
+        arg_names,
+        arg_count,
+        first_instr_id,
+        closure
+    );
+    push_object_onto_stack(thread->data_stack, function);
+    thread->args_count = 0;
+    thread->instr_id++;
+    return true;
 }
 
 /**
@@ -541,17 +571,36 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
 /**
  * @brief Executes the `RET` instruction.
  * 
- * The `RET` opcode terminates execution of the current function and returns control
- * to the caller.
+ * The `RET` opcode terminates the current function by unwinding the stack,
+ * restoring the caller context, and replacing the placeholder return value.
+ * 
+ * Pops the actual return value from the stack and stores it at the return value index.
+ * The stack is then reduced to the unwinding index, effectively discarding all intermediate
+ * values. Instruction pointer and context are restored to resume execution in the caller.
+ * 
+ * If the current context is not a function (i.e., has no return point), or the stack is empty,
+ * the function fails. Such a case indicates a corrupted or invalid execution state.
  * 
  * @param runtime The runtime environment.
- * @param instr The instruction to execute (unused parameter).
- * @param thread Pointer to the executing thread.
- * @return Returns `true` if the return was successfully processed,
- *         or `false` if context restoration failed (should never occur in valid programs).
+ * @param instr The instruction to execute (unused).
+ * @param thread Pointer to the thread executing the instruction.
+ * @return `true` if the return was successfully processed,
+ *         `false` if context restoration failed or the stack was invalid.
  */
 static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return false;
+    context_t *ctx = thread->context;
+    if (ctx->ret_value_index == BAD_STACK_INDEX) {
+        return false; // not returning context
+    }
+    object_t *ret_value = pop_object_from_stack(thread->data_stack);
+    if (ret_value == NULL) {
+        return false; // stack is empty
+    }
+    replace_object_on_stack(thread->data_stack, ret_value, ctx->ret_value_index);
+    reduce_object_stack(thread->data_stack, ctx->unwinding_index);
+    thread->instr_id = ctx->ret_address;
+    thread->context = destroy_context(ctx);
+    return true;
 }
 
 /**

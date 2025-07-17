@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include "common_types.h"
 #include "model_status.h"
 #include "lib/value.h"
 
@@ -630,6 +631,29 @@ object_t *create_string_object(process_t *process, string_value_t value);
  * @return A pointer to the created user-defined object.
  */
 object_t *create_user_defined_object(process_t* process, object_array_t proto);
+
+/**
+ * @brief Creates a new dynamic function object.
+ *
+ * Allocates and initializes a dynamic function object that stores metadata needed for execution,
+ * such as argument names, argument count, starting instruction index, and a closure
+ * object.
+ *
+ * The argument names array (`arg_names`) must be allocated by the caller before invoking this
+ * function. Ownership of this array is transferred to the function object, and it will be
+ * freed internally during object cleanup. This design avoids one memory allocation,
+ * but couples allocation and deallocation logic across module boundaries.
+ *
+ * @param process Pointer to the process to which the function belongs.
+ * @param arg_names Array of argument name objects. Ownership is transferred.
+ * @param arg_count Number of arguments the function accepts.
+ * @param first_instr_id Index of the first instruction to execute in the function body.
+ * @param closure Closure object to be used as the prototype for the function’s context.
+ * 
+ * @return Pointer to the newly created function object.
+ */
+object_t *create_function_object(process_t *process, object_t **arg_names, size_t arg_count,
+        instr_index_t first_instr_id, object_t *closure);
 
 /**
  * @brief Macro to declare a getter function for a static object.
