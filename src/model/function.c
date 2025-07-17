@@ -30,6 +30,7 @@
 
 #include "object.h"
 #include "object_state.h"
+#include "context.h"
 #include "thread.h"
 #include "process.h"
 #include "common_methods.h"
@@ -229,17 +230,18 @@ static bool static_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
         ret_val = sfobj->exec(NULL, 0, thread);
     } else {
         object_t **args = ALLOC(arg_count * sizeof(object_t*));
-        uint16_t i;
-        for (i = 0; i < arg_count; i++) {
-            args[i] = pop_object_from_stack(thread->data_stack);
+        uint16_t index;
+        for (index = 0; index < arg_count; index++) {
+            args[index] = pop_object_from_stack(thread->data_stack);
         }
         ret_val = sfobj->exec(args, arg_count, thread);
-        for (i = 0; i < arg_count; i++) {
-            DECREF(args[i]);
+        for (index = 0; index < arg_count; index++) {
+            DECREF(args[index]);
         }
         FREE(args);
     }
     push_object_onto_stack(thread->data_stack, ret_val);
+    thread->instr_id++;
     return true;
 }
 
@@ -523,7 +525,7 @@ static bool sweep(object_t *obj) {
  * @param obj The object to release.
  */
 static void release(object_t *obj) {
-    object_dynamic_function_t *dfobj = (object_dynamic_function_t *)dfobj;
+    object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
     clear(dfobj, false);
 }
 
@@ -557,5 +559,21 @@ static string_value_t dynamic_to_string_notation(const object_t *obj) {
  */
 static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
+    stack_index_t ret_value_index = push_object_onto_stack(thread->data_stack, get_null_object());
+    context_t *ctx = create_context(thread->process, thread->context, dfobj->closure);
+    ctx->ret_address = thread->instr_id + 1;
+    ctx->ret_value_index = ret_value_index;
+    ctx->unwinding_index = ret_value_index;
+    uint16_t index;
+    for (index = 0; index < arg_count && index < dfobj->arg_count; index++) {
+        object_t *arg = pop_object_from_stack(thread->data_stack);
+        ctx->data->vtbl->add_property(ctx->data, dfobj->arg_names[index], arg, false);
+        DECREF(arg);
+    }
+    for (; index < dfobj->arg_count; index++) {
+        ctx->data->vtbl->add_property(ctx->data, dfobj->arg_names[index], get_null_object(), false);
+    }
+    thread->context = ctx;
+    thread->instr_id = dfobj->first_instr_id;
     return true;
 }

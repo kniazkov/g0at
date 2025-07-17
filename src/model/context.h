@@ -53,7 +53,7 @@ struct context_t {
      */
     object_t *data;
 
-   /**
+    /**
      * @brief A pointer to the previous context in the stack.
      * 
      * This field allows the formation of a stack of contexts, where each context references
@@ -71,6 +71,24 @@ struct context_t {
      *   - The return address is stored in the previous contexts
      */
     instr_index_t ret_address;
+
+    /**
+     * @brief Stack index for the return value of a function.
+     *
+     * Before a function call, a placeholder (e.g., null) is pushed onto the stack
+     * at this index. When the function returns via the RET opcode, the placeholder
+     * is replaced with the actual return value, making it accessible to the caller.
+     */
+    stack_index_t ret_value_index;
+
+    /**
+     * @brief Stack index to unwind to after exiting the context.
+     *
+     * Represents the stack size before entering the current context. Used to clean up
+     * the stack when the context ends. For function calls, it typically equals
+     * ret_value_index; for other constructs, it may differ.
+     */
+    stack_index_t unwinding_index;
 };
 
 /**
@@ -85,23 +103,23 @@ struct context_t {
 context_t *get_root_context();
 
 /**
- * @brief Creates a new execution context and links it to the previous context.
+ * @brief Creates a new execution context and links it to the caller context.
  * 
- * This function allocates memory for a new execution context and initializes it.
- * The data for the new context is represented as an object whose prototype is the data object
- * of the previous context. This establishes a hierarchical relationship between the contexts,
- * allowing the new context to inherit properties from the previous one.
+ * Allocates and initializes a new context object. The `data` field of the context is set
+ * to a new user-defined object with the given prototype. If `proto` is NULL, the prototype
+ * is taken from the caller’s data object. The new context is linked to the caller via the
+ * `previous` field.
  * 
- * The new context is also linked to the provided previous context, forming a chain of contexts
- * that represents the execution stack.
+ * This function is typically used to create a context stub, which can be customized
+ * before execution.
  * 
- * @param process A pointer to the process structure managing the execution state.
- * @param previous A pointer to the previous execution context, which becomes the parent
- *  of the newly created context.
+ * @param process A pointer to the process managing the execution.
+ * @param caller A pointer to the calling context (used as the parent).
+ * @param proto Optional prototype object for the new context’s data.
  * 
- * @return A pointer to the newly created execution context.
+ * @return A pointer to the newly created context.
  */
-context_t *create_context(process_t *process, context_t *previous);
+context_t *create_context(process_t *process, context_t *caller, object_t *proto);
 
 /**
  * @brief Destroys an execution context and returns the previous context.

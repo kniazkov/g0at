@@ -533,8 +533,8 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
 static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *func = pop_object_from_stack(thread->data_stack);
     bool result = func->vtbl->call(func, instr.arg0, thread);
+    // The ID of the following instruction was set inside the call method
     DECREF(func);
-    thread->instr_id++;
     return result;
 }
 
@@ -573,7 +573,7 @@ static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) 
  *         The instruction pointer is always advanced.
  */
 static bool exec_ENTER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    thread->context = create_context(thread->process, thread->context);
+    thread->context = create_context(thread->process, thread->context, NULL);
     thread->instr_id++;
     return true;
 }

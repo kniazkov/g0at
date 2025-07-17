@@ -7,7 +7,10 @@
  * functions for creating, pushing, popping, peeking, and destroying the stack.
  */
 
+#include <assert.h>
+
 #include "object_stack.h"
+#include "object.h"
 #include "lib/allocate.h"
 
 /**
@@ -23,7 +26,7 @@ object_stack_t *create_object_stack() {
     return stack;
 }
 
-void push_object_onto_stack(object_stack_t *stack, object_t *object) {
+stack_index_t push_object_onto_stack(object_stack_t *stack, object_t *object) {
     if (stack->size == stack->capacity) {
         size_t new_capacity = stack->capacity * 2;
         object_t **new_data = (object_t **)ALLOC(new_capacity * sizeof(object_t *));
@@ -34,7 +37,9 @@ void push_object_onto_stack(object_stack_t *stack, object_t *object) {
         stack->objects = new_data;
         stack->capacity = new_capacity;
     }
-    stack->objects[stack->size++] = object;
+    stack_index_t new_index = stack->size++;
+    stack->objects[new_index] = object;
+    return new_index;
 }
 
 object_t *pop_object_from_stack(object_stack_t *stack) {
@@ -44,11 +49,29 @@ object_t *pop_object_from_stack(object_stack_t *stack) {
     return stack->objects[--stack->size];
 }
 
-object_t *peek_object_from_stack(object_stack_t *stack, int index) {
-    if (index < 0 || (size_t)index >= stack->size) {
+object_t *peek_object_from_stack(object_stack_t *stack, stack_index_t index) {
+    if (index < 0 || index >= stack->size) {
         return NULL;
     }
     return stack->objects[stack->size - 1 - index];
+}
+
+void reduce_object_stack(object_stack_t *stack, stack_index_t new_index) {
+    assert(stack->size >= new_index);
+    for (size_t index = new_index; index < stack->size; index++) {
+        DECREF(stack->objects[index]);
+    }
+    stack->size = new_index;
+}
+
+void replace_object_on_stack(object_stack_t *stack, object_t *new_object, stack_index_t index) {
+    assert(stack->size < index);
+    object_t *old_object = stack->objects[index];
+    if (old_object != new_object) {
+        DECREF(old_object);
+        stack->objects[index] = new_object;
+        INCREF(new_object);
+    }
 }
 
 void destroy_object_stack(object_stack_t *stack) {

@@ -108,7 +108,10 @@ static object_t root_context_data = {
  * @brief The singleton instance representing the root context.
  */
 static context_t root_context = {
-    .data = &root_context_data
+    .data = &root_context_data,
+    .ret_address = BAD_INSTR_INDEX,
+    .ret_value_index = BAD_STACK_INDEX,
+    .unwinding_index = BAD_STACK_INDEX
 };
 
 context_t *get_root_context() {

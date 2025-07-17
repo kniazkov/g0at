@@ -27,7 +27,7 @@ process_t *create_process() {
     init_object_list(&process->real_numbers);
     init_object_list(&process->dynamic_strings);
     init_object_list(&process->user_defined_objects);
-    create_thread(process, create_context(process, get_root_context()));
+    create_thread(process, create_context(process, get_root_context(), NULL));
     return process;
 }
 
