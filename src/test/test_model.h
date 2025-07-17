@@ -67,3 +67,9 @@ bool test_sign_function();
  * @return Returns `true` if the test passes, or `false` if it fails.
  */
 bool test_context_cloning();
+
+/**
+ * @brief Tests the definition of a custom function with arguments and its call.
+ * @return Returns `true` if the test passes, or `false` if it fails.
+ */
+bool test_function_definition();

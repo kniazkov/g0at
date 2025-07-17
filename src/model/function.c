@@ -559,11 +559,8 @@ static string_value_t dynamic_to_string_notation(const object_t *obj) {
  */
 static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
-    stack_index_t ret_value_index = push_object_onto_stack(thread->data_stack, get_null_object());
     context_t *ctx = create_context(thread->process, thread->context, dfobj->closure);
     ctx->ret_address = thread->instr_id + 1;
-    ctx->ret_value_index = ret_value_index;
-    ctx->unwinding_index = ret_value_index;
     uint16_t index;
     for (index = 0; index < arg_count && index < dfobj->arg_count; index++) {
         object_t *arg = pop_object_from_stack(thread->data_stack);
@@ -573,6 +570,9 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     for (; index < dfobj->arg_count; index++) {
         ctx->data->vtbl->add_property(ctx->data, dfobj->arg_names[index], get_null_object(), false);
     }
+    stack_index_t ret_value_index = push_object_onto_stack(thread->data_stack, get_null_object());
+    ctx->ret_value_index = ret_value_index;
+    ctx->unwinding_index = ret_value_index;
     thread->context = ctx;
     thread->instr_id = dfobj->first_instr_id;
     return true;
@@ -617,8 +617,12 @@ object_t *create_function_object(process_t *process, object_t **arg_names, size_
     obj->state = UNMARKED;
     obj->arg_names = arg_names;
     obj->arg_count = arg_count;
+    for (size_t index = 0; index < arg_count; index++) {
+        INCREF(arg_names[index]);
+    }
     obj->first_instr_id = first_instr_id;
     obj->closure = closure;
+    INCREF(closure);
     add_object_to_list(&process->objects, &obj->base);
     return &obj->base;
 }

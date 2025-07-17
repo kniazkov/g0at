@@ -57,15 +57,15 @@ object_t *peek_object_from_stack(object_stack_t *stack, stack_index_t index) {
 }
 
 void reduce_object_stack(object_stack_t *stack, stack_index_t new_index) {
-    assert(stack->size >= new_index);
-    for (size_t index = new_index; index < stack->size; index++) {
+    assert(stack->size > new_index);
+    for (size_t index = new_index + 1; index < stack->size; index++) {
         DECREF(stack->objects[index]);
     }
-    stack->size = new_index;
+    stack->size = new_index + 1;
 }
 
 void replace_object_on_stack(object_stack_t *stack, object_t *new_object, stack_index_t index) {
-    assert(stack->size < index);
+    assert(index < stack->size);
     object_t *old_object = stack->objects[index];
     if (old_object != new_object) {
         DECREF(old_object);

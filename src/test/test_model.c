@@ -277,3 +277,35 @@ bool test_context_cloning() {
     free_bytecode(code);
     return true;
 }
+
+bool test_function_definition() {
+    data_builder_t *data_builder = create_data_builder();
+    uint32_t name_a_idx = add_string_to_data_segment(data_builder, L"a");
+    uint32_t name_b_idx = add_string_to_data_segment(data_builder, L"b");
+    uint32_t arg_names[] = { name_a_idx, name_b_idx };
+    uint32_t arg_names_idx = add_data_to_data_segment(data_builder, arg_names, sizeof(arg_names));
+    code_builder_t *code_bulder = create_code_builder();
+    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 2 });
+    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 3 });
+    add_instruction(code_bulder, (instruction_t){ .opcode = ARG, .arg1 = 6 });
+    add_instruction(code_bulder, (instruction_t){ .opcode = FUNC, .arg0 = 2, .arg1 = arg_names_idx });
+    add_instruction(code_bulder, (instruction_t){ .opcode = CALL, .arg0 = 2 });
+    add_instruction(code_bulder, (instruction_t){ .opcode = END } );
+    add_instruction(code_bulder, (instruction_t){ .opcode = VLOAD, .arg1 = name_a_idx });
+    add_instruction(code_bulder, (instruction_t){ .opcode = VLOAD, .arg1 = name_b_idx });
+    add_instruction(code_bulder, (instruction_t){ .opcode = ADD });
+    add_instruction(code_bulder, (instruction_t){ .opcode = RET });
+    bytecode_t *code = link_code_and_data(code_bulder, data_builder);
+    destroy_code_builder(code_bulder);
+    destroy_data_builder(data_builder);
+    process_t *proc = create_process();
+    run(proc, code);
+    ASSERT(proc->main_thread->data_stack->size == 1);
+    object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
+    int_value_t int_val = result->vtbl->get_integer_value(result);
+    ASSERT(int_val.has_value);
+    ASSERT(int_val.value == 5);
+    destroy_process(proc);
+    free_bytecode(code);
+    return true;
+}
