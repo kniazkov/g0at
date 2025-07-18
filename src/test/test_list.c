@@ -46,6 +46,7 @@ static test_description_t test_list[] = {
     , { "'sign' function", test_sign_function }
     , { "context cloning", test_context_cloning }
     , { "function definition", test_function_definition }
+    , { "closure", test_closure }
 
     , { "data builder", test_data_builder }
     , { "linker", test_linker }

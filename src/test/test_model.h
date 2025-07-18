@@ -73,3 +73,10 @@ bool test_context_cloning();
  * @return Returns `true` if the test passes, or `false` if it fails.
  */
 bool test_function_definition();
+
+/**
+ * @brief Tests closures, that is, referring within a function to a variable defined outside
+ *  of that function.
+ * @return Returns `true` if the test passes, or `false` if it fails.
+ */
+bool test_closure();
