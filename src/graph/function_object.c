@@ -85,3 +85,113 @@ static string_value_t get_data(const node_t *node) {
     }
     return result;
 }
+
+/**
+ * @brief Gets the number of child statements in a function object.
+ * @param node Pointer to the function object node.
+ * @return Number of statements in the function body (0 if empty).
+ */
+static size_t get_child_count(const node_t *node) {
+    const function_object_t* expr = (const function_object_t*)node;
+    return expr->stmt_count;
+}
+
+/**
+ * @brief Retrieves a specific child statement from a function object.
+ * 
+ * Accesses the function's body by index with bounds checking.
+ * Valid indices range from 0 to stmt_count - 1.
+ * 
+ * @param node Pointer to the function object node.
+ * @param index Zero-based index of the statement.
+ * @return Pointer to the statement node, or NULL if index is out of bounds.
+ */
+static const node_t* get_child(const node_t *node, size_t index) {
+    const function_object_t* expr = (const function_object_t*)node;
+    if (index >= expr->stmt_count) {
+        return NULL;
+    }
+    return &expr->stmt_list[index]->base;
+}
+
+/**
+ * @brief Generates the function header in Goat syntax.
+ *
+ * Constructs a string like `func(arg1, arg2, ...) {` using the parameter list
+ * from the given function object. Appends the result to the provided string builder.
+ *
+ * @param expr Pointer to the function object expression.
+ * @param builder Pointer to the string builder used to accumulate the output.
+ * @return The resulting string after appending the header.
+ */
+static string_value_t generate_header(const function_object_t* expr, string_builder_t *builder) {
+    append_static_string(builder, L"func(");
+    for (size_t index = 0; index < expr->arg_count; index++) {
+        if (index > 0) {
+            append_static_string(builder, L", ");
+        }
+        append_string_view(builder, expr->arg_list[index]);
+    }
+    return append_static_string(builder, L") {");
+}
+
+/**
+ * @brief Converts a function object node to its compact Goat syntax representation.
+ * 
+ * Generates a single-line canonical Goat representation of the function, including:
+ * - The function keyword with its parameters: `func(arg1, arg2, ...)`
+ * - A block body with all statements concatenated and space-separated
+ * 
+ * Example: `func(x, y) { return x + y }`
+ * 
+ * @param node Pointer to the function object node.
+ * @return `string_value_t` containing the generated code.
+ */
+static string_value_t generate_goat_code(const node_t *node) {
+    const function_object_t* expr = (const function_object_t*)node;
+    string_builder_t builder;
+    init_string_builder(&builder, 128);
+    generate_header(expr, &builder);
+    for (size_t index = 0; index < expr->stmt_count; index++) {
+        if (index > 0) {
+            append_char(&builder, L' ');
+        }
+        statement_t *stmt = expr->stmt_list[index];
+        string_value_t stmt_as_string = stmt->base.vtbl->generate_goat_code(&stmt->base);
+        append_string_value(&builder, stmt_as_string);
+        FREE_STRING(stmt_as_string);
+    }
+    return append_char(&builder, L'}');
+}
+
+/**
+ * @brief Generates a multi-line, indented Goat source code representation of the function.
+ * 
+ * Produces a human-readable version of the function definition with proper formatting:
+ * - Header and braces placed on separate lines
+ * - Statements indented according to nesting level
+ * - Supports arbitrary levels of indentation
+ * 
+ * Example output:
+ * ```
+ * func(x, y) {
+ *     return x + y
+ * }
+ * ```
+ *
+ * @param node Pointer to the function object node.
+ * @param builder Output accumulator for the generated source code.
+ * @param indent Base indentation level (number of tabs).
+ */
+static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+        size_t indent) {
+    const function_object_t* expr = (const function_object_t*)node;
+    string_builder_t header;
+    init_string_builder(&header, 16);
+    add_formatted_source(builder, indent, generate_header(expr, &header));
+    for (size_t index = 0; index < expr->stmt_count; index++) {
+        statement_t *stmt = expr->stmt_list[index];
+        stmt->base.vtbl->generate_indented_goat_code(&stmt->base, builder, indent + 1);
+    }
+    add_static_source(builder, indent, L"}");
+}
