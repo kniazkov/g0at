@@ -116,6 +116,14 @@ typedef enum {
     NODE_VARIABLE,
 
     /**
+     * @brief Function object expression node type.
+     * 
+     * Represents a function object consisting of a parameter list and a body.
+     * When evaluated, it produces a callable function capturing its lexical scope.
+     */
+    NODE_FUNCTION_OBJECT,
+    
+    /**
      * @brief Function call node type.
      * 
      * This node type represents a function call expression in the source code.
