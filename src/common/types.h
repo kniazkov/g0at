@@ -1,10 +1,9 @@
 /**
- * @file common_types.h
+ * @file types.h
  * @copyright 2025 Ivan Kniazkov
- * @brief Definitions of shared types for the Goat language runtime.
+ * @brief Definitions of shared types for the Goat language compiler and runtime.
  * 
- * This file contains type declarations used throughout the Goat model 
- * implementation.
+ * This file contains type declarations used throughout the Goat implementation.
  */
 
 #pragma once

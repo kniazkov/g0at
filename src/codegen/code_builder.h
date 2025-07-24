@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "vm/bytecode.h"
+#include "common/types.h"
 
 /**
  * @typedef code_builder_t
@@ -61,15 +62,15 @@ code_builder_t *create_code_builder();
 /**
  * @brief Adds a new instruction to the builder's list of instructions.
  *
- * This function adds a new instruction to the list. If the list has reached its capacity,
- * it will automatically resize the list to accommodate more instructions.
- * The function returns a pointer to the added instruction, allowing it to be modified later.
+ * This function appends a new instruction to the builder. If the instruction list
+ * is full, it automatically resizes the internal buffer. The function returns the
+ * index of the newly added instruction, which can later be used to access or modify it.
  *
  * @param builder The code builder to which the instruction will be added.
  * @param instruction The instruction to be added.
- * @return A pointer to the added instruction.
+ * @return The index of the added instruction.
  */
-instruction_t *add_instruction(code_builder_t *builder, instruction_t instruction);
+instr_index_t add_instruction(code_builder_t *builder, instruction_t instruction);
 
 /**
  * @brief Destroys the code builder and frees its memory.

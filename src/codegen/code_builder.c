@@ -25,7 +25,7 @@ code_builder_t *create_code_builder(void) {
     return builder;
 }
 
-instruction_t *add_instruction(code_builder_t *builder, instruction_t instruction) {
+instr_index_t add_instruction(code_builder_t *builder, instruction_t instruction) {
     if (builder->size >= builder->capacity) {
         builder->capacity *= 2;
         instruction_t *new_instructions =
@@ -37,7 +37,7 @@ instruction_t *add_instruction(code_builder_t *builder, instruction_t instructio
         builder->instructions = new_instructions;
     }
     builder->instructions[builder->size] = instruction;
-    return &builder->instructions[builder->size++];
+    return builder->size++;
 }
 
 void destroy_code_builder(code_builder_t *builder) {

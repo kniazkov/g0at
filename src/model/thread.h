@@ -16,7 +16,7 @@
 #include <stddef.h>
 
 #include "object_stack.h"
-#include "common_types.h"
+#include "common/types.h"
 
 /**
  * @typedef process_t

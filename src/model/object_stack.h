@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "common_types.h"
+#include "common/types.h"
 
 /**
  * @typedef object_t

@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "common_types.h"
+#include "common/types.h"
 #include "model_status.h"
 #include "lib/value.h"
 
