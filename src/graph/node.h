@@ -11,6 +11,7 @@
 #pragma once
 
 #include "lib/value.h"
+#include "common/types.h"
 
 /**
  * @typedef node_t
@@ -380,6 +381,23 @@ typedef struct {
      * @param data A pointer to the data builder for static data management.
      */
     void (*generate_bytecode_assign)(const node_t *node, code_builder_t *code,
+        data_builder_t *data);
+
+    /**
+     * @brief Generates deferred bytecode for the given node.
+     * 
+     * This method generates "deferred" bytecode for a node — code that is not executed immediately
+     * during the main flow, but instead triggered later, such as function bodies
+     * or lazy expressions.
+     * It returns the index of the first instruction of the generated code, which can later be used
+     * to reference or jump to this code block.
+     * 
+     * @param node A pointer to the node for which deferred bytecode is being generated.
+     * @param code A pointer to the code builder for bytecode generation.
+     * @param data A pointer to the data builder for static data management.
+     * @return The instruction index of the start of the generated deferred bytecode.
+     */
+    instr_index_t (*generate_bytecode_deferred)(const node_t *node, code_builder_t *code,
         data_builder_t *data);
 } node_vtbl_t;
 
