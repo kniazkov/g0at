@@ -165,7 +165,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
  * @param code Code builder receiving generated instructions.
  * @param data Data builder for constant pool management.
  */
-static void generate_bytecode(const node_t *node, code_builder_t *code,
+static void generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const scope_t* scope = (const scope_t*)node;
     add_instruction(code, (instruction_t){ .opcode = ENTER });

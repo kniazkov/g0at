@@ -367,7 +367,7 @@ typedef struct {
      * @param code A pointer to the `code_builder_t` used to add bytecode instructions.
      * @param data A pointer to the `data_builder_t` used to manage static data.
      */
-    void (*generate_bytecode)(const node_t *node, code_builder_t *code, data_builder_t *data);
+    void (*generate_bytecode)(node_t *node, code_builder_t *code, data_builder_t *data);
 
     /**
      * @brief Generates bytecode for storing a value into this expression.

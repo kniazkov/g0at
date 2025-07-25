@@ -79,7 +79,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
  * @param code A pointer to the `code_builder_t` structure for instruction generation.
  * @param data Unused parameter (kept for signature compatibility with other generators).
  */
-static void generate_bytecode(const node_t *node, code_builder_t *code,
+static void generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const integer_t *expr = (const integer_t *)node;
     if (expr->value > INT32_MAX || expr->value < INT32_MIN) {

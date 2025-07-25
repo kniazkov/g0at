@@ -135,7 +135,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
  * @param code A pointer to the `code_builder_t` structure used for generating instructions.
  * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
  */
-static void generate_bytecode(const node_t *node, code_builder_t *code,
+static void generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
     stmt->wrapped->base.vtbl->generate_bytecode(&stmt->wrapped->base, code, data);

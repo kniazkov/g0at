@@ -197,7 +197,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
  * @note This function assumes that the number of arguments for the function call does not exceed
  *  `UINT16_MAX` (the 16-bit unsigned integer limit).
  */
-static void generate_bytecode(const node_t *node, code_builder_t *code,
+static void generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const function_call_t *expr = (const function_call_t *)node;
     assert(expr->args_count < UINT16_MAX);

@@ -79,7 +79,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
  * @param code A pointer to the `code_builder_t` structure used for generating instructions.
  * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
  */
-static void generate_bytecode(const node_t *node, code_builder_t *code,
+static void generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const simple_assignment_t *expr = (const simple_assignment_t *)node;
     expr->base.right_operand->base.vtbl->generate_bytecode(
