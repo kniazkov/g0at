@@ -177,17 +177,20 @@ static void vdeclr_generate_indented_goat_code(const node_t *node, source_builde
  * @param node Pointer to the variable declarator node.
  * @param code Pointer to the code builder for bytecode generation.
  * @param data Pointer to the data builder for string storage.
+ * @return The instruction index of the first emitted instruction.
  */
-static void vdeclr_generate_bytecode(const node_t *node, code_builder_t *code,
+static instr_index_t vdeclr_generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const variable_declarator_t* decl = (const variable_declarator_t*)node;
+    instr_index_t first;
     if (decl->initial) {
-        decl->initial->base.vtbl->generate_bytecode(&decl->initial->base, code, data);
+        first = decl->initial->base.vtbl->generate_bytecode(&decl->initial->base, code, data);
     } else {
-        add_instruction(code, (instruction_t){ .opcode = NIL });
+        first = add_instruction(code, (instruction_t){ .opcode = NIL });
     }
     uint32_t index = add_string_to_data_segment_ex(data, decl->name);
     add_instruction(code, (instruction_t){ .opcode = VAR, .arg1 = index });
+    return first;
 }
 
 /**
@@ -354,14 +357,17 @@ static void vdecln_generate_indented_goat_code(const node_t *node,
  * @param node Pointer to the variable declaration node.
  * @param code Pointer to the code builder for bytecode output.
  * @param data Pointer to the data builder for string storage.
+ * @return The instruction index of the first emitted instruction.
  */
-static void vdecln_generate_bytecode(const node_t *node, 
+static instr_index_t vdecln_generate_bytecode(node_t *node, 
         code_builder_t *code, data_builder_t *data) {
     const variable_declaration_t* decl = (const variable_declaration_t*)node;
-    for (size_t index = 0; index < decl->decl_count; index++) {
+    instr_index_t first = vdeclr_generate_bytecode(&decl->decl_list[0]->base, code, data);
+    for (size_t index = 1; index < decl->decl_count; index++) {
         variable_declarator_t *vdr = decl->decl_list[index];
         vdeclr_generate_bytecode(&vdr->base, code, data);
     }
+    return first;
 }
 
 /**
@@ -544,13 +550,15 @@ static void cdeclr_generate_indented_goat_code(const node_t *node, source_builde
  * @param node Pointer to the constant declarator node.
  * @param code Pointer to the code builder for bytecode output.
  * @param data Pointer to the data builder for string storage.
+ * @return The instruction index of the first emitted instruction.
  */
-static void cdeclr_generate_bytecode(const node_t *node, code_builder_t *code,
+static instr_index_t cdeclr_generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
-    decl->initial->base.vtbl->generate_bytecode(&decl->initial->base, code, data);
+    instr_index_t first = decl->initial->base.vtbl->generate_bytecode(&decl->initial->base, code, data);
     uint32_t index = add_string_to_data_segment_ex(data, decl->name);
     add_instruction(code, (instruction_t){ .opcode = CONST, .arg1 = index });
+    return first;
 }
 
 /**
@@ -721,14 +729,18 @@ static void cdecln_generate_indented_goat_code(const node_t *node, source_builde
  * @param node Pointer to the constant declaration node.
  * @param code Pointer to the code builder for bytecode output.
  * @param data Pointer to the data builder for string storage.
+ * @return The instruction index of the first emitted instruction.
  */
-static void cdecln_generate_bytecode(const node_t *node, 
+static instr_index_t cdecln_generate_bytecode(node_t *node, 
         code_builder_t *code, data_builder_t *data) {
     const constant_declaration_t* decl = (const constant_declaration_t*)node;
-    for (size_t index = 0; index < decl->decl_count; index++) {
+    instr_index_t first = decl->decl_list[0]->base.vtbl->generate_bytecode(
+        &decl->decl_list[0]->base, code, data);
+    for (size_t index = 1; index < decl->decl_count; index++) {
         constant_declarator_t *cdr = decl->decl_list[index];
         cdr->base.vtbl->generate_bytecode(&cdr->base, code, data);
     }
+    return first;
 }
 
 /**

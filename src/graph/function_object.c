@@ -205,10 +205,10 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     add_static_source(builder, indent, L"}");
 }
 
-static void generate_bytecode(node_t *node, code_builder_t *code,
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     function_object_t* expr = (function_object_t*)node;
-    expr->code_instr_index = add_instruction(
+    instr_index_t first = expr->code_instr_index = add_instruction(
         code,
         (instruction_t){ .opcode = ARG, .arg1 = 0xFFFFFFFF } // placeholder
     );
@@ -230,9 +230,9 @@ static void generate_bytecode(node_t *node, code_builder_t *code,
             .arg1 = arg_names_idx
         }
     );
+    return first;
 }
 
-/*
 static instr_index_t generate_bytecode_deferred(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     function_object_t* expr = (function_object_t*)node;
@@ -242,15 +242,14 @@ static instr_index_t generate_bytecode_deferred(const node_t *node, code_builder
         add_instruction(code, (instruction_t){ .opcode = RET });        
     }
     else {
-
-        for (size_t index = 0; index < expr->stmt_count; index++) {
+        first = expr->stmt_list[0]->base.vtbl->generate_bytecode(&expr->stmt_list[0]->base,
+            code, data);
+        for (size_t index = 1; index < expr->stmt_count; index++) {
             statement_t *stmt = expr->stmt_list[index];
             stmt->base.vtbl->generate_bytecode(&stmt->base, code, data);
         }
         add_instruction(code, (instruction_t){ .opcode = NIL });
         add_instruction(code, (instruction_t){ .opcode = RET });
-
     }
-    
+    return first;
 }
-*/

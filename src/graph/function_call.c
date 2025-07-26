@@ -193,14 +193,16 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
  * @param node A pointer to the function call node in the abstract syntax tree.
  * @param code A pointer to the `code_builder_t` structure, which is used to build the instructions.
  * @param data A pointer to the `data_builder_t` used to manage static data.
+ * @return The instruction index of the first emitted instruction.
  * 
  * @note This function assumes that the number of arguments for the function call does not exceed
  *  `UINT16_MAX` (the 16-bit unsigned integer limit).
  */
-static void generate_bytecode(node_t *node, code_builder_t *code,
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const function_call_t *expr = (const function_call_t *)node;
     assert(expr->args_count < UINT16_MAX);
+    instr_index_t first = code->size;
     if (expr->args_count > 0) {
         size_t index = expr->args_count;
         do {
@@ -211,6 +213,7 @@ static void generate_bytecode(node_t *node, code_builder_t *code,
     }
     expr->func_object->base.vtbl->generate_bytecode(&expr->func_object->base, code, data);
     add_instruction(code, (instruction_t){ .opcode = CALL, .arg0 = (uint16_t)expr->args_count });
+    return first;
 }
 
 /**

@@ -366,8 +366,9 @@ typedef struct {
      * @param node A pointer to the node for which bytecode is being generated.
      * @param code A pointer to the `code_builder_t` used to add bytecode instructions.
      * @param data A pointer to the `data_builder_t` used to manage static data.
+     * @return The instruction index of the first emitted instruction.
      */
-    void (*generate_bytecode)(node_t *node, code_builder_t *code, data_builder_t *data);
+    instr_index_t (*generate_bytecode)(node_t *node, code_builder_t *code, data_builder_t *data);
 
     /**
      * @brief Generates bytecode for storing a value into this expression.
@@ -379,8 +380,9 @@ typedef struct {
      * @param node A pointer to the target node.
      * @param code A pointer to the code builder for bytecode generation.
      * @param data A pointer to the data builder for static data management.
+     * @return The instruction index of the first emitted instruction.
      */
-    void (*generate_bytecode_assign)(const node_t *node, code_builder_t *code,
+    instr_index_t (*generate_bytecode_assign)(const node_t *node, code_builder_t *code,
         data_builder_t *data);
 
     /**

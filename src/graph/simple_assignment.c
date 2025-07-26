@@ -78,14 +78,16 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
  * @param node A pointer to the node representing the addition operation.
  * @param code A pointer to the `code_builder_t` structure used for generating instructions.
  * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
+ * @return The instruction index of the first emitted instruction.
  */
-static void generate_bytecode(node_t *node, code_builder_t *code,
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const simple_assignment_t *expr = (const simple_assignment_t *)node;
-    expr->base.right_operand->base.vtbl->generate_bytecode(
+    instr_index_t first = expr->base.right_operand->base.vtbl->generate_bytecode(
         &expr->base.right_operand->base, code, data);
     expr->base.left_operand->base.base.vtbl->generate_bytecode_assign(
         &expr->base.left_operand->base.base, code, data);
+    return first;
 }
 
 /**

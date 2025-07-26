@@ -164,16 +164,18 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
  * @param node Pointer to the scope node to compile..
  * @param code Code builder receiving generated instructions.
  * @param data Data builder for constant pool management.
+ * @return The instruction index of the first emitted instruction.
  */
-static void generate_bytecode(node_t *node, code_builder_t *code,
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const scope_t* scope = (const scope_t*)node;
-    add_instruction(code, (instruction_t){ .opcode = ENTER });
+    instr_index_t first = add_instruction(code, (instruction_t){ .opcode = ENTER });
     for (size_t index = 0; index < scope->stmt_count; index++) {
         statement_t *stmt = scope->stmt_list[index];
         stmt->base.vtbl->generate_bytecode(&stmt->base, code, data);
     }
     add_instruction(code, (instruction_t){ .opcode = LEAVE });
+    return first;
 }
 
 /**

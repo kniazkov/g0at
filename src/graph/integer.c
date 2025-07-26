@@ -78,18 +78,21 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
  * @param node A pointer to the node representing an integer literal.
  * @param code A pointer to the `code_builder_t` structure for instruction generation.
  * @param data Unused parameter (kept for signature compatibility with other generators).
+ * @return The instruction index of the first emitted instruction.
  */
-static void generate_bytecode(node_t *node, code_builder_t *code,
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const integer_t *expr = (const integer_t *)node;
+    instr_index_t first;
     if (expr->value > INT32_MAX || expr->value < INT32_MIN) {
         split64_t s;
         s.int_value = expr->value;
-        add_instruction(code, (instruction_t){ .opcode = ARG, .arg1 = s.parts[0] });
+        first = add_instruction(code, (instruction_t){ .opcode = ARG, .arg1 = s.parts[0] });
         add_instruction(code, (instruction_t){ .opcode = ILOAD64, .arg1 = s.parts[1] });
     } else {
-        add_instruction(code, (instruction_t){ .opcode = ILOAD32, .arg1 = expr->value });
+        first = add_instruction(code, (instruction_t){ .opcode = ILOAD32, .arg1 = expr->value });
     }
+    return first;
 }
 
 /**
