@@ -205,6 +205,20 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     add_static_source(builder, indent, L"}");
 }
 
+/**
+ * @brief Generates the main bytecode for a function object expression.
+ * 
+ * This function emits the initial instruction(s) required to represent a function object
+ * in the bytecode stream. It prepares a placeholder instruction (`ARG`) for body address
+ * and emits a  `FUNC` instruction with encoded parameter information.
+ * 
+ * The actual function body is not generated here — that is handled by `generate_bytecode_deferred`.
+ * 
+ * @param node A pointer to the function object node.
+ * @param code A pointer to the bytecode builder.
+ * @param data A pointer to the static data segment builder.
+ * @return The instruction index of the first emitted instruction.
+ */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     function_object_t* expr = (function_object_t*)node;
@@ -215,7 +229,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     uint32_t arg_names_idx = 0;
     if (expr->arg_count > 0) {
         size_t arg_size = expr->arg_count * sizeof(uint32_t);
-        uint32_t *arg_names = (uint32_t)ALLOC(arg_size);
+        uint32_t *arg_names = (uint32_t*)ALLOC(arg_size);
         for (size_t index = 0; index < expr->arg_count; index++) {
             arg_names[index] = add_string_to_data_segment_ex(data, expr->arg_list[index]);
         }
@@ -233,6 +247,18 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     return first;
 }
 
+/**
+ * @brief Generates deferred bytecode for the body of a function object.
+ * 
+ * This function emits the actual bytecode instructions for the function body. It is meant to
+ * be called separately from the main bytecode generation phase, allowing function definitions
+ * to exist independently of their execution logic until invoked.
+ * 
+ * @param node A pointer to the function object node.
+ * @param code A pointer to the bytecode builder.
+ * @param data A pointer to the static data segment builder.
+ * @return The instruction index of the first instruction of the function body.
+ */
 static instr_index_t generate_bytecode_deferred(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     function_object_t* expr = (function_object_t*)node;
@@ -251,5 +277,49 @@ static instr_index_t generate_bytecode_deferred(const node_t *node, code_builder
         add_instruction(code, (instruction_t){ .opcode = NIL });
         add_instruction(code, (instruction_t){ .opcode = RET });
     }
+    code->instructions[expr->code_instr_index].arg1 = (uint32_t)first;
     return first;
+}
+
+/**
+ * @brief Virtual table for function object node operations.
+ * 
+ * This virtual table provides the implementation of operations specific to function object nodes
+ * in the abstract syntax tree (AST).
+ */
+static node_vtbl_t fo_vtbl = {
+    .type = NODE_FUNCTION_OBJECT,
+    .type_name = L"function object",
+    .get_data = get_data,
+    .get_child_count = get_child_count,
+    .get_child = get_child,
+    .get_child_tag = no_tags,
+    .generate_goat_code = generate_goat_code,
+    .generate_indented_goat_code = generate_indented_goat_code,
+    .generate_bytecode = generate_bytecode,
+    .generate_bytecode_deferred = generate_bytecode_deferred
+};
+
+node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, size_t arg_count) {
+    function_object_t *fobj = (function_object_t*)alloc_zeroed_from_arena(arena,
+        sizeof(function_object_t));
+    fobj->base.base.vtbl = &fo_vtbl;
+    if (arg_count > 0) {
+        fobj->arg_list = (string_view_t*)alloc_from_arena(arena, sizeof(string_view_t) * arg_count);
+        for (size_t index = 0; index < arg_count; index++) {
+            fobj->arg_list[index] = copy_string_to_arena(arena, arg_list[index].data,
+                arg_list[index].length);
+        }
+        fobj->arg_count = arg_count;
+    }
+    return &fobj->base.base;
+}
+
+void fill_function_body(node_t *node, arena_t *arena, statement_t **stmt_list, size_t stmt_count) {
+    assert(node->vtbl->type == NODE_FUNCTION_OBJECT);
+    function_object_t *fobj = (function_object_t *)node;
+    size_t data_size = stmt_count * sizeof(statement_t *);
+    fobj->stmt_list = (statement_t **)alloc_from_arena(arena, data_size);
+    memcpy(fobj->stmt_list, stmt_list, data_size);
+    fobj->stmt_count = stmt_count;
 }

@@ -145,3 +145,30 @@ node_t *create_scope_node(arena_t *arena);
  * @param stmt_count Number of statements.
  */
 void fill_scope_node(node_t *node, arena_t *arena, statement_t **stmt_list, size_t stmt_count);
+
+/**
+ * @brief Creates a function object node in the AST.
+ * 
+ * Allocates and initializes a function object node using the given argument list.
+ * The function parameters are copied into the arena. The function body is not set here
+ * and must be filled later using `fill_function_body`.
+ * 
+ * @param arena The arena allocator for memory management.
+ * @param arg_list The list of function parameter names.
+ * @param arg_count The number of parameters.
+ * @return A pointer to the newly created function object node (as `node_t`).
+ */
+node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, size_t arg_count);
+
+/**
+ * @brief Fills in the body of a function object node.
+ * 
+ * Copies the list of statements forming the function body into the function object.
+ * This must be called after creating the node via `create_function_object_node`.
+ * 
+ * @param node A pointer to a node previously created as a function object.
+ * @param arena The arena allocator for memory management.
+ * @param stmt_list An array of pointers to statement nodes.
+ * @param stmt_count The number of statements in the function body.
+ */
+void fill_function_body(node_t *node, arena_t *arena, statement_t **stmt_list, size_t stmt_count);
