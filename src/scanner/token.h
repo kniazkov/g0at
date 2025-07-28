@@ -56,6 +56,7 @@ typedef enum {
     TOKEN_STATEMENT,        /**< A statement (e.g., assignment, control structures, etc.) */
     TOKEN_FCALL_ARGS,       /**< Unprocessed function call arguments */
     TOKEN_SCOPE_BODY,       /**< Unprocessed scope body */
+    TOKEN_FUNCTION_BODY,    /**< Unprocessed function body */
     // Other token types can be added here in the future
 } token_type_t;
 
@@ -251,6 +252,11 @@ typedef struct {
      * @brief Tokens containing scope objects whose bodies have not yet been processed.
      */
     token_list_t scope_objects;
+
+    /**
+     * @brief Tokens containing function objects whose bodies have not yet been processed.
+     */
+    token_list_t function_objects;
 } token_groups_t;
 
 /**

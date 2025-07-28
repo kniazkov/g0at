@@ -15,6 +15,31 @@
 #include "lib/arena.h"
 #include "resources/messages.h"
 
+static void init_scope(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
+    node_t *node = create_scope_node(memory->graph); 
+    token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
+    expr->type = TOKEN_EXPRESSION;
+    expr->begin = token->begin;
+    expr->end = token->end;
+    expr->text = token->text;
+    expr->node = node;
+    replace_token(token, expr);
+    token->type = TOKEN_SCOPE_BODY;
+    token->node = node;
+    remove_token_from_group(token);
+    append_token_to_group(&groups->scope_objects, token);
+}
+
+static void init_function_wo_args(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
+    node_t *func_obj = create_function_object_node(memory->graph, NULL, 0); 
+    token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
+    collapse_tokens_to_token(memory->tokens, token->left, token,
+        TOKEN_EXPRESSION, func_obj);
+    token->type = TOKEN_FUNCTION_BODY;
+    token->node = func_obj;
+    append_token_to_group(&groups->function_objects, token);
+}
+
 /**
  * @brief Handles initial processing of scope blocks (curly brace pairs).
  * 
@@ -29,21 +54,12 @@
 compilation_error_t *parsing_scopes_and_functions(token_t *token, parser_memory_t *memory,
         token_groups_t *groups) {
     assert(token->type == TOKEN_BRACKET_PAIR && token->text.data[0] == L'{');
-    /**
-     * @todo processing for functions, if not a function declaration then:
-     */
-    node_t *node = create_scope_node(memory->graph); 
-    token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
-    expr->type = TOKEN_EXPRESSION;
-    expr->begin = token->begin;
-    expr->end = token->end;
-    expr->text = token->text;
-    expr->node = node;
-    replace_token(token, expr);
-    token->type = TOKEN_SCOPE_BODY;
-    token->node = node;
-    remove_token_from_group(token);
-    append_token_to_group(&groups->scope_objects, token);
+    if (token->left && token->left->type == TOKEN_FUNC) {
+        // func { ... } - function without arguments
+        init_function_wo_args(token, memory, groups);
+        return NULL;
+    }
+    init_scope(token, memory, groups);
     return NULL;
 }
 
@@ -69,5 +85,17 @@ compilation_error_t *parsing_scope_bodies(token_t *token, parser_memory_t *memor
         return result.error;
     }
     fill_scope_node(token->node, memory->graph, result.list, result.count);
+    return NULL;
+}
+
+compilation_error_t *parsing_function_bodies(token_t *token, parser_memory_t *memory,
+        token_groups_t *groups) {
+    assert(token->type == TOKEN_FUNCTION_BODY && token->node
+        && token->node->vtbl->type == NODE_FUNCTION_OBJECT);
+    statement_list_processing_result_t result = process_statement_list(memory, &token->children);
+    if (result.error) {
+        return result.error;
+    }
+    fill_function_body(token->node, memory->graph, result.list, result.count);
     return NULL;
 }

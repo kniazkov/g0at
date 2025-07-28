@@ -78,6 +78,13 @@ compilation_error_t *parsing_scope_bodies(token_t *token, parser_memory_t *memor
     token_groups_t *groups);
 
 /**
+ * @brief Rule for handling statements within a function.
+ */
+compilation_error_t *parsing_function_bodies(token_t *token, parser_memory_t *memory,
+    token_groups_t *groups);
+
+
+/**
  * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into
  *  a special token.
  * 
@@ -352,6 +359,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_FORWARD(var_keywords, parsing_variable_declarations);
     APPLY_FORWARD(const_keywords, parsing_constant_declarations);
     APPLY_FORWARD(scope_objects, parsing_scope_bodies);
+    APPLY_FORWARD(function_objects, parsing_function_bodies);
     // add other rules...
     return error;
 }
