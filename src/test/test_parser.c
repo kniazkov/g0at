@@ -163,7 +163,8 @@ bool test_parsing_function_calls() {
     ASSERT(error == NULL);
     ASSERT(tokens.count == 2);
     ASSERT(groups->identifiers.count == 1);
-    error = apply_reduction_rules(groups, &memory);
+    parsing_result_t parsing_result = {0};
+    error = apply_reduction_rules(groups, &memory, &parsing_result);
     ASSERT(error == NULL);
     ASSERT(tokens.count == 1);
     ASSERT(groups->identifiers.count == 0);

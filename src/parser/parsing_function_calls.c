@@ -71,12 +71,12 @@ compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
 compilation_error_t *parsing_function_call_args(token_t *container,
         parser_memory_t *memory, token_groups_t *groups) {
     assert(container->type == TOKEN_FCALL_ARGS);
-    expression_t **args = (expression_t **)ALLOC(container->children.count * sizeof(expression_t*));
-    size_t args_count = 0;
     token_t *token = container->children.first;
     if (token == NULL) {
         return NULL;
     }
+    expression_t **args = (expression_t **)ALLOC(container->children.count * sizeof(expression_t*));
+    size_t args_count = 0;
     compilation_error_t *error = NULL;
     while (true) {
         if (token->type == TOKEN_EXPRESSION) {

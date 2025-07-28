@@ -15,6 +15,17 @@
 #include "lib/arena.h"
 #include "resources/messages.h"
 
+/**
+ * @brief Initializes a scope expression node from a `{...}` block.
+ * 
+ * This function creates a new scope node and replaces the original bracket-pair token
+ * with an expression token referencing the scope. It also registers the scope in
+ * the appropriate token group for later processing.
+ * 
+ * @param token The `{` bracket-pair token.
+ * @param memory Parser memory context for allocations.
+ * @param groups Token classification groups.
+ */
 static void init_scope(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
     node_t *node = create_scope_node(memory->graph); 
     token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));

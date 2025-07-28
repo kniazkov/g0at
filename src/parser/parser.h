@@ -11,9 +11,29 @@
 
 #pragma once
 
+#include "lib/linked_list.h"
 #include "scanner/scanner.h"
 #include "graph/statement.h"
 #include "compilation_error.h"
+
+/**
+ * @struct parsing_result_t
+ * @brief Partial result of the parsing process.
+ * 
+ * This structure holds intermediate or final results produced by the parser.
+ * Currently, it only contains a list of function definitions (`functions`), but may be
+ * extended in the future.
+ */
+typedef struct
+{
+    /**
+     * @brief List of parsed function objects.
+     * 
+     * This is a linked list of function definitions.
+     * Each entry points to a function object node in the AST.
+     */
+    linked_list_t *functions;
+} parsing_result_t;
 
 /**
  * @typedef reduce_rule_t
@@ -145,6 +165,8 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
  * @param groups A pointer to the token groups to which the reduction rules will be applied.
  * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
  *  for tokens and syntax tree nodes.
+ * @param result A pointer to the structure used to collect selected parsing results,
+ *  such as a list of parsed functions.
  * @return A pointer to the last `compilation_error_t` in the chain of errors, or `NULL`
  *  if no errors occurred. The returned error points to the head of the linked list of errors via
  *  its `next` field.
@@ -154,7 +176,8 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
  * @note The caller is responsible for iterating through the linked list of errors and 
  *       handling or logging each error as needed.
  */
-compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory);
+compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory,
+        parsing_result_t *result);
 
 /**
  * @brief Processes the root-level token list and constructs a syntax tree root node.

@@ -66,7 +66,8 @@ int go(options_t *opt) {
         /*
             5. build a syntax tree
         */
-        error = apply_reduction_rules(groups, &memory);
+        parsing_result_t parsing_result = {0};
+        error = apply_reduction_rules(groups, &memory, &parsing_result);
         if (error != NULL) {
             break;
         }
@@ -121,6 +122,12 @@ int go(options_t *opt) {
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
         root_node->vtbl->generate_bytecode(root_node, code_builder, data_builder);
+        linked_list_item_t *func_ptr = parsing_result.functions->head;
+        while(func_ptr) {
+            node_t *func_obj = (node_t*)func_ptr->data;
+            func_obj->vtbl->generate_bytecode_deferred(func_obj, code_builder, data_builder);
+            func_ptr = func_ptr->next;
+        }
         bytecode_t *bytecode = link_code_and_data(code_builder, data_builder);
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);

@@ -347,10 +347,33 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
         } \
     } while(0)
 
+/**
+ * @brief Collects AST nodes from a token group into a linked list.
+ * 
+ * Iterates over all tokens in the given token group and extracts non-null `node` pointers.
+ * Each valid node is appended to a newly created linked list allocated from the provided arena.
+ * 
+ * @param tokens A pointer to the token list (token group).
+ * @param arena Memory arena used for allocating the linked list and its nodes.
+ * @return A linked list containing all non-null AST nodes from the token group.
+ */
+static linked_list_t *collect_nodes_grom_group(token_list_t *tokens, arena_t *arena) {
+    linked_list_t *nodes = create_linked_list(arena);
+    token_t *token = tokens->first;
+    while(token) {
+        if (token->node) {
+            linked_list_push_back(nodes, arena, token->node);
+        }
+        token = token->next_in_group;
+    }
+    return nodes;
+}
 
-compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory) {
+compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory,
+        parsing_result_t *result) {
     compilation_error_t *error = NULL;
     APPLY_FORWARD(scope_blocks, parsing_scopes_and_functions);
+    result->functions = collect_nodes_grom_group(&groups->function_objects, memory->graph);
     APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
     APPLY_FORWARD(identifiers, parsing_single_identifiers);
     APPLY_FORWARD(additive_operators, parsing_additive_operators);
