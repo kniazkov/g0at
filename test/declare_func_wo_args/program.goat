@@ -1,0 +1,6 @@
+var f = func {
+    print("it works.\n")
+}
+
+f()
+f()
