@@ -33,3 +33,6 @@ declare_func_wo_args
 count_to_100 
 declare_func_empty_args 
 declare_func_2_args 
+declare_func_1_arg 
+bad_func_arg 
+no_comma_bw_func_args 

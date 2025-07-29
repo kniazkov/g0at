@@ -102,3 +102,14 @@ struct compilation_error_t {
  */
 compilation_error_t *create_error_from_token(arena_t *arena, const token_t *token,
     const wchar_t *format, ...);
+
+/**
+ * @brief Reverses a linked list of compilation errors in-place.
+ * 
+ * This function takes a pointer to the head of a singly linked list of `compilation_error_t`
+ * structures and reverses the list. After reversal, the original last error becomes the new head.
+ * 
+ * @param head Pointer to the first error in the original list.
+ * @return Pointer to the new head of the reversed list.
+ */
+compilation_error_t *reverse_compilation_errors(compilation_error_t *head);

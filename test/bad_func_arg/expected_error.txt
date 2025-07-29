@@ -1,0 +1,1 @@
+Compilation error in 'program.goat', 1.19: Function argument must be an identifier, but got '3'

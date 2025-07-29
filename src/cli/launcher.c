@@ -166,6 +166,7 @@ int go(options_t *opt) {
         14. print error messages (if any)
     */
     if (error != NULL) {
+        error = reverse_compilation_errors(error);
         const wchar_t const *error_msg_format = get_messages()->compilation_error;
         while (error != NULL) {
             fprintf_utf8(stderr, error_msg_format, error->begin.file_name, error->begin.row,

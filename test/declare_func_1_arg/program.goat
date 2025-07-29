@@ -1,0 +1,5 @@
+const f = func(a, ) {
+    print(a)
+}
+
+f("it works.")

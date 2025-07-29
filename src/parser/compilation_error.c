@@ -34,7 +34,19 @@ compilation_error_t *create_error_from_token(arena_t *arena, const token_t *toke
     } else {
         error->message = EMPTY_STRING_VIEW;
     }
-    error->critical = false;
+    error->critical = true;
     error->next = NULL;
     return error;
+}
+
+compilation_error_t *reverse_compilation_errors(compilation_error_t *head) {
+    compilation_error_t *prev = NULL;
+    compilation_error_t *curr = head;
+    while (curr) {
+        compilation_error_t *next = curr->next;
+        curr->next = prev;
+        prev = curr;
+        curr = next;
+    }
+    return prev;
 }
