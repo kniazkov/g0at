@@ -114,3 +114,15 @@ node_t *create_variable_declaration_node(arena_t *arena, declarator_t **decl_lis
  */
 node_t *create_constant_declaration_node(arena_t *arena, declarator_t **decl_list,
         size_t decl_count);
+
+/**
+ * @brief Creates a return statement node.
+ * 
+ * Allocates and initializes a `return_t` node in the given memory arena.
+ * The return statement may optionally include a value expression to be returned.
+ * 
+ * @param arena Memory arena used for allocation.
+ * @param value Expression to return, or `NULL` for a bare `return;`.
+ * @return A pointer to the created return statement node.
+ */
+statement_t *create_return_node(arena_t *arena, expression_t *value);

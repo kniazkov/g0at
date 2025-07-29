@@ -203,7 +203,17 @@ typedef enum {
      * - Identifier node (required)
      * - Initializer expression node (required)
      */
-    NODE_CONSTANT_DECLARATOR
+    NODE_CONSTANT_DECLARATOR,
+
+    /**
+     * @brief Return statement node type.
+     * 
+     * Represents a `return` statement in the syntax tree. May optionally include
+     * a value expression to be returned from the function.
+     * Contains:
+     * - Return value expression node (optional)
+     */
+    NODE_RETURN,
 } node_type_t;
 
 /**
