@@ -31,3 +31,5 @@ temp_nested_object
 external_scope_changing 
 declare_func_wo_args 
 count_to_100 
+declare_func_empty_args 
+declare_func_2_args 

@@ -50,6 +50,7 @@ static messages_t english = {
     .expected_const_after_comma = L"Expected another constant declaration after comma",
     .invalid_var_declaration_syntax = L"Expected either variable name or name with value assignment, but got '%s'",
     .invalid_const_declaration_syntax = L"Expected name with value assignment, but got '%s'",
+    .invalid_function_argument = L"Function argument must be an identifier, but got '%s'",
 };
 
 /**
@@ -87,6 +88,7 @@ static messages_t russian = {
     .expected_const_after_comma = L"После запятой ожидается определение следующей константы",
     .invalid_var_declaration_syntax = L"Ожидается либо имя переменной, либо имя с присваиванием значения, но получено '%s'",
     .invalid_const_declaration_syntax = L"Ожидается имя с присваиванием значения, но получено '%s'",
+    .invalid_function_argument = L"Аргумент функции должен быть идентификатором, но получено '%s'",
 };
 
 /**

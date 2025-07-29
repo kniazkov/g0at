@@ -197,7 +197,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     const function_object_t* expr = (const function_object_t*)node;
     string_builder_t header;
     init_string_builder(&header, 16);
-    add_formatted_source(builder, indent, generate_header(expr, &header));
+    append_formatted_source(builder, generate_header(expr, &header));
     for (size_t index = 0; index < expr->stmt_count; index++) {
         statement_t *stmt = expr->stmt_list[index];
         stmt->base.vtbl->generate_indented_goat_code(&stmt->base, builder, indent + 1);
