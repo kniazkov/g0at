@@ -50,6 +50,7 @@ typedef enum {
     TOKEN_VAR,              /**< The 'var' keyword for variable declarations */
     TOKEN_CONST,            /**< The 'const' keyword for constant declarations */
     TOKEN_FUNC,             /**< The 'func' keyword for function declarations */
+    TOKEN_RETURN,           /**< The 'return' keyword used in return statements */
 
     TOKEN_BRACKET_PAIR,     /**< A pair of brackets and all tokens between them */
     TOKEN_EXPRESSION,       /**< An expression token, which contains an attached syntax tree node */
@@ -257,6 +258,11 @@ typedef struct {
      * @brief Tokens containing function objects whose bodies have not yet been processed.
      */
     token_list_t function_objects;
+
+    /**
+     * @brief Group for 'return' keyword tokens.
+     */
+    token_list_t return_keywords;
 } token_groups_t;
 
 /**

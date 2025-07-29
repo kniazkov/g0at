@@ -227,6 +227,13 @@ static const keyword_lookup_t keywords[] = {
         NULL,
         SIZE_MAX
     },
+    {
+        L"return",
+        6,
+        TOKEN_RETURN,
+        NULL,
+        offsetof(token_groups_t, return_keywords)
+    },
     /* Add new keywords here */
 };
 
