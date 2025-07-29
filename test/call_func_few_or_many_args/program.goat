@@ -1,0 +1,11 @@
+const f = func(a, b, c) {
+    print(a);
+    print("\n");
+    print(b);
+    print("\n");
+    print(c);
+    print("\n");
+}
+
+f(1, 2)
+f(1, 2, 3, 4)

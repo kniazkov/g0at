@@ -36,3 +36,4 @@ declare_func_2_args
 declare_func_1_arg 
 bad_func_arg 
 no_comma_bw_func_args 
+call_func_few_or_many_args 
