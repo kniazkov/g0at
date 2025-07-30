@@ -274,8 +274,10 @@ static instr_index_t generate_bytecode_deferred(const node_t *node, code_builder
             statement_t *stmt = expr->stmt_list[index];
             stmt->base.vtbl->generate_bytecode(&stmt->base, code, data);
         }
-        add_instruction(code, (instruction_t){ .opcode = NIL });
-        add_instruction(code, (instruction_t){ .opcode = RET });
+        if (expr->stmt_list[expr->stmt_count - 1]->base.vtbl->type != NODE_RETURN) {
+            add_instruction(code, (instruction_t){ .opcode = NIL });
+            add_instruction(code, (instruction_t){ .opcode = RET });
+        }
     }
     code->instructions[expr->code_instr_index].arg1 = (uint32_t)first;
     return first;

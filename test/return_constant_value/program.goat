@@ -1,0 +1,6 @@
+const f = func() {
+    return 1
+}
+
+const x = f()
+print(x)

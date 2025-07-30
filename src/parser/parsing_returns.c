@@ -18,7 +18,7 @@
  * @brief Parses a return statement and creates a corresponding AST node.
  * 
  * This function processes a `TOKEN_RETURN` token, optionally followed by an expression token,
- * and collapses the sequence into a single `TOKEN_EXPRESSION` token representing a return
+ * and collapses the sequence into a single `TOKEN_STATEMENT` token representing a return
  * statement in the abstract syntax tree (AST).
  * 
  * If the return statement includes an expression, it is attached to the created return node.
@@ -37,7 +37,7 @@ compilation_error_t *parsing_returns(token_t *token, parser_memory_t *memory,
             memory->tokens, 
             token, 
             token->right,
-            TOKEN_EXPRESSION, 
+            TOKEN_STATEMENT, 
             create_return_node(memory->graph, (expression_t*)token->right->node)
         );
     } else {
@@ -45,7 +45,7 @@ compilation_error_t *parsing_returns(token_t *token, parser_memory_t *memory,
             memory->tokens, 
             token, 
             token,
-            TOKEN_EXPRESSION, 
+            TOKEN_STATEMENT, 
             create_return_node(memory->graph, NULL)
         );
     }
