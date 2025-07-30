@@ -1,0 +1,7 @@
+const f = func() {
+    print("it works.");
+    return;
+    print("it does not work.");
+};
+
+f()

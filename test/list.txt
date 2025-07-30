@@ -38,3 +38,6 @@ bad_func_arg
 no_comma_bw_func_args 
 call_func_few_or_many_args 
 return_constant_value 
+return_expression 
+dead_code 
+return_object 

@@ -1,0 +1,9 @@
+const f = func() {
+    return {
+        x = 2
+        y = 3
+    }
+}
+
+const obj = f()
+print(obj)

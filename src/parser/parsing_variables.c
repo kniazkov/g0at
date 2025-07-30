@@ -44,6 +44,7 @@ compilation_error_t *parsing_single_identifiers(token_t *identifier, parser_memo
                        || identifier->left->type == TOKEN_SEMICOLON
                        || identifier->left->type == TOKEN_VAR
                        || identifier->left->type == TOKEN_CONST
+                       || identifier->left->type == TOKEN_RETURN
                        ;
         if (!valid_left) {
             return NULL;

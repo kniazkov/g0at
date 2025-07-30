@@ -1,0 +1,6 @@
+const f = func(a, b) {
+    return a - b
+}
+
+const x = f(4, 7)
+print(x)
