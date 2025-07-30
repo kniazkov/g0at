@@ -108,6 +108,14 @@ typedef enum {
     NODE_INTEGER,
 
     /**
+     * @brief Real number node type.
+     * 
+     * This node type represents a 64-bit real number in the source code.
+     * It stores the real value as part of the AST.
+     */
+    NODE_REAL,
+
+    /**
      * @brief Variable node type.
      * 
      * This node type represents a variable expression in the source code.

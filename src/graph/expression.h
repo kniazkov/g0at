@@ -63,6 +63,17 @@ node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t le
 node_t *create_integer_node(arena_t *arena, int64_t value);
 
 /**
+ * @brief Creates a real number literal expression node.
+ * 
+ * Allocates and initializes a `real_t` node in the given arena.
+ * 
+ * @param arena Memory arena for allocation.
+ * @param value The 64-bit floating-point value to store.
+ * @return A pointer to the created AST node.
+ */
+node_t *create_real_number_node(arena_t *arena, double value);
+
+/**
  * @brief Creates a new variable expression node.
  * 
  * This function allocates and initializes a new variable expression node in the syntax tree.
