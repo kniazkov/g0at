@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <wctype.h>
 #include <stddef.h>
+#include <math.h>
 
 #include "scanner.h"
 #include "lib/allocate.h"
@@ -319,32 +320,84 @@ cleanup:
 }
 
 /**
- * @brief Parses a numeric literal in the source code.
+ * @brief Parses a numeric literal (integer or real) in the source code.
  *
- * This function parses a sequence of digits representing an integer literal,
- * optionally applying a negative sign. It constructs a signed 64-bit integer
- * value and creates an AST node for the parsed number.
+ * This function parses a numeric literal starting at the current character, which must be a digit.
+ * It supports both integer and floating-point (real) literals, including optional fractional and
+ * exponent parts (e.g., `42`, `3.14`, `1e-5`). If a minus sign was parsed earlier, it is applied
+ * using the `negative` flag.
+ *
+ * Based on the parsed form, the function creates either an integer or real number AST node
+ * and assigns it to `token->node`. The token type is set to `TOKEN_EXPRESSION`.
  *
  * @param scan The scanner instance used for lexical analysis.
- * @param token The token to store the parsed integer or error message.
- * @param negative Flag indicating whether the number should be negated
- *        (true if preceded by a minus sign).
+ * @param token The token object to populate with the resulting node and type.
+ * @param negative `true` if the number is prefixed with a minus sign; otherwise `false`.
  *
- * @note The function assumes the current character is a digit (0-9) when called.
- *       Overflow checking is not performed - values exceeding INT64_MAX/MIN will wrap.
+ * @note The function assumes the current character is a digit (`0`–`9`) when called.
+ * @note No overflow checking is performed for integer literals.
+ * @note The exponent part must follow the format `[eE][+/-]digits`.
  */
 static void parse_number(scanner_t *scan, token_t *token, bool negative) {
     wchar_t ch = get_char(scan);
     assert(iswdigit(ch));
+
     token->type = TOKEN_EXPRESSION;
+
     int64_t int_part = 0;
-    while(iswdigit(ch)) {
-        int_part = int_part * 10 + ch - '0';
+    while (iswdigit(ch)) {
+        int_part = int_part * 10 + (ch - '0');
         ch = next_char(scan);
     }
-    if (negative) {
-        token->node = create_integer_node(scan->memory->graph, -int_part);
+
+    bool is_real = false;
+    double value = (double)int_part;
+
+    if (ch == L'.') {
+        is_real = true;
+        ch = next_char(scan);
+        double frac = 0.0;
+        double scale = 0.1;
+        while (iswdigit(ch)) {
+            frac += (ch - '0') * scale;
+            scale *= 0.1;
+            ch = next_char(scan);
+        }
+        value += frac;
+    }
+
+    if (ch == L'e' || ch == L'E') {
+        is_real = true;
+        ch = next_char(scan);
+        bool exp_neg = false;
+        if (ch == L'-') {
+            exp_neg = true;
+            ch = next_char(scan);
+        } else if (ch == L'+') {
+            ch = next_char(scan);
+        }
+
+        int exponent = 0;
+        while (iswdigit(ch)) {
+            exponent = exponent * 10 + (ch - '0');
+            ch = next_char(scan);
+        }
+
+        if (exp_neg) {
+            exponent = -exponent;
+        }
+        value *= pow(10.0, exponent);
+    }
+
+    if (is_real) {
+        if (negative) {
+            value = -value;
+        }
+        token->node = create_real_number_node(scan->memory->graph, value);
     } else {
+        if (negative) {
+            int_part = -int_part;
+        }
         token->node = create_integer_node(scan->memory->graph, int_part);
     }
 }
