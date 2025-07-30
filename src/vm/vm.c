@@ -235,6 +235,38 @@ static bool exec_ILOAD64(runtime_t *runtime, instruction_t instr, thread_t *thre
 }
 
 /**
+ * @brief Executes the RLOAD instruction.
+ * 
+ * The `RLOAD` opcode pushes a 64-bit floating-point (double) value onto the data stack.
+ * Like `ILOAD64`, it uses the argument stack to combine the two 32-bit parts of the value.
+ * 
+ * The low 32 bits must be pushed beforehand with the `ARG` instruction. This function then
+ * combines the low and high parts into a full 64-bit floating-point number and pushes it
+ * onto the data stack.
+ * 
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread Pointer to the thread that is executing the instruction.
+ * @return `true` if the value was successfully pushed, `false` if the argument stack is not
+ *  properly set up.
+ */
+static bool exec_RLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    if (thread->args_count != 1) {
+        return false; // bad bytecode
+    }
+    split64_t s;
+    s.parts[0] = thread->args[0];
+    s.parts[1] = instr.arg1;
+    push_object_onto_stack(
+        thread->data_stack,
+        create_real_number_object(thread->process, s.real_value)
+    );
+    thread->args_count = 0;
+    thread->instr_id++;
+    return true;
+}
+
+/**
  * @brief Executes the SLOAD opcode to load a static string into the stack.
  *
  * The `SLOAD` opcode loads a static string identified by its `string_id` into the stack. The
@@ -670,6 +702,7 @@ static instr_executor_t executors[] = {
     exec_NIL,     /**< Pushes a null object onto the data stack. */
     exec_ILOAD32, /**< Pushes a 32-bit integer onto the data stack. */
     exec_ILOAD64, /**< Pushes a 64-bit integer onto the data stack. */
+    exec_RLOAD,   /**< Pushes a 64-bit float onto the data stack. */
     exec_SLOAD,   /**< Pushes a static string onto the data stack. */
     exec_VLOAD,   /**< Loads a variable value onto the data stack or `null` if undefined. */
     exec_VAR,     /**< Declares a new mutable variable in current context. */

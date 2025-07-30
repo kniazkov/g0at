@@ -48,7 +48,7 @@ typedef enum {
      * the additional arguments are pushed onto the stack in reverse order, and the target
      * instruction will pop them as needed.
      */
-    ARG = 0x01, /**< Adds an argument to the argument stack. */
+    ARG, /**< Adds an argument to the argument stack. */
 
     /**
      * @brief Ends the program immediately.
@@ -57,7 +57,7 @@ typedef enum {
      * instruction is encountered, the VM halts, and no further instructions are executed. It is 
      * used for normal program termination.
      */
-    END = 0x02, /**< Immediately ends the program execution. */
+    END, /**< Immediately ends the program execution. */
 
     /**
      * @brief Pops an object off the data stack.
@@ -65,7 +65,7 @@ typedef enum {
      * The `POP` opcode removes the top object from the data stack. This is used when an object 
      * is no longer needed and should be discarded.
      */
-    POP = 0x03, /**< Removes the top object from the data stack. */
+    POP, /**< Removes the top object from the data stack. */
 
     /**
      * @brief Pushes a null object onto the data stack.
@@ -74,7 +74,7 @@ typedef enum {
      * the absence of a value or as a default placeholder. The name `NIL` is used instead of
      * `NULL` to avoid confusion with the C language's NULL macro.
      */
-    NIL = 0x04, /**< Pushes a null object onto the data stack. */
+    NIL, /**< Pushes a null object onto the data stack. */
 
     /**
      * @brief Pushes a 32-bit integer onto the data stack.
@@ -82,7 +82,7 @@ typedef enum {
      * The `ILOAD32` opcode pushes a 32-bit integer onto the data stack. This is used for loading
      * integer values into the virtual machine's stack for further operations.
      */
-    ILOAD32 = 0x05, /**< Pushes a 32-bit integer onto the data stack. */
+    ILOAD32, /**< Pushes a 32-bit integer onto the data stack. */
 
     /**
      * @brief Pushes a 64-bit integer onto the data stack.
@@ -92,7 +92,17 @@ typedef enum {
      * two parts: the lower 32 bits can be pushed with `ILOAD32`, and the upper 32 bits are loaded 
      * separately using the `ARG` instruction.
      */
-    ILOAD64 = 0x06, /**< Pushes a 64-bit integer onto the data stack. */
+    ILOAD64, /**< Pushes a 64-bit integer onto the data stack. */
+
+    /**
+     * @brief Pushes a 64-bit floating-point number onto the data stack.
+     *
+     * The `RLOAD` opcode is used to push a 64-bit double-precision float onto the data stack.
+     * Like `ILOAD64`, it requires two instructions: the high 32 bits are encoded in the `arg1`
+     * field of `RLOAD`, and the low 32 bits must be pushed beforehand using the `ARG` opcode.
+     * This ensures proper reconstruction of the full 64-bit floating-point value.
+     */
+    RLOAD, /**< Pushes a 64-bit float onto the data stack (requires ARG for low bits). */
 
     /**
      * @brief Loads a static string onto the data stack.
@@ -101,7 +111,7 @@ typedef enum {
      * predefined and have a fixed memory location (in the bytecode), meaning they are not subject
      * to garbage collection. 
      */
-    SLOAD = 0x07, /**< Loads a static string onto the data stack. */
+    SLOAD, /**< Loads a static string onto the data stack. */
 
     /**
      * @brief Loads the value of a variable from the current context onto the data stack.
@@ -110,7 +120,7 @@ typedef enum {
      * identified by its name (static string), and pushes it onto the data stack. If the variable 
      * does not exist in the current context, the constant `null` is loaded instead.
      */
-    VLOAD = 0x08, /**< Loads a variable value onto the data stack or `null` if undefined. */
+    VLOAD, /**< Loads a variable value onto the data stack or `null` if undefined. */
 
     /**
      * @brief Declares a new mutable variable in the current execution context.
@@ -122,7 +132,7 @@ typedef enum {
      *   (shadowing)
      * - Otherwise: creates new variable in current context
      */
-    VAR = 0x09, /**< Declares a new mutable variable in current context. */
+    VAR, /**< Declares a new mutable variable in current context. */
 
     /**
      * @brief Declares a new immutable constant in the current execution context.
@@ -137,7 +147,7 @@ typedef enum {
      * - Cannot be modified after creation (attempt throws exception)
      * - Can still be shadowed in child contexts
      */
-    CONST = 0x0A, /**< Declares a new immutable constant in current context. */
+    CONST, /**< Declares a new immutable constant in current context. */
 
     /**
      * @brief Stores a value to an existing variable in the context chain.
@@ -150,7 +160,7 @@ typedef enum {
      * - If not found: creates new variable in current context (like VAR)
      * This enables closures by allowing inner functions to modify outer scopes.
      */
-    STORE = 0x0B, /**< Stores to existing variable or creates new if not found. */
+    STORE, /**< Stores to existing variable or creates new if not found. */
 
    /**
      * @brief Adds the top two objects of the stack.
@@ -160,7 +170,7 @@ typedef enum {
      * operation can be used for both numerical and non-numerical objects, depending on the virtual 
      * machine's behavior.
      */
-    ADD = 0x0C, /**< Adds the top two objects on the data stack. */
+    ADD, /**< Adds the top two objects on the data stack. */
 
     /**
      * @brief Subtracts the top two objects of the stack.
@@ -170,7 +180,7 @@ typedef enum {
      * and then pushes the result back onto the stack. This operation can be used for numerical
      * objects or other types that support subtraction.
      */
-    SUB = 0x0D, /**< Subtracts the top two objects on the data stack. */
+    SUB, /**< Subtracts the top two objects on the data stack. */
 
     /**
      * @brief Creates a new function object.
@@ -182,7 +192,7 @@ typedef enum {
      *
      * Usage in bytecode always appears as an ARG+FUNC pair.
      */
-    FUNC = 0x0E, /**< Creates a new function object. */
+    FUNC, /**< Creates a new function object. */
 
     /**
      * @brief Calls a function with arguments from the data stack.
@@ -203,7 +213,7 @@ typedef enum {
      * This opcode facilitates invoking callable objects within the virtual machine, allowing
      * for dynamic function calls and composition.
      */
-    CALL = 0x0F, /**< Calls a function with arguments from the data stack. */
+    CALL, /**< Calls a function with arguments from the data stack. */
 
     /**
      * @brief Returns from the current function.
@@ -213,7 +223,7 @@ typedef enum {
      *
      * Every function implicitly ends with RET if no explicit return exists.
      */
-    RET = 0x10, /**< Returns from current function. */
+    RET, /**< Returns from current function. */
 
     /**
      * @brief Creates a new execution context using the current context as a prototype.
@@ -223,7 +233,7 @@ typedef enum {
      * (`VAR`, `CONST`, `STORE`, `VLOAD`) will refer to this new context. The previous context is
      * preserved and can be restored with `LEAVE`.
      */
-    ENTER = 0x11, /**< Creates a new context, inheriting from the current one. */
+    ENTER, /**< Creates a new context, inheriting from the current one. */
 
     /**
      * @brief Restores the previous execution context.
@@ -232,5 +242,5 @@ typedef enum {
      * context remains on the stack (unless explicitly popped), allowing it to be stored
      * for later use.
      */
-    LEAVE = 0x12, /**< Restores the parent context, leaving the current one on the stack. */
+    LEAVE /**< Restores the parent context, leaving the current one on the stack. */
 } opcode_t;
