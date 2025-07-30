@@ -88,7 +88,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         code,
         (instruction_t){ .opcode = ARG, .arg1 = s.parts[0] }
     );
-    //add_instruction(code, (instruction_t){ .opcode = RLOAD, .arg1 = s.parts[1] });
+    add_instruction(code, (instruction_t){ .opcode = RLOAD, .arg1 = s.parts[1] });
     return first;
 }
 
