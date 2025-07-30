@@ -15,27 +15,27 @@
 /**
  * @brief Forward declaration for linked list node.
  */
-typedef struct linked_list_item_t linked_list_item_t;
+typedef struct list_item_t list_item_t;
 
 /**
- * @struct linked_list_item_t
+ * @struct list_item_t
  * @brief A node in a doubly linked list.
  */
-struct linked_list_item_t {
-    linked_list_item_t *prev; /**< Pointer to the previous node. */
-    linked_list_item_t *next; /**< Pointer to the next node. */
-    void *data;               /**< Pointer to the stored data. */
+struct list_item_t {
+    list_item_t *prev; /**< Pointer to the previous node. */
+    list_item_t *next; /**< Pointer to the next node. */
+    void *data;        /**< Pointer to the stored data. */
 };
 
 /**
- * @struct linked_list_t
+ * @struct list_t
  * @brief A doubly linked list using arena allocation.
  */
 typedef struct {
-    linked_list_item_t *head; /**< Pointer to the first node. */
-    linked_list_item_t *tail; /**< Pointer to the last node. */
-    size_t size;
-} linked_list_t;
+    list_item_t *head; /**< Pointer to the first node. */
+    list_item_t *tail; /**< Pointer to the last node. */
+    size_t size;       /**< Size of the list */
+} list_t;
 
 /**
  * @brief Creates a new empty linked list.
@@ -43,7 +43,7 @@ typedef struct {
  * @param arena Memory arena used for allocation.
  * @return A pointer to a newly created list.
  */
-linked_list_t *create_linked_list(arena_t *arena);
+list_t *create_linked_list(arena_t *arena);
 
 /**
  * @brief Adds a new element to the front of the list.
@@ -52,7 +52,7 @@ linked_list_t *create_linked_list(arena_t *arena);
  * @param arena Memory arena used for allocation.
  * @param data Pointer to the data to store.
  */
-void linked_list_push_front(linked_list_t *list, arena_t *arena, void *data);
+void list_push_front(list_t *list, arena_t *arena, void *data);
 
 /**
  * @brief Adds a new element to the end of the list.
@@ -61,4 +61,4 @@ void linked_list_push_front(linked_list_t *list, arena_t *arena, void *data);
  * @param arena Memory arena used for allocation.
  * @param data Pointer to the data to store.
  */
-void linked_list_push_back(linked_list_t *list, arena_t *arena, void *data);
+void list_push_back(list_t *list, arena_t *arena, void *data);

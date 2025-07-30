@@ -83,7 +83,11 @@ compilation_error_t *parsing_scope_bodies(token_t *token, parser_memory_t *memor
 compilation_error_t *parsing_function_bodies(token_t *token, parser_memory_t *memory,
     token_groups_t *groups);
 
-
+/**
+ * @brief Rule for handling `return` statements.
+ */
+compilation_error_t *parsing_returns(token_t *token, parser_memory_t *memory,
+    token_groups_t *groups);
 /**
  * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into
  *  a special token.
@@ -357,12 +361,12 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
  * @param arena Memory arena used for allocating the linked list and its nodes.
  * @return A linked list containing all non-null AST nodes from the token group.
  */
-static linked_list_t *collect_nodes_from_group(token_list_t *tokens, arena_t *arena) {
-    linked_list_t *nodes = create_linked_list(arena);
+static list_t *collect_nodes_from_group(token_list_t *tokens, arena_t *arena) {
+    list_t *nodes = create_linked_list(arena);
     token_t *token = tokens->first;
     while(token) {
         if (token->node) {
-            linked_list_push_back(nodes, arena, token->node);
+            list_push_back(nodes, arena, token->node);
         }
         token = token->next_in_group;
     }
@@ -381,6 +385,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_FORWARD(function_arguments, parsing_function_call_args);
     APPLY_FORWARD(var_keywords, parsing_variable_declarations);
     APPLY_FORWARD(const_keywords, parsing_constant_declarations);
+    APPLY_FORWARD(return_keywords, parsing_returns);
     APPLY_FORWARD(scope_objects, parsing_scope_bodies);
     APPLY_FORWARD(function_objects, parsing_function_bodies);
     // add other rules...

@@ -32,7 +32,7 @@ typedef struct
      * This is a linked list of function definitions.
      * Each entry points to a function object node in the AST.
      */
-    linked_list_t *functions;
+    list_t *functions;
 } parsing_result_t;
 
 /**

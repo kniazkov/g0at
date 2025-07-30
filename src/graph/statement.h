@@ -125,4 +125,4 @@ node_t *create_constant_declaration_node(arena_t *arena, declarator_t **decl_lis
  * @param value Expression to return, or `NULL` for a bare `return;`.
  * @return A pointer to the created return statement node.
  */
-statement_t *create_return_node(arena_t *arena, expression_t *value);
+node_t *create_return_node(arena_t *arena, expression_t *value);

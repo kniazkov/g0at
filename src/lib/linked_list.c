@@ -10,14 +10,14 @@
 
 #include "linked_list.h"
 
-linked_list_t *create_linked_list(arena_t *arena) {
-    return (linked_list_t *)alloc_zeroed_from_arena(arena, sizeof(linked_list_t));
+list_t *create_linked_list(arena_t *arena) {
+    return (list_t *)alloc_zeroed_from_arena(arena, sizeof(list_t));
 }
 
-void linked_list_push_front(linked_list_t *list, arena_t *arena, void *data) {
-    linked_list_item_t *node = (linked_list_item_t *)alloc_zeroed_from_arena(
+void list_push_front(list_t *list, arena_t *arena, void *data) {
+    list_item_t *node = (list_item_t *)alloc_zeroed_from_arena(
         arena,
-        sizeof(linked_list_item_t)
+        sizeof(list_item_t)
     );
     node->data = data;
     node->next = list->head;
@@ -29,10 +29,10 @@ void linked_list_push_front(linked_list_t *list, arena_t *arena, void *data) {
     list->size++;
 }
 
-void linked_list_push_back(linked_list_t *list, arena_t *arena, void *data) {
-    linked_list_item_t *node = (linked_list_item_t *)alloc_zeroed_from_arena(
+void list_push_back(list_t *list, arena_t *arena, void *data) {
+    list_item_t *node = (list_item_t *)alloc_zeroed_from_arena(
         arena,
-        sizeof(linked_list_item_t)
+        sizeof(list_item_t)
     );
     node->data = data;
     node->prev = list->tail;
