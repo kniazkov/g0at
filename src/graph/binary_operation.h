@@ -111,3 +111,17 @@ expression_t *create_addition_node(arena_t *arena, expression_t *left_operand,
  */
 expression_t *create_subtraction_node(arena_t *arena, expression_t *left_operand,
         expression_t *right_operand);
+
+/**
+ * @brief Creates a multiplication expression node.
+ * 
+ * Allocates and initializes a multiplication node representing the `*` operation between two
+ * operands in the abstract syntax tree.
+ * 
+ * @param arena The arena allocator used for memory management.
+ * @param left_operand The left-hand operand of the multiplication.
+ * @param right_operand The right-hand operand of the multiplication.
+ * @return A pointer to the newly created multiplication expression node.
+ */
+expression_t *create_multiplication_node(arena_t *arena, expression_t *left_operand,
+        expression_t *right_operand);

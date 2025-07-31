@@ -29,6 +29,13 @@ compilation_error_t *parsing_additive_operators(token_t *operator, parser_memory
     token_groups_t *groups);
 
 /**
+ * @brief Rule for handling a multiplicative operator (`*`, `/` or `%`), followed by expressions
+ *  on both sides.
+ */
+compilation_error_t *parsing_multiplicative_operators(token_t *operator, parser_memory_t *memory,
+        token_groups_t *groups);
+
+/**
  * @brief Rule for handling an assignment operator, with assignable expression on the left side
  *  and expression on the right side.
  */
@@ -380,6 +387,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     result->functions = collect_nodes_from_group(&groups->function_objects, memory->graph);
     APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
     APPLY_FORWARD(identifiers, parsing_single_identifiers);
+    APPLY_FORWARD(multiplicative_operators, parsing_multiplicative_operators);
     APPLY_FORWARD(additive_operators, parsing_additive_operators);
     APPLY_BACKWARD(assignment_operators, parsing_assignment_operators);
     APPLY_FORWARD(function_arguments, parsing_function_call_args);

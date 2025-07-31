@@ -45,3 +45,5 @@ real_number
 small_real_number 
 very_small_real_number 
 real_zero 
+multiplication 
+multiplication_and_addition 

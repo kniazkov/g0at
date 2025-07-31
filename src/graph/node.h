@@ -152,7 +152,7 @@ typedef enum {
     /**
      * @brief Addition operation node type.
      * 
-     * This node type represents a binary addition operation in the source code.
+     * This node type represents a binary addition (`+`) operation in the source code.
      * It stores the left and right operands of the addition.
      */
     NODE_ADDITION,
@@ -160,10 +160,84 @@ typedef enum {
     /**
      * @brief Subtraction operation node type.
      * 
-     * This node type represents a binary subtraction operation in the source code.
+     * This node type represents a binary subtraction (`-`) operation in the source code.
      * It stores the left and right operands of the subtraction.
      */
     NODE_SUBTRACTION,
+
+    /**
+     * @brief Multiplication operation node type.
+     * 
+     * This node type represents a binary multiplication operation (`*`) in the source code.
+     * It stores the left and right operands of the multiplication.
+     */
+    NODE_MULTIPLICATION,
+
+    /**
+     * @brief Division operation node type.
+     * 
+     * This node type represents a binary division operation (`/`) in the source code.
+     * It stores the left and right operands of the division.
+     */
+    NODE_DIVISION,
+
+    /**
+     * @brief Modulo (remainder) operation node type.
+     * 
+     * This node type represents a binary modulo operation (`%`) in the source code.
+     * It stores the left and right operands of the operation.
+     */
+    NODE_MODULO,
+
+    /**
+     * @brief Exponentiation operation node type.
+     * 
+     * This node type represents a binary power operation (`**` or `^`) in the source code.
+     * It stores the base (left operand) and the exponent (right operand).
+     */
+    NODE_POWER,
+
+    /**
+     * @brief Less-than comparison node type.
+     * 
+     * Represents the `<` operation between two operands.
+     */
+    NODE_LESS,
+
+    /**
+     * @brief Less-than-or-equal comparison node type.
+     * 
+     * Represents the `<=` operation between two operands.
+     */
+    NODE_LESS_OR_EQUAL,
+
+    /**
+     * @brief Greater-than comparison node type.
+     * 
+     * Represents the `>` operation between two operands.
+     */
+    NODE_GREATER,
+
+    /**
+     * @brief Greater-than-or-equal comparison node type.
+     * 
+     * Represents the `>=` operation between two operands.
+     */
+    NODE_GREATER_OR_EQUAL,
+
+    /**
+     * @brief Equality comparison node type.
+     * 
+     * Represents the `==` operation between two operands.
+     */
+    NODE_EQUAL,
+
+    /**
+     * @brief Inequality comparison node type.
+     * 
+     * Represents the `!=` operation between two operands.
+     */
+    NODE_NOT_EQUAL,
 
     /**
      * @brief Statement expression node type.
