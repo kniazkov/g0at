@@ -356,6 +356,109 @@ typedef struct {
     object_t* (*subtract)(process_t *process, object_t *obj1, object_t *obj2);
 
     /**
+     * @brief Function pointer for multiplying two objects.
+     *
+     * Executes the `MUL` operation, multiplying two objects and returning the result.
+     *
+     * @param process Process that will own the resulting object.
+     * @param obj1 First operand.
+     * @param obj2 Second operand.
+     * @return Resulting object of the multiplication.
+     */
+    object_t* (*multiply)(process_t *process, object_t *obj1, object_t *obj2);
+
+    /**
+     * @brief Function pointer for dividing two objects.
+     *
+     * Executes the `DIV` operation, dividing the first object by the second and returning
+     * the result.
+     *
+     * @param process Process that will own the resulting object.
+     * @param obj1 Dividend.
+     * @param obj2 Divisor.
+     * @return Resulting object of the division.
+     */
+    object_t* (*divide)(process_t *process, object_t *obj1, object_t *obj2);
+
+    /**
+     * @brief Function pointer for computing the remainder of division (modulo).
+     *
+     * Executes the `MOD` operation, returning the remainder after division.
+     *
+     * @param process Process that will own the resulting object.
+     * @param obj1 Dividend.
+     * @param obj2 Divisor.
+     * @return Resulting object of the modulo operation.
+     */
+    object_t* (*modulo)(process_t *process, object_t *obj1, object_t *obj2);
+
+    /**
+     * @brief Function pointer for exponentiation (power).
+     *
+     * Executes the `POW` operation, raising the first object to the power of the second.
+     *
+     * @param process Process that will own the resulting object.
+     * @param obj1 Base.
+     * @param obj2 Exponent.
+     * @return Resulting object of the power operation.
+     */
+    object_t* (*power)(process_t *process, object_t *obj1, object_t *obj2);
+
+    /**
+     * @brief Function pointer for checking if first object is less than the second.
+     *
+     * @param obj1 First object.
+     * @param obj2 Second object.
+     * @return `true` if obj1 < obj2, `false` otherwise.
+     */
+    bool (*less)(const object_t *obj1, const object_t *obj2);
+
+    /**
+     * @brief Function pointer for checking if first object is less than or equal to the second.
+     *
+     * @param obj1 First object.
+     * @param obj2 Second object.
+     * @return `true` if obj1 <= obj2, `false` otherwise.
+     */
+    bool (*less_or_equal)(const object_t *obj1, const object_t *obj2);
+
+    /**
+     * @brief Function pointer for checking if first object is greater than the second.
+     *
+     * @param obj1 First object.
+     * @param obj2 Second object.
+     * @return `true` if obj1 > obj2, `false` otherwise.
+     */
+    bool (*greater)(const object_t *obj1, const object_t *obj2);
+
+    /**
+     * @brief Function pointer for checking if first object is greater than or equal to the second.
+     *
+     * @param obj1 First object.
+     * @param obj2 Second object.
+     * @return `true` if obj1 >= obj2, `false` otherwise.
+     */
+    bool (*greater_or_equal)(const object_t *obj1, const object_t *obj2);
+
+    /**
+     * @brief Function pointer for checking equality of two objects.
+     *
+     * @param obj1 First object.
+     * @param obj2 Second object.
+     * @return `true` if obj1 equals obj2, `false` otherwise.
+     */
+    bool (*equal)(const object_t *obj1, const object_t *obj2);
+
+    /**
+     * @brief Function pointer for checking inequality of two objects.
+     *
+     * @param obj1 First object.
+     * @param obj2 Second object.
+     * @return `true` if obj1 does not equal obj2, `false` otherwise.
+     */
+    bool (*not_equal)(const object_t *obj1, const object_t *obj2);
+
+    /**
      * @brief Function pointer for retrieving the boolean value of an object.
      * 
      * The `get_boolean_value` function retrieves the boolean representation of an object. 
