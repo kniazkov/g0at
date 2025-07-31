@@ -163,7 +163,7 @@ object_t *stub_add(process_t *process, object_t *obj1, object_t *obj2);
  * @param obj2 The second object (subtrahend).
  * @return Always returns `NULL`, indicating the operation is unsupported.
  */
-object_t *stub_sub(process_t *process, object_t *obj1, object_t *obj2);
+object_t *stub_subtract(process_t *process, object_t *obj1, object_t *obj2);
 
 /**
  * @brief Retrieves the boolean value of an object based on its keys.

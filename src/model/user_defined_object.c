@@ -534,7 +534,7 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
  * @param obj2 The second object (subtrahend).
  * @return Always returns `NULL` because subtraction is not supported for user-defined objects.
  */
-static object_t *sub(process_t *process, object_t *obj1, object_t *obj2) {
+static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
     return NULL;
 }
 
@@ -575,7 +575,7 @@ static object_vtbl_t vtbl = {
     .create_property = create_property,
     .set_property = set_property,
     .add = add,
-    .sub = sub,
+    .subtract = subtract,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = stub_get_integer_value,
     .get_real_value = stub_get_real_value,

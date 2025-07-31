@@ -89,7 +89,7 @@ object_t *stub_add(process_t *process, object_t *obj1, object_t *obj2) {
     return NULL;
 }
 
-object_t *stub_sub(process_t *process, object_t *obj1, object_t *obj2) {
+object_t *stub_subtract(process_t *process, object_t *obj1, object_t *obj2) {
     return NULL;
 }
 

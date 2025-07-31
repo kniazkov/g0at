@@ -497,7 +497,7 @@ static bool exec_SUB(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        object_t *result = first->vtbl->sub(thread->process, first, second);
+        object_t *result = first->vtbl->subtract(thread->process, first, second);
         if (result) {
             DECREF(first);
             DECREF(second);

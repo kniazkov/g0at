@@ -144,7 +144,7 @@ static object_vtbl_t integer_proto_vtbl = {
     .create_property = create_property_on_immutable,
     .set_property = set_property_on_immutable,
     .add = stub_add,
-    .sub = stub_sub,
+    .subtract = stub_subtract,
     .get_boolean_value = stub_get_boolean_value,
     .get_integer_value = stub_get_integer_value,
     .get_real_value = stub_get_real_value,
@@ -381,7 +381,7 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
  * @return A pointer to the resulting object of the subtraction, or `NULL` if the second object 
  *  cannot be interpreted as an integer or a real number.
  */
-static object_t *sub(process_t *process, object_t *obj1, object_t *obj2) {
+static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = obj1->vtbl->get_integer_value(obj1);
     int_value_t second_int = obj2->vtbl->get_integer_value(obj2);
     if (second_int.has_value) {
@@ -465,7 +465,7 @@ static object_vtbl_t static_vtbl = {
     .create_property = create_property_on_immutable,
     .set_property = set_property_on_immutable,
     .add = add,
-    .sub = sub,
+    .subtract = subtract,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = static_get_integer_value,
     .get_real_value = static_get_real_value,
@@ -541,7 +541,7 @@ static object_vtbl_t dynamic_vtbl = {
     .create_property = create_property_on_immutable,
     .set_property = set_property_on_immutable,
     .add = add,
-    .sub = sub,
+    .subtract = subtract,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = dynamic_get_integer_value,
     .get_real_value = dynamic_get_real_value,

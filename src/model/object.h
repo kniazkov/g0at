@@ -353,7 +353,7 @@ typedef struct {
      * @param obj2 Pointer to the second object (subtrahend).
      * @return A pointer to the resulting object of the subtraction.
      */
-    object_t* (*sub)(process_t *process, object_t *obj1, object_t *obj2);
+    object_t* (*subtract)(process_t *process, object_t *obj1, object_t *obj2);
 
     /**
      * @brief Function pointer for retrieving the boolean value of an object.
