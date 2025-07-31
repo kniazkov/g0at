@@ -509,6 +509,7 @@ DECLARE_STATIC_STRING(string_length, L"length")
 DECLARE_STATIC_STRING(string_pi, L"pi")
 DECLARE_STATIC_STRING(string_print, L"print")
 DECLARE_STATIC_STRING(string_sign, L"sign")
+DECLARE_STATIC_STRING(string_sqrt, L"sqrt")
 
 /**
  * @var dynamic_string_vtbl

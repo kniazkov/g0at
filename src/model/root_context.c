@@ -31,12 +31,13 @@
  * @return An object array containing all property keys.
  */
 static object_array_t get_keys(const object_t *obj) {
-    static object_t *keys[4] = { NULL };
+    static object_t *keys[5] = { NULL };
     if (keys[0] == NULL) {
         keys[0] = get_string_atan();
         keys[1] = get_string_pi();
         keys[2] = get_string_print();
         keys[3] = get_string_sign();
+        keys[4] = get_string_sqrt();
     }
     return (object_array_t){ keys, sizeof(keys) / sizeof(object_t*) };
 }
@@ -55,7 +56,8 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
             { L"atan", get_function_atan },
             { L"pi", get_pi_object },
             { L"print", get_function_print },
-            { L"sign", get_function_sign }
+            { L"sign", get_function_sign },
+            { L"sqrt", get_function_sqrt }
             // ... add other properties later
         };
         static_object_getter_t getter = (static_object_getter_t)binary_search(

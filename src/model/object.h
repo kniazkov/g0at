@@ -774,6 +774,7 @@ DECLARE_STATIC_OBJECT(string_length)
 DECLARE_STATIC_OBJECT(string_pi)
 DECLARE_STATIC_OBJECT(string_print)
 DECLARE_STATIC_OBJECT(string_sign)
+DECLARE_STATIC_OBJECT(string_sqrt)
 
 /**
  * @brief Retrieves the function prototype object.
@@ -782,5 +783,6 @@ DECLARE_STATIC_OBJECT(string_sign)
 object_t *get_function_proto();
 
 DECLARE_STATIC_OBJECT(function_atan)
-DECLARE_STATIC_OBJECT(function_sign)
 DECLARE_STATIC_OBJECT(function_print)
+DECLARE_STATIC_OBJECT(function_sign)
+DECLARE_STATIC_OBJECT(function_sqrt)

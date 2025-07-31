@@ -405,6 +405,26 @@ START_FUNCTION(function_sign)
 END_FUNCTION(function_sign, L"sign");
 
 /**
+ * @brief Built-in function: computes the square root of a number.
+ * 
+ * This function returns the square root of the first argument interpreted as a real number.
+ * The result is returned as a dynamically created real number object.
+ * 
+ * @param args Array of object pointers, where args[0] is the input number.
+ * @param arg_count Number of arguments passed to the function.
+ * @param thread Pointer to the executing thread.
+ * @return A new real number object representing the square root, or `NULL` on error.
+ */
+START_FUNCTION(function_sqrt)
+    if (arg_count < 1) {
+        return NULL;
+    }
+    double value = args[0]->vtbl->get_real_value(args[0]).value;
+    double result = sqrt(value);
+    return create_real_number_object(thread->process, result);
+END_FUNCTION(function_sqrt, L"sqrt");
+
+/**
  * @brief Structure representing a dynamic function object.
  *
  * This structure defines a dynamically created function in the Goat programming language.
