@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <math.h>
 
 #include "object.h"
 #include "object_state.h"
@@ -145,6 +146,16 @@ static object_vtbl_t integer_proto_vtbl = {
     .set_property = set_property_on_immutable,
     .add = stub_add,
     .subtract = stub_subtract,
+    .multiply = stub_multiply,
+    .divide = stub_divide,
+    .modulo = stub_modulo,
+    .power = stub_power,
+    .less = common_less,
+    .less_or_equal = common_less_or_equal,
+    .greater = common_greater,
+    .greater_or_equal = common_greater_or_equal,
+    .equal = common_equal,
+    .not_equal = common_not_equal,
     .get_boolean_value = stub_get_boolean_value,
     .get_integer_value = stub_get_integer_value,
     .get_real_value = stub_get_real_value,
@@ -395,6 +406,100 @@ static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
 }
 
 /**
+ * @brief Multiplies two objects and returns the result as a new object.
+ * 
+ * Attempts to interpret the second object as either an integer or real number.
+ * If successful, performs the multiplication and returns the resulting object.
+ * 
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (multiplicand).
+ * @param obj2 The second object (multiplier).
+ * @return A pointer to the result, or `NULL` if the second object is not numeric.
+ */
+static object_t *multiply(process_t *process, object_t *obj1, object_t *obj2) {
+    int_value_t first = obj1->vtbl->get_integer_value(obj1);
+    int_value_t second_int = obj2->vtbl->get_integer_value(obj2);
+    if (second_int.has_value) {
+        return create_integer_object(process, first.value * second_int.value);
+    }
+    real_value_t second_real = obj2->vtbl->get_real_value(obj2);
+    if (second_real.has_value) {
+        return create_real_number_object(process, first.value * second_real.value);
+    }
+    return NULL;
+}
+
+/**
+ * @brief Divides the first object by the second and returns the result as a new object.
+ * 
+ * Attempts to interpret the second object as either an integer or real number.
+ * Division by zero results in `NULL`.
+ * 
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (dividend).
+ * @param obj2 The second object (divisor).
+ * @return A pointer to the result, or `NULL` if the second object is not numeric or is zero.
+ */
+static object_t *divide(process_t *process, object_t *obj1, object_t *obj2) {
+    int_value_t first = obj1->vtbl->get_integer_value(obj1);
+    int_value_t second_int = obj2->vtbl->get_integer_value(obj2);
+    if (second_int.has_value) {
+        if (second_int.value == 0) {
+            return NULL;
+        }
+        return create_integer_object(process, first.value / second_int.value);
+    }
+    real_value_t second_real = obj2->vtbl->get_real_value(obj2);
+    if (second_real.has_value) {
+        if (second_real.value == 0) {
+            return NULL;
+        }
+        return create_real_number_object(process, first.value / second_real.value);
+    }
+    return NULL;
+}
+
+/**
+ * @brief Computes the remainder of integer division (modulo).
+ * 
+ * Attempts to interpret the second object as an integer.
+ * If successful, computes `obj1 % obj2` and returns the result.
+ * 
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (dividend).
+ * @param obj2 The second object (divisor).
+ * @return A pointer to the result, or `NULL` if the second object is not an integer.
+ */
+static object_t *modulo(process_t *process, object_t *obj1, object_t *obj2) {
+    int_value_t first = obj1->vtbl->get_integer_value(obj1);
+    int_value_t second_int = obj2->vtbl->get_integer_value(obj2);
+    if (second_int.has_value) {
+        return create_integer_object(process, first.value % second_int.value);
+    }
+    return NULL;
+}
+
+/**
+ * @brief Raises the first object to the power of the second and returns the result.
+ * 
+ * Attempts to interpret the first object as an integer and the second as a real number.
+ * If successful, performs exponentiation and returns the resulting object.
+ * 
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (base).
+ * @param obj2 The second object (exponent).
+ * @return A pointer to the result, or `NULL` if the second object is not a real number.
+ */
+static object_t *power(process_t *process, object_t *obj1, object_t *obj2) {
+    int_value_t first = obj1->vtbl->get_integer_value(obj1);
+    real_value_t second = obj2->vtbl->get_real_value(obj2);
+    if (second.has_value) {
+        return create_real_number_object(process, pow((double)first.value, second.value));
+    }
+    return NULL;
+}
+
+/**
  * @brief Retrieves the boolean representation of an object.
  * @param obj The object from which to retrieve the boolean value.
  * @return Boolean representation of the object.
@@ -466,6 +571,16 @@ static object_vtbl_t static_vtbl = {
     .set_property = set_property_on_immutable,
     .add = add,
     .subtract = subtract,
+    .multiply = multiply,
+    .divide = divide,
+    .modulo = modulo,
+    .power = power,
+    .less = common_less,
+    .less_or_equal = common_less_or_equal,
+    .greater = common_greater,
+    .greater_or_equal = common_greater_or_equal,
+    .equal = common_equal,
+    .not_equal = common_not_equal,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = static_get_integer_value,
     .get_real_value = static_get_real_value,
@@ -542,6 +657,16 @@ static object_vtbl_t dynamic_vtbl = {
     .set_property = set_property_on_immutable,
     .add = add,
     .subtract = subtract,
+    .multiply = multiply,
+    .divide = divide,
+    .modulo = modulo,
+    .power = power,
+    .less = common_less,
+    .less_or_equal = common_less_or_equal,
+    .greater = common_greater,
+    .greater_or_equal = common_greater_or_equal,
+    .equal = common_equal,
+    .not_equal = common_not_equal,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = dynamic_get_integer_value,
     .get_real_value = dynamic_get_real_value,

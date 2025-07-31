@@ -539,6 +539,50 @@ static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
 }
 
 /**
+ * @brief Multiplies two objects and returns the result.
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (multiplicand).
+ * @param obj2 The second object (multiplier).
+ * @return Always returns `NULL` because multiplication is not supported for user-defined objects.
+ */
+static object_t *multiply(process_t *process, object_t *obj1, object_t *obj2) {
+    return NULL;
+}
+
+/**
+ * @brief Divides one object by another and returns the result.
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (dividend).
+ * @param obj2 The second object (divisor).
+ * @return Always returns `NULL` because division is not supported for user-defined objects.
+ */
+static object_t *divide(process_t *process, object_t *obj1, object_t *obj2) {
+    return NULL;
+}
+
+/**
+ * @brief Computes the remainder of division (modulo) between two objects.
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (dividend).
+ * @param obj2 The second object (divisor).
+ * @return Always returns `NULL` because modulo is not supported for user-defined objects.
+ */
+static object_t *modulo(process_t *process, object_t *obj1, object_t *obj2) {
+    return NULL;
+}
+
+/**
+ * @brief Raises one object to the power of another and returns the result.
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (base).
+ * @param obj2 The second object (exponent).
+ * @return Always returns `NULL` because power is not supported for user-defined objects.
+ */
+static object_t *power(process_t *process, object_t *obj1, object_t *obj2) {
+    return NULL;
+}
+
+/**
  * @brief Retrieves the boolean representation of a user-defined object.
  * 
  * This function converts the user-defined object to its string representation and returns
@@ -576,6 +620,16 @@ static object_vtbl_t vtbl = {
     .set_property = set_property,
     .add = add,
     .subtract = subtract,
+    .multiply = multiply,
+    .divide = divide,
+    .modulo = modulo,
+    .power = power,
+    .less = common_less,
+    .less_or_equal = common_less_or_equal,
+    .greater = common_greater,
+    .greater_or_equal = common_greater_or_equal,
+    .equal = common_equal,
+    .not_equal = common_not_equal,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = stub_get_integer_value,
     .get_real_value = stub_get_real_value,

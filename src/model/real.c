@@ -154,6 +154,16 @@ static object_vtbl_t real_proto_vtbl = {
     .set_property = set_property_on_immutable,
     .add = stub_add,
     .subtract = stub_subtract,
+    .multiply = stub_multiply,
+    .divide = stub_divide,
+    .modulo = stub_modulo,
+    .power = stub_power,
+    .less = common_less,
+    .less_or_equal = common_less_or_equal,
+    .greater = common_greater,
+    .greater_or_equal = common_greater_or_equal,
+    .equal = common_equal,
+    .not_equal = common_not_equal,
     .get_boolean_value = stub_get_boolean_value,
     .get_integer_value = stub_get_integer_value,
     .get_real_value = stub_get_real_value,
@@ -407,6 +417,57 @@ static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
 }
 
 /**
+ * @brief Multiplies two objects and returns the result as a new object.
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (multiplicand).
+ * @param obj2 The second object (multiplier).
+ * @return Resulting object, or `NULL` if the second object is not a real number.
+ */
+static object_t *multiply(process_t *process, object_t *obj1, object_t *obj2) {
+    real_value_t first = obj1->vtbl->get_real_value(obj1);
+    real_value_t second = obj2->vtbl->get_real_value(obj2);
+    if (!second.has_value) {
+        return NULL;
+    }
+    return create_real_number_object(process, first.value * second.value);
+}
+
+/**
+ * @brief Divides the first object by the second and returns the result.
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (dividend).
+ * @param obj2 The second object (divisor).
+ * @return Resulting object, or `NULL` if the second is not a real number or is zero.
+ */
+static object_t *divide(process_t *process, object_t *obj1, object_t *obj2) {
+    real_value_t first = obj1->vtbl->get_real_value(obj1);
+    real_value_t second = obj2->vtbl->get_real_value(obj2);
+    if (!second.has_value) {
+        return NULL;
+    }
+    if (second.value == 0) {
+        return NULL;
+    }
+    return create_real_number_object(process, first.value / second.value);
+}
+
+/**
+ * @brief Raises the first object to the power of the second and returns the result.
+ * @param process Process that will own the resulting object.
+ * @param obj1 The first object (base).
+ * @param obj2 The second object (exponent).
+ * @return Resulting object, or `NULL` if the second object is not a real number.
+ */
+static object_t *power(process_t *process, object_t *obj1, object_t *obj2) {
+    real_value_t first = obj1->vtbl->get_real_value(obj1);
+    real_value_t second = obj2->vtbl->get_real_value(obj2);
+    if (!second.has_value) {
+        return NULL;
+    }
+    return create_real_number_object(process, pow(first.value, second.value));
+}
+
+/**
  * @brief Retrieves the boolean representation of an object.
  * @param obj The object from which to retrieve the boolean value.
  * @return Boolean representation of the object.
@@ -500,6 +561,16 @@ static object_vtbl_t static_vtbl = {
     .set_property = set_property_on_immutable,
     .add = add,
     .subtract = subtract,
+    .multiply = multiply,
+    .divide = divide,
+    .modulo = stub_modulo,
+    .power = power,
+    .less = common_less,
+    .less_or_equal = common_less_or_equal,
+    .greater = common_greater,
+    .greater_or_equal = common_greater_or_equal,
+    .equal = common_equal,
+    .not_equal = common_not_equal,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = static_get_integer_value,
     .get_real_value = static_get_real_value,
@@ -543,6 +614,16 @@ static object_vtbl_t dynamic_vtbl = {
     .set_property = set_property_on_immutable,
     .add = add,
     .subtract = subtract,
+    .multiply = multiply,
+    .divide = divide,
+    .modulo = stub_modulo,
+    .power = power,
+    .less = common_less,
+    .less_or_equal = common_less_or_equal,
+    .greater = common_greater,
+    .greater_or_equal = common_greater_or_equal,
+    .equal = common_equal,
+    .not_equal = common_not_equal,
     .get_boolean_value = get_boolean_value,
     .get_integer_value = dynamic_get_integer_value,
     .get_real_value = dynamic_get_real_value,

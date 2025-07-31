@@ -93,6 +93,46 @@ object_t *stub_subtract(process_t *process, object_t *obj1, object_t *obj2) {
     return NULL;
 }
 
+object_t *stub_multiply(process_t *process, object_t *obj1, object_t *obj2) {
+    return NULL;
+}
+
+object_t *stub_divide(process_t *process, object_t *obj1, object_t *obj2) {
+    return NULL;
+}
+
+object_t *stub_modulo(process_t *process, object_t *obj1, object_t *obj2) {
+    return NULL;
+}
+
+object_t *stub_power(process_t *process, object_t *obj1, object_t *obj2) {
+    return NULL;
+}
+
+bool common_less(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->compare(obj1, obj2) < 0;
+}
+
+bool common_less_or_equal(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->compare(obj1, obj2) <= 0;
+}
+
+bool common_greater(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->compare(obj1, obj2) > 0;
+}
+
+bool common_greater_or_equal(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->compare(obj1, obj2) >= 0;
+}
+
+bool common_equal(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->compare(obj1, obj2) == 0;
+}
+
+bool common_not_equal(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->compare(obj1, obj2) != 0;
+}
+
 bool common_get_boolean_value(const object_t *obj) {
     return obj->vtbl->get_keys(obj).size > 0;
 }

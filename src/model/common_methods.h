@@ -152,7 +152,7 @@ model_status_t set_property_on_immutable(object_t *obj, object_t *key, object_t 
 object_t *stub_add(process_t *process, object_t *obj1, object_t *obj2);
 
 /**
- * @brief Stub implementation for the `sub` operation on unsupported objects.
+ * @brief Stub implementation for the `subtract` operation on unsupported objects.
  * 
  * This function serves as a placeholder for the `sub` operation. It is used when an object does
  * not support subtraction. The function always returns `NULL`, indicating that the operation is
@@ -164,6 +164,116 @@ object_t *stub_add(process_t *process, object_t *obj1, object_t *obj2);
  * @return Always returns `NULL`, indicating the operation is unsupported.
  */
 object_t *stub_subtract(process_t *process, object_t *obj1, object_t *obj2);
+
+/**
+ * @brief Stub implementation for the `multiply` operation on unsupported objects.
+ * 
+ * This function serves as a placeholder for the `multiply` operation. It is used when an object
+ * does not support multiplication. The function always returns `NULL`, indicating that the
+ * operation is not supported.
+ * 
+ * @param process The current process context (unused in this implementation).
+ * @param obj1 The first object (multiplicand).
+ * @param obj2 The second object (multiplier).
+ * @return Always returns `NULL`, indicating the operation is unsupported.
+ */
+object_t *stub_multiply(process_t *process, object_t *obj1, object_t *obj2);
+
+/**
+ * @brief Stub implementation for the `divide` operation on unsupported objects.
+ * 
+ * This function serves as a placeholder for the `divide` operation. It is used when an object does
+ * not support division. The function always returns `NULL`, indicating that the operation is not
+ * supported.
+ * 
+ * @param process The current process context (unused in this implementation).
+ * @param obj1 The first object (dividend).
+ * @param obj2 The second object (divisor).
+ * @return Always returns `NULL`, indicating the operation is unsupported.
+ */
+object_t *stub_divide(process_t *process, object_t *obj1, object_t *obj2);
+
+/**
+ * @brief Stub implementation for the `modulo` operation on unsupported objects.
+ * 
+ * This function serves as a placeholder for the `modulo` operation. It is used when an object does
+ * not support computing the remainder. The function always returns `NULL`, indicating that
+ * the operation is not supported.
+ * 
+ * @param process The current process context (unused in this implementation).
+ * @param obj1 The first object (dividend).
+ * @param obj2 The second object (divisor).
+ * @return Always returns `NULL`, indicating the operation is unsupported.
+ */
+object_t *stub_modulo(process_t *process, object_t *obj1, object_t *obj2);
+
+/**
+ * @brief Stub implementation for the `power` operation on unsupported objects.
+ * 
+ * This function serves as a placeholder for the `power` operation. It is used when an object does
+ * not support exponentiation. The function always returns `NULL`, indicating that the operation
+ * is not supported.
+ * 
+ * @param process The current process context (unused in this implementation).
+ * @param obj1 The first object (base).
+ * @param obj2 The second object (exponent).
+ * @return Always returns `NULL`, indicating the operation is unsupported.
+ */
+object_t *stub_power(process_t *process, object_t *obj1, object_t *obj2);
+
+/**
+ * @brief Checks if obj1 is less than obj2 using their `compare` implementation.
+ * 
+ * @param obj1 First object.
+ * @param obj2 Second object.
+ * @return `true` if obj1 < obj2, `false` otherwise.
+ */
+bool common_less(const object_t *obj1, const object_t *obj2);
+
+/**
+ * @brief Checks if obj1 is less than or equal to obj2 using their `compare` implementation.
+ * 
+ * @param obj1 First object.
+ * @param obj2 Second object.
+ * @return `true` if obj1 <= obj2, `false` otherwise.
+ */
+bool common_less_or_equal(const object_t *obj1, const object_t *obj2);
+
+/**
+ * @brief Checks if obj1 is greater than obj2 using their `compare` implementation.
+ * 
+ * @param obj1 First object.
+ * @param obj2 Second object.
+ * @return `true` if obj1 > obj2, `false` otherwise.
+ */
+bool common_greater(const object_t *obj1, const object_t *obj2);
+
+/**
+ * @brief Checks if obj1 is greater than or equal to obj2 using their `compare` implementation.
+ * 
+ * @param obj1 First object.
+ * @param obj2 Second object.
+ * @return `true` if obj1 >= obj2, `false` otherwise.
+ */
+bool common_greater_or_equal(const object_t *obj1, const object_t *obj2);
+
+/**
+ * @brief Checks if obj1 is equal to obj2 using their `compare` implementation.
+ * 
+ * @param obj1 First object.
+ * @param obj2 Second object.
+ * @return `true` if obj1 == obj2, `false` otherwise.
+ */
+bool common_equal(const object_t *obj1, const object_t *obj2);
+
+/**
+ * @brief Checks if obj1 is not equal to obj2 using their `compare` implementation.
+ * 
+ * @param obj1 First object.
+ * @param obj2 Second object.
+ * @return `true` if obj1 != obj2, `false` otherwise.
+ */
+bool common_not_equal(const object_t *obj1, const object_t *obj2);
 
 /**
  * @brief Retrieves the boolean value of an object based on its keys.
