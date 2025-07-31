@@ -121,7 +121,7 @@ object_array_t common_get_topology(const object_t *obj);
  * @param constant Whether the property should be constant (ignored for immutable objects).
  * @return Always returns `MSTAT_IMMUTABLE_OBJECT`, indicating that the operation is not supported.
  */
-model_status_t add_property_on_immutable(object_t *obj, object_t *key, object_t *value, bool constant);
+model_status_t create_property_on_immutable(object_t *obj, object_t *key, object_t *value, bool constant);
 
 /**
  * @brief Stub for setting a property on an immutable object.

@@ -346,7 +346,7 @@ static bool exec_VAR(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     if (value == NULL) {
         return false; // empty stack
     }
-    model_status_t result = thread->context->data->vtbl->add_property(thread->context->data,
+    model_status_t result = thread->context->data->vtbl->create_property(thread->context->data,
             key, value, false);
     if (result != MSTAT_OK) {
         return false; // already exists
@@ -381,7 +381,7 @@ static bool exec_CONST(runtime_t *runtime, instruction_t instr, thread_t *thread
     if (value == NULL) {
         return false; // empty stack
     }
-    model_status_t result = thread->context->data->vtbl->add_property(thread->context->data,
+    model_status_t result = thread->context->data->vtbl->create_property(thread->context->data,
             key, value, true);
     if (result != MSTAT_OK) {
         return false; // already exists
@@ -440,7 +440,7 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
         } while (index < proto.size);
     }
     if (!changed) {
-        result = context->vtbl->add_property(context, key, value, false);
+        result = context->vtbl->create_property(context, key, value, false);
         if (result != MSTAT_OK) {
             return false;
         }

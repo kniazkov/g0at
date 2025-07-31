@@ -310,7 +310,7 @@ typedef struct {
      *        cannot be modified after creation.
      * @return Status of the operation performed.
      */
-    model_status_t (*add_property)(object_t *obj, object_t *key, object_t *value, bool constant);
+    model_status_t (*create_property)(object_t *obj, object_t *key, object_t *value, bool constant);
 
     /**
      * @brief Sets a property on an object.

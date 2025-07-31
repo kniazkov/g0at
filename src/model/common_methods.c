@@ -76,7 +76,7 @@ object_array_t common_get_topology(const object_t *obj) {
     return common_get_prototypes(obj);
 }
 
-model_status_t add_property_on_immutable(
+model_status_t create_property_on_immutable(
         object_t *obj, object_t *key, object_t *value, bool constant) {
     return MSTAT_IMMUTABLE_OBJECT;
 }

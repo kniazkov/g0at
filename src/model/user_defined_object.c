@@ -473,7 +473,8 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
  * @param constant If `true`, marks the property as immutable (cannot be modified later).
  * @return Status of the operation performed.
  */
-static model_status_t add_property(object_t *obj, object_t *key, object_t *value, bool constant) {
+static model_status_t create_property(object_t *obj, object_t *key, object_t *value,
+        bool constant) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
     if (ref) {
@@ -571,7 +572,7 @@ static object_vtbl_t vtbl = {
     .get_topology = get_topology,
     .get_keys = get_keys,
     .get_property = get_property,
-    .add_property = add_property,
+    .create_property = create_property,
     .set_property = set_property,
     .add = add,
     .sub = sub,

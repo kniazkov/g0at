@@ -83,7 +83,7 @@ static object_vtbl_t function_proto_vtbl = {
     .get_topology = common_get_topology,
     .get_keys = get_keys,
     .get_property = get_property,
-    .add_property = add_property_on_immutable,
+    .create_property = create_property_on_immutable,
     .set_property = set_property_on_immutable,
     .add = stub_add,
     .sub = stub_sub,
@@ -264,7 +264,7 @@ static object_vtbl_t static_vtbl = {
     .get_topology = get_topology,
     .get_keys = get_keys,
     .get_property = get_property,
-    .add_property = add_property_on_immutable,
+    .create_property = create_property_on_immutable,
     .set_property = set_property_on_immutable,
     .add = stub_add,
     .sub = stub_sub,
@@ -564,11 +564,11 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     uint16_t index;
     for (index = 0; index < arg_count && index < dfobj->arg_count; index++) {
         object_t *arg = pop_object_from_stack(thread->data_stack);
-        ctx->data->vtbl->add_property(ctx->data, dfobj->arg_names[index], arg, false);
+        ctx->data->vtbl->create_property(ctx->data, dfobj->arg_names[index], arg, false);
         DECREF(arg);
     }
     for (; index < dfobj->arg_count; index++) {
-        ctx->data->vtbl->add_property(ctx->data, dfobj->arg_names[index], get_null_object(), false);
+        ctx->data->vtbl->create_property(ctx->data, dfobj->arg_names[index], get_null_object(), false);
     }
     stack_index_t ret_value_index = push_object_onto_stack(thread->data_stack, get_null_object());
     ctx->ret_value_index = ret_value_index;
@@ -597,7 +597,7 @@ static object_vtbl_t dynamic_vtbl = {
     .get_topology = get_topology,
     .get_keys = get_keys,
     .get_property = get_property,
-    .add_property = add_property_on_immutable,
+    .create_property = create_property_on_immutable,
     .set_property = set_property_on_immutable,
     .add = stub_add,
     .sub = stub_sub,

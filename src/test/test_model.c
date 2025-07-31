@@ -132,25 +132,25 @@ bool test_properties() {
     process_t *process = create_process();
     object_t *root_object = get_root_object();
     object_t *obj = create_user_defined_object(process, (object_array_t){&root_object, 1});
-    obj->vtbl->add_property(
+    obj->vtbl->create_property(
         obj,
         create_string_object(process, STATIC_STRING(L"first")),
         create_string_object(process, STATIC_STRING(L"one")),
         true
     );
-    obj->vtbl->add_property(
+    obj->vtbl->create_property(
         obj,
         create_string_object(process, STATIC_STRING(L"second")),
         create_string_object(process, STATIC_STRING(L"two")),
         true
     );
-    obj->vtbl->add_property(
+    obj->vtbl->create_property(
         obj,
         create_integer_object(process, 3),
         create_string_object(process, STATIC_STRING(L"three")),
         true
     );
-    obj->vtbl->add_property(
+    obj->vtbl->create_property(
         obj,
         get_boolean_object(true),
         create_string_object(process, STATIC_STRING(L"boolean")),
