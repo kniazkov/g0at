@@ -302,7 +302,7 @@ string_value_t string_to_string_notation(const wchar_t *prefix, const string_val
 void double_to_string(double value, char *buffer, size_t buffer_size) {
     if ((value >= 1e-10 && value <= 1e10) || (value <= -1e-10 && value >= -1e10)) {
         char temp_buffer[32];
-        snprintf(temp_buffer, sizeof(temp_buffer), "%.15f", value);
+        snprintf(temp_buffer, sizeof(temp_buffer), "%.11f", value);
         char *dot = strchr(temp_buffer, '.');
         if (dot) {
             char *end = dot + strlen(dot) - 1;

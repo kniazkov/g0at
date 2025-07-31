@@ -351,19 +351,24 @@ static void parse_number(scanner_t *scan, token_t *token, bool negative) {
     }
 
     bool is_real = false;
-    double value = (double)int_part;
+    double value;
 
     if (ch == L'.') {
         is_real = true;
+        int64_t fract_part = 0;
+        int divisor = 1;
         ch = next_char(scan);
-        double frac = 0.0;
-        double scale = 0.1;
         while (iswdigit(ch)) {
-            frac += (ch - '0') * scale;
-            scale *= 0.1;
+            fract_part = fract_part * 10 + (ch - '0');
+            divisor *= 10;
             ch = next_char(scan);
         }
-        value += frac;
+        double int_t = (double)int_part;
+        double fract_d = (double)fract_part / (double)divisor;
+        value = int_t + fract_d;
+    }
+    else {
+        value = (double)int_part;
     }
 
     if (ch == L'e' || ch == L'E') {
@@ -390,15 +395,9 @@ static void parse_number(scanner_t *scan, token_t *token, bool negative) {
     }
 
     if (is_real) {
-        if (negative) {
-            value = -value;
-        }
-        token->node = create_real_number_node(scan->memory->graph, value);
+        token->node = create_real_number_node(scan->memory->graph, negative ? -value : value);
     } else {
-        if (negative) {
-            int_part = -int_part;
-        }
-        token->node = create_integer_node(scan->memory->graph, int_part);
+        token->node = create_integer_node(scan->memory->graph, negative ? -int_part : int_part);
     }
 }
 
