@@ -132,6 +132,8 @@ compilation_error_t *parsing_multiplicative_operators(token_t *operator, parser_
     expression_t *operation = NULL;
     if (operator->text.data[0] == L'*') {
         operation = create_multiplication_node(memory->graph, left_operand, right_operand);
+    } else if (operator->text.data[0] == L'/') {
+        operation = create_division_node(memory->graph, left_operand, right_operand);
     }
     collapse_tokens_to_token(memory->tokens, operator->left, operator->right, TOKEN_EXPRESSION,
         &operation->base);
