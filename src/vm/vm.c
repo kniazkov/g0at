@@ -510,6 +510,259 @@ static bool exec_SUB(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 }
 
 /**
+ * @brief Executes the `MUL` instruction.
+ *
+ * Pops the top two objects from the data stack, multiplies them using the `multiply` method,
+ * and pushes the result back onto the stack. Returns `false` on failure.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread The thread executing the instruction.
+ * @return `true` if multiplication succeeded, `false` otherwise.
+ */
+static bool exec_MUL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        object_t *result = first->vtbl->multiply(thread->process, first, second);
+        if (result) {
+            DECREF(first);
+            DECREF(second);
+            push_object_onto_stack(thread->data_stack, result);
+            thread->instr_id++;
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Executes the `DIVIDE` instruction.
+ *
+ * Pops the top two objects from the data stack, divides them using the `divide` method,
+ * and pushes the result. Division by zero or invalid operands return `false`.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread The thread executing the instruction.
+ * @return `true` if division succeeded, `false` otherwise.
+ */
+static bool exec_DIVIDE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        object_t *result = first->vtbl->divide(thread->process, first, second);
+        if (result) {
+            DECREF(first);
+            DECREF(second);
+            push_object_onto_stack(thread->data_stack, result);
+            thread->instr_id++;
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Executes the `MODULO` instruction.
+ *
+ * Pops the top two objects from the data stack, computes remainder using `modulo` method,
+ * and pushes the result. Returns `false` if operation is unsupported.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread The thread executing the instruction.
+ * @return `true` if modulo succeeded, `false` otherwise.
+ */
+static bool exec_MODULO(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        object_t *result = first->vtbl->modulo(thread->process, first, second);
+        if (result) {
+            DECREF(first);
+            DECREF(second);
+            push_object_onto_stack(thread->data_stack, result);
+            thread->instr_id++;
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Executes the `POWER` instruction.
+ *
+ * Pops the top two objects from the data stack, raises the first to the power of the second
+ * using `power` method, and pushes the result. Returns `false` if operation fails.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread The thread executing the instruction.
+ * @return `true` if power succeeded, `false` otherwise.
+ */
+static bool exec_POWER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        object_t *result = first->vtbl->power(thread->process, first, second);
+        if (result) {
+            DECREF(first);
+            DECREF(second);
+            push_object_onto_stack(thread->data_stack, result);
+            thread->instr_id++;
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Executes the `LESS` instruction.
+ *
+ * Pops the top two objects from the stack, compares them using `less`, and pushes a boolean.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread The thread executing the instruction.
+ * @return `true` if comparison succeeded, `false` otherwise.
+ */
+static bool exec_LESS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        bool result = first->vtbl->less(first, second);
+        DECREF(first);
+        DECREF(second);
+        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+        thread->instr_id++;
+        return true;
+        }
+    return false;
+}
+
+/**
+ * @brief Executes the `LEQ` (less or equal) instruction.
+ *
+ * Pops the top two objects from the stack, compares them using `less_or_equal`,
+ * and pushes a boolean.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread The thread executing the instruction.
+ * @return `true` if comparison succeeded, `false` otherwise.
+ */
+static bool exec_LEQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        bool result = first->vtbl->less_or_equal(first, second);
+        DECREF(first);
+        DECREF(second);
+        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+        thread->instr_id++;
+        return true;
+        }
+    return false;
+}
+
+/**
+ * @brief Executes the `GREATER` instruction.
+ *
+ * Pops the top two objects from the stack, compares them using `greater`, and pushes a boolean.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread The thread executing the instruction.
+ * @return `true` if comparison succeeded, `false` otherwise.
+ */
+static bool exec_GREATER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        bool result = first->vtbl->greater(first, second);
+        DECREF(first);
+        DECREF(second);
+        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+        thread->instr_id++;
+        return true;
+        }
+    return false;
+}
+
+/**
+ * @brief Executes the `GREQ` (greater or equal) instruction.
+ *
+ * Pops the top two objects from the stack, compares them using `greater_or_equal`, and pushes a boolean.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread The thread executing the instruction.
+ * @return `true` if comparison succeeded, `false` otherwise.
+ */
+static bool exec_GREQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        bool result = first->vtbl->greater_or_equal(first, second);
+        DECREF(first);
+        DECREF(second);
+        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+        thread->instr_id++;
+        return true;
+        }
+    return false;
+}
+
+/**
+ * @brief Executes the `EQUAL` instruction.
+ *
+ * Pops the top two objects from the stack, compares them using `equal`, and pushes a boolean.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread The thread executing the instruction.
+ * @return `true` if comparison succeeded, `false` otherwise.
+ */
+static bool exec_EQUAL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        bool result = first->vtbl->equal(first, second);
+        DECREF(first);
+        DECREF(second);
+        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+        thread->instr_id++;
+        return true;
+        }
+    return false;
+}
+
+/**
+ * @brief Executes the `DIFF` (not equal) instruction.
+ *
+ * Pops the top two objects from the stack, compares them using `not_equal`, and pushes a boolean.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute.
+ * @param thread The thread executing the instruction.
+ * @return `true` if comparison succeeded, `false` otherwise.
+ */
+static bool exec_DIFF(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *second = pop_object_from_stack(thread->data_stack);
+    object_t *first = pop_object_from_stack(thread->data_stack);
+    if (first && second) {
+        bool result = first->vtbl->not_equal(first, second);
+        DECREF(first);
+        DECREF(second);
+        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+        thread->instr_id++;
+        return true;
+        }
+    return false;
+}
+
+/**
  * @brief Executes the `FUNC` instruction.
  * 
  * The `FUNC` opcode creates a new dynamic function object. It uses:
@@ -710,6 +963,16 @@ static instr_executor_t executors[] = {
     exec_STORE,   /**< Stores to existing variable or creates new if not found. */
     exec_ADD,     /**< Adds the top two objects of the stack. */
     exec_SUB,     /**< Subtracts the top two objects of the stack. */
+    exec_MUL,     /**< Multiplies the top two objects on the data stack. */
+    exec_DIVIDE,  /**< Divides the first object by the second on the data stack. */
+    exec_MODULO,  /**< Computes the modulo of the top two objects on the data stack. */
+    exec_POWER,   /**< Raises the first object to the power of the second. */
+    exec_LESS,    /**< Checks if first < second and pushes boolean result. */
+    exec_LEQ,     /**< Checks if first <= second and pushes boolean result. */
+    exec_GREATER, /**< Checks if first > second and pushes boolean result. */
+    exec_GREQ,    /**< Checks if first >= second and pushes boolean result. */
+    exec_EQUAL,   /**< Pushes `true` if top two objects are equal. */
+    exec_DIFF,    /**< Pushes `true` if top two objects are not equal. */
     exec_FUNC,    /**< Creates a new function object. */
     exec_CALL,    /**< Calls a function with arguments from the data stack. */
     exec_RET,     /**< Returns from current function. */

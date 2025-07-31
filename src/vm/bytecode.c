@@ -49,6 +49,16 @@ static instruction_descriptor_t descriptors[] =
     , { .code = L"STORE", .arg_1_is_string = true }
     , { .code = L"ADD" }
     , { .code = L"SUB" }
+    , { .code = L"MUL" }
+    , { .code = L"DIVIDE" }
+    , { .code = L"MODULO" }
+    , { .code = L"POWER" }
+    , { .code = L"LESS" }
+    , { .code = L"LEQ" }
+    , { .code = L"GREATER" }
+    , { .code = L"GREQ" }
+    , { .code = L"EQUAL" }
+    , { .code = L"DIFF" }
     , { .code = L"FUNC", .has_arg_0 = true, .arg_1_is_unsigned_integer = true }
     , { .code = L"CALL", .has_arg_0 = true }
     , { .code = L"RET" }

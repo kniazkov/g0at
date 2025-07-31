@@ -162,7 +162,7 @@ typedef enum {
      */
     STORE, /**< Stores to existing variable or creates new if not found. */
 
-   /**
+    /**
      * @brief Adds the top two objects of the stack.
      *
      * The `ADD` opcode performs an addition operation on the two topmost objects on the data stack. 
@@ -181,6 +181,88 @@ typedef enum {
      * objects or other types that support subtraction.
      */
     SUB, /**< Subtracts the top two objects on the data stack. */
+
+    /**
+     * @brief Multiplies the top two objects on the data stack.
+     *
+     * The `MUL` opcode pops the top two objects from the data stack, multiplies them, 
+     * and pushes the result back onto the stack. Applicable to numeric types or other 
+     * objects that define multiplication behavior.
+     */
+    MUL, /**< Multiplies the top two objects on the data stack. */
+
+    /**
+     * @brief Divides the first object by the second on the data stack.
+     *
+     * The `DIVIDE` opcode pops the top two objects from the data stack, divides the first 
+     * by the second, and pushes the result. If division by zero or unsupported types occurs, 
+     * an exception may be raised.
+     */
+    DIVIDE, /**< Divides the first object by the second on the data stack. */
+
+    /**
+     * @brief Computes the modulo (remainder) of the top two objects.
+     *
+     * The `MODULO` opcode pops the top two objects, computes the remainder of the first 
+     * divided by the second, and pushes the result. Supports only integer-compatible types.
+     */
+    MODULO, /**< Computes the modulo of the top two objects on the data stack. */
+
+    /**
+     * @brief Raises one object to the power of another.
+     *
+     * The `POWER` opcode pops the top two objects, treats the first as the base and 
+     * the second as the exponent, performs exponentiation, and pushes the result.
+     */
+    POWER, /**< Raises the first object to the power of the second. */
+
+    /**
+     * @brief Compares if the first object is less than the second.
+     *
+     * The `LESS` opcode compares the two topmost objects and pushes a boolean result 
+     * (`true` or `false`) depending on whether the first is strictly less than the second.
+     */
+    LESS, /**< Checks if first < second and pushes boolean result. */
+
+    /**
+     * @brief Compares if the first object is less than or equal to the second.
+     *
+     * The `LEQ` opcode performs a less-than-or-equal comparison between the top two 
+     * objects and pushes a boolean result.
+     */
+    LEQ, /**< Checks if first <= second and pushes boolean result. */
+
+    /**
+     * @brief Compares if the first object is greater than the second.
+     *
+     * The `GREATER` opcode compares the two topmost objects and pushes `true` if the first 
+     * is greater than the second, otherwise `false`.
+     */
+    GREATER, /**< Checks if first > second and pushes boolean result. */
+
+    /**
+     * @brief Compares if the first object is greater than or equal to the second.
+     *
+     * The `GREQ` opcode performs a greater-than-or-equal comparison between the top two 
+     * objects and pushes the boolean result.
+     */
+    GREQ, /**< Checks if first >= second and pushes boolean result. */
+
+    /**
+     * @brief Checks if the two topmost objects are equal.
+     *
+     * The `EQUAL` opcode compares the top two objects for equality and pushes `true` if 
+     * they are equal, `false` otherwise.
+     */
+    EQUAL, /**< Pushes `true` if top two objects are equal. */
+
+    /**
+     * @brief Checks if the two topmost objects are not equal.
+     *
+     * The `DIFF` opcode checks inequality between the top two objects. Pushes `true` if 
+     * they differ, `false` if they are equal.
+     */
+    DIFF, /**< Pushes `true` if top two objects are not equal. */
 
     /**
      * @brief Creates a new function object.
