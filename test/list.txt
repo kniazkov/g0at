@@ -41,3 +41,7 @@ return_constant_value
 return_expression 
 dead_code 
 return_object 
+real_number 
+small_real_number 
+very_small_real_number 
+real_zero 
