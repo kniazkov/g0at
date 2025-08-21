@@ -510,10 +510,8 @@ static int_value_t static_get_integer_value(const object_t *obj) {
 static int_value_t dynamic_get_integer_value(const object_t *obj) {
     object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
     double value = drobj->value;
-    if (value == trunc(value)) {
-        if (value >= (double)INT64_MIN && value <= (double)INT64_MAX) {
-            return (int_value_t){ true, (int64_t)value };
-        }
+    if (value == trunc(value) && value >= (double)INT64_MIN && value <= (double)INT64_MAX) {
+        return (int_value_t){ true, (int64_t)value };
     }
     return (int_value_t){ false, 0 };
 }

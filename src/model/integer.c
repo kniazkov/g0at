@@ -442,19 +442,16 @@ static object_t *multiply(process_t *process, object_t *obj1, object_t *obj2) {
  */
 static object_t *divide(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = obj1->vtbl->get_integer_value(obj1);
-    int_value_t second_int = obj2->vtbl->get_integer_value(obj2);
-    if (second_int.has_value) {
-        if (second_int.value == 0) {
+    real_value_t second = obj2->vtbl->get_real_value(obj2);
+    if (second.has_value) {
+        if (second.value == 0) {
             return NULL;
         }
-        return create_integer_object(process, first.value / second_int.value);
-    }
-    real_value_t second_real = obj2->vtbl->get_real_value(obj2);
-    if (second_real.has_value) {
-        if (second_real.value == 0) {
-            return NULL;
+        double result = (double)first.value / second.value;
+        if (result == trunc(result) && result >= (double)INT64_MIN && result <= (double)INT64_MAX) {
+            return create_integer_object(process, (int64_t)result);
         }
-        return create_real_number_object(process, first.value / second_real.value);
+        return create_real_number_object(process, result);
     }
     return NULL;
 }
