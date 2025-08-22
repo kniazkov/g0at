@@ -141,3 +141,33 @@ compilation_error_t *parsing_multiplicative_operators(token_t *operator, parser_
         &operation->base);
     return NULL;
 }
+
+/**
+ * @brief Rule for handling exponentiation operators (`**`).
+ * 
+ * This function processes a token sequence with a power operator (`**`)
+ * and two expression operands. It reduces the sequence into a single expression node
+ * representing the power (exponentiation) operation.
+ * 
+ * @param operator The token representing the power operator.
+ * @param memory A pointer to the `parser_memory_t` structure, which manages allocation
+ *  for tokens and nodes.
+ * @param groups Token classification groups that may be updated during the reduction.
+ * @return A pointer to a `compilation_error_t` if an error occurs, or `NULL` if no error.
+ */
+compilation_error_t *parsing_power_operators(token_t *operator, parser_memory_t *memory,
+        token_groups_t *groups) {
+    assert(operator->type == TOKEN_OPERATOR && operator->text.data[0] == L'*');
+
+    compilation_error_t *error = check_operands(operator, memory);
+    if (error) {
+        return error;
+    }
+
+    expression_t *left_operand = (expression_t *)operator->left->node;
+    expression_t *right_operand = (expression_t *)operator->right->node;
+    expression_t *operation = create_power_node(memory->graph, left_operand, right_operand);
+    collapse_tokens_to_token(memory->tokens, operator->left, operator->right, TOKEN_EXPRESSION,
+        &operation->base);
+    return NULL;
+}

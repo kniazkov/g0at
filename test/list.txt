@@ -49,3 +49,4 @@ multiplication
 multiplication_and_addition 
 division 
 non_integer_division 
+power 

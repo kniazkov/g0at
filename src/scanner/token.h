@@ -225,6 +225,11 @@ typedef struct {
     token_list_t multiplicative_operators;
 
     /**
+     * @brief Group for power operators.
+     */
+    token_list_t power_operators;
+
+    /**
      * @brief Group for assignment operators.
      */
     token_list_t assignment_operators;

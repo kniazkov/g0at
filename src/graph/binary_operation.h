@@ -153,3 +153,17 @@ expression_t *create_division_node(arena_t *arena, expression_t *left_operand,
  */
 expression_t *create_modulo_node(arena_t *arena, expression_t *left_operand,
         expression_t *right_operand);
+
+/**
+ * @brief Creates a power (exponentiation) expression node.
+ * 
+ * Allocates and initializes a power node representing the `**` operation between two
+ * operands in the abstract syntax tree.
+ * 
+ * @param arena The arena allocator used for memory management.
+ * @param left_operand The base operand of the exponentiation.
+ * @param right_operand The exponent operand of the exponentiation.
+ * @return A pointer to the newly created power expression node.
+ */
+expression_t *create_power_node(arena_t *arena, expression_t *left_operand,
+        expression_t *right_operand);
