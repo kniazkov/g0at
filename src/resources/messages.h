@@ -49,6 +49,7 @@ typedef struct {
     const wchar_t const *invalid_var_declaration_syntax;
     const wchar_t const *invalid_const_declaration_syntax;
     const wchar_t const *invalid_function_argument;
+    const wchar_t const *invalid_parenthesized_expression;
     // add other
 } messages_t;
 

@@ -151,12 +151,12 @@ static node_vtbl_t expression_parenthesized_vtbl = {
     .generate_bytecode = generate_bytecode,
 };
 
-expression_t *create_parenthesized_expression_node(arena_t *arena) {
+node_t *create_parenthesized_expression_node(arena_t *arena) {
     parenthesized_expression_t *expr =
         (parenthesized_expression_t *)alloc_from_arena(arena, sizeof(parenthesized_expression_t));
     expr->base.base.vtbl = &expression_parenthesized_vtbl;
     expr->inner = NULL;
-    return &expr->base;
+    return &expr->base.base;
 }
 
 void fill_parenthesized_expression(node_t *node, expression_t *inner) {

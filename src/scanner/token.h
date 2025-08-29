@@ -40,24 +40,26 @@ typedef struct node_t node_t;
  * during lexical analysis.
  */
 typedef enum {
-    TOKEN_IDENTIFIER,       /**< An identifier (variable, function name, etc.) */
-    TOKEN_BRACKET,          /**< A bracket (e.g., '(', ')', '{', '}', '[', ']', etc.) */
-    TOKEN_OPERATOR,         /**< An operator (e.g., '+', '-', '*', '/', '=', '==', etc.) */
-    TOKEN_COMMA,            /**< Comma ',' used in parameter lists, array literals, etc. */
-    TOKEN_SEMICOLON,        /**< Semicolon ';' used as statement terminator */
-    TOKEN_ERROR,            /**< An invalid token (error case) */
+    TOKEN_IDENTIFIER,             /**< An identifier (variable, function name, etc.) */
+    TOKEN_BRACKET,                /**< A bracket (e.g., '(', ')', '{', '}', '[', ']', etc.) */
+    TOKEN_OPERATOR,               /**< An operator (e.g., '+', '-', '*', '/', '=', '==', etc.) */
+    TOKEN_COMMA,                  /**< Comma ',' used in parameter lists, array literals, etc. */
+    TOKEN_SEMICOLON,              /**< Semicolon ';' used as statement terminator */
+    TOKEN_ERROR,                  /**< An invalid token (error case) */
 
-    TOKEN_VAR,              /**< The 'var' keyword for variable declarations */
-    TOKEN_CONST,            /**< The 'const' keyword for constant declarations */
-    TOKEN_FUNC,             /**< The 'func' keyword for function declarations */
-    TOKEN_RETURN,           /**< The 'return' keyword used in return statements */
+    TOKEN_VAR,                    /**< The 'var' keyword for variable declarations */
+    TOKEN_CONST,                  /**< The 'const' keyword for constant declarations */
+    TOKEN_FUNC,                   /**< The 'func' keyword for function declarations */
+    TOKEN_RETURN,                 /**< The 'return' keyword used in return statements */
 
-    TOKEN_BRACKET_PAIR,     /**< A pair of brackets and all tokens between them */
-    TOKEN_EXPRESSION,       /**< An expression token, which contains an attached syntax tree node */
-    TOKEN_STATEMENT,        /**< A statement (e.g., assignment, control structures, etc.) */
-    TOKEN_FCALL_ARGS,       /**< Unprocessed function call arguments */
-    TOKEN_SCOPE_BODY,       /**< Unprocessed scope body */
-    TOKEN_FUNCTION_BODY,    /**< Unprocessed function body */
+    TOKEN_BRACKET_PAIR,           /**< A pair of brackets and all tokens between them */
+    TOKEN_EXPRESSION,             /**< An expression token, which contains an attached
+                                       syntax tree node */
+    TOKEN_STATEMENT,              /**< A statement (e.g., assignment, control structures, etc.) */
+    TOKEN_FCALL_ARGS,             /**< Unprocessed function call arguments */
+    TOKEN_SCOPE_BODY,             /**< Unprocessed scope body */
+    TOKEN_EXPRESSION_IN_BRACKETS, /**< Unprocessed expression in brackets */
+    TOKEN_FUNCTION_BODY,          /**< Unprocessed function body */
     // Other token types can be added here in the future
 } token_type_t;
 
@@ -258,6 +260,17 @@ typedef struct {
      * @brief Tokens containing scope objects whose bodies have not yet been processed.
      */
     token_list_t scope_objects;
+
+    /**
+     * @brief Tokens containing expressions in parentheses that have not yet been processed at all.
+     */
+    token_list_t unprocessed_parenthesized_expressions;
+
+    /**
+     * @brief Tokens containing expressions in parentheses that have passed the first part
+     * of processing.
+     */
+    token_list_t preprocessed_parenthesized_expressions;
 
     /**
      * @brief Tokens containing function objects whose bodies have not yet been processed.

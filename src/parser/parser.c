@@ -101,6 +101,20 @@ compilation_error_t *parsing_function_bodies(token_t *token, parser_memory_t *me
  */
 compilation_error_t *parsing_returns(token_t *token, parser_memory_t *memory,
     token_groups_t *groups);
+
+/**
+ * @brief Rule for processing an expression in parentheses - identifies it as such and changes it
+ * in the token chain. 
+ */
+compilation_error_t *preparsing_parenthesized_expressions(token_t *token, parser_memory_t *memory,
+    token_groups_t *groups);
+
+/**
+ * @brief Rule for final processing of expressions in parentheses.
+ */
+compilation_error_t *parsing_parenthesized_expressions(token_t *token, parser_memory_t *memory,
+    token_groups_t *groups);
+
 /**
  * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into
  *  a special token.
@@ -155,7 +169,9 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
                 text[2] = L'\0';
                 pair->text = (string_view_t){ text, 2 };
                 append_token_to_neighbors(list, pair);
-                if (bracket == '{') {
+                if (bracket == '(') {
+                    append_token_to_group(&groups->unprocessed_parenthesized_expressions, pair);
+                } else if (bracket == '{') {
                     append_token_to_group(&groups->scope_blocks, pair);
                 }
             } else {
@@ -392,6 +408,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_FORWARD(scope_blocks, parsing_scopes_and_functions);
     result->functions = collect_nodes_from_group(&groups->function_objects, memory->graph);
     APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
+    APPLY_FORWARD(unprocessed_parenthesized_expressions, preparsing_parenthesized_expressions);
     APPLY_FORWARD(identifiers, parsing_single_identifiers);
     APPLY_BACKWARD(power_operators, parsing_power_operators);
     APPLY_FORWARD(multiplicative_operators, parsing_multiplicative_operators);
@@ -403,6 +420,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_FORWARD(return_keywords, parsing_returns);
     APPLY_FORWARD(scope_objects, parsing_scope_bodies);
     APPLY_FORWARD(function_objects, parsing_function_bodies);
+    APPLY_FORWARD(preprocessed_parenthesized_expressions, parsing_parenthesized_expressions);
     // add other rules...
     return error;
 }

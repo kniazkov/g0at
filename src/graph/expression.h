@@ -190,7 +190,7 @@ void fill_function_body(node_t *node, arena_t *arena, statement_t **stmt_list, s
  * @param arena The memory arena to allocate from.
  * @return A pointer to the created expression node.
  */
-expression_t *create_parenthesized_expression_node(arena_t *arena);
+node_t *create_parenthesized_expression_node(arena_t *arena);
 
 /**
  * @brief Fills the inner expression of a parenthesized expression node.

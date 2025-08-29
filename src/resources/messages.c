@@ -51,6 +51,7 @@ static messages_t english = {
     .invalid_var_declaration_syntax = L"Expected either variable name or name with value assignment, but got '%s'",
     .invalid_const_declaration_syntax = L"Expected name with value assignment, but got '%s'",
     .invalid_function_argument = L"Function argument must be an identifier, but got '%s'",
+    .invalid_parenthesized_expression = L"Inside parentheses there must be exactly one expression",
 };
 
 /**
@@ -89,6 +90,7 @@ static messages_t russian = {
     .invalid_var_declaration_syntax = L"Ожидается либо имя переменной, либо имя с присваиванием значения, но получено '%s'",
     .invalid_const_declaration_syntax = L"Ожидается имя с присваиванием значения, но получено '%s'",
     .invalid_function_argument = L"Аргумент функции должен быть идентификатором, но получено '%s'",
+    .invalid_parenthesized_expression = L"Внутри круглых скобок должно быть выражение, причем ровно одно",
 };
 
 /**
