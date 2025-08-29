@@ -125,6 +125,16 @@ typedef enum {
     NODE_VARIABLE,
 
     /**
+     * @brief Parenthesized expression node type.
+     * 
+     * This node type represents an expression wrapped in parentheses in the source code.
+     * It stores a single inner expression. Parentheses do not change the semantics of the
+     * expression itself, but they enforce explicit grouping and can affect evaluation order
+     * during parsing and code generation.
+     */
+    NODE_EXPRESSION_PARENTHESIZED,
+
+    /**
      * @brief Function object expression node type.
      * 
      * Represents a function object consisting of a parameter list and a body.

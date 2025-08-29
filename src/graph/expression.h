@@ -183,3 +183,21 @@ node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, siz
  * @param stmt_count The number of statements in the function body.
  */
 void fill_function_body(node_t *node, arena_t *arena, statement_t **stmt_list, size_t stmt_count);
+
+/**
+ * @brief Creates a new parenthesized expression node with no inner expression.
+ *
+ * @param arena The memory arena to allocate from.
+ * @return A pointer to the created expression node.
+ */
+expression_t *create_parenthesized_expression_node(arena_t *arena);
+
+/**
+ * @brief Fills the inner expression of a parenthesized expression node.
+ *
+ * This function assigns the wrapped expression after node creation.
+ *
+ * @param node A pointer to the node representing a parenthesized expression.
+ * @param inner A pointer to the inner expression to wrap.
+ */
+void fill_parenthesized_expression(node_t *node, expression_t *inner);
