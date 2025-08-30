@@ -92,6 +92,24 @@ typedef enum {
     NODE_NULL,
 
     /**
+     * @brief Boolean literal `true` node type.
+     * 
+     * This node type represents the boolean constant `true` in the source code.
+     * The node contains no additional data as the value is a singleton that can be
+     * referenced directly.
+     */
+    NODE_TRUE,
+
+    /**
+     * @brief Boolean literal `false` node type.
+     * 
+     * This node type represents the boolean constant `false` in the source code.
+     * The node contains no additional data as the value is a singleton that can be
+     * referenced directly.
+     */
+    NODE_FALSE,
+
+    /**
      * @brief Static string node type.
      * 
      * This node type represents a static string literal in the source code.

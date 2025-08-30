@@ -222,6 +222,20 @@ static const keyword_lookup_t keywords[] = {
         SIZE_MAX
     },
     {
+        L"true",
+        4,
+        TOKEN_EXPRESSION,
+        get_true_node_instance,
+        SIZE_MAX
+    },
+    {
+        L"false",
+        5,
+        TOKEN_EXPRESSION,
+        get_false_node_instance,
+        SIZE_MAX
+    },
+    {
         L"func",
         4,
         TOKEN_FUNC,

@@ -77,6 +77,22 @@ typedef enum {
     NIL, /**< Pushes a null object onto the data stack. */
 
     /**
+     * @brief Pushes the boolean constant `true` onto the data stack.
+     *
+     * The `TRUE` opcode pushes a boolean value representing logical true.
+     * This is used when an expression evaluates to the constant true.
+     */
+    TRUE, /**< Pushes the boolean value true onto the data stack. */
+
+    /**
+     * @brief Pushes the boolean constant `false` onto the data stack.
+     *
+     * The `FALSE` opcode pushes a boolean value representing logical false.
+     * This is used when an expression evaluates to the constant false.
+     */
+    FALSE, /**< Pushes the boolean value false onto the data stack. */
+
+    /**
      * @brief Pushes a 32-bit integer onto the data stack.
      *
      * The `ILOAD32` opcode pushes a 32-bit integer onto the data stack. This is used for loading

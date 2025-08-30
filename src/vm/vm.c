@@ -191,6 +191,43 @@ static bool exec_NIL(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 }
 
 /**
+ * @brief Executes the TRUE instruction.
+ * 
+ * The `TRUE` opcode pushes the boolean constant `true` onto the data stack.
+ * This is used to represent the logical truth value in expressions and control flow.
+ * The boolean object is a shared singleton, so no additional allocations are required.
+ * 
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute (unused in this operation).
+ * @param thread Pointer to the thread that is executing the instruction.
+ * @return Always returns `true` to continue executing the next instruction.
+ */
+static bool exec_TRUE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    push_object_onto_stack(thread->data_stack, get_boolean_object(true));
+    thread->instr_id++;
+    return true;
+}
+
+/**
+ * @brief Executes the FALSE instruction.
+ * 
+ * The `FALSE` opcode pushes the boolean constant `false` onto the data stack.
+ * This is used to represent the logical false value in expressions and control flow.
+ * The boolean object is a shared singleton, so no additional allocations are required.
+ * 
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute (unused in this operation).
+ * @param thread Pointer to the thread that is executing the instruction.
+ * @return Always returns `true` to continue executing the next instruction.
+ */
+static bool exec_FALSE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    push_object_onto_stack(thread->data_stack, get_boolean_object(false));
+    thread->instr_id++;
+    return true;
+}
+
+
+/**
  * @brief Executes the ILOAD32 instruction.
  * 
  * The `ILOAD32` opcode pushes a 32-bit integer onto the data stack. This operation loads a
@@ -953,6 +990,8 @@ static instr_executor_t executors[] = {
     exec_END,     /**< Ends the program immediately. */
     exec_POP,     /**< Pops an object off the data stack. */
     exec_NIL,     /**< Pushes a null object onto the data stack. */
+    exec_TRUE,    /**< Pushes the boolean value true onto the data stack. */
+    exec_FALSE,   /**< Pushes the boolean value false onto the data stack. */
     exec_ILOAD32, /**< Pushes a 32-bit integer onto the data stack. */
     exec_ILOAD64, /**< Pushes a 64-bit integer onto the data stack. */
     exec_RLOAD,   /**< Pushes a 64-bit float onto the data stack. */

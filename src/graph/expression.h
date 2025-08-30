@@ -201,3 +201,15 @@ node_t *create_parenthesized_expression_node(arena_t *arena);
  * @param inner A pointer to the inner expression to wrap.
  */
 void fill_parenthesized_expression(node_t *node, expression_t *inner);
+
+/**
+ * @brief Retrieves the singleton node instance for the boolean `true` literal.
+ * @return Pointer to the shared node representing `true`.
+ */
+node_t *get_true_node_instance();
+
+/**
+ * @brief Retrieves the singleton node instance for the boolean `false` literal.
+ * @return Pointer to the shared node representing `false`.
+ */
+node_t *get_false_node_instance();
