@@ -167,3 +167,14 @@ expression_t *create_modulo_node(arena_t *arena, expression_t *left_operand,
  */
 expression_t *create_power_node(arena_t *arena, expression_t *left_operand,
         expression_t *right_operand);
+
+/**
+ * @brief Creates a new less-than (`<`) expression node.
+ * 
+ * @param arena The memory arena to allocate from.
+ * @param left_operand The left-hand operand of the comparison.
+ * @param right_operand The right-hand operand of the comparison.
+ * @return A pointer to the created expression node.
+ */
+expression_t *create_less_node(arena_t *arena, expression_t *left_operand,
+        expression_t *right_operand);
