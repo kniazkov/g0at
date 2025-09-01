@@ -9,6 +9,7 @@
  */
 
 #include <assert.h>
+#include <wchar.h>
 
 #include "parser.h"
 #include "graph/binary_operation.h"
@@ -63,6 +64,58 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
         );
     }
 
+    return NULL;
+}
+
+/**
+ * @brief Rule for handling comparison operators.
+ *
+ * This reduction processes a token sequence with a comparison operator and two
+ * expression operands. It validates that both sides are expressions and
+ * reduces the sequence into a single expression node representing the
+ * corresponding comparison.
+ *
+ * Supported operators (currently):
+ * - `<`  — creates a less-than comparison node (`NODE_LESS`, opcode `LESS`).
+ *
+ * Behavior:
+ * - Verifies operands are valid expressions via @ref check_operands
+ * - Builds a comparison AST node (e.g., @ref create_less_node for `<`)
+ * - Collapses the three-token span (left, operator, right) into a single
+ *   `TOKEN_EXPRESSION` using @ref collapse_tokens_to_token
+ *
+ * @param operator The token representing the comparison operator (must be `TOKEN_OPERATOR`).
+ * @param memory Parser memory context used for allocations and error reporting.
+ * @param groups Token classification groups (unused in this rule).
+ * @return `NULL` on success; a pointer to @ref compilation_error_t on invalid operands
+ *         or unsupported operator.
+ *
+ * @note Additional operators such as `<=`, `>`, `>=`, `==`, `!=` can be added in
+ *       the future by extending the operator dispatch inside this function.
+ *
+ * @pre `operator->type == TOKEN_OPERATOR`
+ *
+ * @see check_operands
+ * @see create_less_node
+ * @see collapse_tokens_to_token
+ */
+compilation_error_t *parsing_comparison_operators(token_t *operator, parser_memory_t *memory,
+        token_groups_t *groups) {
+    assert(operator->type == TOKEN_OPERATOR);
+
+    compilation_error_t *error = check_operands(operator, memory);
+    if (error) {
+        return error;
+    }
+
+    expression_t *left_operand = (expression_t *)operator->left->node;
+    expression_t *right_operand = (expression_t *)operator->right->node;
+    expression_t *operation;
+    if (0 == wcscmp(operator->text.data , L"<")) {
+        operation = create_less_node(memory->graph, left_operand, right_operand);
+    }
+    collapse_tokens_to_token(memory->tokens, operator->left, operator->right, TOKEN_EXPRESSION,
+        &operation->base);
     return NULL;
 }
 

@@ -237,6 +237,11 @@ typedef struct {
     token_list_t assignment_operators;
 
     /**
+     * @brief Group for comparison operators.
+     */
+    token_list_t comparison_operators;
+
+    /**
      * @brief Unprocessed function call arguments.
      */
     token_list_t function_arguments;

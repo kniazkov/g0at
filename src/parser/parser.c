@@ -22,6 +22,13 @@
 #include "graph/node.h"
 
 /**
+ * @brief Rule for handling comparison operators, followed by expressions
+ *  on both sides.
+ */
+compilation_error_t *parsing_comparison_operators(token_t *operator, parser_memory_t *memory,
+    token_groups_t *groups);
+
+/**
  * @brief Rule for handling an additive operator (`+` or `-`), followed by expressions
  *  on both sides.
  */
@@ -413,6 +420,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_BACKWARD(power_operators, parsing_power_operators);
     APPLY_FORWARD(multiplicative_operators, parsing_multiplicative_operators);
     APPLY_FORWARD(additive_operators, parsing_additive_operators);
+    APPLY_FORWARD(comparison_operators, parsing_comparison_operators);
     APPLY_BACKWARD(assignment_operators, parsing_assignment_operators);
     APPLY_FORWARD(function_arguments, parsing_function_call_args);
     APPLY_FORWARD(var_keywords, parsing_variable_declarations);
