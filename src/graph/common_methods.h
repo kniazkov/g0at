@@ -20,6 +20,30 @@
 string_value_t no_data(const node_t *node);
 
 /**
+ * @brief Universal "no properties" indicator for nodes without properties
+ *        (`get_property_count` implementation).
+ *
+ * @param node Unused parameter (maintains interface consistency).
+ * @return Always returns 0 (indicating no properties).
+ */
+size_t no_properties(const node_t *node);
+
+/**
+ * @brief Universal "no property" getter stub (`get_property` implementation).
+ *
+ * This function is used for nodes that do not expose any properties.
+ * Instead of leaving the outputs untouched, it explicitly assigns empty
+ * values to both @p out_key and @p out_value to ensure predictable behavior.
+ *
+ * @param node Unused parameter (interface compatibility).
+ * @param index Unused parameter (interface compatibility).
+ * @param out_key Output pointer that will be set to an empty @ref string_view_t.
+ * @param out_value Output pointer that will be set to an empty @ref string_value_t.
+ */
+void no_property(const node_t *node, size_t index,
+                 string_view_t *out_key, string_value_t *out_value);
+
+/**
  * @brief Universal "no children" indicator for leaf nodes (`get_child_count ` implementation).
  * @param node Unused parameter (maintains interface consistency).
  * @return Always returns 0 (indicating no child nodes).

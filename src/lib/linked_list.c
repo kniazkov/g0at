@@ -5,21 +5,22 @@
  *
  * This file provides the function definitions for creating and modifying
  * a doubly linked list where memory is managed by a memory arena. Nodes store
- * generic `void*` data and support adding elements to the front or back.
+ * `value_t` items and support adding elements to the front or back.
  */
 
+#include "arena.h"
 #include "linked_list.h"
 
 list_t *create_linked_list(arena_t *arena) {
     return (list_t *)alloc_zeroed_from_arena(arena, sizeof(list_t));
 }
 
-void list_push_front(list_t *list, arena_t *arena, void *data) {
+void list_push_front(list_t *list, arena_t *arena, value_t value) {
     list_item_t *node = (list_item_t *)alloc_zeroed_from_arena(
         arena,
         sizeof(list_item_t)
     );
-    node->data = data;
+    node->value = value;
     node->next = list->head;
     if (list->head)
         list->head->prev = node;
@@ -29,12 +30,12 @@ void list_push_front(list_t *list, arena_t *arena, void *data) {
     list->size++;
 }
 
-void list_push_back(list_t *list, arena_t *arena, void *data) {
+void list_push_back(list_t *list, arena_t *arena, value_t value) {
     list_item_t *node = (list_item_t *)alloc_zeroed_from_arena(
         arena,
         sizeof(list_item_t)
     );
-    node->data = data;
+    node->value = value;
     node->prev = list->tail;
     if (list->tail)
         list->tail->next = node;

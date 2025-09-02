@@ -98,12 +98,37 @@ typedef struct {
      * For example:
      * - For an identifier node: the identifier name
      * - For a literal node: the literal value
-     * - For operators: the operator symbol
      * 
      * @param node A pointer to the node.
      * @return A `string_value_t` containing the node's data or empty value if none.
      */
     string_value_t (*get_data)(const node_t *node);
+
+    /**
+     * @brief Gets the number of properties exposed by this node.
+     *
+     * Returns how many properties this node provides for debugging or visualization
+     * purposes. A property is a named attribute represented as a key–value pair
+     * (e.g., "name" → "foo", "type" → "int").
+     * If zero, the node exposes no additional properties.
+     *
+     * @param node A pointer to the node.
+     * @return Number of properties available for this node.
+     */
+    size_t (*get_property_count)(const node_t *node);
+
+    /**
+     * @brief Retrieves a property of this node by index.
+     *
+     * Provides the indexed property (key–value pair) from the node.
+     *
+     * @param node A pointer to the node.
+     * @param index Zero-based index in range [0, get_property_count(node)).
+     * @param out_key Output pointer to receive the property key (name).
+     * @param out_value Output pointer to receive the property value.
+     */
+    void (*get_property)(const node_t *node, size_t index,
+                         string_view_t *out_key, string_value_t *out_value);
 
     /**
      * @brief Gets the number of child nodes.

@@ -10,6 +10,7 @@
 #pragma once
 
 #include "node.h"
+#include "data_type.h"
 
 /**
  * @brief Forward declaration of declarator structure (needed for variable & constant declaration).
@@ -25,6 +26,15 @@ struct expression_t {
      * @brief Base node structure, providing common attributes for all nodes.
      */
     node_t base;
+
+    /**
+     * @brief The semantic data type of this expression (optional).
+     *
+     * Points to the @ref data_type_t describing the type of the expression.
+     * May be NULL for untyped/invalid expressions during early parsing or
+     * when the type is inferred/unknown at the current stage.
+     */
+    data_type_t *data_type;
 };
 
 /**

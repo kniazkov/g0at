@@ -4,18 +4,24 @@
  * @brief Doubly linked list implementation using arena allocation.
  *
  * This file defines the interface for a minimal doubly linked list where nodes
- * are allocated from a memory arena. The list stores generic `void*` pointers.
+ * are allocated from a memory arena. The list stores `value_t` items.
  * Memory is never freed individually — the entire list is released when the arena is destroyed.
  */
 
 #pragma once
 
-#include "arena.h"
+#include "value.h"
 
 /**
  * @brief Forward declaration for linked list node.
  */
 typedef struct list_item_t list_item_t;
+
+/**
+ * @struct arena_t
+ * @brief Forward declaration for memory arena structure.
+ */
+typedef struct arena_t arena_t;
 
 /**
  * @struct list_item_t
@@ -24,7 +30,7 @@ typedef struct list_item_t list_item_t;
 struct list_item_t {
     list_item_t *prev; /**< Pointer to the previous node. */
     list_item_t *next; /**< Pointer to the next node. */
-    void *data;        /**< Pointer to the stored data. */
+    value_t value;     /**< Stored data. */
 };
 
 /**
@@ -50,15 +56,15 @@ list_t *create_linked_list(arena_t *arena);
  * 
  * @param list The list to modify.
  * @param arena Memory arena used for allocation.
- * @param data Pointer to the data to store.
+ * @param value Data to store.
  */
-void list_push_front(list_t *list, arena_t *arena, void *data);
+void list_push_front(list_t *list, arena_t *arena, value_t value);
 
 /**
  * @brief Adds a new element to the end of the list.
  * 
  * @param list The list to modify.
  * @param arena Memory arena used for allocation.
- * @param data Pointer to the data to store.
+ * @param value Data to store.
  */
-void list_push_back(list_t *list, arena_t *arena, void *data);
+void list_push_back(list_t *list, arena_t *arena, value_t value);
