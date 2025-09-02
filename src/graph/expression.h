@@ -34,7 +34,7 @@ struct expression_t {
      * May be NULL for untyped/invalid expressions during early parsing or
      * when the type is inferred/unknown at the current stage.
      */
-    data_type_t *data_type;
+    const data_type_t *data_type;
 };
 
 /**

@@ -49,3 +49,20 @@ typedef struct {
 
     /* More fields may be added later (size, alignment, qualifiers, etc.). */
 } data_type_t;
+
+/**
+ * @def BUILT_IN_DATA_TYPE
+ * @brief Helper macro for defining built-in data types.
+ *
+ * This macro creates a @ref data_type_t initializer for a built-in type
+ * that directly maps to a C language type name.
+ *
+ * @param c_type_name A wide string literal (e.g., L"int", L"double").
+ */
+#define BUILT_IN_DATA_TYPE(c_type_name) \
+    {\
+        .c_equivalent = { \
+            .data = (c_type_name), \
+            .length = sizeof(c_type_name) / sizeof(wchar_t) - 1 \
+        }\
+    }
