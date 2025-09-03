@@ -148,24 +148,24 @@ void set_function_call_arguments(node_t *node, arena_t *arena,
         expression_t **args, size_t args_count);
 
 /**
- * @brief Creates an empty scope node.
- *  * 
- * The created node should be populated using `fill_scope_node()` before use.
- * 
+ * @brief Creates an empty statement_list node.
  * @param arena Memory arena to allocate from.
- * @return Pointer to newly created empty scope node.
+ * @return Pointer to the newly created node.
  */
-node_t *create_scope_node(arena_t *arena);
+node_t *create_statement_list_node(arena_t *arena);
 
 /**
- * @brief Populates a scope node with statements.
- *  * 
- * @param node Scope node to populate. Must be NODE_SCOPE type.
- * @param arena Memory arena for allocations. Must match node's arena.
- * @param stmt_list Array of statements to copy.
+ * @brief Initializes a statement_list node with a provided array of statements.
+ *
+ * Copies the array of statement pointers into arena-managed memory and sets the count.
+ *
+ * @param node Target node (must be of type `NODE_STATEMENT_LIST`).
+ * @param arena Memory arena used for internal allocations.
+ * @param stmt_list Source array of statement pointers.
  * @param stmt_count Number of statements.
  */
-void fill_scope_node(node_t *node, arena_t *arena, statement_t **stmt_list, size_t stmt_count);
+void fill_statement_list_node(node_t *node, arena_t *arena, statement_t **stmt_list,
+    size_t stmt_count);
 
 /**
  * @brief Creates a function object node in the AST.

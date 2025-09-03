@@ -57,7 +57,7 @@ typedef enum {
                                        syntax tree node */
     TOKEN_STATEMENT,              /**< A statement (e.g., assignment, control structures, etc.) */
     TOKEN_FCALL_ARGS,             /**< Unprocessed function call arguments */
-    TOKEN_SCOPE_BODY,             /**< Unprocessed scope body */
+    TOKEN_STATEMENT_LIST,         /**< Unprocessed statement list */
     TOKEN_EXPRESSION_IN_BRACKETS, /**< Unprocessed expression in brackets */
     TOKEN_FUNCTION_BODY,          /**< Unprocessed function body */
     // Other token types can be added here in the future
@@ -262,9 +262,9 @@ typedef struct {
     token_list_t scope_blocks;
 
     /**
-     * @brief Tokens containing scope objects whose bodies have not yet been processed.
+     * @brief Tokens containing statement lists whose bodies have not yet been processed.
      */
-    token_list_t scope_objects;
+    token_list_t statement_lists;
 
     /**
      * @brief Tokens containing expressions in parentheses that have not yet been processed at all.

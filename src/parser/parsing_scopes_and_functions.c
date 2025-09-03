@@ -17,18 +17,18 @@
 #include "resources/messages.h"
 
 /**
- * @brief Initializes a scope expression node from a `{...}` block.
+ * @brief Initializes a statement list expression node from a `{...}` block.
  * 
- * This function creates a new scope node and replaces the original bracket-pair token
- * with an expression token referencing the scope. It also registers the scope in
+ * This function creates a new statement list node and replaces the original bracket-pair token
+ * with an expression token referencing the statement list. It also registers the statement list in
  * the appropriate token group for later processing.
  * 
  * @param token The `{` bracket-pair token.
  * @param memory Parser memory context for allocations.
  * @param groups Token classification groups.
  */
-static void init_scope(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
-    node_t *node = create_scope_node(memory->graph); 
+static void init_statement_list(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
+    node_t *node = create_statement_list_node(memory->graph); 
     token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     expr->type = TOKEN_EXPRESSION;
     expr->begin = token->begin;
@@ -36,10 +36,10 @@ static void init_scope(token_t *token, parser_memory_t *memory, token_groups_t *
     expr->text = token->text;
     expr->node = node;
     replace_token(token, expr);
-    token->type = TOKEN_SCOPE_BODY;
+    token->type = TOKEN_STATEMENT_LIST;
     token->node = node;
     remove_token_from_group(token);
-    append_token_to_group(&groups->scope_objects, token);
+    append_token_to_group(&groups->statement_lists, token);
 }
 
 /**
@@ -145,32 +145,33 @@ compilation_error_t *parsing_scopes_and_functions(token_t *token, parser_memory_
             return init_function_with_args(token, memory, groups);
         }
     }
-    init_scope(token, memory, groups);
+    init_statement_list(token, memory, groups);
     return NULL;
 }
 
 /**
- * @brief Processes statements within a scope block.
+ * @brief Processes statements within a statement list.
  * 
  * Completes scope processing by:
  * 1. Parsing all child tokens as statements
  * 2. Filling the scope node with processed statements
  * 3. Maintaining proper AST relationships
  *
- * @param token The scope expression token (must be TOKEN_EXPRESSION containing NODE_SCOPE).
+ * @param token The scope expression token (must be TOKEN_EXPRESSION containing
+ *  NODE_STATEMENT_LIST).
  * @param memory Parser memory context for allocations.
  * @param groups Token classification groups for statement processing.
  * @return NULL on success, compilation error if statement processing fails.
- * @pre Scope node must be created by parsing_scopes_and_functions()
  */
-compilation_error_t *parsing_scope_bodies(token_t *token, parser_memory_t *memory,
+compilation_error_t *parsing_statement_list_bodies(token_t *token, parser_memory_t *memory,
         token_groups_t *groups) {
-    assert(token->type == TOKEN_SCOPE_BODY && token->node && token->node->vtbl->type == NODE_SCOPE);
+    assert(token->type == TOKEN_STATEMENT_LIST && token->node &&
+        token->node->vtbl->type == NODE_STATEMENT_LIST);
     statement_list_processing_result_t result = process_statement_list(memory, &token->children);
     if (result.error) {
         return result.error;
     }
-    fill_scope_node(token->node, memory->graph, result.list, result.count);
+    fill_statement_list_node(token->node, memory->graph, result.list, result.count);
     return NULL;
 }
 

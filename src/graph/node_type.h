@@ -32,11 +32,11 @@ typedef enum {
     NODE_ROOT = 0,
 
     /**
-     * @brief Scope node type.
+     * @brief Statement list node type.
      * 
-     * This node represents a set of instructions executing in some scope.
+     * This node represents a list of statements. This list has its own scope.
      */
-    NODE_SCOPE,
+    NODE_STATEMENT_LIST,
 
     /**
      * @brief Null literal node type.

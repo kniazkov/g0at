@@ -92,9 +92,9 @@ compilation_error_t *parsing_scopes_and_functions(token_t *token, parser_memory_
     token_groups_t *groups);
 
 /**
- * @brief Rule for handling statements within a scope block.
+ * @brief Rule for handling statements within a statement list.
  */
-compilation_error_t *parsing_scope_bodies(token_t *token, parser_memory_t *memory,
+compilation_error_t *parsing_statement_list_bodies(token_t *token, parser_memory_t *memory,
     token_groups_t *groups);
 
 /**
@@ -426,7 +426,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_FORWARD(var_keywords, parsing_variable_declarations);
     APPLY_FORWARD(const_keywords, parsing_constant_declarations);
     APPLY_FORWARD(return_keywords, parsing_returns);
-    APPLY_FORWARD(scope_objects, parsing_scope_bodies);
+    APPLY_FORWARD(statement_lists, parsing_statement_list_bodies);
     APPLY_FORWARD(function_objects, parsing_function_bodies);
     APPLY_FORWARD(preprocessed_parenthesized_expressions, parsing_parenthesized_expressions);
     // add other rules...
