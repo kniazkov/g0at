@@ -10,9 +10,11 @@ include_directories(.)
 file(GLOB core_sources
   lib/*.c
   resources/*.c
+  common/*.c
   scanner/*.c
   parser/*.c
   graph/*.c
+  analysis/*.c
   codegen/*.c
   model/*.c
   vm/*.c

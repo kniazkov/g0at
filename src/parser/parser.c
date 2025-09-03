@@ -14,7 +14,6 @@
 #include <memory.h>
 
 #include "parser.h"
-#include "compilation_error.h"
 #include "lib/arena.h"
 #include "scanner/scanner.h"
 #include "scanner/token.h"

@@ -14,7 +14,7 @@
 #include "lib/linked_list.h"
 #include "scanner/scanner.h"
 #include "graph/statement.h"
-#include "compilation_error.h"
+#include "common/compilation_error.h"
 
 /**
  * @struct parsing_result_t

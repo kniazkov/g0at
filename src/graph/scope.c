@@ -15,7 +15,9 @@
 #include "lib/arena.h"
 
 scope_t *create_scope(arena_t *arena, scope_t *parent) {
+    static unsigned int last_id = 0;
     scope_t *scope = (scope_t*)alloc_zeroed_from_arena(arena, sizeof(scope_t));
+    scope->id = ++last_id;
     scope->parent = parent;
     return scope;
 }

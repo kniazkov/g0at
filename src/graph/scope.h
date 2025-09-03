@@ -88,6 +88,14 @@ struct binding_t {
  */
 struct scope_t {
     /**
+     * @brief Globally unique identifier of this scope.
+     *
+     * Assigned by `create_scope()` from a static counter.
+     * The first created scope gets id = 1, then increases monotonically.
+     */
+    unsigned int id;
+
+    /**
      * @brief Pointer to the parent scope.
      *
      * If `NULL`, this scope is the global (root) scope.

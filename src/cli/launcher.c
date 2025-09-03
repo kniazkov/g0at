@@ -17,6 +17,7 @@
 #include "resources/messages.h"
 #include "scanner/scanner.h"
 #include "parser/parser.h"
+#include "analysis/analysis.h"
 #include "codegen/linker.h"
 #include "codegen/source_builder.h"
 #include "graph/node.h"
@@ -87,7 +88,15 @@ int go(options_t *opt) {
         tokens_memory = NULL;
 
         /*
-            7. print source code (if needed)
+            7. perform a static analysis
+        */
+        error = analyze(root_node, graph_memory);
+        if (error != NULL) {
+            break;
+        }
+
+        /*
+            8. print source code (if needed)
         */
         if (opt->print_source_code) {
             source_builder_t *source_builder = create_source_builder();
@@ -101,7 +110,7 @@ int go(options_t *opt) {
         }
 
         /*
-            8. visualization (if needed)
+            9. visualization (if needed)
         */
         if (opt->graph_output_file != NULL) {
             if (is_graphviz_available()) {
@@ -117,7 +126,7 @@ int go(options_t *opt) {
         }
 
         /*
-            9. compile the syntax tree into bytecode
+            10. compile the syntax tree into bytecode
         */
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
@@ -133,7 +142,7 @@ int go(options_t *opt) {
         destroy_data_builder(data_builder);
 
         /*
-            10. print bytecode (if needed)
+            11. print bytecode (if needed)
         */
         if (opt->print_bytecode) {
             string_value_t text = bytecode_to_text(bytecode);
@@ -142,7 +151,7 @@ int go(options_t *opt) {
         }
         
         /*
-            11. destroy the syntax tree, since the bytecode exists
+            12. destroy the syntax tree, since the bytecode exists
         */
         destroy_arena(graph_memory);
         graph_memory = NULL;
@@ -150,20 +159,20 @@ int go(options_t *opt) {
         code = NULL_STRING_VALUE;
 
         /*
-            12. run the virtual machine
+            13. run the virtual machine
         */
         process_t *process = create_process();
         ret_code = run(process, bytecode);
         destroy_process(process);
 
         /*
-            13. destroy bytecode
+            14. destroy bytecode
         */
         free_bytecode(bytecode);
     } while(false);
 
     /*
-        14. print error messages (if any)
+        15. print error messages (if any)
     */
     if (error != NULL) {
         error = reverse_compilation_errors(error);
@@ -177,7 +186,7 @@ int go(options_t *opt) {
     }
 
     /*
-        15. free the memory used by the compiler if it is not free yet
+        16. free the memory used by the compiler if it is not free yet
     */
     if (graph_memory != NULL) {
         destroy_arena(graph_memory);
@@ -189,7 +198,7 @@ int go(options_t *opt) {
     FREE_STRING(code);
 
     /*
-        16. check for memory leaks
+        17. check for memory leaks
     */
     size_t leaked_memory_size = get_allocated_memory_size() - previously_allocated;
     if (leaked_memory_size > 0) {

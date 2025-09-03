@@ -11,6 +11,7 @@
 #pragma once
 
 #include "node_type.h"
+#include "scope.h"
 #include "lib/value.h"
 #include "common/types.h"
 
@@ -302,6 +303,30 @@ struct node_t {
      *  specific node type.
      */
     node_vtbl_t *vtbl;
+
+    /**
+     * @brief The lexical scope this node belongs to.
+     *
+     * Set by the semantic phase that wires nodes to scopes. May be `NULL`
+     * for nodes that conceptually live outside any scope during early phases,
+     * but should be assigned before codegen/analysis that depends on scope.
+     */
+    scope_t *scope;
+
+    /**
+     * @brief Per-scope execution/topology identifier.
+     *
+     * A unique, positive integer assigned by the first pass of the static
+     * analyzer *within a single lexical scope*. The assignment guarantees that
+     * a node with a larger id is never executed earlier than a node with a
+     * smaller id in that scope.
+     *
+     * Initialization & invariants:
+     * - `0` means "unassigned/invalid" (freshly constructed nodes MUST start at 0).
+     * - The first valid id is `1`.
+     * - Id numbering restarts for each new scope.
+     */
+    unsigned int id;
 };
 
 /**
