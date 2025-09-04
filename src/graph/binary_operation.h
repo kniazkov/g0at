@@ -68,7 +68,7 @@ size_t binop_get_child_count(const node_t *node);
  *              - 1: right operand
  * @return Pointer to child node or NULL if index invalid.
  */
-const node_t* binop_get_child(const node_t *node, size_t index);
+node_t* binop_get_child(const node_t *node, size_t index);
 
 /**
  * @brief Gets relationship tags for binary operation children.

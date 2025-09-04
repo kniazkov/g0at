@@ -12,7 +12,7 @@ size_t binop_get_child_count(const node_t *node) {
     return 2;
 }
 
-const node_t* binop_get_child(const node_t *node, size_t index) {
+node_t* binop_get_child(const node_t *node, size_t index) {
     const binary_operation_t *expr = (const binary_operation_t *)node;
     if (index == 0) {
         return &expr->left_operand->base;

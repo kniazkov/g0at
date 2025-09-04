@@ -86,7 +86,7 @@ static size_t get_child_count(const node_t *node) {
  * @param index Zero-based child position.
  * @return Pointer to child node or NULL.
  */
-static const node_t* get_child(const node_t *node, size_t index) {
+static node_t* get_child(const node_t *node, size_t index) {
     const function_call_t* expr = (const function_call_t*)node;
     if (index < 0) {
         return NULL;

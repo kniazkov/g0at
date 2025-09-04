@@ -64,7 +64,7 @@ static size_t get_child_count(const node_t *node) {
  * @param index Must be 0 to get the wrapped expression.
  * @return Pointer to the wrapped expression node or NULL.
  */
-static const node_t* get_child(const node_t *node, size_t index) {
+static node_t* get_child(const node_t *node, size_t index) {
     const statement_expression_t* expr = (const statement_expression_t*)node;
     if (index == 0) {
         return &expr->wrapped->base;

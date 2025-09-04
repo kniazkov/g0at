@@ -92,7 +92,7 @@ static size_t vdeclr_get_child_count(const node_t *node) {
  * @param index Must be 0 to get the initializer expression.
  * @return Pointer to the initializer expression node or NULL.
  */
-static const node_t* vdeclr_get_child(const node_t *node, size_t index) {
+static node_t* vdeclr_get_child(const node_t *node, size_t index) {
     const variable_declarator_t* decl = (const variable_declarator_t*)node;
     if (index == 0 && decl->initial) {
         return &decl->initial->base;
@@ -287,7 +287,7 @@ static size_t vdecln_get_child_count(const node_t *node) {
  * @param index Zero-based index of the declarator to retrieve.
  * @return Pointer to the requested declarator node, or NULL if index is out of bounds.
  */
-static const node_t* vdecln_get_child(const node_t *node, size_t index) {
+static node_t* vdecln_get_child(const node_t *node, size_t index) {
     const variable_declaration_t* decl = (const variable_declaration_t*)node;
     if (index >= decl->decl_count) {
         return NULL;
@@ -472,7 +472,7 @@ static size_t cdeclr_get_child_count(const node_t *node) {
  * @param index Must be 0 to get the initializer expression.
  * @return Pointer to the initializer expression node or NULL if index != 0.
  */
-static const node_t* cdeclr_get_child(const node_t *node, size_t index) {
+static node_t* cdeclr_get_child(const node_t *node, size_t index) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
     if (index == 0) {
         return &decl->initial->base;
@@ -659,7 +659,7 @@ static size_t cdecln_get_child_count(const node_t *node) {
  * @param index Zero-based index of the declarator to retrieve.
  * @return Pointer to the constant declarator node, or NULL if index is invalid.
  */
-static const node_t* cdecln_get_child(const node_t *node, size_t index) {
+static node_t* cdecln_get_child(const node_t *node, size_t index) {
     const constant_declaration_t* decl = (const constant_declaration_t*)node;
     if (index >= decl->decl_count) {
         return NULL;

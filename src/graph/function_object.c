@@ -115,7 +115,7 @@ static size_t get_child_count(const node_t *node) {
  * @param index Zero-based index of the statement.
  * @return Pointer to the statement node, or NULL if index is out of bounds.
  */
-static const node_t* get_child(const node_t *node, size_t index) {
+static node_t* get_child(const node_t *node, size_t index) {
     const function_object_t* expr = (const function_object_t*)node;
     if (index >= expr->stmt_count) {
         return NULL;

@@ -62,7 +62,7 @@ static size_t get_child_count(const node_t *node) {
  * @param index Must be 0 to retrieve the inner expression.
  * @return Pointer to the inner expression node, or NULL if index != 0.
  */
-static const node_t* get_child(const node_t *node, size_t index) {
+static node_t* get_child(const node_t *node, size_t index) {
     const parenthesized_expression_t *expr = (const parenthesized_expression_t *)node;
     if (index == 0) {
         return &expr->inner->base;

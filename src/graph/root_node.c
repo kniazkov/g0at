@@ -69,7 +69,7 @@ static size_t get_child_count(const node_t *node) {
  * @param index Zero-based statement position.
  * @return Pointer to statement node or NULL.
  */
-static const node_t* get_child(const node_t *node, size_t index) {
+static node_t* get_child(const node_t *node, size_t index) {
     const root_node_t* root = (const root_node_t*)node;
     if (index >= root->stmt_count) {
         return NULL;

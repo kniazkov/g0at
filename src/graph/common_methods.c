@@ -28,7 +28,7 @@ size_t no_children(const node_t *node) {
     return 0;
 }
 
-const node_t* no_child(const node_t *node, size_t index) {
+node_t* no_child(const node_t *node, size_t index) {
     return NULL;
 }
 
