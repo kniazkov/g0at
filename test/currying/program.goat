@@ -1,0 +1,9 @@
+var f = func(a) {
+    return func(b) {
+        return a + b
+    }
+}
+
+const ff = f(2)
+const x = ff(3)
+print(x)
