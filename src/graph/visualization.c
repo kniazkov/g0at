@@ -107,10 +107,26 @@ string_value_t trim_and_escape_html_entities(string_value_t input) {
  *
  * @param node The node to convert (must not be NULL).
  * @param last_node_id Pointer to the last used node ID (will be incremented).
+ * @param current_scope_id Current scope identifier.
+ * @param indent DOT source code indentation.
  * @param builder Source builder for accumulating DOT output.
  * @return int The assigned node ID.
  */
-static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* builder) {
+static int node_to_dot(const node_t* node, int* last_node_id, unsigned int current_scope_id,
+        size_t indent, source_builder_t* builder) {
+    bool new_scope = false;
+    if (node->scope->id != current_scope_id) {
+        new_scope = true;
+        add_formatted_source(
+            builder,
+            indent,
+            format_string(
+                L"subgraph cluster_%d { style=\"rounded,dashed\"; color=gray;",
+                node->scope->id
+            )
+        );
+        indent++;
+    }
     int id = ++(*last_node_id);
     const wchar_t* name = node->vtbl->type_name;
     string_value_t value = node->vtbl->get_data(node);
@@ -118,7 +134,7 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
         string_value_t formatted_value = trim_and_escape_html_entities(value);
         add_formatted_source(
             builder,
-            1,
+            indent,
             format_string(
                 L"node_%d [label = <%s<br/><font color='blue'>%s</font>>];",
                 id,
@@ -130,7 +146,7 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
     } else {
         add_formatted_source(
             builder,
-            1,
+            indent,
             format_string(
                 L"node_%d [label = \"%s\"];",
                 id,
@@ -141,12 +157,18 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
     FREE_STRING(value);
     size_t count = node->vtbl->get_child_count(node);
     for (size_t index = 0; index < count; index++) {
-        int child_id = node_to_dot(node->vtbl->get_child(node, index), last_node_id, builder);
+        int child_id = node_to_dot(
+            node->vtbl->get_child(node, index),
+            last_node_id,
+            node->scope->id,
+            indent,
+            builder
+        );
         const wchar_t* tag = node->vtbl->get_child_tag(node, index);
         if (tag == NULL) {
             add_formatted_source(
                 builder,
-                1,
+                indent,
                 format_string(
                     L"node_%d -> node_%d [label = \" %zu\"];",
                     id,
@@ -157,7 +179,7 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
         } else {
             add_formatted_source(
                 builder,
-                1,
+                indent,
                 format_string(
                     L"node_%d -> node_%d [label = \" %s\"];",
                     id,
@@ -166,6 +188,9 @@ static int node_to_dot(const node_t* node, int* last_node_id, source_builder_t* 
                 )
             );
         }
+    }
+    if (new_scope) {
+        add_static_source(builder, indent - 1, L"}");
     }
     return id;
 }
@@ -184,7 +209,7 @@ bool generate_image(const node_t* root_node, const char *graph_output_file) {
         L"edge [fontname=\"serif\", fontsize=\"11\", penwidth=\"0.7\"];");
     add_static_source(builder, 1, L"graph [fontname=\"serif\", fontsize=\"11\"];");
     int last_node_id = 0;
-    node_to_dot(root_node, &last_node_id, builder);
+    node_to_dot(root_node, &last_node_id, 0, 1, builder);
     add_static_source(builder, 0, L"}");
     string_value_t dot_code = build_source(builder);
     destroy_source_builder(builder);

@@ -48,28 +48,24 @@
  */
 static void assign_node_indexes_and_scopes(node_t *node, arena_t *arena, scope_t *scope,
         unsigned int *next_id) {
+    node->scope = scope;
+    node->id = (*next_id)++;
     const size_t child_count = node->vtbl->get_child_count(node);
     for (size_t child_id = 0; child_id < child_count; child_id++) {
         node_t *child = node->vtbl->get_child(node, child_id);
         switch (child->vtbl->type) {
             case NODE_FUNCTION_OBJECT: {
-                child->scope = scope;
-                child->id = (*next_id)++;
                 scope_t *inner_scope = create_scope(arena, scope);
                 unsigned int inner_counter = 1;
                 assign_node_indexes_and_scopes(child, arena, inner_scope, &inner_counter);
                 break;
             }
             case NODE_STATEMENT_LIST: {
-                child->scope = scope;
-                child->id = (*next_id)++;
                 scope_t *inner_scope = create_scope(arena, scope);
                 assign_node_indexes_and_scopes(child, arena, inner_scope, next_id);
                 break;
             }
             default: {
-                child->scope = scope;
-                child->id = (*next_id)++;
                 assign_node_indexes_and_scopes(child, arena, scope, next_id);
                 break;
             }
