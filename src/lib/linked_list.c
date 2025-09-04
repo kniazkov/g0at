@@ -44,3 +44,22 @@ void list_push_back(list_t *list, arena_t *arena, value_t value) {
     list->tail = node;
     list->size++;
 }
+
+void list_remove_item(list_t *list, list_item_t *item) {
+    if (!list || !item) {
+        return;
+    }
+    if (item->prev) {
+        item->prev->next = item->next;
+    } else {
+        list->head = item->next;
+    }
+    if (item->next) {
+        item->next->prev = item->prev;
+    } else {
+        list->tail = item->prev;
+    }
+    list->size--;
+    item->prev = NULL;
+    item->next = NULL;
+}

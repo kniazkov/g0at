@@ -248,20 +248,33 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
 }
 
 /**
- * @brief Generates deferred bytecode for the body of a function object.
- * 
- * This function emits the actual bytecode instructions for the function body. It is meant to
- * be called separately from the main bytecode generation phase, allowing function definitions
- * to exist independently of their execution logic until invoked.
- * 
- * @param node A pointer to the function object node.
- * @param code A pointer to the bytecode builder.
- * @param data A pointer to the static data segment builder.
- * @return The instruction index of the first instruction of the function body.
+ * @brief Attempts to generate deferred bytecode for a function object's body.
+ *
+ * Emits the bytecode instructions that implement the function body. This is
+ * invoked separately from the main (non-deferred) codegen phase so that
+ * function definitions can exist before their bodies are emitted.
+ *
+ * Readiness & multi-pass behavior:
+ * - If the call site / jump placeholder for this function is not yet known
+ *   (i.e., there is no valid instruction slot to patch with the entry address),
+ *   the function returns `false` and emits nothing. The caller should
+ *   schedule another pass later.
+ * - When the placeholder is known, the function emits the body and patches
+ *   the previously reserved instruction with the entry point; in this case
+ *   it returns `true`.
+ *
+ * @param node Pointer to the function object node.
+ * @param code Bytecode builder that receives emitted instructions.
+ * @param data Static data (constant pool) builder.
+ * @return `true` if the function body was emitted and the call site patched;
+ *  `false` if required information is missing and another pass is needed.
  */
-static instr_index_t generate_bytecode_deferred(const node_t *node, code_builder_t *code,
+static bool generate_bytecode_deferred(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     function_object_t* expr = (function_object_t*)node;
+    if (expr->code_instr_index == BAD_INSTR_INDEX) {
+        return false;
+    }
     instr_index_t first;
     if (expr->stmt_count == 0) {
         first = add_instruction(code, (instruction_t){ .opcode = NIL });
@@ -280,7 +293,7 @@ static instr_index_t generate_bytecode_deferred(const node_t *node, code_builder
         }
     }
     code->instructions[expr->code_instr_index].arg1 = (uint32_t)first;
-    return first;
+    return true;
 }
 
 /**
@@ -324,4 +337,5 @@ void fill_function_body(node_t *node, arena_t *arena, statement_t **stmt_list, s
     fobj->stmt_list = (statement_t **)alloc_from_arena(arena, data_size);
     memcpy(fobj->stmt_list, stmt_list, data_size);
     fobj->stmt_count = stmt_count;
+    fobj->code_instr_index = BAD_INSTR_INDEX;
 }

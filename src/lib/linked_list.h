@@ -68,3 +68,16 @@ void list_push_front(list_t *list, arena_t *arena, value_t value);
  * @param value Data to store.
  */
 void list_push_back(list_t *list, arena_t *arena, value_t value);
+
+/**
+ * @brief Removes a specific item from the list.
+ *
+ * Adjusts the neighboring nodes and list head/tail pointers so that the
+ * specified item is no longer part of the list. The memory for the node is
+ * not freed individually (because of arena allocation); it simply becomes
+ * unreachable.
+ *
+ * @param list The list to modify (must not be NULL).
+ * @param item The node to remove (must not be NULL and must belong to @p list).
+ */
+void list_remove_item(list_t *list, list_item_t *item);

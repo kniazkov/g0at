@@ -131,12 +131,22 @@ int go(options_t *opt) {
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
         root_node->vtbl->generate_bytecode(root_node, code_builder, data_builder);
-        list_item_t *func_item = parsing_result.functions->head;
-        while(func_item) {
-            node_t *func_obj = (node_t*)func_item->value.ptr;
-            func_obj->vtbl->generate_bytecode_deferred(func_obj, code_builder, data_builder);
-            func_item = func_item->next;
-        }
+        bool processed_all;
+        do {
+            processed_all = true;
+            list_item_t *func_item = parsing_result.functions->head;
+            while(func_item) {
+                list_item_t *next_item = func_item->next;
+                node_t *func_obj = (node_t*)func_item->value.ptr;
+                if (func_obj->vtbl->generate_bytecode_deferred(func_obj, code_builder,
+                        data_builder)) {
+                    list_remove_item(parsing_result.functions, func_item);
+                } else {
+                    processed_all = false;
+                }
+                func_item = next_item;
+            }
+        } while(!processed_all);
         bytecode_t *bytecode = link_code_and_data(code_builder, data_builder);
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);

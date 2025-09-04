@@ -273,9 +273,11 @@ typedef struct {
      * @param node A pointer to the node for which deferred bytecode is being generated.
      * @param code A pointer to the code builder for bytecode generation.
      * @param data A pointer to the data builder for static data management.
-     * @return The instruction index of the start of the generated deferred bytecode.
+     * @return `true` if the deferred bytecode was successfully generated
+     *  in this pass; `false` if required information is still missing and another generation
+     *  pass is needed.
      */
-    instr_index_t (*generate_bytecode_deferred)(const node_t *node, code_builder_t *code,
+    bool (*generate_bytecode_deferred)(const node_t *node, code_builder_t *code,
         data_builder_t *data);
 } node_vtbl_t;
 
