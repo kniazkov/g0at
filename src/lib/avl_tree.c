@@ -13,6 +13,7 @@
 
 #include "avl_tree.h"
 #include "lib/allocate.h"
+#include "lib/arena.h"
 
 /**
  * @brief Returns the larger of two integers.
@@ -135,7 +136,7 @@ static avl_node_t *balance(avl_tree_t *tree, avl_node_t *node) {
  * @param node A pointer to the current node in the tree.
  * @param key A pointer to the key to insert.
  * @param value A pointer to the value associated with the key.
- * @param value A pointer to pointer to the previous value associated with the key.
+ * @param old_value A pointer to pointer to the previous value associated with the key.
  * 
  * @return The node where the key-value pair was inserted or `NULL` if the key already exists.
  */
@@ -165,6 +166,45 @@ static avl_node_t *insert(avl_tree_t *tree, avl_node_t *node, void *key,
     node->height = 1 + max(get_height(node->left), get_height(node->right));
 
     return balance(tree, node);
+}
+
+/**
+ * @brief Arena-backed insertion helper.
+ * @param tree A pointer to the AVL tree with arena structure.
+ * @param node A pointer to the current node in the tree.
+ * @param key A pointer to the key to insert.
+ * @param value A pointer to the value associated with the key.
+ * @param old_value A pointer to pointer to the previous value associated with the key.
+ * 
+ * @return The node where the key-value pair was inserted or `NULL` if the key already exists.
+ */
+static avl_node_t *insert_arena(avl_tree_arena_t *tree, avl_node_t *node, void *key,
+        value_t value, value_t *old_value) {
+    if (!node) {
+        avl_node_t *new_node =
+            (avl_node_t *)alloc_zeroed_from_arena(tree->arena, sizeof(avl_node_t));
+        new_node->key = key;
+        new_node->value = value;
+        new_node->height = 1;
+        memset(old_value, 0, sizeof(value_t));
+        return new_node;
+    }
+
+    int cmp = tree->base.comparator(key, node->key);
+
+    if (cmp < 0) {
+        node->left = insert_arena(tree, node->left, key, value, old_value);
+    } else if (cmp > 0) {
+        node->right = insert_arena(tree, node->right, key, value, old_value);
+    } else {
+        *old_value = node->value;
+        node->value = value;
+        return node;
+    }
+
+    node->height = 1 + max(get_height(node->left), get_height(node->right));
+
+    return balance(&tree->base, node);
 }
 
 /**
@@ -235,9 +275,25 @@ avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*)) {
     return tree;
 }
 
+avl_tree_arena_t *create_avl_tree_arena(arena_t *arena,
+        int (*comparator)(const void*, const void*)) {
+    avl_tree_arena_t *tree =
+        (avl_tree_arena_t *)alloc_zeroed_from_arena(arena, sizeof(avl_tree_arena_t));
+    tree->base.root = NULL;
+    tree->base.comparator = comparator;
+    tree->arena = arena;
+    return tree;
+}
+
 value_t set_in_avl_tree(avl_tree_t *tree, void *key, value_t value) {
     value_t old_value;
     tree->root = insert(tree, tree->root, key, value, &old_value);
+    return old_value;
+}
+
+value_t set_in_avl_tree_arena(avl_tree_arena_t *tree, void *key, value_t value) {
+    value_t old_value;
+    tree->base.root = insert_arena(tree, tree->base.root, key, value, &old_value);
     return old_value;
 }
 

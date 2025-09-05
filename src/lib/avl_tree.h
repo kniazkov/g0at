@@ -16,6 +16,12 @@
 #include "value.h"
 
 /**
+ * @struct arena_t
+ * @brief Forward declaration for memory arena structure.
+ */
+typedef struct arena_t arena_t;
+
+/**
  * @struct avl_node_t
  * @brief A node in the AVL tree.
  *
@@ -57,6 +63,25 @@ typedef struct {
 } avl_tree_t;
 
 /**
+ * @struct avl_tree_arena_t
+ * @brief AVL tree that stores its own arena and embeds avl_tree_t as the first field.
+ *
+ * The tree and all its nodes are allocated from arena. Memory is not freed
+ * individually; it lives for the arena's lifetime.
+ */
+typedef struct {
+    /**
+     * @brief Embedded plain AVL tree.
+     */    
+    avl_tree_t base;
+
+    /**
+     * @brief Memory arena used for allocations.
+     */
+    arena_t   *arena;
+} avl_tree_arena_t;
+
+/**
  * @brief Creates an empty AVL tree.
  * 
  * This function allocates memory for an AVL tree structure, initializes it with
@@ -77,6 +102,15 @@ typedef struct {
 avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*));
 
 /**
+ * @brief Creates an empty AVL tree that allocates from the given arena.
+ * @param arena Arena to allocate the tree and its nodes from.
+ * @param comparator Comparator function for keys (same contract as avl_tree_t).
+ * @return Newly created arena-backed AVL tree.
+ */
+avl_tree_arena_t *create_avl_tree_arena(arena_t *arena,
+        int (*comparator)(const void*, const void*));
+
+/**
  * @brief Inserts a key-value pair into the AVL tree or updates the value if the key exists.
  * 
  * This function attempts to insert a new key-value pair into the AVL tree. If the key already
@@ -94,6 +128,16 @@ avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*));
  *  If the key is new, the function returns default value (filled with zeros).
  */
 value_t set_in_avl_tree(avl_tree_t *tree, void *key, value_t value);
+
+/**
+ * @brief Inserts/updates a key-value pair using the tree's stored arena.
+ *
+ * @param tree Arena-backed AVL tree.
+ * @param key Key pointer.
+ * @param value Value to set.
+ * @return Old value if the key existed; zero-filled value otherwise.
+ */
+value_t set_in_avl_tree_arena(avl_tree_arena_t *tree, void *key, value_t value);
 
 /**
  * @brief Checks if the AVL tree contains a node with the specified key.

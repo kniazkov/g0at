@@ -13,12 +13,7 @@
 #pragma once
 
 #include "lib/value.h"
-
-/**
- * @typedef binding_t
- * @brief Forward declaration for the binding structure.
- */
-typedef struct binding_t binding_t;
+#include "lib/avl_tree.h"
 
 /**
  * @typedef scope_t
@@ -31,51 +26,6 @@ typedef struct scope_t scope_t;
  * @brief Forward declaration for the node structure.
  */
 typedef struct node_t node_t;
-
-/**
- * @typedef arena_t
- * @brief Forward declaration for the memory arena structure.
- */
-typedef struct arena_t arena_t;
-
-/**
- * @struct binding_t
- * @brief Represents a symbol binding in a lexical scope.
- *
- * A binding describes a single declared entity (variable, constant) within a scope.
- * Bindings are organized as a singly linked list for each scope, which integrates well with arena
- * allocation (no need for dynamic resizing or deallocation).
- *
- * Each binding stores:
- * - Its name (as a string view into arena-managed memory)
- * - The AST node where it was declared
- * - A link to the next binding in the current scope
- */
-struct binding_t {
-    /**
-     * @brief Pointer to the next binding in the current scope's linked list.
-     *
-     * Scopes maintain their bindings as a simple forward-linked list.
-     * New declarations are typically pushed at the head.
-     */
-    binding_t *next;
-
-    /**
-     * @brief The name of the declared object.
-     *
-     * Stored as a string view into arena-allocated memory. The view does not
-     * own the underlying memory and assumes that the string outlives the binding.
-     */
-    string_view_t name;
-
-    /**
-     * @brief Pointer to the AST node where this binding is declared.
-     *
-     * This allows semantic analysis, code generation, and error reporting
-     * to reference the original declaration site.
-     */
-    node_t *node;
-};
 
 /**
  * @struct scope_t
@@ -103,12 +53,12 @@ struct scope_t {
     scope_t *parent;
 
     /**
-     * @brief Pointer to the first binding in this scope.
+     * @brief Symbol bindings stored in this scope.
      *
-     * Bindings are organized as a singly linked list. If the scope has no
-     * declarations, this pointer is NULL.
+     * Implemented as an AVL tree allocated from the same arena as the scope.
+     * Keys are identifier names, values are pointers to the corresponding AST nodes.
      */
-    binding_t *bindings;
+    avl_tree_arena_t *bindings;
 };
 
 /**
@@ -121,3 +71,37 @@ struct scope_t {
  * @return Pointer to the newly created scope.
  */
 scope_t *create_scope(arena_t *arena, scope_t *parent);
+
+/**
+ * @brief Adds (or updates) a symbol in the given scope.
+ *
+ * Inserts a binding into scope bindings using the symbol name as the key.
+ * If a symbol with the same name already exists in this scope, its value is
+ * updated and the previous node pointer is returned.
+ *
+ * @param scope Target scope.
+ * @param name  Symbol name (wide string).
+ * @param node  AST node where the symbol is declared.
+ * @return The previous node pointer if the symbol existed; otherwise NULL.
+ */
+const node_t* add_symbol_to_scope(scope_t *scope, const wchar_t *name, const node_t *node);
+
+/**
+ * @brief Looks up a symbol in the given scope only.
+ *
+ * @param scope Scope to search.
+ * @param name  Symbol name.
+ * @return The node pointer if found; otherwise NULL.
+ */
+const node_t* find_symbol_in_scope(const scope_t *scope, const wchar_t *name);
+
+/**
+ * @brief Looks up a symbol in the scope and its parents (inner-to-outer search).
+ *
+ * Walks the parent chain starting from scope. Returns on the first match.
+ *
+ * @param scope Starting scope.
+ * @param name  Symbol name.
+ * @return The node pointer if found; otherwise NULL.
+ */
+const node_t* find_symbol_in_scope_and_parents(const scope_t *scope, const wchar_t *name);
