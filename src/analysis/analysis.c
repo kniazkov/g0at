@@ -12,9 +12,41 @@
  */
 
 #include "analysis.h"
+#include "lib/arena.h"
 #include "common/compilation_error.h"
 #include "graph/node.h"
-#include "lib/arena.h"
+#include "model/context.h"
+#include "model/object.h"
+
+/**
+ * @brief Creates a new scope initialized from the root execution context.
+ *
+ * This function builds a fresh lexical scope using global bindings from the
+ * root context. It does the following:
+ * 1. Creates a new scope with no parent (global scope).
+ * 2. Retrieves all keys from the root context's data object.
+ * 3. Inserts each key as a symbol into the scope, associating it with the
+ *    given root node.
+ *
+ * This allows the  analyzer to start with a scope that already contains globally visible symbols,
+ * e.g. built-in objects and standard library functions.
+ *
+ * @param root_node Pointer to the root AST node. Used as the declaration
+ *  site for inserted symbols.
+ * @param arena Memory arena from which the scope and its bindings are allocated.
+ * @return A pointer to the newly created and populated scope.
+ */
+static scope_t *create_scope_from_root_context(node_t *root_node, arena_t *arena) {
+    scope_t *scope = create_scope(arena, NULL);
+    context_t *context = get_root_context();
+    object_array_t keys = context->data->vtbl->get_keys(context->data);
+    for (size_t index = 0; index < keys.size; index++) {
+        const object_t *key = keys.items[index];
+        string_value_t key_str = key->vtbl->to_string(key);
+        add_symbol_to_scope(scope, key_str.data, root_node);
+    }
+    return scope;
+}
 
 /**
  * @brief Recursively assigns node identifiers and connects nodes to lexical scopes.
@@ -74,7 +106,7 @@ static void assign_node_indexes_and_scopes(node_t *node, arena_t *arena, scope_t
 }
 
 compilation_error_t *analyze(node_t *root_node, arena_t *arena) {
-    scope_t *root_scope = create_scope(arena, NULL);
+    scope_t *root_scope = create_scope_from_root_context(root_node, arena);
     unsigned int node_counter = 0;
     assign_node_indexes_and_scopes(root_node, arena, root_scope, &node_counter);
     return NULL;
