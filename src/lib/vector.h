@@ -96,4 +96,4 @@ void destroy_vector(vector_t *vector);
  * @param vector A pointer to the vector to be destroyed.
  * @param item_dtor A function pointer that will be called to destroy each item.
  */
-void destroy_vector_ex(vector_t *vector, void (*item_dtor)());
+void destroy_vector_ex(vector_t *vector, void (*item_dtor)(void *));

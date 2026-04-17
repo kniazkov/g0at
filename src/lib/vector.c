@@ -67,7 +67,7 @@ void destroy_vector(vector_t *vector) {
     FREE(vector);
 }
 
-void destroy_vector_ex(vector_t *vector, void (*item_dtor)()) {
+void destroy_vector_ex(vector_t *vector, void (*item_dtor)(void *)) {
     for (size_t index = 0; index < vector->size; index++) {
         item_dtor(vector->data[index]);
     }

@@ -11,10 +11,10 @@ if exist goat.exe del goat.exe
 if exist unit_testing.exe del unit_testing.exe
 cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug ..\src
 
-make goat
+mingw32-make goat
 if exist goat.exe copy goat.exe ..
 
-make unit_testing
+mingw32-make unit_testing
 echo.
 if exist unit_testing.exe unit_testing.exe
 cd ..
