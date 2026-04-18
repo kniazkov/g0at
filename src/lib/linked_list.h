@@ -38,6 +38,7 @@ struct list_item_t {
  * @brief A doubly linked list using arena allocation.
  */
 typedef struct {
+    arena_t *arena;    /**< Memory arena used to allocate list nodes. */
     list_item_t *head; /**< Pointer to the first node. */
     list_item_t *tail; /**< Pointer to the last node. */
     size_t size;       /**< Size of the list */
@@ -45,6 +46,8 @@ typedef struct {
 
 /**
  * @brief Creates a new empty linked list.
+ * 
+ * The arena is stored inside the list and reused for all subsequent node allocations.
  * 
  * @param arena Memory arena used for allocation.
  * @return A pointer to a newly created list.
@@ -55,19 +58,17 @@ list_t *create_linked_list(arena_t *arena);
  * @brief Adds a new element to the front of the list.
  * 
  * @param list The list to modify.
- * @param arena Memory arena used for allocation.
  * @param value Data to store.
  */
-void list_push_front(list_t *list, arena_t *arena, value_t value);
+void list_push_front(list_t *list, value_t value);
 
 /**
  * @brief Adds a new element to the end of the list.
  * 
  * @param list The list to modify.
- * @param arena Memory arena used for allocation.
  * @param value Data to store.
  */
-void list_push_back(list_t *list, arena_t *arena, value_t value);
+void list_push_back(list_t *list, value_t value);
 
 /**
  * @brief Removes a specific item from the list.

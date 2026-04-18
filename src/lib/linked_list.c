@@ -11,16 +11,23 @@
 #include "arena.h"
 #include "linked_list.h"
 
-list_t *create_linked_list(arena_t *arena) {
-    return (list_t *)alloc_zeroed_from_arena(arena, sizeof(list_t));
-}
-
-void list_push_front(list_t *list, arena_t *arena, value_t value) {
+static list_item_t *create_list_item(list_t *list, value_t value) {
     list_item_t *node = (list_item_t *)alloc_zeroed_from_arena(
-        arena,
+        list->arena,
         sizeof(list_item_t)
     );
     node->value = value;
+    return node;
+}
+
+list_t *create_linked_list(arena_t *arena) {
+    list_t *list = (list_t *)alloc_zeroed_from_arena(arena, sizeof(list_t));
+    list->arena = arena;
+    return list;
+}
+
+void list_push_front(list_t *list, value_t value) {
+    list_item_t *node = create_list_item(list, value);
     node->next = list->head;
     if (list->head)
         list->head->prev = node;
@@ -30,11 +37,8 @@ void list_push_front(list_t *list, arena_t *arena, value_t value) {
     list->size++;
 }
 
-void list_push_back(list_t *list, arena_t *arena, value_t value) {
-    list_item_t *node = (list_item_t *)alloc_zeroed_from_arena(
-        arena,
-        sizeof(list_item_t)
-    );
+void list_push_back(list_t *list, value_t value) {
+    list_item_t *node = create_list_item(list, value);
     node->value = value;
     node->prev = list->tail;
     if (list->tail)
