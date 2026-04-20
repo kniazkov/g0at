@@ -100,7 +100,7 @@ int go(options_t *opt) {
         */
         if (opt->print_source_code) {
             source_builder_t *source_builder = create_source_builder();
-            root_node->vtbl->generate_indented_goat_code(root_node, source_builder, 0);
+            generate_indented_goat_code_from_node(root_node, source_builder, 0);
             string_value_t source_code = build_source(source_builder);
             if (source_code.data) {
                 print_utf8(source_code.data);
@@ -130,7 +130,7 @@ int go(options_t *opt) {
         */
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
-        root_node->vtbl->generate_bytecode(root_node, code_builder, data_builder);
+        generate_bytecode_from_node(root_node, code_builder, data_builder);
         bool processed_all;
         do {
             processed_all = true;
@@ -138,7 +138,7 @@ int go(options_t *opt) {
             while(func_item) {
                 list_item_t *next_item = func_item->next;
                 node_t *func_obj = (node_t*)func_item->value.ptr;
-                if (func_obj->vtbl->generate_bytecode_deferred(func_obj, code_builder,
+                if (generate_deferred_bytecode_from_node(func_obj, code_builder,
                         data_builder)) {
                     remove_item_from_linked_list(parsing_result.functions, func_item);
                 } else {

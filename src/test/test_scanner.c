@@ -85,7 +85,7 @@ bool test_static_string() {
     ASSERT(tok->text.length == 11);
     ASSERT(tok->node != NULL);
     ASSERT(tok->node->vtbl->type == NODE_STATIC_STRING);
-    string_value_t value = tok->node->vtbl->generate_goat_code(tok->node);
+    string_value_t value = generate_goat_code_from_node(tok->node);
     ASSERT(wcscmp(L"\"new\\nline\"", value.data) == 0);
     FREE_STRING(value);
     tok = get_token(scan);

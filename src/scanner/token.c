@@ -9,7 +9,7 @@
 
 string_value_t token_to_string(const token_t *token) {
     if (token->node) {
-        return token->node->vtbl->generate_goat_code(token->node);
+        return generate_goat_code_from_node(token->node);
     }
     return VIEW_TO_VALUE(token->text);
 }

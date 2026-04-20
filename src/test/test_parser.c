@@ -169,7 +169,7 @@ bool test_parsing_function_calls() {
     ASSERT(tokens.count == 1);
     ASSERT(groups->identifiers.count == 0);
     ASSERT(tokens.first->node->vtbl->type == NODE_FUNCTION_CALL);
-    string_value_t code2 = tokens.first->node->vtbl->generate_goat_code(tokens.first->node);
+    string_value_t code2 = generate_goat_code_from_node(tokens.first->node);
     ASSERT(wcscmp(code, code2.data) == 0);
     FREE_STRING(code2);
     node_t *root_node;
@@ -177,7 +177,7 @@ bool test_parsing_function_calls() {
     ASSERT(error == NULL);
     ASSERT(root_node != NULL);
     ASSERT(root_node->vtbl->type == NODE_ROOT);
-    code2 = root_node->vtbl->generate_goat_code(root_node);
+    code2 = generate_goat_code_from_node(root_node);
     ASSERT(wcscmp(L"print(\"test\");", code2.data) == 0);
     FREE_STRING(code2);
     FREE(groups);
