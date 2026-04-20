@@ -43,7 +43,7 @@ static void destroy_all_objects_in_the_list(object_list_t *list) {
     object_t *object = list->head;
     while (object) {
         object_t *next = object->next;
-        object->vtbl->release(object);
+        release_object(object);
         object = next;
     }
 }

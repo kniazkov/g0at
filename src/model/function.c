@@ -341,8 +341,8 @@ START_FUNCTION(function_atan)
     if (arg_count < 2) {
         return NULL;
     }
-    real_value_t y = args[0]->vtbl->get_real_value(args[0]);
-    real_value_t x = args[1]->vtbl->get_real_value(args[1]);
+    real_value_t y = get_object_real_value(args[0]);
+    real_value_t x = get_object_real_value(args[1]);
     if (!x.has_value || !y.has_value) {
         return NULL;
     }
@@ -369,7 +369,7 @@ START_FUNCTION(function_print)
     if (arg_count < 1) {
         return NULL;
     }
-    string_value_t str = args[0]->vtbl->to_string(args[0]);
+    string_value_t str = convert_object_to_string(args[0]);
     if (str.data) {
         print_utf8(str.data);
         FREE_STRING(str);
@@ -392,7 +392,7 @@ START_FUNCTION(function_sign)
     if (arg_count < 1) {
         return NULL;
     }
-    double value = args[0]->vtbl->get_real_value(args[0]).value;
+    double value = get_object_real_value(args[0]).value;
     int sign;
     if (value > 0) {
         sign = 1;
@@ -419,7 +419,7 @@ START_FUNCTION(function_sqrt)
     if (arg_count < 1) {
         return NULL;
     }
-    double value = args[0]->vtbl->get_real_value(args[0]).value;
+    double value = get_object_real_value(args[0]).value;
     double result = sqrt(value);
     return create_real_number_object(thread->process, result);
 END_FUNCTION(function_sqrt, L"sqrt");
@@ -604,11 +604,11 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     uint16_t index;
     for (index = 0; index < arg_count && index < dfobj->arg_count; index++) {
         object_t *arg = pop_object_from_stack(thread->data_stack);
-        ctx->data->vtbl->create_property(ctx->data, dfobj->arg_names[index], arg, false);
+        create_object_property(ctx->data, dfobj->arg_names[index], arg, false);
         DECREF(arg);
     }
     for (; index < dfobj->arg_count; index++) {
-        ctx->data->vtbl->create_property(ctx->data, dfobj->arg_names[index], get_null_object(), false);
+        create_object_property(ctx->data, dfobj->arg_names[index], get_null_object(), false);
     }
     stack_index_t ret_value_index = push_object_onto_stack(thread->data_stack, get_null_object());
     ctx->ret_value_index = ret_value_index;

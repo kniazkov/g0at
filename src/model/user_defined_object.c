@@ -228,8 +228,8 @@ static void dec_ref(object_t *obj) {
 static void mark_child_pair(void *unused, void *key, value_t value) {
     object_t *key_obj = (object_t *)key;
     property_value_t *ref = (property_value_t *)value.ptr;
-    key_obj->vtbl->mark(key_obj);
-    ref->object->vtbl->mark(ref->object);
+    mark_object(key_obj);
+    mark_object(ref->object);
 }
 
 /**
@@ -360,11 +360,11 @@ static void child_pair_to_string(void *data, void *key, value_t value) {
     }
     object_t *key_obj = (object_t *)key;
     property_value_t *ref = (property_value_t *)value.ptr;
-    string_value_t key_str = key_obj->vtbl->to_string_notation(key_obj);
+    string_value_t key_str = convert_object_to_string_notation(key_obj);
     append_string_value(builder, key_str);
     FREE_STRING(key_str);
     append_char(builder, ':');
-    string_value_t value_str = ref->object->vtbl->to_string_notation(ref->object);
+    string_value_t value_str = convert_object_to_string_notation(ref->object);
     append_string_value(builder, value_str);
     FREE_STRING(value_str);
 }
@@ -658,7 +658,7 @@ static int key_comparator(const void *first, const void *second) {
     } else if (obj1->vtbl->type < obj2->vtbl->type) {
         return -1;
     } else {
-        return obj1->vtbl->compare(obj1, obj2);
+        return compare_objects_using_vtbl(obj1, obj2);
     }
 }
 
@@ -677,7 +677,7 @@ static void topological_sorting(object_t *obj, avl_tree_t *processed, vector_t *
     if (avl_tree_contains(processed, obj)) {
         return;
     }
-    object_array_t proto = obj->vtbl->get_prototypes(obj);
+    object_array_t proto = get_object_prototypes(obj);
     if (proto.size > 0) {
         size_t index = proto.size;
         do {
@@ -720,7 +720,7 @@ static void build_topology(object_array_t proto, vector_t *topology) {
         // single prototype
         object_t *single = proto.items[0];
         append_to_vector(topology, single);
-        object_array_t parents = single->vtbl->get_topology(single);
+        object_array_t parents = get_object_topology(single);
         for (index = 0; index < parents.size; index++) {
             append_to_vector(topology, parents.items[index]);
         }        

@@ -95,7 +95,7 @@ static object_array_t get_keys(const object_t *obj) {
 static object_t *proto_get_property(const object_t *obj, const object_t *key) {
     object_t *value = NULL;
     if (key->vtbl->type == TYPE_STRING) {
-        string_value_t key_str = key->vtbl->to_string(key);
+        string_value_t key_str = convert_object_to_string(key);
         if (wcscmp(L"length", key_str.data) == 0) {
             value = get_integer_zero();
         }
@@ -252,8 +252,8 @@ static void release(object_t *obj) {
  *  negative if obj1 < obj2, 0 if equal.
  */
 static int compare(const object_t *obj1, const object_t *obj2) {
-    string_value_t first = obj1->vtbl->to_string(obj1);
-    string_value_t second = obj2->vtbl->to_string(obj2);
+    string_value_t first = convert_object_to_string(obj1);
+    string_value_t second = convert_object_to_string(obj2);
     int result = wcscmp(first.data, second.data);
     FREE_STRING(second);
     return result;
@@ -270,7 +270,7 @@ static object_t *clone(process_t *process, object_t *obj) {
     if (process == obj->process) {
         return obj;
     }
-    string_value_t value = obj->vtbl->to_string(obj);
+    string_value_t value = convert_object_to_string(obj);
     return create_string_object(process, value);
 }
 
@@ -308,7 +308,7 @@ static string_value_t dynamic_to_string(const object_t *obj) {
  *         The string is dynamically allocated, and the caller must free it using `FREE`.
  */
 static string_value_t to_string_notation(const object_t *obj) {
-    string_value_t value = obj->vtbl->to_string(obj);
+    string_value_t value = convert_object_to_string(obj);
     return string_to_string_notation(L"", value);
 }
 
@@ -371,7 +371,7 @@ static object_array_t get_topology(const object_t *obj) {
 static object_t *static_get_property(const object_t *obj, const object_t *key) {
     if (key->vtbl->type == TYPE_STRING) {
         object_static_string_t *stsobj = (object_static_string_t *)obj;
-        string_value_t key_str = key->vtbl->to_string(key);
+        string_value_t key_str = convert_object_to_string(key);
         if (wcscmp(L"length", key_str.data) == 0) {
             return get_static_integer_object((int)stsobj->string.length);
         }
@@ -388,7 +388,7 @@ static object_t *static_get_property(const object_t *obj, const object_t *key) {
 static object_t *dynamic_get_property(const object_t *obj, const object_t *key) {
     if (key->vtbl->type == TYPE_STRING) {
         object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
-        string_value_t key_str = key->vtbl->to_string(key);
+        string_value_t key_str = convert_object_to_string(key);
         if (wcscmp(L"length", key_str.data) == 0) {
             return create_integer_object(obj->process, (int64_t)dsobj->string.length);
         }
@@ -410,15 +410,15 @@ static object_t *dynamic_get_property(const object_t *obj, const object_t *key) 
  * @return A pointer to the resulting object after concatenation.
  */
 static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
-    string_value_t first = obj1->vtbl->to_string(obj1);
+    string_value_t first = convert_object_to_string(obj1);
     if (first.length == 0) {
         if (obj2->vtbl->type == TYPE_STRING) {
             INCREF(obj2);
             return obj2;
         }
-        return create_string_object(process, obj2->vtbl->to_string(obj2));
+        return create_string_object(process, convert_object_to_string(obj2));
     }
-    string_value_t second = obj2->vtbl->to_string(obj2);
+    string_value_t second = convert_object_to_string(obj2);
     if (second.length == 0) {
         INCREF(obj1);
         return obj1;
@@ -442,7 +442,7 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
  */
 
 static bool get_boolean_value(const object_t *obj) {
-    string_value_t value = obj->vtbl->to_string(obj);
+    string_value_t value = convert_object_to_string(obj);
     return value.length > 0;
 }
 

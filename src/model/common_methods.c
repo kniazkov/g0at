@@ -42,18 +42,18 @@ string_value_t common_to_string_notation(const object_t *obj) {
     string_builder_t builder;
     init_string_builder(&builder, 2);
     append_char(&builder, '{');
-    object_array_t keys = obj->vtbl->get_keys(obj);
+    object_array_t keys = get_object_keys(obj);
     for (size_t index = 0; index < keys.size; index++) {
         if (index > 0) {
             append_char(&builder, ';');
         }
         object_t *key = keys.items[index];
-        string_value_t key_str = key->vtbl->to_string_notation(key);
+        string_value_t key_str = convert_object_to_string_notation(key);
         append_string_value(&builder, key_str);
         FREE_STRING(key_str);
         append_char(&builder, '=');
-        object_t *value = obj->vtbl->get_property(obj, key);
-        string_value_t value_str = value->vtbl->to_string_notation(value);
+        object_t *value = get_object_property(obj, key);
+        string_value_t value_str = convert_object_to_string_notation(value);
         append_string_value(&builder, value_str);
         FREE_STRING(value_str);
     }
@@ -110,31 +110,31 @@ object_t *stub_power(process_t *process, object_t *obj1, object_t *obj2) {
 }
 
 bool common_less(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->compare(obj1, obj2) < 0;
+    return compare_objects_using_vtbl(obj1, obj2) < 0;
 }
 
 bool common_less_or_equal(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->compare(obj1, obj2) <= 0;
+    return compare_objects_using_vtbl(obj1, obj2) <= 0;
 }
 
 bool common_greater(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->compare(obj1, obj2) > 0;
+    return compare_objects_using_vtbl(obj1, obj2) > 0;
 }
 
 bool common_greater_or_equal(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->compare(obj1, obj2) >= 0;
+    return compare_objects_using_vtbl(obj1, obj2) >= 0;
 }
 
 bool common_equal(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->compare(obj1, obj2) == 0;
+    return compare_objects_using_vtbl(obj1, obj2) == 0;
 }
 
 bool common_not_equal(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->compare(obj1, obj2) != 0;
+    return compare_objects_using_vtbl(obj1, obj2) != 0;
 }
 
 bool common_get_boolean_value(const object_t *obj) {
-    return obj->vtbl->get_keys(obj).size > 0;
+    return get_object_keys(obj).size > 0;
 }
 
 bool stub_get_boolean_value(const object_t *obj) {

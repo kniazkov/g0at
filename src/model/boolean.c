@@ -98,8 +98,8 @@ object_t *get_boolean_proto() {
  *  negative if obj1 < obj2, 0 if equal.
  */
 static int compare(const object_t *obj1, const object_t *obj2) {
-    return (obj1->vtbl->get_boolean_value(obj1) ? 1 : 0) 
-        - (obj2->vtbl->get_boolean_value(obj2) ? 1 : 0);
+    return (get_object_boolean_value(obj1) ? 1 : 0) 
+        - (get_object_boolean_value(obj2) ? 1 : 0);
 }
 
 /**

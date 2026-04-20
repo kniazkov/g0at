@@ -267,8 +267,7 @@ static void release(object_t *obj) {
  *  negative if obj1 < obj2, 0 if equal.
  */
 static int compare(const object_t *obj1, const object_t *obj2) {
-    double diff = obj1->vtbl->get_integer_value(obj1).value 
-        - obj2->vtbl->get_real_value(obj2).value;
+    double diff = get_object_integer_value(obj1).value - get_object_real_value(obj2).value;
     if (diff > 0) {
         return 1;
     } else if (diff < 0) {
@@ -289,7 +288,7 @@ static object_t *clone(process_t *process, object_t *obj) {
     if (process == obj->process) {
         return obj;
     }
-    return create_integer_object(process, obj->vtbl->get_integer_value(obj).value);
+    return create_integer_object(process, get_object_integer_value(obj).value);
 }
 
 /**
@@ -299,7 +298,7 @@ static object_t *clone(process_t *process, object_t *obj) {
  *  The string is dynamically allocated and the caller must free it using `FREE`.
  */
 static string_value_t to_string(const object_t *obj) {
-    int64_t value = obj->vtbl->get_integer_value(obj).value;
+    int64_t value = get_object_integer_value(obj).value;
     return format_string(L"%ld", value);
 }
 
@@ -372,12 +371,12 @@ static object_array_t get_topology(const object_t *obj) {
  *  cannot be interpreted as an integer or a real number.
  */
 static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
-    int_value_t first = obj1->vtbl->get_integer_value(obj1);
-    int_value_t second_int = obj2->vtbl->get_integer_value(obj2);
+    int_value_t first = get_object_integer_value(obj1);
+    int_value_t second_int = get_object_integer_value(obj2);
     if (second_int.has_value) {
         return create_integer_object(process, first.value + second_int.value);
     }
-    real_value_t second_real = obj2->vtbl->get_real_value(obj2);
+    real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
         return create_real_number_object(process, first.value + second_real.value);
     }
@@ -393,12 +392,12 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
  *  cannot be interpreted as an integer or a real number.
  */
 static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
-    int_value_t first = obj1->vtbl->get_integer_value(obj1);
-    int_value_t second_int = obj2->vtbl->get_integer_value(obj2);
+    int_value_t first = get_object_integer_value(obj1);
+    int_value_t second_int = get_object_integer_value(obj2);
     if (second_int.has_value) {
         return create_integer_object(process, first.value - second_int.value);
     }
-    real_value_t second_real = obj2->vtbl->get_real_value(obj2);
+    real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
         return create_real_number_object(process, first.value - second_real.value);
     }
@@ -417,12 +416,12 @@ static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
  * @return A pointer to the result, or `NULL` if the second object is not numeric.
  */
 static object_t *multiply(process_t *process, object_t *obj1, object_t *obj2) {
-    int_value_t first = obj1->vtbl->get_integer_value(obj1);
-    int_value_t second_int = obj2->vtbl->get_integer_value(obj2);
+    int_value_t first = get_object_integer_value(obj1);
+    int_value_t second_int = get_object_integer_value(obj2);
     if (second_int.has_value) {
         return create_integer_object(process, first.value * second_int.value);
     }
-    real_value_t second_real = obj2->vtbl->get_real_value(obj2);
+    real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
         return create_real_number_object(process, first.value * second_real.value);
     }
@@ -441,8 +440,8 @@ static object_t *multiply(process_t *process, object_t *obj1, object_t *obj2) {
  * @return A pointer to the result, or `NULL` if the second object is not numeric or is zero.
  */
 static object_t *divide(process_t *process, object_t *obj1, object_t *obj2) {
-    int_value_t first = obj1->vtbl->get_integer_value(obj1);
-    real_value_t second = obj2->vtbl->get_real_value(obj2);
+    int_value_t first = get_object_integer_value(obj1);
+    real_value_t second = get_object_real_value(obj2);
     if (second.has_value) {
         if (second.value == 0) {
             return NULL;
@@ -468,8 +467,8 @@ static object_t *divide(process_t *process, object_t *obj1, object_t *obj2) {
  * @return A pointer to the result, or `NULL` if the second object is not an integer.
  */
 static object_t *modulo(process_t *process, object_t *obj1, object_t *obj2) {
-    int_value_t first = obj1->vtbl->get_integer_value(obj1);
-    int_value_t second_int = obj2->vtbl->get_integer_value(obj2);
+    int_value_t first = get_object_integer_value(obj1);
+    int_value_t second_int = get_object_integer_value(obj2);
     if (second_int.has_value) {
         return create_integer_object(process, first.value % second_int.value);
     }
@@ -488,8 +487,8 @@ static object_t *modulo(process_t *process, object_t *obj1, object_t *obj2) {
  * @return A pointer to the result, or `NULL` if the second object is not a real number.
  */
 static object_t *power(process_t *process, object_t *obj1, object_t *obj2) {
-    int_value_t first = obj1->vtbl->get_integer_value(obj1);
-    real_value_t second = obj2->vtbl->get_real_value(obj2);
+    int_value_t first = get_object_integer_value(obj1);
+    real_value_t second = get_object_real_value(obj2);
     if (second.has_value) {
         return create_real_number_object(process, pow((double)first.value, second.value));
     }
@@ -502,7 +501,7 @@ static object_t *power(process_t *process, object_t *obj1, object_t *obj2) {
  * @return Boolean representation of the object.
  */
 static bool get_boolean_value(const object_t *obj) {
-    return obj->vtbl->get_integer_value(obj).value != 0;
+    return get_object_integer_value(obj).value != 0;
 }
 
 /**
