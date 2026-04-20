@@ -129,7 +129,7 @@ static int node_to_dot(const node_t* node, int* last_node_id, unsigned int curre
     }
     int id = ++(*last_node_id);
     const wchar_t* name = node->vtbl->type_name;
-    string_value_t value = node->vtbl->get_data(node);
+    string_value_t value = get_node_data(node);
     if (value.length > 0) {
         string_value_t formatted_value = trim_and_escape_html_entities(value);
         add_formatted_source(
@@ -155,16 +155,16 @@ static int node_to_dot(const node_t* node, int* last_node_id, unsigned int curre
         );
     }
     FREE_STRING(value);
-    size_t count = node->vtbl->get_child_count(node);
+    size_t count = get_node_child_count(node);
     for (size_t index = 0; index < count; index++) {
         int child_id = node_to_dot(
-            node->vtbl->get_child(node, index),
+            get_node_child(node, index),
             last_node_id,
             node->scope->id,
             indent,
             builder
         );
-        const wchar_t* tag = node->vtbl->get_child_tag(node, index);
+        const wchar_t* tag = get_node_child_tag(node, index);
         if (tag == NULL) {
             add_formatted_source(
                 builder,

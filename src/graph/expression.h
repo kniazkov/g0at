@@ -38,6 +38,194 @@ struct expression_t {
 };
 
 /**
+ * @brief Gets the primary string data associated with an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @return A `string_value_t` containing the expression data or empty value if none.
+ */
+static inline string_value_t get_expression_data(const expression_t *expr) {
+    return get_node_data(&expr->base);
+}
+
+/**
+ * @brief Gets the number of properties exposed by an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @return Number of properties exposed by the expression.
+ */
+static inline size_t get_expression_property_count(const expression_t *expr) {
+    return get_node_property_count(&expr->base);
+}
+
+/**
+ * @brief Retrieves a property of an expression by index.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @param index Zero-based property index.
+ * @param out_key Output pointer to receive the property key.
+ * @param out_value Output pointer to receive the property value.
+ */
+static inline void get_expression_property(const expression_t *expr, size_t index,
+        string_view_t *out_key, string_value_t *out_value) {
+    get_node_property(&expr->base, index, out_key, out_value);
+}
+
+/**
+ * @brief Gets the number of direct child nodes of an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @return Number of child nodes.
+ */
+static inline size_t get_expression_child_count(const expression_t *expr) {
+    return get_node_child_count(&expr->base);
+}
+
+/**
+ * @brief Gets a child node of an expression by index.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @param index Zero-based child index.
+ * @return Pointer to the child node or NULL if index is out of range.
+ */
+static inline node_t *get_expression_child(const expression_t *expr, size_t index) {
+    return get_node_child(&expr->base, index);
+}
+
+/**
+ * @brief Gets the tag/label for a child node of an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @param index Zero-based child index.
+ * @return Wide character string with the child tag or NULL if not applicable.
+ */
+static inline const wchar_t *get_expression_child_tag(const expression_t *expr, size_t index) {
+    return get_node_child_tag(&expr->base, index);
+}
+
+/**
+ * @brief Generates a single-line Goat source code representation from an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @return A `string_value_t` containing the generated Goat code.
+ */
+static inline string_value_t generate_goat_code_from_expression(const expression_t *expr) {
+    return generate_goat_code_from_node(&expr->base);
+}
+
+/**
+ * @brief Generates indented Goat source code from an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @param builder A pointer to the source builder.
+ * @param indent The number of tabs used for indentation.
+ */
+static inline void generate_indented_goat_code_from_expression(const expression_t *expr,
+        source_builder_t *builder, size_t indent) {
+    generate_indented_goat_code_from_node(&expr->base, builder, indent);
+}
+
+/**
+ * @brief Checks whether C code can be generated from an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @return `true` if C code generation is supported, `false` otherwise.
+ */
+static inline bool can_generate_c_code_from_expression(const expression_t *expr) {
+    return can_generate_c_code_from_node(&expr->base);
+}
+
+/**
+ * @brief Generates a single-line C source code representation from an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @return A `string_value_t` containing the generated C code or NULL string if
+ *  conversion is not possible.
+ */
+static inline string_value_t generate_c_code_from_expression(const expression_t *expr) {
+    return generate_c_code_from_node(&expr->base);
+}
+
+/**
+ * @brief Generates indented C source code from an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @param builder A pointer to the source builder.
+ * @param indent The number of tabs used for indentation.
+ */
+static inline void generate_indented_c_code_from_expression(const expression_t *expr,
+        source_builder_t *builder, size_t indent) {
+    generate_indented_c_code_from_node(&expr->base, builder, indent);
+}
+
+/**
+ * @brief Generates bytecode from an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @param code A pointer to the code builder used for instruction emission.
+ * @param data A pointer to the data builder used for static data management.
+ * @return The instruction index of the first emitted instruction.
+ */
+static inline instr_index_t generate_bytecode_from_expression(expression_t *expr,
+        code_builder_t *code, data_builder_t *data) {
+    return generate_bytecode_from_node(&expr->base, code, data);
+}
+
+/**
+ * @brief Generates bytecode for storing a value into an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the target expression.
+ * @param code A pointer to the code builder.
+ * @param data A pointer to the data builder.
+ * @return The instruction index of the first emitted instruction.
+ */
+static inline instr_index_t generate_bytecode_assign_from_expression(const expression_t *expr,
+        code_builder_t *code, data_builder_t *data) {
+    return generate_bytecode_assign_from_node(&expr->base, code, data);
+}
+
+/**
+ * @brief Generates deferred bytecode from an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @param code A pointer to the code builder.
+ * @param data A pointer to the data builder.
+ * @return `true` if deferred bytecode was successfully generated in this pass;
+ *  `false` otherwise.
+ */
+static inline bool generate_deferred_bytecode_from_expression(const expression_t *expr,
+        code_builder_t *code, data_builder_t *data) {
+    return generate_deferred_bytecode_from_node(&expr->base, code, data);
+}
+
+/**
  * @brief Gets the singleton instance of the null expression node.
  * 
  * Returns the shared instance of the null expression node. This function

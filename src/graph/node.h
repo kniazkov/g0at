@@ -332,6 +332,210 @@ struct node_t {
 };
 
 /**
+ * @brief Gets the primary string data associated with a node.
+ *
+ * This helper dispatches to the node's virtual table and returns the main
+ * data payload of the node in string form. For example, for identifier nodes
+ * this may be the identifier name, and for literal nodes it may be the
+ * literal text/value.
+ *
+ * @param node A pointer to the node.
+ * @return A `string_value_t` containing the node's data or empty value if none.
+ */
+static inline string_value_t get_node_data(const node_t *node) {
+    return node->vtbl->get_data(node);
+}
+
+/**
+ * @brief Gets the number of properties exposed by a node.
+ *
+ * This helper dispatches to the node's virtual table and returns how many
+ * key-value properties are available for debugging or visualization.
+ *
+ * @param node A pointer to the node.
+ * @return Number of properties exposed by the node.
+ */
+static inline size_t get_node_property_count(const node_t *node) {
+    return node->vtbl->get_property_count(node);
+}
+
+/**
+ * @brief Retrieves a property of a node by index.
+ *
+ * This helper dispatches to the node's virtual table and retrieves the
+ * indexed property exposed by the node.
+ *
+ * @param node A pointer to the node.
+ * @param index Zero-based property index.
+ * @param out_key Output pointer to receive the property key.
+ * @param out_value Output pointer to receive the property value.
+ */
+static inline void get_node_property(const node_t *node, size_t index,
+        string_view_t *out_key, string_value_t *out_value) {
+    node->vtbl->get_property(node, index, out_key, out_value);
+}
+
+/**
+ * @brief Gets the number of direct child nodes.
+ *
+ * This helper dispatches to the node's virtual table and returns the number
+ * of direct children for the node.
+ *
+ * @param node A pointer to the node.
+ * @return Number of child nodes.
+ */
+static inline size_t get_node_child_count(const node_t *node) {
+    return node->vtbl->get_child_count(node);
+}
+
+/**
+ * @brief Gets a child node by index.
+ *
+ * This helper dispatches to the node's virtual table and retrieves the
+ * indexed child node.
+ *
+ * @param node A pointer to the parent node.
+ * @param index Zero-based child index.
+ * @return Pointer to the child node or NULL if index is out of range.
+ */
+static inline node_t* get_node_child(const node_t *node, size_t index) {
+    return node->vtbl->get_child(node, index);
+}
+
+/**
+ * @brief Gets the tag/label for a child node.
+ *
+ * This helper dispatches to the node's virtual table and returns the
+ * descriptive tag associated with the indexed child.
+ *
+ * @param node A pointer to the parent node.
+ * @param index Zero-based child index.
+ * @return Wide character string with the child tag or NULL if not applicable.
+ */
+static inline const wchar_t* get_node_child_tag(const node_t *node, size_t index) {
+    return node->vtbl->get_child_tag(node, index);
+}
+
+/**
+ * @brief Generates a single-line Goat source code representation from a node.
+ *
+ * This helper dispatches to the node's virtual table and returns compact Goat
+ * source code corresponding to the node.
+ *
+ * @param node A pointer to the node.
+ * @return A `string_value_t` containing the generated Goat code.
+ */
+static inline string_value_t generate_goat_code_from_node(const node_t *node) {
+    return node->vtbl->generate_goat_code(node);
+}
+
+/**
+ * @brief Generates indented Goat source code from a node.
+ *
+ * This helper dispatches to the node's virtual table and appends formatted
+ * Goat source code for the node to the provided builder.
+ *
+ * @param node A pointer to the node.
+ * @param builder A pointer to the source builder.
+ * @param indent The number of tabs used for indentation.
+ */
+static inline void generate_indented_goat_code_from_node(const node_t *node,
+        source_builder_t *builder, size_t indent) {
+    node->vtbl->generate_indented_goat_code(node, builder, indent);
+}
+
+/**
+ * @brief Checks whether C code can be generated from a node.
+ *
+ * This helper dispatches to the node's virtual table and reports whether
+ * the node has a valid representation in C.
+ *
+ * @param node A pointer to the node.
+ * @return `true` if C code generation is supported, `false` otherwise.
+ */
+static inline bool can_generate_c_code_from_node(const node_t *node) {
+    return node->vtbl->can_generate_c_code(node);
+}
+
+/**
+ * @brief Generates a single-line C source code representation from a node.
+ *
+ * This helper dispatches to the node's virtual table and attempts to produce
+ * compact C source code corresponding to the node.
+ *
+ * @param node A pointer to the node.
+ * @return A `string_value_t` containing the generated C code or NULL string if
+ *  conversion is not possible.
+ */
+static inline string_value_t generate_c_code_from_node(const node_t *node) {
+    return node->vtbl->generate_c_code(node);
+}
+
+/**
+ * @brief Generates indented C source code from a node.
+ *
+ * This helper dispatches to the node's virtual table and appends formatted
+ * C source code for the node to the provided builder.
+ *
+ * @param node A pointer to the node.
+ * @param builder A pointer to the source builder.
+ * @param indent The number of tabs used for indentation.
+ */
+static inline void generate_indented_c_code_from_node(const node_t *node,
+        source_builder_t *builder, size_t indent) {
+    node->vtbl->generate_indented_c_code(node, builder, indent);
+}
+
+/**
+ * @brief Generates bytecode from a node.
+ *
+ * This helper dispatches to the node's virtual table and generates bytecode
+ * instructions for the given node.
+ *
+ * @param node A pointer to the node.
+ * @param code A pointer to the code builder used for instruction emission.
+ * @param data A pointer to the data builder used for static data management.
+ * @return The instruction index of the first emitted instruction.
+ */
+static inline instr_index_t generate_bytecode_from_node(node_t *node,
+        code_builder_t *code, data_builder_t *data) {
+    return node->vtbl->generate_bytecode(node, code, data);
+}
+
+/**
+ * @brief Generates bytecode for storing a value into a node.
+ *
+ * This helper dispatches to the node's virtual table and generates bytecode
+ * for assignment into an assignable expression.
+ *
+ * @param node A pointer to the target node.
+ * @param code A pointer to the code builder.
+ * @param data A pointer to the data builder.
+ * @return The instruction index of the first emitted instruction.
+ */
+static inline instr_index_t generate_bytecode_assign_from_node(const node_t *node,
+        code_builder_t *code, data_builder_t *data) {
+    return node->vtbl->generate_bytecode_assign(node, code, data);
+}
+
+/**
+ * @brief Generates deferred bytecode from a node.
+ *
+ * This helper dispatches to the node's virtual table and generates deferred
+ * bytecode for nodes such as function bodies or other delayed code blocks.
+ *
+ * @param node A pointer to the node.
+ * @param code A pointer to the code builder.
+ * @param data A pointer to the data builder.
+ * @return `true` if deferred bytecode was successfully generated in this pass;
+ *  `false` otherwise.
+ */
+static inline bool generate_deferred_bytecode_from_node(const node_t *node,
+        code_builder_t *code, data_builder_t *data) {
+    return node->vtbl->generate_bytecode_deferred(node, code, data);
+}
+
+/**
  * @brief Creates a new root node.
  * 
  * This function allocates memory for a new root node, copies the provided statement list into
