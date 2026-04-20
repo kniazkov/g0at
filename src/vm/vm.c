@@ -64,12 +64,12 @@ typedef bool (*instr_executor_t)(runtime_t *runtime, instruction_t instr, thread
  * @return The value of the property, or the `null` object if the property was not found.
  */
 static object_t *get_property_from_object_or_its_prototypes(object_t *obj, object_t *key) {
-    object_t *value = obj->vtbl->get_property(obj, key);
+    object_t *value = get_object_property(obj, key);
     if (value == NULL) {
-        object_array_t proto = obj->vtbl->get_topology(obj);
+        object_array_t proto = get_object_topology(obj);
         size_t index = 0;
         do {
-            value = proto.items[index]->vtbl->get_property(proto.items[index], key);
+            value = get_object_property(proto.items[index], key);
             index++;
         } while (value == NULL && index < proto.size);
     }
@@ -383,8 +383,7 @@ static bool exec_VAR(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     if (value == NULL) {
         return false; // empty stack
     }
-    model_status_t result = thread->context->data->vtbl->create_property(thread->context->data,
-            key, value, false);
+    model_status_t result = create_object_property(thread->context->data, key, value, false);
     if (result != MSTAT_OK) {
         return false; // already exists
     }
@@ -418,8 +417,7 @@ static bool exec_CONST(runtime_t *runtime, instruction_t instr, thread_t *thread
     if (value == NULL) {
         return false; // empty stack
     }
-    model_status_t result = thread->context->data->vtbl->create_property(thread->context->data,
-            key, value, true);
+    model_status_t result = create_object_property(thread->context->data, key, value, true);
     if (result != MSTAT_OK) {
         return false; // already exists
     }
@@ -456,16 +454,16 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     }
     object_t *context = thread->context->data;
     bool changed = false;
-    model_status_t result = context->vtbl->set_property(context, key, value);
+    model_status_t result = set_object_property(context, key, value);
     assert(result != MSTAT_IMMUTABLE_OBJECT);
     if (result == MSTAT_OK) {
         changed = true;
     }
     else if (result == MSTAT_PROPERTY_NOT_FOUND) {
-        object_array_t proto = context->vtbl->get_topology(context);
+        object_array_t proto = get_object_topology(context);
         size_t index = 0;
         do {
-            result = proto.items[index]->vtbl->set_property(proto.items[index], key, value);
+            result = set_object_property(proto.items[index], key, value);
             if (result == MSTAT_IMMUTABLE_OBJECT) {
                 break;
             }
@@ -477,7 +475,7 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
         } while (index < proto.size);
     }
     if (!changed) {
-        result = context->vtbl->create_property(context, key, value, false);
+        result = create_object_property(context, key, value, false);
         if (result != MSTAT_OK) {
             return false;
         }
@@ -504,7 +502,7 @@ static bool exec_ADD(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        object_t *result = first->vtbl->add(thread->process, first, second);
+        object_t *result = add_objects(thread->process, first, second);
         if (result) {
             DECREF(first);
             DECREF(second);
@@ -534,7 +532,7 @@ static bool exec_SUB(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        object_t *result = first->vtbl->subtract(thread->process, first, second);
+        object_t *result = subtract_objects(thread->process, first, second);
         if (result) {
             DECREF(first);
             DECREF(second);
@@ -561,7 +559,7 @@ static bool exec_MUL(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        object_t *result = first->vtbl->multiply(thread->process, first, second);
+        object_t *result = multiply_objects(thread->process, first, second);
         if (result) {
             DECREF(first);
             DECREF(second);
@@ -588,7 +586,7 @@ static bool exec_DIVIDE(runtime_t *runtime, instruction_t instr, thread_t *threa
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        object_t *result = first->vtbl->divide(thread->process, first, second);
+        object_t *result = divide_objects(thread->process, first, second);
         if (result) {
             DECREF(first);
             DECREF(second);
@@ -615,7 +613,7 @@ static bool exec_MODULO(runtime_t *runtime, instruction_t instr, thread_t *threa
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        object_t *result = first->vtbl->modulo(thread->process, first, second);
+        object_t *result = modulo_objects(thread->process, first, second);
         if (result) {
             DECREF(first);
             DECREF(second);
@@ -642,7 +640,7 @@ static bool exec_POWER(runtime_t *runtime, instruction_t instr, thread_t *thread
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        object_t *result = first->vtbl->power(thread->process, first, second);
+        object_t *result = power_objects(thread->process, first, second);
         if (result) {
             DECREF(first);
             DECREF(second);
@@ -668,13 +666,13 @@ static bool exec_LESS(runtime_t *runtime, instruction_t instr, thread_t *thread)
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        bool result = first->vtbl->less(first, second);
+        bool result = is_object_less_than(first, second);
         DECREF(first);
         DECREF(second);
         push_object_onto_stack(thread->data_stack, get_boolean_object(result));
         thread->instr_id++;
         return true;
-        }
+    }
     return false;
 }
 
@@ -693,13 +691,13 @@ static bool exec_LEQ(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        bool result = first->vtbl->less_or_equal(first, second);
+        bool result = is_object_less_or_equal(first, second);
         DECREF(first);
         DECREF(second);
         push_object_onto_stack(thread->data_stack, get_boolean_object(result));
         thread->instr_id++;
         return true;
-        }
+    }
     return false;
 }
 
@@ -717,13 +715,13 @@ static bool exec_GREATER(runtime_t *runtime, instruction_t instr, thread_t *thre
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        bool result = first->vtbl->greater(first, second);
+        bool result = is_object_greater_than(first, second);
         DECREF(first);
         DECREF(second);
         push_object_onto_stack(thread->data_stack, get_boolean_object(result));
         thread->instr_id++;
         return true;
-        }
+    }
     return false;
 }
 
@@ -741,13 +739,13 @@ static bool exec_GREQ(runtime_t *runtime, instruction_t instr, thread_t *thread)
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        bool result = first->vtbl->greater_or_equal(first, second);
+        bool result = is_object_greater_or_equal(first, second);
         DECREF(first);
         DECREF(second);
         push_object_onto_stack(thread->data_stack, get_boolean_object(result));
         thread->instr_id++;
         return true;
-        }
+    }
     return false;
 }
 
@@ -765,13 +763,13 @@ static bool exec_EQUAL(runtime_t *runtime, instruction_t instr, thread_t *thread
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        bool result = first->vtbl->equal(first, second);
+        bool result = are_objects_equal(first, second);
         DECREF(first);
         DECREF(second);
         push_object_onto_stack(thread->data_stack, get_boolean_object(result));
         thread->instr_id++;
         return true;
-        }
+    }
     return false;
 }
 
@@ -789,13 +787,13 @@ static bool exec_DIFF(runtime_t *runtime, instruction_t instr, thread_t *thread)
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (first && second) {
-        bool result = first->vtbl->not_equal(first, second);
+        bool result = are_objects_not_equal(first, second);
         DECREF(first);
         DECREF(second);
         push_object_onto_stack(thread->data_stack, get_boolean_object(result));
         thread->instr_id++;
         return true;
-        }
+    }
     return false;
 }
 
@@ -884,7 +882,7 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
  */
 static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *func = pop_object_from_stack(thread->data_stack);
-    bool result = func->vtbl->call(func, instr.arg0, thread);
+    bool result = call_object(func, instr.arg0, thread);
     // The ID of the following instruction was set inside the call method
     DECREF(func);
     return result;

@@ -589,6 +589,405 @@ struct object_t {
 #define DECREFIF(obj)  if ((obj) != NULL) { ((object_t*)(obj))->vtbl->dec_ref((object_t*)(obj)); }
 
 /**
+ * @brief Marks an object during garbage collection.
+ *
+ * This helper dispatches to the object's virtual table and marks
+ * the object as reachable.
+ *
+ * @param obj A pointer to the object.
+ */
+static inline void mark_object(object_t *obj) {
+    obj->vtbl->mark(obj);
+}
+
+/**
+ * @brief Sweeps an object during garbage collection.
+ *
+ * This helper dispatches to the object's virtual table and performs
+ * sweep logic for the object.
+ *
+ * @param obj A pointer to the object.
+ * @return `true` if the object was destroyed or moved to object pool,
+ *  `false` if it remains alive.
+ */
+static inline bool sweep_object(object_t *obj) {
+    return obj->vtbl->sweep(obj);
+}
+
+/**
+ * @brief Releases an object.
+ *
+ * This helper dispatches to the object's virtual table and performs
+ * final destruction logic for the object.
+ *
+ * @param obj A pointer to the object.
+ */
+static inline void release_object(object_t *obj) {
+    obj->vtbl->release(obj);
+}
+
+/**
+ * @brief Compares two objects.
+ *
+ * This helper dispatches to the virtual table of the first object and compares
+ * it with the second one.
+ *
+ * @param obj1 The first object.
+ * @param obj2 The second object.
+ * @return A negative value if `obj1 < obj2`, zero if equal, positive if `obj1 > obj2`.
+ */
+static inline int compare_objects_using_vtbl(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->compare(obj1, obj2);
+}
+
+/**
+ * @brief Clones an object for a process.
+ *
+ * This helper dispatches to the object's virtual table and creates
+ * a clone owned by the given process.
+ *
+ * @param process The target process.
+ * @param obj A pointer to the object to clone.
+ * @return A pointer to the cloned object.
+ */
+static inline object_t *clone_object(process_t *process, object_t *obj) {
+    return obj->vtbl->clone(process, obj);
+}
+
+/**
+ * @brief Converts an object to its plain string representation.
+ *
+ * This helper dispatches to the object's virtual table and returns
+ * its string representation.
+ *
+ * @param obj A pointer to the object.
+ * @return The string representation of the object.
+ */
+static inline string_value_t convert_object_to_string(const object_t *obj) {
+    return obj->vtbl->to_string(obj);
+}
+
+/**
+ * @brief Converts an object to its Goat notation representation.
+ *
+ * This helper dispatches to the object's virtual table and returns
+ * its Goat notation string representation.
+ *
+ * @param obj A pointer to the object.
+ * @return The Goat notation representation of the object.
+ */
+static inline string_value_t convert_object_to_string_notation(const object_t *obj) {
+    return obj->vtbl->to_string_notation(obj);
+}
+
+/**
+ * @brief Gets the immediate prototypes of an object.
+ *
+ * This helper dispatches to the object's virtual table and returns
+ * the object's direct prototype list.
+ *
+ * @param obj A pointer to the object.
+ * @return The array of immediate prototypes.
+ */
+static inline object_array_t get_object_prototypes(const object_t *obj) {
+    return obj->vtbl->get_prototypes(obj);
+}
+
+/**
+ * @brief Gets the full prototype topology of an object.
+ *
+ * This helper dispatches to the object's virtual table and returns
+ * the object's full prototype topology.
+ *
+ * @param obj A pointer to the object.
+ * @return The topologically sorted prototype array.
+ */
+static inline object_array_t get_object_topology(const object_t *obj) {
+    return obj->vtbl->get_topology(obj);
+}
+
+/**
+ * @brief Gets all property keys of an object.
+ *
+ * This helper dispatches to the object's virtual table and returns
+ * the array of property keys.
+ *
+ * @param obj A pointer to the object.
+ * @return An array containing the object's property keys.
+ */
+static inline object_array_t get_object_keys(const object_t *obj) {
+    return obj->vtbl->get_keys(obj);
+}
+
+/**
+ * @brief Gets a property value from an object.
+ *
+ * This helper dispatches to the object's virtual table and retrieves
+ * the property value by key.
+ *
+ * @param obj The object from which to retrieve the property.
+ * @param key The property key.
+ * @return The property value, or NULL if not found.
+ */
+static inline object_t *get_object_property(const object_t *obj, const object_t *key) {
+    return obj->vtbl->get_property(obj, key);
+}
+
+/**
+ * @brief Creates a property on an object.
+ *
+ * This helper dispatches to the object's virtual table and creates
+ * a new property with the given key and value.
+ *
+ * @param obj The target object.
+ * @param key The property key.
+ * @param value The property value.
+ * @param constant Whether the property should be constant.
+ * @return Status of the operation.
+ */
+static inline model_status_t create_object_property(object_t *obj, object_t *key,
+        object_t *value, bool constant) {
+    return obj->vtbl->create_property(obj, key, value, constant);
+}
+
+/**
+ * @brief Sets a property on an object.
+ *
+ * This helper dispatches to the object's virtual table and updates
+ * the property value for the given key.
+ *
+ * @param obj The target object.
+ * @param key The property key.
+ * @param value The new property value.
+ * @return Status of the operation.
+ */
+static inline model_status_t set_object_property(object_t *obj, object_t *key, object_t *value) {
+    return obj->vtbl->set_property(obj, key, value);
+}
+
+/**
+ * @brief Adds two objects.
+ *
+ * This helper dispatches to the virtual table of the first object
+ * and performs the addition operation.
+ *
+ * @param process Process that will own the result.
+ * @param obj1 The first operand.
+ * @param obj2 The second operand.
+ * @return The resulting object.
+ */
+static inline object_t *add_objects(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->add(process, obj1, obj2);
+}
+
+/**
+ * @brief Subtracts one object from another.
+ *
+ * This helper dispatches to the virtual table of the first object
+ * and performs the subtraction operation.
+ *
+ * @param process Process that will own the result.
+ * @param obj1 The first operand.
+ * @param obj2 The second operand.
+ * @return The resulting object.
+ */
+static inline object_t *subtract_objects(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->subtract(process, obj1, obj2);
+}
+
+/**
+ * @brief Multiplies two objects.
+ *
+ * This helper dispatches to the virtual table of the first object
+ * and performs the multiplication operation.
+ *
+ * @param process Process that will own the result.
+ * @param obj1 The first operand.
+ * @param obj2 The second operand.
+ * @return The resulting object.
+ */
+static inline object_t *multiply_objects(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->multiply(process, obj1, obj2);
+}
+
+/**
+ * @brief Divides one object by another.
+ *
+ * This helper dispatches to the virtual table of the first object
+ * and performs the division operation.
+ *
+ * @param process Process that will own the result.
+ * @param obj1 The dividend.
+ * @param obj2 The divisor.
+ * @return The resulting object.
+ */
+static inline object_t *divide_objects(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->divide(process, obj1, obj2);
+}
+
+/**
+ * @brief Computes the modulo of two objects.
+ *
+ * This helper dispatches to the virtual table of the first object
+ * and performs the modulo operation.
+ *
+ * @param process Process that will own the result.
+ * @param obj1 The dividend.
+ * @param obj2 The divisor.
+ * @return The resulting object.
+ */
+static inline object_t *modulo_objects(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->modulo(process, obj1, obj2);
+}
+
+/**
+ * @brief Raises one object to the power of another.
+ *
+ * This helper dispatches to the virtual table of the first object
+ * and performs the power operation.
+ *
+ * @param process Process that will own the result.
+ * @param obj1 The base.
+ * @param obj2 The exponent.
+ * @return The resulting object.
+ */
+static inline object_t *power_objects(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->power(process, obj1, obj2);
+}
+
+/**
+ * @brief Checks whether the first object is less than the second.
+ *
+ * This helper dispatches to the virtual table of the first object.
+ *
+ * @param obj1 The first object.
+ * @param obj2 The second object.
+ * @return `true` if `obj1 < obj2`, `false` otherwise.
+ */
+static inline bool is_object_less_than(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->less(obj1, obj2);
+}
+
+/**
+ * @brief Checks whether the first object is less than or equal to the second.
+ *
+ * This helper dispatches to the virtual table of the first object.
+ *
+ * @param obj1 The first object.
+ * @param obj2 The second object.
+ * @return `true` if `obj1 <= obj2`, `false` otherwise.
+ */
+static inline bool is_object_less_or_equal(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->less_or_equal(obj1, obj2);
+}
+
+/**
+ * @brief Checks whether the first object is greater than the second.
+ *
+ * This helper dispatches to the virtual table of the first object.
+ *
+ * @param obj1 The first object.
+ * @param obj2 The second object.
+ * @return `true` if `obj1 > obj2`, `false` otherwise.
+ */
+static inline bool is_object_greater_than(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->greater(obj1, obj2);
+}
+
+/**
+ * @brief Checks whether the first object is greater than or equal to the second.
+ *
+ * This helper dispatches to the virtual table of the first object.
+ *
+ * @param obj1 The first object.
+ * @param obj2 The second object.
+ * @return `true` if `obj1 >= obj2`, `false` otherwise.
+ */
+static inline bool is_object_greater_or_equal(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->greater_or_equal(obj1, obj2);
+}
+
+/**
+ * @brief Checks whether two objects are equal.
+ *
+ * This helper dispatches to the virtual table of the first object.
+ *
+ * @param obj1 The first object.
+ * @param obj2 The second object.
+ * @return `true` if the objects are equal, `false` otherwise.
+ */
+static inline bool are_objects_equal(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->equal(obj1, obj2);
+}
+
+/**
+ * @brief Checks whether two objects are not equal.
+ *
+ * This helper dispatches to the virtual table of the first object.
+ *
+ * @param obj1 The first object.
+ * @param obj2 The second object.
+ * @return `true` if the objects are not equal, `false` otherwise.
+ */
+static inline bool are_objects_not_equal(const object_t *obj1, const object_t *obj2) {
+    return obj1->vtbl->not_equal(obj1, obj2);
+}
+
+/**
+ * @brief Gets the boolean value of an object.
+ *
+ * This helper dispatches to the object's virtual table and returns
+ * the boolean representation of the object.
+ *
+ * @param obj A pointer to the object.
+ * @return The boolean value of the object.
+ */
+static inline bool get_object_boolean_value(const object_t *obj) {
+    return obj->vtbl->get_boolean_value(obj);
+}
+
+/**
+ * @brief Gets the integer value of an object.
+ *
+ * This helper dispatches to the object's virtual table and returns
+ * the integer representation of the object.
+ *
+ * @param obj A pointer to the object.
+ * @return The integer value descriptor.
+ */
+static inline int_value_t get_object_integer_value(const object_t *obj) {
+    return obj->vtbl->get_integer_value(obj);
+}
+
+/**
+ * @brief Gets the real value of an object.
+ *
+ * This helper dispatches to the object's virtual table and returns
+ * the floating-point representation of the object.
+ *
+ * @param obj A pointer to the object.
+ * @return The real value descriptor.
+ */
+static inline real_value_t get_object_real_value(const object_t *obj) {
+    return obj->vtbl->get_real_value(obj);
+}
+
+/**
+ * @brief Invokes an object as a function.
+ *
+ * This helper dispatches to the object's virtual table and performs
+ * a functional call if the object is callable.
+ *
+ * @param obj A pointer to the object.
+ * @param arg_count Number of arguments being passed.
+ * @param thread The thread in which the call is performed.
+ * @return `true` if the call was performed, `false` otherwise.
+ */
+static inline bool call_object(object_t *obj, uint16_t arg_count, thread_t *thread) {
+    return obj->vtbl->call(obj, arg_count, thread);
+}
+
+/**
  * @typedef static_object_getter_t
  * @brief Typedef for a function that retrieves a static object.
  * 
