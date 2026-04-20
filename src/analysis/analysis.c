@@ -70,6 +70,7 @@ static scope_t *create_scope_from_root_context(node_t *root_node, arena_t *arena
  *   - Its children are analyzed within the same scope and numbering sequence.
  *
  * @param node      The current AST node to analyze.
+ * @param parent    The parent node.
  * @param arena     The memory arena used for allocating new scopes.
  * @param scope     The scope that this node belongs to.
  * @param next_id   Pointer to the counter of node identifiers in the current scope.
@@ -78,8 +79,9 @@ static scope_t *create_scope_from_root_context(node_t *root_node, arena_t *arena
  * @note Each scope has its own sequence of node ids starting from 1, except
  *  statement list scopes which continue the numbering of their parent.
  */
-static void assign_node_indexes_and_scopes(node_t *node, arena_t *arena, scope_t *scope,
-        unsigned int *next_id) {
+static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, arena_t *arena,
+        scope_t *scope, unsigned int *next_id) {
+    node->parent = parent;
     node->scope = scope;
     node->id = (*next_id)++;
     const size_t child_count = node->vtbl->get_child_count(node);
@@ -89,16 +91,16 @@ static void assign_node_indexes_and_scopes(node_t *node, arena_t *arena, scope_t
             case NODE_FUNCTION_OBJECT: {
                 scope_t *inner_scope = create_scope(arena, scope);
                 unsigned int inner_counter = 1;
-                assign_node_indexes_and_scopes(child, arena, inner_scope, &inner_counter);
+                assign_node_indexes_and_scopes(child, node, arena, inner_scope, &inner_counter);
                 break;
             }
             case NODE_STATEMENT_LIST: {
                 scope_t *inner_scope = create_scope(arena, scope);
-                assign_node_indexes_and_scopes(child, arena, inner_scope, next_id);
+                assign_node_indexes_and_scopes(child, node, arena, inner_scope, next_id);
                 break;
             }
             default: {
-                assign_node_indexes_and_scopes(child, arena, scope, next_id);
+                assign_node_indexes_and_scopes(child, node, arena, scope, next_id);
                 break;
             }
         }
@@ -108,6 +110,6 @@ static void assign_node_indexes_and_scopes(node_t *node, arena_t *arena, scope_t
 compilation_error_t *analyze(node_t *root_node, arena_t *arena) {
     scope_t *root_scope = create_scope_from_root_context(root_node, arena);
     unsigned int node_counter = 0;
-    assign_node_indexes_and_scopes(root_node, arena, root_scope, &node_counter);
+    assign_node_indexes_and_scopes(root_node, NULL, arena, root_scope, &node_counter);
     return NULL;
 }

@@ -307,6 +307,14 @@ struct node_t {
     node_vtbl_t *vtbl;
 
     /**
+     * @brief A pointer to the node that contains this node as a child.
+     * 
+     * This field is populated during analysis and is used to navigate the syntax tree
+     * toward the root.
+     */
+    node_t *parent;
+
+    /**
      * @brief The lexical scope this node belongs to.
      *
      * Set by the semantic phase that wires nodes to scopes. May be `NULL`
