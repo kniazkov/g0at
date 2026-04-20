@@ -98,7 +98,7 @@ static string_value_t generate_goat_code(const node_t *node) {
             append_char(&builder, L' ');
         }
         statement_t *stmt = root->stmt_list[index];
-        string_value_t stmt_as_string = stmt->base.vtbl->generate_goat_code(&stmt->base);
+        string_value_t stmt_as_string = generate_goat_code_from_statement(stmt);
         result = append_string_value(&builder, stmt_as_string);
         FREE_STRING(stmt_as_string);
     }
@@ -119,7 +119,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     const root_node_t *root = (const root_node_t *)node;
     for (size_t index = 0; index < root->stmt_count; index++) {
         statement_t *stmt = root->stmt_list[index];
-        stmt->base.vtbl->generate_indented_goat_code(&stmt->base, builder, indent);
+        generate_indented_goat_code_from_statement(stmt, builder, indent);
     }
 }
 
@@ -141,7 +141,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     const root_node_t *root = (const root_node_t *)node;
     for (size_t index = 0; index < root->stmt_count; index++) {
         statement_t *stmt = root->stmt_list[index];
-        stmt->base.vtbl->generate_bytecode(&stmt->base, code, data);
+        generate_bytecode_from_statement(stmt, code, data);
     }
     add_instruction(code, (instruction_t){ .opcode = END });
     return 0;

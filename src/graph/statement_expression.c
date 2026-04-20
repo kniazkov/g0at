@@ -98,8 +98,7 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
 static string_value_t generate_goat_code(const node_t *node) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
     string_builder_t builder;
-    string_value_t expr_as_string =
-        stmt->wrapped->base.vtbl->generate_goat_code(&stmt->wrapped->base);
+    string_value_t expr_as_string = generate_goat_code_from_expression(stmt->wrapped);
     init_string_builder(&builder, expr_as_string.length + 1);  // +1 for the semicolon
     append_string_value(&builder, expr_as_string);
     FREE_STRING(expr_as_string);
@@ -119,7 +118,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
        size_t indent) {
     add_static_source(builder, indent, L"");
     const statement_expression_t *stmt = (const statement_expression_t *)node;
-    stmt->wrapped->base.vtbl->generate_indented_goat_code(&stmt->wrapped->base, builder, indent);
+    generate_indented_goat_code_from_expression(stmt->wrapped, builder, indent);
     append_static_source(builder, L";");
 }
 
@@ -139,7 +138,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
-    instr_index_t first = stmt->wrapped->base.vtbl->generate_bytecode(&stmt->wrapped->base, code, data);
+    instr_index_t first = generate_bytecode_from_expression(stmt->wrapped, code, data);
     add_instruction(code, (instruction_t){ .opcode = POP });
     return first;
 }

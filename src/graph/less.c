@@ -44,9 +44,9 @@ typedef struct {
 static string_value_t generate_goat_code(const node_t *node) {
     const less_t *expr = (const less_t *)node;
     string_value_t left =
-        expr->base.left_operand->base.vtbl->generate_goat_code(&expr->base.left_operand->base);
+        generate_goat_code_from_expression(expr->base.left_operand);
     string_value_t right =
-        expr->base.right_operand->base.vtbl->generate_goat_code(&expr->base.right_operand->base);
+        generate_goat_code_from_expression(expr->base.right_operand);
     string_value_t result = format_string(L"%s < %s", left.data, right.data);
     FREE_STRING(left);
     FREE_STRING(right);
@@ -67,11 +67,9 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const less_t *expr = (const less_t *)node;
-    expr->base.left_operand->base.vtbl->generate_indented_goat_code(&expr->base.left_operand->base,
-        builder, indent);
+    generate_indented_goat_code_from_expression(expr->base.left_operand, builder, indent);
     append_static_source(builder, L" < ");
-    expr->base.right_operand->base.vtbl->generate_indented_goat_code(
-        &expr->base.right_operand->base, builder, indent);
+    generate_indented_goat_code_from_expression(expr->base.right_operand, builder, indent);
 }
 
 /**
@@ -88,10 +86,8 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const less_t *expr = (const less_t *)node;
-    instr_index_t first = expr->base.left_operand->base.vtbl->generate_bytecode(
-        &expr->base.left_operand->base, code, data);
-    expr->base.right_operand->base.vtbl->generate_bytecode(
-        &expr->base.right_operand->base, code, data);
+    instr_index_t first = generate_bytecode_from_expression(expr->base.left_operand, code, data);
+    generate_bytecode_from_expression(expr->base.right_operand, code, data);
     add_instruction(code, (instruction_t){ .opcode = LESS });
     return first;
 }

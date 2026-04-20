@@ -131,7 +131,7 @@ static string_value_t vdeclr_generate_goat_code(const node_t *node) {
     if (decl->initial) {
         string_builder_t builder;
         string_value_t initial_as_string =
-            decl->initial->base.vtbl->generate_goat_code(&decl->initial->base);
+            generate_goat_code_from_expression(decl->initial);
         init_string_builder(&builder, decl->name.length + 3 + initial_as_string.length);
         append_string_view(&builder, decl->name);
         append_static_string(&builder, L" = ");
@@ -161,7 +161,7 @@ static void vdeclr_generate_indented_goat_code(const node_t *node, source_builde
     append_formatted_source(builder, VIEW_TO_VALUE(decl->name));
     if (decl->initial) {
         append_static_source(builder, L" = ");
-        decl->initial->base.vtbl->generate_indented_goat_code(&decl->initial->base,
+        generate_indented_goat_code_from_expression(decl->initial,
             builder, indent);
     }
 }
@@ -184,7 +184,7 @@ static instr_index_t vdeclr_generate_bytecode(node_t *node, code_builder_t *code
     const variable_declarator_t* decl = (const variable_declarator_t*)node;
     instr_index_t first;
     if (decl->initial) {
-        first = decl->initial->base.vtbl->generate_bytecode(&decl->initial->base, code, data);
+        first = generate_bytecode_from_expression(decl->initial, code, data);
     } else {
         first = add_instruction(code, (instruction_t){ .opcode = NIL });
     }
@@ -510,7 +510,7 @@ static string_value_t cdeclr_generate_goat_code(const node_t *node) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
     string_builder_t builder;
     string_value_t initial_as_string =
-        decl->initial->base.vtbl->generate_goat_code(&decl->initial->base);
+        generate_goat_code_from_expression(decl->initial);
     init_string_builder(&builder, decl->name.length + 3 + initial_as_string.length);
     append_string_view(&builder, decl->name);
     append_static_string(&builder, L" = ");
@@ -536,7 +536,7 @@ static void cdeclr_generate_indented_goat_code(const node_t *node, source_builde
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
     append_formatted_source(builder, VIEW_TO_VALUE(decl->name));
     append_static_source(builder, L" = ");
-    decl->initial->base.vtbl->generate_indented_goat_code(&decl->initial->base, builder, indent);
+    generate_indented_goat_code_from_expression(decl->initial, builder, indent);
 }
 
 /**
@@ -555,7 +555,7 @@ static void cdeclr_generate_indented_goat_code(const node_t *node, source_builde
 static instr_index_t cdeclr_generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
-    instr_index_t first = decl->initial->base.vtbl->generate_bytecode(&decl->initial->base, code, data);
+    instr_index_t first = generate_bytecode_from_expression(decl->initial, code, data);
     uint32_t index = add_string_to_data_segment_ex(data, decl->name);
     add_instruction(code, (instruction_t){ .opcode = CONST, .arg1 = index });
     return first;
@@ -687,7 +687,7 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
             append_static_string(&builder, L", ");
         }
         constant_declarator_t *cdr = decl->decl_list[index];
-        string_value_t cdr_as_string = cdr->base.vtbl->generate_goat_code(&cdr->base);
+        string_value_t cdr_as_string = generate_goat_code_from_node(&cdr->base);
         append_string_value(&builder, cdr_as_string);
         FREE_STRING(cdr_as_string);
     }
@@ -734,11 +734,11 @@ static void cdecln_generate_indented_goat_code(const node_t *node, source_builde
 static instr_index_t cdecln_generate_bytecode(node_t *node, 
         code_builder_t *code, data_builder_t *data) {
     const constant_declaration_t* decl = (const constant_declaration_t*)node;
-    instr_index_t first = decl->decl_list[0]->base.vtbl->generate_bytecode(
+    instr_index_t first = generate_bytecode_from_node(
         &decl->decl_list[0]->base, code, data);
     for (size_t index = 1; index < decl->decl_count; index++) {
         constant_declarator_t *cdr = decl->decl_list[index];
-        cdr->base.vtbl->generate_bytecode(&cdr->base, code, data);
+        generate_bytecode_from_node(&cdr->base, code, data);
     }
     return first;
 }

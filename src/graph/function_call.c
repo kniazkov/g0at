@@ -135,7 +135,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     init_string_builder(&builder, 0);
 
     string_value_t func_object_as_string =
-        expr->func_object->base.vtbl->generate_goat_code(&expr->func_object->base);
+        generate_goat_code_from_expression(expr->func_object);
     append_string_value(&builder, func_object_as_string);
     FREE_STRING(func_object_as_string);
 
@@ -145,7 +145,7 @@ static string_value_t generate_goat_code(const node_t *node) {
             append_static_string(&builder, L", ");
         }
         expression_t *arg = expr->args[index];
-        string_value_t arg_as_string = arg->base.vtbl->generate_goat_code(&arg->base);
+        string_value_t arg_as_string = generate_goat_code_from_expression(arg);
         append_string_value(&builder, arg_as_string);
         FREE_STRING(arg_as_string);
     }
@@ -169,15 +169,14 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const function_call_t *expr = (const function_call_t *)node;
-    expr->func_object->base.vtbl->generate_indented_goat_code(&expr->func_object->base,
-        builder, indent);
+    generate_indented_goat_code_from_expression(expr->func_object, builder, indent);
     append_static_source(builder, L"(");
     for (size_t index = 0; index < expr->args_count; index++) {
         if (index > 0) {
             append_static_source(builder, L", ");
         }
         expression_t *arg = expr->args[index];
-        arg->base.vtbl->generate_indented_goat_code(&arg->base, builder, indent);
+        generate_indented_goat_code_from_expression(arg, builder, indent);
     }
     append_static_source(builder, L")");
 }
@@ -208,10 +207,10 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         do {
             index--;
             expression_t *arg = expr->args[index];
-            arg->base.vtbl->generate_bytecode(&arg->base, code, data);
+            generate_bytecode_from_expression(arg, code, data);
         } while (index > 0);
     }
-    expr->func_object->base.vtbl->generate_bytecode(&expr->func_object->base, code, data);
+    generate_bytecode_from_expression(expr->func_object, code, data);
     add_instruction(code, (instruction_t){ .opcode = CALL, .arg0 = (uint16_t)expr->args_count });
     return first;
 }

@@ -91,7 +91,7 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
  */
 static string_value_t generate_goat_code(const node_t *node) {
     const parenthesized_expression_t *expr = (const parenthesized_expression_t *)node;
-    string_value_t inner_str = expr->inner->base.vtbl->generate_goat_code(&expr->inner->base);
+    string_value_t inner_str = generate_goat_code_from_expression(expr->inner);
     string_builder_t sb;
     init_string_builder(&sb, inner_str.length + 2); // +2 for parentheses
     append_char(&sb, L'(');
@@ -115,7 +115,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
         size_t indent) {
     const parenthesized_expression_t *expr = (const parenthesized_expression_t *)node;
     append_static_source(builder, L"(");
-    expr->inner->base.vtbl->generate_indented_goat_code(&expr->inner->base, builder, 0);
+    generate_indented_goat_code_from_expression(expr->inner, builder, 0);
     append_static_source(builder, L")");
 }
 
@@ -133,7 +133,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     parenthesized_expression_t *expr = (parenthesized_expression_t *)node;
-    return expr->inner->base.vtbl->generate_bytecode(&expr->inner->base, code, data);
+    return generate_bytecode_from_expression(expr->inner, code, data);
 }
 
 /**
