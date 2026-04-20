@@ -22,10 +22,10 @@
  * @param thread A pointer to the thread whose stack and context data are to be processed.
  */
 static void mark_objects_in_context_and_stack(thread_t *thread) {
-    thread->context->data->vtbl->mark(thread->context->data);
+    mark_object(thread->context->data);
     for (size_t index = 0; index < thread->data_stack->size; index++) {
         object_t *obj = thread->data_stack->objects[index];
-        obj->vtbl->mark(obj);
+        mark_object(obj);
     }
 }
 
@@ -38,7 +38,7 @@ static void mark_objects_in_context_and_stack(thread_t *thread) {
  */
 static void mark_reachable_objects(process_t *proc) {
     for (size_t index = 0; index < proc->string_cache_size; index++) {
-        proc->string_cache[index]->vtbl->mark(proc->string_cache[index]);
+        mark_object(proc->string_cache[index]);
     }
     thread_t *thread = proc->main_thread;
     do {
@@ -59,7 +59,7 @@ static void sweep_unreachable_objects(process_t *proc) {
     object_t *last_live = NULL;
     object_t *obj = proc->objects.head;
     while (obj != NULL) {
-        if (obj->vtbl->sweep(obj)) {
+        if (sweep_object(obj)) {
             obj = last_live ? last_live->next : proc->objects.head;
         } else {
             last_live = obj;

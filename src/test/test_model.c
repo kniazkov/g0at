@@ -36,11 +36,11 @@ static bytecode_t *create_test_bytecode(instruction_t *list, int count) {
 
 bool test_boolean_object() {
     object_t *obj1 = get_boolean_object(true);
-    string_value_t value = obj1->vtbl->to_string(obj1);
+    string_value_t value = convert_object_to_string(obj1);
     ASSERT(wcscmp(L"true", value.data) == 0);
     ASSERT(value.should_free == false);
     object_t *obj2 = get_boolean_object(false);
-    value = obj2->vtbl->to_string(obj1);
+    value = convert_object_to_string(obj2);
     ASSERT(wcscmp(L"false", value.data) == 0);
     ASSERT(value.should_free == false);
     return true;
@@ -49,7 +49,7 @@ bool test_boolean_object() {
 bool test_integer_object() {
     process_t *proc = create_process();
     object_t *obj = create_integer_object(proc, -1024);
-    string_value_t value = obj->vtbl->to_string(obj);
+    string_value_t value = convert_object_to_string(obj);
     ASSERT(wcscmp(L"-1024", value.data) == 0);
     ASSERT(value.should_free);
     FREE_STRING(value);
@@ -69,7 +69,7 @@ bool test_addition_of_two_integers() {
     run(proc, code);
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
-    int_value_t int_val = result->vtbl->get_integer_value(result);
+    int_value_t int_val = get_object_integer_value(result);
     ASSERT(int_val.has_value);
     ASSERT(int_val.value == 5);
     destroy_process(proc);
@@ -92,7 +92,7 @@ bool test_subtraction_of_two_integers() {
     run(proc, code);
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
-    int_value_t int_val = result->vtbl->get_integer_value(result);
+    int_value_t int_val = get_object_integer_value(result);
     ASSERT(int_val.has_value);
     ASSERT(int_val.value == 9999999999);
     destroy_process(proc);
@@ -119,7 +119,7 @@ bool test_strings_concatenation() {
     run(proc, code);
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
-    string_value_t value = result->vtbl->to_string(result);
+    string_value_t value = convert_object_to_string(result);
     ASSERT(value.data != NULL);
     ASSERT(wcscmp(value.data, L"it works.") == 0);
     ASSERT(value.length == 9);
@@ -132,55 +132,51 @@ bool test_properties() {
     process_t *process = create_process();
     object_t *root_object = get_root_object();
     object_t *obj = create_user_defined_object(process, (object_array_t){&root_object, 1});
-    obj->vtbl->create_property(
-        obj,
+    create_object_property(obj,
         create_string_object(process, STATIC_STRING(L"first")),
         create_string_object(process, STATIC_STRING(L"one")),
         true
     );
-    obj->vtbl->create_property(
-        obj,
+    create_object_property(obj,
         create_string_object(process, STATIC_STRING(L"second")),
         create_string_object(process, STATIC_STRING(L"two")),
         true
     );
-    obj->vtbl->create_property(
-        obj,
+    create_object_property(obj,
         create_integer_object(process, 3),
         create_string_object(process, STATIC_STRING(L"three")),
         true
     );
-    obj->vtbl->create_property(
-        obj,
+    create_object_property(obj,
         get_boolean_object(true),
         create_string_object(process, STATIC_STRING(L"boolean")),
         true
     );
-    object_t *clone = obj->vtbl->clone(process, obj);
+    object_t *clone = clone_object(process, obj);
     const wchar_t *expected = L"{true:\"boolean\",3:\"three\",\"first\":\"one\",\"second\":\"two\"}";
-    string_value_t str = obj->vtbl->to_string(obj);
+    string_value_t str = convert_object_to_string(obj);
     ASSERT(0 == wcscmp(str.data, expected));
     FREE_STRING(str);
-    str = clone->vtbl->to_string(clone);
+    str = convert_object_to_string(clone);
     ASSERT(0 == wcscmp(str.data, expected));
     FREE_STRING(str);
     object_t *key = create_string_object(process, STATIC_STRING(L"first"));
-    object_t *value = obj->vtbl->get_property(obj, key);
+    object_t *value = get_object_property(obj, key);
     ASSERT(value != NULL);
-    str = value->vtbl->to_string(value);
+    str = convert_object_to_string(value);
     ASSERT(0 == wcscmp(str.data, L"one"));
     FREE_STRING(str);
     key = create_string_object(process, STATIC_STRING(L"length"));
-    value = value->vtbl->get_property(value, key);
+    value = get_object_property(value, key);
     ASSERT(value != NULL);
-    ASSERT(value->vtbl->get_integer_value(value).value == 3);
+    ASSERT(get_object_integer_value(value).value == 3);
     key = create_string_object(process, STATIC_STRING(L"third"));
-    value = obj->vtbl->get_property(obj, key);
+    value = get_object_property(obj, key);
     ASSERT(value == NULL);
-    object_array_t keys = obj->vtbl->get_keys(obj);
+    object_array_t keys = get_object_keys(obj);
     ASSERT(keys.size == 4);
     for (size_t index = 0; index < keys.size; index++) {
-        ASSERT(clone->vtbl->get_property(clone, keys.items[index]) != NULL);
+        ASSERT(get_object_property(clone, keys.items[index]) != NULL);
     }
     destroy_process(process);
     return true;
@@ -189,10 +185,10 @@ bool test_properties() {
 bool test_string_topology() {
     process_t *process = create_process();
     object_t *obj = create_string_object(process, STATIC_STRING(L"test"));
-    object_array_t topology = obj->vtbl->get_topology(obj);
+    object_array_t topology = get_object_topology(obj);
     ASSERT(topology.size = 2);
     const wchar_t *expected = L"{\"length\"=0}";
-    string_value_t str = topology.items[0]->vtbl->to_string(topology.items[0]);
+    string_value_t str = convert_object_to_string(topology.items[0]);
     ASSERT(0 == wcscmp(str.data, expected));
     FREE_STRING(str);
     destroy_process(process);
@@ -215,7 +211,7 @@ bool test_store_and_load() {
     run(proc, code);
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
-    int_value_t int_val = result->vtbl->get_integer_value(result);
+    int_value_t int_val = get_object_integer_value(result);
     ASSERT(int_val.has_value);
     ASSERT(int_val.value == 1024);
     destroy_process(proc);
@@ -238,7 +234,7 @@ bool test_sign_function() {
     run(proc, code);
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
-    int_value_t int_val = result->vtbl->get_integer_value(result);
+    int_value_t int_val = get_object_integer_value(result);
     ASSERT(int_val.has_value);
     ASSERT(int_val.value == -1);
     destroy_process(proc);
@@ -268,9 +264,9 @@ bool test_context_cloning() {
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *obj = peek_object_from_stack(proc->main_thread->data_stack, 0);
     object_t *key = create_string_object(proc, STATIC_STRING(L"y"));
-    object_t *value = obj->vtbl->get_property(obj, key);
+    object_t *value = get_object_property(obj, key);
     ASSERT(value != NULL);
-    string_value_t str = value->vtbl->to_string(value);
+    string_value_t str = convert_object_to_string(value);
     ASSERT(0 == wcscmp(str.data, L"5"));
     FREE_STRING(str);
     destroy_process(proc);
@@ -302,7 +298,7 @@ bool test_function_definition() {
     run(proc, code);
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
-    int_value_t int_val = result->vtbl->get_integer_value(result);
+    int_value_t int_val = get_object_integer_value(result);
     ASSERT(int_val.has_value);
     ASSERT(int_val.value == 5);
     destroy_process(proc);
@@ -335,7 +331,7 @@ bool test_closure() {
     run(proc, code);
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
-    int_value_t int_val = result->vtbl->get_integer_value(result);
+    int_value_t int_val = get_object_integer_value(result);
     ASSERT(int_val.has_value);
     ASSERT(int_val.value == 5);
     destroy_process(proc);
