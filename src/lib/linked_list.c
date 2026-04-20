@@ -26,7 +26,7 @@ list_t *create_linked_list(arena_t *arena) {
     return list;
 }
 
-void list_push_front(list_t *list, value_t value) {
+void prepend_item_to_linked_list(list_t *list, value_t value) {
     list_item_t *node = create_list_item(list, value);
     node->next = list->head;
     if (list->head)
@@ -37,7 +37,7 @@ void list_push_front(list_t *list, value_t value) {
     list->size++;
 }
 
-void list_push_back(list_t *list, value_t value) {
+void append_item_to_linked_list(list_t *list, value_t value) {
     list_item_t *node = create_list_item(list, value);
     node->value = value;
     node->prev = list->tail;
@@ -49,7 +49,7 @@ void list_push_back(list_t *list, value_t value) {
     list->size++;
 }
 
-void list_remove_item(list_t *list, list_item_t *item) {
+void remove_item_from_linked_list(list_t *list, list_item_t *item) {
     if (!list || !item) {
         return;
     }

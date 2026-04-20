@@ -140,7 +140,7 @@ int go(options_t *opt) {
                 node_t *func_obj = (node_t*)func_item->value.ptr;
                 if (func_obj->vtbl->generate_bytecode_deferred(func_obj, code_builder,
                         data_builder)) {
-                    list_remove_item(parsing_result.functions, func_item);
+                    remove_item_from_linked_list(parsing_result.functions, func_item);
                 } else {
                     processed_all = false;
                 }

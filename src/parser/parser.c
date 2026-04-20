@@ -401,7 +401,7 @@ static list_t *collect_nodes_from_group(token_list_t *tokens, arena_t *arena) {
     token_t *token = tokens->first;
     while(token) {
         if (token->node) {
-            list_push_back(nodes, (value_t){ .ptr = token->node });
+            append_item_to_linked_list(nodes, (value_t){ .ptr = token->node });
         }
         token = token->next_in_group;
     }

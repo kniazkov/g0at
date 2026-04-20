@@ -60,7 +60,7 @@ list_t *create_linked_list(arena_t *arena);
  * @param list The list to modify.
  * @param value Data to store.
  */
-void list_push_front(list_t *list, value_t value);
+void prepend_item_to_linked_list(list_t *list, value_t value);
 
 /**
  * @brief Adds a new element to the end of the list.
@@ -68,7 +68,7 @@ void list_push_front(list_t *list, value_t value);
  * @param list The list to modify.
  * @param value Data to store.
  */
-void list_push_back(list_t *list, value_t value);
+void append_item_to_linked_list(list_t *list, value_t value);
 
 /**
  * @brief Removes a specific item from the list.
@@ -81,4 +81,4 @@ void list_push_back(list_t *list, value_t value);
  * @param list The list to modify (must not be NULL).
  * @param item The node to remove (must not be NULL and must belong to @p list).
  */
-void list_remove_item(list_t *list, list_item_t *item);
+void remove_item_from_linked_list(list_t *list, list_item_t *item);
