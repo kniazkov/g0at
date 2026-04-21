@@ -105,19 +105,12 @@ static node_vtbl_t true_vtbl = {
     .generate_bytecode = generate_bytecode_true,
 };
 
-/**
- * @brief Singleton instance of the boolean `true` expression node.
- *
- * Since `true` is a constant value with no state, we use a single shared instance
- * rather than creating new nodes for each occurrence in the syntax tree.
- */
-static boolean_true_t true_instance = {
-    .base = {
-        .base = {
-            .vtbl = &true_vtbl
-        }
-    }
-};
+node_t *create_true_node(arena_t *arena) {
+    boolean_true_t *expr =
+        (boolean_true_t *)alloc_zeroed_from_arena(arena, sizeof(boolean_true_t));
+    expr->base.base.vtbl = &true_vtbl;
+    return &expr->base.base;
+}
 
 /**
  * @brief Converts a boolean `false` expression to its string representation.
@@ -179,24 +172,9 @@ static node_vtbl_t false_vtbl = {
     .generate_bytecode = generate_bytecode_false,
 };
 
-/**
- * @brief Singleton instance of the boolean `false` expression node.
- *
- * Since `false` is a constant value with no state, we use a single shared instance
- * rather than creating new nodes for each occurrence in the syntax tree.
- */
-static boolean_false_t false_instance = {
-    .base = {
-        .base = {
-            .vtbl = &false_vtbl
-        }
-    }
-};
-
-node_t *get_true_node_instance() {
-    return &true_instance.base.base;
-}
-
-node_t *get_false_node_instance() {
-    return &false_instance.base.base;
+node_t *create_false_node(arena_t *arena) {
+    boolean_false_t *expr =
+        (boolean_false_t *)alloc_zeroed_from_arena(arena, sizeof(boolean_false_t));
+    expr->base.base.vtbl = &false_vtbl;
+    return &expr->base.base;
 }

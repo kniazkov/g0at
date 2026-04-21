@@ -98,20 +98,8 @@ static node_vtbl_t null_vtbl = {
     .generate_bytecode = generate_bytecode,
 };
 
-/**
- * @brief Singleton instance of the null expression node.
- * 
- * Since null is a constant value with no state, we use a single shared instance
- * rather than creating new nodes for each occurrence in the syntax tree.
- */
-static null_t instance = {
-    .base = {
-        .base = {
-            .vtbl = &null_vtbl
-        }
-    }
-};
-
-node_t *get_null_node_instance() {
-    return &instance.base.base;
+node_t *create_null_node(arena_t *arena) {
+    null_t *expr = (null_t *)alloc_zeroed_from_arena(arena, sizeof(null_t));
+    expr->base.base.vtbl = &null_vtbl;
+    return &expr->base.base;
 }

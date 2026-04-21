@@ -226,16 +226,6 @@ static inline bool generate_deferred_bytecode_from_expression(const expression_t
 }
 
 /**
- * @brief Gets the singleton instance of the null expression node.
- * 
- * Returns the shared instance of the null expression node. This function
- * provides global access to the null node without requiring allocation.
- * 
- * @return Pointer to the singleton null node instance.
- */
-node_t *get_null_node_instance();
-
-/**
  * @brief Creates a new static string expression node.
  * 
  * This function initializes a static string expression node with the given string value
@@ -401,13 +391,25 @@ node_t *create_parenthesized_expression_node(arena_t *arena);
 void fill_parenthesized_expression(node_t *node, expression_t *inner);
 
 /**
- * @brief Retrieves the singleton node instance for the boolean `true` literal.
- * @return Pointer to the shared node representing `true`.
+ * @brief Creates a new null literal expression node.
+ *
+ * @param arena Memory arena used for node allocation.
+ * @return Pointer to the created null literal node.
  */
-node_t *get_true_node_instance();
+node_t *create_null_node(arena_t *arena);
 
 /**
- * @brief Retrieves the singleton node instance for the boolean `false` literal.
- * @return Pointer to the shared node representing `false`.
+ * @brief Creates a new boolean `true` literal expression node.
+ *
+ * @param arena Memory arena used for node allocation.
+ * @return Pointer to the created `true` literal node.
  */
-node_t *get_false_node_instance();
+node_t *create_true_node(arena_t *arena);
+
+/**
+ * @brief Creates a new boolean `false` literal expression node.
+ *
+ * @param arena Memory arena used for node allocation.
+ * @return Pointer to the created `false` literal node.
+ */
+node_t *create_false_node(arena_t *arena);
