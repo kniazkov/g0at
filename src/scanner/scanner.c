@@ -189,11 +189,11 @@ static bool is_operator(wchar_t c) {
  * @brief Structure for keyword to token type mapping
  */
 typedef struct {
-    const wchar_t* keyword;    /**< Keyword string */
-    size_t length;             /**< Length of keyword */
-    token_type_t type;         /**< Corresponding token type */
-    node_t* (*node_factory)(); /**< Optional AST node factory (NULL for simple keywords) */
-    size_t group_offset;       /**< Optional group offset in the group structure */
+    const wchar_t* keyword;            /**< Keyword string */
+    size_t length;                     /**< Length of keyword */
+    token_type_t type;                 /**< Corresponding token type */
+    node_t* (*node_factory)(arena_t*); /**< Optional AST node factory (NULL for simple keywords) */
+    size_t group_offset;               /**< Optional group offset in the group structure */
 } keyword_lookup_t;
 
 /**
@@ -218,21 +218,21 @@ static const keyword_lookup_t keywords[] = {
         L"null",
         4,
         TOKEN_EXPRESSION,
-        get_null_node_instance,
+        create_null_node,
         SIZE_MAX
     },
     {
         L"true",
         4,
         TOKEN_EXPRESSION,
-        get_true_node_instance,
+        create_true_node,
         SIZE_MAX
     },
     {
         L"false",
         5,
         TOKEN_EXPRESSION,
-        get_false_node_instance,
+        create_false_node,
         SIZE_MAX
     },
     {
@@ -459,7 +459,7 @@ token_t *get_token(scanner_t *scan) {
                 token->type = kw->type;
                 token->text = (string_view_t){ kw->keyword, kw->length };
                 if (kw->node_factory) {
-                    token->node = kw->node_factory();
+                    token->node = kw->node_factory(scan->memory->graph);
                 }
                 if (kw->group_offset != SIZE_MAX) {
                     token_list_t* group = (token_list_t*)((char*)(scan->groups) + kw->group_offset);
