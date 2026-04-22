@@ -111,7 +111,7 @@ static node_vtbl_t real_vtbl = {
 };
 
 node_t *create_real_number_node(arena_t *arena, double value) {
-    real_t *expr = (real_t *)alloc_from_arena(arena, sizeof(real_t));
+    real_t *expr = (real_t *)alloc_zeroed_from_arena(arena, sizeof(real_t));
     expr->base.base.vtbl = &real_vtbl;
     expr->value = value;
     return &expr->base.base;

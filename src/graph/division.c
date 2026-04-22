@@ -112,7 +112,7 @@ static node_vtbl_t division_vtbl = {
 
 expression_t *create_division_node(arena_t *arena, expression_t *left_operand,
         expression_t *right_operand) {
-    division_t *expr = (division_t *)alloc_from_arena(arena, sizeof(division_t));
+    division_t *expr = (division_t *)alloc_zeroed_from_arena(arena, sizeof(division_t));
     expr->base.base.base.vtbl = &division_vtbl;
     expr->base.left_operand = left_operand;
     expr->base.right_operand = right_operand;

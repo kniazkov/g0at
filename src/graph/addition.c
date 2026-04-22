@@ -112,7 +112,7 @@ static node_vtbl_t addition_vtbl = {
 
 expression_t *create_addition_node(arena_t *arena, expression_t *left_operand,
         expression_t *right_operand) {
-    addition_t *expr = (addition_t *)alloc_from_arena(arena, sizeof(addition_t));
+    addition_t *expr = (addition_t *)alloc_zeroed_from_arena(arena, sizeof(addition_t));
     expr->base.base.base.vtbl = &addition_vtbl;
     expr->base.left_operand = left_operand;
     expr->base.right_operand = right_operand;

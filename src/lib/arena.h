@@ -243,6 +243,11 @@ typedef struct parser_memory_t parser_memory_t;
  */
 struct parser_memory_t {
     /**
+     * @brief Memory arena used for storing source code positions.
+     */
+    arena_t *positions; /**< Memory arena for source positions. */
+
+    /**
      * @brief Memory arena used for allocating tokens during parsing and reduction.
      */
     arena_t *tokens; /**< Memory arena for tokens. */

@@ -153,9 +153,8 @@ static node_vtbl_t expression_parenthesized_vtbl = {
 
 node_t *create_parenthesized_expression_node(arena_t *arena) {
     parenthesized_expression_t *expr =
-        (parenthesized_expression_t *)alloc_from_arena(arena, sizeof(parenthesized_expression_t));
+        (parenthesized_expression_t *)alloc_zeroed_from_arena(arena, sizeof(parenthesized_expression_t));
     expr->base.base.vtbl = &expression_parenthesized_vtbl;
-    expr->inner = NULL;
     return &expr->base.base;
 }
 

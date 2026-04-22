@@ -223,7 +223,7 @@ static node_vtbl_t vdeclr_vtbl = {
 static variable_declarator_t *create_variable_declarator_node(arena_t *arena,
         const declarator_t *spec) {
     variable_declarator_t *decl = 
-        (variable_declarator_t *)alloc_from_arena(arena, sizeof(variable_declarator_t));
+        (variable_declarator_t *)alloc_zeroed_from_arena(arena, sizeof(variable_declarator_t));
     decl->base.vtbl = &vdeclr_vtbl;
     decl->name = spec->name;
     decl->initial = spec->initial;
@@ -391,7 +391,7 @@ static node_vtbl_t vdecln_vtbl = {
 node_t *create_variable_declaration_node(arena_t *arena, declarator_t **decl_list,
         size_t decl_count) {
     assert(decl_count > 0);
-    variable_declaration_t *node = (variable_declaration_t *)alloc_from_arena(
+    variable_declaration_t *node = (variable_declaration_t *)alloc_zeroed_from_arena(
             arena, sizeof(variable_declaration_t));
     node->base.base.vtbl = &vdecln_vtbl;
     node->decl_list = (variable_declarator_t **)alloc_from_arena(arena,
@@ -594,7 +594,7 @@ static constant_declarator_t *create_constant_declarator_node(arena_t *arena,
     assert(spec->initial != NULL);
     
     constant_declarator_t *decl = 
-        (constant_declarator_t *)alloc_from_arena(arena, sizeof(constant_declarator_t));
+        (constant_declarator_t *)alloc_zeroed_from_arena(arena, sizeof(constant_declarator_t));
     decl->base.vtbl = &cdeclr_vtbl;
     decl->name = spec->name;
     decl->initial = spec->initial;
@@ -764,7 +764,7 @@ static node_vtbl_t cdecln_vtbl = {
 node_t *create_constant_declaration_node(arena_t *arena, declarator_t **decl_list,
         size_t decl_count) {
     assert(decl_count > 0);
-    constant_declaration_t *node = (constant_declaration_t *)alloc_from_arena(
+    constant_declaration_t *node = (constant_declaration_t *)alloc_zeroed_from_arena(
             arena, sizeof(constant_declaration_t));
     node->base.base.vtbl = &cdecln_vtbl;
     node->decl_list = (constant_declarator_t **)alloc_from_arena(arena,

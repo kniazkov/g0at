@@ -108,7 +108,7 @@ static node_vtbl_t simple_assignment_vtbl = {
 
 expression_t *create_simple_assignment_node(arena_t *arena, assignable_expression_t *left_operand,
         expression_t *right_operand) {
-    simple_assignment_t *expr = (simple_assignment_t *)alloc_from_arena(
+    simple_assignment_t *expr = (simple_assignment_t *)alloc_zeroed_from_arena(
         arena,
         sizeof(simple_assignment_t)
     );

@@ -113,7 +113,7 @@ static node_vtbl_t power_vtbl = {
 
 expression_t *create_power_node(arena_t *arena, expression_t *left_operand,
         expression_t *right_operand) {
-    power_t *expr = (power_t *)alloc_from_arena(arena, sizeof(power_t));
+    power_t *expr = (power_t *)alloc_zeroed_from_arena(arena, sizeof(power_t));
     expr->base.base.base.vtbl = &power_vtbl;
     expr->base.left_operand = left_operand;
     expr->base.right_operand = right_operand;

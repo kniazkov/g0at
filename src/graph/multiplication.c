@@ -111,7 +111,7 @@ static node_vtbl_t multiplication_vtbl = {
 
 expression_t *create_multiplication_node(arena_t *arena, expression_t *left_operand,
         expression_t *right_operand) {
-    multiplication_t *expr = (multiplication_t *)alloc_from_arena(arena, sizeof(multiplication_t));
+    multiplication_t *expr = (multiplication_t *)alloc_zeroed_from_arena(arena, sizeof(multiplication_t));
     expr->base.base.base.vtbl = &multiplication_vtbl;
     expr->base.left_operand = left_operand;
     expr->base.right_operand = right_operand;

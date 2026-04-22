@@ -168,7 +168,7 @@ static node_vtbl_t root_node_vtbl = {
 };
 
 node_t *create_root_node(arena_t *arena, statement_t **stmt_list, size_t stmt_count) {
-    root_node_t *root = (root_node_t *)alloc_from_arena(arena, sizeof(root_node_t));
+    root_node_t *root = (root_node_t *)alloc_zeroed_from_arena(arena, sizeof(root_node_t));
     root->base.vtbl = &root_node_vtbl;
     size_t data_size = stmt_count * sizeof(statement_t *);
     root->stmt_list = (statement_t **)alloc_from_arena(arena, data_size);

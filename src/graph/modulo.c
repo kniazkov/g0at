@@ -103,7 +103,7 @@ static node_vtbl_t modulo_vtbl = {
 
 expression_t *create_modulo_node(arena_t *arena, expression_t *left_operand,
         expression_t *right_operand) {
-    modulo_t *expr = (modulo_t *)alloc_from_arena(arena, sizeof(modulo_t));
+    modulo_t *expr = (modulo_t *)alloc_zeroed_from_arena(arena, sizeof(modulo_t));
     expr->base.base.base.vtbl = &modulo_vtbl;
     expr->base.left_operand = left_operand;
     expr->base.right_operand = right_operand;

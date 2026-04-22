@@ -119,7 +119,7 @@ static node_vtbl_t integer_vtbl = {
 static data_type_t data_type = BUILT_IN_DATA_TYPE(L"int");
 
 node_t *create_integer_node(arena_t *arena, int64_t value) {
-    integer_t *expr = (integer_t *)alloc_from_arena(arena, sizeof(integer_t));
+    integer_t *expr = (integer_t *)alloc_zeroed_from_arena(arena, sizeof(integer_t));
     expr->base.base.vtbl = &integer_vtbl;
     expr->base.data_type = &data_type;
     expr->value = value;

@@ -13,8 +13,8 @@
 
 #include <stdbool.h>
 
+#include "position.h"
 #include "lib/value.h"
-#include "scanner/position.h"
 
 /**
  * @brief Forward declaration of compilation error structure.

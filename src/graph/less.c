@@ -113,7 +113,7 @@ static node_vtbl_t less_vtbl = {
 
 expression_t *create_less_node(arena_t *arena, expression_t *left_operand,
         expression_t *right_operand) {
-    less_t *expr = (less_t *)alloc_from_arena(arena, sizeof(less_t));
+    less_t *expr = (less_t *)alloc_zeroed_from_arena(arena, sizeof(less_t));
     expr->base.base.base.vtbl = &less_vtbl;
     expr->base.left_operand = left_operand;
     expr->base.right_operand = right_operand;

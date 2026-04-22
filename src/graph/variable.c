@@ -141,7 +141,7 @@ static node_vtbl_t variable_vtbl = {
 };
 
 expression_t *create_variable_node(arena_t *arena, string_view_t name) {
-    variable_t *expr = (variable_t *)alloc_from_arena(arena, sizeof(variable_t));
+    variable_t *expr = (variable_t *)alloc_zeroed_from_arena(arena, sizeof(variable_t));
     expr->base.base.base.vtbl = &variable_vtbl;
     expr->name = copy_string_to_arena(arena, name.data, name.length);
     return &expr->base.base;

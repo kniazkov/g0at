@@ -186,7 +186,7 @@ static node_vtbl_t return_vtbl = {
 
 node_t *create_return_node(arena_t *arena, expression_t *value) {
     return_t *stmt = 
-        (return_t *)alloc_from_arena(arena, sizeof(return_t));
+        (return_t *)alloc_zeroed_from_arena(arena, sizeof(return_t));
     stmt->base.base.vtbl = &return_vtbl;
     stmt->value = value;
     return &stmt->base.base;

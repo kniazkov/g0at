@@ -14,7 +14,7 @@
 #include <stddef.h>
 #include <wchar.h>
 
-#include "position.h"
+#include "common/position.h"
 #include "lib/value.h"
 
 /**

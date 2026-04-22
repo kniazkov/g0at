@@ -14,7 +14,6 @@
 
 #include <wchar.h>
 #include "token.h"
-#include "position.h"
 
 /**
  * @brief Forward declaration of scanner structure.

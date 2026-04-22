@@ -111,7 +111,7 @@ static node_vtbl_t subtraction_vtbl = {
 
 expression_t *create_subtraction_node(arena_t *arena, expression_t *left_operand,
         expression_t *right_operand) {
-    subtraction_t *expr = (subtraction_t *)alloc_from_arena(arena, sizeof(subtraction_t));
+    subtraction_t *expr = (subtraction_t *)alloc_zeroed_from_arena(arena, sizeof(subtraction_t));
     expr->base.base.base.vtbl = &subtraction_vtbl;
     expr->base.left_operand = left_operand;
     expr->base.right_operand = right_operand;

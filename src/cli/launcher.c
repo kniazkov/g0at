@@ -45,9 +45,10 @@ int go(options_t *opt) {
     /*
         3. allocate memory for the parser
     */
+    arena_t *positions_memory = create_arena();
     arena_t *tokens_memory = create_arena();
     arena_t *graph_memory = create_arena();
-    parser_memory_t memory = { tokens_memory, graph_memory };
+    parser_memory_t memory = { positions_memory, tokens_memory, graph_memory };
     token_groups_t *groups = (token_groups_t*)ALLOC(sizeof(token_groups_t));
 
     compilation_error_t *error = NULL;
@@ -169,20 +170,26 @@ int go(options_t *opt) {
         code = NULL_STRING_VALUE;
 
         /*
-            13. run the virtual machine
+            13. at this stage, there is no need to keep track of the source code's positions either
+        */
+        destroy_arena(positions_memory);
+        positions_memory = NULL;
+
+        /*
+            14. run the virtual machine
         */
         process_t *process = create_process();
         ret_code = run(process, bytecode);
         destroy_process(process);
 
         /*
-            14. destroy bytecode
+            15. destroy bytecode
         */
         free_bytecode(bytecode);
     } while(false);
 
     /*
-        15. print error messages (if any)
+        16. print error messages (if any)
     */
     if (error != NULL) {
         error = reverse_compilation_errors(error);
@@ -196,8 +203,11 @@ int go(options_t *opt) {
     }
 
     /*
-        16. free the memory used by the compiler if it is not free yet
+        17. free the memory used by the compiler if it is not free yet
     */
+    if (positions_memory != NULL) {
+        destroy_arena(positions_memory);
+    }
     if (graph_memory != NULL) {
         destroy_arena(graph_memory);
     }
@@ -208,7 +218,7 @@ int go(options_t *opt) {
     FREE_STRING(code);
 
     /*
-        17. check for memory leaks
+        18. check for memory leaks
     */
     size_t leaked_memory_size = get_allocated_memory_size() - previously_allocated;
     if (leaked_memory_size > 0) {

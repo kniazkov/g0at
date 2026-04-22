@@ -127,7 +127,7 @@ static node_vtbl_t static_string_vtbl = {
 };
 
 node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length) {
-    static_string_t *expr = (static_string_t *)alloc_from_arena(arena, sizeof(static_string_t));
+    static_string_t *expr = (static_string_t *)alloc_zeroed_from_arena(arena, sizeof(static_string_t));
     expr->base.base.vtbl = &static_string_vtbl;
     expr->string = copy_string_to_arena(arena, data, length);
     return &expr->base.base;
