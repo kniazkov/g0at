@@ -22,8 +22,7 @@ compilation_error_t *create_error_from_token(arena_t *arena, const token_t *toke
     assert(format != NULL);
     compilation_error_t *error = (compilation_error_t *)alloc_from_arena(
             arena, sizeof(compilation_error_t));
-    error->begin = token->begin;
-    error->end = token->end;
+    error->position = token->position;
     va_list args;
     va_start(args, format);
     string_value_t value = format_string_vargs(format, args);

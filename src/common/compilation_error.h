@@ -44,21 +44,15 @@ typedef struct arena_t arena_t;
  */
 struct compilation_error_t {
     /**
-     * @brief The full position of the error's beginning in the source code.
-     * 
+     * @brief The full position of the error in the source code.
+     *
      * This field stores the information about the file, row, column, and offset
-     * where the error began. This helps pinpoint the exact starting location of the error.
-     */
-    full_position_t begin;
-
-    /**
-     * @brief The short position of the error's end in the source code.
-     * 
-     * This field stores the position of the character immediately after the error
+     * where the error began, and also position of the character immediately after the error
      * occurred, represented by the row, column, and offset where the error ends.
-     * This can be useful for indicating a range of affected source code.
+     * This helps pinpoint the exact starting location of the error.
      */
-    short_position_t end;
+    position_range_t *position;
+
     /**
      * @brief The error message.
      * 

@@ -34,7 +34,7 @@ compilation_error_t *parsing_returns(token_t *token, parser_memory_t *memory,
     assert(token->type == TOKEN_RETURN);
     if (token->right && token->right->type == TOKEN_EXPRESSION) {
         collapse_tokens_to_token(
-            memory->tokens, 
+            memory, 
             token, 
             token->right,
             TOKEN_STATEMENT, 
@@ -42,7 +42,7 @@ compilation_error_t *parsing_returns(token_t *token, parser_memory_t *memory,
         );
     } else {
         collapse_tokens_to_token(
-            memory->tokens, 
+            memory, 
             token, 
             token,
             TOKEN_STATEMENT, 

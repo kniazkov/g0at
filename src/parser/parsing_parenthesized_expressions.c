@@ -43,8 +43,7 @@ compilation_error_t *preparsing_parenthesized_expressions(token_t *token, parser
     node_t *node = create_parenthesized_expression_node(memory->graph); 
     token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     expr->type = TOKEN_EXPRESSION;
-    expr->begin = token->begin;
-    expr->end = token->end;
+    expr->position = token->position;
     expr->text = token->text;
     expr->node = node;
     replace_token(token, expr);
@@ -91,7 +90,7 @@ compilation_error_t *parsing_parenthesized_expressions(token_t *token, parser_me
     return NULL;
 error:
     return create_error_from_token(
-        memory->tokens,
+        memory->errors,
         token,
         get_messages()->invalid_parenthesized_expression
     );

@@ -15,8 +15,8 @@
 #include "graph/node.h"
 
 bool test_identifier() {
-    arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena, arena };
+    arena_t *arena = create_arena(8);
+    parser_memory_t memory = { arena, arena, arena, arena };
     token_groups_t groups;
     scanner_t *scan = create_scanner(
         "program.goat",
@@ -28,19 +28,19 @@ bool test_identifier() {
     ASSERT(tok->type == TOKEN_IDENTIFIER);
     ASSERT(wcscmp(L"test", tok->text.data) == 0);
     ASSERT(tok->text.length == 4);
-    ASSERT(strcmp("program.goat", tok->begin.file_name) == 0);
-    ASSERT(tok->begin.row == 1);
-    ASSERT(tok->begin.column == 3);
-    ASSERT(tok->end.row == 1);
-    ASSERT(tok->end.column == 7);
+    ASSERT(strcmp("program.goat", tok->position->begin->file_name) == 0);
+    ASSERT(tok->position->begin->row == 1);
+    ASSERT(tok->position->begin->column == 3);
+    ASSERT(tok->position->end->row == 1);
+    ASSERT(tok->position->end->column == 7);
     tok = get_token(scan);
     ASSERT(tok->type == TOKEN_IDENTIFIER);
     ASSERT(wcscmp(L"abc123", tok->text.data) == 0);
     ASSERT(tok->text.length == 6);
-    ASSERT(tok->begin.row == 2);
-    ASSERT(tok->begin.column == 2);
-    ASSERT(tok->end.row == 2);
-    ASSERT(tok->end.column == 8);
+    ASSERT(tok->position->begin->row == 2);
+    ASSERT(tok->position->begin->column == 2);
+    ASSERT(tok->position->end->row == 2);
+    ASSERT(tok->position->end->column == 8);
     tok = get_token(scan);
     ASSERT(tok == NULL);
     destroy_arena(arena);
@@ -48,8 +48,8 @@ bool test_identifier() {
 }
 
 bool test_bracket() {
-    arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena, arena };
+    arena_t *arena = create_arena(8);
+    parser_memory_t memory = { arena, arena, arena, arena };
     token_groups_t groups;
     scanner_t *scan = create_scanner(
         "program.goat",
@@ -66,8 +66,8 @@ bool test_bracket() {
 }
 
 bool test_static_string() {
-    arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena, arena };
+    arena_t *arena = create_arena(8);
+    parser_memory_t memory = { arena, arena, arena, arena };
     token_groups_t groups;
     scanner_t *scan = create_scanner(
         "program.goat", 
@@ -100,8 +100,8 @@ bool test_static_string() {
 }
 
 bool test_uknown_symbol() {
-    arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena, arena };
+    arena_t *arena = create_arena(8);
+    parser_memory_t memory = { arena, arena, arena, arena };
     token_groups_t groups;
     scanner_t *scan = create_scanner(
         "program.goat", 

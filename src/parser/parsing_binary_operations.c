@@ -31,7 +31,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
     token_t *left_token = operator->left;
     if (left_token == NULL) {
         return create_error_from_token(
-            memory->tokens,
+            memory->errors,
             operator,
             get_messages()->expected_expression,
             operator->text
@@ -39,7 +39,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
     }
     if (left_token->type != TOKEN_EXPRESSION) {
         return create_error_from_token(
-            memory->tokens,
+            memory->errors,
             left_token,
             get_messages()->expected_expression,
             left_token->text
@@ -49,7 +49,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
     token_t *right_token = operator->right;
     if (right_token == NULL) {
         return create_error_from_token(
-            memory->tokens,
+            memory->errors,
             operator,
             get_messages()->expected_expression,
             operator->text
@@ -57,7 +57,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
     }
     if (right_token->type != TOKEN_EXPRESSION) {
         return create_error_from_token(
-            memory->tokens,
+            memory->errors,
             right_token,
             get_messages()->expected_expression,
             right_token->text
@@ -114,7 +114,7 @@ compilation_error_t *parsing_comparison_operators(token_t *operator, parser_memo
     if (0 == wcscmp(operator->text.data , L"<")) {
         operation = create_less_node(memory->graph, left_operand, right_operand);
     }
-    collapse_tokens_to_token(memory->tokens, operator->left, operator->right, TOKEN_EXPRESSION,
+    collapse_tokens_to_token(memory, operator->left, operator->right, TOKEN_EXPRESSION,
         &operation->base);
     return NULL;
 }
@@ -151,7 +151,7 @@ compilation_error_t *parsing_additive_operators(token_t *operator, parser_memory
     } else {
         operation = create_subtraction_node(memory->graph, left_operand, right_operand);
     }
-    collapse_tokens_to_token(memory->tokens, operator->left, operator->right, TOKEN_EXPRESSION,
+    collapse_tokens_to_token(memory, operator->left, operator->right, TOKEN_EXPRESSION,
         &operation->base);
     return NULL;
 }
@@ -190,7 +190,7 @@ compilation_error_t *parsing_multiplicative_operators(token_t *operator, parser_
     } else if (operator->text.data[0] == L'%') {
         operation = create_modulo_node(memory->graph, left_operand, right_operand);
     }
-    collapse_tokens_to_token(memory->tokens, operator->left, operator->right, TOKEN_EXPRESSION,
+    collapse_tokens_to_token(memory, operator->left, operator->right, TOKEN_EXPRESSION,
         &operation->base);
     return NULL;
 }
@@ -220,7 +220,7 @@ compilation_error_t *parsing_power_operators(token_t *operator, parser_memory_t 
     expression_t *left_operand = (expression_t *)operator->left->node;
     expression_t *right_operand = (expression_t *)operator->right->node;
     expression_t *operation = create_power_node(memory->graph, left_operand, right_operand);
-    collapse_tokens_to_token(memory->tokens, operator->left, operator->right, TOKEN_EXPRESSION,
+    collapse_tokens_to_token(memory, operator->left, operator->right, TOKEN_EXPRESSION,
         &operation->base);
     return NULL;
 }

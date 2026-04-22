@@ -443,18 +443,19 @@ token_t *get_token(scanner_t *scan) {
     }
 
     token_t *token = alloc_zeroed_from_arena(scan->memory->tokens, sizeof(token_t));
-    token->begin = scan->position;
+    
+    full_position_t *begin = copy_full_position_to_arena(scan->memory->positions, &scan->position);
 
     if (is_letter(ch)) {
         bool predefined = false;
         do {
             ch = next_char(scan);
         } while(is_letter(ch) || iswdigit(ch));
-        size_t length = scan->position.code - token->begin.code;
+        size_t length = scan->position.code - begin->code;
         for (size_t index = 0; index < sizeof(keywords) / sizeof(keyword_lookup_t); index++) {
             const keyword_lookup_t* kw = &keywords[index];
             if (length == kw->length && 
-                    wcsncmp(token->begin.code, kw->keyword, kw->length) == 0) {
+                    wcsncmp(begin->code, kw->keyword, kw->length) == 0) {
                 predefined = true;
                 token->type = kw->type;
                 token->text = (string_view_t){ kw->keyword, kw->length };
@@ -509,13 +510,16 @@ token_t *get_token(scanner_t *scan) {
         next_char(scan);
     }
     
-    token->end = full_to_short_position(&scan->position);
     if (token->text.data == NULL) {
-        size_t length = scan->position.code - token->begin.code;
-        token->text = copy_string_to_arena(scan->memory->tokens, token->begin.code, length);
+        size_t length = scan->position.code - begin->code;
+        token->text = copy_string_to_arena(scan->memory->tokens, begin->code, length);
     } else if (token->text.length == 0) {
         token->text.length = wcslen(token->text.data);
     }
+
+    short_position_t *end = create_short_position_from_full(scan->memory->positions,
+        &scan->position);
+    token->position = create_position_range(scan->memory->positions, begin, end);
 
     if (token->type == TOKEN_OPERATOR) {
         for (size_t index = 0; index < sizeof(operator_mappings)/sizeof(operator_mapping_t);

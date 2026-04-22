@@ -43,7 +43,7 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
     vector_t *vector = NULL;
     if (!keyword->right) {
         error = create_error_from_token(
-            memory->tokens,
+            memory->errors,
             keyword,
             get_messages()->expected_var_declaration
         );
@@ -77,7 +77,7 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
         if (token->type == TOKEN_COMMA) {
             if (!token->right) {
                 error = create_error_from_token(
-                    memory->tokens,
+                    memory->errors,
                     token,
                     get_messages()->expected_var_after_comma
                 );
@@ -94,7 +94,7 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
         vector->size
     );
     collapse_tokens_to_token(
-        memory->tokens, 
+        memory, 
         keyword, 
         last_token,
         TOKEN_STATEMENT, 
@@ -106,7 +106,7 @@ invalid_declaration:
     {
         string_value_t last_token_str = token_to_string(last_token);
         error = create_error_from_token(
-            memory->tokens,
+            memory->errors,
             keyword,
             get_messages()->invalid_var_declaration_syntax,
             last_token_str.data
@@ -140,7 +140,7 @@ compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memo
     vector_t *vector = NULL;
     if (!keyword->right) {
         error = create_error_from_token(
-            memory->tokens,
+            memory->errors,
             keyword,
             get_messages()->expected_const_declaration
         );
@@ -167,7 +167,7 @@ compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memo
         if (token->type == TOKEN_COMMA) {
             if (!token->right) {
                 error = create_error_from_token(
-                    memory->tokens,
+                    memory->errors,
                     token,
                     get_messages()->expected_const_after_comma
                 );
@@ -184,7 +184,7 @@ compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memo
         vector->size
     );
     collapse_tokens_to_token(
-        memory->tokens, 
+        memory, 
         keyword, 
         last_token,
         TOKEN_STATEMENT, 
@@ -196,7 +196,7 @@ invalid_declaration:
     {
         string_value_t last_token_str = token_to_string(last_token);
         error = create_error_from_token(
-            memory->tokens,
+            memory->errors,
             keyword,
             get_messages()->invalid_const_declaration_syntax,
             last_token_str.data

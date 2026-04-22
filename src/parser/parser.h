@@ -69,7 +69,7 @@ typedef compilation_error_t* (*reduce_rule_t)(token_t *start_token, parser_memor
  * tokens are stored in the lists pointed to by `tokens`. If any errors are encountered
  * during the scanning process, they are returned.
  * 
- * @param arena The memory arena for allocating tokens.
+ * @param memory A pointer to the parser's memory structure, used for memory allocation.
  * @param scan The scanner used to get the tokens.
  * @param tokens A pointer to token list where the processed tokens will be stored.
  * @param groups Token classification groups that may be updated during processing.
@@ -79,7 +79,7 @@ typedef compilation_error_t* (*reduce_rule_t)(token_t *start_token, parser_memor
  * @return A `compilation_error_t` pointer if an error is detected (e.g., mismatched brackets),
  *  or NULL if no errors.
  */
-compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens,
+compilation_error_t *process_brackets(parser_memory_t *memory, scanner_t *scan, token_list_t *tokens,
         token_groups_t *groups);
 
 /**
@@ -93,7 +93,7 @@ compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_lis
  * After collapsing the tokens, the old tokens are removed from the token list, and the new token
  * is inserted in their place, maintaining the linkage of surrounding tokens.
  * 
- * @param arena The memory arena to allocate the new token.
+ * @param memory A pointer to the parser's memory structure, used for memory allocation.
  * @param first The first token in the sequence to collapse.
  * @param last The last token in the sequence to collapse.
  * @param type The type of the new token.
@@ -104,7 +104,7 @@ compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_lis
  *  from the token list during the collapse process. The new token will replace the sequence
  *  of tokens in the list.
  */
-token_t *collapse_tokens_to_token(arena_t *arena, token_t *first, token_t *last,
+token_t *collapse_tokens_to_token(parser_memory_t *memory, token_t *first, token_t *last,
         token_type_t type, node_t *node);
 
 /**

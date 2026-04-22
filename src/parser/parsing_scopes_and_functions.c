@@ -31,8 +31,7 @@ static void init_statement_list(token_t *token, parser_memory_t *memory, token_g
     node_t *node = create_statement_list_node(memory->graph); 
     token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     expr->type = TOKEN_EXPRESSION;
-    expr->begin = token->begin;
-    expr->end = token->end;
+    expr->position = token->position;
     expr->text = token->text;
     expr->node = node;
     replace_token(token, expr);
@@ -56,7 +55,7 @@ static void init_statement_list(token_t *token, parser_memory_t *memory, token_g
 static void init_function_wo_args(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
     node_t *func_obj = create_function_object_node(memory->graph, NULL, 0); 
     token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
-    collapse_tokens_to_token(memory->tokens, token->left, token,
+    collapse_tokens_to_token(memory, token->left, token,
         TOKEN_EXPRESSION, func_obj);
     token->type = TOKEN_FUNCTION_BODY;
     token->node = func_obj;
@@ -90,7 +89,7 @@ static compilation_error_t *init_function_with_args(token_t *token, parser_memor
     while (arg_token) {
         if (arg_token->type != TOKEN_IDENTIFIER) {
             string_value_t text = token_to_string(arg_token);
-            error = create_error_from_token(memory->tokens, token,
+            error = create_error_from_token(memory->errors, token,
                 get_messages()->invalid_function_argument, text.data);
             FREE_STRING(text);
             goto cleanup;
@@ -101,7 +100,7 @@ static compilation_error_t *init_function_with_args(token_t *token, parser_memor
             break;
         }
         if (next->type != TOKEN_COMMA) {
-            error = create_error_from_token(memory->tokens, token,
+            error = create_error_from_token(memory->errors, token,
                 get_messages()->expected_comma_between_args);
             goto cleanup;
         }
@@ -109,7 +108,7 @@ static compilation_error_t *init_function_with_args(token_t *token, parser_memor
     }
     node_t *func_obj = create_function_object_node(memory->graph, arg_list, arg_count); 
     token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
-    collapse_tokens_to_token(memory->tokens, token->left->left, token,
+    collapse_tokens_to_token(memory, token->left->left, token,
         TOKEN_EXPRESSION, func_obj);
     token->type = TOKEN_FUNCTION_BODY;
     token->node = func_obj;

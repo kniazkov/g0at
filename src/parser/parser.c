@@ -129,7 +129,7 @@ compilation_error_t *parsing_parenthesized_expressions(token_t *token, parser_me
  * It wraps balanced bracket pairs into a special `TOKEN_BRACKET_PAIR` token.
  * If an unmatched bracket is found, or if brackets do not match, it returns an error.
  * 
- * @param arena The memory arena for allocating new tokens and error descriptors.
+ * @param memory A pointer to the parser's memory structure, used for memory allocation.
  * @param scan The scanner used to get tokens.
  * @param list The list to which the resulting tokens will be added.
  * @param opening_token The token representing the opening bracket (used to track errors).
@@ -139,7 +139,7 @@ compilation_error_t *parsing_parenthesized_expressions(token_t *token, parser_me
  * @return A `compilation_error_t` pointer if an error is detected (e.g., mismatched brackets),
  *  or NULL if no errors.
  */
-static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanner_t *scan,
+static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memory, scanner_t *scan,
         token_list_t *list, const token_t *opening_token, const token_t **closing_token,
         token_groups_t *groups) {
     const token_t *previous = opening_token;
@@ -149,27 +149,44 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
             if (opening_token == NULL) {
                 return NULL; // no opening bracket - no error
             }
-            compilation_error_t *error = create_error_from_token(arena, opening_token,
-                get_messages()->unclosed_opening_bracket, opening_token->text.data[0]);
-            error->end = previous->end;
+            compilation_error_t *error = create_error_from_token(
+                memory->errors,
+                opening_token,
+                get_messages()->unclosed_opening_bracket,
+                opening_token->text.data[0]
+            );
+            error->position = create_position_range(
+                memory->positions,
+                opening_token->position->begin,
+                previous->position->end
+            );
             return error;
         }
         if (token->type == TOKEN_ERROR) {
-            return create_error_from_token(arena, token, NULL);
+            return create_error_from_token(memory->errors, token, NULL);
         }
         if (token->type == TOKEN_BRACKET) {
             wchar_t bracket = token->text.data[0];
             if (bracket == L'(' || bracket == L'{' || bracket == '[') {
-                token_t *pair = (token_t *)alloc_zeroed_from_arena(arena, sizeof(token_t));
+                token_t *pair = (token_t *)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
                 pair->type = TOKEN_BRACKET_PAIR;
-                pair->begin = token->begin;
-                compilation_error_t *error = scan_and_analyze_for_brackets(arena, scan,
-                    &pair->children, token, &previous, groups);
+                compilation_error_t *error = scan_and_analyze_for_brackets(
+                    memory,
+                    scan,
+                    &pair->children,
+                    token,
+                    &previous, 
+                    groups
+                );
                 if (error != NULL) {
                     return error;
                 }
-                pair->end = previous->end;
-                wchar_t *text = (wchar_t *)alloc_from_arena(arena, sizeof(wchar_t) * 3);
+                pair->position = create_position_range(
+                    memory->positions,
+                    token->position->begin,
+                    previous->position->end
+                );
+                wchar_t *text = (wchar_t *)alloc_from_arena(memory->tokens, sizeof(wchar_t) * 3);
                 text[0] = bracket;
                 text[1] = previous->text.data[0];
                 text[2] = L'\0';
@@ -184,7 +201,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
                 *closing_token = token;
                 if (opening_token == NULL) {
                     return create_error_from_token(
-                        arena,
+                        memory->errors,
                         token,
                         get_messages()->missing_opening_bracket,
                         bracket
@@ -201,13 +218,17 @@ static compilation_error_t *scan_and_analyze_for_brackets(arena_t *arena, scanne
                 assert(opening_bracket != L'\0');
                 if (opening_token->text.data[0] != opening_bracket) {
                     compilation_error_t *error = create_error_from_token(
-                        arena,
+                        memory->errors,
                         opening_token,
                         get_messages()->brackets_do_not_match,
                         bracket,
                         opening_token->text.data[0]
                     );
-                    error->end = token->end;
+                    error->position = create_position_range(
+                        memory->positions,
+                        opening_token->position->begin,
+                        token->position->end
+                    );
                     return error;
                 }
                 return NULL;
@@ -307,11 +328,11 @@ static compilation_error_t *apply_reduction_rule_backward(token_list_t *list, re
     return error;
 }
 
-compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_list_t *tokens,
-        token_groups_t *groups) {
+compilation_error_t *process_brackets(parser_memory_t *memory, scanner_t *scan,
+        token_list_t *tokens, token_groups_t *groups) {
     memset(tokens, 0, sizeof(token_list_t));
     const token_t *last_token;
-    compilation_error_t *error = scan_and_analyze_for_brackets(arena, scan, tokens, NULL,
+    compilation_error_t *error = scan_and_analyze_for_brackets(memory, scan, tokens, NULL,
         &last_token, groups);
     if (error != NULL) {
         error->critical = true;
@@ -319,12 +340,15 @@ compilation_error_t *process_brackets(arena_t *arena, scanner_t *scan, token_lis
     return error;
 }
 
-token_t *collapse_tokens_to_token(arena_t *arena, token_t *first, token_t *last,
+token_t *collapse_tokens_to_token(parser_memory_t *memory, token_t *first, token_t *last,
         token_type_t type, node_t *node) {
-    token_t *new_token = (token_t *)alloc_zeroed_from_arena(arena, sizeof(token_t));
+    token_t *new_token = (token_t *)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     new_token->type = type;
-    new_token->begin = first->begin;
-    new_token->end = last->end;
+    new_token->position = create_position_range(
+        memory->positions,
+        first->position->begin,
+        last->position->end
+    );
     new_token->node = node;
     token_t *old_token = first;
     while(old_token != last) {
@@ -351,7 +375,7 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
                 (expression_t*)token->node);
         }
         else if (token->type != TOKEN_COMMA && token->type != TOKEN_SEMICOLON) {
-            result.error = create_error_from_token(memory->tokens, token,
+            result.error = create_error_from_token(memory->errors, token,
                 get_messages()->not_a_statement, token->text);
             break;
         }

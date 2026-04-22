@@ -45,7 +45,7 @@ compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
         token_t *args = identifier->right;
         args->type = TOKEN_FCALL_ARGS;
         args->node = func_call;
-        collapse_tokens_to_token(memory->tokens, identifier, identifier->right,
+        collapse_tokens_to_token(memory, identifier, identifier->right,
             TOKEN_EXPRESSION, func_call);
         append_token_to_group(&groups->function_arguments, args);
     }
@@ -82,7 +82,7 @@ compilation_error_t *parsing_function_call_args(token_t *container,
         if (token->type == TOKEN_EXPRESSION) {
             args[args_count++] = (expression_t *)token->node;
         } else {
-            error = create_error_from_token(memory->tokens, token,
+            error = create_error_from_token(memory->errors, token,
                 get_messages()->expected_expression, token->text);
             goto cleanup;
         }
@@ -91,12 +91,12 @@ compilation_error_t *parsing_function_call_args(token_t *container,
             break;
         }
         if (token->type != TOKEN_COMMA) {
-            error = create_error_from_token(memory->tokens, token,
+            error = create_error_from_token(memory->errors, token,
                 get_messages()->expected_comma_between_args);
             goto cleanup;
         }
         if (token->right == NULL) {
-            error = create_error_from_token(memory->tokens, token->right ,
+            error = create_error_from_token(memory->errors, token->right ,
                 get_messages()->expected_expr_after_comma);
             goto cleanup;
         }

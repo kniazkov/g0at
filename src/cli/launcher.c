@@ -45,10 +45,12 @@ int go(options_t *opt) {
     /*
         3. allocate memory for the parser
     */
-    arena_t *positions_memory = create_arena();
-    arena_t *tokens_memory = create_arena();
-    arena_t *graph_memory = create_arena();
-    parser_memory_t memory = { positions_memory, tokens_memory, graph_memory };
+    parser_memory_t memory = { 
+        create_arena(64),  // positions
+        create_arena(64),  // tokens
+        create_arena(128), // nodes
+        create_arena(8)    // errors
+    };
     token_groups_t *groups = (token_groups_t*)ALLOC(sizeof(token_groups_t));
 
     compilation_error_t *error = NULL;
@@ -60,7 +62,7 @@ int go(options_t *opt) {
         */
         scanner_t *scan = create_scanner(opt->input_file->file_name, code, &memory, groups);
         token_list_t tokens;
-        error = process_brackets(tokens_memory, scan, &tokens, groups);
+        error = process_brackets(&memory, scan, &tokens, groups);
         if (error != NULL) {
             break;
         }
@@ -85,13 +87,13 @@ int go(options_t *opt) {
         */
         FREE(groups);
         groups = NULL;
-        destroy_arena(tokens_memory);
-        tokens_memory = NULL;
+        destroy_arena(memory.tokens);
+        memory.tokens = NULL;
 
         /*
             7. perform a static analysis
         */
-        error = analyze(root_node, graph_memory);
+        error = analyze(root_node, memory.graph);
         if (error != NULL) {
             break;
         }
@@ -164,61 +166,58 @@ int go(options_t *opt) {
         /*
             12. destroy the syntax tree, since the bytecode exists
         */
-        destroy_arena(graph_memory);
-        graph_memory = NULL;
+        destroy_arena(memory.graph);
+        memory.graph = NULL;
         FREE_STRING(code);
         code = NULL_STRING_VALUE;
 
         /*
-            13. at this stage, there is no need to keep track of the source code's positions either
-        */
-        destroy_arena(positions_memory);
-        positions_memory = NULL;
-
-        /*
-            14. run the virtual machine
+            13. run the virtual machine
         */
         process_t *process = create_process();
         ret_code = run(process, bytecode);
         destroy_process(process);
 
         /*
-            15. destroy bytecode
+            14. destroy bytecode
         */
         free_bytecode(bytecode);
     } while(false);
 
     /*
-        16. print error messages (if any)
+        15. print error messages (if any)
     */
     if (error != NULL) {
         error = reverse_compilation_errors(error);
         const wchar_t const *error_msg_format = get_messages()->compilation_error;
         while (error != NULL) {
-            fprintf_utf8(stderr, error_msg_format, error->begin.file_name, error->begin.row,
-                error->begin.column, error->message.data);
+            fprintf_utf8(stderr, error_msg_format, error->position->begin->file_name,
+                error->position->begin->row, error->position->begin->column, error->message.data);
             fprintf(stderr, "\n");
             error = error->next;
         }
     }
 
     /*
-        17. free the memory used by the compiler if it is not free yet
+        16. free the memory used by the compiler if it is not free yet
     */
-    if (positions_memory != NULL) {
-        destroy_arena(positions_memory);
+    if (memory.positions != NULL) {
+        destroy_arena(memory.positions);
     }
-    if (graph_memory != NULL) {
-        destroy_arena(graph_memory);
+    if (memory.tokens != NULL) {
+        destroy_arena(memory.tokens);
     }
     FREE(groups);
-    if (tokens_memory != NULL) {
-        destroy_arena(tokens_memory);
+    if (memory.graph != NULL) {
+        destroy_arena(memory.graph);
     }
     FREE_STRING(code);
+    if (memory.errors != NULL) {
+        destroy_arena(memory.errors);
+    }
 
     /*
-        18. check for memory leaks
+        17. check for memory leaks
     */
     size_t leaked_memory_size = get_allocated_memory_size() - previously_allocated;
     if (leaked_memory_size > 0) {

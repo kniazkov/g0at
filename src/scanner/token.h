@@ -166,18 +166,14 @@ struct token_t {
     token_t *next_in_group;
 
     /**
-     * @brief The position where the token starts in the source code.
+     * @brief Pointer to the source range occupied by this token.
      *
-     * Includes the file name, row, column, and offset.
+     * This field stores the beginning and ending positions of the token in the
+     * source code as a single @ref position_range_t structure. It can be shared
+     * safely between different entities because the range data is allocated in an
+     * independent memory arena.
      */
-    full_position_t begin;
-
-    /**
-     * @brief The position of the character following the token in the source code.
-     *
-     * Includes the row and column of the character immediately after the token.
-     */
-    short_position_t end;
+    position_range_t *position;
 
     /**
      * @brief The text of the token.
