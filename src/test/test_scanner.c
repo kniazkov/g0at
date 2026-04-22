@@ -16,7 +16,7 @@
 
 bool test_identifier() {
     arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena };
+    parser_memory_t memory = { arena, arena, arena };
     token_groups_t groups;
     scanner_t *scan = create_scanner(
         "program.goat",
@@ -49,7 +49,7 @@ bool test_identifier() {
 
 bool test_bracket() {
     arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena };
+    parser_memory_t memory = { arena, arena, arena };
     token_groups_t groups;
     scanner_t *scan = create_scanner(
         "program.goat",
@@ -67,7 +67,7 @@ bool test_bracket() {
 
 bool test_static_string() {
     arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena };
+    parser_memory_t memory = { arena, arena, arena };
     token_groups_t groups;
     scanner_t *scan = create_scanner(
         "program.goat", 
@@ -101,7 +101,7 @@ bool test_static_string() {
 
 bool test_uknown_symbol() {
     arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena };
+    parser_memory_t memory = { arena, arena, arena };
     token_groups_t groups;
     scanner_t *scan = create_scanner(
         "program.goat", 

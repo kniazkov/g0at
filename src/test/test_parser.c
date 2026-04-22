@@ -17,7 +17,7 @@
 
 bool test_brackets_one_level_nesting() {
     arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena };
+    parser_memory_t memory = { arena, arena, arena };
     token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
     scanner_t *scan = create_scanner(
         "program.goat", 
@@ -44,7 +44,7 @@ bool test_brackets_one_level_nesting() {
 
 bool test_brackets_two_levels_nesting() {
     arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena };
+    parser_memory_t memory = { arena, arena, arena };
     token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
     scanner_t *scan = create_scanner(
         "program.goat", 
@@ -74,7 +74,7 @@ bool test_brackets_two_levels_nesting() {
 
 bool test_unclosed_bracket() {
     arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena };
+    parser_memory_t memory = { arena, arena, arena };
     token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
     scanner_t *scan = create_scanner(
         "program.goat", 
@@ -100,7 +100,7 @@ bool test_unclosed_bracket() {
 
 bool test_missing_opening_bracket() {
     arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena };
+    parser_memory_t memory = { arena, arena, arena };
     token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
     scanner_t *scan = create_scanner(
         "program.goat", 
@@ -124,7 +124,7 @@ bool test_missing_opening_bracket() {
 
 bool test_closing_bracket_does_not_match_opening() {
     arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena };
+    parser_memory_t memory = { arena, arena, arena };
     token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
     scanner_t *scan = create_scanner(
         "program.goat", 
@@ -149,7 +149,7 @@ bool test_closing_bracket_does_not_match_opening() {
 
 bool test_parsing_function_calls() {
     arena_t *arena = create_arena();
-    parser_memory_t memory = { arena, arena };
+    parser_memory_t memory = { arena, arena, arena };
     token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
     wchar_t *code = L"print(\"test\")";
     scanner_t *scan = create_scanner(
