@@ -50,6 +50,7 @@ typedef struct {
     const wchar_t const *invalid_const_declaration_syntax;
     const wchar_t const *invalid_function_argument;
     const wchar_t const *invalid_parenthesized_expression;
+    const wchar_t const *variable_used_before_declaration;
     // add other
 } messages_t;
 
