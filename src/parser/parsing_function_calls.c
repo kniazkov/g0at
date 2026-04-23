@@ -82,8 +82,13 @@ compilation_error_t *parsing_function_call_args(token_t *container,
         if (token->type == TOKEN_EXPRESSION) {
             args[args_count++] = (expression_t *)token->node;
         } else {
-            error = create_error_from_token(memory->errors, token,
-                get_messages()->expected_expression, token->text);
+            error = create_error_from_token(
+                memory->errors,
+                token,
+                CRITICAL,
+                get_messages()->expected_expression,
+                token->text
+            );
             goto cleanup;
         }
         token = token->right;
@@ -91,13 +96,21 @@ compilation_error_t *parsing_function_call_args(token_t *container,
             break;
         }
         if (token->type != TOKEN_COMMA) {
-            error = create_error_from_token(memory->errors, token,
-                get_messages()->expected_comma_between_args);
+            error = create_error_from_token(
+                memory->errors,
+                token,
+                CRITICAL,
+                get_messages()->expected_comma_between_args
+            );
             goto cleanup;
         }
         if (token->right == NULL) {
-            error = create_error_from_token(memory->errors, token->right ,
-                get_messages()->expected_expr_after_comma);
+            error = create_error_from_token(
+                memory->errors,
+                token->right,
+                CRITICAL,
+                get_messages()->expected_expr_after_comma
+            );
             goto cleanup;
         }
         token = token->right;

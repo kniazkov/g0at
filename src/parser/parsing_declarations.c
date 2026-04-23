@@ -45,6 +45,7 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
         error = create_error_from_token(
             memory->errors,
             keyword,
+            CRITICAL,
             get_messages()->expected_var_declaration
         );
         goto cleanup;
@@ -79,6 +80,7 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
                 error = create_error_from_token(
                     memory->errors,
                     token,
+                    CRITICAL,
                     get_messages()->expected_var_after_comma
                 );
                 goto cleanup;
@@ -108,6 +110,7 @@ invalid_declaration:
         error = create_error_from_token(
             memory->errors,
             keyword,
+            CRITICAL,
             get_messages()->invalid_var_declaration_syntax,
             last_token_str.data
         );
@@ -142,6 +145,7 @@ compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memo
         error = create_error_from_token(
             memory->errors,
             keyword,
+            CRITICAL,
             get_messages()->expected_const_declaration
         );
         goto cleanup;
@@ -169,6 +173,7 @@ compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memo
                 error = create_error_from_token(
                     memory->errors,
                     token,
+                    CRITICAL,
                     get_messages()->expected_const_after_comma
                 );
                 goto cleanup;
@@ -198,6 +203,7 @@ invalid_declaration:
         error = create_error_from_token(
             memory->errors,
             keyword,
+            CRITICAL,
             get_messages()->invalid_const_declaration_syntax,
             last_token_str.data
         );

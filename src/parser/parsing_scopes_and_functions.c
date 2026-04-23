@@ -89,8 +89,13 @@ static compilation_error_t *init_function_with_args(token_t *token, parser_memor
     while (arg_token) {
         if (arg_token->type != TOKEN_IDENTIFIER) {
             string_value_t text = token_to_string(arg_token);
-            error = create_error_from_token(memory->errors, token,
-                get_messages()->invalid_function_argument, text.data);
+            error = create_error_from_token(
+                memory->errors,
+                token,
+                CRITICAL,
+                get_messages()->invalid_function_argument,
+                text.data
+            );
             FREE_STRING(text);
             goto cleanup;
         }
@@ -100,8 +105,12 @@ static compilation_error_t *init_function_with_args(token_t *token, parser_memor
             break;
         }
         if (next->type != TOKEN_COMMA) {
-            error = create_error_from_token(memory->errors, token,
-                get_messages()->expected_comma_between_args);
+            error = create_error_from_token(
+                memory->errors,
+                token,
+                CRITICAL,
+                get_messages()->expected_comma_between_args
+            );
             goto cleanup;
         }
         arg_token = next->right;

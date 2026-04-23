@@ -92,6 +92,7 @@ error:
     return create_error_from_token(
         memory->errors,
         token,
+        CRITICAL,
         get_messages()->invalid_parenthesized_expression
     );
 }

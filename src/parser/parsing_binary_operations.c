@@ -33,6 +33,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
         return create_error_from_token(
             memory->errors,
             operator,
+            CRITICAL,
             get_messages()->expected_expression,
             operator->text
         );
@@ -41,6 +42,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
         return create_error_from_token(
             memory->errors,
             left_token,
+            CRITICAL,
             get_messages()->expected_expression,
             left_token->text
         );
@@ -51,6 +53,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
         return create_error_from_token(
             memory->errors,
             operator,
+            CRITICAL,
             get_messages()->expected_expression,
             operator->text
         );
@@ -59,6 +62,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
         return create_error_from_token(
             memory->errors,
             right_token,
+            CRITICAL,
             get_messages()->expected_expression,
             right_token->text
         );

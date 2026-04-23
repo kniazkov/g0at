@@ -152,6 +152,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
             compilation_error_t *error = create_error_from_token(
                 memory->errors,
                 opening_token,
+                CRITICAL,
                 get_messages()->unclosed_opening_bracket,
                 opening_token->text.data[0]
             );
@@ -163,7 +164,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
             return error;
         }
         if (token->type == TOKEN_ERROR) {
-            return create_error_from_token(memory->errors, token, NULL);
+            return create_error_from_token(memory->errors, token, CRITICAL, L"");
         }
         if (token->type == TOKEN_BRACKET) {
             wchar_t bracket = token->text.data[0];
@@ -203,6 +204,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
                     return create_error_from_token(
                         memory->errors,
                         token,
+                        CRITICAL,
                         get_messages()->missing_opening_bracket,
                         bracket
                     );
@@ -220,6 +222,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
                     compilation_error_t *error = create_error_from_token(
                         memory->errors,
                         opening_token,
+                        CRITICAL,
                         get_messages()->brackets_do_not_match,
                         bracket,
                         opening_token->text.data[0]
@@ -275,7 +278,7 @@ static compilation_error_t *apply_reduction_rule_forward(token_list_t *list, red
         if (new_error != NULL) {
             new_error->next = error;
             error = new_error;
-            if (error->critical) {
+            if (error->severity == CRITICAL) {
                 break;
             }
         }
@@ -319,7 +322,7 @@ static compilation_error_t *apply_reduction_rule_backward(token_list_t *list, re
         if (new_error != NULL) {
             new_error->next = error;
             error = new_error;
-            if (error->critical) {
+            if (error->severity == CRITICAL) {
                 break;
             }
         }
@@ -334,9 +337,6 @@ compilation_error_t *process_brackets(parser_memory_t *memory, scanner_t *scan,
     const token_t *last_token;
     compilation_error_t *error = scan_and_analyze_for_brackets(memory, scan, tokens, NULL,
         &last_token, groups);
-    if (error != NULL) {
-        error->critical = true;
-    }
     return error;
 }
 
@@ -384,7 +384,7 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
                 (expression_t*)token->node);
         }
         else if (token->type != TOKEN_COMMA && token->type != TOKEN_SEMICOLON) {
-            result.error = create_error_from_token(memory->errors, token,
+            result.error = create_error_from_token(memory->errors, token, CRITICAL,
                 get_messages()->not_a_statement, token->text);
             break;
         }
@@ -401,7 +401,7 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
 #define APPLY_FORWARD(group_name, rule_func) \
     do { \
         error = apply_reduction_rule_forward(&groups->group_name, rule_func, memory, groups, error); \
-        if (error != NULL && error->critical) { \
+        if (error != NULL && error->severity == CRITICAL) { \
             return error; \
         } \
     } while(0)
@@ -414,7 +414,7 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
 #define APPLY_BACKWARD(group_name, rule_func) \
     do { \
         error = apply_reduction_rule_backward(&groups->group_name, rule_func, memory, groups, error); \
-        if (error != NULL && error->critical) { \
+        if (error != NULL && error->severity == CRITICAL) { \
             return error; \
         } \
     } while(0)

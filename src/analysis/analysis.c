@@ -84,9 +84,9 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, arena_t
     node->parent = parent;
     node->scope = scope;
     node->id = (*next_id)++;
-    const size_t child_count = node->vtbl->get_child_count(node);
+    const size_t child_count = get_node_child_count(node);
     for (size_t child_id = 0; child_id < child_count; child_id++) {
-        node_t *child = node->vtbl->get_child(node, child_id);
+        node_t *child = get_node_child(node, child_id);
         switch (child->vtbl->type) {
             case NODE_FUNCTION_OBJECT: {
                 scope_t *inner_scope = create_scope(arena, scope);

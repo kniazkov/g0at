@@ -35,24 +35,29 @@ compilation_error_t *parsing_assignment_operators(token_t *operator, parser_memo
     
     token_t *left_token = operator->left;
     if (left_token == NULL) {
-        compilation_error_t *error = create_error_from_token(memory->errors, operator,
-            get_messages()->expected_lvalue, operator->text);
+        compilation_error_t *error = create_error_from_token(
+            memory->errors,
+            operator,
+            CRITICAL,
+            get_messages()->expected_lvalue,
+            operator->text
+        );
         return error;
     }
     if (left_token->type != TOKEN_EXPRESSION || !left_token->node->vtbl->is_assignable_expression) {
-        compilation_error_t *error = create_error_from_token(memory->errors, left_token,
+        compilation_error_t *error = create_error_from_token(memory->errors, left_token, CRITICAL,
             get_messages()->expected_lvalue, left_token->text);
         return error;
     }
 
     token_t *right_token = operator->right;
     if (right_token == NULL) {
-        compilation_error_t *error = create_error_from_token(memory->errors, operator,
+        compilation_error_t *error = create_error_from_token(memory->errors, operator, CRITICAL,
             get_messages()->expected_expression, operator->text);
         return error;
     }
     if (right_token->type != TOKEN_EXPRESSION) {
-        compilation_error_t *error = create_error_from_token(memory->errors, right_token,
+        compilation_error_t *error = create_error_from_token(memory->errors, right_token, CRITICAL,
             get_messages()->expected_expression, right_token->text);
         return error;
     }
