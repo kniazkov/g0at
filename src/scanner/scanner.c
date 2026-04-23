@@ -443,7 +443,7 @@ token_t *get_token(scanner_t *scan) {
     }
 
     token_t *token = alloc_zeroed_from_arena(scan->memory->tokens, sizeof(token_t));
-    
+
     full_position_t *begin = copy_full_position_to_arena(scan->memory->positions, &scan->position);
 
     if (is_letter(ch)) {
@@ -520,6 +520,9 @@ token_t *get_token(scanner_t *scan) {
     short_position_t *end = create_short_position_from_full(scan->memory->positions,
         &scan->position);
     token->position = create_position_range(scan->memory->positions, begin, end);
+    if (token->node) {
+        token->node->position = token->position;
+    }
 
     if (token->type == TOKEN_OPERATOR) {
         for (size_t index = 0; index < sizeof(operator_mappings)/sizeof(operator_mapping_t);

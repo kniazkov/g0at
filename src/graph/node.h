@@ -13,6 +13,7 @@
 #include "node_type.h"
 #include "scope.h"
 #include "lib/value.h"
+#include "common/position.h"
 #include "common/types.h"
 
 /**
@@ -313,6 +314,15 @@ struct node_t {
      * toward the root.
      */
     node_t *parent;
+
+    /**
+     * @brief A pointer to the source range occupied by this node.
+     *
+     * This field stores the beginning and ending positions of the node in the
+     * source code as a single structure.
+     */
+    position_range_t *position;
+
 
     /**
      * @brief The lexical scope this node belongs to.

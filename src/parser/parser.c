@@ -344,12 +344,21 @@ token_t *collapse_tokens_to_token(parser_memory_t *memory, token_t *first, token
         token_type_t type, node_t *node) {
     token_t *new_token = (token_t *)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     new_token->type = type;
-    new_token->position = create_position_range(
-        memory->positions,
-        first->position->begin,
-        last->position->end
-    );
     new_token->node = node;
+
+    position_range_t *position;
+    if (first == last) {
+        position = first->position;
+    } else {
+        position = create_position_range(
+            memory->positions,
+            first->position->begin,
+            last->position->end
+        );
+    }
+    new_token->position = position;
+    node->position = position;
+
     token_t *old_token = first;
     while(old_token != last) {
         token_t *next = old_token->right;
