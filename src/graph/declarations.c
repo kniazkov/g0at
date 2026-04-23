@@ -221,7 +221,7 @@ static node_vtbl_t vdeclr_vtbl = {
  * @return Pointer to the newly created variable declarator node.
  */
 static variable_declarator_t *create_variable_declarator_node(arena_t *arena,
-        const declarator_t *spec) {
+        const base_declarator_t *spec) {
     variable_declarator_t *decl = 
         (variable_declarator_t *)alloc_zeroed_from_arena(arena, sizeof(variable_declarator_t));
     decl->base.vtbl = &vdeclr_vtbl;
@@ -388,7 +388,7 @@ static node_vtbl_t vdecln_vtbl = {
     .generate_bytecode = vdecln_generate_bytecode,
 };
 
-node_t *create_variable_declaration_node(arena_t *arena, declarator_t **decl_list,
+node_t *create_variable_declaration_node(arena_t *arena, base_declarator_t **decl_list,
         size_t decl_count) {
     assert(decl_count > 0);
     variable_declaration_t *node = (variable_declaration_t *)alloc_zeroed_from_arena(
@@ -590,7 +590,7 @@ static node_vtbl_t cdeclr_vtbl = {
  * @return Pointer to newly created constant_declarator_t node.
  */
 static constant_declarator_t *create_constant_declarator_node(arena_t *arena,
-        const declarator_t *spec) {
+        const base_declarator_t *spec) {
     assert(spec->initial != NULL);
     
     constant_declarator_t *decl = 
@@ -761,7 +761,7 @@ static node_vtbl_t cdecln_vtbl = {
     .generate_bytecode = cdecln_generate_bytecode,
 };
 
-node_t *create_constant_declaration_node(arena_t *arena, declarator_t **decl_list,
+node_t *create_constant_declaration_node(arena_t *arena, base_declarator_t **decl_list,
         size_t decl_count) {
     assert(decl_count > 0);
     constant_declaration_t *node = (constant_declaration_t *)alloc_zeroed_from_arena(

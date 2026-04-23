@@ -24,7 +24,7 @@
 /**
  * @brief Forward declaration of declarator structure (needed for variable & constant declaration).
  */
-typedef struct declarator_t declarator_t;
+typedef struct base_declarator_t base_declarator_t;
 
 /**
  * @struct statement_t
@@ -234,13 +234,13 @@ static inline bool generate_deferred_bytecode_from_statement(const statement_t *
 statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped);
 
 /**
- * @struct declarator_t
+ * @struct base_declarator_t
  * @brief Represents a single declaration (variable or constant) in an AST.
  *
  * This structure encapsulates the common properties of both variable and constant
  * declarations, including the identifier name and [optional] initializer expression.
  */
-struct declarator_t {
+struct base_declarator_t {
     /**
      * @brief The name of the declared identifier.
      */
@@ -268,7 +268,7 @@ struct declarator_t {
  * 
  * @note The created node takes ownership of the declarator list and its contents.
  */
-node_t *create_variable_declaration_node(arena_t *arena, declarator_t **decl_list,
+node_t *create_variable_declaration_node(arena_t *arena, base_declarator_t **decl_list,
         size_t decl_count);
 
 /**
@@ -285,7 +285,7 @@ node_t *create_variable_declaration_node(arena_t *arena, declarator_t **decl_lis
  * @note The created node takes ownership of the declarator list and its contents.
  * @warning All declarators must have non-NULL initializers.
  */
-node_t *create_constant_declaration_node(arena_t *arena, declarator_t **decl_list,
+node_t *create_constant_declaration_node(arena_t *arena, base_declarator_t **decl_list,
         size_t decl_count);
 
 /**
