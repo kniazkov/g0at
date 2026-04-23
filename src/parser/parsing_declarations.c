@@ -60,7 +60,7 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
                 token->node->vtbl->type != NODE_SIMPLE_ASSIGNMENT)) {
             goto invalid_declaration;
         }
-        declarator_t *item = NULL;
+        base_declarator_t *item = NULL;
         if (token->node->vtbl->type == NODE_VARIABLE) {
             item = create_declarator_from_variable(token->node);
         } else {
@@ -92,7 +92,7 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
     } while(true);
     node_t *declaration = create_variable_declaration_node(
         memory->graph, 
-        (declarator_t**)vector->data,
+        (base_declarator_t**)vector->data,
         vector->size
     );
     collapse_tokens_to_token(
@@ -159,7 +159,7 @@ compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memo
                 token->node->vtbl->type != NODE_SIMPLE_ASSIGNMENT) {
             goto invalid_declaration;
         }
-        declarator_t *item = create_declarator_from_simple_assignment(token->node);
+        base_declarator_t *item = create_declarator_from_simple_assignment(token->node);
         if (item == NULL) {
             goto invalid_declaration;
         }
@@ -185,7 +185,7 @@ compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memo
     } while(true);
     node_t *declaration = create_constant_declaration_node(
         memory->graph, 
-        (declarator_t**)vector->data,
+        (base_declarator_t**)vector->data,
         vector->size
     );
     collapse_tokens_to_token(
