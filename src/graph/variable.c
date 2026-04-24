@@ -9,7 +9,7 @@
 
 #include <assert.h>
 
-#include "assignable_expression.h"
+#include "variable.h"
 #include "common_methods.h"
 #include "statement.h"
 #include "declarations.h"
@@ -19,26 +19,6 @@
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
-
-/**
- * @struct variable_t
- * @brief Represents a variable expression node.
- * 
- * This structure defines a variable expression in the syntax tree. A variable refers
- * to a named entity, such as a variable or constant in the source code. The structure
- * extends `assignable_expression_t` and includes a field for storing the variable's name.
- */
-typedef struct {
-    /**
-     * @brief Base expression structure from which variable_t inherits.
-     */
-    assignable_expression_t base;
-
-    /**
-     * @brief String representing the variable's name.
-     */
-    string_view_t name;
-} variable_t;
 
 /**
  * @brief Gets the variable name as string data
