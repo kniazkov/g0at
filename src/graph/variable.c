@@ -147,10 +147,10 @@ expression_t *create_variable_node(arena_t *arena, string_view_t name) {
     return &expr->base.base;
 }
 
-base_declarator_t *create_declarator_from_variable(const node_t *expr) {
+declarator_spec_t *create_declarator_from_variable(const node_t *expr) {
     assert(expr->vtbl->type == NODE_VARIABLE);
     const variable_t *var = (variable_t *)expr;
-    base_declarator_t *decl = (base_declarator_t*)ALLOC(sizeof(base_declarator_t));
+    declarator_spec_t *decl = (declarator_spec_t*)ALLOC(sizeof(declarator_spec_t));
     decl->name = var->name;
     decl->initial = NULL;
     return decl;

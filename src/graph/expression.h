@@ -15,7 +15,7 @@
 /**
  * @brief Forward declaration of declarator structure (needed for variable & constant declaration).
  */
-typedef struct base_declarator_t base_declarator_t;
+typedef struct declarator_spec_t declarator_spec_t;
 
 /**
  * @struct expression_t
@@ -281,14 +281,14 @@ expression_t *create_variable_node(arena_t *arena, string_view_t name);
  * nodes (like variable_declaration_t) to formally declare the variable.
  * 
  * @param expr Pointer to the variable expression to convert.
- * @return Pointer to newly allocated base_declarator_t with name copied from the variable and no
+ * @return Pointer to newly allocated declarator_spec_t with name copied from the variable and no
  *  initializer.
  * @warning The returned declarator is heap-allocated and must be freed by the caller
  *  when no longer needed.
  * @note The created declarator will have no initializer (NULL), which is valid for
  *  variable declarations but invalid for constant declarations.
  */
-base_declarator_t *create_declarator_from_variable(const node_t *expr);
+declarator_spec_t *create_declarator_from_variable(const node_t *expr);
 
 /**
  * @brief Creates a function call expression node with empty arguments.

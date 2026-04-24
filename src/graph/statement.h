@@ -24,7 +24,7 @@
 /**
  * @brief Forward declaration of declarator structure (needed for variable & constant declaration).
  */
-typedef struct base_declarator_t base_declarator_t;
+typedef struct declarator_spec_t declarator_spec_t;
 
 /**
  * @struct statement_t
@@ -234,13 +234,13 @@ static inline bool generate_deferred_bytecode_from_statement(const statement_t *
 statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped);
 
 /**
- * @struct base_declarator_t
+ * @struct declarator_spec_t
  * @brief Represents a single declaration (variable or constant) in an AST.
  *
  * This structure encapsulates the common properties of both variable and constant
  * declarations, including the identifier name and [optional] initializer expression.
  */
-struct base_declarator_t {
+struct declarator_spec_t {
     /**
      * @brief The name of the declared identifier.
      */
@@ -254,39 +254,6 @@ struct base_declarator_t {
      */
     expression_t *initial;
 };
-
-/**
- * @brief Creates a new variable declaration AST node.
- * 
- * Constructs a complete variable declaration statement node containing one or more
- * variable declarators. The node owns the declarator list and its contents.
- * 
- * @param arena Arena allocator for memory management.
- * @param decl_list Array of declarator specifications.
- * @param decl_count Number of declarators (must be > 0).
- * @return Pointer to the newly created variable declaration node.
- * 
- * @note The created node takes ownership of the declarator list and its contents.
- */
-node_t *create_variable_declaration_node(arena_t *arena, base_declarator_t **decl_list,
-        size_t decl_count);
-
-/**
- * @brief Creates a new constant declaration AST node.
- * 
- * Constructs a complete constant declaration statement node containing one or more
- * constant declarators. The node owns the declarator list and its contents.
- * 
- * @param arena Arena allocator for memory management.
- * @param decl_list Array of declarator specifications.
- * @param decl_count Number of declarators (must be > 0).
- * @return Pointer to the newly created constant declaration node.
- * 
- * @note The created node takes ownership of the declarator list and its contents.
- * @warning All declarators must have non-NULL initializers.
- */
-node_t *create_constant_declaration_node(arena_t *arena, base_declarator_t **decl_list,
-        size_t decl_count);
 
 /**
  * @brief Creates a return statement node.

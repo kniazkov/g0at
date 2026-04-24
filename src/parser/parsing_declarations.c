@@ -12,6 +12,7 @@
 #include "parser.h"
 #include "graph/assignment.h"
 #include "graph/statement.h"
+#include "graph/declarations.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/vector.h"
@@ -60,7 +61,7 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
                 token->node->vtbl->type != NODE_SIMPLE_ASSIGNMENT)) {
             goto invalid_declaration;
         }
-        base_declarator_t *item = NULL;
+        declarator_spec_t *item = NULL;
         if (token->node->vtbl->type == NODE_VARIABLE) {
             item = create_declarator_from_variable(token->node);
         } else {
@@ -92,7 +93,7 @@ compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memo
     } while(true);
     node_t *declaration = create_variable_declaration_node(
         memory->graph, 
-        (base_declarator_t**)vector->data,
+        (declarator_spec_t**)vector->data,
         vector->size
     );
     collapse_tokens_to_token(
@@ -159,7 +160,7 @@ compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memo
                 token->node->vtbl->type != NODE_SIMPLE_ASSIGNMENT) {
             goto invalid_declaration;
         }
-        base_declarator_t *item = create_declarator_from_simple_assignment(token->node);
+        declarator_spec_t *item = create_declarator_from_simple_assignment(token->node);
         if (item == NULL) {
             goto invalid_declaration;
         }
@@ -185,7 +186,7 @@ compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memo
     } while(true);
     node_t *declaration = create_constant_declaration_node(
         memory->graph, 
-        (base_declarator_t**)vector->data,
+        (declarator_spec_t**)vector->data,
         vector->size
     );
     collapse_tokens_to_token(
