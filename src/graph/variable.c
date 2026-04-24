@@ -12,6 +12,7 @@
 #include "assignable_expression.h"
 #include "common_methods.h"
 #include "statement.h"
+#include "declarations.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"

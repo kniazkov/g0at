@@ -11,6 +11,7 @@
 
 #include "assignment.h"
 #include "statement.h"
+#include "declarations.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"

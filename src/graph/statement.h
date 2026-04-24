@@ -234,28 +234,6 @@ static inline bool generate_deferred_bytecode_from_statement(const statement_t *
 statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped);
 
 /**
- * @struct declarator_spec_t
- * @brief Represents a single declaration (variable or constant) in an AST.
- *
- * This structure encapsulates the common properties of both variable and constant
- * declarations, including the identifier name and [optional] initializer expression.
- */
-struct declarator_spec_t {
-    /**
-     * @brief The name of the declared identifier.
-     */
-    string_view_t name;
-
-    /**
-     * @brief The initializer expression for the declaration.
-     *
-     * - For variables: Optional (may be NULL)
-     * - For constants: Required (must be non-NULL)
-     */
-    expression_t *initial;
-};
-
-/**
  * @brief Creates a return statement node.
  * 
  * Allocates and initializes a `return_t` node in the given memory arena.
