@@ -16,8 +16,11 @@
 #include "lib/vector.h"
 #include "common/compilation_error.h"
 #include "graph/node.h"
+#include "graph/declarations.h"
+#include "graph/variable.h"
 #include "model/context.h"
 #include "model/object.h"
+#include "resources/messages.h"
 
 /**
  * @brief Creates a new scope initialized from the root execution context.
@@ -132,11 +135,59 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, vector_
     }
 }
 
-compilation_error_t *analyze(node_t *root_node, arena_t *arena) {
-    scope_t *root_scope = create_scope_from_root_context(root_node, arena);
+/**
+ * ...
+ */
+static compilation_error_t *bind_variables(node_t **all_nodes, size_t node_count,
+        parser_memory_t *memory) {
+    compilation_error_t *error = NULL;
+    for (size_t index = 0; index < node_count; index++) {
+        node_t *node = all_nodes[index];
+        if (node->vtbl->type == NODE_VARIABLE_DECLARATOR 
+                || node->vtbl->type == NODE_CONSTANT_DECLARATOR) {
+            declarator_t *decl = (declarator_t*)node;
+            add_symbol_to_scope(node->scope, decl->name.data, node);
+        } else if (node->vtbl->type == NODE_VARIABLE) {
+            variable_t *var = (variable_t*)node;
+            const node_t *decl = find_symbol_in_scope_and_parents(node->scope, var->name.data);
+            if (decl == NULL) {
+                compilation_error_t *new_error = create_error_from_node(
+                    memory->errors,
+                    node,
+                    WARNING,
+                    get_messages()->variable_used_before_declaration,
+                    var->name.data
+                );
+                new_error->next = error;
+                error = new_error;
+            } else if (decl->vtbl->type == NODE_VARIABLE_DECLARATOR 
+                    || decl->vtbl->type == NODE_CONSTANT_DECLARATOR) {
+                var->declarator = (declarator_t*)decl;
+            }
+        }
+    }
+    return error;
+}
+
+compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory) {
+    scope_t *root_scope = create_scope_from_root_context(root_node, memory->graph);
     unsigned int node_counter = 0;
     vector_t *all_nodes = create_vector();
-    assign_node_indexes_and_scopes(root_node, NULL, all_nodes, arena, root_scope, &node_counter);
+    assign_node_indexes_and_scopes(
+        root_node,
+        NULL,
+        all_nodes,
+        memory->graph,
+        root_scope,
+        &node_counter
+    );
+    /*
+    compilation_error_t *error = bind_variables(
+        (node_t**)all_nodes->data,
+        all_nodes->size,
+        memory
+    );
+    */
     // ... further analysis ...
     destroy_vector(all_nodes);
     return NULL;

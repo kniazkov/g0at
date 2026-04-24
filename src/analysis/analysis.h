@@ -28,10 +28,10 @@ typedef struct compilation_error_t compilation_error_t;
 typedef struct node_t node_t;
 
 /**
- * @typedef arena_t
- * @brief Forward declaration for the memory arena structure.
+ * @typedef parser_memory_t
+ * @brief Forward declaration for the parser memory structure.
  */
-typedef struct arena_t arena_t;
+typedef struct parser_memory_t parser_memory_t;
 
 /**
  * @brief Performs static analysis on the given syntax tree.
@@ -47,9 +47,9 @@ typedef struct arena_t arena_t;
  * - Etc
  *
  * @param root_node Pointer to the root AST node.
- * @param arena Memory arena used for allocating auxiliary structures, such as scopes, bindings,
+ * @param memory Memory used for allocating auxiliary structures, such as scopes, bindings,
  *  and error reports.
  * @return Pointer to a linked list of compilation errors discovered during analysis, or NULL
  *  if the analysis completed successfully without errors.
  */
-compilation_error_t *analyze(node_t *root_node, arena_t *arena);
+compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory);
