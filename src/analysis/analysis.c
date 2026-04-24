@@ -13,6 +13,7 @@
 
 #include "analysis.h"
 #include "lib/arena.h"
+#include "lib/vector.h"
 #include "common/compilation_error.h"
 #include "graph/node.h"
 #include "model/context.h"
@@ -69,18 +70,21 @@ static scope_t *create_scope_from_root_context(node_t *root_node, arena_t *arena
  *   - The node is assigned the next identifier in the current scope.
  *   - Its children are analyzed within the same scope and numbering sequence.
  *
- * @param node      The current AST node to analyze.
- * @param parent    The parent node.
- * @param arena     The memory arena used for allocating new scopes.
- * @param scope     The scope that this node belongs to.
+ * @param node      Current AST node to analyze.
+ * @param parent    Parent node.
+ * @param all_nodes Collection containing all nodes of the syntax tree in depth-first
+ *                  traversal order.
+ * @param arena     Memory arena used for allocating new scopes.
+ * @param scope     Scope that this node belongs to.
  * @param next_id   Pointer to the counter of node identifiers in the current scope.
  *  Updated as nodes are assigned ids.
  *
  * @note Each scope has its own sequence of node ids starting from 1, except
  *  statement list scopes which continue the numbering of their parent.
  */
-static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, arena_t *arena,
-        scope_t *scope, unsigned int *next_id) {
+static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, vector_t *all_nodes,
+        arena_t *arena, scope_t *scope, unsigned int *next_id) {
+    append_to_vector(all_nodes, node);
     node->parent = parent;
     node->scope = scope;
     node->id = (*next_id)++;
@@ -91,16 +95,37 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, arena_t
             case NODE_FUNCTION_OBJECT: {
                 scope_t *inner_scope = create_scope(arena, scope);
                 unsigned int inner_counter = 1;
-                assign_node_indexes_and_scopes(child, node, arena, inner_scope, &inner_counter);
+                assign_node_indexes_and_scopes(
+                    child,
+                    node,
+                    all_nodes,
+                    arena,
+                    inner_scope,
+                    &inner_counter
+                );
                 break;
             }
             case NODE_STATEMENT_LIST: {
                 scope_t *inner_scope = create_scope(arena, scope);
-                assign_node_indexes_and_scopes(child, node, arena, inner_scope, next_id);
+                assign_node_indexes_and_scopes(
+                    child,
+                    node,
+                    all_nodes,
+                    arena,
+                    inner_scope,
+                    next_id
+                );
                 break;
             }
             default: {
-                assign_node_indexes_and_scopes(child, node, arena, scope, next_id);
+                assign_node_indexes_and_scopes(
+                    child,
+                    node,
+                    all_nodes,
+                    arena,
+                    scope,
+                    next_id
+                );
                 break;
             }
         }
@@ -110,6 +135,9 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, arena_t
 compilation_error_t *analyze(node_t *root_node, arena_t *arena) {
     scope_t *root_scope = create_scope_from_root_context(root_node, arena);
     unsigned int node_counter = 0;
-    assign_node_indexes_and_scopes(root_node, NULL, arena, root_scope, &node_counter);
+    vector_t *all_nodes = create_vector();
+    assign_node_indexes_and_scopes(root_node, NULL, all_nodes, arena, root_scope, &node_counter);
+    // ... further analysis ...
+    destroy_vector(all_nodes);
     return NULL;
 }
