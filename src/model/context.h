@@ -1,6 +1,6 @@
 /**
  * @file context.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the structure and behavior for the execution context in the
  *  Goat programming language.
  * 

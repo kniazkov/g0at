@@ -1,6 +1,6 @@
 /**
  * @file thread.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the structure for threads in the Goat programming language.
  * 
  * A thread represents a unit of execution within a process in the Goat language.

@@ -1,6 +1,6 @@
 /**
  * @file parsing_binary_operations.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines reduction rules for handling binary operations.
  *
  * This file contains the implementation of reduction rules for binary operations such as

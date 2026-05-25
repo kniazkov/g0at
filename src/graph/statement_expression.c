@@ -1,6 +1,6 @@
 /**
  * @file statement_expression.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of statement expression node.
  * 
  * This file defines the behavior of the statement expression, which is a special case of statement

@@ -1,6 +1,6 @@
 /**
  * @file data_builder.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implements the functions for managing data building in the Goat virtual machine.
  *
  * This file implements the logic for adding and managing static data in the Goat virtual machine's

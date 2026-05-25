@@ -1,6 +1,6 @@
 /**
  * @file root_context.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the root context for the Goat programming language execution.
  * 
  * The root context serves as the initial execution context when the Goat program starts. 

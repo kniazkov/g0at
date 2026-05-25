@@ -1,6 +1,6 @@
 /**
  * @file opcodes.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the opcodes for the Goat virtual machine.
  *
  * This file contains the definition of the `opcode_t` enumeration, which enumerates all the

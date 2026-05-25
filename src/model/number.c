@@ -1,6 +1,6 @@
 /**
  * @file number.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementations of a prototype for numeric objects (integer and float).
  *
  * This file defines the behavior of numeric objects, which include both

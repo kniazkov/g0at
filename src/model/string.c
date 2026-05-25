@@ -1,6 +1,6 @@
 /**
  * @file string.с
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementations of an object representing a string.
  *
  * This file defines the structure and behavior of string objects. There are two types

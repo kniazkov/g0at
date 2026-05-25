@@ -1,6 +1,6 @@
 /**
  * @file options.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definitions and function prototypes for command-line options parsing.
  *
  * This file provides the structures and functions necessary to parse command-line options

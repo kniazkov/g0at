@@ -1,6 +1,6 @@
 /**
  * @file code_builder.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implements functions for building and managing a list of bytecode instructions.
  *
  * This file provides the implementation for the `code_builder_t` structure

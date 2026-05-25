@@ -1,6 +1,6 @@
 /**
  * @file scope.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the scope structure and its operations.
  *
  * This file provides the concrete implementation of the scope abstraction,

@@ -1,6 +1,6 @@
 /**
  * @file parsing_scopes_and_functions.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines reduction rules for scope blocks and function declarations.
  *
  * This file contains the implementation of reduction rules specific to processing

@@ -1,6 +1,6 @@
 /**
  * @file node.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definitions for the basic node structure of the abstract syntax tree (AST).
  * 
  * This file contains the definition of the basic node structure for the abstract syntax tree (AST).

@@ -1,6 +1,6 @@
 /**
  * @file gc.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Garbage Collection for the Goat Virtual Machine.
  * 
  * This file contains the implementation of garbage collection functions that allow the

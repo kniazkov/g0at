@@ -1,6 +1,6 @@
 /**
  * @file process.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implements functions for managing processes in the Goat programming language.
  * 
  * This file contains the implementation of functions for creating and destroying processes.

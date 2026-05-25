@@ -1,6 +1,6 @@
 /**
  * @file division.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the division binary operation expression node.
  * 
  * This file defines the behavior of the division expression node, which represents the

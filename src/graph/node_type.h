@@ -1,6 +1,6 @@
 /**
  * @file node_type.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Enumeration of node types for the abstract syntax tree (AST).
  *
  * This file defines the @ref node_type_t enumeration, which lists all possible

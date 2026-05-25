@@ -1,6 +1,6 @@
 /**
  * @file object_stack.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implements the stack structure and operations for managing Goat objects.
  *
  * This file provides the implementation for a stack that stores Goat objects. It includes

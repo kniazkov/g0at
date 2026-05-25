@@ -1,6 +1,6 @@
 /**
  * @file binary_operation.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definition of the binary operation expression structure.
  * 
  * This file defines the `binary_operation_t` structure, which represents a binary operation

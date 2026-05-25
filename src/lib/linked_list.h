@@ -1,6 +1,6 @@
 /**
  * @file linked_list.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Doubly linked list implementation using arena allocation.
  *
  * This file defines the interface for a minimal doubly linked list where nodes

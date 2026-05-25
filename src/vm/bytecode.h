@@ -1,6 +1,6 @@
 /**
  * @file bytecode.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the structure and operations for bytecode in the Goat virtual machine.
  *
  * This file contains the description of the bytecode executed by the Goat virtual machine.

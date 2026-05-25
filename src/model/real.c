@@ -1,6 +1,6 @@
 /**
  * @file real.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of an object representing a real number.
  *
  * This file defines the structure and behavior of real number objects. There are two types

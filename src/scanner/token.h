@@ -1,6 +1,6 @@
 /**
  * @file token.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the structure for representing a token (lexeme) and its associated data.
  *
  * This file contains the definition of the `token_t` structure, which represents a token

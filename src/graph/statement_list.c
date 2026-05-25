@@ -1,6 +1,6 @@
 /**
  * @file statement_list.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the statement_list node in the abstract syntax tree (AST).
  *
  * This node represents a list of statements enclosed in curly braces.

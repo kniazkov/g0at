@@ -1,6 +1,6 @@
 /**
  * @file visualization.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief AST visualization using GraphViz DOT format.
  * 
  * Provides functionality to convert abstract syntax trees to DOT format

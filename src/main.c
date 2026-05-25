@@ -1,6 +1,6 @@
 /**
  * @file main.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Main entry point of the Goat interpreter.
  */
 

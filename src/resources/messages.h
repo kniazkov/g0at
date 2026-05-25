@@ -1,6 +1,6 @@
 /**
  * @file messages.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definitions for localized error messages.
  * 
  * This file defines the structure for holding localized error messages used during the parsing

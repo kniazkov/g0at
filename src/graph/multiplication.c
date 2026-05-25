@@ -1,6 +1,6 @@
 /**
  * @file multiplication.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the multiplication binary operation expression node.
  * 
  * This file defines the behavior of the multiplication expression node, which represents the

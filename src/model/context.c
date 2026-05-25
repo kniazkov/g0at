@@ -1,6 +1,6 @@
 /**
  * @file context.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implements the creation, management, and destruction of execution contexts
  *  in the Goat programming language.
  * 

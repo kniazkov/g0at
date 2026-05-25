@@ -1,6 +1,6 @@
 /**
  * @file functional_testing.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief A program for performing functional tests on the project's output.
  *
  * This program executes functional tests by running the project's binary with a set of 

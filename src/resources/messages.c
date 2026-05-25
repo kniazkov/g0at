@@ -1,6 +1,6 @@
 /**
  * @file messages.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implements message handling with language selection.
  * 
  * This file provides functionality for managing localized error messages in different languages.

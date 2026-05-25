@@ -1,6 +1,6 @@
 /**
  * @file vm.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the virtual machine for the Goat programming language.
  * 
  * This file contains the interface for the virtual machine (VM) that executes bytecode

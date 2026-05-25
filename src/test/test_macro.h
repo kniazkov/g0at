@@ -1,6 +1,6 @@
 /**
  * @file test_macro.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief A set of macros to facilitate writing unit tests.
  */
 

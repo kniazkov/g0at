@@ -1,6 +1,6 @@
 /**
  * @file source_builder.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines structures and functions for building source code in multiple languages.
  * 
  * This file contains the declarations of structures and functions for converting an abstract

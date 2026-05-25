@@ -1,6 +1,6 @@
 /**
  * @file options.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of command-line options parsing functions.
  *
  * This file contains the implementation of the functions responsible for parsing the

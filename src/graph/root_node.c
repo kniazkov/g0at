@@ -1,6 +1,6 @@
 /**
  * @file root_node.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the root node in the abstract syntax tree (AST).
  * 
  * This file defines the behavior of the root node, which represents the entry point

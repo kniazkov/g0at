@@ -1,6 +1,6 @@
 /**
  * @file object_state.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the object states for garbage collection in the Goat language.
  * 
  * This file describes the `object_state_t` enum, which is used to track the current state

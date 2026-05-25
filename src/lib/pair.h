@@ -1,6 +1,6 @@
 /**
  * @file pair.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definitions of structures and function prototypes for a generic pair.
  *
  * This header file provides the interface for a simple pair structure, where each pair consists

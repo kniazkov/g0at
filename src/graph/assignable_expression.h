@@ -1,6 +1,6 @@
 /**
  * @file assignable_expression.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definition of the assignable expression structure.
  * 
  * This file defines the `assignable_expression_t` structure, which represents an assignable

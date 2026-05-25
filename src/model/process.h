@@ -1,6 +1,6 @@
 /**
  * @file process.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the structure for processes in the Goat programming language.
  * 
  * A process represents an executing program within the Goat language.

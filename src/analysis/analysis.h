@@ -1,6 +1,6 @@
 /**
  * @file analysis.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Declarations for static code analysis functions.
  *
  * This header defines the public interface for the static analysis subsystem.

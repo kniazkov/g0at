@@ -1,6 +1,6 @@
 /**
  * @file null.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the null expression.
  * 
  * This file defines the behavior of the null expression, which represents a literal

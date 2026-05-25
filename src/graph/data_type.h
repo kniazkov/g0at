@@ -1,6 +1,6 @@
 /**
  * @file data_type.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definition of the data type descriptor used by expressions.
  *
  * This file declares the @ref data_type_t structure that describes a semantic

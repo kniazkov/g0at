@@ -1,6 +1,6 @@
 /**
  * @file pair.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definitions of functions for working with pairs.
  *
  * This file contains the implementation of functions for creating, destroying, 

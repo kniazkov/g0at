@@ -1,6 +1,6 @@
 /**
  * @file arena.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definitions of structures and function prototypes for a memory arena.
  *
  * A memory arena is a memory allocation scheme where memory is allocated in large chunks,

@@ -1,6 +1,6 @@
 /**
  * @file user_defined_object.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definitions and methods for user-defined objects in the Goat programming language.
  * 
  * This file provides the structure and functionality for a user-defined object type in the

@@ -1,6 +1,6 @@
 /**
  * @file variable.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definition of the variable expression node.
  *
  * This file defines the structure representing a variable expression in the

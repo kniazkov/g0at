@@ -1,6 +1,6 @@
 /**
  * @file test_codegen.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief A set of tests for testing code generator.
  */
 

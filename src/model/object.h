@@ -1,6 +1,6 @@
 /**
  * @file object.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the base structure for all objects in the Goat programming language.
  * 
  * This file describes the general framework for objects in the Goat language. 

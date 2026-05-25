@@ -1,6 +1,6 @@
 /**
  * @file vector.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definitions of structures and function prototypes for a vector (dynamic array).
  *
  * This header file provides the interface for a simple dynamic array, referred to as a vector.

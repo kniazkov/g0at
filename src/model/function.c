@@ -1,6 +1,6 @@
 /**
  * @file function.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementations of an object representing a function.
  *
  * This file defines the structure and behavior of function objects in the Goat programming

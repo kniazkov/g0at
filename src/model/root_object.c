@@ -1,6 +1,6 @@
 /**
  * @file root_object.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the root singleton object in the Goat programming language.
  * 
  * This file implements the root object in Goat, which is the ultimate prototype 

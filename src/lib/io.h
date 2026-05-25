@@ -1,6 +1,6 @@
 /**
  * @file io.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definitions of structures and function prototypes for input-output operations.
  *
  * This file provides the function prototypes for various input-output operations,

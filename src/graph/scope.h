@@ -1,6 +1,6 @@
 /**
  * @file scope.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Declaration of the scope structure and its operations.
  *
  * This header defines the interface for the scope abstraction, which represents

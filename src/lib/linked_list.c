@@ -1,6 +1,6 @@
 /**
  * @file linked_list.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of a doubly linked list using arena allocation.
  *
  * This file provides the function definitions for creating and modifying

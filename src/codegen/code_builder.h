@@ -1,6 +1,6 @@
 /**
  * @file code_builder.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines structures and functions for building and managing a list of
  *  bytecode instructions.
  *

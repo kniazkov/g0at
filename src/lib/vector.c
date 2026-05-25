@@ -1,6 +1,6 @@
 /**
  * @file vector.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of functions for a dynamic array (vector).
  *
  * This source file contains the implementation of the functions for the vector data structure.

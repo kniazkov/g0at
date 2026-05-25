@@ -1,6 +1,6 @@
 /**
  * @file path.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Platform-independent path manipulation structures and functions.
  *
  * This file provides cross-platform path handling functionality including:

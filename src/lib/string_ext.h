@@ -1,6 +1,6 @@
 /**
  * @file string_ext.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Extension of the standard C library for working with strings.
  */
 

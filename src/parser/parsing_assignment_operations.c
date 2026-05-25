@@ -1,6 +1,6 @@
 /**
  * @file parsing_assignment_operations.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines reduction rules for handling assignment operations.
  *
  * This file contains the implementation of reduction rules for assignment operations such as

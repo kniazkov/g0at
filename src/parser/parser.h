@@ -1,6 +1,6 @@
 /**
  * @file parser.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines structures and function prototypes for the parser.
  *
  * This file contains the definition of structures and function prototypes for the parser,

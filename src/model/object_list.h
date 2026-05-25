@@ -1,6 +1,6 @@
 /**
  * @file object_list.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the object list structure for Goat language.
  * 
  * This file describes the structure for a doubly linked list that holds objects

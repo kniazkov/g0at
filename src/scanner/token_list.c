@@ -1,6 +1,6 @@
 /**
  * @file token_list.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Provides functions for manipulating tokens in token lists.
  *
  * This file contains the implementation of functions that allow manipulation of tokens 

@@ -1,6 +1,6 @@
 /**
  * @file data_builder.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Contains the declaration of the data builder structure and functions for managing
  *  static data in the Goat virtual machine.
  *

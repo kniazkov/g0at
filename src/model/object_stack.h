@@ -1,6 +1,6 @@
 /**
  * @file object_stack.h 
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the stack structure for managing Goat objects.
  *
  * This file describes the structure and operations for a stack of Goat objects.

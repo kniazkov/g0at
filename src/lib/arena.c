@@ -1,6 +1,6 @@
 /**
  * @file arena.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of memory arena management functions.
  *
  * This file contains the implementation of a memory arena, a memory allocation scheme that manages

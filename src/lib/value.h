@@ -1,6 +1,6 @@
 /**
  * @file value.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines structures and unions for storing different types of values in a unified way.
  *
  * This file contains definitions for various structures and unions that allow for flexible

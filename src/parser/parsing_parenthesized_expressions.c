@@ -1,6 +1,6 @@
 /**
  * @file parsing_parenthesized_expressions.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines reduction rules for parenthesized expressions.
  *
  * This file contains the implementation of two reduction rules that handle

@@ -1,6 +1,6 @@
 /**
  * @file unit_testing.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief A program for running unit tests.
  */
 

@@ -1,6 +1,6 @@
 /**
  * @file launcher.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of functions for launching the compiler and virtual machine.
  *
  * This file contains the implementation of functions responsible for starting the compiler and

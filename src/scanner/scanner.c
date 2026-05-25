@@ -1,6 +1,6 @@
 /**
  * @file scanner.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Provides the implementation of the scanner functions for lexical analysis.
  *
  * This file contains the implementation of the scanner functions, which handle

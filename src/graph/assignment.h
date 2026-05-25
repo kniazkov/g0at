@@ -1,6 +1,6 @@
 /**
  * @file assignment.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definition of the assignment operation structure.
  * 
  * This file defines the `assignment_t` structure, which represents a base assignment

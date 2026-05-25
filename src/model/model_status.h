@@ -1,6 +1,6 @@
 /**
  * @file model_status.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Status codes for model operations
  */
 

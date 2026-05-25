@@ -1,6 +1,6 @@
 /**
  * @file function_call.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of function call expressions.
  * 
  * This file defines the behavior of the function call expression, which represents

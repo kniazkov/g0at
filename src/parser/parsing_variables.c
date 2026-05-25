@@ -1,6 +1,6 @@
 /**
  * @file parsing_variables.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines reduction rules for creating variable reference nodes.
  *
  * This file contains the implementation of reduction rules specific to variable references.

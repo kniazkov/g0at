@@ -1,6 +1,6 @@
 /**
  * @file parser.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implements the functions for the parser.
  *
  * This file contains the implementation of functions for the parser, which transforms a token

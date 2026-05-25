@@ -1,6 +1,6 @@
 /**
  * @file compilation_error.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Provides helper functions for allocating and populating compilation diagnostics.
  *
  * This file contains functions for creating and managing `compilation_error_t` structures,

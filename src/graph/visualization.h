@@ -1,6 +1,6 @@
 /**
  * @file visualization.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief AST visualization module using GraphViz DOT format
  *
  * Provides interface for converting abstract syntax trees to visual representations

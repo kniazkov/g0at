@@ -1,6 +1,6 @@
 /**
  * @file statement.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definition of the statement structure.
  * 
  * This file defines the `statement_t` structure, which represents a statement node in the

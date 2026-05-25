@@ -1,6 +1,6 @@
 /**
  * @file launcher.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Function prototypes and structure definitions for launching the compiler and virtual
  *  machine.
  *

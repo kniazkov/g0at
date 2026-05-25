@@ -1,6 +1,6 @@
 /**
  * @file bytecode.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implements functions for managing bytecode.
  */
 

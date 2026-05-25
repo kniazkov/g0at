@@ -1,6 +1,6 @@
 /**
  * @file function_object.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of function object expressions.
  * 
  * This file defines the behavior of function object expressions in the abstract syntax tree (AST).

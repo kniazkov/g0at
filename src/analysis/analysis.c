@@ -1,6 +1,6 @@
 /**
  * @file analysis.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of static code analysis functions.
  *
  * This file provides the core implementation of the static analysis subsystem.

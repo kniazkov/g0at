@@ -1,6 +1,6 @@
 /**
  * @file split64.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Provides a union for splitting or combining a 64-bit value.
  * 
  * This is particularly useful in virtual machine implementations, where large values may need

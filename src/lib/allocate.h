@@ -1,6 +1,6 @@
 /**
  * @file allocate.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Memory allocation utility for the project.
  */
 

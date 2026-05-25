@@ -1,6 +1,6 @@
 /**
  * @file addition.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the addition binary operation expression node.
  * 
  * This file defines the behavior of the addition expression node, which represents the addition

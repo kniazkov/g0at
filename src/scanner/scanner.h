@@ -1,6 +1,6 @@
 /**
  * @file scanner.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Provides the definition of the scanner structure and function prototypes
  *  for lexical analysis.
  *

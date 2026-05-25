@@ -1,6 +1,6 @@
 /**
  * @file io.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementations of input-output operations for UTF-8 encoded files
  *  and standard input/output.
  */

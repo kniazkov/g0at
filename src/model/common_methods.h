@@ -1,6 +1,6 @@
 /**
  * @file common_methods.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Declarations of common methods for the Goat objects.
  * 
  * This file contains declarations of methods that are shared across multiple 

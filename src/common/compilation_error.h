@@ -1,6 +1,6 @@
 /**
  * @file compilation_error.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Defines the structure and functions for handling compilation diagnostics.
  *
  * This file contains the definition of the `compilation_error_t` structure, which is used

@@ -1,6 +1,6 @@
 /**
  * @file modulo.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the modulo (remainder) binary operation expression node.
  * 
  * This file defines the behavior of the modulo expression node, which represents the

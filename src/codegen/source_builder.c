@@ -1,6 +1,6 @@
 /**
  * @file source_builder.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the source builder for code generation.
  * 
  * This file contains the implementation of the `source_builder_t` structure and its related

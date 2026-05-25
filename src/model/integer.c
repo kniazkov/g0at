@@ -1,6 +1,6 @@
 /**
  * @file integer.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementations of an object representing an integer.
  *
  * This file defines the structure and behavior of integer objects. There are two types

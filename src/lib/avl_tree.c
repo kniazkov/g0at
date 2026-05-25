@@ -1,6 +1,6 @@
 /**
  * @file avl_tree.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementations of functions that work with AVL tree.
  *
  * An AVL tree is a self-balancing binary search tree where the difference in heights between

@@ -1,6 +1,6 @@
 /**
  * @file declarations.h
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Definitions for declaration-related structures and functions.
  *
  * This file defines auxiliary structures and factory functions used for

@@ -1,6 +1,6 @@
 /**
  * @file less.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the less-than binary operation expression node.
  * 
  * This file defines the behavior of the less-than expression node, which represents the

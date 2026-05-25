@@ -1,6 +1,6 @@
 /**
  * @file variable.c
- * @copyright 2025 Ivan Kniazkov
+ * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the variable expression node.
  * 
  * This file defines the behavior of the variable expression node, which represents
