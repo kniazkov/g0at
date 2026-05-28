@@ -271,6 +271,20 @@ typedef enum {
     NODE_CONSTANT_DECLARATOR,
 
     /**
+     * @brief Function argument list node type.
+     *
+     * Represents a container for formal function arguments.
+     */
+    NODE_ARGUMENT_LIST,
+
+    /**
+     * @brief Function argument node type.
+     *
+     * Represents a single formal function argument.
+     */
+    NODE_ARGUMENT,
+
+    /**
      * @brief Return statement node type.
      * 
      * Represents a `return` statement in the syntax tree. May optionally include

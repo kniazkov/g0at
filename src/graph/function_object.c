@@ -13,12 +13,307 @@
 #include "common_methods.h"
 #include "expression.h"
 #include "statement.h"
+#include "declarations.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
+
+/**
+ * @struct argument_t
+ * @brief Represents a single function argument in the abstract syntax tree.
+ *
+ * This structure defines a node for one formal argument of a function object
+ * (e.g., "x" in "func(x, y) { ... }"). Arguments are represented as separate
+ * AST nodes so analysis passes, including data-flow graph construction, can
+ * attach edges directly to individual formal parameters instead of relying on
+ * a plain list of names.
+ */
+typedef struct {
+    /**
+     * @brief Base declarator structure.
+     *
+     * Stores the argument name and allows the argument to be treated as a
+     * regular AST node through the embedded node_t object.
+     */
+    declarator_t base;
+} argument_t;
+
+/**
+ * @brief Gets the argument name as string data.
+ *
+ * Provides access to the formal parameter name stored in the argument node.
+ *
+ * @param node Pointer to the argument node.
+ * @return `string_value_t` containing the argument name.
+ */
+static string_value_t arg_get_data(const node_t *node) {
+    const argument_t *arg = (const argument_t *)node;
+    return VIEW_TO_VALUE(arg->base.name);
+}
+
+/**
+ * @brief Generates Goat source code for a function argument.
+ *
+ * Produces the textual representation of a single formal parameter.
+ *
+ * @param node Pointer to the argument node.
+ * @return `string_value_t` containing the generated code.
+ */
+static string_value_t arg_generate_goat_code(const node_t *node) {
+    const argument_t *arg = (const argument_t *)node;
+    return VIEW_TO_VALUE(arg->base.name);
+}
+
+/**
+ * @brief Generates indented Goat source code for a function argument.
+ *
+ * Appends the argument name to the source builder. The argument itself does
+ * not introduce indentation; indentation is controlled by the enclosing
+ * function object or argument list.
+ *
+ * @param node Pointer to the argument node.
+ * @param builder Pointer to the source builder where generated code is stored.
+ * @param indent Current indentation level (unused).
+ */
+static void arg_generate_indented_goat_code(const node_t *node,
+        source_builder_t *builder, size_t indent) {
+    const argument_t *arg = (const argument_t *)node;
+    append_formatted_source(builder, VIEW_TO_VALUE(arg->base.name));
+}
+
+/**
+ * @brief Rejects direct bytecode generation for an argument node.
+ *
+ * Formal arguments are encoded by the enclosing function object, not emitted
+ * as standalone bytecode. This method exists to keep the node virtual table
+ * complete and to fail fast if code generation is accidentally invoked on an
+ * argument node directly.
+ *
+ * @param node Pointer to the argument node.
+ * @param code Pointer to the code builder.
+ * @param data Pointer to the data builder.
+ * @return Never returns in debug builds; returns BAD_INSTR_INDEX otherwise.
+ */
+static instr_index_t arg_generate_bytecode(node_t *node, code_builder_t *code,
+        data_builder_t *data) {
+    assert(!"argument nodes do not generate bytecode directly");
+    return BAD_INSTR_INDEX;
+}
+
+/**
+ * @brief Virtual table for function argument nodes.
+ *
+ * Provides implementations of operations specific to a single formal argument.
+ */
+static node_vtbl_t arg_vtbl = {
+    .type = NODE_ARGUMENT,
+    .type_name = L"argument",
+    .get_data = arg_get_data,
+    .get_child_count = no_children,
+    .get_child = no_child,
+    .get_child_tag = no_tags,
+    .generate_goat_code = arg_generate_goat_code,
+    .generate_indented_goat_code = arg_generate_indented_goat_code,
+    .generate_bytecode = arg_generate_bytecode,
+};
+
+/**
+ * @brief Creates a new function argument AST node.
+ *
+ * Allocates and initializes an argument node with the given formal parameter
+ * name. The name is copied to the arena so the node does not depend on parser
+ * temporary storage.
+ *
+ * @param arena Arena allocator to use for node allocation.
+ * @param name Formal argument name.
+ * @return Pointer to the newly created argument node.
+ */
+static argument_t *create_argument_node(arena_t *arena, string_view_t name) {
+    argument_t *arg =
+        (argument_t *)alloc_zeroed_from_arena(arena, sizeof(argument_t));
+    arg->base.base.vtbl = &arg_vtbl;
+    arg->base.name = copy_string_to_arena(arena, name.data, name.length);
+    return arg;
+}
+
+/**
+ * @struct argument_list_t
+ * @brief Represents a list of function arguments in the abstract syntax tree.
+ *
+ * This structure defines a container node for formal function arguments
+ * (e.g., "x, y, z" in "func(x, y, z) { ... }"). Each argument is stored as a
+ * separate @ref argument_t child node so graph-based analysis can address every
+ * parameter independently.
+ */
+typedef struct {
+    /**
+     * @brief Base AST node structure.
+     *
+     * Allows the argument list to be treated as a regular AST node and attached
+     * as a child of a function object node.
+     */
+    node_t base;
+
+    /**
+     * @brief Array of function argument nodes.
+     *
+     * An arena-allocated array of pointers to @ref argument_t nodes. The array
+     * may be NULL when @ref arg_count is zero.
+     */
+    argument_t **arg_list;
+
+    /**
+     * @brief Count of function arguments.
+     *
+     * Specifies the number of elements in @ref arg_list. Zero is valid for
+     * functions without formal parameters.
+     */
+    size_t arg_count;
+} argument_list_t;
+
+/**
+ * @brief Gets the child count for an argument list node.
+ *
+ * Returns the number of formal arguments contained in this list.
+ *
+ * @param node Pointer to the argument list node.
+ * @return The count of child argument nodes.
+ */
+static size_t alist_get_child_count(const node_t *node) {
+    const argument_list_t *list = (const argument_list_t *)node;
+    return list->arg_count;
+}
+
+/**
+ * @brief Retrieves a specific argument child node.
+ *
+ * Provides access to individual formal argument nodes within the list.
+ *
+ * @param node Pointer to the argument list node.
+ * @param index Zero-based index of the argument to retrieve.
+ * @return Pointer to the requested argument node, or NULL if index is invalid.
+ */
+static node_t *alist_get_child(const node_t *node, size_t index) {
+    const argument_list_t *list = (const argument_list_t *)node;
+    if (index >= list->arg_count) {
+        return NULL;
+    }
+    return &list->arg_list[index]->base.base;
+}
+
+/**
+ * @brief Generates Goat source code for an argument list.
+ *
+ * Produces a comma-separated list of formal parameter names without enclosing
+ * parentheses, so the enclosing function object can decide how to format its
+ * header.
+ *
+ * @param node Pointer to the argument list node.
+ * @return `string_value_t` containing the generated argument list.
+ */
+static string_value_t alist_generate_goat_code(const node_t *node) {
+    const argument_list_t *list = (const argument_list_t *)node;
+    string_value_t result = EMPTY_STRING_VALUE;
+    string_builder_t builder;
+    init_string_builder(&builder, 0);
+    for (size_t index = 0; index < list->arg_count; index++) {
+        if (index > 0) {
+            append_static_string(&builder, L", ");
+        }
+        result = append_string_view(&builder, list->arg_list[index]->base.name);
+    }
+    return result;
+}
+
+/**
+ * @brief Generates indented Goat source code for an argument list.
+ *
+ * Appends a comma-separated list of formal parameter names to the source
+ * builder. The list itself does not introduce line breaks or indentation.
+ *
+ * @param node Pointer to the argument list node.
+ * @param builder Pointer to the source builder where generated code is stored.
+ * @param indent Current indentation level (unused).
+ */
+static void alist_generate_indented_goat_code(const node_t *node,
+        source_builder_t *builder, size_t indent) {
+    const argument_list_t *list = (const argument_list_t *)node;
+    for (size_t index = 0; index < list->arg_count; index++) {
+        if (index > 0) {
+            append_static_source(builder, L", ");
+        }
+        append_formatted_source(builder, VIEW_TO_VALUE(list->arg_list[index]->base.name));
+    }
+}
+
+/**
+ * @brief Rejects direct bytecode generation for an argument list node.
+ *
+ * Argument lists are consumed by the enclosing function object during bytecode
+ * generation. They are not executable nodes and must not emit instructions by
+ * themselves.
+ *
+ * @param node Pointer to the argument list node.
+ * @param code Pointer to the code builder.
+ * @param data Pointer to the data builder.
+ * @return Never returns in debug builds; returns BAD_INSTR_INDEX otherwise.
+ */
+static instr_index_t alist_generate_bytecode(node_t *node, code_builder_t *code,
+        data_builder_t *data) {
+    assert(!"argument list nodes do not generate bytecode directly");
+    return BAD_INSTR_INDEX;
+}
+
+/**
+ * @brief Virtual table for function argument list nodes.
+ *
+ * Contains function pointers implementing all operations for an argument list
+ * container node.
+ */
+static node_vtbl_t alist_vtbl = {
+    .type = NODE_ARGUMENT_LIST,
+    .type_name = L"argument list",
+    .get_data = no_data,
+    .get_child_count = alist_get_child_count,
+    .get_child = alist_get_child,
+    .get_child_tag = no_tags,
+    .generate_goat_code = alist_generate_goat_code,
+    .generate_indented_goat_code = alist_generate_indented_goat_code,
+    .generate_bytecode = alist_generate_bytecode,
+};
+
+/**
+ * @brief Creates a new function argument list AST node.
+ *
+ * Allocates an argument list container and creates one @ref argument_t child
+ * node for every formal parameter name in the input array.
+ *
+ * @param arena Arena allocator to use for node allocation.
+ * @param arg_list Array of formal argument names. May be NULL when arg_count is zero.
+ * @param arg_count Number of formal arguments.
+ * @return Pointer to the newly created argument list node.
+ */
+node_t *create_argument_list_node(arena_t *arena, string_view_t *arg_list,
+        size_t arg_count) {
+    argument_list_t *node =
+        (argument_list_t *)alloc_zeroed_from_arena(arena, sizeof(argument_list_t));
+    node->base.vtbl = &alist_vtbl;
+    node->arg_count = arg_count;
+
+    if (arg_count > 0) {
+        assert(arg_list != NULL);
+        node->arg_list = (argument_t **)alloc_from_arena(arena,
+                arg_count * sizeof(argument_t *));
+        for (size_t index = 0; index < arg_count; index++) {
+            node->arg_list[index] = create_argument_node(arena, arg_list[index]);
+        }
+    }
+
+    return &node->base;
+}
 
 /**
  * @struct function_object_t
