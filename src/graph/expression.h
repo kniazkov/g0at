@@ -18,6 +18,11 @@
 typedef struct declarator_spec_t declarator_spec_t;
 
 /**
+ * @brief Forward declaration of statement list structure.
+ */
+typedef struct statement_list_t statement_list_t;
+
+/**
  * @struct expression_t
  * @brief The structure representing an expression node.
  */
@@ -330,7 +335,7 @@ void set_function_call_arguments(node_t *node, arena_t *arena,
  * @param arena Memory arena to allocate from.
  * @return Pointer to the newly created node.
  */
-node_t *create_statement_list_node(arena_t *arena);
+statement_list_t *create_statement_list_node(arena_t *arena);
 
 /**
  * @brief Initializes a statement_list node with a provided array of statements.

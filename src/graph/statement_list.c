@@ -26,7 +26,7 @@
  * Holds an array of statements wrapped by curly braces.
  * Execution occurs in a new lexical environment created for the block.
  */
-typedef struct {
+struct statement_list_t {
     /**
      * @brief Base expression structure inherited by statement_list_t.
      *
@@ -43,7 +43,7 @@ typedef struct {
      * @brief Number of statements in the list.
      */
     size_t stmt_count;
-} statement_list_t;
+};
 
 /**
  * @brief Returns the number of child statements in the list.
@@ -172,13 +172,13 @@ static node_vtbl_t statement_list_vtbl = {
     .generate_bytecode = generate_bytecode
 };
 
-node_t *create_statement_list_node(arena_t *arena) {
+statement_list_t *create_statement_list_node(arena_t *arena) {
     statement_list_t *list = (statement_list_t *)alloc_zeroed_from_arena(
         arena,
         sizeof(statement_list_t)
     );
     list->base.base.vtbl = &statement_list_vtbl;
-    return &list->base.base;
+    return list;
 }
 
 void fill_statement_list_node(node_t *node, arena_t *arena, statement_t **stmt_list,
