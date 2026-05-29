@@ -31,6 +31,59 @@ static string_value_t get_data(const node_t *node) {
 }
 
 /**
+ * @brief Gets the number of nodes related to a variable node.
+ *
+ * A variable node may be related to the declarator that introduced the
+ * referenced name. If semantic analysis has resolved the variable, this returns
+ * 1; otherwise it returns 0.
+ *
+ * @param node Pointer to the variable node.
+ * @return 1 if the variable has a resolved declarator, otherwise 0.
+ */
+static size_t get_related_count(const node_t *node) {
+    const variable_t *expr = (const variable_t *)node;
+    return expr->declarator ? 1 : 0;
+}
+
+/**
+ * @brief Retrieves a related node from a variable node.
+ *
+ * For a resolved variable, index 0 returns the declarator node that introduced
+ * the referenced name.
+ *
+ * @param node Pointer to the variable node.
+ * @param index Zero-based related-node index.
+ * @return Pointer to the related declarator node, or NULL if index is out of bounds
+ *         or the variable has not been resolved.
+ */
+static node_t *get_related(const node_t *node, size_t index) {
+    const variable_t *expr = (const variable_t *)node;
+    if (index == 0) {
+        return &expr->declarator->base;
+    }
+    return NULL;
+}
+
+/**
+ * @brief Gets the relation type for a related variable node.
+ *
+ * For index 0, returns RELATION_DECLARATION when the variable has been resolved
+ * to a declarator. Otherwise returns RELATION_NONE.
+ *
+ * @param node Pointer to the variable node.
+ * @param index Zero-based related-node index.
+ * @return RELATION_DECLARATION for the resolved declarator relation, otherwise
+ *         RELATION_NONE.
+ */
+static relation_type_t get_relation_type(const node_t *node, size_t index) {
+    const variable_t *expr = (const variable_t *)node;
+    if (index == 0 && expr->declarator) {
+        return RELATION_DECLARATION;
+    }
+    return RELATION_NONE;
+}
+
+/**
  * @brief Converts a variable expression to its string representation.
  * 
  * This function converts the given variable expression to its representation as it would
@@ -115,9 +168,9 @@ static node_vtbl_t variable_vtbl = {
     .get_child_count = no_children,
     .get_child = no_child,
     .get_child_tag = no_tags,
-    .get_related_count = no_related_nodes,
-    .get_related = no_related_node,
-    .get_relation_type = no_relation_type,
+    .get_related_count = get_related_count,
+    .get_related = get_related,
+    .get_relation_type = get_relation_type,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
