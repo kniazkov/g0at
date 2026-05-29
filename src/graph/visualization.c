@@ -249,9 +249,9 @@ static void append_related_edges_to_dot(const vector_t *all_nodes, const avl_tre
                 builder,
                 indent,
                 format_string(
-                    L"node_%u -> node_%u [label=\" %s\", style=dashed, color=darkslategray, fontcolor=darkslategray, dir=back];",
-                    target_id.uint32_val,
+                    L"node_%u -> node_%u [label=\" %s\", style=dashed, color=darkslategray, fontcolor=darkslategray];",
                     source_id.uint32_val,
+                    target_id.uint32_val,
                     relation_name.data
                 )
             );
