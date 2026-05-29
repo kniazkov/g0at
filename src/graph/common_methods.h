@@ -65,3 +65,35 @@ node_t* no_child(const node_t *node, size_t index);
  * @return Always returns NULL (no relationship tags available).
  */
 const wchar_t* no_tags(const node_t *node, size_t index);
+
+/**
+ * @brief Returns zero related nodes.
+ *
+ * Default implementation for nodes that do not expose non-child relations.
+ *
+ * @param node A pointer to the node.
+ * @return Always returns 0.
+ */
+size_t no_related_nodes(const node_t *node);
+
+/**
+ * @brief Returns no related node.
+ *
+ * Default implementation for nodes that do not expose non-child relations.
+ *
+ * @param node A pointer to the node.
+ * @param index Zero-based related-node index.
+ * @return Always returns NULL.
+ */
+node_t *no_related_node(const node_t *node, size_t index);
+
+/**
+ * @brief Returns no relation type.
+ *
+ * Default implementation for nodes that do not expose non-child relations.
+ *
+ * @param node A pointer to the node.
+ * @param index Zero-based related-node index.
+ * @return Always returns RELATION_NONE.
+ */
+relation_type_t no_relation_type(const node_t *node, size_t index);

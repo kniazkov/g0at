@@ -11,6 +11,7 @@
 #pragma once
 
 #include "node_type.h"
+#include "relation_type.h"
 #include "scope.h"
 #include "lib/value.h"
 #include "common/position.h"
@@ -153,6 +154,42 @@ typedef struct {
      */
     node_t* (*get_child)(const node_t *node, size_t index);
 
+    /**
+     * @brief Gets the number of related nodes.
+     *
+     * Returns the number of nodes related to this node outside the direct AST
+     * child hierarchy. Related nodes represent semantic or analysis-level links,
+     * such as a variable usage referring to its declaration.
+     *
+     * @param node A pointer to the node.
+     * @return Number of related nodes.
+     */
+    size_t (*get_related_count)(const node_t *node);
+
+    /**
+     * @brief Gets a related node by index.
+     *
+     * Retrieves a node related to this node outside the direct AST child
+     * hierarchy.
+     *
+     * @param node A pointer to the node.
+     * @param index Zero-based related-node index.
+     * @return Pointer to the related node or NULL if index is out of range.
+     */
+    node_t* (*get_related)(const node_t *node, size_t index);
+
+    /**
+     * @brief Gets the relation type for a related node.
+     *
+     * Returns the semantic relation type between this node and the related node
+     * at the specified index.
+     *
+     * @param node A pointer to the node.
+     * @param index Zero-based related-node index.
+     * @return Type of relation, or RELATION_NONE if index is out of range.
+     */
+    relation_type_t (*get_relation_type)(const node_t *node, size_t index);
+    
     /**
      * @brief Gets the tag/label for a child node.
      * 
@@ -432,6 +469,47 @@ static inline node_t* get_node_child(const node_t *node, size_t index) {
  */
 static inline const wchar_t* get_node_child_tag(const node_t *node, size_t index) {
     return node->vtbl->get_child_tag(node, index);
+}
+
+/**
+ * @brief Gets the number of related nodes.
+ *
+ * This helper dispatches to the node's virtual table and returns the number
+ * of non-child nodes related to the given node.
+ *
+ * @param node A pointer to the node.
+ * @return Number of related nodes.
+ */
+static inline size_t get_node_related_count(const node_t *node) {
+    return node->vtbl->get_related_count(node);
+}
+
+/**
+ * @brief Gets a related node by index.
+ *
+ * This helper dispatches to the node's virtual table and retrieves the indexed
+ * related node.
+ *
+ * @param node A pointer to the node.
+ * @param index Zero-based related-node index.
+ * @return Pointer to the related node or NULL if index is out of range.
+ */
+static inline node_t* get_node_related(const node_t *node, size_t index) {
+    return node->vtbl->get_related(node, index);
+}
+
+/**
+ * @brief Gets the relation type for a related node.
+ *
+ * This helper dispatches to the node's virtual table and retrieves the relation
+ * type for the indexed related node.
+ *
+ * @param node A pointer to the node.
+ * @param index Zero-based related-node index.
+ * @return Type of relation, or RELATION_NONE if index is out of range.
+ */
+static inline relation_type_t get_node_relation_type(const node_t *node, size_t index) {
+    return node->vtbl->get_relation_type(node, index);
 }
 
 /**

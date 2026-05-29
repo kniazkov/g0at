@@ -35,3 +35,15 @@ node_t* no_child(const node_t *node, size_t index) {
 const wchar_t* no_tags(const node_t *node, size_t index) {
     return NULL;
 }
+
+size_t no_related_nodes(const node_t *node) {
+    return 0;
+}
+
+node_t *no_related_node(const node_t *node, size_t index) {
+    return NULL;
+}
+
+relation_type_t no_relation_type(const node_t *node, size_t index) {
+    return RELATION_NONE;
+}
