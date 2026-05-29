@@ -514,7 +514,7 @@ typedef struct {
  * @param node Pointer to the function object node.
  * @return A `string_value_t` containing the list of parameter names as a string.
  */
-static string_value_t get_data(const node_t *node) {
+static string_value_t fobj_get_data(const node_t *node) {
     const function_object_t *expr = (const function_object_t *)node;
     string_value_t result = EMPTY_STRING_VALUE;
     string_builder_t builder;
@@ -533,7 +533,7 @@ static string_value_t get_data(const node_t *node) {
  * @param node Pointer to the function object node.
  * @return Number of statements in the function body (0 if empty).
  */
-static size_t get_child_count(const node_t *node) {
+static size_t fobj_get_child_count(const node_t *node) {
     const function_object_t* expr = (const function_object_t*)node;
     return expr->stmt_count;
 }
@@ -548,7 +548,7 @@ static size_t get_child_count(const node_t *node) {
  * @param index Zero-based index of the statement.
  * @return Pointer to the statement node, or NULL if index is out of bounds.
  */
-static node_t* get_child(const node_t *node, size_t index) {
+static node_t* fobj_get_child(const node_t *node, size_t index) {
     const function_object_t* expr = (const function_object_t*)node;
     if (index >= expr->stmt_count) {
         return NULL;
@@ -589,7 +589,7 @@ static string_value_t generate_header(const function_object_t* expr, string_buil
  * @param node Pointer to the function object node.
  * @return `string_value_t` containing the generated code.
  */
-static string_value_t generate_goat_code(const node_t *node) {
+static string_value_t fobj_generate_goat_code(const node_t *node) {
     const function_object_t* expr = (const function_object_t*)node;
     string_builder_t builder;
     init_string_builder(&builder, 128);
@@ -625,7 +625,7 @@ static string_value_t generate_goat_code(const node_t *node) {
  * @param builder Output accumulator for the generated source code.
  * @param indent Base indentation level (number of tabs).
  */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+static void fobj_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
     const function_object_t* expr = (const function_object_t*)node;
     string_builder_t header;
@@ -652,7 +652,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
  * @param data A pointer to the static data segment builder.
  * @return The instruction index of the first emitted instruction.
  */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
+static instr_index_t fobj_generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     function_object_t* expr = (function_object_t*)node;
     instr_index_t first = expr->code_instr_index = add_instruction(
@@ -702,7 +702,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
  * @return `true` if the function body was emitted and the call site patched;
  *  `false` if required information is missing and another pass is needed.
  */
-static bool generate_bytecode_deferred(const node_t *node, code_builder_t *code,
+static bool fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *code,
         data_builder_t *data) {
     function_object_t* expr = (function_object_t*)node;
     if (expr->code_instr_index == BAD_INSTR_INDEX) {
@@ -737,14 +737,14 @@ static bool generate_bytecode_deferred(const node_t *node, code_builder_t *code,
 static node_vtbl_t fo_vtbl = {
     .type = NODE_FUNCTION_OBJECT,
     .type_name = L"function object",
-    .get_data = get_data,
-    .get_child_count = get_child_count,
-    .get_child = get_child,
+    .get_data = fobj_get_data,
+    .get_child_count = fobj_get_child_count,
+    .get_child = fobj_get_child,
     .get_child_tag = no_tags,
-    .generate_goat_code = generate_goat_code,
-    .generate_indented_goat_code = generate_indented_goat_code,
-    .generate_bytecode = generate_bytecode,
-    .generate_bytecode_deferred = generate_bytecode_deferred
+    .generate_goat_code = fobj_generate_goat_code,
+    .generate_indented_goat_code = fobj_generate_indented_goat_code,
+    .generate_bytecode = fobj_generate_bytecode,
+    .generate_bytecode_deferred = fobj_generate_bytecode_deferred
 };
 
 node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, size_t arg_count) {
