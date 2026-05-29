@@ -136,6 +136,22 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, vector_
 }
 
 /**
+ * @brief Checks whether a node represents a declarator.
+ *
+ * Declarator nodes introduce named entities into the syntax tree. This includes
+ * variable declarators, constant declarators, and formal function arguments.
+ *
+ * @param node Node to check.
+ * @return `true` if the type is a declarator node, otherwise `false`.
+ */
+static inline bool is_declarator_node(const node_t *node) {
+    node_type_t type = node->vtbl->type;
+    return type == NODE_VARIABLE_DECLARATOR
+        || type == NODE_CONSTANT_DECLARATOR
+        || type == NODE_ARGUMENT;
+}
+
+/**
  * ...
  */
 static compilation_error_t *bind_variables(node_t **all_nodes, size_t node_count,
@@ -143,14 +159,14 @@ static compilation_error_t *bind_variables(node_t **all_nodes, size_t node_count
     compilation_error_t *error = NULL;
     for (size_t index = 0; index < node_count; index++) {
         node_t *node = all_nodes[index];
-        if (node->vtbl->type == NODE_VARIABLE_DECLARATOR 
-                || node->vtbl->type == NODE_CONSTANT_DECLARATOR) {
+        if (is_declarator_node(node)) {
             declarator_t *decl = (declarator_t*)node;
             add_symbol_to_scope(node->scope, decl->name.data, node);
         } else if (node->vtbl->type == NODE_VARIABLE) {
             variable_t *var = (variable_t*)node;
             const node_t *decl = find_symbol_in_scope_and_parents(node->scope, var->name.data);
             if (decl == NULL) {
+                /*
                 compilation_error_t *new_error = create_error_from_node(
                     memory->errors,
                     node,
@@ -160,8 +176,8 @@ static compilation_error_t *bind_variables(node_t **all_nodes, size_t node_count
                 );
                 new_error->next = error;
                 error = new_error;
-            } else if (decl->vtbl->type == NODE_VARIABLE_DECLARATOR 
-                    || decl->vtbl->type == NODE_CONSTANT_DECLARATOR) {
+                */
+            } else if (is_declarator_node(decl)) {
                 var->declarator = (declarator_t*)decl;
             }
         }
@@ -181,13 +197,13 @@ compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory) {
         root_scope,
         &node_counter
     );
-    /*
+    
     compilation_error_t *error = bind_variables(
         (node_t**)all_nodes->data,
         all_nodes->size,
         memory
     );
-    */
+
     // ... further analysis ...
     destroy_vector(all_nodes);
     return NULL;
