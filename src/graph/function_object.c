@@ -205,48 +205,32 @@ static node_t *alist_get_child(const node_t *node, size_t index) {
 }
 
 /**
- * @brief Generates Goat source code for an argument list.
+ * @brief Stub for Goat source generation from an argument list.
  *
- * Produces a comma-separated list of formal parameter names without enclosing
- * parentheses, so the enclosing function object can decide how to format its
- * header.
+ * Argument lists are formatted by the enclosing function object. This function
+ * must never be called directly.
  *
  * @param node Pointer to the argument list node.
- * @return `string_value_t` containing the generated argument list.
+ * @return This function does not return.
  */
 static string_value_t alist_generate_goat_code(const node_t *node) {
-    const argument_list_t *list = (const argument_list_t *)node;
-    string_value_t result = EMPTY_STRING_VALUE;
-    string_builder_t builder;
-    init_string_builder(&builder, 0);
-    for (size_t index = 0; index < list->arg_count; index++) {
-        if (index > 0) {
-            append_static_string(&builder, L", ");
-        }
-        result = append_string_view(&builder, list->arg_list[index]->base.name);
-    }
-    return result;
+    assert(false);
+    return EMPTY_STRING_VALUE;
 }
 
 /**
- * @brief Generates indented Goat source code for an argument list.
+ * @brief Stub for indented Goat source generation from an argument list.
  *
- * Appends a comma-separated list of formal parameter names to the source
- * builder. The list itself does not introduce line breaks or indentation.
+ * Argument lists are formatted by the enclosing function object. This function
+ * must never be called directly.
  *
  * @param node Pointer to the argument list node.
- * @param builder Pointer to the source builder where generated code is stored.
- * @param indent Current indentation level (unused).
+ * @param builder Pointer to the source builder.
+ * @param indent Current indentation level.
  */
 static void alist_generate_indented_goat_code(const node_t *node,
         source_builder_t *builder, size_t indent) {
-    const argument_list_t *list = (const argument_list_t *)node;
-    for (size_t index = 0; index < list->arg_count; index++) {
-        if (index > 0) {
-            append_static_source(builder, L", ");
-        }
-        append_formatted_source(builder, VIEW_TO_VALUE(list->arg_list[index]->base.name));
-    }
+    assert(false);
 }
 
 /**
@@ -263,7 +247,7 @@ static void alist_generate_indented_goat_code(const node_t *node,
  */
 static instr_index_t alist_generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
-    assert(!"argument list nodes do not generate bytecode directly");
+    assert(false);
     return BAD_INSTR_INDEX;
 }
 
@@ -313,6 +297,160 @@ node_t *create_argument_list_node(arena_t *arena, string_view_t *arg_list,
     }
 
     return &node->base;
+}
+
+/**
+ * @struct function_body_t
+ * @brief AST node that stores the body of a function.
+ *
+ * Holds an array of statements wrapped by curly braces. The node has the same
+ * syntactic shape as a regular statement list, but different execution semantics:
+ * it does not create an additional lexical environment. The function call itself
+ * provides the execution context that contains the formal arguments.
+ */
+typedef struct {
+    /**
+     * @brief Base expression structure.
+     *
+     * Enables treating this node as an expression during AST traversal,
+     * manipulation, source generation, and bytecode generation.
+     */
+    expression_t base;
+
+    /**
+     * @brief Array of pointers to statements in the function body.
+     */
+    statement_t **stmt_list;
+
+    /**
+     * @brief Number of statements in the function body.
+     */
+    size_t stmt_count;
+} function_body_t;
+
+/**
+ * @brief Returns the number of child statements in the function body.
+ *
+ * @param node Pointer to the function body node.
+ * @return The number of child statements, or 0 for an empty body.
+ */
+static size_t fbody_get_child_count(const node_t *node) {
+    const function_body_t* body = (const function_body_t*)node;
+    return body->stmt_count;
+}
+
+/**
+ * @brief Retrieves a specific child statement from the function body.
+ *
+ * Performs bounds-checked access. Valid indices are in the range [0, stmt_count).
+ *
+ * @param node Pointer to the function body node.
+ * @param index Zero-based statement index.
+ * @return Pointer to the child node, or NULL if index is out of bounds.
+ */
+static node_t* fbody_get_child(const node_t *node, size_t index) {
+    const function_body_t* body = (const function_body_t*)node;
+    if (index >= body->stmt_count) {
+        return NULL;
+    }
+    return &body->stmt_list[index]->base;
+}
+
+/**
+ * @brief Stub for Goat source generation from a function body.
+ *
+ * Function bodies are formatted by the enclosing function object. This function
+ * must never be called directly.
+ *
+ * @param node Pointer to the function body node.
+ * @return This function does not return.
+ */
+static string_value_t fbody_generate_goat_code(const node_t *node) {
+    assert(false);
+    return EMPTY_STRING_VALUE;
+}
+
+/**
+ * @brief Stub for indented Goat source generation from a function body.
+ *
+ * Function bodies are formatted by the enclosing function object. This function
+ * must never be called directly.
+ *
+ * @param node Pointer to the function body node.
+ * @param builder Source builder accumulating the output.
+ * @param indent Base indentation level.
+ */
+static void fbody_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
+        size_t indent) {
+    assert(false);
+}
+
+/**
+ * @brief Stub for bytecode generation from a function body.
+ *
+ * Function body bytecode is emitted by the enclosing function object as deferred
+ * code. This function must never be called directly.
+ *
+ * @param node Pointer to the function body node.
+ * @param code Code builder receiving emitted instructions.
+ * @param data Data builder for the constant pool.
+ * @return This function does not return.
+ */
+static instr_index_t fbody_generate_bytecode(node_t *node, code_builder_t *code,
+        data_builder_t *data) {
+    assert(false);
+    return BAD_INSTR_INDEX;
+}
+
+/**
+ * @brief Virtual table for function_body node operations.
+ */
+static node_vtbl_t function_body_vtbl = {
+    .type = NODE_FUNCTION_BODY,
+    .type_name = L"function body",
+    .get_data = no_data,
+    .get_child_count = fbody_get_child_count,
+    .get_child = fbody_get_child,
+    .get_child_tag = no_tags,
+    .generate_goat_code = fbody_generate_goat_code,
+    .generate_indented_goat_code = fbody_generate_indented_goat_code,
+    .generate_bytecode = fbody_generate_bytecode
+};
+
+/**
+ * @brief Creates a new function body AST node.
+ *
+ * @param arena Arena allocator for node allocation.
+ * @return Pointer to the newly created function body node.
+ */
+function_body_t *create_function_body_node(arena_t *arena) {
+    function_body_t *body = (function_body_t *)alloc_zeroed_from_arena(
+        arena,
+        sizeof(function_body_t)
+    );
+    body->base.base.vtbl = &function_body_vtbl;
+    return body;
+}
+
+/**
+ * @brief Fills a function body node with statements.
+ *
+ * Copies the statement pointer array into arena-managed memory and stores it
+ * inside the function body node.
+ *
+ * @param node Pointer to the function body node.
+ * @param arena Arena allocator for statement array allocation.
+ * @param stmt_list Array of statement pointers.
+ * @param stmt_count Number of statements in the body.
+ */
+void fill_function_body_node(node_t *node, arena_t *arena, statement_t **stmt_list,
+        size_t stmt_count) {
+    assert(node->vtbl->type == NODE_FUNCTION_BODY);
+    function_body_t *body = (function_body_t *)node;
+    size_t data_size = stmt_count * sizeof(statement_t *);
+    body->stmt_list = (statement_t **)alloc_from_arena(arena, data_size);
+    memcpy(body->stmt_list, stmt_list, data_size);
+    body->stmt_count = stmt_count;
 }
 
 /**

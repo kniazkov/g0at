@@ -285,6 +285,15 @@ typedef enum {
     NODE_ARGUMENT,
 
     /**
+     * @brief Function body node type.
+     *
+     * Represents a brace-delimited list of statements used as a function body.
+     * Unlike a regular statement list, it does not create an additional lexical
+     * environment during bytecode generation.
+     */
+    NODE_FUNCTION_BODY,
+
+    /**
      * @brief Return statement node type.
      * 
      * Represents a `return` statement in the syntax tree. May optionally include
