@@ -99,7 +99,7 @@ static void arg_generate_indented_goat_code(const node_t *node,
  */
 static instr_index_t arg_generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
-    assert(!"argument nodes do not generate bytecode directly");
+    assert(false);
     return BAD_INSTR_INDEX;
 }
 
@@ -280,7 +280,7 @@ static node_vtbl_t alist_vtbl = {
  * @param arg_count Number of formal arguments.
  * @return Pointer to the newly created argument list node.
  */
-node_t *create_argument_list_node(arena_t *arena, string_view_t *arg_list,
+static argument_list_t *create_argument_list_node(arena_t *arena, string_view_t *arg_list,
         size_t arg_count) {
     argument_list_t *node =
         (argument_list_t *)alloc_zeroed_from_arena(arena, sizeof(argument_list_t));
@@ -296,7 +296,7 @@ node_t *create_argument_list_node(arena_t *arena, string_view_t *arg_list,
         }
     }
 
-    return &node->base;
+    return node;
 }
 
 /**
@@ -310,12 +310,9 @@ node_t *create_argument_list_node(arena_t *arena, string_view_t *arg_list,
  */
 typedef struct {
     /**
-     * @brief Base expression structure.
-     *
-     * Enables treating this node as an expression during AST traversal,
-     * manipulation, source generation, and bytecode generation.
+     * @brief Base node structure.
      */
-    expression_t base;
+    node_t base;
 
     /**
      * @brief Array of pointers to statements in the function body.
@@ -423,12 +420,12 @@ static node_vtbl_t function_body_vtbl = {
  * @param arena Arena allocator for node allocation.
  * @return Pointer to the newly created function body node.
  */
-function_body_t *create_function_body_node(arena_t *arena) {
+static function_body_t *create_function_body_node(arena_t *arena) {
     function_body_t *body = (function_body_t *)alloc_zeroed_from_arena(
         arena,
         sizeof(function_body_t)
     );
-    body->base.base.vtbl = &function_body_vtbl;
+    body->base.vtbl = &function_body_vtbl;
     return body;
 }
 
@@ -438,15 +435,13 @@ function_body_t *create_function_body_node(arena_t *arena) {
  * Copies the statement pointer array into arena-managed memory and stores it
  * inside the function body node.
  *
- * @param node Pointer to the function body node.
+ * @param body Pointer to the function body node.
  * @param arena Arena allocator for statement array allocation.
  * @param stmt_list Array of statement pointers.
  * @param stmt_count Number of statements in the body.
  */
-void fill_function_body_node(node_t *node, arena_t *arena, statement_t **stmt_list,
+static void fill_function_body_node(function_body_t *body, arena_t *arena, statement_t **stmt_list,
         size_t stmt_count) {
-    assert(node->vtbl->type == NODE_FUNCTION_BODY);
-    function_body_t *body = (function_body_t *)node;
     size_t data_size = stmt_count * sizeof(statement_t *);
     body->stmt_list = (statement_t **)alloc_from_arena(arena, data_size);
     memcpy(body->stmt_list, stmt_list, data_size);
@@ -471,28 +466,18 @@ typedef struct {
     expression_t base;
 
     /**
-     * @brief List of function parameter names.
-     * 
-     * Each entry is a string view representing a parameter identifier.
+     * @brief Formal argument list for the function.
+     *
+     * Contains one child node per declared argument.
      */
-    string_view_t *arg_list;
+    argument_list_t *arguments;
 
     /**
-     * @brief Number of function parameters.
+     * @brief Function body.
+     *
+     * Contains the statements executed when the function is called.
      */
-    size_t arg_count;
-
-    /**
-     * @brief List of statements forming the function body.
-     * 
-     * This is an array of pointers to statement nodes that make up the function's logic.
-     */
-    statement_t **stmt_list;
-
-    /**
-     * @brief Number of statements in the function body.
-     */
-    size_t stmt_count;
+    function_body_t *body;
 
     /**
      * @brief Index of the `ARG` instruction containing index of the first instruction 
@@ -505,55 +490,57 @@ typedef struct {
 } function_object_t;
 
 /**
- * @brief Retrieves a string representation of the function's parameter list.
+ * @brief Gets the number of child nodes in a function object.
  *
- * This implementation of the `get_data` method for function object nodes returns
- * a comma-separated list of parameter names. If the function has no parameters,
- * an empty string is returned.
+ * A function object always exposes two child nodes:
+ * the formal argument list and the function body.
  *
  * @param node Pointer to the function object node.
- * @return A `string_value_t` containing the list of parameter names as a string.
- */
-static string_value_t fobj_get_data(const node_t *node) {
-    const function_object_t *expr = (const function_object_t *)node;
-    string_value_t result = EMPTY_STRING_VALUE;
-    string_builder_t builder;
-    init_string_builder(&builder, 0);
-    for (size_t index = 0; index < expr->arg_count; index++) {
-        if (index > 0) {
-            append_static_string(&builder, L", ");
-        }
-        result = append_string_view(&builder, expr->arg_list[index]);
-    }
-    return result;
-}
-
-/**
- * @brief Gets the number of child statements in a function object.
- * @param node Pointer to the function object node.
- * @return Number of statements in the function body (0 if empty).
+ * @return Always returns 2.
  */
 static size_t fobj_get_child_count(const node_t *node) {
-    const function_object_t* expr = (const function_object_t*)node;
-    return expr->stmt_count;
+    return 2;
 }
 
 /**
- * @brief Retrieves a specific child statement from a function object.
- * 
- * Accesses the function's body by index with bounds checking.
- * Valid indices range from 0 to stmt_count - 1.
- * 
+ * @brief Retrieves a specific child node from a function object.
+ *
+ * A function object exposes its children in a fixed order:
+ * index 0 is the formal argument list, and index 1 is the function body.
+ *
  * @param node Pointer to the function object node.
- * @param index Zero-based index of the statement.
- * @return Pointer to the statement node, or NULL if index is out of bounds.
+ * @param index Zero-based child index.
+ * @return Pointer to the requested child node, or NULL if index is out of bounds.
  */
 static node_t* fobj_get_child(const node_t *node, size_t index) {
     const function_object_t* expr = (const function_object_t*)node;
-    if (index >= expr->stmt_count) {
-        return NULL;
+    if (index == 0) {
+        return &expr->arguments->base;
     }
-    return &expr->stmt_list[index]->base;
+    if (index == 1) {
+        return &expr->body->base;
+    }
+    return NULL;
+}
+
+/**
+ * @brief Gets the semantic tag for a function object child node.
+ *
+ * Tags identify the role of each child in the function object:
+ * index 0 is tagged as "arguments", and index 1 is tagged as "body".
+ *
+ * @param node Pointer to the function object node.
+ * @param index Zero-based child index.
+ * @return Static wide string tag for the child, or NULL if index is out of bounds.
+ */
+static const wchar_t* fobj_get_child_tag(const node_t *node, size_t index) {
+    if (index == 0) {
+        return L"arguments";
+    }
+    if (index == 1) {
+        return L"body";
+    }
+    return NULL;
 }
 
 /**
@@ -568,11 +555,11 @@ static node_t* fobj_get_child(const node_t *node, size_t index) {
  */
 static string_value_t generate_header(const function_object_t* expr, string_builder_t *builder) {
     append_static_string(builder, L"func(");
-    for (size_t index = 0; index < expr->arg_count; index++) {
+    for (size_t index = 0; index < expr->arguments->arg_count; index++) {
         if (index > 0) {
             append_static_string(builder, L", ");
         }
-        append_string_view(builder, expr->arg_list[index]);
+        append_string_view(builder, expr->arguments->arg_list[index]->base.name);
     }
     return append_static_string(builder, L") {");
 }
@@ -594,11 +581,11 @@ static string_value_t fobj_generate_goat_code(const node_t *node) {
     string_builder_t builder;
     init_string_builder(&builder, 128);
     generate_header(expr, &builder);
-    for (size_t index = 0; index < expr->stmt_count; index++) {
+    for (size_t index = 0; index < expr->body->stmt_count; index++) {
         if (index > 0) {
             append_char(&builder, L' ');
         }
-        statement_t *stmt = expr->stmt_list[index];
+        statement_t *stmt = expr->body->stmt_list[index];
         string_value_t stmt_as_string = generate_goat_code_from_statement(stmt);
         append_string_value(&builder, stmt_as_string);
         FREE_STRING(stmt_as_string);
@@ -631,8 +618,8 @@ static void fobj_generate_indented_goat_code(const node_t *node, source_builder_
     string_builder_t header;
     init_string_builder(&header, 16);
     append_formatted_source(builder, generate_header(expr, &header));
-    for (size_t index = 0; index < expr->stmt_count; index++) {
-        statement_t *stmt = expr->stmt_list[index];
+    for (size_t index = 0; index < expr->body->stmt_count; index++) {
+        statement_t *stmt = expr->body->stmt_list[index];
         generate_indented_goat_code_from_statement(stmt, builder, indent + 1);
     }
     add_static_source(builder, indent, L"}");
@@ -660,11 +647,14 @@ static instr_index_t fobj_generate_bytecode(node_t *node, code_builder_t *code,
         (instruction_t){ .opcode = ARG, .arg1 = 0xFFFFFFFF } // placeholder
     );
     uint32_t arg_names_idx = 0;
-    if (expr->arg_count > 0) {
-        size_t arg_size = expr->arg_count * sizeof(uint32_t);
+    if (expr->arguments->arg_count > 0) {
+        size_t arg_size = expr->arguments->arg_count * sizeof(uint32_t);
         uint32_t *arg_names = (uint32_t*)ALLOC(arg_size);
-        for (size_t index = 0; index < expr->arg_count; index++) {
-            arg_names[index] = add_string_to_data_segment_ex(data, expr->arg_list[index]);
+        for (size_t index = 0; index < expr->arguments->arg_count; index++) {
+            arg_names[index] = add_string_to_data_segment_ex(
+                data,
+                expr->arguments->arg_list[index]->base.name
+            );
         }
         arg_names_idx = add_data_to_data_segment(data, arg_names, arg_size);
         FREE(arg_names);
@@ -673,7 +663,7 @@ static instr_index_t fobj_generate_bytecode(node_t *node, code_builder_t *code,
         code,
         (instruction_t) {
             .opcode = FUNC,
-            .arg0 = (uint16_t)expr->arg_count,
+            .arg0 = (uint16_t)expr->arguments->arg_count,
             .arg1 = arg_names_idx
         }
     );
@@ -709,17 +699,17 @@ static bool fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *
         return false;
     }
     instr_index_t first;
-    if (expr->stmt_count == 0) {
+    if (expr->body->stmt_count == 0) {
         first = add_instruction(code, (instruction_t){ .opcode = NIL });
         add_instruction(code, (instruction_t){ .opcode = RET });        
     }
     else {
-        first = generate_bytecode_from_statement(expr->stmt_list[0], code, data);
-        for (size_t index = 1; index < expr->stmt_count; index++) {
-            statement_t *stmt = expr->stmt_list[index];
+        first = generate_bytecode_from_statement(expr->body->stmt_list[0], code, data);
+        for (size_t index = 1; index < expr->body->stmt_count; index++) {
+            statement_t *stmt = expr->body->stmt_list[index];
             generate_bytecode_from_statement(stmt, code, data);
         }
-        if (expr->stmt_list[expr->stmt_count - 1]->base.vtbl->type != NODE_RETURN) {
+        if (expr->body->stmt_list[expr->body->stmt_count - 1]->base.vtbl->type != NODE_RETURN) {
             add_instruction(code, (instruction_t){ .opcode = NIL });
             add_instruction(code, (instruction_t){ .opcode = RET });
         }
@@ -737,10 +727,10 @@ static bool fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *
 static node_vtbl_t fo_vtbl = {
     .type = NODE_FUNCTION_OBJECT,
     .type_name = L"function object",
-    .get_data = fobj_get_data,
+    .get_data = no_data,
     .get_child_count = fobj_get_child_count,
     .get_child = fobj_get_child,
-    .get_child_tag = no_tags,
+    .get_child_tag = fobj_get_child_tag,
     .generate_goat_code = fobj_generate_goat_code,
     .generate_indented_goat_code = fobj_generate_indented_goat_code,
     .generate_bytecode = fobj_generate_bytecode,
@@ -751,23 +741,14 @@ node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, siz
     function_object_t *fobj = (function_object_t*)alloc_zeroed_from_arena(arena,
         sizeof(function_object_t));
     fobj->base.base.vtbl = &fo_vtbl;
-    if (arg_count > 0) {
-        fobj->arg_list = (string_view_t*)alloc_from_arena(arena, sizeof(string_view_t) * arg_count);
-        for (size_t index = 0; index < arg_count; index++) {
-            fobj->arg_list[index] = copy_string_to_arena(arena, arg_list[index].data,
-                arg_list[index].length);
-        }
-        fobj->arg_count = arg_count;
-    }
+    fobj->arguments = create_argument_list_node(arena, arg_list, arg_count);
+    fobj->body = create_function_body_node(arena);
     return &fobj->base.base;
 }
 
 void fill_function_body(node_t *node, arena_t *arena, statement_t **stmt_list, size_t stmt_count) {
     assert(node->vtbl->type == NODE_FUNCTION_OBJECT);
     function_object_t *fobj = (function_object_t *)node;
-    size_t data_size = stmt_count * sizeof(statement_t *);
-    fobj->stmt_list = (statement_t **)alloc_from_arena(arena, data_size);
-    memcpy(fobj->stmt_list, stmt_list, data_size);
-    fobj->stmt_count = stmt_count;
+    fill_function_body_node(fobj->body, arena, stmt_list, stmt_count);
     fobj->code_instr_index = BAD_INSTR_INDEX;
 }
