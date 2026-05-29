@@ -157,7 +157,7 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
             builder,
             indent,
             format_string(
-                L"node_%u [label = \"%s\"];",
+                L"node_%u [label=\"%s\"];",
                 id,
                 name
             )
@@ -181,7 +181,7 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
                 builder,
                 indent,
                 format_string(
-                    L"node_%u -> node_%u [label = \" %zu\"];",
+                    L"node_%u -> node_%u [label=\" %zu\"];",
                     id,
                     child_id,
                     index
@@ -192,7 +192,7 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
                 builder,
                 indent,
                 format_string(
-                    L"node_%u -> node_%u [label = \" %s\"];",
+                    L"node_%u -> node_%u [label=\" %s\"];",
                     id,
                     child_id,
                     tag
@@ -249,7 +249,7 @@ static void append_related_edges_to_dot(const vector_t *all_nodes, const avl_tre
                 builder,
                 indent,
                 format_string(
-                    L"node_%u -> node_%u [label = \" %s\", style = dashed, color = gray, fontcolor = gray];",
+                    L"node_%u -> node_%u [label=\" %s\", style=dashed, color=darkslategray, fontcolor=darkslategray, constraint=false];",
                     source_id.uint32_val,
                     target_id.uint32_val,
                     relation_name.data
