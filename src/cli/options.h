@@ -16,6 +16,12 @@
 #include "lib/vector.h"
 
 /**
+ * @typedef options_t
+ * @brief Forward declaration for the command line options structure.
+ */
+typedef struct options_t options_t;
+
+/**
  * @struct options_t
  * @brief Structure for storing parsed command-line options.
  * 
@@ -23,7 +29,7 @@
  * the command line, including the input file, language selection,
  * output preferences, and arguments to be passed to the executed script.
  */
-typedef struct {
+struct options_t {
     /**
      * @brief Path to the input file.
      * 
@@ -56,6 +62,13 @@ typedef struct {
     bool print_bytecode;
 
     /**
+     * @brief Flag to enable compiler warnings.
+     *
+     * If set to `true`, the compiler will report warnings in addition to errors.
+     */
+    bool enable_warnings;
+    
+    /**
      * @brief Path to the output file for graph visualization (DOT/GraphViz).
      * 
      * If non-NULL, specifies the file where the program should save
@@ -72,7 +85,7 @@ typedef struct {
      * when it is executed.
      */
     vector_t *script_args;
-} options_t;
+};
 
 /**
  * @brief Creates and initializes an options_t structure.

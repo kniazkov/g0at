@@ -59,7 +59,21 @@ options_t *parse_options(int argc, char **argv) {
 
     for (int index = 1; index < argc; index++) {
         char *arg = argv[index];
+
+        if (strcmp(arg, "/?") == 0) {
+            goto help;
+        }
+        
         if (arg[0] == '-') {
+            if (strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0) {
+                goto help;
+            }
+
+            if (strcmp(arg, "-w") == 0 || strcmp(arg, "--enable-warnings") == 0) {
+                opt->enable_warnings = true;
+                continue;
+            }
+            
             if (strcmp(arg, "--print-bytecode") == 0) {
                 opt->print_bytecode = true;
                 continue;
@@ -113,6 +127,11 @@ options_t *parse_options(int argc, char **argv) {
     return opt;
 
 error:
+    destroy_options(opt);
+    return NULL;
+
+help:
+    fprintf_utf8(stdout, get_messages()->help);
     destroy_options(opt);
     return NULL;
 }

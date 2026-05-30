@@ -34,6 +34,12 @@ typedef struct node_t node_t;
 typedef struct parser_memory_t parser_memory_t;
 
 /**
+ * @typedef options_t
+ * @brief Forward declaration for the command line options structure.
+ */
+typedef struct options_t options_t;
+
+/**
  * @brief Performs static analysis on the given syntax tree.
  *
  * This is the entry point for the semantic/static analysis phase of the
@@ -49,7 +55,9 @@ typedef struct parser_memory_t parser_memory_t;
  * @param root_node Pointer to the root AST node.
  * @param memory Memory used for allocating auxiliary structures, such as scopes, bindings,
  *  and error reports.
+ * @param options A pointer to the `options_t` structure that contains
+ *  the parsed command-line options.
  * @return Pointer to a linked list of compilation errors discovered during analysis, or NULL
  *  if the analysis completed successfully without errors.
  */
-compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory);
+compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options_t *options);

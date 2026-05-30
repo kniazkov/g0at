@@ -93,7 +93,7 @@ int go(options_t *opt) {
         /*
             7. perform a static analysis
         */
-        error = analyze(root_node, &memory);
+        error = analyze(root_node, &memory, opt);
         if (error != NULL) {
             break;
         }

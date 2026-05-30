@@ -14,6 +14,7 @@
 #include "analysis.h"
 #include "lib/arena.h"
 #include "lib/queue.h"
+#include "cli/options.h"
 #include "common/compilation_error.h"
 #include "graph/node.h"
 #include "graph/declarations.h"
@@ -154,7 +155,7 @@ static inline bool is_declarator_node(const node_t *node) {
  * ...
  */
 static void bind_variables_from_node_and_children(node_t *node, parser_memory_t *memory,
-         compilation_error_t **errors) {
+         compilation_error_t **errors, options_t *options) {
     if (is_declarator_node(node)) {
         declarator_t *decl = (declarator_t*)node;
         add_symbol_to_scope(node->scope, decl->name.data, node);
@@ -166,17 +167,17 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
         variable_t *var = (variable_t*)node;
         const node_t *decl = find_symbol_in_scope_and_parents(node->scope, var->name.data);
         if (decl == NULL) {
-            /*
-            compilation_error_t *error = create_error_from_node(
-                memory->errors,
-                node,
-                WARNING,
-                get_messages()->variable_used_before_declaration,
-                var->name.data
-            );
-            error->next = *errors;
-            *errors = error;
-            */
+            if (options->enable_warnings) {
+                compilation_error_t *error = create_error_from_node(
+                    memory->errors,
+                    node,
+                    WARNING,
+                    get_messages()->variable_used_before_declaration,
+                    var->name.data
+                );
+                error->next = *errors;
+                *errors = error;
+            }
         } else if (is_declarator_node(decl)) {
             var->declarator = (declarator_t*)decl;
         }
@@ -184,7 +185,12 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
     }
     size_t count = get_node_child_count(node);
     for (size_t index = 0; index < count; index++) {
-        bind_variables_from_node_and_children(get_node_child(node, index), memory, errors);
+        bind_variables_from_node_and_children(
+            get_node_child(node, index),
+            memory,
+            errors,
+            options
+        );
     }
 }
 
@@ -192,17 +198,22 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
  * ...
  */
 static void bind_variables_in_functions(queue_t *functions, parser_memory_t *memory,
-        compilation_error_t **errors) {
+        compilation_error_t **errors, options_t *options) {
     while(!is_queue_empty(functions)) {
         node_t *node  = (node_t*)dequeue(functions);
         size_t count = get_node_child_count(node);
         for (size_t index = 0; index < count; index++) {
-            bind_variables_from_node_and_children(get_node_child(node, index), memory, errors);
+            bind_variables_from_node_and_children(
+                get_node_child(node, index),
+                memory,
+                errors,
+                options
+            );
         }
     }
 }
 
-compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory) {
+compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options_t *options) {
     scope_t *root_scope = create_scope_from_root_context(root_node, memory->graph);
     unsigned int node_counter = 0;
     queue_t *functions = create_queue();
@@ -217,7 +228,7 @@ compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory) {
     );
     
     compilation_error_t *errors = NULL;
-    bind_variables_in_functions(functions, memory, &errors);
+    bind_variables_in_functions(functions, memory, &errors, options);
     destroy_queue(functions);
 
     // ... further analysis ...

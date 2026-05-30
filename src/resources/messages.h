@@ -21,6 +21,7 @@
  * include various error messages related to symbol recognition, and more can be added as needed.
  */
 typedef struct {
+    const wchar_t const *help;
     const wchar_t const *memory_leak;
     const wchar_t const *no_input_file;
     const wchar_t const *unknown_option;
