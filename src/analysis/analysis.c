@@ -158,12 +158,11 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
     if (is_declarator_node(node)) {
         declarator_t *decl = (declarator_t*)node;
         add_symbol_to_scope(node->scope, decl->name.data, node);
+    }
+    else if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
         return;
     }
-    if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
-        return;
-    }
-    if (node->vtbl->type == NODE_VARIABLE) {
+    else if (node->vtbl->type == NODE_VARIABLE) {
         variable_t *var = (variable_t*)node;
         const node_t *decl = find_symbol_in_scope_and_parents(node->scope, var->name.data);
         if (decl == NULL) {
