@@ -1,1 +1,1 @@
-Compilation error in 'program.goat', 1.21: Expected comma between function arguments
+Fatal error in 'program.goat', 1.21: Expected comma between function arguments

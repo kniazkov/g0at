@@ -94,12 +94,36 @@ int go(options_t *opt) {
             7. perform a static analysis
         */
         error = analyze(root_node, &memory, opt);
-        if (error != NULL) {
+        compilation_error_severity_t severity = get_most_severe_compilation_error(error);
+        if (severity > WARNING) {
             break;
         }
 
         /*
-            8. print source code (if needed)
+            8. print warnings (if any)
+        */
+        if (error != NULL) {
+            error = reverse_compilation_errors(error);
+            const wchar_t const *error_msg_format = get_messages()->compilation_warning;
+            while (error != NULL) {
+                fprintf_utf8(
+                    stderr,
+                    error_msg_format,
+                    error->position->begin->file_name,
+                    error->position->begin->row,
+                    error->position->begin->column,
+                    error->message.data
+                );
+                fprintf(stderr, "\n");
+                error = error->next;
+            }
+        }
+        destroy_arena(memory.errors);
+        memory.errors = NULL;
+        error = NULL;
+
+        /*
+            9. print source code (if needed)
         */
         if (opt->print_source_code) {
             source_builder_t *source_builder = create_source_builder();
@@ -113,7 +137,7 @@ int go(options_t *opt) {
         }
 
         /*
-            9. visualization (if needed)
+            10. visualization (if needed)
         */
         if (opt->graph_output_file != NULL) {
             if (is_graphviz_available()) {
@@ -129,7 +153,7 @@ int go(options_t *opt) {
         }
 
         /*
-            10. compile the syntax tree into bytecode
+            11. compile the syntax tree into bytecode
         */
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
@@ -155,7 +179,7 @@ int go(options_t *opt) {
         destroy_data_builder(data_builder);
 
         /*
-            11. print bytecode (if needed)
+            12. print bytecode (if needed)
         */
         if (opt->print_bytecode) {
             string_value_t text = bytecode_to_text(bytecode);
@@ -164,7 +188,7 @@ int go(options_t *opt) {
         }
         
         /*
-            12. destroy the syntax tree, since the bytecode exists
+            13. destroy the syntax tree, since the bytecode exists
         */
         destroy_arena(memory.graph);
         memory.graph = NULL;
@@ -172,34 +196,51 @@ int go(options_t *opt) {
         code = NULL_STRING_VALUE;
 
         /*
-            13. run the virtual machine
+            14. run the virtual machine
         */
         process_t *process = create_process();
         ret_code = run(process, bytecode);
         destroy_process(process);
 
         /*
-            14. destroy bytecode
+            15. destroy bytecode
         */
         free_bytecode(bytecode);
     } while(false);
 
     /*
-        15. print error messages (if any)
+        16. print error messages (if any)
     */
     if (error != NULL) {
         error = reverse_compilation_errors(error);
-        const wchar_t const *error_msg_format = get_messages()->compilation_error;
         while (error != NULL) {
-            fprintf_utf8(stderr, error_msg_format, error->position->begin->file_name,
-                error->position->begin->row, error->position->begin->column, error->message.data);
+            const wchar_t const *error_msg_format = NULL;
+            switch(error->severity) {
+                case WARNING:
+                    error_msg_format = get_messages()->compilation_warning;
+                    break;
+                case ERROR:
+                    error_msg_format = get_messages()->compilation_error;
+                    break;
+                case CRITICAL:
+                    error_msg_format = get_messages()->critical_compilation_error;
+                    break;
+            }
+            fprintf_utf8(
+                stderr,
+                error_msg_format,
+                error->position->begin->file_name,
+                error->position->begin->row,
+                error->position->begin->column,
+                error->message.data
+            );
             fprintf(stderr, "\n");
             error = error->next;
         }
     }
 
     /*
-        16. free the memory used by the compiler if it is not free yet
+        17. free the memory used by the compiler if it is not free yet
     */
     if (memory.positions != NULL) {
         destroy_arena(memory.positions);
@@ -217,7 +258,7 @@ int go(options_t *opt) {
     }
 
     /*
-        17. check for memory leaks
+        18. check for memory leaks
     */
     size_t leaked_memory_size = get_allocated_memory_size() - previously_allocated;
     if (leaked_memory_size > 0) {

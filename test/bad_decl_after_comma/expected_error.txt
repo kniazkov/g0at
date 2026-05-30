@@ -1,1 +1,1 @@
-Compilation error in 'program.goat', 1.6: Expected another variable declaration after comma
+Fatal error in 'program.goat', 1.6: Expected another variable declaration after comma

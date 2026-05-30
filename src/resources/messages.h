@@ -31,7 +31,9 @@ typedef struct {
     const wchar_t const *graphviz_failed;
     const wchar_t const *duplicate_parameter;
     const wchar_t const *cannot_read_source_file;
+    const wchar_t const *compilation_warning;
     const wchar_t const *compilation_error;
+    const wchar_t const *critical_compilation_error;
     const wchar_t const *unknown_symbol;
     const wchar_t const *unclosed_quotation_mark;
     const wchar_t const *invalid_escape_sequence;
