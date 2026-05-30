@@ -13,7 +13,7 @@
 
 #include "analysis.h"
 #include "lib/arena.h"
-#include "lib/vector.h"
+#include "lib/queue.h"
 #include "common/compilation_error.h"
 #include "graph/node.h"
 #include "graph/declarations.h"
@@ -75,8 +75,7 @@ static scope_t *create_scope_from_root_context(node_t *root_node, arena_t *arena
  *
  * @param node      Current AST node to analyze.
  * @param parent    Parent node.
- * @param all_nodes Collection containing all nodes of the syntax tree in depth-first
- *                  traversal order.
+ * @param functions ....
  * @param arena     Memory arena used for allocating new scopes.
  * @param scope     Scope that this node belongs to.
  * @param next_id   Pointer to the counter of node identifiers in the current scope.
@@ -85,9 +84,8 @@ static scope_t *create_scope_from_root_context(node_t *root_node, arena_t *arena
  * @note Each scope has its own sequence of node ids starting from 1, except
  *  statement list scopes which continue the numbering of their parent.
  */
-static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, vector_t *all_nodes,
+static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t *functions,
         arena_t *arena, scope_t *scope, unsigned int *next_id) {
-    append_to_vector(all_nodes, node);
     node->parent = parent;
     node->scope = scope;
     node->id = (*next_id)++;
@@ -96,12 +94,13 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, vector_
         node_t *child = get_node_child(node, child_id);
         switch (child->vtbl->type) {
             case NODE_FUNCTION_OBJECT: {
+                enqueue(functions, child);
                 scope_t *inner_scope = create_scope(arena, scope);
                 unsigned int inner_counter = 1;
                 assign_node_indexes_and_scopes(
                     child,
                     node,
-                    all_nodes,
+                    functions,
                     arena,
                     inner_scope,
                     &inner_counter
@@ -113,7 +112,7 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, vector_
                 assign_node_indexes_and_scopes(
                     child,
                     node,
-                    all_nodes,
+                    functions,
                     arena,
                     inner_scope,
                     next_id
@@ -124,7 +123,7 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, vector_
                 assign_node_indexes_and_scopes(
                     child,
                     node,
-                    all_nodes,
+                    functions,
                     arena,
                     scope,
                     next_id
@@ -154,57 +153,74 @@ static inline bool is_declarator_node(const node_t *node) {
 /**
  * ...
  */
-static compilation_error_t *bind_variables(node_t **all_nodes, size_t node_count,
-        parser_memory_t *memory) {
-    compilation_error_t *error = NULL;
-    for (size_t index = 0; index < node_count; index++) {
-        node_t *node = all_nodes[index];
-        if (is_declarator_node(node)) {
-            declarator_t *decl = (declarator_t*)node;
-            add_symbol_to_scope(node->scope, decl->name.data, node);
-        } else if (node->vtbl->type == NODE_VARIABLE) {
-            variable_t *var = (variable_t*)node;
-            const node_t *decl = find_symbol_in_scope_and_parents(node->scope, var->name.data);
-            if (decl == NULL) {
-                /*
-                compilation_error_t *new_error = create_error_from_node(
-                    memory->errors,
-                    node,
-                    WARNING,
-                    get_messages()->variable_used_before_declaration,
-                    var->name.data
-                );
-                new_error->next = error;
-                error = new_error;
-                */
-            } else if (is_declarator_node(decl)) {
-                var->declarator = (declarator_t*)decl;
-            }
+static void bind_variables_from_node_and_children(node_t *node, parser_memory_t *memory,
+         compilation_error_t **errors) {
+    if (is_declarator_node(node)) {
+        declarator_t *decl = (declarator_t*)node;
+        add_symbol_to_scope(node->scope, decl->name.data, node);
+        return;
+    }
+    if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
+        return;
+    }
+    if (node->vtbl->type == NODE_VARIABLE) {
+        variable_t *var = (variable_t*)node;
+        const node_t *decl = find_symbol_in_scope_and_parents(node->scope, var->name.data);
+        if (decl == NULL) {
+            /*
+            compilation_error_t *error = create_error_from_node(
+                memory->errors,
+                node,
+                WARNING,
+                get_messages()->variable_used_before_declaration,
+                var->name.data
+            );
+            error->next = *errors;
+            *errors = error;
+            */
+        } else if (is_declarator_node(decl)) {
+            var->declarator = (declarator_t*)decl;
+        }
+        return;
+    }
+    size_t count = get_node_child_count(node);
+    for (size_t index = 0; index < count; index++) {
+        bind_variables_from_node_and_children(get_node_child(node, index), memory, errors);
+    }
+}
+
+/**
+ * ...
+ */
+static void bind_variables_in_functions(queue_t *functions, parser_memory_t *memory,
+        compilation_error_t **errors) {
+    while(!is_queue_empty(functions)) {
+        node_t *node  = (node_t*)dequeue(functions);
+        size_t count = get_node_child_count(node);
+        for (size_t index = 0; index < count; index++) {
+            bind_variables_from_node_and_children(get_node_child(node, index), memory, errors);
         }
     }
-    return error;
 }
 
 compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory) {
     scope_t *root_scope = create_scope_from_root_context(root_node, memory->graph);
     unsigned int node_counter = 0;
-    vector_t *all_nodes = create_vector();
+    queue_t *functions = create_queue();
+    enqueue(functions, root_node);
     assign_node_indexes_and_scopes(
         root_node,
         NULL,
-        all_nodes,
+        functions,
         memory->graph,
         root_scope,
         &node_counter
     );
     
-    compilation_error_t *error = bind_variables(
-        (node_t**)all_nodes->data,
-        all_nodes->size,
-        memory
-    );
+    compilation_error_t *errors = NULL;
+    bind_variables_in_functions(functions, memory, &errors);
+    destroy_queue(functions);
 
     // ... further analysis ...
-    destroy_vector(all_nodes);
-    return NULL;
+    return errors;
 }
