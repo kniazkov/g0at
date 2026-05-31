@@ -155,6 +155,20 @@ typedef struct {
     node_t* (*get_child)(const node_t *node, size_t index);
 
     /**
+     * @brief Gets the tag/label for a child node.
+     * 
+     * Returns a descriptive wide character string that labels the relationship
+     * between the parent node and the specified child node (e.g., "left", "right", 
+     * "condition", "body", "parameters").
+     * 
+     * @param node A pointer to the parent node.
+     * @param index Zero-based index of the child node.
+     * @return Wide character string (const wchar_t*) with the child's tag or NULL
+     * if not applicable.
+     */
+    const wchar_t* (*get_child_tag)(const node_t *node, size_t index);
+
+    /**
      * @brief Gets the number of related nodes.
      *
      * Returns the number of nodes related to this node outside the direct AST
@@ -190,20 +204,6 @@ typedef struct {
      */
     relation_type_t (*get_relation_type)(const node_t *node, size_t index);
     
-    /**
-     * @brief Gets the tag/label for a child node.
-     * 
-     * Returns a descriptive wide character string that labels the relationship
-     * between the parent node and the specified child node (e.g., "left", "right", 
-     * "condition", "body", "parameters").
-     * 
-     * @param node A pointer to the parent node.
-     * @param index Zero-based index of the child node.
-     * @return Wide character string (const wchar_t*) with the child's tag or NULL
-     * if not applicable.
-     */
-    const wchar_t* (*get_child_tag)(const node_t *node, size_t index);
-
     /**
      * @brief Generates a single-line Goat source code representation of the node.
      * 
