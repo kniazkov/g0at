@@ -140,6 +140,32 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t
 }
 
 /**
+ * @brief Recursively assigns the same scope and parent links to a subtree.
+ *
+ * Walks through `node` and all of its children, assigning the specified lexical
+ * scope to every visited node and wiring each node to its parent.
+ *
+ * This helper is intended for synthetic AST fragments inserted after the main
+ * static-analysis indexing pass. It does not assign node ids and does not create
+ * new scopes; it simply attaches the whole subtree to an existing scope, because
+ * the fake nodes are already late to the party and do not get the full ceremony.
+ *
+ * @param node Current AST node to update.
+ * @param parent Parent node to assign to `node`.
+ * @param scope Lexical scope to assign to `node` and all descendants.
+ */
+static void assign_scope_to_subtree(node_t *node, node_t *parent, scope_t *scope) {
+    node->parent = parent;
+    node->scope = scope;
+
+    const size_t child_count = get_node_child_count(node);
+    for (size_t child_id = 0; child_id < child_count; child_id++) {
+        node_t *child = get_node_child(node, child_id);
+        assign_scope_to_subtree(child, node, scope);
+    }
+}
+
+/**
  * ...
  */
 static node_t *find_parent_statement(variable_t *var) {
@@ -165,16 +191,19 @@ typedef struct {
 static void bind_variables_from_node_and_children(node_t *node, parser_memory_t *memory,
         vector_t *insertions, compilation_error_t **errors, options_t *options) {
     if (is_declarator(node->vtbl->type)) {
-        declarator_t *decl = (declarator_t*)node;
-        add_symbol_to_scope(node->scope, decl->name.data, node);
+        declarator_t *declarator = (declarator_t*)node;
+        add_symbol_to_scope(node->scope, declarator->name.data, declarator);
     }
     else if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
         return;
     }
     else if (node->vtbl->type == NODE_VARIABLE) {
         variable_t *var = (variable_t*)node;
-        const node_t *decl = find_symbol_in_scope_and_parents(node->scope, var->name.data);
-        if (decl == NULL) {
+        const declarator_t *declarator = find_symbol_in_scope_and_parents(
+            node->scope,
+            var->name.data
+        );
+        if (declarator == NULL) {
             if (options->enable_warnings) {
                 compilation_error_t *error = create_error_from_node(
                     memory->errors,
@@ -198,8 +227,9 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
             insertion->before = statement;
             append_to_vector(insertions, insertion);
             var->declarator = pair.declarator;
-        } else if (is_declarator(decl->vtbl->type)) {
-            var->declarator = (declarator_t*)decl;
+            add_symbol_to_scope(node->scope, var->name.data, pair.declarator);
+        } else {
+            var->declarator = declarator;
         }
         return;
     }
@@ -256,7 +286,8 @@ compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options
 
     for (int index = 0; index < insertions->size; index++) {
         insertion_t *insertion = (insertion_t*)insertions->data[index];
-        //insert_child_node_before(insertion->target, insertion->item, insertion->before);
+        insert_child_node_before(insertion->target, insertion->item, insertion->before);
+        assign_scope_to_subtree(insertion->item, insertion->target, insertion->target->scope);
     }
     destroy_vector_ex(insertions, FREE);
 

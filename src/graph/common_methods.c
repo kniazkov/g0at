@@ -48,7 +48,7 @@ size_t no_related_nodes(const node_t *node) {
     return 0;
 }
 
-node_t *no_related_node(const node_t *node, size_t index) {
+const node_t *no_related_node(const node_t *node, size_t index) {
     return NULL;
 }
 

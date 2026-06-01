@@ -56,7 +56,7 @@ static size_t get_related_count(const node_t *node) {
  * @return Pointer to the related declarator node, or NULL if index is out of bounds
  *         or the variable has not been resolved.
  */
-static node_t *get_related(const node_t *node, size_t index) {
+static const node_t *get_related(const node_t *node, size_t index) {
     const variable_t *expr = (const variable_t *)node;
     if (index == 0) {
         return &expr->declarator->base;

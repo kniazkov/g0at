@@ -28,6 +28,12 @@ typedef struct scope_t scope_t;
 typedef struct node_t node_t;
 
 /**
+ * @typedef node_t
+ * @brief Forward declaration for the declarator structure.
+ */
+typedef struct declarator_t declarator_t;
+
+/**
  * @struct scope_t
  * @brief Represents a lexical scope in the abstract syntax tree (AST).
  *
@@ -80,11 +86,12 @@ scope_t *create_scope(arena_t *arena, scope_t *parent);
  * updated and the previous node pointer is returned.
  *
  * @param scope Target scope.
- * @param name  Symbol name (wide string).
- * @param node  AST node where the symbol is declared.
+ * @param name Symbol name (wide string).
+ * @param declarator AST node where the symbol is declared.
  * @return The previous node pointer if the symbol existed; otherwise NULL.
  */
-const node_t* add_symbol_to_scope(scope_t *scope, const wchar_t *name, const node_t *node);
+const declarator_t* add_symbol_to_scope(scope_t *scope, const wchar_t *name,
+        const declarator_t *node);
 
 /**
  * @brief Looks up a symbol in the given scope only.
@@ -93,7 +100,7 @@ const node_t* add_symbol_to_scope(scope_t *scope, const wchar_t *name, const nod
  * @param name  Symbol name.
  * @return The node pointer if found; otherwise NULL.
  */
-const node_t* find_symbol_in_scope(const scope_t *scope, const wchar_t *name);
+const declarator_t* find_symbol_in_scope(const scope_t *scope, const wchar_t *name);
 
 /**
  * @brief Looks up a symbol in the scope and its parents (inner-to-outer search).
@@ -104,4 +111,4 @@ const node_t* find_symbol_in_scope(const scope_t *scope, const wchar_t *name);
  * @param name  Symbol name.
  * @return The node pointer if found; otherwise NULL.
  */
-const node_t* find_symbol_in_scope_and_parents(const scope_t *scope, const wchar_t *name);
+const declarator_t* find_symbol_in_scope_and_parents(const scope_t *scope, const wchar_t *name);

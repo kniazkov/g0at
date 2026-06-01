@@ -230,7 +230,7 @@ typedef struct {
      * @param index Zero-based related-node index.
      * @return Pointer to the related node or NULL if index is out of range.
      */
-    node_t* (*get_related)(const node_t *node, size_t index);
+    const node_t* (*get_related)(const node_t *node, size_t index);
 
     /**
      * @brief Gets the relation type for a related node.
@@ -566,7 +566,7 @@ static inline size_t get_node_related_count(const node_t *node) {
  * @param index Zero-based related-node index.
  * @return Pointer to the related node or NULL if index is out of range.
  */
-static inline node_t* get_node_related(const node_t *node, size_t index) {
+static inline const node_t* get_node_related(const node_t *node, size_t index) {
     return node->vtbl->get_related(node, index);
 }
 

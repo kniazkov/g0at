@@ -109,7 +109,7 @@ size_t no_related_nodes(const node_t *node);
  * @param index Zero-based related-node index.
  * @return Always returns NULL.
  */
-node_t *no_related_node(const node_t *node, size_t index);
+const node_t *no_related_node(const node_t *node, size_t index);
 
 /**
  * @brief Returns no relation type.

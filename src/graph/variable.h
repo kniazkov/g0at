@@ -40,5 +40,5 @@ typedef struct variable_t {
      * usage to its declaration in the syntax tree.
      * May be NULL if the variable is unresolved.
      */
-    declarator_t *declarator;
+    const declarator_t *declarator;
 } variable_t;

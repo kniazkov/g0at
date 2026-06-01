@@ -232,7 +232,7 @@ static void append_related_edges_to_dot(const vector_t *all_nodes, const avl_tre
         }
         size_t related_count = get_node_related_count(node);
         for (size_t related_index = 0; related_index < related_count; related_index++) {
-            node_t *related_node = get_node_related(node, related_index);
+            const node_t *related_node = get_node_related(node, related_index);
             if (related_node == NULL) {
                 continue;
             }
