@@ -136,27 +136,11 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t
 }
 
 /**
- * @brief Checks whether a node represents a declarator.
- *
- * Declarator nodes introduce named entities into the syntax tree. This includes
- * variable declarators, constant declarators, and formal function arguments.
- *
- * @param node Node to check.
- * @return `true` if the type is a declarator node, otherwise `false`.
- */
-static inline bool is_declarator_node(const node_t *node) {
-    node_type_t type = node->vtbl->type;
-    return type == NODE_VARIABLE_DECLARATOR
-        || type == NODE_CONSTANT_DECLARATOR
-        || type == NODE_ARGUMENT;
-}
-
-/**
  * ...
  */
 static void bind_variables_from_node_and_children(node_t *node, parser_memory_t *memory,
          compilation_error_t **errors, options_t *options) {
-    if (is_declarator_node(node)) {
+    if (is_declarator(node->vtbl->type)) {
         declarator_t *decl = (declarator_t*)node;
         add_symbol_to_scope(node->scope, decl->name.data, node);
     }
@@ -178,7 +162,7 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
                 error->next = *errors;
                 *errors = error;
             }
-        } else if (is_declarator_node(decl)) {
+        } else if (is_declarator(decl->vtbl->type)) {
             var->declarator = (declarator_t*)decl;
         }
         return;
