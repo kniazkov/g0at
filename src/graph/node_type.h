@@ -383,8 +383,9 @@ static inline bool is_statement(node_type_t type) {
  * pair of curly braces was not enough semantic ambiguity for this language.
  *
  * @param type Node type to check.
- * @return `true` for NODE_STATEMENT_LIST or NODE_FUNCTION_BODY, otherwise `false`.
+ * @return `true` for NODE_ROOT, NODE_STATEMENT_LIST, NODE_FUNCTION_BODY,
+ *         otherwise `false`.
  */
 static inline bool is_statement_list(node_type_t type) {
-    return type == NODE_STATEMENT_LIST || type == NODE_FUNCTION_BODY;
+    return type == NODE_ROOT || type == NODE_STATEMENT_LIST || type == NODE_FUNCTION_BODY;
 }

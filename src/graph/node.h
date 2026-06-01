@@ -169,6 +169,46 @@ typedef struct {
     const wchar_t* (*get_child_tag)(const node_t *node, size_t index);
 
     /**
+     * @brief Inserts a child node before another child node.
+     *
+     * Attempts to insert `new_child` into this node before `before_child`.
+     * The concrete node implementation decides whether insertion is supported,
+     * which child types are valid, and where insertion is allowed.
+     *
+     * If the function returns `false`, the node must remain unchanged. After the
+     * call, regardless of the result, the node must still be structurally valid.
+     *
+     * This method is used by static analysis to inject synthetic AST nodes.
+     *
+     * @param node A pointer to the parent node to modify.
+     * @param new_child A pointer to the child node to insert.
+     * @param before_child A pointer to the existing child before which
+     *        `new_child` should be inserted.
+     * @return `true` if the child was inserted, otherwise `false`.
+     */
+    bool (*insert_child_before)(node_t *node, node_t *new_child, node_t *before_child);
+
+    /**
+     * @brief Replaces one child node with another child node.
+     *
+     * Attempts to replace `old_child` with `new_child`. The concrete node
+     * implementation decides whether replacement is supported and which node
+     * types are valid for the replacement.
+     *
+     * If the function returns `false`, the node must remain unchanged. After the
+     * call, regardless of the result, the node must still be structurally valid.
+     *
+     * This method is used by static analysis to replace AST nodes with simpler
+     * equivalent nodes.
+     *
+     * @param node A pointer to the parent node to modify.
+     * @param old_child A pointer to the existing child node to replace.
+     * @param new_child A pointer to the replacement child node.
+     * @return `true` if the child was replaced, otherwise `false`.
+     */
+    bool (*replace_child)(node_t *node, node_t *old_child, node_t *new_child);
+
+    /**
      * @brief Gets the number of related nodes.
      *
      * Returns the number of nodes related to this node outside the direct AST
@@ -360,7 +400,6 @@ struct node_t {
      */
     position_range_t *position;
 
-
     /**
      * @brief The lexical scope this node belongs to.
      *
@@ -469,6 +508,39 @@ static inline node_t* get_node_child(const node_t *node, size_t index) {
  */
 static inline const wchar_t* get_node_child_tag(const node_t *node, size_t index) {
     return node->vtbl->get_child_tag(node, index);
+}
+
+/**
+ * @brief Inserts a child node before another child node.
+ *
+ * This helper dispatches to the node's virtual table and attempts to insert
+ * `new_child` before `before_child`.
+ *
+ * @param node A pointer to the parent node to modify.
+ * @param new_child A pointer to the child node to insert.
+ * @param before_child A pointer to the existing child before which insertion
+ *        should happen.
+ * @return `true` if insertion succeeded, otherwise `false`.
+ */
+static inline bool insert_child_node_before(node_t *node, node_t *new_child,
+        node_t *before_child) {
+    return node->vtbl->insert_child_before(node, new_child, before_child);
+}
+
+/**
+ * @brief Replaces one child node with another child node.
+ *
+ * This helper dispatches to the node's virtual table and attempts to replace
+ * `old_child` with `new_child`.
+ *
+ * @param node A pointer to the parent node to modify.
+ * @param old_child A pointer to the existing child node to replace.
+ * @param new_child A pointer to the replacement child node.
+ * @return `true` if replacement succeeded, otherwise `false`.
+ */
+static inline bool replace_child_node(node_t *node, node_t *old_child,
+        node_t *new_child) {
+    return node->vtbl->replace_child(node, old_child, new_child);
 }
 
 /**

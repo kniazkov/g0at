@@ -67,6 +67,30 @@ node_t* no_child(const node_t *node, size_t index);
 const wchar_t* no_tags(const node_t *node, size_t index);
 
 /**
+ * @brief Default implementation for unsupported child insertion.
+ *
+ * Does not modify the node and always reports failure.
+ *
+ * @param node A pointer to the parent node.
+ * @param new_child A pointer to the child node to insert.
+ * @param before_child A pointer to the existing child node.
+ * @return Always returns `false`.
+ */
+bool no_child_insertion(node_t *node, node_t *new_child, node_t *before_child);
+
+/**
+ * @brief Default implementation for unsupported child replacement.
+ *
+ * Does not modify the node and always reports failure.
+ *
+ * @param node A pointer to the parent node.
+ * @param old_child A pointer to the existing child node.
+ * @param new_child A pointer to the replacement child node.
+ * @return Always returns `false`.
+ */
+bool no_child_replacement(node_t *node, node_t *old_child, node_t *new_child);
+
+/**
  * @brief Returns zero related nodes.
  *
  * Default implementation for nodes that do not expose non-child relations.

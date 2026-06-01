@@ -36,6 +36,14 @@ const wchar_t* no_tags(const node_t *node, size_t index) {
     return NULL;
 }
 
+bool no_child_insertion(node_t *node, node_t *new_child, node_t *before_child) {
+    return false;
+}
+
+bool no_child_replacement(node_t *node, node_t *old_child, node_t *new_child) {
+    return false;
+}
+
 size_t no_related_nodes(const node_t *node) {
     return 0;
 }
