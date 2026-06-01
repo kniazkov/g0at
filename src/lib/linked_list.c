@@ -68,6 +68,19 @@ void insert_item_to_linked_list_before_existing(list_t *list, list_item_t *befor
     list->size++;
 }
 
+value_t get_linked_list_value(const list_t *list, size_t index) {
+    if (!list || index >= list->size) {
+        return (value_t){ .ptr = NULL };
+    }
+
+    list_item_t *item = list->head;
+    while (index > 0) {
+        item = item->next;
+        index--;
+    }
+    return item->value;
+}
+
 void remove_item_from_linked_list(list_t *list, list_item_t *item) {
     if (!list || !item) {
         return;

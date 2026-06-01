@@ -87,6 +87,20 @@ void insert_item_to_linked_list_before_existing(list_t *list, list_item_t *befor
         value_t value);
 
 /**
+ * @brief Gets a value by its zero-based index.
+ *
+ * Traverses the list from the head and returns the value stored at the
+ * specified index. If the index is out of range, returns a zero-initialized
+ * value_t.
+ *
+ * @param list The list to read.
+ * @param index Zero-based item index.
+ * @return Stored value at the specified index, or zero value if index is out
+ *         of range.
+ */
+value_t get_linked_list_value(const list_t *list, size_t index);
+
+/**
  * @brief Removes a specific item from the list.
  *
  * Adjusts the neighboring nodes and list head/tail pointers so that the
