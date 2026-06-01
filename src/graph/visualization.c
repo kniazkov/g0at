@@ -139,16 +139,18 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
     set_in_avl_tree(nodes_to_ids, (void*)node, (value_t){ .uint32_val = id });        
     const wchar_t* name = node->vtbl->type_name;
     string_value_t value = get_node_data(node);
+    const wchar_t *color = node->id ? L"black" : L"lightgray";
     if (value.length > 0) {
         string_value_t formatted_value = trim_and_escape_html_entities(value);
         add_formatted_source(
             builder,
             indent,
             format_string(
-                L"node_%u [label = <%s<br/><font color='blue'>%s</font>>];",
+                L"node_%u [label=<%s<br/><font color='blue'>%s</font>> color=%s];",
                 id,
                 name,
-                formatted_value.data
+                formatted_value.data,
+                color
             )
         );
         FREE_STRING(formatted_value);
@@ -157,9 +159,10 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
             builder,
             indent,
             format_string(
-                L"node_%u [label=\"%s\"];",
+                L"node_%u [label=\"%s\" color=%s];",
                 id,
-                name
+                name,
+                color
             )
         );
     }
