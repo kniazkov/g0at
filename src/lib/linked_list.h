@@ -71,6 +71,22 @@ void prepend_item_to_linked_list(list_t *list, value_t value);
 void append_item_to_linked_list(list_t *list, value_t value);
 
 /**
+ * @brief Inserts a new element before an existing list item.
+ *
+ * Allocates a new list item from the list arena and inserts it immediately
+ * before `before`. If `before` is the head item, the new item becomes the new
+ * head. If `before` is NULL, the function appends the value to the end of the
+ * list, because even linked lists deserve one tiny convenience.
+ *
+ * @param list The list to modify.
+ * @param before Existing item before which the new value should be inserted,
+ *        or NULL to append to the end.
+ * @param value Data to store.
+ */
+void insert_item_to_linked_list_before_existing(list_t *list, list_item_t *before,
+        value_t value);
+
+/**
  * @brief Removes a specific item from the list.
  *
  * Adjusts the neighboring nodes and list head/tail pointers so that the

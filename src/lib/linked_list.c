@@ -49,6 +49,25 @@ void append_item_to_linked_list(list_t *list, value_t value) {
     list->size++;
 }
 
+void insert_item_to_linked_list_before_existing(list_t *list, list_item_t *before,
+        value_t value) {
+    if (!before) {
+        append_item_to_linked_list(list, value);
+        return;
+    }
+
+    list_item_t *node = create_list_item(list, value);
+    node->prev = before->prev;
+    node->next = before;
+    if (before->prev) {
+        before->prev->next = node;
+    } else {
+        list->head = node;
+    }
+    before->prev = node;
+    list->size++;
+}
+
 void remove_item_from_linked_list(list_t *list, list_item_t *item) {
     if (!list || !item) {
         return;
