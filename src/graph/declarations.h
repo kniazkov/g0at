@@ -66,6 +66,26 @@ typedef struct declarator_t {
 } declarator_t;
 
 /**
+ * @struct variable_declaration_pair_t
+ * @brief Pair of a variable declaration node and its single declarator.
+ *
+ * Used when creating synthetic declarations during static analysis. The
+ * declaration node is the statement inserted into the AST, while the declarator
+ * node is returned separately so other nodes can reference it directly.
+ */
+typedef struct {
+    /**
+     * @brief Variable declaration statement node.
+     */
+    node_t *declaration;
+
+    /**
+     * @brief Single variable declarator contained by the declaration.
+     */
+    declarator_t *declarator;
+} variable_declaration_pair_t;
+
+/**
  * @brief Creates a new variable declaration AST node.
  *
  * Constructs a complete variable declaration statement node containing one or more
@@ -94,3 +114,16 @@ node_t *create_variable_declaration_node(arena_t *arena, declarator_spec_t **dec
  */
 node_t *create_constant_declaration_node(arena_t *arena, declarator_spec_t **decl_list,
         size_t decl_count);
+
+/**
+ * @brief Creates a synthetic declaration of one variable without an initializer.
+ *
+ * Creates a variable declaration node containing exactly one variable declarator
+ * with the specified name and no initial value.
+ *
+ * @param arena Arena allocator for memory management.
+ * @param name Name of the synthetic variable.
+ * @return Pair containing the declaration node and its single declarator node.
+ */
+variable_declaration_pair_t create_synthetic_variable_declaration_node(arena_t *arena,
+        string_view_t name);

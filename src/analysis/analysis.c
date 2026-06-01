@@ -11,9 +11,13 @@
  * optimization and code generation.
  */
 
+#include <assert.h>
+
 #include "analysis.h"
+#include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/queue.h"
+#include "lib/vector.h"
 #include "cli/options.h"
 #include "common/compilation_error.h"
 #include "graph/node.h"
@@ -138,8 +142,28 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t
 /**
  * ...
  */
+static node_t *find_parent_statement(variable_t *var) {
+    node_t *node = var->base.base.base.parent;
+    while(node) {
+        if (is_statement(node->vtbl->type)) {
+            return node;
+        }
+        node = node->parent;
+    }
+    assert(false);
+}
+
+typedef struct {
+    node_t *target;
+    node_t *item;
+    node_t *before;
+} insertion_t;
+
+/**
+ * ...
+ */
 static void bind_variables_from_node_and_children(node_t *node, parser_memory_t *memory,
-         compilation_error_t **errors, options_t *options) {
+        vector_t *insertions, compilation_error_t **errors, options_t *options) {
     if (is_declarator(node->vtbl->type)) {
         declarator_t *decl = (declarator_t*)node;
         add_symbol_to_scope(node->scope, decl->name.data, node);
@@ -162,6 +186,18 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
                 error->next = *errors;
                 *errors = error;
             }
+            node_t *statement = find_parent_statement(var);
+            assert(is_statement_list(statement->parent->vtbl->type));
+            variable_declaration_pair_t pair = create_synthetic_variable_declaration_node(
+                memory->graph,
+                var->name
+            );
+            insertion_t *insertion = ALLOC(sizeof(insertion_t));
+            insertion->target = statement->parent;
+            insertion->item = pair.declaration;
+            insertion->before = statement;
+            append_to_vector(insertions, insertion);
+            var->declarator = pair.declarator;
         } else if (is_declarator(decl->vtbl->type)) {
             var->declarator = (declarator_t*)decl;
         }
@@ -172,6 +208,7 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
         bind_variables_from_node_and_children(
             get_node_child(node, index),
             memory,
+            insertions,
             errors,
             options
         );
@@ -182,7 +219,7 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
  * ...
  */
 static void bind_variables_in_functions(queue_t *functions, parser_memory_t *memory,
-        compilation_error_t **errors, options_t *options) {
+        vector_t *insertions, compilation_error_t **errors, options_t *options) {
     while(!is_queue_empty(functions)) {
         node_t *node  = (node_t*)dequeue(functions);
         size_t count = get_node_child_count(node);
@@ -190,6 +227,7 @@ static void bind_variables_in_functions(queue_t *functions, parser_memory_t *mem
             bind_variables_from_node_and_children(
                 get_node_child(node, index),
                 memory,
+                insertions,
                 errors,
                 options
             );
@@ -212,8 +250,15 @@ compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options
     );
     
     compilation_error_t *errors = NULL;
-    bind_variables_in_functions(functions, memory, &errors, options);
+    vector_t *insertions = create_vector();
+    bind_variables_in_functions(functions, memory, insertions, &errors, options);
     destroy_queue(functions);
+
+    for (int index = 0; index < insertions->size; index++) {
+        insertion_t *insertion = (insertion_t*)insertions->data[index];
+        //insert_child_node_before(insertion->target, insertion->item, insertion->before);
+    }
+    destroy_vector_ex(insertions, FREE);
 
     // ... further analysis ...
     return errors;
