@@ -40,24 +40,35 @@ typedef struct parser_memory_t parser_memory_t;
 typedef struct options_t options_t;
 
 /**
- * @brief Performs static analysis on the given syntax tree.
+ * @brief Performs static analysis over the abstract syntax tree.
  *
- * This is the entry point for the semantic/static analysis phase of the
- * compiler. The function traverses the syntax tree, invoking a sequence of
- * analysis stages such as:
- * - Assigning unique identifiers to scopes and nodes
- * - Building scope chains and symbol bindings
- * - Resolving identifiers and references
- * - Performing semantic checks (e.g., undeclared identifiers, duplicate declarations,
- *   unreachable code)
- * - Etc
+ * Runs the semantic analysis pipeline over the AST. The current pipeline has
+ * three main stages:
  *
- * @param root_node Pointer to the root AST node.
- * @param memory Memory used for allocating auxiliary structures, such as scopes, bindings,
- *  and error reports.
- * @param options A pointer to the `options_t` structure that contains
- *  the parsed command-line options.
- * @return Pointer to a linked list of compilation errors discovered during analysis, or NULL
- *  if the analysis completed successfully without errors.
+ * 1. Assign scopes and node metadata.
+ *    The analyzer walks the whole AST, assigns parent links, lexical scopes,
+ *    and per-scope node identifiers. Function objects are collected into a
+ *    queue in depth-first discovery order.
+ *
+ * 2. Bind declarations and variable usages.
+ *    The analyzer processes the queued root/function nodes. Declarators are
+ *    registered in scopes, and every variable usage is linked to the declarator
+ *    that defines it. If a variable is used before declaration, the analyzer
+ *    creates a synthetic declaration request instead of immediately mutating
+ *    the AST.
+ *
+ * 3. Insert synthetic declarations.
+ *    Deferred synthetic declarations are inserted into the AST in a separate
+ *    pass. Their scope and parent links are then assigned so the final tree
+ *    remains structurally valid.
+ *
+ * After this function completes, the AST has lexical scopes assigned and
+ * variable usages linked to declaration nodes, including built-ins and
+ * synthetic declarations.
+ *
+ * @param root_node Root AST node.
+ * @param memory Parser memory containing graph and error arenas.
+ * @param options Command-line options controlling analysis behavior.
+ * @return Linked list of compilation warnings/errors, or NULL if none.
  */
 compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options_t *options);

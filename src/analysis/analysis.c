@@ -28,20 +28,19 @@
 #include "resources/messages.h"
 
 /**
- * @brief Creates a new scope initialized from the root execution context.
+ * @brief Creates the root lexical scope and fills it with built-in symbols.
  *
- * This function builds a fresh lexical scope using global bindings from the
- * root context. It does the following:
- * 1. Creates a new scope with no parent (global scope).
- * 2. Retrieves all keys from the root context's data object.
- * 3. Inserts each key as a symbol into the scope, associating it with the
- *    given root node.
+ * Builds the top-level scope used by the static analyzer. The scope has no
+ * parent and is populated from the root runtime context, which contains
+ * built-in functions, constants, and other predefined names.
  *
- * This allows the  analyzer to start with a scope that already contains globally visible symbols,
- * e.g. built-in objects and standard library functions.
+ * Built-in symbols do not have source-level declarations, so they are bound to
+ * a shared fake declarator singleton. This gives every resolved built-in a
+ * non-NULL declaration target, which is useful for diagnostics, graph edges,
+ * and later analysis passes.
  *
- * @param arena Memory arena from which the scope and its bindings are allocated.
- * @return A pointer to the newly created and populated scope.
+ * @param arena Memory arena used to allocate the scope and its bindings.
+ * @return Newly created root lexical scope.
  */
 static scope_t *create_scope_from_root_context(arena_t *arena) {
     scope_t *scope = create_scope(arena, NULL);
@@ -57,36 +56,31 @@ static scope_t *create_scope_from_root_context(arena_t *arena) {
 }
 
 /**
- * @brief Recursively assigns node identifiers and connects nodes to lexical scopes.
+ * @brief Assigns parent links, lexical scopes, and per-scope node identifiers.
  *
- * This function performs a depth-first traversal of the abstract syntax tree (AST),
- * assigning sequential identifiers to nodes and creating new scopes where required.
- * The numbering and scoping rules are:
+ * Recursively walks the AST in depth-first order. Every visited node receives:
+ * - a pointer to its parent node;
+ * - a pointer to the lexical scope it belongs to;
+ * - a sequential identifier inside that scope.
  *
- * - For a node of type NODE_FUNCTION_OBJECT:
- *   - The function node itself is assigned the next identifier in the current scope.
- *   - A new scope is created for its body.
- *   - Node identifiers inside this new scope start from 1.
+ * Function objects are also pushed into `functions`. This queue is later used
+ * to bind variables function-by-function. The order matters: outer code must be
+ * processed before inner function bodies, because closures may reference names
+ * declared later in the outer scope.
  *
- * - For a node of type NODE_STATEMENT_LIST:
- *   - The statement list node itself is assigned the next identifier in the current scope.
- *   - A new scope is created for its children.
- *   - Node identifiers continue from the current sequence (no reset).
+ * Scope handling rules:
+ * - Function objects create a new lexical scope and restart node numbering
+ *   inside that function scope from 1.
+ * - Statement-list-like nodes create a new lexical scope, but continue the
+ *   current numbering sequence.
+ * - All other nodes reuse the current scope and current numbering sequence.
  *
- * - For all other node types:
- *   - The node is assigned the next identifier in the current scope.
- *   - Its children are analyzed within the same scope and numbering sequence.
- *
- * @param node      Current AST node to analyze.
- * @param parent    Parent node.
- * @param functions ....
- * @param arena     Memory arena used for allocating new scopes.
- * @param scope     Scope that this node belongs to.
- * @param next_id   Pointer to the counter of node identifiers in the current scope.
- *  Updated as nodes are assigned ids.
- *
- * @note Each scope has its own sequence of node ids starting from 1, except
- *  statement list scopes which continue the numbering of their parent.
+ * @param node Current AST node.
+ * @param parent Parent node, or NULL for the root.
+ * @param functions Queue receiving function objects for later semantic binding.
+ * @param arena Memory arena used to allocate newly created scopes.
+ * @param scope Lexical scope assigned to the current node.
+ * @param next_id Counter used to assign node identifiers in the current scope.
  */
 static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t *functions,
         arena_t *arena, scope_t *scope, unsigned int *next_id) {
@@ -98,6 +92,14 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t
         node_t *child = get_node_child(node, child_id);
         switch (child->vtbl->type) {
             case NODE_FUNCTION_OBJECT: {
+                /*
+                    Function bodies are analyzed in their own lexical scope.
+
+                    The function node is queued so variable binding can process
+                    functions after the enclosing scope has already been scanned.
+                    This allows closures to resolve variables declared later in the
+                    outer block.
+                */
                 enqueue(functions, child);
                 scope_t *inner_scope = create_scope(arena, scope);
                 unsigned int inner_counter = 1;
@@ -112,6 +114,10 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t
                 break;
             }
             case NODE_STATEMENT_LIST: {
+                /*
+                    A regular statement list creates a nested lexical scope, but it
+                    does not restart the execution/topology numbering sequence.
+                */
                 scope_t *inner_scope = create_scope(arena, scope);
                 assign_node_indexes_and_scopes(
                     child,
@@ -124,6 +130,10 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t
                 break;
             }
             default: {
+                /*
+                    Ordinary nodes do not introduce a scope. Their children remain
+                    in the current lexical environment.
+                */
                 assign_node_indexes_and_scopes(
                     child,
                     node,
@@ -139,19 +149,19 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t
 }
 
 /**
- * @brief Recursively assigns the same scope and parent links to a subtree.
+ * @brief Assigns one existing scope and correct parent links to a subtree.
  *
- * Walks through `node` and all of its children, assigning the specified lexical
- * scope to every visited node and wiring each node to its parent.
+ * Recursively attaches `node` and all descendants to the same lexical scope,
+ * while also rebuilding parent links inside the subtree.
  *
- * This helper is intended for synthetic AST fragments inserted after the main
- * static-analysis indexing pass. It does not assign node ids and does not create
- * new scopes; it simply attaches the whole subtree to an existing scope, because
- * the fake nodes are already late to the party and do not get the full ceremony.
+ * This helper is used for synthetic AST fragments inserted after the main
+ * indexing pass. It intentionally does not assign node ids and does not create
+ * new scopes. The synthetic nodes are added late, so they only need enough
+ * metadata to be valid tree participants.
  *
- * @param node Current AST node to update.
- * @param parent Parent node to assign to `node`.
- * @param scope Lexical scope to assign to `node` and all descendants.
+ * @param node Current node to update.
+ * @param parent Parent node assigned to `node`.
+ * @param scope Lexical scope assigned to `node` and all descendants.
  */
 static void assign_scope_to_subtree(node_t *node, node_t *parent, scope_t *scope) {
     node->parent = parent;
@@ -165,7 +175,19 @@ static void assign_scope_to_subtree(node_t *node, node_t *parent, scope_t *scope
 }
 
 /**
- * ...
+ * @brief Finds the nearest statement that contains a variable usage.
+ *
+ * Walks upward from the variable node until it reaches the first ancestor whose
+ * type is a statement. This statement is used as the insertion anchor when the
+ * analyzer needs to synthesize a declaration for an implicitly introduced
+ * variable.
+ *
+ * @param var Variable node whose enclosing statement should be found.
+ * @return Nearest ancestor statement node.
+ *
+ * @note The function asserts if no statement ancestor exists, because a
+ *       variable usage outside a statement is not expected at this analysis
+ *       stage.
  */
 static node_t *find_parent_statement(variable_t *var) {
     node_t *node = var->base.base.base.parent;
@@ -178,31 +200,95 @@ static node_t *find_parent_statement(variable_t *var) {
     assert(false);
 }
 
+/**
+ * @struct insertion_t
+ * @brief Deferred AST insertion request.
+ *
+ * Stores a synthetic node that must be inserted into the tree after variable
+ * binding is complete.
+ *
+ * Insertions are deferred because adding nodes during the binding pass would
+ * change traversal structure and node indexes while the analyzer is still
+ * walking the existing tree.
+ */
 typedef struct {
+    /**
+     * @brief Parent node that receives the inserted child.
+     */
     node_t *target;
+
+    /**
+     * @brief Synthetic node to insert.
+     */
     node_t *item;
+
+    /**
+     * @brief Existing child before which `item` should be inserted.
+     */
     node_t *before;
 } insertion_t;
 
 /**
- * ...
+ * @brief Binds declarations and variable usages inside one AST subtree.
+ *
+ * Recursively walks a subtree and updates lexical scopes and variable nodes:
+ * - declarator nodes are added to the current scope;
+ * - function objects are skipped because they are processed separately from
+ *   the function queue;
+ * - variable nodes are resolved to their declarators through the current scope
+ *   chain.
+ *
+ * If a variable is used before it has a visible declaration, the analyzer:
+ * - optionally emits a warning;
+ * - creates a synthetic variable declaration node;
+ * - stores an insertion request instead of modifying the tree immediately;
+ * - binds the variable to the synthetic declarator;
+ * - adds the synthetic declarator to the current scope.
+ *
+ * Deferred insertion keeps the current traversal stable and prevents existing
+ * node indexes from shifting during analysis.
+ *
+ * @param node Current AST node to process.
+ * @param memory Parser memory containing arenas used for errors and graph nodes.
+ * @param insertions Vector receiving deferred synthetic declaration insertions.
+ * @param errors Output linked list of compilation warnings/errors.
+ * @param options Command-line options controlling warning emission.
  */
 static void bind_variables_from_node_and_children(node_t *node, parser_memory_t *memory,
         vector_t *insertions, compilation_error_t **errors, options_t *options) {
     if (is_declarator(node->vtbl->type)) {
+        /*
+            Declarators introduce names. Add each declared name to the lexical scope
+            associated with the declarator node.
+        */
         declarator_t *declarator = (declarator_t*)node;
         add_symbol_to_scope(node->scope, declarator->name.data, declarator);
     }
     else if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
+        /*
+            Function objects are intentionally skipped here. They are processed later
+            from the function queue, after their enclosing scopes have been fully
+            scanned. This is required for closures that refer to later declarations.
+        */
         return;
     }
     else if (node->vtbl->type == NODE_VARIABLE) {
+        /*
+            Variable usages are resolved against the current scope and its parents.
+            The resolved declarator is stored directly in the variable node.
+        */
         variable_t *var = (variable_t*)node;
         const declarator_t *declarator = find_symbol_in_scope_and_parents(
             node->scope,
             var->name.data
         );
         if (declarator == NULL) {
+            /*
+                The name is not declared yet. Treat assignment-created variables
+                as implicit declarations by creating a synthetic declaration.
+                The declaration is not inserted immediately; only an insertion
+                request is recorded.
+             */            
             if (options->enable_warnings) {
                 compilation_error_t *error = create_error_from_node(
                     memory->errors,
@@ -232,6 +318,9 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
         }
         return;
     }
+    /*
+        Continue binding through ordinary child nodes.
+    */
     size_t count = get_node_child_count(node);
     for (size_t index = 0; index < count; index++) {
         bind_variables_from_node_and_children(
@@ -245,7 +334,21 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
 }
 
 /**
- * ...
+ * @brief Binds variables in queued functions and the root subtree.
+ *
+ * Processes function-like roots from the queue filled during scope assignment.
+ * The queue order follows depth-first discovery order, which ensures that
+ * outer scopes are bound before nested function scopes.
+ *
+ * This order is important for closures: an inner function may reference names
+ * declared later in an enclosing scope, so the enclosing function or root must
+ * be processed before the inner function body.
+ *
+ * @param functions Queue of root/function nodes to process.
+ * @param memory Parser memory containing arenas used for errors and graph nodes.
+ * @param insertions Vector receiving deferred synthetic declaration insertions.
+ * @param errors Output linked list of compilation warnings/errors.
+ * @param options Command-line options controlling warning emission.
  */
 static void bind_variables_in_functions(queue_t *functions, parser_memory_t *memory,
         vector_t *insertions, compilation_error_t **errors, options_t *options) {
@@ -265,8 +368,20 @@ static void bind_variables_in_functions(queue_t *functions, parser_memory_t *mem
 }
 
 compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options_t *options) {
+    /*
+        Build the initial global scope from the runtime root context. This makes
+        built-in names visible before user code is analyzed.
+     */
     scope_t *root_scope = create_scope_from_root_context(memory->graph);
+
+    /*
+        Collect the root and all function objects into a queue while assigning
+        parent links, scopes, and node ids. Functions are queued in depth-first
+        discovery order, but binding is deferred until after the whole outer
+        structure has scopes.
+     */
     unsigned int node_counter = 0;
+    root_node->id = ++node_counter;
     queue_t *functions = create_queue();
     enqueue(functions, root_node);
     assign_node_indexes_and_scopes(
@@ -278,12 +393,21 @@ compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options
         &node_counter
     );
     
+    /*
+        Bind names after scope construction. Synthetic declarations discovered
+        during this pass are stored as insertion requests, not inserted yet.
+     */
     compilation_error_t *errors = NULL;
     vector_t *insertions = create_vector();
     bind_variables_in_functions(functions, memory, insertions, &errors, options);
     destroy_queue(functions);
 
-    for (int index = 0; index < insertions->size; index++) {
+    /*
+        Apply deferred insertions now that binding traversal is complete.
+        Synthetic nodes are attached to the existing scope of their target
+        statement list-like parent.
+     */    
+    for (size_t index = 0; index < insertions->size; index++) {
         insertion_t *insertion = (insertion_t*)insertions->data[index];
         insert_child_node_before(insertion->target, insertion->item, insertion->before);
         assign_scope_to_subtree(insertion->item, insertion->target, insertion->target->scope);
