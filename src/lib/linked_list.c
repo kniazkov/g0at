@@ -99,3 +99,16 @@ void remove_item_from_linked_list(list_t *list, list_item_t *item) {
     item->prev = NULL;
     item->next = NULL;
 }
+
+list_t *clone_linked_list(const list_t *source, arena_t *arena) {
+    list_t *clone = create_linked_list(arena);
+    if (!source) {
+        return clone;
+    }
+    list_item_t *item = source->head;
+    while (item) {
+        append_item_to_linked_list(clone, item->value);
+        item = item->next;
+    }
+    return clone;
+}

@@ -112,3 +112,19 @@ value_t get_linked_list_value(const list_t *list, size_t index);
  * @param item The node to remove (must not be NULL and must belong to @p list).
  */
 void remove_item_from_linked_list(list_t *list, list_item_t *item);
+
+/**
+ * @brief Clones a linked list into another arena.
+ *
+ * Creates a new linked list allocated from `arena` and copies all stored
+ * values into newly allocated list items. The values themselves are copied
+ * as-is; objects referenced by pointer values are not cloned.
+ *
+ * The resulting list is structurally independent from the source list: it has
+ * its own list object and its own list items, even if the same arena is used.
+ *
+ * @param source Source list to clone.
+ * @param arena Arena used to allocate the cloned list and its items.
+ * @return Newly created independent list with the same values.
+ */
+list_t *clone_linked_list(const list_t *source, arena_t *arena);
