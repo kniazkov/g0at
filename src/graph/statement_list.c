@@ -249,7 +249,6 @@ void fill_statement_list_node(node_t *node, arena_t *arena, statement_t **stmt_l
         size_t stmt_count) {
     assert(node->vtbl->type == NODE_STATEMENT_LIST);
     statement_list_t *list = (statement_list_t *)node;
-    list->stmt_list = create_linked_list(arena);
     for (size_t index = 0; index < stmt_count; index++) {
         append_item_to_linked_list(list->stmt_list, (value_t){ .ptr = stmt_list[index] });
     }

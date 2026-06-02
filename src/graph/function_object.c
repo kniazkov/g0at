@@ -16,6 +16,7 @@
 #include "declarations.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
+#include "lib/linked_list.h"
 #include "lib/string_ext.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
@@ -313,10 +314,10 @@ static argument_list_t *create_argument_list_node(arena_t *arena, string_view_t 
  * @struct function_body_t
  * @brief AST node that stores the body of a function.
  *
- * Holds an array of statements wrapped by curly braces. The node has the same
- * syntactic shape as a regular statement list, but different execution semantics:
- * it does not create an additional lexical environment. The function call itself
- * provides the execution context that contains the formal arguments.
+ * Holds a linked list of statements wrapped by curly braces. The node has the
+ * same syntactic shape as a regular statement list, but different execution
+ * semantics: it does not create an additional lexical environment. The function
+ * call itself provides the execution context that contains the formal arguments.
  */
 typedef struct {
     /**
@@ -325,14 +326,11 @@ typedef struct {
     node_t base;
 
     /**
-     * @brief Array of pointers to statements in the function body.
+     * @brief Linked list of statements in the function body.
+     *
+     * Stores statements in execution order.
      */
-    statement_t **stmt_list;
-
-    /**
-     * @brief Number of statements in the function body.
-     */
-    size_t stmt_count;
+    list_t *stmt_list;
 } function_body_t;
 
 /**
@@ -343,7 +341,7 @@ typedef struct {
  */
 static size_t fbody_get_child_count(const node_t *node) {
     const function_body_t* body = (const function_body_t*)node;
-    return body->stmt_count;
+    return body->stmt_list->size;
 }
 
 /**
@@ -357,10 +355,49 @@ static size_t fbody_get_child_count(const node_t *node) {
  */
 static node_t* fbody_get_child(const node_t *node, size_t index) {
     const function_body_t* body = (const function_body_t*)node;
-    if (index >= body->stmt_count) {
-        return NULL;
+    return (node_t*)get_linked_list_value(body->stmt_list, index).ptr;
+}
+
+/**
+ * @brief Inserts a child statement before another child statement.
+ *
+ * Searches the function body statement list for `before_child` and inserts
+ * `new_child` immediately before it. The function body accepts only statements
+ * as children; if `before_child` is not found, or `new_child` is not a statement
+ * node, the body remains unchanged and the function returns `false`.
+ *
+ * This is used by static analysis to inject synthetic statements while
+ * preserving execution order.
+ *
+ * @param node Pointer to the function body node.
+ * @param new_child Statement node to insert.
+ * @param before_child Existing child statement before which insertion should happen.
+ * @return `true` if insertion succeeded, otherwise `false`.
+ */
+static bool fbody_insert_child_before(node_t *node, node_t *new_child,
+        node_t *before_child) {
+    if (!is_statement(new_child->vtbl->type)) {
+        return false;
     }
-    return &body->stmt_list[index]->base;
+
+    function_body_t* body = (function_body_t*)node;
+    list_item_t *item = body->stmt_list->head;
+    while(item) {
+        if (item->value.ptr == before_child) {
+            break;
+        }
+        item = item->next;
+    }
+    if (!item) {
+        return false;
+    }
+
+    insert_item_to_linked_list_before_existing(
+        body->stmt_list,
+        item,
+        (value_t){ .ptr = new_child }
+    );
+    return true;
 }
 
 /**
@@ -419,7 +456,7 @@ static node_vtbl_t function_body_vtbl = {
     .get_child_count = fbody_get_child_count,
     .get_child = fbody_get_child,
     .get_child_tag = no_tags,
-    .insert_child_before = no_child_insertion,
+    .insert_child_before = fbody_insert_child_before,
     .replace_child = no_child_replacement,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
@@ -441,26 +478,26 @@ static function_body_t *create_function_body_node(arena_t *arena) {
         sizeof(function_body_t)
     );
     body->base.vtbl = &function_body_vtbl;
+    body->stmt_list = create_linked_list(arena);
     return body;
 }
 
 /**
  * @brief Fills a function body node with statements.
  *
- * Copies the statement pointer array into arena-managed memory and stores it
- * inside the function body node.
+ * Recreates the body statement list and appends the given statements in
+ * execution order.
  *
  * @param body Pointer to the function body node.
- * @param arena Arena allocator for statement array allocation.
+ * @param arena Arena allocator for list allocation.
  * @param stmt_list Array of statement pointers.
  * @param stmt_count Number of statements in the body.
  */
 static void fill_function_body_node(function_body_t *body, arena_t *arena, statement_t **stmt_list,
         size_t stmt_count) {
-    size_t data_size = stmt_count * sizeof(statement_t *);
-    body->stmt_list = (statement_t **)alloc_from_arena(arena, data_size);
-    memcpy(body->stmt_list, stmt_list, data_size);
-    body->stmt_count = stmt_count;
+    for (size_t index = 0; index < stmt_count; index++) {
+        append_item_to_linked_list(body->stmt_list, (value_t){ .ptr = stmt_list[index] });
+    }
 }
 
 /**
@@ -596,14 +633,18 @@ static string_value_t fobj_generate_goat_code(const node_t *node) {
     string_builder_t builder;
     init_string_builder(&builder, 128);
     generate_header(expr, &builder);
-    for (size_t index = 0; index < expr->body->stmt_count; index++) {
-        if (index > 0) {
+    list_item_t *item = expr->body->stmt_list->head;
+    bool needs_space = false;
+    while (item) {
+        if (needs_space) {
             append_char(&builder, L' ');
         }
-        statement_t *stmt = expr->body->stmt_list[index];
+        needs_space = true;
+        statement_t *stmt = (statement_t*)item->value.ptr;
         string_value_t stmt_as_string = generate_goat_code_from_statement(stmt);
         append_string_value(&builder, stmt_as_string);
         FREE_STRING(stmt_as_string);
+        item = item->next;
     }
     return append_char(&builder, L'}');
 }
@@ -633,9 +674,11 @@ static void fobj_generate_indented_goat_code(const node_t *node, source_builder_
     string_builder_t header;
     init_string_builder(&header, 16);
     append_formatted_source(builder, generate_header(expr, &header));
-    for (size_t index = 0; index < expr->body->stmt_count; index++) {
-        statement_t *stmt = expr->body->stmt_list[index];
+    list_item_t *item = expr->body->stmt_list->head;
+    while (item) {
+        statement_t *stmt = (statement_t*)item->value.ptr;
         generate_indented_goat_code_from_statement(stmt, builder, indent + 1);
+        item = item->next;
     }
     add_static_source(builder, indent, L"}");
 }
@@ -714,17 +757,22 @@ static bool fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *
         return false;
     }
     instr_index_t first;
-    if (expr->body->stmt_count == 0) {
+    if (expr->body->stmt_list->size == 0) {
         first = add_instruction(code, (instruction_t){ .opcode = NIL });
-        add_instruction(code, (instruction_t){ .opcode = RET });        
+        add_instruction(code, (instruction_t){ .opcode = RET });
     }
     else {
-        first = generate_bytecode_from_statement(expr->body->stmt_list[0], code, data);
-        for (size_t index = 1; index < expr->body->stmt_count; index++) {
-            statement_t *stmt = expr->body->stmt_list[index];
+        list_item_t *item = expr->body->stmt_list->head;
+        statement_t *stmt = (statement_t*)item->value.ptr;
+        first = generate_bytecode_from_statement(stmt, code, data);
+
+        while (item->next) {
+            item = item->next;
+            stmt = (statement_t*)item->value.ptr;
             generate_bytecode_from_statement(stmt, code, data);
         }
-        if (expr->body->stmt_list[expr->body->stmt_count - 1]->base.vtbl->type != NODE_RETURN) {
+
+        if (stmt->base.vtbl->type != NODE_RETURN) {
             add_instruction(code, (instruction_t){ .opcode = NIL });
             add_instruction(code, (instruction_t){ .opcode = RET });
         }
