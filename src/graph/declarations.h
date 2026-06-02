@@ -127,3 +127,18 @@ node_t *create_constant_declaration_node(arena_t *arena, declarator_spec_t **dec
  */
 variable_declaration_pair_t create_synthetic_variable_declaration_node(arena_t *arena,
         string_view_t name);
+
+/**
+ * @brief Gets the built-in declarator placeholder.
+ *
+ * Returns a singleton fake declarator used for built-in names that are provided
+ * by the runtime or standard environment and therefore have no explicit
+ * declaration in user source code.
+ *
+ * The declarator has an invalid name and must not be emitted as a real source
+ * declaration. It exists only so resolved built-ins can still point to a
+ * non-NULL declarator during static analysis and graph construction.
+ *
+ * @return Pointer to the built-in declarator singleton.
+ */
+const declarator_t *get_builtin_declarator();

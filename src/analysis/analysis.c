@@ -40,19 +40,18 @@
  * This allows the  analyzer to start with a scope that already contains globally visible symbols,
  * e.g. built-in objects and standard library functions.
  *
- * @param root_node Pointer to the root AST node. Used as the declaration
- *  site for inserted symbols.
  * @param arena Memory arena from which the scope and its bindings are allocated.
  * @return A pointer to the newly created and populated scope.
  */
-static scope_t *create_scope_from_root_context(node_t *root_node, arena_t *arena) {
+static scope_t *create_scope_from_root_context(arena_t *arena) {
     scope_t *scope = create_scope(arena, NULL);
     context_t *context = get_root_context();
     object_array_t keys = get_object_keys(context->data);
+    const declarator_t *declarator = get_builtin_declarator(); 
     for (size_t index = 0; index < keys.size; index++) {
         const object_t *key = keys.items[index];
         string_value_t key_str = convert_object_to_string(key);
-        add_symbol_to_scope(scope, key_str.data, root_node);
+        add_symbol_to_scope(scope, key_str.data, declarator);
     }
     return scope;
 }
@@ -266,7 +265,7 @@ static void bind_variables_in_functions(queue_t *functions, parser_memory_t *mem
 }
 
 compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options_t *options) {
-    scope_t *root_scope = create_scope_from_root_context(root_node, memory->graph);
+    scope_t *root_scope = create_scope_from_root_context(memory->graph);
     unsigned int node_counter = 0;
     queue_t *functions = create_queue();
     enqueue(functions, root_node);

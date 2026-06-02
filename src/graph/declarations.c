@@ -813,3 +813,32 @@ variable_declaration_pair_t create_synthetic_variable_declaration_node(arena_t *
         .declarator = &declarator->base
     };
 }
+
+/**
+ * @brief Invalid name used by the built-in declarator singleton.
+ */
+static wchar_t builtin_declarator_name_data[] = L"*";
+
+/**
+ * @brief Singleton fake declarator for built-in names.
+ *
+ * Used as a non-NULL declaration target for runtime-provided names such as
+ * built-in functions and constants.
+ */
+static declarator_t builtin_declarator = {
+    .base = {
+        .vtbl = &cdeclr_vtbl,
+        .parent = NULL,
+        .position = NULL,
+        .scope = NULL,
+        .id = 0
+    },
+    .name = {
+        .data = L"*",
+        .length = 1
+    }
+};
+
+const declarator_t *get_builtin_declarator() {
+    return &builtin_declarator;
+}
