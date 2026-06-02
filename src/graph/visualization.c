@@ -7,6 +7,7 @@
  * and generate graph images using GraphViz 'dot' tool.
  */
 
+#include "variable.h"
 #include "visualization.h"
 #include "lib/allocate.h"
 #include "lib/avl_tree.h"
@@ -139,18 +140,27 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
     set_in_avl_tree(nodes_to_ids, (void*)node, (value_t){ .uint32_val = id });        
     const wchar_t* name = node->vtbl->type_name;
     string_value_t value = get_node_data(node);
-    const wchar_t *color = node->id ? L"black" : L"lightgray";
+    const wchar_t *node_color = node->id ? L"black" : L"silver";
     if (value.length > 0) {
+        const wchar_t *font_color = L"blue";
+        if (node->vtbl->type == NODE_VARIABLE) {
+            variable_t *var = (variable_t*)node;
+            if (var->declarator->name.data[0] == L'*') {
+                // build-in object
+                font_color = L"purple";
+            }
+        }
         string_value_t formatted_value = trim_and_escape_html_entities(value);
         add_formatted_source(
             builder,
             indent,
             format_string(
-                L"node_%u [label=<%s<br/><font color='blue'>%s</font>> color=%s];",
+                L"node_%u [label=<%s<br/><font color='%s'>%s</font>> color=%s];",
                 id,
                 name,
+                font_color,
                 formatted_value.data,
-                color
+                node_color
             )
         );
         FREE_STRING(formatted_value);
@@ -162,7 +172,7 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
                 L"node_%u [label=\"%s\" color=%s];",
                 id,
                 name,
-                color
+                node_color
             )
         );
     }
