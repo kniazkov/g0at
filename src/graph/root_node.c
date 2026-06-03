@@ -41,7 +41,7 @@ typedef struct {
      * analysis and transformation passes to insert additional statements into
      * the program while preserving a valid AST structure.
      */
-    list_t *stmt_list;
+    list_t *statements;
 } root_node_t;
 
 /**
@@ -51,7 +51,7 @@ typedef struct {
  */
 static size_t get_child_count(const node_t *node) {
     const root_node_t* root = (const root_node_t*)node;
-    return root->stmt_list->size;
+    return root->statements->size;
 }
 
 /**
@@ -66,7 +66,7 @@ static size_t get_child_count(const node_t *node) {
  */
 static node_t* get_child(const node_t *node, size_t index) {
     const root_node_t* root = (const root_node_t*)node;
-    return (node_t*)get_linked_list_value(root->stmt_list, index).ptr;
+    return (node_t*)get_linked_list_value(root->statements, index).ptr;
 }
 
 /**
@@ -90,7 +90,7 @@ static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_
         return false;
     }
     root_node_t* root = (root_node_t*)node;
-    list_item_t *item = root->stmt_list->head;
+    list_item_t *item = root->statements->head;
     while(item) {
         if (item->value.ptr == before_child) {
             break;
@@ -101,7 +101,7 @@ static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_
         return false;
     }
     insert_item_to_linked_list_before_existing(
-        root->stmt_list,
+        root->statements,
         item,
         (value_t){ .ptr = new_child }
     );
@@ -124,7 +124,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_builder_t builder;
     init_string_builder(&builder, 0);
     string_value_t result = EMPTY_STRING_VALUE;
-    list_item_t *item = root->stmt_list->head;
+    list_item_t *item = root->statements->head;
     bool flag = false;
     while (item) {
         if (flag) {
@@ -152,7 +152,7 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
     const root_node_t *root = (const root_node_t *)node;
-    list_item_t *item = root->stmt_list->head;
+    list_item_t *item = root->statements->head;
     while (item) {
         statement_t *stmt = (statement_t*)item->value.ptr;
         generate_indented_goat_code_from_statement(stmt, builder, indent);
@@ -164,7 +164,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
  * @brief Generates bytecode for a root node.
  * 
  * This function generates bytecode for a root node by iterating through all the statements
- * in the `stmt_list` of the root node. For each statement, it calls the `gen_bytecode` function
+ * in the `statements` of the root node. For each statement, it calls the `gen_bytecode` function
  * for that statement to generate the corresponding bytecode. The bytecode generation is done
  * for all statements in the list, which represent the top-level operations of the program.
  * 
@@ -176,7 +176,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const root_node_t *root = (const root_node_t *)node;
-    list_item_t *item = root->stmt_list->head;
+    list_item_t *item = root->statements->head;
     while (item) {
         statement_t *stmt = (statement_t*)item->value.ptr;
         generate_bytecode_from_statement(stmt, code, data);
@@ -211,13 +211,9 @@ static node_vtbl_t root_node_vtbl = {
     .generate_bytecode = generate_bytecode,
 };
 
-node_t *create_root_node(arena_t *arena, statement_t **stmt_list, size_t stmt_count) {
+node_t *create_root_node(arena_t *arena, list_t *statements) {
     root_node_t *root = (root_node_t *)alloc_zeroed_from_arena(arena, sizeof(root_node_t));
     root->base.vtbl = &root_node_vtbl;
-    size_t data_size = stmt_count * sizeof(statement_t *);
-    root->stmt_list = create_linked_list(arena);
-    for (size_t index = 0; index < stmt_count; index++) {
-        append_item_to_linked_list(root->stmt_list, (value_t){ .ptr = stmt_list[index] });
-    }
+    root->statements = statements;
     return &root->base;
 }

@@ -13,6 +13,12 @@
 #include "value.h"
 
 /**
+ * @typedef list_t
+ * @brief Forward declaration for linked list structure.
+ */
+typedef struct list_t list_t;
+
+/**
  * @brief Forward declaration for linked list node.
  */
 typedef struct list_item_t list_item_t;
@@ -37,12 +43,12 @@ struct list_item_t {
  * @struct list_t
  * @brief A doubly linked list using arena allocation.
  */
-typedef struct {
+struct list_t {
     arena_t *arena;    /**< Memory arena used to allocate list nodes. */
     list_item_t *head; /**< Pointer to the first node. */
     list_item_t *tail; /**< Pointer to the last node. */
     size_t size;       /**< Size of the list */
-} list_t;
+};
 
 /**
  * @brief Creates a new empty linked list.

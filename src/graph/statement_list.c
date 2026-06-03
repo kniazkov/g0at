@@ -42,7 +42,7 @@ typedef struct {
      * Stores statement nodes in execution order. Each list item contains a
      * pointer to a statement node in its `value.ptr` field.
      */
-    list_t *stmt_list;
+    list_t *statements;
 } statement_list_t;
 
 /**
@@ -53,7 +53,7 @@ typedef struct {
  */
 static size_t get_child_count(const node_t *node) {
     const statement_list_t* list = (const statement_list_t*)node;
-    return list->stmt_list->size;
+    return list->statements->size;
 }
 
 /**
@@ -68,7 +68,7 @@ static size_t get_child_count(const node_t *node) {
  */
 static node_t* get_child(const node_t *node, size_t index) {
     const statement_list_t* list = (const statement_list_t*)node;
-    return (node_t*)get_linked_list_value(list->stmt_list, index).ptr;
+    return (node_t*)get_linked_list_value(list->statements, index).ptr;
 }
 
 /**
@@ -93,7 +93,7 @@ static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_
     }
 
     statement_list_t* list = (statement_list_t*)node;
-    list_item_t *item = list->stmt_list->head;
+    list_item_t *item = list->statements->head;
     while (item) {
         if (item->value.ptr == before_child) {
             break;
@@ -105,7 +105,7 @@ static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_
     }
 
     insert_item_to_linked_list_before_existing(
-        list->stmt_list,
+        list->statements,
         item,
         (value_t){ .ptr = new_child }
     );
@@ -127,7 +127,7 @@ static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_
  */
 static string_value_t generate_goat_code(const node_t *node) {
     const statement_list_t* list = (const statement_list_t*)node;
-    if (list->stmt_list->size == 0) {
+    if (list->statements->size == 0) {
         return STATIC_STRING(L"{ }");
     }
 
@@ -136,7 +136,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     append_char(&builder, L'{');
 
     bool has_previous = false;
-    list_item_t *item = list->stmt_list->head;
+    list_item_t *item = list->statements->head;
     while (item) {
         if (has_previous) {
             append_char(&builder, L' ');
@@ -169,14 +169,14 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
     const statement_list_t* list = (const statement_list_t*)node;
-    if (list->stmt_list->size == 0) {
+    if (list->statements->size == 0) {
         append_static_source(builder, L"{ }");
         return;
     }
 
     append_static_source(builder, L"{");
 
-    list_item_t *item = list->stmt_list->head;
+    list_item_t *item = list->statements->head;
     while (item) {
         statement_t *stmt = (statement_t*)item->value.ptr;
         generate_indented_goat_code_from_statement(stmt, builder, indent + 1);
@@ -204,7 +204,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     const statement_list_t* list = (const statement_list_t*)node;
     instr_index_t first = add_instruction(code, (instruction_t){ .opcode = ENTER });
 
-    list_item_t *item = list->stmt_list->head;
+    list_item_t *item = list->statements->head;
     while (item) {
         statement_t *stmt = (statement_t*)item->value.ptr;
         generate_bytecode_from_statement(stmt, code, data);
@@ -241,15 +241,11 @@ node_t *create_statement_list_node(arena_t *arena) {
         sizeof(statement_list_t)
     );
     list->base.base.vtbl = &statement_list_vtbl;
-    list->stmt_list = create_linked_list(arena);
     return &list->base.base;
 }
 
-void fill_statement_list_node(node_t *node, arena_t *arena, statement_t **stmt_list,
-        size_t stmt_count) {
+void fill_statement_list_node(node_t *node, list_t *statements) {
     assert(node->vtbl->type == NODE_STATEMENT_LIST);
     statement_list_t *list = (statement_list_t *)node;
-    for (size_t index = 0; index < stmt_count; index++) {
-        append_item_to_linked_list(list->stmt_list, (value_t){ .ptr = stmt_list[index] });
-    }
+    list->statements = statements;
 }

@@ -60,6 +60,12 @@ typedef struct data_builder_t data_builder_t;
 typedef struct arena_t arena_t;
 
 /**
+ * @typedef list_t
+ * @brief Forward declaration for the linked list structure.
+ */
+typedef struct list_t list_t;
+
+/**
  * @struct node_vtbl_t
  * @brief The virtual table structure for nodes in the syntax tree.
  * 
@@ -710,8 +716,7 @@ static inline bool generate_deferred_bytecode_from_node(const node_t *node,
  * the node, and returns a pointer to the newly created node.
  * 
  * @param arena A pointer to the memory arena for memory allocation.
- * @param stmt_list A list of statements to be included in the root node.
- * @param stmt_count The number of statements in the list.
+ * @param statements A list of statements to be included in the root node.
  * @return A pointer to the newly created root node.
  */
-node_t *create_root_node(arena_t *arena, statement_t **stmt_list, size_t stmt_count);
+node_t *create_root_node(arena_t *arena, list_t *statements);

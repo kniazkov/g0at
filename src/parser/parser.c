@@ -372,20 +372,34 @@ token_t *collapse_tokens_to_token(parser_memory_t *memory, token_t *first, token
 statement_list_processing_result_t process_statement_list(parser_memory_t *memory,
         token_list_t *tokens) {
     statement_list_processing_result_t result = {0};
-    result.list = (statement_t **)alloc_from_arena(memory->tokens,
-        tokens->count * sizeof(statement_t *));
+    result.list = create_linked_list(memory->graph);
+
     token_t *token = tokens->first;
     while (token != NULL) {
         if (token->type == TOKEN_STATEMENT) {
-            result.list[result.count++] = (statement_t *)token->node;
+            append_item_to_linked_list(
+                result.list,
+                (value_t){ .ptr = token->node }
+            );
         }
         else if (token->type == TOKEN_EXPRESSION) {
-            result.list[result.count++] = create_statement_expression_node(memory->graph,
-                (expression_t*)token->node);
+            statement_t *stmt = create_statement_expression_node(
+                memory->graph,
+                (expression_t*)token->node
+            );
+            append_item_to_linked_list(
+                result.list,
+                (value_t){ .ptr = stmt }
+            );
         }
         else if (token->type != TOKEN_COMMA && token->type != TOKEN_SEMICOLON) {
-            result.error = create_error_from_token(memory->errors, token, CRITICAL,
-                get_messages()->not_a_statement, token->text);
+            result.error = create_error_from_token(
+                memory->errors,
+                token,
+                CRITICAL,
+                get_messages()->not_a_statement,
+                token->text
+            );
             break;
         }
         token = token->right;
@@ -472,7 +486,7 @@ compilation_error_t *process_root_token_list(parser_memory_t *memory,
         *root_node = NULL;
         return stmt.error;
     } else {
-        *root_node = create_root_node(memory->graph, stmt.list, stmt.count);
+        *root_node = create_root_node(memory->graph, stmt.list);
         return NULL;
     }
 }

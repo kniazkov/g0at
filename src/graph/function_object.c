@@ -330,7 +330,7 @@ typedef struct {
      *
      * Stores statements in execution order.
      */
-    list_t *stmt_list;
+    list_t *statements;
 } function_body_t;
 
 /**
@@ -341,7 +341,7 @@ typedef struct {
  */
 static size_t fbody_get_child_count(const node_t *node) {
     const function_body_t* body = (const function_body_t*)node;
-    return body->stmt_list->size;
+    return body->statements->size;
 }
 
 /**
@@ -355,7 +355,7 @@ static size_t fbody_get_child_count(const node_t *node) {
  */
 static node_t* fbody_get_child(const node_t *node, size_t index) {
     const function_body_t* body = (const function_body_t*)node;
-    return (node_t*)get_linked_list_value(body->stmt_list, index).ptr;
+    return (node_t*)get_linked_list_value(body->statements, index).ptr;
 }
 
 /**
@@ -381,7 +381,7 @@ static bool fbody_insert_child_before(node_t *node, node_t *new_child,
     }
 
     function_body_t* body = (function_body_t*)node;
-    list_item_t *item = body->stmt_list->head;
+    list_item_t *item = body->statements->head;
     while(item) {
         if (item->value.ptr == before_child) {
             break;
@@ -393,7 +393,7 @@ static bool fbody_insert_child_before(node_t *node, node_t *new_child,
     }
 
     insert_item_to_linked_list_before_existing(
-        body->stmt_list,
+        body->statements,
         item,
         (value_t){ .ptr = new_child }
     );
@@ -478,26 +478,7 @@ static function_body_t *create_function_body_node(arena_t *arena) {
         sizeof(function_body_t)
     );
     body->base.vtbl = &function_body_vtbl;
-    body->stmt_list = create_linked_list(arena);
     return body;
-}
-
-/**
- * @brief Fills a function body node with statements.
- *
- * Recreates the body statement list and appends the given statements in
- * execution order.
- *
- * @param body Pointer to the function body node.
- * @param arena Arena allocator for list allocation.
- * @param stmt_list Array of statement pointers.
- * @param stmt_count Number of statements in the body.
- */
-static void fill_function_body_node(function_body_t *body, arena_t *arena, statement_t **stmt_list,
-        size_t stmt_count) {
-    for (size_t index = 0; index < stmt_count; index++) {
-        append_item_to_linked_list(body->stmt_list, (value_t){ .ptr = stmt_list[index] });
-    }
 }
 
 /**
@@ -633,7 +614,7 @@ static string_value_t fobj_generate_goat_code(const node_t *node) {
     string_builder_t builder;
     init_string_builder(&builder, 128);
     generate_header(expr, &builder);
-    list_item_t *item = expr->body->stmt_list->head;
+    list_item_t *item = expr->body->statements->head;
     bool needs_space = false;
     while (item) {
         if (needs_space) {
@@ -674,7 +655,7 @@ static void fobj_generate_indented_goat_code(const node_t *node, source_builder_
     string_builder_t header;
     init_string_builder(&header, 16);
     append_formatted_source(builder, generate_header(expr, &header));
-    list_item_t *item = expr->body->stmt_list->head;
+    list_item_t *item = expr->body->statements->head;
     while (item) {
         statement_t *stmt = (statement_t*)item->value.ptr;
         generate_indented_goat_code_from_statement(stmt, builder, indent + 1);
@@ -757,12 +738,12 @@ static bool fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *
         return false;
     }
     instr_index_t first;
-    if (expr->body->stmt_list->size == 0) {
+    if (expr->body->statements->size == 0) {
         first = add_instruction(code, (instruction_t){ .opcode = NIL });
         add_instruction(code, (instruction_t){ .opcode = RET });
     }
     else {
-        list_item_t *item = expr->body->stmt_list->head;
+        list_item_t *item = expr->body->statements->head;
         statement_t *stmt = (statement_t*)item->value.ptr;
         first = generate_bytecode_from_statement(stmt, code, data);
 
@@ -814,9 +795,9 @@ node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, siz
     return &fobj->base.base;
 }
 
-void fill_function_body(node_t *node, arena_t *arena, statement_t **stmt_list, size_t stmt_count) {
+void fill_function_body(node_t *node, list_t *statements) {
     assert(node->vtbl->type == NODE_FUNCTION_OBJECT);
     function_object_t *fobj = (function_object_t *)node;
-    fill_function_body_node(fobj->body, arena, stmt_list, stmt_count);
+    fobj->body->statements = statements;
     fobj->code_instr_index = BAD_INSTR_INDEX;
 }

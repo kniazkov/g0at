@@ -179,7 +179,7 @@ compilation_error_t *parsing_statement_list_bodies(token_t *token, parser_memory
     if (result.error) {
         return result.error;
     }
-    fill_statement_list_node(token->node, memory->graph, result.list, result.count);
+    fill_statement_list_node(token->node, result.list);
     return NULL;
 }
 
@@ -204,6 +204,6 @@ compilation_error_t *parsing_function_bodies(token_t *token, parser_memory_t *me
     if (result.error) {
         return result.error;
     }
-    fill_function_body(token->node, memory->graph, result.list, result.count);
+    fill_function_body(token->node, result.list);
     return NULL;
 }

@@ -333,17 +333,12 @@ void set_function_call_arguments(node_t *node, arena_t *arena,
 node_t *create_statement_list_node(arena_t *arena);
 
 /**
- * @brief Initializes a statement_list node with a provided array of statements.
- *
- * Copies the array of statement pointers into arena-managed memory and sets the count.
+ * @brief Initializes a statement_list node with a provided list of statements.
  *
  * @param node Target node (must be of type `NODE_STATEMENT_LIST`).
- * @param arena Memory arena used for internal allocations.
- * @param stmt_list Source array of statement pointers.
- * @param stmt_count Number of statements.
+ * @param statements List of statements.
  */
-void fill_statement_list_node(node_t *node, arena_t *arena, statement_t **stmt_list,
-    size_t stmt_count);
+void fill_statement_list_node(node_t *node, list_t *statements);
 
 /**
  * @brief Creates a function object node in the AST.
@@ -362,15 +357,10 @@ node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, siz
 /**
  * @brief Fills in the body of a function object node.
  * 
- * Copies the list of statements forming the function body into the function object.
- * This must be called after creating the node via `create_function_object_node`.
- * 
  * @param node A pointer to a node previously created as a function object.
- * @param arena The arena allocator for memory management.
- * @param stmt_list An array of pointers to statement nodes.
- * @param stmt_count The number of statements in the function body.
+ * @param statements A list of statements.
  */
-void fill_function_body(node_t *node, arena_t *arena, statement_t **stmt_list, size_t stmt_count);
+void fill_function_body(node_t *node, list_t *statements);
 
 /**
  * @brief Creates a new parenthesized expression node with no inner expression.

@@ -109,21 +109,19 @@ token_t *collapse_tokens_to_token(parser_memory_t *memory, token_t *first, token
 
 /**
  * @struct statement_list_processing_result_t
- * @brief A structure representing the result of processing a list of statements.
- * 
- * This structure holds the processed statements, the number of statements,
- * and any error that may have occurred during the processing.
+ * @brief Result of processing tokens into a statement list.
+ *
+ * Contains a linked list of parsed statements allocated from the graph arena,
+ * plus an optional compilation error.
  */
 typedef struct {
     /**
-     * @brief An array of statement nodes.
+     * @brief Linked list of statement nodes.
+     *
+     * Stores `statement_t *` values as `value_t.ptr`. The list and its items
+     * are allocated from `memory->graph`.
      */
-    statement_t **list;
-
-    /**
-     * @brief The number of statements in the list.
-     */
-    size_t count;
+    list_t *list;
 
     /**
      * @brief A pointer to a compilation error, if any.
@@ -132,22 +130,22 @@ typedef struct {
 } statement_list_processing_result_t;
 
 /**
- * @brief Processes a list of tokens and attempts to create statements from them.
- * 
- * This function iterates over a list of tokens, identifies statement tokens, and converts
- * them into a list of statements. If an expression token is encountered, it is wrapped as
- * a statement. If any error occurs (e.g., invalid token), the process stops and the error
- * is stored in the result.
- * 
- * @param memory A pointer to the parser's memory structure, used for memory allocation.
- * @param tokens A pointer to the list of tokens to be processed.
- * 
- * @return A `statement_list_processing_result_t` structure containing the processed
- *  statements, the total count of statements, and any compilation error encountered.
+ * @brief Processes tokens and builds a linked list of statements.
+ *
+ * Iterates over a token list, extracts statement tokens, and wraps expression
+ * tokens into statement-expression nodes. The resulting statements are appended
+ * to a linked list allocated from graph memory.
+ *
+ * If an invalid token is encountered, processing stops and the error field is
+ * filled.
+ *
+ * @param memory Parser memory used for AST and error allocation.
+ * @param tokens Token list to process.
+ * @return Processing result containing a linked list of statements and an
+ *         optional compilation error.
  */
 statement_list_processing_result_t process_statement_list(parser_memory_t *memory,
         token_list_t *tokens);
-
 /**
  * @brief Applies reduction rules to a sequence of token groups.
  * 
