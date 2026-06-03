@@ -174,6 +174,48 @@ static lattice_element_t make_boolean_constant(bool value, bool can_be_null) {
 }
 
 /**
+ * @brief Creates a general string lattice element.
+ *
+ * @param can_be_null Whether null is included as a possible value.
+ * @return String element.
+ */
+static lattice_element_t make_string(bool can_be_null) {
+    return (lattice_element_t){
+        .type = LATTICE_STRING,
+        .is_constant = false,
+        .can_be_null = can_be_null
+    };
+}
+
+/**
+ * @brief Creates a general function lattice element.
+ *
+ * @param can_be_null Whether null is included as a possible value.
+ * @return Function element.
+ */
+static lattice_element_t make_function(bool can_be_null) {
+    return (lattice_element_t){
+        .type = LATTICE_FUNCTION,
+        .is_constant = false,
+        .can_be_null = can_be_null
+    };
+}
+
+/**
+ * @brief Creates a general user-defined object lattice element.
+ *
+ * @param can_be_null Whether null is included as a possible value.
+ * @return User-defined object element.
+ */
+static lattice_element_t make_user_defined_object(bool can_be_null) {
+    return (lattice_element_t){
+        .type = LATTICE_USER_DEFINED_OBJECT,
+        .is_constant = false,
+        .can_be_null = can_be_null
+    };
+}
+
+/**
  * @brief Creates a null lattice element.
  *
  * @return Null element.
@@ -227,6 +269,38 @@ static bool is_numeric_type(lattice_type_t type) {
         || type == LATTICE_INTEGER
         || type == LATTICE_INTEGER_INTERVAL
         || type == LATTICE_REAL;
+}
+
+/**
+ * @brief Checks whether a lattice type is a simple non-numeric domain.
+ *
+ * @param type Lattice type.
+ * @return true for domains that currently carry no extra payload.
+ */
+static bool is_simple_object_type(lattice_type_t type) {
+    return type == LATTICE_STRING
+        || type == LATTICE_FUNCTION
+        || type == LATTICE_USER_DEFINED_OBJECT;
+}
+
+/**
+ * @brief Creates a simple non-numeric element by type.
+ *
+ * @param type Lattice type.
+ * @param can_be_null Whether null is included as a possible value.
+ * @return String, function, user-defined object, or top for unsupported input.
+ */
+static lattice_element_t make_simple_object(lattice_type_t type, bool can_be_null) {
+    switch (type) {
+        case LATTICE_STRING:
+            return make_string(can_be_null);
+        case LATTICE_FUNCTION:
+            return make_function(can_be_null);
+        case LATTICE_USER_DEFINED_OBJECT:
+            return make_user_defined_object(can_be_null);
+        default:
+            return make_top(can_be_null);
+    }
 }
 
 /**
@@ -413,6 +487,10 @@ lattice_element_t lattice_join(lattice_element_t left, lattice_element_t right) 
         return make_boolean(can_be_null);
     }
 
+    if (left.type == right.type && is_simple_object_type(left.type)) {
+        return make_simple_object(left.type, can_be_null);
+    }
+
     if (is_numeric_type(left.type) && is_numeric_type(right.type)) {
         return make_numeric(can_be_null);
     }
@@ -497,6 +575,10 @@ lattice_element_t lattice_meet(lattice_element_t left, lattice_element_t right) 
             return make_boolean_constant(right.value.bool_value, can_be_null);
         }
         return make_boolean(can_be_null);
+    }
+
+    if (left.type == right.type && is_simple_object_type(left.type)) {
+        return make_simple_object(left.type, can_be_null);
     }
 
     return finish_meet(make_bottom(), can_be_null);

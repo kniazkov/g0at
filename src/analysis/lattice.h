@@ -5,7 +5,7 @@
  *
  * Abstract interpretation evaluates a program over abstract values instead of
  * concrete runtime values. An abstract value describes a set of possible
- * concrete values: for example, "some integer", "a real constant 3.14", or
+ * concrete values: for example, "some integer", "a real constant 3.14", "some string", or
  * "an integer in the interval [0, 10]". This allows the analyzer to reason
  * about code without executing it.
  *
@@ -20,8 +20,7 @@
  * facts about a value.
  *
  * The lattice is intentionally small for now. New abstract value kinds can be
- * added as the static analyzer grows, because apparently the war against
- * uncertainty starts with an enum and misplaced optimism.
+ * added as the static analyzer grows.
  */
 
 #pragma once
@@ -71,6 +70,25 @@ typedef enum {
      * @brief Boolean value.
      */
     LATTICE_BOOLEAN,
+
+    /**
+     * @brief String value.
+     */
+    LATTICE_STRING,
+
+    /**
+     * @brief Function value.
+     */
+    LATTICE_FUNCTION,
+
+    /**
+     * @brief User-defined object value.
+     *
+     * This deliberately does not mean every Goat object. Runtime primitives,
+     * functions, and null are objects too, because apparently reality was not
+     * sufficiently complicated already.
+     */
+    LATTICE_USER_DEFINED_OBJECT,
 
     /**
      * @brief Impossible, contradictory, or unreachable value.
