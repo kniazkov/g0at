@@ -14,6 +14,7 @@
 #include "common_methods.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -51,6 +52,22 @@ typedef struct {
 static string_value_t get_data(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
     return VIEW_TO_VALUE(expr->string);
+}
+
+/**
+ * @brief Calculates the lattice value for a static string literal node.
+ *
+ * The node is expected to be a static string expression. The result is an exact
+ * string constant lattice element containing the literal string stored in the
+ * node.
+ *
+ * @param node A pointer to the static string node.
+ * @param arena Memory arena used to allocate the resulting lattice element.
+ * @return Constant pointer to the calculated string constant lattice element.
+ */
+static const lattice_element_t *calculate(const node_t *node, arena_t *arena) {
+    const static_string_t *expr = (const static_string_t *)node;
+    return make_string_constant_element(arena, expr->string);
 }
 
 /**
@@ -126,7 +143,7 @@ static node_vtbl_t static_string_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = cannot_calculate,
+    .calculate = calculate,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,

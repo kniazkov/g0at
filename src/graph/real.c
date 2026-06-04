@@ -13,6 +13,7 @@
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 #include "lib/split64.h"
+#include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -35,6 +36,21 @@ typedef struct {
      */
     double value;
 } real_t;
+
+/**
+ * @brief Calculates the lattice value for a real number node.
+ *
+ * The node is expected to be a real number expression. The result is an exact
+ * real constant lattice element containing the value stored in the node.
+ *
+ * @param node A pointer to the real number node.
+ * @param arena Memory arena used to allocate the resulting lattice element.
+ * @return Constant pointer to the calculated real constant lattice element.
+ */
+static const lattice_element_t *calculate(const node_t *node, arena_t *arena) {
+    const real_t *expr = (const real_t *)node;
+    return make_real_constant_element(arena, expr->value);
+}
 
 /**
  * @brief Converts a real number expression to its string representation.
@@ -110,7 +126,7 @@ static node_vtbl_t real_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = cannot_calculate,
+    .calculate = calculate,
     .generate_goat_code = get_data_and_generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
