@@ -16,35 +16,43 @@
 #include "lattice.h"
 
 /**
- * @brief Computes the least upper bound of two lattice elements.
- *
- * Join is used when information from two possible execution paths must be
- * merged. The result is the least element that safely includes all values
- * represented by both operands.
- *
- * @param left First lattice element.
- * @param right Second lattice element.
- * @return Least upper bound of `left` and `right`.
+ * @brief Top lattice element singleton.
  */
-lattice_element_t lattice_join(lattice_element_t left, lattice_element_t right) {
-    return (lattice_element_t) {
-        .type = LATTICE_TOP
-    };
+static const lattice_element_t top_element = {
+    .type = LATTICE_TOP
+};
+
+/**
+ * @brief Bottom lattice element singleton.
+ */
+static const lattice_element_t bottom_element = {
+    .type = LATTICE_BOTTOM
+};
+
+/**
+ * @brief Gets the top lattice element singleton.
+ *
+ * @return Constant pointer to the top lattice element.
+ */
+const lattice_element_t *make_top_element() {
+    return &top_element;
 }
 
 /**
- * @brief Computes the greatest lower bound of two lattice elements.
+ * @brief Gets the bottom lattice element singleton.
  *
- * Meet is used when a value is constrained by two facts at once. The result is
- * the most precise element that contains only values represented by both
- * operands.
- *
- * @param left First lattice element.
- * @param right Second lattice element.
- * @return Greatest lower bound of `left` and `right`.
+ * @return Constant pointer to the bottom lattice element.
  */
-lattice_element_t lattice_meet(lattice_element_t left, lattice_element_t right) {
-    return (lattice_element_t) {
-        .type = LATTICE_BOTTOM
-    };
+const lattice_element_t *make_bottom_element() {
+    return &bottom_element;
+}
+
+const lattice_element_t *lattice_join(arena_t *arena,
+        const lattice_element_t *left, const lattice_element_t *right) {
+    return make_top_element();
+}
+
+const lattice_element_t *lattice_meet(arena_t *arena,
+        const lattice_element_t *left, const lattice_element_t *right) {
+    return make_bottom_element();
 }
