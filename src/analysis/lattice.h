@@ -409,3 +409,13 @@ const lattice_element_t *lattice_join(arena_t *arena,
  */
 const lattice_element_t *lattice_meet(arena_t *arena,
         const lattice_element_t *left, const lattice_element_t *right);
+
+/**
+ * @brief Converts a lattice element to a human-readable string.
+ *
+ * The result is intended for graph/debug output.
+ *
+ * @param element Lattice element to convert.
+ * @return String representation of the lattice element.
+ */
+string_value_t lattice_to_string(const lattice_element_t *element);

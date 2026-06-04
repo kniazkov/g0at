@@ -14,6 +14,7 @@
  */
 
 #include "lattice.h"
+#include "lib/string_ext.h"
 
 /**
  * @brief Top lattice element singleton.
@@ -1831,4 +1832,151 @@ const lattice_element_t *lattice_meet(arena_t *arena,
     }
 
     return make_bottom_element();
+}
+
+/**
+ * @brief Converts a lattice type to a short human-readable string.
+ *
+ * @param type Lattice type.
+ * @return String representation of the lattice type.
+ */
+static const wchar_t* lattice_type_to_string(lattice_type_t type) {
+    switch (type) {
+        case LATTICE_TOP:
+            return L"⊤";
+
+        case LATTICE_BOTTOM:
+            return L"⊥";
+
+        case LATTICE_NOT_NULL:
+            return L"¬null";
+
+        case LATTICE_NULL:
+            return L"null";
+
+        case LATTICE_NUMERIC:
+            return L"numeric";
+
+        case LATTICE_INTEGER:
+            return L"integer";
+
+        case LATTICE_INTEGER_RANGE:
+            return L"integer range";
+
+        case LATTICE_INTEGER_CONSTANT:
+            return L"const integer";
+
+        case LATTICE_REAL:
+            return L"real";
+
+        case LATTICE_REAL_CONSTANT:
+            return L"const real";
+
+        case LATTICE_STRING:
+            return L"string";
+
+        case LATTICE_STRING_CONSTANT:
+            return L"const string";
+
+        case LATTICE_BOOLEAN:
+            return L"boolean";
+
+        case LATTICE_TRUE:
+            return L"true";
+
+        case LATTICE_FALSE:
+            return L"false";
+
+        case LATTICE_FUNCTION:
+            return L"function";
+
+        case LATTICE_ARRAY:
+            return L"array";
+
+        case LATTICE_TYPED_ARRAY:
+            return L"array<>";
+
+        case LATTICE_USER_DEFINED_OBJECT:
+            return L"object";
+    }
+
+    return L"?";
+}
+
+string_value_t lattice_to_string(const lattice_element_t *element) {
+    switch (element->type) {
+        case LATTICE_TOP:
+            return STATIC_STRING(L"⊤");
+
+        case LATTICE_BOTTOM:
+            return STATIC_STRING(L"⊥");
+
+        case LATTICE_NOT_NULL:
+            return STATIC_STRING(L"¬null");
+
+        case LATTICE_NULL:
+            return STATIC_STRING(L"null");
+
+        case LATTICE_NUMERIC:
+            return STATIC_STRING(L"numeric");
+
+        case LATTICE_INTEGER:
+            return STATIC_STRING(L"integer");
+
+        case LATTICE_INTEGER_RANGE: {
+            const integer_range_lattice_element_t *range =
+                (const integer_range_lattice_element_t *)element;
+            return format_string(L"integer[%ld..%ld]", range->min, range->max);
+        }
+
+        case LATTICE_INTEGER_CONSTANT: {
+            const integer_constant_lattice_element_t *constant =
+                (const integer_constant_lattice_element_t *)element;
+            return format_string(L"%ld", constant->value);
+        }
+
+        case LATTICE_REAL:
+            return STATIC_STRING(L"real");
+
+        case LATTICE_REAL_CONSTANT: {
+            const real_constant_lattice_element_t *constant =
+                (const real_constant_lattice_element_t *)element;
+            return format_string(L"%f", constant->value);
+        }
+
+        case LATTICE_STRING:
+            return STATIC_STRING(L"string");
+
+        case LATTICE_STRING_CONSTANT: {
+            const string_constant_lattice_element_t *constant =
+                (const string_constant_lattice_element_t *)element;
+            return string_to_string_notation(L"", VIEW_TO_VALUE(constant->value));
+        }
+
+        case LATTICE_BOOLEAN:
+            return STATIC_STRING(L"boolean");
+
+        case LATTICE_TRUE:
+            return STATIC_STRING(L"true");
+
+        case LATTICE_FALSE:
+            return STATIC_STRING(L"false");
+
+        case LATTICE_FUNCTION:
+            return STATIC_STRING(L"function");
+
+        case LATTICE_ARRAY:
+            return STATIC_STRING(L"array");
+
+        case LATTICE_TYPED_ARRAY: {
+            const typed_array_lattice_element_t *array =
+                (const typed_array_lattice_element_t *)element;
+            return format_string(L"array<%s>", lattice_type_to_string(array->element_type));
+        }
+
+        case LATTICE_USER_DEFINED_OBJECT:
+            return STATIC_STRING(L"object");
+    }
+
+    return STATIC_STRING(L"?");
 }
