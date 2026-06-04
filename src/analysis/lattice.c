@@ -1,16 +1,34 @@
 /**
  * @file lattice.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Join and meet operations for abstract-interpretation lattice elements.
+ * @brief Implementation of the abstract-value lattice.
  *
- * This file implements the two fundamental lattice operations:
- * - join: computes the least upper bound of two abstract values;
- * - meet: computes the greatest lower bound of two abstract values.
+ * This file implements construction, formatting, join, and meet operations for
+ * lattice elements declared in @ref lattice.h.
  *
- * In less ceremonial terms, join merges facts coming from different execution
- * paths, while meet narrows facts when additional constraints are known. This
- * is where uncertainty is either politely combined or beaten into a smaller
- * shape.
+ * The implementation intentionally keeps the lattice rules explicit. Each
+ * non-trivial element kind has a small dedicated helper for @ref lattice_join
+ * and @ref lattice_meet. This makes the ordering rules visible in code instead
+ * of hiding them behind a clever generic mechanism, because clever generic
+ * mechanisms in C age about as well as milk in a server room.
+ *
+ * General elements such as top, bottom, null, numeric, string, boolean,
+ * function, array, and user-defined object are represented as immutable
+ * singletons. More specific elements that carry payload data, such as integer
+ * ranges, integer constants, real constants, string constants, and typed arrays,
+ * are allocated from the caller-provided arena.
+ *
+ * The lattice follows these broad rules:
+ * - @ref LATTICE_TOP is the least upper bound of null and all non-null values;
+ * - @ref LATTICE_BOTTOM is the empty set of possible values;
+ * - @ref LATTICE_NOT_NULL contains every non-null value category;
+ * - @ref LATTICE_NUMERIC contains integer and real values;
+ * - constants and ranges are preserved when possible and widened only when the
+ *   join operation requires it;
+ * - meet narrows values and returns bottom when two facts are incompatible.
+ *
+ * The string conversion helpers produce compact human-readable labels intended
+ * for graph output and debugging.
  */
 
 #include "lattice.h"

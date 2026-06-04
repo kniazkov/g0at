@@ -1,28 +1,34 @@
 /**
  * @file lattice.h
  * @copyright 2026 Ivan Kniazkov
- * @brief Lattice elements used by abstract interpretation.
+ * @brief Abstract-value lattice used by static analysis.
  *
- * Abstract interpretation evaluates a program over abstract values instead of
- * concrete runtime values. An abstract value describes a set of possible
- * concrete values: for example, "some integer", "a real constant 3.14", "some string", or
- * "an integer in the interval [0, 10]". This allows the analyzer to reason
- * about code without executing it.
+ * This file declares the abstract values used by the static analyzer to
+ * describe sets of possible runtime values without executing the program.
+ * These values form a small lattice: each element represents either a broad
+ * category such as "any non-null value", a narrower category such as "any
+ * integer", or a precise fact such as "the integer constant 42".
  *
- * The abstract values form a lattice. A lattice is a partially ordered set with
- * two important operations:
- * - join: combines information from multiple control-flow paths;
- * - meet: intersects information when constraints are applied.
+ * The lattice is organized around the following main ideas:
+ * - @ref LATTICE_TOP represents any possible value;
+ * - @ref LATTICE_NOT_NULL represents any value except @ref LATTICE_NULL;
+ * - @ref LATTICE_BOTTOM represents an impossible, contradictory, or unreachable
+ *   value;
+ * - numeric values have additional precision levels for integer ranges,
+ *   integer constants, real values, and real constants;
+ * - strings, booleans, arrays, functions, and user-defined objects have their
+ *   own abstract domains.
  *
- * In this file, the top element represents maximum uncertainty, meaning any
- * value may be possible. The bottom element represents an impossible or
- * unreachable value. Elements between them represent progressively more precise
- * facts about a value.
+ * The two fundamental operations are:
+ * - @ref lattice_join, which computes the least upper bound of two abstract
+ *   values and is used when control-flow paths merge;
+ * - @ref lattice_meet, which computes the greatest lower bound of two abstract
+ *   values and is used when independent constraints must both hold.
  *
- * The lattice is intentionally small for now. New abstract value kinds can be
- * added as the static analyzer grows.
+ * Most general lattice elements are immutable singletons. Elements carrying
+ * extra data, such as integer ranges or string constants, are allocated from an
+ * arena and returned through the common @ref lattice_element_t base pointer.
  */
-
 #pragma once
 
 #include <stdbool.h>
@@ -36,6 +42,12 @@
  * @brief Forward declaration for memory arena structure.
  */
 typedef struct arena_t arena_t;
+
+/**
+ * @typedef lattice_element_t
+ * @brief Forward declaration for an abstract-interpretation lattice element.
+ */
+typedef struct lattice_element_t lattice_element_t;
 
 /**
  * @enum lattice_type_t
@@ -149,12 +161,12 @@ typedef enum {
  * This is the minimal common representation for every abstract value.
  * Type-specific elements may embed it as their first field.
  */
-typedef struct {
+struct lattice_element_t {
     /**
      * @brief Abstract value kind.
      */
     lattice_type_t type;
-} lattice_element_t;
+};
 
 /**
  * @struct integer_range_lattice_element_t

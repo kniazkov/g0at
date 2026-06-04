@@ -66,6 +66,12 @@ typedef struct arena_t arena_t;
 typedef struct list_t list_t;
 
 /**
+ * @typedef lattice_element_t
+ * @brief Forward declaration for an abstract-interpretation lattice element.
+ */
+typedef struct lattice_element_t lattice_element_t;
+
+/**
  * @struct node_vtbl_t
  * @brief The virtual table structure for nodes in the syntax tree.
  * 
@@ -249,7 +255,19 @@ typedef struct {
      * @return Type of relation, or RELATION_NONE if index is out of range.
      */
     relation_type_t (*get_relation_type)(const node_t *node, size_t index);
-    
+
+    /**
+     * @brief Calculates the abstract lattice element represented by this node.
+     *
+     * Used by static analysis to infer the abstract value produced by a syntax-tree
+     * node. Concrete node implementations may override this method.
+     *
+     * @param node A pointer to the node.
+     * @param arena Memory arena for allocating lattice elements.
+     * @return Constant pointer to the calculated lattice element.
+     */
+    const lattice_element_t *(*calculate)(const node_t *node, arena_t *arena);
+
     /**
      * @brief Generates a single-line Goat source code representation of the node.
      * 
@@ -588,6 +606,19 @@ static inline const node_t* get_node_related(const node_t *node, size_t index) {
  */
 static inline relation_type_t get_node_relation_type(const node_t *node, size_t index) {
     return node->vtbl->get_relation_type(node, index);
+}
+
+/**
+ * @brief Calculates the abstract lattice element represented by a node.
+ *
+ * This helper dispatches to the node's virtual table.
+ *
+ * @param node A pointer to the node.
+ * @param arena Memory arena for allocating lattice elements.
+ * @return Constant pointer to the calculated lattice element.
+ */
+static inline const lattice_element_t *calculate_node(const node_t *node, arena_t *arena) {
+    return node->vtbl->calculate(node, arena);
 }
 
 /**

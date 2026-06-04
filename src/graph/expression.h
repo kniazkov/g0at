@@ -115,6 +115,20 @@ static inline const wchar_t *get_expression_child_tag(const expression_t *expr, 
 }
 
 /**
+ * @brief Calculates the abstract lattice element represented by an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param expr A pointer to the expression.
+ * @param arena Memory arena for allocating lattice elements.
+ * @return Constant pointer to the calculated lattice element.
+ */
+static inline const lattice_element_t *calculate_expression(const expression_t *expr,
+        arena_t *arena) {
+    return calculate_node(&expr->base, arena);
+}
+
+/**
  * @brief Generates a single-line Goat source code representation from an expression.
  *
  * This helper forwards the request to the underlying base node helper.

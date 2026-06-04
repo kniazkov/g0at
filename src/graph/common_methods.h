@@ -121,3 +121,12 @@ const node_t *no_related_node(const node_t *node, size_t index);
  * @return Always returns RELATION_NONE.
  */
 relation_type_t no_relation_type(const node_t *node, size_t index);
+
+/**
+ * @brief Default abstract-value calculation for nodes that do not produce a value.
+ *
+ * @param node A pointer to the node.
+ * @param arena Memory arena for allocation, unused by the default implementation.
+ * @return Bottom lattice element.
+ */
+const lattice_element_t *cannot_calculate(const node_t *node, arena_t *arena);
