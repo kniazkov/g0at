@@ -186,6 +186,29 @@ void avl_tree_for_each(const avl_tree_t *tree,
     void (*func)(void* user_data, void* key, value_t value), void *user_data);
 
 /**
+ * @brief Clones an AVL tree preserving its exact shape and node heights.
+ *
+ * The clone is built in O(N) time without reinserting keys and without rebalancing.
+ * Keys and values are copied shallowly.
+ *
+ * @param tree Source AVL tree.
+ * @return Newly allocated AVL tree clone, or NULL if source tree is NULL.
+ */
+avl_tree_t *clone_avl_tree(const avl_tree_t *tree);
+
+/**
+ * @brief Clones an AVL tree into the given arena preserving exact shape and node heights.
+ *
+ * The clone is built in O(N) time without reinserting keys and without rebalancing.
+ * Keys and values are copied shallowly.
+ *
+ * @param arena Arena used to allocate the cloned tree and its nodes.
+ * @param tree Source AVL tree.
+ * @return Newly allocated arena-backed AVL tree clone, or NULL if source tree is NULL.
+ */
+avl_tree_arena_t *clone_avl_tree_arena(arena_t *arena, const avl_tree_t *tree);
+
+/**
  * @brief Clears all nodes in the AVL tree without deallocating the tree structure.
  * 
  * This function removes all nodes from the AVL tree and deallocates the memory associated 

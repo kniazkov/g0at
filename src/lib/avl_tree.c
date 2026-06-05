@@ -268,6 +268,49 @@ static void destroy_nodes(avl_node_t *node) {
     }
 }
 
+/**
+ * @brief Recursively clones nodes preserving the exact tree shape.
+ *
+ * This does not insert nodes through AVL logic, so it runs in O(N) and does not rebalance.
+ *
+ * @param node Source node.
+ * @return Cloned node.
+ */
+static avl_node_t *clone_nodes(const avl_node_t *node) {
+    if (!node) {
+        return NULL;
+    }
+    avl_node_t *copy = (avl_node_t *)CALLOC(sizeof(avl_node_t));
+    copy->key = node->key;
+    copy->value = node->value;
+    copy->height = node->height;
+    copy->left = clone_nodes(node->left);
+    copy->right = clone_nodes(node->right);
+    return copy;
+}
+
+/**
+ * @brief Recursively clones nodes into an arena preserving the exact tree shape.
+ *
+ * This does not insert nodes through AVL logic, so it runs in O(N) and does not rebalance.
+ *
+ * @param arena Arena used for allocation.
+ * @param node Source node.
+ * @return Cloned node.
+ */
+static avl_node_t *clone_nodes_arena(arena_t *arena, const avl_node_t *node) {
+    if (!node) {
+        return NULL;
+    }
+    avl_node_t *copy = (avl_node_t *)alloc_zeroed_from_arena(arena, sizeof(avl_node_t));
+    copy->key = node->key;
+    copy->value = node->value;
+    copy->height = node->height;
+    copy->left = clone_nodes_arena(arena, node->left);
+    copy->right = clone_nodes_arena(arena, node->right);
+    return copy;
+}
+
 avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*)) {
     avl_tree_t *tree = (avl_tree_t *)ALLOC(sizeof(avl_tree_t));
     tree->root = NULL; 
@@ -316,6 +359,28 @@ void avl_tree_for_each(const avl_tree_t *tree,
     if (tree && tree->root) {
         inorder_traversal(tree->root, func, user_data);
     }
+}
+
+avl_tree_t *clone_avl_tree(const avl_tree_t *tree) {
+    if (!tree) {
+        return NULL;
+    }
+    avl_tree_t *copy = (avl_tree_t *)ALLOC(sizeof(avl_tree_t));
+    copy->comparator = tree->comparator;
+    copy->root = clone_nodes(tree->root);
+    return copy;
+}
+
+avl_tree_arena_t *clone_avl_tree_arena(arena_t *arena, const avl_tree_t *tree) {
+    if (!tree) {
+        return NULL;
+    }
+    avl_tree_arena_t *copy =
+        (avl_tree_arena_t *)alloc_zeroed_from_arena(arena, sizeof(avl_tree_arena_t));
+    copy->base.comparator = tree->comparator;
+    copy->base.root = clone_nodes_arena(arena, tree->root);
+    copy->arena = arena;
+    return copy;
 }
 
 void clear_avl_tree(avl_tree_t *tree) {
