@@ -61,33 +61,6 @@ static inline string_value_t get_statement_data(const statement_t *stmt) {
 }
 
 /**
- * @brief Gets the number of properties exposed by a statement.
- *
- * This helper forwards the request to the underlying base node helper.
- *
- * @param stmt A pointer to the statement.
- * @return Number of properties exposed by the statement.
- */
-static inline size_t get_statement_property_count(const statement_t *stmt) {
-    return get_node_property_count(&stmt->base);
-}
-
-/**
- * @brief Retrieves a property of a statement by index.
- *
- * This helper forwards the request to the underlying base node helper.
- *
- * @param stmt A pointer to the statement.
- * @param index Zero-based property index.
- * @param out_key Output pointer to receive the property key.
- * @param out_value Output pointer to receive the property value.
- */
-static inline void get_statement_property(const statement_t *stmt, size_t index,
-        string_view_t *out_key, string_value_t *out_value) {
-    get_node_property(&stmt->base, index, out_key, out_value);
-}
-
-/**
  * @brief Gets the number of direct child nodes of a statement.
  *
  * This helper forwards the request to the underlying base node helper.

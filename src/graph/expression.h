@@ -50,33 +50,6 @@ static inline string_value_t get_expression_data(const expression_t *expr) {
 }
 
 /**
- * @brief Gets the number of properties exposed by an expression.
- *
- * This helper forwards the request to the underlying base node helper.
- *
- * @param expr A pointer to the expression.
- * @return Number of properties exposed by the expression.
- */
-static inline size_t get_expression_property_count(const expression_t *expr) {
-    return get_node_property_count(&expr->base);
-}
-
-/**
- * @brief Retrieves a property of an expression by index.
- *
- * This helper forwards the request to the underlying base node helper.
- *
- * @param expr A pointer to the expression.
- * @param index Zero-based property index.
- * @param out_key Output pointer to receive the property key.
- * @param out_value Output pointer to receive the property value.
- */
-static inline void get_expression_property(const expression_t *expr, size_t index,
-        string_view_t *out_key, string_value_t *out_value) {
-    get_node_property(&expr->base, index, out_key, out_value);
-}
-
-/**
  * @brief Gets the number of direct child nodes of an expression.
  *
  * This helper forwards the request to the underlying base node helper.

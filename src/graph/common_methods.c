@@ -19,10 +19,9 @@ size_t no_properties(const node_t *node) {
     return 0;
 }
 
-void no_property(const node_t *node, size_t index,
-                 string_view_t *out_key, string_value_t *out_value) {
-    *out_key = EMPTY_STRING_VIEW;
+const wchar_t *no_property(const node_t *node, size_t index, string_value_t *out_value) {
     *out_value = EMPTY_STRING_VALUE;
+    return NULL;
 }
 
 size_t no_children(const node_t *node) {

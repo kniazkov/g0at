@@ -32,16 +32,15 @@ size_t no_properties(const node_t *node);
  * @brief Universal "no property" getter stub (`get_property` implementation).
  *
  * This function is used for nodes that do not expose any properties.
- * Instead of leaving the outputs untouched, it explicitly assigns empty
- * values to both @p out_key and @p out_value to ensure predictable behavior.
+ * It assigns an empty value to @p out_value and returns NULL as the property key.
  *
  * @param node Unused parameter (interface compatibility).
  * @param index Unused parameter (interface compatibility).
- * @param out_key Output pointer that will be set to an empty @ref string_view_t.
  * @param out_value Output pointer that will be set to an empty @ref string_value_t.
+ * @return Always returns NULL.
  */
-void no_property(const node_t *node, size_t index,
-                 string_view_t *out_key, string_value_t *out_value);
+const wchar_t *no_property(const node_t *node, size_t index,
+                           string_value_t *out_value);
 
 /**
  * @brief Universal "no children" indicator for leaf nodes (`get_child_count ` implementation).

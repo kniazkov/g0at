@@ -141,15 +141,17 @@ typedef struct {
     /**
      * @brief Retrieves a property of this node by index.
      *
-     * Provides the indexed property (key–value pair) from the node.
+     * Provides the indexed property from the node. The property key is returned
+     * as a constant wide string, while the property value is written to the
+     * output parameter.
      *
      * @param node A pointer to the node.
      * @param index Zero-based index in range [0, get_property_count(node)).
-     * @param out_key Output pointer to receive the property key (name).
      * @param out_value Output pointer to receive the property value.
+     * @return Property key as a constant wide string, or NULL if the property is
+     *         not available.
      */
-    void (*get_property)(const node_t *node, size_t index,
-                         string_view_t *out_key, string_value_t *out_value);
+    const wchar_t *(*get_property)(const node_t *node, size_t index, string_value_t *out_value);
 
     /**
      * @brief Gets the number of child nodes.
@@ -500,17 +502,17 @@ static inline size_t get_node_property_count(const node_t *node) {
 /**
  * @brief Retrieves a property of a node by index.
  *
- * This helper dispatches to the node's virtual table and retrieves the
- * indexed property exposed by the node.
+ * This helper dispatches to the node's virtual table and retrieves the indexed
+ * property exposed by the node.
  *
  * @param node A pointer to the node.
  * @param index Zero-based property index.
- * @param out_key Output pointer to receive the property key.
  * @param out_value Output pointer to receive the property value.
+ * @return Property key as a constant wide string, or NULL if unavailable.
  */
-static inline void get_node_property(const node_t *node, size_t index,
-        string_view_t *out_key, string_value_t *out_value) {
-    node->vtbl->get_property(node, index, out_key, out_value);
+static inline const wchar_t *get_node_property(const node_t *node, size_t index,
+        string_value_t *out_value) {
+    return node->vtbl->get_property(node, index, out_value);
 }
 
 /**
