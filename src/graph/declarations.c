@@ -26,6 +26,7 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "analysis/abstract_state.h"
 #include "codegen/source_builder.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
@@ -299,6 +300,34 @@ static node_t* vdecln_get_child(const node_t *node, size_t index) {
 }
 
 /**
+ * @brief Executes abstract interpretation for a variable declaration statement.
+ *
+ * Walks through all variable declarators contained in the declaration and
+ * evaluates their initializer expressions, if present. For each initialized
+ * variable, the calculated lattice element is written into the current abstract
+ * state under the corresponding declarator key. 
+ * 
+ * Declarators without initializers are intentionally left untouched.
+ *
+ * @param node A pointer to the variable declaration node.
+ * @param state Current abstract state.
+ * @param arena Memory arena used for allocating lattice elements during
+ *        expression calculation.
+ * @return The same abstract state, updated with initialized variable bindings.
+ */
+static abstract_state_t *vdecln_execute(node_t *node, abstract_state_t *state, arena_t *arena) {
+    const variable_declaration_t* decl = (const variable_declaration_t *)node;
+    for (size_t index = 0; index < decl->decl_count; index++) {
+        variable_declarator_t *vdr = decl->decl_list[index];
+        if (vdr->initial) {
+            const lattice_element_t *element = calculate_expression(vdr->initial, arena);
+            set_in_abstract_state(state, &vdr->base, element);
+        }
+    }
+    return state;
+}
+
+/**
  * @brief Generates Goat source code for a variable declaration statement.
  * 
  * Produces the textual representation of a variable declaration including all its
@@ -392,7 +421,7 @@ static node_vtbl_t vdecln_vtbl = {
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
     .calculate = cannot_calculate,
-    .execute = execute_nothing,
+    .execute = vdecln_execute,
     .generate_goat_code = vdecln_generate_goat_code,
     .generate_indented_goat_code = vdecln_generate_indented_goat_code,
     .generate_bytecode = vdecln_generate_bytecode,
@@ -677,6 +706,32 @@ static node_t* cdecln_get_child(const node_t *node, size_t index) {
 }
 
 /**
+ * @brief Executes abstract interpretation for a constant declaration statement.
+ *
+ * Walks through all constant declarators contained in the declaration, evaluates
+ * each initializer expression, and stores the resulting lattice element in the
+ * current abstract state under the corresponding declarator key.
+ *
+ * Unlike variable declarations, constant declarations always have initializers,
+ * so every declarator is expected to produce an abstract value.
+ *
+ * @param node A pointer to the constant declaration node.
+ * @param state Current abstract state.
+ * @param arena Memory arena used for allocating lattice elements during
+ *        expression calculation.
+ * @return The same abstract state, updated with constant bindings.
+ */
+static abstract_state_t *cdecln_execute(node_t *node, abstract_state_t *state, arena_t *arena) {
+    const constant_declaration_t* decl = (const constant_declaration_t *)node;
+    for (size_t index = 0; index < decl->decl_count; index++) {
+        constant_declarator_t *cdr = decl->decl_list[index];
+        const lattice_element_t *element = calculate_expression(cdr->initial, arena);
+        set_in_abstract_state(state, &cdr->base, element);
+    }
+    return state;
+}
+
+/**
  * @brief Generates Goat source code for a constant declaration.
  * 
  * Produces the textual representation of a constant declaration including all
@@ -771,7 +826,7 @@ static node_vtbl_t cdecln_vtbl = {
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
     .calculate = cannot_calculate,
-    .execute = execute_nothing,
+    .execute = cdecln_execute,
     .generate_goat_code = cdecln_generate_goat_code,
     .generate_indented_goat_code = cdecln_generate_indented_goat_code,
     .generate_bytecode = cdecln_generate_bytecode,
