@@ -109,6 +109,31 @@ static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_
 }
 
 /**
+ * @brief Executes abstract interpretation for the root node.
+ *
+ * The root node represents the top-level sequence of program statements. Its
+ * abstract execution is therefore intentionally linear: the method walks through
+ * the statement list in source order and passes the current abstract state from
+ * one statement to the next.
+ *
+ * @param node A pointer to the root node.
+ * @param state Input abstract state before executing the program body.
+ * @param arena Memory arena used by node execution for lattice values and
+ *        analysis-time allocations.
+ * @return Abstract state after executing all top-level statements.
+ */
+static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
+    const root_node_t *root = (const root_node_t *)node;
+    list_item_t *item = root->statements->head;
+    while (item) {
+        statement_t *stmt = (statement_t*)item->value.ptr;
+        state = execute_statement(stmt, state, arena);
+        item = item->next;
+    }
+    return state;
+}
+
+/**
  * @brief Converts the root node to its string representation.
  * 
  * This function generates the string representation of the root node, which is simply
@@ -207,7 +232,7 @@ static node_vtbl_t root_node_vtbl = {
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
     .calculate = cannot_calculate,
-    .execute = execute_nothing,
+    .execute = execute,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
