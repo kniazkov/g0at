@@ -191,3 +191,32 @@ variable_declaration_pair_t create_synthetic_variable_declaration_node(arena_t *
  * @return Pointer to the built-in declarator singleton.
  */
 const declarator_t *get_builtin_declarator();
+
+/**
+ * @brief Gets the number of visualization/debug properties exposed by a declarator.
+ *
+ * Declarators expose the final abstract value inferred for the declared entity
+ * after abstract interpretation has flushed its results into the AST.
+ * If no abstract value has been inferred yet, the declarator exposes no
+ * properties.
+ *
+ * @param node A pointer to the declarator node.
+ * @return 1 if the declarator has an abstract value, otherwise 0.
+ */
+size_t get_property_count_of_declarator(const node_t *node);
+
+/**
+ * @brief Retrieves a visualization/debug property exposed by a declarator.
+ *
+ * Returns the `"abstract"` property when the declarator has a final abstract
+ * value attached to it.
+ * 
+ * @param node A pointer to the declarator node.
+ * @param index Zero-based property index.
+ * @param out_value Output pointer receiving the string representation of the
+ *        abstract value, or an empty string value if unavailable.
+ * @return Property key as a constant wide string, or NULL if the requested
+ *         property is not available.
+ */
+const wchar_t *get_property_of_declarator(const node_t *node, size_t index,
+        string_value_t *out_value);

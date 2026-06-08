@@ -27,9 +27,27 @@
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 #include "analysis/abstract_state.h"
+#include "analysis/lattice.h"
 #include "codegen/source_builder.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
+
+size_t get_property_count_of_declarator(const node_t *node) {
+    const declarator_t *decl = (const declarator_t *)node;
+    return decl->abstract_value ? 1 : 0;
+}
+
+const wchar_t *get_property_of_declarator(const node_t *node, size_t index,
+        string_value_t *out_value) {
+    const declarator_t *decl = (const declarator_t *)node;
+    if (index == 0 && decl->abstract_value) {
+        *out_value = lattice_to_string(decl->abstract_value);
+        return L"abstract";
+    } else {
+        *out_value = EMPTY_STRING_VALUE;
+        return NULL;
+    }
+}
 
 /**
  * @struct variable_declarator_t
@@ -199,8 +217,8 @@ static node_vtbl_t vdeclr_vtbl = {
     .type = NODE_VARIABLE_DECLARATOR,
     .type_name = L"variable declarator",
     .get_data = vdeclr_get_data,
-    .get_property_count = no_properties,
-    .get_property = no_property,
+    .get_property_count = get_property_count_of_declarator,
+    .get_property = get_property_of_declarator,
     .get_child_count = vdeclr_get_child_count,
     .get_child = vdeclr_get_child,
     .get_child_tag = vdeclr_get_child_tag,
@@ -605,8 +623,8 @@ static node_vtbl_t cdeclr_vtbl = {
     .type = NODE_CONSTANT_DECLARATOR,
     .type_name = L"constant declarator",
     .get_data = cdeclr_get_data,
-    .get_property_count = no_properties,
-    .get_property = no_property,
+    .get_property_count = get_property_count_of_declarator,
+    .get_property = get_property_of_declarator,
     .get_child_count = cdeclr_get_child_count,
     .get_child = cdeclr_get_child,
     .get_child_tag = cdeclr_get_child_tag,
