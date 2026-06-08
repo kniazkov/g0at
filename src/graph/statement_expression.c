@@ -86,6 +86,24 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
 }
 
 /**
+ * @brief Executes abstract interpretation for a statement expression.
+ *
+ * A statement expression is only a wrapper around an expression used in statement
+ * position. Its abstract execution therefore delegates directly to the wrapped
+ * expression and returns whatever state that expression produces.
+ *
+ * @param node A pointer to the statement expression node.
+ * @param state Current abstract state.
+ * @param arena Memory arena used for allocating lattice elements and other
+ *        analysis-time values.
+ * @return Abstract state after executing the wrapped expression.
+ */
+static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
+    const statement_expression_t *stmt = (const statement_expression_t *)node;
+    return execute_expression(stmt->wrapped, state, arena);
+}
+
+/**
  * @brief Converts the statement expression to its string representation.
  * 
  * This function generates the string representation of the statement expression, which is simply
@@ -164,7 +182,7 @@ static node_vtbl_t statement_expression_vtbl = {
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
     .calculate = cannot_calculate,
-    .execute = execute_nothing,
+    .execute = execute,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,

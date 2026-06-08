@@ -102,6 +102,21 @@ static inline const lattice_element_t *calculate_expression(const expression_t *
 }
 
 /**
+ * @brief Executes abstract interpretation for an expression.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param stmt A pointer to the expression.
+ * @param state Input abstract state.
+ * @param arena Memory arena for allocating lattice elements.
+ * @return Output abstract state after interpreting this expression.
+ */
+static inline abstract_state_t *execute_expression(expression_t *expr, abstract_state_t *state,
+        arena_t *arena) {
+    return execute_node(&expr->base, state, arena);
+}
+
+/**
  * @brief Generates a single-line Goat source code representation from an expression.
  *
  * This helper forwards the request to the underlying base node helper.

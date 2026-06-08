@@ -12,10 +12,13 @@
 #include "assignment.h"
 #include "statement.h"
 #include "declarations.h"
+#include "variable.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "analysis/abstract_state.h"
+#include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -34,6 +37,45 @@ typedef struct {
      */
     assignment_t base;
 } simple_assignment_t;
+
+/**
+ * @brief Executes abstract interpretation for a simple assignment expression.
+ *
+ * Handles assignments whose left operand is a variable. The right operand is
+ * evaluated into a lattice element, then this value is written to the abstract
+ * state under the declarator referenced by the left-hand variable.
+ *
+ * If the variable already has an abstract value in the current state, the old
+ * and new values are joined before storing the result.
+ *
+ * Non-variable assignment targets are ignored by this implementation and leave
+ * the state unchanged.
+ *
+ * @param node A pointer to the simple assignment expression node.
+ * @param state Current abstract state.
+ * @param arena Memory arena used for calculating expressions and allocating
+ *        joined lattice elements.
+ * @return The same abstract state, updated when the assignment target is a
+ *         variable.
+ */
+static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
+    simple_assignment_t *expr = (simple_assignment_t *)node;
+    if (expr->base.left_operand->base.base.vtbl->type == NODE_VARIABLE) {
+        variable_t *var = (variable_t*)(expr->base.left_operand);
+        const lattice_element_t *old_value = get_from_abstract_state(state, var->declarator);
+        const lattice_element_t *new_value = calculate_expression(expr->base.right_operand, arena);
+        if (old_value == NULL) {
+            set_in_abstract_state(state, var->declarator, new_value);
+        } else {
+            set_in_abstract_state(
+                state,
+                var->declarator,
+                lattice_join(arena, old_value, new_value)
+            );
+        }
+    }
+    return state;
+}
 
 /**
  * @brief Converts an assignment operation to its string representation.
@@ -110,7 +152,7 @@ static node_vtbl_t simple_assignment_vtbl = {
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
     .calculate = cannot_calculate,
-    .execute = execute_nothing,
+    .execute = execute,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode
