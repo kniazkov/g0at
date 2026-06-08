@@ -130,3 +130,15 @@ relation_type_t no_relation_type(const node_t *node, size_t index);
  * @return Bottom lattice element.
  */
 const lattice_element_t *cannot_calculate(const node_t *node, arena_t *arena);
+
+/**
+ * @brief Default abstract execution for nodes without state effects.
+ *
+ * This method performs no abstract interpretation work and simply returns the
+ * input state unchanged.
+ *
+ * @param node A pointer to the node.
+ * @param state Input abstract state.
+ * @return The same abstract state.
+ */
+abstract_state_t *execute_nothing(node_t *node, abstract_state_t *state);

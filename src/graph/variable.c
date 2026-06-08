@@ -174,6 +174,7 @@ static node_vtbl_t variable_vtbl = {
     .get_related = get_related,
     .get_relation_type = get_relation_type,
     .calculate = cannot_calculate,
+    .execute = execute_nothing,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,

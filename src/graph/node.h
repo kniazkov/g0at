@@ -72,6 +72,12 @@ typedef struct list_t list_t;
 typedef struct lattice_element_t lattice_element_t;
 
 /**
+ * @typedef abstract_state_t
+ * @brief Forward declaration for an abstract interpreter state.
+ */
+typedef struct abstract_state_t abstract_state_t;
+
+/**
  * @struct node_vtbl_t
  * @brief The virtual table structure for nodes in the syntax tree.
  * 
@@ -267,6 +273,19 @@ typedef struct {
      * @return Constant pointer to the calculated lattice element.
      */
     const lattice_element_t *(*calculate)(const node_t *node, arena_t *arena);
+
+    /**
+     * @brief Executes abstract interpretation for this node.
+     *
+     * Takes the current abstract state, applies the node-specific abstract
+     * semantics, and returns the resulting abstract state. The returned state
+     * may be the same object or a newly allocated state.
+     *
+     * @param node A pointer to the node.
+     * @param state Input abstract state.
+     * @return Output abstract state after interpreting this node.
+     */
+    abstract_state_t *(*execute)(node_t *node, abstract_state_t *state);
 
     /**
      * @brief Generates a single-line Goat source code representation of the node.
@@ -619,6 +638,19 @@ static inline relation_type_t get_node_relation_type(const node_t *node, size_t 
  */
 static inline const lattice_element_t *calculate_node(const node_t *node, arena_t *arena) {
     return node->vtbl->calculate(node, arena);
+}
+
+/**
+ * @brief Executes abstract interpretation for a node.
+ *
+ * This helper dispatches to the node's virtual table.
+ *
+ * @param node A pointer to the node.
+ * @param state Input abstract state.
+ * @return Output abstract state after interpreting this node.
+ */
+static inline abstract_state_t *execute_node(node_t *node, abstract_state_t *state) {
+    return node->vtbl->execute(node, state);
 }
 
 /**

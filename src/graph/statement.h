@@ -126,6 +126,19 @@ static inline const wchar_t *get_statement_child_tag(const statement_t *stmt, si
 }
 
 /**
+ * @brief Executes abstract interpretation for a statement.
+ *
+ * This helper forwards the request to the underlying base node helper.
+ *
+ * @param stmt A pointer to the statement.
+ * @param state Input abstract state.
+ * @return Output abstract state after interpreting this statement.
+ */
+static inline abstract_state_t *execute_statement(statement_t *stmt, abstract_state_t *state) {
+    return execute_node(&stmt->base, state);
+}
+
+/**
  * @brief Generates a single-line Goat source code representation from a statement.
  *
  * This helper forwards the request to the underlying base node helper.

@@ -130,6 +130,7 @@ static node_vtbl_t integer_vtbl = {
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
     .calculate = calculate,
+    .execute = execute_nothing,
     .generate_goat_code = get_data_and_generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
