@@ -14,6 +14,7 @@
 #include <assert.h>
 
 #include "analysis.h"
+#include "interpreter.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/queue.h"
@@ -413,6 +414,11 @@ compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options
         assign_scope_to_subtree(insertion->item, insertion->target, insertion->target->scope);
     }
     destroy_vector_ex(insertions, FREE);
+
+    /*
+        Perform an abstract interpretation. This will complete the syntax tree.
+    */
+    interpret(root_node, memory);
 
     // ... further analysis ...
     return errors;

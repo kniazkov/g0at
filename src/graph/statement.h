@@ -132,10 +132,12 @@ static inline const wchar_t *get_statement_child_tag(const statement_t *stmt, si
  *
  * @param stmt A pointer to the statement.
  * @param state Input abstract state.
+ * @param arena Memory arena for allocating lattice elements.
  * @return Output abstract state after interpreting this statement.
  */
-static inline abstract_state_t *execute_statement(statement_t *stmt, abstract_state_t *state) {
-    return execute_node(&stmt->base, state);
+static inline abstract_state_t *execute_statement(statement_t *stmt, abstract_state_t *state,
+        arena_t *arena) {
+    return execute_node(&stmt->base, state, arena);
 }
 
 /**

@@ -139,6 +139,7 @@ const lattice_element_t *cannot_calculate(const node_t *node, arena_t *arena);
  *
  * @param node A pointer to the node.
  * @param state Input abstract state.
+ * @param arena Memory arena for allocating lattice elements (unused).
  * @return The same abstract state.
  */
-abstract_state_t *execute_nothing(node_t *node, abstract_state_t *state);
+abstract_state_t *execute_nothing(node_t *node, abstract_state_t *state, arena_t *arena);

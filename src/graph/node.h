@@ -283,9 +283,10 @@ typedef struct {
      *
      * @param node A pointer to the node.
      * @param state Input abstract state.
+     * @param arena Memory arena for allocating lattice elements.
      * @return Output abstract state after interpreting this node.
      */
-    abstract_state_t *(*execute)(node_t *node, abstract_state_t *state);
+    abstract_state_t *(*execute)(node_t *node, abstract_state_t *state, arena_t *arena);
 
     /**
      * @brief Generates a single-line Goat source code representation of the node.
@@ -647,10 +648,12 @@ static inline const lattice_element_t *calculate_node(const node_t *node, arena_
  *
  * @param node A pointer to the node.
  * @param state Input abstract state.
+ * @param arena Memory arena for allocating lattice elements.
  * @return Output abstract state after interpreting this node.
  */
-static inline abstract_state_t *execute_node(node_t *node, abstract_state_t *state) {
-    return node->vtbl->execute(node, state);
+static inline abstract_state_t *execute_node(node_t *node, abstract_state_t *state,
+        arena_t *arena) {
+    return node->vtbl->execute(node, state, arena);
 }
 
 /**
