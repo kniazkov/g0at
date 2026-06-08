@@ -6,6 +6,7 @@
 
 #include "abstract_state.h"
 #include "lib/allocate.h"
+#include "graph/declarations.h"
 
 /**
  * @brief Compares declarator pointers.
@@ -19,7 +20,7 @@ static int declarator_comparator(const void *left, const void *right) {
         return -1;
     }
     if (left > right) {
-        return 1;
+        return +1;
     }
     return 0;
 }
@@ -104,6 +105,23 @@ void abstract_state_for_each(const abstract_state_t *state,
     };
 
     avl_tree_for_each(state->values, abstract_state_for_each_adapter, &context);
+}
+
+/**
+ * @brief Writes one abstract state binding into its declarator.
+ *
+ * @param user_data Unused.
+ * @param declarator Declarator to update.
+ * @param value Abstract value to store in the declarator.
+ */
+static void flush_abstract_state_entry(void *user_data,
+        const declarator_t *declarator, const lattice_element_t *value) {
+    (void)user_data;
+    ((declarator_t*)declarator)->abstract_value = value;
+}
+
+void flush_abstract_state(const abstract_state_t *state) {
+    abstract_state_for_each(state, flush_abstract_state_entry, NULL);
 }
 
 void destroy_abstract_state(abstract_state_t *state) {

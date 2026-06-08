@@ -123,6 +123,19 @@ void abstract_state_for_each(const abstract_state_t *state,
         void *user_data);
 
 /**
+ * @brief Flushes abstract values from the state into their declarators.
+ *
+ * Walks through all bindings stored in the abstract state and writes each
+ * lattice element into the corresponding declarator's `abstract_value` field.
+ *
+ * This turns the temporary program-point state into facts attached directly to
+ * the AST, where later compiler stages and graph visualization can use them.
+ *
+ * @param state Source abstract state.
+ */
+void flush_abstract_state(const abstract_state_t *state);
+
+/**
  * @brief Destroys an abstract state and all its AVL nodes.
  *
  * Does not destroy declarators or lattice elements, only the state container.

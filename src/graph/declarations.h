@@ -19,6 +19,12 @@
 typedef struct expression_t expression_t;
 
 /**
+ * @typedef lattice_element_t
+ * @brief Forward declaration for an abstract-interpretation lattice element.
+ */
+typedef struct lattice_element_t lattice_element_t;
+
+/**
  * @struct declarator_spec_t
  * @brief Represents a single declaration specification.
  *
@@ -63,6 +69,49 @@ typedef struct declarator_t {
      * @brief The name of the declared entity.
      */
     string_view_t name;
+
+    /**
+     * @brief Final abstract value inferred for this declaration.
+     *
+     * This field is filled by the abstract interpretation pass after name
+     * resolution, scope analysis, and declaration binding have already been
+     * completed.
+     *
+     * Unlike the abstract state used during interpretation, this field does not
+     * describe a temporary program point. It stores the final summarized fact
+     * known about the declared entity after all relevant control-flow paths have
+     * been processed and joined. In human terms, this is where the compiler stops
+     * thinking and writes down the least embarrassing answer it managed to prove.
+     *
+     * For example:
+     *
+     *     var x = 0;
+     *
+     * may initially produce the abstract value:
+     *
+     *     integer constant 0
+     *
+     * while:
+     *
+     *     if (condition) {
+     *         x = 1;
+     *     }
+     *
+     * may later widen the final declaration fact to:
+     *
+     *     integer interval [0..1]
+     *
+     * The value is stored directly in the declarator so later compiler stages can
+     * use it without replaying the analysis. Code generation may use this fact for
+     * constant folding, narrowing runtime checks, selecting more specific bytecode,
+     * or eventually emitting more efficient native C code. Naturally, this also
+     * gives the compiler another opportunity to feel superior to the source code.
+     *
+     * The visualization layer may also print this field in the AST graph, making
+     * abstract interpretation results visible next to the declaration that owns
+     * them.
+     */
+    const lattice_element_t *abstract_value;
 } declarator_t;
 
 /**
