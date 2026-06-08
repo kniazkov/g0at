@@ -99,6 +99,47 @@ string_value_t trim_and_escape_html_entities(string_value_t input) {
 }
 
 /**
+ * @brief Builds a table with additional node properties.
+ *
+ * Uses the node virtual-table helpers to retrieve debug/visualization
+ * properties exposed by the node. If the node has no properties, returns an
+ * empty string value.
+ *
+ * The resulting string is intended to be embedded directly into a GraphViz HTML
+ * label below the node's main data.
+ *
+ * @param node Node whose properties should be rendered.
+ * @return HTML fragment with a two-column property table, or empty string.
+ */
+static string_value_t build_node_properties_html(const node_t *node) {
+    size_t count = get_node_property_count(node);
+    if (count == 0) {
+        return EMPTY_STRING_VALUE;
+    }
+
+    string_value_t result = EMPTY_STRING_VALUE;
+    string_builder_t builder = {0};
+    for (size_t index = 0; index < count; index++) {
+        string_value_t value = EMPTY_STRING_VALUE;
+        const wchar_t *key = get_node_property(node, index, &value);
+        if (key == NULL) {
+            FREE_STRING(value);
+            continue;
+        }
+        string_value_t escaped_value = trim_and_escape_html_entities(value);
+        append_string(&builder, L"<br/>");
+        append_string(&builder, key);
+        append_string(&builder, L": <font color='blue'>");
+        append_string_value(&builder, escaped_value);
+        result = append_string(&builder, L"</font>");
+
+        FREE_STRING(escaped_value);
+        FREE_STRING(value);
+    }
+    return result;
+}
+
+/**
  * @brief Recursively converts an AST node and its child subtree to DOT format.
  *
  * Emits the DOT node definition for the given AST node, recursively emits all
@@ -140,6 +181,7 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
     set_in_avl_tree(nodes_to_ids, (void*)node, (value_t){ .uint32_val = id });        
     const wchar_t* name = node->vtbl->type_name;
     string_value_t value = get_node_data(node);
+    string_value_t properties = build_node_properties_html(node);
     const wchar_t *node_color = node->id ? L"black" : L"silver";
     if (value.length > 0) {
         const wchar_t *font_color = L"blue";
@@ -155,15 +197,28 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
             builder,
             indent,
             format_string(
-                L"node_%u [label=<%s<br/><font color='%s'>%s</font>> color=%s];",
+                L"node_%u [label=<%s<br/><font color='%s'>%s</font>%s> color=%s];",
                 id,
                 name,
                 font_color,
                 formatted_value.data,
+                properties.data,
                 node_color
             )
         );
         FREE_STRING(formatted_value);
+    } else if (properties.length > 0) {
+        add_formatted_source(
+            builder,
+            indent,
+            format_string(
+                L"node_%u [label=<%s%s> color=%s];",
+                id,
+                name,
+                properties.data,
+                node_color
+            )
+        );
     } else {
         add_formatted_source(
             builder,
@@ -176,6 +231,7 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
             )
         );
     }
+    FREE_STRING(properties);
     FREE_STRING(value);
     size_t count = get_node_child_count(node);
     for (size_t index = 0; index < count; index++) {
