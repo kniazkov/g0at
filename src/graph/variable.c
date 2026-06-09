@@ -16,6 +16,8 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "analysis/abstract_state.h"
+#include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -81,6 +83,33 @@ static relation_type_t get_relation_type(const node_t *node, size_t index) {
         return RELATION_DECLARATION;
     }
     return RELATION_NONE;
+}
+
+/**
+ * @brief Calculates the abstract value of a variable expression.
+ *
+ * Looks up the variable's bound declarator in the current abstract state and
+ * returns the current lattice value associated with it.
+ *
+ * If the declarator has no entry in the state yet, the variable is treated as
+ * `null`: a null lattice element is created, stored in the state, and returned.
+ * This gives unresolved-or-not-yet-written variables a concrete abstract fact
+ * instead of leaving a delightful little NULL pointer trap for the next pass.
+ *
+ * @param node A pointer to the variable expression node.
+ * @param state Current abstract state.
+ * @param arena Memory arena used by the calculation interface. This
+ *        implementation does not allocate from it directly.
+ * @return Current abstract value of the variable.
+ */
+static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
+    const variable_t *expr = (const variable_t *)node;
+    const lattice_element_t *value = get_from_abstract_state(state, expr->declarator);
+    if (!value) {
+        value = make_null_element();
+        set_in_abstract_state(state, expr->declarator, value);
+    }
+    return value;
 }
 
 /**
@@ -175,7 +204,7 @@ static node_vtbl_t variable_vtbl = {
     .get_related_count = get_related_count,
     .get_related = get_related,
     .get_relation_type = get_relation_type,
-    .calculate = cannot_calculate,
+    .calculate = calculate,
     .execute = execute_nothing,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,

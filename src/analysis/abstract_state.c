@@ -108,15 +108,6 @@ static void destroy_value(value_t value) {
     }
 }
 
-/**
- * @brief Creates an empty abstract state.
- *
- * Allocates a state object and creates its AVL tree. The tree is configured to
- * share lattice-pair values through reference counting when cloned or destroyed.
- *
- * @param arena Arena used later for lattice operations such as joins.
- * @return Pointer to the newly created abstract state.
- */
 abstract_state_t *create_abstract_state(arena_t *arena) {
     abstract_state_t *state = (abstract_state_t*)ALLOC(sizeof(abstract_state_t));
     state->arena = arena;
@@ -126,15 +117,6 @@ abstract_state_t *create_abstract_state(arena_t *arena) {
     return state;
 }
 
-/**
- * @brief Clones an abstract state.
- *
- * The AVL tree is cloned while preserving its shape. Lattice-pair values are
- * shared through the AVL copy callback, which increments their reference counts.
- *
- * @param state Source abstract state.
- * @return Newly allocated clone, or NULL if `state` is NULL.
- */
 abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     if (!state) {
         return NULL;
@@ -145,18 +127,6 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     return copy;
 }
 
-/**
- * @brief Sets the current abstract value for a declarator.
- *
- * If the declarator is already present, its current value is overwritten and
- * its summary is updated by joining the previous summary with the new value.
- * If the declarator is not present, a new lattice-pair record is allocated.
- *
- * @param state Target abstract state.
- * @param declarator Declarator whose value should be updated.
- * @param value New current abstract value.
- * @return Previous current value if the declarator existed, otherwise NULL.
- */
 const lattice_element_t *set_in_abstract_state(abstract_state_t *state,
         const declarator_t *declarator, const lattice_element_t *value) {
     lattice_pair_t *pair = (lattice_pair_t*)get_from_avl_tree(
@@ -178,16 +148,6 @@ const lattice_element_t *set_in_abstract_state(abstract_state_t *state,
     }
 }
 
-/**
- * @brief Gets the current abstract value for a declarator.
- *
- * Looks up the declarator in the state and returns the pair's current value.
- * The summary value is intentionally not returned here.
- *
- * @param state Source abstract state.
- * @param declarator Declarator to look up.
- * @return Current abstract value if present, otherwise NULL.
- */
 const lattice_element_t *get_from_abstract_state(const abstract_state_t *state,
         const declarator_t *declarator) {
     lattice_pair_t *pair = (lattice_pair_t*)get_from_avl_tree(
@@ -197,13 +157,6 @@ const lattice_element_t *get_from_abstract_state(const abstract_state_t *state,
     return pair ? pair->current : NULL;
 }
 
-/**
- * @brief Checks whether the state contains a declarator entry.
- *
- * @param state Source abstract state.
- * @param declarator Declarator to look up.
- * @return true if the declarator is present, false otherwise.
- */
 bool abstract_state_contains(const abstract_state_t *state, const declarator_t *declarator) {
     return avl_tree_contains(state->values, (void*)declarator);
 }
@@ -224,28 +177,10 @@ static void flush_abstract_state_entry(void *user_data, void* key, value_t value
     declarator->abstract_value = pair->summary;
 }
 
-/**
- * @brief Writes accumulated summaries from the state into AST declarators.
- *
- * Iterates over all stored declarations and copies each pair's summary value
- * into the corresponding declarator. After this, the AST carries the final
- * declaration-level abstract facts used by graph visualization and later
- * compiler stages.
- *
- * @param state Source abstract state.
- */
 void flush_abstract_state(const abstract_state_t *state) {
     avl_tree_for_each(state->values, flush_abstract_state_entry, NULL);
 }
 
-/**
- * @brief Destroys an abstract state.
- *
- * Destroys the AVL tree, which releases all stored lattice-pair records through
- * the configured value destroy callback, then frees the state object.
- *
- * @param state Abstract state to destroy.
- */
 void destroy_abstract_state(abstract_state_t *state) {
     if (state) {
         destroy_avl_tree(state->values);
