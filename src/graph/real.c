@@ -44,10 +44,11 @@ typedef struct {
  * real constant lattice element containing the value stored in the node.
  *
  * @param node A pointer to the real number node.
+ * @param state Current abstract state.
  * @param arena Memory arena used to allocate the resulting lattice element.
  * @return Constant pointer to the calculated real constant lattice element.
  */
-static const lattice_element_t *calculate(const node_t *node, arena_t *arena) {
+static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const real_t *expr = (const real_t *)node;
     return make_real_constant_element(arena, expr->value);
 }

@@ -88,19 +88,25 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
 /**
  * @brief Executes abstract interpretation for a statement expression.
  *
- * A statement expression is only a wrapper around an expression used in statement
- * position. Its abstract execution therefore delegates directly to the wrapped
- * expression and returns whatever state that expression produces.
+ * A statement expression is a wrapper around an expression used in statement
+ * position. Its abstract execution evaluates the wrapped expression for its
+ * abstract value and, more importantly, for any side effects it may apply to the
+ * current abstract state.
+ *
+ * The calculated value itself is ignored, because statements do not produce
+ * values for surrounding expressions. Any state changes performed by the wrapped
+ * expression remain in the current state.
  *
  * @param node A pointer to the statement expression node.
  * @param state Current abstract state.
  * @param arena Memory arena used for allocating lattice elements and other
  *        analysis-time values.
- * @return Abstract state after executing the wrapped expression.
+ * @return The same abstract state, possibly modified by the wrapped expression.
  */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
-    return execute_expression(stmt->wrapped, state, arena);
+    calculate_expression(stmt->wrapped, state, arena);
+    return state;
 }
 
 /**

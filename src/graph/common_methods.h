@@ -124,11 +124,16 @@ relation_type_t no_relation_type(const node_t *node, size_t index);
 /**
  * @brief Default abstract-value calculation for nodes that do not produce a value.
  *
+ * This method ignores the current abstract state and returns the bottom lattice
+ * element. It is used as a safe default for nodes that cannot be meaningfully
+ * calculated as expressions.
+ *
  * @param node A pointer to the node.
+ * @param state Current abstract state, unused by the default implementation.
  * @param arena Memory arena for allocation, unused by the default implementation.
  * @return Bottom lattice element.
  */
-const lattice_element_t *cannot_calculate(const node_t *node, arena_t *arena);
+const lattice_element_t *cannot_calculate(node_t *node, abstract_state_t *state, arena_t *arena);
 
 /**
  * @brief Default abstract execution for nodes without state effects.

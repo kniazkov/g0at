@@ -340,7 +340,7 @@ static abstract_state_t *vdecln_execute(node_t *node, abstract_state_t *state, a
     for (size_t index = 0; index < decl->decl_count; index++) {
         variable_declarator_t *vdr = decl->decl_list[index];
         if (vdr->initial) {
-            const lattice_element_t *element = calculate_expression(vdr->initial, arena);
+            const lattice_element_t *element = calculate_expression(vdr->initial, state, arena);
             set_in_abstract_state(state, &vdr->base, element);
         }
     }
@@ -749,7 +749,7 @@ static abstract_state_t *cdecln_execute(node_t *node, abstract_state_t *state, a
     const constant_declaration_t* decl = (const constant_declaration_t *)node;
     for (size_t index = 0; index < decl->decl_count; index++) {
         constant_declarator_t *cdr = decl->decl_list[index];
-        const lattice_element_t *element = calculate_expression(cdr->initial, arena);
+        const lattice_element_t *element = calculate_expression(cdr->initial, state, arena);
         set_in_abstract_state(state, &cdr->base, element);
     }
     return state;

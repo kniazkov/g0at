@@ -56,7 +56,7 @@ relation_type_t no_relation_type(const node_t *node, size_t index) {
     return RELATION_NONE;
 }
 
-const lattice_element_t *cannot_calculate(const node_t *node, arena_t *arena) {
+const lattice_element_t *cannot_calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     return make_bottom_element();
 }
 

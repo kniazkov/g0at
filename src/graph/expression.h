@@ -96,24 +96,9 @@ static inline const wchar_t *get_expression_child_tag(const expression_t *expr, 
  * @param arena Memory arena for allocating lattice elements.
  * @return Constant pointer to the calculated lattice element.
  */
-static inline const lattice_element_t *calculate_expression(const expression_t *expr,
-        arena_t *arena) {
-    return calculate_node(&expr->base, arena);
-}
-
-/**
- * @brief Executes abstract interpretation for an expression.
- *
- * This helper forwards the request to the underlying base node helper.
- *
- * @param stmt A pointer to the expression.
- * @param state Input abstract state.
- * @param arena Memory arena for allocating lattice elements.
- * @return Output abstract state after interpreting this expression.
- */
-static inline abstract_state_t *execute_expression(expression_t *expr, abstract_state_t *state,
-        arena_t *arena) {
-    return execute_node(&expr->base, state, arena);
+static inline const lattice_element_t *calculate_expression(expression_t *expr,
+        abstract_state_t *state, arena_t *arena) {
+    return calculate_node(&expr->base, state, arena);
 }
 
 /**

@@ -62,10 +62,11 @@ static string_value_t get_data(const node_t *node) {
  * node.
  *
  * @param node A pointer to the static string node.
+ * @param state Current abstract state.
  * @param arena Memory arena used to allocate the resulting lattice element.
  * @return Constant pointer to the calculated string constant lattice element.
  */
-static const lattice_element_t *calculate(const node_t *node, arena_t *arena) {
+static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const static_string_t *expr = (const static_string_t *)node;
     return make_string_constant_element(arena, expr->string);
 }

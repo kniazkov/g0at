@@ -45,10 +45,11 @@ typedef struct {
  * integer constant lattice element containing the literal value stored in the node.
  *
  * @param node A pointer to the integer literal node.
+ * @param state Current abstract state.
  * @param arena Memory arena used to allocate the resulting lattice element.
  * @return Constant pointer to the calculated integer constant lattice element.
  */
-static const lattice_element_t *calculate(const node_t *node, arena_t *arena) {
+static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const integer_t *expr = (const integer_t *)node;
     return make_integer_constant_element(arena, expr->value);
 }

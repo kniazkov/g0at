@@ -267,14 +267,20 @@ typedef struct {
     /**
      * @brief Calculates the abstract lattice element represented by this node.
      *
-     * Used by static analysis to infer the abstract value produced by a syntax-tree
-     * node. Concrete node implementations may override this method.
+     * Takes the current abstract state and computes the lattice element produced
+     * by this node at the current program point. The method must always return
+     * a lattice element, but it does not have to modify the state.
+     *
+     * Most expression nodes only read from the state. Nodes with side effects may
+     * update it, but substantial state transitions should normally be implemented
+     * by `execute`.
      *
      * @param node A pointer to the node.
+     * @param state Current abstract state.
      * @param arena Memory arena for allocating lattice elements.
      * @return Constant pointer to the calculated lattice element.
      */
-    const lattice_element_t *(*calculate)(const node_t *node, arena_t *arena);
+    const lattice_element_t *(*calculate)(node_t *node, abstract_state_t *state, arena_t *arena);
 
     /**
      * @brief Executes abstract interpretation for this node.
@@ -636,11 +642,13 @@ static inline relation_type_t get_node_relation_type(const node_t *node, size_t 
  * This helper dispatches to the node's virtual table.
  *
  * @param node A pointer to the node.
+ * @param state Current abstract state.
  * @param arena Memory arena for allocating lattice elements.
  * @return Constant pointer to the calculated lattice element.
  */
-static inline const lattice_element_t *calculate_node(const node_t *node, arena_t *arena) {
-    return node->vtbl->calculate(node, arena);
+static inline const lattice_element_t *calculate_node(node_t *node, abstract_state_t *state,
+        arena_t *arena) {
+    return node->vtbl->calculate(node, state, arena);
 }
 
 /**
