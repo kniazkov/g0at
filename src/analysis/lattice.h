@@ -169,7 +169,7 @@ struct lattice_element_t {
 };
 
 /**
- * @struct integer_range_lattice_element_t
+ * @struct integer_range_element_t
  * @brief Integer range lattice element.
  */
 typedef struct {
@@ -187,10 +187,10 @@ typedef struct {
      * @brief Inclusive upper bound.
      */
     int64_t max;
-} integer_range_lattice_element_t;
+} integer_range_element_t;
 
 /**
- * @struct integer_constant_lattice_element_t
+ * @struct integer_constant_element_t
  * @brief Integer constant lattice element.
  */
 typedef struct {
@@ -203,10 +203,10 @@ typedef struct {
      * @brief Exact integer value.
      */
     int64_t value;
-} integer_constant_lattice_element_t;
+} integer_constant_element_t;
 
 /**
- * @struct real_constant_lattice_element_t
+ * @struct real_constant_element_t
  * @brief Real constant lattice element.
  */
 typedef struct {
@@ -219,10 +219,10 @@ typedef struct {
      * @brief Exact real value.
      */
     double value;
-} real_constant_lattice_element_t;
+} real_constant_element_t;
 
 /**
- * @struct string_constant_lattice_element_t
+ * @struct string_constant_element_t
  * @brief String constant lattice element.
  */
 typedef struct {
@@ -235,10 +235,10 @@ typedef struct {
      * @brief Exact string value.
      */
     string_view_t value;
-} string_constant_lattice_element_t;
+} string_constant_element_t;
 
 /**
- * @struct typed_array_lattice_element_t
+ * @struct typed_array_element_t
  * @brief Typed array lattice element.
  */
 typedef struct {
@@ -251,7 +251,201 @@ typedef struct {
      * @brief Lattice type of array elements.
      */
     lattice_type_t element_type;
-} typed_array_lattice_element_t;
+} typed_array_element_t;
+
+/**
+ * @brief Checks whether a lattice type represents an integer-like value.
+ *
+ * Integer constants and integer ranges are treated as integer values too,
+ * because precision is not a separate type universe, как ни странно.
+ *
+ * @param type Lattice type to check.
+ * @return true if the type belongs to the integer domain.
+ */
+static inline bool is_integer_lattice_type(lattice_type_t type) {
+    return type == LATTICE_INTEGER ||
+           type == LATTICE_INTEGER_RANGE ||
+           type == LATTICE_INTEGER_CONSTANT;
+}
+
+/**
+ * @brief Checks whether a lattice element represents an integer-like value.
+ *
+ * @param element Lattice element to check.
+ * @return true if the element belongs to the integer domain.
+ */
+static inline bool is_integer_lattice_element(const lattice_element_t *element) {
+    return element && is_integer_lattice_type(element->type);
+}
+
+/**
+ * @brief Checks whether a lattice type represents a real-like value.
+ *
+ * @param type Lattice type to check.
+ * @return true if the type belongs to the real domain.
+ */
+static inline bool is_real_lattice_type(lattice_type_t type) {
+    return type == LATTICE_REAL ||
+           type == LATTICE_REAL_CONSTANT;
+}
+
+/**
+ * @brief Checks whether a lattice element represents a real-like value.
+ *
+ * @param element Lattice element to check.
+ * @return true if the element belongs to the real domain.
+ */
+static inline bool is_real_lattice_element(const lattice_element_t *element) {
+    return element && is_real_lattice_type(element->type);
+}
+
+/**
+ * @brief Checks whether a lattice type represents a numeric value.
+ *
+ * Includes broad numeric values, integers, integer ranges, integer constants,
+ * reals, and real constants.
+ *
+ * @param type Lattice type to check.
+ * @return true if the type belongs to the numeric domain.
+ */
+static inline bool is_numeric_lattice_type(lattice_type_t type) {
+    return type == LATTICE_NUMERIC ||
+           is_integer_lattice_type(type) ||
+           is_real_lattice_type(type);
+}
+
+/**
+ * @brief Checks whether a lattice element represents a numeric value.
+ *
+ * @param element Lattice element to check.
+ * @return true if the element belongs to the numeric domain.
+ */
+static inline bool is_numeric_lattice_element(const lattice_element_t *element) {
+    return element && is_numeric_lattice_type(element->type);
+}
+
+/**
+ * @brief Checks whether a lattice type represents a string-like value.
+ *
+ * @param type Lattice type to check.
+ * @return true if the type belongs to the string domain.
+ */
+static inline bool is_string_lattice_type(lattice_type_t type) {
+    return type == LATTICE_STRING ||
+           type == LATTICE_STRING_CONSTANT;
+}
+
+/**
+ * @brief Checks whether a lattice element represents a string-like value.
+ *
+ * @param element Lattice element to check.
+ * @return true if the element belongs to the string domain.
+ */
+static inline bool is_string_lattice_element(const lattice_element_t *element) {
+    return element && is_string_lattice_type(element->type);
+}
+
+/**
+ * @brief Checks whether a lattice type represents a boolean-like value.
+ *
+ * @param type Lattice type to check.
+ * @return true if the type belongs to the boolean domain.
+ */
+static inline bool is_boolean_lattice_type(lattice_type_t type) {
+    return type == LATTICE_BOOLEAN ||
+           type == LATTICE_TRUE ||
+           type == LATTICE_FALSE;
+}
+
+/**
+ * @brief Checks whether a lattice element represents a boolean-like value.
+ *
+ * @param element Lattice element to check.
+ * @return true if the element belongs to the boolean domain.
+ */
+static inline bool is_boolean_lattice_element(const lattice_element_t *element) {
+    return element && is_boolean_lattice_type(element->type);
+}
+
+/**
+ * @brief Checks whether a lattice type represents an array-like value.
+ *
+ * @param type Lattice type to check.
+ * @return true if the type belongs to the array domain.
+ */
+static inline bool is_array_lattice_type(lattice_type_t type) {
+    return type == LATTICE_ARRAY ||
+           type == LATTICE_TYPED_ARRAY;
+}
+
+/**
+ * @brief Checks whether a lattice element represents an array-like value.
+ *
+ * @param element Lattice element to check.
+ * @return true if the element belongs to the array domain.
+ */
+static inline bool is_array_lattice_element(const lattice_element_t *element) {
+    return element && is_array_lattice_type(element->type);
+}
+
+/**
+ * @brief Checks whether a lattice type represents a user-defined object.
+ *
+ * @param type Lattice type to check.
+ * @return true if the type belongs to the user-defined object domain.
+ */
+static inline bool is_user_defined_object_lattice_type(lattice_type_t type) {
+    return type == LATTICE_USER_DEFINED_OBJECT;
+}
+
+/**
+ * @brief Checks whether a lattice element represents a user-defined object.
+ *
+ * @param element Lattice element to check.
+ * @return true if the element belongs to the user-defined object domain.
+ */
+static inline bool is_user_defined_object_lattice_element(const lattice_element_t *element) {
+    return element && is_user_defined_object_lattice_type(element->type);
+}
+
+/**
+ * @brief Checks whether a lattice type may participate in `+`.
+ *
+ * In Goat, addition is abstractly meaningful for numeric addition, string
+ * concatenation, array concatenation, and user-defined object addition.
+ *
+ * User-defined objects are considered addable because the left operand may
+ * define or dispatch a custom `+` operator. The result of such operation is
+ * conservatively unknown.
+ *
+ * @param type Lattice type to check.
+ * @return true if the type is accepted by abstract addition.
+ */
+static inline bool is_addable_lattice_type(lattice_type_t type) {
+    return type == LATTICE_TOP ||
+           type == LATTICE_NOT_NULL ||
+           is_numeric_lattice_type(type) ||
+           is_string_lattice_type(type) ||
+           is_array_lattice_type(type) ||
+           is_user_defined_object_lattice_type(type);
+}
+
+/**
+ * @brief Checks whether a lattice element may participate in `+`.
+ *
+ * In Goat, addition is abstractly meaningful for numeric addition, string
+ * concatenation, array concatenation, and user-defined object addition.
+ *
+ * This is just the element-level wrapper around `is_addable_lattice_type()`,
+ * because apparently even one-line helpers need paperwork in C.
+ *
+ * @param element Lattice element to check.
+ * @return true if the element is not NULL and its type is accepted by abstract
+ *         addition.
+ */
+static inline bool is_addable_lattice_element(const lattice_element_t *element) {
+    return element && is_addable_lattice_type(element->type);
+}
 
 /**
  * @brief Gets the top lattice element singleton.

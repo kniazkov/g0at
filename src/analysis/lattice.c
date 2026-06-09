@@ -153,8 +153,7 @@ const lattice_element_t *make_integer_element() {
 }
 
 const lattice_element_t *make_integer_range_element(arena_t *arena, int64_t min, int64_t max) {
-    integer_range_lattice_element_t *element =
-        alloc_from_arena(arena, sizeof(integer_range_lattice_element_t));
+    integer_range_element_t *element = alloc_from_arena(arena, sizeof(integer_range_element_t));
     element->base.type = LATTICE_INTEGER_RANGE;
     element->min = min;
     element->max = max;
@@ -162,8 +161,8 @@ const lattice_element_t *make_integer_range_element(arena_t *arena, int64_t min,
 }
 
 const lattice_element_t *make_integer_constant_element(arena_t *arena, int64_t value) {
-    integer_constant_lattice_element_t *element =
-        alloc_from_arena(arena, sizeof(integer_constant_lattice_element_t));
+    integer_constant_element_t *element =
+        alloc_from_arena(arena, sizeof(integer_constant_element_t));
     element->base.type = LATTICE_INTEGER_CONSTANT;
     element->value = value;
     return &element->base;
@@ -174,8 +173,7 @@ const lattice_element_t *make_real_element() {
 }
 
 const lattice_element_t *make_real_constant_element(arena_t *arena, double value) {
-    real_constant_lattice_element_t *element =
-        alloc_from_arena(arena, sizeof(real_constant_lattice_element_t));
+    real_constant_element_t *element = alloc_from_arena(arena, sizeof(real_constant_element_t));
     element->base.type = LATTICE_REAL_CONSTANT;
     element->value = value;
     return &element->base;
@@ -186,8 +184,7 @@ const lattice_element_t *make_string_element() {
 }
 
 const lattice_element_t *make_string_constant_element(arena_t *arena, string_view_t value) {
-    string_constant_lattice_element_t *element =
-        alloc_from_arena(arena, sizeof(string_constant_lattice_element_t));
+    string_constant_element_t *element = alloc_from_arena(arena, sizeof(string_constant_element_t));
     element->base.type = LATTICE_STRING_CONSTANT;
     element->value = value;
     return &element->base;
@@ -214,8 +211,7 @@ const lattice_element_t *make_array_element() {
 }
 
 const lattice_element_t *make_typed_array_element(arena_t *arena, lattice_type_t element_type) {
-    typed_array_lattice_element_t *element =
-        alloc_from_arena(arena, sizeof(typed_array_lattice_element_t));
+    typed_array_element_t *element = alloc_from_arena(arena, sizeof(typed_array_element_t));
     element->base.type = LATTICE_TYPED_ARRAY;
     element->element_type = element_type;
     return &element->base;
@@ -351,16 +347,14 @@ static const lattice_element_t *lattice_join_integer(const lattice_element_t *ri
  */
 static const lattice_element_t *lattice_join_integer_range(arena_t *arena,
         const lattice_element_t *left, const lattice_element_t *right) {
-    const integer_range_lattice_element_t *left_range =
-        (const integer_range_lattice_element_t *)left;
+    const integer_range_element_t *left_range = (const integer_range_element_t *)left;
 
     switch (right->type) {
         case LATTICE_BOTTOM:
             return left;
 
         case LATTICE_INTEGER_RANGE: {
-            const integer_range_lattice_element_t *right_range =
-                (const integer_range_lattice_element_t *)right;
+            const integer_range_element_t *right_range = (const integer_range_element_t *)right;
 
             if (left_range->min <= right_range->min && left_range->max >= right_range->max) {
                 return left;
@@ -378,8 +372,8 @@ static const lattice_element_t *lattice_join_integer_range(arena_t *arena,
         }
 
         case LATTICE_INTEGER_CONSTANT: {
-            const integer_constant_lattice_element_t *right_constant =
-                (const integer_constant_lattice_element_t *)right;
+            const integer_constant_element_t *right_constant =
+                (const integer_constant_element_t *)right;
 
             if (left_range->min <= right_constant->value
                     && left_range->max >= right_constant->value) {
@@ -432,18 +426,16 @@ static const lattice_element_t *lattice_join_integer_range(arena_t *arena,
  * @return Constant pointer to the least upper bound.
  */
 static const lattice_element_t *lattice_join_integer_constant(arena_t *arena,
-        const lattice_element_t *left, const lattice_element_t *right
-) {
-    const integer_constant_lattice_element_t *left_constant =
-        (const integer_constant_lattice_element_t *)left;
+        const lattice_element_t *left, const lattice_element_t *right) {
+    const integer_constant_element_t *left_constant =(const integer_constant_element_t *)left;
 
     switch (right->type) {
         case LATTICE_BOTTOM:
             return left;
 
         case LATTICE_INTEGER_CONSTANT: {
-            const integer_constant_lattice_element_t *right_constant =
-                (const integer_constant_lattice_element_t *)right;
+            const integer_constant_element_t *right_constant =
+                (const integer_constant_element_t *)right;
 
             if (left_constant->value == right_constant->value) {
                 return left;
@@ -461,8 +453,8 @@ static const lattice_element_t *lattice_join_integer_constant(arena_t *arena,
         }
 
         case LATTICE_INTEGER_RANGE: {
-            const integer_range_lattice_element_t *right_range =
-                (const integer_range_lattice_element_t *)right;
+            const integer_range_element_t *right_range =
+                (const integer_range_element_t *)right;
 
             if (right_range->min <= left_constant->value
                     && right_range->max >= left_constant->value) {
@@ -560,16 +552,14 @@ static const lattice_element_t *lattice_join_real(const lattice_element_t *right
  */
 static const lattice_element_t *lattice_join_real_constant(const lattice_element_t *left,
         const lattice_element_t *right) {
-    const real_constant_lattice_element_t *left_constant =
-        (const real_constant_lattice_element_t *)left;
+    const real_constant_element_t *left_constant = (const real_constant_element_t *)left;
 
     switch (right->type) {
         case LATTICE_BOTTOM:
             return left;
 
         case LATTICE_REAL_CONSTANT: {
-            const real_constant_lattice_element_t *right_constant =
-                (const real_constant_lattice_element_t *)right;
+            const real_constant_element_t *right_constant = (const real_constant_element_t *)right;
 
             if (left_constant->value == right_constant->value) {
                 return left;
@@ -657,16 +647,15 @@ static const lattice_element_t *lattice_join_string(const lattice_element_t *rig
  */
 static const lattice_element_t *lattice_join_string_constant(const lattice_element_t *left,
         const lattice_element_t *right) {
-    const string_constant_lattice_element_t *left_constant =
-        (const string_constant_lattice_element_t *)left;
+    const string_constant_element_t *left_constant = (const string_constant_element_t *)left;
 
     switch (right->type) {
         case LATTICE_BOTTOM:
             return left;
 
         case LATTICE_STRING_CONSTANT: {
-            const string_constant_lattice_element_t *right_constant =
-                (const string_constant_lattice_element_t *)right;
+            const string_constant_element_t *right_constant =
+                (const string_constant_element_t *)right;
 
             if (left_constant->value.length == right_constant->value.length
                     && wmemcmp(
@@ -917,16 +906,14 @@ static const lattice_element_t *lattice_join_array(const lattice_element_t *righ
  */
 static const lattice_element_t *lattice_join_typed_array(const lattice_element_t *left,
         const lattice_element_t *right) {
-    const typed_array_lattice_element_t *left_array =
-        (const typed_array_lattice_element_t *)left;
+    const typed_array_element_t *left_array = (const typed_array_element_t *)left;
 
     switch (right->type) {
         case LATTICE_BOTTOM:
             return left;
 
         case LATTICE_TYPED_ARRAY: {
-            const typed_array_lattice_element_t *right_array =
-                (const typed_array_lattice_element_t *)right;
+            const typed_array_element_t *right_array = (const typed_array_element_t *)right;
 
             if (left_array->element_type == right_array->element_type) {
                 return left;
@@ -1188,8 +1175,7 @@ static const lattice_element_t *lattice_meet_integer(const lattice_element_t *ri
  */
 static const lattice_element_t *lattice_meet_integer_range(arena_t *arena,
         const lattice_element_t *left, const lattice_element_t *right) {
-    const integer_range_lattice_element_t *left_range =
-        (const integer_range_lattice_element_t *)left;
+    const integer_range_element_t *left_range = (const integer_range_element_t *)left;
 
     switch (right->type) {
         case LATTICE_TOP:
@@ -1199,8 +1185,7 @@ static const lattice_element_t *lattice_meet_integer_range(arena_t *arena,
             return left;
 
         case LATTICE_INTEGER_RANGE: {
-            const integer_range_lattice_element_t *right_range =
-                (const integer_range_lattice_element_t *)right;
+            const integer_range_element_t *right_range = (const integer_range_element_t *)right;
 
             int64_t min = left_range->min > right_range->min
                 ? left_range->min
@@ -1230,8 +1215,8 @@ static const lattice_element_t *lattice_meet_integer_range(arena_t *arena,
         }
 
         case LATTICE_INTEGER_CONSTANT: {
-            const integer_constant_lattice_element_t *right_constant =
-                (const integer_constant_lattice_element_t *)right;
+            const integer_constant_element_t *right_constant =
+                (const integer_constant_element_t *)right;
 
             if (left_range->min <= right_constant->value
                     && right_constant->value <= left_range->max) {
@@ -1271,8 +1256,7 @@ static const lattice_element_t *lattice_meet_integer_range(arena_t *arena,
  */
 static const lattice_element_t *lattice_meet_integer_constant(const lattice_element_t *left,
         const lattice_element_t *right) {
-    const integer_constant_lattice_element_t *left_constant =
-        (const integer_constant_lattice_element_t *)left;
+    const integer_constant_element_t *left_constant = (const integer_constant_element_t *)left;
 
     switch (right->type) {
         case LATTICE_TOP:
@@ -1282,8 +1266,7 @@ static const lattice_element_t *lattice_meet_integer_constant(const lattice_elem
             return left;
 
         case LATTICE_INTEGER_RANGE: {
-            const integer_range_lattice_element_t *right_range =
-                (const integer_range_lattice_element_t *)right;
+            const integer_range_element_t *right_range = (const integer_range_element_t *)right;
 
             if (right_range->min <= left_constant->value
                     && left_constant->value <= right_range->max) {
@@ -1294,8 +1277,8 @@ static const lattice_element_t *lattice_meet_integer_constant(const lattice_elem
         }
 
         case LATTICE_INTEGER_CONSTANT: {
-            const integer_constant_lattice_element_t *right_constant =
-                (const integer_constant_lattice_element_t *)right;
+            const integer_constant_element_t *right_constant =
+                (const integer_constant_element_t *)right;
 
             if (left_constant->value == right_constant->value) {
                 return left;
@@ -1373,8 +1356,7 @@ static const lattice_element_t *lattice_meet_real(const lattice_element_t *right
  */
 static const lattice_element_t *lattice_meet_real_constant(const lattice_element_t *left,
         const lattice_element_t *right) {
-    const real_constant_lattice_element_t *left_constant =
-        (const real_constant_lattice_element_t *)left;
+    const real_constant_element_t *left_constant = (const real_constant_element_t *)left;
 
     switch (right->type) {
         case LATTICE_TOP:
@@ -1384,8 +1366,8 @@ static const lattice_element_t *lattice_meet_real_constant(const lattice_element
             return left;
 
         case LATTICE_REAL_CONSTANT: {
-            const real_constant_lattice_element_t *right_constant =
-                (const real_constant_lattice_element_t *)right;
+            const real_constant_element_t *right_constant =
+                (const real_constant_element_t *)right;
 
             if (left_constant->value == right_constant->value) {
                 return left;
@@ -1464,8 +1446,7 @@ static const lattice_element_t *lattice_meet_string(const lattice_element_t *rig
  */
 static const lattice_element_t *lattice_meet_string_constant(const lattice_element_t *left,
         const lattice_element_t *right) {
-    const string_constant_lattice_element_t *left_constant =
-        (const string_constant_lattice_element_t *)left;
+    const string_constant_element_t *left_constant = (const string_constant_element_t *)left;
 
     switch (right->type) {
         case LATTICE_TOP:
@@ -1474,8 +1455,8 @@ static const lattice_element_t *lattice_meet_string_constant(const lattice_eleme
             return left;
 
         case LATTICE_STRING_CONSTANT: {
-            const string_constant_lattice_element_t *right_constant =
-                (const string_constant_lattice_element_t *)right;
+            const string_constant_element_t *right_constant =
+                (const string_constant_element_t *)right;
 
             if (left_constant->value.length == right_constant->value.length
                     && wmemcmp(
@@ -1710,8 +1691,7 @@ static const lattice_element_t *lattice_meet_array(const lattice_element_t *righ
  */
 static const lattice_element_t *lattice_meet_typed_array(const lattice_element_t *left,
         const lattice_element_t *right) {
-    const typed_array_lattice_element_t *left_array =
-        (const typed_array_lattice_element_t *)left;
+    const typed_array_element_t *left_array = (const typed_array_element_t *)left;
 
     switch (right->type) {
         case LATTICE_TOP:
@@ -1720,8 +1700,7 @@ static const lattice_element_t *lattice_meet_typed_array(const lattice_element_t
             return left;
 
         case LATTICE_TYPED_ARRAY: {
-            const typed_array_lattice_element_t *right_array =
-                (const typed_array_lattice_element_t *)right;
+            const typed_array_element_t *right_array = (const typed_array_element_t *)right;
 
             if (left_array->element_type == right_array->element_type) {
                 return left;
@@ -1942,14 +1921,13 @@ string_value_t lattice_to_string(const lattice_element_t *element) {
             return STATIC_STRING(L"integer");
 
         case LATTICE_INTEGER_RANGE: {
-            const integer_range_lattice_element_t *range =
-                (const integer_range_lattice_element_t *)element;
+            const integer_range_element_t *range = (const integer_range_element_t *)element;
             return format_string(L"integer[%ld..%ld]", range->min, range->max);
         }
 
         case LATTICE_INTEGER_CONSTANT: {
-            const integer_constant_lattice_element_t *constant =
-                (const integer_constant_lattice_element_t *)element;
+            const integer_constant_element_t *constant =
+                (const integer_constant_element_t *)element;
             return format_string(L"%ld", constant->value);
         }
 
@@ -1957,8 +1935,7 @@ string_value_t lattice_to_string(const lattice_element_t *element) {
             return STATIC_STRING(L"real");
 
         case LATTICE_REAL_CONSTANT: {
-            const real_constant_lattice_element_t *constant =
-                (const real_constant_lattice_element_t *)element;
+            const real_constant_element_t *constant = (const real_constant_element_t *)element;
             return format_string(L"%f", constant->value);
         }
 
@@ -1966,8 +1943,8 @@ string_value_t lattice_to_string(const lattice_element_t *element) {
             return STATIC_STRING(L"string");
 
         case LATTICE_STRING_CONSTANT: {
-            const string_constant_lattice_element_t *constant =
-                (const string_constant_lattice_element_t *)element;
+            const string_constant_element_t *constant =
+                (const string_constant_element_t *)element;
             return string_to_string_notation(L"", VIEW_TO_VALUE(constant->value));
         }
 
@@ -1987,8 +1964,7 @@ string_value_t lattice_to_string(const lattice_element_t *element) {
             return STATIC_STRING(L"array");
 
         case LATTICE_TYPED_ARRAY: {
-            const typed_array_lattice_element_t *array =
-                (const typed_array_lattice_element_t *)element;
+            const typed_array_element_t *array = (const typed_array_element_t *)element;
             return format_string(L"array<%s>", lattice_type_to_string(array->element_type));
         }
 
