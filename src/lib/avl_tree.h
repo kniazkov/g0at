@@ -60,6 +60,38 @@ typedef struct {
      * @brief Comparator function to compare keys in the tree.
      */
     int (*comparator)(const void*, const void*);
+
+    /**
+     * @brief Optional key copy function.
+     *
+     * If set, this function is used to copy keys before storing them in the tree
+     * during insertion and cloning. If NULL, keys are copied shallowly.
+     */
+    void *(*copy_key)(void *key);
+
+    /**
+     * @brief Optional value copy function.
+     *
+     * If set, this function is used to copy values before storing them in the tree
+     * during insertion, update, and cloning. If NULL, values are copied shallowly.
+     */
+    value_t (*copy_value)(value_t value);
+
+    /**
+     * @brief Optional key destroy function.
+     *
+     * If set, this function is called for every stored key when tree nodes are
+     * destroyed. If NULL, keys are not destroyed by the tree.
+     */
+    void (*destroy_key)(void *key);
+
+    /**
+     * @brief Optional value destroy function.
+     *
+     * If set, this function is called for every stored value when tree nodes are
+     * destroyed. If NULL, values are not destroyed by the tree.
+     */
+    void (*destroy_value)(value_t value);
 } avl_tree_t;
 
 /**

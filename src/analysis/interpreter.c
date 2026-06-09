@@ -18,7 +18,7 @@
 #include "graph/node.h"
 
 void interpret(node_t *root_node, parser_memory_t *memory) {
-    abstract_state_t *initial = create_abstract_state();
+    abstract_state_t *initial = create_abstract_state(memory->graph);
     abstract_state_t *resulting = execute_node(root_node, initial, memory->graph);
     flush_abstract_state(resulting);
     destroy_abstract_state(resulting);

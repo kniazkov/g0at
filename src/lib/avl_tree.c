@@ -52,6 +52,28 @@ static inline int get_balance(avl_node_t *node) {
 }
 
 /**
+ * @brief Copies a key according to tree ownership rules.
+ *
+ * @param tree AVL tree.
+ * @param key Source key.
+ * @return Copied key, or the original key if no copy function is set.
+ */
+static inline void *copy_key(avl_tree_t *tree, void *key) {
+    return tree->copy_key ? tree->copy_key(key) : key;
+}
+
+/**
+ * @brief Copies a value according to tree ownership rules.
+ *
+ * @param tree AVL tree.
+ * @param value Source value.
+ * @return Copied value, or the original value if no copy function is set.
+ */
+static inline value_t copy_value(avl_tree_t *tree, value_t value) {
+    return tree->copy_value ? tree->copy_value(value) : value;
+}
+
+/**
  * @brief Performs a left rotation on the given node.
  * 
  * This function performs a left rotation to balance the AVL tree. It is used when the right
@@ -144,8 +166,8 @@ static avl_node_t *insert(avl_tree_t *tree, avl_node_t *node, void *key,
         value_t value, value_t *old_value) {
     if (!node) {
         avl_node_t *new_node = (avl_node_t *)CALLOC(sizeof(avl_node_t));
-        new_node->key = key;
-        new_node->value = value;
+        new_node->key = copy_key(tree, key);
+        new_node->value = copy_value(tree, value);
         new_node->height = 1;
         memset(old_value, 0, sizeof(value_t));
         return new_node;
@@ -158,8 +180,13 @@ static avl_node_t *insert(avl_tree_t *tree, avl_node_t *node, void *key,
     } else if (cmp > 0) {
         node->right = insert(tree, node->right, key, value, old_value);
     } else {
-        *old_value = node->value;
-        node->value = value;
+        if (tree->destroy_value) {
+            tree->destroy_value(node->value);
+            memset(old_value, 0, sizeof(value_t));
+        } else {
+            *old_value = node->value;
+        }
+        node->value = copy_value(tree, value);
         return node;
     }
 
@@ -183,8 +210,8 @@ static avl_node_t *insert_arena(avl_tree_arena_t *tree, avl_node_t *node, void *
     if (!node) {
         avl_node_t *new_node =
             (avl_node_t *)alloc_zeroed_from_arena(tree->arena, sizeof(avl_node_t));
-        new_node->key = key;
-        new_node->value = value;
+        new_node->key = copy_key(&tree->base, key);
+        new_node->value = copy_value(&tree->base, value);
         new_node->height = 1;
         memset(old_value, 0, sizeof(value_t));
         return new_node;
@@ -197,8 +224,13 @@ static avl_node_t *insert_arena(avl_tree_arena_t *tree, avl_node_t *node, void *
     } else if (cmp > 0) {
         node->right = insert_arena(tree, node->right, key, value, old_value);
     } else {
-        *old_value = node->value;
-        node->value = value;
+        if (tree->base.destroy_value) {
+            tree->base.destroy_value(node->value);
+            memset(old_value, 0, sizeof(value_t));
+        } else {
+            *old_value = node->value;
+        }
+        node->value = copy_value(&tree->base, value);;
         return node;
     }
 
@@ -258,12 +290,19 @@ static void inorder_traversal(avl_node_t *node,
  * 
  * This is a helper function that recursively traverses the AVL tree and frees all nodes.
  * 
+ * @param tree AVL tree that owns the nodes.
  * @param node The current node to destroy.
  */
-static void destroy_nodes(avl_node_t *node) {
+static void destroy_nodes(avl_tree_t *tree, avl_node_t *node) {
     if (node) {
-        destroy_nodes(node->left);
-        destroy_nodes(node->right);
+        destroy_nodes(tree, node->left);
+        destroy_nodes(tree, node->right);
+        if (tree->destroy_key) {
+            tree->destroy_key(node->key);
+        }
+        if (tree->destroy_value) {
+            tree->destroy_value(node->value);
+        }
         FREE(node);
     }
 }
@@ -273,19 +312,20 @@ static void destroy_nodes(avl_node_t *node) {
  *
  * This does not insert nodes through AVL logic, so it runs in O(N) and does not rebalance.
  *
+ * @param tree Source tree whose copy callbacks are used.
  * @param node Source node.
  * @return Cloned node.
  */
-static avl_node_t *clone_nodes(const avl_node_t *node) {
+static avl_node_t *clone_nodes(const avl_tree_t *tree, const avl_node_t *node) {
     if (!node) {
         return NULL;
     }
     avl_node_t *copy = (avl_node_t *)CALLOC(sizeof(avl_node_t));
-    copy->key = node->key;
-    copy->value = node->value;
+    copy->key = copy_key(tree, node->key);
+    copy->value = copy_value(tree, node->value);
     copy->height = node->height;
-    copy->left = clone_nodes(node->left);
-    copy->right = clone_nodes(node->right);
+    copy->left = clone_nodes(tree, node->left);
+    copy->right = clone_nodes(tree, node->right);
     return copy;
 }
 
@@ -295,24 +335,26 @@ static avl_node_t *clone_nodes(const avl_node_t *node) {
  * This does not insert nodes through AVL logic, so it runs in O(N) and does not rebalance.
  *
  * @param arena Arena used for allocation.
+ * @param tree Source tree whose copy callbacks are used.
  * @param node Source node.
  * @return Cloned node.
  */
-static avl_node_t *clone_nodes_arena(arena_t *arena, const avl_node_t *node) {
+static avl_node_t *clone_nodes_arena(arena_t *arena,
+        const avl_tree_t *tree, const avl_node_t *node) {
     if (!node) {
         return NULL;
     }
     avl_node_t *copy = (avl_node_t *)alloc_zeroed_from_arena(arena, sizeof(avl_node_t));
-    copy->key = node->key;
-    copy->value = node->value;
+    copy->key = copy_key(tree, node->key);
+    copy->value = copy_value(tree, node->value);
     copy->height = node->height;
-    copy->left = clone_nodes_arena(arena, node->left);
-    copy->right = clone_nodes_arena(arena, node->right);
+    copy->left = clone_nodes_arena(arena, tree, node->left);
+    copy->right = clone_nodes_arena(arena, tree, node->right);
     return copy;
 }
 
 avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*)) {
-    avl_tree_t *tree = (avl_tree_t *)ALLOC(sizeof(avl_tree_t));
+    avl_tree_t *tree = (avl_tree_t *)CALLOC(sizeof(avl_tree_t));
     tree->root = NULL; 
     tree->comparator = comparator;
     return tree;
@@ -367,7 +409,11 @@ avl_tree_t *clone_avl_tree(const avl_tree_t *tree) {
     }
     avl_tree_t *copy = (avl_tree_t *)ALLOC(sizeof(avl_tree_t));
     copy->comparator = tree->comparator;
-    copy->root = clone_nodes(tree->root);
+    copy->copy_key = tree->copy_key;
+    copy->copy_value = tree->copy_value;
+    copy->destroy_key = tree->destroy_key;
+    copy->destroy_value = tree->destroy_value;
+    copy->root = clone_nodes(tree, tree->root);
     return copy;
 }
 
@@ -378,19 +424,23 @@ avl_tree_arena_t *clone_avl_tree_arena(arena_t *arena, const avl_tree_t *tree) {
     avl_tree_arena_t *copy =
         (avl_tree_arena_t *)alloc_zeroed_from_arena(arena, sizeof(avl_tree_arena_t));
     copy->base.comparator = tree->comparator;
-    copy->base.root = clone_nodes_arena(arena, tree->root);
+    copy->base.copy_key = tree->copy_key;
+    copy->base.copy_value = tree->copy_value;
+    copy->base.destroy_key = tree->destroy_key;
+    copy->base.destroy_value = tree->destroy_value;
+    copy->base.root = clone_nodes_arena(arena, tree, tree->root);
     copy->arena = arena;
     return copy;
 }
 
 void clear_avl_tree(avl_tree_t *tree) {
-    destroy_nodes(tree->root);
+    destroy_nodes(tree, tree->root);
     tree->root = NULL;
 }
 
 void destroy_avl_tree(avl_tree_t *tree) {
     if (tree) {
-        destroy_nodes(tree->root);
+        destroy_nodes(tree, tree->root);
         FREE(tree);
     }
 }

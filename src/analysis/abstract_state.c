@@ -5,6 +5,7 @@
  */
 
 #include "abstract_state.h"
+#include "lattice.h"
 #include "lib/allocate.h"
 #include "graph/declarations.h"
 
@@ -25,36 +26,31 @@ static int declarator_comparator(const void *left, const void *right) {
     return 0;
 }
 
-/**
- * @brief Adapter context for abstract_state_for_each().
- */
 typedef struct {
-    void (*func)(void *user_data, const declarator_t *declarator,
-            const lattice_element_t *value);
-    void *user_data;
-} abstract_state_for_each_context_t;
+    int refs;
+    const lattice_element_t *current;
+    const lattice_element_t *summary;
+} lattice_pair_t;
 
-/**
- * @brief Adapter from AVL callback signature to abstract state callback signature.
- *
- * @param user_data Pointer to abstract_state_for_each_context_t.
- * @param key Declarator key.
- * @param value Lattice element value wrapped in value_t.
- */
-static void abstract_state_for_each_adapter(void *user_data, void *key, value_t value) {
-    abstract_state_for_each_context_t *context =
-        (abstract_state_for_each_context_t*)user_data;
-
-    context->func(
-        context->user_data,
-        (const declarator_t*)key,
-        (const lattice_element_t*)value.ptr
-    );
+static value_t copy_value(value_t value) {
+    lattice_pair_t *pair = (lattice_pair_t*)value.ptr;
+    pair->refs++;
+    return value;
 }
 
-abstract_state_t *create_abstract_state() {
+static void destroy_value(value_t value) {
+    lattice_pair_t *pair = (lattice_pair_t*)value.ptr;
+    if (!(--pair->refs)) {
+        FREE(pair);
+    }
+}
+
+abstract_state_t *create_abstract_state(arena_t *arena) {
     abstract_state_t *state = (abstract_state_t*)ALLOC(sizeof(abstract_state_t));
+    state->arena = arena;
     state->values = create_avl_tree(declarator_comparator);
+    state->values->copy_value = copy_value;
+    state->values->destroy_value = destroy_value;
     return state;
 }
 
@@ -62,66 +58,54 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     if (!state) {
         return NULL;
     }
-
     abstract_state_t *copy = (abstract_state_t*)ALLOC(sizeof(abstract_state_t));
+    copy->arena = state->arena;
     copy->values = clone_avl_tree(state->values);
-
     return copy;
 }
 
 const lattice_element_t *set_in_abstract_state(abstract_state_t *state,
         const declarator_t *declarator, const lattice_element_t *value) {
-    return (const lattice_element_t*)set_in_avl_tree(
+    lattice_pair_t *pair = (lattice_pair_t*)get_from_avl_tree(
         state->values,
-        (void*)declarator,
-        (value_t){.ptr = (void*)value}
+        (void*)declarator
     ).ptr;
+    if (pair) {
+        const lattice_element_t *old_value = pair->current;
+        pair->current = value;
+        pair->summary = lattice_join(state->arena, pair->summary, value);
+        return old_value;
+    } else {
+        pair = (lattice_pair_t*)ALLOC(sizeof(lattice_pair_t));
+        pair->refs = 0; // will be increased by AVL tree
+        pair->current = value;
+        pair->summary = value;
+        set_in_avl_tree(state->values, (void*)declarator, (value_t){ .ptr = (void*)pair });
+        return NULL;
+    }
 }
 
 const lattice_element_t *get_from_abstract_state(const abstract_state_t *state,
         const declarator_t *declarator) {
-    return (const lattice_element_t*)get_from_avl_tree(
+    lattice_pair_t *pair = (lattice_pair_t*)get_from_avl_tree(
         state->values,
         (void*)declarator
     ).ptr;
+    return pair ? pair->current : NULL;
 }
 
-bool abstract_state_contains(const abstract_state_t *state,
-        const declarator_t *declarator) {
-    return avl_tree_contains(state->values, declarator);
+bool abstract_state_contains(const abstract_state_t *state, const declarator_t *declarator) {
+    return avl_tree_contains(state->values, (void*)declarator);
 }
 
-void abstract_state_for_each(const abstract_state_t *state,
-        void (*func)(void *user_data, const declarator_t *declarator,
-                const lattice_element_t *value),
-        void *user_data) {
-    if (!state || !func) {
-        return;
-    }
-
-    abstract_state_for_each_context_t context = {
-        .func = func,
-        .user_data = user_data
-    };
-
-    avl_tree_for_each(state->values, abstract_state_for_each_adapter, &context);
-}
-
-/**
- * @brief Writes one abstract state binding into its declarator.
- *
- * @param user_data Unused.
- * @param declarator Declarator to update.
- * @param value Abstract value to store in the declarator.
- */
-static void flush_abstract_state_entry(void *user_data,
-        const declarator_t *declarator, const lattice_element_t *value) {
-    (void)user_data;
-    ((declarator_t*)declarator)->abstract_value = value;
+static void flush_abstract_state_entry(void *user_data, void* key, value_t value) {
+    declarator_t *declarator = (declarator_t*)key;
+    lattice_pair_t *pair = (lattice_pair_t*)value.ptr;
+    declarator->abstract_value = pair->summary;
 }
 
 void flush_abstract_state(const abstract_state_t *state) {
-    abstract_state_for_each(state, flush_abstract_state_entry, NULL);
+    avl_tree_for_each(state->values, flush_abstract_state_entry, NULL);
 }
 
 void destroy_abstract_state(abstract_state_t *state) {

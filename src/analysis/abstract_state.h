@@ -41,105 +41,24 @@ typedef struct declarator_t declarator_t;
  */
 typedef struct lattice_element_t lattice_element_t;
 
-/**
- * @struct abstract_state_t
- * @brief Represents an abstract interpreter state.
- *
- * The state maps declarators to lattice elements:
- *
- *     declarator_t* -> const lattice_element_t*
- *
- * It is a snapshot of abstract values known at a particular program point.
- */
 struct abstract_state_t {
-    /**
-     * @brief Mapping from declarators to abstract values.
-     *
-     * Keys are declarator_t pointers.
-     * Values are const lattice_element_t pointers stored through value_t.ptr.
-     */
+    arena_t *arena; 
     avl_tree_t *values;
 };
 
-/**
- * @brief Creates an empty abstract state.
- *
- * @return Pointer to the newly created abstract state.
- */
-abstract_state_t *create_abstract_state();
+abstract_state_t *create_abstract_state(arena_t *arena);
 
-/**
- * @brief Clones an abstract state.
- *
- * The clone preserves the exact AVL tree shape and therefore runs in O(N).
- * Keys and lattice element pointers are copied shallowly.
- *
- * @param state Source abstract state.
- * @return Newly allocated clone, or NULL if state is NULL.
- */
 abstract_state_t *clone_abstract_state(const abstract_state_t *state);
 
-/**
- * @brief Sets the abstract value associated with a declarator.
- *
- * @param state Target abstract state.
- * @param declarator Declarator key.
- * @param value Abstract lattice value.
- * @return Previous abstract value if present; otherwise NULL.
- */
 const lattice_element_t *set_in_abstract_state(abstract_state_t *state,
         const declarator_t *declarator, const lattice_element_t *value);
 
-/**
- * @brief Gets the abstract value associated with a declarator.
- *
- * @param state Source abstract state.
- * @param declarator Declarator key.
- * @return Abstract lattice value if present; otherwise NULL.
- */
 const lattice_element_t *get_from_abstract_state(const abstract_state_t *state,
         const declarator_t *declarator);
 
-/**
- * @brief Checks whether the abstract state contains a declarator.
- *
- * @param state Source abstract state.
- * @param declarator Declarator key.
- * @return true if declarator exists in the state, false otherwise.
- */
 bool abstract_state_contains(const abstract_state_t *state,
         const declarator_t *declarator);
 
-/**
- * @brief Applies a function to each declarator-value pair in the abstract state.
- *
- * @param state Source abstract state.
- * @param func Callback function.
- * @param user_data User data passed to callback.
- */
-void abstract_state_for_each(const abstract_state_t *state,
-        void (*func)(void *user_data, const declarator_t *declarator,
-                const lattice_element_t *value),
-        void *user_data);
-
-/**
- * @brief Flushes abstract values from the state into their declarators.
- *
- * Walks through all bindings stored in the abstract state and writes each
- * lattice element into the corresponding declarator's `abstract_value` field.
- *
- * This turns the temporary program-point state into facts attached directly to
- * the AST, where later compiler stages and graph visualization can use them.
- *
- * @param state Source abstract state.
- */
 void flush_abstract_state(const abstract_state_t *state);
 
-/**
- * @brief Destroys an abstract state and all its AVL nodes.
- *
- * Does not destroy declarators or lattice elements, only the state container.
- *
- * @param state Abstract state to destroy.
- */
 void destroy_abstract_state(abstract_state_t *state);
