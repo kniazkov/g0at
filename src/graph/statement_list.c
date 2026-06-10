@@ -114,17 +114,41 @@ static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_
 }
 
 /**
- * @brief Calculates the abstract value of a user-defined object expression.
+ * @brief Calculates the abstract value of a user-defined object literal.
  *
- * This node produces a user-defined object value, so its abstract calculation
- * returns the corresponding lattice singleton.
+ * A user-defined object is represented by a statement list. Calculating the
+ * object therefore first executes the statements contained in that list, so
+ * declarations and assignments inside the object body are reflected in the
+ * current abstract state.
  *
- * @param node A pointer to the user-defined object node.
- * @param state Current abstract state, unused by this implementation.
- * @param arena Memory arena, unused by this implementation.
+ * After the object body has been interpreted, the expression itself still
+ * produces a user-defined object value. The internal declarations describe what
+ * the object contains, while the expression result describes what evaluating the
+ * object literal yields.
+ *
+ * For example, an object literal may contain its own declarations:
+ *
+ *     {
+ *         var x = 2;
+ *     }
+ *
+ * Interpreting those statements records facts for the object's internal
+ * declarators, but the enclosing expression still has the broad abstract value
+ * `LATTICE_USER_DEFINED_OBJECT`.
+ *
+ * @param node A pointer to the statement-list node representing the object body.
+ * @param state Current abstract state.
+ * @param arena Memory arena used by statement execution and lattice operations.
  * @return User-defined object lattice element.
  */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
+    const statement_list_t* list = (const statement_list_t*)node;
+    list_item_t *item = list->statements->head;
+    while (item) {
+        statement_t *stmt = (statement_t*)item->value.ptr;
+        state = execute_statement(stmt, state, arena);
+        item = item->next;
+    }
     return make_user_defined_object_element();
 }
 
