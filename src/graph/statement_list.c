@@ -16,6 +16,7 @@
 #include "lib/arena.h"
 #include "lib/linked_list.h"
 #include "lib/string_ext.h"
+#include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -110,6 +111,21 @@ static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_
         (value_t){ .ptr = new_child }
     );
     return true;
+}
+
+/**
+ * @brief Calculates the abstract value of a user-defined object expression.
+ *
+ * This node produces a user-defined object value, so its abstract calculation
+ * returns the corresponding lattice singleton.
+ *
+ * @param node A pointer to the user-defined object node.
+ * @param state Current abstract state, unused by this implementation.
+ * @param arena Memory arena, unused by this implementation.
+ * @return User-defined object lattice element.
+ */
+static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
+    return make_user_defined_object_element();
 }
 
 /**
@@ -232,7 +248,7 @@ static node_vtbl_t statement_list_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = cannot_calculate,
+    .calculate = calculate,
     .execute = execute_nothing,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,

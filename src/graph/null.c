@@ -15,6 +15,7 @@
 #include "common_methods.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -34,6 +35,21 @@ typedef struct {
      */
     expression_t base;
 } null_t;
+
+/**
+ * @brief Calculates the abstract value of a null literal.
+ *
+ * A null node always represents the exact null value, so its abstract
+ * calculation simply returns the null lattice singleton.
+ *
+ * @param node A pointer to the null literal node.
+ * @param state Current abstract state, unused by this implementation.
+ * @param arena Memory arena, unused by this implementation.
+ * @return Null lattice element.
+ */
+static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
+    return make_null_element();
+}
 
 /**
  * @brief Converts a null expression to its string representation.
@@ -102,7 +118,7 @@ static node_vtbl_t null_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = cannot_calculate,
+    .calculate = calculate,
     .execute = execute_nothing,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,

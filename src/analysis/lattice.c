@@ -1945,7 +1945,7 @@ string_value_t lattice_to_string(const lattice_element_t *element) {
         case LATTICE_STRING_CONSTANT: {
             const string_constant_element_t *constant =
                 (const string_constant_element_t *)element;
-            return string_to_string_notation(L"", VIEW_TO_VALUE(constant->value));
+            return VIEW_TO_VALUE(constant->value);
         }
 
         case LATTICE_BOOLEAN:

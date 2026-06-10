@@ -18,6 +18,7 @@
 #include "lib/arena.h"
 #include "lib/linked_list.h"
 #include "lib/string_ext.h"
+#include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -610,6 +611,22 @@ static string_value_t generate_header(const function_object_t* expr, string_buil
 }
 
 /**
+ * @brief Calculates the abstract value of a function object.
+ *
+ * A function object expression always produces a function value, so its abstract
+ * calculation returns the function lattice singleton.
+ *
+ * @param node A pointer to the function object node.
+ * @param state Current abstract state, unused by this implementation.
+ * @param arena Memory arena, unused by this implementation.
+ * @return Function lattice element.
+ */
+static const lattice_element_t *fobj_calculate(node_t *node, abstract_state_t *state,
+        arena_t *arena) {
+    return make_function_element();
+}
+
+/**
  * @brief Converts a function object node to its compact Goat syntax representation.
  * 
  * Generates a single-line canonical Goat representation of the function, including:
@@ -794,7 +811,7 @@ static node_vtbl_t fo_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = cannot_calculate,
+    .calculate = fobj_calculate,
     .execute = execute_nothing,
     .generate_goat_code = fobj_generate_goat_code,
     .generate_indented_goat_code = fobj_generate_indented_goat_code,

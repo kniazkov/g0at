@@ -27,14 +27,14 @@
  */
 typedef struct {
     /**
-     * @brief Base expression structure from which integer_t inherits.
+     * @brief Base expression structure from which real_t inherits.
      */
     expression_t base;
 
     /**
-     * @brief The 64-bit signed integer value.
+     * @brief Lattice element containing double value.
      */
-    double value;
+    real_constant_element_t element;
 } real_t;
 
 /**
@@ -50,7 +50,7 @@ typedef struct {
  */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const real_t *expr = (const real_t *)node;
-    return make_real_constant_element(arena, expr->value);
+    return &expr->element.base;
 }
 
 /**
@@ -64,7 +64,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
  */
 static string_value_t get_data_and_generate_goat_code(const node_t *node) {
     const real_t *expr = (const real_t *)node;
-    return format_string(L"%f", expr->value);
+    return format_string(L"%f", expr->element.value);
 }
 
 /**
@@ -80,7 +80,7 @@ static string_value_t get_data_and_generate_goat_code(const node_t *node) {
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const real_t *expr = (const real_t *)node;
-    append_formatted_source(builder, format_string(L"%f", expr->value));
+    append_formatted_source(builder, format_string(L"%f", expr->element.value));
 }
 
 /**
@@ -100,7 +100,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const real_t *expr = (const real_t *)node;
     split64_t s;
-    s.real_value = expr->value;
+    s.real_value = expr->element.value;
     instr_index_t first = add_instruction(
         code,
         (instruction_t){ .opcode = ARG, .arg1 = s.parts[0] }
@@ -139,6 +139,7 @@ static node_vtbl_t real_vtbl = {
 node_t *create_real_number_node(arena_t *arena, double value) {
     real_t *expr = (real_t *)alloc_zeroed_from_arena(arena, sizeof(real_t));
     expr->base.base.vtbl = &real_vtbl;
-    expr->value = value;
+    expr->element.base.type = LATTICE_REAL_CONSTANT;
+    expr->element.value = value;
     return &expr->base.base;
 }

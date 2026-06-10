@@ -35,9 +35,9 @@ typedef struct {
     expression_t base;
 
     /**
-     * @brief String data.
+     * @brief Lattice element containing the string.
      */
-    string_view_t string;
+    string_constant_element_t element;
 } static_string_t;
 
 /**
@@ -51,7 +51,7 @@ typedef struct {
  */
 static string_value_t get_data(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
-    return VIEW_TO_VALUE(expr->string);
+    return VIEW_TO_VALUE(expr->element.value);
 }
 
 /**
@@ -68,7 +68,7 @@ static string_value_t get_data(const node_t *node) {
  */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const static_string_t *expr = (const static_string_t *)node;
-    return make_string_constant_element(arena, expr->string);
+    return &expr->element.base;
 }
 
 /**
@@ -84,7 +84,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
  */
 static string_value_t generate_goat_code(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
-    return string_to_string_notation(L"", VIEW_TO_VALUE(expr->string));
+    return string_to_string_notation(L"", VIEW_TO_VALUE(expr->element.value));
 }
 
 /**
@@ -103,7 +103,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     const static_string_t *expr = (const static_string_t *)node;
     append_formatted_source(
         builder,
-        string_to_string_notation(L"", VIEW_TO_VALUE(expr->string))
+        string_to_string_notation(L"", VIEW_TO_VALUE(expr->element.value))
     );
 }
 
@@ -121,7 +121,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const static_string_t *expr = (const static_string_t *)node;
-    uint32_t index = add_string_to_data_segment_ex(data, expr->string);
+    uint32_t index = add_string_to_data_segment_ex(data, expr->element.value);
     return add_instruction(code, (instruction_t){ .opcode = SLOAD, .arg1 = index });
 }
 
@@ -156,6 +156,7 @@ static node_vtbl_t static_string_vtbl = {
 node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length) {
     static_string_t *expr = (static_string_t *)alloc_zeroed_from_arena(arena, sizeof(static_string_t));
     expr->base.base.vtbl = &static_string_vtbl;
-    expr->string = copy_string_to_arena(arena, data, length);
+    expr->element.base.type = LATTICE_STRING_CONSTANT;
+    expr->element.value = copy_string_to_arena(arena, data, length);
     return &expr->base.base;
 }

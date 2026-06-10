@@ -13,6 +13,7 @@
 #include "common_methods.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -44,6 +45,22 @@ typedef struct {
      */
     expression_t base;
 } boolean_false_t;
+
+/**
+ * @brief Calculates the abstract value of a true literal.
+ *
+ * A true node always represents the exact boolean value `true`, so its abstract
+ * calculation returns the true lattice singleton.
+ *
+ * @param node A pointer to the true literal node.
+ * @param state Current abstract state, unused by this implementation.
+ * @param arena Memory arena, unused by this implementation.
+ * @return True lattice element.
+ */
+static const lattice_element_t *calculate_true(node_t *node, abstract_state_t *state,
+        arena_t *arena) {
+    return make_true_element();
+}
 
 /**
  * @brief Converts a boolean `true` expression to its string representation.
@@ -107,7 +124,7 @@ static node_vtbl_t true_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = cannot_calculate,
+    .calculate = calculate_true,
     .execute = execute_nothing,
     .generate_goat_code = generate_goat_code_true,
     .generate_indented_goat_code = generate_indented_goat_code_true,
@@ -119,6 +136,22 @@ node_t *create_true_node(arena_t *arena) {
         (boolean_true_t *)alloc_zeroed_from_arena(arena, sizeof(boolean_true_t));
     expr->base.base.vtbl = &true_vtbl;
     return &expr->base.base;
+}
+
+/**
+ * @brief Calculates the abstract value of a false literal.
+ *
+ * A false node always represents the exact boolean value `false`, so its abstract
+ * calculation returns the false lattice singleton.
+ *
+ * @param node A pointer to the false literal node.
+ * @param state Current abstract state, unused by this implementation.
+ * @param arena Memory arena, unused by this implementation.
+ * @return False lattice element.
+ */
+static const lattice_element_t *calculate_false(node_t *node, abstract_state_t *state,
+        arena_t *arena) {
+    return make_false_element();
 }
 
 /**
@@ -183,7 +216,7 @@ static node_vtbl_t false_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = cannot_calculate,
+    .calculate = calculate_false,
     .execute = execute_nothing,
     .generate_goat_code = generate_goat_code_false,
     .generate_indented_goat_code = generate_indented_goat_code_false,

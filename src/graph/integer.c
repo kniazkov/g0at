@@ -33,9 +33,9 @@ typedef struct {
     expression_t base;
 
     /**
-     * @brief The 64-bit signed integer value.
+     * @brief Lattice element containing 64-bit signed integer value.
      */
-    int64_t value;
+    integer_constant_element_t element;
 } integer_t;
 
 /**
@@ -51,7 +51,7 @@ typedef struct {
  */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const integer_t *expr = (const integer_t *)node;
-    return make_integer_constant_element(arena, expr->value);
+    return &expr->element.base;
 }
 
 /**
@@ -65,7 +65,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
  */
 static string_value_t get_data_and_generate_goat_code(const node_t *node) {
     const integer_t *expr = (const integer_t *)node;
-    return format_string(L"%ld", expr->value);
+    return format_string(L"%ld", expr->element.value);
 }
 
 /**
@@ -82,7 +82,7 @@ static string_value_t get_data_and_generate_goat_code(const node_t *node) {
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const integer_t *expr = (const integer_t *)node;
-    append_formatted_source(builder, format_string(L"%ld", expr->value));
+    append_formatted_source(builder, format_string(L"%ld", expr->element.value));
 }
 
 /**
@@ -100,14 +100,15 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const integer_t *expr = (const integer_t *)node;
+    int64_t value = expr->element.value;
     instr_index_t first;
-    if (expr->value > INT32_MAX || expr->value < INT32_MIN) {
+    if (value > INT32_MAX || value < INT32_MIN) {
         split64_t s;
-        s.int_value = expr->value;
+        s.int_value = value;
         first = add_instruction(code, (instruction_t){ .opcode = ARG, .arg1 = s.parts[0] });
         add_instruction(code, (instruction_t){ .opcode = ILOAD64, .arg1 = s.parts[1] });
     } else {
-        first = add_instruction(code, (instruction_t){ .opcode = ILOAD32, .arg1 = expr->value });
+        first = add_instruction(code, (instruction_t){ .opcode = ILOAD32, .arg1 = value });
     }
     return first;
 }
@@ -148,6 +149,7 @@ node_t *create_integer_node(arena_t *arena, int64_t value) {
     integer_t *expr = (integer_t *)alloc_zeroed_from_arena(arena, sizeof(integer_t));
     expr->base.base.vtbl = &integer_vtbl;
     expr->base.data_type = &data_type;
-    expr->value = value;
+    expr->element.base.type = LATTICE_INTEGER_CONSTANT;
+    expr->element.value = value;
     return &expr->base.base;
 }
