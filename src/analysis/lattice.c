@@ -1922,7 +1922,7 @@ string_value_t lattice_to_string(const lattice_element_t *element) {
 
         case LATTICE_INTEGER_RANGE: {
             const integer_range_element_t *range = (const integer_range_element_t *)element;
-            return format_string(L"integer[%ld..%ld]", range->min, range->max);
+            return format_string(L"[%ld..%ld]", range->min, range->max);
         }
 
         case LATTICE_INTEGER_CONSTANT: {

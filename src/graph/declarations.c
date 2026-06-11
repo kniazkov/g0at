@@ -55,7 +55,7 @@ const wchar_t *get_property_of_declarator(const node_t *node, size_t index,
     if (index == 0 && decl->abstract_value) {
         *out_value = (node_display_value_t){
             .text = lattice_to_string(decl->abstract_value),
-            .kind = is_string_lattice_element(decl->abstract_value) ? 
+            .kind = decl->abstract_value->type == LATTICE_STRING_CONSTANT ? 
                 NODE_DISPLAY_VALUE_STRING_LITERAL :
                 NODE_DISPLAY_VALUE_PLAIN
         };
