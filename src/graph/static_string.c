@@ -42,16 +42,20 @@ typedef struct {
 
 /**
  * @brief Gets the string data of a static string node.
- * 
- * Returns the string value contained in the static string node.
- * The returned string_value_t shares the same memory and doesn't need freeing.
- * 
- * @param node Pointer to the node.
- * @return `string_value_t` containing the string data.
+ *
+ * Returns the literal string value together with a string-literal display
+ * classification. The returned string_value_t shares the same memory and does
+ * not need freeing.
+ *
+ * @param node Pointer to the static string node.
+ * @return Display value containing the string literal data.
  */
-static string_value_t get_data(const node_t *node) {
+static node_display_value_t get_data(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
-    return VIEW_TO_VALUE(expr->element.value);
+    return (node_display_value_t){
+        .text = VIEW_TO_VALUE(expr->element.value),
+        .kind = NODE_DISPLAY_VALUE_STRING_LITERAL
+    };
 }
 
 /**

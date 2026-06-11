@@ -23,13 +23,26 @@
 #include "codegen/source_builder.h"
 
 /**
- * @brief Gets the variable name as string data
- * @param node Pointer to the node.
- * @return `string_value_t` containing variable name
+ * @brief Gets the variable name as display data.
+ *
+ * Returns the variable name together with a display classification. Variables
+ * resolved to the built-in declarator are marked as predefined names.
+ *
+ * @param node Pointer to the variable node.
+ * @return Display value containing the variable name.
  */
-static string_value_t get_data(const node_t *node) {
+static node_display_value_t get_data(const node_t *node) {
     const variable_t *expr = (const variable_t *)node;
-    return VIEW_TO_VALUE(expr->name);
+    node_display_value_kind_t kind = NODE_DISPLAY_VALUE_PLAIN;
+    if (expr->declarator &&
+            expr->declarator->name.length > 0 &&
+            expr->declarator->name.data[0] == L'*') {
+        kind = NODE_DISPLAY_VALUE_PREDEFINED;
+    }
+    return (node_display_value_t){
+        .text = VIEW_TO_VALUE(expr->name),
+        .kind = kind
+    };
 }
 
 /**

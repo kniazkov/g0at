@@ -55,17 +55,33 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 }
 
 /**
- * @brief Converts an integer expression to its string representation.
- * 
+ * @brief Converts an integer expression to its Goat source representation.
+ *
  * This function converts the given integer expression to its decimal string
  * representation as it would appear in the source code.
- * 
+ *
  * @param node A pointer to the integer expression node.
  * @return A `string_value_t` containing the formatted decimal string.
  */
-static string_value_t get_data_and_generate_goat_code(const node_t *node) {
+static string_value_t generate_goat_code(const node_t *node) {
     const integer_t *expr = (const integer_t *)node;
     return format_string(L"%ld", expr->element.value);
+}
+
+/**
+ * @brief Gets the integer literal as display data.
+ *
+ * Returns the integer literal text together with the default display
+ * classification.
+ *
+ * @param node Pointer to the integer literal node.
+ * @return Display value containing the integer literal text.
+ */
+static node_display_value_t get_data(const node_t *node) {
+    return (node_display_value_t){
+        .text = generate_goat_code(node),
+        .kind = NODE_DISPLAY_VALUE_PLAIN
+    };
 }
 
 /**
@@ -122,7 +138,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
 static node_vtbl_t integer_vtbl = {
     .type = NODE_INTEGER,
     .type_name = L"integer",
-    .get_data = get_data_and_generate_goat_code,
+    .get_data = get_data,
     .get_property_count = no_properties,
     .get_property = no_property,
     .get_child_count = no_children,
@@ -135,7 +151,7 @@ static node_vtbl_t integer_vtbl = {
     .get_relation_type = no_relation_type,
     .calculate = calculate,
     .execute = execute_nothing,
-    .generate_goat_code = get_data_and_generate_goat_code,
+    .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
 };

@@ -44,16 +44,21 @@ typedef struct {
 } argument_t;
 
 /**
- * @brief Gets the argument name as string data.
+ * @brief Gets the argument name as display data.
  *
- * Provides access to the formal parameter name stored in the argument node.
+ * Provides access to the formal parameter name stored in the argument node
+ * together with the default display classification.
  *
  * @param node Pointer to the argument node.
- * @return `string_value_t` containing the argument name.
+ * @return Display value containing the argument name.
  */
-static string_value_t arg_get_data(const node_t *node) {
+static node_display_value_t arg_get_data(const node_t *node)
+{
     const argument_t *arg = (const argument_t *)node;
-    return VIEW_TO_VALUE(arg->base.name);
+    return (node_display_value_t){
+        .text = VIEW_TO_VALUE(arg->base.name),
+        .kind = NODE_DISPLAY_VALUE_PLAIN
+    };
 }
 
 /**

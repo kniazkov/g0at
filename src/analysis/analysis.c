@@ -279,7 +279,7 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
             The resolved declarator is stored directly in the variable node.
         */
         variable_t *var = (variable_t*)node;
-        const declarator_t *declarator = find_symbol_in_scope_and_parents(
+        declarator_t *declarator = find_symbol_in_scope_and_parents(
             node->scope,
             var->name.data
         );

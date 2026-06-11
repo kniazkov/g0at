@@ -78,6 +78,54 @@ typedef struct lattice_element_t lattice_element_t;
 typedef struct abstract_state_t abstract_state_t;
 
 /**
+ * @enum node_display_value_kind_t
+ * @brief Classification hint for node data rendered in graph visualization.
+ *
+ * Describes how a node data value or property value should be displayed.
+ * This value is intended for visualization and debugging only. It does not
+ * affect parsing, semantic analysis, bytecode generation, or source-code
+ * regeneration.
+ */
+typedef enum {
+    /**
+     * @brief No special display classification.
+     *
+     * Used for ordinary node data and ordinary node properties.
+     */
+    NODE_DISPLAY_VALUE_PLAIN = 0,
+
+    /**
+     * @brief Predefined constant, built-in object, or language keyword.
+     */
+    NODE_DISPLAY_VALUE_PREDEFINED,
+
+    /**
+     * @brief String literal value.
+     */
+    NODE_DISPLAY_VALUE_STRING_LITERAL
+} node_display_value_kind_t;
+
+/**
+ * @struct node_display_value_t
+ * @brief String value with an additional graph-display classification.
+ *
+ * Combines the textual value exposed by a node with a display hint used by
+ * graph visualization code. The string ownership rules are the same as for
+ * the embedded @ref string_value_t.
+ */
+typedef struct {
+    /**
+     * @brief Textual value exposed by the node.
+     */
+    string_value_t text;
+
+    /**
+     * @brief Display classification for the value.
+     */
+    node_display_value_kind_t kind;
+} node_display_value_t;
+
+/**
  * @struct node_vtbl_t
  * @brief The virtual table structure for nodes in the syntax tree.
  * 
@@ -113,17 +161,20 @@ typedef struct {
     bool is_assignable_expression;
 
     /**
-     * @brief Gets the string representation of the node's data.
-     * 
-     * Returns the primary data associated with the node in string form.
+     * @brief Gets the display representation of the node's primary data.
+     *
+     * Returns the primary data associated with the node together with a display
+     * classification used by graph visualization.
+     *
      * For example:
      * - For an identifier node: the identifier name
      * - For a literal node: the literal value
-     * 
+     *
      * @param node A pointer to the node.
-     * @return A `string_value_t` containing the node's data or empty value if none.
+     * @return A @ref node_display_value_t containing the node's data and display
+     *  classification, or an empty value if no data is available.
      */
-    string_value_t (*get_data)(const node_t *node);
+    node_display_value_t (*get_data)(const node_t *node);
 
     /**
      * @brief Gets the number of properties exposed by this node.
@@ -142,19 +193,20 @@ typedef struct {
      * @brief Retrieves a property of this node by index.
      *
      * Provides the indexed property from the node. The property key is returned
-     * as a constant wide string, while the property value is written to the
-     * output parameter.
+     * as a constant wide string, while the property value and its display
+     * classification are written to the output parameter.
      *
      * @param node A pointer to the node.
      * @param index Zero-based index in range [0, get_property_count(node)).
-     * @param out_value Output pointer to receive the property value.
+     * @param out_value Output pointer to receive the property value and display
+     *  classification.
      * @return Property key as a constant wide string, or NULL if the property is
-     *         not available.
+     *  not available.
      */
-    const wchar_t *(*get_property)(const node_t *node, size_t index, string_value_t *out_value);
+    const wchar_t *(*get_property)(const node_t *node, size_t index,
+            node_display_value_t *out_value);
 
     /**
-     * @brief Gets the number of child nodes.
      * 
      * Returns the count of direct child nodes for this syntax tree node.
      * 
@@ -478,17 +530,17 @@ struct node_t {
 };
 
 /**
- * @brief Gets the primary string data associated with a node.
+ * @brief Gets the primary display data associated with a node.
  *
  * This helper dispatches to the node's virtual table and returns the main
- * data payload of the node in string form. For example, for identifier nodes
- * this may be the identifier name, and for literal nodes it may be the
- * literal text/value.
+ * data payload of the node together with its graph-display classification.
  *
  * @param node A pointer to the node.
- * @return A `string_value_t` containing the node's data or empty value if none.
+ * @return A @ref node_display_value_t containing the node's data and display
+ * classification, or an empty value if none.
  */
-static inline string_value_t get_node_data(const node_t *node) {
+static inline node_display_value_t get_node_data(const node_t *node)
+{
     return node->vtbl->get_data(node);
 }
 
@@ -513,11 +565,12 @@ static inline size_t get_node_property_count(const node_t *node) {
  *
  * @param node A pointer to the node.
  * @param index Zero-based property index.
- * @param out_value Output pointer to receive the property value.
+ * @param out_value Output pointer to receive the property value and display
+ * classification.
  * @return Property key as a constant wide string, or NULL if unavailable.
  */
-static inline const wchar_t *get_node_property(const node_t *node, size_t index,
-        string_value_t *out_value) {
+static inline const wchar_t *get_node_property(const node_t *node,
+        size_t index, node_display_value_t *out_value) {
     return node->vtbl->get_property(node, index, out_value);
 }
 

@@ -90,7 +90,7 @@ scope_t *create_scope(arena_t *arena, scope_t *parent);
  * @param declarator AST node where the symbol is declared.
  * @return The previous node pointer if the symbol existed; otherwise NULL.
  */
-const declarator_t* add_symbol_to_scope(scope_t *scope, const wchar_t *name,
+declarator_t* add_symbol_to_scope(scope_t *scope, const wchar_t *name,
         const declarator_t *node);
 
 /**
@@ -100,7 +100,7 @@ const declarator_t* add_symbol_to_scope(scope_t *scope, const wchar_t *name,
  * @param name  Symbol name.
  * @return The node pointer if found; otherwise NULL.
  */
-const declarator_t* find_symbol_in_scope(const scope_t *scope, const wchar_t *name);
+declarator_t* find_symbol_in_scope(const scope_t *scope, const wchar_t *name);
 
 /**
  * @brief Looks up a symbol in the scope and its parents (inner-to-outer search).
@@ -111,4 +111,4 @@ const declarator_t* find_symbol_in_scope(const scope_t *scope, const wchar_t *na
  * @param name  Symbol name.
  * @return The node pointer if found; otherwise NULL.
  */
-const declarator_t* find_symbol_in_scope_and_parents(const scope_t *scope, const wchar_t *name);
+declarator_t* find_symbol_in_scope_and_parents(const scope_t *scope, const wchar_t *name);

@@ -15,9 +15,9 @@
 /**
  * @brief Universal "no data" stub function for nodes without data.
  * @param node A pointer to the node (maintains signature compatibility).
- * @return Empty `string_value_t`.
+ * @return Empty display value with no special classification.
  */
-string_value_t no_data(const node_t *node);
+node_display_value_t no_data(const node_t *node);
 
 /**
  * @brief Universal "no properties" indicator for nodes without properties
@@ -31,16 +31,15 @@ size_t no_properties(const node_t *node);
 /**
  * @brief Universal "no property" getter stub (`get_property` implementation).
  *
- * This function is used for nodes that do not expose any properties.
- * It assigns an empty value to @p out_value and returns NULL as the property key.
+ * This function is used for nodes that do not expose any properties. It assigns
+ * an empty display value to @p out_value and returns NULL as the property key.
  *
  * @param node Unused parameter (interface compatibility).
  * @param index Unused parameter (interface compatibility).
- * @param out_value Output pointer that will be set to an empty @ref string_value_t.
+ * @param out_value Output pointer that will be set to an empty display value.
  * @return Always returns NULL.
  */
-const wchar_t *no_property(const node_t *node, size_t index,
-                           string_value_t *out_value);
+const wchar_t *no_property(const node_t *node, size_t index, node_display_value_t *out_value);
 
 /**
  * @brief Universal "no children" indicator for leaf nodes (`get_child_count ` implementation).

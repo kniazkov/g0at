@@ -38,14 +38,15 @@ struct expression_t {
 };
 
 /**
- * @brief Gets the primary string data associated with an expression.
+ * @brief Gets the primary display data associated with an expression.
  *
  * This helper forwards the request to the underlying base node helper.
  *
  * @param expr A pointer to the expression.
- * @return A `string_value_t` containing the expression data or empty value if none.
+ * @return A @ref node_display_value_t containing the expression data and
+ *  display classification, or an empty value if none.
  */
-static inline string_value_t get_expression_data(const expression_t *expr) {
+static inline node_display_value_t get_expression_data(const expression_t *expr) {
     return get_node_data(&expr->base);
 }
 

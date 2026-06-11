@@ -38,16 +38,20 @@ bool is_graphviz_available() {
  * - Length limit (50 chars + ellipsis if truncated)
  * 
  * @param input Input string to process
+ * @param quotes Adds quotation marks at the beginning and end
  * @return string_value_t Processed string (allocated, needs freeing)
  */
-string_value_t trim_and_escape_html_entities(string_value_t input) {
+string_value_t trim_and_escape_html_entities(string_value_t input, bool quotes) {
     if (input.length == 0) {
         return EMPTY_STRING_VALUE;
     }
 
     const size_t MAX_LENGTH = 50;
     string_builder_t builder;
-    init_string_builder(&builder, MAX_LENGTH + 4); // +4 for ellipsis and margin
+    init_string_builder(&builder, MAX_LENGTH + 4 + 2); // +4 for ellipsis and margin, +2 for quotes
+    if (quotes) {
+        append_char(&builder, L'"');
+    }
 
     bool truncated = false;
     size_t remaining = MAX_LENGTH;
@@ -94,6 +98,9 @@ string_value_t trim_and_escape_html_entities(string_value_t input) {
     if (truncated) {
         append_string(&builder, L"...");
     }
+    if (quotes) {
+        append_char(&builder, L'"');
+    }
 
     return (string_value_t){ builder.data, builder.length, true };
 }
@@ -120,21 +127,24 @@ static string_value_t build_node_properties_html(const node_t *node) {
     string_value_t result = EMPTY_STRING_VALUE;
     string_builder_t builder = {0};
     for (size_t index = 0; index < count; index++) {
-        string_value_t value = EMPTY_STRING_VALUE;
+        node_display_value_t value;
         const wchar_t *key = get_node_property(node, index, &value);
         if (key == NULL) {
-            FREE_STRING(value);
             continue;
         }
-        string_value_t escaped_value = trim_and_escape_html_entities(value);
+        string_value_t escaped_value = value.text;
+        if (value.kind == NODE_DISPLAY_VALUE_STRING_LITERAL) {
+            escaped_value = trim_and_escape_html_entities(value.text, true);
+        } else {
+            escaped_value.should_free = false;
+        }
         append_string(&builder, L"<br/>");
         append_string(&builder, key);
         append_string(&builder, L": <font color='blue'>");
         append_string_value(&builder, escaped_value);
         result = append_string(&builder, L"</font>");
-
         FREE_STRING(escaped_value);
-        FREE_STRING(value);
+        FREE_STRING(value.text);
     }
     return result;
 }
@@ -180,19 +190,20 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
     append_to_vector(all_nodes, (void*)node);
     set_in_avl_tree(nodes_to_ids, (void*)node, (value_t){ .uint32_val = id });        
     const wchar_t* name = node->vtbl->type_name;
-    string_value_t value = get_node_data(node);
+    node_display_value_t value = get_node_data(node);
     string_value_t properties = build_node_properties_html(node);
     const wchar_t *node_color = node->id ? L"black" : L"silver";
-    if (value.length > 0) {
+    if (value.text.length > 0) {
         const wchar_t *font_color = L"blue";
-        if (node->vtbl->type == NODE_VARIABLE) {
-            variable_t *var = (variable_t*)node;
-            if (var->declarator->name.data[0] == L'*') {
-                // build-in object
-                font_color = L"purple";
-            }
+        if (value.kind == NODE_DISPLAY_VALUE_PREDEFINED) {
+            font_color = L"purple";
         }
-        string_value_t formatted_value = trim_and_escape_html_entities(value);
+        string_value_t formatted_value = value.text;
+        if (value.kind == NODE_DISPLAY_VALUE_STRING_LITERAL) {
+            formatted_value = trim_and_escape_html_entities(value.text, true);
+        } else {
+            formatted_value.should_free = false;
+        }
         add_formatted_source(
             builder,
             indent,
@@ -207,6 +218,7 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
             )
         );
         FREE_STRING(formatted_value);
+        FREE_STRING(value.text);
     } else if (properties.length > 0) {
         add_formatted_source(
             builder,
@@ -232,7 +244,6 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
         );
     }
     FREE_STRING(properties);
-    FREE_STRING(value);
     size_t count = get_node_child_count(node);
     for (size_t index = 0; index < count; index++) {
         int child_id = node_to_dot(

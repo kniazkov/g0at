@@ -206,17 +206,16 @@ const declarator_t *get_builtin_declarator();
 size_t get_property_count_of_declarator(const node_t *node);
 
 /**
- * @brief Retrieves a visualization/debug property exposed by a declarator.
+ * @brief Retrieves a property of a declarator by index.
  *
- * Returns the `"abstract"` property when the declarator has a final abstract
- * value attached to it.
- * 
- * @param node A pointer to the declarator node.
+ * Currently exposes the abstract interpretation value of the declarator, if it
+ * is available.
+ *
+ * @param node Pointer to the declarator node.
  * @param index Zero-based property index.
- * @param out_value Output pointer receiving the string representation of the
- *        abstract value, or an empty string value if unavailable.
- * @return Property key as a constant wide string, or NULL if the requested
- *         property is not available.
+ * @param out_value Output pointer to receive the property value and display
+ * classification.
+ * @return Property key as a constant wide string, or NULL if unavailable.
  */
 const wchar_t *get_property_of_declarator(const node_t *node, size_t index,
-        string_value_t *out_value);
+        node_display_value_t *out_value);

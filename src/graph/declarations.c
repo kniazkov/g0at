@@ -37,14 +37,34 @@ size_t get_property_count_of_declarator(const node_t *node) {
     return decl->abstract_value ? 1 : 0;
 }
 
+/**
+ * @brief Retrieves a property of a declarator by index.
+ *
+ * Currently exposes the abstract interpretation value of the declarator, if it
+ * is available.
+ *
+ * @param node Pointer to the declarator node.
+ * @param index Zero-based property index.
+ * @param out_value Output pointer to receive the property value and display
+ *  classification.
+ * @return Property key as a constant wide string, or NULL if unavailable.
+ */
 const wchar_t *get_property_of_declarator(const node_t *node, size_t index,
-        string_value_t *out_value) {
+        node_display_value_t *out_value) {
     const declarator_t *decl = (const declarator_t *)node;
     if (index == 0 && decl->abstract_value) {
-        *out_value = lattice_to_string(decl->abstract_value);
+        *out_value = (node_display_value_t){
+            .text = lattice_to_string(decl->abstract_value),
+            .kind = is_string_lattice_element(decl->abstract_value) ? 
+                NODE_DISPLAY_VALUE_STRING_LITERAL :
+                NODE_DISPLAY_VALUE_PLAIN
+        };
         return L"abstract";
     } else {
-        *out_value = EMPTY_STRING_VALUE;
+        *out_value = (node_display_value_t){
+            .text = EMPTY_STRING_VALUE,
+            .kind = NODE_DISPLAY_VALUE_PLAIN
+        };
         return NULL;
     }
 }
@@ -73,16 +93,20 @@ typedef struct {
 } variable_declarator_t;
 
 /**
- * @brief Gets the variable name as string data.
- * 
- * This function provides access to the variable name stored in the declarator node.
- * 
+ * @brief Gets the variable declarator name as display data.
+ *
+ * This function provides access to the variable name stored in the declarator
+ * node together with the default display classification.
+ *
  * @param node Pointer to the variable declarator node.
- * @return `string_value_t` containing the variable name.
+ * @return Display value containing the variable name.
  */
-static string_value_t vdeclr_get_data(const node_t *node) {
+static node_display_value_t vdeclr_get_data(const node_t *node) {
     const variable_declarator_t *decl = (const variable_declarator_t *)node;
-    return VIEW_TO_VALUE(decl->base.name);
+    return (node_display_value_t){
+        .text = VIEW_TO_VALUE(decl->base.name),
+        .kind = NODE_DISPLAY_VALUE_PLAIN
+    };
 }
 
 /**
@@ -492,16 +516,20 @@ typedef struct {
 } constant_declarator_t;
 
 /**
- * @brief Gets the constant name as string data.
- * 
- * Provides access to the constant name stored in the declarator node.
- * 
+ * @brief Gets the constant declarator name as display data.
+ *
+ * Provides access to the constant name stored in the declarator node together
+ * with the default display classification.
+ *
  * @param node Pointer to the constant declarator node.
- * @return string_value_t containing the constant name.
+ * @return Display value containing the constant name.
  */
-static string_value_t cdeclr_get_data(const node_t *node) {
+static node_display_value_t cdeclr_get_data(const node_t *node) {
     const constant_declarator_t *decl = (const constant_declarator_t *)node;
-    return VIEW_TO_VALUE(decl->base.name);
+    return (node_display_value_t){
+        .text = VIEW_TO_VALUE(decl->base.name),
+        .kind = NODE_DISPLAY_VALUE_PLAIN
+    };
 }
 
 /**

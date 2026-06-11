@@ -49,14 +49,15 @@ struct statement_t {
 };
 
 /**
- * @brief Gets the primary string data associated with a statement.
+ * @brief Gets the primary display data associated with a statement.
  *
  * This helper forwards the request to the underlying base node helper.
  *
  * @param stmt A pointer to the statement.
- * @return A `string_value_t` containing the statement data or empty value if none.
+ * @return A @ref node_display_value_t containing the statement data and
+ *  display classification, or an empty value if none.
  */
-static inline string_value_t get_statement_data(const statement_t *stmt) {
+static inline node_display_value_t get_statement_data(const statement_t *stmt) {
     return get_node_data(&stmt->base);
 }
 

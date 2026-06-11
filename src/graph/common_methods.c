@@ -11,16 +11,22 @@
 #include "common_methods.h"
 #include "analysis/lattice.h"
 
-string_value_t no_data(const node_t *node) {
-    return NULL_STRING_VALUE;
-};
+node_display_value_t no_data(const node_t *node) {
+    return (node_display_value_t) {
+        .text = NULL_STRING_VALUE,
+        .kind = NODE_DISPLAY_VALUE_PLAIN
+    };
+}
 
 size_t no_properties(const node_t *node) {
     return 0;
 }
 
-const wchar_t *no_property(const node_t *node, size_t index, string_value_t *out_value) {
-    *out_value = EMPTY_STRING_VALUE;
+const wchar_t *no_property(const node_t *node, size_t index, node_display_value_t *out_value) {
+    *out_value = (node_display_value_t){
+        .text = EMPTY_STRING_VALUE,
+        .kind = NODE_DISPLAY_VALUE_PLAIN
+    };
     return NULL;
 }
 
