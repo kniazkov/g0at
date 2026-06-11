@@ -54,22 +54,22 @@ static inline int get_balance(avl_node_t *node) {
 /**
  * @brief Copies a key according to tree ownership rules.
  *
- * @param tree AVL tree.
+ * @param tree AVL tree whose copy callback is used.
  * @param key Source key.
  * @return Copied key, or the original key if no copy function is set.
  */
-static inline void *copy_key(avl_tree_t *tree, void *key) {
+static inline void *copy_key(const avl_tree_t *tree, void *key) {
     return tree->copy_key ? tree->copy_key(key) : key;
 }
 
 /**
  * @brief Copies a value according to tree ownership rules.
  *
- * @param tree AVL tree.
+ * @param tree AVL tree whose copy callback is used.
  * @param value Source value.
  * @return Copied value, or the original value if no copy function is set.
  */
-static inline value_t copy_value(avl_tree_t *tree, value_t value) {
+static inline value_t copy_value(const avl_tree_t *tree, value_t value) {
     return tree->copy_value ? tree->copy_value(value) : value;
 }
 
