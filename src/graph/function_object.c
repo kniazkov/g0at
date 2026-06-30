@@ -656,7 +656,8 @@ static void fobj_generate_indented_goat_code(const node_t *node, source_builder_
     const function_object_t* expr = (const function_object_t*)node;
     string_builder_t header;
     init_string_builder(&header, 16);
-    append_formatted_source(builder, generate_header(expr, &header));
+    generate_header(expr, &header);
+    append_formatted_source(builder, append_char(&header, L'{'));
     list_item_t *item = expr->body->statements->head;
     while (item) {
         statement_t *stmt = (statement_t*)item->value.ptr;

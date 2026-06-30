@@ -1,8 +1,7 @@
 /**
- * @file statement_sequence.h
+ * @file statement_sequence.c
  * @copyright 2026 Ivan Kniazkov
- * @brief ...
- * 
+ * @brief Helpers for working with ordered lists of statement nodes.
  */
 
 #include "statement_sequence.h"
