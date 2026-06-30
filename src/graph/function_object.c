@@ -13,6 +13,7 @@
 #include "common_methods.h"
 #include "expression.h"
 #include "statement.h"
+#include "statement_sequence.h"
 #include "declarations.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
@@ -390,28 +391,8 @@ static node_t* fbody_get_child(const node_t *node, size_t index) {
  */
 static bool fbody_insert_child_before(node_t *node, node_t *new_child,
         node_t *before_child) {
-    if (!is_statement(new_child->vtbl->type)) {
-        return false;
-    }
-
     function_body_t* body = (function_body_t*)node;
-    list_item_t *item = body->statements->head;
-    while(item) {
-        if (item->value.ptr == before_child) {
-            break;
-        }
-        item = item->next;
-    }
-    if (!item) {
-        return false;
-    }
-
-    insert_item_to_linked_list_before_existing(
-        body->statements,
-        item,
-        (value_t){ .ptr = new_child }
-    );
-    return true;
+    return insert_statement_to_list_before(body->statements, new_child, before_child);
 }
 
 /**

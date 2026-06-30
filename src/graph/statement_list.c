@@ -12,6 +12,7 @@
 #include "common_methods.h"
 #include "expression.h"
 #include "statement.h"
+#include "statement_sequence.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/linked_list.h"
@@ -89,28 +90,8 @@ static node_t* get_child(const node_t *node, size_t index) {
  * @return `true` if insertion succeeded, otherwise `false`.
  */
 static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_child) {
-    if (!is_statement(new_child->vtbl->type)) {
-        return false;
-    }
-
     statement_list_t* list = (statement_list_t*)node;
-    list_item_t *item = list->statements->head;
-    while (item) {
-        if (item->value.ptr == before_child) {
-            break;
-        }
-        item = item->next;
-    }
-    if (!item) {
-        return false;
-    }
-
-    insert_item_to_linked_list_before_existing(
-        list->statements,
-        item,
-        (value_t){ .ptr = new_child }
-    );
-    return true;
+    return insert_statement_to_list_before(list->statements, new_child, before_child);
 }
 
 /**
