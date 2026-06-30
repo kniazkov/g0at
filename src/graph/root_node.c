@@ -129,23 +129,8 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
  */
 static string_value_t generate_goat_code(const node_t *node) {
     const root_node_t *root = (const root_node_t *)node;
-    string_builder_t builder;
-    init_string_builder(&builder, 0);
-    string_value_t result = EMPTY_STRING_VALUE;
-    list_item_t *item = root->statements->head;
-    bool flag = false;
-    while (item) {
-        if (flag) {
-            append_char(&builder, L' ');
-        }
-        flag = true;
-        statement_t *stmt = (statement_t*)item->value.ptr;
-        string_value_t stmt_as_string = generate_goat_code_from_statement(stmt);
-        result = append_string_value(&builder, stmt_as_string);
-        FREE_STRING(stmt_as_string);
-        item = item->next;
-    }
-    return result;
+    string_builder_t builder = { 0 };
+    return generate_goat_code_from_statement_list(root->statements, &builder, false);
 }
 
 /**

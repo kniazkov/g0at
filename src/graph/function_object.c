@@ -593,7 +593,7 @@ static string_value_t generate_header(const function_object_t* expr, string_buil
         }
         append_string_view(builder, expr->arguments->arg_list[index]->base.name);
     }
-    return append_static_string(builder, L") {");
+    return append_static_string(builder, L") ");
 }
 
 /**
@@ -629,20 +629,7 @@ static string_value_t fobj_generate_goat_code(const node_t *node) {
     string_builder_t builder;
     init_string_builder(&builder, 128);
     generate_header(expr, &builder);
-    list_item_t *item = expr->body->statements->head;
-    bool needs_space = false;
-    while (item) {
-        if (needs_space) {
-            append_char(&builder, L' ');
-        }
-        needs_space = true;
-        statement_t *stmt = (statement_t*)item->value.ptr;
-        string_value_t stmt_as_string = generate_goat_code_from_statement(stmt);
-        append_string_value(&builder, stmt_as_string);
-        FREE_STRING(stmt_as_string);
-        item = item->next;
-    }
-    return append_char(&builder, L'}');
+    return generate_goat_code_from_statement_list(expr->body->statements, &builder, true);
 }
 
 /**

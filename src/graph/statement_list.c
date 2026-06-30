@@ -148,31 +148,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
  */
 static string_value_t generate_goat_code(const node_t *node) {
     const statement_list_t* list = (const statement_list_t*)node;
-    if (list->statements->size == 0) {
-        return STATIC_STRING(L"{ }");
-    }
-
-    string_builder_t builder;
-    init_string_builder(&builder, 16);
-    append_char(&builder, L'{');
-
-    bool has_previous = false;
-    list_item_t *item = list->statements->head;
-    while (item) {
-        if (has_previous) {
-            append_char(&builder, L' ');
-        }
-        has_previous = true;
-
-        statement_t *stmt = (statement_t*)item->value.ptr;
-        string_value_t stmt_as_string = generate_goat_code_from_statement(stmt);
-        append_string_value(&builder, stmt_as_string);
-        FREE_STRING(stmt_as_string);
-
-        item = item->next;
-    }
-
-    return append_char(&builder, L'}');
+    string_builder_t builder = { 0 };
+    return generate_goat_code_from_statement_list(list->statements, &builder, true);
 }
 
 /**
