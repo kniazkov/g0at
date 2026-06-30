@@ -14,6 +14,8 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "analysis/abstract_state.h"
+#include "analysis/lattice.h"
 #include "codegen/source_builder.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
@@ -91,6 +93,34 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
         return L"expression";
     }
     return NULL;
+}
+
+/**
+ * @brief Executes abstract interpretation for a return statement node.
+ *
+ * Implements the `execute` virtual method for `return` nodes. The method evaluates the returned
+ * expression, or uses `null` when the statement has no value, stores the resulting lattice element
+ * through `state->return_value` when such storage is available, and switches the abstract control
+ * flow to `FLOW_RETURN`.
+ *
+ * After this method has been called, enclosing statement sequences should stop
+ * interpreting following statements in the current function body.
+ *
+ * @param node The return statement node to execute.
+ * @param state Current abstract state.
+ * @param arena Arena used for lattice elements produced while calculating the
+ *        returned expression.
+ * @return The same abstract state after applying return-statement semantics.
+ */
+static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
+    const return_t* stmt = (const return_t*)node;
+    if (state->return_value) {
+        *state->return_value = stmt->value ?
+            calculate_expression(stmt->value, state, arena) :
+            make_null_element();
+    }
+    state->control_flow = FLOW_RETURN;
+    return state;
 }
 
 /**
@@ -187,7 +217,7 @@ static node_vtbl_t return_vtbl = {
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
     .calculate = cannot_calculate,
-    .execute = execute_nothing,
+    .execute = execute,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
