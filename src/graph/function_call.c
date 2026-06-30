@@ -16,6 +16,8 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "analysis/abstract_state.h"
+#include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 
@@ -116,6 +118,14 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
         return L"object";
     }
     return NULL;
+}
+
+/**
+ * ....
+ */
+static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
+    const function_call_t* expr = (const function_call_t*)node;
+    return make_top_element();
 }
 
 /**
@@ -237,7 +247,7 @@ static node_vtbl_t function_call_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = cannot_calculate,
+    .calculate = calculate,
     .execute = execute_nothing,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
