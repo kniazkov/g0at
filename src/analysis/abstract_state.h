@@ -82,6 +82,30 @@ typedef struct declarator_t declarator_t;
 typedef struct lattice_element_t lattice_element_t;
 
 /**
+ * @enum abstract_control_flow_t
+ * @brief Control-flow mode of the abstract interpreter.
+ *
+ * Describes whether interpretation should continue normally or whether a
+ * return statement has already transferred control out of the current function.
+ */
+typedef enum {
+    /**
+     * @brief Normal execution flow.
+     *
+     * The interpreter continues executing statements in the current function.
+     */
+    FLOW_NORMAL,
+
+    /**
+     * @brief Return flow.
+     *
+     * A return statement has been executed and the interpreter should unwind the
+     * current function body without executing following statements.
+     */
+    FLOW_RETURN
+} abstract_control_flow_t;
+
+/**
  * @struct abstract_state_t
  * @brief Mutable abstract state used during abstract interpretation.
  *
@@ -109,6 +133,22 @@ struct abstract_state_t {
      * `value_t.ptr`.
      */
     avl_tree_t *values;
+
+    /**
+     * @brief Current abstract control-flow mode.
+     *
+     * Indicates whether interpretation should continue normally or whether a
+     * return statement has already been encountered in the current function.
+     */
+    abstract_control_flow_t control_flow;
+
+    /**
+     * @brief Abstract value returned from the current function.
+     *
+     * Stores a pointer to the lattice-element pointer produced by a return
+     * statement.
+     */
+    const lattice_element_t **return_value;
 };
 
 /**

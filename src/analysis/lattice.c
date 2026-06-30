@@ -1846,7 +1846,7 @@ static const wchar_t* lattice_type_to_string(lattice_type_t type) {
             return L"⊥";
 
         case LATTICE_NOT_NULL:
-            return L"¬null";
+            return L"not null";
 
         case LATTICE_NULL:
             return L"null";
@@ -1909,7 +1909,7 @@ string_value_t lattice_to_string(const lattice_element_t *element) {
             return STATIC_STRING(L"⊥");
 
         case LATTICE_NOT_NULL:
-            return STATIC_STRING(L"¬null");
+            return STATIC_STRING(L"not null");
 
         case LATTICE_NULL:
             return STATIC_STRING(L"null");

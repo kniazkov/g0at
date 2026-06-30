@@ -114,6 +114,8 @@ abstract_state_t *create_abstract_state(arena_t *arena) {
     state->values = create_avl_tree(declarator_comparator);
     state->values->copy_value = copy_value;
     state->values->destroy_value = destroy_value;
+    state->control_flow = FLOW_NORMAL;
+    state->return_value = NULL;
     return state;
 }
 
@@ -124,6 +126,8 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     abstract_state_t *copy = (abstract_state_t*)ALLOC(sizeof(abstract_state_t));
     copy->arena = state->arena;
     copy->values = clone_avl_tree(state->values);
+    copy->control_flow = FLOW_NORMAL;
+    copy->return_value = state->return_value;
     return copy;
 }
 
