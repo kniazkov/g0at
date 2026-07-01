@@ -1,0 +1,8 @@
+const f = func(n) {
+    if (n < 10) {
+        f(n + 1)
+        print(n)
+    }
+}
+
+f(0)
