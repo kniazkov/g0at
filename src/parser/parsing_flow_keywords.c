@@ -30,7 +30,7 @@ static compilation_error_t *parsing_if_else(token_t *token, parser_memory_t *mem
             get_messages()->expected_condition_after_if
         );
     }
-    expression_t *condition = (expression_t*)token->node;
+    expression_t *condition = (expression_t*)brackets->children.first->node;
     token_t *next = brackets->right;
     if (
         next == NULL ||
@@ -47,7 +47,7 @@ static compilation_error_t *parsing_if_else(token_t *token, parser_memory_t *mem
     if (next->type == TOKEN_STATEMENT) {
         true_branch = (statement_t*)token->node;
     } else {
-        true_branch = create_statement_expression_node(memory->graph, (expression_t*)token->node);
+        true_branch = create_statement_expression_node(memory->graph, (expression_t*)next->node);
     }
     node_t *node = create_if_else_node(memory->graph, condition, true_branch, NULL);
     collapse_tokens_to_token(memory, token, next, TOKEN_STATEMENT, node);

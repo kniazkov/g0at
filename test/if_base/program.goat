@@ -1,0 +1,5 @@
+if (true) {
+    print("it works")
+}
+if (false)
+    print("it does not work")
