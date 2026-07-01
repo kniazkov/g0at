@@ -233,3 +233,19 @@ statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrap
  * @return A pointer to the created return statement node.
  */
 node_t *create_return_node(arena_t *arena, expression_t *value);
+
+/**
+ * @brief Creates an if-else statement node.
+ * 
+ * Allocates a new if-else statement node in the specified arena and initializes
+ * its condition, true branch, and optional false branch.
+ * 
+ * @param arena Arena used to allocate the node.
+ * @param condition Condition expression of the if statement.
+ * @param true_branch Statement executed when the condition is true.
+ * @param false_branch Statement executed when the condition is false, or NULL
+ *  when there is no else branch.
+ * @return Pointer to the newly created node.
+ */
+node_t *create_if_else_node(arena_t *arena, expression_t *condition, statement_t *true_branch,
+        statement_t *false_branch);
