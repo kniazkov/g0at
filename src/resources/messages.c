@@ -65,6 +65,9 @@ static messages_t english = {
     .invalid_function_argument = L"Function argument must be an identifier, but got '%s'",
     .invalid_parenthesized_expression = L"Inside parentheses there must be exactly one expression",
     .variable_used_before_declaration = L"Variable '%s' is used before its declaration",
+    .expected_statement_after_if = L"Statement expected after 'if' keyword",
+    .expected_statement_after_else = L"Statement expected after 'else' keyword",
+    .else_without_if = L"'else' keyword without matching 'if'",
 };
 
 /**
@@ -117,6 +120,9 @@ static messages_t russian = {
     .invalid_function_argument = L"Аргумент функции должен быть идентификатором, но получено '%s'",
     .invalid_parenthesized_expression = L"Внутри круглых скобок должно быть выражение, причем ровно одно",
     .variable_used_before_declaration = L"Переменная '%s' используется до ее объявления",
+    .expected_statement_after_if = L"После ключевого слова 'if' ожидается инструкция языка",
+    .expected_statement_after_else = L"После ключевого слова 'else' ожидается инструкция языка",
+    .else_without_if = L"Ключевое слово 'else' без соответствующего 'if'",
 };
 
 /**

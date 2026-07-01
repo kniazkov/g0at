@@ -51,6 +51,8 @@ typedef enum {
     TOKEN_CONST,                  /**< The 'const' keyword for constant declarations */
     TOKEN_FUNC,                   /**< The 'func' keyword for function declarations */
     TOKEN_RETURN,                 /**< The 'return' keyword used in return statements */
+    TOKEN_IF,                     /**< The 'if' keyword used in if-else statements */
+    TOKEN_ELSE,                   /**< The 'else' keyword used in if-else statements */
 
     TOKEN_BRACKET_PAIR,           /**< A pair of brackets and all tokens between them */
     TOKEN_EXPRESSION,             /**< An expression token, which contains an attached
@@ -282,6 +284,14 @@ typedef struct {
      * @brief Group for 'return' keyword tokens.
      */
     token_list_t return_keywords;
+
+    /**
+     * @brief Group for control-flow keyword tokens.
+     *
+     * Contains keywords that introduce branches or loops, such as `if`, `for`,
+     * `do`, and `while`.
+     */
+    token_list_t control_flow_keywords;
 } token_groups_t;
 
 /**

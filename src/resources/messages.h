@@ -54,6 +54,9 @@ typedef struct {
     const wchar_t const *invalid_function_argument;
     const wchar_t const *invalid_parenthesized_expression;
     const wchar_t const *variable_used_before_declaration;
+    const wchar_t const *expected_statement_after_if;
+    const wchar_t const *expected_statement_after_else;
+    const wchar_t const *else_without_if;
     // add other
 } messages_t;
 

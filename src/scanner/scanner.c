@@ -249,6 +249,20 @@ static const keyword_lookup_t keywords[] = {
         NULL,
         offsetof(token_groups_t, return_keywords)
     },
+    {
+        L"if",
+        2,
+        TOKEN_IF,
+        NULL,
+        offsetof(token_groups_t, control_flow_keywords)
+    },
+    {
+        L"else",
+        4,
+        TOKEN_ELSE,
+        NULL,
+        SIZE_MAX
+    },
     /* Add new keywords here */
 };
 

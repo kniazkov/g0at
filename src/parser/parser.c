@@ -109,6 +109,12 @@ compilation_error_t *parsing_returns(token_t *token, parser_memory_t *memory,
     token_groups_t *groups);
 
 /**
+ * @brief Rule for handling `if-else`, `for`, `do-while`, `while` statements.
+ */
+compilation_error_t *parsing_flow_keywords(token_t *token, parser_memory_t *memory,
+        token_groups_t *groups);
+
+/**
  * @brief Rule for processing an expression in parentheses - identifies it as such and changes it
  * in the token chain. 
  */
@@ -472,6 +478,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_FORWARD(var_keywords, parsing_variable_declarations);
     APPLY_FORWARD(const_keywords, parsing_constant_declarations);
     APPLY_FORWARD(return_keywords, parsing_returns);
+    APPLY_BACKWARD(control_flow_keywords, parsing_flow_keywords);
     APPLY_FORWARD(statement_lists, parsing_statement_list_bodies);
     APPLY_FORWARD(function_objects, parsing_function_bodies);
     APPLY_FORWARD(preprocessed_parenthesized_expressions, parsing_parenthesized_expressions);
