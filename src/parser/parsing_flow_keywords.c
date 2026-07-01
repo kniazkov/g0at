@@ -45,7 +45,7 @@ static compilation_error_t *parsing_if_else(token_t *token, parser_memory_t *mem
     }
     statement_t *true_branch;
     if (next->type == TOKEN_STATEMENT) {
-        true_branch = (statement_t*)token->node;
+        true_branch = (statement_t*)next->node;
     } else {
         true_branch = create_statement_expression_node(memory->graph, (expression_t*)next->node);
     }
