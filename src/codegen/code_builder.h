@@ -73,6 +73,38 @@ code_builder_t *create_code_builder();
 instr_index_t add_instruction(code_builder_t *builder, instruction_t instruction);
 
 /**
+ * @brief Returns a mutable pointer to an already added instruction.
+ *
+ * This function is intended for patching instructions after they have been
+ * emitted, for example to fill a jump target that was not known when the
+ * instruction was added.
+ *
+ * The returned pointer is temporary. It must be used immediately and must not be
+ * stored, because adding another instruction may reallocate the internal
+ * instruction buffer and invalidate the pointer.
+ *
+ * @param builder The code builder that owns the instruction list.
+ * @param index Index of the instruction to access.
+ * @return Pointer to the instruction at the specified index.
+ */
+static inline instruction_t *get_instruction(code_builder_t *builder, instr_index_t index) {
+    return &builder->instructions[index];
+}
+
+/**
+ * @brief Returns the index that will be assigned to the next added instruction.
+ *
+ * This function is useful when generating control-flow bytecode, where jump
+ * targets often point to an instruction that will be emitted later.
+ *
+ * @param builder The code builder whose next instruction index is requested.
+ * @return Index of the next instruction to be added.
+ */
+static inline instr_index_t get_next_instruction_index(const code_builder_t *builder) {
+    return (instr_index_t)builder->size;
+}
+
+/**
  * @brief Destroys the code builder and frees its memory.
  *
  * This function frees the memory used by the instruction list and the builder itself.

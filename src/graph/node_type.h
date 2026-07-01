@@ -334,6 +334,18 @@ typedef enum {
      * - Return value expression node (optional)
      */
     NODE_RETURN,
+
+    /**
+     * @brief Conditional branch statement node type.
+     *
+     * Represents an `if` statement in the syntax tree, optionally followed by an
+     * `else` branch.
+     * Contains:
+     * - Condition expression node
+     * - Statement node executed when the condition is true
+     * - Statement node executed when the condition is false (optional)
+     */
+    NODE_IF_ELSE,
 } node_type_t;
 
 /**
