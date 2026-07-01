@@ -37,6 +37,8 @@ static instruction_descriptor_t descriptors[] =
       { .code = L"NOP" }
     , { .code = L"ARG", .arg_1_is_unsigned_integer = true }
     , { .code = L"END" }
+    , { .code = L"JUMP", .arg_1_is_unsigned_integer = true }
+    , { .code = L"JIF", .arg_1_is_unsigned_integer = true }
     , { .code = L"POP" }
     , { .code = L"NIL" }
     , { .code = L"TRUE" }

@@ -155,6 +155,55 @@ static bool exec_END(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 }
 
 /**
+ * @brief Executes the JUMP instruction.
+ *
+ * The `JUMP` opcode performs an unconditional branch by setting the current thread's instruction
+ * pointer to the instruction index stored in `instr.arg1`. The data stack
+ * is not inspected or modified.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute. Its `arg1` field contains the target
+ *  instruction index.
+ * @param thread Pointer to the thread that is executing the instruction.
+ * @return Always returns `true` to continue execution from the target instruction.
+ */
+static bool exec_JUMP(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    thread->instr_id = (instr_index_t)instr.arg1;
+    return true;
+}
+
+/**
+ * @brief Executes the JIF instruction.
+ *
+ * The `JIF` opcode pops the top object from the data stack and converts it to a
+ * boolean value. If the value is `false`, execution jumps to the instruction index stored in
+ * `instr.arg1`; otherwise, execution continues with the next instruction.
+ *
+ * If the data stack is empty, execution fails and the function returns `false`.
+ *
+ * @param runtime The runtime environment.
+ * @param instr The instruction to execute. Its `arg1` field contains the target
+ *  instruction index used when the condition is `false`.
+ * @param thread Pointer to the thread that is executing the instruction.
+ * @return `true` if execution can continue, `false` if no condition object was available
+ *  on the data stack.
+ */
+static bool exec_JIF(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *obj = pop_object_from_stack(thread->data_stack);
+    if (!obj) {
+        return false;
+    }
+    bool flag = get_object_boolean_value(obj);
+    if (flag) {
+        thread->instr_id++;
+    } else {
+        thread->instr_id = (instr_index_t)instr.arg1;
+    }
+    DECREFIF(obj);
+    return true;
+}
+
+/**
  * @brief Executes the POP instruction.
  * 
  * The `POP` opcode removes the topmost object from the data stack. It is used when an object
@@ -986,6 +1035,8 @@ static instr_executor_t executors[] = {
     exec_NOP,     /**< No operation - does nothing. */
     exec_ARG,     /**< Argument push onto the argument stack. */
     exec_END,     /**< Ends the program immediately. */
+    exec_JUMP,    /**< Unconditionally jumps to another instruction. */
+    exec_JIF,     /**< Jumps to another instruction if the stack contains `false`. */
     exec_POP,     /**< Pops an object off the data stack. */
     exec_NIL,     /**< Pushes a null object onto the data stack. */
     exec_TRUE,    /**< Pushes the boolean value true onto the data stack. */

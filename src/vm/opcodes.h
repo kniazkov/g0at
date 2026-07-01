@@ -60,6 +60,23 @@ typedef enum {
     END, /**< Immediately ends the program execution. */
 
     /**
+     * @brief Jumps unconditionally to another instruction.
+     *
+     * The `JUMP` opcode changes the instruction pointer to the target instruction
+     * index encoded in the instruction argument. It does not inspect the data stack.
+     */
+    JUMP, /**< Unconditionally jumps to another instruction. */
+
+    /**
+     * @brief Jumps to another instruction if the stack contains `false`.
+     *
+     * The `JIF` opcode checks the boolean value on top of the data stack. If that
+     * value is `false`, execution continues from the target instruction index
+     * encoded in the instruction argument.
+     */
+    JIF, /**< Jumps to another instruction if the stack contains `false`. */
+
+    /**
      * @brief Pops an object off the data stack.
      *
      * The `POP` opcode removes the top object from the data stack. This is used when an object 
