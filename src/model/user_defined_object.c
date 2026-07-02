@@ -242,6 +242,9 @@ static void mark(object_t *obj) {
     if (uobj->state == UNMARKED) {
         uobj->state = MARKED;
         avl_tree_for_each(uobj->properties, mark_child_pair, NULL);
+        for (size_t index = 0; index < uobj->proto->size; index++) {
+            mark_object((object_t*)uobj->proto->data[index]);
+        }
     }
 }
 

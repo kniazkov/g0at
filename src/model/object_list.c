@@ -4,6 +4,8 @@
  * @brief Implementation of functions for managing object lists in Goat language.
  */
 
+#include <assert.h>
+
 #include "object_list.h"
 
 void init_object_list(object_list_t *list) {
@@ -13,6 +15,7 @@ void init_object_list(object_list_t *list) {
 }
 
 void add_object_to_list(object_list_t *list, object_t *obj) {
+    assert(obj->previous == NULL && obj->next == NULL);    
     if (list->tail) {
         list->tail->next = obj;
         obj->previous = list->tail;
@@ -49,6 +52,7 @@ object_t *remove_first_object_from_list(object_list_t *list) {
     } else {
         list->tail = NULL;
     }
+    obj->previous = obj->next = NULL;
     list->size--;
     return obj;
 }

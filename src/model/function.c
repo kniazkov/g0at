@@ -659,7 +659,7 @@ static object_vtbl_t dynamic_vtbl = {
 
 object_t *create_function_object(process_t *process, object_t **arg_names, size_t arg_count,
         instr_index_t first_instr_id, object_t *closure) {
-    object_dynamic_function_t *obj = (object_dynamic_function_t *)ALLOC(
+    object_dynamic_function_t *obj = (object_dynamic_function_t *)CALLOC(
         sizeof(object_dynamic_function_t));
     obj->base.vtbl = &dynamic_vtbl;
     obj->base.process = process;
