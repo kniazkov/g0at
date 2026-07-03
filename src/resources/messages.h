@@ -58,6 +58,7 @@ typedef struct {
     const wchar_t const *expected_statement_after_if;
     const wchar_t const *expected_statement_after_else;
     const wchar_t const *else_without_if;
+    const wchar_t const *duplicate_else_branch;
     // add other
 } messages_t;
 

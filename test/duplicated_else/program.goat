@@ -1,0 +1,7 @@
+if (true) {
+    print("it works")
+} else {
+    print("it does not work")
+} else {
+    print("bad, bad branch")
+}

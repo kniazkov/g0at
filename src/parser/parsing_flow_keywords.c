@@ -81,6 +81,15 @@ static compilation_error_t *parsing_if_else(token_t *token, parser_memory_t *mem
         false_branch = create_statement_expression_node(memory->graph, (expression_t*)next->node);
     }
 
+    if (next->right && next->right->type == TOKEN_ELSE) {
+        return create_error_from_token(
+            memory->errors,
+            next->right,
+            CRITICAL,
+            get_messages()->duplicate_else_branch
+        );
+    }
+
     result = create_if_else_node(memory->graph, condition, true_branch, false_branch);
     collapse_tokens_to_token(memory, token, next, TOKEN_STATEMENT, result);
     return false;

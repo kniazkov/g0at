@@ -69,6 +69,7 @@ static messages_t english = {
     .expected_statement_after_if = L"Statement expected after 'if' keyword",
     .expected_statement_after_else = L"Statement expected after 'else' keyword",
     .else_without_if = L"'else' keyword without matching 'if'",
+    .duplicate_else_branch = L"Unexpected 'else' after an existing 'else' branch",
 };
 
 /**
@@ -125,6 +126,7 @@ static messages_t russian = {
     .expected_statement_after_if = L"После ключевого слова 'if' ожидается инструкция языка",
     .expected_statement_after_else = L"После ключевого слова 'else' ожидается инструкция языка",
     .else_without_if = L"Ключевое слово 'else' без соответствующего 'if'",
+    .duplicate_else_branch = L"После ветки 'else' не может следовать еще одна ветка 'else'",
 };
 
 /**

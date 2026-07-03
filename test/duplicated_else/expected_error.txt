@@ -1,0 +1,1 @@
+Fatal error in 'program.goat', 5.3: Unexpected 'else' after an existing 'else' branch
