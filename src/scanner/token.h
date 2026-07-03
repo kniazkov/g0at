@@ -292,6 +292,11 @@ typedef struct {
      * `do`, and `while`.
      */
     token_list_t control_flow_keywords;
+
+    /**
+     * @brief Group for 'else' keyword tokens.
+     */
+    token_list_t else_keywords;
 } token_groups_t;
 
 /**
