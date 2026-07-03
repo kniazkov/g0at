@@ -114,10 +114,16 @@ compilation_error_t *parsing_comparison_operators(token_t *operator, parser_memo
 
     expression_t *left_operand = (expression_t *)operator->left->node;
     expression_t *right_operand = (expression_t *)operator->right->node;
-    expression_t *operation;
-    if (0 == wcscmp(operator->text.data , L"<")) {
-        operation = create_less_node(memory->graph, left_operand, right_operand);
+    expression_t *operation = NULL;
+    if (operator->text.length == 1) {
+        if (operator->text.data[0] == L'<') {
+            operation = create_less_node(memory->graph, left_operand, right_operand);
+        } else if (operator->text.data[0] == L'>') {
+            operation = create_greater_node(memory->graph, left_operand, right_operand);
+        }
     }
+    
+    assert(operation != NULL);
     collapse_tokens_to_token(memory, operator->left, operator->right, TOKEN_EXPRESSION,
         &operation->base);
     return NULL;
