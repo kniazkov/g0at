@@ -57,6 +57,7 @@
 
 #include "lib/value.h"
 #include "lib/avl_tree.h"
+#include "common/control_flow.h"
 
 /**
  * @typedef abstract_state_t
@@ -80,30 +81,6 @@ typedef struct declarator_t declarator_t;
  * numeric categories, nullability, top, bottom, and similar analysis results.
  */
 typedef struct lattice_element_t lattice_element_t;
-
-/**
- * @enum abstract_control_flow_t
- * @brief Control-flow mode of the abstract interpreter.
- *
- * Describes whether interpretation should continue normally or whether a
- * return statement has already transferred control out of the current function.
- */
-typedef enum {
-    /**
-     * @brief Normal execution flow.
-     *
-     * The interpreter continues executing statements in the current function.
-     */
-    FLOW_NORMAL,
-
-    /**
-     * @brief Return flow.
-     *
-     * A return statement has been executed and the interpreter should unwind the
-     * current function body without executing following statements.
-     */
-    FLOW_RETURN
-} abstract_control_flow_t;
 
 /**
  * @struct abstract_state_t
@@ -140,7 +117,7 @@ struct abstract_state_t {
      * Indicates whether interpretation should continue normally or whether a
      * return statement has already been encountered in the current function.
      */
-    abstract_control_flow_t control_flow;
+    control_flow_t control_flow;
 
     /**
      * @brief Abstract value returned from the current function.
