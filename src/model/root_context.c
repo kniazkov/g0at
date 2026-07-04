@@ -121,7 +121,7 @@ static object_t root_context_data = {
  */
 static context_t root_context = {
     .data = &root_context_data,
-    .ret_address = BAD_INSTR_INDEX,
+    .jump_address = { BAD_INSTR_INDEX, BAD_INSTR_INDEX },
     .ret_value_index = BAD_STACK_INDEX,
     .unwinding_index = BAD_STACK_INDEX
 };

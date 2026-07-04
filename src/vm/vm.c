@@ -958,16 +958,21 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
  */
 static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     context_t *ctx = thread->context;
-    if (ctx->ret_value_index == BAD_STACK_INDEX) {
-        return false; // not returning context
-    }
+    assert (ctx->ret_value_index != BAD_STACK_INDEX);
     object_t *ret_value = pop_object_from_stack(thread->data_stack);
     if (ret_value == NULL) {
         return false; // stack is empty
     }
     replace_object_on_stack(thread->data_stack, ret_value, ctx->ret_value_index);
+    while (ctx && ctx->control_flow != FLOW_RETURN) {
+        if (ctx->unwinding_index != BAD_STACK_INDEX) {
+            reduce_object_stack(thread->data_stack, ctx->unwinding_index);
+        }
+        ctx = destroy_context(ctx);
+    }
+    assert(ctx != NULL);
     reduce_object_stack(thread->data_stack, ctx->unwinding_index);
-    thread->instr_id = ctx->ret_address;
+    thread->instr_id = ctx->jump_address[0];
     thread->context = destroy_context(ctx);
     return true;
 }

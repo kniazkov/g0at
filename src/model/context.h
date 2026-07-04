@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "common/control_flow.h"
 #include "common/types.h"
 
 /**
@@ -63,14 +64,24 @@ struct context_t {
     context_t *previous;
 
     /**
-     * @brief The instruction address to return to after context completion.
-     * 
-     * For function calls, stores the location in the bytecode where execution
-     * should resume after the function returns. Zero address meaning either:
-     *   - This is a top-level context (global scope)
-     *   - The return address is stored in the previous contexts
+     * @brief Control-flow mode handled by this context.
+     *
+     * Defines which non-local control-flow transfer stops unwinding at this context.
+     * When the current thread flow matches this value, the context consumes the flow
+     * and redirects execution to the corresponding entry in `jump_address`.
      */
-    instr_index_t ret_address;
+    control_flow_t control_flow;
+
+    /**
+     * @brief Jump targets used when unwinding this context.
+     *
+     * Stores instruction indices associated with non-local control-flow transfers.
+     * The selected target depends on the control-flow mode that caused the unwind.
+     *
+     * For example, a function-call context uses the `FLOW_RETURN` target to resume
+     * execution after the call.
+     */
+    instr_index_t jump_address[2];
 
     /**
      * @brief Stack index for the return value of a function.

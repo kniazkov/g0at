@@ -20,7 +20,9 @@ context_t *create_context(process_t *process, context_t *caller, object_t *proto
         (object_array_t){ proto ? &proto : &caller->data, 1 }
     );
     ctx->previous = caller;
-    ctx->ret_address = BAD_INSTR_INDEX;
+    ctx->control_flow = FLOW_NORMAL;
+    ctx->jump_address[0] = BAD_INSTR_INDEX;
+    ctx->jump_address[1] = BAD_INSTR_INDEX;
     ctx->ret_value_index = caller->ret_value_index;
     ctx->unwinding_index = BAD_STACK_INDEX;
     return ctx;
