@@ -121,12 +121,16 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
  */
 static string_value_t generate_goat_code(const node_t *node) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
-    string_builder_t builder;
     string_value_t expr_as_string = generate_goat_code_from_expression(stmt->wrapped);
-    init_string_builder(&builder, expr_as_string.length + 1);  // +1 for the semicolon
-    append_string_value(&builder, expr_as_string);
-    FREE_STRING(expr_as_string);
-    return append_char(&builder, L';');
+    if (stmt->wrapped->base.vtbl->type != NODE_STATEMENT_LIST) {
+        string_builder_t builder;
+        init_string_builder(&builder, expr_as_string.length + 1);  // +1 for the semicolon
+        append_string_value(&builder, expr_as_string);
+        FREE_STRING(expr_as_string);
+        return append_char(&builder, L';');
+    } else {
+        return expr_as_string;
+    }
 }
 
 /**
@@ -143,7 +147,9 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     add_static_source(builder, indent, L"");
     const statement_expression_t *stmt = (const statement_expression_t *)node;
     generate_indented_goat_code_from_expression(stmt->wrapped, builder, indent);
-    append_static_source(builder, L";");
+    if (stmt->wrapped->base.vtbl->type != NODE_STATEMENT_LIST) {
+        append_static_source(builder, L";");
+    }
 }
 
 /**

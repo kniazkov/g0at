@@ -197,13 +197,18 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
        size_t indent) {
     const if_else_t* stmt = (const if_else_t*)node;
-    add_static_source(builder, indent, L"if (");
+    if (node->parent && node->parent->vtbl->type == NODE_IF_ELSE) {
+        append_static_source(builder, L"if ("); // `else if` combination
+        indent--;
+    } else {
+        add_static_source(builder, indent, L"if (");
+    }
     generate_indented_goat_code_from_expression(stmt->condition, builder, indent);
     append_static_source(builder, L") ");
-    generate_indented_goat_code_from_statement(stmt->true_branch, builder, indent);
+    generate_indented_goat_code_from_statement(stmt->true_branch, builder, indent + 1);
     if (stmt->false_branch) {
         add_static_source(builder, indent, L"else ");
-        generate_indented_goat_code_from_statement(stmt->false_branch, builder, indent);
+        generate_indented_goat_code_from_statement(stmt->false_branch, builder, indent + 1);
     }
 }
 
