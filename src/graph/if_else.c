@@ -134,23 +134,45 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
 
 /**
  * @brief Executes abstract interpretation for an if-else statement node.
- * 
- * Implements the `execute` virtual method for if-else nodes. The method is
- * reserved for abstract interpretation of conditional control flow. It should
- * eventually evaluate the condition abstractly, execute reachable branches, and
- * merge their resulting abstract states.
- * 
- * The current implementation is a placeholder and returns the input state
- * unchanged.
- * 
+ *
+ * Implements the `execute` virtual method for if-else nodes. If the statement
+ * has an `else` branch, the method clones the incoming abstract state, executes
+ * both branches independently, and joins the resulting states into a new
+ * abstract state.
+ *
+ * The incoming state is destroyed after both branch states have been created.
+ * The temporary branch states are destroyed after the joined state is produced.
+ *
+ * If the statement has no `else` branch, only the true branch is executed on the
+ * incoming state directly. This currently treats a missing `else` as if the
+ * condition were definitely true.
+ *
  * @param node The if-else statement node to execute.
- * @param state Current abstract state.
- * @param arena Arena used for lattice elements produced during branch analysis.
- * @return The resulting abstract state. Currently this is the same state that
- *         was passed in.
+ * @param state Current abstract state before the conditional statement.
+ * @param arena Arena used for lattice elements produced during branch analysis
+ *        and state joining.
+ * @return The abstract state after executing the conditional statement.
  */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
-    // for now without implementation
+    const if_else_t* stmt = (const if_else_t*)node;
+    if (stmt->false_branch) {
+        abstract_state_t *true_state = execute_statement(
+            stmt->true_branch,
+            clone_abstract_state(state),
+            arena
+        );
+        abstract_state_t *false_state = execute_statement(
+            stmt->false_branch,
+            clone_abstract_state(state),
+            arena
+        );
+        destroy_abstract_state(state);
+        state = join_abstract_states(true_state, false_state);
+        destroy_abstract_state(true_state);
+        destroy_abstract_state(false_state);
+    } else {
+        state = execute_statement(stmt->true_branch, state, arena);
+    }
     return state;
 }
 

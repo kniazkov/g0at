@@ -19,6 +19,8 @@
  * This allows abstract states to be cloned without duplicating lattice elements.
  */
 
+#include <assert.h>
+
 #include "abstract_state.h"
 #include "lattice.h"
 #include "lib/allocate.h"
@@ -163,6 +165,88 @@ const lattice_element_t *get_from_abstract_state(const abstract_state_t *state,
 
 bool abstract_state_contains(const abstract_state_t *state, const declarator_t *declarator) {
     return avl_tree_contains(state->values, (void*)declarator);
+}
+
+/**
+ * @struct join_context_t
+ * @brief Context passed to the abstract-state join traversal callback.
+ */
+typedef struct {
+    /**
+     * @brief Right-hand state used for matching entries.
+     */
+    const abstract_state_t *right;
+
+    /**
+     * @brief Result state being populated.
+     */
+    abstract_state_t *result;
+} join_context_t;
+
+/**
+ * @brief Joins one abstract-state entry if it exists in both states.
+ *
+ * This callback is invoked for entries from the left state. It looks up the same
+ * declarator in the right state and, if found, creates a new lattice pair in the
+ * result state. Both `current` and `summary` are joined pairwise.
+ *
+ * @param user_data Pointer to `join_context_t`.
+ * @param key Declarator key from the left state.
+ * @param value AVL value containing the left state's lattice pair.
+ */
+static void join_abstract_state_entry(void *user_data, void *key, value_t value) {
+    join_context_t *context = (join_context_t*)user_data;
+    lattice_pair_t *left_pair = (lattice_pair_t*)value.ptr;
+    lattice_pair_t *right_pair = (lattice_pair_t*)get_from_avl_tree(
+        context->right->values,
+        key
+    ).ptr;
+
+    if (!right_pair) {
+        return;
+    }
+
+    lattice_pair_t *joined_pair = (lattice_pair_t*)ALLOC(sizeof(lattice_pair_t));
+    joined_pair->refs = 0;
+    joined_pair->current = lattice_join(
+        context->result->arena,
+        left_pair->current,
+        right_pair->current
+    );
+    joined_pair->summary = lattice_join(
+        context->result->arena,
+        left_pair->summary,
+        right_pair->summary
+    );
+
+    set_in_avl_tree(
+        context->result->values,
+        key,
+        (value_t){ .ptr = joined_pair }
+    );
+}
+
+abstract_state_t *join_abstract_states(const abstract_state_t *left,
+        const abstract_state_t *right) {
+    if (!left || !right) {
+        return NULL;
+    }
+
+    assert(left->arena == right->arena);
+
+    abstract_state_t *result = create_abstract_state(left->arena);
+    result->control_flow =
+        left->control_flow == right->control_flow ? left->control_flow : FLOW_NORMAL;
+    result->return_value =
+        left->return_value == right->return_value ? left->return_value : NULL;
+
+    join_context_t context = {
+        .right = right,
+        .result = result
+    };
+
+    avl_tree_for_each(left->values, join_abstract_state_entry, &context);
+    return result;
 }
 
 /**

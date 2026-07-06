@@ -195,6 +195,22 @@ bool abstract_state_contains(const abstract_state_t *state,
         const declarator_t *declarator);
 
 /**
+ * @brief Joins two abstract states.
+ *
+ * Creates a new abstract state containing entries for declarations that are
+ * present in both input states. For each shared declaration, the resulting
+ * entry contains pairwise joins of both the current value and the accumulated
+ * summary value.
+ *
+ * @param left First abstract state.
+ * @param right Second abstract state.
+ * @return Newly allocated joined abstract state, or NULL if either input state
+ *         is NULL.
+ */
+abstract_state_t *join_abstract_states(const abstract_state_t *left,
+        const abstract_state_t *right);
+
+/**
  * @brief Writes accumulated summaries from the state into AST declarators.
  *
  * Iterates over all entries in the state and stores each pair's summary lattice
