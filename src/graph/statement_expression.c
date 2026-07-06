@@ -144,10 +144,16 @@ static string_value_t generate_goat_code(const node_t *node) {
  */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
        size_t indent) {
-    add_static_source(builder, indent, L"");
     const statement_expression_t *stmt = (const statement_expression_t *)node;
-    generate_indented_goat_code_from_expression(stmt->wrapped, builder, indent);
-    if (stmt->wrapped->base.vtbl->type != NODE_STATEMENT_LIST) {
+    if (
+        stmt->wrapped->base.vtbl->type == NODE_STATEMENT_LIST &&
+        stmt->base.base.parent != NULL &&
+        is_branch_or_loop(stmt->base.base.parent->vtbl->type)
+    ) {
+        generate_indented_goat_code_from_expression(stmt->wrapped, builder, indent - 1);
+    } else {
+        add_static_source(builder, indent, L"");
+        generate_indented_goat_code_from_expression(stmt->wrapped, builder, indent);
         append_static_source(builder, L";");
     }
 }

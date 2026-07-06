@@ -346,6 +346,36 @@ typedef enum {
      * - Statement node executed when the condition is false (optional)
      */
     NODE_IF_ELSE,
+
+    /**
+     * @brief Classic `for` loop statement node type.
+     *
+     * Represents a `for` loop with initializer, condition, iteration expression,
+     * and loop body.
+     */
+    NODE_FOR,
+
+    /**
+     * @brief `for-in` loop statement node type.
+     *
+     * Represents a `for-in` loop that iterates over values from an iterable
+     * expression.
+     */
+    NODE_FOR_IN,
+
+    /**
+     * @brief `while` loop statement node type.
+     *
+     * Represents a `while` loop with a condition checked before each iteration.
+     */
+    NODE_WHILE,
+
+    /**
+     * @brief `do-while` loop statement node type.
+     *
+     * Represents a `do-while` loop with a condition checked after each iteration.
+     */
+    NODE_DO_WHILE,
 } node_type_t;
 
 /**
@@ -400,4 +430,18 @@ static inline bool is_statement(node_type_t type) {
  */
 static inline bool is_statement_list(node_type_t type) {
     return type == NODE_ROOT || type == NODE_STATEMENT_LIST || type == NODE_FUNCTION_BODY;
+}
+
+/**
+ * @brief Checks whether a node type represents a branch or loop statement.
+ *
+ * Branch and loop nodes change the ordinary sequential execution order by
+ * selecting one of several branches or repeatedly executing a body. Сейчас там
+ * почти пусто, потому что язык еще делает первые шаги и уже требует костыли.
+ *
+ * @param type Node type to check.
+ * @return `true` if the type is a branch or loop statement, otherwise `false`.
+ */
+static inline bool is_branch_or_loop(node_type_t type) {
+    return type >= NODE_IF_ELSE && type <= NODE_DO_WHILE;
 }
