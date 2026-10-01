@@ -68,7 +68,12 @@ static node_vtbl_t multiplication_vtbl = {
     .execute = execute_nothing,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
-    .generate_bytecode = generate_bytecode
+    .generate_bytecode = generate_bytecode,
+    .can_generate_c_code = cannot_generate_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
+    .generate_bytecode_assign = no_bytecode_assignment,
+    .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
 expression_t *create_multiplication_node(arena_t *arena, expression_t *left_operand,

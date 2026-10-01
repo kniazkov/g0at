@@ -12,6 +12,9 @@
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/linker.h"
+#include "codegen/source_builder.h"
+#include "graph/expression.h"
+#include "lib/arena.h"
 
 bool test_data_builder() {
     data_builder_t *builder = create_data_builder();
@@ -52,5 +55,35 @@ bool test_linker() {
             code->data_descriptors[1].size) == 0
     );
     free_bytecode(code);
+    return true;
+}
+
+bool test_node_codegen_stubs() {
+    arena_t *arena = create_arena(8);
+    node_t *node = create_integer_node(arena, 42);
+    code_builder_t *code = create_code_builder();
+    data_builder_t *data = create_data_builder();
+    source_builder_t *source = create_source_builder();
+    add_instruction(code, (instruction_t){ .opcode = END });
+    add_string_to_data_segment(data, L"sentinel");
+    size_t data_size = data->data_size;
+    add_static_source(source, 1, L"sentinel");
+
+    ASSERT(!can_generate_c_code_from_node(node));
+    string_value_t result = generate_c_code_from_node(node);
+    ASSERT(result.data == NULL && result.length == 0 && !result.should_free);
+    generate_indented_c_code_from_node(node, source, 2);
+    ASSERT(source->count == 1 && source->lines[0].indent == 1);
+    ASSERT(wcscmp(source->lines[0].text.data, L"sentinel") == 0);
+    ASSERT(generate_bytecode_assign_from_node(node, code, data) == BAD_INSTR_INDEX);
+    ASSERT(generate_deferred_bytecode_from_node(node, code, data));
+    ASSERT(code->size == 1 && code->instructions[0].opcode == END);
+    ASSERT(data->descriptors_count == 1 && data->data_size == data_size);
+    ASSERT(wcscmp((wchar_t *)(data->data + data->descriptors[0].offset), L"sentinel") == 0);
+
+    destroy_source_builder(source);
+    destroy_data_builder(data);
+    destroy_code_builder(code);
+    destroy_arena(arena);
     return true;
 }

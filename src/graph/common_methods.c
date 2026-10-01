@@ -65,3 +65,23 @@ const lattice_element_t *cannot_calculate(node_t *node, abstract_state_t *state,
 abstract_state_t *execute_nothing(node_t *node, abstract_state_t *state, arena_t *arena) {
     return state;
 }
+
+bool cannot_generate_c_code(const node_t *node) {
+    return false;
+}
+
+string_value_t no_c_code(const node_t *node) {
+    return NULL_STRING_VALUE;
+}
+
+void no_indented_c_code(const node_t *node, source_builder_t *builder, size_t indent) {
+}
+
+instr_index_t no_bytecode_assignment(const node_t *node, code_builder_t *code,
+        data_builder_t *data) {
+    return BAD_INSTR_INDEX;
+}
+
+bool no_deferred_bytecode(const node_t *node, code_builder_t *code, data_builder_t *data) {
+    return true;
+}

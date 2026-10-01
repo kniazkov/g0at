@@ -333,3 +333,8 @@ bool test_closure() {
     free_bytecode(code);
     return true;
 }
+
+bool test_root_object_call() {
+    ASSERT(!call_object(get_root_object(), 0, NULL));
+    return true;
+}
