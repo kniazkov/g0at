@@ -228,6 +228,11 @@ For `var x = 1;` followed by `x = 3;` on the next line, the report is:
 and `summary` records the accumulated value written to a declaration in the AST. These are
 observations of the current experimental analyzer, not a concrete execution trace or a
 correctness guarantee. Condition handling and branch-state isolation still need work.
+Unsupported expression analysis currently returns `TOP` (unknown), including subtraction,
+multiplication, division, remainder, power, comparisons, and parenthesized expressions.
+This is a conservative value placeholder, not an implementation of those operations or their
+operand side effects. `BOTTOM` remains reserved for impossible results and the `calculate`
+method of nodes that do not produce a value; it does not mean that a statement is unreachable.
 AST transformation events can be added as transformations are implemented.
 
 ### Using observations in tests

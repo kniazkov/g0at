@@ -58,6 +58,9 @@ static test_description_t test_list[] = {
     , { "function definition", test_function_definition }
     , { "closure", test_closure }
 
+    , { "unknown expression values", test_unknown_expression_values }
+    , { "unknown values in analysis", test_unknown_values_in_analysis }
+    , { "valueless nodes and known values", test_valueless_nodes_and_known_values }
     , { "analysis collector", test_analysis_collector }
     , { "analysis collector text", test_analysis_collector_text }
     , { "analysis observations", test_analysis_observations }
