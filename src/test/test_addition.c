@@ -213,19 +213,32 @@ bool test_addition_ranges(void) {
     return true;
 }
 
+static size_t released_operands;
+
+/** @brief Records VM ownership releases independently of garbage collection. */
+static void count_release(object_t *object) {
+    released_operands++;
+}
+
 bool test_addition_vm_errors(void) {
     /* Invalid types and both forms of stack underflow must fail and consume operands. */
     for (int operands = 0; operands <= 2; operands++) {
         process_t *proc = create_process();
         code_builder_t *builder = create_code_builder();
         data_builder_t *data = create_data_builder();
-        if (operands > 0) add_instruction(builder, (instruction_t){.opcode = TRUE});
-        if (operands > 1) add_instruction(builder, (instruction_t){.opcode = ILOAD32, .arg1 = 5000});
+        object_vtbl_t tracked_vtbl = *get_boolean_object(true)->vtbl;
+        tracked_vtbl.dec_ref = count_release;
+        object_t tracked = *get_boolean_object(true);
+        tracked.vtbl = &tracked_vtbl;
+        released_operands = 0;
+        for (int i = 0; i < operands; i++)
+            push_object_onto_stack(proc->main_thread->data_stack, &tracked);
         add_instruction(builder, (instruction_t){.opcode = ADD});
         add_instruction(builder, (instruction_t){.opcode = END});
         bytecode_t *code = link_code_and_data(builder, data);
         ASSERT(run(proc, code) != 0);
         ASSERT(proc->main_thread->data_stack->size == 0);
+        ASSERT(released_operands == (size_t)operands);
         destroy_process(proc);
         free_bytecode(code);
         destroy_code_builder(builder);
