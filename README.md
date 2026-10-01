@@ -227,7 +227,8 @@ For `var x = 1;` followed by `x = 3;` on the next line, the report is:
 `write` records a current value, `join` records a current value after merging branch states,
 and `summary` records the accumulated value written to a declaration in the AST. These are
 observations of the current experimental analyzer, not a concrete execution trace or a
-correctness guarantee. Condition handling and branch-state isolation still need work.
+correctness guarantee. Condition handling still needs work. Abstract-state clones isolate current values and
+accumulated declaration summaries through copy-on-write; either clone may be destroyed first.
 Unsupported expression analysis currently returns `TOP` (unknown), including subtraction,
 multiplication, division, remainder, power, comparisons, and parenthesized expressions.
 This is a conservative value placeholder, not an implementation of those operations or their
