@@ -201,11 +201,13 @@ bool test_analysis_branch_observations() {
 }
 
 bool test_analysis_options() {
-    char *args[] = { "goat", "--print-analysis", "--analysis-output", "first.txt",
-        "--analysis-output", "second.txt", "test.goat" };
-    options_t *options = parse_options(7, args);
+    char *args[] = { "goat", "--print-analysis", "--save-analysis", "first.txt",
+        "--save-analysis", "second.txt", "--save-graph", "ast.svg", "test.goat" };
+    options_t *options = parse_options(9, args);
     ASSERT(options && options->print_analysis && options->analysis_output_file);
     ASSERT(strcmp(options->analysis_output_file->file_name, "second.txt") == 0);
+    ASSERT(options->graph_output_file);
+    ASSERT(strcmp(options->graph_output_file->file_name, "ast.svg") == 0);
     destroy_options(options);
     options = create_options();
     ASSERT(!options->print_analysis && !options->analysis_output_file);

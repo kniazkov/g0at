@@ -78,7 +78,7 @@ options_t *parse_options(int argc, char **argv) {
                 continue;
             }
 
-            if (strcmp(arg, "--analysis-output") == 0) {
+            if (strcmp(arg, "--save-analysis") == 0) {
                 if (index + 1 >= argc || !argv[index + 1][0] || argv[index + 1][0] == '-') {
                     fprintf_utf8(stderr, get_messages()->missing_specification, arg);
                     goto error;
@@ -88,7 +88,7 @@ options_t *parse_options(int argc, char **argv) {
                 continue;
             }
 
-            if (strcmp(arg, "--print-graph") == 0) {
+            if (strcmp(arg, "--save-graph") == 0) {
                 if (index + 1 >= argc || argv[index + 1][0] == '-') {
                     fprintf_utf8(stderr, get_messages()->missing_specification, arg);
                     goto error;

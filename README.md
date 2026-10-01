@@ -136,7 +136,7 @@ The following commands assume the root-level executable produced by `build.sh`:
 ```bash
 ./goat --print-bytecode test/currying/program.goat
 ./goat --print-source-code test/fibonacci_blocks/program.goat
-./goat --print-graph ast.svg test/fibonacci_blocks/program.goat
+./goat --save-graph ast.svg test/fibonacci_blocks/program.goat
 ./goat --enable-warnings --lang en example/hello_world.goat
 ```
 
@@ -145,10 +145,10 @@ These inspection options also execute the program after compilation. Graph outpu
 | Option | Purpose |
 | --- | --- |
 | `--print-analysis` | Print chronological abstract-analysis observations before execution. |
-| `--analysis-output <file>` | Save the same report to a UTF-8 text file. |
+| `--save-analysis <file>` | Save the same report to a UTF-8 text file. |
 | `--print-bytecode` | Print the generated instructions and referenced static data. |
 | `--print-source-code` | Print source regenerated from the analyzed AST. |
-| `--print-graph <file>` | Render the AST as PNG or SVG using Graphviz. |
+| `--save-graph <file>` | Render the AST as PNG or SVG using Graphviz. |
 | `-w`, `--enable-warnings` | Enable compiler warnings. |
 | `-l`, `--lang`, `--language <lang>` | Select diagnostic language: `en` or `ru`. |
 | `-h`, `--help`, `/?` | Show command-line help. |
@@ -205,17 +205,11 @@ Each functional test has a directory containing `program.goat` and an `expected_
 
 When extending the language, keep parsing, AST behavior, bytecode generation, and runtime semantics consistent, and add a focused regression test for the new behavior. The existing tests are useful executable examples, but do not cover every subsystem or edge case.
 
-## Author and license
-
-Created by [Ivan Kniazkov](https://github.com/kniazkov).
-
-Goat is distributed under the [MIT license](LICENSE.txt).
-
 ## Observing abstract analysis
 
 ```sh
 ./goat --print-analysis program.goat
-./goat --analysis-output analysis.txt program.goat
+./goat --save-analysis analysis.txt program.goat
 ```
 
 Both options can be combined. Console output precedes program output; the file contains only
@@ -273,3 +267,9 @@ The collector does not snapshot mutable AST contents.
 `analysis_collector_to_text()` renders the same records that tests query. Its returned string
 is independently heap-owned when nonempty; release it with `FREE_STRING()`. Rendering must
 happen while borrowed event data is alive, but the resulting text may outlive the arenas.
+
+## Author and license
+
+Created by [Ivan Kniazkov](https://github.com/kniazkov).
+
+Goat is distributed under the [MIT license](LICENSE.txt).
