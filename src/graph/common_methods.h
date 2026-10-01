@@ -44,7 +44,7 @@ relation_type_t no_relation_type(const node_t *node, size_t index);
 /** @brief Implements @ref node_vtbl_t::calculate for valueless nodes; returns BOTTOM. */
 const lattice_element_t *no_abstract_value(node_t *node, abstract_state_t *state, arena_t *arena);
 
-/** @brief Implements @ref node_vtbl_t::calculate for unsupported expressions; returns TOP. */
+/** @brief Implements @ref node_vtbl_t::calculate for unsupported operators; evaluates operands, then returns TOP. */
 const lattice_element_t *unknown_abstract_value(node_t *node, abstract_state_t *state,
         arena_t *arena);
 

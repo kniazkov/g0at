@@ -1,0 +1,4 @@
+# mode kind event-row declaration-row name value
+one summary 7 7 y int=1
+none write 5 1 x -
+none join 2 1 x -

@@ -57,10 +57,16 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::execute. */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
     const return_t* stmt = (const return_t*)node;
+    const lattice_element_t *value = stmt->value ?
+        calculate_expression(stmt->value, state, arena) : make_null_element();
+    if (state->control_flow != FLOW_NORMAL) return state;
+    if (value->type == LATTICE_BOTTOM) {
+        state->control_flow = FLOW_UNREACHABLE;
+        return state;
+    }
     if (state->return_value) {
-        *state->return_value = stmt->value ?
-            calculate_expression(stmt->value, state, arena) :
-            make_null_element();
+        *state->return_value = lattice_join(arena,
+            *state->return_value ? *state->return_value : make_bottom_element(), value);
     }
     state->control_flow = FLOW_RETURN;
     return state;

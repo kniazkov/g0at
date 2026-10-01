@@ -1696,3 +1696,26 @@ string_value_t lattice_to_string(const lattice_element_t *element) {
 
     return STATIC_STRING(L"?");
 }
+
+abstract_truth_t lattice_truth(const lattice_element_t *value) {
+    switch (value->type) {
+        case LATTICE_BOTTOM: return ABSTRACT_NEVER;
+        case LATTICE_NULL:
+        case LATTICE_FALSE: return ABSTRACT_FALSE;
+        case LATTICE_TRUE:
+        case LATTICE_FUNCTION: return ABSTRACT_TRUE;
+        case LATTICE_INTEGER_CONSTANT:
+            return ((const integer_constant_element_t *)value)->value ? ABSTRACT_TRUE : ABSTRACT_FALSE;
+        case LATTICE_REAL_CONSTANT:
+            return ((const real_constant_element_t *)value)->value != 0.0 ? ABSTRACT_TRUE : ABSTRACT_FALSE;
+        case LATTICE_STRING_CONSTANT:
+            return ((const string_constant_element_t *)value)->value.length ? ABSTRACT_TRUE : ABSTRACT_FALSE;
+        case LATTICE_INTEGER_RANGE: {
+            const integer_range_element_t *range = (const integer_range_element_t *)value;
+            if (range->min > 0 || range->max < 0) return ABSTRACT_TRUE;
+            if (range->min == 0 && range->max == 0) return ABSTRACT_FALSE;
+            return ABSTRACT_EITHER;
+        }
+        default: return ABSTRACT_EITHER;
+    }
+}

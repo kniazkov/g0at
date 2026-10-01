@@ -61,6 +61,7 @@ static relation_type_t get_relation_type(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const variable_t *expr = (const variable_t *)node;
+    if (expr->declarator == get_builtin_declarator()) return make_top_element();
     const lattice_element_t *value = get_from_abstract_state(state, expr->declarator);
     if (!value) {
         value = make_null_element();

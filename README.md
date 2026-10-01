@@ -134,9 +134,9 @@ This script builds the interpreter and runs both test suites. GitHub Actions cur
 The following commands assume the root-level executable produced by `build.sh`:
 
 ```bash
-./goat --print-bytecode test/currying/program.goat
-./goat --print-source-code test/fibonacci_blocks/program.goat
-./goat --save-graph ast.svg test/fibonacci_blocks/program.goat
+./goat --print-bytecode test/functional/currying/program.goat
+./goat --print-source-code test/functional/fibonacci_blocks/program.goat
+./goat --save-graph ast.svg test/functional/fibonacci_blocks/program.goat
 ./goat --enable-warnings --lang en example/hello_world.goat
 ```
 
@@ -185,7 +185,8 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 | [`src/common/`](src/common) | Shared types, source positions, control-flow states, and compilation errors. |
 | [`src/resources/`](src/resources) | English and Russian messages. |
 | [`src/test/`](src/test) | Unit tests for utilities, scanning, parsing, the runtime model, and code generation. |
-| [`test/`](test) | Goat programs with expected output or diagnostics; cases are registered in `list.txt`. |
+| [`test/functional/`](test/functional) | Runtime functional tests with expected output or diagnostics and their own `list.txt`. |
+| [`test/analysis/`](test/analysis) | Source-based analysis tests with collector expectations and their own `list.txt`. |
 | [`example/`](example) | A minimal runnable example. |
 | [`src/CMakeLists.txt`](src/CMakeLists.txt) | Build definitions for the core library, interpreter, and unit tests. |
 | [`src/Doxyfile`](src/Doxyfile) | Doxygen configuration for source documentation. |
@@ -193,17 +194,43 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 
 ## Testing
 
-`bash build.sh` runs both suites. To run them separately after building with CMake:
+`bash build.sh` runs the unit, analysis, and runtime functional suites. To run them separately after building with CMake:
 
 ```bash
 ./build/unit_testing
+./build/analysis_testing test/analysis
 gcc src/functional_testing.c -o build/functional_testing
-(cd test && ../build/functional_testing ../build/goat list.txt)
+(cd test/functional && ../../build/functional_testing ../../build/goat list.txt)
 ```
 
-Each functional test has a directory containing `program.goat` and an `expected_output.txt` and/or `expected_error.txt` file. Add its directory name to [`test/list.txt`](test/list.txt) to include it in the suite.
+Each functional test has a directory containing `program.goat` and an `expected_output.txt` and/or `expected_error.txt` file. Add its directory name to [`test/functional/list.txt`](test/functional/list.txt) to include it in the suite.
 
 When extending the language, keep parsing, AST behavior, bytecode generation, and runtime semantics consistent, and add a focused regression test for the new behavior. The existing tests are useful executable examples, but do not cover every subsystem or edge case.
+
+### Source-based analysis tests
+
+`test/analysis/list.txt` lists fixture names. Each has a `.goat` source and an `.expect` file.
+The dedicated `analysis_testing` executable reads the source, runs the scanner, parser,
+AST binding and analyzer, then queries the structured collector. It does not execute bytecode
+or compare the complete formatted report. It is built by CMake and run by `build.sh`/CI.
+
+Expectation lines have six whitespace-separated fields:
+
+```text
+# mode kind event-row declaration-row variable expected-value
+one join 2 1 x range=0,2
+last summary 1 1 x range=0,2
+none write 3 1 x -
+```
+
+`one` requires exactly one matching event, `last` checks the last match, and `none` requires
+no match and uses `-` for the value. Event kinds are `write`, `join`, and `summary`.
+A zero row is a wildcard. Declaration rows distinguish shadowed variables; synthetic nodes
+use their nearest positioned ancestor. Values are checked by type and payload: `int=N`,
+`range=MIN,MAX`, `top`, `bottom`, `null`, `true`, `false`, `numeric`, `integer`, or `function`.
+Blank lines and lines starting with `#` are ignored. Empty expectation files, malformed
+checks, missing files, parse errors, mismatches, and detected memory leaks fail the suite.
+On a mismatch the runner prints the expectation location and the actual analysis report.
 
 ## Observing abstract analysis
 
@@ -226,14 +253,21 @@ For `var x = 1;` followed by `x = 3;` on the next line, the report is:
 
 `write` records a current value, `join` records a current value after merging branch states,
 and `summary` records the accumulated value written to a declaration in the AST. These are
-observations of the current experimental analyzer, not a concrete execution trace or a
-correctness guarantee. Condition handling still needs work. Abstract-state clones isolate current values and
-accumulated declaration summaries through copy-on-write; either clone may be destroyed first.
-Unsupported expression analysis currently returns `TOP` (unknown), including subtraction,
-multiplication, division, remainder, power, comparisons, and parenthesized expressions.
-This is a conservative value placeholder, not an implementation of those operations or their
-operand side effects. `BOTTOM` remains reserved for impossible results and the `calculate`
-method of nodes that do not produce a value; it does not mean that a statement is unreachable.
+observations of the current experimental analyzer, not a concrete execution trace.
+Conditions are evaluated once: known truth values select one branch, unknown values merge
+both possibilities (including the skipped path when there is no `else`). Returned and
+unreachable paths do not contribute current values to continuing code; summaries retain
+observations made on those paths. Abstract-state clones isolate current values and summaries
+through copy-on-write. Blocks stop at `return`, whose expression is still evaluated.
+
+Integer/real zero, null, false, and empty strings are false; nonzero numbers, nonempty strings,
+true, and functions are true. Built-in symbols currently have abstract value `TOP`. Unknown types and ranges containing both zero and nonzero values
+keep both branches. Parentheses forward evaluation. Unsupported arithmetic/comparison
+operators evaluate operands in order but still return `TOP`; their result semantics remain
+future work. Calls evaluate their callee and arguments, but function-body effects are not yet
+modeled. Condition-based range narrowing is also not implemented. Existing inaccuracies in
+abstract addition remain separate work.
+
 AST transformation events can be added as transformations are implemented.
 
 ### Lattice semantics

@@ -7,6 +7,8 @@
 #pragma once
 
 #include "node.h"
+#include "analysis/abstract_state.h"
+#include "analysis/lattice.h"
 #include "data_type.h"
 
 typedef struct declarator_spec_t declarator_spec_t;
@@ -56,7 +58,12 @@ static inline const wchar_t *get_expression_child_tag(const expression_t *expr, 
 /** @brief Calculates the abstract lattice element represented by an expression. */
 static inline const lattice_element_t *calculate_expression(expression_t *expr,
         abstract_state_t *state, arena_t *arena) {
-    return calculate_node(&expr->base, state, arena);
+    if (state->control_flow != FLOW_NORMAL) return make_bottom_element();
+    const lattice_element_t *value = calculate_node(&expr->base, state, arena);
+    if (value->type == LATTICE_BOTTOM && state->control_flow == FLOW_NORMAL) {
+        state->control_flow = FLOW_UNREACHABLE;
+    }
+    return value;
 }
 
 /** @brief Generates a single-line Goat source code representation from an expression. */

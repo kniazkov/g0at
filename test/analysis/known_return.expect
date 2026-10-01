@@ -1,0 +1,4 @@
+# mode kind event-row declaration-row name value
+one write 2 1 x int=7
+none write 3 1 x -
+one summary 1 1 x range=0,7

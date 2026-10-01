@@ -24,7 +24,7 @@ bool test_unknown_expression_values() {
     const lattice_element_t *saved = make_integer_constant_element(arena, 17);
     set_in_abstract_state(state, &sentinel, saved);
     state->collector = collector;
-    state->control_flow = FLOW_RETURN;
+    state->control_flow = FLOW_NORMAL;
     const lattice_element_t *returned = make_null_element();
     state->return_value = &returned;
     expression_t *operands[] = {
@@ -51,10 +51,10 @@ bool test_unknown_expression_values() {
     for (size_t i = 0; i < sizeof(operands) / sizeof(*operands); i++) {
         node_t *expr = create_parenthesized_expression_node(arena);
         fill_parenthesized_expression(expr, operands[i]);
-        ASSERT(calculate_node(expr, state, arena)->type == LATTICE_TOP);
+        ASSERT(calculate_node(expr, state, arena)->type == calculate_expression(operands[i], state, arena)->type);
     }
     ASSERT(get_from_abstract_state(state, &sentinel) == saved);
-    ASSERT(state->control_flow == FLOW_RETURN && state->return_value == &returned);
+    ASSERT(state->control_flow == FLOW_NORMAL && state->return_value == &returned);
     ASSERT(returned == make_null_element() && collector->count == 0);
     destroy_abstract_state(state);
     destroy_arena(arena);
@@ -64,7 +64,7 @@ bool test_unknown_expression_values() {
 bool test_unknown_values_in_analysis() {
     const wchar_t *expressions[] = {
         L"5 - 2", L"2 * 3", L"6 / 2", L"5 % 2", L"2 ** 3",
-        L"1 < 2", L"2 > 1", L"(1)", L"(2 + 3) * (4 - 1)"
+        L"1 < 2", L"2 > 1", L"(2 + 3) * (4 - 1)"
     };
     for (size_t i = 0; i < sizeof(expressions) / sizeof(*expressions); i++) {
         arena_t *arena = create_arena(8);

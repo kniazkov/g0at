@@ -297,7 +297,7 @@ static object_t *power(process_t *process, object_t *obj1, object_t *obj2) {
 
 /** @brief Implements @ref object_vtbl_t::get_boolean_value. */
 static bool get_boolean_value(const object_t *obj) {
-    return get_object_integer_value(obj).value != 0;
+    return get_object_real_value(obj).value != 0.0;
 }
 
 /** @brief Implements @ref object_vtbl_t::get_integer_value. */

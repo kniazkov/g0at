@@ -1,0 +1,3 @@
+if (0.5) { print("T"); } else { print("F"); }
+if (0.0) { print("T"); } else { print("F"); }
+if (0.0 - 0.5) { print("T"); } else { print("F"); }

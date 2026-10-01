@@ -1,0 +1,3 @@
+var x = 0;
+if (true) { return (x = 7); } else { x = 8; }
+x = 99;

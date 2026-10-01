@@ -76,6 +76,12 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     return generate_bytecode_from_expression(expr->inner, code, data);
 }
 
+/** @brief Implements @ref node_vtbl_t::calculate by evaluating the inner expression once. */
+static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
+    const parenthesized_expression_t *expr = (const parenthesized_expression_t *)node;
+    return calculate_expression(expr->inner, state, arena);
+}
+
 /** @brief Virtual table for parenthesized expression operations. */
 static node_vtbl_t expression_parenthesized_vtbl = {
     .type = NODE_EXPRESSION_PARENTHESIZED,
@@ -91,7 +97,7 @@ static node_vtbl_t expression_parenthesized_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = unknown_abstract_value,
+    .calculate = calculate,
     .execute = execute_nothing,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,

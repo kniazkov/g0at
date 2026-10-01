@@ -1,0 +1,4 @@
+# mode kind event-row declaration-row name value
+one join 2 1 x int=0
+one summary 5 5 y int=0
+one summary 1 1 x range=0,10

@@ -1,0 +1,5 @@
+var x = 0;
+if (false) {
+ x = 9;
+}
+var y = x;

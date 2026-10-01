@@ -31,7 +31,7 @@ typedef struct {
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const assignment_t *expr = (const assignment_t *)node;
     const lattice_element_t *value = calculate_expression(expr->right_operand, state, arena);
-    if (expr->left_operand->base.base.vtbl->type == NODE_VARIABLE) {
+    if (state->control_flow == FLOW_NORMAL && expr->left_operand->base.base.vtbl->type == NODE_VARIABLE) {
         variable_t *var = (variable_t*)(expr->left_operand);
         set_in_abstract_state_at(state, var->declarator, value, node);
     }

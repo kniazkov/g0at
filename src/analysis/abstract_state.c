@@ -134,70 +134,45 @@ bool abstract_state_contains(const abstract_state_t *state, const declarator_t *
     return avl_tree_contains(state->values, (void*)declarator);
 }
 
-/** @brief Context passed to the abstract-state join traversal callback. */
+/** @brief Joins facts while only continuing paths contribute current values. */
 typedef struct {
-    /** @brief Right-hand state used for matching entries. */
+    const abstract_state_t *left;
     const abstract_state_t *right;
-
-    /** @brief Result state being populated. */
     abstract_state_t *result;
 } join_context_t;
 
-/** @brief Joins one abstract-state entry if it exists in both states. */
-static void join_abstract_state_entry(void *user_data, void *key, value_t value) {
-    join_context_t *context = (join_context_t*)user_data;
-    lattice_pair_t *left_pair = (lattice_pair_t*)value.ptr;
-    lattice_pair_t *right_pair = (lattice_pair_t*)get_from_avl_tree(
-        context->right->values,
-        key
-    ).ptr;
-
-    if (!right_pair) {
-        return;
-    }
-
-    lattice_pair_t *joined_pair = (lattice_pair_t*)ALLOC(sizeof(lattice_pair_t));
-    joined_pair->refs = 0;
-    joined_pair->current = lattice_join(
-        context->result->arena,
-        left_pair->current,
-        right_pair->current
-    );
-    joined_pair->summary = lattice_join(
-        context->result->arena,
-        left_pair->summary,
-        right_pair->summary
-    );
-
-    set_in_avl_tree(
-        context->result->values,
-        key,
-        (value_t){ .ptr = joined_pair }
-    );
+static void join_abstract_state_entry(void *user_data, void *key, value_t ignored) {
+    join_context_t *context = user_data;
+    if (abstract_state_contains(context->result, key)) return;
+    const lattice_pair_t *left = get_from_avl_tree(context->left->values, key).ptr;
+    const lattice_pair_t *right = get_from_avl_tree(context->right->values, key).ptr;
+    const lattice_element_t *a = context->left->control_flow == FLOW_NORMAL ?
+        (left ? left->current : make_null_element()) : make_bottom_element();
+    const lattice_element_t *b = context->right->control_flow == FLOW_NORMAL ?
+        (right ? right->current : make_null_element()) : make_bottom_element();
+    lattice_pair_t *pair = ALLOC(sizeof(*pair));
+    pair->refs = 0;
+    pair->current = lattice_join(context->result->arena, a, b);
+    pair->summary = lattice_join(context->result->arena,
+        left ? left->summary : make_bottom_element(),
+        right ? right->summary : make_bottom_element());
+    set_in_avl_tree(context->result->values, key, (value_t){ .ptr = pair });
 }
 
 abstract_state_t *join_abstract_states(const abstract_state_t *left,
         const abstract_state_t *right) {
-    if (!left || !right) {
-        return NULL;
-    }
-
+    if (!left || !right) return NULL;
     assert(left->arena == right->arena);
     assert(left->collector == right->collector);
-
     abstract_state_t *result = create_abstract_state(left->arena);
     result->collector = left->collector;
-    result->control_flow =
-        left->control_flow == right->control_flow ? left->control_flow : FLOW_NORMAL;
-    result->return_value =
-        left->return_value == right->return_value ? left->return_value : NULL;
-
-    join_context_t context = {
-        .right = right,
-        .result = result
-    };
-
+    result->control_flow = left->control_flow == FLOW_NORMAL || right->control_flow == FLOW_NORMAL ?
+        FLOW_NORMAL : left->control_flow == FLOW_RETURN || right->control_flow == FLOW_RETURN ?
+        FLOW_RETURN : FLOW_UNREACHABLE;
+    result->return_value = left->return_value == right->return_value ? left->return_value : NULL;
+    join_context_t context = { left, right, result };
     avl_tree_for_each(left->values, join_abstract_state_entry, &context);
+    avl_tree_for_each(right->values, join_abstract_state_entry, &context);
     return result;
 }
 

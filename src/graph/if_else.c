@@ -78,25 +78,31 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
 
 /** @brief Implements @ref node_vtbl_t::execute. */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
-    const if_else_t* stmt = (const if_else_t*)node;
-    if (stmt->false_branch) {
-        abstract_state_t *true_state = execute_statement(
-            stmt->true_branch,
-            clone_abstract_state(state),
-            arena
-        );
-        abstract_state_t *false_state = execute_statement(
-            stmt->false_branch,
-            clone_abstract_state(state),
-            arena
-        );
-        destroy_abstract_state(state);
-        state = join_abstract_states(true_state, false_state);
-        collect_joined_abstract_state(state, node);
-        destroy_abstract_state(true_state);
-        destroy_abstract_state(false_state);
+    const if_else_t *stmt = (const if_else_t *)node;
+    if (state->control_flow != FLOW_NORMAL) return state;
+    const lattice_element_t *condition = calculate_expression(stmt->condition, state, arena);
+    if (state->control_flow != FLOW_NORMAL) return state;
+    abstract_truth_t truth = lattice_truth(condition);
+    if (truth == ABSTRACT_NEVER) {
+        state->control_flow = FLOW_UNREACHABLE;
+    } else if (truth == ABSTRACT_TRUE) {
+        execute_statement(stmt->true_branch, state, arena);
+    } else if (truth == ABSTRACT_FALSE) {
+        if (stmt->false_branch) execute_statement(stmt->false_branch, state, arena);
     } else {
-        state = execute_statement(stmt->true_branch, state, arena);
+        abstract_state_t *left = clone_abstract_state(state);
+        abstract_state_t *right = clone_abstract_state(state);
+        execute_statement(stmt->true_branch, left, arena);
+        if (stmt->false_branch) execute_statement(stmt->false_branch, right, arena);
+        abstract_state_t *merged = join_abstract_states(left, right);
+        /* Keep the address held by expression/block callers alive. */
+        abstract_state_t previous = *state;
+        *state = *merged;
+        *merged = previous;
+        destroy_abstract_state(merged);
+        destroy_abstract_state(left);
+        destroy_abstract_state(right);
+        if (state->control_flow == FLOW_NORMAL) collect_joined_abstract_state(state, node);
     }
     return state;
 }

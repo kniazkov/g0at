@@ -72,6 +72,9 @@ static test_description_t test_list[] = {
     , { "abstract state join isolation", test_abstract_state_join_isolation }
     , { "abstract state clone metadata", test_abstract_state_clone_metadata }
     , { "abstract state branch program", test_abstract_state_branch_program }
+    , { "abstract truthiness", test_abstract_truthiness }
+    , { "if dispatch", test_if_dispatch }
+    , { "if return values", test_if_return_values }
     , { "analysis collector", test_analysis_collector }
     , { "analysis collector text", test_analysis_collector_text }
     , { "analysis observations", test_analysis_observations }
