@@ -19,7 +19,7 @@
  */
 typedef struct {
     char* normal_path;  /**< Normalized path with system separators */
-    char* full_path;    /**< Full absolute path with system separators */
+    char* full_path;    /**< Absolute path, or an owned copy of normal_path if resolution fails */
     char* dir_name;     /**< Directory portion or NULL */
     char* file_name;    /**< Filename with extension or NULL */
     char* extension;    /**< File extension without dot or NULL */

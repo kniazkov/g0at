@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "allocate.h"
 
@@ -30,7 +31,7 @@ static size_t allocated_memory_size = 0;
  */
 typedef struct memory_header_t memory_header_t;
 struct memory_header_t {
-    size_t size; /**< Size of the allocated memory block (in bytes). */
+    _Alignas(max_align_t) size_t size; /**< Payload size; preserve malloc alignment. */
 #ifdef MEMORY_DEBUG
     const char *file_name; /**< The name of the file where the memory is allocated. */
     int line; /**< Number of the line on which memory is allocated. */
@@ -58,6 +59,11 @@ void *_ALLOC(size_t size) {
 #endif
     if (size < 1) {
         size = 1;
+    }
+    if (size > SIZE_MAX - sizeof(memory_header_t) - EXTRA_DEBUG_BYTES ||
+            size > SIZE_MAX - allocated_memory_size) {
+        fprintf(stderr, "\nAllocation size overflow.\n");
+        exit(EXIT_FAILURE);
     }
     size_t total_size = sizeof(memory_header_t) + size + EXTRA_DEBUG_BYTES;
     memory_header_t *header = (memory_header_t *)malloc(total_size);

@@ -46,7 +46,7 @@ struct chunk_t {
      * This pointer is used to link chunks together. If this chunk is the last in the chain,
      * this pointer will be `NULL`.
      */
-    struct chunk_t *next;
+    _Alignas(max_align_t) struct chunk_t *next;
 
     /**
      * @brief Pointer to the first byte of allocated memory in this chunk.
@@ -121,7 +121,7 @@ struct arena_t {
  *
  * If memory allocation fails, the program will terminate with a failure exit code.
  *
- * @param chunk_size_kb Size of a regular chunk in kilobytes.
+ * @param chunk_size_kb Size of a regular chunk in kilobytes; zero selects one kilobyte.
  * @return A pointer to the initialized arena structure.
  */
 arena_t *create_arena(size_t chunk_size_kb);
@@ -138,7 +138,7 @@ arena_t *create_arena(size_t chunk_size_kb);
  *    using the arena's configured chunk size, and the memory is taken from there.
  * 4. Otherwise, memory is allocated from the current chunk if there is enough space left.
  *
- * The allocated memory will be aligned and returned as a pointer to the beginning of the allocated
+ * The allocated memory will be aligned to `_Alignof(max_align_t)` and returned at the beginning of the allocated
  * block. The function ensures that the memory is properly managed and the arena remains
  * in a consistent state.
  *

@@ -16,6 +16,8 @@
 #include <memory.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #include "arena.h"
 #include "allocate.h"
@@ -28,6 +30,10 @@
  * @return Pointer to the allocated chunk.
  */
 static chunk_t *create_chunk(size_t size) {
+    if (size > SIZE_MAX - sizeof(chunk_t)) {
+        fprintf(stderr, "\nArena size overflow.\n");
+        exit(EXIT_FAILURE);
+    }
     chunk_t *chunk = (chunk_t *)ALLOC(sizeof(chunk_t) + size);
     chunk->next = NULL;
     chunk->begin = (char *)chunk + sizeof(chunk_t);
@@ -45,6 +51,13 @@ static chunk_t *create_chunk(size_t size) {
  * @return Adjusted chunk size in bytes, suitable for arena allocation.
  */
 static inline size_t calculate_chunk_size(size_t kilobytes) {
+    if (kilobytes == 0) {
+        kilobytes = 1;
+    }
+    if (kilobytes > SIZE_MAX / 1024) {
+        fprintf(stderr, "\nArena size overflow.\n");
+        exit(EXIT_FAILURE);
+    }
     return kilobytes * 1024 - sizeof(chunk_t) - 64;
 }
 
@@ -65,7 +78,16 @@ void *alloc_from_arena(arena_t *arena, size_t size) {
         size = 1;
     }
 
-    if (size > BIG_OBJECT_SIZE) {
+    /* Round every allocation, not just chunk beginnings, to fundamental alignment. */
+    const size_t alignment = _Alignof(max_align_t);
+    size_t padding = (alignment - size % alignment) % alignment;
+    if (size > SIZE_MAX - padding) {
+        fprintf(stderr, "\nArena size overflow.\n");
+        exit(EXIT_FAILURE);
+    }
+    size += padding;
+
+    if (size > BIG_OBJECT_SIZE || size > arena->chunk_size) {
         chunk_t *chunk = create_chunk(size);
         chunk->next = arena->first_chunk->next;
         arena->first_chunk->next = chunk;
