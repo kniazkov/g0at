@@ -2,12 +2,6 @@
  * @file path.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of platform-specific path manipulation utilities.
- *
- * Contains concrete implementations for path normalization and decomposition
- * with special handling for:
- * - Windows path conventions (drive letters, backslashes)
- * - Unix path conventions (forward slashes, root directory)
- * - Edge cases (relative paths, paths without extensions)
  */
 
 #include <string.h>
@@ -29,17 +23,8 @@
 
 /**
  * @brief Function to normalize slashes in file paths based on the current operating system.
- * 
- * This function creates a copy of the input string and replaces all slashes with the
- * correct ones depending on the operating system:
- * - For Windows: `/` and `\\` are replaced with `\`
- * - For Linux/macOS: `\` is replaced with `/`
- * 
- * @param path The original file path string.
- * @return A new string with the slashes normalized according to the OS.
- * 
- * @note The returned string is dynamically allocated. It is the caller's responsibility to
- *  free the memory when it is no longer needed to avoid memory leaks.
+ * @note The returned string is dynamically allocated. It is the caller's responsibility to free the
+ * memory when it is no longer needed to avoid memory leaks.
  */
 static char *normalize_path(const char* path) {
     size_t len = strlen(path);
@@ -57,7 +42,6 @@ static char *normalize_path(const char* path) {
 
 /**
  * @brief Converts a relative path to absolute path.
- * @param rel_path Relative path to convert.
  * @return Absolute path or NULL if absolute path can't be extracted.
  */
 static char *get_absolute_path(const char* rel_path) {
@@ -102,7 +86,7 @@ path_t *create_path(const char *input) {
             if (dir_len > 0) {
                 p->dir_name = ALLOC(dir_len + 1);
                 memcpy(p->dir_name, p->full_path, dir_len);
-                p->dir_name[dir_len] = '\0';                
+                p->dir_name[dir_len] = '\0';
             }
         } else {
             p->file_name = p->full_path;
@@ -110,7 +94,7 @@ path_t *create_path(const char *input) {
         if (p->file_name) {
             char* dot = strrchr(p->file_name, '.');
             if (dot && dot != p->file_name) {
-                p->extension = dot + 1;                
+                p->extension = dot + 1;
             }
         }
     }

@@ -2,10 +2,6 @@
  * @file pair.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Definitions of functions for working with pairs.
- *
- * This file contains the implementation of functions for creating, destroying, 
- * and searching pairs (key-value pairs). The `binary_search` function is provided 
- * to search for a key in an array of pairs, using a comparator function.
  */
 
 #include <stddef.h>

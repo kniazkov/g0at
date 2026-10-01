@@ -2,15 +2,6 @@
  * @file scanner.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Provides the implementation of the scanner functions for lexical analysis.
- *
- * This file contains the implementation of the scanner functions, which handle
- * the process of lexical analysis by reading characters from the source code, extracting tokens,
- * and updating the scanner's position in the source code.
-
- * The scanner uses an arena-based memory allocation scheme for efficient token management,
- * where memory is allocated in chunks and freed in bulk when the scanner is cleared.
- * This approach avoids the overhead of frequent small allocations and deallocations during
- * the lexical analysis phase, making it well-suited for performance-critical applications.
  */
 
 #include <assert.h>
@@ -27,28 +18,13 @@
 #include "resources/messages.h"
 #include "graph/expression.h"
 
-/**
- * @brief The size of a tabulation (in columns).
- * 
- * This constant defines the width of a tab character (`\t`). By default, it is set to 4,
- * but it can be adjusted if a different tab width is required. The tabulation width is used
- * in the `next_char` function to correctly update the column number when a tab character
- * is encountered.
- */
+/** @brief The size of a tabulation (in columns). */
 #define TABULATION_SIZE 4
 
 /**
  * @brief Removes all comments from the given source code string.
- * 
- * This function processes the input string `code` and removes all comments (both single-line 
- * and multi-line), as well as all carriage return characters (`\r`), replacing them with spaces.
- * The resulting string will have the same structure as the input code, but without any comments 
- * or `\r` characters, while preserving the rest of the code.
- * 
+ *
  * The function modifies the input string directly and does not allocate additional memory.
- * 
- * @param code A wide-character string (`wchar_t *`) representing the source code.
- *  The input string will be modified in place, and all comments will be replaced with spaces.
  */
 static void remove_comments_and_carriage_returns(wchar_t *code) {
     int i = 0;
@@ -82,34 +58,13 @@ static void remove_comments_and_carriage_returns(wchar_t *code) {
     }
 }
 
-/**
- * @brief Retrieves the current character from the scanner's position.
- *
- * This inline function returns the character currently pointed to by the scanner
- * without advancing the position. It is useful for inspecting the current character
- * in the source code during lexical analysis.
- * 
- * @param scan The scanner instance that tracks the current position in the source code.
- * @return The current character in the source code.
- */
+/** @brief Returns the current source character. */
 
 static inline wchar_t get_char(scanner_t *scan) {
     return *scan->position.code;
 }
 
-/**
- * @brief Returns the next character and updates the position of the scanner.
- * 
- * This function advances the scanner to the next character in the source code.
- * It updates the position based on the current character:
- * - If the current character is a newline (`\n`), the line number is incremented and the column
- *   is reset to 1.
- * - If the current character is a tab (`\t`), the column is incremented by `TABULATION_SIZE`.
- * - Otherwise, the column is incremented by 1.
- * 
- * @param scan The scanner instance that tracks the current position and character.
- * @return The next character in the source code.
- */
+/** @brief Returns the next character and updates the position of the scanner. */
 static wchar_t next_char(scanner_t *scan) {
     wchar_t current = *scan->position.code;
     if (current == L'\n') {
@@ -126,26 +81,7 @@ static wchar_t next_char(scanner_t *scan) {
     return *(++scan->position.code);
 }
 
-/**
- * @brief Checks if a wide character is considered a letter.
- * 
- * This function checks whether the given wide character `c` is considered a letter.
- * It supports letters from multiple alphabets, including:
- * - Latin (A-Z, a-z)
- * - Greek (U+0370 to U+03FF)
- * - Cyrillic (U+0400 to U+04FF)
- * - Armenian (U+0530 to U+058F)
- * - Hebrew (U+0590 to U+05FF)
- * - Arabic (U+0600 to U+06FF)
- * - Indic scripts (U+0900 to U+097F, U+0980 to U+09FF, etc.)
- * - Various other alphabets in the Unicode standard.
- * 
- * The function also includes `_` as a valid letter, which is commonly used in
- * programming languages for variable names and identifiers.
- * 
- * @param c The character to check.
- * @return `true` if the character is a letter, `false` otherwise.
- */
+/** @brief Accepts underscore and the identifier-letter ranges listed below. */
 static bool is_letter(wchar_t c) {
     return
         (c >= L'A' && c <= L'Z') ||      // Uppercase Latin letters
@@ -173,10 +109,6 @@ static bool is_letter(wchar_t c) {
 
 /**
  * @brief Checks if a wide character is considered an operator.
- * 
- * This function checks whether the given wide character `c` is considered an operator.
- * 
- * @param c The character to check.
  * @return `true` if the character is an operator, `false` otherwise.
  */
 static bool is_operator(wchar_t c) {
@@ -184,10 +116,7 @@ static bool is_operator(wchar_t c) {
     return wcschr(operators, c) != NULL;
 }
 
-/**
- * @struct keyword_lookup_t
- * @brief Structure for keyword to token type mapping
- */
+/** @brief Keyword to token type mapping */
 typedef struct {
     const wchar_t* keyword;            /**< Keyword string */
     size_t length;                     /**< Length of keyword */
@@ -196,11 +125,9 @@ typedef struct {
     size_t group_offset;               /**< Optional group offset in the group structure */
 } keyword_lookup_t;
 
-/**
- * @brief Keyword lookup table
- */
+/** @brief Keyword lookup table */
 static const keyword_lookup_t keywords[] = {
-    { 
+    {
         L"var",
         3,
         TOKEN_VAR,
@@ -263,7 +190,7 @@ static const keyword_lookup_t keywords[] = {
         NULL,
         offsetof(token_groups_t, else_keywords)
     },
-    /* Add new keywords here */
+
 };
 
 typedef struct {
@@ -281,18 +208,12 @@ static const operator_mapping_t operator_mappings[] = {
     { L"=",  offsetof(token_groups_t, assignment_operators) },
     { L"<",  offsetof(token_groups_t, comparison_operators) },
     { L">",  offsetof(token_groups_t, comparison_operators) },
-    /* Add new operators here */
+
 };
 
 /**
  * @brief Parses a string literal in the source code.
- *
- * This function parses a string literal starting with a double quote (`"`) and handles
- * escape sequences inside the string. It updates the provided token with the parsed
- * string or sets it as an error if the string is malformed.
- *
- * @param scan The scanner instance used for lexical analysis.
- * @param token The token to store the parsed string or error message.
+ * `scan`: The scanner instance used for lexical analysis.
  */
 static void parse_string(scanner_t *scan, token_t *token) {
     assert(get_char(scan) == L'"');
@@ -353,19 +274,8 @@ cleanup:
 /**
  * @brief Parses a numeric literal (integer or real) in the source code.
  *
- * This function parses a numeric literal starting at the current character, which must be a digit.
- * It supports both integer and floating-point (real) literals, including optional fractional and
- * exponent parts (e.g., `42`, `3.14`, `1e-5`). If a minus sign was parsed earlier, it is applied
- * using the `negative` flag.
- *
- * Based on the parsed form, the function creates either an integer or real number AST node
- * and assigns it to `token->node`. The token type is set to `TOKEN_EXPRESSION`.
- *
- * @param scan The scanner instance used for lexical analysis.
- * @param token The token object to populate with the resulting node and type.
- * @param negative `true` if the number is prefixed with a minus sign; otherwise `false`.
- *
- * @note The function assumes the current character is a digit (`0`–`9`) when called.
+ * Parses a numeric literal starting at the current character, which must be a digit.
+ * `scan`: The scanner instance used for lexical analysis.
  * @note No overflow checking is performed for integer literals.
  * @note The exponent part must follow the format `[eE][+/-]digits`.
  */
@@ -469,7 +379,7 @@ token_t *get_token(scanner_t *scan) {
         size_t length = scan->position.code - begin->code;
         for (size_t index = 0; index < sizeof(keywords) / sizeof(keyword_lookup_t); index++) {
             const keyword_lookup_t* kw = &keywords[index];
-            if (length == kw->length && 
+            if (length == kw->length &&
                     wcsncmp(begin->code, kw->keyword, kw->length) == 0) {
                 predefined = true;
                 token->type = kw->type;
@@ -524,7 +434,7 @@ token_t *get_token(scanner_t *scan) {
         );
         next_char(scan);
     }
-    
+
     if (token->text.data == NULL) {
         size_t length = scan->position.code - begin->code;
         token->text = copy_string_to_arena(scan->memory->tokens, begin->code, length);

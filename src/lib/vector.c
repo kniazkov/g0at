@@ -2,11 +2,6 @@
  * @file vector.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of functions for a dynamic array (vector).
- *
- * This source file contains the implementation of the functions for the vector data structure.
- * The vector is a dynamically resizing array that can store pointers to arbitrary data types.
- * It provides functionality for adding elements, resizing the array when necessary, and destroying 
- * the vector along with its elements.
  */
 
 #include "vector.h"

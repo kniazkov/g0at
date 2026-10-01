@@ -2,10 +2,6 @@
  * @file launcher.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of functions for launching the compiler and virtual machine.
- *
- * This file contains the implementation of functions responsible for starting the compiler and
- * virtual machine. These functions manage the initialization, execution, and cleanup of both
- * systems. They work with command-line options and interact with other components of the project.
  */
 
 #include <stdio.h>
@@ -25,27 +21,19 @@
 #include "vm/vm.h"
 
 int go(options_t *opt) {
-    /*
-        1. setup
-    */
+
     long previously_allocated = get_allocated_memory_size();
     if (opt->language) {
         set_language(opt->language);
     }
 
-    /*
-        2. read source file
-    */
     string_value_t code = read_utf8_file(opt->input_file->full_path);
     if (code.data == NULL) {
         fprintf_utf8(stderr, get_messages()->cannot_read_source_file, opt->input_file->normal_path);
         return -1;
     }
 
-    /*
-        3. allocate memory for the parser
-    */
-    parser_memory_t memory = { 
+    parser_memory_t memory = {
         create_arena(64),  // positions
         create_arena(64),  // tokens
         create_arena(128), // nodes
@@ -55,11 +43,9 @@ int go(options_t *opt) {
 
     compilation_error_t *error = NULL;
     int ret_code = -1;
-    
+
     do {
-        /*
-            4. scan (split code into tokens)
-        */
+
         scanner_t *scan = create_scanner(opt->input_file->file_name, code, &memory, groups);
         token_list_t tokens;
         error = process_brackets(&memory, scan, &tokens, groups);
@@ -67,9 +53,6 @@ int go(options_t *opt) {
             break;
         }
 
-        /*
-            5. build a syntax tree
-        */
         parsing_result_t parsing_result = {0};
         error = apply_reduction_rules(groups, &memory, &parsing_result);
         if (error != NULL) {
@@ -82,26 +65,17 @@ int go(options_t *opt) {
             break;
         }
 
-        /*
-            6. from now on we don't need tokens anymore, we can free this part of memory
-        */
         FREE(groups);
         groups = NULL;
         destroy_arena(memory.tokens);
         memory.tokens = NULL;
 
-        /*
-            7. perform a static analysis
-        */
         error = analyze(root_node, &memory, opt);
         compilation_error_severity_t severity = get_most_severe_compilation_error(error);
         if (severity > WARNING) {
             break;
         }
 
-        /*
-            8. print warnings (if any)
-        */
         if (error != NULL) {
             error = reverse_compilation_errors(error);
             const wchar_t const *error_msg_format = get_messages()->compilation_warning;
@@ -122,9 +96,6 @@ int go(options_t *opt) {
         memory.errors = NULL;
         error = NULL;
 
-        /*
-            9. print source code (if needed)
-        */
         if (opt->print_source_code) {
             source_builder_t *source_builder = create_source_builder();
             generate_indented_goat_code_from_node(root_node, source_builder, 0);
@@ -136,9 +107,6 @@ int go(options_t *opt) {
             destroy_source_builder(source_builder);
         }
 
-        /*
-            10. visualization (if needed)
-        */
         if (opt->graph_output_file != NULL) {
             if (is_graphviz_available()) {
                 bool image_generated = generate_image(root_node, opt->graph_output_file->full_path);
@@ -152,9 +120,6 @@ int go(options_t *opt) {
             }
         }
 
-        /*
-            11. compile the syntax tree into bytecode
-        */
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
         generate_bytecode_from_node(root_node, code_builder, data_builder);
@@ -178,39 +143,24 @@ int go(options_t *opt) {
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);
 
-        /*
-            12. print bytecode (if needed)
-        */
         if (opt->print_bytecode) {
             string_value_t text = bytecode_to_text(bytecode);
             print_utf8(text.data);
             FREE_STRING(text);
         }
-        
-        /*
-            13. destroy the syntax tree, since the bytecode exists
-        */
+
         destroy_arena(memory.graph);
         memory.graph = NULL;
         FREE_STRING(code);
         code = NULL_STRING_VALUE;
 
-        /*
-            14. run the virtual machine
-        */
         process_t *process = create_process();
         ret_code = run(process, bytecode);
         destroy_process(process);
 
-        /*
-            15. destroy bytecode
-        */
         free_bytecode(bytecode);
     } while(false);
 
-    /*
-        16. print error messages (if any)
-    */
     if (error != NULL) {
         error = reverse_compilation_errors(error);
         while (error != NULL) {
@@ -239,9 +189,6 @@ int go(options_t *opt) {
         }
     }
 
-    /*
-        17. free the memory used by the compiler if it is not free yet
-    */
     if (memory.positions != NULL) {
         destroy_arena(memory.positions);
     }
@@ -257,9 +204,6 @@ int go(options_t *opt) {
         destroy_arena(memory.errors);
     }
 
-    /*
-        18. check for memory leaks
-    */
     size_t leaked_memory_size = get_allocated_memory_size() - previously_allocated;
     if (leaked_memory_size > 0) {
         fprintf(stderr, "\n");

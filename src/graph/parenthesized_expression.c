@@ -2,12 +2,6 @@
  * @file parenthesized_expression.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of parenthesized expression node.
- *
- * This file defines the behavior of a parenthesized expression, which is a special case
- * of expression that wraps another expression inside parentheses.
- * The parentheses do not change the semantics of the inner expression but may affect
- * evaluation order and parsing. At creation time, the inner expression is not yet known
- * and is filled later by a separate function.
  */
 
 #include <assert.h>
@@ -21,47 +15,25 @@
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 
-/**
- * @struct parenthesized_expression_t
- * @brief Represents a parenthesized expression node.
- *
- * This structure defines an expression node that wraps another expression
- * in parentheses. The inner expression is evaluated normally, but the
- * parentheses affect grouping in source code.
- */
+/** @brief A parenthesized expression node. */
 typedef struct {
-    /**
-     * @brief Base expression structure.
-     *
-     * Inherits from expression_t so the node can be treated as an expression
-     * in all contexts where an expression is expected.
-     */
+    /** @brief Base expression structure. */
     expression_t base;
 
     /**
      * @brief The wrapped inner expression.
      *
-     * May be NULL immediately after creation. It is set later using
-     * a dedicated filling function.
+     * May be NULL immediately after creation.
      */
     expression_t *inner;
 } parenthesized_expression_t;
 
-/**
- * @brief Gets the number of child nodes.
- * @param node Pointer to the parenthesized expression node.
- * @return Always returns 1.
- */
+/** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t get_child_count(const node_t *node) {
     return 1;
 }
 
-/**
- * @brief Retrieves the child node at the given index.
- * @param node Pointer to the parenthesized expression node.
- * @param index Must be 0 to retrieve the inner expression.
- * @return Pointer to the inner expression node, or NULL if index != 0.
- */
+/** @brief Implements @ref node_vtbl_t::get_child. */
 static node_t* get_child(const node_t *node, size_t index) {
     const parenthesized_expression_t *expr = (const parenthesized_expression_t *)node;
     if (index == 0) {
@@ -70,25 +42,12 @@ static node_t* get_child(const node_t *node, size_t index) {
     return NULL;
 }
 
-/**
- * @brief Gets the child tag for the given index.
- * @param node Pointer to the node (unused).
- * @param index Must be 0.
- * @return Static wide string "expression" or NULL if index != 0.
- */
+/** @brief Implements @ref node_vtbl_t::get_child_tag. */
 static const wchar_t* get_child_tag(const node_t *node, size_t index) {
     return (index == 0) ? L"expression" : NULL;
 }
 
-/**
- * @brief Converts the parenthesized expression to its string representation.
- *
- * This function generates the string representation of the parenthesized expression
- * by surrounding the string representation of the inner expression with parentheses.
- *
- * @param node A pointer to the parenthesized expression node.
- * @return A `string_value_t` containing the formatted string representation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const parenthesized_expression_t *expr = (const parenthesized_expression_t *)node;
     string_value_t inner_str = generate_goat_code_from_expression(expr->inner);
@@ -101,16 +60,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     return result;
 }
 
-/**
- * @brief Generates indented Goat source code for the parenthesized expression.
- *
- * Produces formatted Goat source code with proper indentation,
- * enclosing the inner expression in parentheses.
- *
- * @param node A pointer to the node.
- * @param builder A pointer to the `source_builder_t`.
- * @param indent The number of tabs used for indentation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
     const parenthesized_expression_t *expr = (const parenthesized_expression_t *)node;
@@ -119,26 +69,14 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     append_static_source(builder, L")");
 }
 
-/**
- * @brief Generates bytecode for a parenthesized expression node.
- *
- * This function generates bytecode for the wrapped inner expression directly.
- * No additional instructions are required, since parentheses only affect grouping.
- *
- * @param node A pointer to the node representing a parenthesized expression.
- * @param code A pointer to the `code_builder_t`.
- * @param data A pointer to the `data_builder_t`.
- * @return The instruction index of the first emitted instruction.
- */
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     parenthesized_expression_t *expr = (parenthesized_expression_t *)node;
     return generate_bytecode_from_expression(expr->inner, code, data);
 }
 
-/**
- * @brief Virtual table for parenthesized expression operations.
- */
+/** @brief Virtual table for parenthesized expression operations. */
 static node_vtbl_t expression_parenthesized_vtbl = {
     .type = NODE_EXPRESSION_PARENTHESIZED,
     .type_name = L"parenthesized expression",

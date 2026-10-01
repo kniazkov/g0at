@@ -2,9 +2,6 @@
  * @file simple_assignment.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the simple assignment expression node.
- * 
- * This file defines the behavior of the simple assignment expression node, which represents
- * the '=' operation in the syntax tree.
  */
 
 #include <assert.h>
@@ -23,38 +20,14 @@
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
 
-/**
- * @struct simple_assignment_t
- * @brief Represents a simple assignment operation expression node.
- * 
- * This structure defines a simple assignment operation in the syntax tree. The node
- * extends `assignment_t` and includes references to the target (lvalue) and value (rvalue).
- */
+/** @brief A simple assignment operation expression node. */
 
 typedef struct {
-    /**
-     * @brief Base binary operation structure from which addition_t inherits.
-     */
+    /** @brief Base binary operation structure from which addition_t inherits. */
     assignment_t base;
 } simple_assignment_t;
 
-
-/**
- * @brief Calculates the abstract value of a simple assignment expression.
- *
- * Evaluates the right-hand operand and returns its lattice element as the value
- * produced by the assignment expression itself.
- *
- * If the left-hand operand is a variable, the calculated value is also written
- * into the current abstract state under the variable's bound declarator. This
- * makes assignments usable both as expressions and as state-changing operations.
- *
- * @param node A pointer to the assignment expression node.
- * @param state Current abstract state.
- * @param arena Memory arena used for calculating nested expressions and
- *        allocating lattice elements.
- * @return Abstract value produced by the right-hand operand.
- */
+/** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const assignment_t *expr = (const assignment_t *)node;
     const lattice_element_t *value = calculate_expression(expr->right_operand, state, arena);
@@ -65,11 +38,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     return value;
 }
 
-/**
- * @brief Converts an assignment operation to its string representation.
- * @param node A pointer to the assignment expression node.
- * @return A `string_value_t` containing "target = value" representation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const simple_assignment_t *expr = (const simple_assignment_t *)node;
     string_value_t left =
@@ -82,17 +51,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     return result;
 }
 
-/**
- * @brief Generates indented Goat source code for a simple assignment operation node.
- * 
- * This function implements the virtual method for generating Goat source code for a simple
- * assignment expression (`=` operator). It recursively generates code for both left and right
- * operands, combining them with the assignment operator in between.
- * 
- * @param node Pointer to the assignment node to generate code for.
- * @param builder Pointer to the source builder where generated code will be stored.
- * @param indent The current indentation level (in tabs) for code generation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const simple_assignment_t *expr = (const simple_assignment_t *)node;
@@ -102,13 +61,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     generate_indented_goat_code_from_expression(expr->base.right_operand, builder, indent);
 }
 
-/**
- * @brief Generates bytecode for simple assignment operation.
- * @param node A pointer to the node representing the addition operation.
- * @param code A pointer to the `code_builder_t` structure used for generating instructions.
- * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
- * @return The instruction index of the first emitted instruction.
- */
+/** @brief Generates bytecode for simple assignment operation. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const simple_assignment_t *expr = (const simple_assignment_t *)node;
@@ -118,13 +71,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     return first;
 }
 
-/**
- * @brief Virtual table for simple assignment operations.
- * 
- * This virtual table provides the implementation of operations specific to assignment expressions.
- * It includes function pointers for operations such as converting the simple assignment expression
- * to a string representation and generating the corresponding bytecode.
- */
+/** @brief Virtual table for simple assignment operations. */
 static node_vtbl_t simple_assignment_vtbl = {
     .type = NODE_SIMPLE_ASSIGNMENT,
     .type_name = L"assignment",

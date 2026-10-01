@@ -70,7 +70,7 @@ bool test_static_string() {
     parser_memory_t memory = { arena, arena, arena, arena };
     token_groups_t groups;
     scanner_t *scan = create_scanner(
-        "program.goat", 
+        "program.goat",
         STATIC_STRING(L" \"test\" \"new\\nline\" \"\" \"not closed "),
         &memory,
         &groups
@@ -104,9 +104,9 @@ bool test_uknown_symbol() {
     parser_memory_t memory = { arena, arena, arena, arena };
     token_groups_t groups;
     scanner_t *scan = create_scanner(
-        "program.goat", 
-        STATIC_STRING(L"  `  "), 
-        &memory, 
+        "program.goat",
+        STATIC_STRING(L"  `  "),
+        &memory,
         &groups
     );
     token_t *tok = get_token(scan);

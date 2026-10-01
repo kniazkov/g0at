@@ -15,52 +15,24 @@
 #include "lib/avl_tree.h"
 #include "lib/split64.h"
 
-/**
- * @struct runtime_t
- * @brief Structure to represent the runtime environment for the Goat virtual machine.
- * 
- * This structure holds all the data and state required for the execution of the bytecode 
- * within the virtual machine. It includes the bytecode and other runtime-related information
- * necessary for the program's execution.
- */
+/** @brief The runtime environment for the Goat virtual machine. */
 typedef struct {
-    /**
-     * @brief Pointer to the bytecode being executed.
-     */
+    /** @brief Pointer to the bytecode being executed. */
     bytecode_t *code;
 } runtime_t;
 
 /**
- * @typedef instr_executor_t
  * @brief Typedef for functions that execute a single instruction.
- * 
- * This typedef defines the function signature for functions that execute a single instruction
- * in the Goat virtual machine. These functions take an instruction to be executed, the current
- * thread, and the bytecode that the thread is executing. If the function returns `true`, 
- * the virtual machine proceeds to the next instruction. If the function returns `false`, 
- * the virtual machine halts execution.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return A boolean value indicating whether the virtual machine should continue 
- *  executing the next instruction (`true`), or halt (`false`).
+ * @return A boolean value indicating whether the virtual machine should continue executing the next
+ * instruction (`true`), or halt (`false`).
  */
 typedef bool (*instr_executor_t)(runtime_t *runtime, instruction_t instr, thread_t *thread);
 
 /**
  * @brief Retrieves the value of a property from an object or its prototypes.
- * 
- * This function attempts to retrieve the value of a property identified by the `key` from
- * the specified `obj`. If the property is not found directly on the object, it will search through
- * the object's prototypes (as defined by the object's prototype chain) until the property is found
- * or the end of the chain is reached.
- * 
- * If the property is not found in the object or any of its prototypes, the function will return
- * the `null` object.
- * 
- * @param obj The object from which to retrieve the property.
- * @param key The key identifying the property to retrieve.
+ *
+ * If the property is not found in the object or any of its prototypes, the function will return the
+ * `null` object.
  * @return The value of the property, or the `null` object if the property was not found.
  */
 static object_t *get_property_from_object_or_its_prototypes(object_t *obj, object_t *key) {
@@ -79,12 +51,7 @@ static object_t *get_property_from_object_or_its_prototypes(object_t *obj, objec
     return value;
 }
 
-/**
- * @brief Loads a string from the bytecode or retrieves it from the cache.
- * @param runtime The runtime environment containing the static data cache and bytecode.
- * @param string_id The identifier of the static string to load.
- * @return A pointer to the `object_t` representing the static string.
- */
+/** @brief Loads a string from the bytecode or retrieves it from the cache. */
 static object_t *load_string(runtime_t *runtime, process_t *process, uint32_t string_id) {
     object_t *string = process->string_cache[string_id];
     if (string == NULL) {
@@ -102,34 +69,13 @@ static object_t *load_string(runtime_t *runtime, process_t *process, uint32_t st
     return string;
 }
 
-/**
- * @brief Executes the NOP instruction.
- * 
- * The `NOP` opcode performs no operation and simply advances the instruction pointer.
- * It is typically used as a placeholder or for debugging.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `true` to continue executing the next instruction.
- */
+/** @brief Executes @ref NOP. */
 static bool exec_NOP(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     thread->instr_id++;
     return true;
 }
 
-/**
- * @brief Executes the ARG instruction.
- * 
- * The `ARG` opcode pushes an argument onto the argument stack. If the argument stack is full,
- * it returns `false`. This instruction is used for pushing additional arguments onto the stack
- * for instructions that require more than two arguments.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return `true` if the argument was successfully pushed, `false` if the stack is full.
- */
+/** @brief Executes @ref ARG. */
 static bool exec_ARG(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     if (thread->args_count == ARGS_CAPACITY) {
         return false; // bad bytecode
@@ -139,55 +85,18 @@ static bool exec_ARG(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     return true;
 }
 
-/**
- * @brief Executes the END instruction.
- * 
- * The `END` opcode signals the end of the program, causing the virtual machine to halt
- * execution. Once this instruction is encountered, no further instructions will be executed.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `false` to terminate the execution.
- */
+/** @brief Executes @ref END. */
 static bool exec_END(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     return false;
 }
 
-/**
- * @brief Executes the JUMP instruction.
- *
- * The `JUMP` opcode performs an unconditional branch by setting the current thread's instruction
- * pointer to the instruction index stored in `instr.arg1`. The data stack
- * is not inspected or modified.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute. Its `arg1` field contains the target
- *  instruction index.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `true` to continue execution from the target instruction.
- */
+/** @brief Executes @ref JUMP. */
 static bool exec_JUMP(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     thread->instr_id = (instr_index_t)instr.arg1;
     return true;
 }
 
-/**
- * @brief Executes the JIF instruction.
- *
- * The `JIF` opcode pops the top object from the data stack and converts it to a
- * boolean value. If the value is `false`, execution jumps to the instruction index stored in
- * `instr.arg1`; otherwise, execution continues with the next instruction.
- *
- * If the data stack is empty, execution fails and the function returns `false`.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute. Its `arg1` field contains the target
- *  instruction index used when the condition is `false`.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return `true` if execution can continue, `false` if no condition object was available
- *  on the data stack.
- */
+/** @brief Executes @ref JIF. */
 static bool exec_JIF(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *obj = pop_object_from_stack(thread->data_stack);
     if (!obj) {
@@ -203,17 +112,7 @@ static bool exec_JIF(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     return true;
 }
 
-/**
- * @brief Executes the POP instruction.
- * 
- * The `POP` opcode removes the topmost object from the data stack. It is used when an object
- * is no longer needed and should be discarded from the stack.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `true` to continue executing the next instruction.
- */
+/** @brief Executes @ref POP. */
 static bool exec_POP(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *obj = pop_object_from_stack(thread->data_stack);
     DECREFIF(obj);
@@ -221,72 +120,28 @@ static bool exec_POP(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     return true;
 }
 
-/**
- * @brief Executes the NIL instruction.
- * 
- * The `NIL` opcode pushes a null object onto the data stack. This is used to represent
- * the absence of a value or as a default placeholder. The null object is a singleton
- * instance that can be referenced multiple times without needing additional allocations.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute (unused in this operation).
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `true` to continue executing the next instruction.
- */
+/** @brief Executes @ref NIL. */
 static bool exec_NIL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     push_object_onto_stack(thread->data_stack, get_null_object());
     thread->instr_id++;
     return true;
 }
 
-/**
- * @brief Executes the TRUE instruction.
- * 
- * The `TRUE` opcode pushes the boolean constant `true` onto the data stack.
- * This is used to represent the logical truth value in expressions and control flow.
- * The boolean object is a shared singleton, so no additional allocations are required.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute (unused in this operation).
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `true` to continue executing the next instruction.
- */
+/** @brief Executes @ref TRUE. */
 static bool exec_TRUE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     push_object_onto_stack(thread->data_stack, get_boolean_object(true));
     thread->instr_id++;
     return true;
 }
 
-/**
- * @brief Executes the FALSE instruction.
- * 
- * The `FALSE` opcode pushes the boolean constant `false` onto the data stack.
- * This is used to represent the logical false value in expressions and control flow.
- * The boolean object is a shared singleton, so no additional allocations are required.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute (unused in this operation).
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `true` to continue executing the next instruction.
- */
+/** @brief Executes @ref FALSE. */
 static bool exec_FALSE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     push_object_onto_stack(thread->data_stack, get_boolean_object(false));
     thread->instr_id++;
     return true;
 }
 
-
-/**
- * @brief Executes the ILOAD32 instruction.
- * 
- * The `ILOAD32` opcode pushes a 32-bit integer onto the data stack. This operation loads a
- * 32-bit integer value from the instruction argument and pushes it onto the stack.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `true` to continue executing the next instruction.
- */
+/** @brief Executes @ref ILOAD32. */
 static bool exec_ILOAD32(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     int32_t value = (int32_t)instr.arg1;
     push_object_onto_stack(thread->data_stack, create_integer_object(thread->process, value));
@@ -294,19 +149,7 @@ static bool exec_ILOAD32(runtime_t *runtime, instruction_t instr, thread_t *thre
     return true;
 }
 
-/**
- * @brief Executes the ILOAD64 instruction.
- * 
- * The `ILOAD64` opcode pushes a 64-bit integer onto the data stack. Since 64-bit integers
- * are pushed in two parts (high and low), this instruction uses the argument stack to combine
- * the 32-bit parts and then pushes the resulting 64-bit integer onto the stack.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return `true` if the value was successfully pushed, `false` if the argument stack is not
- *  properly set up.
- */
+/** @brief Executes @ref ILOAD64. */
 static bool exec_ILOAD64(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     if (thread->args_count != 1) {
         return false; // bad bytecode
@@ -320,22 +163,7 @@ static bool exec_ILOAD64(runtime_t *runtime, instruction_t instr, thread_t *thre
     return true;
 }
 
-/**
- * @brief Executes the RLOAD instruction.
- * 
- * The `RLOAD` opcode pushes a 64-bit floating-point (double) value onto the data stack.
- * Like `ILOAD64`, it uses the argument stack to combine the two 32-bit parts of the value.
- * 
- * The low 32 bits must be pushed beforehand with the `ARG` instruction. This function then
- * combines the low and high parts into a full 64-bit floating-point number and pushes it
- * onto the data stack.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return `true` if the value was successfully pushed, `false` if the argument stack is not
- *  properly set up.
- */
+/** @brief Executes @ref RLOAD. */
 static bool exec_RLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     if (thread->args_count != 1) {
         return false; // bad bytecode
@@ -352,21 +180,7 @@ static bool exec_RLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
-/**
- * @brief Executes the SLOAD opcode to load a static string into the stack.
- *
- * The `SLOAD` opcode loads a static string identified by its `string_id` into the stack. The
- * staticstrings are pre-defined in the bytecode and are loaded lazily upon the first access.
- * If the string has already been loaded, it is retrieved from the cache. If not, it is created
- * from the bytecode data and stored in the cache for future use.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * 
- * @return `true` if the string was successfully loaded and pushed onto the stack, `false` if there
- *  is an error (e.g., invalid string id or bytecode corruption).
- */
+/** @brief Executes @ref SLOAD. */
 
 static bool exec_SLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
@@ -380,20 +194,7 @@ static bool exec_SLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
-/**
- * @brief Executes the VLOAD opcode to load a variable value from the context.
- * 
- * The `VLOAD` opcode loads a variable value from the current context based on the `string_id`,
- * which corresponds to the variable's name. The function retrieves the property identified by 
- * the `string_id` from the context's data object. If the property does not exist, it loads 
- * `null` as a placeholder. The value is then pushed onto the stack.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return `true` if the variable value was successfully loaded and pushed onto the stack,
- *  `false` if there is an error (e.g., invalid string id or bytecode corruption).
- */
+/** @brief Executes @ref VLOAD. */
 static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
     if (string_id >= runtime->code->data_descriptor_count) {
@@ -407,21 +208,7 @@ static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
-/**
- * @brief Executes the VAR opcode to declare a mutable variable in current context.
- *
- * The `VAR` opcode declares a new mutable variable in the current execution context.
- * It pops the initial value from the stack and associates it with the variable name.
- * The operation will fail if:
- * - The string_id is invalid (bytecode corruption)
- * - The stack is empty
- * - A variable or constant with this name already exists in current context
- *
- * @param runtime The runtime environment.
- * @param instr The instruction containing the string_id argument.
- * @param thread The thread executing the instruction.
- * @return `true` if variable was successfully declared, `false` on any error.
- */
+/** @brief Executes @ref VAR. */
 static bool exec_VAR(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
     if (string_id >= runtime->code->data_descriptor_count) {
@@ -441,21 +228,7 @@ static bool exec_VAR(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     return true;
 }
 
-/**
- * @brief Executes the CONST opcode to declare an immutable constant in current context.
- *
- * The `CONST` opcode declares a new immutable constant in the current execution context.
- * It pops the initial value from the stack and associates it with the constant name.
- * The operation will fail if:
- * - The string_id is invalid (bytecode corruption)
- * - The stack is empty
- * - A variable or constant with this name already exists in current context
- *
- * @param runtime The runtime environment.
- * @param instr The instruction containing the string_id argument.
- * @param thread The thread executing the instruction.
- * @return `true` if variable was successfully declared, `false` on any error.
- */
+/** @brief Executes @ref CONST. */
 static bool exec_CONST(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
     if (string_id >= runtime->code->data_descriptor_count) {
@@ -475,22 +248,7 @@ static bool exec_CONST(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
-/**
- * @brief Executes the STORE opcode to update a variable value.
- *
- * The `STORE` opcode updates an existing variable's value by searching through:
- * 1. Current context's variables
- * 2. Prototype chain (parent contexts)
- * If the variable is not found, it creates a new mutable variable in current context.
- * The operation will fail if:
- * - The string_id is invalid
- * - The stack is empty
- *
- * @param runtime The runtime environment.
- * @param instr The instruction containing the string_id argument.
- * @param thread The thread executing the instruction.
- * @return `true` if variable was successfully declared, `false` on any error.
- */
+/** @brief Executes @ref STORE. */
 static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
     if (string_id >= runtime->code->data_descriptor_count) {
@@ -533,20 +291,7 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
-/**
- * @brief Executes the `ADD` instruction.
- * 
- * The `ADD` opcode performs an addition operation on the top two objects on the data stack.
- * It pops the top two objects from the stack, adds them using their respective `add` methods,
- * and pushes the result back onto the stack. If either of the objects cannot be added, the
- * operation fails.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Returns `true` if the addition was successful and the result was pushed onto the stack,
- *  or `false` if the addition failed (e.g., due to invalid object types).
- */
+/** @brief Executes @ref ADD. */
 static bool exec_ADD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -563,20 +308,7 @@ static bool exec_ADD(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     return false;
 }
 
-/**
- * @brief Executes the `SUB` instruction.
- * 
- * The `SUB` opcode performs a subtraction operation on the top two objects on the data stack.
- * It pops the top two objects from the stack, subtracts the second operand from the first using
- * their respective `sub` methods, and pushes the result back onto the stack. If either of the
- * objects cannot be subtracted, the operation fails.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Returns `true` if the subtraction was successful and the result was pushed onto the
- *  stack, or `false` if the subtraction failed (e.g., due to invalid object types).
- */
+/** @brief Executes @ref SUB. */
 static bool exec_SUB(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -593,17 +325,7 @@ static bool exec_SUB(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     return false;
 }
 
-/**
- * @brief Executes the `MUL` instruction.
- *
- * Pops the top two objects from the data stack, multiplies them using the `multiply` method,
- * and pushes the result back onto the stack. Returns `false` on failure.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread The thread executing the instruction.
- * @return `true` if multiplication succeeded, `false` otherwise.
- */
+/** @brief Executes @ref MUL. */
 static bool exec_MUL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -620,17 +342,7 @@ static bool exec_MUL(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     return false;
 }
 
-/**
- * @brief Executes the `DIVIDE` instruction.
- *
- * Pops the top two objects from the data stack, divides them using the `divide` method,
- * and pushes the result. Division by zero or invalid operands return `false`.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread The thread executing the instruction.
- * @return `true` if division succeeded, `false` otherwise.
- */
+/** @brief Executes @ref DIVIDE. */
 static bool exec_DIVIDE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -647,17 +359,7 @@ static bool exec_DIVIDE(runtime_t *runtime, instruction_t instr, thread_t *threa
     return false;
 }
 
-/**
- * @brief Executes the `MODULO` instruction.
- *
- * Pops the top two objects from the data stack, computes remainder using `modulo` method,
- * and pushes the result. Returns `false` if operation is unsupported.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread The thread executing the instruction.
- * @return `true` if modulo succeeded, `false` otherwise.
- */
+/** @brief Executes @ref MODULO. */
 static bool exec_MODULO(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -674,17 +376,7 @@ static bool exec_MODULO(runtime_t *runtime, instruction_t instr, thread_t *threa
     return false;
 }
 
-/**
- * @brief Executes the `POWER` instruction.
- *
- * Pops the top two objects from the data stack, raises the first to the power of the second
- * using `power` method, and pushes the result. Returns `false` if operation fails.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread The thread executing the instruction.
- * @return `true` if power succeeded, `false` otherwise.
- */
+/** @brief Executes @ref POWER. */
 static bool exec_POWER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -701,16 +393,7 @@ static bool exec_POWER(runtime_t *runtime, instruction_t instr, thread_t *thread
     return false;
 }
 
-/**
- * @brief Executes the `LESS` instruction.
- *
- * Pops the top two objects from the stack, compares them using `less`, and pushes a boolean.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread The thread executing the instruction.
- * @return `true` if comparison succeeded, `false` otherwise.
- */
+/** @brief Executes @ref LESS. */
 static bool exec_LESS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -725,17 +408,7 @@ static bool exec_LESS(runtime_t *runtime, instruction_t instr, thread_t *thread)
     return false;
 }
 
-/**
- * @brief Executes the `LEQ` (less or equal) instruction.
- *
- * Pops the top two objects from the stack, compares them using `less_or_equal`,
- * and pushes a boolean.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread The thread executing the instruction.
- * @return `true` if comparison succeeded, `false` otherwise.
- */
+/** @brief Executes @ref LEQ. */
 static bool exec_LEQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -750,16 +423,7 @@ static bool exec_LEQ(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     return false;
 }
 
-/**
- * @brief Executes the `GREATER` instruction.
- *
- * Pops the top two objects from the stack, compares them using `greater`, and pushes a boolean.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread The thread executing the instruction.
- * @return `true` if comparison succeeded, `false` otherwise.
- */
+/** @brief Executes @ref GREATER. */
 static bool exec_GREATER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -774,16 +438,7 @@ static bool exec_GREATER(runtime_t *runtime, instruction_t instr, thread_t *thre
     return false;
 }
 
-/**
- * @brief Executes the `GREQ` (greater or equal) instruction.
- *
- * Pops the top two objects from the stack, compares them using `greater_or_equal`, and pushes a boolean.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread The thread executing the instruction.
- * @return `true` if comparison succeeded, `false` otherwise.
- */
+/** @brief Executes @ref GREQ. */
 static bool exec_GREQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -798,16 +453,7 @@ static bool exec_GREQ(runtime_t *runtime, instruction_t instr, thread_t *thread)
     return false;
 }
 
-/**
- * @brief Executes the `EQUAL` instruction.
- *
- * Pops the top two objects from the stack, compares them using `equal`, and pushes a boolean.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread The thread executing the instruction.
- * @return `true` if comparison succeeded, `false` otherwise.
- */
+/** @brief Executes @ref EQUAL. */
 static bool exec_EQUAL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -822,16 +468,7 @@ static bool exec_EQUAL(runtime_t *runtime, instruction_t instr, thread_t *thread
     return false;
 }
 
-/**
- * @brief Executes the `DIFF` (not equal) instruction.
- *
- * Pops the top two objects from the stack, compares them using `not_equal`, and pushes a boolean.
- *
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread The thread executing the instruction.
- * @return `true` if comparison succeeded, `false` otherwise.
- */
+/** @brief Executes @ref DIFF. */
 static bool exec_DIFF(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
@@ -846,31 +483,7 @@ static bool exec_DIFF(runtime_t *runtime, instruction_t instr, thread_t *thread)
     return false;
 }
 
-/**
- * @brief Executes the `FUNC` instruction.
- * 
- * The `FUNC` opcode creates a new dynamic function object. It uses:
- * - `instr.arg0` — the number of function parameters (argument count)
- * - `instr.arg1` — index into the data segment for the list of argument names
- * - Top of the argument stack — the instruction index where function execution begins
- * 
- * Execution steps:
- * - Pops the entry point address (instruction index) from the argument stack
- * - Loads argument name strings from the data segment using the descriptor at `instr.arg1`
- * - Allocates and fills an array of argument name objects
- * - Creates a function object using the entry point, argument names, and current closure
- * - Pushes the resulting function object onto the thread’s data stack
- * 
- * The argument name array is allocated in this function and passed to the function object,
- * which takes ownership and frees it during destruction.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute: `arg0` = argument count, `arg1` = data segment index.
- * @param thread Pointer to the executing thread.
- * 
- * @return `true` if the function object was successfully created and pushed onto the stack,
- *         `false` if an error occurred (e.g., malformed bytecode or memory failure).
- */
+/** @brief Executes @ref FUNC. */
 static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *closure = thread->context->data;
     if (thread->args_count < 1) {
@@ -903,32 +516,7 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
     return true;
 }
 
-/**
- * @brief Executes the `CALL` instruction.
- * 
- * The `CALL` opcode interprets the object at the top of the data stack as a function and invokes
- * it. It expects the specified number of arguments (provided in the `arg0` field of the
- * instruction) to already be present on the stack in the correct order.
- * 
- * Upon execution, this function:
- * - Pops the function object from the data stack.
- * - Invokes the function using its `call` method, passing the specified number of arguments
- *   from the stack and the current thread as parameters.
- * - Handles the result of the function invocation:
- *   - If the function returns a value, the result is pushed onto the data stack.
- *   - If the function does not return a value, a `null` object is pushed onto the stack.
- * 
- * If the function cannot be invoked (e.g., the object is not callable, insufficient arguments
- * are on the stack, or other runtime errors occur), the operation fails, and the instruction
- * is not marked as successfully executed.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute. The `arg0` field specifies the number of arguments
- *  to pass to the function.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Returns `true` if the function was successfully invoked and the result was pushed onto
- *  the stack, or `false` if the invocation failed (e.g., invalid function object, runtime error).
- */
+/** @brief Executes @ref CALL. */
 static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *func = pop_object_from_stack(thread->data_stack);
     bool result = call_object(func, instr.arg0, thread);
@@ -937,25 +525,7 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
     return result;
 }
 
-/**
- * @brief Executes the `RET` instruction.
- * 
- * The `RET` opcode terminates the current function by unwinding the stack,
- * restoring the caller context, and replacing the placeholder return value.
- * 
- * Pops the actual return value from the stack and stores it at the return value index.
- * The stack is then reduced to the unwinding index, effectively discarding all intermediate
- * values. Instruction pointer and context are restored to resume execution in the caller.
- * 
- * If the current context is not a function (i.e., has no return point), or the stack is empty,
- * the function fails. Such a case indicates a corrupted or invalid execution state.
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute (unused).
- * @param thread Pointer to the thread executing the instruction.
- * @return `true` if the return was successfully processed,
- *         `false` if context restoration failed or the stack was invalid.
- */
+/** @brief Executes @ref RET. */
 static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     context_t *ctx = thread->context;
     assert (ctx->ret_value_index != BAD_STACK_INDEX);
@@ -977,45 +547,14 @@ static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     return true;
 }
 
-/**
- * @brief Executes the `ENTER` instruction.
- * 
- * The `ENTER` opcode creates a new execution context using the current context as a prototype.
- * This establishes a new variable scope while maintaining access to variables
- * from the parent scope.
- * 
- * Upon execution, this function:
- * - Creates a new context using the current thread's context as prototype
- * - Sets the thread's current context to the newly created one
- * - All subsequent variable operations will refer to this new context
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `true` as context creation cannot fail in current implementation.
- *         The instruction pointer is always advanced.
- */
+/** @brief Executes @ref ENTER. */
 static bool exec_ENTER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     thread->context = create_context(thread->process, thread->context, NULL);
     thread->instr_id++;
     return true;
 }
 
-/**
- * @brief Executes the `LEAVE` instruction.
- * 
- * The `LEAVE` opcode restores the previous execution context while preserving the current one.
- * 
- * Upon execution, this function:
- * - Captures the current context's data object and pushes it onto the data stack
- * - Destroys the current context and restores the parent context
- * 
- * @param runtime The runtime environment.
- * @param instr The instruction to execute.
- * @param thread Pointer to the thread that is executing the instruction.
- * @return Always returns `true` as context restoration cannot fail in current implementation.
- *         The instruction pointer is always advanced.
- */
+/** @brief Executes @ref LEAVE. */
 static bool exec_LEAVE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     context_t *context = thread->context;
     object_t *object = context->data;
@@ -1026,16 +565,7 @@ static bool exec_LEAVE(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
-/**
- * @brief Array of instruction execution functions for the Goat virtual machine.
- * 
- * This array stores function pointers corresponding to each available opcode in the
- * virtual machine. Each function in the array handles the execution of a single instruction,
- * based on the opcode provided.
- * 
- * The array is indexed by the opcode value, and the corresponding function is called to execute
- * the instruction for that opcode.
- */
+/** @brief Array of instruction execution functions for the Goat virtual machine. */
 static instr_executor_t executors[] = {
     exec_NOP,     /**< No operation - does nothing. */
     exec_ARG,     /**< Argument push onto the argument stack. */
@@ -1076,7 +606,7 @@ static instr_executor_t executors[] = {
 
 int run(process_t *proc, bytecode_t *code) {
 
-    // preparing the environment     
+    // preparing the environment
     runtime_t runtime;
     runtime.code = code;
     if ((proc->string_cache_size = code->data_descriptor_count) > 0) {

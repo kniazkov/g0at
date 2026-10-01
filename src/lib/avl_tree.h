@@ -2,11 +2,6 @@
  * @file avl_tree.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Definitions of structures and function prototypes for an AVL tree.
- *
- * An AVL tree is a self-balancing binary search tree where the difference in heights between
- * the left and right subtrees of any node is at most one. This structure is generic and allows
- * for flexible use with any data type through the use of void pointers and a custom comparator
- * function.
  */
 
 #pragma once
@@ -15,25 +10,9 @@
 
 #include "value.h"
 
-/**
- * @struct arena_t
- * @brief Forward declaration for memory arena structure.
- */
 typedef struct arena_t arena_t;
 
-/**
- * @struct avl_node_t
- * @brief A node in the AVL tree.
- *
- * This structure represents a single node in the AVL tree, which contains a key-value pair,
- * height information, and pointers to its left and right children.
- *
- * The `key` is stored as a `void *`, which allows the tree to store any type of data.
- * The `value` is stored as a `value_t`, which can either hold a `void *` pointer to any type
- * of data or an primitive type.
- * The `height` is used to maintain the balance of the tree, ensuring that operations on the tree
- * can be performed in logarithmic time.
- */
+/** @brief A node in the AVL tree. */
 typedef struct avl_node_t {
     void *key;                /**< Pointer to the key stored in the node. */
     value_t value;            /**< Value associated with the key. */
@@ -42,178 +21,89 @@ typedef struct avl_node_t {
     struct avl_node_t *right; /**< Pointer to the right child node. */
 } avl_node_t;
 
-/**
- * @struct avl_tree_t
- * @brief The AVL tree structure.
- *
- * This structure represents the AVL tree itself, which consists of a root node and a comparator
- * function. The comparator function is used to compare keys and determine the order of nodes
- * within the tree.
- */
+/** @brief The AVL tree structure. */
 typedef struct {
-    /**
-     * @brief Pointer to the root node of the tree.
-     */
+    /** @brief Pointer to the root node of the tree. */
     avl_node_t *root;
 
-    /**
-     * @brief Comparator function to compare keys in the tree.
-     */
+    /** @brief Comparator function to compare keys in the tree. */
     int (*comparator)(const void*, const void*);
 
     /**
      * @brief Optional key copy function.
      *
-     * If set, this function is used to copy keys before storing them in the tree
-     * during insertion and cloning. If NULL, keys are copied shallowly.
+     * If set, this function is used to copy keys before storing them in the tree during insertion
+     * and cloning. If NULL, keys are copied shallowly.
      */
     void *(*copy_key)(void *key);
 
     /**
      * @brief Optional value copy function.
      *
-     * If set, this function is used to copy values before storing them in the tree
-     * during insertion, update, and cloning. If NULL, values are copied shallowly.
+     * If set, this function is used to copy values before storing them in the tree during
+     * insertion, update, and cloning. If NULL, values are copied shallowly.
      */
     value_t (*copy_value)(value_t value);
 
     /**
      * @brief Optional key destroy function.
      *
-     * If set, this function is called for every stored key when tree nodes are
-     * destroyed. If NULL, keys are not destroyed by the tree.
+     * If NULL, keys are not destroyed by the tree.
      */
     void (*destroy_key)(void *key);
 
     /**
      * @brief Optional value destroy function.
      *
-     * If set, this function is called for every stored value when tree nodes are
-     * destroyed. If NULL, values are not destroyed by the tree.
+     * If NULL, values are not destroyed by the tree.
      */
     void (*destroy_value)(value_t value);
 } avl_tree_t;
 
 /**
- * @struct avl_tree_arena_t
  * @brief AVL tree that stores its own arena and embeds avl_tree_t as the first field.
  *
- * The tree and all its nodes are allocated from arena. Memory is not freed
- * individually; it lives for the arena's lifetime.
+ * Memory is not freed individually; it lives for the arena's lifetime.
  */
 typedef struct {
-    /**
-     * @brief Embedded plain AVL tree.
-     */    
+    /** @brief Embedded plain AVL tree. */
     avl_tree_t base;
 
-    /**
-     * @brief Memory arena used for allocations.
-     */
+    /** @brief Memory arena used for allocations. */
     arena_t   *arena;
 } avl_tree_arena_t;
 
-/**
- * @brief Creates an empty AVL tree.
- * 
- * This function allocates memory for an AVL tree structure, initializes it with
- * the provided comparator function, and sets the root pointer to NULL, as the tree
- * is initially empty.
- * 
- * The comparator function is used to compare keys within the tree, determining the
- * order of nodes. The tree's memory is managed using the ALLOC function, which ensures
- * that memory allocation failures are handled by terminating the program.
- * 
- * @param comparator A pointer to the comparator function that compares keys in the tree.
- *                   The function should return a negative value if the first key is less,
- *                   zero if they are equal, and a positive value if the first key is greater.
- * 
- * @return A pointer to the newly created AVL tree structure. The root of the tree is
- *  initially set to NULL.
- */
+/** @brief Creates an empty heap-owned AVL tree with the supplied ordering. */
 avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*));
 
-/**
- * @brief Creates an empty AVL tree that allocates from the given arena.
- * @param arena Arena to allocate the tree and its nodes from.
- * @param comparator Comparator function for keys (same contract as avl_tree_t).
- * @return Newly created arena-backed AVL tree.
- */
+/** @brief Creates an empty AVL tree that allocates from the given arena. */
 avl_tree_arena_t *create_avl_tree_arena(arena_t *arena,
         int (*comparator)(const void*, const void*));
 
 /**
- * @brief Inserts a key-value pair into the AVL tree or updates the value if the key exists.
- * 
- * This function attempts to insert a new key-value pair into the AVL tree. If the key already
- * exists in the tree, the function updates the corresponding value and returns the old value.
- * If the key does not exist, the function inserts the new pair and returns zeros.
- * 
- * The function uses the AVL tree's comparator to find the correct position of the key.
- * The tree is balanced after the insertion or update to ensure optimal search times.
- * 
- * @param tree A pointer to the AVL tree where the key-value pair is inserted or updated.
- * @param key A pointer to the key to insert or update in the tree.
- * @param value Value associated with the key.
- * 
- * @return If the key already exists, the function returns the old value associated with the key.
- *  If the key is new, the function returns default value (filled with zeros).
+ * @brief Inserts or replaces a value using the tree copy callbacks.
+ * Returns the old value unless destroy_value consumes it; otherwise returns zero.
+ * New keys are copied only on insertion.
  */
 value_t set_in_avl_tree(avl_tree_t *tree, void *key, value_t value);
 
-/**
- * @brief Inserts/updates a key-value pair using the tree's stored arena.
- *
- * @param tree Arena-backed AVL tree.
- * @param key Key pointer.
- * @param value Value to set.
- * @return Old value if the key existed; zero-filled value otherwise.
- */
+/** @brief Arena-backed variant of set_in_avl_tree(), with the same copy/destruction rules. */
 value_t set_in_avl_tree_arena(avl_tree_arena_t *tree, void *key, value_t value);
 
 /**
  * @brief Checks if the AVL tree contains a node with the specified key.
- * 
- * This function searches the AVL tree for a node with the given key. It uses
- * the tree's comparator function to compare the key with the nodes in the tree.
- * If a node with the specified key is found, the function returns `true`; otherwise,
- * it returns `false`.
- * 
- * @param tree A pointer to the AVL tree to search.
- * @param key A pointer to the key to search for in the tree.
- * 
  * @return `true` if the tree contains a node with the specified key, otherwise `false`.
  */
 bool avl_tree_contains(const avl_tree_t *tree, const void *key);
 
 /**
  * @brief Retrieves the value associated with the specified key in the AVL tree.
- * 
- * This function searches the AVL tree for a node containing the specified key. If the key
- * is found, the function returns the corresponding value. If the key is not found, the function
- * returns zeros.
- * 
- * @param tree A pointer to the AVL tree to search.
- * @param key A pointer to the key whose associated value is to be retrieved.
- * 
- * @return The value associated with the specified key, or default value (filled with zeros)
- *  if the key is not found in the tree.
+ * @return The value associated with the specified key, or default value (filled with zeros) if the
+ * key is not found in the tree.
  */
 value_t get_from_avl_tree(const avl_tree_t *tree, const void *key);
 
-/**
- * @brief Applies a function to each key-value pair in the AVL tree, with user data.
- * 
- * This function performs an in-order traversal of the AVL tree, applying the provided
- * function to each key-value pair. The function is called for each node in the tree
- * with the key, value, and user data as arguments. This allows the user to pass
- * additional context (user data) to the callback function.
- * 
- * @param tree A pointer to the AVL tree to traverse.
- * @param func A pointer to the function to apply to each key-value pair. The function
- *  should have the signature `void func(void* user_data, void* key, value_t value)`.
- * @param user_data A pointer to user data that will be passed to the callback function.
- */
+/** @brief Applies a function to each key-value pair in the AVL tree, with user data. */
 void avl_tree_for_each(const avl_tree_t *tree,
     void (*func)(void* user_data, void* key, value_t value), void *user_data);
 
@@ -221,9 +111,6 @@ void avl_tree_for_each(const avl_tree_t *tree,
  * @brief Clones an AVL tree preserving its exact shape and node heights.
  *
  * The clone is built in O(N) time without reinserting keys and without rebalancing.
- * Keys and values are copied shallowly.
- *
- * @param tree Source AVL tree.
  * @return Newly allocated AVL tree clone, or NULL if source tree is NULL.
  */
 avl_tree_t *clone_avl_tree(const avl_tree_t *tree);
@@ -232,33 +119,21 @@ avl_tree_t *clone_avl_tree(const avl_tree_t *tree);
  * @brief Clones an AVL tree into the given arena preserving exact shape and node heights.
  *
  * The clone is built in O(N) time without reinserting keys and without rebalancing.
- * Keys and values are copied shallowly.
- *
- * @param arena Arena used to allocate the cloned tree and its nodes.
- * @param tree Source AVL tree.
  * @return Newly allocated arena-backed AVL tree clone, or NULL if source tree is NULL.
  */
 avl_tree_arena_t *clone_avl_tree_arena(arena_t *arena, const avl_tree_t *tree);
 
 /**
  * @brief Clears all nodes in the AVL tree without deallocating the tree structure.
- * 
- * This function removes all nodes from the AVL tree and deallocates the memory associated 
- * with them. However, the memory allocated for the tree structure itself remains intact, 
- * allowing the tree to be reused. After this function is called, the tree will be empty but 
- * still valid for further operations.
- * 
- * @param tree A pointer to the AVL tree to clear.
+ *
+ * After this function is called, the tree will be empty but still valid for further operations.
  */
 void clear_avl_tree(avl_tree_t *tree);
 
 /**
  * @brief Destroys the AVL tree and frees all allocated memory.
- * 
- * This function recursively frees all nodes in the AVL tree and then frees the memory
- * allocated for the tree structure itself. After this function is called, the tree is no longer
- * usable, and all memory associated with it is deallocated.
- * 
- * @param tree A pointer to the AVL tree to destroy.
+ *
+ * After this function is called, the tree is no longer usable, and all memory associated with it is
+ * deallocated.
  */
 void destroy_avl_tree(avl_tree_t *tree);

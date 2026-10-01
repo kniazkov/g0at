@@ -2,19 +2,6 @@
  * @file declarations.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of variable and constant declaration nodes.
- * 
- * This file defines the behavior of declaration nodes in the abstract syntax tree (AST):
- * - Variable declarations (var x, y = 1, z = 2 + 3)
- * - Constant declarations (const pi = 3.14)
- * 
- * Declaration nodes are container statements that hold:
- * 1. For variables: One or more variable declarators (identifier + optional initializer)
- * 2. For constants: One or more constant declarators (identifier + required initializer)
- * 
- * The implementation handles both the syntactic structure and semantic rules:
- * - Multiple declarations in single statement
- * - Optional vs required initializers
- * - Scope management for declared identifiers
  */
 
 #include <assert.h>
@@ -37,25 +24,14 @@ size_t get_property_count_of_declarator(const node_t *node) {
     return decl->abstract_value ? 1 : 0;
 }
 
-/**
- * @brief Retrieves a property of a declarator by index.
- *
- * Currently exposes the abstract interpretation value of the declarator, if it
- * is available.
- *
- * @param node Pointer to the declarator node.
- * @param index Zero-based property index.
- * @param out_value Output pointer to receive the property value and display
- *  classification.
- * @return Property key as a constant wide string, or NULL if unavailable.
- */
+/** @brief Implements @ref node_vtbl_t::get_property. */
 const wchar_t *get_property_of_declarator(const node_t *node, size_t index,
         node_display_value_t *out_value) {
     const declarator_t *decl = (const declarator_t *)node;
     if (index == 0 && decl->abstract_value) {
         *out_value = (node_display_value_t){
             .text = lattice_to_string(decl->abstract_value),
-            .kind = decl->abstract_value->type == LATTICE_STRING_CONSTANT ? 
+            .kind = decl->abstract_value->type == LATTICE_STRING_CONSTANT ?
                 NODE_DISPLAY_VALUE_STRING_LITERAL :
                 NODE_DISPLAY_VALUE_PLAIN
         };
@@ -69,38 +45,21 @@ const wchar_t *get_property_of_declarator(const node_t *node, size_t index,
     }
 }
 
-/**
- * @struct variable_declarator_t
- * @brief Represents a single variable declarator in a declaration statement.
- *
- * This structure defines a node that represents one variable declarator within
- * a variable declaration statement (e.g., "x" or "y = 42" in "var x, y = 42").
- * It contains the variable name and an optional initializer expression.
- */
+/** @brief A single variable declarator in a declaration statement. */
 typedef struct {
-    /**
-     * @brief Base declarator structure.
-     */
+    /** @brief Base declarator structure. */
     declarator_t base;
 
     /**
      * @brief Optional initializer expression for the variable.
-     * 
-     * If not NULL, this expression will be evaluated and its result will
-     * become the initial value of the variable.
+     *
+     * If not NULL, this expression will be evaluated and its result will become the initial value
+     * of the variable.
      */
     expression_t *initial;
 } variable_declarator_t;
 
-/**
- * @brief Gets the variable declarator name as display data.
- *
- * This function provides access to the variable name stored in the declarator
- * node together with the default display classification.
- *
- * @param node Pointer to the variable declarator node.
- * @return Display value containing the variable name.
- */
+/** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t vdeclr_get_data(const node_t *node) {
     const variable_declarator_t *decl = (const variable_declarator_t *)node;
     return (node_display_value_t){
@@ -109,28 +68,13 @@ static node_display_value_t vdeclr_get_data(const node_t *node) {
     };
 }
 
-/**
- * @brief Gets the child count for variable declarator node.
- * 
- * Returns 1 if the declarator has an initializer expression, 0 otherwise.
- * 
- * @param node Pointer to the variable declarator node.
- * @return 1 if initializer exists, 0 otherwise.
- */
+/** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t vdeclr_get_child_count(const node_t *node) {
     variable_declarator_t *decl = (variable_declarator_t*)node;
     return decl->initial == NULL ? 0 : 1;
 }
 
-/**
- * @brief Retrieves the initializer expression node.
- * 
- * Provides access to the initializer expression if it exists.
- * 
- * @param node Pointer to the variable declarator node.
- * @param index Must be 0 to get the initializer expression.
- * @return Pointer to the initializer expression node or NULL.
- */
+/** @brief Implements @ref node_vtbl_t::get_child. */
 static node_t* vdeclr_get_child(const node_t *node, size_t index) {
     const variable_declarator_t* decl = (const variable_declarator_t*)node;
     if (index == 0 && decl->initial) {
@@ -139,15 +83,7 @@ static node_t* vdeclr_get_child(const node_t *node, size_t index) {
     return NULL;
 }
 
-/**
- * @brief Gets child tag for variable declarator.
- * 
- * Returns "initial" for the initializer expression if it exists.
- * 
- * @param node Pointer to the node (unused).
- * @param index Must be 0 to get tag.
- * @return Static wide string "initial" or NULL if index != 0 or no initializer.
- */
+/** @brief Implements @ref node_vtbl_t::get_child_tag. */
 static const wchar_t* vdeclr_get_child_tag(const node_t *node, size_t index) {
     const variable_declarator_t* decl = (const variable_declarator_t*)node;
     if (index == 0 && decl->initial) {
@@ -156,15 +92,7 @@ static const wchar_t* vdeclr_get_child_tag(const node_t *node, size_t index) {
     return NULL;
 }
 
-/**
- * @brief Generates Goat source code for a variable declarator.
- * 
- * Produces either just the variable name (if no initializer) or "name = value" format
- * for initialized variables.
- * 
- * @param node Pointer to the variable declarator node.
- * @return `string_value_t` containing the generated code.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t vdeclr_generate_goat_code(const node_t *node) {
     const variable_declarator_t* decl = (const variable_declarator_t*)node;
     if (decl->initial) {
@@ -182,18 +110,7 @@ static string_value_t vdeclr_generate_goat_code(const node_t *node) {
     }
 }
 
-/**
- * @brief Generates indented Goat source code for a variable declarator expression.
- *
- * This function handles the generation of variable declaration syntax, including:
- * - The variable name
- * - Optional initialization with ' = ' operator
- * - The initializer expression (if present)
- *
- * @param node Pointer to the AST node representing the variable declarator.
- * @param builder Pointer to the source builder where generated code will be stored.
- * @param indent The current indentation level (in tabs) for code generation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void vdeclr_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const variable_declarator_t* decl = (const variable_declarator_t*)node;
@@ -205,19 +122,7 @@ static void vdeclr_generate_indented_goat_code(const node_t *node, source_builde
     }
 }
 
-/**
- * @brief Generates bytecode for a variable declarator.
- * 
- * Produces bytecode that:
- * 1. Evaluates initializer (or pushes NIL if none)
- * 2. Pops the value (handled by declaration statement)
- * 3. Declares the variable in current scope
- * 
- * @param node Pointer to the variable declarator node.
- * @param code Pointer to the code builder for bytecode generation.
- * @param data Pointer to the data builder for string storage.
- * @return The instruction index of the first emitted instruction.
- */
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t vdeclr_generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const variable_declarator_t* decl = (const variable_declarator_t*)node;
@@ -232,11 +137,7 @@ static instr_index_t vdeclr_generate_bytecode(node_t *node, code_builder_t *code
     return first;
 }
 
-/**
- * @brief Virtual table for variable declarator operations.
- * 
- * Provides implementations of operations specific to variable declarator nodes.
- */
+/** @brief Virtual table for variable declarator operations. */
 static node_vtbl_t vdeclr_vtbl = {
     .type = NODE_VARIABLE_DECLARATOR,
     .type_name = L"variable declarator",
@@ -258,19 +159,10 @@ static node_vtbl_t vdeclr_vtbl = {
     .generate_bytecode = vdeclr_generate_bytecode,
 };
 
-/**
- * @brief Creates a new variable declarator node.
- * 
- * Allocates and initializes a new variable declarator node with the given name
- * and optional initializer expression.
- * 
- * @param arena Arena allocator to use for node allocation.
- * @param spec Declarator specification.
- * @return Pointer to the newly created variable declarator node.
- */
+/** @brief Creates a new variable declarator node. */
 static variable_declarator_t *create_variable_declarator_node(arena_t *arena,
         const declarator_spec_t *spec) {
-    variable_declarator_t *decl = 
+    variable_declarator_t *decl =
         (variable_declarator_t *)alloc_zeroed_from_arena(arena, sizeof(variable_declarator_t));
     decl->base.base.vtbl = &vdeclr_vtbl;
     decl->base.name = spec->name;
@@ -278,63 +170,29 @@ static variable_declarator_t *create_variable_declarator_node(arena_t *arena,
     return decl;
 }
 
-/**
- * @struct variable_declaration_t
- * @brief Represents a variable declaration statement containing multiple declarators.
- *
- * This structure defines a node that represents a complete variable declaration statement
- * (e.g., "var x, y = 1, z = 2 + 3"). It serves as a container for one or more variable
- * declarators (variable_declarator_t) and handles their collective behavior.
- */
+/** @brief A variable declaration statement containing multiple declarators. */
 typedef struct {
-    /**
-     * @brief Base statement structure.
-     * 
-     * Provides common statement functionality and allows this structure to be treated
-     * as a statement node in the abstract syntax tree.
-     */
+    /** @brief Base statement structure. */
     statement_t base;
 
-    /**
-     * @brief Array of variable declarators.
-     * 
-     * A dynamically allocated array of pointers to `variable_declarator_t` nodes,
-     * each representing a single variable declaration within this statement.
-     * The memory is allocated from the arena.
-     */
+    /** @brief Array of variable declarators. */
     variable_declarator_t **decl_list;
 
     /**
      * @brief Count of variable declarators.
-     * 
-     * Specifies the number of variable declarators in the decl_list array.
+     *
      * Must be at least 1 (empty declarations are not valid).
      */
     size_t decl_count;
 } variable_declaration_t;
 
-/**
- * @brief Gets the child count for a variable declaration node.
- * 
- * Returns the number of variable declarators contained within this declaration statement.
- * 
- * @param node Pointer to the variable declaration node.
- * @return The count of child declarator nodes (always >= 1).
- */
+/** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t vdecln_get_child_count(const node_t *node) {
     const variable_declaration_t* root = (const variable_declaration_t*)node;
     return root->decl_count;
 }
 
-/**
- * @brief Retrieves a specific declarator child node.
- * 
- * Provides access to individual variable declarators within this declaration statement.
- * 
- * @param node Pointer to the variable declaration node.
- * @param index Zero-based index of the declarator to retrieve.
- * @return Pointer to the requested declarator node, or NULL if index is out of bounds.
- */
+/** @brief Implements @ref node_vtbl_t::get_child. */
 static node_t* vdecln_get_child(const node_t *node, size_t index) {
     const variable_declaration_t* decl = (const variable_declaration_t*)node;
     if (index >= decl->decl_count) {
@@ -343,22 +201,7 @@ static node_t* vdecln_get_child(const node_t *node, size_t index) {
     return &decl->decl_list[index]->base.base;
 }
 
-/**
- * @brief Executes abstract interpretation for a variable declaration statement.
- *
- * Walks through all variable declarators contained in the declaration and
- * evaluates their initializer expressions, if present. For each initialized
- * variable, the calculated lattice element is written into the current abstract
- * state under the corresponding declarator key. 
- * 
- * Declarators without initializers are intentionally left untouched.
- *
- * @param node A pointer to the variable declaration node.
- * @param state Current abstract state.
- * @param arena Memory arena used for allocating lattice elements during
- *        expression calculation.
- * @return The same abstract state, updated with initialized variable bindings.
- */
+/** @brief Implements @ref node_vtbl_t::execute. */
 static abstract_state_t *vdecln_execute(node_t *node, abstract_state_t *state, arena_t *arena) {
     const variable_declaration_t* decl = (const variable_declaration_t *)node;
     for (size_t index = 0; index < decl->decl_count; index++) {
@@ -371,16 +214,7 @@ static abstract_state_t *vdecln_execute(node_t *node, abstract_state_t *state, a
     return state;
 }
 
-/**
- * @brief Generates Goat source code for a variable declaration statement.
- * 
- * Produces the textual representation of a variable declaration including all its
- * declarators (e.g., "x, y = 1, z = 2 + 3" for "var x, y = 1, z = 2 + 3").
- * 
- * @param node Pointer to the variable declaration node.
- * @return string_value_t containing the generated code. The caller is responsible
- *         for freeing the memory if should_free is true.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t vdecln_generate_goat_code(const node_t *node) {
     const variable_declaration_t* decl = (const variable_declaration_t*)node;
     string_builder_t builder;
@@ -398,17 +232,8 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
     return append_char(&builder, L';');
 }
 
-/**
- * @brief Generates indented Goat source code for variable declarations.
- * 
- * Produces properly formatted source code with correct indentation for variable
- * declaration statements, including all declarators.
- * 
- * @param node Pointer to the variable declaration node.
- * @param builder Pointer to the source builder for output.
- * @param indent Number of indentation tabs to apply.
- */
-static void vdecln_generate_indented_goat_code(const node_t *node, 
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
+static void vdecln_generate_indented_goat_code(const node_t *node,
         source_builder_t *builder, size_t indent) {
     const variable_declaration_t* decl = (const variable_declaration_t*)node;
     add_static_source(builder, indent, L"var ");
@@ -422,20 +247,8 @@ static void vdecln_generate_indented_goat_code(const node_t *node,
     append_static_source(builder, L";");
 }
 
-/**
- * @brief Generates bytecode for variable declarations.
- * 
- * Emits bytecode that:
- * 1. Evaluates initializers (if any)
- * 2. Declares variables in current scope
- * 3. Handles proper stack management
- * 
- * @param node Pointer to the variable declaration node.
- * @param code Pointer to the code builder for bytecode output.
- * @param data Pointer to the data builder for string storage.
- * @return The instruction index of the first emitted instruction.
- */
-static instr_index_t vdecln_generate_bytecode(node_t *node, 
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
+static instr_index_t vdecln_generate_bytecode(node_t *node,
         code_builder_t *code, data_builder_t *data) {
     const variable_declaration_t* decl = (const variable_declaration_t*)node;
     instr_index_t first = vdeclr_generate_bytecode(&decl->decl_list[0]->base.base, code, data);
@@ -446,12 +259,7 @@ static instr_index_t vdecln_generate_bytecode(node_t *node,
     return first;
 }
 
-/**
- * @brief Virtual table for variable declaration nodes.
- * 
- * Contains function pointers implementing all operations for variable declaration
- * statements in the abstract syntax tree.
- */
+/** @brief Virtual table for variable declaration nodes. */
 static node_vtbl_t vdecln_vtbl = {
     .type = NODE_VARIABLE_DECLARATION,
     .type_name = L"variable declaration",
@@ -482,48 +290,34 @@ node_t *create_variable_declaration_node(arena_t *arena, declarator_spec_t **dec
     node->decl_list = (variable_declarator_t **)alloc_from_arena(arena,
             decl_count * sizeof(variable_declarator_t *));
     node->decl_count = decl_count;
-    
+
     for (size_t index = 0; index < decl_count; index++) {
         node->decl_list[index] = create_variable_declarator_node(arena, decl_list[index]);
     }
-    
+
     return &node->base.base;
 }
 
 /**
- * @struct constant_declarator_t
- * @brief Represents a constant declaration in the abstract syntax tree.
+ * @brief A constant declaration in the abstract syntax tree.
  *
- * This structure defines a node for constant declarations (e.g., "const pi = 3.14").
- * Unlike variables, constants must be initialized at declaration time and cannot be
- * modified afterward. The node stores both the constant name and its initializer
- * expression.
+ * Unlike variables, constants must be initialized at declaration time and cannot be modified
+ * afterward.
  */
 typedef struct {
-    /**
-     * @brief Base declarator structure.
-     */
+    /** @brief Base declarator structure. */
     declarator_t base;
 
     /**
      * @brief Initializer expression for the constant.
-     * 
-     * Must be non-NULL as constants require initialization. The expression is
-     * evaluated once at declaration time and its result becomes the immutable
-     * value of the constant.
+     *
+     * Must be non-NULL as constants require initialization. The expression is evaluated once at
+     * declaration time and its result becomes the immutable value of the constant.
      */
     expression_t *initial;
 } constant_declarator_t;
 
-/**
- * @brief Gets the constant declarator name as display data.
- *
- * Provides access to the constant name stored in the declarator node together
- * with the default display classification.
- *
- * @param node Pointer to the constant declarator node.
- * @return Display value containing the constant name.
- */
+/** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t cdeclr_get_data(const node_t *node) {
     const constant_declarator_t *decl = (const constant_declarator_t *)node;
     return (node_display_value_t){
@@ -532,27 +326,12 @@ static node_display_value_t cdeclr_get_data(const node_t *node) {
     };
 }
 
-/**
- * @brief Gets the child count for constant declarator node.
- * 
- * Returns 1 as constants always have an initializer expression.
- * 
- * @param node Pointer to the constant declarator node.
- * @return Always returns 1 (constant declarations require initializers).
- */
+/** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t cdeclr_get_child_count(const node_t *node) {
     return 1;
 }
 
-/**
- * @brief Retrieves the initializer expression node.
- * 
- * Provides access to the constant's initializer expression.
- * 
- * @param node Pointer to the constant declarator node.
- * @param index Must be 0 to get the initializer expression.
- * @return Pointer to the initializer expression node or NULL if index != 0.
- */
+/** @brief Implements @ref node_vtbl_t::get_child. */
 static node_t* cdeclr_get_child(const node_t *node, size_t index) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
     if (index == 0) {
@@ -561,15 +340,7 @@ static node_t* cdeclr_get_child(const node_t *node, size_t index) {
     return NULL;
 }
 
-/**
- * @brief Gets child tag for constant declarator.
- * 
- * Returns "initial" for the initializer expression.
- * 
- * @param node Pointer to the node (unused).
- * @param index Must be 0 to get tag.
- * @return Static wide string "initial" or NULL if index != 0.
- */
+/** @brief Implements @ref node_vtbl_t::get_child_tag. */
 static const wchar_t* cdeclr_get_child_tag(const node_t *node, size_t index) {
     if (index == 0) {
         return L"initial";
@@ -577,16 +348,7 @@ static const wchar_t* cdeclr_get_child_tag(const node_t *node, size_t index) {
     return NULL;
 }
 
-/**
- * @brief Generates Goat source code for a constant declarator.
- * 
- * Produces the textual representation of a constant declaration in the format
- * "name = value" (e.g., "pi = 3.14").
- * 
- * @param node Pointer to the constant declarator node.
- * @return string_value_t containing the generated code. The caller is responsible
- *         for freeing the memory if `should_free` is true.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t cdeclr_generate_goat_code(const node_t *node) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
     string_builder_t builder;
@@ -600,18 +362,7 @@ static string_value_t cdeclr_generate_goat_code(const node_t *node) {
     return value;
 }
 
-/**
- * @brief Generates indented Goat source code for a constant declarator expression.
- *
- * This function handles the generation of constant declaration syntax, including:
- * - The constant name
- * - Initialization with ' = ' operator
- * - The initializer expression
- *
- * @param node Pointer to the AST node representing the constant declarator.
- * @param builder Pointer to the source builder where generated code will be stored.
- * @param indent The current indentation level (in tabs) for code generation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void cdeclr_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
@@ -620,19 +371,7 @@ static void cdeclr_generate_indented_goat_code(const node_t *node, source_builde
     generate_indented_goat_code_from_expression(decl->initial, builder, indent);
 }
 
-/**
- * @brief Generates bytecode for a constant declarator.
- * 
- * Produces bytecode that:
- * 1. Evaluates the initializer expression
- * 2. Pops the value from stack (handled by declaration statement)
- * 3. Declares the constant in current scope
- * 
- * @param node Pointer to the constant declarator node.
- * @param code Pointer to the code builder for bytecode output.
- * @param data Pointer to the data builder for string storage.
- * @return The instruction index of the first emitted instruction.
- */
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t cdeclr_generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const constant_declarator_t* decl = (const constant_declarator_t*)node;
@@ -642,11 +381,7 @@ static instr_index_t cdeclr_generate_bytecode(node_t *node, code_builder_t *code
     return first;
 }
 
-/**
- * @brief Virtual table for constant declarator operations.
- * 
- * Provides implementations of operations specific to constant declarator nodes.
- */
+/** @brief Virtual table for constant declarator operations. */
 static node_vtbl_t cdeclr_vtbl = {
     .type = NODE_CONSTANT_DECLARATOR,
     .type_name = L"constant declarator",
@@ -668,22 +403,12 @@ static node_vtbl_t cdeclr_vtbl = {
     .generate_bytecode = cdeclr_generate_bytecode,
 };
 
-/**
- * @brief Creates a new constant declarator AST node.
- * 
- * Constructs a complete constant declarator node from a declarator specification.
- * 
- * @param arena Arena allocator for node allocation.
- * @param spec Pointer to declarator specification containing:
- *             - Name and length
- *             - Mandatory initializer expression
- * @return Pointer to newly created constant_declarator_t node.
- */
+/** @brief Creates a new constant declarator AST node. */
 static constant_declarator_t *create_constant_declarator_node(arena_t *arena,
         const declarator_spec_t *spec) {
     assert(spec->initial != NULL);
-    
-    constant_declarator_t *decl = 
+
+    constant_declarator_t *decl =
         (constant_declarator_t *)alloc_zeroed_from_arena(arena, sizeof(constant_declarator_t));
     decl->base.base.vtbl = &cdeclr_vtbl;
     decl->base.name = spec->name;
@@ -692,63 +417,28 @@ static constant_declarator_t *create_constant_declarator_node(arena_t *arena,
 }
 
 /**
- * @struct constant_declaration_t
- * @brief Represents a constant declaration statement in the abstract syntax tree.
+ * @brief A constant declaration statement in the abstract syntax tree.
  *
- * This structure defines a node that represents a complete constant declaration
- * statement (e.g., "const pi = 3.14, tau = 6.28"). It serves as a container for
- * one or more constant declarators and handles their collective behavior.
  * Unlike variables, all constants must be initialized at declaration time.
  */
 typedef struct {
-    /**
-     * @brief Base statement structure.
-     * 
-     * Provides common statement functionality and allows this structure to be treated
-     * as a statement node in the abstract syntax tree.
-     */
+    /** @brief Base statement structure. */
     statement_t base;
 
-    /**
-     * @brief Array of constant declarators.
-     * 
-     * An arena-allocated array of pointers to constant_declarator_t nodes,
-     * each representing a single constant declaration within this statement.
-     * The array always contains at least one element.
-     */
+    /** @brief Array of constant declarators. */
     constant_declarator_t **decl_list;
 
-    /**
-     * @brief Count of constant declarators.
-     * 
-     * Specifies the number of constant declarators in the `decl_list` array.
-     * The count is always positive (empty declarations are syntactically invalid).
-     */
+    /** @brief Count of constant declarators. */
     size_t decl_count;
 } constant_declaration_t;
 
-/**
- * @brief Gets the child count for a constant declaration node.
- * 
- * Returns the number of constant declarators contained in this declaration.
- * 
- * @param node Pointer to the constant declaration node.
- * @return The count of child declarator nodes (always >= 1).
- */
+/** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t cdecln_get_child_count(const node_t *node) {
     const constant_declaration_t* root = (const constant_declaration_t*)node;
     return root->decl_count;
 }
 
-/**
- * @brief Retrieves a specific constant declarator child node.
- * 
- * Provides access to individual constant declarators within this declaration.
- * 
- * @param node Pointer to the constant declaration node.
- * @param index Zero-based index of the declarator to retrieve.
- * @return Pointer to the constant declarator node, or NULL if index is invalid.
- */
+/** @brief Implements @ref node_vtbl_t::get_child. */
 static node_t* cdecln_get_child(const node_t *node, size_t index) {
     const constant_declaration_t* decl = (const constant_declaration_t*)node;
     if (index >= decl->decl_count) {
@@ -757,22 +447,7 @@ static node_t* cdecln_get_child(const node_t *node, size_t index) {
     return &decl->decl_list[index]->base.base;
 }
 
-/**
- * @brief Executes abstract interpretation for a constant declaration statement.
- *
- * Walks through all constant declarators contained in the declaration, evaluates
- * each initializer expression, and stores the resulting lattice element in the
- * current abstract state under the corresponding declarator key.
- *
- * Unlike variable declarations, constant declarations always have initializers,
- * so every declarator is expected to produce an abstract value.
- *
- * @param node A pointer to the constant declaration node.
- * @param state Current abstract state.
- * @param arena Memory arena used for allocating lattice elements during
- *        expression calculation.
- * @return The same abstract state, updated with constant bindings.
- */
+/** @brief Implements @ref node_vtbl_t::execute. */
 static abstract_state_t *cdecln_execute(node_t *node, abstract_state_t *state, arena_t *arena) {
     const constant_declaration_t* decl = (const constant_declaration_t *)node;
     for (size_t index = 0; index < decl->decl_count; index++) {
@@ -783,16 +458,7 @@ static abstract_state_t *cdecln_execute(node_t *node, abstract_state_t *state, a
     return state;
 }
 
-/**
- * @brief Generates Goat source code for a constant declaration.
- * 
- * Produces the textual representation of a constant declaration including all
- * its declarators (e.g., "const pi = 3.14, tau = 6.28").
- * 
- * @param node Pointer to the constant declaration node.
- * @return string_value_t containing the generated code. The caller is responsible
- *         for freeing the memory if should_free is true.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t cdecln_generate_goat_code(const node_t *node) {
     const constant_declaration_t* decl = (const constant_declaration_t*)node;
     string_builder_t builder;
@@ -810,16 +476,7 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
     return append_char(&builder, L';');
 }
 
-/**
- * @brief Generates indented Goat source code for constant declarations.
- * 
- * Produces properly formatted source code with correct indentation for constant
- * declaration statements, including all declarators.
- * 
- * @param node Pointer to the constant declaration node.
- * @param builder Pointer to the source builder for output.
- * @param indent Number of indentation tabs to apply.
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
     const constant_declaration_t* decl = (const constant_declaration_t*)node;
@@ -834,20 +491,8 @@ static void cdecln_generate_indented_goat_code(const node_t *node, source_builde
     append_static_source(builder, L";");
 }
 
-/**
- * @brief Generates bytecode for constant declarations.
- * 
- * Emits bytecode that:
- * 1. Evaluates initializer expressions
- * 2. Declares constants in current scope
- * 3. Ensures immutability of declared values
- * 
- * @param node Pointer to the constant declaration node.
- * @param code Pointer to the code builder for bytecode output.
- * @param data Pointer to the data builder for string storage.
- * @return The instruction index of the first emitted instruction.
- */
-static instr_index_t cdecln_generate_bytecode(node_t *node, 
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
+static instr_index_t cdecln_generate_bytecode(node_t *node,
         code_builder_t *code, data_builder_t *data) {
     const constant_declaration_t* decl = (const constant_declaration_t*)node;
     instr_index_t first = generate_bytecode_from_node(
@@ -859,12 +504,7 @@ static instr_index_t cdecln_generate_bytecode(node_t *node,
     return first;
 }
 
-/**
- * @brief Virtual table for constant declaration nodes.
- * 
- * Contains function pointers implementing all operations for constant declaration
- * statements in the abstract syntax tree.
- */
+/** @brief Virtual table for constant declaration nodes. */
 static node_vtbl_t cdecln_vtbl = {
     .type = NODE_CONSTANT_DECLARATION,
     .type_name = L"constant declaration",
@@ -895,11 +535,11 @@ node_t *create_constant_declaration_node(arena_t *arena, declarator_spec_t **dec
     node->decl_list = (constant_declarator_t **)alloc_from_arena(arena,
             decl_count * sizeof(constant_declarator_t *));
     node->decl_count = decl_count;
-    
+
     for (size_t index = 0; index < decl_count; index++) {
         node->decl_list[index] = create_constant_declarator_node(arena, decl_list[index]);
     }
-    
+
     return &node->base.base;
 }
 
@@ -931,16 +571,14 @@ variable_declaration_pair_t create_synthetic_variable_declaration_node(arena_t *
     };
 }
 
-/**
- * @brief Invalid name used by the built-in declarator singleton.
- */
+/** @brief Invalid name used by the built-in declarator singleton. */
 static wchar_t builtin_declarator_name_data[] = L"*";
 
 /**
  * @brief Singleton fake declarator for built-in names.
  *
- * Used as a non-NULL declaration target for runtime-provided names such as
- * built-in functions and constants.
+ * Used as a non-NULL declaration target for runtime-provided names such as built-in functions and
+ * constants.
  */
 static declarator_t builtin_declarator = {
     .base = {

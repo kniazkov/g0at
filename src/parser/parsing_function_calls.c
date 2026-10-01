@@ -2,11 +2,6 @@
  * @file parsing_function_calls.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines reduction rules for creating function call nodes.
- *
- * This file contains the implementation of reduction rules specific to function calls.
- * These rules are applied during the parsing process to create new tokens and 
- * abstract syntax tree (AST) nodes representing function calls. The rules define how
- * a sequence of tokens should be transformed into a valid function call expression.
  */
 
 #include <assert.h>
@@ -19,20 +14,7 @@
 
 /**
  * @brief Handles function call syntax (identifier followed by parentheses).
- * 
- * This rule matches the pattern: TOKEN_IDENTIFIER TOKEN_BRACKET_PAIR('(')
- * and converts it into a function call expression. The actual arguments
- * remain unparsed and are stored as TOKEN_FCALL_ARGS for later processing.
- *
- * Behavior:
- * - Creates variable node for function name
- * - Initializes function call node without arguments
- * - Marks bracket pair as containing unparsed arguments
- * - Collapses into TOKEN_EXPRESSION
- *
- * @param identifier The function name token (must be TOKEN_IDENTIFIER).
- * @param memory Parser memory context for allocations.abort
- * @param groups Token classification groups (adds to function_arguments group).
+ * `identifier`: The function name token (must be TOKEN_IDENTIFIER).
  * @return NULL on success, error if invalid syntax encountered.
  */
 compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
@@ -54,18 +36,6 @@ compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
 
 /**
  * @brief Processes unparsed function call arguments from TOKEN_FCALL_ARGS.
- * 
- * Validates and converts raw argument tokens into proper expressions:
- * 1. Checks for valid expression sequence separated by commas
- * 2. Reports errors for:
- *    - Non-expression tokens where arguments expected
- *    - Missing comma between arguments
- *    - Trailing comma without following expression
- * 3. Finalizes function call node with parsed arguments
- *
- * @param container The TOKEN_FCALL_ARGS token containing argument tokens.
- * @param memory Parser memory context for allocations.
- * @param groups Token groups (unused in this rule).
  * @return NULL if arguments parsed successfully, error otherwise.
  */
 compilation_error_t *parsing_function_call_args(token_t *container,

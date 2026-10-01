@@ -2,9 +2,6 @@
  * @file parsing_flow_keywords.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines reduction rules for control-flow keyword tokens.
- * 
- * This module parses keyword-driven control-flow constructs and collapses the
- * corresponding token ranges into statement AST nodes.
  */
 
 #include <assert.h>
@@ -16,19 +13,6 @@
 
 /**
  * @brief Parses an `if` statement with an optional `else` branch.
- *
- * This function expects an `if` keyword followed by a parenthesized condition
- * expression and a statement or expression used as the true branch. If an
- * `else` keyword follows the true branch, the function also parses the false
- * branch.
- *
- * Expression branches are wrapped into statement-expression nodes. On success,
- * the consumed token range is collapsed into a single `TOKEN_STATEMENT`
- * containing a `NODE_IF_ELSE` AST node.
- *
- * @param token The `if` keyword token that starts the construct.
- * @param memory Parser memory used for AST allocation and error creation.
- * @param groups Token groups collected by the parser stage.
  * @return `NULL` on success, or a compilation error if the construct is invalid.
  */
 static compilation_error_t *parsing_if_else(token_t *token, parser_memory_t *memory,
@@ -115,13 +99,6 @@ static compilation_error_t *parsing_if_else(token_t *token, parser_memory_t *mem
 
 /**
  * @brief Parses a control-flow keyword token.
- *
- * Dispatches parsing to the concrete control-flow parser according to the token
- * type. 
- *
- * @param token The control-flow keyword token to parse.
- * @param memory Parser memory used for AST allocation and error creation.
- * @param groups Token groups collected by the parser stage.
  * @return `NULL` on success, or a compilation error if parsing fails.
  */
 compilation_error_t *parsing_flow_keywords(token_t *token, parser_memory_t *memory,
@@ -136,18 +113,7 @@ compilation_error_t *parsing_flow_keywords(token_t *token, parser_memory_t *memo
     return NULL;
 }
 
-/**
- * @brief Reports an `else` keyword without a matching `if`.
- * 
- * The keyword `else` should have been consumed by the previous `if` parser. If it reaches this
- * parser, it is a standalone `else` without a matching `if`, so a critical compilation error
- * is created.
- *
- * @param token The standalone `else` keyword token.
- * @param memory Parser memory used for error creation.
- * @param groups Token groups collected by the parser stage.
- * @return A compilation error describing the unmatched `else`.
- */
+/** @brief Reports an `else` keyword without a matching `if`. */
 compilation_error_t *parsing_else_keywords(token_t *token, parser_memory_t *memory,
         token_groups_t *groups) {
     return create_error_from_token(

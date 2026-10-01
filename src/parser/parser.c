@@ -2,11 +2,6 @@
  * @file parser.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implements the functions for the parser.
- *
- * This file contains the implementation of functions for the parser, which transforms a token
- * stream into an abstract syntax tree (AST). The parser ensures that the token stream adheres
- * to the grammar of the language and builds a tree structure suitable for further analysis
- * and code generation.
  */
 
 #include <assert.h>
@@ -20,136 +15,92 @@
 #include "resources/messages.h"
 #include "graph/node.h"
 
-/**
- * @brief Rule for handling comparison operators, followed by expressions
- *  on both sides.
- */
+/** @brief Rule for handling comparison operators, followed by expressions on both sides. */
 compilation_error_t *parsing_comparison_operators(token_t *operator, parser_memory_t *memory,
     token_groups_t *groups);
 
-/**
- * @brief Rule for handling an additive operator (`+` or `-`), followed by expressions
- *  on both sides.
- */
+/** @brief Rule for handling an additive operator (`+` or `-`), followed by expressions on both sides. */
 compilation_error_t *parsing_additive_operators(token_t *operator, parser_memory_t *memory,
     token_groups_t *groups);
 
 /**
- * @brief Rule for handling a multiplicative operator (`*`, `/` or `%`), followed by expressions
- *  on both sides.
+ * @brief Rule for handling a multiplicative operator (`*`, `/` or `%`), followed by expressions on
+ * both sides.
  */
 compilation_error_t *parsing_multiplicative_operators(token_t *operator, parser_memory_t *memory,
         token_groups_t *groups);
 
-/**
- * @brief Rule for handling a power operator (`**`), followed by expressions on both sides.
- */
+/** @brief Rule for handling a power operator (`**`), followed by expressions on both sides. */
 compilation_error_t *parsing_power_operators(token_t *operator, parser_memory_t *memory,
         token_groups_t *groups);
 
 /**
- * @brief Rule for handling an assignment operator, with assignable expression on the left side
- *  and expression on the right side.
+ * @brief Rule for handling an assignment operator, with assignable expression on the left side and
+ * expression on the right side.
  */
 compilation_error_t *parsing_assignment_operators(token_t *operator, parser_memory_t *memory,
     token_groups_t *groups);
 
-/**
- * @brief Rule for handling an identifier followed by parentheses (function call).
- */
+/** @brief Rule for handling an identifier followed by parentheses (function call). */
 compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
     parser_memory_t *memory, token_groups_t *groups);
 
-/**
- * @brief Rule for handling function calls arguments.
- */
+/** @brief Rule for handling function calls arguments. */
 compilation_error_t *parsing_function_call_args(token_t *identifier,
     parser_memory_t *memory, token_groups_t *groups);
 
-/**
- * @brief Rule for handling single (isolated) identifiers as variables.
- */
+/** @brief Rule for handling single (isolated) identifiers as variables. */
 compilation_error_t *parsing_single_identifiers(token_t *identifier,
     parser_memory_t *memory, token_groups_t *groups);
 
-/**
- * @brief Rule for handling variable declarations.
- */
-compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memory_t *memory, 
+/** @brief Rule for handling variable declarations. */
+compilation_error_t *parsing_variable_declarations(token_t *keyword, parser_memory_t *memory,
     token_groups_t *groups);
 
-/**
- * @brief Rule for handling constant declarations.
- */
-compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memory_t *memory, 
+/** @brief Rule for handling constant declarations. */
+compilation_error_t *parsing_constant_declarations(token_t *keyword, parser_memory_t *memory,
     token_groups_t *groups);
 
-/**
- * @brief Rule for handling scope blocks (curly brace pairs) and functon declarations.
- */
+/** @brief Rule for handling scope blocks (curly brace pairs) and functon declarations. */
 compilation_error_t *parsing_scopes_and_functions(token_t *token, parser_memory_t *memory,
     token_groups_t *groups);
 
-/**
- * @brief Rule for handling statements within a statement list.
- */
+/** @brief Rule for handling statements within a statement list. */
 compilation_error_t *parsing_statement_list_bodies(token_t *token, parser_memory_t *memory,
     token_groups_t *groups);
 
-/**
- * @brief Rule for handling statements within a function.
- */
+/** @brief Rule for handling statements within a function. */
 compilation_error_t *parsing_function_bodies(token_t *token, parser_memory_t *memory,
     token_groups_t *groups);
 
-/**
- * @brief Rule for handling `return` statements.
- */
+/** @brief Rule for handling `return` statements. */
 compilation_error_t *parsing_returns(token_t *token, parser_memory_t *memory,
     token_groups_t *groups);
 
-/**
- * @brief Rule for handling `if-else`, `for`, `do-while`, `while` statements.
- */
+/** @brief Rule for handling `if-else`, `for`, `do-while`, `while` statements. */
 compilation_error_t *parsing_flow_keywords(token_t *token, parser_memory_t *memory,
         token_groups_t *groups);
 
-/**
- * @brief Rule for handling `else` keywords.
- */
+/** @brief Rule for handling `else` keywords. */
 compilation_error_t *parsing_else_keywords(token_t *token, parser_memory_t *memory,
         token_groups_t *groups);
 
 /**
- * @brief Rule for processing an expression in parentheses - identifies it as such and changes it
- * in the token chain. 
+ * @brief Rule for processing an expression in parentheses - identifies it as such and changes it in
+ * the token chain.
  */
 compilation_error_t *preparsing_parenthesized_expressions(token_t *token, parser_memory_t *memory,
     token_groups_t *groups);
 
-/**
- * @brief Rule for final processing of expressions in parentheses.
- */
+/** @brief Rule for final processing of expressions in parentheses. */
 compilation_error_t *parsing_parenthesized_expressions(token_t *token, parser_memory_t *memory,
     token_groups_t *groups);
 
 /**
- * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into
- *  a special token.
- * 
- * This function iterates through tokens and checks for matching opening and closing brackets.
- * It wraps balanced bracket pairs into a special `TOKEN_BRACKET_PAIR` token.
- * If an unmatched bracket is found, or if brackets do not match, it returns an error.
- * 
- * @param memory A pointer to the parser's memory structure, used for memory allocation.
- * @param scan The scanner used to get tokens.
- * @param list The list to which the resulting tokens will be added.
- * @param opening_token The token representing the opening bracket (used to track errors).
- * @param closing_token A pointer to where the closing token will be stored if found.
- * @param groups Token classification groups
- * 
- * @return A `compilation_error_t` pointer if an error is detected (e.g., mismatched brackets),
- *  or NULL if no errors.
+ * @brief Scans and analyzes tokens for balanced brackets, transforming nested brackets into a
+ * special token.
+ * @return A `compilation_error_t` pointer if an error is detected (e.g., mismatched brackets), or
+ * NULL if no errors.
  */
 static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memory, scanner_t *scan,
         token_list_t *list, const token_t *opening_token, const token_t **closing_token,
@@ -188,7 +139,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
                     scan,
                     &pair->children,
                     token,
-                    &previous, 
+                    &previous,
                     groups
                 );
                 if (error != NULL) {
@@ -256,31 +207,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
     return NULL;
 }
 
-/**
- * @brief Applies a reduction rule to the token list from the first to the last token.
- * 
- * This function traverses the token list from the first token to the last, applying
- * the provided reduction rule to each token in the list. The reduction rule may modify
- * the token list and the syntax tree by creating new nodes or tokens. If a reduction
- * rule encounters an error, it is added to a linked list of errors, which the function
- * returns as its result. If a critical error is encountered, the function stops processing
- * immediately.
- * 
- * @param list A pointer to the token list to which the reduction rule will be applied.
- * @param rule The reduction rule function that will be applied to the tokens.
- * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
- *  for tokens and syntax tree nodes.
- * @param groups Token classification groups that may be updated during reduction.
- * @param error A pointer to an existing linked list of errors. Any new errors found during
- *  the reduction process will be added to this list.
- * @return A pointer to the updated linked list of `compilation_error_t` structures. If no
- *  errors were encountered, the function returns the original `error` pointer (unchanged).
- * 
- * @note The function maintains the order of errors by prepending new errors to the front
- *  of the list. The most recent error will be at the head of the returned list.
- * @note If a critical error is encountered, the function stops processing immediately and 
- *  returns the updated error list.
- */
+/** @brief Applies a reduction rule to the token list from the first to the last token. */
 static compilation_error_t *apply_reduction_rule_forward(token_list_t *list, reduce_rule_t rule,
         parser_memory_t *memory, token_groups_t *groups, compilation_error_t *error) {
     token_t *token = list->first;
@@ -301,29 +228,9 @@ static compilation_error_t *apply_reduction_rule_forward(token_list_t *list, red
 
 /**
  * @brief Applies a reduction rule to the token list from the last to the first token.
- * 
- * This function traverses the token list in reverse order, starting from the last token and
- * moving to the first, applying the provided reduction rule to each token. The reduction rule
- * may modify the token list and the syntax tree by creating new nodes or tokens. If a reduction
- * rule encounters an error, it is added to a linked list of errors, which the function updates.
- * If a critical error is encountered, the function stops processing immediately.
- * 
- * @param list A pointer to the token list to which the reduction rule will be applied.
- * @param rule The reduction rule function that will be applied to the tokens.
- * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
- *  for tokens, syntax tree nodes, and errors.
- * @param groups Token classification groups that may be updated during reduction.
- * @param error A pointer to an existing linked list of errors. Any new errors found during
- *  the reduction process will be added to this list.
- * @return A pointer to the updated linked list of `compilation_error_t` structures. If no
- *  errors were encountered, the function returns the original `error` pointer (unchanged).
- * 
- * @note The function maintains the order of errors by prepending new errors to the front
- *  of the list. The most recent error will be at the head of the returned list.
- * @note If a critical error is encountered, the function stops processing immediately and 
- *  returns the updated error list.
- * @note Memory for error structures is allocated from the same arena as tokens (`memory->tokens`), 
- *  ensuring centralized memory management.
+ *
+ * Traverses the token list in reverse order, starting from the last token and moving to the first,
+ * applying the provided reduction rule to each token.
  */
 static compilation_error_t *apply_reduction_rule_backward(token_list_t *list, reduce_rule_t rule,
         parser_memory_t *memory, token_groups_t *groups, compilation_error_t *error) {
@@ -419,11 +326,7 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
     return result;
 }
 
-/**
- * @brief Applies a reduction rule forward and checks for critical errors
- * @param group_name Group name
- * @param rule_func Function implementing the reduction rule
- */
+/** @brief Applies a reduction rule forward and checks for critical errors */
 #define APPLY_FORWARD(group_name, rule_func) \
     do { \
         error = apply_reduction_rule_forward(&groups->group_name, rule_func, memory, groups, error); \
@@ -432,11 +335,7 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
         } \
     } while(0)
 
-/**
- * @brief Applies a reduction rule backward and checks for critical errors  
- * @param group_name Group name
- * @param rule_func Function implementing the reduction rule
- */
+/** @brief Applies a reduction rule backward and checks for critical errors */
 #define APPLY_BACKWARD(group_name, rule_func) \
     do { \
         error = apply_reduction_rule_backward(&groups->group_name, rule_func, memory, groups, error); \
@@ -447,12 +346,8 @@ statement_list_processing_result_t process_statement_list(parser_memory_t *memor
 
 /**
  * @brief Collects AST nodes from a token group into a linked list.
- * 
+ *
  * Iterates over all tokens in the given token group and extracts non-null `node` pointers.
- * Each valid node is appended to a newly created linked list allocated from the provided arena.
- * 
- * @param tokens A pointer to the token list (token group).
- * @param arena Memory arena used for allocating the linked list and its nodes.
  * @return A linked list containing all non-null AST nodes from the token group.
  */
 static list_t *collect_nodes_from_group(token_list_t *tokens, arena_t *arena) {

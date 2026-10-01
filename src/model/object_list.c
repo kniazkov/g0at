@@ -15,7 +15,7 @@ void init_object_list(object_list_t *list) {
 }
 
 void add_object_to_list(object_list_t *list, object_t *obj) {
-    assert(obj->previous == NULL && obj->next == NULL);    
+    assert(obj->previous == NULL && obj->next == NULL);
     if (list->tail) {
         list->tail->next = obj;
         obj->previous = list->tail;

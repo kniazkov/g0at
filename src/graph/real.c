@@ -2,10 +2,6 @@
  * @file real.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the real number literal expression.
- * 
- * This file defines the behavior of real (floating-point) literal expressions,
- * which represent 64-bit IEEE double-precision values in the abstract syntax tree (AST).
- * Real literals are immutable and directly correspond to numeric constants in the source code.
  */
 
 #include "expression.h"
@@ -18,64 +14,28 @@
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
 
-/**
- * @struct real_t
- * @brief Represents a real number literal expression node.
- * 
- * This structure defines a real number (floating-point) literal expression
- * in the syntax tree. It extends `expression_t` and stores a 64-bit `double` value.
- */
+/** @brief A real number literal expression node. */
 typedef struct {
-    /**
-     * @brief Base expression structure from which real_t inherits.
-     */
+    /** @brief Base expression structure from which real_t inherits. */
     expression_t base;
 
-    /**
-     * @brief Lattice element containing double value.
-     */
+    /** @brief Lattice element containing double value. */
     real_constant_element_t element;
 } real_t;
 
-/**
- * @brief Calculates the lattice value for a real number node.
- *
- * The node is expected to be a real number expression. The result is an exact
- * real constant lattice element containing the value stored in the node.
- *
- * @param node A pointer to the real number node.
- * @param state Current abstract state.
- * @param arena Memory arena used to allocate the resulting lattice element.
- * @return Constant pointer to the calculated real constant lattice element.
- */
+/** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const real_t *expr = (const real_t *)node;
     return &expr->element.base;
 }
 
-/**
- * @brief Converts a real number expression to its Goat source representation.
- *
- * Converts the stored floating-point value to a string, as it would appear
- * in the Goat source code.
- *
- * @param node A pointer to the real number expression node.
- * @return A `string_value_t` containing the formatted floating-point string.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const real_t *expr = (const real_t *)node;
     return format_string(L"%f", expr->element.value);
 }
 
-/**
- * @brief Gets the real number literal as display data.
- *
- * Returns the real literal text together with the default display
- * classification.
- *
- * @param node Pointer to the real number literal node.
- * @return Display value containing the real literal text.
- */
+/** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t get_data(const node_t *node) {
     return (node_display_value_t){
         .text = generate_goat_code(node),
@@ -83,35 +43,14 @@ static node_display_value_t get_data(const node_t *node) {
     };
 }
 
-/**
- * @brief Generates indented Goat source code for a real number literal.
- *
- * Converts the real value to a string and appends it to the output
- * with proper formatting and indentation.
- * 
- * @param node Pointer to the real number literal node.
- * @param builder Pointer to the source builder used for code generation.
- * @param indent Current indentation level (in tabs).
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const real_t *expr = (const real_t *)node;
     append_formatted_source(builder, format_string(L"%f", expr->element.value));
 }
 
-/**
- * @brief Generates bytecode for a real number literal node.
- * 
- * Emits:
- * - An `ARG` instruction for the lower 32 bits of the `double` value.
- * - An `RLOAD` instruction for the upper 32 bits.
- * Together, they form the full 64-bit representation of the real number.
- * 
- * @param node A pointer to the real number literal node.
- * @param code A pointer to the code builder for instruction emission.
- * @param data Unused (present for compatibility).
- * @return Index of the first emitted instruction.
- */
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const real_t *expr = (const real_t *)node;
@@ -125,12 +64,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     return first;
 }
 
-/**
- * @brief Virtual table for real number literal expressions.
- * 
- * Implements core operations for real literals: string conversion,
- * bytecode generation, and source code regeneration.
- */
+/** @brief Virtual table for real number literal expressions. */
 static node_vtbl_t real_vtbl = {
     .type = NODE_REAL,
     .type_name = L"real number",

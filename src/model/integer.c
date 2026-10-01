@@ -2,15 +2,6 @@
  * @file integer.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementations of an object representing an integer.
- *
- * This file defines the structure and behavior of integer objects. There are two types
- * of integer objects:
- * 1. Static integers:
- *    - These include integers declared in the model.
- * 2. Dynamic integers:
- *    - These are created as a result of operations at runtime.
- *    - They internally store their own value and are subject to garbage collection when
- *      no longer in use.
  */
 
 #include <assert.h>
@@ -26,28 +17,20 @@
 #include "lib/string_ext.h"
 
 /**
- * @def POOL_CAPACITY
  * @brief Defines the maximum capacity of the object pool.
- * 
- * This macro sets the maximum number of objects that can be stored in the object pool 
- * before it reaches its capacity. Once the pool is full, any swept objects are destroyed 
- * instead of being added to the pool.
+ *
+ * Sets the maximum number of objects that can be stored in the object pool before it reaches its
+ * capacity.
  */
 #define POOL_CAPACITY 1024
 
-/**
- * @struct object_static_integer_t
- * @brief Structure representing a static integer object.
- */
+/** @brief A static integer object. */
 typedef struct {
     object_t base; ///< The base object that provides common functionality.
     int64_t value; ///< The integer value of the object.
 } object_static_integer_t;
 
-/**
- * @struct object_dynamic_integer_t
- * @brief Structure representing a dynamic integer object.
- */
+/** @brief A dynamic integer object. */
 typedef struct {
     object_t base; ///< The base object that provides common functionality.
     int refs; ///< Reference count.
@@ -55,14 +38,7 @@ typedef struct {
     int64_t value; ///< The integer value of the object.
 } object_dynamic_integer_t;
 
-/**
- * @brief Retrieves the prototypes of the integer prototype object.
- * 
- * This function returns an array of prototypes the integer prototype object.
- * 
- * @param obj The object whose prototypes are to be retrieved.
- * @return An object_array_t containing the prototypes of the integer prototype object.
- */
+/** @brief Implements @ref object_vtbl_t::get_prototypes. */
 static object_array_t proto_get_prototypes(const object_t *obj) {
     static object_t *proto = NULL;
     if (!proto) {
@@ -75,14 +51,7 @@ static object_array_t proto_get_prototypes(const object_t *obj) {
     return result;
 }
 
-/**
- * @brief Retrieves the full prototype topology of the integer prototype object.
- * 
- * This function returns the full prototype chain (topology) of the integer prototype object. 
- * 
- * @param obj The object whose prototype topology is to be retrieved.
- * @return An object_array_t containing the full prototype chain.
- */
+/** @brief Implements @ref object_vtbl_t::get_topology. */
 static object_array_t proto_get_topology(const object_t *obj) {
     static object_t* topology[2] = {0};
     if (topology[0] == NULL) {
@@ -96,37 +65,17 @@ static object_array_t proto_get_topology(const object_t *obj) {
     return result;
 }
 
-/**
- * @brief Retrieves all property keys from an object (stub implementation).
- * 
- * This is a stub implementation of the function to retrieve all keys of the properties 
- * defined on an object. Currently, it returns an empty `object_array_t` as a placeholder.
- * 
- * @param obj The object from which to retrieve the keys.
- * @return An empty `object_array_t` (placeholder implementation).
- */
+/** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
     return (object_array_t){ NULL, 0 };
 }
 
-/**
- * @brief Retrieves the value of a property from an object (stub implementation).
- * 
- * This is a stub implementation of the function to retrieve the value of a property from
- * an object. Currently, it returns `NULL` as a placeholder.
- * 
- * @param obj The object from which to retrieve the property.
- * @param key The key of the property to retrieve.
- * @return Always returns `NULL` (placeholder implementation).
- */
+/** @brief Implements @ref object_vtbl_t::get_property. */
 static object_t *get_property(const object_t *obj, const object_t *key) {
     return NULL;
 }
 
-/**
- * @var integer_proto_vtbl
- * @brief Virtual table defining the behavior of the integer prototype object.
- */
+/** @brief Virtual table defining the behavior of the integer prototype object. */
 static object_vtbl_t integer_proto_vtbl = {
     .type = TYPE_OTHER,
     .inc_ref = stub_memory_function,
@@ -162,13 +111,7 @@ static object_vtbl_t integer_proto_vtbl = {
     .call = stub_call
 };
 
-/**
- * @var integer_proto
- * @brief The integer prototype object.
- * 
- * This is the integer prototype object, which is the instance that serves as the 
- * prototype for all integer objects.
- */
+/** @brief The integer prototype object. */
 static object_t integer_proto = {
     .vtbl = &integer_proto_vtbl
 };
@@ -177,14 +120,7 @@ object_t *get_integer_proto() {
     return &integer_proto;
 }
 
-/**
- * @brief Releases or clears a dynamic integer object.
- * 
- * This function either frees the object or resets its state and moves it to a list of reusable
- * objects, depending on the number of objects in the pool.
- * 
- * @param diobj The dynamic integer object to release or clear.
- */
+/** @brief Releases or clears a dynamic integer object. */
 static void release_or_clear(object_dynamic_integer_t *diobj) {
     remove_object_from_list(&diobj->base.process->objects, &diobj->base);
     if (diobj->base.process->integers.size == POOL_CAPACITY) {
@@ -197,20 +133,14 @@ static void release_or_clear(object_dynamic_integer_t *diobj) {
     }
 }
 
-/**
- * @brief Increments the reference count of an object.
- * @param obj The object whose reference count is to be incremented.
- */
+/** @brief Implements @ref object_vtbl_t::inc_ref. */
 static void inc_ref(object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
     assert(diobj->state != ZOMBIE);
     diobj->refs++;
 }
 
-/**
- * @brief Decrements the reference count of an object.
- * @param obj The object whose reference count is to be decremented.
- */
+/** @brief Implements @ref object_vtbl_t::dec_ref. */
 static void dec_ref(object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
     assert(diobj->state != ZOMBIE);
@@ -219,22 +149,14 @@ static void dec_ref(object_t *obj) {
     }
 }
 
-/**
- * @brief Marks an object as reachable during garbage collection.
- * @param obj The object to mark as reachable.
- */
+/** @brief Implements @ref object_vtbl_t::mark. */
 static void mark(object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
     assert(diobj->state != ZOMBIE);
     diobj->state = MARKED;
 }
 
-/**
- * @brief Sweeps the object, cleaning it up or moving it to the object pool.
- * @param obj The object to sweep.
- * @return true if the object was either destroyed or moved to object pool (ZOMBIE),
- *         false if the object was marked (still alive) and shouldn't be processed.
- */
+/** @brief Implements @ref object_vtbl_t::sweep. */
 static bool sweep(object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
     assert(diobj->state != ZOMBIE);
@@ -247,10 +169,7 @@ static bool sweep(object_t *obj) {
     }
 }
 
-/**
- * @brief Releases an integer object.
- * @param obj The object to release.
- */
+/** @brief Implements @ref object_vtbl_t::release. */
 static void release(object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
     remove_object_from_list(
@@ -259,13 +178,7 @@ static void release(object_t *obj) {
     FREE(obj);
 }
 
-/**
- * @brief Compares integer object and other numeric object based on their values.
- * @param obj1 The first object to compare.
- * @param obj2 The second object to compare.
- * @return An integer indicating the relative order: positive if obj1 > obj2,
- *  negative if obj1 < obj2, 0 if equal.
- */
+/** @brief Implements @ref object_vtbl_t::compare. */
 static int compare(const object_t *obj1, const object_t *obj2) {
     double diff = get_object_integer_value(obj1).value - get_object_real_value(obj2).value;
     if (diff > 0) {
@@ -277,13 +190,7 @@ static int compare(const object_t *obj1, const object_t *obj2) {
     }
 }
 
-/**
- * @brief Clones an integer object.
- * @param process The process that will own the cloned object.
- * @param obj The integer object to be cloned.
- * @return A pointer to the cloned integer object. If the process is the same, the original object
- *  is returned; otherwise, a new object is created.
- */
+/** @brief Implements @ref object_vtbl_t::clone. */
 static object_t *clone(process_t *process, object_t *obj) {
     if (process == obj->process) {
         return obj;
@@ -291,46 +198,23 @@ static object_t *clone(process_t *process, object_t *obj) {
     return create_integer_object(process, get_object_integer_value(obj).value);
 }
 
-/**
- * @brief Converts an integer object to a string representation.
- * @param obj The object to convert to a string.
- * @return A `string_value_t` structure containing the string representation of the object.
- *  The string is dynamically allocated and the caller must free it using `FREE`.
- */
+/** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t to_string(const object_t *obj) {
     int64_t value = get_object_integer_value(obj).value;
     return format_string(L"%ld", value);
 }
 
-/**
- * @brief Converts an integer object to a Goat notation string representation.
- * @param obj The object to convert to a string in Goat notation.
- * @return A `string_value_t` structure containing the Goat notation integer representation.
- *  The string is dynamically allocated and the caller must free it using `FREE`.
- */
+/** @brief Implements @ref object_vtbl_t::to_string_notation. */
 static string_value_t to_string_notation(const object_t *obj) {
     return to_string(obj);
 }
 
-/**
- * @var prototypes
- * @brief Array of prototypes for the integer object.
- * 
- * It contains only the `integer_proto` prototype.
- */
+/** @brief Array of prototypes for the integer object. */
 static object_t* prototypes[] = {
     &integer_proto
 };
 
-/**
- * @brief Retrieves the prototypes of an integer object.
- * 
- * This function returns an array of prototypes for an integer object.
- * In this case, it contains only the integer prototype.
- * 
- * @param obj The object whose prototypes are to be retrieved.
- * @return An object_array_t containing the prototypes of the integer object.
- */
+/** @brief Implements @ref object_vtbl_t::get_prototypes. */
 static object_array_t get_prototypes(const object_t *obj) {
     object_array_t result = {
         .items = prototypes,
@@ -339,15 +223,7 @@ static object_array_t get_prototypes(const object_t *obj) {
     return result;
 }
 
-/**
- * @brief Retrieves the full prototype topology of an integer object.
- * 
- * This function returns the full prototype chain (topology) of an integer object.
- * The topology includes the `integer_proto` prototype, numeric prototype and the root object.
- * 
- * @param obj The object whose prototype topology is to be retrieved.
- * @return An object_array_t containing the full prototype chain.
- */
+/** @brief Implements @ref object_vtbl_t::get_topology. */
 static object_array_t get_topology(const object_t *obj) {
     static object_t* topology[3] = {0};
     if (topology[0] == NULL) {
@@ -362,14 +238,7 @@ static object_array_t get_topology(const object_t *obj) {
     return result;
 }
 
-/**
- * @brief Adds two objects and returns the result as a new object.
- * @param process Process that will own the resulting object.
- * @param obj1 The first object to add.
- * @param obj2 The second object to add.
- * @return A pointer to the resulting object of the addition, or `NULL` if the second object 
- *  cannot be interpreted as an integer or a real number.
- */
+/** @brief Implements @ref object_vtbl_t::add. */
 static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     int_value_t second_int = get_object_integer_value(obj2);
@@ -383,14 +252,7 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
     return NULL;
 }
 
-/**
- * @brief Subtracts the value of the second object from the first object.
- * @param process Process that will own the resulting object.
- * @param obj1 The first object (minuend).
- * @param obj2 The second object (subtrahend).
- * @return A pointer to the resulting object of the subtraction, or `NULL` if the second object 
- *  cannot be interpreted as an integer or a real number.
- */
+/** @brief Implements @ref object_vtbl_t::subtract. */
 static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     int_value_t second_int = get_object_integer_value(obj2);
@@ -404,17 +266,7 @@ static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
     return NULL;
 }
 
-/**
- * @brief Multiplies two objects and returns the result as a new object.
- * 
- * Attempts to interpret the second object as either an integer or real number.
- * If successful, performs the multiplication and returns the resulting object.
- * 
- * @param process Process that will own the resulting object.
- * @param obj1 The first object (multiplicand).
- * @param obj2 The second object (multiplier).
- * @return A pointer to the result, or `NULL` if the second object is not numeric.
- */
+/** @brief Implements @ref object_vtbl_t::multiply. */
 static object_t *multiply(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     int_value_t second_int = get_object_integer_value(obj2);
@@ -428,17 +280,7 @@ static object_t *multiply(process_t *process, object_t *obj1, object_t *obj2) {
     return NULL;
 }
 
-/**
- * @brief Divides the first object by the second and returns the result as a new object.
- * 
- * Attempts to interpret the second object as either an integer or real number.
- * Division by zero results in `NULL`.
- * 
- * @param process Process that will own the resulting object.
- * @param obj1 The first object (dividend).
- * @param obj2 The second object (divisor).
- * @return A pointer to the result, or `NULL` if the second object is not numeric or is zero.
- */
+/** @brief Implements @ref object_vtbl_t::divide. */
 static object_t *divide(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     real_value_t second = get_object_real_value(obj2);
@@ -455,17 +297,7 @@ static object_t *divide(process_t *process, object_t *obj1, object_t *obj2) {
     return NULL;
 }
 
-/**
- * @brief Computes the remainder of integer division (modulo).
- * 
- * Attempts to interpret the second object as an integer.
- * If successful, computes `obj1 % obj2` and returns the result.
- * 
- * @param process Process that will own the resulting object.
- * @param obj1 The first object (dividend).
- * @param obj2 The second object (divisor).
- * @return A pointer to the result, or `NULL` if the second object is not an integer.
- */
+/** @brief Implements @ref object_vtbl_t::modulo. */
 static object_t *modulo(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     int_value_t second_int = get_object_integer_value(obj2);
@@ -475,17 +307,7 @@ static object_t *modulo(process_t *process, object_t *obj1, object_t *obj2) {
     return NULL;
 }
 
-/**
- * @brief Raises the first object to the power of the second and returns the result.
- * 
- * Attempts to interpret the first object as an integer and the second as a real number.
- * If successful, performs exponentiation and returns the resulting object.
- * 
- * @param process Process that will own the resulting object.
- * @param obj1 The first object (base).
- * @param obj2 The second object (exponent).
- * @return A pointer to the result, or `NULL` if the second object is not a real number.
- */
+/** @brief Implements @ref object_vtbl_t::power. */
 static object_t *power(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     real_value_t second = get_object_real_value(obj2);
@@ -495,59 +317,36 @@ static object_t *power(process_t *process, object_t *obj1, object_t *obj2) {
     return NULL;
 }
 
-/**
- * @brief Retrieves the boolean representation of an object.
- * @param obj The object from which to retrieve the boolean value.
- * @return Boolean representation of the object.
- */
+/** @brief Implements @ref object_vtbl_t::get_boolean_value. */
 static bool get_boolean_value(const object_t *obj) {
     return get_object_integer_value(obj).value != 0;
 }
 
-/**
- * @brief Retrieves the integer value of a static object.
- * @param obj The object from which to retrieve the integer value.
- * @return An `int_value_t` structure containing the integer value.
- */
+/** @brief Implements @ref object_vtbl_t::get_integer_value. */
 static int_value_t static_get_integer_value(const object_t *obj) {
     object_static_integer_t *siobj = (object_static_integer_t *)obj;
     return (int_value_t){ true, siobj->value };
 }
 
-/**
- * @brief Retrieves the integer value of a dynamic object.
- * @param obj The object from which to retrieve the integer value.
- * @return An `int_value_t` structure containing the integer value.
- */
+/** @brief Implements @ref object_vtbl_t::get_integer_value. */
 static int_value_t dynamic_get_integer_value(const object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
     return (int_value_t){ true, diobj->value };
 }
 
-/**
- * @brief Retrieves value of a static object casted to real.
- * @param obj The object from which to retrieve the real value.
- * @return A `real_value_t` structure containing the real value.
- */
+/** @brief Implements @ref object_vtbl_t::get_real_value. */
 static real_value_t static_get_real_value(const object_t *obj) {
     object_static_integer_t *siobj = (object_static_integer_t *)obj;
     return (real_value_t){ true, (double)siobj->value };
 }
 
-/**
- * @brief Retrieves value of a dynamic object casted to real.
- * @param obj The object from which to retrieve the real value.
- * @return A `real_value_t` structure containing the real value.
- */
+/** @brief Implements @ref object_vtbl_t::get_real_value. */
 static real_value_t dynamic_get_real_value(const object_t *obj) {
     object_dynamic_integer_t *diobj = (object_dynamic_integer_t *)obj;
     return (real_value_t){ true, (double)diobj->value };
 }
 
-/**
- * @var static_vtbl
- * @brief This virtual table defines the behavior of the static integer object.
- */
+/** @brief This virtual table defines the behavior of the static integer object. */
 static object_vtbl_t static_vtbl = {
     .type = TYPE_NUMBER,
     .inc_ref = stub_memory_function,
@@ -583,31 +382,16 @@ static object_vtbl_t static_vtbl = {
     .call = stub_call
 };
 
-/**
- * @brief The total number of static integer objects.
- */
+/** @brief The total number of static integer objects. */
 #define STATIC_INTEGER_RANGE (MAX_STATIC_INTEGER - MIN_STATIC_INTEGER + 1)
 
-/**
- * @brief Static array of objects representing static integer values.
- * 
- * This array holds objects corresponding to integers in the range defined by
- * `MIN_STATIC_INTEGER` to `MAX_STATIC_INTEGER`.
- */
+/** @brief Static array of objects representing static integer values. */
 static object_static_integer_t static_integers[STATIC_INTEGER_RANGE];
 
-/**
- * @brief Flag to indicate whether the static integers array has been initialized.
- */
+/** @brief Flag to indicate whether the static integers array has been initialized. */
 static bool is_static_integers_initialized = false;
 
-/**
- * @brief Initializes the static integer objects array.
- * 
- * This function initializes the static array of integer objects for the range
- * `MIN_STATIC_INTEGER` to `MAX_STATIC_INTEGER`. It is automatically invoked during the
- * first call to `get_static_integer_object()`.
- */
+/** @brief Initializes the static integer objects array. */
 static void initialize_static_integers() {
     for (int i = MIN_STATIC_INTEGER; i <= MAX_STATIC_INTEGER; ++i) {
         static_integers[i - MIN_STATIC_INTEGER] = (object_static_integer_t){
@@ -630,10 +414,7 @@ object_t *get_integer_zero() {
     return get_static_integer_object(0);
 }
 
-/**
- * @var dynamic_vtbl
- * @brief This virtual table defines the behavior of the dynamic integer object.
- */
+/** @brief This virtual table defines the behavior of the dynamic integer object. */
 static object_vtbl_t dynamic_vtbl = {
     .type = TYPE_NUMBER,
     .inc_ref = inc_ref,

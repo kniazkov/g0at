@@ -140,8 +140,8 @@ string_value_t append_repeated_char(string_builder_t *builder, wchar_t symbol, s
 }
 
 /**
- * @brief Encodes one Unicode scalar value into one to four UTF-8 bytes.
- * Invalid scalar values are replaced with U+FFFD, keeping the output valid UTF-8.
+ * @brief Encodes one Unicode scalar value into one to four UTF-8 bytes. Invalid scalar values are
+ * replaced with U+FFFD, keeping the output valid UTF-8.
  */
 static int encode_utf8_char(uint32_t w, char *c) {
     if (w > 0x10FFFF || (w >= 0xD800 && w <= 0xDFFF)) {
@@ -406,7 +406,7 @@ string_value_t format_string_vargs(const wchar_t *format, va_list args) {
                 default:
                     append_char(&builder, L'?');
                     break;
-            }            
+            }
         } else {
             append_char(&builder, *ch);
         }
@@ -436,13 +436,13 @@ string_value_t align_text(string_value_t text, size_t size, alignment_t alignmen
         }
         size_t dst_index;
         for (dst_index = 0; dst_index < offset; dst_index++) {
-            buff[dst_index] = L' ';            
+            buff[dst_index] = L' ';
         }
         for (size_t src_index = 0; src_index < text.length; src_index++, dst_index++) {
-            buff[dst_index] = text.data[src_index];            
+            buff[dst_index] = text.data[src_index];
         }
         for (; dst_index < size; dst_index++) {
-            buff[dst_index] = L' ';            
+            buff[dst_index] = L' ';
         }
     }
     buff[size] = L'\0';

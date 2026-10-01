@@ -2,14 +2,6 @@
  * @file interpreter.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the abstract interpretation entry point.
- *
- * This file contains the top-level driver for abstract interpretation.
- *
- * The pass is intentionally small: it creates an empty abstract state, delegates
- * actual node semantics to the AST virtual table, then writes the resulting
- * abstract facts back into declarators. The unpleasant details are left to node
- * implementations, because centralized giant switch statements are how software
- * goes to die wearing a confident expression.
  */
 
 #include "interpreter.h"

@@ -2,10 +2,6 @@
  * @file data_builder.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implements the functions for managing data building in the Goat virtual machine.
- *
- * This file implements the logic for adding and managing static data in the Goat virtual machine's
- * bytecode, including managing data descriptors, raw data storage, and ensuring uniqueness
- * of strings using an AVL tree.
  */
 
 #include <stdlib.h>
@@ -15,14 +11,10 @@
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 
-/**
- * @brief Initial capacity for the descriptors list
- */
+/** @brief Initial capacity for the descriptors list */
 #define INITIAL_DESCRIPTORS_LIST_CAPACITY 16
 
-/**
- * @brief Initial capacity for the data array
- */
+/** @brief Initial capacity for the data array */
 #define INITIAL_DATA_ARRAY_CAPACITY 256
 
 data_builder_t *create_data_builder(void) {
@@ -61,7 +53,7 @@ uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t si
     }
     if (builder->descriptors_count >= builder->descriptors_capacity) {
         builder->descriptors_capacity *= 2;
-        data_descriptor_t *new_descriptors = 
+        data_descriptor_t *new_descriptors =
             (data_descriptor_t *)ALLOC(builder->descriptors_capacity * sizeof(data_descriptor_t));
         for (size_t descr_idx = 0; descr_idx < builder->descriptors_count; ++descr_idx) {
             new_descriptors[descr_idx] = builder->descriptors[descr_idx];

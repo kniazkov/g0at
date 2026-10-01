@@ -2,10 +2,6 @@
  * @file less.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the less-than binary operation expression node.
- * 
- * This file defines the behavior of the less-than expression node, which represents the
- * comparison of two operands in the syntax tree. The node evaluates to a boolean value
- * indicating whether the left operand is strictly less than the right operand.
  */
 
 #include "binary_operation.h"
@@ -17,30 +13,13 @@
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
 
-/**
- * @struct less_t
- * @brief Represents a less-than (`<`) operation expression node.
- * 
- * This structure defines a less-than comparison in the syntax tree. The node extends
- * `binary_operation_t` and includes references to the left and right operands to be compared.
- */
+/** @brief A less-than (`<`) operation expression node. */
 typedef struct {
-    /**
-     * @brief Base binary operation structure from which less_t inherits.
-     */
+    /** @brief Base binary operation structure from which less_t inherits. */
     binary_operation_t base;
 } less_t;
 
-/**
- * @brief Converts a less-than operation expression to its string representation.
- * 
- * This function converts the given less-than expression to how it would appear
- * in source code (i.e., the left operand, the "<" operator, and the right operand).
- * The resulting string is suitable for embedding in other contexts, such as code generation.
- * 
- * @param node A pointer to the less-than expression node.
- * @return A `string_value_t` containing the formatted string representation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const less_t *expr = (const less_t *)node;
     string_value_t left =
@@ -53,17 +32,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     return result;
 }
 
-/**
- * @brief Generates indented Goat source code for a less-than operation node.
- * 
- * This function implements the virtual method for generating Goat source code for a
- * less-than expression (`<` operator). It recursively generates code for both left and
- * right operands, combining them with the less-than operator in between.
- * 
- * @param node Pointer to the less-than node to generate code for.
- * @param builder Pointer to the source builder where generated code will be stored.
- * @param indent The current indentation level (in tabs) for code generation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const less_t *expr = (const less_t *)node;
@@ -72,17 +41,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     generate_indented_goat_code_from_expression(expr->base.right_operand, builder, indent);
 }
 
-/**
- * @brief Generates bytecode for a less-than operation node.
- * 
- * This function generates bytecode for a less-than comparison by first generating the bytecode
- * for the left and right operands, and then emitting the `LESS` instruction for the comparison.
- * 
- * @param node A pointer to the node representing the less-than operation.
- * @param code A pointer to the `code_builder_t` structure used for generating instructions.
- * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
- * @return The instruction index of the first emitted instruction.
- */
+/** @brief Generates bytecode for a less-than operation node. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const less_t *expr = (const less_t *)node;
@@ -92,13 +51,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     return first;
 }
 
-/**
- * @brief Virtual table for less-than operations.
- * 
- * This virtual table provides the implementation of operations specific to less-than expressions.
- * It includes function pointers for operations such as converting the expression to a string
- * representation and generating the corresponding bytecode.
- */
+/** @brief Virtual table for less-than operations. */
 static node_vtbl_t less_vtbl = {
     .type = NODE_LESS,
     .type_name = L"less",

@@ -2,19 +2,12 @@
  * @file code_builder.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implements functions for building and managing a list of bytecode instructions.
- *
- * This file provides the implementation for the `code_builder_t` structure
- * and its associated functions for dynamically building and managing a list of bytecode
- * instructions. It includes the ability to create, add instructions, resize the list,
- * and free allocated memory.
  */
 
 #include "code_builder.h"
 #include "lib/allocate.h"
 
-/**
- * @brief Initial capacity for the instruction list
- */
+/** @brief Initial capacity for the instruction list */
 #define INITIAL_CAPACITY 128
 
 code_builder_t *create_code_builder(void) {

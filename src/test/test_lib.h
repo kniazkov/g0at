@@ -10,8 +10,8 @@
 
 /**
  * @brief Tests memory allocation, initialization, and deallocation.
- * @return `true` if all memory operations (allocation, initialization, deallocation)
- *  pass successfully, `false` if any of the tests fail.
+ * @return `true` if all memory operations (allocation, initialization, deallocation) pass
+ * successfully, `false` if any of the tests fail.
  */
 bool test_memory_allocation();
 

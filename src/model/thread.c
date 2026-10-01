@@ -2,9 +2,6 @@
  * @file thread.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implements functions for managing threads in the Goat programming language.
- * 
- * This file contains the implementation of functions for creating and destroying threads
- * within a Goat process.
  */
 
 #include <stdlib.h>
@@ -16,9 +13,7 @@
 #include "object_stack.h"
 #include "lib/allocate.h"
 
-/**
- * @brief ID of the last created thread.
- */
+/** @brief ID of the last created thread. */
 static uint64_t last_thread_id = 0;
 
 thread_t *create_thread(process_t *process, context_t *context) {

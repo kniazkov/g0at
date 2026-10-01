@@ -2,132 +2,77 @@
  * @file lattice.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the abstract-value lattice.
- *
- * This file implements construction, formatting, join, and meet operations for
- * lattice elements declared in @ref lattice.h.
- *
- * The implementation intentionally keeps the lattice rules explicit. Each
- * non-trivial element kind has a small dedicated helper for @ref lattice_join
- * and @ref lattice_meet. This makes the ordering rules visible in code instead
- * of hiding them behind a clever generic mechanism, because clever generic
- * mechanisms in C age about as well as milk in a server room.
- *
- * General elements such as top, bottom, null, numeric, string, boolean,
- * function, array, and user-defined object are represented as immutable
- * singletons. More specific elements that carry payload data, such as integer
- * ranges, integer constants, real constants, string constants, and typed arrays,
- * are allocated from the caller-provided arena.
- *
- * The lattice follows these broad rules:
- * - @ref LATTICE_TOP is the least upper bound of null and all non-null values;
- * - @ref LATTICE_BOTTOM is the empty set of possible values;
- * - @ref LATTICE_NOT_NULL contains every non-null value category;
- * - @ref LATTICE_NUMERIC contains integer and real values;
- * - constants and ranges are preserved when possible and widened only when the
- *   join operation requires it;
- * - meet narrows values and returns bottom when two facts are incompatible.
- *
- * The string conversion helpers produce compact human-readable labels intended
- * for graph output and debugging.
  */
 
 #include "lattice.h"
 #include "lib/string_ext.h"
 
-/**
- * @brief Top lattice element singleton.
- */
+/** @brief Top lattice element singleton. */
 static const lattice_element_t top_element = {
     .type = LATTICE_TOP
 };
 
-/**
- * @brief Not-null lattice element singleton.
- */
+/** @brief Not-null lattice element singleton. */
 static const lattice_element_t not_null_element = {
     .type = LATTICE_NOT_NULL
 };
 
-/**
- * @brief Null lattice element singleton.
- */
+/** @brief Null lattice element singleton. */
 static const lattice_element_t null_element = {
     .type = LATTICE_NULL
 };
 
-/**
- * @brief Numeric lattice element singleton.
- */
+/** @brief Numeric lattice element singleton. */
 static const lattice_element_t numeric_element = {
     .type = LATTICE_NUMERIC
 };
 
-/**
- * @brief Integer lattice element singleton.
- */
+/** @brief Integer lattice element singleton. */
 static const lattice_element_t integer_element = {
     .type = LATTICE_INTEGER
 };
 
-/**
- * @brief Real lattice element singleton.
- */
+/** @brief Real lattice element singleton. */
 static const lattice_element_t real_element = {
     .type = LATTICE_REAL
 };
 
-/**
- * @brief String lattice element singleton.
- */
+/** @brief String lattice element singleton. */
 static const lattice_element_t string_element = {
     .type = LATTICE_STRING
 };
 
-/**
- * @brief Boolean lattice element singleton.
- */
+/** @brief Boolean lattice element singleton. */
 static const lattice_element_t boolean_element = {
     .type = LATTICE_BOOLEAN
 };
 
-/**
- * @brief True lattice element singleton.
- */
+/** @brief True lattice element singleton. */
 static const lattice_element_t true_element = {
     .type = LATTICE_TRUE
 };
 
-/**
- * @brief False lattice element singleton.
- */
+/** @brief False lattice element singleton. */
 static const lattice_element_t false_element = {
     .type = LATTICE_FALSE
 };
 
-/**
- * @brief Function lattice element singleton.
- */
+/** @brief Function lattice element singleton. */
 static const lattice_element_t function_element = {
     .type = LATTICE_FUNCTION
 };
 
-/**
- * @brief Array lattice element singleton.
- */
+/** @brief Array lattice element singleton. */
 static const lattice_element_t array_element = {
     .type = LATTICE_ARRAY
 };
 
-/**
- * @brief User-defined object lattice element singleton.
- */
+/** @brief User-defined object lattice element singleton. */
 static const lattice_element_t user_defined_object_element = {
     .type = LATTICE_USER_DEFINED_OBJECT
 };
 
-/**
- * @brief Bottom lattice element singleton.
- */
+/** @brief Bottom lattice element singleton. */
 static const lattice_element_t bottom_element = {
     .type = LATTICE_BOTTOM
 };
@@ -225,14 +170,7 @@ const lattice_element_t *make_bottom_element() {
     return &bottom_element;
 }
 
-/**
- * @brief Joins NOT_NULL with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_NOT_NULL.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins NOT_NULL with another lattice element. */
 static const lattice_element_t *lattice_join_not_null(const lattice_element_t *right) {
     if (right->type == LATTICE_TOP || right->type == LATTICE_NULL) {
         return make_top_element();
@@ -240,14 +178,7 @@ static const lattice_element_t *lattice_join_not_null(const lattice_element_t *r
     return make_not_null_element();
 }
 
-/**
- * @brief Joins NULL with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_NULL.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins NULL with another lattice element. */
 static const lattice_element_t *lattice_join_null(const lattice_element_t *right) {
     if (right->type == LATTICE_BOTTOM || right->type == LATTICE_NULL) {
         return make_null_element();
@@ -255,14 +186,7 @@ static const lattice_element_t *lattice_join_null(const lattice_element_t *right
     return make_top_element();
 }
 
-/**
- * @brief Joins NUMERIC with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_NUMERIC.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins NUMERIC with another lattice element. */
 static const lattice_element_t *lattice_join_numeric(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_BOTTOM:
@@ -294,14 +218,7 @@ static const lattice_element_t *lattice_join_numeric(const lattice_element_t *ri
     return make_top_element();
 }
 
-/**
- * @brief Joins INTEGER with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_INTEGER.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins INTEGER with another lattice element. */
 static const lattice_element_t *lattice_join_integer(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_BOTTOM:
@@ -335,16 +252,7 @@ static const lattice_element_t *lattice_join_integer(const lattice_element_t *ri
     return make_top_element();
 }
 
-/**
- * @brief Joins INTEGER_RANGE with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_INTEGER_RANGE.
- *
- * @param arena Memory arena for allocating a new range element if needed.
- * @param left Left integer range lattice element.
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins INTEGER_RANGE with another lattice element. */
 static const lattice_element_t *lattice_join_integer_range(arena_t *arena,
         const lattice_element_t *left, const lattice_element_t *right) {
     const integer_range_element_t *left_range = (const integer_range_element_t *)left;
@@ -415,16 +323,7 @@ static const lattice_element_t *lattice_join_integer_range(arena_t *arena,
     return make_top_element();
 }
 
-/**
- * @brief Joins INTEGER_CONSTANT with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_INTEGER_CONSTANT.
- *
- * @param arena Memory arena for allocating a new range element if needed.
- * @param left Left integer constant lattice element.
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins INTEGER_CONSTANT with another lattice element. */
 static const lattice_element_t *lattice_join_integer_constant(arena_t *arena,
         const lattice_element_t *left, const lattice_element_t *right) {
     const integer_constant_element_t *left_constant =(const integer_constant_element_t *)left;
@@ -500,14 +399,7 @@ static const lattice_element_t *lattice_join_integer_constant(arena_t *arena,
     return make_top_element();
 }
 
-/**
- * @brief Joins REAL with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_REAL.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins REAL with another lattice element. */
 static const lattice_element_t *lattice_join_real(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_BOTTOM:
@@ -541,15 +433,7 @@ static const lattice_element_t *lattice_join_real(const lattice_element_t *right
     return make_top_element();
 }
 
-/**
- * @brief Joins REAL_CONSTANT with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_REAL_CONSTANT.
- *
- * @param left Left real constant lattice element.
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins REAL_CONSTANT with another lattice element. */
 static const lattice_element_t *lattice_join_real_constant(const lattice_element_t *left,
         const lattice_element_t *right) {
     const real_constant_element_t *left_constant = (const real_constant_element_t *)left;
@@ -597,14 +481,7 @@ static const lattice_element_t *lattice_join_real_constant(const lattice_element
     return make_top_element();
 }
 
-/**
- * @brief Joins STRING with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_STRING.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins STRING with another lattice element. */
 static const lattice_element_t *lattice_join_string(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_BOTTOM:
@@ -636,15 +513,7 @@ static const lattice_element_t *lattice_join_string(const lattice_element_t *rig
     return make_top_element();
 }
 
-/**
- * @brief Joins STRING_CONSTANT with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_STRING_CONSTANT.
- *
- * @param left Left string constant lattice element.
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins STRING_CONSTANT with another lattice element. */
 static const lattice_element_t *lattice_join_string_constant(const lattice_element_t *left,
         const lattice_element_t *right) {
     const string_constant_element_t *left_constant = (const string_constant_element_t *)left;
@@ -696,14 +565,7 @@ static const lattice_element_t *lattice_join_string_constant(const lattice_eleme
     return make_top_element();
 }
 
-/**
- * @brief Joins BOOLEAN with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_BOOLEAN.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins BOOLEAN with another lattice element. */
 static const lattice_element_t *lattice_join_boolean(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_BOTTOM:
@@ -735,14 +597,7 @@ static const lattice_element_t *lattice_join_boolean(const lattice_element_t *ri
     return make_top_element();
 }
 
-/**
- * @brief Joins TRUE with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_TRUE.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins TRUE with another lattice element. */
 static const lattice_element_t *lattice_join_true(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_BOTTOM:
@@ -776,14 +631,7 @@ static const lattice_element_t *lattice_join_true(const lattice_element_t *right
     return make_top_element();
 }
 
-/**
- * @brief Joins FALSE with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_FALSE.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins FALSE with another lattice element. */
 static const lattice_element_t *lattice_join_false(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_BOTTOM:
@@ -817,14 +665,7 @@ static const lattice_element_t *lattice_join_false(const lattice_element_t *righ
     return make_top_element();
 }
 
-/**
- * @brief Joins FUNCTION with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_FUNCTION.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins FUNCTION with another lattice element. */
 static const lattice_element_t *lattice_join_function(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_BOTTOM:
@@ -856,14 +697,7 @@ static const lattice_element_t *lattice_join_function(const lattice_element_t *r
     return make_top_element();
 }
 
-/**
- * @brief Joins ARRAY with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_ARRAY.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins ARRAY with another lattice element. */
 static const lattice_element_t *lattice_join_array(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_BOTTOM:
@@ -895,15 +729,7 @@ static const lattice_element_t *lattice_join_array(const lattice_element_t *righ
     return make_top_element();
 }
 
-/**
- * @brief Joins TYPED_ARRAY with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_TYPED_ARRAY.
- *
- * @param left Left typed array lattice element.
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins TYPED_ARRAY with another lattice element. */
 static const lattice_element_t *lattice_join_typed_array(const lattice_element_t *left,
         const lattice_element_t *right) {
     const typed_array_element_t *left_array = (const typed_array_element_t *)left;
@@ -949,14 +775,7 @@ static const lattice_element_t *lattice_join_typed_array(const lattice_element_t
     return make_top_element();
 }
 
-/**
- * @brief Joins USER_DEFINED_OBJECT with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_USER_DEFINED_OBJECT.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the least upper bound.
- */
+/** @brief Joins USER_DEFINED_OBJECT with another lattice element. */
 static const lattice_element_t *lattice_join_user_defined_object(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_BOTTOM:
@@ -1052,14 +871,7 @@ const lattice_element_t *lattice_join(arena_t *arena,
     return make_top_element();
 }
 
-/**
- * @brief Meets NOT_NULL with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_NOT_NULL.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets NOT_NULL with another lattice element. */
 static const lattice_element_t *lattice_meet_not_null(const lattice_element_t *right) {
     if (right->type == LATTICE_TOP || right->type == LATTICE_NOT_NULL) {
         return make_not_null_element();
@@ -1070,14 +882,7 @@ static const lattice_element_t *lattice_meet_not_null(const lattice_element_t *r
     return right;
 }
 
-/**
- * @brief Meets NULL with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_NULL.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets NULL with another lattice element. */
 static const lattice_element_t *lattice_meet_null(const lattice_element_t *right) {
     if (right->type == LATTICE_TOP || right->type == LATTICE_NULL) {
         return make_null_element();
@@ -1085,14 +890,7 @@ static const lattice_element_t *lattice_meet_null(const lattice_element_t *right
     return make_bottom_element();
 }
 
-/**
- * @brief Meets NUMERIC with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_NUMERIC.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets NUMERIC with another lattice element. */
 static const lattice_element_t *lattice_meet_numeric(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_TOP:
@@ -1124,14 +922,7 @@ static const lattice_element_t *lattice_meet_numeric(const lattice_element_t *ri
     return make_bottom_element();
 }
 
-/**
- * @brief Meets INTEGER with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_INTEGER.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets INTEGER with another lattice element. */
 static const lattice_element_t *lattice_meet_integer(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_TOP:
@@ -1163,16 +954,7 @@ static const lattice_element_t *lattice_meet_integer(const lattice_element_t *ri
     return make_bottom_element();
 }
 
-/**
- * @brief Meets INTEGER_RANGE with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_INTEGER_RANGE.
- *
- * @param arena Memory arena for allocating a new range element if needed.
- * @param left Left integer range lattice element.
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets INTEGER_RANGE with another lattice element. */
 static const lattice_element_t *lattice_meet_integer_range(arena_t *arena,
         const lattice_element_t *left, const lattice_element_t *right) {
     const integer_range_element_t *left_range = (const integer_range_element_t *)left;
@@ -1245,15 +1027,7 @@ static const lattice_element_t *lattice_meet_integer_range(arena_t *arena,
     return make_bottom_element();
 }
 
-/**
- * @brief Meets INTEGER_CONSTANT with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_INTEGER_CONSTANT.
- *
- * @param left Left integer constant lattice element.
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets INTEGER_CONSTANT with another lattice element. */
 static const lattice_element_t *lattice_meet_integer_constant(const lattice_element_t *left,
         const lattice_element_t *right) {
     const integer_constant_element_t *left_constant = (const integer_constant_element_t *)left;
@@ -1306,14 +1080,7 @@ static const lattice_element_t *lattice_meet_integer_constant(const lattice_elem
     return make_bottom_element();
 }
 
-/**
- * @brief Meets REAL with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_REAL.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets REAL with another lattice element. */
 static const lattice_element_t *lattice_meet_real(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_TOP:
@@ -1345,15 +1112,7 @@ static const lattice_element_t *lattice_meet_real(const lattice_element_t *right
     return make_bottom_element();
 }
 
-/**
- * @brief Meets REAL_CONSTANT with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_REAL_CONSTANT.
- *
- * @param left Left real constant lattice element.
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets REAL_CONSTANT with another lattice element. */
 static const lattice_element_t *lattice_meet_real_constant(const lattice_element_t *left,
         const lattice_element_t *right) {
     const real_constant_element_t *left_constant = (const real_constant_element_t *)left;
@@ -1396,14 +1155,7 @@ static const lattice_element_t *lattice_meet_real_constant(const lattice_element
     return make_bottom_element();
 }
 
-/**
- * @brief Meets STRING with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_STRING.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets STRING with another lattice element. */
 static const lattice_element_t *lattice_meet_string(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_TOP:
@@ -1435,15 +1187,7 @@ static const lattice_element_t *lattice_meet_string(const lattice_element_t *rig
     return make_bottom_element();
 }
 
-/**
- * @brief Meets STRING_CONSTANT with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_STRING_CONSTANT.
- *
- * @param left Left string constant lattice element.
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets STRING_CONSTANT with another lattice element. */
 static const lattice_element_t *lattice_meet_string_constant(const lattice_element_t *left,
         const lattice_element_t *right) {
     const string_constant_element_t *left_constant = (const string_constant_element_t *)left;
@@ -1491,14 +1235,7 @@ static const lattice_element_t *lattice_meet_string_constant(const lattice_eleme
     return make_bottom_element();
 }
 
-/**
- * @brief Meets BOOLEAN with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_BOOLEAN.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets BOOLEAN with another lattice element. */
 static const lattice_element_t *lattice_meet_boolean(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_TOP:
@@ -1530,14 +1267,7 @@ static const lattice_element_t *lattice_meet_boolean(const lattice_element_t *ri
     return make_bottom_element();
 }
 
-/**
- * @brief Meets TRUE with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_TRUE.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets TRUE with another lattice element. */
 static const lattice_element_t *lattice_meet_true(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_TOP:
@@ -1567,14 +1297,7 @@ static const lattice_element_t *lattice_meet_true(const lattice_element_t *right
     return make_bottom_element();
 }
 
-/**
- * @brief Meets FALSE with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_FALSE.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets FALSE with another lattice element. */
 static const lattice_element_t *lattice_meet_false(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_TOP:
@@ -1604,14 +1327,7 @@ static const lattice_element_t *lattice_meet_false(const lattice_element_t *righ
     return make_bottom_element();
 }
 
-/**
- * @brief Meets FUNCTION with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_FUNCTION.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets FUNCTION with another lattice element. */
 static const lattice_element_t *lattice_meet_function(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_TOP:
@@ -1641,14 +1357,7 @@ static const lattice_element_t *lattice_meet_function(const lattice_element_t *r
     return make_bottom_element();
 }
 
-/**
- * @brief Meets ARRAY with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_ARRAY.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets ARRAY with another lattice element. */
 static const lattice_element_t *lattice_meet_array(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_TOP:
@@ -1680,15 +1389,7 @@ static const lattice_element_t *lattice_meet_array(const lattice_element_t *righ
     return make_bottom_element();
 }
 
-/**
- * @brief Meets TYPED_ARRAY with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_TYPED_ARRAY.
- *
- * @param left Left typed array lattice element.
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets TYPED_ARRAY with another lattice element. */
 static const lattice_element_t *lattice_meet_typed_array(const lattice_element_t *left,
         const lattice_element_t *right) {
     const typed_array_element_t *left_array = (const typed_array_element_t *)left;
@@ -1730,14 +1431,7 @@ static const lattice_element_t *lattice_meet_typed_array(const lattice_element_t
     return make_bottom_element();
 }
 
-/**
- * @brief Meets USER_DEFINED_OBJECT with another lattice element.
- *
- * The left operand is assumed to be exactly LATTICE_USER_DEFINED_OBJECT.
- *
- * @param right Right lattice element.
- * @return Constant pointer to the greatest lower bound.
- */
+/** @brief Meets USER_DEFINED_OBJECT with another lattice element. */
 static const lattice_element_t *lattice_meet_user_defined_object(const lattice_element_t *right) {
     switch (right->type) {
         case LATTICE_TOP:
@@ -1831,12 +1525,7 @@ const lattice_element_t *lattice_meet(arena_t *arena,
     return make_bottom_element();
 }
 
-/**
- * @brief Converts a lattice type to a short human-readable string.
- *
- * @param type Lattice type.
- * @return String representation of the lattice type.
- */
+/** @brief Converts a lattice type to a short human-readable string. */
 static const wchar_t* lattice_type_to_string(lattice_type_t type) {
     switch (type) {
         case LATTICE_TOP:
