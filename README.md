@@ -144,6 +144,8 @@ These inspection options also execute the program after compilation. Graph outpu
 
 | Option | Purpose |
 | --- | --- |
+| `--print-analysis` | Print chronological abstract-analysis observations before execution. |
+| `--analysis-output <file>` | Save the same report to a UTF-8 text file. |
 | `--print-bytecode` | Print the generated instructions and referenced static data. |
 | `--print-source-code` | Print source regenerated from the analyzed AST. |
 | `--print-graph <file>` | Render the AST as PNG or SVG using Graphviz. |
@@ -208,3 +210,66 @@ When extending the language, keep parsing, AST behavior, bytecode generation, an
 Created by [Ivan Kniazkov](https://github.com/kniazkov).
 
 Goat is distributed under the [MIT license](LICENSE.txt).
+
+## Observing abstract analysis
+
+```sh
+./goat --print-analysis program.goat
+./goat --analysis-output analysis.txt program.goat
+```
+
+Both options can be combined. Console output precedes program output; the file contains only
+analysis observations. A report write failure stops execution with a nonzero exit status.
+Without these options, the CLI does not create a collector.
+
+For `var x = 1;` followed by `x = 3;` on the next line, the report is:
+
+```text
+#1 program.goat:1:1 write x = 1
+#2 program.goat:2:1 write x = 3
+#3 program.goat:1:1 summary x = [1..3]
+```
+
+`write` records a current value, `join` records a current value after merging branch states,
+and `summary` records the accumulated value written to a declaration in the AST. These are
+observations of the current experimental analyzer, not a concrete execution trace or a
+correctness guarantee. Condition handling and branch-state isolation still need work.
+AST transformation events can be added as transformations are implemented.
+
+### Using observations in tests
+
+Create an `analysis_collector_t` with `create_analysis_collector(arena)` and pass it to
+`analyze(root, memory, options, collector)` or `interpret(root, memory, collector)`.
+Pass `NULL` to disable recording. The collector and its singly linked list entries live
+in the supplied arena; appending uses a tail pointer and never reallocates earlier entries.
+
+`add_analysis_event()` also supports focused tests and future analysis passes.
+`analysis_event_query_t` filters by event kind, node identity, declaration identity,
+filename, row, and column. Specified fields are combined with AND; zero/NULL fields
+are wildcards. Filename matching compares contents. Declaration identity distinguishes
+shadowed variables even when their names match.
+
+```c
+analysis_event_query_t query = {
+    .kind = ANALYSIS_VALUE_WRITE,
+    .file_name = "program.goat",
+    .row = 2
+};
+const analysis_event_t *event = find_analysis_event(collector, NULL, &query);
+/* Check event->value->type and its payload; unrelated events need not be asserted. */
+```
+
+Pass the previous match as the second argument to find the next one.
+`find_last_analysis_event()` returns the last recorded match, not a fixed point or a join
+of observations. Event sequence numbers describe collection order, not stable AST IDs.
+Tests should select relevant facts instead of depending on the complete event sequence.
+
+Events borrow AST nodes, declarations, immutable lattice elements, and filenames. Keep their
+arenas and source storage alive until queries and formatting finish. Removing a node from
+the AST does not invalidate its arena allocation. Row and column are captured at insertion;
+for nodes without positions, the nearest positioned ancestor is used, or zero if none exists.
+The collector does not snapshot mutable AST contents.
+
+`analysis_collector_to_text()` renders the same records that tests query. Its returned string
+is independently heap-owned when nonempty; release it with `FREE_STRING()`. Rendering must
+happen while borrowed event data is alive, but the resulting text may outlive the arenas.

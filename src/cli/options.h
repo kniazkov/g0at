@@ -37,6 +37,12 @@ struct options_t {
      */
     bool print_bytecode;
 
+    /** @brief Print chronological analysis observations to stdout. */
+    bool print_analysis;
+
+    /** @brief Optional UTF-8 analysis report destination. */
+    path_t *analysis_output_file;
+
     /** @brief Flag to enable compiler warnings. */
     bool enable_warnings;
 

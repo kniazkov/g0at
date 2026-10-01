@@ -20,6 +20,7 @@ typedef struct {
     const wchar_t const *graphviz_failed;
     const wchar_t const *duplicate_parameter;
     const wchar_t const *cannot_read_source_file;
+    const wchar_t const *cannot_write_analysis_file;
     const wchar_t const *compilation_warning;
     const wchar_t const *compilation_error;
     const wchar_t const *critical_compilation_error;

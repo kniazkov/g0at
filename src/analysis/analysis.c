@@ -224,7 +224,8 @@ static void bind_variables_in_functions(queue_t *functions, parser_memory_t *mem
     }
 }
 
-compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options_t *options) {
+compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options_t *options,
+        analysis_collector_t *collector) {
 
     scope_t *root_scope = create_scope_from_root_context(memory->graph);
 
@@ -255,7 +256,7 @@ compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options
     }
     destroy_vector_ex(insertions, FREE);
 
-    interpret(root_node, memory);
+    interpret(root_node, memory, collector);
 
     // ... further analysis ...
     return errors;

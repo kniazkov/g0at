@@ -73,6 +73,21 @@ options_t *parse_options(int argc, char **argv) {
                 continue;
             }
 
+            if (strcmp(arg, "--print-analysis") == 0) {
+                opt->print_analysis = true;
+                continue;
+            }
+
+            if (strcmp(arg, "--analysis-output") == 0) {
+                if (index + 1 >= argc || !argv[index + 1][0] || argv[index + 1][0] == '-') {
+                    fprintf_utf8(stderr, get_messages()->missing_specification, arg);
+                    goto error;
+                }
+                free_path(opt->analysis_output_file);
+                opt->analysis_output_file = create_path(argv[++index]);
+                continue;
+            }
+
             if (strcmp(arg, "--print-graph") == 0) {
                 if (index + 1 >= argc || argv[index + 1][0] == '-') {
                     fprintf_utf8(stderr, get_messages()->missing_specification, arg);
@@ -128,6 +143,7 @@ help:
 void destroy_options(options_t *opt) {
     free_path(opt->input_file);
     free_path(opt->graph_output_file);
+    free_path(opt->analysis_output_file);
     destroy_vector(opt->script_args);
     FREE(opt);
 }
