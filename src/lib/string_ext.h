@@ -45,6 +45,13 @@ int string_comparator(const void *first, const void *second);
  * 
  * This structure allows constructing strings by dynamically resizing an internal buffer as needed.
  * The string is always null-terminated and can be retrieved by the user.
+ *
+ * Append operations return the builder's current buffer without copying it.
+ * During construction, earlier results are provisional: another append may
+ * invalidate them. Once a returned string is consumed as the final result,
+ * stop using the builder and release that string exactly once with FREE_STRING().
+ * No separate transfer or builder destruction is needed. Never free an
+ * intermediate result and then continue using the builder.
  */
 typedef struct {
     wchar_t *data;      /**< Pointer to the dynamically allocated wide-character string buffer. */
@@ -71,6 +78,8 @@ void init_string_builder(string_builder_t *builder, size_t capacity);
  * 
  * If the new capacity is less than or equal to the current capacity, no changes are made.
  * The data in the current buffer is preserved and copied into the new buffer.
+ * Capacity grows geometrically (approximately 1.5x per growth step), so the resulting
+ * capacity may exceed the request. Equal-capacity requests do not reallocate.
  * 
  * @param builder A pointer to the string_builder_t instance.
  * @param new_capacity The new capacity for the buffer.
@@ -182,6 +191,8 @@ string_value_t append_repeated_char(string_builder_t *builder, wchar_t symbol, s
  * encoded string. It processes each wide-character symbol in the input string and converts it
  * to the corresponding UTF-8 bytes. The resulting string is dynamically allocated,
  * and it is null-terminated.
+ * Input uses UTF-16 code units on 16-bit wchar_t platforms, and Unicode scalar
+ * values on wider wchar_t platforms. Invalid input units are replaced with U+FFFD.
  * 
  * @param wstr The wide-character string (`wchar_t*`) to encode.
  * @return A dynamically allocated UTF-8 encoded string (`char*`).
@@ -197,6 +208,8 @@ char *encode_utf8(const wchar_t *wstr);
  * encoded string. The resulting UTF-8 string is dynamically allocated and null-terminated.
  * Additionally, the size of the encoded string (in bytes) is returned via the `size_ptr`
  * parameter, allowing the caller to avoid recalculating the size when it is needed immediately.
+ * Uses the same UTF-16/scalar and replacement rules as encode_utf8(). The byte
+ * count excludes the terminating null byte; size_ptr may be NULL.
  * 
  * @param wstr The wide-character string (`wchar_t*`) to encode.
  * @param size_ptr A pointer to a `size_t` variable where the size of the UTF-8 encoded string
@@ -212,7 +225,10 @@ char *encode_utf8_ex(const wchar_t *wstr, size_t *size_ptr);
  * This function decodes a UTF-8 encoded string (`char*`) into a wide-character string (`wchar_t*`).
  * The function processes the string byte-by-byte and handles characters encoded with 1 to 4 bytes, 
  * according to the UTF-8 encoding scheme. If any invalid byte sequences are detected, the function
- * will return an empty result (i.e., a failed string).
+ * returns NULL_STRING_VALUE. Overlong encodings, surrogate code points, and
+ * values above U+10FFFF are rejected. Supplementary characters become surrogate
+ * pairs on 16-bit wchar_t platforms. Result length counts wchar_t units, not
+ * Unicode characters. An empty input returns EMPTY_STRING_VALUE without allocation.
  * 
  * @param str A pointer to the UTF-8 encoded string (`char*`) to decode.
  * @return A `string_value_t` structure containing the decoded wide-character string.

@@ -36,6 +36,9 @@ static test_description_t test_list[] = {
     , { "UTF-8 file I/O", test_utf8_file_io }
     , { "AVL tree", test_avl_tree }
     , { "string builder", test_string_builder }
+    , { "string geometric growth", test_string_geometric_growth }
+    , { "UTF-8 roundtrip", test_utf8_roundtrip }
+    , { "UTF-8 invalid sequences", test_utf8_invalid_sequences }
     , { "binary search", test_binary_search }
     , { "double to string", test_double_to_string }
     , { "format string", test_format_string }

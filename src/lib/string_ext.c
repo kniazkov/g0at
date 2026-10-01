@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
 #include "string_ext.h"
 #include "allocate.h"
@@ -44,25 +45,36 @@ void init_string_builder(string_builder_t *builder, size_t capacity) {
 }
 
 void resize_string_builder(string_builder_t *builder, size_t new_capacity) {
-    if (builder->capacity > new_capacity) {
+    if (builder->capacity >= new_capacity) {
         return;
     }
-    wchar_t *new_data = ALLOC((new_capacity + 1) * sizeof(wchar_t));
+    const size_t maximum = SIZE_MAX / sizeof(wchar_t) - 1;
+    if (new_capacity > maximum) {
+        fprintf(stderr, "\nString capacity overflow.\n");
+        exit(EXIT_FAILURE);
+    }
+    size_t capacity = builder->capacity;
+    if (capacity < INITIAL_STRING_BUILDER_CAPACITY) {
+        capacity = INITIAL_STRING_BUILDER_CAPACITY;
+    }
+    while (capacity < new_capacity) {
+        size_t increment = capacity / 2;
+        capacity = increment > maximum - capacity ? maximum : capacity + increment;
+    }
+    wchar_t *new_data = ALLOC((capacity + 1) * sizeof(wchar_t));
     if (builder->data) {
         memcpy(new_data, builder->data, (builder->length + 1) * sizeof(wchar_t));
         FREE(builder->data);
+    } else {
+        new_data[0] = 0;
     }
     builder->data = new_data;
-    builder->capacity = new_capacity;
+    builder->capacity = capacity;
 }
 
 string_value_t append_char(string_builder_t *builder, wchar_t symbol) {
     if (builder->length == builder->capacity) {
-        resize_string_builder(
-            builder,
-            builder->capacity < INITIAL_STRING_BUILDER_CAPACITY ? INITIAL_STRING_BUILDER_CAPACITY :
-                builder->capacity * 3 / 2
-        );
+        resize_string_builder(builder, builder->length + 1);
     }
     builder->data[builder->length++] = symbol;
     builder->data[builder->length] = 0;
@@ -128,46 +140,33 @@ string_value_t append_repeated_char(string_builder_t *builder, wchar_t symbol, s
 }
 
 /**
- * @brief Encodes a single wide-character symbol (`wchar_t`) into UTF-8.
- * 
- * This function encodes a single wide-character symbol (`wchar_t`) into its UTF-8 representation.
- * It supports the full range of Unicode characters, from 1-byte characters (ASCII) to
- * 4-byte characters (for Unicode code points beyond the Basic Multilingual Plane).
- * 
- * The function returns the number of bytes written to the `c` array (1, 2, 3, or 4),
- * depending on the Unicode code point, and stores the UTF-8 encoded bytes in the provided buffer.
- * 
- * @param w The wide-character symbol (`wchar_t`) to encode in UTF-8.
- * @param c A buffer to hold the resulting UTF-8 encoded bytes. The buffer should be large enough
- *  to hold up to 4 bytes (depending on the character).
- * @return The number of bytes written to `c`, or 0 if the character cannot be encoded.
+ * @brief Encodes one Unicode scalar value into one to four UTF-8 bytes.
+ * Invalid scalar values are replaced with U+FFFD, keeping the output valid UTF-8.
  */
-static int encode_utf8_char(wchar_t w, char *c) {
+static int encode_utf8_char(uint32_t w, char *c) {
+    if (w > 0x10FFFF || (w >= 0xD800 && w <= 0xDFFF)) {
+        w = 0xFFFD;
+    }
     if (w < 0x80) {
         c[0] = (char)w;
         return 1;
     }
     if (w < 0x800) {
-        c[0] = (char)((w & 0x7C0) >> 6) + 0xC0;
-        c[1] = (char)(w & 0x3F) + 0x80;
+        c[0] = (char)(0xC0 | (w >> 6));
+        c[1] = (char)(0x80 | (w & 0x3F));
         return 2;
     }
     if (w < 0x10000) {
-        c[0] = (char)((w & 0xF000) >> 12) + 0xE0;
-        c[1] = (char)((w & 0xFC0) >> 6) + 0x80;
-        c[2] = (char)(w & 0x3F) + 0x80;
+        c[0] = (char)(0xE0 | (w >> 12));
+        c[1] = (char)(0x80 | ((w >> 6) & 0x3F));
+        c[2] = (char)(0x80 | (w & 0x3F));
         return 3;
     }
-#if WCHAR_MAX > 0xFFFF
-    if (w < 0x200000) {
-        c[0] = (char)((w & 0x1C0000) >> 18) + 0xF0;
-        c[1] = (char)((w & 0x3F000) >> 12) + 0x80;
-        c[2] = (char)((w & 0xFC0) >> 6) + 0x80;
-        c[3] = (char)(w & 0x3F) + 0x80;
-        return 3;
-    }
-#endif
-    return 0;
+    c[0] = (char)(0xF0 | (w >> 18));
+    c[1] = (char)(0x80 | ((w >> 12) & 0x3F));
+    c[2] = (char)(0x80 | ((w >> 6) & 0x3F));
+    c[3] = (char)(0x80 | (w & 0x3F));
+    return 4;
 }
 
 char *encode_utf8_ex(const wchar_t *wstr, size_t *size_ptr) {
@@ -177,20 +176,31 @@ char *encode_utf8_ex(const wchar_t *wstr, size_t *size_ptr) {
     size_t capacity = init_capacity;
     char symbol[4];
     while (*wstr) {
-        int bytes_count = encode_utf8_char(*wstr, symbol);
-        if (bytes_count > 0) {
-            if (size + bytes_count + 1 > capacity) {
-                capacity *= 2;
-                char *new_buffer = ALLOC(capacity);
-                memcpy(new_buffer, buffer, size);
-                FREE(buffer);
-                buffer = new_buffer;
-            }
-            for (int i = 0; i < bytes_count; i++) {
-                buffer[size++] = symbol[i];
+        uint32_t scalar = (uint32_t)*wstr++;
+#if WCHAR_MAX <= 0xFFFF
+        /* Windows wchar_t stores UTF-16 code units, not complete scalar values. */
+        if (scalar >= 0xD800 && scalar <= 0xDBFF) {
+            uint32_t low = (uint32_t)*wstr;
+            if (low >= 0xDC00 && low <= 0xDFFF) {
+                scalar = 0x10000 + ((scalar - 0xD800) << 10) + (low - 0xDC00);
+                wstr++;
             }
         }
-        wstr++;
+#endif
+        int bytes_count = encode_utf8_char(scalar, symbol);
+        if (size > SIZE_MAX - (size_t)bytes_count - 1) {
+            fprintf(stderr, "\nUTF-8 size overflow.\n");
+            exit(EXIT_FAILURE);
+        }
+        if (size + bytes_count + 1 > capacity) {
+            capacity = capacity > SIZE_MAX / 2 ? SIZE_MAX : capacity * 2;
+            char *new_buffer = ALLOC(capacity);
+            memcpy(new_buffer, buffer, size);
+            FREE(buffer);
+            buffer = new_buffer;
+        }
+        memcpy(buffer + size, symbol, (size_t)bytes_count);
+        size += bytes_count;
     }
     buffer[size] = '\0';
     if (size_ptr != NULL) {
@@ -205,62 +215,55 @@ char *encode_utf8(const wchar_t *wstr) {
 
 string_value_t decode_utf8(const char *str) {
     string_builder_t builder;
-    init_string_builder(&builder, 16);
+    init_string_builder(&builder, 0);
     string_value_t result = EMPTY_STRING_VALUE;
     while (*str) {
-        unsigned char c0 = (unsigned char)*str++;
-        wchar_t w = 0;
-        if ((c0 & 0x80) == 0) {
-            w = c0;
-        }
-        else if ((c0 & 0xE0) == 0xC0) {
-            if (*str == '\0') {
-                goto error;
-            }
-            unsigned char c1 = (unsigned char)*str++;
-            if ((c1 & 0xC0) != 0x80) {
-                goto error;
-            }
-            w = ((c0 & 0x1F) << 6) + (c1 & 0x3F);
-        }
-        else if ((c0 & 0xF0) == 0xE0) {
-            if (*str == '\0') {
-                goto error;
-            }
-            unsigned char c1 = (unsigned char)*str++;
-            if (*str == '\0') {
-                goto error;
-            }
-            unsigned char c2 = (unsigned char)*str++;
-            if ((c1 & 0xC0) != 0x80 || (c2 & 0xC0) != 0x80) {
-                goto error;
-            }
-            w = ((c0 & 0xF) << 12) + ((c1 & 0x3F) << 6) + (c2 & 0x3F);
-        }
-#if WCHAR_MAX > 0xFFFF
-        else if ((c0 & 0xF8) == 0xF0) {
-            if (*str == '\0') {
-                goto error;
-            }
-            unsigned char c1 = (unsigned char)*str++;
-            if (*str == '\0') {
-                goto error;
-            }
-            unsigned char c2 = (unsigned char)*str++;
-            if (*str == '\0') {
-                goto error;
-            }
-            unsigned char c3 = (unsigned char)*str++;
-            if ((c1 & 0xC0) != 0x80 || (c2 & 0xC0) != 0x80 || (c3 & 0xC0) != 0x80) {
-                goto error;
-            }
-            w = ((c0 & 0x7) << 18) + ((c1 & 0x3F) << 12) + ((c2 & 0x3F) << 6) + (c3 & 0x3F);
-        }
-#endif
-        else {
+        unsigned char first = (unsigned char)*str++;
+        uint32_t scalar;
+        uint32_t minimum;
+        unsigned int remaining;
+        if (first < 0x80) {
+            scalar = first;
+            minimum = 0;
+            remaining = 0;
+        } else if (first >= 0xC2 && first <= 0xDF) {
+            scalar = first & 0x1F;
+            minimum = 0x80;
+            remaining = 1;
+        } else if (first >= 0xE0 && first <= 0xEF) {
+            scalar = first & 0x0F;
+            minimum = 0x800;
+            remaining = 2;
+        } else if (first >= 0xF0 && first <= 0xF4) {
+            scalar = first & 0x07;
+            minimum = 0x10000;
+            remaining = 3;
+        } else {
             goto error;
         }
-        result = append_char(&builder, w);
+        for (unsigned int i = 0; i < remaining; i++) {
+            unsigned char next = (unsigned char)*str;
+            if ((next & 0xC0) != 0x80) {
+                goto error;
+            }
+            str++;
+            scalar = (scalar << 6) | (next & 0x3F);
+        }
+        /* Reject overlong encodings, surrogate code points, and values above Unicode. */
+        if (scalar < minimum || scalar > 0x10FFFF ||
+                (scalar >= 0xD800 && scalar <= 0xDFFF)) {
+            goto error;
+        }
+#if WCHAR_MAX <= 0xFFFF
+        if (scalar >= 0x10000) {
+            scalar -= 0x10000;
+            append_char(&builder, (wchar_t)(0xD800 + (scalar >> 10)));
+            result = append_char(&builder, (wchar_t)(0xDC00 + (scalar & 0x3FF)));
+        } else
+#endif
+        {
+            result = append_char(&builder, (wchar_t)scalar);
+        }
     }
     return result;
 
