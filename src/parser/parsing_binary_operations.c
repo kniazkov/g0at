@@ -2,10 +2,6 @@
  * @file parsing_binary_operations.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines reduction rules for handling binary operations.
- *
- * This file contains the implementation of reduction rules for binary operations such as
- * addition and subtraction. These rules are applied during the parsing process to create
- * new tokens and abstract syntax tree (AST) nodes representing binary operations.
  */
 
 #include <assert.h>
@@ -18,13 +14,6 @@
 
 /**
  * @brief Validates that both operands of a binary operator are valid expressions.
- * 
- * This function checks whether the tokens to the left and right of the given operator token
- * exist and are valid expression tokens. If either operand is missing or is not an expression,
- * a compilation error is generated.
- * 
- * @param operator The operator token whose operands are to be checked.
- * @param memory A pointer to the parser memory structure used for error reporting.
  * @return A pointer to a `compilation_error_t` if operands are invalid, or `NULL` if valid.
  */
 static compilation_error_t * check_operands(token_t *operator, parser_memory_t *memory) {
@@ -73,35 +62,10 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
 
 /**
  * @brief Rule for handling comparison operators.
- *
- * This reduction processes a token sequence with a comparison operator and two
- * expression operands. It validates that both sides are expressions and
- * reduces the sequence into a single expression node representing the
- * corresponding comparison.
- *
- * Supported operators (currently):
- * - `<`  — creates a less-than comparison node (`NODE_LESS`, opcode `LESS`).
- *
- * Behavior:
- * - Verifies operands are valid expressions via @ref check_operands
- * - Builds a comparison AST node (e.g., @ref create_less_node for `<`)
- * - Collapses the three-token span (left, operator, right) into a single
- *   `TOKEN_EXPRESSION` using @ref collapse_tokens_to_token
- *
- * @param operator The token representing the comparison operator (must be `TOKEN_OPERATOR`).
- * @param memory Parser memory context used for allocations and error reporting.
- * @param groups Token classification groups (unused in this rule).
- * @return `NULL` on success; a pointer to @ref compilation_error_t on invalid operands
- *         or unsupported operator.
- *
- * @note Additional operators such as `<=`, `>`, `>=`, `==`, `!=` can be added in
- *       the future by extending the operator dispatch inside this function.
- *
+ * `operator`: The token representing the comparison operator (must be `TOKEN_OPERATOR`).
+ * @return `NULL` on success; a pointer to @ref compilation_error_t on invalid operands or
+ * unsupported operator.
  * @pre `operator->type == TOKEN_OPERATOR`
- *
- * @see check_operands
- * @see create_less_node
- * @see collapse_tokens_to_token
  */
 compilation_error_t *parsing_comparison_operators(token_t *operator, parser_memory_t *memory,
         token_groups_t *groups) {
@@ -122,7 +86,7 @@ compilation_error_t *parsing_comparison_operators(token_t *operator, parser_memo
             operation = create_greater_node(memory->graph, left_operand, right_operand);
         }
     }
-    
+
     assert(operation != NULL);
     collapse_tokens_to_token(memory, operator->left, operator->right, TOKEN_EXPRESSION,
         &operation->base);
@@ -131,16 +95,6 @@ compilation_error_t *parsing_comparison_operators(token_t *operator, parser_memo
 
 /**
  * @brief Rule for handling additive operators (plus and minus).
- * 
- * This function processes a token sequence with an additive operator (`+` or `-`), followed by
- * expressions on both sides, and creates a binary operation node. It performs a reduction on
- * the sequence of tokens, turning it into a single token representing the binary operation
- * (addition or subtraction).
- * 
- * @param identifier The token representing the operator (either `+` or `-`).
- * @param memory A pointer to the `parser_memory_t` structure, which manages memory allocation
- *  for tokens, syntax tree nodes, and errors.
- * @param groups Token classification groups that may be updated during reduction.
  * @return A pointer to a `compilation_error_t` if an error occurs, or `NULL` if no error.
  */
 compilation_error_t *parsing_additive_operators(token_t *operator, parser_memory_t *memory,
@@ -168,15 +122,6 @@ compilation_error_t *parsing_additive_operators(token_t *operator, parser_memory
 
 /**
  * @brief Rule for handling multiplicative operators (*, /, %).
- * 
- * This function processes a token sequence with a multiplicative operator (`*`, `/`, `%`)
- * and two expression operands. It reduces the sequence into a single expression node
- * representing the corresponding binary operation.
- * 
- * @param operator The token representing the operator.
- * @param memory A pointer to the `parser_memory_t` structure, which manages allocation
- *  for tokens and nodes.
- * @param groups Token classification groups that may be updated during the reduction.
  * @return A pointer to a `compilation_error_t` if an error occurs, or `NULL` if no error.
  */
 compilation_error_t *parsing_multiplicative_operators(token_t *operator, parser_memory_t *memory,
@@ -207,15 +152,6 @@ compilation_error_t *parsing_multiplicative_operators(token_t *operator, parser_
 
 /**
  * @brief Rule for handling exponentiation operators (`**`).
- * 
- * This function processes a token sequence with a power operator (`**`)
- * and two expression operands. It reduces the sequence into a single expression node
- * representing the power (exponentiation) operation.
- * 
- * @param operator The token representing the power operator.
- * @param memory A pointer to the `parser_memory_t` structure, which manages allocation
- *  for tokens and nodes.
- * @param groups Token classification groups that may be updated during the reduction.
  * @return A pointer to a `compilation_error_t` if an error occurs, or `NULL` if no error.
  */
 compilation_error_t *parsing_power_operators(token_t *operator, parser_memory_t *memory,

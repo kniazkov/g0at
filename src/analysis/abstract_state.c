@@ -2,21 +2,6 @@
  * @file abstract_state.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the abstract interpreter state.
- *
- * This file implements the abstract-state container used by abstract
- * interpretation.
- *
- * The state maps declaration nodes to small reference-counted records containing
- * two abstract values:
- *
- *     current
- *         The value known at the current program point.
- *
- *     summary
- *         The join of all values assigned to the declaration through this state.
- *
- * The AVL tree owns the pair records through its value copy/destroy callbacks.
- * This allows abstract states to be cloned without duplicating lattice elements.
  */
 
 #include <assert.h>
@@ -29,13 +14,8 @@
 /**
  * @brief Compares declarator pointers.
  *
- * Provides a strict ordering over declarator addresses so they can be used as
- * AVL tree keys. Declarators are identity objects at this stage: after semantic
- * binding, the pointer itself is the resolved declaration.
- *
- * @param left First declarator pointer.
- * @param right Second declarator pointer.
- * @return -1 if `left` is lower than `right`, +1 if greater, or 0 if equal.
+ * Declarators are identity objects at this stage: after semantic binding, the pointer itself is the
+ * resolved declaration.
  */
 static int declarator_comparator(const void *left, const void *right) {
     if (left < right) {
@@ -48,45 +28,23 @@ static int declarator_comparator(const void *left, const void *right) {
 }
 
 /**
- * @struct lattice_pair_t
  * @brief Reference-counted pair of abstract values for one declarator.
  *
- * Each abstract-state entry stores both the current value and the accumulated
- * summary for a declaration.
- *
- * Pair objects may be shared between cloned abstract states. The AVL tree calls
- * `copy_value()` when copying a value and `destroy_value()` when destroying it,
- * so this structure carries a tiny reference counter.
+ * Pair objects may be shared between cloned abstract states.
  */
 typedef struct {
-    /**
-     * @brief Number of AVL entries currently referencing this pair.
-     */
+    /** @brief Number of AVL entries currently referencing this pair. */
     int refs;
 
-    /**
-     * @brief Abstract value at the current program point.
-     *
-     * This value is used by expression calculation when reading declarations.
-     */
+    /** @brief Abstract value at the current program point. */
     const lattice_element_t *current;
 
-    /**
-     * @brief Accumulated abstract value observed for the declaration.
-     *
-     * This value is updated with lattice joins and eventually flushed into the
-     * corresponding declarator.
-     */
+    /** @brief Accumulated abstract value observed for the declaration. */
     const lattice_element_t *summary;
 } lattice_pair_t;
 
 /**
  * @brief Copies an AVL value containing a lattice pair.
- *
- * The pair itself is not duplicated. Instead, its reference counter is
- * incremented and the same pointer is returned.
- *
- * @param value AVL value whose pointer references a lattice pair.
  * @return The same value after incrementing the pair reference count.
  */
 static value_t copy_value(value_t value) {
@@ -95,14 +53,7 @@ static value_t copy_value(value_t value) {
     return value;
 }
 
-/**
- * @brief Destroys an AVL value containing a lattice pair.
- *
- * Decrements the pair reference counter and frees the pair when the last AVL
- * entry releases it.
- *
- * @param value AVL value whose pointer references a lattice pair.
- */
+/** @brief Destroys an AVL value containing a lattice pair. */
 static void destroy_value(value_t value) {
     lattice_pair_t *pair = (lattice_pair_t*)value.ptr;
     if (!(--pair->refs)) {
@@ -167,33 +118,16 @@ bool abstract_state_contains(const abstract_state_t *state, const declarator_t *
     return avl_tree_contains(state->values, (void*)declarator);
 }
 
-/**
- * @struct join_context_t
- * @brief Context passed to the abstract-state join traversal callback.
- */
+/** @brief Context passed to the abstract-state join traversal callback. */
 typedef struct {
-    /**
-     * @brief Right-hand state used for matching entries.
-     */
+    /** @brief Right-hand state used for matching entries. */
     const abstract_state_t *right;
 
-    /**
-     * @brief Result state being populated.
-     */
+    /** @brief Result state being populated. */
     abstract_state_t *result;
 } join_context_t;
 
-/**
- * @brief Joins one abstract-state entry if it exists in both states.
- *
- * This callback is invoked for entries from the left state. It looks up the same
- * declarator in the right state and, if found, creates a new lattice pair in the
- * result state. Both `current` and `summary` are joined pairwise.
- *
- * @param user_data Pointer to `join_context_t`.
- * @param key Declarator key from the left state.
- * @param value AVL value containing the left state's lattice pair.
- */
+/** @brief Joins one abstract-state entry if it exists in both states. */
 static void join_abstract_state_entry(void *user_data, void *key, value_t value) {
     join_context_t *context = (join_context_t*)user_data;
     lattice_pair_t *left_pair = (lattice_pair_t*)value.ptr;
@@ -249,16 +183,7 @@ abstract_state_t *join_abstract_states(const abstract_state_t *left,
     return result;
 }
 
-/**
- * @brief Flushes one abstract-state entry into its declarator.
- *
- * Stores the accumulated summary value into the declarator's `abstract_value`
- * field. This callback is used by `flush_abstract_state()`.
- *
- * @param user_data Unused callback context.
- * @param key Declarator key.
- * @param value AVL value containing a lattice-pair pointer.
- */
+/** @brief Flushes one abstract-state entry into its declarator. */
 static void flush_abstract_state_entry(void *user_data, void* key, value_t value) {
     declarator_t *declarator = (declarator_t*)key;
     lattice_pair_t *pair = (lattice_pair_t*)value.ptr;

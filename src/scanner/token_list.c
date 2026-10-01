@@ -2,15 +2,6 @@
  * @file token_list.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Provides functions for manipulating tokens in token lists.
- *
- * This file contains the implementation of functions that allow manipulation of tokens 
- * within a doubly linked list. The functions include:
- * - Adding tokens to the list (both at the beginning and at the end).
- * - Removing tokens from the list.
- * - Replacing one token with another in the list.
-
- * These operations are essential for manipulating lists of tokens during lexical analysis,
- * tokenization, or syntactic parsing phases of the program.
  */
 
 #include <assert.h>

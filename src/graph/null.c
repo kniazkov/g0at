@@ -2,11 +2,6 @@
  * @file null.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the null expression.
- * 
- * This file defines the behavior of the null expression, which represents a literal
- * null value in the syntax tree. The null value is a singleton that indicates the
- * absence of a meaningful value and can be used in variable declarations,
- * assignments, and function returns.
  */
 
 #include <memory.h>
@@ -21,74 +16,34 @@
 #include "codegen/source_builder.h"
 
 /**
- * @struct null_t
- * @brief Represents a null expression node.
- * 
- * This structure defines a null expression in the syntax tree. The null value
- * is a singleton that indicates the absence of a meaningful value. The structure
- * extends `expression_t` but contains no additional fields since null requires
- * no additional data storage.
+ * @brief A null expression node.
+ *
+ * Defines a null expression in the syntax tree. The null value is a singleton that indicates the
+ * absence of a meaningful value. The structure extends `expression_t` but contains no additional
+ * fields since null requires no additional data storage.
  */
 typedef struct {
-    /**
-     * @brief Base expression structure from which null_t inherits.
-     */
+    /** @brief Base expression structure from which null_t inherits. */
     expression_t base;
 } null_t;
 
-/**
- * @brief Calculates the abstract value of a null literal.
- *
- * A null node always represents the exact null value, so its abstract
- * calculation simply returns the null lattice singleton.
- *
- * @param node A pointer to the null literal node.
- * @param state Current abstract state, unused by this implementation.
- * @param arena Memory arena, unused by this implementation.
- * @return Null lattice element.
- */
+/** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     return make_null_element();
 }
 
-/**
- * @brief Converts a null expression to its string representation.
- * 
- * This function returns the string "null" as the representation of the null
- * expression, matching how it would appear in source code. The returned
- * string is a constant value and doesn't require memory management.
- * 
- * @param node A pointer to the null expression node (unused).
- * @return A `string_value_t` containing the literal string "null".
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
-    return STATIC_STRING(L"null"); 
+    return STATIC_STRING(L"null");
 }
 
-/**
- * @brief Generates indented Goat source code for a null expression.
- *
- * @param node Pointer to the AST node representing the null expression.
- * @param builder Pointer to the source builder where generated code will be stored.
- * @param indent The current indentation level (in tabs) for code generation (unused).
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     append_static_source(builder, L"null");
 }
 
-/**
- * @brief Generates bytecode for a null expression.
- * 
- * This function generates bytecode for a null expression by emitting a `NIL`
- * opcode. The NIL instruction pushes the null value onto the virtual machine's
- * stack when executed.
- * 
- * @param node A pointer to the node representing the null expression (unused).
- * @param code A pointer to the `code_builder_t` structure used for generating instructions.
- * @param data A pointer to the `data_builder_t` structure (unused in this case).
- * @return The instruction index of the first emitted instruction.
- */
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     return add_instruction(code, (instruction_t){ .opcode = NIL });
@@ -96,11 +51,10 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
 
 /**
  * @brief Virtual table for null expressions.
- * 
- * This virtual table provides the implementation of operations specific to null
- * expressions. It contains function pointers for operations such as converting
- * the null value to a string representation and generating the corresponding
- * bytecode.
+ *
+ * This virtual table provides the implementation of operations specific to null expressions. It
+ * contains function pointers for operations such as converting the null value to a string
+ * representation and generating the corresponding bytecode.
  */
 static node_vtbl_t null_vtbl = {
     .type = NODE_NULL,

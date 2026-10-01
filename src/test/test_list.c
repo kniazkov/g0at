@@ -26,7 +26,7 @@ static test_description_t test_list[] = {
     , { "parsing identifier", test_identifier }
     , { "parsing bracket", test_bracket }
     , { "unknown symbol", test_uknown_symbol }
-      
+
     , { "memory allocation", test_memory_allocation }
     , { "allocation alignment", test_allocation_alignment }
     , { "arena alignment and growth", test_arena_alignment_and_growth }

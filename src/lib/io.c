@@ -1,8 +1,8 @@
 /**
  * @file io.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Implementations of input-output operations for UTF-8 encoded files
- *  and standard input/output.
+ * @brief Implementations of input-output operations for UTF-8 encoded files and standard
+ * input/output.
  */
 
 #include <stdio.h>

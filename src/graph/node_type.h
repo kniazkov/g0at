@@ -2,389 +2,162 @@
  * @file node_type.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Enumeration of node types for the abstract syntax tree (AST).
- *
- * This file defines the @ref node_type_t enumeration, which lists all possible
- * node types used in the abstract syntax tree (AST). Each node type corresponds
- * to a specific language construct.
  */
 
 #pragma once
 
 #include <stdbool.h>
 
-/**
- * @enum node_type_t
- * @brief Enumeration of node types in the abstract syntax tree (AST).
- * 
- * Each node type represents a category of nodes in the AST, which correspond to different
- * language constructs (e.g., expressions, statements, literals). The node type is used to
- * uniquely identify the kind of information stored within the node and guide operations like
- * parsing, traversal, and code generation.
- * 
- * Types are used in the AST to determine the appropriate handling and processing for different
- * kinds of language constructs.
- */
+/** @brief Enumeration of node types in the abstract syntax tree (AST). */
 typedef enum {
-    /**
-     * @brief Root node type.
-     *
-     * This node type represents the root of the abstract syntax tree (AST). It serves as the
-     * entry point to the AST, containing the main structure of the parsed source code.
-     */
+    /** @brief Root node type. */
     NODE_ROOT = 0,
 
-    /**
-     * @brief Function argument list node type.
-     *
-     * Represents a container for formal function arguments.
-     */
+    /** @brief Function argument list node type. */
     NODE_ARGUMENT_LIST,
 
     /**
      * @brief Function body node type.
      *
-     * Represents a brace-delimited list of statements used as a function body.
-     * Unlike a regular statement list, it does not create an additional lexical
-     * environment during bytecode generation.
+     * Unlike a regular statement list, it does not create an additional lexical environment during
+     * bytecode generation.
      */
     NODE_FUNCTION_BODY,
 
-    /*
-        ----------------------------------------------------------------------
-        DECLARATOR NODE TYPES.
-    
-        Declarators are syntax tree nodes that introduce a single named entity.
-        Each declarator declares one variable, constant, or formal function argument.
+    /* Declarators introduce one name each. */
 
-        Declaration statement nodes may contain multiple declarators, but each
-        declarator node represents exactly one declared name.
-    */
-
-    /**
-     * @brief Function argument node type.
-     *
-     * Represents a single formal function argument.
-     */
+    /** @brief Function argument node type. */
     NODE_ARGUMENT,
 
-    /**
-     * @brief Variable declarator node type.
-     *
-     * Represents a single variable declarator in a declaration statement.
-     * Contains:
-     * - Identifier node (required)
-     * - Initializer expression node (optional)
-     */
+    /** @brief Variable declarator node type. */
     NODE_VARIABLE_DECLARATOR,
 
-    /**
-     * @brief Constant declarator node type.
-     *
-     * Represents a single constant declarator in a declaration statement.
-     * Contains:
-     * - Identifier node (required)
-     * - Initializer expression node (required)
-     */
+    /** @brief Constant declarator node type. */
     NODE_CONSTANT_DECLARATOR,
 
-    /*  
-        ----------------------------------------------------------------------
-        EXPRESSION NODE TYPES.
-      
-        Expressions are syntax tree nodes that represent entities producing a value.
-        Every expression can be evaluated and has a resulting value, even if that
-        value is later ignored by an enclosing statement.
-     */
+    /* Expressions produce values. */
 
-    /**
-     * @brief Statement list node type.
-     *
-     * This node represents a list of statements. This list has its own scope.
-     */
+    /** @brief Statement list node type. */
     NODE_STATEMENT_LIST,
 
     /**
      * @brief Null literal node type.
      *
-     * This node type represents a null literal in the source code, indicating the absence
-     * of a value. The node contains no additional data as null is a singleton value.
+     * This node type represents a null literal in the source code, indicating the absence of a
+     * value. The node contains no additional data as null is a singleton value.
      */
     NODE_NULL,
 
-    /**
-     * @brief Boolean literal `true` node type.
-     *
-     * This node type represents the boolean constant `true` in the source code.
-     * The node contains no additional data as the value is a singleton that can be
-     * referenced directly.
-     */
+    /** @brief Boolean literal `true` node type. */
     NODE_TRUE,
 
-    /**
-     * @brief Boolean literal `false` node type.
-     *
-     * This node type represents the boolean constant `false` in the source code.
-     * The node contains no additional data as the value is a singleton that can be
-     * referenced directly.
-     */
+    /** @brief Boolean literal `false` node type. */
     NODE_FALSE,
 
-    /**
-     * @brief Static string node type.
-     *
-     * This node type represents a static string literal in the source code.
-     * It stores the string content as a part of the AST.
-     */
+    /** @brief Static string node type. */
     NODE_STATIC_STRING,
 
-    /**
-     * @brief Integer literal node type.
-     *
-     * This node type represents a 64-bit integer literal in the source code.
-     * It stores the integer value as part of the AST.
-     */
+    /** @brief Integer literal node type. */
     NODE_INTEGER,
 
-    /**
-     * @brief Real number node type.
-     *
-     * This node type represents a 64-bit real number in the source code.
-     * It stores the real value as part of the AST.
-     */
+    /** @brief Real number node type. */
     NODE_REAL,
 
-    /**
-     * @brief Variable node type.
-     *
-     * This node type represents a variable expression in the source code.
-     * It stores the name of the variable, and can be used to represent variables
-     * or other named entities (e.g., constants).
-     */
+    /** @brief Variable node type. */
     NODE_VARIABLE,
 
-    /**
-     * @brief Parenthesized expression node type.
-     *
-     * This node type represents an expression wrapped in parentheses in the source code.
-     * It stores a single inner expression. Parentheses do not change the semantics of the
-     * expression itself, but they enforce explicit grouping and can affect evaluation order
-     * during parsing and code generation.
-     */
+    /** @brief Parenthesized expression node type. */
     NODE_EXPRESSION_PARENTHESIZED,
 
     /**
      * @brief Function object expression node type.
      *
-     * Represents a function object consisting of a parameter list and a body.
      * When evaluated, it produces a callable function capturing its lexical scope.
      */
     NODE_FUNCTION_OBJECT,
 
-    /**
-     * @brief Function call node type.
-     *
-     * This node type represents a function call expression in the source code.
-     * It stores information about the function being called, including the function object
-     * expression and the arguments passed to the function.
-     */
+    /** @brief Function call node type. */
     NODE_FUNCTION_CALL,
 
-    /**
-     * @brief Simple assignment operation node type.
-     *
-     * This node type represents a simple assignment operation in the source code.
-     * It stores the left-hand side (target variable) and right-hand side (assigned value).
-     */
+    /** @brief Simple assignment operation node type. */
     NODE_SIMPLE_ASSIGNMENT,
 
-    /**
-     * @brief Addition operation node type.
-     *
-     * This node type represents a binary addition (`+`) operation in the source code.
-     * It stores the left and right operands of the addition.
-     */
+    /** @brief Addition operation node type. */
     NODE_ADDITION,
 
-    /**
-     * @brief Subtraction operation node type.
-     *
-     * This node type represents a binary subtraction (`-`) operation in the source code.
-     * It stores the left and right operands of the subtraction.
-     */
+    /** @brief Subtraction operation node type. */
     NODE_SUBTRACTION,
 
-    /**
-     * @brief Multiplication operation node type.
-     *
-     * This node type represents a binary multiplication operation (`*`) in the source code.
-     * It stores the left and right operands of the multiplication.
-     */
+    /** @brief Multiplication operation node type. */
     NODE_MULTIPLICATION,
 
-    /**
-     * @brief Division operation node type.
-     *
-     * This node type represents a binary division operation (`/`) in the source code.
-     * It stores the left and right operands of the division.
-     */
+    /** @brief Division operation node type. */
     NODE_DIVISION,
 
-    /**
-     * @brief Modulo (remainder) operation node type.
-     *
-     * This node type represents a binary modulo operation (`%`) in the source code.
-     * It stores the left and right operands of the operation.
-     */
+    /** @brief Modulo (remainder) operation node type. */
     NODE_MODULO,
 
-    /**
-     * @brief Exponentiation operation node type.
-     *
-     * This node type represents a binary power operation (`**` or `^`) in the source code.
-     * It stores the base (left operand) and the exponent (right operand).
-     */
+    /** @brief Exponentiation operation node type. */
     NODE_POWER,
 
-    /**
-     * @brief Less-than comparison node type.
-     *
-     * Represents the `<` operation between two operands.
-     */
+    /** @brief Less-than comparison node type. */
     NODE_LESS,
 
-    /**
-     * @brief Less-than-or-equal comparison node type.
-     *
-     * Represents the `<=` operation between two operands.
-     */
+    /** @brief Less-than-or-equal comparison node type. */
     NODE_LESS_OR_EQUAL,
 
-    /**
-     * @brief Greater-than comparison node type.
-     *
-     * Represents the `>` operation between two operands.
-     */
+    /** @brief Greater-than comparison node type. */
     NODE_GREATER,
 
-    /**
-     * @brief Greater-than-or-equal comparison node type.
-     *
-     * Represents the `>=` operation between two operands.
-     */
+    /** @brief Greater-than-or-equal comparison node type. */
     NODE_GREATER_OR_EQUAL,
 
-    /**
-     * @brief Equality comparison node type.
-     *
-     * Represents the `==` operation between two operands.
-     */
+    /** @brief Equality comparison node type. */
     NODE_EQUAL,
 
-    /**
-     * @brief Inequality comparison node type.
-     *
-     * Represents the `!=` operation between two operands.
-     */
+    /** @brief Inequality comparison node type. */
     NODE_NOT_EQUAL,
 
-    /*
-        ----------------------------------------------------------------------
-        STATEMENT NODE TYPES
-    
-        Statements are syntax tree nodes that represent instructions executed
-        sequentially. A statement may evaluate expressions internally, but the
-        statement itself is used for control flow, declarations, or side effects
-        rather than for producing a value.
-    */
+    /* Statements control execution and side effects. */
 
-    /**
-     * @brief Statement expression node type.
-     *
-     * This node type represents a statement expression, which contains an expression
-     * whose result is evaluated but ignored. It is used to represent statements
-     * where an expression is evaluated solely for its side effects, such as a function call.
-     * The result of the expression is not used further in the program.
-     */
+    /** @brief Statement expression node type. */
     NODE_STATEMENT_EXPRESSION,
 
-    /**
-     * @brief Variable declaration statement node type.
-     *
-     * This node represents a variable declaration statement (e.g., "var x = 1, y, z = 2 + 3").
-     * Contains child nodes of type NODE_VARIABLE_DECLARATOR for each declared variable.
-     * The node itself serves as a container and doesn't store specific values.
-     */
+    /** @brief Variable declaration statement node type. */
     NODE_VARIABLE_DECLARATION,
 
-    /**
-     * @brief Constant declaration statement node type.
-     *
-     * This node represents a constant declaration statement (e.g., "const pi = 3.14").
-     * Contains child nodes of type NODE_CONSTANT_DECLARATOR for each declared constant.
-     * The node itself serves as a container and doesn't store specific values.
-     */
+    /** @brief Constant declaration statement node type. */
     NODE_CONSTANT_DECLARATION,
 
-    /**
-     * @brief Return statement node type.
-     *
-     * Represents a `return` statement in the syntax tree. May optionally include
-     * a value expression to be returned from the function.
-     * Contains:
-     * - Return value expression node (optional)
-     */
+    /** @brief Return statement node type. */
     NODE_RETURN,
 
-    /**
-     * @brief Conditional branch statement node type.
-     *
-     * Represents an `if` statement in the syntax tree, optionally followed by an
-     * `else` branch.
-     * Contains:
-     * - Condition expression node
-     * - Statement node executed when the condition is true
-     * - Statement node executed when the condition is false (optional)
-     */
+    /** @brief Conditional branch statement node type. */
     NODE_IF_ELSE,
 
-    /**
-     * @brief Classic `for` loop statement node type.
-     *
-     * Represents a `for` loop with initializer, condition, iteration expression,
-     * and loop body.
-     */
+    /** @brief Classic `for` loop statement node type. */
     NODE_FOR,
 
-    /**
-     * @brief `for-in` loop statement node type.
-     *
-     * Represents a `for-in` loop that iterates over values from an iterable
-     * expression.
-     */
+    /** @brief `for-in` loop statement node type. */
     NODE_FOR_IN,
 
     /**
      * @brief `while` loop statement node type.
      *
-     * Represents a `while` loop with a condition checked before each iteration.
+     * A `while` loop with a condition checked before each iteration.
      */
     NODE_WHILE,
 
     /**
      * @brief `do-while` loop statement node type.
      *
-     * Represents a `do-while` loop with a condition checked after each iteration.
+     * A `do-while` loop with a condition checked after each iteration.
      */
     NODE_DO_WHILE,
 } node_type_t;
 
 /**
  * @brief Checks whether a node type represents a declarator.
- *
- * Declarators introduce a single named entity into a scope: a variable,
- * a constant, or a formal function argument.
- *
- * @param type Node type to check.
  * @return `true` if the type is in the declarator range, otherwise `false`.
  */
 static inline bool is_declarator(node_type_t type) {
@@ -393,10 +166,6 @@ static inline bool is_declarator(node_type_t type) {
 
 /**
  * @brief Checks whether a node type represents an expression.
- *
- * Expressions are syntax tree nodes that produce a value when evaluated.
- *
- * @param type Node type to check.
  * @return `true` if the type is in the expression range, otherwise `false`.
  */
 static inline bool is_expression(node_type_t type) {
@@ -405,12 +174,6 @@ static inline bool is_expression(node_type_t type) {
 
 /**
  * @brief Checks whether a node type represents a statement.
- *
- * Statements are instructions executed sequentially. They may evaluate
- * expressions internally, but are used for control flow, declarations,
- * or side effects rather than for directly producing a value.
- *
- * @param type Node type to check.
  * @return `true` if the type is in the statement range, otherwise `false`.
  */
 static inline bool is_statement(node_type_t type) {
@@ -419,14 +182,7 @@ static inline bool is_statement(node_type_t type) {
 
 /**
  * @brief Checks whether a node type represents a statement list-like expression.
- *
- * Statement list-like nodes contain sequentially executed statements. This
- * includes regular statement lists and function bodies, because apparently one
- * pair of curly braces was not enough semantic ambiguity for this language.
- *
- * @param type Node type to check.
- * @return `true` for NODE_ROOT, NODE_STATEMENT_LIST, NODE_FUNCTION_BODY,
- *         otherwise `false`.
+ * @return `true` for NODE_ROOT, NODE_STATEMENT_LIST, NODE_FUNCTION_BODY, otherwise `false`.
  */
 static inline bool is_statement_list(node_type_t type) {
     return type == NODE_ROOT || type == NODE_STATEMENT_LIST || type == NODE_FUNCTION_BODY;
@@ -434,12 +190,6 @@ static inline bool is_statement_list(node_type_t type) {
 
 /**
  * @brief Checks whether a node type represents a branch or loop statement.
- *
- * Branch and loop nodes change the ordinary sequential execution order by
- * selecting one of several branches or repeatedly executing a body. Сейчас там
- * почти пусто, потому что язык еще делает первые шаги и уже требует костыли.
- *
- * @param type Node type to check.
  * @return `true` if the type is a branch or loop statement, otherwise `false`.
  */
 static inline bool is_branch_or_loop(node_type_t type) {

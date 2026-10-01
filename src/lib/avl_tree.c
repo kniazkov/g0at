@@ -2,11 +2,6 @@
  * @file avl_tree.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementations of functions that work with AVL tree.
- *
- * An AVL tree is a self-balancing binary search tree where the difference in heights between
- * the left and right subtrees of any node is at most one. This structure is generic and allows
- * for flexible use with any data type through the use of void pointers and a custom comparator
- * function.
  */
 
 #include <memory.h>
@@ -15,73 +10,37 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 
-/**
- * @brief Returns the larger of two integers.
- * @param a The first integer to compare.
- * @param b The second integer to compare.
- * @return The larger of the two integers.
- */
+/** @brief Returns the larger of two integers. */
 static inline int max(int a, int b) {
     return a > b ? a : b;
 }
 
 /**
  * @brief Gets the height of a node.
- * 
- * This function returns the height of a given node. If the node is NULL, it returns 0.
- * 
- * @param node The node whose height is to be determined.
- * @return The height of the node.
+ *
+ * If the node is NULL, it returns 0.
  */
 static inline int get_height(avl_node_t *node) {
     return node ? node->height : 0;
 }
 
-/**
- * @brief Calculates the balance factor of a node.
- * 
- * This function calculates the balance factor of a node, which is the difference between
- * the height of the left and right subtrees. The balance factor helps to determine
- * whether the tree is balanced or requires rotation.
- * 
- * @param node The node whose balance factor is to be calculated.
- * @return The balance factor of the node.
- */
+/** @brief Calculates the balance factor of a node. */
 static inline int get_balance(avl_node_t *node) {
     return node ? get_height(node->left) - get_height(node->right) : 0;
 }
 
-/**
- * @brief Copies a key according to tree ownership rules.
- *
- * @param tree AVL tree whose copy callback is used.
- * @param key Source key.
- * @return Copied key, or the original key if no copy function is set.
- */
+/** @brief Copies a key according to tree ownership rules. */
 static inline void *copy_key(const avl_tree_t *tree, void *key) {
     return tree->copy_key ? tree->copy_key(key) : key;
 }
 
-/**
- * @brief Copies a value according to tree ownership rules.
- *
- * @param tree AVL tree whose copy callback is used.
- * @param value Source value.
- * @return Copied value, or the original value if no copy function is set.
- */
+/** @brief Copies a value according to tree ownership rules. */
 static inline value_t copy_value(const avl_tree_t *tree, value_t value) {
     return tree->copy_value ? tree->copy_value(value) : value;
 }
 
 /**
  * @brief Performs a left rotation on the given node.
- * 
- * This function performs a left rotation to balance the AVL tree. It is used when the right
- * subtree of a node is too heavy.
- * 
- * @param tree A pointer to the AVL tree structure.
- * @param node The node to rotate left.
- * 
  * @return The new root node after the rotation.
  */
 static avl_node_t *rotate_left(avl_tree_t *tree, avl_node_t *node) {
@@ -95,13 +54,6 @@ static avl_node_t *rotate_left(avl_tree_t *tree, avl_node_t *node) {
 
 /**
  * @brief Performs a right rotation on the given node.
- * 
- * This function performs a right rotation to balance the AVL tree. It is used when the left
- * subtree of a node is too heavy.
- * 
- * @param tree A pointer to the AVL tree structure.
- * @param node The node to rotate right.
- * 
  * @return The new root node after the rotation.
  */
 static avl_node_t *rotate_right(avl_tree_t *tree, avl_node_t *node) {
@@ -113,17 +65,7 @@ static avl_node_t *rotate_right(avl_tree_t *tree, avl_node_t *node) {
     return new_root;
 }
 
-/**
- * @brief Balances the AVL tree at the given node.
- * 
- * This function checks the balance factor of the node and performs the necessary rotations
- * to maintain the AVL property (balance factor between -1 and 1).
- * 
- * @param tree A pointer to the AVL tree structure.
- * @param node The node to balance.
- * 
- * @return The new root node of the balanced subtree.
- */
+/** @brief Balances the AVL tree at the given node. */
 static avl_node_t *balance(avl_tree_t *tree, avl_node_t *node) {
     int balance_factor = get_balance(node);
 
@@ -145,22 +87,8 @@ static avl_node_t *balance(avl_tree_t *tree, avl_node_t *node) {
 }
 
 /**
- * @brief Inserts a key-value pair into the AVL tree.
- * 
- * This is a recursive function that attempts to insert the key-value pair into the tree.
- * If the key already exists, it does not insert a new pair. The function returns the node
- * where the insertion occurred or  `NULL` if the key is already in the tree.
- * 
- * After the insertion, the function ensures the tree is balanced by checking the heights
- * of nodes and performing rotations as necessary.
- * 
- * @param tree A pointer to the AVL tree structure.
- * @param node A pointer to the current node in the tree.
- * @param key A pointer to the key to insert.
- * @param value A pointer to the value associated with the key.
- * @param old_value A pointer to pointer to the previous value associated with the key.
- * 
- * @return The node where the key-value pair was inserted or `NULL` if the key already exists.
+ * @brief Inserts or replaces a value, then restores AVL balance.
+ * Replaced values are destroyed through the callback, or returned through old_value.
  */
 static avl_node_t *insert(avl_tree_t *tree, avl_node_t *node, void *key,
         value_t value, value_t *old_value) {
@@ -174,7 +102,7 @@ static avl_node_t *insert(avl_tree_t *tree, avl_node_t *node, void *key,
     }
 
     int cmp = tree->comparator(key, node->key);
-    
+
     if (cmp < 0) {
         node->left = insert(tree, node->left, key, value, old_value);
     } else if (cmp > 0) {
@@ -197,12 +125,6 @@ static avl_node_t *insert(avl_tree_t *tree, avl_node_t *node, void *key,
 
 /**
  * @brief Arena-backed insertion helper.
- * @param tree A pointer to the AVL tree with arena structure.
- * @param node A pointer to the current node in the tree.
- * @param key A pointer to the key to insert.
- * @param value A pointer to the value associated with the key.
- * @param old_value A pointer to pointer to the previous value associated with the key.
- * 
  * @return The node where the key-value pair was inserted or `NULL` if the key already exists.
  */
 static avl_node_t *insert_arena(avl_tree_arena_t *tree, avl_node_t *node, void *key,
@@ -241,22 +163,13 @@ static avl_node_t *insert_arena(avl_tree_arena_t *tree, avl_node_t *node, void *
 
 /**
  * @brief Recursively searches for a node with the specified key in the AVL tree.
- * 
- * This is a helper function that performs a recursive search to find the node
- * associated with the given key. The function uses the tree's comparator to compare
- * the key with each node in the tree.
- * 
- * @param tree A pointer to the AVL tree structure.
- * @param node The current node being examined.
- * @param key A pointer to the key to search for.
- * 
  * @return A pointer to the node with the specified key, or `NULL` if no such node is found.
  */
 static avl_node_t *find(const avl_tree_t *tree, avl_node_t *node, const void *key) {
     if (!node) return NULL;
 
     int cmp = tree->comparator(key, node->key);
-    
+
     if (cmp < 0) {
         return find(tree, node->left, key);
     } else if (cmp > 0) {
@@ -266,16 +179,7 @@ static avl_node_t *find(const avl_tree_t *tree, avl_node_t *node, const void *ke
     }
 }
 
-/**
- * @brief Recursively performs an in-order traversal of the AVL tree.
- * 
- * This is a helper function that recursively traverses the AVL tree in an in-order
- * manner and applies the provided function to each key-value pair, passing the user data.
- * 
- * @param node The current node to process.
- * @param func A pointer to the function to apply to each key-value pair.
- * @param user_data A pointer to user data that will be passed to the callback function.
- */
+/** @brief Recursively performs an in-order traversal of the AVL tree. */
 static void inorder_traversal(avl_node_t *node,
         void (*func)(void* user_data, void* key, value_t value), void *user_data) {
     if (node) {
@@ -287,11 +191,7 @@ static void inorder_traversal(avl_node_t *node,
 
 /**
  * @brief Recursively destroys all nodes in the AVL tree.
- * 
- * This is a helper function that recursively traverses the AVL tree and frees all nodes.
- * 
- * @param tree AVL tree that owns the nodes.
- * @param node The current node to destroy.
+ * `tree`: AVL tree that owns the nodes.
  */
 static void destroy_nodes(avl_tree_t *tree, avl_node_t *node) {
     if (node) {
@@ -311,10 +211,6 @@ static void destroy_nodes(avl_tree_t *tree, avl_node_t *node) {
  * @brief Recursively clones nodes preserving the exact tree shape.
  *
  * This does not insert nodes through AVL logic, so it runs in O(N) and does not rebalance.
- *
- * @param tree Source tree whose copy callbacks are used.
- * @param node Source node.
- * @return Cloned node.
  */
 static avl_node_t *clone_nodes(const avl_tree_t *tree, const avl_node_t *node) {
     if (!node) {
@@ -333,11 +229,6 @@ static avl_node_t *clone_nodes(const avl_tree_t *tree, const avl_node_t *node) {
  * @brief Recursively clones nodes into an arena preserving the exact tree shape.
  *
  * This does not insert nodes through AVL logic, so it runs in O(N) and does not rebalance.
- *
- * @param arena Arena used for allocation.
- * @param tree Source tree whose copy callbacks are used.
- * @param node Source node.
- * @return Cloned node.
  */
 static avl_node_t *clone_nodes_arena(arena_t *arena,
         const avl_tree_t *tree, const avl_node_t *node) {
@@ -355,7 +246,7 @@ static avl_node_t *clone_nodes_arena(arena_t *arena,
 
 avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*)) {
     avl_tree_t *tree = (avl_tree_t *)CALLOC(sizeof(avl_tree_t));
-    tree->root = NULL; 
+    tree->root = NULL;
     tree->comparator = comparator;
     return tree;
 }

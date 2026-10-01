@@ -2,24 +2,13 @@
  * @file messages.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Definitions for localized error messages.
- * 
- * This file defines the structure for holding localized error messages used during the parsing
- * of source code and the compilation to bytecode. It supports multiple languages by storing
- * different sets of messages.
  */
 
 #pragma once
 
 #include <wchar.h>
 
-/**
- * @struct messages_t
- * @brief Structure to hold localized error messages.
- * 
- * This structure contains pointers to localized error messages, which are used during
- * the parsing and compilation process. Each message is a wide-character string. The messages
- * include various error messages related to symbol recognition, and more can be added as needed.
- */
+/** @brief Structure to hold localized error messages. */
 typedef struct {
     const wchar_t const *help;
     const wchar_t const *memory_leak;
@@ -62,36 +51,11 @@ typedef struct {
     // add other
 } messages_t;
 
-/**
- * @brief Returns the current set of messages based on the selected language.
- * 
- * This function returns a pointer to the `messages_t` structure, which contains 
- * the localized error messages used during the parsing of source code and 
- * compilation to bytecode, for the selected language.
- * 
- * @return A pointer to the current `messages_t` structure.
- */
+/** @brief Returns the current set of messages based on the selected language. */
 const messages_t *get_messages();
 
-/**
- * @brief Sets the language for error messages.
- * 
- * This function selects the language for error messages based on the provided language code.
- * The language code is compared case-insensitively.
- * 
- * @param lang The language code (for now, "en" for English, "ru" for Russian).
- */
+/** @brief Sets the language for error messages. */
 void set_language(const char *lang);
 
-/**
- * @brief Initializes the message structure based on the environment variable.
- * 
- * This function reads the `GOAT_LANGUAGE` environment variable and, if set, uses its value
- * to set the language for error and informational messages.
- * 
- * If the environment variable is not set, the default language will be English.
- * 
- * @note This function is called automatically at program startup to ensure the correct
- *  language is used based on the environment settings.
- */
+/** @brief Initializes the message structure based on the environment variable. */
 void init_messages();

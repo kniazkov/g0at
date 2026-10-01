@@ -29,18 +29,7 @@ bool test_memory_allocation() {
     return true;
 }
 
-/**
- * @brief Callback function for iterating over the AVL tree.
- * 
- * This function is used as a callback for `avl_tree_for_each`. It adds each key from the AVL
- * tree to the provided vector.
- * 
- * @param user_data A pointer to user-specific data, in this case, a pointer to a vector.
- * @param key A pointer to the key of the current node in the AVL tree.
- * @param value Value associated with the key in the AVL tree.
- * 
- * @note The function adds each key to the vector passed via `user_data`.
- */
+/** @brief Callback function for iterating over the AVL tree. */
 static void avl_callback(void *user_data, void *key, value_t value) {
     vector_t *keys = (vector_t *)user_data;
     append_to_vector(keys, WSTRDUP((wchar_t *)key));

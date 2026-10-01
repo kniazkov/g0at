@@ -2,10 +2,6 @@
  * @file common_methods.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implements common methods for the Goat nodes.
- * 
- * This file provides implementations of methods that are shared across multiple 
- * node implementations in the Goat language. These methods are defined separately 
- * to ensure code reuse and maintainability.
  */
 
 #include "common_methods.h"

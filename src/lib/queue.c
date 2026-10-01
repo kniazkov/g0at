@@ -2,10 +2,6 @@
  * @file queue.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of functions for a FIFO queue.
- *
- * This source file contains the implementation of a simple queue data structure.
- * The queue stores pointers to arbitrary data and supports appending elements to
- * the end and removing elements from the beginning.
  */
 
 #include "queue.h"

@@ -2,10 +2,6 @@
  * @file static_string.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the static string expression.
- * 
- * This file defines the behavior of the static string expression, which represents a literal
- * string value in the syntax tree. Static strings are immutable and directly correspond to
- * string literals in the source code.
  */
 
 #include <memory.h>
@@ -20,36 +16,19 @@
 #include "codegen/source_builder.h"
 
 /**
- * @struct static_string_t
- * @brief Represents a static string expression node.
- * 
- * This structure defines a static string expression in the syntax tree. A static string
- * is a literal value that appears in the source code and is immutable. The structure
- * extends `expression_t` and includes additional fields for storing the string's value
- * and its length.
+ * @brief A static string expression node.
+ *
+ * A static string is a literal value that appears in the source code and is immutable.
  */
 typedef struct {
-    /**
-     * @brief Base expression structure from which static_string_t inherits.
-     */
+    /** @brief Base expression structure from which static_string_t inherits. */
     expression_t base;
 
-    /**
-     * @brief Lattice element containing the string.
-     */
+    /** @brief Lattice element containing the string. */
     string_constant_element_t element;
 } static_string_t;
 
-/**
- * @brief Gets the string data of a static string node.
- *
- * Returns the literal string value together with a string-literal display
- * classification. The returned string_value_t shares the same memory and does
- * not need freeing.
- *
- * @param node Pointer to the static string node.
- * @return Display value containing the string literal data.
- */
+/** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t get_data(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
     return (node_display_value_t){
@@ -58,50 +37,19 @@ static node_display_value_t get_data(const node_t *node) {
     };
 }
 
-/**
- * @brief Calculates the lattice value for a static string literal node.
- *
- * The node is expected to be a static string expression. The result is an exact
- * string constant lattice element containing the literal string stored in the
- * node.
- *
- * @param node A pointer to the static string node.
- * @param state Current abstract state.
- * @param arena Memory arena used to allocate the resulting lattice element.
- * @return Constant pointer to the calculated string constant lattice element.
- */
+/** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const static_string_t *expr = (const static_string_t *)node;
     return &expr->element.base;
 }
 
-/**
- * @brief Converts a static string expression to its string representation.
- * 
- * This function converts the given static string expression to its representation as it would
- * appear in the source code, including surrounding quotes and escaped characters (e.g., `\n`,
- * `\t`, `\\`). The resulting string is generated in a notation suitable for embedding in other
- * contexts, such as code generation.
- * 
- * @param node A pointer to the static string expression node.
- * @return A `string_value_t` containing the formatted string representation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
     return string_to_string_notation(L"", VIEW_TO_VALUE(expr->element.value));
 }
 
-/**
- * @brief Generates indented Goat source code for a static string literal expression.
- * 
- * This function implements the virtual method for generating Goat source code that represents
- * a string literal. It outputs the string in proper Goat syntax, including escaping special
- * characters and wrapping the content in quotation marks.
- *
- * @param node Pointer to the AST node representing the string literal.
- * @param builder Pointer to the source builder where generated code will be stored.
- * @param indent The current indentation level (in tabs) for code generation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
     const static_string_t *expr = (const static_string_t *)node;
@@ -111,17 +59,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     );
 }
 
-/**
- * @brief Generates bytecode for a static string node.
- * 
- * This function generates bytecode for a static string node by first adding the string
- * to the data segment, and then generating a `SLOAD` instruction with the index of the
- * string in the data segment. 
- * @param node A pointer to the node representing a static string.
- * @param code A pointer to the `code_builder_t` structure used for generating instructions.
- * @param data A pointer to the `data_builder_t` structure used for managing the data segment.
- * @return The instruction index of the first emitted instruction.
- */
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const static_string_t *expr = (const static_string_t *)node;
@@ -129,13 +67,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     return add_instruction(code, (instruction_t){ .opcode = SLOAD, .arg1 = index });
 }
 
-/**
- * @brief Virtual table for static string expressions.
- * 
- * This virtual table provides the implementation of operations specific to static string
- * expressions. It contains function pointers for operations such as converting the static string
- * to a string representation and generating the corresponding bytecode.
- */
+/** @brief Virtual table for static string expressions. */
 static node_vtbl_t static_string_vtbl = {
     .type = NODE_STATIC_STRING,
     .type_name = L"static string",

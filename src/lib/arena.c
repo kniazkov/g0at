@@ -2,15 +2,6 @@
  * @file arena.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of memory arena management functions.
- *
- * This file contains the implementation of a memory arena, a memory allocation scheme that manages
- * large blocks of memory (chunks) and allocates smaller portions from them.
- * The memory is allocated in chunks, and individual deallocations are not supported.
- * Instead, the entire memory arena is freed when it is no longer needed.
- *
- * The functions in this file allow the initialization, allocation, and freeing of memory
- * within the arena. Memory is allocated in blocks, and each block can be used to serve
- * multiple allocation requests.
  */
 
 #include <memory.h>
@@ -23,12 +14,7 @@
 #include "allocate.h"
 #include "string_ext.h"
 
-/**
- * @brief Allocates a new chunk with the specified payload size.
- *
- * @param size Size of the chunk payload in bytes.
- * @return Pointer to the allocated chunk.
- */
+/** @brief Allocates a new chunk with the specified payload size. */
 static chunk_t *create_chunk(size_t size) {
     if (size > SIZE_MAX - sizeof(chunk_t)) {
         fprintf(stderr, "\nArena size overflow.\n");
@@ -44,11 +30,8 @@ static chunk_t *create_chunk(size_t size) {
 /**
  * @brief Calculates the chunk size in bytes based on the given size in kilobytes.
  *
- * This function converts the specified size from kilobytes to bytes and subtracts
- * the memory overhead required for the chunk header and additional alignment padding.
- *
- * @param kilobytes Desired chunk size in kilobytes.
- * @return Adjusted chunk size in bytes, suitable for arena allocation.
+ * Converts the specified size from kilobytes to bytes and subtracts the memory overhead required
+ * for the chunk header and additional alignment padding.
  */
 static inline size_t calculate_chunk_size(size_t kilobytes) {
     if (kilobytes == 0) {

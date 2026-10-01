@@ -11,12 +11,7 @@
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 
-/**
- * @brief Describes the properties of a bytecode instruction.
- * 
- * This structure contains metadata about a specific bytecode instruction,
- * including its mnemonic code and information about its operands.
- */
+/** @brief Describes the properties of a bytecode instruction. */
 typedef struct {
     const wchar_t *code; /**< The opcode name as a wide-character string. */
     bool has_flags; /**< Indicates if the instruction has flag bits. */
@@ -26,12 +21,7 @@ typedef struct {
     bool arg_1_is_string; /**< Indicates if `arg1` is a string reference. */
 } instruction_descriptor_t;
 
-/**
- * @brief An array of instruction descriptors defining the available bytecode instructions.
- * 
- * This static array provides metadata for each instruction in the bytecode system,
- * including its opcode name and operand properties.
- */
+/** @brief An array of instruction descriptors defining the available bytecode instructions. */
 static instruction_descriptor_t descriptors[] =
 {
       { .code = L"NOP" }
@@ -70,31 +60,19 @@ static instruction_descriptor_t descriptors[] =
     , { .code = L"LEAVE" }
 };
 
-/**
- * @brief Defines the column width for instruction numbers in the bytecode text representation.
- */
+/** @brief Defines the column width for instruction numbers in the bytecode text representation. */
 #define NUMBER_COLUMN_SIZE 8
 
-/**
- * @brief Defines the column width for opcodes in the bytecode text representation.
- */
+/** @brief Defines the column width for opcodes in the bytecode text representation. */
 #define OPCODE_COLUMN_SIZE 11
 
-/**
- * @brief Defines the column width for flag bits in the bytecode text representation.
- */
+/** @brief Defines the column width for flag bits in the bytecode text representation. */
 #define FLAGS_COLUMN_SIZE 9
 
-/**
- * @brief Defines the column width for the first argument (arg0) in the bytecode
- *  text representation.
- */
+/** @brief Defines the column width for the first argument (arg0) in the bytecode text representation. */
 #define ARG0_COLUMN_SIZE 6
 
-/**
- * @brief Defines the column width for the second argument (arg1) in the bytecode
- *  text representation.
- */
+/** @brief Defines the column width for the second argument (arg1) in the bytecode text representation. */
 #define ARG1_COLUMN_SIZE 12
 
 string_value_t bytecode_to_text(const bytecode_t *code) {

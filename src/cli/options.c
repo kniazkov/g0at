@@ -2,10 +2,6 @@
  * @file options.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of command-line options parsing functions.
- *
- * This file contains the implementation of the functions responsible for parsing the
- * command-line options provided by the user. It processes the input arguments, validates
- * them, and stores the parsed options in a structured format.
  */
 
 #include <stdio.h>
@@ -17,14 +13,7 @@
 #include "lib/io.h"
 #include "resources/messages.h"
 
-/**
- * @brief Checks if the graph output filename has a valid extension and format.
- * This function validates that the provided filename:
- * - Ends with either .png or .svg extension
- * - Is not an empty string
- * @param filename The filename to validate
- * @return true if filename is valid, false otherwise
- */
+/** @brief Accepts nonempty PNG or SVG output names. */
 static bool check_graph_file(const char *filename) {
     if (filename == NULL || *filename == '\0') {
         return false;
@@ -63,7 +52,7 @@ options_t *parse_options(int argc, char **argv) {
         if (strcmp(arg, "/?") == 0) {
             goto help;
         }
-        
+
         if (arg[0] == '-') {
             if (strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0) {
                 goto help;
@@ -73,7 +62,7 @@ options_t *parse_options(int argc, char **argv) {
                 opt->enable_warnings = true;
                 continue;
             }
-            
+
             if (strcmp(arg, "--print-bytecode") == 0) {
                 opt->print_bytecode = true;
                 continue;
@@ -90,7 +79,7 @@ options_t *parse_options(int argc, char **argv) {
                     goto error;
                 }
                 opt->graph_output_file = create_path(argv[++index]);
-                if (strcasecmp(opt->graph_output_file->extension, "png") != 0 
+                if (strcasecmp(opt->graph_output_file->extension, "png") != 0
                         && strcasecmp(opt->graph_output_file->extension, "svg") != 0) {
                     fprintf_utf8(stderr, get_messages()->bad_graph_file);
                     goto error;

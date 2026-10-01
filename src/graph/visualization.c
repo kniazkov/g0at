@@ -2,9 +2,6 @@
  * @file visualization.c
  * @copyright 2026 Ivan Kniazkov
  * @brief AST visualization using GraphViz DOT format.
- * 
- * Provides functionality to convert abstract syntax trees to DOT format
- * and generate graph images using GraphViz 'dot' tool.
  */
 
 #include "variable.h"
@@ -28,19 +25,7 @@ bool is_graphviz_available() {
 #endif
 }
 
-/**
- * @brief Processes input string with trimming, escaping and length limiting
- * 
- * Handles:
- * - Empty input (returns empty string)
- * - Newlines, tabs, quotes (converts to visible escape sequences)
- * - HTML special characters (converts to entities)
- * - Length limit (50 chars + ellipsis if truncated)
- * 
- * @param input Input string to process
- * @param quotes Adds quotation marks at the beginning and end
- * @return string_value_t Processed string (allocated, needs freeing)
- */
+/** @brief Processes input string with trimming, escaping and length limiting */
 string_value_t trim_and_escape_html_entities(string_value_t input, bool quotes) {
     if (input.length == 0) {
         return EMPTY_STRING_VALUE;
@@ -58,10 +43,10 @@ string_value_t trim_and_escape_html_entities(string_value_t input, bool quotes) 
 
     for (size_t index = 0; index < input.length; index++) {
         wchar_t c = input.data[index];
-        
+
         size_t char_len = 1;
         switch (c) {
-            case '\n': case '\r': case '\t': 
+            case '\n': case '\r': case '\t':
             case '\"': case '\'': case '\\':
                 char_len = 2;
                 break;
@@ -105,19 +90,7 @@ string_value_t trim_and_escape_html_entities(string_value_t input, bool quotes) 
     return (string_value_t){ builder.data, builder.length, true };
 }
 
-/**
- * @brief Builds a table with additional node properties.
- *
- * Uses the node virtual-table helpers to retrieve debug/visualization
- * properties exposed by the node. If the node has no properties, returns an
- * empty string value.
- *
- * The resulting string is intended to be embedded directly into a GraphViz HTML
- * label below the node's main data.
- *
- * @param node Node whose properties should be rendered.
- * @return HTML fragment with a two-column property table, or empty string.
- */
+/** @brief Builds a table with additional node properties. */
 static string_value_t build_node_properties_html(const node_t *node) {
     size_t count = get_node_property_count(node);
     if (count == 0) {
@@ -151,27 +124,10 @@ static string_value_t build_node_properties_html(const node_t *node) {
 
 /**
  * @brief Recursively converts an AST node and its child subtree to DOT format.
- *
- * Emits the DOT node definition for the given AST node, recursively emits all
- * child nodes, and writes DOT edges for direct parent-child relationships.
- *
- * During traversal, the function also fills two helper collections used by
- * later visualization passes:
- * - `all_nodes` receives every visited AST node in traversal order.
- * - `nodes_to_ids` maps each AST node pointer to its generated DOT node ID.
- *
- * @param node Node to convert. Must not be NULL.
- * @param last_node_id Pointer to the last assigned DOT node ID. Incremented for
- *        each emitted node.
- * @param all_nodes Vector that receives all visited AST nodes.
- * @param nodes_to_ids AVL tree mapping AST node pointers to DOT node IDs.
- * @param current_scope_id Scope ID of the surrounding scope cluster.
- * @param indent DOT source indentation level.
- * @param builder Source builder accumulating DOT output.
- * @return Generated DOT node ID for `node`.
+ * `node`: Node to convert. Must not be NULL.
  */
 static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all_nodes,
-        avl_tree_t* nodes_to_ids, unsigned int current_scope_id, 
+        avl_tree_t* nodes_to_ids, unsigned int current_scope_id,
         size_t indent, source_builder_t* builder) {
     bool new_scope = false;
     if (node->scope->id != current_scope_id) {
@@ -188,7 +144,7 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
     }
     uint32_t id = ++(*last_node_id);
     append_to_vector(all_nodes, (void*)node);
-    set_in_avl_tree(nodes_to_ids, (void*)node, (value_t){ .uint32_val = id });        
+    set_in_avl_tree(nodes_to_ids, (void*)node, (value_t){ .uint32_val = id });
     const wchar_t* name = node->vtbl->type_name;
     node_display_value_t value = get_node_data(node);
     string_value_t properties = build_node_properties_html(node);
@@ -286,22 +242,7 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
     return id;
 }
 
-/**
- * @brief Emits DOT edges for non-child relations between AST nodes.
- *
- * Iterates over all AST nodes collected during DOT generation and emits dashed
- * edges for every related node exposed by the node virtual table. These edges
- * represent semantic links rather than parent-child AST structure, such as a
- * variable usage referring to its declarator.
- *
- * The function uses `nodes_to_ids` to translate AST node pointers into DOT node
- * IDs assigned earlier by `node_to_dot()`.
- *
- * @param all_nodes Vector containing all AST nodes visited by `node_to_dot()`.
- * @param nodes_to_ids AVL tree mapping AST node pointers to DOT node IDs.
- * @param indent DOT source indentation level.
- * @param builder Source builder accumulating DOT output.
- */
+/** @brief Emits DOT edges for non-child relations between AST nodes. */
 static void append_related_edges_to_dot(const vector_t *all_nodes, const avl_tree_t *nodes_to_ids,
         size_t indent, source_builder_t *builder) {
     for (size_t node_index = 0; node_index < all_nodes->size; node_index++) {
@@ -339,16 +280,7 @@ static void append_related_edges_to_dot(const vector_t *all_nodes, const avl_tre
     }
 }
 
-/**
- * @brief Compares two AST node pointers for AVL tree ordering.
- *
- * Provides a stable ordering over node addresses so AST node pointers can be
- * used as keys in the `nodes_to_ids` map.
- *
- * @param first First node pointer key.
- * @param second Second node pointer key.
- * @return -1 if `first` is lower than `second`, +1 if greater, or 0 if equal.
- */
+/** @brief Compares two AST node pointers for AVL tree ordering. */
 static int node_comparator(const void *first, const void *second) {
     uintptr_t first_value = (uintptr_t)first;
     uintptr_t second_value = (uintptr_t)second;
@@ -418,6 +350,6 @@ cleanup:
     remove(dot_file);
     FREE(dot_file);
     FREE_STRING(dot_code);
- 
+
     return result;
 }

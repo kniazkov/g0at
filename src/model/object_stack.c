@@ -2,9 +2,6 @@
  * @file object_stack.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implements the stack structure and operations for managing Goat objects.
- *
- * This file provides the implementation for a stack that stores Goat objects. It includes
- * functions for creating, pushing, popping, peeking, and destroying the stack.
  */
 
 #include <assert.h>
@@ -13,9 +10,7 @@
 #include "object.h"
 #include "lib/allocate.h"
 
-/**
- * @brief Default initial capacity for the stack.
- */
+/** @brief Default initial capacity for the stack. */
 #define DEFAULT_CAPACITY 128
 
 object_stack_t *create_object_stack() {

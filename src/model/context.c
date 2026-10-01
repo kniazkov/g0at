@@ -1,12 +1,8 @@
 /**
  * @file context.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Implements the creation, management, and destruction of execution contexts
- *  in the Goat programming language.
- * 
- * This file contains the implementations for functions related to managing contexts
- * in Goat. Contexts are a core concept used to encapsulate the execution state of a program,
- * allowing for structured program execution and flow control.
+ * @brief Implements the creation, management, and destruction of execution contexts in the Goat
+ * programming language.
  */
 
 #include "context.h"

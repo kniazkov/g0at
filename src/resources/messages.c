@@ -2,11 +2,6 @@
  * @file messages.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implements message handling with language selection.
- * 
- * This file provides functionality for managing localized error messages in different languages.
- * The majority of the messages are related to errors encountered during the parsing of source code 
- * and compilation to bytecode. It supports selecting between English and Russian languages, 
- * and retrieving messages in the selected language.
  */
 
 #include <ctype.h>
@@ -15,13 +10,7 @@
 
 #include "messages.h"
 
-/**
- * @var english
- * @brief The message structure for English language.
- * 
- * This structure contains the English language version of the error messages, which 
- * are used during the parsing and compilation process.
- */
+/** @brief The message structure for English language. */
 static messages_t english = {
     .help =
         L"Usage: goat [options] <input_file> [script arguments...]\n"
@@ -72,13 +61,7 @@ static messages_t english = {
     .duplicate_else_branch = L"Unexpected 'else' after an existing 'else' branch",
 };
 
-/**
- * @var russian
- * @brief The message structure for Russian language.
- * 
- * This structure contains the Russian language version of the error messages, which 
- * are used during the parsing and compilation process.
- */
+/** @brief The message structure for Russian language. */
 static messages_t russian = {
     .help =
         L"Использование: goat [параметры] <входной_файл> [аргументы скрипта...]\n"
@@ -129,14 +112,7 @@ static messages_t russian = {
     .duplicate_else_branch = L"После ветки 'else' не может следовать еще одна ветка 'else'",
 };
 
-/**
- * @var messages
- * @brief Pointer to the current message structure.
- * 
- * This pointer is used to access the appropriate set of localized error messages 
- * based on the selected language. It can point to either the `english` or `russian` 
- * message structure, depending on the current language setting.
- */
+/** @brief Pointer to the current message structure. */
 static messages_t *messages = &english;
 
 const messages_t *get_messages() {
@@ -152,7 +128,7 @@ void set_language(const char *lang) {
         buff[i] = tolower(lang[i]);
     }
     buff[i] = '\0';
-    
+
     if (strcmp("ru", buff) == 0) {
         messages = &russian;
     } else {

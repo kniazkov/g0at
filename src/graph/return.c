@@ -2,10 +2,6 @@
  * @file return.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the return statement node.
- * 
- * This file defines the behavior of the `return` statement node in the abstract syntax tree.
- * The return statement is used to exit from a function and optionally provide a return value.
- * This implementation handles semantic representation and bytecode generation for return logic.
  */
 
 #include "statement.h"
@@ -20,55 +16,27 @@
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 
-/**
- * @struct return_t
- * @brief AST node representing a return statement.
- * 
- * This structure defines the `return` statement in the abstract syntax tree (AST).
- * A return statement optionally holds a value expression that specifies what value
- * should be returned from a function.
- */
+/** @brief AST node representing a return statement. */
 typedef struct {
-    /**
-     * @brief Base statement structure.
-     * 
-     * Allows the return statement to be treated as a generic statement in the AST.
-     */
+    /** @brief Base statement structure. */
     statement_t base;
 
     /**
      * @brief The expression representing the return value (optional).
-     * 
-     * This can be `NULL` for `return;` without a value, or point to an expression
-     * that produces the return value (e.g., `return x + 1;`).
+     *
+     * This can be `NULL` for `return;` without a value, or point to an expression that produces the
+     * return value (e.g., `return x + 1;`).
      */
     expression_t *value;
 } return_t;
 
-/**
- * @brief Returns the number of child nodes in a return statement.
- * 
- * A return statement has one child if it returns a value expression,
- * or zero if it is a bare `return;` without a value.
- * 
- * @param node A pointer to the return statement node.
- * @return 1 if the return statement has a value expression, 0 otherwise.
- */
+/** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t get_child_count(const node_t *node) {
     const return_t* stmt = (const return_t*)node;
     return stmt->value != NULL ? 1 : 0;
 }
 
-/**
- * @brief Retrieves the child node of a return statement by index.
- * 
- * If the return statement has a value expression, it is returned for index 0.
- * Otherwise, or if the index is out of range, `NULL` is returned.
- * 
- * @param node Pointer to the return statement node.
- * @param index Must be 0 to retrieve the return value expression.
- * @return Pointer to the return value expression node, or NULL.
- */
+/** @brief Implements @ref node_vtbl_t::get_child. */
 static node_t* get_child(const node_t *node, size_t index) {
     const return_t* stmt = (const return_t*)node;
     if (index == 0 && stmt->value) {
@@ -77,16 +45,7 @@ static node_t* get_child(const node_t *node, size_t index) {
     return NULL;
 }
 
-/**
- * @brief Returns the tag label for a child of a return statement.
- * 
- * If the return statement has a value expression and the index is 0,
- * this function returns the label "expression". Otherwise, it returns NULL.
- * 
- * @param node A pointer to the return statement node.
- * @param index Zero-based index of the child node.
- * @return A wide string label for the child node, or NULL if not applicable.
- */
+/** @brief Implements @ref node_vtbl_t::get_child_tag. */
 static const wchar_t* get_child_tag(const node_t *node, size_t index) {
     const return_t* stmt = (const return_t*)node;
     if (index == 0 && stmt->value) {
@@ -95,23 +54,7 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
     return NULL;
 }
 
-/**
- * @brief Executes abstract interpretation for a return statement node.
- *
- * Implements the `execute` virtual method for `return` nodes. The method evaluates the returned
- * expression, or uses `null` when the statement has no value, stores the resulting lattice element
- * through `state->return_value` when such storage is available, and switches the abstract control
- * flow to `FLOW_RETURN`.
- *
- * After this method has been called, enclosing statement sequences should stop
- * interpreting following statements in the current function body.
- *
- * @param node The return statement node to execute.
- * @param state Current abstract state.
- * @param arena Arena used for lattice elements produced while calculating the
- *        returned expression.
- * @return The same abstract state after applying return-statement semantics.
- */
+/** @brief Implements @ref node_vtbl_t::execute. */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
     const return_t* stmt = (const return_t*)node;
     if (state->return_value) {
@@ -123,16 +66,7 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
     return state;
 }
 
-/**
- * @brief Generates Goat source code for a return statement.
- * 
- * Produces a single-line textual representation of the return statement.
- * If the return includes a value expression, it is printed after `return`.
- * Otherwise, just `return;` is emitted.
- * 
- * @param node A pointer to the return statement node.
- * @return A `string_value_t` containing the generated Goat source code.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const return_t* stmt = (const return_t*)node;
     if (stmt->value) {
@@ -149,17 +83,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     }
 }
 
-/**
- * @brief Generates indented Goat source code for a return statement.
- * 
- * Produces a formatted representation of the return statement with the specified indentation.
- * If the return includes a value expression, it is emitted after `return`, followed by a semicolon.
- * Otherwise, just `return;` is generated.
- * 
- * @param node A pointer to the return statement node.
- * @param builder A pointer to the `source_builder_t` used to accumulate the output.
- * @param indent The number of tab characters to prepend for indentation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
        size_t indent) {
     const return_t* stmt = (const return_t*)node;
@@ -172,18 +96,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     }
 }
 
-/**
- * @brief Generates bytecode for a return statement node.
- * 
- * If the return statement includes a value, bytecode is generated for the value expression
- * first. Otherwise, a `NIL` instruction is emitted to represent an empty return.
- * In both cases, a `RET` instruction is added at the end to complete the return operation.
- * 
- * @param node A pointer to the return statement node.
- * @param code A pointer to the bytecode builder.
- * @param data A pointer to the static data builder.
- * @return The instruction index of the first emitted instruction.
- */
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const return_t* stmt = (const return_t*)node;
@@ -197,11 +110,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     return first;
 }
 
-/**
- * @brief Virtual table for return node.
- * 
- * This virtual table provides the implementation of operations specific to return nodes.
- */
+/** @brief Virtual table for return node. */
 static node_vtbl_t return_vtbl = {
     .type = NODE_RETURN,
     .type_name = L"return",
@@ -224,7 +133,7 @@ static node_vtbl_t return_vtbl = {
 };
 
 node_t *create_return_node(arena_t *arena, expression_t *value) {
-    return_t *stmt = 
+    return_t *stmt =
         (return_t *)alloc_zeroed_from_arena(arena, sizeof(return_t));
     stmt->base.base.vtbl = &return_vtbl;
     stmt->value = value;

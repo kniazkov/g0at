@@ -2,9 +2,6 @@
  * @file statement_list.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the statement_list node in the abstract syntax tree (AST).
- *
- * This node represents a list of statements enclosed in curly braces.
- * While executing, it creates a new lexical environment (scope).
  */
 
 #include <assert.h>
@@ -23,105 +20,37 @@
 #include "codegen/source_builder.h"
 
 /**
- * @struct statement_list_t
  * @brief AST node that stores a list of statements.
  *
- * Holds statements wrapped by curly braces. Execution occurs in a new lexical
- * environment created for the block.
+ * Execution occurs in a new lexical environment created for the block.
  */
 typedef struct {
-    /**
-     * @brief Base expression structure.
-     *
-     * Enables treating this node as an expression during AST traversal,
-     * analysis, source generation, and bytecode generation.
-     */
+    /** @brief Base expression structure. */
     expression_t base;
 
-    /**
-     * @brief Linked list of statements in the block.
-     *
-     * Stores statement nodes in execution order. Each list item contains a
-     * pointer to a statement node in its `value.ptr` field.
-     */
+    /** @brief Linked list of statements in the block. */
     list_t *statements;
 } statement_list_t;
 
-/**
- * @brief Returns the number of child statements in the list.
- *
- * @param node Pointer to the statement list node.
- * @return Number of child statements, or 0 for an empty list.
- */
+/** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t get_child_count(const node_t *node) {
     const statement_list_t* list = (const statement_list_t*)node;
     return list->statements->size;
 }
 
-/**
- * @brief Retrieves a specific child statement from the list.
- *
- * Performs bounds-checked indexed access through the linked list. Valid indices
- * are in the range [0, stmt_count).
- *
- * @param node Pointer to the statement list node.
- * @param index Zero-based statement index.
- * @return Pointer to the child statement node, or NULL if index is out of range.
- */
+/** @brief Implements @ref node_vtbl_t::get_child. */
 static node_t* get_child(const node_t *node, size_t index) {
     const statement_list_t* list = (const statement_list_t*)node;
     return (node_t*)get_linked_list_value(list->statements, index).ptr;
 }
 
-/**
- * @brief Inserts a child statement before another child statement.
- *
- * Searches the statement list for `before_child` and inserts `new_child`
- * immediately before it. A statement list accepts only statement nodes as
- * children. If `before_child` is not found, or `new_child` is not a statement,
- * the list remains unchanged and the function returns `false`.
- *
- * This is used by static analysis to inject synthetic statements while
- * preserving execution order.
- *
- * @param node Pointer to the statement list node.
- * @param new_child Statement node to insert.
- * @param before_child Existing child statement before which insertion should happen.
- * @return `true` if insertion succeeded, otherwise `false`.
- */
+/** @brief Implements @ref node_vtbl_t::insert_child_before. */
 static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_child) {
     statement_list_t* list = (statement_list_t*)node;
     return insert_statement_to_list_before(list->statements, new_child, before_child);
 }
 
-/**
- * @brief Calculates the abstract value of a user-defined object literal.
- *
- * A user-defined object is represented by a statement list. Calculating the
- * object therefore first executes the statements contained in that list, so
- * declarations and assignments inside the object body are reflected in the
- * current abstract state.
- *
- * After the object body has been interpreted, the expression itself still
- * produces a user-defined object value. The internal declarations describe what
- * the object contains, while the expression result describes what evaluating the
- * object literal yields.
- *
- * For example, an object literal may contain its own declarations:
- *
- *     {
- *         var x = 2;
- *     }
- *
- * Interpreting those statements records facts for the object's internal
- * declarators, but the enclosing expression still has the broad abstract value
- * `LATTICE_USER_DEFINED_OBJECT`.
- *
- * @param node A pointer to the statement-list node representing the object body.
- * @param state Current abstract state.
- * @param arena Memory arena used by statement execution and lattice operations.
- * @return User-defined object lattice element.
- */
+/** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const statement_list_t* list = (const statement_list_t*)node;
     list_item_t *item = list->statements->head;
@@ -133,37 +62,14 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     return make_user_defined_object_element();
 }
 
-/**
- * @brief Converts the statement list node to its Goat language representation.
- *
- * Produces a canonical form:
- * 1) Opening brace '{'
- * 2) Concatenation of all statements separated by a single space
- * 3) Closing brace '}'
- *
- * Empty lists are rendered as "{ }".
- *
- * @param node Pointer to the statement list node.
- * @return string_value_t containing the formatted representation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const statement_list_t* list = (const statement_list_t*)node;
     string_builder_t builder = { 0 };
     return generate_goat_code_from_statement_list(list->statements, &builder, true);
 }
 
-/**
- * @brief Generates properly indented Goat source code for the statement list.
- *
- * Formatting rules:
- * - Braces appear around the block.
- * - Nested statements increase indentation by one tab level.
- * - Statements follow their own indentation rules.
- *
- * @param node Pointer to the statement list node.
- * @param builder Source builder accumulating the output.
- * @param indent Base indentation level for this block.
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
         size_t indent) {
     const statement_list_t* list = (const statement_list_t*)node;
@@ -187,15 +93,9 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 /**
  * @brief Emits bytecode for the statement list.
  *
- * Execution semantics:
- * 1) ENTER — create a new lexical environment (context)
- * 2) emit bytecode for all statements within that environment
- * 3) LEAVE — restore the previous context, preserving the block's result
- *
- * @param node Pointer to the statement list node.
- * @param code Code builder receiving emitted instructions.
- * @param data Data builder for the constant pool.
- * @return Index of the first emitted instruction.
+ * Execution semantics: 1) ENTER — create a new lexical environment (context) 2) emit bytecode for
+ * all statements within that environment 3) LEAVE — restore the previous context, preserving the
+ * block's result
  */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
@@ -213,9 +113,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     return first;
 }
 
-/**
- * @brief Virtual table for the statement_list node operations.
- */
+/** @brief Virtual table for the statement_list node operations. */
 static node_vtbl_t statement_list_vtbl = {
     .type = NODE_STATEMENT_LIST,
     .type_name = L"statement_list",

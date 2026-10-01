@@ -20,9 +20,9 @@ bool test_brackets_one_level_nesting() {
     parser_memory_t memory = { arena, arena, arena, arena };
     token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
     scanner_t *scan = create_scanner(
-        "program.goat", 
-        STATIC_STRING(L"aaa ( \"bbb\" ccc ) ddd "), 
-        &memory, 
+        "program.goat",
+        STATIC_STRING(L"aaa ( \"bbb\" ccc ) ddd "),
+        &memory,
         groups
     );
     token_list_t tokens;
@@ -47,7 +47,7 @@ bool test_brackets_two_levels_nesting() {
     parser_memory_t memory = { arena, arena, arena, arena };
     token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
     scanner_t *scan = create_scanner(
-        "program.goat", 
+        "program.goat",
         STATIC_STRING(L"aaa ( \"bbb\" [ ccc ddd ] ) eee "),
         &memory,
         groups
@@ -77,9 +77,9 @@ bool test_unclosed_bracket() {
     parser_memory_t memory = { arena, arena, arena, arena };
     token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
     scanner_t *scan = create_scanner(
-        "program.goat", 
-        STATIC_STRING(L"aaa ( bbb"), 
-        &memory, 
+        "program.goat",
+        STATIC_STRING(L"aaa ( bbb"),
+        &memory,
         groups
     );
     token_list_t tokens;
@@ -103,9 +103,9 @@ bool test_missing_opening_bracket() {
     parser_memory_t memory = { arena, arena, arena, arena };
     token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
     scanner_t *scan = create_scanner(
-        "program.goat", 
-        STATIC_STRING(L"aaa \n bbb ] ccc"), 
-        &memory, 
+        "program.goat",
+        STATIC_STRING(L"aaa \n bbb ] ccc"),
+        &memory,
         groups
     );
     token_list_t tokens;
@@ -127,7 +127,7 @@ bool test_closing_bracket_does_not_match_opening() {
     parser_memory_t memory = { arena, arena, arena, arena };
     token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
     scanner_t *scan = create_scanner(
-        "program.goat", 
+        "program.goat",
         STATIC_STRING(L"aaa { bbb \n ccc ] ddd"),
         &memory,
         groups

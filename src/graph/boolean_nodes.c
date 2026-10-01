@@ -1,12 +1,6 @@
 /**
- * @file boolean_nodes.c
- * © 2025 Ivan Kniazkov
+ * @file boolean_nodes.c © 2025 Ivan Kniazkov
  * @brief Implementation of the boolean literal expressions (`true` and `false`).
- *
- * This file defines the behavior of the boolean literal expressions, which represent
- * the logical constants `true` and `false` in the syntax tree. Each value is modeled
- * as a singleton node (no per-node state) and can be used in variable initializers,
- * assignments, conditions, and function returns.
  */
 
 #include "expression.h"
@@ -18,98 +12,42 @@
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
 
-/**
- * @struct boolean_true_t
- * @brief Represents a boolean literal `true` expression node.
- *
- * The `true` value is a singleton logical constant. The structure extends
- * `expression_t` but contains no additional fields as no extra storage is needed.
- */
+/** @brief A boolean literal `true` expression node. */
 typedef struct {
-    /**
-     * @brief Base expression structure from which boolean_true_t inherits.
-     */
+    /** @brief Base expression structure from which boolean_true_t inherits. */
     expression_t base;
 } boolean_true_t;
 
-/**
- * @struct boolean_false_t
- * @brief Represents a boolean literal `false` expression node.
- *
- * The `false` value is a singleton logical constant. The structure extends
- * `expression_t` but contains no additional fields as no extra storage is needed.
- */
+/** @brief A boolean literal `false` expression node. */
 typedef struct {
-    /**
-     * @brief Base expression structure from which boolean_false_t inherits.
-     */
+    /** @brief Base expression structure from which boolean_false_t inherits. */
     expression_t base;
 } boolean_false_t;
 
-/**
- * @brief Calculates the abstract value of a true literal.
- *
- * A true node always represents the exact boolean value `true`, so its abstract
- * calculation returns the true lattice singleton.
- *
- * @param node A pointer to the true literal node.
- * @param state Current abstract state, unused by this implementation.
- * @param arena Memory arena, unused by this implementation.
- * @return True lattice element.
- */
+/** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate_true(node_t *node, abstract_state_t *state,
         arena_t *arena) {
     return make_true_element();
 }
 
-/**
- * @brief Converts a boolean `true` expression to its string representation.
- *
- * This function returns the string "true" as the representation of the boolean
- * `true` literal, matching how it would appear in source code. The returned
- * string is a constant value and doesn't require memory management.
- *
- * @param node A pointer to the `true` expression node (unused).
- * @return A `string_value_t` containing the literal string "true".
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code_true(const node_t *node) {
     return STATIC_STRING(L"true");
 }
 
-/**
- * @brief Generates indented Goat source code for a boolean `true` expression.
- *
- * @param node Pointer to the AST node representing the boolean `true` expression.
- * @param builder Pointer to the source builder where generated code will be stored.
- * @param indent The current indentation level (in tabs) for code generation (unused).
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code_true(const node_t *node, source_builder_t *builder,
         size_t indent) {
     append_static_source(builder, L"true");
 }
 
-/**
- * @brief Generates bytecode for a boolean `true` expression.
- *
- * This function emits the `TRUE` opcode. The `TRUE` instruction pushes the boolean
- * true value onto the virtual machine's stack when executed.
- *
- * @param node A pointer to the node representing the boolean `true` expression (unused).
- * @param code A pointer to the `code_builder_t` structure used for generating instructions.
- * @param data A pointer to the `data_builder_t` structure (unused in this case).
- * @return The instruction index of the first emitted instruction.
- */
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode_true(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     return add_instruction(code, (instruction_t){ .opcode = TRUE });
 }
 
-/**
- * @brief Virtual table for boolean `true` expressions.
- *
- * This virtual table provides the implementation of operations specific to the
- * boolean `true` literal.
- */
+/** @brief Virtual table for boolean `true` expressions. */
 static node_vtbl_t true_vtbl = {
     .type = NODE_TRUE,
     .type_name = L"true",
@@ -138,70 +76,30 @@ node_t *create_true_node(arena_t *arena) {
     return &expr->base.base;
 }
 
-/**
- * @brief Calculates the abstract value of a false literal.
- *
- * A false node always represents the exact boolean value `false`, so its abstract
- * calculation returns the false lattice singleton.
- *
- * @param node A pointer to the false literal node.
- * @param state Current abstract state, unused by this implementation.
- * @param arena Memory arena, unused by this implementation.
- * @return False lattice element.
- */
+/** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate_false(node_t *node, abstract_state_t *state,
         arena_t *arena) {
     return make_false_element();
 }
 
-/**
- * @brief Converts a boolean `false` expression to its string representation.
- *
- * This function returns the string "false" as the representation of the boolean
- * `false` literal, matching how it would appear in source code. The returned
- * string is a constant value and doesn't require memory management.
- *
- * @param node A pointer to the `false` expression node (unused).
- * @return A `string_value_t` containing the literal string "false".
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code_false(const node_t *node) {
     return STATIC_STRING(L"false");
 }
 
-/**
- * @brief Generates indented Goat source code for a boolean `false` expression.
- *
- * @param node Pointer to the AST node representing the boolean `false` expression.
- * @param builder Pointer to the source builder where generated code will be stored.
- * @param indent The current indentation level (in tabs) for code generation (unused).
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code_false(const node_t *node, source_builder_t *builder,
         size_t indent) {
     append_static_source(builder, L"false");
 }
 
-/**
- * @brief Generates bytecode for a boolean `false` expression.
- *
- * This function emits the `FALSE` opcode. The `FALSE` instruction pushes the boolean
- * false value onto the virtual machine's stack when executed.
- *
- * @param node A pointer to the node representing the boolean `false` expression (unused).
- * @param code A pointer to the `code_builder_t` structure used for generating instructions.
- * @param data A pointer to the `data_builder_t` structure (unused in this case).
- * @return The instruction index of the first emitted instruction.
- */
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode_false(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     return add_instruction(code, (instruction_t){ .opcode = FALSE });
 }
 
-/**
- * @brief Virtual table for boolean `false` expressions.
- *
- * This virtual table provides the implementation of operations specific to the
- * boolean `false` literal.
- */
+/** @brief Virtual table for boolean `false` expressions. */
 static node_vtbl_t false_vtbl = {
     .type = NODE_FALSE,
     .type_name = L"false",

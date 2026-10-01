@@ -11,24 +11,17 @@
 
 #include "allocate.h"
 
-/**
- * @brief The extra number of debug bytes added to the allocated block size 
- *  when MEMORY_DEBUG is enabled.
- */
+/** @brief The extra number of debug bytes added to the allocated block size when MEMORY_DEBUG is enabled. */
 #ifdef MEMORY_DEBUG
     #define EXTRA_DEBUG_BYTES 8
 #else
     #define EXTRA_DEBUG_BYTES 0
 #endif
 
-/**
- * @brief Tracks the total allocated memory size.
- */
+/** @brief Tracks the total allocated memory size. */
 static size_t allocated_memory_size = 0;
 
-/**
- * @brief Structure used for storing the size of allocated memory block.
- */
+/** @brief Structure used for storing the size of allocated memory block. */
 typedef struct memory_header_t memory_header_t;
 struct memory_header_t {
     _Alignas(max_align_t) size_t size; /**< Payload size; preserve malloc alignment. */
@@ -41,14 +34,10 @@ struct memory_header_t {
 };
 
 #ifdef MEMORY_DEBUG
-/**
- * @brief The first memory block in the linked block list
- */
+/** @brief The first memory block in the linked block list */
 static memory_header_t *first_block = NULL;
 
-/**
- * @brief The last memory block in the linked block list
- */
+/** @brief The last memory block in the linked block list */
 static memory_header_t *last_block = NULL;
 #endif
 

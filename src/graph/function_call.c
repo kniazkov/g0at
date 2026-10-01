@@ -2,11 +2,6 @@
  * @file function_call.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of function call expressions.
- * 
- * This file defines the behavior of the function call expression, which represents
- * a function call in the abstract syntax tree (AST). A function call consists of
- * a function object (e.g., the function being called) and a list of arguments.
- * The arguments are evaluated and passed to the function when invoked.
  */
 
 #include <assert.h>
@@ -21,73 +16,28 @@
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 
-/**
- * @struct function_call_t
- * @brief Represents a function call expression node.
- * 
- * This structure defines a function call expression in the AST. It includes
- * a reference to the function object being called and a list of arguments passed
- * to the function.
- */
+/** @brief A function call expression node. */
 typedef struct {
-    /**
-     * @brief Base expression structure from which function_call_t inherits.
-     * 
-     * This structure allows the function call node to be treated polymorphically
-     * as an `expression_t`, enabling operations such as printing and evaluation.
-     */
+    /** @brief Base expression structure from which function_call_t inherits. */
     expression_t base;
 
-    /**
-     * @brief The function object being called.
-     * 
-     * This is the expression representing the function being invoked. It could be a variable,
-     * a function literal, or some other form of callable object.
-     */
+    /** @brief The function object being called. */
     expression_t *func_object;
 
-    /**
-     * @brief The arguments passed to the function.
-     * 
-     * This array stores the expressions representing the arguments to the function.
-     * Each argument is evaluated and passed to the function when the call is made.
-     */
+    /** @brief The arguments passed to the function. */
     expression_t **args;
 
-    /**
-     * @brief The number of arguments in the function call.
-     * 
-     * This value indicates how many arguments are in the `args` array.
-     */
+    /** @brief The number of arguments in the function call. */
     size_t args_count;
 } function_call_t;
 
-/**
- * @brief Gets the child count for function call node.
- * 
- * Function call nodes contain:
- * - 1 child for the function object being called (index 0)
- * - N children for arguments (indices 1..N)
- * 
- * @param node Pointer to function call node.
- * @return Total child count (1 + number of arguments).
- */
+/** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t get_child_count(const node_t *node) {
     const function_call_t* expr = (const function_call_t*)node;
     return 1 + expr->args_count;
 }
 
-/**
- * @brief Retrieves specific child node of function call.
- * 
- * Child nodes are organized as:
- * - index 0: function object (callee)
- * - indices 1..N: arguments
- * 
- * @param node Pointer to function call node.
- * @param index Zero-based child position.
- * @return Pointer to child node or NULL.
- */
+/** @brief Implements @ref node_vtbl_t::get_child. */
 static node_t* get_child(const node_t *node, size_t index) {
     const function_call_t* expr = (const function_call_t*)node;
     if (index < 0) {
@@ -102,17 +52,7 @@ static node_t* get_child(const node_t *node, size_t index) {
     return &expr->args[index - 1]->base;
 }
 
-/**
- * @brief Gets relationship tags for function call children.
- * 
- * Provides semantic labels for:
- * - index 0: "object" (function being called)
- * - indices 1..N: NULL (arguments have no special tags)
- * 
- * @param node Unused (interface consistency).
- * @param index Child position.
- * @return "object" for index 0, NULL otherwise.
- */
+/** @brief Implements @ref node_vtbl_t::get_child_tag. */
 static const wchar_t* get_child_tag(const node_t *node, size_t index) {
     if (index == 0) {
         return L"object";
@@ -120,25 +60,13 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
     return NULL;
 }
 
-/**
- * ....
- */
+/** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const function_call_t* expr = (const function_call_t*)node;
     return make_top_element();
 }
 
-/**
- * @brief Converts a function call expression to its string representation.
- * 
- * This function converts the given function call expression to a string that represents how the
- * call would appear in source code. It includes the function name and the arguments
- * in the correct syntax.
- * 
- * @param node A pointer to the function call expression node.
- * @return A `string_value_t` containing the formatted string representation of
- *  the function call, including the function name and arguments.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const function_call_t *expr = (const function_call_t *)node;
     string_builder_t builder;
@@ -163,19 +91,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     return append_char(&builder, L')');
 }
 
-/**
- * @brief Generates indented Goat source code for a function call expression.
- *
- * This function implements the virtual method for generating Goat source code that represents
- * a function call. It handles the complete syntax including:
- * - The function name/expression
- * - Parentheses around arguments
- * - Comma-separated argument list
- *
- * @param node Pointer to the AST node representing the function call.
- * @param builder Pointer to the source builder where generated code will be stored.
- * @param indent The current indentation level (in tabs) for code generation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const function_call_t *expr = (const function_call_t *)node;
@@ -191,22 +107,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     append_static_source(builder, L")");
 }
 
-/**
- * @brief Generates bytecode for a function call expression.
- * 
- * This function generates the bytecode for a function call expression. It processes the arguments
- * of the function call first, generating the bytecode for each argument by iterating through the
- * list of arguments in reverse order. Then, it generates the bytecode for the function object
- * itself. Finally, it adds a `CALL` instruction to the bytecode, with the argument count.
- * 
- * @param node A pointer to the function call node in the abstract syntax tree.
- * @param code A pointer to the `code_builder_t` structure, which is used to build the instructions.
- * @param data A pointer to the `data_builder_t` used to manage static data.
- * @return The instruction index of the first emitted instruction.
- * 
- * @note This function assumes that the number of arguments for the function call does not exceed
- *  `UINT16_MAX` (the 16-bit unsigned integer limit).
- */
+/** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const function_call_t *expr = (const function_call_t *)node;
@@ -225,14 +126,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     return first;
 }
 
-/**
- * @brief Virtual table for function call expressions.
- * 
- * This virtual table provides the implementation of operations specific to function call
- * expressions within the abstract syntax tree (AST). Function calls in the AST consist of a
- * function object and its arguments, and this virtual table defines how to handle those
- * specific operations.
- */
+/** @brief Virtual table for function call expressions. */
 static node_vtbl_t function_call_vtbl = {
     .type = NODE_FUNCTION_CALL,
     .type_name = L"function call",
@@ -262,7 +156,7 @@ node_t *create_function_call_node_without_args(arena_t *arena, expression_t *fun
     return &expr->base.base;
 }
 
-void set_function_call_arguments(node_t *node, arena_t *arena, 
+void set_function_call_arguments(node_t *node, arena_t *arena,
         expression_t **args, size_t args_count) {
     assert(node->vtbl->type == NODE_FUNCTION_CALL);
     function_call_t *expr = (function_call_t *)node;

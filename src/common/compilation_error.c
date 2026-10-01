@@ -2,10 +2,6 @@
  * @file compilation_error.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Provides helper functions for allocating and populating compilation diagnostics.
- *
- * This file contains functions for creating and managing `compilation_error_t` structures,
- * which represent diagnostics that occur during compilation. These diagnostics include
- * information such as the source position, a descriptive message, and a severity level.
  */
 
 #include <assert.h>
@@ -18,21 +14,9 @@
 #include "scanner/token.h"
 #include "graph/node.h"
 
-/**
- * @brief Creates a compilation diagnostic from a source range and a variable argument list.
- *
- * This helper allocates and initializes a `compilation_error_t` structure, assigns the given
- * source range to it, formats the diagnostic message, and sets the severity to @ref CRITICAL.
- *
- * @param arena The memory arena for allocating the diagnostic descriptor.
- * @param position The source range associated with the diagnostic.
- * @param severity The severity of the diagnostic message.
- * @param format A format string used to generate the diagnostic message.
- * @param args Variable argument list for the format string.
- * @return A pointer to the created diagnostic descriptor.
- */
+/** @brief Creates a compilation diagnostic from a source range and a variable argument list. */
 static compilation_error_t *create_error_from_position_vargs(arena_t *arena,
-        position_range_t *position, compilation_error_severity_t severity, 
+        position_range_t *position, compilation_error_severity_t severity,
         const wchar_t *format, va_list args) {
     assert(format != NULL);
 

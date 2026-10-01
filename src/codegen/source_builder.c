@@ -2,11 +2,6 @@
  * @file source_builder.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the source builder for code generation.
- * 
- * This file contains the implementation of the `source_builder_t` structure and its related
- * functions. The source builder is responsible for generating source code in various languages,
- * such as Goat, C, and DOT. It allows for the construction of source code line by line, managing
- * indentation, and dynamically resizing the list of lines as more lines are added.
  */
 
 #include <memory.h>
@@ -15,9 +10,7 @@
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 
-/**
- * @brief Define initial capacity for the source builder's lines array
- */
+/** @brief Define initial capacity for the source builder's lines array */
 #define INITIAL_CAPACITY 64
 
 source_builder_t *create_source_builder() {
@@ -73,14 +66,10 @@ void append_source(source_builder_t *builder, const wchar_t *format, ...) {
     va_end(args);
 }
 
-/**
- * @brief Define tabulation width (one "unit" of indentation)
- */
+/** @brief Define tabulation width (one "unit" of indentation) */
 #define TAB_SIZE 4
 
-/**
- * @brief Tabulation as a set of spaces
- */
+/** @brief Tabulation as a set of spaces */
 static wchar_t *tabulation = L"    ";
 
 string_value_t build_source(source_builder_t *builder) {
@@ -100,7 +89,7 @@ string_value_t build_source(source_builder_t *builder) {
 
 void destroy_source_builder(source_builder_t *builder) {
     for (size_t index = 0; index < builder->count; index++) {
-        FREE_STRING(builder->lines[index].text);            
+        FREE_STRING(builder->lines[index].text);
     }
     FREE(builder->lines);
     FREE(builder);

@@ -2,11 +2,6 @@
  * @file parsing_scopes_and_functions.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines reduction rules for scope blocks and function declarations.
- *
- * This file contains the implementation of reduction rules specific to processing
- * curly brace-delimited scope blocks and function declarations. These rules handle:
- * - Creation of scope nodes and function declarations from brace pairs
- * - Processing of statements within scope bodies
  */
 #include <assert.h>
 
@@ -16,19 +11,9 @@
 #include "lib/arena.h"
 #include "resources/messages.h"
 
-/**
- * @brief Initializes a statement list expression node from a `{...}` block.
- * 
- * This function creates a new statement list node and replaces the original bracket-pair token
- * with an expression token referencing the statement list. It also registers the statement list in
- * the appropriate token group for later processing.
- * 
- * @param token The `{` bracket-pair token.
- * @param memory Parser memory context for allocations.
- * @param groups Token classification groups.
- */
+/** @brief Initializes a statement list expression node from a `{...}` block. */
 static void init_statement_list(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
-    node_t *node = create_statement_list_node(memory->graph); 
+    node_t *node = create_statement_list_node(memory->graph);
     token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     expr->type = TOKEN_EXPRESSION;
     expr->position = token->position;
@@ -41,19 +26,9 @@ static void init_statement_list(token_t *token, parser_memory_t *memory, token_g
     append_token_to_group(&groups->statement_lists, token);
 }
 
-/**
- * @brief Initializes a function object node for a function without arguments.
- * 
- * This function creates a function object node with no parameters and replaces
- * the relevant tokens with a single expression token. The resulting token is marked
- * for later function body processing.
- * 
- * @param token The `{` token following the `func` keyword.
- * @param memory Parser memory context for allocations.
- * @param groups Token classification groups.
- */
+/** @brief Initializes a function object node for a function without arguments. */
 static void init_function_wo_args(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
-    node_t *func_obj = create_function_object_node(memory->graph, NULL, 0); 
+    node_t *func_obj = create_function_object_node(memory->graph, NULL, 0);
     token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     collapse_tokens_to_token(memory, token->left, token,
         TOKEN_EXPRESSION, func_obj);
@@ -64,19 +39,6 @@ static void init_function_wo_args(token_t *token, parser_memory_t *memory, token
 
 /**
  * @brief Initializes a function object node with arguments.
- * 
- * This function processes the argument list of a function declaration and validates its syntax.
- * It expects a list of identifiers separated by commas. If the list is valid, it creates a 
- * `function_object_t` node and replaces the corresponding tokens with a new expression token 
- * representing the function. If an error is encountered (e.g., invalid argument or missing comma),
- * an appropriate `compilation_error_t` is returned.
- * 
- * On success, the function token is marked as `TOKEN_FUNCTION_BODY` and added to the 
- * `function_objects` group for further body processing.
- * 
- * @param token A pointer to the token representing the function's `{}` block.
- * @param memory Parser memory context for allocations.
- * @param groups Token classification groups.
  * @return A pointer to a `compilation_error_t` if an error occurred, or `NULL` on success.
  */
 static compilation_error_t *init_function_with_args(token_t *token, parser_memory_t *memory,
@@ -115,7 +77,7 @@ static compilation_error_t *init_function_with_args(token_t *token, parser_memor
         }
         arg_token = next->right;
     }
-    node_t *func_obj = create_function_object_node(memory->graph, arg_list, arg_count); 
+    node_t *func_obj = create_function_object_node(memory->graph, arg_list, arg_count);
     token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     collapse_tokens_to_token(memory, token->left->left, token,
         TOKEN_EXPRESSION, func_obj);
@@ -129,13 +91,7 @@ cleanup:
 
 /**
  * @brief Handles initial processing of scope blocks (curly brace pairs).
- * 
- * This rule matches TOKEN_BRACKET_PAIR('{') tokens and converts them into
- * scope expressions and function declarations.
- *
- * @param token The opening brace token (must be TOKEN_BRACKET_PAIR with '{').
- * @param memory Parser memory context for allocations.
- * @param groups Token classification groups.
+ * `token`: The opening brace token (must be TOKEN_BRACKET_PAIR with '{').
  * @return NULL on success, error if invalid token provided.
  */
 compilation_error_t *parsing_scopes_and_functions(token_t *token, parser_memory_t *memory,
@@ -159,16 +115,8 @@ compilation_error_t *parsing_scopes_and_functions(token_t *token, parser_memory_
 
 /**
  * @brief Processes statements within a statement list.
- * 
- * Completes scope processing by:
- * 1. Parsing all child tokens as statements
- * 2. Filling the scope node with processed statements
- * 3. Maintaining proper AST relationships
- *
- * @param token The scope expression token (must be TOKEN_EXPRESSION containing
- *  NODE_STATEMENT_LIST).
- * @param memory Parser memory context for allocations.
- * @param groups Token classification groups for statement processing.
+ * `token`: The scope expression token (must be TOKEN_EXPRESSION containing
+ * NODE_STATEMENT_LIST).
  * @return NULL on success, compilation error if statement processing fails.
  */
 compilation_error_t *parsing_statement_list_bodies(token_t *token, parser_memory_t *memory,
@@ -185,16 +133,9 @@ compilation_error_t *parsing_statement_list_bodies(token_t *token, parser_memory
 
 /**
  * @brief Processes the body of a function object.
- * 
- * This function analyzes the tokens inside a function body (enclosed by `{}`) and
- * converts them into a list of statements. It then fills the corresponding
- * `function_object_t` node with the processed statement list.
- * 
- * @param token A token representing the function body (must have type `TOKEN_FUNCTION_BODY`).
- * @param memory Parser memory context for allocations.
- * @param groups Token classification groups used for parsing.
- * @return `NULL` if processing succeeds, or a pointer to a `compilation_error_t`
- *  if an error occurred during statement processing.
+ * `token`: A token representing the function body (must have type `TOKEN_FUNCTION_BODY`).
+ * @return `NULL` if processing succeeds, or a pointer to a `compilation_error_t` if an error
+ * occurred during statement processing.
  */
 compilation_error_t *parsing_function_bodies(token_t *token, parser_memory_t *memory,
         token_groups_t *groups) {

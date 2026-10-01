@@ -6,10 +6,7 @@
 
 #pragma once
 
-/**
- * @enum model_status_t
- * @brief Status codes returned by model operations
- */
+/** @brief Status codes returned by model operations */
 typedef enum {
     MSTAT_OK = 0, /**< Operation completed successfully */
     MSTAT_IMMUTABLE_OBJECT, /**< Target object is immutable */

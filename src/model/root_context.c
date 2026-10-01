@@ -2,17 +2,6 @@
  * @file root_context.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines the root context for the Goat programming language execution.
- * 
- * The root context serves as the initial execution context when the Goat program starts. 
- * It contains all the built-in objects and functions that are available from the moment
- * the program begins. This includes essential objects such as primitive types, constants, 
- * and functions, as well as the prototype objects that form the basis for object-oriented behavior
- * in Goat.
- * 
- * As a singleton, the root context is unique for the entire execution of the program. 
- * It is used to initialize the execution environment and is typically referenced by the program
- * during the initial setup phase, where the context's data forms the foundation for all subsequent
- * program execution.
  */
 
 #include "context.h"
@@ -21,15 +10,7 @@
 #include "lib/pair.h"
 #include "lib/string_ext.h"
 
-/**
- * @brief Retrieves all property keys from the root context.
- * 
- * This function returns a static array containing the property keys associated with the root
- * context. The array is initialized lazily during the first invocation of the function.
- * 
- * @param obj The object from which to retrieve the keys (ignored).
- * @return An object array containing all property keys.
- */
+/** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
     static object_t *keys[5] = { NULL };
     if (keys[0] == NULL) {
@@ -42,17 +23,12 @@ static object_array_t get_keys(const object_t *obj) {
     return (object_array_t){ keys, sizeof(keys) / sizeof(object_t*) };
 }
 
-/**
- * @brief Retrieves the value of a property from the root context.
- * @param obj The root context object (unused in this implementation).
- * @param key The key of the property to retrieve.
- * @return The value of the property if found, otherwise `NULL`.
-*/
+/** @brief Implements @ref object_vtbl_t::get_property. */
 static object_t *get_property(const object_t *obj, const object_t *key) {
     object_t *value = NULL;
     if (key->vtbl->type == TYPE_STRING) {
         string_value_t key_str = key->vtbl->to_string(key);
-        static pair_t properties[] = { 
+        static pair_t properties[] = {
             { L"atan", get_function_atan },
             { L"pi", get_pi_object },
             { L"print", get_function_print },
@@ -70,10 +46,7 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
     return value;
 }
 
-/**
- * @var vtbl
- * @brief Virtual table defining the behavior of the object containing root context data.
- */
+/** @brief Virtual table defining the behavior of the object containing root context data. */
 static object_vtbl_t vtbl = {
     .type = TYPE_OTHER,
     .inc_ref = stub_memory_function,
@@ -109,16 +82,12 @@ static object_vtbl_t vtbl = {
     .call = stub_call
 };
 
-/**
- * @brief The singleton instance representing the object containing root context data.
- */
+/** @brief The singleton instance representing the object containing root context data. */
 static object_t root_context_data = {
     .vtbl = &vtbl
 };
 
-/**
- * @brief The singleton instance representing the root context.
- */
+/** @brief The singleton instance representing the root context. */
 static context_t root_context = {
     .data = &root_context_data,
     .jump_address = { BAD_INSTR_INDEX, BAD_INSTR_INDEX },

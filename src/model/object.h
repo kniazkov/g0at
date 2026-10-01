@@ -2,11 +2,6 @@
  * @file object.h
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines the base structure for all objects in the Goat programming language.
- * 
- * This file describes the general framework for objects in the Goat language. 
- * In Goat, all entities, including primitive types like strings and numbers, as well as functions,
- * are considered objects. The specific characteristics of each object type differ, but here we
- * define the common structure that all objects in the language will share.
  */
 
 #pragma once
@@ -15,625 +10,286 @@
 #include "model_status.h"
 #include "lib/value.h"
 
-/**
- * @typedef object_t
- * @brief Forward declaration for the object structure.
- */
 typedef struct object_t object_t;
 
-/**
- * @typedef process_t
- * @brief Forward declaration for the process structure.
- */
 typedef struct process_t process_t;
 
-/**
- * @typedef thread_t
- * @brief Forward declaration for the thread structure.
- */
 typedef struct thread_t thread_t;
 
-/**
- * @enum object_type_t
- * @brief Enumeration of object types in the Goat virtual machine.
- *
- * Each object type represents a category of objects that may be used by the virtual machine.
- * The types are utilized in comparison operations to determine the relative ordering of objects
- * and ensure correct behavior in data structures like the AVL tree.
- *
- * Types are used to compare objects in the `compare_objects` function. The comparison first
- * checks the type, and if the types are equal, it compares the content of the objects.
- */
+/** @brief Enumeration of object types in the Goat virtual machine. */
 typedef enum {
-    /**
-     * @brief Boolean type (true/false).
-     */
+    /** @brief Boolean type (true/false). */
     TYPE_BOOLEAN = 0,
 
-    /**
-     * @brief Numeric type (integer or floating-point numbers).
-     */
+    /** @brief Numeric type (integer or floating-point numbers). */
     TYPE_NUMBER = 1,
 
-    /**
-     * @brief String type (sequence of characters).
-     */
+    /** @brief String type (sequence of characters). */
     TYPE_STRING = 2,
 
-    /**
-     * @brief User-defined object type (for objects created by the user).
-     */
+    /** @brief User-defined object type (for objects created by the user). */
     TYPE_USER_DEFINED_OBJECT = 3,
 
-    /**
-     * @brief Other object type.
-     */
+    /** @brief Other object type. */
     TYPE_OTHER = 4
 } object_type_t;
 
 /**
- * @struct object_array_t
- * @brief Represents a constant array of object pointers.
- * 
- * This structure is used to store a list of constant object pointers (`object_t*`), 
- * along with the count of objects in the list. The array itself is immutable, ensuring 
- * that its contents cannot be modified after creation.
- * 
- * It is primarily used to manage collections of objects such as prototypes or topology chains.
+ * @brief A constant array of object pointers.
+ *
+ * The array itself is immutable, ensuring that its contents cannot be modified after creation.
  */
 typedef struct {
     /**
      * @brief Pointer to a constant array of object pointers.
-     * 
-     * Each element in the array is a pointer to an object. The array itself is immutable,
-     * but the objects it points to can be mutable based on their individual types.
+     *
+     * The array itself is immutable, but the objects it points to can be mutable based on their
+     * individual types.
      */
     object_t *const *items;
 
-    /**
-     * @brief The number of objects in the array.
-     * 
-     * This field specifies the total number of object pointers in the `items` array. 
-     */
+    /** @brief The number of objects in the array. */
     size_t size;
 } object_array_t;
 
-/**
- * @struct object_vtbl_t
- * @brief The virtual table structure for objects in Goat.
- * 
- * This structure contains pointers to functions that implement the behavior
- * of different object types in the Goat language. The virtual table is used
- * to enable polymorphism, allowing different object types to have their own
- * implementations for certain operations.
- */
+/** @brief The virtual table structure for objects in Goat. */
 typedef struct {
-    /**
-     * @brief The type of the object.
-     * 
-     * This field specifies the type of the object. It is used to differentiate between
-     * different object types in the virtual machine.
-     * Since the type is consistent across all objects of a given type, it is included in the
-     * virtual table rather than in each individual object. This approach allows for a more
-     * compact memory layout without adding redundant fields to each object.
-     * 
-     * @note This is not a function pointer, but is included in the virtual table to align with
-     *  the overall structure and avoid adding redundant type fields to each object.
-     */    
+    /** @brief The type of the object. */
     object_type_t type;
 
     /**
-     * @brief Function pointer for adding a reference to an object (incrementing its
-     *  reference count).
-     * 
-     * This function increments the reference count of the object to indicate that
-     * it is being referenced by another part of the program.
-     * 
-     * @param obj The object to add a reference to.
+     * @brief Adding a reference to an object (incrementing its reference count).
+     *
+     * Increments the reference count of the object to indicate that it is being referenced by
+     * another part of the program.
      */
     void (*inc_ref)(object_t *obj);
 
     /**
-     * @brief Function pointer for removing a reference from an object (decrementing its
-     *  reference count).
-     * 
-     * This function decrements the reference count of the object. When the reference count
-     * reaches zero, the object is eligible immediate destruction.
-     * 
-     * @param obj The object to remove a reference from.
+     * @brief Removing a reference from an object (decrementing its reference count).
+     *
+     * Decrements the reference count of the object. When the reference count reaches zero, the
+     * object is eligible immediate destruction.
      */
     void (*dec_ref)(object_t *obj);
 
-    /**
-     * @brief Function pointer for marking an object during garbage collection.
-     * 
-     * The `mark` function is used during the garbage collection process to identify
-     * objects that are still in use. This function typically sets a flag or performs
-     * some other operation to indicate that the object is reachable from the root set
-     * or another marked object.
-     * 
-     * @param obj The object to mark.
-     */
+    /** @brief Marking an object during garbage collection. */
     void (*mark)(object_t *obj);
 
     /**
-     * @brief Function pointer for sweeping (cleaning up) an object during garbage collection.
-     * 
-     * The `sweep` function is responsible for cleaning up objects that are no longer
-     * marked as in use. This includes either complete destruction or preparing the object
-     * for reuse (moving to object pool and marking as ZOMBIE).
-     * 
-     * @param obj The object to sweep.
-     * @return true if the object was either destroyed or moved to object pool (ZOMBIE),
-     *         false if the object was marked (still alive) and shouldn't be processed.
+     * @brief Sweeping (cleaning up) an object during garbage collection.
+     * @return true if the object was either destroyed or moved to object pool (ZOMBIE), false if
+     * the object was marked (still alive) and shouldn't be processed.
      */
     bool (*sweep)(object_t *obj);
-    
-    /**
-     * @brief Function pointer for releasing (destroying) an object.
-     * @param obj The object to release.
-     */
+
+    /** @brief Releasing (destroying) an object. */
     void (*release)(object_t *obj);
 
-    /**
-     * @brief Function pointer for comparing two objects.
-     * 
-     * This function compares two objects and determines their relative ordering. It is used
-     * in data structures such as AVL trees to maintain proper ordering of objects based on
-     * user-defined criteria.
-     * 
-     * The function returns:
-     * - A negative integer if `obj1` is less than `obj2`.
-     * - Zero if `obj1` is equal to `obj2`.
-     * - A positive integer if `obj1` is greater than `obj2`.
-     * 
-     * @param obj1 The first object to compare.
-     * @param obj2 The second object to compare.
-     * @return An integer indicating the relative order of the two objects.
-     * 
-     * @note The comparison criteria should be consistent and transitive to ensure correctness
-     *  of data structures like AVL trees that rely on this function.
-     */
+    /** @brief Comparing two objects. */
     int (*compare)(const object_t *obj1, const object_t *obj2);
 
     /**
      * @brief Creates a clone of the given object.
-     * 
-     * This function creates a new object that is a clone of the provided one. It is used to
-     * create an independent copy of an object, owned by the given process.
-     * 
-     * @param process The process that will own the cloned object.
-     * @param obj The object to be cloned.
-     * @return A pointer to the newly created clone of the object.
-     * 
+     *
+     * It is used to create an independent copy of an object, owned by the given process.
      * @note The cloned object should be independent of the original. Depending on the type of
-     *  object, additional cloning operations may be implemented.
+     * object, additional cloning operations may be implemented.
      */
     object_t* (*clone)(process_t *process, object_t *obj);
 
     /**
-     * @brief Function pointer for converting an object to its string representation.
-     * @param obj The object to convert to a string.
-     * @return The string representation of the object as a `string_value_t`.
-     * @note The returned string is dynamically allocated, and the caller must ensure that
-     *  the memory is freed after use to avoid memory leaks. The `should_free` flag in the 
-     *  `string_value_t` structure indicates whether the caller should free the memory.
+     * @brief Converting an object to its string representation.
+     * @note The returned string is dynamically allocated, and the caller must ensure that the
+     * memory is freed after use to avoid memory leaks. The `should_free` flag in the
+     * `string_value_t` structure indicates whether the caller should free the memory.
      */
     string_value_t (*to_string)(const object_t *obj);
 
     /**
-     * @brief Function pointer for converting an object to its Goat notation representation.
-     * @param obj The object to convert to Goat notation.
-     * @return The Goat notation string representation of the object as a `string_value_t`.
-     * @note The returned string is dynamically allocated, and the caller must ensure that
-     *  the memory is freed after use to avoid memory leaks. The `should_free` flag in the 
-     *  `string_value_t` structure indicates whether the caller should free the memory.
+     * @brief Converting an object to its Goat notation representation.
+     * @note The returned string is dynamically allocated, and the caller must ensure that the
+     * memory is freed after use to avoid memory leaks. The `should_free` flag in the
+     * `string_value_t` structure indicates whether the caller should free the memory.
      */
     string_value_t (*to_string_notation)(const object_t *obj);
 
-    /**
-     * @brief Function pointer for retrieving the prototypes of an object.
-     * 
-     * This function returns a constant array of prototypes associated with the object.
-     * Goat is a prototype-oriented language, meaning that objects inherit behavior and
-     * properties directly from other objects rather than from fixed classes. This allows
-     * for dynamic and flexible object creation and modification.
-     * 
-     * In Goat, an object may have more than one prototype, enabling multiple inheritance.
-     * The list of prototypes returned by this function represents the immediate prototypes
-     * of the object.
-     * 
-     * @param obj The object whose prototypes are to be retrieved.
-     * @return An array of prototypes (`const object_array_t`) associated with the object.
-     */
+    /** @brief Retrieving the prototypes of an object. */
     object_array_t (*get_prototypes)(const object_t *obj);
 
-    /**
-     * @brief Function pointer for retrieving the full prototype topology of an object.
-     * 
-     * This function returns the complete chain of prototypes associated with the object,
-     * sorted using a topological sorting algorithm. The result represents the inheritance
-     * hierarchy from the closest prototype to the most distant one. Topological sorting is used
-     * to resolve the order of traversal in the case of multiple inheritance, addressing issues
-     * such as the "diamond problem."
-     * 
-     * For objects with simple single inheritance, the topological sort reduces to a 
-     * straightforward linear vector of prototypes.
-     * 
-     * @param obj The object whose prototype topology is to be retrieved.
-     * @return An array of prototypes (`const object_array_t`) representing the full
-     *  prototype chain of the object, sorted topologically.
-     */
+    /** @brief Retrieving the full prototype topology of an object. */
     object_array_t (*get_topology)(const object_t *obj);
 
     /**
      * @brief Retrieves all property keys from an object.
-     * 
-     * This function returns an array containing references to all keys of the properties 
-     * defined on the given object. The keys are typically strings, but may be any type 
-     * of object. 
-     * 
-     * @param obj The object from which to retrieve the keys.
-     * @return An object array containing all property keys.
      * @note The memory for the returned array is managed internally by the object, and the caller
-     *  must not attempt to free or modify it.
+     * must not attempt to free or modify it.
      */
     object_array_t (*get_keys)(const object_t *obj);
 
     /**
      * @brief Retrieves the value of a property from an object.
-     * 
-     * This function retrieves the value associated with the given key in the properties
-     * of the object. The key is typically a string, but can be any object.
+     *
      * If the property does not exist, the function returns NULL.
-     * 
-     * @param obj The object from which to retrieve the property.
-     * @param key The key of the property to retrieve.
      * @return A pointer to the value of the property, or NULL if the property does not exist.
-     * 
-     * @note The behavior of this function depends on the underlying property storage and retrieval
-     *  mechanism.
      */
     object_t* (*get_property)(const object_t *obj, const object_t *key);
 
     /**
      * @brief Adds a new property to an object.
-     * 
-     * This function adds a new property to the object with the given key and value.
-     * The property can be marked as constant, which means it cannot be modified
-     * once set. The operation may fail with specific error codes indicating the reason.
-     * 
-     * @param obj The object to which the property will be added.
-     * @param key The key of the property to add.
-     * @param value The value to assign to the property.
-     * @param constant If `true`, the property will be marked as constant and
-     *        cannot be modified after creation.
-     * @return Status of the operation performed.
+     * `constant`: If `true`, the property will be marked as constant and cannot be modified
+     * after creation.
      */
     model_status_t (*create_property)(object_t *obj, object_t *key, object_t *value, bool constant);
 
-    /**
-     * @brief Sets a property on an object.
-     * 
-     * This function sets the value of a property for a given object. The property is 
-     * associated with a key (which can be any object, though typically a string).
-     * The operation may fail with specific error codes indicating the reason.
-     * 
-     * @param obj The object on which to set the property.
-     * @param key The key of the property to set.
-     * @param value The value to assign to the property.
-     * @return Status of the operation performed.
-     * 
-     * @note The implementation of this function may vary depending on the specific object type and 
-     *  constraints imposed on the properties of the object.
-     */
+    /** @brief Sets a property on an object. */
     model_status_t (*set_property)(object_t *obj, object_t *key, object_t *value);
 
-    /**
-     * @brief Function pointer for adding two objects.
-     * 
-     * The `add` function is used for executing the `ADD` operation, which adds the values
-     * of two objects and returns a new object representing the result.
-     * 
-     * @param process Process that will own the resulting object.
-     * @param obj1 Pointer to the first object to add.
-     * @param obj2 Pointer to the second object to add.
-     * @return A pointer to the resulting object of the addition.
-     */
+    /** @brief Adding two objects. */
     object_t* (*add)(process_t *process, object_t *obj1, object_t *obj2);
 
-    /**
-     * @brief Function pointer for subtracting two objects.
-     * 
-     * The `sub` function is used for executing the `SUB` operation, which subtracts the value
-     * of the second object from the first and returns a new object representing the result.
-     * 
-     * @param process Process that will own the resulting object.
-     * @param obj1 Pointer to the first object (minuend).
-     * @param obj2 Pointer to the second object (subtrahend).
-     * @return A pointer to the resulting object of the subtraction.
-     */
+    /** @brief Subtracting two objects. */
     object_t* (*subtract)(process_t *process, object_t *obj1, object_t *obj2);
 
-    /**
-     * @brief Function pointer for multiplying two objects.
-     *
-     * Executes the `MUL` operation, multiplying two objects and returning the result.
-     *
-     * @param process Process that will own the resulting object.
-     * @param obj1 First operand.
-     * @param obj2 Second operand.
-     * @return Resulting object of the multiplication.
-     */
+    /** @brief Multiplying two objects. */
     object_t* (*multiply)(process_t *process, object_t *obj1, object_t *obj2);
 
-    /**
-     * @brief Function pointer for dividing two objects.
-     *
-     * Executes the `DIV` operation, dividing the first object by the second and returning
-     * the result.
-     *
-     * @param process Process that will own the resulting object.
-     * @param obj1 Dividend.
-     * @param obj2 Divisor.
-     * @return Resulting object of the division.
-     */
+    /** @brief Dividing two objects. */
     object_t* (*divide)(process_t *process, object_t *obj1, object_t *obj2);
 
     /**
-     * @brief Function pointer for computing the remainder of division (modulo).
+     * @brief Computing the remainder of division (modulo).
      *
      * Executes the `MOD` operation, returning the remainder after division.
-     *
-     * @param process Process that will own the resulting object.
-     * @param obj1 Dividend.
-     * @param obj2 Divisor.
-     * @return Resulting object of the modulo operation.
      */
     object_t* (*modulo)(process_t *process, object_t *obj1, object_t *obj2);
 
-    /**
-     * @brief Function pointer for exponentiation (power).
-     *
-     * Executes the `POW` operation, raising the first object to the power of the second.
-     *
-     * @param process Process that will own the resulting object.
-     * @param obj1 Base.
-     * @param obj2 Exponent.
-     * @return Resulting object of the power operation.
-     */
+    /** @brief Exponentiation (power). */
     object_t* (*power)(process_t *process, object_t *obj1, object_t *obj2);
 
     /**
-     * @brief Function pointer for checking if first object is less than the second.
-     *
-     * @param obj1 First object.
-     * @param obj2 Second object.
+     * @brief Checking if first object is less than the second.
      * @return `true` if obj1 < obj2, `false` otherwise.
      */
     bool (*less)(const object_t *obj1, const object_t *obj2);
 
     /**
-     * @brief Function pointer for checking if first object is less than or equal to the second.
-     *
-     * @param obj1 First object.
-     * @param obj2 Second object.
+     * @brief Checking if first object is less than or equal to the second.
      * @return `true` if obj1 <= obj2, `false` otherwise.
      */
     bool (*less_or_equal)(const object_t *obj1, const object_t *obj2);
 
     /**
-     * @brief Function pointer for checking if first object is greater than the second.
-     *
-     * @param obj1 First object.
-     * @param obj2 Second object.
+     * @brief Checking if first object is greater than the second.
      * @return `true` if obj1 > obj2, `false` otherwise.
      */
     bool (*greater)(const object_t *obj1, const object_t *obj2);
 
     /**
-     * @brief Function pointer for checking if first object is greater than or equal to the second.
-     *
-     * @param obj1 First object.
-     * @param obj2 Second object.
+     * @brief Checking if first object is greater than or equal to the second.
      * @return `true` if obj1 >= obj2, `false` otherwise.
      */
     bool (*greater_or_equal)(const object_t *obj1, const object_t *obj2);
 
     /**
-     * @brief Function pointer for checking equality of two objects.
-     *
-     * @param obj1 First object.
-     * @param obj2 Second object.
+     * @brief Checking equality of two objects.
      * @return `true` if obj1 equals obj2, `false` otherwise.
      */
     bool (*equal)(const object_t *obj1, const object_t *obj2);
 
     /**
-     * @brief Function pointer for checking inequality of two objects.
-     *
-     * @param obj1 First object.
-     * @param obj2 Second object.
+     * @brief Checking inequality of two objects.
      * @return `true` if obj1 does not equal obj2, `false` otherwise.
      */
     bool (*not_equal)(const object_t *obj1, const object_t *obj2);
 
     /**
-     * @brief Function pointer for retrieving the boolean value of an object.
-     * 
-     * The `get_boolean_value` function retrieves the boolean representation of an object. 
-     * Every object in the system can be converted to a boolean value. For example, zero, 
-     * `null`, or empty values might be considered `false`, while others are `true`.
-     * 
-     * @param obj The object to convert to a boolean value.
-     * @return Boolean representation of the object.
+     * @brief Retrieving the boolean value of an object.
+     *
+     * For example, zero, `null`, or empty values might be considered `false`, while others are
+     * `true`.
      */
     bool (*get_boolean_value)(const object_t *obj);
 
-    /**
-     * @brief Function pointer for retrieving the integer value of an object.
-     * 
-     * The `get_integer_value` function is used to retrieve the integer value of an object, 
-     * if the object can be logically represented as an integer. If the object cannot be converted
-     * to an integer, this function returns an `int_value_t` with `has_value` set to `false` 
-     * and `value` set to an undefined state.
-     * 
-     * @param obj The object from which to retrieve the integer value.
-     * @return An `int_value_t` structure containing the integer value, or indicating that the 
-     *  value is not available if `has_value` is `false`.
-     */
+    /** @brief Converts to an integer; has_value == false means conversion is unavailable. */
     int_value_t (*get_integer_value)(const object_t *obj);
 
-    /**
-     * @brief Function pointer for retrieving the floating-point value of an object.
-     * 
-     * The `get_real_value` function retrieves the floating-point (real) value of an object, 
-     * if the object can be logically represented as a real number. If the object cannot be 
-     * converted to a real number, this function returns a `real_value_t` with `has_value` set 
-     * to `false` and `value` set to an undefined state.
-     * 
-     * @param obj The object from which to retrieve the floating-point value.
-     * @return A `real_value_t` structure containing the floating-point value, or indicating 
-     *  that the value is not available if `has_value` is `false`.
-     */
+    /** @brief Converts to a real; has_value == false means conversion is unavailable. */
     real_value_t (*get_real_value)(const object_t *obj);
 
     /**
-     * @brief Function pointer for invoking a function object.
-     *
-     * The `call` function executes a function object. It retrieves arguments from the data stack,
-     * executes the function, and pushes the return value back onto the stack.
-     *
-     * For user-defined functions, this method optionally modifies the call stack and updates the
-     * instruction pointer to indicate the next instruction to execute.
-     *
-     * @param obj Pointer to the function object being invoked.
-     * @param arg_count The number of arguments being passed to the function.
-     * @param thread Pointer to the thread in which the function is executed.
-     * @return `true` if the object is a functional object and the call was performed,
-     *  `false` otherwise.
+     * @brief Invoking a function object.
+     * @return `true` if the object is a functional object and the call was performed, `false`
+     * otherwise.
      */
     bool (*call)(object_t *obj, uint16_t arg_count, thread_t *thread);
 } object_vtbl_t;
 
 /**
- * @struct object_t
  * @brief The base object structure in Goat.
- * 
- * This structure represents the base object in the Goat programming language.
- * All objects, whether primitive types, functions, or other user-defined types,
- * share this common structure, which includes a pointer to their virtual table.
- * The virtual table enables polymorphic behavior for objects of different types.
+ *
+ * All objects, whether primitive types, functions, or other user-defined types, share this common
+ * structure, which includes a pointer to their virtual table.
  */
 struct object_t {
-    /**
-     * @brief Pointer to the object's virtual table.
-     */
+    /** @brief Pointer to the object's virtual table. */
     object_vtbl_t *vtbl;
 
     /**
      * @brief Pointer to the process that owns this object.
-     * 
-     * Each object is associated with a process that manages its lifetime. The process is 
-     * responsible for memory management, including garbage collection and object destruction.
+     *
+     * Each object is associated with a process that manages its lifetime.
      */
     process_t *process;
 
-    /**
-     * @brief Pointer to the previous object in the list.
-     * 
-     * This pointer references the object that precedes the current object in
-     * the doubly linked list.
-     */
+    /** @brief Pointer to the previous object in the list. */
     object_t *previous;
 
-    /**
-     * @brief Pointer to the next object in the list.
-     * 
-     * This pointer references the object that follows the current object in
-     * the doubly linked list.
-     */
-    object_t *next;    
+    /** @brief Pointer to the next object in the list. */
+    object_t *next;
 };
 
 /**
  * @brief Macro to increment the reference count of an object.
- * 
- * This macro increments the reference count of the object by calling the `inc_ref` function
- * through the object's virtual table.
- * 
- * @param obj The object whose reference count is to be incremented.
+ *
+ * Increments the reference count of the object by calling the `inc_ref` function through the
+ * object's virtual table.
+ * `obj`: The object whose reference count is to be incremented.
  */
 #define INCREF(obj)  (((object_t*)(obj))->vtbl->inc_ref((object_t*)(obj)))
 
 /**
  * @brief Macro to decrement the reference count of an object.
- * 
- * This macro decrements the reference count of the object by calling the `dec_ref` function
- * through the object's virtual table. If the reference count reaches zero, the object is released
- * or cleared.
- * 
- * @param obj The object whose reference count is to be decremented.
+ *
+ * Decrements the reference count of the object by calling the `dec_ref` function through the
+ * object's virtual table. If the reference count reaches zero, the object is released or cleared.
+ * `obj`: The object whose reference count is to be decremented.
  */
 #define DECREF(obj)  (((object_t*)(obj))->vtbl->dec_ref((object_t*)(obj)))
 
-/**
- * @brief Macro to conditionally decrement the reference count of an object.
- * 
- * This macro first checks if the object is not NULL before calling the `dec_ref` function
- * through the object's virtual table. If the object is not NULL, its reference count is
- * decremented. If the reference count reaches zero, the object is released or cleared.
- * 
- * @param obj The object whose reference count is to be decremented if not NULL.
- */
+/** @brief Decrements the reference count unless the pointer is NULL. */
 #define DECREFIF(obj)  if ((obj) != NULL) { ((object_t*)(obj))->vtbl->dec_ref((object_t*)(obj)); }
 
-/**
- * @brief Marks an object during garbage collection.
- *
- * This helper dispatches to the object's virtual table and marks
- * the object as reachable.
- *
- * @param obj A pointer to the object.
- */
+/** @brief Marks an object during garbage collection. */
 static inline void mark_object(object_t *obj) {
     obj->vtbl->mark(obj);
 }
 
 /**
  * @brief Sweeps an object during garbage collection.
- *
- * This helper dispatches to the object's virtual table and performs
- * sweep logic for the object.
- *
- * @param obj A pointer to the object.
- * @return `true` if the object was destroyed or moved to object pool,
- *  `false` if it remains alive.
+ * @return `true` if the object was destroyed or moved to object pool, `false` if it remains alive.
  */
 static inline bool sweep_object(object_t *obj) {
     return obj->vtbl->sweep(obj);
 }
 
-/**
- * @brief Releases an object.
- *
- * This helper dispatches to the object's virtual table and performs
- * final destruction logic for the object.
- *
- * @param obj A pointer to the object.
- */
+/** @brief Releases an object. */
 static inline void release_object(object_t *obj) {
     obj->vtbl->release(obj);
 }
 
 /**
  * @brief Compares two objects.
- *
- * This helper dispatches to the virtual table of the first object and compares
- * it with the second one.
- *
- * @param obj1 The first object.
- * @param obj2 The second object.
  * @return A negative value if `obj1 < obj2`, zero if equal, positive if `obj1 > obj2`.
  */
 static inline int compare_objects_using_vtbl(const object_t *obj1, const object_t *obj2) {
@@ -643,225 +299,89 @@ static inline int compare_objects_using_vtbl(const object_t *obj1, const object_
 /**
  * @brief Clones an object for a process.
  *
- * This helper dispatches to the object's virtual table and creates
- * a clone owned by the given process.
- *
- * @param process The target process.
- * @param obj A pointer to the object to clone.
- * @return A pointer to the cloned object.
+ * This helper dispatches to the object's virtual table and creates a clone owned by the given
+ * process.
  */
 static inline object_t *clone_object(process_t *process, object_t *obj) {
     return obj->vtbl->clone(process, obj);
 }
 
-/**
- * @brief Converts an object to its plain string representation.
- *
- * This helper dispatches to the object's virtual table and returns
- * its string representation.
- *
- * @param obj A pointer to the object.
- * @return The string representation of the object.
- */
+/** @brief Converts an object to its plain string representation. */
 static inline string_value_t convert_object_to_string(const object_t *obj) {
     return obj->vtbl->to_string(obj);
 }
 
-/**
- * @brief Converts an object to its Goat notation representation.
- *
- * This helper dispatches to the object's virtual table and returns
- * its Goat notation string representation.
- *
- * @param obj A pointer to the object.
- * @return The Goat notation representation of the object.
- */
+/** @brief Converts an object to its Goat notation representation. */
 static inline string_value_t convert_object_to_string_notation(const object_t *obj) {
     return obj->vtbl->to_string_notation(obj);
 }
 
-/**
- * @brief Gets the immediate prototypes of an object.
- *
- * This helper dispatches to the object's virtual table and returns
- * the object's direct prototype list.
- *
- * @param obj A pointer to the object.
- * @return The array of immediate prototypes.
- */
+/** @brief Gets the immediate prototypes of an object. */
 static inline object_array_t get_object_prototypes(const object_t *obj) {
     return obj->vtbl->get_prototypes(obj);
 }
 
-/**
- * @brief Gets the full prototype topology of an object.
- *
- * This helper dispatches to the object's virtual table and returns
- * the object's full prototype topology.
- *
- * @param obj A pointer to the object.
- * @return The topologically sorted prototype array.
- */
+/** @brief Gets the full prototype topology of an object. */
 static inline object_array_t get_object_topology(const object_t *obj) {
     return obj->vtbl->get_topology(obj);
 }
 
-/**
- * @brief Gets all property keys of an object.
- *
- * This helper dispatches to the object's virtual table and returns
- * the array of property keys.
- *
- * @param obj A pointer to the object.
- * @return An array containing the object's property keys.
- */
+/** @brief Gets all property keys of an object. */
 static inline object_array_t get_object_keys(const object_t *obj) {
     return obj->vtbl->get_keys(obj);
 }
 
 /**
  * @brief Gets a property value from an object.
- *
- * This helper dispatches to the object's virtual table and retrieves
- * the property value by key.
- *
- * @param obj The object from which to retrieve the property.
- * @param key The property key.
  * @return The property value, or NULL if not found.
  */
 static inline object_t *get_object_property(const object_t *obj, const object_t *key) {
     return obj->vtbl->get_property(obj, key);
 }
 
-/**
- * @brief Creates a property on an object.
- *
- * This helper dispatches to the object's virtual table and creates
- * a new property with the given key and value.
- *
- * @param obj The target object.
- * @param key The property key.
- * @param value The property value.
- * @param constant Whether the property should be constant.
- * @return Status of the operation.
- */
+/** @brief Creates a property on an object. */
 static inline model_status_t create_object_property(object_t *obj, object_t *key,
         object_t *value, bool constant) {
     return obj->vtbl->create_property(obj, key, value, constant);
 }
 
-/**
- * @brief Sets a property on an object.
- *
- * This helper dispatches to the object's virtual table and updates
- * the property value for the given key.
- *
- * @param obj The target object.
- * @param key The property key.
- * @param value The new property value.
- * @return Status of the operation.
- */
+/** @brief Sets a property on an object. */
 static inline model_status_t set_object_property(object_t *obj, object_t *key, object_t *value) {
     return obj->vtbl->set_property(obj, key, value);
 }
 
-/**
- * @brief Adds two objects.
- *
- * This helper dispatches to the virtual table of the first object
- * and performs the addition operation.
- *
- * @param process Process that will own the result.
- * @param obj1 The first operand.
- * @param obj2 The second operand.
- * @return The resulting object.
- */
+/** @brief Adds two objects. */
 static inline object_t *add_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->add(process, obj1, obj2);
 }
 
-/**
- * @brief Subtracts one object from another.
- *
- * This helper dispatches to the virtual table of the first object
- * and performs the subtraction operation.
- *
- * @param process Process that will own the result.
- * @param obj1 The first operand.
- * @param obj2 The second operand.
- * @return The resulting object.
- */
+/** @brief Subtracts one object from another. */
 static inline object_t *subtract_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->subtract(process, obj1, obj2);
 }
 
-/**
- * @brief Multiplies two objects.
- *
- * This helper dispatches to the virtual table of the first object
- * and performs the multiplication operation.
- *
- * @param process Process that will own the result.
- * @param obj1 The first operand.
- * @param obj2 The second operand.
- * @return The resulting object.
- */
+/** @brief Multiplies two objects. */
 static inline object_t *multiply_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->multiply(process, obj1, obj2);
 }
 
-/**
- * @brief Divides one object by another.
- *
- * This helper dispatches to the virtual table of the first object
- * and performs the division operation.
- *
- * @param process Process that will own the result.
- * @param obj1 The dividend.
- * @param obj2 The divisor.
- * @return The resulting object.
- */
+/** @brief Divides one object by another. */
 static inline object_t *divide_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->divide(process, obj1, obj2);
 }
 
-/**
- * @brief Computes the modulo of two objects.
- *
- * This helper dispatches to the virtual table of the first object
- * and performs the modulo operation.
- *
- * @param process Process that will own the result.
- * @param obj1 The dividend.
- * @param obj2 The divisor.
- * @return The resulting object.
- */
+/** @brief Computes the modulo of two objects. */
 static inline object_t *modulo_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->modulo(process, obj1, obj2);
 }
 
-/**
- * @brief Raises one object to the power of another.
- *
- * This helper dispatches to the virtual table of the first object
- * and performs the power operation.
- *
- * @param process Process that will own the result.
- * @param obj1 The base.
- * @param obj2 The exponent.
- * @return The resulting object.
- */
+/** @brief Raises one object to the power of another. */
 static inline object_t *power_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->power(process, obj1, obj2);
 }
 
 /**
  * @brief Checks whether the first object is less than the second.
- *
- * This helper dispatches to the virtual table of the first object.
- *
- * @param obj1 The first object.
- * @param obj2 The second object.
  * @return `true` if `obj1 < obj2`, `false` otherwise.
  */
 static inline bool is_object_less_than(const object_t *obj1, const object_t *obj2) {
@@ -870,11 +390,6 @@ static inline bool is_object_less_than(const object_t *obj1, const object_t *obj
 
 /**
  * @brief Checks whether the first object is less than or equal to the second.
- *
- * This helper dispatches to the virtual table of the first object.
- *
- * @param obj1 The first object.
- * @param obj2 The second object.
  * @return `true` if `obj1 <= obj2`, `false` otherwise.
  */
 static inline bool is_object_less_or_equal(const object_t *obj1, const object_t *obj2) {
@@ -883,11 +398,6 @@ static inline bool is_object_less_or_equal(const object_t *obj1, const object_t 
 
 /**
  * @brief Checks whether the first object is greater than the second.
- *
- * This helper dispatches to the virtual table of the first object.
- *
- * @param obj1 The first object.
- * @param obj2 The second object.
  * @return `true` if `obj1 > obj2`, `false` otherwise.
  */
 static inline bool is_object_greater_than(const object_t *obj1, const object_t *obj2) {
@@ -896,11 +406,6 @@ static inline bool is_object_greater_than(const object_t *obj1, const object_t *
 
 /**
  * @brief Checks whether the first object is greater than or equal to the second.
- *
- * This helper dispatches to the virtual table of the first object.
- *
- * @param obj1 The first object.
- * @param obj2 The second object.
  * @return `true` if `obj1 >= obj2`, `false` otherwise.
  */
 static inline bool is_object_greater_or_equal(const object_t *obj1, const object_t *obj2) {
@@ -909,11 +414,6 @@ static inline bool is_object_greater_or_equal(const object_t *obj1, const object
 
 /**
  * @brief Checks whether two objects are equal.
- *
- * This helper dispatches to the virtual table of the first object.
- *
- * @param obj1 The first object.
- * @param obj2 The second object.
  * @return `true` if the objects are equal, `false` otherwise.
  */
 static inline bool are_objects_equal(const object_t *obj1, const object_t *obj2) {
@@ -922,65 +422,29 @@ static inline bool are_objects_equal(const object_t *obj1, const object_t *obj2)
 
 /**
  * @brief Checks whether two objects are not equal.
- *
- * This helper dispatches to the virtual table of the first object.
- *
- * @param obj1 The first object.
- * @param obj2 The second object.
  * @return `true` if the objects are not equal, `false` otherwise.
  */
 static inline bool are_objects_not_equal(const object_t *obj1, const object_t *obj2) {
     return obj1->vtbl->not_equal(obj1, obj2);
 }
 
-/**
- * @brief Gets the boolean value of an object.
- *
- * This helper dispatches to the object's virtual table and returns
- * the boolean representation of the object.
- *
- * @param obj A pointer to the object.
- * @return The boolean value of the object.
- */
+/** @brief Gets the boolean value of an object. */
 static inline bool get_object_boolean_value(const object_t *obj) {
     return obj->vtbl->get_boolean_value(obj);
 }
 
-/**
- * @brief Gets the integer value of an object.
- *
- * This helper dispatches to the object's virtual table and returns
- * the integer representation of the object.
- *
- * @param obj A pointer to the object.
- * @return The integer value descriptor.
- */
+/** @brief Gets the integer value of an object. */
 static inline int_value_t get_object_integer_value(const object_t *obj) {
     return obj->vtbl->get_integer_value(obj);
 }
 
-/**
- * @brief Gets the real value of an object.
- *
- * This helper dispatches to the object's virtual table and returns
- * the floating-point representation of the object.
- *
- * @param obj A pointer to the object.
- * @return The real value descriptor.
- */
+/** @brief Gets the real value of an object. */
 static inline real_value_t get_object_real_value(const object_t *obj) {
     return obj->vtbl->get_real_value(obj);
 }
 
 /**
  * @brief Invokes an object as a function.
- *
- * This helper dispatches to the object's virtual table and performs
- * a functional call if the object is callable.
- *
- * @param obj A pointer to the object.
- * @param arg_count Number of arguments being passed.
- * @param thread The thread in which the call is performed.
  * @return `true` if the call was performed, `false` otherwise.
  */
 static inline bool call_object(object_t *obj, uint16_t arg_count, thread_t *thread) {
@@ -988,28 +452,17 @@ static inline bool call_object(object_t *obj, uint16_t arg_count, thread_t *thre
 }
 
 /**
- * @typedef static_object_getter_t
  * @brief Typedef for a function that retrieves a static object.
- * 
- * Functions with this signature are used as getters to retrieve pointers to specific static
- * objects. These objects are immutable and exist for the lifetime of the program.
- * 
- * Such functions are typically used to retrieve globally defined, pre-initialized objects
- * like built-in functions, constants, or prototypes.
- * 
- * @return A pointer to the requested static object.
+ *
+ * These objects are immutable and exist for the lifetime of the program.
  */
 typedef object_t *(*static_object_getter_t)(void);
 
 /**
  * @brief Retrieves the root object of the Goat programming language.
- * 
- * This function returns a pointer to the root object, which serves as the singleton 
- * at the top of the prototype chain for all objects in the language. The root object 
- * has no prototype of its own and defines the base methods and properties shared 
- * by all other objects.
- * 
- * @return A pointer to the root object.
+ *
+ * The root object has no prototype of its own and defines the base methods and properties shared by
+ * all other objects.
  */
 object_t *get_root_object();
 
@@ -1019,154 +472,75 @@ object_t *get_root_object();
  */
 object_t *get_null_object();
 
-/**
- * @brief Retrieves the boolean prototype object.
- * @return A pointer to the boolean prototype object.
- */
+/** @brief Retrieves the boolean prototype object. */
 object_t *get_boolean_proto();
 
 /**
  * @brief Retrieves the singleton instance for a given boolean value.
- * @param value The boolean value.
  * @return A pointer to the singleton object representing `true` or `false`.
  */
 object_t *get_boolean_object(bool value);
 
-/**
- * @brief The minimum static integer value.
- */
+/** @brief The minimum static integer value. */
 #define MIN_STATIC_INTEGER -1
 
-/**
- * @brief The maximum static integer value.
- */
+/** @brief The maximum static integer value. */
 #define MAX_STATIC_INTEGER 127
 
-/**
- * @brief Retrieves the prototype for numeric objects (integer and float).
- * @return A pointer to the numeric prototype object.
- */
+/** @brief Retrieves the prototype for numeric objects (integer and float). */
 object_t *get_numeric_proto();
 
-/**
- * @brief Retrieves the integer prototype object.
- * @return A pointer to the integer prototype object.
- */
+/** @brief Retrieves the integer prototype object. */
 object_t *get_integer_proto();
 
-/**
- * @brief Retrieves the real number prototype object.
- * @return A pointer to the real number prototype object.
- */
+/** @brief Retrieves the real number prototype object. */
 object_t *get_real_proto();
 
 /**
  * @brief Retrieves a static integer object.
- * 
- * This function returns a pointer to the static object representing the specified integer value.
- * The input value must be within the range `MIN_STATIC_INTEGER` to `MAX_STATIC_INTEGER`;
- * otherwise, an assertion will fail.
- * 
- * Static integers only store a reference to their value, which exists for the duration
- * of the program's execution. These integers are not managed by the garbage collector.
- * 
- * @param value The integer value for which to retrieve the static object.
- * @return A pointer to the static object representing the integer.
+ *
+ * The input value must be within the range `MIN_STATIC_INTEGER` to `MAX_STATIC_INTEGER`; otherwise,
+ * an assertion will fail.
  */
 object_t *get_static_integer_object(int value);
 
-/**
- * @brief Retrieves a static object representing the integer value `0`.
- * @return A pointer to the static object representing `0`.
- */
+/** @brief Retrieves a static object representing the integer value `0`. */
 object_t *get_integer_zero();
 
-/**
- * @brief Creates or retrieves an integer object.
- * 
- * This function creates a dynamic integer object if the value is outside the range of static
- * integers. If the value falls within the range of statically pre-initialized integers, the
- * corresponding static object is returned.
- * 
- * @param process The process that will own the integer object.
- * @param value The integer value to represent.
- * @return A pointer to the object representing the integer value.
- */
+/** @brief Creates or retrieves an integer object. */
 object_t *create_integer_object(process_t *process, int64_t value);
 
-/**
- * @brief Gets the singleton instance of the Pi constant object.
- * @return A pointer to the static object representing Pi.
- */
+/** @brief Gets the singleton instance of the Pi constant object. */
 object_t *get_pi_object();
 
-/**
- * @brief Creates a real number object.
- * 
- * This function creates a new dynamic real number object for the given value.
- * 
- * @param process The process that will own the real number object.
- * @param value The double-precision floating-point value to represent.
- * @return A pointer to the newly created object representing the real number.
- */
+/** @brief Creates a real number object. */
 object_t *create_real_number_object(process_t *process, double value);
 
-/**
- * @brief Retrieves the string prototype object.
- * @return A pointer to the string prototype object.
- */
+/** @brief Retrieves the string prototype object. */
 object_t *get_string_proto();
 
-/**
- * @brief Creates a dynamic string object from a string value.
- * @param process The process in which the object is created.
- * @param value The string value to use for creating the dynamic string.
- * @return A pointer to the created dynamic string object.
- */
+/** @brief Creates a dynamic string object from a string value. */
 object_t *create_string_object(process_t *process, string_value_t value);
 
-/**
- * @brief Creates a new user-defined object.
- * @param process The process that will own the created object.
- * @param proto An array of prototypes that will be associated with the object.
- *  This list defines the inheritance chain and the topology of the object.
- * @return A pointer to the created user-defined object.
- */
+/** @brief Creates a new user-defined object. */
 object_t *create_user_defined_object(process_t* process, object_array_t proto);
 
 /**
  * @brief Creates a new dynamic function object.
  *
- * Allocates and initializes a dynamic function object that stores metadata needed for execution,
- * such as argument names, argument count, starting instruction index, and a closure
- * object.
- *
  * The argument names array (`arg_names`) must be allocated by the caller before invoking this
- * function. Ownership of this array is transferred to the function object, and it will be
- * freed internally during object cleanup. This design avoids one memory allocation,
- * but couples allocation and deallocation logic across module boundaries.
- *
- * @param process Pointer to the process to which the function belongs.
- * @param arg_names Array of argument name objects. Ownership is transferred.
- * @param arg_count Number of arguments the function accepts.
- * @param first_instr_id Index of the first instruction to execute in the function body.
- * @param closure Closure object to be used as the prototype for the function’s context.
- * 
- * @return Pointer to the newly created function object.
+ * function. Ownership of this array is transferred to the function object, and it will be freed
+ * internally during object cleanup.
+ * `arg_names`: Array of argument name objects. Ownership is transferred.
  */
 object_t *create_function_object(process_t *process, object_t **arg_names, size_t arg_count,
         instr_index_t first_instr_id, object_t *closure);
 
-/**
- * @brief Macro to declare a getter function for a static object.
- * @param name The name of the static object for which the getter is generated.
- */
+/** @brief Macro to declare a getter function for a static object. */
 #define DECLARE_STATIC_OBJECT(name) \
     object_t *get_##name();
 
-/**
- * @brief Declares getter functions for common static string objects.
- */
+/** @brief Declares getter functions for common static string objects. */
 DECLARE_STATIC_OBJECT(empty_string)
 DECLARE_STATIC_OBJECT(string_atan)
 DECLARE_STATIC_OBJECT(string_length)
@@ -1175,10 +549,7 @@ DECLARE_STATIC_OBJECT(string_print)
 DECLARE_STATIC_OBJECT(string_sign)
 DECLARE_STATIC_OBJECT(string_sqrt)
 
-/**
- * @brief Retrieves the function prototype object.
- * @return A pointer to the function prototype object.
- */
+/** @brief Retrieves the function prototype object. */
 object_t *get_function_proto();
 
 DECLARE_STATIC_OBJECT(function_atan)

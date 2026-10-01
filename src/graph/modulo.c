@@ -2,9 +2,6 @@
  * @file modulo.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of the modulo (remainder) binary operation expression node.
- * 
- * This file defines the behavior of the modulo expression node, which represents the
- * remainder of the division of two operands in the syntax tree. 
  */
 
 #include "binary_operation.h"
@@ -16,30 +13,13 @@
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
 
-/**
- * @struct modulo_t
- * @brief Represents a modulo operation expression node.
- * 
- * This structure defines a modulo operation in the syntax tree. The modulo node
- * extends `binary_operation_t` and includes references to the left and right operands
- * whose remainder is to be computed.
- */
+/** @brief A modulo operation expression node. */
 typedef struct {
-    /**
-     * @brief Base binary operation structure from which modulo_t inherits.
-     */
+    /** @brief Base binary operation structure from which modulo_t inherits. */
     binary_operation_t base;
 } modulo_t;
 
-/**
- * @brief Converts a modulo operation expression to its string representation.
- * 
- * This function converts the given modulo expression to its representation as it would
- * appear in the source code (e.g., the left operand, the "%" operator, and the right operand).
- * 
- * @param node A pointer to the modulo expression node.
- * @return A `string_value_t` containing the formatted string representation.
- */
+/** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const modulo_t *expr = (const modulo_t *)node;
     string_value_t left = generate_goat_code_from_expression(expr->base.left_operand);
@@ -50,15 +30,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     return result;
 }
 
-/**
- * @brief Generates indented Goat source code for a modulo operation node.
- * 
- * This function generates code for both operands, combining them with the modulo `%` operator.
- * 
- * @param node Pointer to the modulo node to generate code for.
- * @param builder Pointer to the source builder.
- * @param indent The current indentation level (in tabs).
- */
+/** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
             size_t indent) {
     const modulo_t *expr = (const modulo_t *)node;
@@ -67,16 +39,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     generate_indented_goat_code_from_expression(expr->base.right_operand, builder, indent);
 }
 
-/**
- * @brief Generates bytecode for a modulo operation node.
- * 
- * Generates code for the operands and then emits a `MODULO` instruction.
- * 
- * @param node A pointer to the node representing the modulo operation.
- * @param code A pointer to the code builder.
- * @param data A pointer to the data builder.
- * @return The instruction index of the first emitted instruction.
- */
+/** @brief Generates bytecode for a modulo operation node. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const modulo_t *expr = (const modulo_t *)node;
@@ -86,9 +49,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
     return first;
 }
 
-/**
- * @brief Virtual table for modulo operations.
- */
+/** @brief Virtual table for modulo operations. */
 static node_vtbl_t modulo_vtbl = {
     .type = NODE_MODULO,
     .type_name = L"modulo",
