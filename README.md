@@ -394,6 +394,27 @@ The collector does not snapshot mutable AST contents.
 is independently heap-owned when nonempty; release it with `FREE_STRING()`. Rendering must
 happen while borrowed event data is alive, but the resulting text may outlive the arenas.
 
+## Built-in exception constants
+
+`Exceptions` is an immutable, process-independent object in the root context. Its properties
+are ordinary string constants whose contents equal their names:
+
+| Constant | Intended use |
+| --- | --- |
+| `INVALID_ARGUMENT` | Invalid argument type, value, or count. |
+| `INVALID_OPERATION` | Unsupported operation or calling a non-callable value. |
+| `DIVISION_BY_ZERO` | Division or remainder with a zero divisor. |
+| `IMMUTABLE_OBJECT` | Attempt to change an immutable object. |
+| `PROPERTY_ALREADY_EXISTS` | Duplicate property creation. |
+| `PROPERTY_IS_CONSTANT` | Attempt to replace a constant property. |
+| `PROPERTY_NOT_FOUND` | An operation requires a missing property. |
+
+Native code can use `get_exceptions_object()` and the `get_exception_*()` getters.
+This supplies the values for the upcoming exception mechanism; it does not yet implement
+`throw`, `try`/`catch`, or change operator failure behavior. Property access is available
+through the object model; source syntax such as `Exceptions.INVALID_ARGUMENT` is not yet
+supported by the parser. Programs can already refer to and print `Exceptions`.
+
 ## Author and license
 
 Created by [Ivan Kniazkov](https://github.com/kniazkov).

@@ -12,8 +12,9 @@
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
-    static object_t *keys[5] = { NULL };
+    static object_t *keys[6] = { NULL };
     if (keys[0] == NULL) {
+        keys[5] = get_string_exceptions();
         keys[0] = get_string_atan();
         keys[1] = get_string_pi();
         keys[2] = get_string_print();
@@ -29,6 +30,7 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
     if (key->vtbl->type == TYPE_STRING) {
         string_value_t key_str = key->vtbl->to_string(key);
         static pair_t properties[] = {
+            { L"Exceptions", get_exceptions_object },
             { L"atan", get_function_atan },
             { L"pi", get_pi_object },
             { L"print", get_function_print },

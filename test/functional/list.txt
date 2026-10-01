@@ -83,3 +83,4 @@ addition_invalid_object
 addition_invalid_nested
 addition_error_order
 addition_error_short_circuit
+exceptions
