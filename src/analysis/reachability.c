@@ -10,6 +10,7 @@
 #include "graph/variable.h"
 #include "graph/declarations.h"
 
+/** @brief Sets or clears the unreachable flag on a node and all descendants. */
 static void set_subtree_flag(node_t *node, bool unreachable) {
     node->unreachable = unreachable;
     for (size_t i = 0; i < get_node_child_count(node); i++) {
@@ -17,15 +18,18 @@ static void set_subtree_flag(node_t *node, bool unreachable) {
     }
 }
 
+/** @brief Marks a whole subtree unreachable and records one event for its root. */
 static void mark_dead(node_t *node, analysis_collector_t *collector) {
     set_subtree_flag(node, true);
     add_analysis_event(collector, ANALYSIS_UNREACHABLE, node, NULL, NULL);
 }
 
+/** @brief AVL callback: replaces one variable value with TOP. */
 static void forget_entry(void *context, void *key, value_t ignored) {
     set_in_abstract_state(context, key, make_top_element());
 }
 
+/** @brief Discards variable facts after effects that this pass cannot track. */
 static void forget_values(abstract_state_t *state) {
     avl_tree_for_each(state->values, forget_entry, state);
 }
@@ -33,6 +37,7 @@ static void forget_values(abstract_state_t *state) {
 static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
         analysis_collector_t *collector);
 
+/** @brief Visits children in order, marking those after terminated control flow unreachable. */
 static void visit_children(node_t *node, abstract_state_t **state,
         analysis_collector_t *collector) {
     for (size_t i = 0; i < get_node_child_count(node); i++) {
@@ -40,6 +45,7 @@ static void visit_children(node_t *node, abstract_state_t **state,
     }
 }
 
+/** @brief Marks excluded branches and merges states when either branch may execute. */
 static void visit_if(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
     const lattice_element_t *condition = visit(get_node_child(node, 0), state, collector);
     node_t *yes = get_node_child(node, 1);
@@ -69,6 +75,10 @@ static void visit_if(node_t *node, abstract_state_t **state, analysis_collector_
     }
 }
 
+/**
+ * @brief Updates the abstract state, marks dead subtrees, and returns the node's abstract value.
+ * Branch merging may replace *state; deferred function bodies are skipped.
+ */
 static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
         analysis_collector_t *collector) {
     if ((*state)->control_flow != FLOW_NORMAL) {
@@ -159,6 +169,7 @@ static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
     }
 }
 
+/** @brief Clears old marks and checks immediate execution from a fresh abstract state. */
 void mark_unreachable_code(node_t *root, arena_t *arena, analysis_collector_t *collector) {
     set_subtree_flag(root, false);
     abstract_state_t *state = create_abstract_state(arena);
