@@ -1,0 +1,5 @@
+var x = 0;
+if (1 < 2) {
+ x = 10; return;
+}
+var y = x;

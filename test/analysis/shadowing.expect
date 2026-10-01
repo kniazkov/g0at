@@ -1,0 +1,4 @@
+# mode kind event-row declaration-row name value
+one summary 3 3 x range=3,4
+one summary 1 1 x range=0,2
+one summary 6 6 y range=0,2

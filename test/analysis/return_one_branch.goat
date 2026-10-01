@@ -1,0 +1,7 @@
+var x = 0;
+if (1 < 2) {
+ x = 10;
+ return (x = 20);
+ x = 99;
+} else { x = 2; }
+var y = x;

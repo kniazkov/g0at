@@ -1,0 +1,5 @@
+var x = 0;
+if (false) { x = 1; }
+else if (true) { x = 2; }
+else { x = 3; }
+var y = x;

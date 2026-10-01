@@ -36,3 +36,6 @@ add_executable(unit_testing ${unit_testing_exe})
 target_link_libraries (unit_testing core pthread m)
 
 add_definitions(-DMEMORY_DEBUG)
+
+add_executable(analysis_testing analysis_testing.c)
+target_link_libraries(analysis_testing core pthread m)

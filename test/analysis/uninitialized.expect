@@ -1,0 +1,4 @@
+# mode kind event-row declaration-row name value
+one write 1 1 x null
+one join 2 1 x top
+one summary 5 5 y top

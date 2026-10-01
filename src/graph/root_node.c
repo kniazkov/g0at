@@ -5,6 +5,7 @@
  */
 
 #include "common_methods.h"
+#include "analysis/abstract_state.h"
 #include "statement.h"
 #include "statement_sequence.h"
 #include "lib/allocate.h"
@@ -45,7 +46,7 @@ static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
     const root_node_t *root = (const root_node_t *)node;
     list_item_t *item = root->statements->head;
-    while (item) {
+    while (item && state->control_flow == FLOW_NORMAL) {
         statement_t *stmt = (statement_t*)item->value.ptr;
         state = execute_statement(stmt, state, arena);
         item = item->next;

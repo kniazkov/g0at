@@ -1,0 +1,4 @@
+const probe = func(a) { return a; };
+var x = 0;
+if (probe(x = x + 1)) { x = x + 1; } else { x = x + 2; }
+var y = x;

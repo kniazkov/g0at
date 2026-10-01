@@ -40,7 +40,7 @@ struct abstract_state_t {
     /** @brief Current abstract control-flow mode. */
     control_flow_t control_flow;
 
-    /** @brief Borrowed return-output slot; cloning preserves this external reference. */
+    /** @brief Borrowed return-summary accumulator (NULL/BOTTOM initially); shared across branches. */
     const lattice_element_t **return_value;
 };
 
@@ -87,8 +87,8 @@ bool abstract_state_contains(const abstract_state_t *state,
 /**
  * @brief Joins two abstract states.
  *
- * For each shared declaration, the resulting entry contains pairwise joins of both the current
- * value and the accumulated summary value.
+ * Joins summaries from both paths; only FLOW_NORMAL paths contribute current values.
+ * Missing current entries on continuing paths mean NULL. Keeps declarations from either input.
  * @return Newly allocated joined abstract state, or NULL if either input state is NULL.
  */
 abstract_state_t *join_abstract_states(const abstract_state_t *left,

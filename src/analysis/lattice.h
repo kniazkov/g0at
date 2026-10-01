@@ -362,3 +362,14 @@ const lattice_element_t *lattice_meet(arena_t *arena,
 
 /** @brief Converts a lattice element to a human-readable string. */
 string_value_t lattice_to_string(const lattice_element_t *element);
+
+/** @brief Possible truth values; zero means no reachable value. */
+typedef enum {
+    ABSTRACT_NEVER = 0,
+    ABSTRACT_FALSE = 1,
+    ABSTRACT_TRUE = 2,
+    ABSTRACT_EITHER = 3
+} abstract_truth_t;
+
+/** @brief Converts an abstract value using Goat's truthiness rules. */
+abstract_truth_t lattice_truth(const lattice_element_t *value);

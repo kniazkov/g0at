@@ -6,6 +6,7 @@
 
 #include "common_methods.h"
 #include "analysis/lattice.h"
+#include "expression.h"
 
 node_display_value_t no_data(const node_t *node) {
     return (node_display_value_t) {
@@ -64,6 +65,10 @@ const lattice_element_t *no_abstract_value(node_t *node, abstract_state_t *state
 
 const lattice_element_t *unknown_abstract_value(node_t *node, abstract_state_t *state,
         arena_t *arena) {
+    for (size_t i = 0; i < get_node_child_count(node); i++) {
+        calculate_expression((expression_t *)get_node_child(node, i), state, arena);
+        if (state->control_flow != FLOW_NORMAL) return make_bottom_element();
+    }
     return make_top_element();
 }
 

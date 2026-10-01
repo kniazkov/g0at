@@ -63,7 +63,11 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const function_call_t* expr = (const function_call_t*)node;
-    return make_top_element();
+    calculate_expression(expr->func_object, state, arena);
+    for (size_t i = 0; i < expr->args_count && state->control_flow == FLOW_NORMAL; i++) {
+        calculate_expression(expr->args[i], state, arena);
+    }
+    return state->control_flow == FLOW_NORMAL ? make_top_element() : make_bottom_element();
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */

@@ -17,5 +17,8 @@ typedef enum {
     FLOW_NORMAL,
 
     /** @brief Return flow. */
-    FLOW_RETURN
+    FLOW_RETURN,
+
+    /** @brief Abstract path has no normal execution (not used by the VM). */
+    FLOW_UNREACHABLE
 } control_flow_t;

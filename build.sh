@@ -31,6 +31,13 @@ else
     exit -1
 fi
 
+if [[ $testing_result -eq 0 ]]
+then
+    make analysis_testing || exit 1
+    ./analysis_testing ../test/analysis
+    testing_result=$?
+fi
+
 cd ..
 if [[ $testing_result -eq 0 ]]
 then

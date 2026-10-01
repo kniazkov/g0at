@@ -7,6 +7,7 @@
 #include <assert.h>
 
 #include "common_methods.h"
+#include "analysis/abstract_state.h"
 #include "expression.h"
 #include "statement.h"
 #include "statement_sequence.h"
@@ -54,7 +55,7 @@ static bool insert_child_before(node_t *node, node_t *new_child, node_t *before_
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const statement_list_t* list = (const statement_list_t*)node;
     list_item_t *item = list->statements->head;
-    while (item) {
+    while (item && state->control_flow == FLOW_NORMAL) {
         statement_t *stmt = (statement_t*)item->value.ptr;
         state = execute_statement(stmt, state, arena);
         item = item->next;

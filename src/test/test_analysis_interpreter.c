@@ -59,7 +59,7 @@ bool test_analysis_branch_observations() {
     arena_t *arena = create_arena(8);
     parser_memory_t memory = { arena, arena, arena, arena };
     node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(
-        L"var x = 1;\nif (true) { x = 1; } else { x = 1; }\nx = 2;\n"));
+        L"var x = 1;\nif (1 < 2) { x = 1; } else { x = 1; }\nx = 2;\n"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
