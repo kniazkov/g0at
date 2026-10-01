@@ -294,7 +294,7 @@ const lattice_element_t *make_numeric_element();
 /** @brief Gets the integer lattice element singleton. */
 const lattice_element_t *make_integer_element();
 
-/** @brief Creates an integer range lattice element. */
+/** @brief Normalizes empty, singleton, and full int64 ranges to BOTTOM, a constant, and INTEGER. */
 const lattice_element_t *make_integer_range_element(arena_t *arena, int64_t min, int64_t max);
 
 /** @brief Creates an integer constant lattice element. */
@@ -303,7 +303,7 @@ const lattice_element_t *make_integer_constant_element(arena_t *arena, int64_t v
 /** @brief Gets the real lattice element singleton. */
 const lattice_element_t *make_real_element();
 
-/** @brief Creates a real constant lattice element. */
+/** @brief Creates a real constant; lattice equality groups NaNs but distinguishes signed zeros. */
 const lattice_element_t *make_real_constant_element(arena_t *arena, double value);
 
 /** @brief Gets the string lattice element singleton. */
@@ -338,7 +338,12 @@ const lattice_element_t *make_function_element();
 /** @brief Gets the array lattice element singleton. */
 const lattice_element_t *make_array_element();
 
-/** @brief Creates a typed array lattice element. */
+/**
+ * @brief Arrays whose elements belong to element_type; empty arrays are always included.
+ * TOP normalizes to ARRAY; BOTTOM describes only the empty array.
+ * @pre element_type is an unparameterized domain, not a range, constant payload, or TYPED_ARRAY.
+ * TRUE and FALSE are supported; nested arrays may use ARRAY without an element constraint.
+ */
 const lattice_element_t *make_typed_array_element(arena_t *arena, lattice_type_t element_type);
 
 /** @brief Gets the user-defined object lattice element singleton. */

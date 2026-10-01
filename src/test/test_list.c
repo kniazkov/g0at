@@ -11,6 +11,7 @@
 #include "test_model.h"
 #include "test_codegen.h"
 #include "test_analysis.h"
+#include "test_lattice.h"
 
 static bool stub() {
     return true;
@@ -61,6 +62,10 @@ static test_description_t test_list[] = {
     , { "unknown expression values", test_unknown_expression_values }
     , { "unknown values in analysis", test_unknown_values_in_analysis }
     , { "valueless nodes and known values", test_valueless_nodes_and_known_values }
+    , { "lattice examples", test_lattice_examples }
+    , { "lattice boundaries", test_lattice_boundaries }
+    , { "lattice arrays", test_lattice_arrays }
+    , { "lattice laws", test_lattice_laws }
     , { "analysis collector", test_analysis_collector }
     , { "analysis collector text", test_analysis_collector_text }
     , { "analysis observations", test_analysis_observations }

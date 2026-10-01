@@ -235,6 +235,28 @@ operand side effects. `BOTTOM` remains reserved for impossible results and the `
 method of nodes that do not produce a value; it does not mean that a statement is unreachable.
 AST transformation events can be added as transformations are implemented.
 
+### Lattice semantics
+
+`join` computes a least upper bound; `meet` computes a greatest lower bound. Empty integer
+ranges normalize to `BOTTOM`, single-point ranges to integer constants, and the complete
+`int64_t` range to `INTEGER`. Real constants treat all NaNs as one abstract value while
+keeping positive and negative zero distinct.
+
+`array<T>` describes arrays whose elements belong to `T`, including the empty array.
+Consequently, `array<BOTTOM>` describes only the empty array, and `array<TOP>` normalizes
+to `ARRAY`. Array joins and meets follow the element-domain hierarchy: for example,
+`array<INTEGER>` joined with `array<NUMERIC>` is `array<NUMERIC>`, and their meet is
+`array<INTEGER>`. Disjoint element domains meet at `array<BOTTOM>`, not `BOTTOM`.
+
+The current array representation stores only a domain enum. It supports unparameterized
+domains (including TRUE/FALSE and ARRAY), not constant payloads, integer bounds, or
+nested typed-array constraints.
+
+Analysis tests are split into collector, interpreter, command-line options, unknown-value,
+and lattice files in `src/test/`. Parser setup is shared through `analysis_test_support`.
+Lattice tests include explicit expected results and algebraic checks over all pairs and
+triples of a fixed set of representative values.
+
 ### Using observations in tests
 
 Create an `analysis_collector_t` with `create_analysis_collector(arena)` and pass it to
