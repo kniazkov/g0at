@@ -42,10 +42,10 @@ cd ..
 if [[ $testing_result -eq 0 ]]
 then
     gcc src/functional_testing.c -o functional_testing
-    cd test
-    ../functional_testing ../goat list.txt
+    cd test/functional
+    ../../functional_testing ../../goat list.txt
     testing_result=$?
-    cd ..
+    cd ../..
     rm functional_testing*
     echo ""
 fi

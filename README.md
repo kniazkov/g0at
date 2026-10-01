@@ -134,9 +134,9 @@ This script builds the interpreter and runs both test suites. GitHub Actions cur
 The following commands assume the root-level executable produced by `build.sh`:
 
 ```bash
-./goat --print-bytecode test/currying/program.goat
-./goat --print-source-code test/fibonacci_blocks/program.goat
-./goat --save-graph ast.svg test/fibonacci_blocks/program.goat
+./goat --print-bytecode test/functional/currying/program.goat
+./goat --print-source-code test/functional/fibonacci_blocks/program.goat
+./goat --save-graph ast.svg test/functional/fibonacci_blocks/program.goat
 ./goat --enable-warnings --lang en example/hello_world.goat
 ```
 
@@ -185,7 +185,8 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 | [`src/common/`](src/common) | Shared types, source positions, control-flow states, and compilation errors. |
 | [`src/resources/`](src/resources) | English and Russian messages. |
 | [`src/test/`](src/test) | Unit tests for utilities, scanning, parsing, the runtime model, and code generation. |
-| [`test/`](test) | Goat programs with expected output or diagnostics; cases are registered in `list.txt`. |
+| [`test/functional/`](test/functional) | Runtime functional tests with expected output or diagnostics and their own `list.txt`. |
+| [`test/analysis/`](test/analysis) | Source-based analysis tests with collector expectations and their own `list.txt`. |
 | [`example/`](example) | A minimal runnable example. |
 | [`src/CMakeLists.txt`](src/CMakeLists.txt) | Build definitions for the core library, interpreter, and unit tests. |
 | [`src/Doxyfile`](src/Doxyfile) | Doxygen configuration for source documentation. |
@@ -199,10 +200,10 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 ./build/unit_testing
 ./build/analysis_testing test/analysis
 gcc src/functional_testing.c -o build/functional_testing
-(cd test && ../build/functional_testing ../build/goat list.txt)
+(cd test/functional && ../../build/functional_testing ../../build/goat list.txt)
 ```
 
-Each functional test has a directory containing `program.goat` and an `expected_output.txt` and/or `expected_error.txt` file. Add its directory name to [`test/list.txt`](test/list.txt) to include it in the suite.
+Each functional test has a directory containing `program.goat` and an `expected_output.txt` and/or `expected_error.txt` file. Add its directory name to [`test/functional/list.txt`](test/functional/list.txt) to include it in the suite.
 
 When extending the language, keep parsing, AST behavior, bytecode generation, and runtime semantics consistent, and add a focused regression test for the new behavior. The existing tests are useful executable examples, but do not cover every subsystem or edge case.
 
