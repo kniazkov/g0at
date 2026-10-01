@@ -133,7 +133,7 @@ static const lattice_element_t *calculate_integer_addition(arena_t *arena,
 
                 return make_real_constant_element(
                     arena,
-                    (double)int_constant->value + real_constant->value
+                    integer_to_double(int_constant->value) + real_constant->value
                 );
             }
             return make_real_element();
@@ -165,7 +165,7 @@ static const lattice_element_t *calculate_real_addition(arena_t *arena,
 
                 return make_real_constant_element(
                     arena,
-                    real_constant->value + (double)int_constant->value
+                    real_constant->value + integer_to_double(int_constant->value)
                 );
             }
             return make_real_element();

@@ -248,7 +248,7 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
     }
     real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
-        return create_real_number_object(process, first.value + second_real.value);
+        return create_real_number_object(process, integer_to_double(first.value) + second_real.value);
     }
     return NULL;
 }

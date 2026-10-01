@@ -97,6 +97,8 @@ bool test_addition_models_and_constants(void) {
         for (size_t j = 0; j < count; j++) {
             object_t *result = add_objects(proc, cases[i].object, cases[j].object);
             const lattice_element_t *value = lattice_add(arena, cases[i].value, cases[j].value);
+            if (!contains(value, result))
+                printf("Addition mismatch for operand indices %zu, %zu\n", i, j);
             ASSERT(contains(value, result));
             if (result) {
                 DECREF(result);
@@ -119,6 +121,14 @@ bool test_addition_models_and_constants(void) {
     ASSERT(!is_integer_object(sum));
     ASSERT(get_object_real_value(sum).value == 1.5);
     DECREF(sum);
+    object_t *large = create_integer_object(proc, INT64_C(9007199254740993));
+    sum = add_objects(proc, large, half);
+    ASSERT(get_object_real_value(sum).value == 9007199254740992.0);
+    DECREF(sum);
+    sum = add_objects(proc, half, large);
+    ASSERT(get_object_real_value(sum).value == 9007199254740992.0);
+    DECREF(sum);
+    DECREF(large);
     DECREF(half);
     const lattice_element_t *max = make_integer_constant_element(arena, INT64_MAX);
     const lattice_element_t *min = make_integer_constant_element(arena, INT64_MIN);
