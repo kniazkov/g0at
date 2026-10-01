@@ -1,0 +1,4 @@
+var x = "0" + 1;
+if (x) { print("live"); }
+else { print("maybe"); }
+print("after");

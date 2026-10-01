@@ -1,0 +1,7 @@
+var x = 0;
+if ((true)) { x = 1; }
+if (false) { x = 99; }
+if ((x = 0)) { x = 99; }
+print(x);
+if (0.5) { print("T"); }
+if ("") { print("wrong"); }

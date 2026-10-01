@@ -1,0 +1,2 @@
+var x = "0" + 1;
+if (x) { print("live"); } else { print("wrong"); }

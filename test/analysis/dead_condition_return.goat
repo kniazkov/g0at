@@ -1,0 +1,3 @@
+if ({ return; }) { print("dead"); }
+else { print("dead too"); }
+print("also dead");

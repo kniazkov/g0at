@@ -1,0 +1,1 @@
+if (func() {}) { print("T"); } else { print("wrong"); }

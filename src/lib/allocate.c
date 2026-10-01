@@ -24,6 +24,7 @@ static size_t allocated_memory_size = 0;
 /** @brief Structure used for storing the size of allocated memory block. */
 typedef struct memory_header_t memory_header_t;
 struct memory_header_t {
+    void *allocation; /**< Original malloc pointer, before alignment padding. */
     _Alignas(max_align_t) size_t size; /**< Payload size; preserve malloc alignment. */
 #ifdef MEMORY_DEBUG
     const char *file_name; /**< The name of the file where the memory is allocated. */
@@ -49,19 +50,25 @@ void *_ALLOC(size_t size) {
     if (size < 1) {
         size = 1;
     }
-    if (size > SIZE_MAX - sizeof(memory_header_t) - EXTRA_DEBUG_BYTES ||
+    const size_t padding = _Alignof(max_align_t) - 1;
+    if (size > SIZE_MAX - sizeof(memory_header_t) - EXTRA_DEBUG_BYTES - padding ||
             size > SIZE_MAX - allocated_memory_size) {
         fprintf(stderr, "\nAllocation size overflow.\n");
         exit(EXIT_FAILURE);
     }
-    size_t total_size = sizeof(memory_header_t) + size + EXTRA_DEBUG_BYTES;
-    memory_header_t *header = (memory_header_t *)malloc(total_size);
+    size_t total_size = sizeof(memory_header_t) + size + EXTRA_DEBUG_BYTES + padding;
+    void *allocation = malloc(total_size);
 
-    if (!header) {
+    if (!allocation) {
         fprintf(stderr, "\nOut of memory.\n");
         exit(EXIT_FAILURE);
     }
 
+    /* The CRT heap may have weaker alignment than the compiler's max_align_t. */
+    size_t offset = (_Alignof(max_align_t) - (uintptr_t)allocation % _Alignof(max_align_t))
+        % _Alignof(max_align_t);
+    memory_header_t *header = (memory_header_t *)((char *)allocation + offset);
+    header->allocation = allocation;
     header->size = size;
     allocated_memory_size += size;
 
@@ -128,7 +135,7 @@ void _FREE(void *ptr) {
 #endif
 
     allocated_memory_size -= size;
-    free(header);
+    free(header->allocation);
 }
 
 size_t get_allocated_memory_size() {

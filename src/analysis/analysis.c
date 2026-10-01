@@ -8,6 +8,7 @@
 
 #include "analysis.h"
 #include "interpreter.h"
+#include "reachability.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/queue.h"
@@ -15,6 +16,7 @@
 #include "cli/options.h"
 #include "common/compilation_error.h"
 #include "graph/node.h"
+#include "graph/statement.h"
 #include "graph/declarations.h"
 #include "graph/variable.h"
 #include "model/context.h"
@@ -44,6 +46,9 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t
         arena_t *arena, scope_t *scope, unsigned int *next_id) {
     node->parent = parent;
     node->scope = scope;
+    node->unreachable = false;
+    if (node->vtbl->type == NODE_IF_ELSE) set_if_else_condition_truth(node, ABSTRACT_EITHER);
+    if (is_declarator(node->vtbl->type)) ((declarator_t *)node)->abstract_value = NULL;
     node->id = (*next_id)++;
     const size_t child_count = get_node_child_count(node);
     for (size_t child_id = 0; child_id < child_count; child_id++) {
@@ -256,8 +261,10 @@ compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options
     }
     destroy_vector_ex(insertions, FREE);
 
+    if (options->optimization_level == OPTIMIZATION_NONE) return errors;
+
     interpret(root_node, memory, collector);
 
-    // ... further analysis ...
+    mark_unreachable_code(root_node, memory->graph, collector);
     return errors;
 }

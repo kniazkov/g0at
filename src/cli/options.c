@@ -35,6 +35,7 @@ static bool check_graph_file(const char *filename) {
 options_t *create_options() {
     options_t *opt = (options_t *)CALLOC(sizeof(options_t));
     opt->script_args = create_vector();
+    opt->optimization_level = OPTIMIZATION_ALL;
     return opt;
 }
 
@@ -60,6 +61,21 @@ options_t *parse_options(int argc, char **argv) {
 
             if (strcmp(arg, "-w") == 0 || strcmp(arg, "--enable-warnings") == 0) {
                 opt->enable_warnings = true;
+                continue;
+            }
+
+            if (strcmp(arg, "--optimize") == 0) {
+                if (index + 1 >= argc || !argv[index + 1][0] || argv[index + 1][0] == '-') {
+                    fprintf_utf8(stderr, get_messages()->missing_specification, arg);
+                    goto error;
+                }
+                const char *level = argv[++index];
+                if (strcmp(level, "none") == 0) opt->optimization_level = OPTIMIZATION_NONE;
+                else if (strcmp(level, "all") == 0) opt->optimization_level = OPTIMIZATION_ALL;
+                else {
+                    fprintf_utf8(stderr, get_messages()->bad_optimization_level, level);
+                    goto error;
+                }
                 continue;
             }
 

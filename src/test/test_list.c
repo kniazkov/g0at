@@ -14,6 +14,9 @@
 #include "test_abstract_state.h"
 #include "test_lattice.h"
 
+#include "test_reachability.h"
+#include "test_optimization.h"
+
 static bool stub() {
     return true;
 }
@@ -30,6 +33,13 @@ static test_description_t test_list[] = {
     , { "parsing bracket", test_bracket }
     , { "unknown symbol", test_uknown_symbol }
 
+    , { "optimization options", test_optimization_options }
+    , { "optimization modes", test_optimization_modes }
+    , { "optimized if bytecode", test_optimized_if_bytecode }
+    , { "reachability flags and events", test_reachability_flags }
+    , { "reachability bytecode", test_reachability_bytecode }
+    , { "reachability bytecode boundaries", test_reachability_bytecode_boundaries }
+    , { "reachability graph", test_reachability_graph }
     , { "memory allocation", test_memory_allocation }
     , { "allocation alignment", test_allocation_alignment }
     , { "arena alignment and growth", test_arena_alignment_and_growth }

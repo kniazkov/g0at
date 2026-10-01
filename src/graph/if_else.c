@@ -24,6 +24,9 @@ typedef struct {
     /** @brief Condition expression of the if statement. */
     expression_t *condition;
 
+    /** @brief EITHER until the reachability pass proves otherwise. */
+    abstract_truth_t condition_truth;
+
     /** @brief Statement executed when the condition is true. */
     statement_t *true_branch;
 
@@ -146,11 +149,44 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
     }
 }
 
+/** @brief Literal conditions have no effects and need not be evaluated. */
+static bool is_literal_condition(const node_t *node) {
+    switch (node->vtbl->type) {
+        case NODE_NULL:
+        case NODE_TRUE:
+        case NODE_FALSE:
+        case NODE_INTEGER:
+        case NODE_REAL:
+        case NODE_STATIC_STRING:
+            return true;
+        case NODE_EXPRESSION_PARENTHESIZED:
+            return is_literal_condition(get_node_child(node, 0));
+        default:
+            return false;
+    }
+}
+
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         data_builder_t *data) {
     const if_else_t* stmt = (const if_else_t*)node;
-    instr_index_t first = generate_bytecode_from_expression(stmt->condition, code, data);
+    instr_index_t first = get_next_instruction_index(code);
+    if (stmt->condition_truth != ABSTRACT_EITHER) {
+        if (stmt->condition_truth == ABSTRACT_NEVER) {
+            return generate_bytecode_from_expression(stmt->condition, code, data);
+        }
+        if (!is_literal_condition(&stmt->condition->base)) {
+            generate_bytecode_from_expression(stmt->condition, code, data);
+            add_instruction(code, (instruction_t){ .opcode = POP });
+        }
+        if (stmt->condition_truth == ABSTRACT_TRUE) {
+            generate_bytecode_from_statement(stmt->true_branch, code, data);
+        } else if (stmt->false_branch) {
+            generate_bytecode_from_statement(stmt->false_branch, code, data);
+        }
+        return first;
+    }
+    generate_bytecode_from_expression(stmt->condition, code, data);
     instr_index_t jif_index = add_instruction(code, (instruction_t){ .opcode = JIF });
     generate_bytecode_from_statement(stmt->true_branch, code, data);
     if (stmt->false_branch) {
@@ -197,7 +233,12 @@ node_t *create_if_else_node(arena_t *arena, expression_t *condition, statement_t
         (if_else_t *)alloc_zeroed_from_arena(arena, sizeof(if_else_t));
     stmt->base.base.vtbl = &if_else_vtbl;
     stmt->condition = condition;
+    stmt->condition_truth = ABSTRACT_EITHER;
     stmt->true_branch = true_branch;
     stmt->false_branch = false_branch;
     return &stmt->base.base;
+}
+
+void set_if_else_condition_truth(node_t *node, abstract_truth_t truth) {
+    ((if_else_t *)node)->condition_truth = truth;
 }

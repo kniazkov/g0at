@@ -125,5 +125,6 @@ statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrap
         (statement_expression_t *)alloc_zeroed_from_arena(arena, sizeof(statement_expression_t));
     expr->base.base.vtbl = &statement_expression_vtbl;
     expr->wrapped = wrapped;
+    expr->base.base.position = wrapped->base.position;
     return &expr->base;
 }

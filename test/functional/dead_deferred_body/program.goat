@@ -1,0 +1,4 @@
+var x = 0;
+var f = func() { if (x) { print("live"); } else { print("wrong"); } };
+x = 1;
+f();

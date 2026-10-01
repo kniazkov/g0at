@@ -1,0 +1,9 @@
+var x = 0;
+var f = func() {
+ if (x) { print("later"); }
+ if (false) { print("unvisited"); }
+ return;
+ print("unvisited too");
+};
+x = 1;
+f();

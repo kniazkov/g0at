@@ -144,6 +144,7 @@ These inspection options also execute the program after compilation. Graph outpu
 
 | Option | Purpose |
 | --- | --- |
+| `--optimize <none|all>` | Select optimizations; defaults to `all`. |
 | `--print-analysis` | Print chronological abstract-analysis observations before execution. |
 | `--save-analysis <file>` | Save the same report to a UTF-8 text file. |
 | `--print-bytecode` | Print the generated instructions and referenced static data. |
@@ -190,7 +191,7 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 | [`example/`](example) | A minimal runnable example. |
 | [`src/CMakeLists.txt`](src/CMakeLists.txt) | Build definitions for the core library, interpreter, and unit tests. |
 | [`src/Doxyfile`](src/Doxyfile) | Doxygen configuration for source documentation. |
-| [`.github/workflows/`](.github/workflows) | Linux build and test workflow. |
+| [`.github/workflows/`](.github/workflows) | Linux and Windows (MinGW32, MinGW64, UCRT64) build and test workflows. |
 
 ## Testing
 
@@ -202,6 +203,14 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 gcc src/functional_testing.c -o build/functional_testing
 (cd test/functional && ../../build/functional_testing ../../build/goat list.txt)
 ```
+
+CI runs all three suites on Linux and on Windows with MinGW32, MinGW64 and UCRT64.
+The Windows build script stops on failed builds or tests; failed functional output is retained
+as CI artifacts.
+
+The functional runner executes every case twice, with `--optimize none` and `--optimize all`,
+against the same expected output and diagnostics. Failed runs retain separate
+`actual_output_none.txt` / `actual_output_all.txt` and corresponding error files.
 
 Each functional test has a directory containing `program.goat` and an `expected_output.txt` and/or `expected_error.txt` file. Add its directory name to [`test/functional/list.txt`](test/functional/list.txt) to include it in the suite.
 
@@ -225,12 +234,42 @@ none write 3 1 x -
 
 `one` requires exactly one matching event, `last` checks the last match, and `none` requires
 no match and uses `-` for the value. Event kinds are `write`, `join`, and `summary`.
+For proven dead subtrees, use `one unreachable ROW 0 - -`,
+`last unreachable ROW 0 - -`, or `none unreachable ROW 0 - -`.
+These events have a node but no declaration or value; the last three fields must be `0 - -`.
+One event describes the root of a dead subtree, rather than every descendant.
+
 A zero row is a wildcard. Declaration rows distinguish shadowed variables; synthetic nodes
 use their nearest positioned ancestor. Values are checked by type and payload: `int=N`,
 `range=MIN,MAX`, `top`, `bottom`, `null`, `true`, `false`, `numeric`, `integer`, or `function`.
 Blank lines and lines starting with `#` are ignored. Empty expectation files, malformed
 checks, missing files, parse errors, mismatches, and detected memory leaks fail the suite.
 On a mismatch the runner prints the expectation location and the actual analysis report.
+
+### Proven unreachable code
+
+`--optimize none` stops after required AST preparation: parents, scopes, node IDs,
+name binding and implicit declarations. It performs no abstract interpretation or reachability
+proofs, produces no analysis events, and keeps both branches in bytecode. Binding remains
+necessary to preserve implicit-variable and closure behavior. `--optimize all` enables all
+currently implemented analysis and optimization passes.
+
+A separate conservative pass marks `node_t.unreachable` after abstract interpretation.
+It follows immediate execution through declarations, assignments, blocks, and `if`, including
+code after unconditional returns. Known conditions eliminate one branch; unknown conditions
+merge continuing states. Function bodies are left unclassified because they may execute later.
+A function created inside a proven dead subtree is dead along with that subtree.
+
+The pass uses literals and propagated values, but treats arithmetic/comparison results as
+unknown until their abstract semantics match the VM. Calls invalidate known variable values
+because captured bindings may change. Call arguments follow bytecode order: right to left,
+then the callee. An unset flag means **not proven unreachable**, not necessarily reachable.
+
+Dead nodes stay in the AST with light-gray outlines, labels and edges, without a fill.
+Bytecode generation skips them and removes conditional jumps when the condition is proven.
+Literal conditions are omitted; other conditions are evaluated once and their result discarded.
+Source-code regeneration keeps the original branches for inspection. The collector reports
+subtree roots, for example `#4 program.goat, 3.6: unreachable statement expression`.
 
 ## Observing abstract analysis
 

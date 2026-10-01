@@ -11,10 +11,10 @@
 
 /** @brief Trims leading and trailing whitespace characters from a string. */
 static char * trim (char *s) {
-    int i;
-    while (isspace (*s)) s++;
-    for (i = strlen (s) - 1; (isspace (s[i])); i--) ;
-    s[i + 1] = '\0';
+    while (isspace((unsigned char)*s)) s++;
+    size_t length = strlen(s);
+    while (length && isspace((unsigned char)s[length - 1])) length--;
+    s[length] = '\0';
     return s;
 }
 
@@ -60,7 +60,7 @@ static int get_file_size(FILE *file) {
 }
 
 /** @brief Executes a test by running the project's binary and comparing its output with expected results. */
-int do_test(char *interpreter, char *test_name) {
+int do_test(char *interpreter, char *test_name, const char *optimization) {
     int result = 0;
 
     char cmd[1024],
@@ -68,14 +68,19 @@ int do_test(char *interpreter, char *test_name) {
         path_expected_output[256],
         path_actual_error[256],
         path_expected_error[256];
-    snprintf(path_actual_output, 256, "%s%cactual_output.txt", test_name, path_separator());
+    snprintf(path_actual_output, 256, "%s%cactual_output_%s.txt", test_name, path_separator(), optimization);
     snprintf(path_expected_output, 256, "%s%cexpected_output.txt", test_name, path_separator());
-    snprintf(path_actual_error, 256, "%s%cactual_error.txt", test_name, path_separator());
+    snprintf(path_actual_error, 256, "%s%cactual_error_%s.txt", test_name, path_separator(), optimization);
     snprintf(path_expected_error, 256, "%s%cexpected_error.txt", test_name, path_separator());
-    snprintf(cmd, 1024, "%s --lang en %s%cprogram.goat 1> %s 2> %s",
-        interpreter, test_name, path_separator(), path_actual_output, path_actual_error);
+#ifdef _WIN32
+    const char *command_format = "\"\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" 1> \"%s\" 2> \"%s\"\"";
+#else
+    const char *command_format = "\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" 1> \"%s\" 2> \"%s\"";
+#endif
+    snprintf(cmd, sizeof(cmd), command_format,
+        interpreter, optimization, test_name, path_separator(), path_actual_output, path_actual_error);
 
-    system(cmd);
+    int status = system(cmd);
 
     FILE *actual_output = NULL,
         *expected_output = NULL,
@@ -98,6 +103,7 @@ int do_test(char *interpreter, char *test_name) {
         if (!compare_files(actual_error, expected_error)) goto cleanup;
     }
 
+    if (status == -1 || (status != 0 && !expected_error)) goto cleanup;
     result = 1;
 
 cleanup:
@@ -136,16 +142,19 @@ int main(int argc, char** argv) {
         if (fgets(test_name, 128, list)) {
             char *test_name_trim = trim(test_name);
             if (strlen(test_name_trim) > 0 && test_name_trim[0] != '#') {
-            int result = do_test(argv[1], test_name_trim);
-                if (result) {
-                    printf("[ ok ]");
-                    passed++;
+                const char *levels[] = {"none", "all"};
+                for (size_t level = 0; level < 2; level++) {
+                    int result = do_test(argv[1], test_name_trim, levels[level]);
+                    if (result) {
+                        printf("[ ok ]");
+                        passed++;
+                    }
+                    else {
+                        printf("[fail]");
+                        failed++;
+                    }
+                    printf(" %s (optimize=%s)\n", test_name_trim, levels[level]);
                 }
-                else {
-                    printf("[fail]");
-                    failed++;
-                }
-                printf(" %s\n", test_name_trim);
             }
         }
     }

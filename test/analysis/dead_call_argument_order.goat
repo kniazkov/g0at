@@ -1,0 +1,6 @@
+var x = 0;
+var f = func(a, b) { };
+f({
+ if (x) { print("live"); }
+ else { print("dead"); }
+}, x = 1);

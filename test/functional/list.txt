@@ -64,3 +64,11 @@ duplicated_else
 greater 
 fibonacci_blocks
 real_truthiness
+dead_branch_effects
+dead_closure_mutation
+dead_deferred_body
+dead_call_order
+dead_arithmetic_fallback
+optimization_implicit_capture
+optimization_if_without_else
+optimization_function_condition

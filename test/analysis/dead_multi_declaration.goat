@@ -1,0 +1,2 @@
+var x = { return; }, y = 99;
+print("dead");

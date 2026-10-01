@@ -1,0 +1,4 @@
+print(x);
+var f = func() { x = 1; };
+f();
+print(x);
