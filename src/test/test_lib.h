@@ -53,3 +53,6 @@ bool test_binary_search_boundaries();
 bool test_path_lifetime();
 bool test_utf8_formatted_output();
 bool test_utf8_file_io();
+bool test_string_geometric_growth();
+bool test_utf8_roundtrip();
+bool test_utf8_invalid_sequences();
