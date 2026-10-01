@@ -541,6 +541,7 @@ static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) 
         return false; // stack is empty
     }
     replace_object_on_stack(thread->data_stack, ret_value, ctx->ret_value_index);
+    DECREF(ret_value);
     while (ctx && ctx->control_flow != FLOW_RETURN) {
         if (ctx->unwinding_index != BAD_STACK_INDEX) {
             reduce_object_stack(thread->data_stack, ctx->unwinding_index);
@@ -570,6 +571,74 @@ static bool exec_LEAVE(runtime_t *runtime, instruction_t instr, thread_t *thread
     push_object_onto_stack(thread->data_stack, object);
     thread->instr_id++;
     return true;
+}
+
+/** @brief Executes @ref RESTORE without producing a block result. */
+static bool exec_RESTORE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    if (thread->context == get_root_context()) {
+        runtime->status = 1;
+        return false;
+    }
+    thread->context = destroy_context(thread->context);
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Executes @ref TRY, saving the stack boundary and handler address. */
+static bool exec_TRY(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    if (instr.arg1 >= runtime->code->instructions_count) {
+        runtime->status = 1;
+        return false;
+    }
+    context_t *ctx = create_context(thread->process, thread->context, NULL);
+    ctx->control_flow = FLOW_THROW;
+    ctx->jump_address[0] = instr.arg1;
+    ctx->unwinding_index = thread->data_stack->size ? thread->data_stack->size - 1 : BAD_STACK_INDEX;
+    thread->context = ctx;
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Unwinds to a handler, transferring ownership of the thrown object. */
+static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception) {
+    context_t *root = get_root_context();
+    context_t *handler = thread->context;
+    while (handler != root && handler->control_flow != FLOW_THROW) handler = handler->previous;
+    size_t size = handler == root || handler->unwinding_index == BAD_STACK_INDEX
+        ? 0 : handler->unwinding_index + 1;
+    if (thread->data_stack->size < size) {
+        /* Malformed bytecode consumed values below the saved boundary. */
+        DECREF(exception.value);
+        runtime->status = 1;
+        return false;
+    }
+    while (thread->context != handler) thread->context = destroy_context(thread->context);
+    while (thread->data_stack->size > size) {
+        object_t *value = pop_object_from_stack(thread->data_stack);
+        DECREF(value);
+    }
+    thread->args_count = 0;
+    if (handler == root) {
+        DECREFIF(thread->exception.value);
+        thread->exception = exception;
+        runtime->status = 1;
+        return false;
+    }
+    instr_index_t address = handler->jump_address[0];
+    thread->context = destroy_context(handler);
+    push_object_onto_stack(thread->data_stack, exception.value);
+    thread->instr_id = address;
+    return true;
+}
+
+/** @brief Executes @ref THROW; the top value survives stack and context unwinding. */
+static bool exec_THROW(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    exception_t exception = {pop_object_from_stack(thread->data_stack)};
+    if (!exception.value) {
+        runtime->status = 1;
+        return false;
+    }
+    return dispatch_exception(runtime, thread, exception);
 }
 
 /** @brief Array of instruction execution functions for the Goat virtual machine. */
@@ -607,7 +676,10 @@ static instr_executor_t executors[] = {
     exec_CALL,    /**< Calls a function with arguments from the data stack. */
     exec_RET,     /**< Returns from current function. */
     exec_ENTER,   /**< Creates a new context, inheriting from the current one. */
-    exec_LEAVE    /**< Restores the parent context, leaving the current one on the stack. */
+    exec_LEAVE,   /**< Restores the parent and pushes the departed context's data. */
+    exec_RESTORE, /**< Restores the parent without a stack result. */
+    exec_TRY,     /**< Creates an exception-handler context. */
+    exec_THROW    /**< Unwinds to the nearest exception handler. */
     // Additional opcodes can be added here in the future...
 };
 

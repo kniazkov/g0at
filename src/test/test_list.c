@@ -58,6 +58,13 @@ static test_description_t test_list[] = {
     , { "format string", test_format_string }
     , { "text alignment", test_align_text }
 
+    , { "vm throw cleanup", test_vm_throw_cleanup }
+    , { "vm restore", test_vm_restore }
+    , { "vm throw values", test_vm_throw_values }
+    , { "vm throw nested", test_vm_throw_nested }
+    , { "vm throw calls", test_vm_throw_calls }
+    , { "vm throw uncaught", test_vm_throw_uncaught }
+    , { "vm exception invalid bytecode", test_vm_exception_invalid_bytecode }
     , { "exceptions object", test_exceptions_object }
     , { "boolean object", test_boolean_object }
     , { "integer object", test_integer_object }

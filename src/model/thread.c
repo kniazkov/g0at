@@ -11,6 +11,7 @@
 #include "process.h"
 #include "context.h"
 #include "object_stack.h"
+#include "object.h"
 #include "lib/allocate.h"
 
 /** @brief ID of the last created thread. */
@@ -48,6 +49,7 @@ void destroy_thread(thread_t *thread) {
     while (context != NULL && context != root_context) {
         context = destroy_context(context);
     }
+    DECREFIF(thread->exception.value);
     destroy_object_stack(thread->data_stack);
     FREE(thread);
 }

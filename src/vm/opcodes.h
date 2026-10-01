@@ -74,5 +74,11 @@ typedef enum {
 
     ENTER, /**< Creates a new context, inheriting from the current one. */
 
-    LEAVE /**< Restores the parent context, leaving the current one on the stack. */
+    LEAVE, /**< Restores the parent context, pushing the departed context's data. */
+
+    RESTORE, /**< Destroys one context without changing the data stack. */
+
+    TRY, /**< Creates an exception context; arg1 is the handler address. */
+
+    THROW /**< Transfers the top value to the nearest handler after unwinding. */
 } opcode_t;

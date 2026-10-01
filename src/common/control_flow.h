@@ -20,5 +20,8 @@ typedef enum {
     FLOW_RETURN,
 
     /** @brief Abstract path has no normal execution (not used by the VM). */
-    FLOW_UNREACHABLE
+    FLOW_UNREACHABLE,
+
+    /** @brief Exception flow handled by a runtime TRY context. */
+    FLOW_THROW
 } control_flow_t;

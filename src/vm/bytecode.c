@@ -58,6 +58,9 @@ static instruction_descriptor_t descriptors[] =
     , { .code = L"RET" }
     , { .code = L"ENTER" }
     , { .code = L"LEAVE" }
+    , { .code = L"RESTORE" }
+    , { .code = L"TRY", .arg_1_is_unsigned_integer = true }
+    , { .code = L"THROW" }
 };
 
 /** @brief Defines the column width for instruction numbers in the bytecode text representation. */
