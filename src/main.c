@@ -4,6 +4,8 @@
  * @brief Main entry point of the Goat interpreter.
  */
 
+#include <stdlib.h>
+
 #include "lib/allocate.h"
 #include "lib/io.h"
 #include "resources/messages.h"
@@ -19,12 +21,12 @@ int main(int argc, char** argv) {
 
     options_t *opt = parse_options(argc, argv);
     if (opt == NULL) {
-        return -1;
+        return EXIT_FAILURE;
     }
 
     if (!init_io()) {
         // @todo message here
-        return -1;
+        return EXIT_FAILURE;
     }
 
     int ret_val = go(opt);
@@ -32,5 +34,6 @@ int main(int argc, char** argv) {
     destroy_options(opt);
     print_list_of_memory_blocks();
 
-    return ret_val;
+    /* Avoid Windows system() confusing a child exit code of -1 with launch failure. */
+    return ret_val == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

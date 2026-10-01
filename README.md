@@ -191,7 +191,7 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 | [`example/`](example) | A minimal runnable example. |
 | [`src/CMakeLists.txt`](src/CMakeLists.txt) | Build definitions for the core library, interpreter, and unit tests. |
 | [`src/Doxyfile`](src/Doxyfile) | Doxygen configuration for source documentation. |
-| [`.github/workflows/`](.github/workflows) | Linux build and test workflow. |
+| [`.github/workflows/`](.github/workflows) | Linux and Windows (MinGW32, MinGW64, UCRT64) build and test workflows. |
 
 ## Testing
 
@@ -203,6 +203,10 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 gcc src/functional_testing.c -o build/functional_testing
 (cd test/functional && ../../build/functional_testing ../../build/goat list.txt)
 ```
+
+CI runs all three suites on Linux and on Windows with MinGW32, MinGW64 and UCRT64.
+The Windows build script stops on failed builds or tests; failed functional output is retained
+as CI artifacts.
 
 The functional runner executes every case twice, with `--optimize none` and `--optimize all`,
 against the same expected output and diagnostics. Failed runs retain separate

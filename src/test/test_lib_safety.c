@@ -7,6 +7,15 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#ifdef _WIN32
+#include <io.h>
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "test_lib.h"
 #include "test_macro.h"
@@ -113,9 +122,42 @@ bool test_path_lifetime() {
     return true;
 }
 
+/** @brief Creates a unique test file exclusively, including on legacy Windows CRTs. */
+static FILE *create_test_file(char *name, size_t capacity) {
+    static unsigned sequence;
+    for (unsigned attempt = 0; attempt < 100; attempt++) {
+#ifdef _WIN32
+        long pid = (long)_getpid();
+#else
+        long pid = (long)getpid();
+#endif
+        snprintf(name, capacity, "goat_lib_%ld_%u.tmp", pid, sequence++);
+#ifdef _WIN32
+        int fd = _open(name, _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY, _S_IREAD | _S_IWRITE);
+#else
+        int fd = open(name, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
+#endif
+        if (fd < 0) {
+            if (errno == EEXIST) continue;
+            perror("create test file");
+            return NULL;
+        }
+#ifdef _WIN32
+        FILE *file = _fdopen(fd, "w+b");
+        if (!file) _close(fd);
+#else
+        FILE *file = fdopen(fd, "w+b");
+        if (!file) close(fd);
+#endif
+        if (!file) remove(name);
+        return file;
+    }
+    return NULL;
+}
+
 bool test_utf8_formatted_output() {
-    const char *name = "goat_lib_format_test.tmp";
-    FILE *file = fopen(name, "w+x");
+    char name[80];
+    FILE *file = create_test_file(name, sizeof(name));
     ASSERT(file != NULL);
     /* Percent signs supplied as data must never become a second format string. */
     fprintf_utf8(file, L"%s | %a | %d%% | %s", L"100%% %s %n %", "file%name", 42,
@@ -135,9 +177,8 @@ bool test_utf8_formatted_output() {
 }
 
 bool test_utf8_file_io() {
-    const char *name = "goat_lib_io_test.tmp";
-    /* Never overwrite a pre-existing file in the test runner's directory. */
-    FILE *file = fopen(name, "wx");
+    char name[80];
+    FILE *file = create_test_file(name, sizeof(name));
     ASSERT(file != NULL);
     ASSERT(fclose(file) == 0);
     size_t before = get_allocated_memory_size();
