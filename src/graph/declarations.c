@@ -259,10 +259,10 @@ static void vdecln_generate_indented_goat_code(const node_t *node,
 static instr_index_t vdecln_generate_bytecode(node_t *node,
         code_builder_t *code, data_builder_t *data) {
     const variable_declaration_t* decl = (const variable_declaration_t*)node;
-    instr_index_t first = vdeclr_generate_bytecode(&decl->decl_list[0]->base.base, code, data);
+    instr_index_t first = generate_bytecode_from_node(&decl->decl_list[0]->base.base, code, data);
     for (size_t index = 1; index < decl->decl_count; index++) {
         variable_declarator_t *vdr = decl->decl_list[index];
-        vdeclr_generate_bytecode(&vdr->base.base, code, data);
+        generate_bytecode_from_node(&vdr->base.base, code, data);
     }
     return first;
 }

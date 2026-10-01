@@ -8,6 +8,7 @@
 
 #include "analysis.h"
 #include "interpreter.h"
+#include "reachability.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/queue.h"
@@ -258,6 +259,6 @@ compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options
 
     interpret(root_node, memory, collector);
 
-    // ... further analysis ...
+    mark_unreachable_code(root_node, memory->graph, collector);
     return errors;
 }

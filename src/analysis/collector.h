@@ -17,7 +17,8 @@ typedef enum {
     ANALYSIS_EVENT_ANY = 0, /**< Query wildcard; never recorded. */
     ANALYSIS_VALUE_WRITE,
     ANALYSIS_STATE_JOIN,
-    ANALYSIS_DECLARATION_SUMMARY
+    ANALYSIS_DECLARATION_SUMMARY,
+    ANALYSIS_UNREACHABLE /**< Subtree root; declarator and value are NULL. */
 } analysis_event_kind_t;
 
 /** @brief One observation, not a mutable reference to an abstract state. */
@@ -59,7 +60,10 @@ typedef struct {
 /** @brief Creates an empty collector in a non-NULL arena. */
 analysis_collector_t *create_analysis_collector(arena_t *arena);
 
-/** @brief Appends in O(1); NULL collector disables recording. Node may be NULL. */
+/**
+ * @brief Appends in O(1); NULL collector disables recording.
+ * Unreachable events require a node and NULL declaration/value; value events require both.
+ */
 const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
         analysis_event_kind_t kind, const node_t *node, const declarator_t *declarator,
         const lattice_element_t *value);

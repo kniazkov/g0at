@@ -25,8 +25,8 @@ const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
     if (!collector) {
         return NULL;
     }
-    assert(kind >= ANALYSIS_VALUE_WRITE && kind <= ANALYSIS_DECLARATION_SUMMARY);
-    assert(declarator && value);
+    assert(kind >= ANALYSIS_VALUE_WRITE && kind <= ANALYSIS_UNREACHABLE);
+    assert(kind == ANALYSIS_UNREACHABLE ? node && !declarator && !value : declarator && value);
     analysis_event_t *event = alloc_zeroed_from_arena(collector->arena, sizeof(*event));
     event->sequence = ++collector->count;
     event->kind = kind;
@@ -94,17 +94,22 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
     for (const analysis_event_t *event = collector ? collector->head : NULL;
             event; event = event->next) {
         const wchar_t *kind = event->kind == ANALYSIS_VALUE_WRITE ? L"write" :
-            event->kind == ANALYSIS_STATE_JOIN ? L"join" : L"summary";
+            event->kind == ANALYSIS_STATE_JOIN ? L"join" :
+            event->kind == ANALYSIS_UNREACHABLE ? L"unreachable" : L"summary";
         string_value_t filename = event->file_name ? decode_utf8(event->file_name) :
             STATIC_STRING(L"<unknown>");
-        string_value_t value = lattice_to_string(event->value);
+        string_value_t value = event->value ? lattice_to_string(event->value) : EMPTY_STRING_VALUE;
         string_value_t line = format_string(L"#%zu %s, %zu.%zu: %s ",
             event->sequence, filename.data ? filename.data : L"<unknown>",
             event->row, event->column, kind);
         append_string_value(&builder, line);
-        append_string_view(&builder, event->declarator->name);
-        append_static_string(&builder, L" = ");
-        append_string_value(&builder, value);
+        if (event->kind == ANALYSIS_UNREACHABLE) {
+            append_string(&builder, event->node->vtbl->type_name);
+        } else {
+            append_string_view(&builder, event->declarator->name);
+            append_static_string(&builder, L" = ");
+            append_string_value(&builder, value);
+        }
         result = append_char(&builder, L'\n');
         FREE_STRING(line);
         FREE_STRING(value);

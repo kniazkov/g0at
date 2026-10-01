@@ -1,0 +1,7 @@
+var x = 0;
+if ((x = 1)) { print("T"); } else { print("dead"); }
+print(x);
+if ((x = 0)) { print("dead"); } else { print("F"); }
+print(x);
+if (false) { print("dead"); }
+print("end");

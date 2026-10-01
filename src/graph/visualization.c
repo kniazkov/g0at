@@ -113,7 +113,8 @@ static string_value_t build_node_properties_html(const node_t *node) {
         }
         append_string(&builder, L"<br/>");
         append_string(&builder, key);
-        append_string(&builder, L": <font color='blue'>");
+        append_string(&builder, node->unreachable ?
+            L": <font color='gray70'>" : L": <font color='blue'>");
         append_string_value(&builder, escaped_value);
         result = append_string(&builder, L"</font>");
         FREE_STRING(escaped_value);
@@ -136,8 +137,8 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
             builder,
             indent,
             format_string(
-                L"subgraph cluster_%d { style=\"rounded,dashed\"; color=gray;",
-                node->scope->id
+                L"subgraph cluster_%d { style=\"rounded,dashed\"; color=%s;",
+                node->scope->id, node->unreachable ? L"lightgray" : L"gray"
             )
         );
         indent++;
@@ -148,12 +149,16 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
     const wchar_t* name = node->vtbl->type_name;
     node_display_value_t value = get_node_data(node);
     string_value_t properties = build_node_properties_html(node);
-    const wchar_t *node_color = node->id ? L"black" : L"silver";
+    const wchar_t *node_color = node->unreachable ? L"lightgray" :
+        node->id ? L"black" : L"silver";
+    const wchar_t *node_style = node->unreachable ?
+        L" fontcolor=gray70 style=\"rounded,filled\" fillcolor=gray96 tooltip=\"unreachable\"" : L"";
     if (value.text.length > 0) {
         const wchar_t *font_color = L"blue";
         if (value.kind == NODE_DISPLAY_VALUE_PREDEFINED) {
             font_color = L"purple";
         }
+        if (node->unreachable) font_color = L"gray70";
         string_value_t formatted_value = value.text;
         if (value.kind == NODE_DISPLAY_VALUE_STRING_LITERAL) {
             formatted_value = trim_and_escape_html_entities(value.text, true);
@@ -164,13 +169,13 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
             builder,
             indent,
             format_string(
-                L"node_%u [label=<%s<br/><font color='%s'>%s</font>%s> color=%s];",
+                L"node_%u [label=<%s<br/><font color='%s'>%s</font>%s> color=%s%s];",
                 id,
                 name,
                 font_color,
                 formatted_value.data,
                 properties.data,
-                node_color
+                node_color, node_style
             )
         );
         FREE_STRING(formatted_value);
@@ -180,11 +185,11 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
             builder,
             indent,
             format_string(
-                L"node_%u [label=<%s%s> color=%s];",
+                L"node_%u [label=<%s%s> color=%s%s];",
                 id,
                 name,
                 properties.data,
-                node_color
+                node_color, node_style
             )
         );
     } else {
@@ -192,10 +197,10 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
             builder,
             indent,
             format_string(
-                L"node_%u [label=\"%s\" color=%s];",
+                L"node_%u [label=\"%s\" color=%s%s];",
                 id,
                 name,
-                node_color
+                node_color, node_style
             )
         );
     }
@@ -217,10 +222,11 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
                 builder,
                 indent,
                 format_string(
-                    L"node_%u -> node_%u [label=\" %zu\"];",
+                    L"node_%u -> node_%u [label=\" %zu\"%s];",
                     id,
                     child_id,
-                    index
+                    index,
+                    get_node_child(node, index)->unreachable ? L" color=lightgray fontcolor=gray70" : L""
                 )
             );
         } else {
@@ -228,10 +234,11 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
                 builder,
                 indent,
                 format_string(
-                    L"node_%u -> node_%u [label=\" %s\"];",
+                    L"node_%u -> node_%u [label=\" %s\"%s];",
                     id,
                     child_id,
-                    tag
+                    tag,
+                    get_node_child(node, index)->unreachable ? L" color=lightgray fontcolor=gray70" : L""
                 )
             );
         }
@@ -270,10 +277,12 @@ static void append_related_edges_to_dot(const vector_t *all_nodes, const avl_tre
                 builder,
                 indent,
                 format_string(
-                    L"node_%u -> node_%u [label=\" %s\", style=dashed, color=navy];",
+                    L"node_%u -> node_%u [label=\" %s\", style=dashed, color=%s, fontcolor=%s];",
                     source_id.uint32_val,
                     target_id.uint32_val,
-                    relation_name.data
+                    relation_name.data,
+                    node->unreachable || related_node->unreachable ? L"lightgray" : L"navy",
+                    node->unreachable || related_node->unreachable ? L"gray70" : L"black"
                 )
             );
         }
@@ -294,8 +303,7 @@ static int node_comparator(const void *first, const void *second) {
     return 0;
 }
 
-bool generate_image(const node_t* root_node, const char *graph_output_file) {
-    bool result = false;
+string_value_t generate_graph_dot(const node_t *root_node) {
 
     source_builder_t *builder = create_source_builder();
     add_static_source(builder, 0, L"digraph AST {");
@@ -317,7 +325,12 @@ bool generate_image(const node_t* root_node, const char *graph_output_file) {
     add_static_source(builder, 0, L"}");
     string_value_t dot_code = build_source(builder);
     destroy_source_builder(builder);
+    return dot_code;
+}
 
+bool generate_image(const node_t* root_node, const char *graph_output_file) {
+    bool result = false;
+    string_value_t dot_code = generate_graph_dot(root_node);
     size_t file_name_len = strlen(graph_output_file);
     char *dot_file = (char*)ALLOC(file_name_len + 6); // name + ".dot"
     sprintf(dot_file, "%s.dot", graph_output_file);

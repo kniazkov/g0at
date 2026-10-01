@@ -219,6 +219,9 @@ struct node_t {
      * Numbering restarts at function boundaries, but continues through ordinary blocks.
      */
     unsigned int id;
+
+    /** @brief Proven unreachable; false also covers code not analyzed yet. */
+    bool unreachable;
 };
 
 /** @brief Gets the primary display data associated with a node. */
@@ -358,6 +361,7 @@ static inline void generate_indented_c_code_from_node(const node_t *node,
 /** @brief Generates bytecode from a node. */
 static inline instr_index_t generate_bytecode_from_node(node_t *node,
         code_builder_t *code, data_builder_t *data) {
+    if (node->unreachable) return BAD_INSTR_INDEX;
     return node->vtbl->generate_bytecode(node, code, data);
 }
 

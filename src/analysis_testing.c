@@ -67,24 +67,30 @@ static bool check_expectations(FILE *file, const analysis_collector_t *collector
         if (!strcmp(kind, "write")) query.kind = ANALYSIS_VALUE_WRITE;
         else if (!strcmp(kind, "join")) query.kind = ANALYSIS_STATE_JOIN;
         else if (!strcmp(kind, "summary")) query.kind = ANALYSIS_DECLARATION_SUMMARY;
+        else if (!strcmp(kind, "unreachable")) query.kind = ANALYSIS_UNREACHABLE;
         else { fprintf(stderr, "%s.expect:%zu: invalid event kind\n", name, line_number); return false; }
         if (!strcmp(mode, "none") && strcmp(expected, "-")) return false;
+        bool unreachable = query.kind == ANALYSIS_UNREACHABLE;
+        if (unreachable && (decl_row || strcmp(variable, "-") || strcmp(expected, "-"))) return false;
         string_value_t wide = decode_utf8(variable);
         if (!wide.data) return false;
         size_t matches = 0;
         const analysis_event_t *last = NULL;
         for (const analysis_event_t *event = find_analysis_event(collector, NULL, &query);
                 event; event = find_analysis_event(collector, event, &query)) {
-            string_view_t actual = event->declarator->name;
-            if (actual.length != wide.length || wmemcmp(actual.data, wide.data, wide.length)) continue;
-            if (decl_row && declaration_row(event->declarator) != decl_row) continue;
+            if (!unreachable) {
+                string_view_t actual = event->declarator->name;
+                if (actual.length != wide.length || wmemcmp(actual.data, wide.data, wide.length)) continue;
+                if (decl_row && declaration_row(event->declarator) != decl_row) continue;
+            }
             matches++;
             last = event;
         }
         FREE_STRING(wide);
         checks++;
         bool ok = !strcmp(mode, "none") ? matches == 0 :
-            last && (!strcmp(mode, "last") || matches == 1) && value_matches(last->value, expected);
+            last && (!strcmp(mode, "last") || matches == 1) &&
+            (unreachable || value_matches(last->value, expected));
         if (!ok) {
             fprintf(stderr, "%s.expect:%zu: %s (selector matched %zu events)\n",
                 name, line_number, line, matches);

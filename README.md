@@ -225,12 +225,35 @@ none write 3 1 x -
 
 `one` requires exactly one matching event, `last` checks the last match, and `none` requires
 no match and uses `-` for the value. Event kinds are `write`, `join`, and `summary`.
+For proven dead subtrees, use `one unreachable ROW 0 - -`,
+`last unreachable ROW 0 - -`, or `none unreachable ROW 0 - -`.
+These events have a node but no declaration or value; the last three fields must be `0 - -`.
+One event describes the root of a dead subtree, rather than every descendant.
+
 A zero row is a wildcard. Declaration rows distinguish shadowed variables; synthetic nodes
 use their nearest positioned ancestor. Values are checked by type and payload: `int=N`,
 `range=MIN,MAX`, `top`, `bottom`, `null`, `true`, `false`, `numeric`, `integer`, or `function`.
 Blank lines and lines starting with `#` are ignored. Empty expectation files, malformed
 checks, missing files, parse errors, mismatches, and detected memory leaks fail the suite.
 On a mismatch the runner prints the expectation location and the actual analysis report.
+
+### Proven unreachable code
+
+A separate conservative pass marks `node_t.unreachable` after abstract interpretation.
+It follows immediate execution through declarations, assignments, blocks, and `if`, including
+code after unconditional returns. Known conditions eliminate one branch; unknown conditions
+merge continuing states. Function bodies are left unclassified because they may execute later.
+A function created inside a proven dead subtree is dead along with that subtree.
+
+The pass uses literals and propagated values, but treats arithmetic/comparison results as
+unknown until their abstract semantics match the VM. Calls invalidate known variable values
+because captured bindings may change. Call arguments follow bytecode order: right to left,
+then the callee. An unset flag means **not proven unreachable**, not necessarily reachable.
+
+Dead nodes stay in the AST and appear light gray in graphs, including their labels and edges.
+Bytecode generation skips them while retaining condition evaluation and its side effects.
+Source-code regeneration keeps the original branches for inspection. The collector reports
+subtree roots, for example `#4 program.goat, 3.6: unreachable statement expression`.
 
 ## Observing abstract analysis
 

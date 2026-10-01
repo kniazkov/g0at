@@ -14,6 +14,7 @@
 /** @brief Initializes a statement list expression node from a `{...}` block. */
 static void init_statement_list(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
     node_t *node = create_statement_list_node(memory->graph);
+    node->position = token->position;
     token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     expr->type = TOKEN_EXPRESSION;
     expr->position = token->position;
