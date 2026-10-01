@@ -11,3 +11,7 @@ bool test_analysis_collector_text();
 bool test_analysis_observations();
 bool test_analysis_branch_observations();
 bool test_analysis_options();
+
+bool test_unknown_expression_values();
+bool test_unknown_values_in_analysis();
+bool test_valueless_nodes_and_known_values();

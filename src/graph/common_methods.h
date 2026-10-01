@@ -41,8 +41,12 @@ const node_t *no_related_node(const node_t *node, size_t index);
 /** @brief Implements @ref node_vtbl_t::get_relation_type. */
 relation_type_t no_relation_type(const node_t *node, size_t index);
 
-/** @brief Implements @ref node_vtbl_t::calculate for nodes without values. */
-const lattice_element_t *cannot_calculate(node_t *node, abstract_state_t *state, arena_t *arena);
+/** @brief Implements @ref node_vtbl_t::calculate for valueless nodes; returns BOTTOM. */
+const lattice_element_t *no_abstract_value(node_t *node, abstract_state_t *state, arena_t *arena);
+
+/** @brief Implements @ref node_vtbl_t::calculate for unsupported expressions; returns TOP. */
+const lattice_element_t *unknown_abstract_value(node_t *node, abstract_state_t *state,
+        arena_t *arena);
 
 /** @brief Implements @ref node_vtbl_t::execute. */
 abstract_state_t *execute_nothing(node_t *node, abstract_state_t *state, arena_t *arena);
