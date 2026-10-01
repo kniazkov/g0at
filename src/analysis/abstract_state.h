@@ -9,6 +9,7 @@
 #include "lib/value.h"
 #include "lib/avl_tree.h"
 #include "common/control_flow.h"
+#include "collector.h"
 
 typedef struct abstract_state_t abstract_state_t;
 
@@ -29,6 +30,9 @@ struct abstract_state_t {
      * The state does not own the arena.
      */
     arena_t *arena;
+
+    /** @brief Optional borrowed collector, shared by branch states. */
+    analysis_collector_t *collector;
 
     /** @brief Mapping from declarators to lattice-pair records. */
     avl_tree_t *values;
@@ -94,3 +98,10 @@ void flush_abstract_state(const abstract_state_t *state);
 
 /** @brief Destroys an abstract state. */
 void destroy_abstract_state(abstract_state_t *state);
+
+/** @brief Records a write at its source node; the ordinary setter uses the declaration node. */
+const lattice_element_t *set_in_abstract_state_at(abstract_state_t *state,
+        const declarator_t *declarator, const lattice_element_t *value, const node_t *node);
+
+/** @brief Records current values after merging branches at node. */
+void collect_joined_abstract_state(const abstract_state_t *state, const node_t *node);

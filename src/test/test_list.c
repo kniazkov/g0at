@@ -10,6 +10,7 @@
 #include "test_parser.h"
 #include "test_model.h"
 #include "test_codegen.h"
+#include "test_analysis.h"
 
 static bool stub() {
     return true;
@@ -56,6 +57,12 @@ static test_description_t test_list[] = {
     , { "context cloning", test_context_cloning }
     , { "function definition", test_function_definition }
     , { "closure", test_closure }
+
+    , { "analysis collector", test_analysis_collector }
+    , { "analysis collector text", test_analysis_collector_text }
+    , { "analysis observations", test_analysis_observations }
+    , { "analysis branch observations", test_analysis_branch_observations }
+    , { "analysis options", test_analysis_options }
 
     , { "data builder", test_data_builder }
     , { "linker", test_linker }

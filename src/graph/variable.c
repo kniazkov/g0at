@@ -64,7 +64,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     const lattice_element_t *value = get_from_abstract_state(state, expr->declarator);
     if (!value) {
         value = make_null_element();
-        set_in_abstract_state(state, expr->declarator, value);
+        set_in_abstract_state_at(state, expr->declarator, value, node);
     }
     return value;
 }

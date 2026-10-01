@@ -92,6 +92,7 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
         );
         destroy_abstract_state(state);
         state = join_abstract_states(true_state, false_state);
+        collect_joined_abstract_state(state, node);
         destroy_abstract_state(true_state);
         destroy_abstract_state(false_state);
     } else {

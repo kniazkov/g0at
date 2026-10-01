@@ -64,6 +64,7 @@ static void destroy_value(value_t value) {
 abstract_state_t *create_abstract_state(arena_t *arena) {
     abstract_state_t *state = (abstract_state_t*)ALLOC(sizeof(abstract_state_t));
     state->arena = arena;
+    state->collector = NULL;
     state->values = create_avl_tree(declarator_comparator);
     state->values->copy_value = copy_value;
     state->values->destroy_value = destroy_value;
@@ -78,6 +79,7 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     }
     abstract_state_t *copy = (abstract_state_t*)ALLOC(sizeof(abstract_state_t));
     copy->arena = state->arena;
+    copy->collector = state->collector;
     copy->values = clone_avl_tree(state->values);
     copy->control_flow = FLOW_NORMAL;
     copy->return_value = state->return_value;
@@ -86,6 +88,12 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
 
 const lattice_element_t *set_in_abstract_state(abstract_state_t *state,
         const declarator_t *declarator, const lattice_element_t *value) {
+    return set_in_abstract_state_at(state, declarator, value, &declarator->base);
+}
+
+const lattice_element_t *set_in_abstract_state_at(abstract_state_t *state,
+        const declarator_t *declarator, const lattice_element_t *value, const node_t *node) {
+    add_analysis_event(state->collector, ANALYSIS_VALUE_WRITE, node, declarator, value);
     lattice_pair_t *pair = (lattice_pair_t*)get_from_avl_tree(
         state->values,
         (void*)declarator
@@ -167,8 +175,10 @@ abstract_state_t *join_abstract_states(const abstract_state_t *left,
     }
 
     assert(left->arena == right->arena);
+    assert(left->collector == right->collector);
 
     abstract_state_t *result = create_abstract_state(left->arena);
+    result->collector = left->collector;
     result->control_flow =
         left->control_flow == right->control_flow ? left->control_flow : FLOW_NORMAL;
     result->return_value =
@@ -188,15 +198,37 @@ static void flush_abstract_state_entry(void *user_data, void* key, value_t value
     declarator_t *declarator = (declarator_t*)key;
     lattice_pair_t *pair = (lattice_pair_t*)value.ptr;
     declarator->abstract_value = pair->summary;
+    const abstract_state_t *state = user_data;
+    add_analysis_event(state->collector, ANALYSIS_DECLARATION_SUMMARY,
+        &declarator->base, declarator, pair->summary);
 }
 
 void flush_abstract_state(const abstract_state_t *state) {
-    avl_tree_for_each(state->values, flush_abstract_state_entry, NULL);
+    avl_tree_for_each(state->values, flush_abstract_state_entry, (void *)state);
 }
 
 void destroy_abstract_state(abstract_state_t *state) {
     if (state) {
         destroy_avl_tree(state->values);
         FREE(state);
+    }
+}
+
+typedef struct {
+    analysis_collector_t *collector;
+    const node_t *node;
+} collection_context_t;
+
+static void collect_joined_entry(void *user_data, void *key, value_t value) {
+    collection_context_t *context = user_data;
+    lattice_pair_t *pair = (lattice_pair_t *)value.ptr;
+    add_analysis_event(context->collector, ANALYSIS_STATE_JOIN, context->node,
+        key, pair->current);
+}
+
+void collect_joined_abstract_state(const abstract_state_t *state, const node_t *node) {
+    if (state->collector) {
+        collection_context_t context = { state->collector, node };
+        avl_tree_for_each(state->values, collect_joined_entry, &context);
     }
 }

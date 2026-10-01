@@ -70,7 +70,9 @@ int go(options_t *opt) {
         destroy_arena(memory.tokens);
         memory.tokens = NULL;
 
-        error = analyze(root_node, &memory, opt);
+        analysis_collector_t *collector = (opt->print_analysis || opt->analysis_output_file) ?
+            create_analysis_collector(memory.graph) : NULL;
+        error = analyze(root_node, &memory, opt, collector);
         compilation_error_severity_t severity = get_most_severe_compilation_error(error);
         if (severity > WARNING) {
             break;
@@ -95,6 +97,22 @@ int go(options_t *opt) {
         destroy_arena(memory.errors);
         memory.errors = NULL;
         error = NULL;
+
+        if (collector) {
+            string_value_t report = analysis_collector_to_text(collector);
+            if (opt->print_analysis) {
+                print_utf8(report.data);
+            }
+            bool written = !opt->analysis_output_file ||
+                write_utf8_file(opt->analysis_output_file->full_path, report.data);
+            FREE_STRING(report);
+            if (!written) {
+                fprintf_utf8(stderr, get_messages()->cannot_write_analysis_file,
+                    opt->analysis_output_file->normal_path);
+                fprintf(stderr, "\n");
+                break;
+            }
+        }
 
         if (opt->print_source_code) {
             source_builder_t *source_builder = create_source_builder();
