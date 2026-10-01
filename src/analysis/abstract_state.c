@@ -81,7 +81,7 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     copy->arena = state->arena;
     copy->collector = state->collector;
     copy->values = clone_avl_tree(state->values);
-    copy->control_flow = FLOW_NORMAL;
+    copy->control_flow = state->control_flow;
     copy->return_value = state->return_value;
     return copy;
 }
@@ -100,6 +100,14 @@ const lattice_element_t *set_in_abstract_state_at(abstract_state_t *state,
     ).ptr;
     if (pair) {
         const lattice_element_t *old_value = pair->current;
+        if (pair->refs > 1) {
+            lattice_pair_t *private_pair = ALLOC(sizeof(*private_pair));
+            *private_pair = *pair;
+            private_pair->refs = 0; // set_in_avl_tree takes the new reference
+            set_in_avl_tree(state->values, (void *)declarator,
+                (value_t){ .ptr = private_pair });
+            pair = private_pair;
+        }
         pair->current = value;
         pair->summary = lattice_join(state->arena, pair->summary, value);
         return old_value;

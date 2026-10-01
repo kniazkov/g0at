@@ -40,7 +40,7 @@ struct abstract_state_t {
     /** @brief Current abstract control-flow mode. */
     control_flow_t control_flow;
 
-    /** @brief Abstract value returned from the current function. */
+    /** @brief Borrowed return-output slot; cloning preserves this external reference. */
     const lattice_element_t **return_value;
 };
 
@@ -54,8 +54,9 @@ abstract_state_t *create_abstract_state(arena_t *arena);
 /**
  * @brief Clones an abstract state.
  *
- * Stored lattice-pair records are shared through reference counting by the AVL value-copy callback,
- * while declarator keys and lattice elements remain shallow references.
+ * Current values and summaries are isolated by copy-on-write; control flow is copied.
+ * Declarators, immutable lattice values, the collector, and return-output slot remain borrowed.
+ * Either state may be destroyed first; shared arenas must outlive both.
  * @return Newly allocated clone, or NULL if `state` is NULL.
  */
 abstract_state_t *clone_abstract_state(const abstract_state_t *state);

@@ -11,6 +11,7 @@
 #include "test_model.h"
 #include "test_codegen.h"
 #include "test_analysis.h"
+#include "test_abstract_state.h"
 #include "test_lattice.h"
 
 static bool stub() {
@@ -66,6 +67,11 @@ static test_description_t test_list[] = {
     , { "lattice boundaries", test_lattice_boundaries }
     , { "lattice arrays", test_lattice_arrays }
     , { "lattice laws", test_lattice_laws }
+    , { "abstract state clone lifetimes", test_abstract_state_clone_lifetimes }
+    , { "abstract state many declarations", test_abstract_state_many_declarations }
+    , { "abstract state join isolation", test_abstract_state_join_isolation }
+    , { "abstract state clone metadata", test_abstract_state_clone_metadata }
+    , { "abstract state branch program", test_abstract_state_branch_program }
     , { "analysis collector", test_analysis_collector }
     , { "analysis collector text", test_analysis_collector_text }
     , { "analysis observations", test_analysis_observations }
