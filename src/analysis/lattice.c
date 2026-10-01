@@ -4,6 +4,9 @@
  * @brief Implementation of the abstract-value lattice.
  */
 
+#include <assert.h>
+#include <math.h>
+
 #include "lattice.h"
 #include "lib/string_ext.h"
 
@@ -98,6 +101,15 @@ const lattice_element_t *make_integer_element() {
 }
 
 const lattice_element_t *make_integer_range_element(arena_t *arena, int64_t min, int64_t max) {
+    if (min > max) {
+        return make_bottom_element();
+    }
+    if (min == max) {
+        return make_integer_constant_element(arena, min);
+    }
+    if (min == INT64_MIN && max == INT64_MAX) {
+        return make_integer_element();
+    }
     integer_range_element_t *element = alloc_from_arena(arena, sizeof(integer_range_element_t));
     element->base.type = LATTICE_INTEGER_RANGE;
     element->min = min;
@@ -156,6 +168,13 @@ const lattice_element_t *make_array_element() {
 }
 
 const lattice_element_t *make_typed_array_element(arena_t *arena, lattice_type_t element_type) {
+    assert(element_type >= LATTICE_TOP && element_type <= LATTICE_BOTTOM);
+    assert(element_type != LATTICE_INTEGER_RANGE && element_type != LATTICE_INTEGER_CONSTANT
+        && element_type != LATTICE_REAL_CONSTANT && element_type != LATTICE_STRING_CONSTANT
+        && element_type != LATTICE_TYPED_ARRAY);
+    if (element_type == LATTICE_TOP) {
+        return make_array_element();
+    }
     typed_array_element_t *element = alloc_from_arena(arena, sizeof(typed_array_element_t));
     element->base.type = LATTICE_TYPED_ARRAY;
     element->element_type = element_type;
@@ -433,6 +452,14 @@ static const lattice_element_t *lattice_join_real(const lattice_element_t *right
     return make_top_element();
 }
 
+/** @brief Abstract real equality: all NaNs agree; signed zeros remain distinct. */
+static bool same_real_constant(double left, double right) {
+    if (isnan(left) || isnan(right)) {
+        return isnan(left) && isnan(right);
+    }
+    return left == right && (left != 0.0 || !!signbit(left) == !!signbit(right));
+}
+
 /** @brief Joins REAL_CONSTANT with another lattice element. */
 static const lattice_element_t *lattice_join_real_constant(const lattice_element_t *left,
         const lattice_element_t *right) {
@@ -445,7 +472,7 @@ static const lattice_element_t *lattice_join_real_constant(const lattice_element
         case LATTICE_REAL_CONSTANT: {
             const real_constant_element_t *right_constant = (const real_constant_element_t *)right;
 
-            if (left_constant->value == right_constant->value) {
+            if (same_real_constant(left_constant->value, right_constant->value)) {
                 return left;
             }
 
@@ -730,7 +757,7 @@ static const lattice_element_t *lattice_join_array(const lattice_element_t *righ
 }
 
 /** @brief Joins TYPED_ARRAY with another lattice element. */
-static const lattice_element_t *lattice_join_typed_array(const lattice_element_t *left,
+static const lattice_element_t *lattice_join_typed_array(arena_t *arena, const lattice_element_t *left,
         const lattice_element_t *right) {
     const typed_array_element_t *left_array = (const typed_array_element_t *)left;
 
@@ -745,7 +772,10 @@ static const lattice_element_t *lattice_join_typed_array(const lattice_element_t
                 return left;
             }
 
-            return make_array_element();
+            const lattice_element_t left_type = { .type = left_array->element_type };
+            const lattice_element_t right_type = { .type = right_array->element_type };
+            const lattice_element_t *element = lattice_join(arena, &left_type, &right_type);
+            return make_typed_array_element(arena, element->type);
         }
 
         case LATTICE_ARRAY:
@@ -859,7 +889,7 @@ const lattice_element_t *lattice_join(arena_t *arena,
             return lattice_join_array(right);
 
         case LATTICE_TYPED_ARRAY:
-            return lattice_join_typed_array(left, right);
+            return lattice_join_typed_array(arena, left, right);
 
         case LATTICE_USER_DEFINED_OBJECT:
             return lattice_join_user_defined_object(right);
@@ -1128,7 +1158,7 @@ static const lattice_element_t *lattice_meet_real_constant(const lattice_element
             const real_constant_element_t *right_constant =
                 (const real_constant_element_t *)right;
 
-            if (left_constant->value == right_constant->value) {
+            if (same_real_constant(left_constant->value, right_constant->value)) {
                 return left;
             }
 
@@ -1390,7 +1420,7 @@ static const lattice_element_t *lattice_meet_array(const lattice_element_t *righ
 }
 
 /** @brief Meets TYPED_ARRAY with another lattice element. */
-static const lattice_element_t *lattice_meet_typed_array(const lattice_element_t *left,
+static const lattice_element_t *lattice_meet_typed_array(arena_t *arena, const lattice_element_t *left,
         const lattice_element_t *right) {
     const typed_array_element_t *left_array = (const typed_array_element_t *)left;
 
@@ -1407,7 +1437,10 @@ static const lattice_element_t *lattice_meet_typed_array(const lattice_element_t
                 return left;
             }
 
-            return make_bottom_element();
+            const lattice_element_t left_type = { .type = left_array->element_type };
+            const lattice_element_t right_type = { .type = right_array->element_type };
+            const lattice_element_t *element = lattice_meet(arena, &left_type, &right_type);
+            return make_typed_array_element(arena, element->type);
         }
 
         case LATTICE_NULL:
@@ -1513,7 +1546,7 @@ const lattice_element_t *lattice_meet(arena_t *arena,
             return lattice_meet_array(right);
 
         case LATTICE_TYPED_ARRAY:
-            return lattice_meet_typed_array(left, right);
+            return lattice_meet_typed_array(arena, left, right);
 
         case LATTICE_USER_DEFINED_OBJECT:
             return lattice_meet_user_defined_object(right);
