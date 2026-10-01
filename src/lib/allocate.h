@@ -18,13 +18,13 @@ void *_CALLOC(size_t size);
 void _FREE(void *ptr); 
 
 /**
- * @brief Allocates memory of the given size and handles out-of-memory situations.
+ * @brief Allocates memory aligned for any fundamental C type.
  * 
  * In debugging mode, extra bytes are added at the end of the allocated block to detect
  * memory corruption.
  *
  * This function attempts to allocate a block of memory of the specified size using 
- * `malloc()`. If the allocation fails (i.e., the system runs out of memory), an error 
+ * `malloc()`. If allocation fails or its size calculation overflows, an error
  * message is printed to the error stream, and the program terminates with a failure exit code 
  * (EXIT_FAILURE). In our project, running out of memory is considered a critical error 
  * and no recovery is possible, so the program is forced to exit immediately.

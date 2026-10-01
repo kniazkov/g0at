@@ -46,3 +46,10 @@ bool test_double_to_string();
 bool test_format_string();
 
 bool test_align_text();
+
+bool test_allocation_alignment();
+bool test_arena_alignment_and_growth();
+bool test_binary_search_boundaries();
+bool test_path_lifetime();
+bool test_utf8_formatted_output();
+bool test_utf8_file_io();

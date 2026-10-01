@@ -15,9 +15,10 @@
 void *binary_search(pair_t *pairs, size_t size, const void *key,
         int (*comparator)(const void*, const void*)) {
     size_t low = 0;
-    size_t high = size - 1;
+    size_t high = size;
 
-    while (low <= high) {
+    /* Search the half-open interval [low, high), including the empty case. */
+    while (low < high) {
         size_t mid = low + (high - low) / 2;
         int cmp_result = comparator(pairs[mid].key, key);
 
@@ -27,7 +28,7 @@ void *binary_search(pair_t *pairs, size_t size, const void *key,
         if (cmp_result < 0) {
             low = mid + 1;
         } else {
-            high = mid - 1;
+            high = mid;
         }
     }
 

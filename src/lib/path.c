@@ -88,7 +88,9 @@ path_t *create_path(const char *input) {
         p->normal_path = normalize_path(input);
         p->full_path = get_absolute_path(p->normal_path);
         if (p->full_path == NULL) {
-            p->full_path = p->normal_path;
+            size_t length = strlen(p->normal_path) + 1;
+            p->full_path = ALLOC(length);
+            memcpy(p->full_path, p->normal_path, length);
         }
         char *last_separator = strrchr(p->full_path, PATH_SEPARATOR);
         if (last_separator) {

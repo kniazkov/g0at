@@ -28,6 +28,12 @@ static test_description_t test_list[] = {
     , { "unknown symbol", test_uknown_symbol }
       
     , { "memory allocation", test_memory_allocation }
+    , { "allocation alignment", test_allocation_alignment }
+    , { "arena alignment and growth", test_arena_alignment_and_growth }
+    , { "binary search boundaries", test_binary_search_boundaries }
+    , { "path lifetime", test_path_lifetime }
+    , { "UTF-8 formatted output", test_utf8_formatted_output }
+    , { "UTF-8 file I/O", test_utf8_file_io }
     , { "AVL tree", test_avl_tree }
     , { "string builder", test_string_builder }
     , { "binary search", test_binary_search }
