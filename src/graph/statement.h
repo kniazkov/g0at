@@ -7,6 +7,7 @@
 #pragma once
 
 #include "node.h"
+#include "analysis/lattice.h"
 
 typedef struct declarator_spec_t declarator_spec_t;
 
@@ -123,3 +124,6 @@ node_t *create_return_node(arena_t *arena, expression_t *value);
  */
 node_t *create_if_else_node(arena_t *arena, expression_t *condition, statement_t *true_branch,
         statement_t *false_branch);
+
+/** @brief Stores the condition truth proven by the reachability pass. */
+void set_if_else_condition_truth(node_t *node, abstract_truth_t truth);

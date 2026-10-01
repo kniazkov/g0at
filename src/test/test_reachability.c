@@ -83,7 +83,7 @@ bool test_reachability_bytecode() {
             branches++;
         }
     }
-    ASSERT(writes == 2 && live == 1 && branches == 2);
+    ASSERT(writes == 2 && live == 1 && branches == 0);
     destroy_data_builder(data);
     destroy_code_builder(code);
     destroy_options(options);
@@ -135,7 +135,8 @@ bool test_reachability_graph() {
     options_t *options = create_options();
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t dot = generate_graph_dot(root);
-    ASSERT(wcsstr(dot.data, L"fillcolor=gray96 tooltip=\"unreachable\""));
+    ASSERT(wcsstr(dot.data, L"fontcolor=gray70 tooltip=\"unreachable\""));
+    ASSERT(!wcsstr(dot.data, L"filled") && !wcsstr(dot.data, L"fillcolor"));
     ASSERT(wcsstr(dot.data, L"font color='gray70'>\"dead\"</font>"));
     ASSERT(wcsstr(dot.data, L"color=lightgray fontcolor=gray70"));
     ASSERT(wcsstr(dot.data, L"style=dashed, color=lightgray, fontcolor=gray70"));

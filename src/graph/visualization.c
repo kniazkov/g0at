@@ -152,7 +152,7 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
     const wchar_t *node_color = node->unreachable ? L"lightgray" :
         node->id ? L"black" : L"silver";
     const wchar_t *node_style = node->unreachable ?
-        L" fontcolor=gray70 style=\"rounded,filled\" fillcolor=gray96 tooltip=\"unreachable\"" : L"";
+        L" fontcolor=gray70 tooltip=\"unreachable\"" : L"";
     if (value.text.length > 0) {
         const wchar_t *font_color = L"blue";
         if (value.kind == NODE_DISPLAY_VALUE_PREDEFINED) {

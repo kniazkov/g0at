@@ -12,15 +12,15 @@ gcc src\functional_testing.c -o functional_testing
 cd test\functional
 ..\..\functional_testing.exe ..\..\goat.exe list.txt > NUL
 cd ..\..
-for %%F in ("test\functional\%1\actual_output.txt") do if %%~zF NEQ 0 (
-    ren test\functional\%1\actual_output.txt expected_output.txt
+for %%F in ("test\functional\%1\actual_output_all.txt") do if %%~zF NEQ 0 (
+    ren test\functional\%1\actual_output_all.txt expected_output.txt
 ) else (
-    del test\functional\%1\actual_output.txt
+    del test\functional\%1\actual_output_all.txt
 )
-for %%F in ("test\functional\%1\actual_error.txt") do if %%~zF NEQ 0 (
-    ren test\functional\%1\actual_error.txt expected_error.txt
+for %%F in ("test\functional\%1\actual_error_all.txt") do if %%~zF NEQ 0 (
+    ren test\functional\%1\actual_error_all.txt expected_error.txt
 ) else (
-    del test\functional\%1\actual_error.txt
+    del test\functional\%1\actual_error_all.txt
 )
 cd test\functional
 ..\..\functional_testing.exe ..\..\goat.exe list.txt

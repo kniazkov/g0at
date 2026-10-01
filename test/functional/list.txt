@@ -69,3 +69,6 @@ dead_closure_mutation
 dead_deferred_body
 dead_call_order
 dead_arithmetic_fallback
+optimization_implicit_capture
+optimization_if_without_else
+optimization_function_condition

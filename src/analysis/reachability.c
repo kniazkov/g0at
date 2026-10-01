@@ -7,12 +7,16 @@
 #include "abstract_state.h"
 #include "lattice.h"
 #include "graph/node.h"
+#include "graph/statement.h"
 #include "graph/variable.h"
 #include "graph/declarations.h"
 
 /** @brief Sets or clears the unreachable flag on a node and all descendants. */
 static void set_subtree_flag(node_t *node, bool unreachable) {
     node->unreachable = unreachable;
+    if (!unreachable && node->vtbl->type == NODE_IF_ELSE) {
+        set_if_else_condition_truth(node, ABSTRACT_EITHER);
+    }
     for (size_t i = 0; i < get_node_child_count(node); i++) {
         set_subtree_flag(get_node_child(node, i), unreachable);
     }
@@ -51,11 +55,13 @@ static void visit_if(node_t *node, abstract_state_t **state, analysis_collector_
     node_t *yes = get_node_child(node, 1);
     node_t *no = get_node_child_count(node) == 3 ? get_node_child(node, 2) : NULL;
     if ((*state)->control_flow != FLOW_NORMAL) {
+        set_if_else_condition_truth(node, ABSTRACT_NEVER);
         mark_dead(yes, collector);
         if (no) mark_dead(no, collector);
         return;
     }
     abstract_truth_t truth = lattice_truth(condition);
+    set_if_else_condition_truth(node, truth);
     if (truth == ABSTRACT_TRUE) {
         if (no) mark_dead(no, collector);
         visit(yes, state, collector);

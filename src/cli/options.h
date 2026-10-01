@@ -13,10 +13,19 @@
 
 typedef struct options_t options_t;
 
+/** @brief Optional analysis and code optimization level. */
+typedef enum {
+    OPTIMIZATION_NONE,
+    OPTIMIZATION_ALL
+} optimization_level_t;
+
 /** @brief Storing parsed command-line options. */
 struct options_t {
     /** @brief Path to the input file. */
     path_t *input_file;
+
+    /** @brief Defaults to OPTIMIZATION_ALL. */
+    optimization_level_t optimization_level;
 
     /** @brief Language for the command-line interface (CLI) error messages. */
     const char *language;
