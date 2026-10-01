@@ -103,9 +103,9 @@ bool test_analysis_collector_text() {
         make_top_element());
     text = analysis_collector_to_text(collector);
     ASSERT(wcscmp(text.data,
-        L"#1 тест%.goat:2:4 write число = 1\n"
-        L"#2 тест%.goat:2:4 join число = [1..3]\n"
-        L"#3 <unknown>:0:0 summary число = ⊤\n") == 0);
+        L"#1 тест%.goat, 2.4: write число = 1\n"
+        L"#2 тест%.goat, 2.4: join число = [1..3]\n"
+        L"#3 <unknown>, 0.0: summary число = ⊤\n") == 0);
     ASSERT(text.length == wcslen(text.data));
     FREE_STRING(text);
     destroy_arena(arena);

@@ -98,7 +98,7 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
         string_value_t filename = event->file_name ? decode_utf8(event->file_name) :
             STATIC_STRING(L"<unknown>");
         string_value_t value = lattice_to_string(event->value);
-        string_value_t line = format_string(L"#%zu %s:%zu:%zu %s ",
+        string_value_t line = format_string(L"#%zu %s, %zu.%zu: %s ",
             event->sequence, filename.data ? filename.data : L"<unknown>",
             event->row, event->column, kind);
         append_string_value(&builder, line);
