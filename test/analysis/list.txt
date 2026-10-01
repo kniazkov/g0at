@@ -28,3 +28,4 @@ positive_range
 zero_crossing_range
 return_false_branch
 both_unreachable
+builtin_condition

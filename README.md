@@ -260,7 +260,7 @@ observations made on those paths. Abstract-state clones isolate current values a
 through copy-on-write. Blocks stop at `return`, whose expression is still evaluated.
 
 Integer/real zero, null, false, and empty strings are false; nonzero numbers, nonempty strings,
-true, and functions are true. Unknown types and ranges containing both zero and nonzero values
+true, and functions are true. Built-in symbols currently have abstract value `TOP`. Unknown types and ranges containing both zero and nonzero values
 keep both branches. Parentheses forward evaluation. Unsupported arithmetic/comparison
 operators evaluate operands in order but still return `TOP`; their result semantics remain
 future work. Calls evaluate their callee and arguments, but function-body effects are not yet
