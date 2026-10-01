@@ -1,0 +1,1 @@
+print("" + null); print("|"); print("" + true); print("|"); print("" + false); print("|"); print("x" + 1.5); print("|"); print("x" + (0 - 2)); print("|"); print("Ж" + "🐐"); print("" + "");

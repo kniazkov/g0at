@@ -5,6 +5,7 @@
  */
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdbool.h>
 
 #include "vm.h"
@@ -19,6 +20,8 @@
 typedef struct {
     /** @brief Pointer to the bytecode being executed. */
     bytecode_t *code;
+    /** @brief Nonzero if an instruction failed. */
+    int status;
 } runtime_t;
 
 /**
@@ -305,6 +308,10 @@ static bool exec_ADD(runtime_t *runtime, instruction_t instr, thread_t *thread) 
             return true;
         }
     }
+    DECREFIF(first);
+    DECREFIF(second);
+    runtime->status = 1;
+    fputs("Invalid operands for addition.\n", stderr);
     return false;
 }
 
@@ -609,6 +616,7 @@ int run(process_t *proc, bytecode_t *code) {
     // preparing the environment
     runtime_t runtime;
     runtime.code = code;
+    runtime.status = 0;
     if ((proc->string_cache_size = code->data_descriptor_count) > 0) {
         proc->string_cache = CALLOC(code->data_descriptor_count * sizeof(object_t*));
     }
@@ -631,5 +639,5 @@ int run(process_t *proc, bytecode_t *code) {
     proc->string_cache = NULL;
     proc->string_cache_size = 0;
     collect_garbage(proc);
-    return 0;
+    return runtime.status;
 }

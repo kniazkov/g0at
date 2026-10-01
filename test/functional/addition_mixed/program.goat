@@ -1,0 +1,2 @@
+print(1 + 0.5); print("|"); print(0.5 + 1); print("|"); print((0 - 2) + 1.25); print("|"); print(1.25 + (0 - 2));
+var a = 9007199254740993 + 0.5; var b = 0.5 + 9007199254740993; print("|"); print(sign(a - b));

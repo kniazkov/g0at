@@ -1,0 +1,5 @@
+var x = 1;
+if (print()) { x = 3; }
+var y = x + 2;
+var z = x + 0.5;
+var text = "x" + x;

@@ -1,0 +1,5 @@
+one write 1 1 min int=-9223372036854775808
+one unreachable 2 0 - -
+none unreachable 3 0 - -
+none write 0 0 wrong -
+one write 3 3 right int=2

@@ -510,6 +510,9 @@ object_t *get_integer_zero();
 /** @brief Creates or retrieves an integer object. */
 object_t *create_integer_object(process_t *process, int64_t value);
 
+/** @brief Tests representation rather than convertibility to an integer. */
+bool is_integer_object(const object_t *obj);
+
 /** @brief Gets the singleton instance of the Pi constant object. */
 object_t *get_pi_object();
 

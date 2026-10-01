@@ -45,3 +45,10 @@ dead_condition_return
 dead_call_argument_order
 dead_argument_return
 dead_multi_declaration
+addition_constants
+addition_range
+addition_reachability
+addition_invalid
+addition_bottom_right
+addition_unknown_right
+addition_wrapped_condition

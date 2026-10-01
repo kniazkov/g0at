@@ -72,3 +72,14 @@ dead_arithmetic_fallback
 optimization_implicit_capture
 optimization_if_without_else
 optimization_function_condition
+addition_mixed
+addition_wrapping
+addition_coercion
+addition_condition
+addition_order
+addition_invalid_number_string
+addition_invalid_boolean
+addition_invalid_object
+addition_invalid_nested
+addition_error_order
+addition_error_short_circuit
