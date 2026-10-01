@@ -58,6 +58,7 @@ static test_description_t test_list[] = {
     , { "format string", test_format_string }
     , { "text alignment", test_align_text }
 
+    , { "exceptions object", test_exceptions_object }
     , { "boolean object", test_boolean_object }
     , { "integer object", test_integer_object }
     , { "addition models and constants", test_addition_models_and_constants }

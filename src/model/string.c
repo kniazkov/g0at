@@ -333,6 +333,14 @@ static object_vtbl_t static_string_vtbl = {
 
 /** @brief Declares some common static string objects. */
 DECLARE_STATIC_STRING(empty_string, L"")
+DECLARE_STATIC_STRING(string_exceptions, L"Exceptions")
+DECLARE_STATIC_STRING(exception_division_by_zero, L"DIVISION_BY_ZERO")
+DECLARE_STATIC_STRING(exception_immutable_object, L"IMMUTABLE_OBJECT")
+DECLARE_STATIC_STRING(exception_invalid_argument, L"INVALID_ARGUMENT")
+DECLARE_STATIC_STRING(exception_invalid_operation, L"INVALID_OPERATION")
+DECLARE_STATIC_STRING(exception_property_already_exists, L"PROPERTY_ALREADY_EXISTS")
+DECLARE_STATIC_STRING(exception_property_is_constant, L"PROPERTY_IS_CONSTANT")
+DECLARE_STATIC_STRING(exception_property_not_found, L"PROPERTY_NOT_FOUND")
 DECLARE_STATIC_STRING(string_atan, L"atan")
 DECLARE_STATIC_STRING(string_length, L"length")
 DECLARE_STATIC_STRING(string_pi, L"pi")

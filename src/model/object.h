@@ -466,6 +466,9 @@ typedef object_t *(*static_object_getter_t)(void);
  */
 object_t *get_root_object();
 
+/** @brief Gets the immutable namespace of built-in exception strings. */
+object_t *get_exceptions_object();
+
 /**
  * @brief Retrieves the singleton instance of the `null` object.
  * @return A pointer to the singleton `null` object.
@@ -545,6 +548,7 @@ object_t *create_function_object(process_t *process, object_t **arg_names, size_
 
 /** @brief Declares getter functions for common static string objects. */
 DECLARE_STATIC_OBJECT(empty_string)
+DECLARE_STATIC_OBJECT(string_exceptions)
 DECLARE_STATIC_OBJECT(string_atan)
 DECLARE_STATIC_OBJECT(string_length)
 DECLARE_STATIC_OBJECT(string_pi)
@@ -559,3 +563,12 @@ DECLARE_STATIC_OBJECT(function_atan)
 DECLARE_STATIC_OBJECT(function_print)
 DECLARE_STATIC_OBJECT(function_sign)
 DECLARE_STATIC_OBJECT(function_sqrt)
+
+/** @brief Stable string values for built-in exceptions; no exception wrappers. */
+DECLARE_STATIC_OBJECT(exception_division_by_zero)
+DECLARE_STATIC_OBJECT(exception_immutable_object)
+DECLARE_STATIC_OBJECT(exception_invalid_argument)
+DECLARE_STATIC_OBJECT(exception_invalid_operation)
+DECLARE_STATIC_OBJECT(exception_property_already_exists)
+DECLARE_STATIC_OBJECT(exception_property_is_constant)
+DECLARE_STATIC_OBJECT(exception_property_not_found)

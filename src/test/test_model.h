@@ -83,3 +83,6 @@ bool test_closure();
 
 /** @brief Tests that the root object rejects function calls. */
 bool test_root_object_call();
+
+/** @brief Tests built-in exception strings and their immutable namespace. */
+bool test_exceptions_object(void);
