@@ -1,0 +1,9 @@
+var a = 1 + 0.5;
+var b = 0.5 + 1;
+var c = 9223372036854775807 + 1;
+var d = c + c;
+var e = "" + null;
+var f = "x" + true;
+var g = "x" + 1.5;
+var h = "Ж" + "🐐";
+var i = "" + "";

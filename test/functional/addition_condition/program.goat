@@ -1,0 +1,3 @@
+if ((0 - 1) + 1) { print("bad"); } else { print("zero"); }
+if ("" + false) { print("text"); } else { print("bad"); }
+if (1 + (0 - 0.5)) { print("real"); } else { print("bad"); }

@@ -1,0 +1,3 @@
+var min = 9223372036854775807 + 1;
+if (min + min) { var wrong = 1; }
+else { var right = 2; }

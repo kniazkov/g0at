@@ -6,6 +6,7 @@
 #include "reachability.h"
 #include "abstract_state.h"
 #include "lattice.h"
+#include "addition.h"
 #include "graph/node.h"
 #include "graph/statement.h"
 #include "graph/variable.h"
@@ -153,7 +154,13 @@ static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
             /* A closure or built-in may change any captured binding. */
             forget_values(*state);
             return make_top_element();
-        case NODE_ADDITION:
+        case NODE_ADDITION: {
+            const lattice_element_t *left = visit(get_node_child(node, 0), state, collector);
+            const lattice_element_t *right = visit(get_node_child(node, 1), state, collector);
+            const lattice_element_t *result = lattice_add((*state)->arena, left, right);
+            if (result->type == LATTICE_BOTTOM) (*state)->control_flow = FLOW_UNREACHABLE;
+            return result;
+        }
         case NODE_SUBTRACTION:
         case NODE_MULTIPLICATION:
         case NODE_DIVISION:

@@ -270,6 +270,7 @@ static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
     }
     string_value_t second = convert_object_to_string(obj2);
     if (second.length == 0) {
+        FREE_STRING(second);
         INCREF(obj1);
         return obj1;
     }

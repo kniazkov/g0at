@@ -4,6 +4,7 @@
  * @brief Implementations of an object representing an integer.
  */
 
+#include "lib/integer_math.h"
 #include <assert.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -241,9 +242,9 @@ static object_array_t get_topology(const object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::add. */
 static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
-    int_value_t second_int = get_object_integer_value(obj2);
-    if (second_int.has_value) {
-        return create_integer_object(process, first.value + second_int.value);
+    if (is_integer_object(obj2)) {
+        int_value_t second_int = get_object_integer_value(obj2);
+        return create_integer_object(process, add_int64_wrapping(first.value, second_int.value));
     }
     real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
@@ -467,4 +468,9 @@ object_t *create_integer_object(process_t *process, int64_t value) {
     obj->value = value;
     add_object_to_list(&process->objects, &obj->base);
     return &obj->base;
+}
+
+/** @brief Identifies native integer representations, without numeric conversion. */
+bool is_integer_object(const object_t *obj) {
+    return obj->vtbl == &static_vtbl || obj->vtbl == &dynamic_vtbl;
 }

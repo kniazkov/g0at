@@ -1,0 +1,1 @@
+var min = 9223372036854775807 + 1; print(min); print("|"); print(min + (0 - 1)); print("|"); print(min + min);

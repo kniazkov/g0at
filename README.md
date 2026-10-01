@@ -241,7 +241,9 @@ One event describes the root of a dead subtree, rather than every descendant.
 
 A zero row is a wildcard. Declaration rows distinguish shadowed variables; synthetic nodes
 use their nearest positioned ancestor. Values are checked by type and payload: `int=N`,
-`range=MIN,MAX`, `top`, `bottom`, `null`, `true`, `false`, `numeric`, `integer`, or `function`.
+`range=MIN,MAX`, `real=VALUE`, `string=UTF8_TEXT` (no whitespace; `string=` is empty),
+`top`, `bottom`, `null`, `true`, `false`, `numeric`, `integer`, `real`, `string`, or `function`.
+Real expectations distinguish signed zero and accept `nan` and infinities.
 Blank lines and lines starting with `#` are ignored. Empty expectation files, malformed
 checks, missing files, parse errors, mismatches, and detected memory leaks fail the suite.
 On a mismatch the runner prints the expectation location and the actual analysis report.
@@ -260,8 +262,8 @@ code after unconditional returns. Known conditions eliminate one branch; unknown
 merge continuing states. Function bodies are left unclassified because they may execute later.
 A function created inside a proven dead subtree is dead along with that subtree.
 
-The pass uses literals and propagated values, but treats arithmetic/comparison results as
-unknown until their abstract semantics match the VM. Calls invalidate known variable values
+The pass uses literals, propagated values, and addition. Other arithmetic/comparison
+results remain unknown until their abstract semantics match the VM. Calls invalidate known variable values
 because captured bindings may change. Call arguments follow bytecode order: right to left,
 then the callee. An unset flag means **not proven unreachable**, not necessarily reachable.
 
@@ -304,10 +306,33 @@ true, and functions are true. Built-in symbols currently have abstract value `TO
 keep both branches. Parentheses forward evaluation. Unsupported arithmetic/comparison
 operators evaluate operands in order but still return `TOP`; their result semantics remain
 future work. Calls evaluate their callee and arguments, but function-body effects are not yet
-modeled. Condition-based range narrowing is also not implemented. Existing inaccuracies in
-abstract addition remain separate work.
+modeled. Condition-based range narrowing is also not implemented.
 
 AST transformation events can be added as transformations are implemented.
+
+### Addition
+
+`+` evaluates left to right and dispatches on the left operand:
+
+- Two integers add modulo 2^64, interpreted as a signed 64-bit result.
+- If either numeric operand is real, both are added as doubles. Fractional parts are
+  preserved; IEEE infinities, NaNs and signed zero follow floating-point addition.
+- A string on the left concatenates the right operand's ordinary string representation.
+  The reverse is not implicit: `"x" + 1` works, `1 + "x"` fails.
+- Null, booleans, functions and user objects do not implement left-hand addition.
+  A failed VM `ADD` releases its operands, reports an error and returns a nonzero status.
+
+The shared `lattice_add()` transfer function folds constants and propagates numeric and
+string domains. Integer intervals use checked endpoint sums; if wrapping cannot be
+represented by one interval, they widen conservatively to `INTEGER`. `BOTTOM` in either
+operand yields `BOTTOM`. Array domains remain placeholders with an unknown addition
+result until runtime arrays exist. The result describes successful evaluations, not the
+absence of possible runtime errors for broad operand domains.
+
+Addition tests compare abstract constants with object-model and VM results, cover every
+pair of representative domains and enumerate small intervals near zero and both integer
+limits. Source fixtures check collector events, reachability, evaluation order and runtime
+errors in both optimization modes.
 
 ### Lattice semantics
 

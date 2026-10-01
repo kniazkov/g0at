@@ -12,6 +12,7 @@
 #include "analysis/lattice.h"
 #include "cli/options.h"
 #include "graph/declarations.h"
+#include <math.h>
 #include "lib/allocate.h"
 #include "lib/io.h"
 #include "lib/string_ext.h"
@@ -30,9 +31,26 @@ static bool value_matches(const lattice_element_t *value, const char *text) {
             ((const integer_range_element_t *)value)->min == a &&
             ((const integer_range_element_t *)value)->max == b;
     }
+    double real;
+    if (sscanf(text, "real=%lf%n", &real, &used) == 1 && !text[used]) {
+        if (value->type != LATTICE_REAL_CONSTANT) return false;
+        double actual = ((const real_constant_element_t*)value)->value;
+        return (isnan(real) && isnan(actual)) ||
+            (actual == real && (real != 0 || !!signbit(real) == !!signbit(actual)));
+    }
+    if (!strncmp(text, "string=", 7)) {
+        if (value->type != LATTICE_STRING_CONSTANT) return false;
+        string_value_t expected = decode_utf8(text + 7);
+        string_view_t actual = ((const string_constant_element_t*)value)->value;
+        bool equal = expected.length == actual.length &&
+            !wmemcmp(expected.data, actual.data, actual.length);
+        FREE_STRING(expected);
+        return equal;
+    }
     struct { const char *name; lattice_type_t type; } types[] = {
         { "top", LATTICE_TOP }, { "bottom", LATTICE_BOTTOM }, { "null", LATTICE_NULL },
         { "true", LATTICE_TRUE }, { "false", LATTICE_FALSE }, { "numeric", LATTICE_NUMERIC },
+        { "real", LATTICE_REAL }, { "string", LATTICE_STRING },
         { "integer", LATTICE_INTEGER }, { "function", LATTICE_FUNCTION }
     };
     for (size_t i = 0; i < sizeof(types) / sizeof(*types); i++) {

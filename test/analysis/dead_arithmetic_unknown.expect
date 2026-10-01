@@ -1,1 +1,4 @@
-none unreachable 0 0 - -
+one write 1 1 x string=01
+one unreachable 3 0 - -
+none unreachable 2 0 - -
+none unreachable 4 0 - -
