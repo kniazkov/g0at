@@ -219,9 +219,9 @@ Without these options, the CLI does not create a collector.
 For `var x = 1;` followed by `x = 3;` on the next line, the report is:
 
 ```text
-#1 program.goat:1:1 write x = 1
-#2 program.goat:2:1 write x = 3
-#3 program.goat:1:1 summary x = [1..3]
+#1 program.goat, 1.1: write x = 1
+#2 program.goat, 2.1: write x = 3
+#3 program.goat, 1.1: summary x = [1..3]
 ```
 
 `write` records a current value, `join` records a current value after merging branch states,
