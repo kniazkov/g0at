@@ -122,7 +122,11 @@ static node_vtbl_t variable_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .generate_bytecode_assign = generate_bytecode_assign
+    .generate_bytecode_assign = generate_bytecode_assign,
+    .can_generate_c_code = cannot_generate_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
+    .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
 expression_t *create_variable_node(arena_t *arena, string_view_t name) {

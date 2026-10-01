@@ -19,3 +19,6 @@ bool test_data_builder();
  * @return True if the test passes, false otherwise.
  */
 bool test_linker();
+
+/** @brief Tests unsupported code generation through the node virtual table. */
+bool test_node_codegen_stubs();

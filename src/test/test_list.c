@@ -59,6 +59,8 @@ static test_description_t test_list[] = {
 
     , { "data builder", test_data_builder }
     , { "linker", test_linker }
+    , { "node codegen stubs", test_node_codegen_stubs }
+    , { "root object call", test_root_object_call }
 };
 
 int get_number_of_tests() {

@@ -80,3 +80,6 @@ bool test_function_definition();
  * @return Returns `true` if the test passes, or `false` if it fails.
  */
 bool test_closure();
+
+/** @brief Tests that the root object rejects function calls. */
+bool test_root_object_call();

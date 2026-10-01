@@ -46,3 +46,19 @@ const lattice_element_t *cannot_calculate(node_t *node, abstract_state_t *state,
 
 /** @brief Implements @ref node_vtbl_t::execute. */
 abstract_state_t *execute_nothing(node_t *node, abstract_state_t *state, arena_t *arena);
+
+/** @brief Implements @ref node_vtbl_t::can_generate_c_code for unsupported nodes. */
+bool cannot_generate_c_code(const node_t *node);
+
+/** @brief Implements @ref node_vtbl_t::generate_c_code; returns NULL_STRING_VALUE. */
+string_value_t no_c_code(const node_t *node);
+
+/** @brief Implements @ref node_vtbl_t::generate_indented_c_code without emitting text. */
+void no_indented_c_code(const node_t *node, source_builder_t *builder, size_t indent);
+
+/** @brief Implements @ref node_vtbl_t::generate_bytecode_assign; returns BAD_INSTR_INDEX. */
+instr_index_t no_bytecode_assignment(const node_t *node, code_builder_t *code,
+        data_builder_t *data);
+
+/** @brief Implements @ref node_vtbl_t::generate_bytecode_deferred; no work means complete. */
+bool no_deferred_bytecode(const node_t *node, code_builder_t *code, data_builder_t *data);

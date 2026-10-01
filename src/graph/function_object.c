@@ -76,6 +76,11 @@ static node_vtbl_t arg_vtbl = {
     .generate_goat_code = arg_generate_goat_code,
     .generate_indented_goat_code = arg_generate_indented_goat_code,
     .generate_bytecode = arg_generate_bytecode,
+    .can_generate_c_code = cannot_generate_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
+    .generate_bytecode_assign = no_bytecode_assignment,
+    .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
 /**
@@ -161,6 +166,11 @@ static node_vtbl_t alist_vtbl = {
     .generate_goat_code = alist_generate_goat_code,
     .generate_indented_goat_code = alist_generate_indented_goat_code,
     .generate_bytecode = alist_generate_bytecode,
+    .can_generate_c_code = cannot_generate_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
+    .generate_bytecode_assign = no_bytecode_assignment,
+    .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
 /**
@@ -257,7 +267,12 @@ static node_vtbl_t function_body_vtbl = {
     .execute = execute_nothing,
     .generate_goat_code = fbody_generate_goat_code,
     .generate_indented_goat_code = fbody_generate_indented_goat_code,
-    .generate_bytecode = fbody_generate_bytecode
+    .generate_bytecode = fbody_generate_bytecode,
+    .can_generate_c_code = cannot_generate_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
+    .generate_bytecode_assign = no_bytecode_assignment,
+    .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
 /** @brief Creates a new function body AST node. */
@@ -447,7 +462,11 @@ static node_vtbl_t fo_vtbl = {
     .generate_goat_code = fobj_generate_goat_code,
     .generate_indented_goat_code = fobj_generate_indented_goat_code,
     .generate_bytecode = fobj_generate_bytecode,
-    .generate_bytecode_deferred = fobj_generate_bytecode_deferred
+    .generate_bytecode_deferred = fobj_generate_bytecode_deferred,
+    .can_generate_c_code = cannot_generate_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
+    .generate_bytecode_assign = no_bytecode_assignment,
 };
 
 node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, size_t arg_count) {

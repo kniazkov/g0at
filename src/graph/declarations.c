@@ -157,6 +157,11 @@ static node_vtbl_t vdeclr_vtbl = {
     .generate_goat_code = vdeclr_generate_goat_code,
     .generate_indented_goat_code = vdeclr_generate_indented_goat_code,
     .generate_bytecode = vdeclr_generate_bytecode,
+    .can_generate_c_code = cannot_generate_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
+    .generate_bytecode_assign = no_bytecode_assignment,
+    .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
 /** @brief Creates a new variable declarator node. */
@@ -279,6 +284,11 @@ static node_vtbl_t vdecln_vtbl = {
     .generate_goat_code = vdecln_generate_goat_code,
     .generate_indented_goat_code = vdecln_generate_indented_goat_code,
     .generate_bytecode = vdecln_generate_bytecode,
+    .can_generate_c_code = cannot_generate_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
+    .generate_bytecode_assign = no_bytecode_assignment,
+    .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
 node_t *create_variable_declaration_node(arena_t *arena, declarator_spec_t **decl_list,
@@ -401,6 +411,11 @@ static node_vtbl_t cdeclr_vtbl = {
     .generate_goat_code = cdeclr_generate_goat_code,
     .generate_indented_goat_code = cdeclr_generate_indented_goat_code,
     .generate_bytecode = cdeclr_generate_bytecode,
+    .can_generate_c_code = cannot_generate_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
+    .generate_bytecode_assign = no_bytecode_assignment,
+    .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
 /** @brief Creates a new constant declarator AST node. */
@@ -524,6 +539,11 @@ static node_vtbl_t cdecln_vtbl = {
     .generate_goat_code = cdecln_generate_goat_code,
     .generate_indented_goat_code = cdecln_generate_indented_goat_code,
     .generate_bytecode = cdecln_generate_bytecode,
+    .can_generate_c_code = cannot_generate_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
+    .generate_bytecode_assign = no_bytecode_assignment,
+    .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
 node_t *create_constant_declaration_node(arena_t *arena, declarator_spec_t **decl_list,
