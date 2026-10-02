@@ -247,8 +247,7 @@ The script verifies the version and configuration, then runs `--dry-run --Werror
 editing source files. This is a formatting check, not a naming or correctness analyzer.
 CI treats any formatting violation as a failure and saves the full diagnostics in the
 `code-style-diagnostics` artifact. There is no changed-lines-only filter or legacy baseline:
-existing inconsistencies are reported too. The initial integration intentionally leaves
-those violations for a separate cleanup.
+existing inconsistencies are reported too. All current sources follow the same rules.
 
 ### Source-based analysis tests
 

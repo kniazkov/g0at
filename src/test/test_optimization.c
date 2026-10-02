@@ -3,16 +3,17 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief CLI modes, mandatory binding, and conditional bytecode pruning.
  */
-#include <stdio.h>
-#include <wchar.h>
-#include "test_macro.h"
-#include "analysis_test_support.h"
 #include "analysis/analysis.h"
+#include "analysis_test_support.h"
 #include "cli/options.h"
-#include "graph/declarations.h"
-#include "graph/variable.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
+#include "graph/declarations.h"
+#include "graph/variable.h"
+#include "test_macro.h"
+
+#include <stdio.h>
+#include <wchar.h>
 
 bool test_optimization_options() {
     options_t *options = create_options();
@@ -30,16 +31,19 @@ bool test_optimization_options() {
 }
 
 static bool has_dead_node(const node_t *node) {
-    if (node->unreachable) return true;
+    if (node->unreachable)
+        return true;
     for (size_t i = 0; i < get_node_child_count(node); i++) {
-        if (has_dead_node(get_node_child(node, i))) return true;
+        if (has_dead_node(get_node_child(node, i)))
+            return true;
     }
     return false;
 }
 
 static size_t opcode_count(const code_builder_t *code, unsigned opcode) {
     size_t count = 0;
-    for (size_t i = 0; i < code->size; i++) count += code->instructions[i].opcode == opcode;
+    for (size_t i = 0; i < code->size; i++)
+        count += code->instructions[i].opcode == opcode;
     return count;
 }
 
@@ -47,8 +51,9 @@ bool test_optimization_modes() {
     for (int disabled = 0; disabled < 2; disabled++) {
         arena_t *arena = create_arena(16);
         parser_memory_t memory = {arena, arena, arena, arena};
-        node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(
-            L"var x = 0; if (true) { x = 1; } else { x = 2; } print(x);"));
+        node_t *root = parse_analysis_test_program(
+            &memory,
+            STATIC_STRING(L"var x = 0; if (true) { x = 1; } else { x = 2; } print(x);"));
         ASSERT(root);
         options_t *options = create_options();
         options->optimization_level = disabled ? OPTIMIZATION_NONE : OPTIMIZATION_ALL;
@@ -88,22 +93,25 @@ bool test_optimization_modes() {
 }
 
 bool test_optimized_if_bytecode() {
-    struct { const wchar_t *source; size_t jumps, stores, pops, functions; } cases[] = {
-        {L"if (true) { } else { }", 0, 0, 1, 0},
-        {L"if ((true)) { }", 0, 0, 1, 0},
-        {L"if (false) { }", 0, 0, 0, 0},
-        {L"if (null) { } else { }", 0, 0, 1, 0},
-        {L"var x = 0; if ((x = 1)) { } else { }", 0, 1, 2, 0},
-        {L"var x = 1; if ((x = 0)) { }", 0, 1, 1, 0},
-        {L"var x = 1; if (x) { }", 0, 0, 2, 0},
-        {L"if (func() {}) { }", 0, 0, 2, 1},
-        {L"if (1 < 2) { } else { }", 2, 0, 2, 0},
-        {L"if ({ return; }) { } else { }", 0, 0, 0, 0}
-    };
+    struct {
+        const wchar_t *source;
+        size_t jumps, stores, pops, functions;
+    } cases[] = {{L"if (true) { } else { }", 0, 0, 1, 0},
+                 {L"if ((true)) { }", 0, 0, 1, 0},
+                 {L"if (false) { }", 0, 0, 0, 0},
+                 {L"if (null) { } else { }", 0, 0, 1, 0},
+                 {L"var x = 0; if ((x = 1)) { } else { }", 0, 1, 2, 0},
+                 {L"var x = 1; if ((x = 0)) { }", 0, 1, 1, 0},
+                 {L"var x = 1; if (x) { }", 0, 0, 2, 0},
+                 {L"if (func() {}) { }", 0, 0, 2, 1},
+                 {L"if (1 < 2) { } else { }", 2, 0, 2, 0},
+                 {L"if ({ return; }) { } else { }", 0, 0, 0, 0}};
+
     for (size_t c = 0; c < sizeof(cases) / sizeof(*cases); c++) {
         arena_t *arena = create_arena(16);
         parser_memory_t memory = {arena, arena, arena, arena};
-        node_t *root = parse_analysis_test_program(&memory,
+        node_t *root = parse_analysis_test_program(
+            &memory,
             (string_value_t){cases[c].source, wcslen(cases[c].source), false});
         ASSERT(root);
         options_t *options = create_options();

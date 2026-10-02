@@ -4,16 +4,18 @@
  * @brief A program for performing functional tests on the project's output.
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 /** @brief Trims leading and trailing whitespace characters from a string. */
-static char * trim (char *s) {
-    while (isspace((unsigned char)*s)) s++;
+static char *trim(char *s) {
+    while (isspace((unsigned char)*s))
+        s++;
     size_t length = strlen(s);
-    while (length && isspace((unsigned char)s[length - 1])) length--;
+    while (length && isspace((unsigned char)s[length - 1]))
+        length--;
     s[length] = '\0';
     return s;
 }
@@ -29,7 +31,7 @@ static const char path_separator() {
 
 /** @brief Replaces all path separators in a given path with the platform-specific separator. */
 static void fix_path_separator(char *path) {
-    while(*path) {
+    while (*path) {
         if (*path == '\\' || *path == '/') {
             *path = path_separator();
         }
@@ -39,14 +41,17 @@ static void fix_path_separator(char *path) {
 
 /** @brief Compares the contents of two files, ignoring carriage return characters. */
 static int compare_files(FILE *actual, FILE *expected) {
-    while(!feof(actual)) {
+    while (!feof(actual)) {
         int a = fgetc(actual);
-        while(a == '\r') a = fgetc(actual);
+        while (a == '\r')
+            a = fgetc(actual);
 
         int e = fgetc(expected);
-        while(e == '\r') e = fgetc(expected);
+        while (e == '\r')
+            e = fgetc(expected);
 
-        if (a != e) return 0;
+        if (a != e)
+            return 0;
     }
     return feof(expected);
 }
@@ -59,58 +64,84 @@ static int get_file_size(FILE *file) {
     return result;
 }
 
-/** @brief Executes a test by running the project's binary and comparing its output with expected results. */
+/** @brief Executes a test by running the project's binary and comparing its output with expected
+ * results. */
 int do_test(char *interpreter, char *test_name, const char *optimization) {
     int result = 0;
 
-    char cmd[1024],
-        path_actual_output[256],
-        path_expected_output[256],
-        path_actual_error[256],
+    char cmd[1024], path_actual_output[256], path_expected_output[256], path_actual_error[256],
         path_expected_error[256];
-    snprintf(path_actual_output, 256, "%s%cactual_output_%s.txt", test_name, path_separator(), optimization);
+    snprintf(path_actual_output,
+             256,
+             "%s%cactual_output_%s.txt",
+             test_name,
+             path_separator(),
+             optimization);
     snprintf(path_expected_output, 256, "%s%cexpected_output.txt", test_name, path_separator());
-    snprintf(path_actual_error, 256, "%s%cactual_error_%s.txt", test_name, path_separator(), optimization);
+    snprintf(path_actual_error,
+             256,
+             "%s%cactual_error_%s.txt",
+             test_name,
+             path_separator(),
+             optimization);
     snprintf(path_expected_error, 256, "%s%cexpected_error.txt", test_name, path_separator());
 #ifdef _WIN32
-    const char *command_format = "\"\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" 1> \"%s\" 2> \"%s\"\"";
+    const char *command_format =
+        "\"\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" 1> \"%s\" 2> \"%s\"\"";
 #else
-    const char *command_format = "\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" 1> \"%s\" 2> \"%s\"";
+    const char *command_format =
+        "\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" 1> \"%s\" 2> \"%s\"";
 #endif
-    snprintf(cmd, sizeof(cmd), command_format,
-        interpreter, optimization, test_name, path_separator(), path_actual_output, path_actual_error);
+    snprintf(cmd,
+             sizeof(cmd),
+             command_format,
+             interpreter,
+             optimization,
+             test_name,
+             path_separator(),
+             path_actual_output,
+             path_actual_error);
 
     int status = system(cmd);
 
-    FILE *actual_output = NULL,
-        *expected_output = NULL,
-        *actual_error = NULL,
-        *expected_error = NULL;
+    FILE *actual_output = NULL, *expected_output = NULL, *actual_error = NULL,
+         *expected_error = NULL;
     actual_output = fopen(path_actual_output, "r");
-    if (!actual_output) goto cleanup;
+    if (!actual_output)
+        goto cleanup;
     expected_output = fopen(path_expected_output, "r");
     if (!expected_output) {
-        if (get_file_size(actual_output) > 0) goto cleanup;
+        if (get_file_size(actual_output) > 0)
+            goto cleanup;
     } else {
-        if (!compare_files(actual_output, expected_output)) goto cleanup;
+        if (!compare_files(actual_output, expected_output))
+            goto cleanup;
     }
     actual_error = fopen(path_actual_error, "r");
-    if (!actual_error) goto cleanup;
+    if (!actual_error)
+        goto cleanup;
     expected_error = fopen(path_expected_error, "r");
     if (!expected_error) {
-        if (get_file_size(actual_error) > 0) goto cleanup;
+        if (get_file_size(actual_error) > 0)
+            goto cleanup;
     } else {
-        if (!compare_files(actual_error, expected_error)) goto cleanup;
+        if (!compare_files(actual_error, expected_error))
+            goto cleanup;
     }
 
-    if (status == -1 || ((status != 0) != (expected_error != NULL))) goto cleanup;
+    if (status == -1 || ((status != 0) != (expected_error != NULL)))
+        goto cleanup;
     result = 1;
 
 cleanup:
-    if (actual_output) fclose(actual_output);
-    if (expected_output) fclose(expected_output);
-    if (actual_error) fclose(actual_error);
-    if (expected_error) fclose(expected_error);
+    if (actual_output)
+        fclose(actual_output);
+    if (expected_output)
+        fclose(expected_output);
+    if (actual_error)
+        fclose(actual_error);
+    if (expected_error)
+        fclose(expected_error);
     if (result) {
         remove(path_actual_output);
         remove(path_actual_error);
@@ -123,7 +154,7 @@ cleanup:
  * @brief Entry point.
  * @return 0 if all tests passed, non-zero if any test failed.
  */
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     if (argc < 3) {
         printf("Usage: functional_testing <interpreter> <list of tests>\n");
         return -1;
@@ -148,8 +179,7 @@ int main(int argc, char** argv) {
                     if (result) {
                         printf("[ ok ]");
                         passed++;
-                    }
-                    else {
+                    } else {
                         printf("[fail]");
                         failed++;
                     }
@@ -158,9 +188,13 @@ int main(int argc, char** argv) {
             }
         }
     }
-    printf("\nFunctional testing done; total: %d, passed: %d, failed: %d.", passed + failed, passed, failed);
+    printf("\nFunctional testing done; total: %d, passed: %d, failed: %d.",
+           passed + failed,
+           passed,
+           failed);
 
     fclose(list);
-    if (failed > 0) return -1;
+    if (failed > 0)
+        return -1;
     return 0;
 }

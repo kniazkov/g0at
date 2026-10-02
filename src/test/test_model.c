@@ -4,17 +4,18 @@
  * @brief A set of tests for testing object model.
  */
 
-#include <stdio.h>
-
 #include "test_model.h"
-#include "test_macro.h"
+
+#include "codegen/linker.h"
+#include "lib/allocate.h"
+#include "lib/split64.h"
 #include "model/object.h"
 #include "model/process.h"
 #include "model/thread.h"
-#include "codegen/linker.h"
+#include "test_macro.h"
 #include "vm/vm.h"
-#include "lib/allocate.h"
-#include "lib/split64.h"
+
+#include <stdio.h>
 
 /** @brief Creates a test bytecode sequence. */
 static bytecode_t *create_test_bytecode(instruction_t *list, int count) {
@@ -53,12 +54,10 @@ bool test_integer_object() {
 }
 
 bool test_addition_of_two_integers() {
-    instruction_t list[] = {
-        { .opcode = ILOAD32, .arg1 = 2 },
-        { .opcode = ILOAD32, .arg1 = 3 },
-        { .opcode = ADD },
-        { .opcode = END }
-    };
+    instruction_t list[] = {{.opcode = ILOAD32, .arg1 = 2},
+                            {.opcode = ILOAD32, .arg1 = 3},
+                            {.opcode = ADD},
+                            {.opcode = END}};
     bytecode_t *code = create_test_bytecode(list, 4);
     process_t *proc = create_process();
     run(proc, code);
@@ -75,13 +74,11 @@ bool test_addition_of_two_integers() {
 bool test_subtraction_of_two_integers() {
     split64_t s;
     s.int_value = 10000000000;
-    instruction_t list[] = {
-        { .opcode = ARG, .arg1 = s.parts[0] },
-        { .opcode = ILOAD64, .arg1 = s.parts[1] },
-        { .opcode = ILOAD32, .arg1 = 1 },
-        { .opcode = SUB },
-        { .opcode = END }
-    };
+    instruction_t list[] = {{.opcode = ARG, .arg1 = s.parts[0]},
+                            {.opcode = ILOAD64, .arg1 = s.parts[1]},
+                            {.opcode = ILOAD32, .arg1 = 1},
+                            {.opcode = SUB},
+                            {.opcode = END}};
     bytecode_t *code = create_test_bytecode(list, 5);
     process_t *proc = create_process();
     run(proc, code);
@@ -101,12 +98,12 @@ bool test_strings_concatenation() {
     uint32_t second = add_string_to_data_segment(data_builder, L" ");
     uint32_t third = add_string_to_data_segment(data_builder, L"works.");
     code_builder_t *code_bulder = create_code_builder();
-    add_instruction(code_bulder, (instruction_t){ .opcode = SLOAD, .arg1 = first });
-    add_instruction(code_bulder, (instruction_t){ .opcode = SLOAD, .arg1 = second });
-    add_instruction(code_bulder, (instruction_t){ .opcode = SLOAD, .arg1 = third });
-    add_instruction(code_bulder, (instruction_t){ .opcode = ADD } );
-    add_instruction(code_bulder, (instruction_t){ .opcode = ADD } );
-    add_instruction(code_bulder, (instruction_t){ .opcode = END } );
+    add_instruction(code_bulder, (instruction_t){.opcode = SLOAD, .arg1 = first});
+    add_instruction(code_bulder, (instruction_t){.opcode = SLOAD, .arg1 = second});
+    add_instruction(code_bulder, (instruction_t){.opcode = SLOAD, .arg1 = third});
+    add_instruction(code_bulder, (instruction_t){.opcode = ADD});
+    add_instruction(code_bulder, (instruction_t){.opcode = ADD});
+    add_instruction(code_bulder, (instruction_t){.opcode = END});
     bytecode_t *code = link_code_and_data(code_bulder, data_builder);
     destroy_code_builder(code_bulder);
     destroy_data_builder(data_builder);
@@ -128,27 +125,24 @@ bool test_properties() {
     object_t *root_object = get_root_object();
     object_t *obj = create_user_defined_object(process, (object_array_t){&root_object, 1});
     create_object_property(obj,
-        create_string_object(process, STATIC_STRING(L"first")),
-        create_string_object(process, STATIC_STRING(L"one")),
-        true
-    );
+                           create_string_object(process, STATIC_STRING(L"first")),
+                           create_string_object(process, STATIC_STRING(L"one")),
+                           true);
     create_object_property(obj,
-        create_string_object(process, STATIC_STRING(L"second")),
-        create_string_object(process, STATIC_STRING(L"two")),
-        true
-    );
+                           create_string_object(process, STATIC_STRING(L"second")),
+                           create_string_object(process, STATIC_STRING(L"two")),
+                           true);
     create_object_property(obj,
-        create_integer_object(process, 3),
-        create_string_object(process, STATIC_STRING(L"three")),
-        true
-    );
+                           create_integer_object(process, 3),
+                           create_string_object(process, STATIC_STRING(L"three")),
+                           true);
     create_object_property(obj,
-        get_boolean_object(true),
-        create_string_object(process, STATIC_STRING(L"boolean")),
-        true
-    );
+                           get_boolean_object(true),
+                           create_string_object(process, STATIC_STRING(L"boolean")),
+                           true);
     object_t *clone = clone_object(process, obj);
-    const wchar_t *expected = L"{true:\"boolean\",3:\"three\",\"first\":\"one\",\"second\":\"two\"}";
+    const wchar_t *expected =
+        L"{true:\"boolean\",3:\"three\",\"first\":\"one\",\"second\":\"two\"}";
     string_value_t str = convert_object_to_string(obj);
     ASSERT(0 == wcscmp(str.data, expected));
     FREE_STRING(str);
@@ -194,11 +188,11 @@ bool test_store_and_load() {
     data_builder_t *data_builder = create_data_builder();
     uint32_t name_idx = add_string_to_data_segment(data_builder, L"value");
     code_builder_t *code_bulder = create_code_builder();
-    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 1024 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = STORE, .arg1 = name_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = POP });
-    add_instruction(code_bulder, (instruction_t){ .opcode = VLOAD, .arg1 = name_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = END } );
+    add_instruction(code_bulder, (instruction_t){.opcode = ILOAD32, .arg1 = 1024});
+    add_instruction(code_bulder, (instruction_t){.opcode = STORE, .arg1 = name_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = POP});
+    add_instruction(code_bulder, (instruction_t){.opcode = VLOAD, .arg1 = name_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = END});
     bytecode_t *code = link_code_and_data(code_bulder, data_builder);
     destroy_code_builder(code_bulder);
     destroy_data_builder(data_builder);
@@ -218,10 +212,10 @@ bool test_sign_function() {
     data_builder_t *data_builder = create_data_builder();
     uint32_t name_idx = add_string_to_data_segment(data_builder, L"sign");
     code_builder_t *code_bulder = create_code_builder();
-    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = -1024 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = VLOAD, .arg1 = name_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = CALL, .arg0 = 1 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = END } );
+    add_instruction(code_bulder, (instruction_t){.opcode = ILOAD32, .arg1 = -1024});
+    add_instruction(code_bulder, (instruction_t){.opcode = VLOAD, .arg1 = name_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = CALL, .arg0 = 1});
+    add_instruction(code_bulder, (instruction_t){.opcode = END});
     bytecode_t *code = link_code_and_data(code_bulder, data_builder);
     destroy_code_builder(code_bulder);
     destroy_data_builder(data_builder);
@@ -242,15 +236,15 @@ bool test_context_cloning() {
     uint32_t name_x_idx = add_string_to_data_segment(data_builder, L"x");
     uint32_t name_y_idx = add_string_to_data_segment(data_builder, L"y");
     code_builder_t *code_bulder = create_code_builder();
-    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 2 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = VAR, .arg1 = name_x_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = ENTER });
-    add_instruction(code_bulder, (instruction_t){ .opcode = VLOAD, .arg1 = name_x_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 3 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = ADD });
-    add_instruction(code_bulder, (instruction_t){ .opcode = VAR, .arg1 = name_y_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = LEAVE });
-    add_instruction(code_bulder, (instruction_t){ .opcode = END } );
+    add_instruction(code_bulder, (instruction_t){.opcode = ILOAD32, .arg1 = 2});
+    add_instruction(code_bulder, (instruction_t){.opcode = VAR, .arg1 = name_x_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = ENTER});
+    add_instruction(code_bulder, (instruction_t){.opcode = VLOAD, .arg1 = name_x_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = ILOAD32, .arg1 = 3});
+    add_instruction(code_bulder, (instruction_t){.opcode = ADD});
+    add_instruction(code_bulder, (instruction_t){.opcode = VAR, .arg1 = name_y_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = LEAVE});
+    add_instruction(code_bulder, (instruction_t){.opcode = END});
     bytecode_t *code = link_code_and_data(code_bulder, data_builder);
     destroy_code_builder(code_bulder);
     destroy_data_builder(data_builder);
@@ -273,19 +267,19 @@ bool test_function_definition() {
     data_builder_t *data_builder = create_data_builder();
     uint32_t name_a_idx = add_string_to_data_segment(data_builder, L"a");
     uint32_t name_b_idx = add_string_to_data_segment(data_builder, L"b");
-    uint32_t arg_names[] = { name_a_idx, name_b_idx };
+    uint32_t arg_names[] = {name_a_idx, name_b_idx};
     uint32_t arg_names_idx = add_data_to_data_segment(data_builder, arg_names, sizeof(arg_names));
     code_builder_t *code_bulder = create_code_builder();
-    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 2 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 3 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = ARG, .arg1 = 6 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = FUNC, .arg0 = 2, .arg1 = arg_names_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = CALL, .arg0 = 2 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = END } );
-    add_instruction(code_bulder, (instruction_t){ .opcode = VLOAD, .arg1 = name_a_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = VLOAD, .arg1 = name_b_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = ADD });
-    add_instruction(code_bulder, (instruction_t){ .opcode = RET });
+    add_instruction(code_bulder, (instruction_t){.opcode = ILOAD32, .arg1 = 2});
+    add_instruction(code_bulder, (instruction_t){.opcode = ILOAD32, .arg1 = 3});
+    add_instruction(code_bulder, (instruction_t){.opcode = ARG, .arg1 = 6});
+    add_instruction(code_bulder, (instruction_t){.opcode = FUNC, .arg0 = 2, .arg1 = arg_names_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = CALL, .arg0 = 2});
+    add_instruction(code_bulder, (instruction_t){.opcode = END});
+    add_instruction(code_bulder, (instruction_t){.opcode = VLOAD, .arg1 = name_a_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = VLOAD, .arg1 = name_b_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = ADD});
+    add_instruction(code_bulder, (instruction_t){.opcode = RET});
     bytecode_t *code = link_code_and_data(code_bulder, data_builder);
     destroy_code_builder(code_bulder);
     destroy_data_builder(data_builder);
@@ -305,20 +299,20 @@ bool test_closure() {
     data_builder_t *data_builder = create_data_builder();
     uint32_t name_a_idx = add_string_to_data_segment(data_builder, L"a");
     uint32_t name_b_idx = add_string_to_data_segment(data_builder, L"b");
-    uint32_t arg_names[] = { name_a_idx };
+    uint32_t arg_names[] = {name_a_idx};
     uint32_t arg_names_idx = add_data_to_data_segment(data_builder, arg_names, sizeof(arg_names));
     code_builder_t *code_bulder = create_code_builder();
-    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 2 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = VAR, .arg1 = name_b_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = ILOAD32, .arg1 = 3 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = ARG, .arg1 = 7 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = FUNC, .arg0 = 1, .arg1 = arg_names_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = CALL, .arg0 = 1 });
-    add_instruction(code_bulder, (instruction_t){ .opcode = END } );
-    add_instruction(code_bulder, (instruction_t){ .opcode = VLOAD, .arg1 = name_a_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = VLOAD, .arg1 = name_b_idx });
-    add_instruction(code_bulder, (instruction_t){ .opcode = ADD });
-    add_instruction(code_bulder, (instruction_t){ .opcode = RET });
+    add_instruction(code_bulder, (instruction_t){.opcode = ILOAD32, .arg1 = 2});
+    add_instruction(code_bulder, (instruction_t){.opcode = VAR, .arg1 = name_b_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = ILOAD32, .arg1 = 3});
+    add_instruction(code_bulder, (instruction_t){.opcode = ARG, .arg1 = 7});
+    add_instruction(code_bulder, (instruction_t){.opcode = FUNC, .arg0 = 1, .arg1 = arg_names_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = CALL, .arg0 = 1});
+    add_instruction(code_bulder, (instruction_t){.opcode = END});
+    add_instruction(code_bulder, (instruction_t){.opcode = VLOAD, .arg1 = name_a_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = VLOAD, .arg1 = name_b_idx});
+    add_instruction(code_bulder, (instruction_t){.opcode = ADD});
+    add_instruction(code_bulder, (instruction_t){.opcode = RET});
     bytecode_t *code = link_code_and_data(code_bulder, data_builder);
     destroy_code_builder(code_bulder);
     destroy_data_builder(data_builder);
