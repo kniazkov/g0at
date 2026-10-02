@@ -125,3 +125,14 @@ operation_mod_catch
 operation_power_catch
 operation_stub_catch
 operation_div_uncaught
+subtraction_mixed
+subtraction_wrapping
+subtraction_precision
+subtraction_associativity
+subtraction_condition
+subtraction_effects
+subtraction_call_order
+subtraction_error_order
+subtraction_error_function
+subtraction_invalid_string
+subtraction_uncaught

@@ -1,0 +1,1 @@
+try { var x = "x" - 1; } catch (e) { print(e); } try { var x = 1 - "x"; } catch (e) { print(e); }

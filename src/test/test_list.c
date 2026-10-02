@@ -6,6 +6,7 @@
 
 #include "test_list.h"
 #include "test_addition.h"
+#include "test_subtraction.h"
 #include "test_operation_result.h"
 #include "test_lib.h"
 #include "test_scanner.h"
@@ -73,6 +74,9 @@ static test_description_t test_list[] = {
     , { "integer object", test_integer_object }
     , { "addition models and constants", test_addition_models_and_constants }
     , { "addition domains", test_addition_domains }
+    , { "subtraction models and constants", test_subtraction_models_and_constants }
+    , { "subtraction domains", test_subtraction_domains }
+    , { "subtraction ranges", test_subtraction_ranges }
     , { "addition ranges", test_addition_ranges }
     , { "addition VM errors", test_addition_vm_errors }
     , { "operation results", test_operation_results }

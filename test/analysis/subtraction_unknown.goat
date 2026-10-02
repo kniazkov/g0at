@@ -1,0 +1,4 @@
+var x = print();
+var a = 1 - x;
+var b = 0.5 - x;
+var c = x - 1;

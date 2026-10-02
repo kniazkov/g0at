@@ -1,0 +1,1 @@
+print("before"); var x = 1 - "x"; print("wrong");

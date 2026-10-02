@@ -5,6 +5,7 @@
  */
 
 #include "binary_operation.h"
+#include "analysis/subtraction.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
@@ -18,6 +19,15 @@ typedef struct {
     /** @brief Base binary operation structure from which subtraction_t inherits. */
     binary_operation_t base;
 } subtraction_t;
+
+/** @brief Implements @ref node_vtbl_t::calculate. */
+static const lattice_element_t *calculate(node_t *node,
+        abstract_state_t *state, arena_t *arena) {
+    const binary_operation_t *expr = (const binary_operation_t*)node;
+    const lattice_element_t *left = calculate_expression(expr->left_operand, state, arena);
+    const lattice_element_t *right = calculate_expression(expr->right_operand, state, arena);
+    return lattice_subtract(arena, left, right);
+}
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
@@ -64,7 +74,7 @@ static node_vtbl_t subtraction_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = unknown_abstract_value,
+    .calculate = calculate,
     .execute = execute_nothing,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
