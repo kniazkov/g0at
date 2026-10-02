@@ -1,1 +1,1 @@
-Invalid operands for addition.
+Uncaught exception: INVALID_ARGUMENT

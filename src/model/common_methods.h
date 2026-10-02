@@ -42,22 +42,22 @@ model_status_t create_property_on_immutable(object_t *obj, object_t *key, object
 model_status_t set_property_on_immutable(object_t *obj, object_t *key, object_t *value);
 
 /** @brief Implements @ref object_vtbl_t::add. */
-object_t *stub_add(process_t *process, object_t *obj1, object_t *obj2);
+operation_result_t stub_add(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::subtract. */
-object_t *stub_subtract(process_t *process, object_t *obj1, object_t *obj2);
+operation_result_t stub_subtract(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::multiply. */
-object_t *stub_multiply(process_t *process, object_t *obj1, object_t *obj2);
+operation_result_t stub_multiply(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::divide. */
-object_t *stub_divide(process_t *process, object_t *obj1, object_t *obj2);
+operation_result_t stub_divide(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::modulo. */
-object_t *stub_modulo(process_t *process, object_t *obj1, object_t *obj2);
+operation_result_t stub_modulo(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::power. */
-object_t *stub_power(process_t *process, object_t *obj1, object_t *obj2);
+operation_result_t stub_power(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::less. */
 bool common_less(const object_t *obj1, const object_t *obj2);

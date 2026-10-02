@@ -12,6 +12,22 @@
 
 typedef struct object_t object_t;
 
+/** @brief Owns one reference to a non-NULL result or thrown value, including Goat null. */
+typedef struct {
+    object_t *value;
+    bool is_exception;
+} operation_result_t;
+
+/** @brief Transfers an owned value into a normal operation result. */
+static inline operation_result_t operation_success(object_t *value) {
+    return (operation_result_t){value, false};
+}
+
+/** @brief Transfers an owned value into an exceptional operation result. */
+static inline operation_result_t operation_exception(object_t *value) {
+    return (operation_result_t){value, true};
+}
+
 typedef struct process_t process_t;
 
 typedef struct thread_t thread_t;
@@ -146,26 +162,26 @@ typedef struct {
     model_status_t (*set_property)(object_t *obj, object_t *key, object_t *value);
 
     /** @brief Adding two objects. */
-    object_t* (*add)(process_t *process, object_t *obj1, object_t *obj2);
+    operation_result_t (*add)(process_t *process, object_t *obj1, object_t *obj2);
 
     /** @brief Subtracting two objects. */
-    object_t* (*subtract)(process_t *process, object_t *obj1, object_t *obj2);
+    operation_result_t (*subtract)(process_t *process, object_t *obj1, object_t *obj2);
 
     /** @brief Multiplying two objects. */
-    object_t* (*multiply)(process_t *process, object_t *obj1, object_t *obj2);
+    operation_result_t (*multiply)(process_t *process, object_t *obj1, object_t *obj2);
 
     /** @brief Dividing two objects. */
-    object_t* (*divide)(process_t *process, object_t *obj1, object_t *obj2);
+    operation_result_t (*divide)(process_t *process, object_t *obj1, object_t *obj2);
 
     /**
      * @brief Computing the remainder of division (modulo).
      *
      * Executes the `MOD` operation, returning the remainder after division.
      */
-    object_t* (*modulo)(process_t *process, object_t *obj1, object_t *obj2);
+    operation_result_t (*modulo)(process_t *process, object_t *obj1, object_t *obj2);
 
     /** @brief Exponentiation (power). */
-    object_t* (*power)(process_t *process, object_t *obj1, object_t *obj2);
+    operation_result_t (*power)(process_t *process, object_t *obj1, object_t *obj2);
 
     /**
      * @brief Checking if first object is less than the second.
@@ -351,32 +367,32 @@ static inline model_status_t set_object_property(object_t *obj, object_t *key, o
 }
 
 /** @brief Adds two objects. */
-static inline object_t *add_objects(process_t *process, object_t *obj1, object_t *obj2) {
+static inline operation_result_t add_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->add(process, obj1, obj2);
 }
 
 /** @brief Subtracts one object from another. */
-static inline object_t *subtract_objects(process_t *process, object_t *obj1, object_t *obj2) {
+static inline operation_result_t subtract_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->subtract(process, obj1, obj2);
 }
 
 /** @brief Multiplies two objects. */
-static inline object_t *multiply_objects(process_t *process, object_t *obj1, object_t *obj2) {
+static inline operation_result_t multiply_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->multiply(process, obj1, obj2);
 }
 
 /** @brief Divides one object by another. */
-static inline object_t *divide_objects(process_t *process, object_t *obj1, object_t *obj2) {
+static inline operation_result_t divide_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->divide(process, obj1, obj2);
 }
 
 /** @brief Computes the modulo of two objects. */
-static inline object_t *modulo_objects(process_t *process, object_t *obj1, object_t *obj2) {
+static inline operation_result_t modulo_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->modulo(process, obj1, obj2);
 }
 
 /** @brief Raises one object to the power of another. */
-static inline object_t *power_objects(process_t *process, object_t *obj1, object_t *obj2) {
+static inline operation_result_t power_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->power(process, obj1, obj2);
 }
 

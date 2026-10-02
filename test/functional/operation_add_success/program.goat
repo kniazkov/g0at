@@ -1,0 +1,1 @@
+try { print(1 + 2); print(1 + 0.5); print("" + "kept"); print("kept" + ""); } catch (e) { print("wrong"); }

@@ -1,0 +1,1 @@
+try { var x = 1 / null; } catch (e) { print(e); } try { var x = 1 / 0; } catch (e) { print(e); } try { var x = 1.5 / 0; } catch (e) { print(e); }

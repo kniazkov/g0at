@@ -1,0 +1,1 @@
+try { try { var x = 1 + "bad"; } catch (e) { throw e; } } catch (e) { print(e); }

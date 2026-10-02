@@ -95,7 +95,14 @@ bool test_addition_models_and_constants(void) {
     }
     for (size_t i = 0; i < count; i++) {
         for (size_t j = 0; j < count; j++) {
-            object_t *result = add_objects(proc, cases[i].object, cases[j].object);
+            operation_result_t outcome = add_objects(proc, cases[i].object, cases[j].object);
+            ASSERT(outcome.value);
+            object_t *result = outcome.is_exception ? NULL : outcome.value;
+            if (outcome.is_exception) {
+                ASSERT(outcome.value == get_exception_invalid_argument() ||
+                    outcome.value == get_exception_invalid_operation());
+                DECREF(outcome.value);
+            }
             const lattice_element_t *value = lattice_add(arena, cases[i].value, cases[j].value);
             if (!contains(value, result))
                 printf("Addition mismatch for operand indices %zu, %zu\n", i, j);
@@ -117,15 +124,15 @@ bool test_addition_models_and_constants(void) {
     }
     /* Independent expectations: differential agreement alone can preserve shared bugs. */
     object_t *half = create_real_number_object(proc, 0.5);
-    object_t *sum = add_objects(proc, get_static_integer_object(1), half);
+    object_t *sum = add_objects(proc, get_static_integer_object(1), half).value;
     ASSERT(!is_integer_object(sum));
     ASSERT(get_object_real_value(sum).value == 1.5);
     DECREF(sum);
     object_t *large = create_integer_object(proc, INT64_C(9007199254740993));
-    sum = add_objects(proc, large, half);
+    sum = add_objects(proc, large, half).value;
     ASSERT(get_object_real_value(sum).value == 9007199254740992.0);
     DECREF(sum);
-    sum = add_objects(proc, half, large);
+    sum = add_objects(proc, half, large).value;
     ASSERT(get_object_real_value(sum).value == 9007199254740992.0);
     DECREF(sum);
     DECREF(large);
@@ -201,7 +208,7 @@ bool test_addition_ranges(void) {
                 for (int64_t y = intervals[j][0]; ; y++) {
                     object_t *left = create_integer_object(proc, x);
                     object_t *right = create_integer_object(proc, y);
-                    object_t *sum = add_objects(proc, left, right);
+                    object_t *sum = add_objects(proc, left, right).value;
                     ASSERT(contains(r, sum));
                     DECREF(left); DECREF(right); DECREF(sum);
                     if (y == intervals[j][1]) break;
@@ -249,6 +256,8 @@ bool test_addition_vm_errors(void) {
         ASSERT(run(proc, code) != 0);
         ASSERT(proc->main_thread->data_stack->size == 0);
         ASSERT(released_operands == (size_t)operands);
+        ASSERT(proc->main_thread->exception.value == (operands == 2 ?
+            get_exception_invalid_operation() : NULL));
         destroy_process(proc);
         free_bytecode(code);
         destroy_code_builder(builder);

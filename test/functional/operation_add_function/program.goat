@@ -1,0 +1,1 @@
+var f = func { return 1 + "bad"; }; try { print("prefix" + f()); } catch (e) { print(e); } print("after");

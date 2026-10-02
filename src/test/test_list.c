@@ -6,6 +6,7 @@
 
 #include "test_list.h"
 #include "test_addition.h"
+#include "test_operation_result.h"
 #include "test_lib.h"
 #include "test_scanner.h"
 #include "test_parser.h"
@@ -74,6 +75,9 @@ static test_description_t test_list[] = {
     , { "addition domains", test_addition_domains }
     , { "addition ranges", test_addition_ranges }
     , { "addition VM errors", test_addition_vm_errors }
+    , { "operation results", test_operation_results }
+    , { "operation VM dispatch", test_operation_vm_dispatch }
+    , { "operation result ownership", test_operation_result_ownership }
     , { "addition of two integers", test_addition_of_two_integers }
     , { "subtraction of two integers", test_subtraction_of_two_integers }
     , { "string concatenation", test_strings_concatenation }
