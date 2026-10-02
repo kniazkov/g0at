@@ -202,6 +202,7 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 | [`src/analysis/`](src/analysis) | Name binding, abstract states, the value lattice, and abstract interpretation. |
 | [`src/codegen/`](src/codegen) | Instruction/data builders, linking, and source formatting helpers. |
 | [`src/vm/`](src/vm) | Bytecode format, instruction execution, and garbage collection. |
+| [`src/builtins/`](src/builtins) | Native functions: paired runtime/abstract implementations and their registry. |
 | [`src/model/`](src/model) | Runtime values, objects, functions, contexts, processes, and thread structures. |
 | [`src/lib/`](src/lib) | Allocation, arenas, containers, strings, paths, and I/O utilities. |
 | [`src/common/`](src/common) | Shared types, source positions, control-flow states, and compilation errors. |
@@ -390,11 +391,25 @@ AST transformation events can be added as transformations are implemented.
 
 ### Built-in function descriptors
 
-Each native function has an immutable `builtin_function_t` descriptor in
-[`src/model/function.c`](src/model/function.c). It supplies the runtime executor, abstract
-executor, minimum argument count, name, singleton getter, and effect flags. Abstract
-executors live in [`src/analysis/builtin_function.c`](src/analysis/builtin_function.c).
-The AST call node has no list of special function names.
+Native functions live in [`src/builtins/`](src/builtins). Each function has one file
+(for example, [`sqrt.c`](src/builtins/sqrt.c)) with four ordinary C definitions:
+
+1. A static runtime `execute` function.
+2. A static abstract `interpret` function.
+3. An immutable `builtin_function_t` descriptor with named fields.
+4. A getter for its static runtime object.
+
+There are no function-definition macros. The generic object model handles arity checks,
+argument ownership, invocation, and exceptions; it contains no individual library functions.
+Shared numeric-domain helpers live in `builtins/numeric.h`, and `builtins/registry.c` lists
+the descriptors used for name lookup. This separates library definitions from call machinery
+while keeping each function's two implementations together.
+
+To add a function, add its `.c` file, declare and register its descriptor in `registry.h/.c`,
+and expose its name in the root key list (including its static name string and object getter).
+Root property lookup uses the registry directly, without a second function dispatch table.
+Reconfigure CMake to discover the new source. Add analysis and runtime fixtures for its
+result, effects, and errors; tests execute programs with optimization both disabled and enabled.
 
 | Function | Abstract normal result | Effects |
 | --- | --- | --- |

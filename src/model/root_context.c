@@ -4,6 +4,7 @@
  * @brief Defines the root context for the Goat programming language execution.
  */
 
+#include "builtins/registry.h"
 #include "common_methods.h"
 #include "context.h"
 #include "lib/pair.h"
@@ -29,13 +30,13 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
     object_t *value = NULL;
     if (key->vtbl->type == TYPE_STRING) {
         string_value_t key_str = key->vtbl->to_string(key);
+        const builtin_function_t *function =
+            find_builtin_function((string_view_t){key_str.data, key_str.length});
+        if (function)
+            return function->get_object();
         static pair_t properties[] = {
             {L"Exceptions", get_exceptions_object},
-            {L"atan", get_function_atan},
-            {L"pi", get_pi_object},
-            {L"print", get_function_print},
-            {L"sign", get_function_sign},
-            {L"sqrt", get_function_sqrt}
+            {L"pi", get_pi_object}
             // ... add other properties later
         };
         static_object_getter_t getter =

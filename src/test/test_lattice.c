@@ -6,8 +6,8 @@
 #include "test_lattice.h"
 
 #include "analysis/lattice.h"
+#include "builtins/registry.h"
 #include "graph/node.h"
-#include "model/builtin_function.h"
 #include "test_macro.h"
 
 #include <math.h>

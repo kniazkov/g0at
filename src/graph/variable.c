@@ -8,6 +8,7 @@
 
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "builtins/registry.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -16,7 +17,6 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
-#include "model/builtin_function.h"
 #include "statement.h"
 
 #include <assert.h>

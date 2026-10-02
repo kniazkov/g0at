@@ -598,10 +598,10 @@ DECLARE_STATIC_OBJECT(string_sqrt)
 /** @brief Retrieves the function prototype object. */
 object_t *get_function_proto();
 
-DECLARE_STATIC_OBJECT(function_atan)
-DECLARE_STATIC_OBJECT(function_print)
-DECLARE_STATIC_OBJECT(function_sign)
-DECLARE_STATIC_OBJECT(function_sqrt)
+object_t *get_function_atan(void);
+object_t *get_function_print(void);
+object_t *get_function_sign(void);
+object_t *get_function_sqrt(void);
 
 /** @brief Stable string values for built-in exceptions; no exception wrappers. */
 DECLARE_STATIC_OBJECT(exception_division_by_zero)

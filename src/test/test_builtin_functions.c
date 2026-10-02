@@ -6,8 +6,8 @@
 
 #include "analysis/function_call.h"
 #include "analysis/lattice.h"
+#include "builtins/registry.h"
 #include "graph/declarations.h"
-#include "model/builtin_function.h"
 #include "model/context.h"
 #include "model/process.h"
 #include "model/thread.h"

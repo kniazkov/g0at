@@ -32,8 +32,12 @@ typedef struct builtin_function_t {
     object_t *(*get_object)(void);
 } builtin_function_t;
 
-/** @brief Enumerates the native function registry. */
-const builtin_function_t *const *get_builtin_functions(size_t *count);
+/** @brief Static storage for a native singleton, owned by its definition file. */
+typedef struct {
+    object_t base;
+    const builtin_function_t *descriptor;
+} builtin_function_object_t;
 
-/** @brief Looks up a native function by its complete name; constants return NULL. */
-const builtin_function_t *find_builtin_function(string_view_t name);
+/** @brief Initializes static storage once and returns its stable object identity. */
+object_t *get_builtin_function_object(builtin_function_object_t *storage,
+                                      const builtin_function_t *descriptor);
