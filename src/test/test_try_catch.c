@@ -69,7 +69,7 @@ bool test_try_catch_structure(void) {
     source = generate_graph_dot(node);
     ASSERT(wcsstr(source.data, L"try-catch") && wcsstr(source.data, L"error"));
     FREE_STRING(source);
-    ASSERT(!can_generate_c_code_from_node(node));
+    ASSERT(!can_generate_c_code_from_node(node, NULL));
     ASSERT(!generate_c_code_from_node(node).data);
     statement_t *empty_body = create_statement_expression_node(arena, &block(arena, NULL)->base);
     node_t *empty =

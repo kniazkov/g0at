@@ -41,6 +41,7 @@ typedef struct list_t list_t;
 typedef struct lattice_element_t lattice_element_t;
 
 typedef struct abstract_state_t abstract_state_t;
+typedef struct analysis_collector_t analysis_collector_t;
 
 /**
  * @brief Classification hint for node data rendered in graph visualization.
@@ -160,6 +161,14 @@ typedef struct {
      */
     abstract_state_t *(*execute)(node_t *node, abstract_state_t *state, arena_t *arena);
 
+    /** @brief Immediate-execution proof; may replace *state, never specializes deferred bodies. */
+    const lattice_element_t *(*analyze_reachability)(node_t *node,
+                                                     abstract_state_t **state,
+                                                     analysis_collector_t *collector);
+
+    /** @brief Proves no writes/I/O using child caches; a function object describes its body. */
+    bool (*is_pure)(const node_t *node);
+
     /** @brief Generates a single-line Goat source code representation of the node. */
     string_value_t (*generate_goat_code)(const node_t *node);
 
@@ -169,10 +178,10 @@ typedef struct {
                                         size_t indent);
 
     /**
-     * @brief Checks if C code generation is possible for this node.
-     * @return `true` if C generation is supported, `false` otherwise.
+     * @brief Proves membership in the current C subset, not availability of a C emitter.
+     * value is an optional pointwise fact; NULL must not infer a variable type from summaries.
      */
-    bool (*can_generate_c_code)(const node_t *node);
+    bool (*can_generate_c_code)(const node_t *node, const lattice_element_t *value);
 
     /**
      * @brief Generates a single-line C source code representation of the node, if possible.
@@ -351,12 +360,10 @@ static inline void generate_indented_goat_code_from_node(const node_t *node,
     node->vtbl->generate_indented_goat_code(node, builder, indent);
 }
 
-/**
- * @brief Checks whether C code can be generated from a node.
- * @return `true` if C code generation is supported, `false` otherwise.
- */
-static inline bool can_generate_c_code_from_node(const node_t *node) {
-    return node->vtbl->can_generate_c_code(node);
+/** @brief Checks membership in the current C subset using optional pointwise facts. */
+static inline bool can_generate_c_code_from_node(const node_t *node,
+                                                 const lattice_element_t *value) {
+    return node->vtbl->can_generate_c_code(node, value);
 }
 
 /**

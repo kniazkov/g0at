@@ -8,3 +8,5 @@
 
 bool test_node_property_events();
 bool test_node_property_reset();
+
+bool test_node_virtual_analysis();

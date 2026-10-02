@@ -6,6 +6,7 @@
 
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "analysis/reachability.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -86,9 +87,19 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
+/** @brief Implements node_vtbl_t::analyze_reachability. */
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    visit_reachable_children(node, state, collector);
+    (*state)->control_flow = FLOW_UNREACHABLE;
+    return make_bottom_element();
+}
+
 /** @brief Virtual table for throw nodes. */
 static node_vtbl_t throw_vtbl = {
     .type = NODE_THROW,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = not_pure,
     .type_name = L"throw",
     .get_data = no_data,
     .get_property_count = no_properties,

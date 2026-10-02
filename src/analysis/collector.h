@@ -44,7 +44,7 @@ struct analysis_event_t {
  * and source storage must outlive queries and formatting. Positions are captured on insertion
  * from the node or its nearest ancestor with a source position.
  */
-typedef struct {
+typedef struct analysis_collector_t {
     arena_t *arena;
     analysis_event_t *head;
     analysis_event_t *tail;

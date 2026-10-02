@@ -4,6 +4,7 @@
  */
 #include "update_expression.h"
 
+#include "analysis/reachability.h"
 #include "analysis/update.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
@@ -78,9 +79,31 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
+/** @brief Implements node_vtbl_t::analyze_reachability. */
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    node_t *target = get_node_child(node, 0);
+    const lattice_element_t *old = visit_reachable_node(target, state, collector);
+    const lattice_element_t *value =
+        lattice_update((*state)->arena, old, update_is_decrement(node->vtbl->type));
+    const declarator_t *decl = ((variable_t *)target)->declarator;
+    if (decl && decl != get_builtin_declarator()
+        && decl->base.vtbl->type == NODE_CONSTANT_DECLARATOR)
+        value = make_bottom_element();
+    if (value->type == LATTICE_BOTTOM)
+        (*state)->control_flow = FLOW_UNREACHABLE;
+    if ((*state)->control_flow != FLOW_NORMAL)
+        return make_bottom_element();
+    if (decl != get_builtin_declarator())
+        set_in_abstract_state(*state, decl, value);
+    return update_is_postfix(node->vtbl->type) ? old : value;
+}
+
 /** @brief Virtual table for update expressions. */
 static node_vtbl_t prefix_increment_vtbl = {
     .type = NODE_PREFIX_INCREMENT,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = not_pure,
     .type_name = L"prefix increment",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -108,6 +131,8 @@ static node_vtbl_t prefix_increment_vtbl = {
 /** @brief Virtual table for update expressions. */
 static node_vtbl_t prefix_decrement_vtbl = {
     .type = NODE_PREFIX_DECREMENT,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = not_pure,
     .type_name = L"prefix decrement",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -135,6 +160,8 @@ static node_vtbl_t prefix_decrement_vtbl = {
 /** @brief Virtual table for update expressions. */
 static node_vtbl_t postfix_increment_vtbl = {
     .type = NODE_POSTFIX_INCREMENT,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = not_pure,
     .type_name = L"postfix increment",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -162,6 +189,8 @@ static node_vtbl_t postfix_increment_vtbl = {
 /** @brief Virtual table for update expressions. */
 static node_vtbl_t postfix_decrement_vtbl = {
     .type = NODE_POSTFIX_DECREMENT,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = not_pure,
     .type_name = L"postfix decrement",
     .get_data = no_data,
     .get_property_count = no_properties,

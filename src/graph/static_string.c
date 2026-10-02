@@ -65,6 +65,8 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
 /** @brief Virtual table for static string expressions. */
 static node_vtbl_t static_string_vtbl = {
     .type = NODE_STATIC_STRING,
+    .analyze_reachability = reachability_literal,
+    .is_pure = children_are_pure,
     .type_name = L"static string",
     .get_data = get_data,
     .get_property_count = no_properties,

@@ -92,6 +92,8 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
 /** @brief Virtual table for statement expression operations. */
 static node_vtbl_t statement_expression_vtbl = {
     .type = NODE_STATEMENT_EXPRESSION,
+    .analyze_reachability = visit_reachable_child,
+    .is_pure = children_are_pure,
     .type_name = L"statement expression",
     .get_data = no_data,
     .get_property_count = no_properties,

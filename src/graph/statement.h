@@ -74,14 +74,6 @@ static inline void generate_indented_goat_code_from_statement(const statement_t 
 }
 
 /**
- * @brief Checks whether C code can be generated from a statement.
- * @return `true` if C code generation is supported, `false` otherwise.
- */
-static inline bool can_generate_c_code_from_statement(const statement_t *stmt) {
-    return can_generate_c_code_from_node(&stmt->base);
-}
-
-/**
  * @brief Generates a single-line C source code representation from a statement.
  * @return A `string_value_t` containing the generated C code or NULL string if conversion is not
  * possible.

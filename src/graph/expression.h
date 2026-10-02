@@ -80,14 +80,6 @@ static inline void generate_indented_goat_code_from_expression(const expression_
 }
 
 /**
- * @brief Checks whether C code can be generated from an expression.
- * @return `true` if C code generation is supported, `false` otherwise.
- */
-static inline bool can_generate_c_code_from_expression(const expression_t *expr) {
-    return can_generate_c_code_from_node(&expr->base);
-}
-
-/**
  * @brief Generates a single-line C source code representation from an expression.
  * @return A `string_value_t` containing the generated C code or NULL string if conversion is not
  * possible.

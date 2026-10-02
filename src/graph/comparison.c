@@ -5,6 +5,7 @@
 #include "comparison.h"
 
 #include "analysis/comparison.h"
+#include "analysis/reachability.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
@@ -65,6 +66,19 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
     append_formatted_source(builder, generate_goat_code(node));
 }
 
+/** @brief Implements node_vtbl_t::analyze_reachability. */
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    const lattice_element_t *left = visit_reachable_node(get_node_child(node, 0), state, collector);
+    const lattice_element_t *right =
+        visit_reachable_node(get_node_child(node, 1), state, collector);
+    const lattice_element_t *result =
+        lattice_compare(left, right, node_comparison_kind(node->vtbl->type));
+    if (result->type == LATTICE_BOTTOM)
+        (*state)->control_flow = FLOW_UNREACHABLE;
+    return result;
+}
+
 /** @brief Implements node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     binary_operation_t *expr = (binary_operation_t *)node;
@@ -78,6 +92,8 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
 static node_vtbl_t vtables[] = {
     {
         .type = NODE_LESS,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"less",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -103,6 +119,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_LESS_OR_EQUAL,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"less or equal",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -128,6 +146,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_GREATER,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"greater",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -153,6 +173,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_GREATER_OR_EQUAL,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"greater or equal",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -178,6 +200,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_EQUAL,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"equal",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -203,6 +227,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_NOT_EQUAL,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"not equal",
         .get_data = no_data,
         .get_property_count = no_properties,

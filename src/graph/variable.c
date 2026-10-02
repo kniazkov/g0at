@@ -8,6 +8,7 @@
 
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "analysis/reachability.h"
 #include "builtins/registry.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
@@ -104,9 +105,26 @@ generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_
     return add_instruction(code, (instruction_t){.opcode = STORE, .arg1 = index});
 }
 
+/** @brief Implements node_vtbl_t::analyze_reachability. */
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    const declarator_t *decl = ((variable_t *)node)->declarator;
+    if (decl == get_builtin_declarator())
+        return calculate_node(node, *state, (*state)->arena);
+    const lattice_element_t *value = get_from_abstract_state(*state, decl);
+    return value ? value : make_top_element();
+}
+
+/** @brief Numeric representation must be proven at this particular read. */
+static bool can_generate_c_code(const node_t *node, const lattice_element_t *value) {
+    return is_integer_lattice_element(value) || is_real_lattice_element(value);
+}
+
 /** @brief Virtual table for variable expressions. */
 static node_vtbl_t variable_vtbl = {
     .type = NODE_VARIABLE,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = children_are_pure,
     .type_name = L"variable",
     .is_assignable_expression = true,
     .get_data = get_data,
@@ -126,7 +144,7 @@ static node_vtbl_t variable_vtbl = {
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
     .generate_bytecode_assign = generate_bytecode_assign,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_deferred = no_deferred_bytecode,

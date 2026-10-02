@@ -50,6 +50,8 @@ generate_bytecode_true(node_t *node, code_builder_t *code, data_builder_t *data)
 /** @brief Virtual table for boolean `true` expressions. */
 static node_vtbl_t true_vtbl = {
     .type = NODE_TRUE,
+    .analyze_reachability = reachability_literal,
+    .is_pure = children_are_pure,
     .type_name = L"true",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -106,6 +108,8 @@ generate_bytecode_false(node_t *node, code_builder_t *code, data_builder_t *data
 /** @brief Virtual table for boolean `false` expressions. */
 static node_vtbl_t false_vtbl = {
     .type = NODE_FALSE,
+    .analyze_reachability = reachability_literal,
+    .is_pure = children_are_pure,
     .type_name = L"false",
     .get_data = no_data,
     .get_property_count = no_properties,

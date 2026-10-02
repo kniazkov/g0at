@@ -8,6 +8,7 @@
 
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "analysis/reachability.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -131,9 +132,23 @@ vdeclr_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *dat
     return first;
 }
 
+/** @brief Implements node_vtbl_t::analyze_reachability. */
+static const lattice_element_t *
+declarator_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    const lattice_element_t *value =
+        get_node_child_count(node) ? visit_reachable_node(get_node_child(node, 0), state, collector)
+                                   : make_null_element();
+    if ((*state)->control_flow == FLOW_NORMAL) {
+        set_in_abstract_state(*state, (declarator_t *)node, value);
+    }
+    return value;
+}
+
 /** @brief Virtual table for variable declarator operations. */
 static node_vtbl_t vdeclr_vtbl = {
     .type = NODE_VARIABLE_DECLARATOR,
+    .analyze_reachability = declarator_reachability,
+    .is_pure = not_pure,
     .type_name = L"variable declarator",
     .get_data = vdeclr_get_data,
     .get_property_count = get_property_count_of_declarator,
@@ -265,6 +280,8 @@ vdecln_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *dat
 /** @brief Virtual table for variable declaration nodes. */
 static node_vtbl_t vdecln_vtbl = {
     .type = NODE_VARIABLE_DECLARATION,
+    .analyze_reachability = visit_reachable_children,
+    .is_pure = not_pure,
     .type_name = L"variable declaration",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -390,6 +407,8 @@ cdeclr_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *dat
 /** @brief Virtual table for constant declarator operations. */
 static node_vtbl_t cdeclr_vtbl = {
     .type = NODE_CONSTANT_DECLARATOR,
+    .analyze_reachability = declarator_reachability,
+    .is_pure = not_pure,
     .type_name = L"constant declarator",
     .get_data = cdeclr_get_data,
     .get_property_count = get_property_count_of_declarator,
@@ -519,6 +538,8 @@ cdecln_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *dat
 /** @brief Virtual table for constant declaration nodes. */
 static node_vtbl_t cdecln_vtbl = {
     .type = NODE_CONSTANT_DECLARATION,
+    .analyze_reachability = visit_reachable_children,
+    .is_pure = not_pure,
     .type_name = L"constant declaration",
     .get_data = no_data,
     .get_property_count = no_properties,
