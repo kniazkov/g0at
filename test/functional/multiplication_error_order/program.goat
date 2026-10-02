@@ -1,0 +1,1 @@
+var f = func { print("R"); return 1; }; try { var x = true * f(); } catch (e) { print(e); } try { var x = (true * 1) * f(); } catch (e) { print(e); }

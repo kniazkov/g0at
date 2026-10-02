@@ -1,0 +1,4 @@
+if (3 * 0.5) { print("live"); }
+else { print("dead"); }
+if (-9223372036854775808 * 2) { print("dead"); }
+else { print("live"); }

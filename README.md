@@ -408,6 +408,23 @@ Both abstract interpretation and reachability use this transfer function. Tests 
 operand order, exception short-circuiting, noncommutative interval bounds, integer limits,
 mixed precision, NaNs, infinities and signed zero.
 
+### Multiplication
+
+`*` evaluates left to right. Integer products wrap modulo 2^64; a real operand makes
+the result real, with integer-to-double rounding before multiplication. IEEE NaNs,
+infinities, signed zero and underflow are preserved. Unsupported receivers throw
+`INVALID_OPERATION`; nonnumeric arguments to a number throw `INVALID_ARGUMENT`.
+
+`lattice_multiply()` is shared by abstract interpretation and reachability. It folds
+constants and bounds integer intervals using all four endpoint products. If an endpoint
+product overflows, it widens to `INTEGER`. Real/numeric domains stay conservative;
+`0 * x` is not folded to zero for unknown real values, which may be NaN or infinity.
+
+Tests compare model, VM and abstract results, enumerate interval values, and exercise
+source programs with and without optimization. Independent mixed-number expectations
+cover `+`, `-` and `*` in both operand orders, including values beyond double's exact
+integer range and integral-valued real operands.
+
 ### Unary plus and minus
 
 Prefix `+` preserves a numeric object's value and type; `-` negates it. Integer negation

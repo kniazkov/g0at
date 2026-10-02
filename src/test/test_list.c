@@ -13,6 +13,7 @@
 #include "test_lattice.h"
 #include "test_lib.h"
 #include "test_model.h"
+#include "test_multiplication.h"
 #include "test_operation_result.h"
 #include "test_optimization.h"
 #include "test_parser.h"
@@ -81,6 +82,10 @@ static test_description_t test_list[] = {
     {"integer object", test_integer_object},
     {"addition models and constants", test_addition_models_and_constants},
     {"addition domains", test_addition_domains},
+    {"mixed numeric arithmetic", test_mixed_arithmetic},
+    {"multiplication models and constants", test_multiplication_models_and_constants},
+    {"multiplication domains", test_multiplication_domains},
+    {"multiplication ranges", test_multiplication_ranges},
     {"subtraction models and constants", test_subtraction_models_and_constants},
     {"subtraction domains", test_subtraction_domains},
     {"subtraction ranges", test_subtraction_ranges},
