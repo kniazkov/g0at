@@ -41,6 +41,8 @@ static instruction_descriptor_t descriptors[] =
     , { .code = L"VAR", .arg_1_is_string = true }
     , { .code = L"CONST", .arg_1_is_string = true }
     , { .code = L"STORE", .arg_1_is_string = true }
+    , { .code = L"UPLUS" }
+    , { .code = L"UMINUS" }
     , { .code = L"ADD" }
     , { .code = L"SUB" }
     , { .code = L"MUL" }
@@ -61,8 +63,6 @@ static instruction_descriptor_t descriptors[] =
     , { .code = L"RESTORE" }
     , { .code = L"TRY", .arg_1_is_unsigned_integer = true }
     , { .code = L"THROW" }
-    , { .code = L"UPLUS" }
-    , { .code = L"UMINUS" }
 };
 
 /** @brief Defines the column width for instruction numbers in the bytecode text representation. */

@@ -296,6 +296,33 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
 /** @brief Unwinds to a handler, transferring ownership of the thrown object. */
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
 
+/** @brief Consumes one operand and transfers its result or exception. */
+static bool execute_unary_operation(runtime_t *runtime, thread_t *thread,
+        operation_result_t (*operation)(process_t *, object_t *)) {
+    object_t *operand = pop_object_from_stack(thread->data_stack);
+    if (!operand) {
+        runtime->status = 1;
+        return false;
+    }
+    operation_result_t result = operation(thread->process, operand);
+    DECREF(operand);
+    if (result.is_exception)
+        return dispatch_exception(runtime, thread, (exception_t){result.value});
+    push_object_onto_stack(thread->data_stack, result.value);
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Executes @ref UPLUS. */
+static bool exec_UPLUS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_unary_operation(runtime, thread, unary_plus_object);
+}
+
+/** @brief Executes @ref UMINUS. */
+static bool exec_UMINUS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_unary_operation(runtime, thread, unary_minus_object);
+}
+
 /** @brief Consumes operands and transfers the result to the stack or exception handler. */
 static bool execute_binary_operation(runtime_t *runtime, thread_t *thread,
         operation_result_t (*operation)(process_t *, object_t *, object_t *)) {
@@ -588,33 +615,6 @@ static bool exec_THROW(runtime_t *runtime, instruction_t instr, thread_t *thread
     return dispatch_exception(runtime, thread, exception);
 }
 
-/** @brief Consumes one operand and transfers its result or exception. */
-static bool execute_unary_operation(runtime_t *runtime, thread_t *thread,
-        operation_result_t (*operation)(process_t *, object_t *)) {
-    object_t *operand = pop_object_from_stack(thread->data_stack);
-    if (!operand) {
-        runtime->status = 1;
-        return false;
-    }
-    operation_result_t result = operation(thread->process, operand);
-    DECREF(operand);
-    if (result.is_exception)
-        return dispatch_exception(runtime, thread, (exception_t){result.value});
-    push_object_onto_stack(thread->data_stack, result.value);
-    thread->instr_id++;
-    return true;
-}
-
-/** @brief Executes @ref UPLUS. */
-static bool exec_UPLUS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_unary_operation(runtime, thread, unary_plus_object);
-}
-
-/** @brief Executes @ref UMINUS. */
-static bool exec_UMINUS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    return execute_unary_operation(runtime, thread, unary_minus_object);
-}
-
 /** @brief Array of instruction execution functions for the Goat virtual machine. */
 static instr_executor_t executors[] = {
     exec_NOP,     /**< No operation - does nothing. */
@@ -634,6 +634,8 @@ static instr_executor_t executors[] = {
     exec_VAR,     /**< Declares a new mutable variable in current context. */
     exec_CONST,   /**< Declares a new immutable constant in current context. */
     exec_STORE,   /**< Stores to existing variable or creates new if not found. */
+    exec_UPLUS,   /**< Applies unary plus to the top value. */
+    exec_UMINUS,  /**< Negates the top value. */
     exec_ADD,     /**< Adds the top two objects of the stack. */
     exec_SUB,     /**< Subtracts the top two objects of the stack. */
     exec_MUL,     /**< Multiplies the top two objects on the data stack. */
@@ -653,9 +655,7 @@ static instr_executor_t executors[] = {
     exec_LEAVE,   /**< Restores the parent and pushes the departed context's data. */
     exec_RESTORE, /**< Restores the parent without a stack result. */
     exec_TRY,     /**< Creates an exception-handler context. */
-    exec_THROW,   /**< Unwinds to the nearest exception handler. */
-    exec_UPLUS,
-    exec_UMINUS
+    exec_THROW    /**< Unwinds to the nearest exception handler. */
     // Additional opcodes can be added here in the future...
 };
 

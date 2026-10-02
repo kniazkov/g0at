@@ -42,6 +42,10 @@ typedef enum {
 
     STORE, /**< Stores to existing variable or creates new if not found. */
 
+    UPLUS, /**< Applies unary plus to the top value. */
+
+    UMINUS, /**< Negates the top value. */
+
     ADD, /**< Adds the top two objects on the data stack. */
 
     SUB, /**< Subtracts the top two objects on the data stack. */
@@ -80,7 +84,5 @@ typedef enum {
 
     TRY, /**< Creates an exception context; arg1 is the handler address. */
 
-    THROW, /**< Transfers the top value to the nearest handler after unwinding. */
-    UPLUS, /**< Applies unary plus to the top value. */
-    UMINUS /**< Negates the top value. */
+    THROW /**< Transfers the top value to the nearest handler after unwinding. */
 } opcode_t;
