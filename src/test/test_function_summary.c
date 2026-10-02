@@ -19,7 +19,7 @@ bool test_function_summary_storage() {
     arena_t *arena = create_arena(16);
     string_view_t args[] = {{L"x", 1}, {L"y", 1}};
     node_t *function = create_function_object_node(arena, args, 2);
-    function_summary_t *summary = get_function_summary(function);
+    function_summary_t *summary = create_function_summary(arena, function, 2);
     ASSERT(summary->function == function && summary->parameter_count == 2);
     ASSERT(summary->parameter_types[0]->type == LATTICE_TOP);
     ASSERT(summary->parameter_types[1]->type == LATTICE_TOP);
@@ -39,7 +39,7 @@ bool test_function_summary_storage() {
     ASSERT(snapshot != summary && snapshot->parameter_types != storage);
     reset_function_summary(summary);
     ASSERT(summary->parameter_types == storage && summary->function == function);
-    ASSERT(summary->parameter_types[0]->type == LATTICE_TOP);
+    ASSERT(summary->parameter_types[0]->type == LATTICE_INTEGER);
     ASSERT(summary->return_type->type == LATTICE_TOP);
     ASSERT(summary->effects == FUNCTION_EFFECT_UNKNOWN && summary->status == FUNCTION_UNANALYZED);
     ASSERT(summary->c_support == FUNCTION_C_UNKNOWN);
@@ -49,7 +49,7 @@ bool test_function_summary_storage() {
     ASSERT(snapshot->effects == FUNCTION_EFFECT_NONE && snapshot->status == FUNCTION_ANALYZED);
     ASSERT(snapshot->c_support == FUNCTION_C_SUPPORTED);
     node_t *empty = create_function_object_node(arena, NULL, 0);
-    function_summary_t *other = get_function_summary(empty);
+    function_summary_t *other = create_function_summary(arena, empty, 0);
     ASSERT(other != summary && other->function == empty);
     ASSERT(!other->parameter_count && !other->parameter_types);
     ASSERT(!snapshot_function_summary(snapshots, other)->parameter_types);
@@ -61,7 +61,7 @@ bool test_function_summary_storage() {
 bool test_function_summary_states() {
     arena_t *arena = create_arena(16);
     node_t *function = create_function_object_node(arena, NULL, 0);
-    function_summary_t *summary = get_function_summary(function);
+    function_summary_t *summary = create_function_summary(arena, function, 0);
     const function_analysis_status_t statuses[] = {FUNCTION_UNANALYZED,
                                                    FUNCTION_ANALYZING,
                                                    FUNCTION_ANALYZED,
@@ -94,7 +94,7 @@ bool test_function_summary_events() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const f = func(n) { return func() { return n; }; }; f(10);"));
+        STATIC_STRING(L"const f = func(n) { return func() { return n; }; }; var g = f(10); g();"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -114,23 +114,23 @@ bool test_function_summary_events() {
     string_value_t before = analysis_collector_to_text(collector);
     ASSERT(wcsstr(before.data, L": function-summary unanalyzed ("));
     ASSERT(wcsstr(before.data, L"effects=unknown c=unknown"));
-    function_summary_t *live = get_function_summary(second->node);
-    live->parameter_types[0] = make_integer_element();
+    function_summary_set_t *set = get_function_summaries(second->node);
+    function_summary_t *live = set->head;
+    live->parameter_types[0] = make_real_element();
     live->return_type = make_integer_element();
     live->effects = FUNCTION_EFFECT_NONE;
     live->status = FUNCTION_ANALYZED;
     live->c_support = FUNCTION_C_SUPPORTED;
-    ASSERT(second->function_summary->parameter_types[0]->type == LATTICE_TOP);
+    ASSERT(second->function_summary->parameter_types[0]->type == LATTICE_INTEGER);
     string_value_t after = analysis_collector_to_text(collector);
     ASSERT(!wcscmp(before.data, after.data));
     FREE_STRING(after);
-    ASSERT(!add_analysis_event(NULL, ANALYSIS_FUNCTION_SUMMARY, second->node, NULL, NULL));
+    ASSERT(!add_function_summary_event(NULL, live));
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
-    ASSERT(live == get_function_summary(second->node));
-    ASSERT(live->status == FUNCTION_UNANALYZED && live->effects == FUNCTION_EFFECT_UNKNOWN);
-    ASSERT(live->parameter_types[0]->type == LATTICE_TOP && live->return_type->type == LATTICE_TOP);
-    ASSERT(live->c_support == FUNCTION_C_UNKNOWN);
+    ASSERT(set == get_function_summaries(second->node));
+    ASSERT(!set->head && !set->tail);
+    ASSERT(second->function_summary->parameter_types[0]->type == LATTICE_INTEGER);
     after = analysis_collector_to_text(collector);
     ASSERT(!wcscmp(before.data, after.data));
     FREE_STRING(before);

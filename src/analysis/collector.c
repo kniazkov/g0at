@@ -7,7 +7,6 @@
 
 #include "function_summary.h"
 #include "graph/declarations.h"
-#include "graph/expression.h"
 #include "lattice.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
@@ -22,19 +21,11 @@ analysis_collector_t *create_analysis_collector(arena_t *arena) {
     return collector;
 }
 
-const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
-                                           analysis_event_kind_t kind,
-                                           const node_t *node,
-                                           const declarator_t *declarator,
-                                           const lattice_element_t *value) {
-    if (!collector) {
-        return NULL;
-    }
-    assert(kind >= ANALYSIS_VALUE_WRITE && kind <= ANALYSIS_FUNCTION_SUMMARY);
-    assert(kind == ANALYSIS_UNREACHABLE || kind == ANALYSIS_NODE_FLAGS
-                   || kind == ANALYSIS_FUNCTION_SUMMARY
-               ? node && !declarator && !value
-               : declarator && value);
+static analysis_event_t *append_event(analysis_collector_t *collector,
+                                      analysis_event_kind_t kind,
+                                      const node_t *node,
+                                      const declarator_t *declarator,
+                                      const lattice_element_t *value) {
     analysis_event_t *event = alloc_zeroed_from_arena(collector->arena, sizeof(*event));
     event->sequence = ++collector->count;
     event->kind = kind;
@@ -43,9 +34,6 @@ const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
     event->value = value;
     if (kind == ANALYSIS_NODE_FLAGS)
         event->flags = node->flags;
-    if (kind == ANALYSIS_FUNCTION_SUMMARY)
-        event->function_summary =
-            snapshot_function_summary(collector->arena, get_function_summary(node));
     const node_t *located = node;
     while (located && (!located->position || !located->position->begin)) {
         located = located->parent;
@@ -62,6 +50,30 @@ const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
         collector->head = event;
     }
     collector->tail = event;
+    return event;
+}
+
+const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
+                                           analysis_event_kind_t kind,
+                                           const node_t *node,
+                                           const declarator_t *declarator,
+                                           const lattice_element_t *value) {
+    if (!collector)
+        return NULL;
+    assert(kind >= ANALYSIS_VALUE_WRITE && kind <= ANALYSIS_NODE_FLAGS);
+    assert(kind == ANALYSIS_UNREACHABLE || kind == ANALYSIS_NODE_FLAGS
+               ? node && !declarator && !value
+               : declarator && value);
+    return append_event(collector, kind, node, declarator, value);
+}
+
+const analysis_event_t *add_function_summary_event(analysis_collector_t *collector,
+                                                   const function_summary_t *summary) {
+    if (!collector)
+        return NULL;
+    analysis_event_t *event =
+        append_event(collector, ANALYSIS_FUNCTION_SUMMARY, summary->function, NULL, NULL);
+    event->function_summary = snapshot_function_summary(collector->arena, summary);
     return event;
 }
 

@@ -302,8 +302,8 @@ typedef struct {
     /** @brief Function body. */
     function_body_t *body;
 
-    /** @brief Provisional body summary, owned by the graph arena. */
-    function_summary_t *summary;
+    /** @brief Observed body signatures, owned by the graph arena. */
+    function_summary_set_t *summaries;
 
     /**
      * @brief Index of the `ARG` instruction containing index of the first instruction of the
@@ -478,7 +478,7 @@ node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, siz
     fobj->base.base.vtbl = &fo_vtbl;
     fobj->arguments = create_argument_list_node(arena, arg_list, arg_count);
     fobj->body = create_function_body_node(arena);
-    fobj->summary = create_function_summary(arena, &fobj->base.base, arg_count);
+    fobj->summaries = create_function_summary_set(arena, &fobj->base.base, arg_count);
     return &fobj->base.base;
 }
 
@@ -489,7 +489,7 @@ void fill_function_body(node_t *node, list_t *statements) {
     fobj->code_instr_index = BAD_INSTR_INDEX;
 }
 
-function_summary_t *get_function_summary(const node_t *node) {
+function_summary_set_t *get_function_summaries(const node_t *node) {
     assert(node->vtbl->type == NODE_FUNCTION_OBJECT);
-    return ((const function_object_t *)node)->summary;
+    return ((const function_object_t *)node)->summaries;
 }

@@ -55,7 +55,7 @@ static void assign_node_indexes_and_scopes(node_t *node,
     node->parent = parent;
     node->scope = scope;
     if (node->vtbl->type == NODE_FUNCTION_OBJECT)
-        reset_function_summary(get_function_summary(node));
+        reset_function_summary_set(get_function_summaries(node));
     node->flags &= ~(NODE_FLAG_UNREACHABLE | NODE_FLAG_PURE | NODE_FLAG_C_COMPATIBLE);
     if (node->vtbl->type == NODE_IF_ELSE)
         set_if_else_condition_truth(node, ABSTRACT_EITHER);

@@ -12,7 +12,7 @@
 #include "node.h"
 
 typedef struct declarator_spec_t declarator_spec_t;
-typedef struct function_summary_t function_summary_t;
+typedef struct function_summary_set_t function_summary_set_t;
 
 /** @brief The structure representing an expression node. */
 struct expression_t {
@@ -169,8 +169,8 @@ node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, siz
 /** @brief Fills in the body of a function object node. */
 void fill_function_body(node_t *node, list_t *statements);
 
-/** @brief Gets the arena-owned body summary of a function object. */
-function_summary_t *get_function_summary(const node_t *node);
+/** @brief Gets the arena-owned signature set of a function object. */
+function_summary_set_t *get_function_summaries(const node_t *node);
 
 /** @brief Creates a new parenthesized expression node with no inner expression. */
 node_t *create_parenthesized_expression_node(arena_t *arena);

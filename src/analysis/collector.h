@@ -72,13 +72,17 @@ analysis_collector_t *create_analysis_collector(arena_t *arena);
 /**
  * @brief Appends in O(1); NULL collector disables recording.
  * Structural events require a node and NULL declaration/value; value events require both.
- * Function summary events require a function object node.
+ * Function summaries use add_function_summary_event().
  */
 const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
                                            analysis_event_kind_t kind,
                                            const node_t *node,
                                            const declarator_t *declarator,
                                            const lattice_element_t *value);
+
+/** @brief Appends an isolated signature snapshot; NULL collector disables recording. */
+const analysis_event_t *add_function_summary_event(analysis_collector_t *collector,
+                                                   const function_summary_t *summary);
 
 /**
  * @brief Finds the next matching event in O(n); NULL query matches everything.

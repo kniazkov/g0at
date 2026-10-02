@@ -4,7 +4,9 @@
  */
 #include "function_call.h"
 
+#include "function_summary.h"
 #include "graph/declarations.h"
+#include "graph/expression.h"
 #include "graph/node.h"
 #include "model/builtin_function.h"
 
@@ -75,6 +77,7 @@ const lattice_element_t *interpret_function_call(const lattice_element_t *functi
             caller->control_flow = FLOW_UNREACHABLE;
         return value;
     }
+    register_function_specialization(get_function_summaries(known->node), args, count);
     bool owner_active = known->owner == NULL;
     bool recursive = false;
     size_t depth = 0;
