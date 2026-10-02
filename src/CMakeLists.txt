@@ -4,7 +4,7 @@
 # that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 
 cmake_minimum_required(VERSION 3.10)
-project(goat)
+project(goat LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 include_directories(.)

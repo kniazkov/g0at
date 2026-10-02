@@ -45,6 +45,9 @@ jobs:
   linux:
     name: Build and test (Linux, ${{ matrix.name }})
     runs-on: ubuntu-latest
+    env:
+      # Configuration must succeed without a C++ compiler.
+      CXX: /nonexistent/cxx
     strategy:
       fail-fast: false
       matrix:
