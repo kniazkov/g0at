@@ -123,3 +123,13 @@ update_invalid
 update_constant
 update_order
 update_overflow_range
+comparison_constants
+comparison_nan
+comparison_ranges
+comparison_limits
+comparison_unknown
+comparison_effects
+comparison_invalid
+comparison_invalid_left
+comparison_invalid_right
+comparison_reachability

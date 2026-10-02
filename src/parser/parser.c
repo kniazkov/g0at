@@ -382,6 +382,7 @@ apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory, parsing_r
     APPLY_FORWARD(multiplicative_operators, parsing_multiplicative_operators);
     APPLY_FORWARD(additive_operators, parsing_additive_operators);
     APPLY_FORWARD(comparison_operators, parsing_comparison_operators);
+    APPLY_FORWARD(equality_operators, parsing_comparison_operators);
     APPLY_BACKWARD(assignment_operators, parsing_assignment_operators);
     APPLY_FORWARD(function_arguments, parsing_function_call_args);
     APPLY_FORWARD(var_keywords, parsing_variable_declarations);

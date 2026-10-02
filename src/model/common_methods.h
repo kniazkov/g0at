@@ -61,22 +61,22 @@ operation_result_t stub_modulo(process_t *process, object_t *obj1, object_t *obj
 operation_result_t stub_power(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::less. */
-bool common_less(const object_t *obj1, const object_t *obj2);
+operation_result_t common_less(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::less_or_equal. */
-bool common_less_or_equal(const object_t *obj1, const object_t *obj2);
+operation_result_t common_less_or_equal(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::greater. */
-bool common_greater(const object_t *obj1, const object_t *obj2);
+operation_result_t common_greater(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::greater_or_equal. */
-bool common_greater_or_equal(const object_t *obj1, const object_t *obj2);
+operation_result_t common_greater_or_equal(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::equal. */
-bool common_equal(const object_t *obj1, const object_t *obj2);
+operation_result_t common_equal(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::not_equal. */
-bool common_not_equal(const object_t *obj1, const object_t *obj2);
+operation_result_t common_not_equal(process_t *process, object_t *obj1, object_t *obj2);
 
 /** @brief Implements @ref object_vtbl_t::get_boolean_value. */
 bool common_get_boolean_value(const object_t *obj);
@@ -96,3 +96,6 @@ bool stub_call(object_t *obj, uint16_t arg_count, thread_t *thread);
 operation_result_t stub_unary_operation(process_t *process, object_t *obj);
 /** @brief Implements numeric object_vtbl_t::unary_plus, retaining the operand. */
 operation_result_t numeric_unary_plus(process_t *process, object_t *obj);
+
+/** @brief Internal numeric key ordering; NaNs sort after all numbers. */
+int compare_numeric_keys(const object_t *left, const object_t *right);

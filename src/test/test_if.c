@@ -156,8 +156,7 @@ bool test_if_return_values() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(
-            L"var x = 0; if (1 < 2) { return (x = 1); } else { return (x = 3); } x = 99;"));
+        STATIC_STRING(L"var x = 0; if (pi) { return (x = 1); } else { return (x = 3); } x = 99;"));
     ASSERT(root);
     options_t *options = create_options();
     ASSERT(!analyze(root, &memory, options, NULL));

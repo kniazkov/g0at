@@ -157,6 +157,7 @@ typedef struct {
 
     /** @brief Group for comparison operators. */
     token_list_t comparison_operators;
+    token_list_t equality_operators;
 
     /** @brief Unprocessed function call arguments. */
     token_list_t function_arguments;

@@ -104,7 +104,8 @@ bool test_optimized_if_bytecode() {
                  {L"var x = 1; if ((x = 0)) { }", 0, 1, 1, 0},
                  {L"var x = 1; if (x) { }", 0, 0, 2, 0},
                  {L"if (func() {}) { }", 0, 0, 2, 1},
-                 {L"if (1 < 2) { } else { }", 2, 0, 2, 0},
+                 {L"if (1 < 2) { } else { }", 0, 0, 2, 0},
+                 {L"if (pi) { } else { }", 2, 0, 2, 0},
                  {L"if ({ return; }) { } else { }", 0, 0, 0, 0}};
 
     for (size_t c = 0; c < sizeof(cases) / sizeof(*cases); c++) {

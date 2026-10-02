@@ -10,6 +10,7 @@
 #include "test_addition.h"
 #include "test_analysis.h"
 #include "test_codegen.h"
+#include "test_comparison.h"
 #include "test_division.h"
 #include "test_lattice.h"
 #include "test_lib.h"
@@ -31,6 +32,10 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"comparison values", test_comparison_values},
+    {"comparison ranges", test_comparison_ranges},
+    {"comparison nodes", test_comparison_nodes},
+    {"comparison keys", test_comparison_keys},
     {"update models and VM", test_update_models_vm},
     {"update errors and DUP ownership", test_update_errors},
     {"update AST and parser", test_update_ast_parser},

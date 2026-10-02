@@ -71,13 +71,18 @@ parsing_comparison_operators(token_t *operator, parser_memory_t * memory, token_
     expression_t *left_operand = (expression_t *)operator->left->node;
     expression_t *right_operand = (expression_t *)operator->right->node;
     expression_t *operation = NULL;
-    if (operator->text.length == 1) {
-        if (operator->text.data[0] == L'<') {
-            operation = create_less_node(memory->graph, left_operand, right_operand);
-        } else if (operator->text.data[0] == L'>') {
-            operation = create_greater_node(memory->graph, left_operand, right_operand);
-        }
-    }
+    if (!wcscmp(operator->text.data, L"<"))
+        operation = create_less_node(memory->graph, left_operand, right_operand);
+    else if (!wcscmp(operator->text.data, L"<="))
+        operation = create_less_or_equal_node(memory->graph, left_operand, right_operand);
+    else if (!wcscmp(operator->text.data, L">"))
+        operation = create_greater_node(memory->graph, left_operand, right_operand);
+    else if (!wcscmp(operator->text.data, L">="))
+        operation = create_greater_or_equal_node(memory->graph, left_operand, right_operand);
+    else if (!wcscmp(operator->text.data, L"=="))
+        operation = create_equal_node(memory->graph, left_operand, right_operand);
+    else if (!wcscmp(operator->text.data, L"!="))
+        operation = create_not_equal_node(memory->graph, left_operand, right_operand);
 
     assert(operation != NULL);
     collapse_tokens_to_token(memory,

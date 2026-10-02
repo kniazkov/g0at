@@ -173,18 +173,6 @@ static void release(object_t *obj) {
     FREE(obj);
 }
 
-/** @brief Implements @ref object_vtbl_t::compare. */
-static int compare(const object_t *obj1, const object_t *obj2) {
-    double diff = get_object_integer_value(obj1).value - get_object_real_value(obj2).value;
-    if (diff > 0) {
-        return 1;
-    } else if (diff < 0) {
-        return -1;
-    } else {
-        return 0;
-    }
-}
-
 /** @brief Implements @ref object_vtbl_t::clone. */
 static object_t *clone(process_t *process, object_t *obj) {
     if (process == obj->process) {
@@ -379,7 +367,7 @@ static object_vtbl_t static_vtbl = {.type = TYPE_NUMBER,
                                     .mark = stub_memory_function,
                                     .sweep = no_sweep,
                                     .release = stub_memory_function,
-                                    .compare = compare,
+                                    .compare = compare_numeric_keys,
                                     .clone = clone,
                                     .to_string = to_string,
                                     .to_string_notation = to_string_notation,
@@ -447,7 +435,7 @@ static object_vtbl_t dynamic_vtbl = {.type = TYPE_NUMBER,
                                      .mark = mark,
                                      .sweep = sweep,
                                      .release = release,
-                                     .compare = compare,
+                                     .compare = compare_numeric_keys,
                                      .clone = clone,
                                      .to_string = to_string,
                                      .to_string_notation = to_string_notation,

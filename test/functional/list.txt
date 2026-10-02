@@ -216,3 +216,17 @@ update_alias
 update_function_error
 update_builtin_error
 update_uncaught
+comparison_integers
+comparison_mixed
+comparison_nan
+comparison_infinity
+comparison_strings
+comparison_types
+comparison_precedence
+comparison_identity
+comparison_order
+comparison_errors
+comparison_error_order
+comparison_branches
+comparison_closure
+comparison_uncaught

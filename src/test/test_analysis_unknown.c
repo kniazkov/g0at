@@ -35,15 +35,10 @@ bool test_unknown_expression_values() {
                                 (expression_t *)create_null_node(arena),
                                 (expression_t *)create_true_node(arena),
                                 (expression_t *)create_static_string_node(arena, L"text", 4)};
-    expression_t *(*factories[])(arena_t *, expression_t *, expression_t *) = {create_less_node,
-                                                                               create_greater_node};
-    for (size_t op = 0; op < sizeof(factories) / sizeof(*factories); op++) {
-        for (size_t i = 0; i < sizeof(operands) / sizeof(*operands); i++) {
-            for (size_t j = 0; j < sizeof(operands) / sizeof(*operands); j++) {
-                expression_t *expr = factories[op](arena, operands[i], operands[j]);
-                ASSERT(calculate_expression(expr, state, arena)->type == LATTICE_TOP);
-            }
-        }
+    for (size_t i = 0; i < sizeof(operands) / sizeof(*operands); i++) {
+        expression_t *expr =
+            (expression_t *)create_function_call_node_without_args(arena, operands[i]);
+        ASSERT(calculate_expression(expr, state, arena)->type == LATTICE_TOP);
     }
     for (size_t i = 0; i < sizeof(operands) / sizeof(*operands); i++) {
         node_t *expr = create_parenthesized_expression_node(arena);
@@ -60,7 +55,7 @@ bool test_unknown_expression_values() {
 }
 
 bool test_unknown_values_in_analysis() {
-    const wchar_t *expressions[] = {L"1 < 2", L"2 > 1", L"(2 + 3) < (4 - 1)"};
+    const wchar_t *expressions[] = {L"pi", L"print()", L"(pi)"};
     for (size_t i = 0; i < sizeof(expressions) / sizeof(*expressions); i++) {
         arena_t *arena = create_arena(8);
         parser_memory_t memory = {arena, arena, arena, arena};
