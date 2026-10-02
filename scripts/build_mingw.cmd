@@ -5,15 +5,14 @@
 
 @echo off
 setlocal
-pushd "%~dp0"
+pushd "%~dp0.." || exit /b 1
 cmake -S src -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug || goto failed
-cmake --build build --target goat unit_testing analysis_testing || goto failed
+cmake --build build --target goat unit_testing analysis_testing functional_testing || goto failed
 copy /Y build\goat.exe goat.exe > NUL || goto failed
 
 build\unit_testing.exe || goto failed
 build\analysis_testing.exe test\analysis || goto failed
 
-gcc src\functional_testing.c -o build\functional_testing.exe || goto failed
 pushd test\functional
 ..\..\build\functional_testing.exe ..\..\goat.exe list.txt
 set "testing_result=%errorlevel%"

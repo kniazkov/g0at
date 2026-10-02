@@ -92,8 +92,8 @@ The implementation is not a complete language specification. For example, loops 
 
 Requirements:
 
-- GCC, GNU Make, and Bash.
-- CMake 3.10 or newer.
+- GCC or Clang, GNU Make, and Bash.
+- CMake 3.13 or newer.
 - The standard C development libraries, including pthread and libm.
 - Optional: Graphviz (`dot` on `PATH`) for AST images.
 
@@ -102,11 +102,18 @@ From the repository root:
 ```bash
 git clone https://github.com/kniazkov/g0at.git
 cd g0at
-bash build.sh
+bash scripts/build.sh
 ./goat example/hello_world.goat
 ```
 
-The build script creates `goat` in the repository root, runs the unit tests, and then runs the functional tests if the unit tests pass. The included example prints `it works!`.
+The build script creates `goat` in the repository root, runs the unit, analysis and runtime functional tests, stopping on failures. The included example prints `it works!`.
+
+Scripts resolve paths from their own location, so they can be invoked from any directory.
+To select Clang with a separate CMake build directory:
+
+```bash
+CC=clang BUILD_DIR=build/clang bash scripts/build.sh
+```
 
 To build individual targets directly:
 
@@ -123,15 +130,17 @@ cmake --build build --target unit_testing
 Install CMake and a MinGW toolchain with GCC, `mingw32-make`, and pthread support available on `PATH`. From a command prompt in the repository root, run:
 
 ```bat
-build_mingw.cmd
+scripts\build_mingw.cmd
 goat.exe example\hello_world.goat
 ```
 
-This script builds the interpreter and runs both test suites. GitHub Actions currently exercises the Linux build.
+This script builds the interpreter and runs all three test suites.
+For a release build without tests, run `scripts\build_release_mingw.cmd`.
+The helper `scripts\create_test.cmd` creates a runtime fixture from root-level `program.goat`.
 
 ## Inspect a program
 
-The following commands assume the root-level executable produced by `build.sh`:
+The following commands assume the root-level executable produced by `scripts/build.sh`:
 
 ```bash
 ./goat --print-bytecode test/functional/currying/program.goat
@@ -173,6 +182,7 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 
 | Path | Responsibility |
 | --- | --- |
+| [`scripts/`](scripts) | Build scripts and the Windows fixture-creation helper. |
 | [`src/main.c`](src/main.c) | Executable entry point. |
 | [`src/cli/`](src/cli) | Command-line options and compilation/execution orchestration. |
 | [`src/scanner/`](src/scanner) | Tokenization, token groups, and token lists. |
@@ -191,21 +201,23 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 | [`example/`](example) | A minimal runnable example. |
 | [`src/CMakeLists.txt`](src/CMakeLists.txt) | Build definitions for the core library, interpreter, and unit tests. |
 | [`src/Doxyfile`](src/Doxyfile) | Doxygen configuration for source documentation. |
-| [`.github/workflows/`](.github/workflows) | Linux and Windows (MinGW32, MinGW64, UCRT64) build and test workflows. |
+| [`.github/workflows/`](.github/workflows) | Linux (GCC/Clang) and Windows (GCC) build and test workflow. |
 
 ## Testing
 
-`bash build.sh` runs the unit, analysis, and runtime functional suites. To run them separately after building with CMake:
+`bash scripts/build.sh` runs the unit, analysis, and runtime functional suites. To run them separately after building with CMake:
 
 ```bash
 ./build/unit_testing
 ./build/analysis_testing test/analysis
-gcc src/functional_testing.c -o build/functional_testing
+cmake --build build --target functional_testing
 (cd test/functional && ../../build/functional_testing ../../build/goat list.txt)
 ```
 
-CI runs all three suites on Linux and on Windows with MinGW32, MinGW64 and UCRT64.
-The Windows build script stops on failed builds or tests; failed functional output is retained
+CI runs all three suites with GCC and Clang on Linux and with GCC on Windows
+(MinGW32, MinGW64 and UCRT64). Pull requests run once per update; push builds run only
+on `master`, including after merges. Manual runs are also available.
+Build scripts stop on failed builds or tests; failed functional output is retained
 as CI artifacts.
 
 The functional runner executes every case twice, with `--optimize none` and `--optimize all`,
@@ -221,7 +233,7 @@ When extending the language, keep parsing, AST behavior, bytecode generation, an
 `test/analysis/list.txt` lists fixture names. Each has a `.goat` source and an `.expect` file.
 The dedicated `analysis_testing` executable reads the source, runs the scanner, parser,
 AST binding and analyzer, then queries the structured collector. It does not execute bytecode
-or compare the complete formatted report. It is built by CMake and run by `build.sh`/CI.
+or compare the complete formatted report. It is built by CMake and run by `scripts/build.sh`/CI.
 
 Expectation lines have six whitespace-separated fields:
 

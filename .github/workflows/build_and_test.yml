@@ -1,18 +1,40 @@
-name: build and test
-run-name: ${{ github.actor }} is building the Goat interpreter
-on: [push, pull_request]
+name: Build and test
+run-name: Build and test — ${{ github.event_name }} — ${{ github.head_ref || github.ref_name }}
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  build:
+  linux:
+    name: Build and test (Linux, ${{ matrix.name }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: GCC
+            compiler: gcc
+          - name: Clang
+            compiler: clang
     steps:
       - uses: actions/checkout@v4
       - name: Build and test
-        run: ./build.sh
-        shell: bash
+        run: bash scripts/build.sh
+        env:
+          CC: ${{ matrix.compiler }}
+          BUILD_DIR: build/${{ matrix.compiler }}
+      - name: Preserve failed functional outputs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failures-Linux-${{ matrix.name }}
+          path: test/functional/**/actual_*.txt
+          if-no-files-found: ignore
   windows:
-    name: Windows (${{ matrix.msystem }})
+    name: Build and test (Windows, GCC ${{ matrix.msystem }})
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -33,13 +55,16 @@ jobs:
             ${{ matrix.prefix }}-gcc
             ${{ matrix.prefix }}-cmake
             ${{ matrix.prefix }}-make
-      - name: Build and test through the Windows script
+      - name: Build and test
         shell: msys2 {0}
-        run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c build_mingw.cmd
+        run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_mingw.cmd'
+      - name: Build release
+        shell: msys2 {0}
+        run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_release_mingw.cmd'
       - name: Preserve failed functional outputs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: failures-${{ matrix.msystem }}
+          name: failures-Windows-GCC-${{ matrix.msystem }}
           path: test/functional/**/actual_*.txt
           if-no-files-found: ignore
