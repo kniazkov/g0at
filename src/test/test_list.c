@@ -104,6 +104,9 @@ static test_description_t test_list[] = {
     , { "analysis branch observations", test_analysis_branch_observations }
     , { "analysis options", test_analysis_options }
 
+    , { "try catch structure", test_try_catch_structure }
+    , { "try catch bytecode", test_try_catch_bytecode }
+    , { "try catch analysis placeholder", test_try_catch_analysis_placeholder }
     , { "data builder", test_data_builder }
     , { "linker", test_linker }
     , { "node codegen stubs", test_node_codegen_stubs }

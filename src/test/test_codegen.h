@@ -22,3 +22,8 @@ bool test_linker();
 
 /** @brief Tests unsupported code generation through the node virtual table. */
 bool test_node_codegen_stubs();
+
+/** @brief Tests try/catch AST structure, bytecode and conservative analysis. */
+bool test_try_catch_structure(void);
+bool test_try_catch_bytecode(void);
+bool test_try_catch_analysis_placeholder(void);
