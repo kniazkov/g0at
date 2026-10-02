@@ -4,7 +4,9 @@
 ::  that can be found in the LICENSE.txt file or at https://opensource.org/licenses/MIT.
 
 @echo off
-if exist test\functional\%1\program.goat exit /b
+setlocal
+pushd "%~dp0.." || exit /b 1
+if exist test\functional\%1\program.goat goto done
 mkdir test\functional\%1
 copy program.goat test\functional\%1
 echo %1 >> test\functional\list.txt
@@ -28,3 +30,7 @@ cd ..\..
 del functional_testing.exe
 echo.
 git add test\functional\%1\*
+
+:done
+popd
+endlocal
