@@ -19,13 +19,13 @@ create_function_summary(arena_t *arena, const node_t *function, size_t parameter
     if (parameter_count)
         summary->parameter_types =
             alloc_from_arena(arena, parameter_count * sizeof(*summary->parameter_types));
+    for (size_t i = 0; i < parameter_count; i++)
+        summary->parameter_types[i] = make_top_element();
     reset_function_summary(summary);
     return summary;
 }
 
 void reset_function_summary(function_summary_t *summary) {
-    for (size_t i = 0; i < summary->parameter_count; i++)
-        summary->parameter_types[i] = make_top_element();
     summary->return_type = make_top_element();
     summary->effects = FUNCTION_EFFECT_UNKNOWN;
     summary->status = FUNCTION_UNANALYZED;
@@ -38,6 +38,7 @@ const function_summary_t *snapshot_function_summary(arena_t *arena,
         create_function_summary(arena, summary->function, summary->parameter_count);
     const lattice_element_t **parameters = copy->parameter_types;
     *copy = *summary;
+    copy->next = NULL;
     copy->parameter_types = parameters;
     if (summary->parameter_count)
         memcpy(parameters,
@@ -95,4 +96,81 @@ string_value_t function_summary_to_string(const function_summary_t *summary) {
     }
     append_static_string(&builder, L" c=");
     return append_string(&builder, support);
+}
+
+function_summary_set_t *
+create_function_summary_set(arena_t *arena, const node_t *function, size_t parameter_count) {
+    function_summary_set_t *set = alloc_zeroed_from_arena(arena, sizeof(*set));
+    set->arena = arena;
+    set->function = function;
+    set->parameter_count = parameter_count;
+    return set;
+}
+
+void reset_function_summary_set(function_summary_set_t *set) {
+    set->head = set->tail = NULL;
+}
+
+/** @brief Removes value refinements and identities from a specialization key. */
+static const lattice_element_t *parameter_type(const lattice_element_t *value) {
+    switch (value->type) {
+        case LATTICE_INTEGER_CONSTANT:
+        case LATTICE_INTEGER_RANGE:
+        case LATTICE_INTEGER:
+            return make_integer_element();
+        case LATTICE_REAL_CONSTANT:
+        case LATTICE_REAL:
+            return make_real_element();
+        case LATTICE_STRING_CONSTANT:
+        case LATTICE_STRING:
+            return make_string_element();
+        case LATTICE_TRUE:
+        case LATTICE_FALSE:
+        case LATTICE_BOOLEAN:
+            return make_boolean_element();
+        case LATTICE_KNOWN_FUNCTION:
+        case LATTICE_FUNCTION:
+            return make_function_element();
+        case LATTICE_TYPED_ARRAY:
+        case LATTICE_ARRAY:
+            return make_array_element();
+        case LATTICE_NULL:
+            return make_null_element();
+        case LATTICE_NUMERIC:
+            return make_numeric_element();
+        case LATTICE_NOT_NULL:
+            return make_not_null_element();
+        case LATTICE_USER_DEFINED_OBJECT:
+            return make_user_defined_object_element();
+        default:
+            return make_top_element();
+    }
+}
+
+function_summary_t *register_function_specialization(function_summary_set_t *set,
+                                                     const lattice_element_t *const *args,
+                                                     size_t count) {
+    for (size_t i = 0; i < count; i++) {
+        if (args[i]->type == LATTICE_BOTTOM)
+            return NULL;
+    }
+    for (function_summary_t *summary = set->head; summary; summary = summary->next) {
+        size_t i = 0;
+        while (i < set->parameter_count
+               && summary->parameter_types[i]
+                      == parameter_type(i < count ? args[i] : make_null_element()))
+            i++;
+        if (i == set->parameter_count)
+            return summary;
+    }
+    function_summary_t *summary =
+        create_function_summary(set->arena, set->function, set->parameter_count);
+    for (size_t i = 0; i < set->parameter_count; i++)
+        summary->parameter_types[i] = parameter_type(i < count ? args[i] : make_null_element());
+    if (set->tail)
+        set->tail->next = summary;
+    else
+        set->head = summary;
+    set->tail = summary;
+    return summary;
 }

@@ -39,12 +39,13 @@ typedef enum {
  * @brief Arena-owned record; function and immutable lattice elements are borrowed.
  * Parameter storage belongs to the record's arena. Borrowed data must outlive the record.
  * Status describes the analysis attempt, not precision: ANALYZED may still contain TOP or UNKNOWN.
- * This initial record has no specialization key and is not consumed by optimization.
+ * Type signatures do not distinguish closure captures; records are not result caches.
  */
 typedef struct function_summary_t {
+    struct function_summary_t *next; /**< Next specialization; NULL in snapshots. */
     const node_t *function;
     size_t parameter_count;
-    const lattice_element_t **parameter_types;
+    const lattice_element_t **parameter_types; /**< Treat as immutable after registration. */
     const lattice_element_t *return_type;
     uint32_t effects;
     function_analysis_status_t status;
@@ -55,7 +56,7 @@ typedef struct function_summary_t {
 function_summary_t *
 create_function_summary(arena_t *arena, const node_t *function, size_t parameter_count);
 
-/** @brief Clears observations, preserving function identity and parameter storage. */
+/** @brief Clears observations, preserving function identity and the parameter type key. */
 void reset_function_summary(function_summary_t *summary);
 
 /** @brief Copies mutable record/parameter storage; immutable lattice values remain borrowed. */
@@ -64,3 +65,28 @@ const function_summary_t *snapshot_function_summary(arena_t *arena,
 
 /** @brief Formats status and facts; release the result with FREE_STRING(). */
 string_value_t function_summary_to_string(const function_summary_t *summary);
+
+/** @brief Per-function signatures, in first-observation order, owned by the graph arena. */
+typedef struct function_summary_set_t {
+    arena_t *arena;
+    const node_t *function;
+    size_t parameter_count;
+    function_summary_t *head;
+    function_summary_t *tail;
+} function_summary_set_t;
+
+/** @brief Starts an empty set; no signature is inferred for an uncalled function. */
+function_summary_set_t *
+create_function_summary_set(arena_t *arena, const node_t *function, size_t parameter_count);
+
+/** @brief Drops current signatures; arena-owned records and event snapshots remain valid. */
+void reset_function_summary_set(function_summary_set_t *set);
+
+/**
+ * @brief Finds or adds a type signature; missing arguments are NULL, extras are ignored.
+ * Constants/ranges lose their values, callable identities become FUNCTION, typed arrays ARRAY.
+ * BOTTOM in any supplied argument prevents registration, including ignored extra arguments.
+ */
+function_summary_t *register_function_specialization(function_summary_set_t *set,
+                                                     const lattice_element_t *const *args,
+                                                     size_t count);

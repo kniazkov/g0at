@@ -380,26 +380,42 @@ Node-specific behavior lives beside the node implementation. `graph/common_metho
 shared traversal/property implementations and conservative stubs; lattice operations, state
 joining, collector storage and call budgets remain shared analysis infrastructure.
 
-### Function summary foundation
+### Function type specializations
 
-Each function object owns an arena-backed `function_summary_t` describing its body,
-separate from the effects of creating a closure and from cached node flags. The record
-reserves parameter and return types, possible effects, analysis status, and C-subset support.
+Each function object owns an arena-backed list of `function_summary_t` records. During
+existing call interpretation, a known user function registers a signature for the types
+of its formal parameters. `f(10)` and `f(20)` share `(integer)`; `f(1.5)` gets `(real)`.
+Signatures are listed in first-observation order and discarded at the start of each
+`analyze` call, including `--optimize=none`.
 
-This is storage only: no specialization or new function proof is computed yet. Every
-record starts with `TOP` types, unknown effects, and unknown C support, and is reset on
-each `analyze` call, including `--optimize=none`.
+Constants and integer ranges collapse to their base types. Booleans become `boolean`,
+known callable identities become `function`, and typed arrays become `array`. `TOP`,
+`NOT_NULL`, and `NUMERIC` remain distinct abstract domains rather than being guessed.
+Missing arguments become `null`; extra arguments are evaluated normally but are not
+part of the formal-parameter key. An impossible argument prevents registration.
+Different function nodes always have separate lists. Uncalled functions have no signatures.
 
-The statuses are `unanalyzed`, `analyzing`, `analyzed`, and `inconclusive`. An inconclusive
-attempt is distinct from a function never examined; even `analyzed` does not itself prove
-purity or C support. Those facts have their own fields. Possible exceptions will be
-modelled separately from observable effects in a later step.
+These records describe observed type signatures only. Return types remain `TOP`, effects
+and C support remain unknown, and status stays `unanalyzed`. No new result, purity, or
+C-compatibility proof is computed yet. Registration follows existing bounded analysis;
+it does not discover every possible call. A signature does not distinguish captured
+values or callable argument identities and must not be used as a cached call result.
 
-With analysis enabled, `function-summary` events expose these provisional records in
-`--print-analysis` and `--save-analysis`. Events copy the record and parameter slots;
-later changes do not alter earlier observations. C tests can select them with
-`ANALYSIS_FUNCTION_SUMMARY` and inspect `event->function_summary`. The source-based
-`.expect` selector language is unchanged for now.
+The other statuses reserved for later analysis are `analyzing`, `analyzed`, and
+`inconclusive`. Completing analysis alone does not prove purity or C support.
+
+With analysis enabled, one `function-summary` event per observed signature appears in
+`--print-analysis` and `--save-analysis`, for example:
+
+```text
+#12 program.goat, 1.11: function-summary unanalyzed (integer) -> ⊤ effects=unknown c=unknown
+```
+
+Events snapshot the record and parameter slots, without linking to other signatures.
+Later changes or reanalysis do not alter earlier observations. C tests can select them
+with `ANALYSIS_FUNCTION_SUMMARY` and inspect `event->function_summary`. The source-based
+`.expect` selector language is unchanged for now. Existing node flags still describe the
+original analysis; specialization-specific proofs will be connected in later steps.
 
 ### Proven unreachable code
 

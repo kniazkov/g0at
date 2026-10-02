@@ -4,6 +4,8 @@
  */
 #include "properties.h"
 
+#include "function_summary.h"
+#include "graph/expression.h"
 #include "graph/node.h"
 
 void classify_node_properties(node_t *node, analysis_collector_t *collector) {
@@ -21,6 +23,9 @@ void classify_node_properties(node_t *node, analysis_collector_t *collector) {
             node->flags |= NODE_FLAG_C_COMPATIBLE;
     }
     add_analysis_event(collector, ANALYSIS_NODE_FLAGS, node, NULL, NULL);
-    if (node->vtbl->type == NODE_FUNCTION_OBJECT)
-        add_analysis_event(collector, ANALYSIS_FUNCTION_SUMMARY, node, NULL, NULL);
+    if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
+        for (function_summary_t *summary = get_function_summaries(node)->head; summary;
+             summary = summary->next)
+            add_function_summary_event(collector, summary);
+    }
 }
