@@ -1,0 +1,3 @@
+var f=func(a){return 1;};
+var g=func(a){return 2;};
+var value=f(f=g);

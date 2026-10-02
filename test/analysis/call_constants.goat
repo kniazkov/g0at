@@ -1,0 +1,4 @@
+var f=func(a,b){return a+b;};
+var x=f(2,3);
+var y=f(1.5,2);
+var z=f("a","b");

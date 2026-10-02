@@ -1,0 +1,5 @@
+var id=func(a){return a;};
+var a=id(false);
+var b=id(0);
+var c=id("");
+var d=id(null);

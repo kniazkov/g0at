@@ -1,0 +1,3 @@
+const x=1;
+var f=func(){x=2;return 3;};
+var result=f();

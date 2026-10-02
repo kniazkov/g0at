@@ -1,0 +1,4 @@
+var x=0;
+var f=func(a,b){return a*10+b;};
+var value=f(++x,++x);
+var after=x;

@@ -1,0 +1,3 @@
+var f=func(n){return g(n);};
+var g=func(n){return f(n);};
+var result=f(1);

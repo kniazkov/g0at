@@ -5,6 +5,7 @@
  */
 
 #include "analysis/abstract_state.h"
+#include "analysis/function_call.h"
 #include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
@@ -71,6 +72,7 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
                          *state->return_value ? *state->return_value : make_bottom_element(),
                          value);
     }
+    collect_abstract_return(state);
     state->control_flow = FLOW_RETURN;
     return state;
 }

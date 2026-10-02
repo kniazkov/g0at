@@ -1,0 +1,4 @@
+var x=0;
+var f=func(c){if(c){x=2;return 10;}x=4;return 20;};
+var a=f(pi);
+var after=x;

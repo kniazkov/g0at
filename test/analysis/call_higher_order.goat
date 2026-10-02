@@ -1,0 +1,3 @@
+var apply=func(f,x){return f(x);};
+var twice=func(x){return x*2;};
+var answer=apply(twice,21);

@@ -1,0 +1,1 @@
+var x=0;var f=func(){x=3;throw "bad";};try{f();}catch(e){print(e);}print(x);

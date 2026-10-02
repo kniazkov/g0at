@@ -1,0 +1,4 @@
+one write 2 2 a int=2
+one write 3 3 b int=4
+one write 4 4 c range=2,4
+none unreachable 1 0 - -

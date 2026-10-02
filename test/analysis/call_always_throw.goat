@@ -1,0 +1,3 @@
+var f=func(){throw "bad";};
+var result=f();
+var after=1;

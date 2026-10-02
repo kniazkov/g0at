@@ -1,0 +1,5 @@
+var x=99;
+var f=func(a){var x=a;return x;};
+var a=f(1);
+var b=f(2);
+var after=x;

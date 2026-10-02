@@ -1,0 +1,4 @@
+var target=func(a){return a+2;};
+var get=func(){return target;};
+var alias=get();
+var result=alias(40);

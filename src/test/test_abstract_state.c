@@ -207,7 +207,7 @@ bool test_abstract_state_branch_program() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
         parse_analysis_test_program(&memory,
-                                    STATIC_STRING(L"const choose = func() { return true; };\n"
+                                    STATIC_STRING(L"const choose = func() { return pi; };\n"
                                                   L"var x = 0;\n"
                                                   L"if (choose()) { x = 1; } else { x = x + 2; }\n"
                                                   L"var y = x;\n"));

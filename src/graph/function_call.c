@@ -4,6 +4,8 @@
  * @brief Implementation of function call expressions.
  */
 
+#include "analysis/function_call.h"
+
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
 #include "codegen/code_builder.h"
@@ -13,6 +15,7 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "variable.h"
 
 #include <assert.h>
 
@@ -63,11 +66,28 @@ static const wchar_t *get_child_tag(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const function_call_t *expr = (const function_call_t *)node;
-    calculate_expression(expr->func_object, state, arena);
-    for (size_t i = 0; i < expr->args_count && state->control_flow == FLOW_NORMAL; i++) {
-        calculate_expression(expr->args[i], state, arena);
+    const lattice_element_t **args =
+        alloc_from_arena(arena, (expr->args_count + 1) * sizeof(*args));
+    for (size_t i = expr->args_count; i > 0 && state->control_flow == FLOW_NORMAL; i--)
+        args[i - 1] = calculate_expression(expr->args[i - 1], state, arena);
+    if (state->control_flow != FLOW_NORMAL)
+        return make_bottom_element();
+    const lattice_element_t *function = calculate_expression(expr->func_object, state, arena);
+    if (state->control_flow != FLOW_NORMAL)
+        return make_bottom_element();
+    node_t *callee = &expr->func_object->base;
+    while (callee->vtbl->type == NODE_EXPRESSION_PARENTHESIZED)
+        callee = get_node_child(callee, 0);
+    if (callee->vtbl->type == NODE_VARIABLE) {
+        variable_t *variable = (variable_t *)callee;
+        if (variable->declarator == get_builtin_declarator()
+            && !abstract_state_contains(state, get_builtin_declarator())
+            && (!wcscmp(variable->name.data, L"print") || !wcscmp(variable->name.data, L"atan")
+                || !wcscmp(variable->name.data, L"sign") || !wcscmp(variable->name.data, L"sqrt")))
+            /* These native functions neither mutate bindings nor invoke user callbacks. */
+            return make_top_element();
     }
-    return state->control_flow == FLOW_NORMAL ? make_top_element() : make_bottom_element();
+    return interpret_function_call(function, args, expr->args_count, state);
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */

@@ -341,7 +341,7 @@ static string_value_t generate_header(const function_object_t *expr, string_buil
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *
 fobj_calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
-    return make_function_element();
+    return make_known_function_element(arena, node, state->call_frame);
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */

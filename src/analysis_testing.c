@@ -67,7 +67,8 @@ static bool value_matches(const lattice_element_t *value, const char *text) {
 
     for (size_t i = 0; i < sizeof(types) / sizeof(*types); i++) {
         if (!strcmp(text, types[i].name))
-            return value->type == types[i].type;
+            return value->type == types[i].type
+                   || (types[i].type == LATTICE_FUNCTION && value->type == LATTICE_KNOWN_FUNCTION);
     }
     return false;
 }

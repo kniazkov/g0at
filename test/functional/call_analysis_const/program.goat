@@ -1,0 +1,1 @@
+const x=1;var f=func(){x=2;return 3;};try{f();}catch(e){print(e);}print(x);

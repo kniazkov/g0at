@@ -1,0 +1,4 @@
+var x=0;
+var fail=func(){throw "bad";};
+var f=func(a,b){x=99;return 7;};
+var result=f(x=1,fail());

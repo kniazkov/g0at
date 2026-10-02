@@ -255,6 +255,7 @@ lattice_add(arena_t *arena, const lattice_element_t *left, const lattice_element
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
+        case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
             /* Incompatible operand: no normal result (BOTTOM). */
             return make_bottom_element();
