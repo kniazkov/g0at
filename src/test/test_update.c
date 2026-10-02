@@ -140,15 +140,6 @@ bool test_update_errors(void) {
             destroy_process(proc);
         }
     }
-    opcode_t opcodes[] = {INC, DEC, DUP};
-    for (size_t i = 0; i < 3; i++) {
-        instruction_t instructions[] = {{.opcode = opcodes[i]}, {.opcode = END}};
-        bytecode_t *code = make_code(instructions, 2);
-        proc = create_process();
-        ASSERT(run(proc, code) != 0 && proc->main_thread->data_stack->size == 0);
-        free_bytecode(code);
-        destroy_process(proc);
-    }
     /* DUP retains arbitrary values too, independent of numeric update support. */
     proc = create_process();
     object_t *string = create_string_object(proc, (string_value_t){L"heap value", 10, false});

@@ -23,20 +23,16 @@ object_stack_t *create_object_stack();
 /** @brief Pushes an object onto the stack. */
 stack_index_t push_object_onto_stack(object_stack_t *stack, object_t *object);
 
-/**
- * @brief Pops the top object from the stack.
- *
- * If the stack is empty, returns NULL.
- * @return Pointer to the popped object, or NULL if the stack is empty.
- */
+/** @brief Reports a fatal stack invariant violation and exits the process. */
+_Noreturn void fail_stack_underflow(void);
+
+/** @brief Requires enough stack values, otherwise prints to stderr and exits. */
+void require_object_stack_size(const object_stack_t *stack, size_t size);
+
+/** @brief Pops a value; stack underflow is fatal. */
 object_t *pop_object_from_stack(object_stack_t *stack);
 
-/**
- * @brief Retrieves an object at a specific index from the stack without removing it.
- *
- * If the index is invalid, returns NULL.
- * @return Pointer to the object at the specified index, or NULL if the index is invalid.
- */
+/** @brief Peeks from the top; an out-of-range index is fatal. */
 object_t *peek_object_from_stack(object_stack_t *stack, stack_index_t index);
 
 /**

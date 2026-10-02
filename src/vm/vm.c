@@ -99,9 +99,6 @@ static bool exec_JUMP(runtime_t *runtime, instruction_t instr, thread_t *thread)
 /** @brief Executes @ref JIF. */
 static bool exec_JIF(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *obj = pop_object_from_stack(thread->data_stack);
-    if (!obj) {
-        return false;
-    }
     bool flag = get_object_boolean_value(obj);
     if (flag) {
         thread->instr_id++;
@@ -123,10 +120,6 @@ static bool exec_POP(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 /** @brief Executes @ref DUP. */
 static bool exec_DUP(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *obj = peek_object_from_stack(thread->data_stack, 0);
-    if (!obj) {
-        runtime->status = 1;
-        return false;
-    }
     INCREF(obj);
     push_object_onto_stack(thread->data_stack, obj);
     thread->instr_id++;
@@ -227,9 +220,6 @@ static bool exec_VAR(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = pop_object_from_stack(thread->data_stack);
-    if (value == NULL) {
-        return false; // empty stack
-    }
     model_status_t result = create_object_property(thread->context->data, key, value, false);
     if (result != MSTAT_OK) {
         return false; // already exists
@@ -247,9 +237,6 @@ static bool exec_CONST(runtime_t *runtime, instruction_t instr, thread_t *thread
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = pop_object_from_stack(thread->data_stack);
-    if (value == NULL) {
-        return false; // empty stack
-    }
     model_status_t result = create_object_property(thread->context->data, key, value, true);
     if (result != MSTAT_OK) {
         return false; // already exists
@@ -269,9 +256,6 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = peek_object_from_stack(thread->data_stack, 0);
-    if (value == NULL) {
-        return false; // empty stack
-    }
     object_t *context = thread->context->data;
     bool changed = false;
     model_status_t result = set_object_property(context, key, value);
@@ -316,10 +300,6 @@ static bool execute_unary_operation(runtime_t *runtime,
                                     thread_t *thread,
                                     operation_result_t (*operation)(process_t *, object_t *)) {
     object_t *operand = pop_object_from_stack(thread->data_stack);
-    if (!operand) {
-        runtime->status = 1;
-        return false;
-    }
     operation_result_t result = operation(thread->process, operand);
     DECREF(operand);
     if (result.is_exception)
@@ -356,12 +336,6 @@ execute_binary_operation(runtime_t *runtime,
                          operation_result_t (*operation)(process_t *, object_t *, object_t *)) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
-    if (!first || !second) {
-        DECREFIF(first);
-        DECREFIF(second);
-        runtime->status = 1;
-        return false;
-    }
     operation_result_t result = operation(thread->process, first, second);
     DECREF(first);
     DECREF(second);
@@ -406,98 +380,79 @@ static bool exec_POWER(runtime_t *runtime, instruction_t instr, thread_t *thread
 static bool exec_LESS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        bool result = is_object_less_than(first, second);
-        DECREF(first);
-        DECREF(second);
-        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-        thread->instr_id++;
-        return true;
-    }
-    return false;
+    bool result = is_object_less_than(first, second);
+    DECREF(first);
+    DECREF(second);
+    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+    thread->instr_id++;
+    return true;
 }
 
 /** @brief Executes @ref LEQ. */
 static bool exec_LEQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        bool result = is_object_less_or_equal(first, second);
-        DECREF(first);
-        DECREF(second);
-        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-        thread->instr_id++;
-        return true;
-    }
-    return false;
+    bool result = is_object_less_or_equal(first, second);
+    DECREF(first);
+    DECREF(second);
+    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+    thread->instr_id++;
+    return true;
 }
 
 /** @brief Executes @ref GREATER. */
 static bool exec_GREATER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        bool result = is_object_greater_than(first, second);
-        DECREF(first);
-        DECREF(second);
-        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-        thread->instr_id++;
-        return true;
-    }
-    return false;
+    bool result = is_object_greater_than(first, second);
+    DECREF(first);
+    DECREF(second);
+    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+    thread->instr_id++;
+    return true;
 }
 
 /** @brief Executes @ref GREQ. */
 static bool exec_GREQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        bool result = is_object_greater_or_equal(first, second);
-        DECREF(first);
-        DECREF(second);
-        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-        thread->instr_id++;
-        return true;
-    }
-    return false;
+    bool result = is_object_greater_or_equal(first, second);
+    DECREF(first);
+    DECREF(second);
+    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+    thread->instr_id++;
+    return true;
 }
 
 /** @brief Executes @ref EQUAL. */
 static bool exec_EQUAL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        bool result = are_objects_equal(first, second);
-        DECREF(first);
-        DECREF(second);
-        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-        thread->instr_id++;
-        return true;
-    }
-    return false;
+    bool result = are_objects_equal(first, second);
+    DECREF(first);
+    DECREF(second);
+    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+    thread->instr_id++;
+    return true;
 }
 
 /** @brief Executes @ref DIFF. */
 static bool exec_DIFF(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        bool result = are_objects_not_equal(first, second);
-        DECREF(first);
-        DECREF(second);
-        push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-        thread->instr_id++;
-        return true;
-    }
-    return false;
+    bool result = are_objects_not_equal(first, second);
+    DECREF(first);
+    DECREF(second);
+    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+    thread->instr_id++;
+    return true;
 }
 
 /** @brief Executes @ref FUNC. */
 static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *closure = thread->context->data;
-    if (thread->args_count < 1) {
-        return false; // bad bytecode, no ARG before
-    }
+    if (thread->args_count < 1)
+        fail_stack_underflow();
     instr_index_t first_instr_id = (instr_index_t)thread->args[0];
     uint16_t arg_count = instr.arg0;
     object_t **arg_names = NULL;
@@ -522,6 +477,7 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
 
 /** @brief Executes @ref CALL. */
 static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    require_object_stack_size(thread->data_stack, (size_t)instr.arg0 + 1);
     object_t *func = pop_object_from_stack(thread->data_stack);
     bool result = call_object(func, instr.arg0, thread);
     // The ID of the following instruction was set inside the call method
@@ -532,11 +488,9 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
 /** @brief Executes @ref RET. */
 static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     context_t *ctx = thread->context;
+    require_object_stack_size(thread->data_stack, 1);
     assert(ctx->ret_value_index != BAD_STACK_INDEX);
     object_t *ret_value = pop_object_from_stack(thread->data_stack);
-    if (ret_value == NULL) {
-        return false; // stack is empty
-    }
     replace_object_on_stack(thread->data_stack, ret_value, ctx->ret_value_index);
     DECREF(ret_value);
     while (ctx && ctx->control_flow != FLOW_RETURN) {
@@ -606,12 +560,7 @@ static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t
     size_t size = handler == root || handler->unwinding_index == BAD_STACK_INDEX
                       ? 0
                       : handler->unwinding_index + 1;
-    if (thread->data_stack->size < size) {
-        /* Malformed bytecode consumed values below the saved boundary. */
-        DECREF(exception.value);
-        runtime->status = 1;
-        return false;
-    }
+    require_object_stack_size(thread->data_stack, size);
     while (thread->context != handler)
         thread->context = destroy_context(thread->context);
     while (thread->data_stack->size > size) {
@@ -635,10 +584,6 @@ static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t
 /** @brief Executes @ref THROW; the top value survives stack and context unwinding. */
 static bool exec_THROW(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     exception_t exception = {pop_object_from_stack(thread->data_stack)};
-    if (!exception.value) {
-        runtime->status = 1;
-        return false;
-    }
     return dispatch_exception(runtime, thread, exception);
 }
 

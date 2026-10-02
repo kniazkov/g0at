@@ -523,6 +523,11 @@ Prefix variable updates emit `VLOAD INC/DEC STORE`. Postfix updates emit
 Abstract interpretation records the new variable value while returning the correct
 old or new expression value. Reachability uses the same numeric transfer function.
 
+A stack underflow is a fatal interpreter invariant violation: it prints
+`FATAL: Stack underflow! The interpreter is broken. Aborting.` to stderr and exits
+the process with failure, including in release builds. Goat `try/catch` cannot
+intercept it. Process-isolated tests exercise malformed bytecode and stack access.
+
 ### Lattice semantics
 
 `join` computes a least upper bound; `meet` computes a greatest lower bound. Empty integer

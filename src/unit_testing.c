@@ -6,9 +6,11 @@
 
 #include "lib/allocate.h"
 #include "test/test_list.h"
+#include "test/test_stack_underflow.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /**
  * @brief Executes the registered unit tests and reports the results.
@@ -41,8 +43,14 @@ static bool unit_testing() {
 }
 
 /** @brief Entry point. */
-int main() {
+int main(int argc, char **argv) {
+    if (argc == 3 && !strcmp(argv[1], "--stack-underflow-case")) {
+        run_stack_underflow_case(atoi(argv[2]));
+        return 0;
+    }
     bool success = unit_testing();
+    if (success)
+        success = test_stack_underflow(argv[0]);
     if (!success) {
         exit(EXIT_FAILURE);
     }

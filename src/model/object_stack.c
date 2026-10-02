@@ -9,7 +9,19 @@
 #include "lib/allocate.h"
 #include "object.h"
 
-#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+/** @brief Terminates the process on a broken stack invariant. */
+_Noreturn void fail_stack_underflow(void) {
+    fputs("FATAL: Stack underflow! The interpreter is broken. Aborting.\n", stderr);
+    exit(EXIT_FAILURE);
+}
+
+void require_object_stack_size(const object_stack_t *stack, size_t size) {
+    if (stack->size < size)
+        fail_stack_underflow();
+}
 
 /** @brief Default initial capacity for the stack. */
 #define DEFAULT_CAPACITY 128
@@ -39,21 +51,19 @@ stack_index_t push_object_onto_stack(object_stack_t *stack, object_t *object) {
 }
 
 object_t *pop_object_from_stack(object_stack_t *stack) {
-    if (stack->size == 0) {
-        return NULL;
-    }
+    require_object_stack_size(stack, 1);
     return stack->objects[--stack->size];
 }
 
 object_t *peek_object_from_stack(object_stack_t *stack, stack_index_t index) {
-    if (index < 0 || index >= stack->size) {
-        return NULL;
-    }
+    if (index >= stack->size)
+        fail_stack_underflow();
     return stack->objects[stack->size - 1 - index];
 }
 
 void reduce_object_stack(object_stack_t *stack, stack_index_t new_index) {
-    assert(stack->size > new_index);
+    if (new_index >= stack->size)
+        fail_stack_underflow();
     for (size_t index = new_index + 1; index < stack->size; index++) {
         DECREF(stack->objects[index]);
     }
@@ -61,7 +71,8 @@ void reduce_object_stack(object_stack_t *stack, stack_index_t new_index) {
 }
 
 void replace_object_on_stack(object_stack_t *stack, object_t *new_object, stack_index_t index) {
-    assert(index < stack->size);
+    if (index >= stack->size)
+        fail_stack_underflow();
     object_t *old_object = stack->objects[index];
     if (old_object != new_object) {
         DECREF(old_object);
