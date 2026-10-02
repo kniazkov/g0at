@@ -60,6 +60,13 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
           BUILD_DIR: build/${{ matrix.compiler }}
+      - name: Build release
+        run: bash scripts/build_release.sh
+        env:
+          CC: ${{ matrix.compiler }}
+          BUILD_DIR: build/release-${{ matrix.compiler }}
+      - name: Smoke test release
+        run: ./goat example/hello_world.goat
       - name: Preserve failed functional outputs
         if: failure()
         uses: actions/upload-artifact@v4
