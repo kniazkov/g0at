@@ -1,0 +1,10 @@
+var emit = print;
+var calls = 0;
+var print = func(value) {
+    calls = calls + 1;
+    return value + 1;
+};
+var result = print(41);
+emit(result);
+emit(",");
+emit(calls);

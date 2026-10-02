@@ -206,3 +206,4 @@ native_invalid_sign
 native_invalid_sqrt
 native_invalid_atan_first
 native_invalid_atan_second
+native_print_shadow

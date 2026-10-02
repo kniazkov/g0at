@@ -1,0 +1,4 @@
+one write 7 7 result int=42
+one write 4 2 calls int=1
+one write 3 3 value int=41
+one summary 2 2 calls range=0,1

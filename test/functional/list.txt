@@ -286,3 +286,4 @@ native_catch_atan_y
 native_catch_atan_x
 native_uncaught_missing
 native_uncaught_type
+native_print_shadow
