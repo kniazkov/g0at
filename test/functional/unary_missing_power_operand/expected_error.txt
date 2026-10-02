@@ -1,0 +1,1 @@
+Fatal error in 'program.goat', 1.9: Unexpected token '**', expression expected at this position

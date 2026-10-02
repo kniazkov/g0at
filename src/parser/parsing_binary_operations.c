@@ -24,7 +24,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
             operator,
             CRITICAL,
             get_messages()->expected_expression,
-            operator->text
+            operator->text.data
         );
     }
     if (left_token->type != TOKEN_EXPRESSION) {
@@ -33,7 +33,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
             left_token,
             CRITICAL,
             get_messages()->expected_expression,
-            left_token->text
+            left_token->text.data
         );
     }
 
@@ -44,7 +44,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
             operator,
             CRITICAL,
             get_messages()->expected_expression,
-            operator->text
+            operator->text.data
         );
     }
     if (right_token->type != TOKEN_EXPRESSION) {
@@ -53,7 +53,7 @@ static compilation_error_t * check_operands(token_t *operator, parser_memory_t *
             right_token,
             CRITICAL,
             get_messages()->expected_expression,
-            right_token->text
+            right_token->text.data
         );
     }
 

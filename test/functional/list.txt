@@ -150,3 +150,4 @@ unary_uncaught
 unary_exponent_sign
 unary_missing_operand
 unary_missing_exponent
+unary_missing_power_operand

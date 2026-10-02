@@ -27,7 +27,7 @@ compilation_error_t *parsing_unary_operators(token_t *sign, parser_memory_t *mem
     token_t *operand = sign->right;
     if (!operand || operand->type != TOKEN_EXPRESSION)
         return create_error_from_token(memory->errors, sign, CRITICAL,
-            get_messages()->expected_expression, sign->text);
+            get_messages()->expected_expression, sign->text.data);
     compilation_error_t *error = reduce_power_tail(operand, memory, groups);
     if (error) return error;
     expression_t *expr = (expression_t *)sign->right->node;
