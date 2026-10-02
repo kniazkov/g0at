@@ -57,6 +57,12 @@ const lattice_element_t *interpret_function_call(const lattice_element_t *functi
             return make_bottom_element();
         }
     }
+    /* Call dependencies are not solved by the initial return-type pass. */
+    if (caller->type_analysis_incomplete) {
+        *caller->type_analysis_incomplete = true;
+        forget_abstract_values(caller);
+        return make_top_element();
+    }
     if (function->type != LATTICE_KNOWN_FUNCTION) {
         if (function->type == LATTICE_TOP || function->type == LATTICE_NOT_NULL
             || function->type == LATTICE_FUNCTION)

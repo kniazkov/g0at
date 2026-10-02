@@ -224,3 +224,10 @@ properties_conditions
 math_library
 int_constants
 input_domains
+
+# Return types of observed signatures
+function_return_types
+function_return_exits
+function_return_captures
+function_return_unsupported
+function_return_closures

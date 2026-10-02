@@ -4,6 +4,7 @@
  * @brief Source-file tests against structured analysis observations.
  */
 #include "analysis/analysis.h"
+#include "analysis/function_summary.h"
 #include "analysis/lattice.h"
 #include "cli/options.h"
 #include "graph/declarations.h"
@@ -71,7 +72,10 @@ static bool value_matches(const lattice_element_t *value, const char *text) {
                  {"real", LATTICE_REAL},
                  {"string", LATTICE_STRING},
                  {"integer", LATTICE_INTEGER},
-                 {"function", LATTICE_FUNCTION}};
+                 {"function", LATTICE_FUNCTION},
+                 {"not_null", LATTICE_NOT_NULL},
+                 {"array", LATTICE_ARRAY},
+                 {"object", LATTICE_USER_DEFINED_OBJECT}};
 
     for (size_t i = 0; i < sizeof(types) / sizeof(*types); i++) {
         if (!strcmp(text, types[i].name))
@@ -79,6 +83,38 @@ static bool value_matches(const lattice_element_t *value, const char *text) {
                    || (types[i].type == LATTICE_FUNCTION && value->type == LATTICE_KNOWN_FUNCTION);
     }
     return false;
+}
+
+/** @brief Comma-separated formal types; '-' selects a zero-parameter signature. */
+static bool signature_matches(const function_summary_t *summary, const char *text) {
+    if (!summary->parameter_count)
+        return !strcmp(text, "-");
+    for (size_t i = 0; i < summary->parameter_count; i++) {
+        size_t length = strcspn(text, ",");
+        char type[32];
+        if (!length || length >= sizeof(type))
+            return false;
+        memcpy(type, text, length);
+        type[length] = 0;
+        if (!value_matches(summary->parameter_types[i], type))
+            return false;
+        text += length;
+        if (i + 1 == summary->parameter_count)
+            return !*text;
+        if (*text++ != ',')
+            return false;
+    }
+    return false;
+}
+
+/** @brief Checks status:type without interpreting an inconclusive TOP as a successful proof. */
+static bool return_type_matches(const function_summary_t *summary, const char *text) {
+    const char *status = summary->status == FUNCTION_ANALYZED       ? "analyzed:"
+                         : summary->status == FUNCTION_INCONCLUSIVE ? "inconclusive:"
+                         : summary->status == FUNCTION_ANALYZING    ? "analyzing:"
+                                                                    : "unanalyzed:";
+    size_t length = strlen(status);
+    return !strncmp(text, status, length) && value_matches(summary->return_type, text + length);
 }
 
 /** @brief Display names use underscores instead of spaces in expectation selectors. */
@@ -145,7 +181,10 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
             query.kind = ANALYSIS_STATE_JOIN;
         else if (!strcmp(kind, "summary"))
             query.kind = ANALYSIS_DECLARATION_SUMMARY;
-        else if (!strcmp(kind, "flags")) {
+        else if (!strcmp(kind, "function")) {
+            query.kind = ANALYSIS_FUNCTION_SUMMARY;
+            query.column = decl_row;
+        } else if (!strcmp(kind, "flags")) {
             query.kind = ANALYSIS_NODE_FLAGS;
             query.column = decl_row;
         } else if (!strcmp(kind, "unreachable"))
@@ -158,6 +197,7 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
             return false;
         bool unreachable = query.kind == ANALYSIS_UNREACHABLE;
         bool flags = query.kind == ANALYSIS_NODE_FLAGS;
+        bool function = query.kind == ANALYSIS_FUNCTION_SUMMARY;
         if (unreachable && (decl_row || strcmp(variable, "-") || strcmp(expected, "-")))
             return false;
         string_value_t wide = decode_utf8(variable);
@@ -167,7 +207,10 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
         const analysis_event_t *last = NULL;
         for (const analysis_event_t *event = find_analysis_event(collector, NULL, &query); event;
              event = find_analysis_event(collector, event, &query)) {
-            if (flags) {
+            if (function) {
+                if (!signature_matches(event->function_summary, variable))
+                    continue;
+            } else if (flags) {
                 if (!node_type_matches(event->node, wide.data))
                     continue;
             } else if (!unreachable) {
@@ -186,8 +229,9 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
                       ? matches == 0
                       : last && (!strcmp(mode, "last") || matches == 1)
                             && (unreachable
-                                || (flags ? flags_match(last->flags, expected)
-                                          : value_matches(last->value, expected)));
+                                || (function ? return_type_matches(last->function_summary, expected)
+                                    : flags  ? flags_match(last->flags, expected)
+                                             : value_matches(last->value, expected)));
         if (!ok) {
             fprintf(stderr,
                     "%s.expect:%zu: %s (selector matched %zu events)\n",

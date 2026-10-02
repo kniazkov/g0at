@@ -138,8 +138,8 @@ bool test_function_signature_calls() {
     for (size_t i = 0; i < sizeof(expected) / sizeof(*expected); i++) {
         event = find_analysis_event(collector, event, &query);
         ASSERT(event && event->function_summary->parameter_types[0]->type == expected[i]);
-        ASSERT(event->function_summary->status == FUNCTION_UNANALYZED);
-        ASSERT(event->function_summary->return_type->type == LATTICE_TOP);
+        ASSERT(event->function_summary->status == FUNCTION_ANALYZED);
+        ASSERT(event->function_summary->return_type->type == expected[i]);
     }
     ASSERT(!find_analysis_event(collector, event, &query));
     query.row = 3;

@@ -1,0 +1,7 @@
+one function 2 0 - analyzed:top
+one function 6 0 integer analyzed:integer
+# Ordinary call observations retain their concrete values.
+last write 3 3 a int=10
+last write 5 5 b string=changed
+last write 7 7 c int=5
+last write 8 8 d int=99

@@ -73,6 +73,7 @@ abstract_state_t *create_abstract_state(arena_t *arena) {
     state->return_value = NULL;
     state->call_frame = NULL;
     state->builtin_bindings_unknown = false;
+    state->type_analysis_incomplete = NULL;
     state->call_budget = alloc_from_arena(arena, sizeof(size_t));
     *state->call_budget = 1024;
     return state;
@@ -91,6 +92,7 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     copy->call_frame = state->call_frame;
     copy->builtin_bindings_unknown = state->builtin_bindings_unknown;
     copy->call_budget = state->call_budget;
+    copy->type_analysis_incomplete = state->type_analysis_incomplete;
     return copy;
 }
 
@@ -188,6 +190,7 @@ abstract_state_t *join_abstract_states(const abstract_state_t *left,
     result->builtin_bindings_unknown =
         left->builtin_bindings_unknown || right->builtin_bindings_unknown;
     result->call_budget = left->call_budget;
+    result->type_analysis_incomplete = left->type_analysis_incomplete;
     join_context_t context = {left, right, result};
     avl_tree_for_each(left->values, join_abstract_state_entry, &context);
     avl_tree_for_each(right->values, join_abstract_state_entry, &context);

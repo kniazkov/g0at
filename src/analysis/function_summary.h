@@ -90,3 +90,6 @@ void reset_function_summary_set(function_summary_set_t *set);
 function_summary_t *register_function_specialization(function_summary_set_t *set,
                                                      const lattice_element_t *const *args,
                                                      size_t count);
+
+/** @brief Removes value refinements from a type; preserves BOTTOM for no normal return. */
+const lattice_element_t *function_summary_type(const lattice_element_t *value);
