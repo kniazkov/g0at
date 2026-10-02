@@ -8,7 +8,9 @@
 
 #include "cli/options.h"
 #include "common/compilation_error.h"
+#include "function_summary.h"
 #include "graph/declarations.h"
+#include "graph/expression.h"
 #include "graph/node.h"
 #include "graph/statement.h"
 #include "graph/variable.h"
@@ -52,6 +54,8 @@ static void assign_node_indexes_and_scopes(node_t *node,
                                            unsigned int *next_id) {
     node->parent = parent;
     node->scope = scope;
+    if (node->vtbl->type == NODE_FUNCTION_OBJECT)
+        reset_function_summary(get_function_summary(node));
     node->flags &= ~(NODE_FLAG_UNREACHABLE | NODE_FLAG_PURE | NODE_FLAG_C_COMPATIBLE);
     if (node->vtbl->type == NODE_IF_ELSE)
         set_if_else_condition_truth(node, ABSTRACT_EITHER);

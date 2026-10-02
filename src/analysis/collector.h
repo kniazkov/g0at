@@ -14,14 +14,16 @@ typedef struct node_t node_t;
 typedef struct declarator_t declarator_t;
 typedef struct lattice_element_t lattice_element_t;
 typedef struct analysis_event_t analysis_event_t;
+typedef struct function_summary_t function_summary_t;
 
 typedef enum {
     ANALYSIS_EVENT_ANY = 0, /**< Query wildcard; never recorded. */
     ANALYSIS_VALUE_WRITE,
     ANALYSIS_STATE_JOIN,
     ANALYSIS_DECLARATION_SUMMARY,
-    ANALYSIS_UNREACHABLE, /**< Subtree root; declarator and value are NULL. */
-    ANALYSIS_NODE_FLAGS   /**< Final proof snapshot, including zero (no proof). */
+    ANALYSIS_UNREACHABLE,     /**< Subtree root; declarator and value are NULL. */
+    ANALYSIS_NODE_FLAGS,      /**< Final proof snapshot, including zero (no proof). */
+    ANALYSIS_FUNCTION_SUMMARY /**< Function-body facts, independent of later analysis. */
 } analysis_event_kind_t;
 
 /** @brief One observation, not a mutable reference to an abstract state. */
@@ -32,6 +34,7 @@ struct analysis_event_t {
     const node_t *node;
     const declarator_t *declarator;
     const lattice_element_t *value;
+    const function_summary_t *function_summary; /**< Snapshot for ANALYSIS_FUNCTION_SUMMARY. */
     uint32_t flags; /**< Snapshot for ANALYSIS_NODE_FLAGS, independent of later node changes. */
     const char *file_name;
     size_t row;
@@ -68,7 +71,8 @@ analysis_collector_t *create_analysis_collector(arena_t *arena);
 
 /**
  * @brief Appends in O(1); NULL collector disables recording.
- * Unreachable and flag events require a node and NULL declaration/value; value events require both.
+ * Structural events require a node and NULL declaration/value; value events require both.
+ * Function summary events require a function object node.
  */
 const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
                                            analysis_event_kind_t kind,

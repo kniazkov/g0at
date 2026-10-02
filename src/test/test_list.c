@@ -14,6 +14,7 @@
 #include "test_comparison.h"
 #include "test_division.h"
 #include "test_function_analysis.h"
+#include "test_function_summary.h"
 #include "test_lattice.h"
 #include "test_lib.h"
 #include "test_logic.h"
@@ -47,6 +48,9 @@ static test_description_t test_list[] = {
     {"builtin numeric results", test_builtin_numeric_results},
     {"builtin errors", test_builtin_errors},
     {"builtin domains", test_builtin_domains},
+    {"function summary storage", test_function_summary_storage},
+    {"function summary states", test_function_summary_states},
+    {"function summary events", test_function_summary_events},
     {"function lattice", test_function_lattice},
     {"function call budget", test_function_call_budget},
     {"function call state", test_function_call_state},
