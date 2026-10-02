@@ -1,0 +1,2 @@
+if (1 / 2) { print("fraction"); } else { print("bad"); }
+if (0 / 2) { print("bad"); } else { print("|zero"); }

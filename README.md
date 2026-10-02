@@ -425,6 +425,29 @@ source programs with and without optimization. Independent mixed-number expectat
 cover `+`, `-` and `*` in both operand orders, including values beyond double's exact
 integer range and integral-valued real operands.
 
+### Division
+
+`/` evaluates left to right. Two integers produce an integer when division is exact
+and the quotient fits in `int64_t`; otherwise they produce a real. Exact division uses
+integer arithmetic, preserving large values. `INT64_MIN / -1` produces real `2^63`.
+If either operand is real, the result is always real, with integers rounded to double
+before arithmetic. A fractional integer quotient remains real even if double rounding
+makes it look integral.
+
+Both integer zero and real `+0.0`/`-0.0` divisors throw `DIVISION_BY_ZERO`, including
+when the numerator is NaN. Other nonzero real divisions follow IEEE behavior.
+Unsupported receivers throw `INVALID_OPERATION`; incompatible arguments to numeric
+receivers throw `INVALID_ARGUMENT`.
+
+`lattice_divide()` folds constants and detects known zero divisors for numeric receivers.
+Integer ranges divided by `1` retain their bounds; division by `-1` reverses bounds
+when `INT64_MIN` is excluded. General integer-range division returns `NUMERIC`, since
+both integer and fractional real results are possible. Real operands yield a real domain.
+These domains describe normal results only: a range containing zero can still throw.
+The same rules drive AST analysis and reachability. Tests cover model/VM agreement,
+independent boundary expectations, mixed types, zero divisors, IEEE values, intervals,
+collector events and source programs in both optimization modes.
+
 ### Unary plus and minus
 
 Prefix `+` preserves a numeric object's value and type; `-` negates it. Integer negation

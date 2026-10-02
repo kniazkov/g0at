@@ -1,0 +1,7 @@
+one write 3 3 a range=-2,3
+one write 4 4 b range=-3,2
+one write 5 5 c numeric
+one write 6 6 d numeric
+one write 7 7 e real
+one write 8 8 f real
+one write 9 9 g int=0

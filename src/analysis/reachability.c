@@ -7,6 +7,7 @@
 
 #include "abstract_state.h"
 #include "addition.h"
+#include "division.h"
 #include "graph/declarations.h"
 #include "graph/node.h"
 #include "graph/statement.h"
@@ -179,19 +180,29 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
         }
         case NODE_ADDITION:
         case NODE_SUBTRACTION:
-        case NODE_MULTIPLICATION: {
+        case NODE_MULTIPLICATION:
+        case NODE_DIVISION: {
             const lattice_element_t *left = visit(get_node_child(node, 0), state, collector);
             const lattice_element_t *right = visit(get_node_child(node, 1), state, collector);
-            const lattice_element_t *result = node->vtbl->type == NODE_ADDITION
-                                                  ? lattice_add((*state)->arena, left, right)
-                                              : node->vtbl->type == NODE_SUBTRACTION
-                                                  ? lattice_subtract((*state)->arena, left, right)
-                                                  : lattice_multiply((*state)->arena, left, right);
+            const lattice_element_t *result;
+            switch (node->vtbl->type) {
+                case NODE_ADDITION:
+                    result = lattice_add((*state)->arena, left, right);
+                    break;
+                case NODE_SUBTRACTION:
+                    result = lattice_subtract((*state)->arena, left, right);
+                    break;
+                case NODE_MULTIPLICATION:
+                    result = lattice_multiply((*state)->arena, left, right);
+                    break;
+                default:
+                    result = lattice_divide((*state)->arena, left, right);
+                    break;
+            }
             if (result->type == LATTICE_BOTTOM)
                 (*state)->control_flow = FLOW_UNREACHABLE;
             return result;
         }
-        case NODE_DIVISION:
         case NODE_MODULO:
         case NODE_POWER:
         case NODE_LESS:

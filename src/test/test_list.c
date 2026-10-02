@@ -10,6 +10,7 @@
 #include "test_addition.h"
 #include "test_analysis.h"
 #include "test_codegen.h"
+#include "test_division.h"
 #include "test_lattice.h"
 #include "test_lib.h"
 #include "test_model.h"
@@ -83,6 +84,10 @@ static test_description_t test_list[] = {
     {"addition models and constants", test_addition_models_and_constants},
     {"addition domains", test_addition_domains},
     {"mixed numeric arithmetic", test_mixed_arithmetic},
+    {"division models and constants", test_division_models_and_constants},
+    {"division domains", test_division_domains},
+    {"division ranges", test_division_ranges},
+    {"division independent expectations", test_division_expected},
     {"multiplication models and constants", test_multiplication_models_and_constants},
     {"multiplication domains", test_multiplication_domains},
     {"multiplication ranges", test_multiplication_ranges},

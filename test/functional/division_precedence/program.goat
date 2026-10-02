@@ -1,0 +1,1 @@
+print(12 / 2 / 3); print("|"); print(12 / (2 / 3)); print("|"); print(3 + 12 / 4); print("|"); print(16 / 2 ** 2);

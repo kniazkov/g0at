@@ -81,3 +81,15 @@ multiplication_unknown
 multiplication_bottom_left
 multiplication_bottom_right
 mixed_add_sub
+division_constants
+division_ranges
+division_overflow_range
+division_reachability
+division_zero
+division_negative_zero
+division_zero_unknown_numerator
+division_effects
+division_invalid
+division_unknown
+division_bottom_left
+division_bottom_right
