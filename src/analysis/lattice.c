@@ -144,11 +144,19 @@ const lattice_element_t *make_known_function_element(arena_t *arena,
     return &value->base;
 }
 
+const lattice_element_t *make_builtin_function_element(arena_t *arena,
+                                                       const struct builtin_function_t *builtin) {
+    known_function_element_t *value = alloc_zeroed_from_arena(arena, sizeof(*value));
+    value->base.type = LATTICE_KNOWN_FUNCTION;
+    value->builtin = builtin;
+    return &value->base;
+}
+
 /** @brief Whether two known values identify the same body and lexical activation. */
 static bool same_function(const lattice_element_t *left, const lattice_element_t *right) {
     const known_function_element_t *a = (const known_function_element_t *)left;
     const known_function_element_t *b = (const known_function_element_t *)right;
-    return a->node == b->node && a->owner == b->owner;
+    return a->node == b->node && a->owner == b->owner && a->builtin == b->builtin;
 }
 
 const lattice_element_t *make_array_element() {

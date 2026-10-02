@@ -1,3 +1,3 @@
-var x = print();
+var x = pi;
 var a = 1 % x;
 var b = x % 1;

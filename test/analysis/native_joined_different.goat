@@ -1,0 +1,3 @@
+var f=sign;
+if(pi){f=sqrt;}
+var result=f(4);

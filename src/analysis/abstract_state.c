@@ -72,6 +72,7 @@ abstract_state_t *create_abstract_state(arena_t *arena) {
     state->control_flow = FLOW_NORMAL;
     state->return_value = NULL;
     state->call_frame = NULL;
+    state->builtin_bindings_unknown = false;
     state->call_budget = alloc_from_arena(arena, sizeof(size_t));
     *state->call_budget = 1024;
     return state;
@@ -88,6 +89,7 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     copy->control_flow = state->control_flow;
     copy->return_value = state->return_value;
     copy->call_frame = state->call_frame;
+    copy->builtin_bindings_unknown = state->builtin_bindings_unknown;
     copy->call_budget = state->call_budget;
     return copy;
 }
@@ -102,6 +104,8 @@ const lattice_element_t *set_in_abstract_state_at(abstract_state_t *state,
                                                   const declarator_t *declarator,
                                                   const lattice_element_t *value,
                                                   const node_t *node) {
+    if (declarator == get_builtin_declarator())
+        state->builtin_bindings_unknown = true;
     add_analysis_event(state->collector, ANALYSIS_VALUE_WRITE, node, declarator, value);
     lattice_pair_t *pair =
         (lattice_pair_t *)get_from_avl_tree(state->values, (void *)declarator).ptr;
@@ -181,6 +185,8 @@ abstract_state_t *join_abstract_states(const abstract_state_t *left,
                                : FLOW_UNREACHABLE;
     result->return_value = left->return_value == right->return_value ? left->return_value : NULL;
     result->call_frame = left->call_frame;
+    result->builtin_bindings_unknown =
+        left->builtin_bindings_unknown || right->builtin_bindings_unknown;
     result->call_budget = left->call_budget;
     join_context_t context = {left, right, result};
     avl_tree_for_each(left->values, join_abstract_state_entry, &context);
@@ -242,6 +248,7 @@ static void forget_entry(void *context, void *key, value_t ignored) {
 }
 
 void forget_abstract_values(abstract_state_t *state) {
+    state->builtin_bindings_unknown = true;
     avl_tree_for_each(state->values, forget_entry, state);
 }
 
@@ -268,6 +275,7 @@ static void copy_call_entry(void *context, void *key, value_t value) {
 void apply_abstract_call_state(abstract_state_t *caller,
                                const abstract_state_t *result,
                                const node_t *function) {
+    caller->builtin_bindings_unknown |= result->builtin_bindings_unknown;
     call_copy_t copy = {caller, function};
     avl_tree_for_each(result->values, copy_call_entry, &copy);
 }

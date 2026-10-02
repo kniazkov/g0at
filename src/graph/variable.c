@@ -8,6 +8,7 @@
 
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "builtins/registry.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -58,8 +59,12 @@ static relation_type_t get_relation_type(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const variable_t *expr = (const variable_t *)node;
-    if (expr->declarator == get_builtin_declarator())
-        return make_top_element();
+    if (expr->declarator == get_builtin_declarator()) {
+        const builtin_function_t *builtin = find_builtin_function(expr->name);
+        return builtin && !state->builtin_bindings_unknown
+                   ? make_builtin_function_element(arena, builtin)
+                   : make_top_element();
+    }
     const lattice_element_t *value = get_from_abstract_state(state, expr->declarator);
     if (!value) {
         value = make_null_element();

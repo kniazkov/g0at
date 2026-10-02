@@ -1,0 +1,4 @@
+var a=sign(-9);
+var b=sign(0.25);
+var c=sqrt(9);
+var d=atan(0,1);

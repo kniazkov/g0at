@@ -47,15 +47,10 @@ static const wchar_t *get_child_tag(const node_t *node, size_t index) {
     return index == 0 ? L"try" : index == 1 ? L"catch" : NULL;
 }
 
-/** @brief Discards facts that either unmodeled exception path may change. */
-static void forget_value(void *context, void *key, value_t ignored) {
-    set_in_abstract_state(context, key, make_top_element());
-}
-
 /** @brief Conservative placeholder until exceptional abstract states are implemented. */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
     if (state->control_flow == FLOW_NORMAL)
-        avl_tree_for_each(state->values, forget_value, state);
+        forget_abstract_values(state);
     return state;
 }
 

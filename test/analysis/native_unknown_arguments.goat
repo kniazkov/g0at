@@ -1,0 +1,3 @@
+var a=sign(pi);
+var b=sqrt(pi);
+var c=atan(pi,1);

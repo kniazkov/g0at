@@ -371,9 +371,14 @@ typedef struct {
     lattice_element_t base;
     struct node_t *node;
     struct abstract_call_frame_t *owner;
+    const struct builtin_function_t *builtin;
 } known_function_element_t;
 
 /** @brief Records a function body and the activation containing its captures. */
 const lattice_element_t *make_known_function_element(arena_t *arena,
                                                      struct node_t *node,
                                                      struct abstract_call_frame_t *owner);
+
+/** @brief Creates a known callable for a native descriptor. */
+const lattice_element_t *make_builtin_function_element(arena_t *arena,
+                                                       const struct builtin_function_t *builtin);

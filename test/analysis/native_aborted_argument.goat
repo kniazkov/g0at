@@ -1,0 +1,3 @@
+var x=0;
+var result=atan(x=1,true+1);
+var after=x;

@@ -39,7 +39,7 @@ struct thread_t {
     /** @brief The current execution context of the thread. */
     context_t *context;
 
-    /** @brief Unhandled exception, retained until thread destruction. */
+    /** @brief Pending native-call or unhandled exception, owned and traced by GC. */
     exception_t exception;
 
     /** @brief The data stack used by the thread. */

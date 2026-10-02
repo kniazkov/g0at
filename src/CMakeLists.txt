@@ -17,6 +17,7 @@ file(GLOB core_sources
   parser/*.c
   graph/*.c
   analysis/*.c
+  builtins/*.c
   codegen/*.c
   model/*.c
   vm/*.c

@@ -9,6 +9,7 @@
 #include "test_abstract_state.h"
 #include "test_addition.h"
 #include "test_analysis.h"
+#include "test_builtin_functions.h"
 #include "test_codegen.h"
 #include "test_comparison.h"
 #include "test_division.h"
@@ -34,6 +35,10 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"builtin registry", test_builtin_registry},
+    {"builtin numeric results", test_builtin_numeric_results},
+    {"builtin errors", test_builtin_errors},
+    {"builtin domains", test_builtin_domains},
     {"function lattice", test_function_lattice},
     {"function call budget", test_function_call_budget},
     {"function call state", test_function_call_state},

@@ -503,6 +503,11 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
     bool result = call_object(func, instr.arg0, thread);
     // The ID of the following instruction was set inside the call method
     DECREF(func);
+    if (!result && thread->exception.value) {
+        exception_t exception = thread->exception;
+        thread->exception.value = NULL;
+        return dispatch_exception(runtime, thread, exception);
+    }
     return result;
 }
 

@@ -1,0 +1,1 @@
+var f=func(g){return g(true);};try{var x=10+f(sqrt);print("bad");}catch(e){print(e);}print(",");print(sqrt(16));
