@@ -6,6 +6,7 @@
 
 #include "common_methods.h"
 #include "lib/allocate.h"
+#include "lib/bitwise.h"
 #include "lib/integer_math.h"
 #include "lib/string_ext.h"
 #include "object.h"
@@ -87,6 +88,12 @@ static object_vtbl_t integer_proto_vtbl = {.type = TYPE_OTHER,
                                            .get_property = get_property,
                                            .create_property = create_property_on_immutable,
                                            .set_property = set_property_on_immutable,
+                                           .bitwise_not = stub_unary_operation,
+                                           .bitwise_and = stub_bitwise,
+                                           .bitwise_or = stub_bitwise,
+                                           .bitwise_xor = stub_bitwise,
+                                           .shift_left = stub_bitwise,
+                                           .shift_right = stub_bitwise,
                                            .unary_plus = stub_unary_operation,
                                            .unary_minus = stub_unary_operation,
                                            .increment = stub_unary_operation,
@@ -171,6 +178,42 @@ static void release(object_t *obj) {
                                                    : &obj->process->objects,
                             obj);
     FREE(obj);
+}
+
+static operation_result_t bitwise_not(process_t *process, object_t *obj) {
+    return (operation_result_t){
+        create_integer_object(process, invert_integer(get_object_integer_value(obj).value)),
+        false};
+}
+
+static operation_result_t
+bitwise_binary(process_t *process, object_t *left, object_t *right, bitwise_kind_t kind) {
+    if (!is_integer_object(right))
+        return operation_exception(get_exception_invalid_argument());
+    int64_t a = get_object_integer_value(left).value, b = get_object_integer_value(right).value;
+    if ((kind == BIT_SHIFT_LEFT || kind == BIT_SHIFT_RIGHT) && (b < 0 || b > 63))
+        return operation_exception(get_exception_invalid_argument());
+    return (operation_result_t){create_integer_object(process, bitwise_integer(a, b, kind)), false};
+}
+
+static operation_result_t bitwise_and(process_t *process, object_t *left, object_t *right) {
+    return bitwise_binary(process, left, right, BIT_AND);
+}
+
+static operation_result_t bitwise_or(process_t *process, object_t *left, object_t *right) {
+    return bitwise_binary(process, left, right, BIT_OR);
+}
+
+static operation_result_t bitwise_xor(process_t *process, object_t *left, object_t *right) {
+    return bitwise_binary(process, left, right, BIT_XOR);
+}
+
+static operation_result_t shift_left(process_t *process, object_t *left, object_t *right) {
+    return bitwise_binary(process, left, right, BIT_SHIFT_LEFT);
+}
+
+static operation_result_t shift_right(process_t *process, object_t *left, object_t *right) {
+    return bitwise_binary(process, left, right, BIT_SHIFT_RIGHT);
 }
 
 /** @brief Implements @ref object_vtbl_t::clone. */
@@ -377,6 +420,12 @@ static object_vtbl_t static_vtbl = {.type = TYPE_NUMBER,
                                     .get_property = get_property,
                                     .create_property = create_property_on_immutable,
                                     .set_property = set_property_on_immutable,
+                                    .bitwise_not = bitwise_not,
+                                    .bitwise_and = bitwise_and,
+                                    .bitwise_or = bitwise_or,
+                                    .bitwise_xor = bitwise_xor,
+                                    .shift_left = shift_left,
+                                    .shift_right = shift_right,
                                     .unary_plus = numeric_unary_plus,
                                     .unary_minus = unary_minus,
                                     .increment = increment,
@@ -445,6 +494,12 @@ static object_vtbl_t dynamic_vtbl = {.type = TYPE_NUMBER,
                                      .get_property = get_property,
                                      .create_property = create_property_on_immutable,
                                      .set_property = set_property_on_immutable,
+                                     .bitwise_not = bitwise_not,
+                                     .bitwise_and = bitwise_and,
+                                     .bitwise_or = bitwise_or,
+                                     .bitwise_xor = bitwise_xor,
+                                     .shift_left = shift_left,
+                                     .shift_right = shift_right,
                                      .unary_plus = numeric_unary_plus,
                                      .unary_minus = unary_minus,
                                      .increment = increment,

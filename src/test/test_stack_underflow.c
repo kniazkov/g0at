@@ -20,13 +20,15 @@
 static const struct {
     opcode_t opcode;
     int operands;
-} cases[] = {{FUNC, 0},    {JIF, 0},     {POP, 0},    {DUP, 0},    {VAR, 0},    {CONST, 0},
-             {STORE, 0},   {UPLUS, 0},   {UMINUS, 0}, {INC, 0},    {DEC, 0},    {THROW, 0},
-             {RET, 0},     {CALL, 0},    {ADD, 0},    {ADD, 1},    {SUB, 0},    {SUB, 1},
-             {MUL, 0},     {MUL, 1},     {DIVIDE, 0}, {DIVIDE, 1}, {MODULO, 0}, {MODULO, 1},
-             {POWER, 0},   {POWER, 1},   {LESS, 0},   {LESS, 1},   {LEQ, 0},    {LEQ, 1},
-             {GREATER, 0}, {GREATER, 1}, {GREQ, 0},   {GREQ, 1},   {EQUAL, 0},  {EQUAL, 1},
-             {DIFF, 0},    {DIFF, 1},    {CALL, 1},   {RET, 1}};
+} cases[] = {
+    {LNOT, 0},   {BOOL, 0},   {BNOT, 0},   {LAND, 0},    {LOR, 0},     {BAND, 0},  {BAND, 1},
+    {BOR, 0},    {BOR, 1},    {BXOR, 0},   {BXOR, 1},    {SHL, 0},     {SHL, 1},   {SHR, 0},
+    {SHR, 1},    {FUNC, 0},   {JIF, 0},    {POP, 0},     {DUP, 0},     {VAR, 0},   {CONST, 0},
+    {STORE, 0},  {UPLUS, 0},  {UMINUS, 0}, {INC, 0},     {DEC, 0},     {THROW, 0}, {RET, 0},
+    {CALL, 0},   {ADD, 0},    {ADD, 1},    {SUB, 0},     {SUB, 1},     {MUL, 0},   {MUL, 1},
+    {DIVIDE, 0}, {DIVIDE, 1}, {MODULO, 0}, {MODULO, 1},  {POWER, 0},   {POWER, 1}, {LESS, 0},
+    {LESS, 1},   {LEQ, 0},    {LEQ, 1},    {GREATER, 0}, {GREATER, 1}, {GREQ, 0},  {GREQ, 1},
+    {EQUAL, 0},  {EQUAL, 1},  {DIFF, 0},   {DIFF, 1},    {CALL, 1},    {RET, 1}};
 
 void run_stack_underflow_case(int index) {
     process_t *proc = create_process();

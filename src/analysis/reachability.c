@@ -7,10 +7,12 @@
 
 #include "abstract_state.h"
 #include "addition.h"
+#include "bitwise.h"
 #include "comparison.h"
 #include "division.h"
 #include "graph/comparison.h"
 #include "graph/declarations.h"
+#include "graph/logic.h"
 #include "graph/node.h"
 #include "graph/statement.h"
 #include "graph/update_expression.h"
@@ -97,6 +99,35 @@ static void visit_if(node_t *node, abstract_state_t **state, analysis_collector_
     }
 }
 
+/** @brief Visits the right operand only on paths which do not short-circuit. */
+static const lattice_element_t *
+visit_logical(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    const lattice_element_t *left = visit(get_node_child(node, 0), state, collector);
+    node_t *right_node = get_node_child(node, 1);
+    if ((*state)->control_flow != FLOW_NORMAL) {
+        mark_dead(right_node, collector);
+        return make_bottom_element();
+    }
+    bool is_or = node->vtbl->type == NODE_LOGICAL_OR;
+    abstract_truth_t truth = lattice_truth(left);
+    const lattice_element_t *skipped = is_or ? make_true_element() : make_false_element();
+    if (truth == (is_or ? ABSTRACT_TRUE : ABSTRACT_FALSE)) {
+        mark_dead(right_node, collector);
+        return skipped;
+    }
+    if (truth != ABSTRACT_EITHER)
+        return lattice_boolean(visit(right_node, state, collector), false);
+    abstract_state_t *right = clone_abstract_state(*state);
+    const lattice_element_t *value = lattice_boolean(visit(right_node, &right, collector), false);
+    if (right->control_flow != FLOW_NORMAL)
+        value = make_bottom_element();
+    abstract_state_t *merged = join_abstract_states(*state, right);
+    destroy_abstract_state(right);
+    destroy_abstract_state(*state);
+    *state = merged;
+    return lattice_join(merged->arena, skipped, value);
+}
+
 /**
  * @brief Updates the abstract state, marks dead subtrees, and returns the node's abstract value.
  * Branch merging may replace *state; deferred function bodies are skipped.
@@ -175,6 +206,33 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
             /* A closure or built-in may change any captured binding. */
             forget_values(*state);
             return make_top_element();
+        case NODE_LOGICAL_AND:
+        case NODE_LOGICAL_OR:
+            return visit_logical(node, state, collector);
+        case NODE_LOGICAL_NOT:
+        case NODE_BOOLEAN_CONVERSION:
+        case NODE_BITWISE_NOT: {
+            const lattice_element_t *value = visit(get_node_child(node, 0), state, collector);
+            value = node->vtbl->type == NODE_BITWISE_NOT
+                        ? lattice_bitwise_not((*state)->arena, value)
+                        : lattice_boolean(value, node->vtbl->type == NODE_LOGICAL_NOT);
+            if (value->type == LATTICE_BOTTOM)
+                (*state)->control_flow = FLOW_UNREACHABLE;
+            return value;
+        }
+        case NODE_BITWISE_AND:
+        case NODE_BITWISE_OR:
+        case NODE_BITWISE_XOR:
+        case NODE_SHIFT_LEFT:
+        case NODE_SHIFT_RIGHT: {
+            const lattice_element_t *left = visit(get_node_child(node, 0), state, collector);
+            const lattice_element_t *right = visit(get_node_child(node, 1), state, collector);
+            const lattice_element_t *value =
+                lattice_bitwise((*state)->arena, left, right, node_bitwise_kind(node->vtbl->type));
+            if (value->type == LATTICE_BOTTOM)
+                (*state)->control_flow = FLOW_UNREACHABLE;
+            return value;
+        }
         case NODE_PREFIX_INCREMENT:
         case NODE_PREFIX_DECREMENT:
         case NODE_POSTFIX_INCREMENT:

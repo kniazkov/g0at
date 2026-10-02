@@ -99,3 +99,6 @@ operation_result_t numeric_unary_plus(process_t *process, object_t *obj);
 
 /** @brief Internal numeric key ordering; NaNs sort after all numbers. */
 int compare_numeric_keys(const object_t *left, const object_t *right);
+
+/** @brief Unsupported integer-only binary operation. */
+operation_result_t stub_bitwise(process_t *process, object_t *left, object_t *right);

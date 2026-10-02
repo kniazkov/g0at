@@ -210,3 +210,7 @@ operation_result_t numeric_unary_plus(process_t *process, object_t *obj) {
     INCREF(obj);
     return operation_success(obj);
 }
+
+operation_result_t stub_bitwise(process_t *process, object_t *left, object_t *right) {
+    return operation_exception(get_exception_invalid_operation());
+}

@@ -1,0 +1,3 @@
+var x=0;
+var a=pi || ++x;
+var b=x;

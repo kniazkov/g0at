@@ -1,0 +1,1 @@
+var fail=func(){throw "wrong";}; print(false && fail());print(true || fail());print(false && (1/0));print(true || (1<<64));

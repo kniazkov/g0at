@@ -145,6 +145,16 @@ typedef struct {
 } operator_mapping_t;
 
 static const operator_mapping_t operator_mappings[] = {
+    {L"!", offsetof(token_groups_t, additive_operators)},
+    {L"!!", offsetof(token_groups_t, additive_operators)},
+    {L"~", offsetof(token_groups_t, additive_operators)},
+    {L"&&", offsetof(token_groups_t, logical_and_operators)},
+    {L"||", offsetof(token_groups_t, logical_or_operators)},
+    {L"&", offsetof(token_groups_t, bitwise_and_operators)},
+    {L"|", offsetof(token_groups_t, bitwise_or_operators)},
+    {L"^", offsetof(token_groups_t, bitwise_xor_operators)},
+    {L"<<", offsetof(token_groups_t, shift_operators)},
+    {L">>", offsetof(token_groups_t, shift_operators)},
     {L"++", offsetof(token_groups_t, update_operators)},
     {L"--", offsetof(token_groups_t, update_operators)},
     {L"+", offsetof(token_groups_t, additive_operators)},
@@ -355,14 +365,13 @@ token_t *get_token(scanner_t *scan) {
         }
     } else if (is_operator(ch)) {
         token->type = TOKEN_OPERATOR;
-        if (ch == L'+' || ch == L'-') {
-            wchar_t sign = ch;
-            if (next_char(scan) == sign)
+        wchar_t first = ch, second = next_char(scan);
+        for (size_t i = 0; i < sizeof(operator_mappings) / sizeof(*operator_mappings); i++) {
+            const wchar_t *op = operator_mappings[i].oper;
+            if (op[0] == first && op[1] && op[1] == second && op[2] == 0) {
                 next_char(scan);
-        } else {
-            do {
-                ch = next_char(scan);
-            } while (is_operator(ch) && ch != L'+' && ch != L'-');
+                break;
+            }
         }
     } else if (ch == L'{' || ch == L'}' || ch == L'(' || ch == L')' || ch == L'[' || ch == L']') {
         token->type = TOKEN_BRACKET;

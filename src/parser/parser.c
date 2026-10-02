@@ -366,6 +366,8 @@ static list_t *collect_nodes_from_group(token_list_t *tokens, arena_t *arena) {
     return nodes;
 }
 
+compilation_error_t *parsing_logic_operators(token_t *, parser_memory_t *, token_groups_t *);
+
 compilation_error_t *
 apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory, parsing_result_t *result) {
     compilation_error_t *error = NULL;
@@ -381,8 +383,14 @@ apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory, parsing_r
     APPLY_BACKWARD(power_operators, parsing_power_operators);
     APPLY_FORWARD(multiplicative_operators, parsing_multiplicative_operators);
     APPLY_FORWARD(additive_operators, parsing_additive_operators);
+    APPLY_FORWARD(shift_operators, parsing_logic_operators);
     APPLY_FORWARD(comparison_operators, parsing_comparison_operators);
     APPLY_FORWARD(equality_operators, parsing_comparison_operators);
+    APPLY_FORWARD(bitwise_and_operators, parsing_logic_operators);
+    APPLY_FORWARD(bitwise_xor_operators, parsing_logic_operators);
+    APPLY_FORWARD(bitwise_or_operators, parsing_logic_operators);
+    APPLY_FORWARD(logical_and_operators, parsing_logic_operators);
+    APPLY_FORWARD(logical_or_operators, parsing_logic_operators);
     APPLY_BACKWARD(assignment_operators, parsing_assignment_operators);
     APPLY_FORWARD(function_arguments, parsing_function_call_args);
     APPLY_FORWARD(var_keywords, parsing_variable_declarations);

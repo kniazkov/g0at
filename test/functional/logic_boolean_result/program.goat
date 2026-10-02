@@ -1,0 +1,12 @@
+print(2&&3);print("|");
+print(0||3);print("|");
+print("yes"&&"");print("|");
+print(null||"text");print("|");
+print(false&&null);print("|");
+print(0.5||0);print("|");
+print(!!!1);print("|");
+print(!!!!0);print("|");
+print(!~0);print("|");
+print(~1);print("|");
+print(~-4);print("|");
+print(!0**0);print("|");

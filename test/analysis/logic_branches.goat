@@ -1,0 +1,3 @@
+if(false && (1/0)){print("dead");}
+if(true || (1<<64)){}else{print("dead");}
+var x=1;
