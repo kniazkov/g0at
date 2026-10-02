@@ -31,13 +31,21 @@ static bool value_matches(const lattice_element_t *value, const char *text) {
                && ((const integer_range_element_t *)value)->min == a
                && ((const integer_range_element_t *)value)->max == b;
     }
-    double real;
-    if (sscanf(text, "real=%lf%n", &real, &used) == 1 && !text[used]) {
+    if (!strncmp(text, "real=", 5)) {
         if (value->type != LATTICE_REAL_CONSTANT)
             return false;
         double actual = ((const real_constant_element_t *)value)->value;
-        return (isnan(real) && isnan(actual))
-               || (actual == real && (real != 0 || !!signbit(real) == !!signbit(actual)));
+        const char *expected = text + 5;
+        /* Do not delegate special values to the platform's scanf implementation. */
+        if (!strcmp(expected, "nan"))
+            return isnan(actual);
+        if (!strcmp(expected, "inf") || !strcmp(expected, "+inf"))
+            return isinf(actual) && !signbit(actual);
+        if (!strcmp(expected, "-inf"))
+            return isinf(actual) && signbit(actual);
+        double real;
+        return sscanf(expected, "%lf%n", &real, &used) == 1 && !expected[used] && isfinite(real)
+               && actual == real && (real != 0 || !!signbit(real) == !!signbit(actual));
     }
     if (!strncmp(text, "string=", 7)) {
         if (value->type != LATTICE_STRING_CONSTANT)
