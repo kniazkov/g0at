@@ -632,9 +632,17 @@ static instr_executor_t executors[] = {
     exec_UMINUS,  /**< Negates the top value. */
     exec_INC,     /**< Applies numeric increment. */
     exec_DEC,     /**< Applies numeric decrement. */
-    exec_LNOT,    exec_BOOL, exec_BNOT, exec_LAND, exec_LOR, exec_BAND,
-    exec_BOR,     exec_BXOR, exec_SHL,  exec_SHR,  exec_ADD, /**< Adds the top two objects of the
-                                                                stack. */
+    exec_LNOT,    /**< Negates truthiness. */
+    exec_BOOL,    /**< Converts the top value to boolean. */
+    exec_BNOT,    /**< Inverts integer bits. */
+    exec_LAND,    /**< Short-circuits when the left value is false. */
+    exec_LOR,     /**< Short-circuits when the left value is true. */
+    exec_BAND,    /**< Computes integer bitwise AND. */
+    exec_BOR,     /**< Computes integer bitwise OR. */
+    exec_BXOR,    /**< Computes integer bitwise XOR. */
+    exec_SHL,     /**< Shifts integer bits left. */
+    exec_SHR,     /**< Shifts integer bits right with sign extension. */
+    exec_ADD,     /**< Adds the top two objects of the stack. */
     exec_SUB,     /**< Subtracts the top two objects of the stack. */
     exec_MUL,     /**< Multiplies the top two objects on the data stack. */
     exec_DIVIDE,  /**< Divides the first object by the second on the data stack. */
