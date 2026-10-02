@@ -287,3 +287,19 @@ native_catch_atan_x
 native_uncaught_missing
 native_uncaught_type
 native_print_shadow
+
+# Math, conversion and input
+math_library
+math_errors
+math_ieee
+int_conversion
+int_effects
+input_lines
+input_long
+input_eof
+native_math_shadow
+quadratic_two
+quadratic_double
+quadratic_none
+quadratic_linear
+quadratic_degenerate

@@ -562,6 +562,15 @@ object_t *create_real_number_object(process_t *process, double value);
 /** @brief Retrieves the string prototype object. */
 object_t *get_string_proto();
 
+/** @brief Caller-owned permanent storage for an immutable string singleton. */
+typedef struct {
+    object_t base;
+    string_view_t string;
+} object_static_string_t;
+
+/** @brief Initializes once; storage and text must live for the entire process. */
+object_t *get_static_string_object(object_static_string_t *storage, const wchar_t *text);
+
 /** @brief Creates a dynamic string object from a string value. */
 object_t *create_string_object(process_t *process, string_value_t value);
 

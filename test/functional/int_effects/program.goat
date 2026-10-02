@@ -1,0 +1,5 @@
+var n = 0;
+var fallback = func() { n++; return "bad"; };
+print(int(3, fallback())); print(n);
+try { int(); } catch (e) { print(e); }
+var int = func(a) { return a + 10; }; print(int(1));

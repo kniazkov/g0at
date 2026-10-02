@@ -1,0 +1,3 @@
+var sin = func(x) { return x+1; }; print(sin(2));
+var input = func() { return "fake"; }; print(input());
+var math = cos; print(math(0) == 1);

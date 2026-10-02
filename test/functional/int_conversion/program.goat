@@ -1,0 +1,11 @@
+print(int("  +42 ")); print("|");
+print(int("-9223372036854775808")); print("|");
+print(int("9223372036854775807")); print("|");
+print(int(3.9)); print("|"); print(int(-3.9)); print("|");
+print(int(true)); print(int(false)); print("|");
+print(int(null)); print("|"); print(int("bad", "fallback")); print("|");
+print(int("9223372036854775808", -7)); print("|");
+print(int(9223372036854775808.0, -8)); print("|");
+print(int(sqrt(-1), -9)); print("|"); print(int(0**-1, -10)); print("|");
+print(int(9223372036854775807)); print("|");
+print(int({}, {x=7})); print("|"); print(int("bad", null));

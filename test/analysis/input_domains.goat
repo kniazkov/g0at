@@ -1,0 +1,5 @@
+var known = 7;
+var line = input();
+var value = int(line);
+var fallback = int(line, "bad");
+var out = known;

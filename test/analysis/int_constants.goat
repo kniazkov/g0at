@@ -1,0 +1,10 @@
+var a = int("  +42 ");
+var b = int(-3.9);
+var c = int(true);
+var d = int(false);
+var e = int(null);
+var f = int("bad", "fallback");
+var g = int(9223372036854775808.0, -8);
+var h = int("-9223372036854775808");
+var i = int(sqrt(-1), null);
+var j = int("9223372036854775807");

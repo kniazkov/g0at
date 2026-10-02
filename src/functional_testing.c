@@ -70,7 +70,7 @@ int do_test(char *interpreter, char *test_name, const char *optimization) {
     int result = 0;
 
     char cmd[1024], path_actual_output[256], path_expected_output[256], path_actual_error[256],
-        path_expected_error[256];
+        path_expected_error[256], path_input[256];
     snprintf(path_actual_output,
              256,
              "%s%cactual_output_%s.txt",
@@ -85,12 +85,23 @@ int do_test(char *interpreter, char *test_name, const char *optimization) {
              path_separator(),
              optimization);
     snprintf(path_expected_error, 256, "%s%cexpected_error.txt", test_name, path_separator());
+    snprintf(path_input, sizeof(path_input), "%s%cinput.txt", test_name, path_separator());
+    FILE *input = fopen(path_input, "r");
+    if (input)
+        fclose(input);
+    else {
+#ifdef _WIN32
+        strcpy(path_input, "NUL");
+#else
+        strcpy(path_input, "/dev/null");
+#endif
+    }
 #ifdef _WIN32
     const char *command_format =
-        "\"\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" 1> \"%s\" 2> \"%s\"\"";
+        "\"\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" < \"%s\" 1> \"%s\" 2> \"%s\"\"";
 #else
     const char *command_format =
-        "\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" 1> \"%s\" 2> \"%s\"";
+        "\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" < \"%s\" 1> \"%s\" 2> \"%s\"";
 #endif
     snprintf(cmd,
              sizeof(cmd),
@@ -99,6 +110,7 @@ int do_test(char *interpreter, char *test_name, const char *optimization) {
              optimization,
              test_name,
              path_separator(),
+             path_input,
              path_actual_output,
              path_actual_error);
 

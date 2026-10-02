@@ -1,0 +1,23 @@
+// Real roots of a*x*x + b*x + c = 0. Coefficients are read as integers.
+var solve = func(a, b, c) {
+    if (a == 0) {
+        if (b == 0) { return {}; }
+        return { x = -c / b; };
+    }
+    var d = b * b - 4 * a * c;
+    if (d < 0) { return {}; }
+    if (d == 0) { return { x = -b / (2 * a); }; }
+    // This form avoids cancellation in one root when b is large.
+    var q = -0.5 * (b + (2 * int(b >= 0) - 1) * sqrt(d));
+    return { x1 = q / a; x2 = c / q; };
+};
+
+print("a: ");
+var a = int(input());
+print("b: ");
+var b = int(input());
+print("c: ");
+var c = int(input());
+// Convert before arithmetic to avoid integer overflow in the discriminant.
+print(solve(a * 1.0, b * 1.0, c * 1.0));
+print("\n");

@@ -33,6 +33,17 @@ bool test_data_builder() {
            == 0);
     ASSERT(memcmp(builder->data + builder->descriptors[2].offset, L"gamma", sizeof(wchar_t) * 6)
            == 0);
+    /* Cross repeated buffer growth and look up old strings after every relocation. */
+    for (size_t i = 0; i < 1000; i++) {
+        wchar_t text[40];
+        swprintf(text, 40, L"new-string-%zu", i);
+        uint32_t added = add_string_to_data_segment(builder, text);
+        ASSERT(added == i + 3);
+        ASSERT(add_string_to_data_segment(builder, L"alpha") == 0);
+        ASSERT(add_string_to_data_segment_ex(builder, (string_view_t){text, wcslen(text)})
+               == added);
+        ASSERT(!wcscmp((wchar_t *)(builder->data + builder->descriptors[added].offset), text));
+    }
     destroy_data_builder(builder);
     return true;
 }

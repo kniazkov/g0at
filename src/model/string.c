@@ -23,16 +23,6 @@
 #define POOL_CAPACITY 1024
 
 /**
- * @brief A static string object.
- *
- * Static strings are immutable and exist for the entire duration of the program's execution.
- */
-typedef struct {
-    object_t base;        ///< The base object that provides common functionality.
-    string_view_t string; ///< The string.
-} object_static_string_t;
-
-/**
  * @brief A dynamic string object.
  *
  * Dynamic strings are also immutable but are created at runtime, typically as a result of string
@@ -333,6 +323,14 @@ static object_vtbl_t static_string_vtbl = {.type = TYPE_STRING,
                                            .get_integer_value = stub_get_integer_value,
                                            .get_real_value = stub_get_real_value,
                                            .call = stub_call};
+
+object_t *get_static_string_object(object_static_string_t *storage, const wchar_t *text) {
+    if (!storage->base.vtbl) {
+        storage->base.vtbl = &static_string_vtbl;
+        storage->string = (string_view_t){text, wcslen(text)};
+    }
+    return &storage->base;
+}
 
 /** @brief Macro to declare a static string object and provide access to it. */
 #define DECLARE_STATIC_STRING(name, string)                                                        \
