@@ -1,0 +1,1 @@
+try { throw "caught"; print("bad"); } catch (e) { print(e); } print("after");

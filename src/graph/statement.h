@@ -11,6 +11,7 @@
 
 typedef struct declarator_spec_t declarator_spec_t;
 typedef struct statement_list_t statement_list_t;
+typedef struct declarator_t declarator_t;
 
 /**
  * @brief The structure representing a statement node.
@@ -132,7 +133,13 @@ void set_if_else_condition_truth(node_t *node, abstract_truth_t truth);
 /**
  * @brief Creates `try statement catch (identifier) statement_list`.
  * Copies the nonempty identifier to arena; handler is a block expression.
- * Parser binding and exceptional abstract interpretation are not implemented yet.
+ * Exceptional abstract interpretation is conservative until path tracking is implemented.
  */
 node_t *create_try_catch_node(arena_t *arena, statement_t *body,
         string_view_t exception_name, statement_list_t *handler);
+
+/** @brief Creates a throw with a required expression. */
+node_t *create_throw_node(arena_t *arena, expression_t *value);
+
+/** @brief Gets the catch-local declaration used by name binding. */
+declarator_t *get_catch_declarator(node_t *node);

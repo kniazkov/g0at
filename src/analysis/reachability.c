@@ -142,6 +142,10 @@ static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
         case NODE_IF_ELSE:
             visit_if(node, state, collector);
             return make_top_element();
+        case NODE_THROW:
+            visit_children(node, state, collector);
+            (*state)->control_flow = FLOW_UNREACHABLE;
+            return make_bottom_element();
         case NODE_RETURN:
             visit_children(node, state, collector);
             (*state)->control_flow = FLOW_RETURN;

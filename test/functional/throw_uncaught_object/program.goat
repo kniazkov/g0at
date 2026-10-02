@@ -1,0 +1,1 @@
+throw { var x = 5; };

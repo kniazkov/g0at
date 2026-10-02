@@ -410,8 +410,8 @@ are ordinary string constants whose contents equal their names:
 | `PROPERTY_NOT_FOUND` | An operation requires a missing property. |
 
 Native code can use `get_exceptions_object()` and the `get_exception_*()` getters.
-This supplies the values for the upcoming exception mechanism; it does not yet implement
-source-level `throw`, `try`/`catch`, or change operator failure behavior. Property access is available
+These values are intended for built-in throws; operator failure behavior has not yet been
+converted to exceptions. Property access is available
 through the object model; source syntax such as `Exceptions.INVALID_ARGUMENT` is not yet
 supported by the parser. Programs can already refer to and print `Exceptions`.
 
@@ -439,12 +439,23 @@ The `NODE_TRY_CATCH` AST node can be constructed through `create_try_catch_node(
 It stores `try statement catch (identifier) statement_list`, copies the identifier into the
 arena, exposes both children to visualization, regenerates source and emits the handler
 bytecode. Catch consumes the thrown stack value into a local variable; neither path leaves
-a block result on the stack. Parser integration and catch-name lexical binding are the next
-step. Abstract execution currently discards known variable values conservatively instead
+a block result on the stack. The parser accepts this syntax and binds the catch name only inside its block (including
+closures created there). Single try statements are normalized to blocks for local declarations.
+Abstract execution currently discards known variable values conservatively instead
 of pretending to analyze exceptional paths.
 
-No diagnostic formatting or exception syntax is added yet. Operators and built-ins are not
-yet connected to this mechanism; tests exercise the instructions directly through bytecode.
+`throw expression` throws any value, including `null`. `try` accepts one statement, while
+`catch (identifier)` requires a braced block. Catch names shadow outer bindings and do not
+escape their block. Bare `throw` is not supported; rethrow with `throw identifier`.
+
+```goat
+try { throw "failed"; } catch (error) { print(error); }
+```
+
+An uncaught exception prints `Uncaught exception: <value>` to stderr in the selected language
+before process cleanup and returns a failing exit status. Operators and built-ins are not
+yet connected to this mechanism; explicit throws are covered by source-level functional tests
+with optimization both disabled and enabled.
 
 ## Author and license
 

@@ -103,7 +103,7 @@ int do_test(char *interpreter, char *test_name, const char *optimization) {
         if (!compare_files(actual_error, expected_error)) goto cleanup;
     }
 
-    if (status == -1 || (status != 0 && !expected_error)) goto cleanup;
+    if (status == -1 || ((status != 0) != (expected_error != NULL))) goto cleanup;
     result = 1;
 
 cleanup:

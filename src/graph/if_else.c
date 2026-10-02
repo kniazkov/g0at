@@ -119,6 +119,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_value_t cs = generate_goat_code_from_expression(stmt->condition);
     append_string_value(&builder, cs);
     FREE_STRING(cs);
+    append_static_string(&builder, L") ");
     string_value_t tbs = generate_goat_code_from_statement(stmt->true_branch);
     append_string_value(&builder, tbs);
     FREE_STRING(tbs);
@@ -128,6 +129,7 @@ static string_value_t generate_goat_code(const node_t *node) {
         append_string_value(&builder, fbs);
         FREE_STRING(fbs);
     }
+    return append_static_string(&builder, L"");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */

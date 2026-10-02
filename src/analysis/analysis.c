@@ -53,6 +53,11 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t
     const size_t child_count = get_node_child_count(node);
     for (size_t child_id = 0; child_id < child_count; child_id++) {
         node_t *child = get_node_child(node, child_id);
+        if (node->vtbl->type == NODE_TRY_CATCH && child_id == 0) {
+            assign_node_indexes_and_scopes(child, node, functions, arena,
+                create_scope(arena, scope), next_id);
+            continue;
+        }
         switch (child->vtbl->type) {
             case NODE_FUNCTION_OBJECT: {
                 /* Queue inner functions until enclosing names have been bound. */
@@ -96,6 +101,14 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t
             }
         }
     }
+    if (node->vtbl->type == NODE_TRY_CATCH) {
+        declarator_t *decl = get_catch_declarator(node);
+        decl->base.parent = node;
+        decl->base.scope = get_node_child(node, 1)->scope;
+        decl->base.id = (*next_id)++;
+        decl->base.position = node->position;
+        decl->abstract_value = NULL;
+    }
 }
 
 /**
@@ -117,7 +130,8 @@ static void assign_scope_to_subtree(node_t *node, node_t *parent, scope_t *scope
 static node_t *find_parent_statement(variable_t *var) {
     node_t *node = var->base.base.base.parent;
     while(node) {
-        if (is_statement(node->vtbl->type)) {
+        if (node->parent && is_statement_list(node->parent->vtbl->type) &&
+                (is_statement(node->vtbl->type) || is_branch_or_loop(node->vtbl->type))) {
             return node;
         }
         node = node->parent;
@@ -151,6 +165,13 @@ typedef struct {
  */
 static void bind_variables_from_node_and_children(node_t *node, parser_memory_t *memory,
         vector_t *insertions, compilation_error_t **errors, options_t *options) {
+    if (node->vtbl->type == NODE_TRY_CATCH) {
+        bind_variables_from_node_and_children(get_node_child(node, 0), memory, insertions, errors, options);
+        declarator_t *decl = get_catch_declarator(node);
+        add_symbol_to_scope(decl->base.scope, decl->name.data, decl);
+        bind_variables_from_node_and_children(get_node_child(node, 1), memory, insertions, errors, options);
+        return;
+    }
     if (is_declarator(node->vtbl->type)) {
 
         declarator_t *declarator = (declarator_t*)node;

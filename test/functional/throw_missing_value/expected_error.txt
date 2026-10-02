@@ -1,0 +1,1 @@
+Fatal error in 'program.goat', 1.1: Expected an expression after 'throw'

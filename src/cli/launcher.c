@@ -19,6 +19,8 @@
 #include "graph/node.h"
 #include "graph/visualization.h"
 #include "vm/vm.h"
+#include "model/thread.h"
+#include "model/object.h"
 
 int go(options_t *opt) {
 
@@ -174,6 +176,16 @@ int go(options_t *opt) {
 
         process_t *process = create_process();
         ret_code = run(process, bytecode);
+        thread_t *thread = process->main_thread;
+        do {
+            if (thread->exception.value) {
+                string_value_t text = convert_object_to_string(thread->exception.value);
+                fprintf_utf8(stderr, get_messages()->uncaught_exception, text.data);
+                fprintf(stderr, "\n");
+                FREE_STRING(text);
+            }
+            thread = thread->next;
+        } while (thread != process->main_thread);
         destroy_process(process);
 
         free_bytecode(bytecode);

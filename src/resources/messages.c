@@ -64,6 +64,13 @@ static messages_t english = {
     .expected_statement_after_else = L"Statement expected after 'else' keyword",
     .else_without_if = L"'else' keyword without matching 'if'",
     .duplicate_else_branch = L"Unexpected 'else' after an existing 'else' branch",
+    .expected_try_statement = L"Expected a statement after 'try'",
+    .expected_catch = L"Expected 'catch' after the try statement",
+    .invalid_catch_binding = L"Expected a single identifier in parentheses after 'catch'",
+    .expected_catch_block = L"Expected a braced statement list after catch parameter",
+    .catch_without_try = L"Catch without matching try",
+    .expected_throw_value = L"Expected an expression after 'throw'",
+    .uncaught_exception = L"Uncaught exception: %s",
 };
 
 /** @brief The message structure for Russian language. */
@@ -120,6 +127,13 @@ static messages_t russian = {
     .expected_statement_after_else = L"После ключевого слова 'else' ожидается инструкция языка",
     .else_without_if = L"Ключевое слово 'else' без соответствующего 'if'",
     .duplicate_else_branch = L"После ветки 'else' не может следовать еще одна ветка 'else'",
+    .expected_try_statement = L"После 'try' ожидается оператор",
+    .expected_catch = L"После оператора try ожидается 'catch'",
+    .invalid_catch_binding = L"После 'catch' ожидается один идентификатор в круглых скобках",
+    .expected_catch_block = L"После параметра catch ожидается блок в фигурных скобках",
+    .catch_without_try = L"Catch без соответствующего try",
+    .expected_throw_value = L"После 'throw' ожидается выражение",
+    .uncaught_exception = L"Неперехваченное исключение: %s",
 };
 
 /** @brief Pointer to the current message structure. */

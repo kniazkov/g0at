@@ -1,0 +1,1 @@
+var x = 0; try { x = 1; throw "stop"; x = 99; } catch (e) { print(x); x = 2; } print(x);

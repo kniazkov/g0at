@@ -37,6 +37,10 @@ typedef enum {
     TOKEN_FUNC,                   /**< The 'func' keyword for function declarations */
     TOKEN_RETURN,                 /**< The 'return' keyword used in return statements */
     TOKEN_IF,                     /**< The 'if' keyword used in if-else statements */
+    TOKEN_TRY,                   /**< The try keyword. */
+    TOKEN_CATCH,                 /**< The catch keyword. */
+    TOKEN_THROW,                 /**< The throw keyword. */
+    TOKEN_CATCH_BINDING,         /**< Validated catch identifier in parentheses. */
     TOKEN_ELSE,                   /**< The 'else' keyword used in if-else statements */
 
     TOKEN_BRACKET_PAIR,           /**< A pair of brackets and all tokens between them */
@@ -178,6 +182,9 @@ typedef struct {
 
     /** @brief Group for 'return' keyword tokens. */
     token_list_t return_keywords;
+
+    token_list_t throw_keywords; /**< Explicit throws. */
+    token_list_t catch_keywords; /**< Catch headers and unmatched catch diagnostics. */
 
     /** @brief Group for control-flow keyword tokens. */
     token_list_t control_flow_keywords;

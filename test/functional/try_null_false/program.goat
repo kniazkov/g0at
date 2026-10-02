@@ -1,0 +1,1 @@
+try throw null catch (e) { print(e); } try throw false catch (e) { print(e); }

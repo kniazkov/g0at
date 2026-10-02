@@ -43,3 +43,7 @@ bool test_closing_bracket_does_not_match_opening();
  * @return True if the test passes, false otherwise.
  */
 bool test_parsing_function_calls();
+
+/** @brief Tests exception syntax and catch-local binding. */
+bool test_exception_parser(void);
+bool test_catch_binding(void);

@@ -6,6 +6,7 @@
 #include "statement.h"
 #include "expression.h"
 #include "statement_list.h"
+#include "declarations.h"
 #include "common_methods.h"
 #include "analysis/abstract_state.h"
 #include "lib/allocate.h"
@@ -20,6 +21,7 @@ typedef struct {
     statement_t *body;
     string_view_t exception_name;
     statement_list_t *handler;
+    declarator_t *exception_declarator;
 } try_catch_t;
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
@@ -138,5 +140,12 @@ node_t *create_try_catch_node(arena_t *arena, statement_t *body,
     stmt->body = body;
     stmt->exception_name = copy_string_to_arena(arena, exception_name.data, exception_name.length);
     stmt->handler = handler;
+    stmt->exception_declarator = create_synthetic_variable_declaration_node(
+        arena, stmt->exception_name).declarator;
     return &stmt->base.base;
+}
+
+declarator_t *get_catch_declarator(node_t *node) {
+    assert(node->vtbl->type == NODE_TRY_CATCH);
+    return ((try_catch_t*)node)->exception_declarator;
 }
