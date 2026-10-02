@@ -249,6 +249,20 @@ CI treats any formatting violation as a failure and saves the full diagnostics i
 `code-style-diagnostics` artifact. There is no changed-lines-only filter or legacy baseline:
 existing inconsistencies are reported too. All current sources follow the same rules.
 
+### Documentation checks
+
+Install Doxygen (CI uses Ubuntu 24.04's package) and run:
+
+```bash
+bash scripts/check_docs.sh
+```
+
+The check reports malformed documentation and unresolved references, including in static
+functions. It does not require comments or parameter/return descriptions, and accepts
+partially documented parameter lists. Incorrect existing markup (including invalid `@param`
+names) can still produce diagnostics. CI fails on warnings and saves `doxygen-diagnostics`;
+generated HTML stays in `build/doxygen-check`. The regular `src/Doxyfile` is unchanged.
+
 ### Source-based analysis tests
 
 `test/analysis/list.txt` lists fixture names. Each has a `.goat` source and an `.expect` file.

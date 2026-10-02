@@ -25,6 +25,23 @@ jobs:
           name: code-style-diagnostics
           path: code-style.log
           if-no-files-found: ignore
+  documentation:
+    name: Documentation (Doxygen)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen
+      - name: Check documentation
+        shell: bash
+        run: bash scripts/check_docs.sh 2>&1 | tee doxygen.log
+      - name: Preserve documentation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doxygen-diagnostics
+          path: doxygen.log
+          if-no-files-found: ignore
   linux:
     name: Build and test (Linux, ${{ matrix.name }})
     runs-on: ubuntu-latest
