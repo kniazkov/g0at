@@ -115,6 +115,16 @@ To select Clang with a separate CMake build directory:
 CC=clang BUILD_DIR=build/clang bash scripts/build.sh
 ```
 
+For a release build without tests:
+
+```bash
+bash scripts/build_release.sh
+```
+
+This builds only `goat` with `CMAKE_BUILD_TYPE=Release` in `build/release` and copies
+it to the repository root. `CC` and `BUILD_DIR` work as above; relative build paths
+are resolved from the repository root.
+
 To build individual targets directly:
 
 ```bash
