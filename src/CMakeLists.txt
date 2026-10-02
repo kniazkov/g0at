@@ -23,6 +23,8 @@ file(GLOB core_sources
   cli/*.c
 )
 add_library(core STATIC ${core_sources})
+# Keep the allocator API consistent between core and its consumers.
+target_compile_definitions(core PUBLIC "$<$<NOT:$<CONFIG:Release>>:MEMORY_DEBUG>")
 message(STATUS "Found core sources: ${core_sources}")
 
 file(GLOB goat_exe main.c)
@@ -34,8 +36,6 @@ file(GLOB unit_testing_exe unit_testing.c test/*.c)
 message(STATUS "Found unit testing sources: ${unit_testing_exe}")
 add_executable(unit_testing ${unit_testing_exe})
 target_link_libraries (unit_testing core pthread m)
-
-add_definitions(-DMEMORY_DEBUG)
 
 add_executable(analysis_testing analysis_testing.c)
 target_link_libraries(analysis_testing core pthread m)

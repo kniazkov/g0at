@@ -123,7 +123,8 @@ bash scripts/build_release.sh
 
 This builds only `goat` with `CMAKE_BUILD_TYPE=Release` in `build/release` and copies
 it to the repository root. `CC` and `BUILD_DIR` work as above; relative build paths
-are resolved from the repository root.
+are resolved from the repository root. CMake disables `MEMORY_DEBUG` in Release
+for both Linux and Windows scripts; Debug builds retain allocation tracking and guards.
 
 To build individual targets directly:
 
