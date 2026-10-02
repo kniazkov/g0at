@@ -63,7 +63,7 @@ void *alloc_from_arena(arena_t *arena, size_t size) {
     }
 
     /* Round every allocation, not just chunk beginnings, to fundamental alignment. */
-    const size_t alignment = _Alignof(max_align_t);
+    const size_t alignment = _Alignof(memory_alignment_t);
     size_t padding = (alignment - size % alignment) % alignment;
     if (size > SIZE_MAX - padding) {
         fprintf(stderr, "\nArena size overflow.\n");

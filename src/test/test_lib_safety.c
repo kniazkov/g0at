@@ -26,16 +26,23 @@
 #include "test_lib.h"
 #include "test_macro.h"
 
+/** @brief Alignment seen with project headers included before CRT headers. */
+unsigned int alignment_from_header_first(void);
+
 bool test_allocation_alignment() {
+    ASSERT(alignment_from_header_first() == _Alignof(memory_alignment_t));
+    ASSERT(_Alignof(memory_alignment_t) >= _Alignof(max_align_t));
     const size_t sizes[] = {0, 1, 3, sizeof(max_align_t), 257};
     size_t before = get_allocated_memory_size();
     for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++) {
         unsigned char *p = ALLOC(sizes[i]);
         ASSERT((uintptr_t)p % _Alignof(max_align_t) == 0);
+        ASSERT((uintptr_t)p % _Alignof(memory_alignment_t) == 0);
         memset(p, 0x5A, sizes[i] ? sizes[i] : 1);
         FREE(p);
         p = CALLOC(sizes[i]);
         ASSERT((uintptr_t)p % _Alignof(max_align_t) == 0);
+        ASSERT((uintptr_t)p % _Alignof(memory_alignment_t) == 0);
         for (size_t j = 0; j < sizes[i]; j++) {
             ASSERT(p[j] == 0);
         }
@@ -61,6 +68,7 @@ bool test_arena_alignment_and_growth() {
             sizes[i] = i % 4 == 0 ? 513 : (i % 4 == 1 ? 255 : i % 37 + 1);
             blocks[i] = alloc_from_arena(arena, sizes[i]);
             ASSERT((uintptr_t)blocks[i] % _Alignof(max_align_t) == 0);
+            ASSERT((uintptr_t)blocks[i] % _Alignof(memory_alignment_t) == 0);
             memset(blocks[i], (unsigned char)i, sizes[i]);
         }
         for (size_t i = 0; i < 160; i++) {
