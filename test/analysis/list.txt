@@ -54,3 +54,13 @@ addition_unknown_right
 addition_wrapped_condition
 throw_stops_analysis
 try_conservative_analysis
+subtraction_constants
+subtraction_ranges
+subtraction_overflow_range
+subtraction_reachability
+subtraction_invalid
+subtraction_effects
+subtraction_bottom_left
+subtraction_bottom_right
+subtraction_wrapped_condition
+subtraction_unknown

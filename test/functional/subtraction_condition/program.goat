@@ -1,0 +1,1 @@
+if (1 - 1) { print("wrong"); } else { print("zero"); } if (1 - 0.5) { print("half"); } else { print("wrong"); }

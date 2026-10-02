@@ -37,7 +37,7 @@ bool test_unknown_expression_values() {
         (expression_t *)create_static_string_node(arena, L"text", 4)
     };
     expression_t *(*factories[])(arena_t *, expression_t *, expression_t *) = {
-        create_subtraction_node, create_multiplication_node, create_division_node,
+        create_multiplication_node, create_division_node,
         create_modulo_node, create_power_node, create_less_node, create_greater_node
     };
     for (size_t op = 0; op < sizeof(factories) / sizeof(*factories); op++) {
@@ -63,7 +63,7 @@ bool test_unknown_expression_values() {
 
 bool test_unknown_values_in_analysis() {
     const wchar_t *expressions[] = {
-        L"5 - 2", L"2 * 3", L"6 / 2", L"5 % 2", L"2 ** 3",
+        L"2 * 3", L"6 / 2", L"5 % 2", L"2 ** 3",
         L"1 < 2", L"2 > 1", L"(2 + 3) * (4 - 1)"
     };
     for (size_t i = 0; i < sizeof(expressions) / sizeof(*expressions); i++) {

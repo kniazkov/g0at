@@ -262,7 +262,7 @@ code after unconditional returns. Known conditions eliminate one branch; unknown
 merge continuing states. Function bodies are left unclassified because they may execute later.
 A function created inside a proven dead subtree is dead along with that subtree.
 
-The pass uses literals, propagated values, and addition. Other arithmetic/comparison
+The pass uses literals, propagated values, addition and subtraction. Other arithmetic/comparison
 results remain unknown until their abstract semantics match the VM. Calls invalidate known variable values
 because captured bindings may change. Call arguments follow bytecode order: right to left,
 then the callee. An unset flag means **not proven unreachable**, not necessarily reachable.
@@ -320,7 +320,7 @@ AST transformation events can be added as transformations are implemented.
 - A string on the left concatenates the right operand's ordinary string representation.
   The reverse is not implicit: `"x" + 1` works, `1 + "x"` fails.
 - Null, booleans, functions and user objects do not implement left-hand addition.
-  A failed VM `ADD` releases its operands, reports an error and returns a nonzero status.
+  A failed VM `ADD` releases its operands and dispatches an exception to the nearest handler.
 
 The shared `lattice_add()` transfer function folds constants and propagates numeric and
 string domains. Integer intervals use checked endpoint sums; if wrapping cannot be
@@ -333,6 +333,22 @@ Addition tests compare abstract constants with object-model and VM results, cove
 pair of representative domains and enumerate small intervals near zero and both integer
 limits. Source fixtures check collector events, reachability, evaluation order and runtime
 errors in both optimization modes.
+
+### Subtraction
+
+`-` evaluates left to right and uses the same numeric promotion as `+`: two integers
+subtract modulo 2^64; either real operand produces a real result. Integer-to-double
+conversion rounds before arithmetic, including on x87 targets. There is no implicit
+conversion from strings, booleans or null. Unsupported receivers throw `INVALID_OPERATION`;
+incompatible numeric arguments throw `INVALID_ARGUMENT`.
+
+`lattice_subtract()` folds constants, preserves real/numeric domains and computes integer
+interval bounds as `[left.min - right.max, left.max - right.min]`. Overflowing bounds widen
+to `INTEGER`; constant arithmetic still wraps exactly. `BOTTOM` denotes no normal result,
+not an exception payload. Unknown receivers and future array models remain conservative.
+Both abstract interpretation and reachability use this transfer function. Tests cover
+operand order, exception short-circuiting, noncommutative interval bounds, integer limits,
+mixed precision, NaNs, infinities and signed zero.
 
 ### Lattice semantics
 
