@@ -23,7 +23,8 @@ static const builtin_function_t *lookup(const wchar_t *name) {
 bool test_builtin_registry() {
     size_t count;
     const builtin_function_t *const *functions = get_builtin_functions(&count);
-    ASSERT(count == 4);
+    ASSERT(count == 32);
+    ASSERT(get_object_keys(get_root_context()->data).size == count + 2);
     for (size_t i = 0; i < count; i++) {
         const builtin_function_t *f = functions[i];
         ASSERT(f && f->execute && f->interpret && f->get_object && f->name);
@@ -35,7 +36,9 @@ bool test_builtin_registry() {
         DECREF(key);
         destroy_process(proc);
         ASSERT(f->effects
-               == (!wcscmp(f->name, L"print") ? BUILTIN_EFFECT_OUTPUT : BUILTIN_EFFECT_NONE));
+               == (!wcscmp(f->name, L"print")   ? BUILTIN_EFFECT_OUTPUT
+                   : !wcscmp(f->name, L"input") ? BUILTIN_EFFECT_INPUT
+                                                : BUILTIN_EFFECT_NONE));
     }
     ASSERT(!lookup(L"pi") && !lookup(L"Exceptions") && !lookup(L"sig") && !lookup(L"signx"));
     const wchar_t raw[] = {L's', L'i', L'g', L'n', L'x'};
@@ -70,11 +73,17 @@ bool test_builtin_numeric_results() {
                           {false, 0, INFINITY},
                           {false, 0, -INFINITY},
                           {false, 0, NAN}};
-    const wchar_t *names[] = {L"sign", L"sqrt", L"atan"};
-    for (size_t f = 0; f < 3; f++) {
-        const builtin_function_t *descriptor = lookup(names[f]);
+    size_t total;
+    const builtin_function_t *const *functions = get_builtin_functions(&total);
+    for (size_t f = 0; f < total; f++) {
+        const builtin_function_t *descriptor = functions[f];
+        if (descriptor == &builtin_print || descriptor == &builtin_input
+            || descriptor == &builtin_int)
+            continue;
         for (size_t i = 0; i < sizeof(samples) / sizeof(*samples); i++) {
-            for (size_t j = 0; j < (f == 2 ? sizeof(samples) / sizeof(*samples) : 1); j++) {
+            for (size_t j = 0;
+                 j < (descriptor->min_args == 2 ? sizeof(samples) / sizeof(*samples) : 1);
+                 j++) {
                 arena_t *arena = create_arena(8);
                 abstract_state_t *state = create_abstract_state(arena);
                 process_t *proc = create_process();
@@ -101,7 +110,7 @@ bool test_builtin_numeric_results() {
                 ASSERT(!proc->main_thread->exception.value
                        && proc->main_thread->data_stack->size == 1);
                 object_t *actual = pop_object_from_stack(proc->main_thread->data_stack);
-                if (f == 0) {
+                if (descriptor == &builtin_sign) {
                     ASSERT(value->type == LATTICE_INTEGER_CONSTANT);
                     ASSERT(get_object_integer_value(actual).value
                            == ((const integer_constant_element_t *)value)->value);
@@ -151,9 +160,10 @@ bool test_builtin_errors() {
             destroy_process(proc);
         }
     }
-    const wchar_t *numeric[] = {L"sign", L"sqrt", L"atan"};
-    for (size_t i = 0; i < 3; i++) {
-        const builtin_function_t *f = lookup(numeric[i]);
+    for (size_t i = 0; i < count; i++) {
+        const builtin_function_t *f = functions[i];
+        if (f == &builtin_print || f == &builtin_input || f == &builtin_int)
+            continue;
         for (size_t bad = 0; bad < f->min_args; bad++) {
             for (int kind = 0; kind < 5; kind++) {
                 process_t *proc = create_process();

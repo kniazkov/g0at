@@ -20,6 +20,7 @@
 #include "test_model.h"
 #include "test_modulo.h"
 #include "test_multiplication.h"
+#include "test_native_conversion.h"
 #include "test_node_properties.h"
 #include "test_operation_result.h"
 #include "test_optimization.h"
@@ -36,6 +37,9 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"native int", test_native_int},
+    {"native int domains", test_native_int_domains},
+    {"input lines", test_input_lines},
     {"node property events", test_node_property_events},
     {"node property reset", test_node_property_reset},
     {"builtin registry", test_builtin_registry},

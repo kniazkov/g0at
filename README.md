@@ -439,6 +439,51 @@ modelling, recursive fixed points, and persistent closure environments remain fu
 
 AST transformation events can be added as transformations are implemented.
 
+### Mathematics, conversion and input
+
+The following numeric functions accept integers or reals and return reals. Integer arguments
+are converted to double precision, so sufficiently large integers may lose precision.
+Angles are in radians. Domain errors and overflow follow libm/IEEE behavior (NaN/infinity),
+while missing or nonnumeric arguments throw `Exceptions.INVALID_ARGUMENT`.
+
+| Group | Functions |
+| --- | --- |
+| Trigonometry | `sin(x)`, `cos(x)`, `tan(x)`, `asin(x)`, `acos(x)`, existing `atan(y, x)` |
+| Hyperbolic | `sinh(x)`, `cosh(x)`, `tanh(x)` |
+| Exponentials/logarithms | `exp(x)`, `exp2(x)`, `expm1(x)`, `log(x)`, `log2(x)`, `log10(x)`, `log1p(x)` |
+| Roots/powers | `sqrt(x)`, `cbrt(x)`, `pow(x, y)`, `hypot(x, y)` |
+| Rounding/magnitude | `floor(x)`, `ceil(x)`, `trunc(x)`, `round(x)`, `abs(x)` |
+| Binary helpers | `min(x, y)`, `max(x, y)`, `fmod(x, y)` |
+
+`log` is natural logarithm; `round` rounds halfway cases away from zero. `fmod` is the
+floating-point remainder, with the dividend's sign. `min`/`max` accept exactly two used
+arguments and return the numeric argument when only the other is NaN. The existing
+`sign(x)` returns an integer. Extra arguments follow the existing evaluated-but-unused rule.
+Every function has a pure descriptor and an abstract executor: constants fold, unknown
+numeric inputs produce `REAL`, and definitely invalid inputs produce `BOTTOM`.
+
+`int(value, fallback = 0)` preserves integers, truncates finite reals toward zero, maps
+booleans to 0/1, and parses complete signed decimal integer strings. Leading/trailing ASCII
+whitespace is allowed. Empty strings, trailing junk, fractional/exponent/hex strings,
+NaN, infinities, values outside signed 64-bit range and unsupported types use the fallback.
+The fallback is returned unchanged and can have any type; it is evaluated even when conversion
+succeeds. Calling `int()` without a value throws `Exceptions.INVALID_ARGUMENT`.
+
+`input()` blocks for one line and removes its LF or CRLF terminator. EOF returns `""`;
+read errors or invalid UTF-8 throw `Exceptions.INVALID_OPERATION`. Redirected input is UTF-8;
+the Windows console is read as Unicode. Prompts printed before the call are flushed.
+The abstract executor returns `STRING` without reading anything. Input has its own effect
+flag, so it cannot be classified as pure; it does not change variable bindings.
+
+Run `./goat example/quadratic.goat` for an interactive example. It reads three **integer**
+coefficients, solves using real arithmetic, and prints an object containing real roots.
+It handles two roots, a repeated root, no real roots and linear equations. Degenerate
+cases with both leading coefficients zero return an empty object (including the identity
+with infinitely many solutions). Invalid coefficient input uses `int`'s default zero.
+
+Runtime fixtures can include `input.txt`, fed to stdin for each optimization mode. Otherwise
+stdin is empty, so a test can never accidentally wait for keyboard input.
+
 ### Built-in function descriptors
 
 Native functions live in [`src/builtins/`](src/builtins). Each function has one file
@@ -456,8 +501,8 @@ the descriptors used for name lookup. This separates library definitions from ca
 while keeping each function's two implementations together.
 
 To add a function, add its `.c` file, declare and register its descriptor in `registry.h/.c`,
-and expose its name in the root key list (including its static name string and object getter).
-Root property lookup uses the registry directly, without a second function dispatch table.
+and declare its object getter in `registry.h`. Root keys and property lookup both use the
+registry; name strings have permanent storage and need no separate registration.
 Reconfigure CMake to discover the new source. Add analysis and runtime fixtures for its
 result, effects, and errors; tests execute programs with optimization both disabled and enabled.
 

@@ -40,3 +40,6 @@ bool read_digital_input(int index);
 
 /** @brief GPIO output stub; does nothing. */
 void write_digital_output(int index, bool value);
+
+/** @brief Reads one line without LF/CRLF; EOF is empty, errors return NULL. Caller frees. */
+string_value_t read_input_line(FILE *file);

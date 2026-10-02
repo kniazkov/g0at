@@ -18,6 +18,11 @@
 /** @brief Initial capacity for the data array */
 #define INITIAL_DATA_ARRAY_CAPACITY 256
 
+/** @brief Deduplication keys must survive growth of the packed data buffer. */
+static void *copy_string_key(void *key) {
+    return WSTRDUP(key);
+}
+
 data_builder_t *create_data_builder(void) {
     data_builder_t *builder = (data_builder_t *)ALLOC(sizeof(data_builder_t));
     builder->descriptors =
@@ -28,6 +33,8 @@ data_builder_t *create_data_builder(void) {
     builder->descriptors_count = 0;
     builder->descriptors_capacity = INITIAL_DESCRIPTORS_LIST_CAPACITY;
     builder->strings = create_avl_tree(string_comparator);
+    builder->strings->copy_key = copy_string_key;
+    builder->strings->destroy_key = FREE;
     return builder;
 }
 
@@ -40,7 +47,7 @@ uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t si
             new_capacity = new_size;
         }
         builder->data_capacity = new_capacity;
-        uint8_t *new_data = (uint8_t *)ALLOC(new_size);
+        uint8_t *new_data = (uint8_t *)ALLOC(new_capacity);
         memcpy(new_data, builder->data, builder->data_size);
         FREE(builder->data);
         builder->data = new_data;

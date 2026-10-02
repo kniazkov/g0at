@@ -13,16 +13,7 @@
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
-    static object_t *keys[6] = {NULL};
-    if (keys[0] == NULL) {
-        keys[5] = get_string_exceptions();
-        keys[0] = get_string_atan();
-        keys[1] = get_string_pi();
-        keys[2] = get_string_print();
-        keys[3] = get_string_sign();
-        keys[4] = get_string_sqrt();
-    }
-    return (object_array_t){keys, sizeof(keys) / sizeof(object_t *)};
+    return get_builtin_context_keys();
 }
 
 /** @brief Implements @ref object_vtbl_t::get_property. */

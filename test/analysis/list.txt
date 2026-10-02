@@ -219,3 +219,8 @@ properties_writes
 properties_joins
 properties_native_alias
 properties_conditions
+
+# Math, conversion and input
+math_library
+int_constants
+input_domains

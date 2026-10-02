@@ -1,0 +1,8 @@
+var nan = log(-1); print(nan != nan);
+print(log(0) < -1e300);
+print(exp(10000) > 1e300);
+print(min(nan, 3) == 3);
+print(max(3, nan) == 3);
+var bad = fmod(1, 0); print(bad != bad);
+print(pow(-2, 3) == -8);
+print(abs(-0.0) == 0);

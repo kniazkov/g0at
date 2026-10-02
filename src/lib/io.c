@@ -16,6 +16,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#    include <io.h>
+#    include <windows.h>
+#endif
+
 bool init_io(void) {
     // platform-specific GPIO initialization...
     return true;
@@ -89,4 +94,60 @@ bool read_digital_input(int index) {
 
 void write_digital_output(int index, bool value) {
     return;
+}
+
+string_value_t read_input_line(FILE *file) {
+#ifdef _WIN32
+    HANDLE handle = (HANDLE)_get_osfhandle(_fileno(file));
+    DWORD mode;
+    if (handle != INVALID_HANDLE_VALUE && GetConsoleMode(handle, &mode)) {
+        string_builder_t builder;
+        init_string_builder(&builder, 0);
+        string_value_t result = EMPTY_STRING_VALUE;
+        for (;;) {
+            wchar_t ch;
+            DWORD read;
+            if (!ReadConsoleW(handle, &ch, 1, &read, NULL)) {
+                FREE_STRING(result);
+                return NULL_STRING_VALUE;
+            }
+            if (!read || ch == L'\n')
+                break;
+            result = append_char(&builder, ch);
+        }
+        if (result.length && result.data[result.length - 1] == L'\r') {
+            builder.data[--builder.length] = 0;
+            result.length--;
+        }
+        return result;
+    }
+#endif
+    size_t capacity = 128, length = 0;
+    char *buffer = ALLOC(capacity);
+    bool valid = true;
+    int ch;
+    while ((ch = fgetc(file)) != EOF && ch != '\n') {
+        if (!ch)
+            valid = false;
+        if (length == capacity - 1) {
+            if (capacity > SIZE_MAX / 2) {
+                FREE(buffer);
+                return NULL_STRING_VALUE;
+            }
+            capacity *= 2;
+            char *larger = ALLOC(capacity);
+            memcpy(larger, buffer, length);
+            FREE(buffer);
+            buffer = larger;
+        }
+        buffer[length++] = (char)ch;
+    }
+    if (ch == '\n' && length && buffer[length - 1] == '\r')
+        length--;
+    buffer[length] = 0;
+    string_value_t result = !valid || ferror(file) ? NULL_STRING_VALUE
+                            : length               ? decode_utf8(buffer)
+                                                   : EMPTY_STRING_VALUE;
+    FREE(buffer);
+    return result;
 }

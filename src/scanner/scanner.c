@@ -245,6 +245,7 @@ static void parse_number(scanner_t *scan, token_t *token, bool negative) {
 
     token->type = TOKEN_EXPRESSION;
 
+    const wchar_t *begin = scan->position.code;
     uint64_t int_part = 0;
     while (iswdigit(ch)) {
         int_part = int_part * 10 + (ch - '0');
@@ -252,49 +253,24 @@ static void parse_number(scanner_t *scan, token_t *token, bool negative) {
     }
 
     bool is_real = false;
-    double value;
-
     if (ch == L'.') {
         is_real = true;
-        int64_t fract_part = 0;
-        int divisor = 1;
         ch = next_char(scan);
-        while (iswdigit(ch)) {
-            fract_part = fract_part * 10 + (ch - '0');
-            divisor *= 10;
+        while (iswdigit(ch))
             ch = next_char(scan);
-        }
-        double int_t = (double)int_part;
-        double fract_d = (double)fract_part / (double)divisor;
-        value = int_t + fract_d;
-    } else {
-        value = (double)int_part;
     }
-
     if (ch == L'e' || ch == L'E') {
         is_real = true;
         ch = next_char(scan);
-        bool exp_neg = false;
-        if (ch == L'-') {
-            exp_neg = true;
+        if (ch == L'-' || ch == L'+')
             ch = next_char(scan);
-        } else if (ch == L'+') {
+        while (iswdigit(ch))
             ch = next_char(scan);
-        }
-
-        int exponent = 0;
-        while (iswdigit(ch)) {
-            exponent = exponent * 10 + (ch - '0');
-            ch = next_char(scan);
-        }
-
-        if (exp_neg) {
-            exponent = -exponent;
-        }
-        value *= pow(10.0, exponent);
     }
 
     if (is_real) {
+        /* Avoid overflowing integer accumulators for fractions and exponents. */
+        double value = wcstod(begin, NULL);
         token->node = create_real_number_node(scan->memory->graph, negative ? -value : value);
     } else {
         int64_t integer = int_part <= INT64_MAX

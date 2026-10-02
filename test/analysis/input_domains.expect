@@ -1,0 +1,4 @@
+one write 2 2 line string
+one write 3 3 value integer
+one write 5 5 out int=7
+one flags 2 0 function_call none

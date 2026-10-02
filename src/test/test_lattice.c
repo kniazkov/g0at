@@ -189,7 +189,10 @@ static bool law(bool holds, const char *name, size_t i, size_t j, size_t k) {
 
 bool test_lattice_laws() {
     arena_t *values = create_arena(8);
-    const lattice_element_t *samples[64];
+    size_t builtin_count;
+    const builtin_function_t *const *builtins = get_builtin_functions(&builtin_count);
+    const lattice_element_t **samples =
+        alloc_from_arena(values, (64 + builtin_count) * sizeof(*samples));
     size_t count = 0;
     const lattice_element_t *generic[] = {make_top_element(),
                                           make_not_null_element(),
@@ -213,8 +216,6 @@ bool test_lattice_laws() {
     samples[count++] = make_known_function_element(values, &function_a, NULL);
     samples[count++] = make_known_function_element(values, &function_a, NULL);
     samples[count++] = make_known_function_element(values, &function_b, NULL);
-    size_t builtin_count;
-    const builtin_function_t *const *builtins = get_builtin_functions(&builtin_count);
     for (size_t i = 0; i < builtin_count; i++)
         samples[count++] = make_builtin_function_element(values, builtins[i]);
     int64_t integers[] = {INT64_MIN, -1, 0, 1, INT64_MAX};
