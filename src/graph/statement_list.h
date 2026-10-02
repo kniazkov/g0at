@@ -8,7 +8,7 @@
 
 /** @brief An arena-owned block and its ordered statements. */
 typedef struct statement_list_t {
-    expression_t base; /**< Base expression. */
+    expression_t base;  /**< Base expression. */
     list_t *statements; /**< Arena-owned statement list, filled after parsing the body. */
 } statement_list_t;
 

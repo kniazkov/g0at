@@ -4,24 +4,25 @@
  * @brief Implementation of static code analysis functions.
  */
 
-#include <assert.h>
-
 #include "analysis.h"
+
+#include "cli/options.h"
+#include "common/compilation_error.h"
+#include "graph/declarations.h"
+#include "graph/node.h"
+#include "graph/statement.h"
+#include "graph/variable.h"
 #include "interpreter.h"
-#include "reachability.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/queue.h"
 #include "lib/vector.h"
-#include "cli/options.h"
-#include "common/compilation_error.h"
-#include "graph/node.h"
-#include "graph/statement.h"
-#include "graph/declarations.h"
-#include "graph/variable.h"
 #include "model/context.h"
 #include "model/object.h"
+#include "reachability.h"
 #include "resources/messages.h"
+
+#include <assert.h>
 
 /** @brief Adds built-ins to the root scope using a shared synthetic declarator. */
 static scope_t *create_scope_from_root_context(arena_t *arena) {
@@ -42,20 +43,30 @@ static scope_t *create_scope_from_root_context(arena_t *arena) {
  * Functions restart numbering; ordinary blocks inherit the sequence. Outer scopes
  * must be bound before inner functions so closures can resolve later declarations.
  */
-static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t *functions,
-        arena_t *arena, scope_t *scope, unsigned int *next_id) {
+static void assign_node_indexes_and_scopes(node_t *node,
+                                           node_t *parent,
+                                           queue_t *functions,
+                                           arena_t *arena,
+                                           scope_t *scope,
+                                           unsigned int *next_id) {
     node->parent = parent;
     node->scope = scope;
     node->unreachable = false;
-    if (node->vtbl->type == NODE_IF_ELSE) set_if_else_condition_truth(node, ABSTRACT_EITHER);
-    if (is_declarator(node->vtbl->type)) ((declarator_t *)node)->abstract_value = NULL;
+    if (node->vtbl->type == NODE_IF_ELSE)
+        set_if_else_condition_truth(node, ABSTRACT_EITHER);
+    if (is_declarator(node->vtbl->type))
+        ((declarator_t *)node)->abstract_value = NULL;
     node->id = (*next_id)++;
     const size_t child_count = get_node_child_count(node);
     for (size_t child_id = 0; child_id < child_count; child_id++) {
         node_t *child = get_node_child(node, child_id);
         if (node->vtbl->type == NODE_TRY_CATCH && child_id == 0) {
-            assign_node_indexes_and_scopes(child, node, functions, arena,
-                create_scope(arena, scope), next_id);
+            assign_node_indexes_and_scopes(child,
+                                           node,
+                                           functions,
+                                           arena,
+                                           create_scope(arena, scope),
+                                           next_id);
             continue;
         }
         switch (child->vtbl->type) {
@@ -64,39 +75,22 @@ static void assign_node_indexes_and_scopes(node_t *node, node_t *parent, queue_t
                 enqueue(functions, child);
                 scope_t *inner_scope = create_scope(arena, scope);
                 unsigned int inner_counter = 1;
-                assign_node_indexes_and_scopes(
-                    child,
-                    node,
-                    functions,
-                    arena,
-                    inner_scope,
-                    &inner_counter
-                );
+                assign_node_indexes_and_scopes(child,
+                                               node,
+                                               functions,
+                                               arena,
+                                               inner_scope,
+                                               &inner_counter);
                 break;
             }
             case NODE_STATEMENT_LIST: {
                 /* Ordinary blocks keep the enclosing ID sequence. */
                 scope_t *inner_scope = create_scope(arena, scope);
-                assign_node_indexes_and_scopes(
-                    child,
-                    node,
-                    functions,
-                    arena,
-                    inner_scope,
-                    next_id
-                );
+                assign_node_indexes_and_scopes(child, node, functions, arena, inner_scope, next_id);
                 break;
             }
             default: {
-
-                assign_node_indexes_and_scopes(
-                    child,
-                    node,
-                    functions,
-                    arena,
-                    scope,
-                    next_id
-                );
+                assign_node_indexes_and_scopes(child, node, functions, arena, scope, next_id);
                 break;
             }
         }
@@ -129,9 +123,9 @@ static void assign_scope_to_subtree(node_t *node, node_t *parent, scope_t *scope
 /** @brief Finds the nearest statement that contains a variable usage. */
 static node_t *find_parent_statement(variable_t *var) {
     node_t *node = var->base.base.base.parent;
-    while(node) {
-        if (node->parent && is_statement_list(node->parent->vtbl->type) &&
-                (is_statement(node->vtbl->type) || is_branch_or_loop(node->vtbl->type))) {
+    while (node) {
+        if (node->parent && is_statement_list(node->parent->vtbl->type)
+            && (is_statement(node->vtbl->type) || is_branch_or_loop(node->vtbl->type))) {
             return node;
         }
         node = node->parent;
@@ -163,50 +157,51 @@ typedef struct {
  * Implicit declarations are queued for insertion after traversal to avoid invalidating
  * child indexes. Nested functions are bound separately after their enclosing scopes.
  */
-static void bind_variables_from_node_and_children(node_t *node, parser_memory_t *memory,
-        vector_t *insertions, compilation_error_t **errors, options_t *options) {
+static void bind_variables_from_node_and_children(node_t *node,
+                                                  parser_memory_t *memory,
+                                                  vector_t *insertions,
+                                                  compilation_error_t **errors,
+                                                  options_t *options) {
     if (node->vtbl->type == NODE_TRY_CATCH) {
-        bind_variables_from_node_and_children(get_node_child(node, 0), memory, insertions, errors, options);
+        bind_variables_from_node_and_children(get_node_child(node, 0),
+                                              memory,
+                                              insertions,
+                                              errors,
+                                              options);
         declarator_t *decl = get_catch_declarator(node);
         add_symbol_to_scope(decl->base.scope, decl->name.data, decl);
-        bind_variables_from_node_and_children(get_node_child(node, 1), memory, insertions, errors, options);
+        bind_variables_from_node_and_children(get_node_child(node, 1),
+                                              memory,
+                                              insertions,
+                                              errors,
+                                              options);
         return;
     }
     if (is_declarator(node->vtbl->type)) {
-
-        declarator_t *declarator = (declarator_t*)node;
+        declarator_t *declarator = (declarator_t *)node;
         add_symbol_to_scope(node->scope, declarator->name.data, declarator);
-    }
-    else if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
+    } else if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
         /* Bind nested functions later so closures can refer to later declarations. */
         return;
-    }
-    else if (node->vtbl->type == NODE_VARIABLE) {
-
-        variable_t *var = (variable_t*)node;
-        declarator_t *declarator = find_symbol_in_scope_and_parents(
-            node->scope,
-            var->name.data
-        );
+    } else if (node->vtbl->type == NODE_VARIABLE) {
+        variable_t *var = (variable_t *)node;
+        declarator_t *declarator = find_symbol_in_scope_and_parents(node->scope, var->name.data);
         if (declarator == NULL) {
             /* Defer the synthetic declaration until traversal finishes. */
             if (options->enable_warnings) {
-                compilation_error_t *error = create_error_from_node(
-                    memory->errors,
-                    node,
-                    WARNING,
-                    get_messages()->variable_used_before_declaration,
-                    var->name.data
-                );
+                compilation_error_t *error =
+                    create_error_from_node(memory->errors,
+                                           node,
+                                           WARNING,
+                                           get_messages()->variable_used_before_declaration,
+                                           var->name.data);
                 error->next = *errors;
                 *errors = error;
             }
             node_t *statement = find_parent_statement(var);
             assert(is_statement_list(statement->parent->vtbl->type));
-            variable_declaration_pair_t pair = create_synthetic_variable_declaration_node(
-                memory->graph,
-                var->name
-            );
+            variable_declaration_pair_t pair =
+                create_synthetic_variable_declaration_node(memory->graph, var->name);
             insertion_t *insertion = ALLOC(sizeof(insertion_t));
             insertion->target = statement->parent;
             insertion->item = pair.declaration;
@@ -222,37 +217,37 @@ static void bind_variables_from_node_and_children(node_t *node, parser_memory_t 
 
     size_t count = get_node_child_count(node);
     for (size_t index = 0; index < count; index++) {
-        bind_variables_from_node_and_children(
-            get_node_child(node, index),
-            memory,
-            insertions,
-            errors,
-            options
-        );
+        bind_variables_from_node_and_children(get_node_child(node, index),
+                                              memory,
+                                              insertions,
+                                              errors,
+                                              options);
     }
 }
 
 /** @brief Binds queued roots in enclosing-before-nested order for closure resolution. */
-static void bind_variables_in_functions(queue_t *functions, parser_memory_t *memory,
-        vector_t *insertions, compilation_error_t **errors, options_t *options) {
-    while(!is_queue_empty(functions)) {
-        node_t *node  = (node_t*)dequeue(functions);
+static void bind_variables_in_functions(queue_t *functions,
+                                        parser_memory_t *memory,
+                                        vector_t *insertions,
+                                        compilation_error_t **errors,
+                                        options_t *options) {
+    while (!is_queue_empty(functions)) {
+        node_t *node = (node_t *)dequeue(functions);
         size_t count = get_node_child_count(node);
         for (size_t index = 0; index < count; index++) {
-            bind_variables_from_node_and_children(
-                get_node_child(node, index),
-                memory,
-                insertions,
-                errors,
-                options
-            );
+            bind_variables_from_node_and_children(get_node_child(node, index),
+                                                  memory,
+                                                  insertions,
+                                                  errors,
+                                                  options);
         }
     }
 }
 
-compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options_t *options,
-        analysis_collector_t *collector) {
-
+compilation_error_t *analyze(node_t *root_node,
+                             parser_memory_t *memory,
+                             options_t *options,
+                             analysis_collector_t *collector) {
     scope_t *root_scope = create_scope_from_root_context(memory->graph);
 
     /* Queue functions in enclosing-before-nested order. */
@@ -260,14 +255,12 @@ compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options
     root_node->id = ++node_counter;
     queue_t *functions = create_queue();
     enqueue(functions, root_node);
-    assign_node_indexes_and_scopes(
-        root_node,
-        NULL,
-        functions,
-        memory->graph,
-        root_scope,
-        &node_counter
-    );
+    assign_node_indexes_and_scopes(root_node,
+                                   NULL,
+                                   functions,
+                                   memory->graph,
+                                   root_scope,
+                                   &node_counter);
 
     compilation_error_t *errors = NULL;
     vector_t *insertions = create_vector();
@@ -276,13 +269,14 @@ compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options
 
     /* Traversal is complete; synthetic declarations can now be inserted. */
     for (size_t index = 0; index < insertions->size; index++) {
-        insertion_t *insertion = (insertion_t*)insertions->data[index];
+        insertion_t *insertion = (insertion_t *)insertions->data[index];
         insert_child_node_before(insertion->target, insertion->item, insertion->before);
         assign_scope_to_subtree(insertion->item, insertion->target, insertion->target->scope);
     }
     destroy_vector_ex(insertions, FREE);
 
-    if (options->optimization_level == OPTIMIZATION_NONE) return errors;
+    if (options->optimization_level == OPTIMIZATION_NONE)
+        return errors;
 
     interpret(root_node, memory, collector);
 

@@ -4,21 +4,21 @@
  * @brief Implementation of function object expressions.
  */
 
- #include <assert.h>
-
-#include "common_methods.h"
-#include "expression.h"
-#include "statement.h"
-#include "statement_sequence.h"
-#include "declarations.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/linked_list.h"
-#include "lib/string_ext.h"
 #include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
+#include "common_methods.h"
+#include "declarations.h"
+#include "expression.h"
+#include "lib/allocate.h"
+#include "lib/arena.h"
+#include "lib/linked_list.h"
+#include "lib/string_ext.h"
+#include "statement.h"
+#include "statement_sequence.h"
+
+#include <assert.h>
 
 /** @brief A single function argument in the abstract syntax tree. */
 typedef struct {
@@ -27,13 +27,10 @@ typedef struct {
 } argument_t;
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
-static node_display_value_t arg_get_data(const node_t *node)
-{
+static node_display_value_t arg_get_data(const node_t *node) {
     const argument_t *arg = (const argument_t *)node;
-    return (node_display_value_t){
-        .text = VIEW_TO_VALUE(arg->base.name),
-        .kind = NODE_DISPLAY_VALUE_PLAIN
-    };
+    return (node_display_value_t){.text = VIEW_TO_VALUE(arg->base.name),
+                                  .kind = NODE_DISPLAY_VALUE_PLAIN};
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
@@ -43,15 +40,15 @@ static string_value_t arg_generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void arg_generate_indented_goat_code(const node_t *node,
-        source_builder_t *builder, size_t indent) {
+static void
+arg_generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const argument_t *arg = (const argument_t *)node;
     append_formatted_source(builder, VIEW_TO_VALUE(arg->base.name));
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t arg_generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t
+arg_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     assert(false);
     return BAD_INSTR_INDEX;
 }
@@ -89,8 +86,7 @@ static node_vtbl_t arg_vtbl = {
  * The name is copied to the arena so the node does not depend on parser temporary storage.
  */
 static argument_t *create_argument_node(arena_t *arena, string_view_t name) {
-    argument_t *arg =
-        (argument_t *)alloc_zeroed_from_arena(arena, sizeof(argument_t));
+    argument_t *arg = (argument_t *)alloc_zeroed_from_arena(arena, sizeof(argument_t));
     arg->base.base.vtbl = &arg_vtbl;
     arg->base.name = copy_string_to_arena(arena, name.data, name.length);
     return arg;
@@ -134,14 +130,14 @@ static string_value_t alist_generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void alist_generate_indented_goat_code(const node_t *node,
-        source_builder_t *builder, size_t indent) {
+static void
+alist_generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     assert(false);
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t alist_generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t
+alist_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     assert(false);
     return BAD_INSTR_INDEX;
 }
@@ -177,8 +173,8 @@ static node_vtbl_t alist_vtbl = {
  * @brief Creates a new function argument list AST node.
  * `arg_list`: Array of formal argument names. May be NULL when arg_count is zero.
  */
-static argument_list_t *create_argument_list_node(arena_t *arena, string_view_t *arg_list,
-        size_t arg_count) {
+static argument_list_t *
+create_argument_list_node(arena_t *arena, string_view_t *arg_list, size_t arg_count) {
     argument_list_t *node =
         (argument_list_t *)alloc_zeroed_from_arena(arena, sizeof(argument_list_t));
     node->base.vtbl = &alist_vtbl;
@@ -186,8 +182,7 @@ static argument_list_t *create_argument_list_node(arena_t *arena, string_view_t 
 
     if (arg_count > 0) {
         assert(arg_list != NULL);
-        node->arg_list = (argument_t **)alloc_from_arena(arena,
-                arg_count * sizeof(argument_t *));
+        node->arg_list = (argument_t **)alloc_from_arena(arena, arg_count * sizeof(argument_t *));
         for (size_t index = 0; index < arg_count; index++) {
             node->arg_list[index] = create_argument_node(arena, arg_list[index]);
         }
@@ -212,20 +207,19 @@ typedef struct {
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t fbody_get_child_count(const node_t *node) {
-    const function_body_t* body = (const function_body_t*)node;
+    const function_body_t *body = (const function_body_t *)node;
     return body->statements->size;
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
-static node_t* fbody_get_child(const node_t *node, size_t index) {
-    const function_body_t* body = (const function_body_t*)node;
-    return (node_t*)get_linked_list_value(body->statements, index).ptr;
+static node_t *fbody_get_child(const node_t *node, size_t index) {
+    const function_body_t *body = (const function_body_t *)node;
+    return (node_t *)get_linked_list_value(body->statements, index).ptr;
 }
 
 /** @brief Implements @ref node_vtbl_t::insert_child_before. */
-static bool fbody_insert_child_before(node_t *node, node_t *new_child,
-        node_t *before_child) {
-    function_body_t* body = (function_body_t*)node;
+static bool fbody_insert_child_before(node_t *node, node_t *new_child, node_t *before_child) {
+    function_body_t *body = (function_body_t *)node;
     return insert_statement_to_list_before(body->statements, new_child, before_child);
 }
 
@@ -236,14 +230,14 @@ static string_value_t fbody_generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void fbody_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-        size_t indent) {
+static void
+fbody_generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     assert(false);
 }
 
 /** @brief Stub for @ref node_vtbl_t::generate_bytecode; the function object emits the body. */
-static instr_index_t fbody_generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t
+fbody_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     assert(false);
     return BAD_INSTR_INDEX;
 }
@@ -277,10 +271,8 @@ static node_vtbl_t function_body_vtbl = {
 
 /** @brief Creates a new function body AST node. */
 static function_body_t *create_function_body_node(arena_t *arena) {
-    function_body_t *body = (function_body_t *)alloc_zeroed_from_arena(
-        arena,
-        sizeof(function_body_t)
-    );
+    function_body_t *body =
+        (function_body_t *)alloc_zeroed_from_arena(arena, sizeof(function_body_t));
     body->base.vtbl = &function_body_vtbl;
     return body;
 }
@@ -309,8 +301,8 @@ static size_t fobj_get_child_count(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
-static node_t* fobj_get_child(const node_t *node, size_t index) {
-    const function_object_t* expr = (const function_object_t*)node;
+static node_t *fobj_get_child(const node_t *node, size_t index) {
+    const function_object_t *expr = (const function_object_t *)node;
     if (index == 0) {
         return &expr->arguments->base;
     }
@@ -321,7 +313,7 @@ static node_t* fobj_get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t* fobj_get_child_tag(const node_t *node, size_t index) {
+static const wchar_t *fobj_get_child_tag(const node_t *node, size_t index) {
     if (index == 0) {
         return L"arguments";
     }
@@ -335,7 +327,7 @@ static const wchar_t* fobj_get_child_tag(const node_t *node, size_t index) {
  * @brief Generates the function header in Goat syntax.
  * @return The resulting string after appending the header.
  */
-static string_value_t generate_header(const function_object_t* expr, string_builder_t *builder) {
+static string_value_t generate_header(const function_object_t *expr, string_builder_t *builder) {
     append_static_string(builder, L"func(");
     for (size_t index = 0; index < expr->arguments->arg_count; index++) {
         if (index > 0) {
@@ -347,14 +339,14 @@ static string_value_t generate_header(const function_object_t* expr, string_buil
 }
 
 /** @brief Implements @ref node_vtbl_t::calculate. */
-static const lattice_element_t *fobj_calculate(node_t *node, abstract_state_t *state,
-        arena_t *arena) {
+static const lattice_element_t *
+fobj_calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     return make_function_element();
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t fobj_generate_goat_code(const node_t *node) {
-    const function_object_t* expr = (const function_object_t*)node;
+    const function_object_t *expr = (const function_object_t *)node;
     string_builder_t builder;
     init_string_builder(&builder, 128);
     generate_header(expr, &builder);
@@ -362,16 +354,16 @@ static string_value_t fobj_generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void fobj_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-        size_t indent) {
-    const function_object_t* expr = (const function_object_t*)node;
+static void
+fobj_generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
+    const function_object_t *expr = (const function_object_t *)node;
     string_builder_t header;
     init_string_builder(&header, 16);
     generate_header(expr, &header);
     append_formatted_source(builder, append_char(&header, L'{'));
     list_item_t *item = expr->body->statements->head;
     while (item) {
-        statement_t *stmt = (statement_t*)item->value.ptr;
+        statement_t *stmt = (statement_t *)item->value.ptr;
         generate_indented_goat_code_from_statement(stmt, builder, indent + 1);
         item = item->next;
     }
@@ -379,63 +371,55 @@ static void fobj_generate_indented_goat_code(const node_t *node, source_builder_
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t fobj_generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
-    function_object_t* expr = (function_object_t*)node;
-    instr_index_t first = expr->code_instr_index = add_instruction(
-        code,
-        (instruction_t){ .opcode = ARG, .arg1 = 0xFFFFFFFF } // placeholder
-    );
+static instr_index_t
+fobj_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    function_object_t *expr = (function_object_t *)node;
+    instr_index_t first = expr->code_instr_index =
+        add_instruction(code, (instruction_t){.opcode = ARG, .arg1 = 0xFFFFFFFF} // placeholder
+        );
     uint32_t arg_names_idx = 0;
     if (expr->arguments->arg_count > 0) {
         size_t arg_size = expr->arguments->arg_count * sizeof(uint32_t);
-        uint32_t *arg_names = (uint32_t*)ALLOC(arg_size);
+        uint32_t *arg_names = (uint32_t *)ALLOC(arg_size);
         for (size_t index = 0; index < expr->arguments->arg_count; index++) {
-            arg_names[index] = add_string_to_data_segment_ex(
-                data,
-                expr->arguments->arg_list[index]->base.name
-            );
+            arg_names[index] =
+                add_string_to_data_segment_ex(data, expr->arguments->arg_list[index]->base.name);
         }
         arg_names_idx = add_data_to_data_segment(data, arg_names, arg_size);
         FREE(arg_names);
     }
-    add_instruction(
-        code,
-        (instruction_t) {
-            .opcode = FUNC,
-            .arg0 = (uint16_t)expr->arguments->arg_count,
-            .arg1 = arg_names_idx
-        }
-    );
+    add_instruction(code,
+                    (instruction_t){.opcode = FUNC,
+                                    .arg0 = (uint16_t)expr->arguments->arg_count,
+                                    .arg1 = arg_names_idx});
     return first;
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode_deferred. */
-static bool fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *code,
-        data_builder_t *data) {
-    function_object_t* expr = (function_object_t*)node;
+static bool
+fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *code, data_builder_t *data) {
+    function_object_t *expr = (function_object_t *)node;
     if (expr->code_instr_index == BAD_INSTR_INDEX) {
         return false;
     }
     instr_index_t first;
     if (expr->body->statements->size == 0) {
-        first = add_instruction(code, (instruction_t){ .opcode = NIL });
-        add_instruction(code, (instruction_t){ .opcode = RET });
-    }
-    else {
+        first = add_instruction(code, (instruction_t){.opcode = NIL});
+        add_instruction(code, (instruction_t){.opcode = RET});
+    } else {
         list_item_t *item = expr->body->statements->head;
-        statement_t *stmt = (statement_t*)item->value.ptr;
+        statement_t *stmt = (statement_t *)item->value.ptr;
         first = generate_bytecode_from_statement(stmt, code, data);
 
         while (item->next) {
             item = item->next;
-            stmt = (statement_t*)item->value.ptr;
+            stmt = (statement_t *)item->value.ptr;
             generate_bytecode_from_statement(stmt, code, data);
         }
 
         if (stmt->base.vtbl->type != NODE_RETURN) {
-            add_instruction(code, (instruction_t){ .opcode = NIL });
-            add_instruction(code, (instruction_t){ .opcode = RET });
+            add_instruction(code, (instruction_t){.opcode = NIL});
+            add_instruction(code, (instruction_t){.opcode = RET});
         }
     }
     code->instructions[expr->code_instr_index].arg1 = (uint32_t)first;
@@ -470,8 +454,8 @@ static node_vtbl_t fo_vtbl = {
 };
 
 node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, size_t arg_count) {
-    function_object_t *fobj = (function_object_t*)alloc_zeroed_from_arena(arena,
-        sizeof(function_object_t));
+    function_object_t *fobj =
+        (function_object_t *)alloc_zeroed_from_arena(arena, sizeof(function_object_t));
     fobj->base.base.vtbl = &fo_vtbl;
     fobj->arguments = create_argument_list_node(arena, arg_list, arg_count);
     fobj->body = create_function_body_node(arena);

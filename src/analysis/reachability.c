@@ -4,15 +4,16 @@
  * @brief Reachability proofs independent of experimental arithmetic summaries.
  */
 #include "reachability.h"
+
 #include "abstract_state.h"
-#include "lattice.h"
 #include "addition.h"
-#include "subtraction.h"
-#include "unary_operation.h"
+#include "graph/declarations.h"
 #include "graph/node.h"
 #include "graph/statement.h"
 #include "graph/variable.h"
-#include "graph/declarations.h"
+#include "lattice.h"
+#include "subtraction.h"
+#include "unary_operation.h"
 
 /** @brief Sets or clears the unreachable flag on a node and all descendants. */
 static void set_subtree_flag(node_t *node, bool unreachable) {
@@ -41,12 +42,12 @@ static void forget_values(abstract_state_t *state) {
     avl_tree_for_each(state->values, forget_entry, state);
 }
 
-static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
-        analysis_collector_t *collector);
+static const lattice_element_t *
+visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector);
 
 /** @brief Visits children in order, marking those after terminated control flow unreachable. */
-static void visit_children(node_t *node, abstract_state_t **state,
-        analysis_collector_t *collector) {
+static void
+visit_children(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
     for (size_t i = 0; i < get_node_child_count(node); i++) {
         visit(get_node_child(node, i), state, collector);
     }
@@ -60,22 +61,26 @@ static void visit_if(node_t *node, abstract_state_t **state, analysis_collector_
     if ((*state)->control_flow != FLOW_NORMAL) {
         set_if_else_condition_truth(node, ABSTRACT_NEVER);
         mark_dead(yes, collector);
-        if (no) mark_dead(no, collector);
+        if (no)
+            mark_dead(no, collector);
         return;
     }
     abstract_truth_t truth = lattice_truth(condition);
     set_if_else_condition_truth(node, truth);
     if (truth == ABSTRACT_TRUE) {
-        if (no) mark_dead(no, collector);
+        if (no)
+            mark_dead(no, collector);
         visit(yes, state, collector);
     } else if (truth == ABSTRACT_FALSE) {
         mark_dead(yes, collector);
-        if (no) visit(no, state, collector);
+        if (no)
+            visit(no, state, collector);
     } else {
         abstract_state_t *left = clone_abstract_state(*state);
         abstract_state_t *right = clone_abstract_state(*state);
         visit(yes, &left, collector);
-        if (no) visit(no, &right, collector);
+        if (no)
+            visit(no, &right, collector);
         abstract_state_t *merged = join_abstract_states(left, right);
         destroy_abstract_state(left);
         destroy_abstract_state(right);
@@ -88,8 +93,8 @@ static void visit_if(node_t *node, abstract_state_t **state, analysis_collector_
  * @brief Updates the abstract state, marks dead subtrees, and returns the node's abstract value.
  * Branch merging may replace *state; deferred function bodies are skipped.
  */
-static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
-        analysis_collector_t *collector) {
+static const lattice_element_t *
+visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
     if ((*state)->control_flow != FLOW_NORMAL) {
         mark_dead(node, collector);
         return make_bottom_element();
@@ -107,7 +112,8 @@ static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
             return make_function_element();
         case NODE_VARIABLE: {
             const declarator_t *decl = ((variable_t *)node)->declarator;
-            if (decl == get_builtin_declarator()) return make_top_element();
+            if (decl == get_builtin_declarator())
+                return make_top_element();
             const lattice_element_t *value = get_from_abstract_state(*state, decl);
             return value ? value : make_top_element();
         }
@@ -122,8 +128,9 @@ static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
             return make_top_element();
         case NODE_VARIABLE_DECLARATOR:
         case NODE_CONSTANT_DECLARATOR: {
-            const lattice_element_t *value = get_node_child_count(node) ?
-                visit(get_node_child(node, 0), state, collector) : make_null_element();
+            const lattice_element_t *value = get_node_child_count(node)
+                                                 ? visit(get_node_child(node, 0), state, collector)
+                                                 : make_null_element();
             if ((*state)->control_flow == FLOW_NORMAL) {
                 set_in_abstract_state(*state, (declarator_t *)node, value);
             }
@@ -163,9 +170,10 @@ static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
         case NODE_UNARY_PLUS:
         case NODE_UNARY_MINUS: {
             const lattice_element_t *value = visit(get_node_child(node, 0), state, collector);
-            const lattice_element_t *result = lattice_unary((*state)->arena, value,
-                node->vtbl->type == NODE_UNARY_MINUS);
-            if (result->type == LATTICE_BOTTOM) (*state)->control_flow = FLOW_UNREACHABLE;
+            const lattice_element_t *result =
+                lattice_unary((*state)->arena, value, node->vtbl->type == NODE_UNARY_MINUS);
+            if (result->type == LATTICE_BOTTOM)
+                (*state)->control_flow = FLOW_UNREACHABLE;
             return result;
         }
         case NODE_ADDITION:
@@ -173,9 +181,10 @@ static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
             const lattice_element_t *left = visit(get_node_child(node, 0), state, collector);
             const lattice_element_t *right = visit(get_node_child(node, 1), state, collector);
             const lattice_element_t *result = node->vtbl->type == NODE_ADDITION
-                ? lattice_add((*state)->arena, left, right)
-                : lattice_subtract((*state)->arena, left, right);
-            if (result->type == LATTICE_BOTTOM) (*state)->control_flow = FLOW_UNREACHABLE;
+                                                  ? lattice_add((*state)->arena, left, right)
+                                                  : lattice_subtract((*state)->arena, left, right);
+            if (result->type == LATTICE_BOTTOM)
+                (*state)->control_flow = FLOW_UNREACHABLE;
             return result;
         }
         case NODE_MULTIPLICATION:

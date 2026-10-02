@@ -3,14 +3,14 @@
  * @brief Implementation of the boolean literal expressions (`true` and `false`).
  */
 
-#include "expression.h"
-#include "common_methods.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
 #include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
+#include "common_methods.h"
+#include "expression.h"
+#include "lib/arena.h"
+#include "lib/string_ext.h"
 
 /** @brief A boolean literal `true` expression node. */
 typedef struct {
@@ -25,8 +25,8 @@ typedef struct {
 } boolean_false_t;
 
 /** @brief Implements @ref node_vtbl_t::calculate. */
-static const lattice_element_t *calculate_true(node_t *node, abstract_state_t *state,
-        arena_t *arena) {
+static const lattice_element_t *
+calculate_true(node_t *node, abstract_state_t *state, arena_t *arena) {
     return make_true_element();
 }
 
@@ -36,15 +36,15 @@ static string_value_t generate_goat_code_true(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code_true(const node_t *node, source_builder_t *builder,
-        size_t indent) {
+static void
+generate_indented_goat_code_true(const node_t *node, source_builder_t *builder, size_t indent) {
     append_static_source(builder, L"true");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t generate_bytecode_true(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
-    return add_instruction(code, (instruction_t){ .opcode = TRUE });
+static instr_index_t
+generate_bytecode_true(node_t *node, code_builder_t *code, data_builder_t *data) {
+    return add_instruction(code, (instruction_t){.opcode = TRUE});
 }
 
 /** @brief Virtual table for boolean `true` expressions. */
@@ -75,15 +75,14 @@ static node_vtbl_t true_vtbl = {
 };
 
 node_t *create_true_node(arena_t *arena) {
-    boolean_true_t *expr =
-        (boolean_true_t *)alloc_zeroed_from_arena(arena, sizeof(boolean_true_t));
+    boolean_true_t *expr = (boolean_true_t *)alloc_zeroed_from_arena(arena, sizeof(boolean_true_t));
     expr->base.base.vtbl = &true_vtbl;
     return &expr->base.base;
 }
 
 /** @brief Implements @ref node_vtbl_t::calculate. */
-static const lattice_element_t *calculate_false(node_t *node, abstract_state_t *state,
-        arena_t *arena) {
+static const lattice_element_t *
+calculate_false(node_t *node, abstract_state_t *state, arena_t *arena) {
     return make_false_element();
 }
 
@@ -93,15 +92,15 @@ static string_value_t generate_goat_code_false(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code_false(const node_t *node, source_builder_t *builder,
-        size_t indent) {
+static void
+generate_indented_goat_code_false(const node_t *node, source_builder_t *builder, size_t indent) {
     append_static_source(builder, L"false");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t generate_bytecode_false(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
-    return add_instruction(code, (instruction_t){ .opcode = FALSE });
+static instr_index_t
+generate_bytecode_false(node_t *node, code_builder_t *code, data_builder_t *data) {
+    return add_instruction(code, (instruction_t){.opcode = FALSE});
 }
 
 /** @brief Virtual table for boolean `false` expressions. */

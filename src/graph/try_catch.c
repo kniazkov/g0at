@@ -2,18 +2,19 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief A try statement and its named catch block.
  */
-#include <assert.h>
-#include "statement.h"
-#include "expression.h"
-#include "statement_list.h"
-#include "declarations.h"
-#include "common_methods.h"
 #include "analysis/abstract_state.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
-#include "codegen/source_builder.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
+#include "common_methods.h"
+#include "declarations.h"
+#include "expression.h"
+#include "lib/allocate.h"
+#include "lib/string_ext.h"
+#include "statement.h"
+#include "statement_list.h"
+
+#include <assert.h>
 
 /** @brief Catch names belong to the graph arena; both children are borrowed AST nodes. */
 typedef struct {
@@ -26,16 +27,18 @@ typedef struct {
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t get_data(const node_t *node) {
-    const try_catch_t *stmt = (const try_catch_t*)node;
+    const try_catch_t *stmt = (const try_catch_t *)node;
     return (node_display_value_t){VIEW_TO_VALUE(stmt->exception_name), NODE_DISPLAY_VALUE_PLAIN};
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
-static size_t get_child_count(const node_t *node) { return 2; }
+static size_t get_child_count(const node_t *node) {
+    return 2;
+}
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
 static node_t *get_child(const node_t *node, size_t index) {
-    const try_catch_t *stmt = (const try_catch_t*)node;
+    const try_catch_t *stmt = (const try_catch_t *)node;
     return index == 0 ? &stmt->body->base : index == 1 ? &stmt->handler->base.base : NULL;
 }
 
@@ -58,24 +61,24 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
-    const try_catch_t *stmt = (const try_catch_t*)node;
+    const try_catch_t *stmt = (const try_catch_t *)node;
     string_value_t body = generate_goat_code_from_statement(stmt->body);
     string_value_t handler = generate_goat_code_from_expression(&stmt->handler->base);
-    string_value_t result = format_string(L"try %s catch (%s) %s",
-        body.data, stmt->exception_name.data, handler.data);
+    string_value_t result =
+        format_string(L"try %s catch (%s) %s", body.data, stmt->exception_name.data, handler.data);
     FREE_STRING(body);
     FREE_STRING(handler);
     return result;
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-        size_t indent) {
-    const try_catch_t *stmt = (const try_catch_t*)node;
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
+    const try_catch_t *stmt = (const try_catch_t *)node;
     add_static_source(builder, indent, L"try");
     const node_t *body = &stmt->body->base;
-    if (body->vtbl->type == NODE_STATEMENT_EXPRESSION &&
-            get_node_child(body, 0)->vtbl->type == NODE_STATEMENT_LIST) {
+    if (body->vtbl->type == NODE_STATEMENT_EXPRESSION
+        && get_node_child(body, 0)->vtbl->type == NODE_STATEMENT_LIST) {
         append_static_source(builder, L" ");
         generate_indented_goat_code_from_node(get_node_child(body, 0), builder, indent);
     } else {
@@ -87,15 +90,17 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 
 /** @brief Emits separate try/catch contexts, binding the thrown stack value in catch. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
-    const try_catch_t *stmt = (const try_catch_t*)node;
+    const try_catch_t *stmt = (const try_catch_t *)node;
     instr_index_t first = add_instruction(code, (instruction_t){.opcode = TRY});
     generate_bytecode_from_statement(stmt->body, code, data);
     add_instruction(code, (instruction_t){.opcode = RESTORE});
     instr_index_t skip = add_instruction(code, (instruction_t){.opcode = JUMP});
     get_instruction(code, first)->arg1 = get_next_instruction_index(code);
     add_instruction(code, (instruction_t){.opcode = ENTER});
-    add_instruction(code, (instruction_t){.opcode = VAR,
-        .arg1 = add_string_to_data_segment(data, stmt->exception_name.data)});
+    add_instruction(
+        code,
+        (instruction_t){.opcode = VAR,
+                        .arg1 = add_string_to_data_segment(data, stmt->exception_name.data)});
     /* The catch block shares the context that contains the exception binding. */
     for (size_t i = 0; i < get_node_child_count(&stmt->handler->base.base); i++)
         generate_bytecode_from_node(get_node_child(&stmt->handler->base.base, i), code, data);
@@ -130,9 +135,12 @@ static node_vtbl_t vtbl = {
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
-node_t *create_try_catch_node(arena_t *arena, statement_t *body,
-        string_view_t exception_name, statement_list_t *handler) {
-    assert(body && (is_statement(body->base.vtbl->type) || is_branch_or_loop(body->base.vtbl->type)));
+node_t *create_try_catch_node(arena_t *arena,
+                              statement_t *body,
+                              string_view_t exception_name,
+                              statement_list_t *handler) {
+    assert(body
+           && (is_statement(body->base.vtbl->type) || is_branch_or_loop(body->base.vtbl->type)));
     assert(exception_name.data && exception_name.length);
     assert(handler && handler->base.base.vtbl->type == NODE_STATEMENT_LIST);
     try_catch_t *stmt = alloc_zeroed_from_arena(arena, sizeof(try_catch_t));
@@ -140,12 +148,12 @@ node_t *create_try_catch_node(arena_t *arena, statement_t *body,
     stmt->body = body;
     stmt->exception_name = copy_string_to_arena(arena, exception_name.data, exception_name.length);
     stmt->handler = handler;
-    stmt->exception_declarator = create_synthetic_variable_declaration_node(
-        arena, stmt->exception_name).declarator;
+    stmt->exception_declarator =
+        create_synthetic_variable_declaration_node(arena, stmt->exception_name).declarator;
     return &stmt->base.base;
 }
 
 declarator_t *get_catch_declarator(node_t *node) {
     assert(node->vtbl->type == NODE_TRY_CATCH);
-    return ((try_catch_t*)node)->exception_declarator;
+    return ((try_catch_t *)node)->exception_declarator;
 }

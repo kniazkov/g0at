@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <stddef.h>
-
 #include "lib/value.h"
+
+#include <stddef.h>
 
 typedef struct line_of_code_t line_of_code_t;
 
@@ -47,7 +47,7 @@ source_builder_t *create_source_builder();
 void add_formatted_source(source_builder_t *builder, size_t indent, string_value_t text);
 
 /** @brief Convenience macro for adding static string literals as source lines. */
-#define add_static_source(builder, indent, text) \
+#define add_static_source(builder, indent, text)                                                   \
     add_formatted_source(builder, indent, STATIC_STRING(text))
 
 /** @brief Appends to the last line, consuming text according to its should_free flag. */
@@ -62,7 +62,8 @@ void add_source(source_builder_t *builder, size_t indent, const wchar_t *format,
 /** @brief Appends text to the last line of source code. */
 void append_source(source_builder_t *builder, const wchar_t *format, ...);
 
-/** @brief Returns the assembled source; release with FREE_STRING(). The builder remains separate. */
+/** @brief Returns the assembled source; release with FREE_STRING(). The builder remains separate.
+ */
 string_value_t build_source(source_builder_t *builder);
 
 /** @brief Destroys a source builder. */

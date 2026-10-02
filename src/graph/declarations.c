@@ -4,20 +4,21 @@
  * @brief Implementation of variable and constant declaration nodes.
  */
 
-#include <assert.h>
-
 #include "declarations.h"
-#include "statement.h"
-#include "expression.h"
+
+#include "analysis/abstract_state.h"
+#include "analysis/lattice.h"
+#include "codegen/code_builder.h"
+#include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 #include "common_methods.h"
+#include "expression.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
-#include "analysis/abstract_state.h"
-#include "analysis/lattice.h"
-#include "codegen/source_builder.h"
-#include "codegen/code_builder.h"
-#include "codegen/data_builder.h"
+#include "statement.h"
+
+#include <assert.h>
 
 size_t get_property_count_of_declarator(const node_t *node) {
     const declarator_t *decl = (const declarator_t *)node;
@@ -25,22 +26,19 @@ size_t get_property_count_of_declarator(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_property. */
-const wchar_t *get_property_of_declarator(const node_t *node, size_t index,
-        node_display_value_t *out_value) {
+const wchar_t *
+get_property_of_declarator(const node_t *node, size_t index, node_display_value_t *out_value) {
     const declarator_t *decl = (const declarator_t *)node;
     if (index == 0 && decl->abstract_value) {
-        *out_value = (node_display_value_t){
-            .text = lattice_to_string(decl->abstract_value),
-            .kind = decl->abstract_value->type == LATTICE_STRING_CONSTANT ?
-                NODE_DISPLAY_VALUE_STRING_LITERAL :
-                NODE_DISPLAY_VALUE_PLAIN
-        };
+        *out_value =
+            (node_display_value_t){.text = lattice_to_string(decl->abstract_value),
+                                   .kind = decl->abstract_value->type == LATTICE_STRING_CONSTANT
+                                               ? NODE_DISPLAY_VALUE_STRING_LITERAL
+                                               : NODE_DISPLAY_VALUE_PLAIN};
         return L"abstract";
     } else {
-        *out_value = (node_display_value_t){
-            .text = EMPTY_STRING_VALUE,
-            .kind = NODE_DISPLAY_VALUE_PLAIN
-        };
+        *out_value =
+            (node_display_value_t){.text = EMPTY_STRING_VALUE, .kind = NODE_DISPLAY_VALUE_PLAIN};
         return NULL;
     }
 }
@@ -62,21 +60,19 @@ typedef struct {
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t vdeclr_get_data(const node_t *node) {
     const variable_declarator_t *decl = (const variable_declarator_t *)node;
-    return (node_display_value_t){
-        .text = VIEW_TO_VALUE(decl->base.name),
-        .kind = NODE_DISPLAY_VALUE_PLAIN
-    };
+    return (node_display_value_t){.text = VIEW_TO_VALUE(decl->base.name),
+                                  .kind = NODE_DISPLAY_VALUE_PLAIN};
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t vdeclr_get_child_count(const node_t *node) {
-    variable_declarator_t *decl = (variable_declarator_t*)node;
+    variable_declarator_t *decl = (variable_declarator_t *)node;
     return decl->initial == NULL ? 0 : 1;
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
-static node_t* vdeclr_get_child(const node_t *node, size_t index) {
-    const variable_declarator_t* decl = (const variable_declarator_t*)node;
+static node_t *vdeclr_get_child(const node_t *node, size_t index) {
+    const variable_declarator_t *decl = (const variable_declarator_t *)node;
     if (index == 0 && decl->initial) {
         return &decl->initial->base;
     }
@@ -84,8 +80,8 @@ static node_t* vdeclr_get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t* vdeclr_get_child_tag(const node_t *node, size_t index) {
-    const variable_declarator_t* decl = (const variable_declarator_t*)node;
+static const wchar_t *vdeclr_get_child_tag(const node_t *node, size_t index) {
+    const variable_declarator_t *decl = (const variable_declarator_t *)node;
     if (index == 0 && decl->initial) {
         return L"initial";
     }
@@ -94,11 +90,10 @@ static const wchar_t* vdeclr_get_child_tag(const node_t *node, size_t index) {
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t vdeclr_generate_goat_code(const node_t *node) {
-    const variable_declarator_t* decl = (const variable_declarator_t*)node;
+    const variable_declarator_t *decl = (const variable_declarator_t *)node;
     if (decl->initial) {
         string_builder_t builder;
-        string_value_t initial_as_string =
-            generate_goat_code_from_expression(decl->initial);
+        string_value_t initial_as_string = generate_goat_code_from_expression(decl->initial);
         init_string_builder(&builder, decl->base.name.length + 3 + initial_as_string.length);
         append_string_view(&builder, decl->base.name);
         append_static_string(&builder, L" = ");
@@ -111,29 +106,28 @@ static string_value_t vdeclr_generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void vdeclr_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-            size_t indent) {
-    const variable_declarator_t* decl = (const variable_declarator_t*)node;
+static void
+vdeclr_generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
+    const variable_declarator_t *decl = (const variable_declarator_t *)node;
     append_formatted_source(builder, VIEW_TO_VALUE(decl->base.name));
     if (decl->initial) {
         append_static_source(builder, L" = ");
-        generate_indented_goat_code_from_expression(decl->initial,
-            builder, indent);
+        generate_indented_goat_code_from_expression(decl->initial, builder, indent);
     }
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t vdeclr_generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
-    const variable_declarator_t* decl = (const variable_declarator_t*)node;
+static instr_index_t
+vdeclr_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    const variable_declarator_t *decl = (const variable_declarator_t *)node;
     instr_index_t first;
     if (decl->initial) {
         first = generate_bytecode_from_expression(decl->initial, code, data);
     } else {
-        first = add_instruction(code, (instruction_t){ .opcode = NIL });
+        first = add_instruction(code, (instruction_t){.opcode = NIL});
     }
     uint32_t index = add_string_to_data_segment_ex(data, decl->base.name);
-    add_instruction(code, (instruction_t){ .opcode = VAR, .arg1 = index });
+    add_instruction(code, (instruction_t){.opcode = VAR, .arg1 = index});
     return first;
 }
 
@@ -166,7 +160,7 @@ static node_vtbl_t vdeclr_vtbl = {
 
 /** @brief Creates a new variable declarator node. */
 static variable_declarator_t *create_variable_declarator_node(arena_t *arena,
-        const declarator_spec_t *spec) {
+                                                              const declarator_spec_t *spec) {
     variable_declarator_t *decl =
         (variable_declarator_t *)alloc_zeroed_from_arena(arena, sizeof(variable_declarator_t));
     decl->base.base.vtbl = &vdeclr_vtbl;
@@ -193,13 +187,13 @@ typedef struct {
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t vdecln_get_child_count(const node_t *node) {
-    const variable_declaration_t* root = (const variable_declaration_t*)node;
+    const variable_declaration_t *root = (const variable_declaration_t *)node;
     return root->decl_count;
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
-static node_t* vdecln_get_child(const node_t *node, size_t index) {
-    const variable_declaration_t* decl = (const variable_declaration_t*)node;
+static node_t *vdecln_get_child(const node_t *node, size_t index) {
+    const variable_declaration_t *decl = (const variable_declaration_t *)node;
     if (index >= decl->decl_count) {
         return NULL;
     }
@@ -208,12 +202,13 @@ static node_t* vdecln_get_child(const node_t *node, size_t index) {
 
 /** @brief Implements @ref node_vtbl_t::execute. */
 static abstract_state_t *vdecln_execute(node_t *node, abstract_state_t *state, arena_t *arena) {
-    const variable_declaration_t* decl = (const variable_declaration_t *)node;
+    const variable_declaration_t *decl = (const variable_declaration_t *)node;
     for (size_t index = 0; index < decl->decl_count; index++) {
         variable_declarator_t *vdr = decl->decl_list[index];
         if (vdr->initial) {
             const lattice_element_t *element = calculate_expression(vdr->initial, state, arena);
-            if (state->control_flow != FLOW_NORMAL) break;
+            if (state->control_flow != FLOW_NORMAL)
+                break;
             set_in_abstract_state(state, &vdr->base, element);
         } else {
             set_in_abstract_state(state, &vdr->base, make_null_element());
@@ -224,7 +219,7 @@ static abstract_state_t *vdecln_execute(node_t *node, abstract_state_t *state, a
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t vdecln_generate_goat_code(const node_t *node) {
-    const variable_declaration_t* decl = (const variable_declaration_t*)node;
+    const variable_declaration_t *decl = (const variable_declaration_t *)node;
     string_builder_t builder;
     init_string_builder(&builder, 0);
     append_static_string(&builder, L"var ");
@@ -241,9 +236,9 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void vdecln_generate_indented_goat_code(const node_t *node,
-        source_builder_t *builder, size_t indent) {
-    const variable_declaration_t* decl = (const variable_declaration_t*)node;
+static void
+vdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
+    const variable_declaration_t *decl = (const variable_declaration_t *)node;
     add_static_source(builder, indent, L"var ");
     for (size_t index = 0; index < decl->decl_count; index++) {
         if (index > 0) {
@@ -256,9 +251,9 @@ static void vdecln_generate_indented_goat_code(const node_t *node,
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t vdecln_generate_bytecode(node_t *node,
-        code_builder_t *code, data_builder_t *data) {
-    const variable_declaration_t* decl = (const variable_declaration_t*)node;
+static instr_index_t
+vdecln_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    const variable_declaration_t *decl = (const variable_declaration_t *)node;
     instr_index_t first = generate_bytecode_from_node(&decl->decl_list[0]->base.base, code, data);
     for (size_t index = 1; index < decl->decl_count; index++) {
         variable_declarator_t *vdr = decl->decl_list[index];
@@ -294,14 +289,15 @@ static node_vtbl_t vdecln_vtbl = {
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
-node_t *create_variable_declaration_node(arena_t *arena, declarator_spec_t **decl_list,
-        size_t decl_count) {
+node_t *
+create_variable_declaration_node(arena_t *arena, declarator_spec_t **decl_list, size_t decl_count) {
     assert(decl_count > 0);
-    variable_declaration_t *node = (variable_declaration_t *)alloc_zeroed_from_arena(
-            arena, sizeof(variable_declaration_t));
+    variable_declaration_t *node =
+        (variable_declaration_t *)alloc_zeroed_from_arena(arena, sizeof(variable_declaration_t));
     node->base.base.vtbl = &vdecln_vtbl;
-    node->decl_list = (variable_declarator_t **)alloc_from_arena(arena,
-            decl_count * sizeof(variable_declarator_t *));
+    node->decl_list =
+        (variable_declarator_t **)alloc_from_arena(arena,
+                                                   decl_count * sizeof(variable_declarator_t *));
     node->decl_count = decl_count;
 
     for (size_t index = 0; index < decl_count; index++) {
@@ -333,10 +329,8 @@ typedef struct {
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t cdeclr_get_data(const node_t *node) {
     const constant_declarator_t *decl = (const constant_declarator_t *)node;
-    return (node_display_value_t){
-        .text = VIEW_TO_VALUE(decl->base.name),
-        .kind = NODE_DISPLAY_VALUE_PLAIN
-    };
+    return (node_display_value_t){.text = VIEW_TO_VALUE(decl->base.name),
+                                  .kind = NODE_DISPLAY_VALUE_PLAIN};
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
@@ -345,8 +339,8 @@ static size_t cdeclr_get_child_count(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
-static node_t* cdeclr_get_child(const node_t *node, size_t index) {
-    const constant_declarator_t* decl = (const constant_declarator_t*)node;
+static node_t *cdeclr_get_child(const node_t *node, size_t index) {
+    const constant_declarator_t *decl = (const constant_declarator_t *)node;
     if (index == 0) {
         return &decl->initial->base;
     }
@@ -354,7 +348,7 @@ static node_t* cdeclr_get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t* cdeclr_get_child_tag(const node_t *node, size_t index) {
+static const wchar_t *cdeclr_get_child_tag(const node_t *node, size_t index) {
     if (index == 0) {
         return L"initial";
     }
@@ -363,10 +357,9 @@ static const wchar_t* cdeclr_get_child_tag(const node_t *node, size_t index) {
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t cdeclr_generate_goat_code(const node_t *node) {
-    const constant_declarator_t* decl = (const constant_declarator_t*)node;
+    const constant_declarator_t *decl = (const constant_declarator_t *)node;
     string_builder_t builder;
-    string_value_t initial_as_string =
-        generate_goat_code_from_expression(decl->initial);
+    string_value_t initial_as_string = generate_goat_code_from_expression(decl->initial);
     init_string_builder(&builder, decl->base.name.length + 3 + initial_as_string.length);
     append_string_view(&builder, decl->base.name);
     append_static_string(&builder, L" = ");
@@ -376,21 +369,21 @@ static string_value_t cdeclr_generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void cdeclr_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-            size_t indent) {
-    const constant_declarator_t* decl = (const constant_declarator_t*)node;
+static void
+cdeclr_generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
+    const constant_declarator_t *decl = (const constant_declarator_t *)node;
     append_formatted_source(builder, VIEW_TO_VALUE(decl->base.name));
     append_static_source(builder, L" = ");
     generate_indented_goat_code_from_expression(decl->initial, builder, indent);
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t cdeclr_generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
-    const constant_declarator_t* decl = (const constant_declarator_t*)node;
+static instr_index_t
+cdeclr_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    const constant_declarator_t *decl = (const constant_declarator_t *)node;
     instr_index_t first = generate_bytecode_from_expression(decl->initial, code, data);
     uint32_t index = add_string_to_data_segment_ex(data, decl->base.name);
-    add_instruction(code, (instruction_t){ .opcode = CONST, .arg1 = index });
+    add_instruction(code, (instruction_t){.opcode = CONST, .arg1 = index});
     return first;
 }
 
@@ -423,7 +416,7 @@ static node_vtbl_t cdeclr_vtbl = {
 
 /** @brief Creates a new constant declarator AST node. */
 static constant_declarator_t *create_constant_declarator_node(arena_t *arena,
-        const declarator_spec_t *spec) {
+                                                              const declarator_spec_t *spec) {
     assert(spec->initial != NULL);
 
     constant_declarator_t *decl =
@@ -452,13 +445,13 @@ typedef struct {
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t cdecln_get_child_count(const node_t *node) {
-    const constant_declaration_t* root = (const constant_declaration_t*)node;
+    const constant_declaration_t *root = (const constant_declaration_t *)node;
     return root->decl_count;
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
-static node_t* cdecln_get_child(const node_t *node, size_t index) {
-    const constant_declaration_t* decl = (const constant_declaration_t*)node;
+static node_t *cdecln_get_child(const node_t *node, size_t index) {
+    const constant_declaration_t *decl = (const constant_declaration_t *)node;
     if (index >= decl->decl_count) {
         return NULL;
     }
@@ -467,11 +460,12 @@ static node_t* cdecln_get_child(const node_t *node, size_t index) {
 
 /** @brief Implements @ref node_vtbl_t::execute. */
 static abstract_state_t *cdecln_execute(node_t *node, abstract_state_t *state, arena_t *arena) {
-    const constant_declaration_t* decl = (const constant_declaration_t *)node;
+    const constant_declaration_t *decl = (const constant_declaration_t *)node;
     for (size_t index = 0; index < decl->decl_count; index++) {
         constant_declarator_t *cdr = decl->decl_list[index];
         const lattice_element_t *element = calculate_expression(cdr->initial, state, arena);
-        if (state->control_flow != FLOW_NORMAL) break;
+        if (state->control_flow != FLOW_NORMAL)
+            break;
         set_in_abstract_state(state, &cdr->base, element);
     }
     return state;
@@ -479,7 +473,7 @@ static abstract_state_t *cdecln_execute(node_t *node, abstract_state_t *state, a
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t cdecln_generate_goat_code(const node_t *node) {
-    const constant_declaration_t* decl = (const constant_declaration_t*)node;
+    const constant_declaration_t *decl = (const constant_declaration_t *)node;
     string_builder_t builder;
     init_string_builder(&builder, 0);
     append_static_string(&builder, L"const ");
@@ -496,9 +490,9 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-        size_t indent) {
-    const constant_declaration_t* decl = (const constant_declaration_t*)node;
+static void
+cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
+    const constant_declaration_t *decl = (const constant_declaration_t *)node;
     add_static_source(builder, indent, L"const ");
     for (size_t index = 0; index < decl->decl_count; index++) {
         if (index > 0) {
@@ -511,11 +505,10 @@ static void cdecln_generate_indented_goat_code(const node_t *node, source_builde
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t cdecln_generate_bytecode(node_t *node,
-        code_builder_t *code, data_builder_t *data) {
-    const constant_declaration_t* decl = (const constant_declaration_t*)node;
-    instr_index_t first = generate_bytecode_from_node(
-        &decl->decl_list[0]->base.base, code, data);
+static instr_index_t
+cdecln_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    const constant_declaration_t *decl = (const constant_declaration_t *)node;
+    instr_index_t first = generate_bytecode_from_node(&decl->decl_list[0]->base.base, code, data);
     for (size_t index = 1; index < decl->decl_count; index++) {
         constant_declarator_t *cdr = decl->decl_list[index];
         generate_bytecode_from_node(&cdr->base.base, code, data);
@@ -550,14 +543,15 @@ static node_vtbl_t cdecln_vtbl = {
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
-node_t *create_constant_declaration_node(arena_t *arena, declarator_spec_t **decl_list,
-        size_t decl_count) {
+node_t *
+create_constant_declaration_node(arena_t *arena, declarator_spec_t **decl_list, size_t decl_count) {
     assert(decl_count > 0);
-    constant_declaration_t *node = (constant_declaration_t *)alloc_zeroed_from_arena(
-            arena, sizeof(constant_declaration_t));
+    constant_declaration_t *node =
+        (constant_declaration_t *)alloc_zeroed_from_arena(arena, sizeof(constant_declaration_t));
     node->base.base.vtbl = &cdecln_vtbl;
-    node->decl_list = (constant_declarator_t **)alloc_from_arena(arena,
-            decl_count * sizeof(constant_declarator_t *));
+    node->decl_list =
+        (constant_declarator_t **)alloc_from_arena(arena,
+                                                   decl_count * sizeof(constant_declarator_t *));
     node->decl_count = decl_count;
 
     for (size_t index = 0; index < decl_count; index++) {
@@ -568,31 +562,23 @@ node_t *create_constant_declaration_node(arena_t *arena, declarator_spec_t **dec
 }
 
 variable_declaration_pair_t create_synthetic_variable_declaration_node(arena_t *arena,
-        string_view_t name) {
-    variable_declarator_t *declarator = (variable_declarator_t *)alloc_zeroed_from_arena(
-        arena,
-        sizeof(variable_declarator_t)
-    );
+                                                                       string_view_t name) {
+    variable_declarator_t *declarator =
+        (variable_declarator_t *)alloc_zeroed_from_arena(arena, sizeof(variable_declarator_t));
     declarator->base.base.vtbl = &vdeclr_vtbl;
     declarator->base.name = name;
     declarator->initial = NULL;
 
-    variable_declaration_t *declaration = (variable_declaration_t *)alloc_zeroed_from_arena(
-        arena,
-        sizeof(variable_declaration_t)
-    );
+    variable_declaration_t *declaration =
+        (variable_declaration_t *)alloc_zeroed_from_arena(arena, sizeof(variable_declaration_t));
     declaration->base.base.vtbl = &vdecln_vtbl;
-    declaration->decl_list = (variable_declarator_t **)alloc_from_arena(
-        arena,
-        sizeof(variable_declarator_t *) * 1
-    );
+    declaration->decl_list =
+        (variable_declarator_t **)alloc_from_arena(arena, sizeof(variable_declarator_t *) * 1);
     declaration->decl_list[0] = declarator;
     declaration->decl_count = 1;
 
-    return (variable_declaration_pair_t){
-        .declaration = &declaration->base.base,
-        .declarator = &declarator->base
-    };
+    return (variable_declaration_pair_t){.declaration = &declaration->base.base,
+                                         .declarator = &declarator->base};
 }
 
 /** @brief Invalid name used by the built-in declarator singleton. */
@@ -605,18 +591,8 @@ static wchar_t builtin_declarator_name_data[] = L"*";
  * constants.
  */
 static declarator_t builtin_declarator = {
-    .base = {
-        .vtbl = &cdeclr_vtbl,
-        .parent = NULL,
-        .position = NULL,
-        .scope = NULL,
-        .id = 0
-    },
-    .name = {
-        .data = L"*",
-        .length = 1
-    }
-};
+    .base = {.vtbl = &cdeclr_vtbl, .parent = NULL, .position = NULL, .scope = NULL, .id = 0},
+    .name = {.data = L"*", .length = 1}};
 
 const declarator_t *get_builtin_declarator() {
     return &builtin_declarator;

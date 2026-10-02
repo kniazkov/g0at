@@ -4,17 +4,17 @@
  * @brief Implementation of the if-else statement node.
  */
 
-#include "statement.h"
-#include "expression.h"
+#include "analysis/abstract_state.h"
+#include "analysis/lattice.h"
+#include "codegen/code_builder.h"
+#include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 #include "common_methods.h"
+#include "expression.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
-#include "analysis/abstract_state.h"
-#include "analysis/lattice.h"
-#include "codegen/source_builder.h"
-#include "codegen/code_builder.h"
-#include "codegen/data_builder.h"
+#include "statement.h"
 
 /** @brief AST node representing an if-else statement. */
 typedef struct {
@@ -40,13 +40,13 @@ typedef struct {
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t get_child_count(const node_t *node) {
-    const if_else_t* stmt = (const if_else_t*)node;
+    const if_else_t *stmt = (const if_else_t *)node;
     return stmt->false_branch != NULL ? 3 : 2;
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
-static node_t* get_child(const node_t *node, size_t index) {
-    const if_else_t* stmt = (const if_else_t*)node;
+static node_t *get_child(const node_t *node, size_t index) {
+    const if_else_t *stmt = (const if_else_t *)node;
     switch (index) {
         case 0:
             return &stmt->condition->base;
@@ -63,8 +63,8 @@ static node_t* get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t* get_child_tag(const node_t *node, size_t index) {
-    const if_else_t* stmt = (const if_else_t*)node;
+static const wchar_t *get_child_tag(const node_t *node, size_t index) {
+    const if_else_t *stmt = (const if_else_t *)node;
     switch (index) {
         case 0:
             return L"condition";
@@ -82,21 +82,25 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::execute. */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
     const if_else_t *stmt = (const if_else_t *)node;
-    if (state->control_flow != FLOW_NORMAL) return state;
+    if (state->control_flow != FLOW_NORMAL)
+        return state;
     const lattice_element_t *condition = calculate_expression(stmt->condition, state, arena);
-    if (state->control_flow != FLOW_NORMAL) return state;
+    if (state->control_flow != FLOW_NORMAL)
+        return state;
     abstract_truth_t truth = lattice_truth(condition);
     if (truth == ABSTRACT_NEVER) {
         state->control_flow = FLOW_UNREACHABLE;
     } else if (truth == ABSTRACT_TRUE) {
         execute_statement(stmt->true_branch, state, arena);
     } else if (truth == ABSTRACT_FALSE) {
-        if (stmt->false_branch) execute_statement(stmt->false_branch, state, arena);
+        if (stmt->false_branch)
+            execute_statement(stmt->false_branch, state, arena);
     } else {
         abstract_state_t *left = clone_abstract_state(state);
         abstract_state_t *right = clone_abstract_state(state);
         execute_statement(stmt->true_branch, left, arena);
-        if (stmt->false_branch) execute_statement(stmt->false_branch, right, arena);
+        if (stmt->false_branch)
+            execute_statement(stmt->false_branch, right, arena);
         abstract_state_t *merged = join_abstract_states(left, right);
         /* Keep the address held by expression/block callers alive. */
         abstract_state_t previous = *state;
@@ -105,14 +109,15 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
         destroy_abstract_state(merged);
         destroy_abstract_state(left);
         destroy_abstract_state(right);
-        if (state->control_flow == FLOW_NORMAL) collect_joined_abstract_state(state, node);
+        if (state->control_flow == FLOW_NORMAL)
+            collect_joined_abstract_state(state, node);
     }
     return state;
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
-    const if_else_t* stmt = (const if_else_t*)node;
+    const if_else_t *stmt = (const if_else_t *)node;
     string_builder_t builder;
     init_string_builder(&builder, 32);
     append_static_string(&builder, L"if (");
@@ -133,9 +138,9 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-       size_t indent) {
-    const if_else_t* stmt = (const if_else_t*)node;
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
+    const if_else_t *stmt = (const if_else_t *)node;
     if (node->parent && node->parent->vtbl->type == NODE_IF_ELSE) {
         append_static_source(builder, L"if ("); // `else if` combination
         indent--;
@@ -169,9 +174,8 @@ static bool is_literal_condition(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
-    const if_else_t* stmt = (const if_else_t*)node;
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    const if_else_t *stmt = (const if_else_t *)node;
     instr_index_t first = get_next_instruction_index(code);
     if (stmt->condition_truth != ABSTRACT_EITHER) {
         if (stmt->condition_truth == ABSTRACT_NEVER) {
@@ -179,7 +183,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         }
         if (!is_literal_condition(&stmt->condition->base)) {
             generate_bytecode_from_expression(stmt->condition, code, data);
-            add_instruction(code, (instruction_t){ .opcode = POP });
+            add_instruction(code, (instruction_t){.opcode = POP});
         }
         if (stmt->condition_truth == ABSTRACT_TRUE) {
             generate_bytecode_from_statement(stmt->true_branch, code, data);
@@ -189,10 +193,10 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         return first;
     }
     generate_bytecode_from_expression(stmt->condition, code, data);
-    instr_index_t jif_index = add_instruction(code, (instruction_t){ .opcode = JIF });
+    instr_index_t jif_index = add_instruction(code, (instruction_t){.opcode = JIF});
     generate_bytecode_from_statement(stmt->true_branch, code, data);
     if (stmt->false_branch) {
-        instr_index_t jump_index = add_instruction(code, (instruction_t){ .opcode = JUMP });
+        instr_index_t jump_index = add_instruction(code, (instruction_t){.opcode = JUMP});
         get_instruction(code, jif_index)->arg1 = get_next_instruction_index(code);
         generate_bytecode_from_statement(stmt->false_branch, code, data);
         get_instruction(code, jump_index)->arg1 = get_next_instruction_index(code);
@@ -229,10 +233,11 @@ static node_vtbl_t if_else_vtbl = {
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
-node_t *create_if_else_node(arena_t *arena, expression_t *condition, statement_t *true_branch,
-        statement_t *false_branch) {
-    if_else_t *stmt =
-        (if_else_t *)alloc_zeroed_from_arena(arena, sizeof(if_else_t));
+node_t *create_if_else_node(arena_t *arena,
+                            expression_t *condition,
+                            statement_t *true_branch,
+                            statement_t *false_branch) {
+    if_else_t *stmt = (if_else_t *)alloc_zeroed_from_arena(arena, sizeof(if_else_t));
     stmt->base.base.vtbl = &if_else_vtbl;
     stmt->condition = condition;
     stmt->condition_truth = ABSTRACT_EITHER;

@@ -21,5 +21,7 @@ typedef struct options_t options_t;
  * A NULL collector disables observations.
  * Undeclared variables receive synthetic declarations. Returns accumulated diagnostics.
  */
-compilation_error_t *analyze(node_t *root_node, parser_memory_t *memory, options_t *options,
-        analysis_collector_t *collector);
+compilation_error_t *analyze(node_t *root_node,
+                             parser_memory_t *memory,
+                             options_t *options,
+                             analysis_collector_t *collector);

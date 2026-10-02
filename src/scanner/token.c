@@ -5,6 +5,7 @@
  */
 
 #include "token.h"
+
 #include "graph/node.h"
 
 string_value_t token_to_string(const token_t *token) {

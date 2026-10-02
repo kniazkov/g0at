@@ -4,17 +4,17 @@
  * @brief Implementation of the return statement node.
  */
 
-#include "statement.h"
-#include "expression.h"
+#include "analysis/abstract_state.h"
+#include "analysis/lattice.h"
+#include "codegen/code_builder.h"
+#include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 #include "common_methods.h"
+#include "expression.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
-#include "analysis/abstract_state.h"
-#include "analysis/lattice.h"
-#include "codegen/source_builder.h"
-#include "codegen/code_builder.h"
-#include "codegen/data_builder.h"
+#include "statement.h"
 
 /** @brief AST node representing a return statement. */
 typedef struct {
@@ -32,13 +32,13 @@ typedef struct {
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t get_child_count(const node_t *node) {
-    const return_t* stmt = (const return_t*)node;
+    const return_t *stmt = (const return_t *)node;
     return stmt->value != NULL ? 1 : 0;
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
-static node_t* get_child(const node_t *node, size_t index) {
-    const return_t* stmt = (const return_t*)node;
+static node_t *get_child(const node_t *node, size_t index) {
+    const return_t *stmt = (const return_t *)node;
     if (index == 0 && stmt->value) {
         return &stmt->value->base;
     }
@@ -46,8 +46,8 @@ static node_t* get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t* get_child_tag(const node_t *node, size_t index) {
-    const return_t* stmt = (const return_t*)node;
+static const wchar_t *get_child_tag(const node_t *node, size_t index) {
+    const return_t *stmt = (const return_t *)node;
     if (index == 0 && stmt->value) {
         return L"expression";
     }
@@ -56,17 +56,20 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
 
 /** @brief Implements @ref node_vtbl_t::execute. */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
-    const return_t* stmt = (const return_t*)node;
-    const lattice_element_t *value = stmt->value ?
-        calculate_expression(stmt->value, state, arena) : make_null_element();
-    if (state->control_flow != FLOW_NORMAL) return state;
+    const return_t *stmt = (const return_t *)node;
+    const lattice_element_t *value =
+        stmt->value ? calculate_expression(stmt->value, state, arena) : make_null_element();
+    if (state->control_flow != FLOW_NORMAL)
+        return state;
     if (value->type == LATTICE_BOTTOM) {
         state->control_flow = FLOW_UNREACHABLE;
         return state;
     }
     if (state->return_value) {
-        *state->return_value = lattice_join(arena,
-            *state->return_value ? *state->return_value : make_bottom_element(), value);
+        *state->return_value =
+            lattice_join(arena,
+                         *state->return_value ? *state->return_value : make_bottom_element(),
+                         value);
     }
     state->control_flow = FLOW_RETURN;
     return state;
@@ -74,11 +77,10 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
-    const return_t* stmt = (const return_t*)node;
+    const return_t *stmt = (const return_t *)node;
     if (stmt->value) {
         string_builder_t builder;
-        string_value_t value_as_string =
-            generate_goat_code_from_expression(stmt->value);
+        string_value_t value_as_string = generate_goat_code_from_expression(stmt->value);
         init_string_builder(&builder, value_as_string.length + 8);
         append_static_string(&builder, L"return ");
         append_string_value(&builder, value_as_string);
@@ -90,9 +92,9 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-       size_t indent) {
-    const return_t* stmt = (const return_t*)node;
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
+    const return_t *stmt = (const return_t *)node;
     if (stmt->value) {
         add_static_source(builder, indent, L"return ");
         generate_indented_goat_code_from_expression(stmt->value, builder, indent);
@@ -103,16 +105,15 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
-    const return_t* stmt = (const return_t*)node;
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    const return_t *stmt = (const return_t *)node;
     instr_index_t first;
     if (stmt->value) {
         first = generate_bytecode_from_expression(stmt->value, code, data);
     } else {
-        first = add_instruction(code, (instruction_t){ .opcode = NIL });
+        first = add_instruction(code, (instruction_t){.opcode = NIL});
     }
-    add_instruction(code, (instruction_t){ .opcode = RET });
+    add_instruction(code, (instruction_t){.opcode = RET});
     return first;
 }
 
@@ -144,8 +145,7 @@ static node_vtbl_t return_vtbl = {
 };
 
 node_t *create_return_node(arena_t *arena, expression_t *value) {
-    return_t *stmt =
-        (return_t *)alloc_zeroed_from_arena(arena, sizeof(return_t));
+    return_t *stmt = (return_t *)alloc_zeroed_from_arena(arena, sizeof(return_t));
     stmt->base.base.vtbl = &return_vtbl;
     stmt->value = value;
     return &stmt->base.base;

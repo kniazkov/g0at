@@ -6,12 +6,12 @@
 
 #pragma once
 
+#include "common/position.h"
+#include "common/types.h"
+#include "lib/value.h"
 #include "node_type.h"
 #include "relation_type.h"
 #include "scope.h"
-#include "lib/value.h"
-#include "common/position.h"
-#include "common/types.h"
 
 typedef struct node_t node_t;
 
@@ -68,7 +68,7 @@ typedef struct {
     node_type_t type;
 
     /** @brief Human-readable type name of the node. */
-    const wchar_t* type_name;
+    const wchar_t *type_name;
 
     /** @brief Marks an lvalue; generate_bytecode_assign must be implemented. */
     bool is_assignable_expression;
@@ -84,8 +84,9 @@ typedef struct {
      * `index`: Zero-based index in range [0, get_property_count(node)).
      * @return Property key as a constant wide string, or NULL if the property is not available.
      */
-    const wchar_t *(*get_property)(const node_t *node, size_t index,
-            node_display_value_t *out_value);
+    const wchar_t *(*get_property)(const node_t *node,
+                                   size_t index,
+                                   node_display_value_t *out_value);
 
     /** @brief Returns the count of direct child nodes for this syntax tree node. */
     size_t (*get_child_count)(const node_t *node);
@@ -95,7 +96,7 @@ typedef struct {
      * `index`: Zero-based index of the child node.
      * @return Pointer to the child node or NULL if index is out of range.
      */
-    node_t* (*get_child)(const node_t *node, size_t index);
+    node_t *(*get_child)(const node_t *node, size_t index);
 
     /**
      * @brief Gets the tag/label for a child node.
@@ -103,7 +104,7 @@ typedef struct {
      * @return Wide character string (const wchar_t*) with the child's tag or NULL if not
      * applicable.
      */
-    const wchar_t* (*get_child_tag)(const node_t *node, size_t index);
+    const wchar_t *(*get_child_tag)(const node_t *node, size_t index);
 
     /**
      * @brief Inserts new_child before before_child.
@@ -128,7 +129,7 @@ typedef struct {
      * `index`: Zero-based related-node index.
      * @return Pointer to the related node or NULL if index is out of range.
      */
-    const node_t* (*get_related)(const node_t *node, size_t index);
+    const node_t *(*get_related)(const node_t *node, size_t index);
 
     /**
      * @brief Gets the relation type for a related node.
@@ -154,8 +155,9 @@ typedef struct {
     string_value_t (*generate_goat_code)(const node_t *node);
 
     /** @brief Generates indented Goat source code for the node, if applicable. */
-    void (*generate_indented_goat_code)(const node_t *node, source_builder_t *builder,
-            size_t indent);
+    void (*generate_indented_goat_code)(const node_t *node,
+                                        source_builder_t *builder,
+                                        size_t indent);
 
     /**
      * @brief Checks if C code generation is possible for this node.
@@ -179,15 +181,17 @@ typedef struct {
     instr_index_t (*generate_bytecode)(node_t *node, code_builder_t *code, data_builder_t *data);
 
     /** @brief Generates bytecode for storing a value into this expression. */
-    instr_index_t (*generate_bytecode_assign)(const node_t *node, code_builder_t *code,
-        data_builder_t *data);
+    instr_index_t (*generate_bytecode_assign)(const node_t *node,
+                                              code_builder_t *code,
+                                              data_builder_t *data);
 
     /**
      * @brief Emits deferred code such as a function body.
      * @return false if dependencies are unresolved and another pass is needed.
      */
-    bool (*generate_bytecode_deferred)(const node_t *node, code_builder_t *code,
-        data_builder_t *data);
+    bool (*generate_bytecode_deferred)(const node_t *node,
+                                       code_builder_t *code,
+                                       data_builder_t *data);
 } node_vtbl_t;
 
 /**
@@ -225,8 +229,7 @@ struct node_t {
 };
 
 /** @brief Gets the primary display data associated with a node. */
-static inline node_display_value_t get_node_data(const node_t *node)
-{
+static inline node_display_value_t get_node_data(const node_t *node) {
     return node->vtbl->get_data(node);
 }
 
@@ -240,8 +243,8 @@ static inline size_t get_node_property_count(const node_t *node) {
  * `index`: Zero-based property index.
  * @return Property key as a constant wide string, or NULL if unavailable.
  */
-static inline const wchar_t *get_node_property(const node_t *node,
-        size_t index, node_display_value_t *out_value) {
+static inline const wchar_t *
+get_node_property(const node_t *node, size_t index, node_display_value_t *out_value) {
     return node->vtbl->get_property(node, index, out_value);
 }
 
@@ -255,7 +258,7 @@ static inline size_t get_node_child_count(const node_t *node) {
  * `index`: Zero-based child index.
  * @return Pointer to the child node or NULL if index is out of range.
  */
-static inline node_t* get_node_child(const node_t *node, size_t index) {
+static inline node_t *get_node_child(const node_t *node, size_t index) {
     return node->vtbl->get_child(node, index);
 }
 
@@ -264,7 +267,7 @@ static inline node_t* get_node_child(const node_t *node, size_t index) {
  * `index`: Zero-based child index.
  * @return Wide character string with the child tag or NULL if not applicable.
  */
-static inline const wchar_t* get_node_child_tag(const node_t *node, size_t index) {
+static inline const wchar_t *get_node_child_tag(const node_t *node, size_t index) {
     return node->vtbl->get_child_tag(node, index);
 }
 
@@ -272,8 +275,7 @@ static inline const wchar_t* get_node_child_tag(const node_t *node, size_t index
  * @brief Inserts new_child before before_child.
  * Returns false without changing the node if unsupported; preserves structural validity.
  */
-static inline bool insert_child_node_before(node_t *node, node_t *new_child,
-        node_t *before_child) {
+static inline bool insert_child_node_before(node_t *node, node_t *new_child, node_t *before_child) {
     return node->vtbl->insert_child_before(node, new_child, before_child);
 }
 
@@ -281,8 +283,7 @@ static inline bool insert_child_node_before(node_t *node, node_t *new_child,
  * @brief Replaces one child node with another child node.
  * @return `true` if replacement succeeded, otherwise `false`.
  */
-static inline bool replace_child_node(node_t *node, node_t *old_child,
-        node_t *new_child) {
+static inline bool replace_child_node(node_t *node, node_t *old_child, node_t *new_child) {
     return node->vtbl->replace_child(node, old_child, new_child);
 }
 
@@ -296,7 +297,7 @@ static inline size_t get_node_related_count(const node_t *node) {
  * `index`: Zero-based related-node index.
  * @return Pointer to the related node or NULL if index is out of range.
  */
-static inline const node_t* get_node_related(const node_t *node, size_t index) {
+static inline const node_t *get_node_related(const node_t *node, size_t index) {
     return node->vtbl->get_related(node, index);
 }
 
@@ -310,8 +311,8 @@ static inline relation_type_t get_node_relation_type(const node_t *node, size_t 
 }
 
 /** @brief Calculates the abstract lattice element represented by a node. */
-static inline const lattice_element_t *calculate_node(node_t *node, abstract_state_t *state,
-        arena_t *arena) {
+static inline const lattice_element_t *
+calculate_node(node_t *node, abstract_state_t *state, arena_t *arena) {
     return node->vtbl->calculate(node, state, arena);
 }
 
@@ -319,8 +320,8 @@ static inline const lattice_element_t *calculate_node(node_t *node, abstract_sta
  * @brief Executes abstract interpretation for a node.
  * @return Output abstract state after interpreting this node.
  */
-static inline abstract_state_t *execute_node(node_t *node, abstract_state_t *state,
-        arena_t *arena) {
+static inline abstract_state_t *
+execute_node(node_t *node, abstract_state_t *state, arena_t *arena) {
     return node->vtbl->execute(node, state, arena);
 }
 
@@ -331,7 +332,8 @@ static inline string_value_t generate_goat_code_from_node(const node_t *node) {
 
 /** @brief Generates indented Goat source code from a node. */
 static inline void generate_indented_goat_code_from_node(const node_t *node,
-        source_builder_t *builder, size_t indent) {
+                                                         source_builder_t *builder,
+                                                         size_t indent) {
     node->vtbl->generate_indented_goat_code(node, builder, indent);
 }
 
@@ -353,21 +355,22 @@ static inline string_value_t generate_c_code_from_node(const node_t *node) {
 }
 
 /** @brief Generates indented C source code from a node. */
-static inline void generate_indented_c_code_from_node(const node_t *node,
-        source_builder_t *builder, size_t indent) {
+static inline void
+generate_indented_c_code_from_node(const node_t *node, source_builder_t *builder, size_t indent) {
     node->vtbl->generate_indented_c_code(node, builder, indent);
 }
 
 /** @brief Generates bytecode from a node. */
-static inline instr_index_t generate_bytecode_from_node(node_t *node,
-        code_builder_t *code, data_builder_t *data) {
-    if (node->unreachable) return BAD_INSTR_INDEX;
+static inline instr_index_t
+generate_bytecode_from_node(node_t *node, code_builder_t *code, data_builder_t *data) {
+    if (node->unreachable)
+        return BAD_INSTR_INDEX;
     return node->vtbl->generate_bytecode(node, code, data);
 }
 
 /** @brief Generates bytecode for storing a value into a node. */
-static inline instr_index_t generate_bytecode_assign_from_node(const node_t *node,
-        code_builder_t *code, data_builder_t *data) {
+static inline instr_index_t
+generate_bytecode_assign_from_node(const node_t *node, code_builder_t *code, data_builder_t *data) {
     return node->vtbl->generate_bytecode_assign(node, code, data);
 }
 
@@ -379,7 +382,8 @@ static inline instr_index_t generate_bytecode_assign_from_node(const node_t *nod
  * @return `true` if deferred bytecode was successfully generated in this pass; `false` otherwise.
  */
 static inline bool generate_deferred_bytecode_from_node(const node_t *node,
-        code_builder_t *code, data_builder_t *data) {
+                                                        code_builder_t *code,
+                                                        data_builder_t *data) {
     return node->vtbl->generate_bytecode_deferred(node, code, data);
 }
 

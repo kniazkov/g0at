@@ -4,16 +4,16 @@
  * @brief Implementation of parenthesized expression node.
  */
 
-#include <assert.h>
-
-#include "expression.h"
+#include "codegen/code_builder.h"
+#include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 #include "common_methods.h"
+#include "expression.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
-#include "codegen/source_builder.h"
-#include "codegen/code_builder.h"
-#include "codegen/data_builder.h"
+
+#include <assert.h>
 
 /** @brief A parenthesized expression node. */
 typedef struct {
@@ -34,7 +34,7 @@ static size_t get_child_count(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
-static node_t* get_child(const node_t *node, size_t index) {
+static node_t *get_child(const node_t *node, size_t index) {
     const parenthesized_expression_t *expr = (const parenthesized_expression_t *)node;
     if (index == 0) {
         return &expr->inner->base;
@@ -43,7 +43,7 @@ static node_t* get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t* get_child_tag(const node_t *node, size_t index) {
+static const wchar_t *get_child_tag(const node_t *node, size_t index) {
     return (index == 0) ? L"expression" : NULL;
 }
 
@@ -61,8 +61,8 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-        size_t indent) {
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const parenthesized_expression_t *expr = (const parenthesized_expression_t *)node;
     append_static_source(builder, L"(");
     generate_indented_goat_code_from_expression(expr->inner, builder, 0);
@@ -70,8 +70,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     parenthesized_expression_t *expr = (parenthesized_expression_t *)node;
     return generate_bytecode_from_expression(expr->inner, code, data);
 }
@@ -111,7 +110,8 @@ static node_vtbl_t expression_parenthesized_vtbl = {
 
 node_t *create_parenthesized_expression_node(arena_t *arena) {
     parenthesized_expression_t *expr =
-        (parenthesized_expression_t *)alloc_zeroed_from_arena(arena, sizeof(parenthesized_expression_t));
+        (parenthesized_expression_t *)alloc_zeroed_from_arena(arena,
+                                                              sizeof(parenthesized_expression_t));
     expr->base.base.vtbl = &expression_parenthesized_vtbl;
     return &expr->base.base;
 }

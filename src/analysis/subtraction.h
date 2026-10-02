@@ -5,5 +5,5 @@
 #pragma once
 #include "lattice.h"
 /** @brief Returns possible normal results; BOTTOM means no successful evaluation. */
-const lattice_element_t *lattice_subtract(arena_t *arena,
-    const lattice_element_t *left, const lattice_element_t *right);
+const lattice_element_t *
+lattice_subtract(arena_t *arena, const lattice_element_t *left, const lattice_element_t *right);

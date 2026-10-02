@@ -4,15 +4,15 @@
  * @brief Implementation of the integer literal expression.
  */
 
-#include "expression.h"
-#include "common_methods.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
-#include "lib/split64.h"
 #include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
+#include "common_methods.h"
+#include "expression.h"
+#include "lib/arena.h"
+#include "lib/split64.h"
+#include "lib/string_ext.h"
 
 /** @brief An integer literal expression node. */
 typedef struct {
@@ -37,32 +37,29 @@ static string_value_t generate_goat_code(const node_t *node) {
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t get_data(const node_t *node) {
-    return (node_display_value_t){
-        .text = generate_goat_code(node),
-        .kind = NODE_DISPLAY_VALUE_PLAIN
-    };
+    return (node_display_value_t){.text = generate_goat_code(node),
+                                  .kind = NODE_DISPLAY_VALUE_PLAIN};
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-            size_t indent) {
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const integer_t *expr = (const integer_t *)node;
     append_formatted_source(builder, format_string(L"%ld", expr->element.value));
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const integer_t *expr = (const integer_t *)node;
     int64_t value = expr->element.value;
     instr_index_t first;
     if (value > INT32_MAX || value < INT32_MIN) {
         split64_t s;
         s.int_value = value;
-        first = add_instruction(code, (instruction_t){ .opcode = ARG, .arg1 = s.parts[0] });
-        add_instruction(code, (instruction_t){ .opcode = ILOAD64, .arg1 = s.parts[1] });
+        first = add_instruction(code, (instruction_t){.opcode = ARG, .arg1 = s.parts[0]});
+        add_instruction(code, (instruction_t){.opcode = ILOAD64, .arg1 = s.parts[1]});
     } else {
-        first = add_instruction(code, (instruction_t){ .opcode = ILOAD32, .arg1 = value });
+        first = add_instruction(code, (instruction_t){.opcode = ILOAD32, .arg1 = value});
     }
     return first;
 }

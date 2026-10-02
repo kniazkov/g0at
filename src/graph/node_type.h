@@ -88,7 +88,7 @@ typedef enum {
     /** @brief Subtraction operation node type. */
     NODE_SUBTRACTION,
 
-    NODE_UNARY_PLUS, /**< Unary numeric identity. */
+    NODE_UNARY_PLUS,  /**< Unary numeric identity. */
     NODE_UNARY_MINUS, /**< Unary numeric negation. */
 
     /** @brief Multiplication operation node type. */

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "expression.h"
 #include "assignable_expression.h"
+#include "expression.h"
 
 typedef struct assignment_t assignment_t;
 
@@ -34,7 +34,7 @@ size_t assignment_get_child_count(const node_t *node);
  * `index`: Zero-based child position: - 0: left operand - 1: right operand
  * @return Pointer to child node or NULL if index invalid.
  */
-node_t* assignment_get_child(const node_t *node, size_t index);
+node_t *assignment_get_child(const node_t *node, size_t index);
 
 /**
  * @brief Gets relationship tags for assignment children.
@@ -44,11 +44,12 @@ node_t* assignment_get_child(const node_t *node, size_t index);
  * `index`: Zero-based child position.
  * @return Static wide string literal or NULL.
  */
-const wchar_t* assignment_get_tag(const node_t *node, size_t index);
+const wchar_t *assignment_get_tag(const node_t *node, size_t index);
 
 /** @brief Creates a new simple assignment expression node. */
-expression_t *create_simple_assignment_node(arena_t *arena, assignable_expression_t *left_operand,
-        expression_t *right_operand);
+expression_t *create_simple_assignment_node(arena_t *arena,
+                                            assignable_expression_t *left_operand,
+                                            expression_t *right_operand);
 
 /**
  * @brief Creates a declarator from a simple assignment expression.

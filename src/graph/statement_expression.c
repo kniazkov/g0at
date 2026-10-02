@@ -4,15 +4,15 @@
  * @brief Implementation of statement expression node.
  */
 
-#include "statement.h"
-#include "expression.h"
+#include "codegen/code_builder.h"
+#include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 #include "common_methods.h"
+#include "expression.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
-#include "codegen/source_builder.h"
-#include "codegen/code_builder.h"
-#include "codegen/data_builder.h"
+#include "statement.h"
 
 /** @brief A statement expression node. */
 typedef struct {
@@ -29,8 +29,8 @@ static size_t get_child_count(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
-static node_t* get_child(const node_t *node, size_t index) {
-    const statement_expression_t* expr = (const statement_expression_t*)node;
+static node_t *get_child(const node_t *node, size_t index) {
+    const statement_expression_t *expr = (const statement_expression_t *)node;
     if (index == 0) {
         return &expr->wrapped->base;
     }
@@ -38,7 +38,7 @@ static node_t* get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t* get_child_tag(const node_t *node, size_t index) {
+static const wchar_t *get_child_tag(const node_t *node, size_t index) {
     if (index == 0) {
         return L"expression";
     }
@@ -58,7 +58,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_value_t expr_as_string = generate_goat_code_from_expression(stmt->wrapped);
     if (stmt->wrapped->base.vtbl->type != NODE_STATEMENT_LIST) {
         string_builder_t builder;
-        init_string_builder(&builder, expr_as_string.length + 1);  // +1 for the semicolon
+        init_string_builder(&builder, expr_as_string.length + 1); // +1 for the semicolon
         append_string_value(&builder, expr_as_string);
         FREE_STRING(expr_as_string);
         return append_char(&builder, L';');
@@ -68,14 +68,11 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-       size_t indent) {
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
-    if (
-        stmt->wrapped->base.vtbl->type == NODE_STATEMENT_LIST &&
-        stmt->base.base.parent != NULL &&
-        is_branch_or_loop(stmt->base.base.parent->vtbl->type)
-    ) {
+    if (stmt->wrapped->base.vtbl->type == NODE_STATEMENT_LIST && stmt->base.base.parent != NULL
+        && is_branch_or_loop(stmt->base.base.parent->vtbl->type)) {
         generate_indented_goat_code_from_expression(stmt->wrapped, builder, indent - 1);
     } else {
         add_static_source(builder, indent, L"");
@@ -85,11 +82,10 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
     instr_index_t first = generate_bytecode_from_expression(stmt->wrapped, code, data);
-    add_instruction(code, (instruction_t){ .opcode = POP });
+    add_instruction(code, (instruction_t){.opcode = POP});
     return first;
 }
 

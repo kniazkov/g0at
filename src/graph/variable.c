@@ -4,34 +4,31 @@
  * @brief Implementation of the variable expression node.
  */
 
-#include <assert.h>
-
 #include "variable.h"
-#include "common_methods.h"
-#include "statement.h"
-#include "declarations.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
+
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
+#include "common_methods.h"
+#include "declarations.h"
+#include "lib/allocate.h"
+#include "lib/arena.h"
+#include "lib/string_ext.h"
+#include "statement.h"
+
+#include <assert.h>
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t get_data(const node_t *node) {
     const variable_t *expr = (const variable_t *)node;
     node_display_value_kind_t kind = NODE_DISPLAY_VALUE_PLAIN;
-    if (expr->declarator &&
-            expr->declarator->name.length > 0 &&
-            expr->declarator->name.data[0] == L'*') {
+    if (expr->declarator && expr->declarator->name.length > 0
+        && expr->declarator->name.data[0] == L'*') {
         kind = NODE_DISPLAY_VALUE_PREDEFINED;
     }
-    return (node_display_value_t){
-        .text = VIEW_TO_VALUE(expr->name),
-        .kind = kind
-    };
+    return (node_display_value_t){.text = VIEW_TO_VALUE(expr->name), .kind = kind};
 }
 
 /** @brief Implements @ref node_vtbl_t::get_related_count. */
@@ -61,7 +58,8 @@ static relation_type_t get_relation_type(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const variable_t *expr = (const variable_t *)node;
-    if (expr->declarator == get_builtin_declarator()) return make_top_element();
+    if (expr->declarator == get_builtin_declarator())
+        return make_top_element();
     const lattice_element_t *value = get_from_abstract_state(state, expr->declarator);
     if (!value) {
         value = make_null_element();
@@ -77,29 +75,28 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-            size_t indent) {
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const variable_t *expr = (const variable_t *)node;
     append_formatted_source(builder, VIEW_TO_VALUE(expr->name));
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const variable_t *expr = (const variable_t *)node;
     uint32_t index = add_string_to_data_segment_ex(data, expr->name);
-    return add_instruction(code, (instruction_t){ .opcode = VLOAD, .arg1 = index });
+    return add_instruction(code, (instruction_t){.opcode = VLOAD, .arg1 = index});
 }
 
 /**
  * @brief Generates bytecode for storing a value into a variable.
  * `node`: A pointer to the variable node (must be of variable type)
  */
-static instr_index_t generate_bytecode_assign(const node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t
+generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_t *data) {
     const variable_t *expr = (const variable_t *)node;
     uint32_t index = add_string_to_data_segment_ex(data, expr->name);
-    return add_instruction(code, (instruction_t){ .opcode = STORE, .arg1 = index });
+    return add_instruction(code, (instruction_t){.opcode = STORE, .arg1 = index});
 }
 
 /** @brief Virtual table for variable expressions. */
@@ -140,7 +137,7 @@ expression_t *create_variable_node(arena_t *arena, string_view_t name) {
 declarator_spec_t *create_declarator_from_variable(const node_t *expr) {
     assert(expr->vtbl->type == NODE_VARIABLE);
     const variable_t *var = (variable_t *)expr;
-    declarator_spec_t *decl = (declarator_spec_t*)ALLOC(sizeof(declarator_spec_t));
+    declarator_spec_t *decl = (declarator_spec_t *)ALLOC(sizeof(declarator_spec_t));
     decl->name = var->name;
     decl->initial = NULL;
     return decl;

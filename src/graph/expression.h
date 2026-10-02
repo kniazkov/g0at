@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "node.h"
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
 #include "data_type.h"
+#include "node.h"
 
 typedef struct declarator_spec_t declarator_spec_t;
 
@@ -56,9 +56,10 @@ static inline const wchar_t *get_expression_child_tag(const expression_t *expr, 
 }
 
 /** @brief Calculates the abstract lattice element represented by an expression. */
-static inline const lattice_element_t *calculate_expression(expression_t *expr,
-        abstract_state_t *state, arena_t *arena) {
-    if (state->control_flow != FLOW_NORMAL) return make_bottom_element();
+static inline const lattice_element_t *
+calculate_expression(expression_t *expr, abstract_state_t *state, arena_t *arena) {
+    if (state->control_flow != FLOW_NORMAL)
+        return make_bottom_element();
     const lattice_element_t *value = calculate_node(&expr->base, state, arena);
     if (value->type == LATTICE_BOTTOM && state->control_flow == FLOW_NORMAL) {
         state->control_flow = FLOW_UNREACHABLE;
@@ -73,7 +74,8 @@ static inline string_value_t generate_goat_code_from_expression(const expression
 
 /** @brief Generates indented Goat source code from an expression. */
 static inline void generate_indented_goat_code_from_expression(const expression_t *expr,
-        source_builder_t *builder, size_t indent) {
+                                                               source_builder_t *builder,
+                                                               size_t indent) {
     generate_indented_goat_code_from_node(&expr->base, builder, indent);
 }
 
@@ -96,19 +98,21 @@ static inline string_value_t generate_c_code_from_expression(const expression_t 
 
 /** @brief Generates indented C source code from an expression. */
 static inline void generate_indented_c_code_from_expression(const expression_t *expr,
-        source_builder_t *builder, size_t indent) {
+                                                            source_builder_t *builder,
+                                                            size_t indent) {
     generate_indented_c_code_from_node(&expr->base, builder, indent);
 }
 
 /** @brief Generates bytecode from an expression. */
-static inline instr_index_t generate_bytecode_from_expression(expression_t *expr,
-        code_builder_t *code, data_builder_t *data) {
+static inline instr_index_t
+generate_bytecode_from_expression(expression_t *expr, code_builder_t *code, data_builder_t *data) {
     return generate_bytecode_from_node(&expr->base, code, data);
 }
 
 /** @brief Generates bytecode for storing a value into an expression. */
 static inline instr_index_t generate_bytecode_assign_from_expression(const expression_t *expr,
-        code_builder_t *code, data_builder_t *data) {
+                                                                     code_builder_t *code,
+                                                                     data_builder_t *data) {
     return generate_bytecode_assign_from_node(&expr->base, code, data);
 }
 
@@ -117,7 +121,8 @@ static inline instr_index_t generate_bytecode_assign_from_expression(const expre
  * @return `true` if deferred bytecode was successfully generated in this pass; `false` otherwise.
  */
 static inline bool generate_deferred_bytecode_from_expression(const expression_t *expr,
-        code_builder_t *code, data_builder_t *data) {
+                                                              code_builder_t *code,
+                                                              data_builder_t *data) {
     return generate_deferred_bytecode_from_node(&expr->base, code, data);
 }
 
@@ -156,8 +161,10 @@ node_t *create_function_call_node_without_args(arena_t *arena, expression_t *fun
  * @pre The node must be of function call type (`NODE_FUNCTION_CALL`)
  * @pre The node must not have arguments already set
  */
-void set_function_call_arguments(node_t *node, arena_t *arena,
-        expression_t **args, size_t args_count);
+void set_function_call_arguments(node_t *node,
+                                 arena_t *arena,
+                                 expression_t **args,
+                                 size_t args_count);
 
 /**
  * @brief Creates a function object node in the AST.

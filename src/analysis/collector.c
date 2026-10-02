@@ -3,14 +3,15 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Analysis event storage, queries, and text rendering.
  */
+#include "collector.h"
+
+#include "graph/declarations.h"
+#include "lattice.h"
+#include "lib/allocate.h"
+#include "lib/string_ext.h"
+
 #include <assert.h>
 #include <string.h>
-
-#include "collector.h"
-#include "lattice.h"
-#include "graph/declarations.h"
-#include "lib/string_ext.h"
-#include "lib/allocate.h"
 
 analysis_collector_t *create_analysis_collector(arena_t *arena) {
     assert(arena);
@@ -20,8 +21,10 @@ analysis_collector_t *create_analysis_collector(arena_t *arena) {
 }
 
 const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
-        analysis_event_kind_t kind, const node_t *node, const declarator_t *declarator,
-        const lattice_element_t *value) {
+                                           analysis_event_kind_t kind,
+                                           const node_t *node,
+                                           const declarator_t *declarator,
+                                           const lattice_element_t *value) {
     if (!collector) {
         return NULL;
     }
@@ -53,18 +56,19 @@ const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
 }
 
 static bool matches(const analysis_event_t *event, const analysis_event_query_t *query) {
-    return !query || (
-        (!query->kind || event->kind == query->kind) &&
-        (!query->node || event->node == query->node) &&
-        (!query->declarator || event->declarator == query->declarator) &&
-        (!query->file_name || (event->file_name &&
-            strcmp(event->file_name, query->file_name) == 0)) &&
-        (!query->row || event->row == query->row) &&
-        (!query->column || event->column == query->column));
+    return !query
+           || ((!query->kind || event->kind == query->kind)
+               && (!query->node || event->node == query->node)
+               && (!query->declarator || event->declarator == query->declarator)
+               && (!query->file_name
+                   || (event->file_name && strcmp(event->file_name, query->file_name) == 0))
+               && (!query->row || event->row == query->row)
+               && (!query->column || event->column == query->column));
 }
 
 const analysis_event_t *find_analysis_event(const analysis_collector_t *collector,
-        const analysis_event_t *after, const analysis_event_query_t *query) {
+                                            const analysis_event_t *after,
+                                            const analysis_event_query_t *query) {
     if (!collector) {
         return NULL;
     }
@@ -76,10 +80,10 @@ const analysis_event_t *find_analysis_event(const analysis_collector_t *collecto
 }
 
 const analysis_event_t *find_last_analysis_event(const analysis_collector_t *collector,
-        const analysis_event_query_t *query) {
+                                                 const analysis_event_query_t *query) {
     const analysis_event_t *last = NULL;
-    for (const analysis_event_t *event = collector ? collector->head : NULL;
-            event; event = event->next) {
+    for (const analysis_event_t *event = collector ? collector->head : NULL; event;
+         event = event->next) {
         if (matches(event, query)) {
             last = event;
         }
@@ -91,17 +95,21 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
     string_builder_t builder;
     init_string_builder(&builder, 0);
     string_value_t result = EMPTY_STRING_VALUE;
-    for (const analysis_event_t *event = collector ? collector->head : NULL;
-            event; event = event->next) {
-        const wchar_t *kind = event->kind == ANALYSIS_VALUE_WRITE ? L"write" :
-            event->kind == ANALYSIS_STATE_JOIN ? L"join" :
-            event->kind == ANALYSIS_UNREACHABLE ? L"unreachable" : L"summary";
-        string_value_t filename = event->file_name ? decode_utf8(event->file_name) :
-            STATIC_STRING(L"<unknown>");
+    for (const analysis_event_t *event = collector ? collector->head : NULL; event;
+         event = event->next) {
+        const wchar_t *kind = event->kind == ANALYSIS_VALUE_WRITE   ? L"write"
+                              : event->kind == ANALYSIS_STATE_JOIN  ? L"join"
+                              : event->kind == ANALYSIS_UNREACHABLE ? L"unreachable"
+                                                                    : L"summary";
+        string_value_t filename =
+            event->file_name ? decode_utf8(event->file_name) : STATIC_STRING(L"<unknown>");
         string_value_t value = event->value ? lattice_to_string(event->value) : EMPTY_STRING_VALUE;
         string_value_t line = format_string(L"#%zu %s, %zu.%zu: %s ",
-            event->sequence, filename.data ? filename.data : L"<unknown>",
-            event->row, event->column, kind);
+                                            event->sequence,
+                                            filename.data ? filename.data : L"<unknown>",
+                                            event->row,
+                                            event->column,
+                                            kind);
         append_string_value(&builder, line);
         if (event->kind == ANALYSIS_UNREACHABLE) {
             append_string(&builder, event->node->vtbl->type_name);

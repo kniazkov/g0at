@@ -4,20 +4,21 @@
  * @brief Provides the implementation of the scanner functions for lexical analysis.
  */
 
-#include "lib/integer_math.h"
-#include <assert.h>
-#include <memory.h>
-#include <stdbool.h>
-#include <wctype.h>
-#include <stddef.h>
-#include <math.h>
-
 #include "scanner.h"
+
+#include "graph/expression.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
+#include "lib/integer_math.h"
 #include "lib/string_ext.h"
 #include "resources/messages.h"
-#include "graph/expression.h"
+
+#include <assert.h>
+#include <math.h>
+#include <memory.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <wctype.h>
 
 /** @brief The size of a tabulation (in columns). */
 #define TABULATION_SIZE 4
@@ -33,14 +34,12 @@ static void remove_comments_and_carriage_returns(wchar_t *code) {
         if (code[i] == L'\r') {
             code[i] = L' ';
             i++;
-        }
-        else if (code[i] == L'/' && code[i + 1] == L'/') {
+        } else if (code[i] == L'/' && code[i + 1] == L'/') {
             while (code[i] != L'\0' && code[i] != L'\n') {
                 code[i] = L' ';
                 i++;
             }
-        }
-        else if (code[i] == L'/' && code[i + 1] == L'*') {
+        } else if (code[i] == L'/' && code[i + 1] == L'*') {
             code[i] = L' ';
             code[i + 1] = L' ';
             i += 2;
@@ -71,11 +70,9 @@ static wchar_t next_char(scanner_t *scan) {
     if (current == L'\n') {
         scan->position.row++;
         scan->position.column = 1;
-    }
-    else if (current == L'\t') {
+    } else if (current == L'\t') {
         scan->position.column += TABULATION_SIZE;
-    }
-    else {
+    } else {
         scan->position.column++;
     }
     scan->position.offset++;
@@ -84,28 +81,27 @@ static wchar_t next_char(scanner_t *scan) {
 
 /** @brief Accepts underscore and the identifier-letter ranges listed below. */
 static bool is_letter(wchar_t c) {
-    return
-        (c >= L'A' && c <= L'Z') ||      // Uppercase Latin letters
-        c == L'_' ||                     // Underscore is considered a letter in identifiers
-        (c >= L'a' && c <= L'z') ||      // Lowercase Latin letters
-        (c >= 0x0370 && c <= 0x03FF) ||  // Greek letters
-        (c >= 0x0400 && c <= 0x04FF) ||  // Cyrillic letters
-        (c >= 0x0530 && c <= 0x058F) ||  // Armenian letters
-        (c >= 0x0590 && c <= 0x05FF) ||  // Hebrew letters
-        (c >= 0x0600 && c <= 0x06FF) ||  // Arabic letters
-        (c >= 0x0800 && c <= 0x083F) ||  // Syriac
-        (c >= 0x0900 && c <= 0x097F) ||  // Devanagari (Hindi, Sanskrit, etc.)
-        (c >= 0x0980 && c <= 0x09FF) ||  // Bengali
-        (c >= 0x0A00 && c <= 0x0A7F) ||  // Gurmukhi
-        (c >= 0x0A80 && c <= 0x0AFF) ||  // Gujarati
-        (c >= 0x0B00 && c <= 0x0B7F) ||  // Oriya
-        (c >= 0x0F00 && c <= 0x0FFF) ||  // Tibetan
-        (c >= 0x1800 && c <= 0x18AF) ||  // Canadian Aboriginal syllabics
-        (c >= 0x1D00 && c <= 0x1D7F) ||  // Phonetic Extensions
-        (c >= 0x1E00 && c <= 0x1EFF) ||  // Latin Extended Additional
-        (c >= 0x2C00 && c <= 0x2C5F) ||  // Glagolitic
-        (c >= 0xA720 && c <= 0xA7FF) ||  // Latin Extended-D
-        (c >= 0xA840 && c <= 0xA87F);    // Phags-pa
+    return (c >= L'A' && c <= L'Z') ||     // Uppercase Latin letters
+           c == L'_' ||                    // Underscore is considered a letter in identifiers
+           (c >= L'a' && c <= L'z') ||     // Lowercase Latin letters
+           (c >= 0x0370 && c <= 0x03FF) || // Greek letters
+           (c >= 0x0400 && c <= 0x04FF) || // Cyrillic letters
+           (c >= 0x0530 && c <= 0x058F) || // Armenian letters
+           (c >= 0x0590 && c <= 0x05FF) || // Hebrew letters
+           (c >= 0x0600 && c <= 0x06FF) || // Arabic letters
+           (c >= 0x0800 && c <= 0x083F) || // Syriac
+           (c >= 0x0900 && c <= 0x097F) || // Devanagari (Hindi, Sanskrit, etc.)
+           (c >= 0x0980 && c <= 0x09FF) || // Bengali
+           (c >= 0x0A00 && c <= 0x0A7F) || // Gurmukhi
+           (c >= 0x0A80 && c <= 0x0AFF) || // Gujarati
+           (c >= 0x0B00 && c <= 0x0B7F) || // Oriya
+           (c >= 0x0F00 && c <= 0x0FFF) || // Tibetan
+           (c >= 0x1800 && c <= 0x18AF) || // Canadian Aboriginal syllabics
+           (c >= 0x1D00 && c <= 0x1D7F) || // Phonetic Extensions
+           (c >= 0x1E00 && c <= 0x1EFF) || // Latin Extended Additional
+           (c >= 0x2C00 && c <= 0x2C5F) || // Glagolitic
+           (c >= 0xA720 && c <= 0xA7FF) || // Latin Extended-D
+           (c >= 0xA840 && c <= 0xA87F);   // Phags-pa
 }
 
 /**
@@ -119,81 +115,27 @@ static bool is_operator(wchar_t c) {
 
 /** @brief Keyword to token type mapping */
 typedef struct {
-    const wchar_t* keyword;            /**< Keyword string */
-    size_t length;                     /**< Length of keyword */
-    token_type_t type;                 /**< Corresponding token type */
-    node_t* (*node_factory)(arena_t*); /**< Optional AST node factory (NULL for simple keywords) */
-    size_t group_offset;               /**< Optional group offset in the group structure */
+    const wchar_t *keyword;             /**< Keyword string */
+    size_t length;                      /**< Length of keyword */
+    token_type_t type;                  /**< Corresponding token type */
+    node_t *(*node_factory)(arena_t *); /**< Optional AST node factory (NULL for simple keywords) */
+    size_t group_offset;                /**< Optional group offset in the group structure */
 } keyword_lookup_t;
 
 /** @brief Keyword lookup table */
 static const keyword_lookup_t keywords[] = {
-    {
-        L"var",
-        3,
-        TOKEN_VAR,
-        NULL,
-        offsetof(token_groups_t, var_keywords)
-    },
-    {
-        L"const",
-        5,
-        TOKEN_CONST,
-        NULL,
-        offsetof(token_groups_t, const_keywords)
-    },
-    {
-        L"null",
-        4,
-        TOKEN_EXPRESSION,
-        create_null_node,
-        SIZE_MAX
-    },
-    {
-        L"true",
-        4,
-        TOKEN_EXPRESSION,
-        create_true_node,
-        SIZE_MAX
-    },
-    {
-        L"false",
-        5,
-        TOKEN_EXPRESSION,
-        create_false_node,
-        SIZE_MAX
-    },
-    {
-        L"func",
-        4,
-        TOKEN_FUNC,
-        NULL,
-        SIZE_MAX
-    },
-    {
-        L"return",
-        6,
-        TOKEN_RETURN,
-        NULL,
-        offsetof(token_groups_t, return_keywords)
-    },
-    { L"try", 3, TOKEN_TRY, NULL, offsetof(token_groups_t, control_flow_keywords) },
-    { L"catch", 5, TOKEN_CATCH, NULL, offsetof(token_groups_t, catch_keywords) },
-    { L"throw", 5, TOKEN_THROW, NULL, offsetof(token_groups_t, throw_keywords) },
-    {
-        L"if",
-        2,
-        TOKEN_IF,
-        NULL,
-        offsetof(token_groups_t, control_flow_keywords)
-    },
-    {
-        L"else",
-        4,
-        TOKEN_ELSE,
-        NULL,
-        offsetof(token_groups_t, else_keywords)
-    },
+    {L"var", 3, TOKEN_VAR, NULL, offsetof(token_groups_t, var_keywords)},
+    {L"const", 5, TOKEN_CONST, NULL, offsetof(token_groups_t, const_keywords)},
+    {L"null", 4, TOKEN_EXPRESSION, create_null_node, SIZE_MAX},
+    {L"true", 4, TOKEN_EXPRESSION, create_true_node, SIZE_MAX},
+    {L"false", 5, TOKEN_EXPRESSION, create_false_node, SIZE_MAX},
+    {L"func", 4, TOKEN_FUNC, NULL, SIZE_MAX},
+    {L"return", 6, TOKEN_RETURN, NULL, offsetof(token_groups_t, return_keywords)},
+    {L"try", 3, TOKEN_TRY, NULL, offsetof(token_groups_t, control_flow_keywords)},
+    {L"catch", 5, TOKEN_CATCH, NULL, offsetof(token_groups_t, catch_keywords)},
+    {L"throw", 5, TOKEN_THROW, NULL, offsetof(token_groups_t, throw_keywords)},
+    {L"if", 2, TOKEN_IF, NULL, offsetof(token_groups_t, control_flow_keywords)},
+    {L"else", 4, TOKEN_ELSE, NULL, offsetof(token_groups_t, else_keywords)},
 
 };
 
@@ -203,15 +145,15 @@ typedef struct {
 } operator_mapping_t;
 
 static const operator_mapping_t operator_mappings[] = {
-    { L"+",  offsetof(token_groups_t, additive_operators) },
-    { L"-",  offsetof(token_groups_t, additive_operators) },
-    { L"*",  offsetof(token_groups_t, multiplicative_operators) },
-    { L"/",  offsetof(token_groups_t, multiplicative_operators) },
-    { L"%",  offsetof(token_groups_t, multiplicative_operators) },
-    { L"**", offsetof(token_groups_t, power_operators) },
-    { L"=",  offsetof(token_groups_t, assignment_operators) },
-    { L"<",  offsetof(token_groups_t, comparison_operators) },
-    { L">",  offsetof(token_groups_t, comparison_operators) },
+    {L"+", offsetof(token_groups_t, additive_operators)},
+    {L"-", offsetof(token_groups_t, additive_operators)},
+    {L"*", offsetof(token_groups_t, multiplicative_operators)},
+    {L"/", offsetof(token_groups_t, multiplicative_operators)},
+    {L"%", offsetof(token_groups_t, multiplicative_operators)},
+    {L"**", offsetof(token_groups_t, power_operators)},
+    {L"=", offsetof(token_groups_t, assignment_operators)},
+    {L"<", offsetof(token_groups_t, comparison_operators)},
+    {L">", offsetof(token_groups_t, comparison_operators)},
 
 };
 
@@ -233,7 +175,7 @@ static void parse_string(scanner_t *scan, token_t *token) {
         }
         if (ch == L'\\') {
             ch = next_char(scan);
-            switch(ch) {
+            switch (ch) {
                 case L'\0':
                     token->type = TOKEN_ERROR;
                     token->text.data = get_messages()->unclosed_quotation_mark;
@@ -257,11 +199,9 @@ static void parse_string(scanner_t *scan, token_t *token) {
                     break;
                 default:
                     token->type = TOKEN_ERROR;
-                    token->text = format_string_to_arena(
-                        scan->memory->tokens,
-                        get_messages()->invalid_escape_sequence,
-                        ch
-                    );
+                    token->text = format_string_to_arena(scan->memory->tokens,
+                                                         get_messages()->invalid_escape_sequence,
+                                                         ch);
                     goto cleanup;
             }
         } else {
@@ -311,8 +251,7 @@ static void parse_number(scanner_t *scan, token_t *token, bool negative) {
         double int_t = (double)int_part;
         double fract_d = (double)fract_part / (double)divisor;
         value = int_t + fract_d;
-    }
-    else {
+    } else {
         value = (double)int_part;
     }
 
@@ -342,21 +281,24 @@ static void parse_number(scanner_t *scan, token_t *token, bool negative) {
     if (is_real) {
         token->node = create_real_number_node(scan->memory->graph, negative ? -value : value);
     } else {
-        int64_t integer = int_part <= INT64_MAX ? (int64_t)int_part
-            : INT64_MIN + (int64_t)(int_part - ((uint64_t)INT64_MAX + 1));
+        int64_t integer = int_part <= INT64_MAX
+                              ? (int64_t)int_part
+                              : INT64_MIN + (int64_t)(int_part - ((uint64_t)INT64_MAX + 1));
         token->node = create_integer_node(scan->memory->graph,
-            negative ? subtract_int64_wrapping(0, integer) : integer);
+                                          negative ? subtract_int64_wrapping(0, integer) : integer);
     }
 }
 
-scanner_t *create_scanner(const char *file_name, string_value_t code, parser_memory_t *memory,
-        token_groups_t *groups) {
+scanner_t *create_scanner(const char *file_name,
+                          string_value_t code,
+                          parser_memory_t *memory,
+                          token_groups_t *groups) {
     scanner_t *scan = alloc_zeroed_from_arena(memory->tokens, sizeof(scanner_t));
     size_t code_size = sizeof(wchar_t) * (code.length + 1);
     scan->code = alloc_from_arena(memory->tokens, code_size);
     memcpy(scan->code, code.data, code_size);
     remove_comments_and_carriage_returns(scan->code);
-    scan->position = (full_position_t){ file_name, 1, 1, scan->code, 0 };
+    scan->position = (full_position_t){file_name, 1, 1, scan->code, 0};
     scan->memory = memory;
     scan->groups = groups;
     memset(groups, 0, sizeof(token_groups_t));
@@ -382,20 +324,20 @@ token_t *get_token(scanner_t *scan) {
         bool predefined = false;
         do {
             ch = next_char(scan);
-        } while(is_letter(ch) || iswdigit(ch));
+        } while (is_letter(ch) || iswdigit(ch));
         size_t length = scan->position.code - begin->code;
         for (size_t index = 0; index < sizeof(keywords) / sizeof(keyword_lookup_t); index++) {
-            const keyword_lookup_t* kw = &keywords[index];
-            if (length == kw->length &&
-                    wcsncmp(begin->code, kw->keyword, kw->length) == 0) {
+            const keyword_lookup_t *kw = &keywords[index];
+            if (length == kw->length && wcsncmp(begin->code, kw->keyword, kw->length) == 0) {
                 predefined = true;
                 token->type = kw->type;
-                token->text = (string_view_t){ kw->keyword, kw->length };
+                token->text = (string_view_t){kw->keyword, kw->length};
                 if (kw->node_factory) {
                     token->node = kw->node_factory(scan->memory->graph);
                 }
                 if (kw->group_offset != SIZE_MAX) {
-                    token_list_t* group = (token_list_t*)((char*)(scan->groups) + kw->group_offset);
+                    token_list_t *group =
+                        (token_list_t *)((char *)(scan->groups) + kw->group_offset);
                     append_token_to_group(group, token);
                 }
                 break;
@@ -405,8 +347,7 @@ token_t *get_token(scanner_t *scan) {
             token->type = TOKEN_IDENTIFIER;
             append_token_to_group(&scan->groups->identifiers, token);
         }
-    }
-    else if (is_operator(ch)) {
+    } else if (is_operator(ch)) {
         token->type = TOKEN_OPERATOR;
         if (ch == L'+' || ch == L'-') {
             next_char(scan);
@@ -415,34 +356,25 @@ token_t *get_token(scanner_t *scan) {
                 ch = next_char(scan);
             } while (is_operator(ch) && ch != L'+' && ch != L'-');
         }
-    }
-    else if (ch == L'{' || ch == L'}' || ch == L'(' || ch == L')' || ch == L'[' || ch == L']') {
+    } else if (ch == L'{' || ch == L'}' || ch == L'(' || ch == L')' || ch == L'[' || ch == L']') {
         token->type = TOKEN_BRACKET;
         next_char(scan);
-    }
-    else if (ch == L'"') {
+    } else if (ch == L'"') {
         parse_string(scan, token);
-    }
-    else if (iswdigit(ch)) {
+    } else if (iswdigit(ch)) {
         parse_number(scan, token, false);
-    }
-    else if (ch == L',') {
+    } else if (ch == L',') {
         token->type = TOKEN_COMMA;
-        token->text = (string_view_t){ L",", 1 };
+        token->text = (string_view_t){L",", 1};
         next_char(scan);
-    }
-    else if (ch == L';') {
+    } else if (ch == L';') {
         token->type = TOKEN_SEMICOLON;
-        token->text = (string_view_t){ L";", 1 };
+        token->text = (string_view_t){L";", 1};
         next_char(scan);
-    }
-    else {
+    } else {
         token->type = TOKEN_ERROR;
-        token->text = format_string_to_arena(
-            scan->memory->tokens,
-            get_messages()->unknown_symbol,
-            ch
-        );
+        token->text =
+            format_string_to_arena(scan->memory->tokens, get_messages()->unknown_symbol, ch);
         next_char(scan);
     }
 
@@ -453,19 +385,19 @@ token_t *get_token(scanner_t *scan) {
         token->text.length = wcslen(token->text.data);
     }
 
-    short_position_t *end = create_short_position_from_full(scan->memory->positions,
-        &scan->position);
+    short_position_t *end =
+        create_short_position_from_full(scan->memory->positions, &scan->position);
     token->position = create_position_range(scan->memory->positions, begin, end);
     if (token->node) {
         token->node->position = token->position;
     }
 
     if (token->type == TOKEN_OPERATOR) {
-        for (size_t index = 0; index < sizeof(operator_mappings)/sizeof(operator_mapping_t);
-                index++) {
+        for (size_t index = 0; index < sizeof(operator_mappings) / sizeof(operator_mapping_t);
+             index++) {
             if (wcscmp(operator_mappings[index].oper, token->text.data) == 0) {
-                token_list_t* group = (token_list_t*)((char*)(scan->groups)
-                    + operator_mappings[index].group_offset);
+                token_list_t *group = (token_list_t *)((char *)(scan->groups)
+                                                       + operator_mappings[index].group_offset);
                 append_token_to_group(group, token);
                 break;
             }

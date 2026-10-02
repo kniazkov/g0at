@@ -57,8 +57,8 @@ typedef struct {
  * The node owns the declarator list and its contents.
  * `decl_count`: Number of declarators (must be > 0).
  */
-node_t *create_variable_declaration_node(arena_t *arena, declarator_spec_t **decl_list,
-        size_t decl_count);
+node_t *
+create_variable_declaration_node(arena_t *arena, declarator_spec_t **decl_list, size_t decl_count);
 
 /**
  * @brief Creates a new constant declaration AST node.
@@ -67,12 +67,12 @@ node_t *create_variable_declaration_node(arena_t *arena, declarator_spec_t **dec
  * `decl_count`: Number of declarators (must be > 0).
  * @warning All declarators must have non-`NULL` initializers.
  */
-node_t *create_constant_declaration_node(arena_t *arena, declarator_spec_t **decl_list,
-        size_t decl_count);
+node_t *
+create_constant_declaration_node(arena_t *arena, declarator_spec_t **decl_list, size_t decl_count);
 
 /** @brief Creates a synthetic declaration of one variable without an initializer. */
 variable_declaration_pair_t create_synthetic_variable_declaration_node(arena_t *arena,
-        string_view_t name);
+                                                                       string_view_t name);
 
 /**
  * @brief Gets the built-in declarator placeholder.
@@ -96,5 +96,5 @@ size_t get_property_count_of_declarator(const node_t *node);
  * `index`: Zero-based property index.
  * @return Property key as a constant wide string, or NULL if unavailable.
  */
-const wchar_t *get_property_of_declarator(const node_t *node, size_t index,
-        node_display_value_t *out_value);
+const wchar_t *
+get_property_of_declarator(const node_t *node, size_t index, node_display_value_t *out_value);

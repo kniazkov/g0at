@@ -5,14 +5,12 @@
  */
 
 #include "common_methods.h"
+
 #include "analysis/lattice.h"
 #include "expression.h"
 
 node_display_value_t no_data(const node_t *node) {
-    return (node_display_value_t) {
-        .text = NULL_STRING_VALUE,
-        .kind = NODE_DISPLAY_VALUE_PLAIN
-    };
+    return (node_display_value_t){.text = NULL_STRING_VALUE, .kind = NODE_DISPLAY_VALUE_PLAIN};
 }
 
 size_t no_properties(const node_t *node) {
@@ -20,10 +18,8 @@ size_t no_properties(const node_t *node) {
 }
 
 const wchar_t *no_property(const node_t *node, size_t index, node_display_value_t *out_value) {
-    *out_value = (node_display_value_t){
-        .text = EMPTY_STRING_VALUE,
-        .kind = NODE_DISPLAY_VALUE_PLAIN
-    };
+    *out_value =
+        (node_display_value_t){.text = EMPTY_STRING_VALUE, .kind = NODE_DISPLAY_VALUE_PLAIN};
     return NULL;
 }
 
@@ -31,11 +27,11 @@ size_t no_children(const node_t *node) {
     return 0;
 }
 
-node_t* no_child(const node_t *node, size_t index) {
+node_t *no_child(const node_t *node, size_t index) {
     return NULL;
 }
 
-const wchar_t* no_tags(const node_t *node, size_t index) {
+const wchar_t *no_tags(const node_t *node, size_t index) {
     return NULL;
 }
 
@@ -63,11 +59,12 @@ const lattice_element_t *no_abstract_value(node_t *node, abstract_state_t *state
     return make_bottom_element();
 }
 
-const lattice_element_t *unknown_abstract_value(node_t *node, abstract_state_t *state,
-        arena_t *arena) {
+const lattice_element_t *
+unknown_abstract_value(node_t *node, abstract_state_t *state, arena_t *arena) {
     for (size_t i = 0; i < get_node_child_count(node); i++) {
         calculate_expression((expression_t *)get_node_child(node, i), state, arena);
-        if (state->control_flow != FLOW_NORMAL) return make_bottom_element();
+        if (state->control_flow != FLOW_NORMAL)
+            return make_bottom_element();
     }
     return make_top_element();
 }
@@ -87,8 +84,8 @@ string_value_t no_c_code(const node_t *node) {
 void no_indented_c_code(const node_t *node, source_builder_t *builder, size_t indent) {
 }
 
-instr_index_t no_bytecode_assignment(const node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+instr_index_t
+no_bytecode_assignment(const node_t *node, code_builder_t *code, data_builder_t *data) {
     return BAD_INSTR_INDEX;
 }
 
