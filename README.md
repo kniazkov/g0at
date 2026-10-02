@@ -65,7 +65,7 @@ See [the functional tests](test) for more examples, including nested objects, cl
 
 - Dynamically typed values: integers, real numbers, strings, booleans, `null`, functions, and user-defined objects.
 - Variable and constant declarations with `var` and `const`, assignment, and implicit variable declarations.
-- Arithmetic operators `+`, `-`, `*`, `/`, `%`, and `**`, string concatenation, and comparisons with `<` and `>`.
+- Arithmetic operators `+`, `-`, `*`, `/`, `%`, and `**`, string concatenation, and comparisons `<`, `<=`, `>`, `>=`, `==`, and `!=`.
 - Parenthesized expressions and operator precedence.
 - Lexical scopes, first-class functions, arguments, closures, recursion, and `return`.
 - `if` / `else`, including nested branches and block bodies.
@@ -528,6 +528,38 @@ A stack underflow is a fatal interpreter invariant violation: it prints
 the process with failure, including in release builds. Goat `try/catch` cannot
 intercept it. Process-isolated tests exercise malformed bytecode and stack access.
 
+### Comparisons
+
+The six comparison operators evaluate left to right. Ordering (`<`, `<=`, `>`, `>=`)
+binds more tightly than equality (`==`, `!=`); both bind less tightly than arithmetic.
+Operators at the same precedence associate left to right, so `a < b < c` compares
+the boolean result of `a < b` with `c`, rather than testing a mathematical chain.
+
+- Numbers compare by value, including mixed integer/real operands. Comparisons do
+  not round integers through double, even beyond 2^53 or at the int64 limits.
+- NaN is unequal to every numeric value, including itself; all four ordering
+  comparisons involving NaN are false. Signed zeros compare equal.
+- Strings compare lexicographically by Unicode scalar value, without normalization.
+  Embedded NUL characters participate in the comparison. Booleans use `false < true`.
+- Equality does not coerce strings or booleans to numbers. Different types are
+  unequal except for integer/real pairs. Null equals null; objects and functions
+  compare by identity.
+- Ordering requires two numbers, two strings, or two booleans. An unsupported left
+  operand throws `INVALID_OPERATION`; an incompatible right operand throws
+  `INVALID_ARGUMENT`.
+
+Comparison methods return `operation_result_t`, and VM comparisons use the same
+exception dispatch as arithmetic. Internal key ordering remains separate: NaNs
+sort after other numbers and equal each other as keys, keeping AVL lookups stable.
+
+The analyzer folds constants and proves comparisons between integer intervals,
+including intervals versus real constants. Uncertain results are boolean; invalid
+ordering has no normal result (`BOTTOM`). Reachability uses the same transfer
+function. Reference identity and unknown real domains remain conservative.
+Analysis expectation files accept `boolean` for either truth value. Older branch
+join tests use `pi` (currently abstracted as TOP) instead of relying on an
+unimplemented `1 < 2` comparison to provide an unknown condition.
+
 ### Lattice semantics
 
 `join` computes a least upper bound; `meet` computes a greatest lower bound. Empty integer
@@ -647,7 +679,7 @@ try { throw "failed"; } catch (error) { print(error); }
 
 An uncaught exception prints `Uncaught exception: <value>` to stderr in the selected language
 before process cleanup and returns a failing exit status. Arithmetic methods (`add`, `subtract`,
-`multiply`, `divide`, `modulo`, `power`) return `operation_result_t`: a non-NULL `value` and
+`multiply`, `divide`, `modulo`, `power`) and all six comparisons return `operation_result_t`: a non-NULL `value` and
 `is_exception`. Either result owns one reference, transferred to the VM stack or exception
 handler. The same object may also be an operand; implementations must retain that reference.
 

@@ -75,3 +75,15 @@ create_less_node(arena_t *arena, expression_t *left_operand, expression_t *right
 /** @brief Creates a new greater-than (`>`) expression node. */
 expression_t *
 create_greater_node(arena_t *arena, expression_t *left_operand, expression_t *right_operand);
+
+/** @brief Creates a less or equal comparison. */
+expression_t *create_less_or_equal_node(arena_t *arena, expression_t *left, expression_t *right);
+
+/** @brief Creates a greater or equal comparison. */
+expression_t *create_greater_or_equal_node(arena_t *arena, expression_t *left, expression_t *right);
+
+/** @brief Creates a equal comparison. */
+expression_t *create_equal_node(arena_t *arena, expression_t *left, expression_t *right);
+
+/** @brief Creates a not equal comparison. */
+expression_t *create_not_equal_node(arena_t *arena, expression_t *left, expression_t *right);

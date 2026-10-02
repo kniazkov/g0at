@@ -1,4 +1,4 @@
 var x = 1;
-if (1 < 2) { x = 2; }
+if (pi) { x = 2; }
 if (x) { x = 3; }
 else { x = 4; }

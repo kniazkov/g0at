@@ -1,0 +1,7 @@
+try { print(1 < "1"); } catch(e) { print(e); print("|"); }
+try { print("1" >= 1); } catch(e) { print(e); print("|"); }
+try { print(true > 1); } catch(e) { print(e); print("|"); }
+try { print(null <= null); } catch(e) { print(e); print("|"); }
+try { print(print < print); } catch(e) { print(e); print("|"); }
+try { print({} >= {}); } catch(e) { print(e); print("|"); }
+try { print(1 < 2 < 3); } catch(e) { print(e); print("|"); }

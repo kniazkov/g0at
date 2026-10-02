@@ -7,7 +7,10 @@
 #include "common_methods.h"
 
 #include "lib/allocate.h"
+#include "lib/comparison.h"
 #include "lib/string_ext.h"
+
+#include <math.h>
 
 void stub_memory_function(object_t *obj) {
     return;
@@ -18,9 +21,9 @@ bool no_sweep(object_t *obj) {
 }
 
 int compare_object_addresses(const object_t *obj1, const object_t *obj2) {
-    if (obj1 > obj2) {
+    if ((uintptr_t)obj1 > (uintptr_t)obj2) {
         return 1;
-    } else if (obj1 < obj2) {
+    } else if ((uintptr_t)obj1 < (uintptr_t)obj2) {
         return -1;
     } else {
         return 0;
@@ -103,28 +106,80 @@ operation_result_t stub_power(process_t *process, object_t *obj1, object_t *obj2
     return operation_exception(get_exception_invalid_operation());
 }
 
-bool common_less(const object_t *obj1, const object_t *obj2) {
-    return compare_objects_using_vtbl(obj1, obj2) < 0;
+/** @brief Compares numeric values without rounding integer operands. */
+static comparison_order_t numeric_order(const object_t *left, const object_t *right) {
+    bool li = is_integer_object(left), ri = is_integer_object(right);
+    if (li && ri) {
+        int64_t a = get_object_integer_value(left).value, b = get_object_integer_value(right).value;
+        return a < b ? ORDER_LESS : a > b ? ORDER_GREATER : ORDER_EQUAL;
+    }
+    if (li)
+        return compare_integer_real(get_object_integer_value(left).value,
+                                    get_object_real_value(right).value);
+    if (ri) {
+        comparison_order_t order = compare_integer_real(get_object_integer_value(right).value,
+                                                        get_object_real_value(left).value);
+        return order == ORDER_LESS ? ORDER_GREATER : order == ORDER_GREATER ? ORDER_LESS : order;
+    }
+    return compare_reals(get_object_real_value(left).value, get_object_real_value(right).value);
 }
 
-bool common_less_or_equal(const object_t *obj1, const object_t *obj2) {
-    return compare_objects_using_vtbl(obj1, obj2) <= 0;
+int compare_numeric_keys(const object_t *left, const object_t *right) {
+    comparison_order_t order = numeric_order(left, right);
+    if (order == ORDER_UNORDERED) {
+        bool a = isnan(get_object_real_value(left).value),
+             b = isnan(get_object_real_value(right).value);
+        return (int)a - (int)b;
+    }
+    return order == ORDER_LESS ? -1 : order == ORDER_GREATER ? 1 : 0;
 }
 
-bool common_greater(const object_t *obj1, const object_t *obj2) {
-    return compare_objects_using_vtbl(obj1, obj2) > 0;
+static operation_result_t compare_values(object_t *left, object_t *right, comparison_kind_t kind) {
+    bool equality = kind == COMPARE_EQUAL || kind == COMPARE_NOT_EQUAL;
+    object_type_t lt = left->vtbl->type, rt = right->vtbl->type;
+    bool ordered = lt == TYPE_NUMBER || lt == TYPE_STRING || lt == TYPE_BOOLEAN;
+    comparison_order_t order;
+    if (!ordered || lt != rt) {
+        if (!equality)
+            return operation_exception(ordered ? get_exception_invalid_argument()
+                                               : get_exception_invalid_operation());
+        order = left == right ? ORDER_EQUAL : ORDER_UNORDERED;
+    } else if (lt == TYPE_NUMBER) {
+        order = numeric_order(left, right);
+    } else if (lt == TYPE_BOOLEAN) {
+        bool a = get_object_boolean_value(left), b = get_object_boolean_value(right);
+        order = a < b ? ORDER_LESS : a > b ? ORDER_GREATER : ORDER_EQUAL;
+    } else {
+        string_value_t a = convert_object_to_string(left), b = convert_object_to_string(right);
+        order = compare_strings(VALUE_TO_VIEW(a), VALUE_TO_VIEW(b));
+        FREE_STRING(a);
+        FREE_STRING(b);
+    }
+    return (operation_result_t){get_boolean_object(comparison_matches(order, kind)), false};
 }
 
-bool common_greater_or_equal(const object_t *obj1, const object_t *obj2) {
-    return compare_objects_using_vtbl(obj1, obj2) >= 0;
+operation_result_t common_less(process_t *process, object_t *obj1, object_t *obj2) {
+    return compare_values(obj1, obj2, COMPARE_LESS);
 }
 
-bool common_equal(const object_t *obj1, const object_t *obj2) {
-    return compare_objects_using_vtbl(obj1, obj2) == 0;
+operation_result_t common_less_or_equal(process_t *process, object_t *obj1, object_t *obj2) {
+    return compare_values(obj1, obj2, COMPARE_LEQ);
 }
 
-bool common_not_equal(const object_t *obj1, const object_t *obj2) {
-    return compare_objects_using_vtbl(obj1, obj2) != 0;
+operation_result_t common_greater(process_t *process, object_t *obj1, object_t *obj2) {
+    return compare_values(obj1, obj2, COMPARE_GREATER);
+}
+
+operation_result_t common_greater_or_equal(process_t *process, object_t *obj1, object_t *obj2) {
+    return compare_values(obj1, obj2, COMPARE_GREQ);
+}
+
+operation_result_t common_equal(process_t *process, object_t *obj1, object_t *obj2) {
+    return compare_values(obj1, obj2, COMPARE_EQUAL);
+}
+
+operation_result_t common_not_equal(process_t *process, object_t *obj1, object_t *obj2) {
+    return compare_values(obj1, obj2, COMPARE_NOT_EQUAL);
 }
 
 bool common_get_boolean_value(const object_t *obj) {

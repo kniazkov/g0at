@@ -56,6 +56,7 @@ static bool value_matches(const lattice_element_t *value, const char *text) {
     } types[] = {{"top", LATTICE_TOP},
                  {"bottom", LATTICE_BOTTOM},
                  {"null", LATTICE_NULL},
+                 {"boolean", LATTICE_BOOLEAN},
                  {"true", LATTICE_TRUE},
                  {"false", LATTICE_FALSE},
                  {"numeric", LATTICE_NUMERIC},

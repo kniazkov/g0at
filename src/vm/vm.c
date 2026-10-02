@@ -378,74 +378,32 @@ static bool exec_POWER(runtime_t *runtime, instruction_t instr, thread_t *thread
 
 /** @brief Executes @ref LESS. */
 static bool exec_LESS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *second = pop_object_from_stack(thread->data_stack);
-    object_t *first = pop_object_from_stack(thread->data_stack);
-    bool result = is_object_less_than(first, second);
-    DECREF(first);
-    DECREF(second);
-    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-    thread->instr_id++;
-    return true;
+    return execute_binary_operation(runtime, thread, is_object_less_than);
 }
 
 /** @brief Executes @ref LEQ. */
 static bool exec_LEQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *second = pop_object_from_stack(thread->data_stack);
-    object_t *first = pop_object_from_stack(thread->data_stack);
-    bool result = is_object_less_or_equal(first, second);
-    DECREF(first);
-    DECREF(second);
-    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-    thread->instr_id++;
-    return true;
+    return execute_binary_operation(runtime, thread, is_object_less_or_equal);
 }
 
 /** @brief Executes @ref GREATER. */
 static bool exec_GREATER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *second = pop_object_from_stack(thread->data_stack);
-    object_t *first = pop_object_from_stack(thread->data_stack);
-    bool result = is_object_greater_than(first, second);
-    DECREF(first);
-    DECREF(second);
-    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-    thread->instr_id++;
-    return true;
+    return execute_binary_operation(runtime, thread, is_object_greater_than);
 }
 
 /** @brief Executes @ref GREQ. */
 static bool exec_GREQ(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *second = pop_object_from_stack(thread->data_stack);
-    object_t *first = pop_object_from_stack(thread->data_stack);
-    bool result = is_object_greater_or_equal(first, second);
-    DECREF(first);
-    DECREF(second);
-    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-    thread->instr_id++;
-    return true;
+    return execute_binary_operation(runtime, thread, is_object_greater_or_equal);
 }
 
 /** @brief Executes @ref EQUAL. */
 static bool exec_EQUAL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *second = pop_object_from_stack(thread->data_stack);
-    object_t *first = pop_object_from_stack(thread->data_stack);
-    bool result = are_objects_equal(first, second);
-    DECREF(first);
-    DECREF(second);
-    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-    thread->instr_id++;
-    return true;
+    return execute_binary_operation(runtime, thread, are_objects_equal);
 }
 
 /** @brief Executes @ref DIFF. */
 static bool exec_DIFF(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *second = pop_object_from_stack(thread->data_stack);
-    object_t *first = pop_object_from_stack(thread->data_stack);
-    bool result = are_objects_not_equal(first, second);
-    DECREF(first);
-    DECREF(second);
-    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
-    thread->instr_id++;
-    return true;
+    return execute_binary_operation(runtime, thread, are_objects_not_equal);
 }
 
 /** @brief Executes @ref FUNC. */

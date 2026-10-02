@@ -1,0 +1,3 @@
+if (1 <= 2) { } else {print("dead");}
+if (2 == 3) {print("dead");}
+var x=1;

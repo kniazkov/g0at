@@ -154,6 +154,10 @@ static const operator_mapping_t operator_mappings[] = {
     {L"%", offsetof(token_groups_t, multiplicative_operators)},
     {L"**", offsetof(token_groups_t, power_operators)},
     {L"=", offsetof(token_groups_t, assignment_operators)},
+    {L"==", offsetof(token_groups_t, equality_operators)},
+    {L"!=", offsetof(token_groups_t, equality_operators)},
+    {L"<=", offsetof(token_groups_t, comparison_operators)},
+    {L">=", offsetof(token_groups_t, comparison_operators)},
     {L"<", offsetof(token_groups_t, comparison_operators)},
     {L">", offsetof(token_groups_t, comparison_operators)},
 

@@ -7,7 +7,9 @@
 
 #include "abstract_state.h"
 #include "addition.h"
+#include "comparison.h"
 #include "division.h"
+#include "graph/comparison.h"
 #include "graph/declarations.h"
 #include "graph/node.h"
 #include "graph/statement.h"
@@ -240,10 +242,15 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
         case NODE_GREATER:
         case NODE_GREATER_OR_EQUAL:
         case NODE_EQUAL:
-        case NODE_NOT_EQUAL:
-            visit_children(node, state, collector);
-            /* Until abstract operators match the VM, their results are not proofs. */
-            return make_top_element();
+        case NODE_NOT_EQUAL: {
+            const lattice_element_t *left = visit(get_node_child(node, 0), state, collector);
+            const lattice_element_t *right = visit(get_node_child(node, 1), state, collector);
+            const lattice_element_t *result =
+                lattice_compare(left, right, node_comparison_kind(node->vtbl->type));
+            if (result->type == LATTICE_BOTTOM)
+                (*state)->control_flow = FLOW_UNREACHABLE;
+            return result;
+        }
         default:
             /* Unknown control flow (including future loops) is not traversed once. */
             forget_values(*state);

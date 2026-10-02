@@ -1,5 +1,5 @@
 var x = 0;
-if (1 < 2) {
+if (pi) {
  if (true + 1) { x = 99; }
  x = 88;
 } else { x = 2; }

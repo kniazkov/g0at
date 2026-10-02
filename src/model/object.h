@@ -194,41 +194,23 @@ typedef struct {
     /** @brief Exponentiation (power). */
     operation_result_t (*power)(process_t *process, object_t *obj1, object_t *obj2);
 
-    /**
-     * @brief Checking if first object is less than the second.
-     * @return `true` if obj1 < obj2, `false` otherwise.
-     */
-    bool (*less)(const object_t *obj1, const object_t *obj2);
+    /** @brief Returns a boolean result or a comparison exception. */
+    operation_result_t (*less)(process_t *process, object_t *obj1, object_t *obj2);
 
-    /**
-     * @brief Checking if first object is less than or equal to the second.
-     * @return `true` if obj1 <= obj2, `false` otherwise.
-     */
-    bool (*less_or_equal)(const object_t *obj1, const object_t *obj2);
+    /** @brief Returns a boolean result or a comparison exception. */
+    operation_result_t (*less_or_equal)(process_t *process, object_t *obj1, object_t *obj2);
 
-    /**
-     * @brief Checking if first object is greater than the second.
-     * @return `true` if obj1 > obj2, `false` otherwise.
-     */
-    bool (*greater)(const object_t *obj1, const object_t *obj2);
+    /** @brief Returns a boolean result or a comparison exception. */
+    operation_result_t (*greater)(process_t *process, object_t *obj1, object_t *obj2);
 
-    /**
-     * @brief Checking if first object is greater than or equal to the second.
-     * @return `true` if obj1 >= obj2, `false` otherwise.
-     */
-    bool (*greater_or_equal)(const object_t *obj1, const object_t *obj2);
+    /** @brief Returns a boolean result or a comparison exception. */
+    operation_result_t (*greater_or_equal)(process_t *process, object_t *obj1, object_t *obj2);
 
-    /**
-     * @brief Checking equality of two objects.
-     * @return `true` if obj1 equals obj2, `false` otherwise.
-     */
-    bool (*equal)(const object_t *obj1, const object_t *obj2);
+    /** @brief Returns a boolean result or a comparison exception. */
+    operation_result_t (*equal)(process_t *process, object_t *obj1, object_t *obj2);
 
-    /**
-     * @brief Checking inequality of two objects.
-     * @return `true` if obj1 does not equal obj2, `false` otherwise.
-     */
-    bool (*not_equal)(const object_t *obj1, const object_t *obj2);
+    /** @brief Returns a boolean result or a comparison exception. */
+    operation_result_t (*not_equal)(process_t *process, object_t *obj1, object_t *obj2);
 
     /**
      * @brief Retrieving the boolean value of an object.
@@ -434,52 +416,40 @@ static inline operation_result_t power_objects(process_t *process, object_t *obj
     return obj1->vtbl->power(process, obj1, obj2);
 }
 
-/**
- * @brief Checks whether the first object is less than the second.
- * @return `true` if `obj1 < obj2`, `false` otherwise.
- */
-static inline bool is_object_less_than(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->less(obj1, obj2);
+/** @brief Dispatches comparison, returning an owned result or exception. */
+static inline operation_result_t
+is_object_less_than(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->less(process, obj1, obj2);
 }
 
-/**
- * @brief Checks whether the first object is less than or equal to the second.
- * @return `true` if `obj1 <= obj2`, `false` otherwise.
- */
-static inline bool is_object_less_or_equal(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->less_or_equal(obj1, obj2);
+/** @brief Dispatches comparison, returning an owned result or exception. */
+static inline operation_result_t
+is_object_less_or_equal(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->less_or_equal(process, obj1, obj2);
 }
 
-/**
- * @brief Checks whether the first object is greater than the second.
- * @return `true` if `obj1 > obj2`, `false` otherwise.
- */
-static inline bool is_object_greater_than(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->greater(obj1, obj2);
+/** @brief Dispatches comparison, returning an owned result or exception. */
+static inline operation_result_t
+is_object_greater_than(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->greater(process, obj1, obj2);
 }
 
-/**
- * @brief Checks whether the first object is greater than or equal to the second.
- * @return `true` if `obj1 >= obj2`, `false` otherwise.
- */
-static inline bool is_object_greater_or_equal(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->greater_or_equal(obj1, obj2);
+/** @brief Dispatches comparison, returning an owned result or exception. */
+static inline operation_result_t
+is_object_greater_or_equal(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->greater_or_equal(process, obj1, obj2);
 }
 
-/**
- * @brief Checks whether two objects are equal.
- * @return `true` if the objects are equal, `false` otherwise.
- */
-static inline bool are_objects_equal(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->equal(obj1, obj2);
+/** @brief Dispatches comparison, returning an owned result or exception. */
+static inline operation_result_t
+are_objects_equal(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->equal(process, obj1, obj2);
 }
 
-/**
- * @brief Checks whether two objects are not equal.
- * @return `true` if the objects are not equal, `false` otherwise.
- */
-static inline bool are_objects_not_equal(const object_t *obj1, const object_t *obj2) {
-    return obj1->vtbl->not_equal(obj1, obj2);
+/** @brief Dispatches comparison, returning an owned result or exception. */
+static inline operation_result_t
+are_objects_not_equal(process_t *process, object_t *obj1, object_t *obj2) {
+    return obj1->vtbl->not_equal(process, obj1, obj2);
 }
 
 /** @brief Gets the boolean value of an object. */

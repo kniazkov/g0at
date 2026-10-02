@@ -1,0 +1,7 @@
+var n = (-1) ** 0.5;
+var v2 = n < n;
+var v3 = n <= n;
+var v4 = n > n;
+var v5 = n >= n;
+var v6 = n == n;
+var v7 = n != n;

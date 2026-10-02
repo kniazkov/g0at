@@ -1,0 +1,7 @@
+print("abc" < "abd"); print("|");
+print("abc" <= "abc"); print("|");
+print("abc" != "abcd"); print("|");
+print("" == ""); print("|");
+print("é" > "a"); print("|");
+print("" < "𐀀"); print("|");
+print("𐀀" > ""); print("|");

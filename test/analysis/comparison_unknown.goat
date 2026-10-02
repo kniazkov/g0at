@@ -1,0 +1,3 @@
+var a=pi < 1;
+var b=print == print;
+var c={} == {};

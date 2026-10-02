@@ -6,6 +6,7 @@
 
 #include "common_methods.h"
 #include "lib/allocate.h"
+#include "lib/comparison.h"
 #include "lib/string_ext.h"
 #include "object.h"
 #include "object_state.h"
@@ -174,7 +175,9 @@ static void release(object_t *obj) {
 static int compare(const object_t *obj1, const object_t *obj2) {
     string_value_t first = convert_object_to_string(obj1);
     string_value_t second = convert_object_to_string(obj2);
-    int result = wcscmp(first.data, second.data);
+    comparison_order_t order = compare_strings(VALUE_TO_VIEW(first), VALUE_TO_VIEW(second));
+    int result = order == ORDER_LESS ? -1 : order == ORDER_GREATER ? 1 : 0;
+    FREE_STRING(first);
     FREE_STRING(second);
     return result;
 }
@@ -397,7 +400,14 @@ object_t *create_string_object(process_t *process, string_value_t value) {
     }
     obj->refs = 1;
     obj->state = UNMARKED;
-    obj->string.data = value.should_free ? value.data : WSTRDUP(value.data);
+    if (value.should_free) {
+        obj->string.data = value.data;
+    } else {
+        wchar_t *copy = ALLOC((value.length + 1) * sizeof(wchar_t));
+        wmemcpy(copy, value.data, value.length);
+        copy[value.length] = 0;
+        obj->string.data = copy;
+    }
     obj->string.length = value.length;
     add_object_to_list(&process->objects, &obj->base);
     return &obj->base;
