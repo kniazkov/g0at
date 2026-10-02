@@ -7,13 +7,15 @@
 
 #include "parser.h"
 #include "graph/expression.h"
+#include "graph/statement_list.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "resources/messages.h"
 
 /** @brief Initializes a statement list expression node from a `{...}` block. */
 static void init_statement_list(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
-    node_t *node = create_statement_list_node(memory->graph);
+    statement_list_t *block = create_statement_list_node(memory->graph);
+    node_t *node = &block->base.base;
     node->position = token->position;
     token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     expr->type = TOKEN_EXPRESSION;
@@ -128,7 +130,7 @@ compilation_error_t *parsing_statement_list_bodies(token_t *token, parser_memory
     if (result.error) {
         return result.error;
     }
-    fill_statement_list_node(token->node, result.list);
+    fill_statement_list_node((statement_list_t*)token->node, result.list);
     return NULL;
 }
 

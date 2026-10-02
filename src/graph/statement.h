@@ -10,6 +10,7 @@
 #include "analysis/lattice.h"
 
 typedef struct declarator_spec_t declarator_spec_t;
+typedef struct statement_list_t statement_list_t;
 
 /**
  * @brief The structure representing a statement node.
@@ -127,3 +128,11 @@ node_t *create_if_else_node(arena_t *arena, expression_t *condition, statement_t
 
 /** @brief Stores the condition truth proven by the reachability pass. */
 void set_if_else_condition_truth(node_t *node, abstract_truth_t truth);
+
+/**
+ * @brief Creates `try statement catch (identifier) statement_list`.
+ * Copies the nonempty identifier to arena; handler is a block expression.
+ * Parser binding and exceptional abstract interpretation are not implemented yet.
+ */
+node_t *create_try_catch_node(arena_t *arena, statement_t *body,
+        string_view_t exception_name, statement_list_t *handler);

@@ -8,7 +8,7 @@
 
 #include "common_methods.h"
 #include "analysis/abstract_state.h"
-#include "expression.h"
+#include "statement_list.h"
 #include "statement.h"
 #include "statement_sequence.h"
 #include "lib/allocate.h"
@@ -19,19 +19,6 @@
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
-
-/**
- * @brief AST node that stores a list of statements.
- *
- * Execution occurs in a new lexical environment created for the block.
- */
-typedef struct {
-    /** @brief Base expression structure. */
-    expression_t base;
-
-    /** @brief Linked list of statements in the block. */
-    list_t *statements;
-} statement_list_t;
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t get_child_count(const node_t *node) {
@@ -141,17 +128,16 @@ static node_vtbl_t statement_list_vtbl = {
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
-node_t *create_statement_list_node(arena_t *arena) {
+statement_list_t *create_statement_list_node(arena_t *arena) {
     statement_list_t *list = (statement_list_t *)alloc_zeroed_from_arena(
         arena,
         sizeof(statement_list_t)
     );
     list->base.base.vtbl = &statement_list_vtbl;
-    return &list->base.base;
+    return list;
 }
 
-void fill_statement_list_node(node_t *node, list_t *statements) {
-    assert(node->vtbl->type == NODE_STATEMENT_LIST);
-    statement_list_t *list = (statement_list_t *)node;
-    list->statements = statements;
+void fill_statement_list_node(statement_list_t *node, list_t *statements) {
+    assert(node->base.base.vtbl->type == NODE_STATEMENT_LIST);
+    node->statements = statements;
 }

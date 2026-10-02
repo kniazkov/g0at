@@ -435,6 +435,14 @@ An uncaught throw unwinds to the root context and empties the data stack. `run()
 nonzero, and the originating thread retains the thrown object in `exception.value` until
 thread destruction. This one-field structure owns a reference and is a GC root; Goat `null`
 is a valid thrown object, while a C NULL pointer means there is no pending exception.
+The `NODE_TRY_CATCH` AST node can be constructed through `create_try_catch_node()`.
+It stores `try statement catch (identifier) statement_list`, copies the identifier into the
+arena, exposes both children to visualization, regenerates source and emits the handler
+bytecode. Catch consumes the thrown stack value into a local variable; neither path leaves
+a block result on the stack. Parser integration and catch-name lexical binding are the next
+step. Abstract execution currently discards known variable values conservatively instead
+of pretending to analyze exceptional paths.
+
 No diagnostic formatting or exception syntax is added yet. Operators and built-ins are not
 yet connected to this mechanism; tests exercise the instructions directly through bytecode.
 
