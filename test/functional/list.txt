@@ -249,3 +249,16 @@ logic_bit_errors
 logic_bit_error_order
 logic_bit_uncaught
 logic_deferred
+call_analysis_branches
+call_analysis_captures
+call_analysis_nested
+call_analysis_higher_order
+call_analysis_order
+call_analysis_callee_order
+call_analysis_escape
+call_analysis_catch
+call_analysis_const
+call_analysis_missing_extra
+call_analysis_local_reset
+call_analysis_closure_argument
+call_analysis_extra_stack

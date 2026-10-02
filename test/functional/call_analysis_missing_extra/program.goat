@@ -1,0 +1,8 @@
+var f=func(a,b){return b;};
+var missing=f(1);
+var extra=f(1,2,3);
+var empty=func(){};
+var nothing=empty();
+var bare=func(){return;};
+var n=bare();
+print(missing);print(",");print(extra);print(",");print(nothing);print(",");print(n);

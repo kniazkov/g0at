@@ -1,0 +1,5 @@
+var x=1;
+var f=func(){x=2;};
+if(pi){f=func(){x=3;};}
+f();
+var after=x;

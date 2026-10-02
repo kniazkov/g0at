@@ -43,6 +43,10 @@ struct abstract_state_t {
     /** @brief Borrowed return-summary accumulator (NULL/BOTTOM initially); shared across branches.
      */
     const lattice_element_t **return_value;
+
+    /** @brief Borrowed activation and shared evaluation budget. */
+    struct abstract_call_frame_t *call_frame;
+    size_t *call_budget;
 };
 
 /**
@@ -108,3 +112,14 @@ const lattice_element_t *set_in_abstract_state_at(abstract_state_t *state,
 
 /** @brief Records current values after merging branches at node. */
 void collect_joined_abstract_state(const abstract_state_t *state, const node_t *node);
+
+/** @brief Invalidates facts after an unknown call. */
+void forget_abstract_values(abstract_state_t *state);
+
+/** @brief Imports call effects and summaries, keeping caller-local bindings intact. */
+void apply_abstract_call_state(abstract_state_t *caller,
+                               const abstract_state_t *result,
+                               const node_t *function);
+
+/** @brief Resets locals from an earlier invocation of the same function. */
+void reset_abstract_call_locals(abstract_state_t *state, const node_t *function);

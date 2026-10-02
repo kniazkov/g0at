@@ -1,0 +1,3 @@
+var x=1;
+var f=func(a){x=2;return a;};
+var after=x;

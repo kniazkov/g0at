@@ -12,6 +12,7 @@
 #include "test_codegen.h"
 #include "test_comparison.h"
 #include "test_division.h"
+#include "test_function_analysis.h"
 #include "test_lattice.h"
 #include "test_lib.h"
 #include "test_logic.h"
@@ -33,6 +34,9 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"function lattice", test_function_lattice},
+    {"function call budget", test_function_call_budget},
+    {"function call state", test_function_call_state},
     {"bitwise values", test_bitwise_values},
     {"bitwise errors", test_bitwise_errors},
     {"bitwise domains", test_bitwise_domains},

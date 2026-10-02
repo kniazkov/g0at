@@ -1,0 +1,2 @@
+var f=func(){try{return 7;}catch(e){return 8;}};
+var result=f();

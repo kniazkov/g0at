@@ -1,0 +1,4 @@
+var f=func(c){if(c){return 2;}else{return 4;}};
+var a=f(true);
+var b=f(false);
+var c=f(pi);

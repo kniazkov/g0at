@@ -1,0 +1,4 @@
+var factory=func(x){return func(y){return x+y;};};
+var closure=factory(10);
+var result=closure(3);
+print(result);

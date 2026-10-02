@@ -1,0 +1,4 @@
+var x=0;
+var f=func(c){if(c){x=2;return 7;}x=9;throw "bad";};
+var result=f(pi);
+var after=x;

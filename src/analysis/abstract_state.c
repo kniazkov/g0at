@@ -71,6 +71,9 @@ abstract_state_t *create_abstract_state(arena_t *arena) {
     state->values->destroy_value = destroy_value;
     state->control_flow = FLOW_NORMAL;
     state->return_value = NULL;
+    state->call_frame = NULL;
+    state->call_budget = alloc_from_arena(arena, sizeof(size_t));
+    *state->call_budget = 1024;
     return state;
 }
 
@@ -84,6 +87,8 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     copy->values = clone_avl_tree(state->values);
     copy->control_flow = state->control_flow;
     copy->return_value = state->return_value;
+    copy->call_frame = state->call_frame;
+    copy->call_budget = state->call_budget;
     return copy;
 }
 
@@ -175,6 +180,8 @@ abstract_state_t *join_abstract_states(const abstract_state_t *left,
                                ? FLOW_RETURN
                                : FLOW_UNREACHABLE;
     result->return_value = left->return_value == right->return_value ? left->return_value : NULL;
+    result->call_frame = left->call_frame;
+    result->call_budget = left->call_budget;
     join_context_t context = {left, right, result};
     avl_tree_for_each(left->values, join_abstract_state_entry, &context);
     avl_tree_for_each(right->values, join_abstract_state_entry, &context);
@@ -221,4 +228,61 @@ void collect_joined_abstract_state(const abstract_state_t *state, const node_t *
         collection_context_t context = {state->collector, node};
         avl_tree_for_each(state->values, collect_joined_entry, &context);
     }
+}
+
+/** @brief Finds the function that owns a declaration, excluding nested functions. */
+static const node_t *local_owner(const node_t *node) {
+    while (node && node->vtbl->type != NODE_FUNCTION_OBJECT)
+        node = node->parent;
+    return node;
+}
+
+static void forget_entry(void *context, void *key, value_t ignored) {
+    set_in_abstract_state(context, key, make_top_element());
+}
+
+void forget_abstract_values(abstract_state_t *state) {
+    avl_tree_for_each(state->values, forget_entry, state);
+}
+
+typedef struct {
+    abstract_state_t *caller;
+    const node_t *function;
+} call_copy_t;
+
+/** @brief Copies effects without exposing callee locals as live caller bindings. */
+static void copy_call_entry(void *context, void *key, value_t value) {
+    call_copy_t *copy = context;
+    lattice_pair_t *source = value.ptr;
+    lattice_pair_t *old = get_from_avl_tree(copy->caller->values, key).ptr;
+    lattice_pair_t *pair = ALLOC(sizeof(*pair));
+    pair->refs = 0;
+    pair->current = local_owner(key) == copy->function ? (old ? old->current : make_null_element())
+                                                       : source->current;
+    pair->summary = lattice_join(copy->caller->arena,
+                                 old ? old->summary : make_bottom_element(),
+                                 source->summary);
+    set_in_avl_tree(copy->caller->values, key, (value_t){.ptr = pair});
+}
+
+void apply_abstract_call_state(abstract_state_t *caller,
+                               const abstract_state_t *result,
+                               const node_t *function) {
+    call_copy_t copy = {caller, function};
+    avl_tree_for_each(result->values, copy_call_entry, &copy);
+}
+
+static void reset_local(void *context, void *key, value_t value) {
+    call_copy_t *copy = context;
+    if (local_owner(key) == copy->function) {
+        lattice_pair_t *old = value.ptr;
+        lattice_pair_t *pair = ALLOC(sizeof(*pair));
+        *pair = (lattice_pair_t){0, make_null_element(), old->summary};
+        set_in_avl_tree(copy->caller->values, key, (value_t){.ptr = pair});
+    }
+}
+
+void reset_abstract_call_locals(abstract_state_t *state, const node_t *function) {
+    call_copy_t copy = {state, function};
+    avl_tree_for_each(state->values, reset_local, &copy);
 }

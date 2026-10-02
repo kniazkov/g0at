@@ -363,8 +363,28 @@ Integer/real zero, null, false, and empty strings are false; nonzero numbers, no
 true, and functions are true. Built-in symbols currently have abstract value `TOP`. Unknown types and ranges containing both zero and nonzero values
 keep both branches. Parentheses forward evaluation. Unsupported arithmetic/comparison
 operators evaluate operands in order but still return `TOP`; their result semantics remain
-future work. Calls evaluate their callee and arguments, but function-body effects are not yet
-modeled. Condition-based range narrowing is also not implemented.
+future work. Condition-based range narrowing is also not implemented.
+
+Known user functions are analyzed at each call with the current abstract arguments.
+Arguments are evaluated right to left, followed by the callee, matching the VM. Missing
+parameters receive `null`; extra arguments are evaluated but do not create parameters.
+The result joins reachable explicit returns and `null` for fallthrough. Captured writes
+from normal exits are merged back into the caller; parameter and local bindings stay
+isolated between calls. Parameter writes and body observations appear in the collector,
+so a declaration may have several `write` events from different calls.
+
+Function values retain their body and lexical activation through assignments and argument
+passing. Immediately invoked nested closures can therefore read and update active captures.
+Different possible callees widen to the generic `function` domain. Unknown callees,
+recursive re-entry, escaped closures whose activation has ended, and bodies containing
+`try/catch` currently return `TOP` and invalidate variable facts. Analysis is bounded to
+32 active calls and 1024 body evaluations per pass. Direct built-ins keep their unknown
+result but do not invalidate bindings: the current native functions have no user callbacks
+or binding mutations.
+
+These call summaries do not specialize shared AST bodies or mark their branches dead.
+The separate reachability pass still treats calls conservatively. Exceptional return-state
+modelling, recursive fixed points, and persistent closure environments remain future work.
 
 AST transformation events can be added as transformations are implemented.
 

@@ -1,0 +1,4 @@
+var f=func(c){var x;if(c){x=7;}return x;};
+var a=f(true);
+var b=f(false);
+print(a);print(",");print(b);

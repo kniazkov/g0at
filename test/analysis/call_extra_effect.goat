@@ -1,0 +1,4 @@
+var x=0;
+var f=func(a){return a;};
+var result=f(++x,++x);
+var after=x;

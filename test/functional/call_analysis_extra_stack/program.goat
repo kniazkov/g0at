@@ -1,0 +1,5 @@
+var f=func(a){return a;};
+var value=10+f(2,99);
+var zero=func(){return 3;};
+var other=20+zero(88,77);
+print(value);print(",");print(other);

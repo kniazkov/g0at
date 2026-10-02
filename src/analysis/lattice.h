@@ -64,6 +64,9 @@ typedef enum {
     /** @brief Any function value. */
     LATTICE_FUNCTION,
 
+    /** @brief A known function body and its lexical activation. */
+    LATTICE_KNOWN_FUNCTION,
+
     /** @brief Any array value. */
     LATTICE_ARRAY,
 
@@ -362,3 +365,15 @@ typedef enum {
 
 /** @brief Converts an abstract value using Goat's truthiness rules. */
 abstract_truth_t lattice_truth(const lattice_element_t *value);
+
+/** @brief Known callable; closure identity is not used for equality folding. */
+typedef struct {
+    lattice_element_t base;
+    struct node_t *node;
+    struct abstract_call_frame_t *owner;
+} known_function_element_t;
+
+/** @brief Records a function body and the activation containing its captures. */
+const lattice_element_t *make_known_function_element(arena_t *arena,
+                                                     struct node_t *node,
+                                                     struct abstract_call_frame_t *owner);

@@ -6,6 +6,7 @@
 #include "test_lattice.h"
 
 #include "analysis/lattice.h"
+#include "graph/node.h"
 #include "test_macro.h"
 
 #include <math.h>
@@ -40,6 +41,11 @@ static bool equal(const lattice_element_t *a, const lattice_element_t *b) {
             string_view_t x = ((const string_constant_element_t *)a)->value;
             string_view_t y = ((const string_constant_element_t *)b)->value;
             return x.length == y.length && (!x.length || !wmemcmp(x.data, y.data, x.length));
+        }
+        case LATTICE_KNOWN_FUNCTION: {
+            const known_function_element_t *x = (const known_function_element_t *)a;
+            const known_function_element_t *y = (const known_function_element_t *)b;
+            return x->node == y->node && x->owner == y->owner;
         }
         case LATTICE_TYPED_ARRAY:
             return ((const typed_array_element_t *)a)->element_type
@@ -202,6 +208,10 @@ bool test_lattice_laws() {
         samples[count++] = generic[i];
         samples[count++] = make_typed_array_element(values, generic[i]->type);
     }
+    node_t function_a = {0}, function_b = {0};
+    samples[count++] = make_known_function_element(values, &function_a, NULL);
+    samples[count++] = make_known_function_element(values, &function_a, NULL);
+    samples[count++] = make_known_function_element(values, &function_b, NULL);
     int64_t integers[] = {INT64_MIN, -1, 0, 1, INT64_MAX};
     for (size_t i = 0; i < sizeof(integers) / sizeof(*integers); i++) {
         samples[count++] = make_integer_constant_element(values, integers[i]);

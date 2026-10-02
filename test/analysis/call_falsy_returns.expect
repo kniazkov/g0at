@@ -1,0 +1,4 @@
+one write 2 2 a false
+one write 3 3 b int=0
+one write 4 4 c string=
+one write 5 5 d null

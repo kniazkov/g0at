@@ -1,0 +1,4 @@
+var apply=func(f){return f();};
+var outer=func(x){return apply(func(){x=x+1;return x;});};
+var result=outer(41);
+print(result);

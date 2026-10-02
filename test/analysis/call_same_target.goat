@@ -1,0 +1,3 @@
+var f=func(a){return a+1;};
+if(pi){var dummy=1;}
+var result=f(2);

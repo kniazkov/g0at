@@ -369,6 +369,11 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     for (; index < dfobj->arg_count; index++) {
         create_object_property(ctx->data, dfobj->arg_names[index], get_null_object(), false);
     }
+    /* Extra actual arguments have been evaluated but have no parameter binding. */
+    for (size_t extra = dfobj->arg_count; extra < arg_count; extra++) {
+        object_t *arg = pop_object_from_stack(thread->data_stack);
+        DECREF(arg);
+    }
     stack_index_t ret_value_index = push_object_onto_stack(thread->data_stack, get_null_object());
     ctx->ret_value_index = ret_value_index;
     ctx->unwinding_index = ret_value_index;

@@ -34,6 +34,11 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     if (state->control_flow == FLOW_NORMAL
         && expr->left_operand->base.base.vtbl->type == NODE_VARIABLE) {
         variable_t *var = (variable_t *)(expr->left_operand);
+        if (var->declarator && var->declarator != get_builtin_declarator()
+            && var->declarator->base.vtbl->type == NODE_CONSTANT_DECLARATOR) {
+            state->control_flow = FLOW_UNREACHABLE;
+            return make_bottom_element();
+        }
         set_in_abstract_state_at(state, var->declarator, value, node);
     }
     return value;

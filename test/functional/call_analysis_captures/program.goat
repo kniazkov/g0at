@@ -1,0 +1,6 @@
+var x=1;
+var f=func(a){x=x+a;return x;};
+var a=f(2);
+var b=f(4);
+var after=x;
+print(a);print(",");print(b);print(",");print(after);

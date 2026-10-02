@@ -20,6 +20,7 @@ static int group(lattice_type_t type) {
             return 3;
         case LATTICE_NULL:
             return 4;
+        case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
             return 5;
         case LATTICE_USER_DEFINED_OBJECT:

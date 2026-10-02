@@ -1,0 +1,4 @@
+var x=0;
+var f=func(){return 7;x=99;};
+var result=f();
+var after=x;
