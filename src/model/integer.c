@@ -306,8 +306,8 @@ static operation_result_t divide(process_t *process, object_t *obj1, object_t *o
 /** @brief Implements @ref object_vtbl_t::modulo. */
 static operation_result_t modulo(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
-    int_value_t second_int = get_object_integer_value(obj2);
-    if (second_int.has_value) {
+    if (is_integer_object(obj2)) {
+        int_value_t second_int = get_object_integer_value(obj2);
         if (second_int.value == 0)
             return operation_exception(get_exception_division_by_zero());
         if (first.value == INT64_MIN && second_int.value == -1)

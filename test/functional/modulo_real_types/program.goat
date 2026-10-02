@@ -1,0 +1,6 @@
+try { print(5 % 2.0); } catch (e) { print(e); } print("|");
+try { print(5 % 2.5); } catch (e) { print(e); } print("|");
+try { print(5.0 % 2); } catch (e) { print(e); } print("|");
+try { print(5.0 % 2.0); } catch (e) { print(e); } print("|");
+try { print(5 % -0.0); } catch (e) { print(e); } print("|");
+try { print(5 % 0); } catch (e) { print(e); }

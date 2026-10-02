@@ -103,3 +103,14 @@ power_invalid
 power_unknown
 power_bottom_left
 power_bottom_right
+modulo_constants
+modulo_ranges
+modulo_reachability
+modulo_unknown
+modulo_zero
+modulo_real_right
+modulo_real_left
+modulo_effects
+modulo_invalid
+modulo_bottom_left
+modulo_bottom_right

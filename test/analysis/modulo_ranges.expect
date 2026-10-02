@@ -1,0 +1,5 @@
+one write 3 3 a range=-2,2
+one write 4 4 b range=-2,2
+one write 5 5 c int=0
+one write 6 6 d range=0,2
+one write 7 7 e int=0

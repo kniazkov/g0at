@@ -14,6 +14,7 @@
 #include "test_lattice.h"
 #include "test_lib.h"
 #include "test_model.h"
+#include "test_modulo.h"
 #include "test_multiplication.h"
 #include "test_operation_result.h"
 #include "test_optimization.h"
@@ -89,6 +90,9 @@ static test_description_t test_list[] = {
     {"power independent expectations", test_power_expected},
     {"power domains", test_power_domains},
     {"power ranges", test_power_ranges},
+    {"modulo models and constants", test_modulo_models_and_constants},
+    {"modulo independent expectations", test_modulo_expected},
+    {"modulo domains and ranges", test_modulo_ranges},
     {"division models and constants", test_division_models_and_constants},
     {"division domains", test_division_domains},
     {"division ranges", test_division_ranges},

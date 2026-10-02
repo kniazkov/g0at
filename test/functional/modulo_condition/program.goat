@@ -1,0 +1,2 @@
+if (6 % 3) { print("bad"); } else { print("zero"); }
+if (-5 % 3) { print("|negative"); } else { print("bad"); }
