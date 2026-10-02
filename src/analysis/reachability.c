@@ -11,6 +11,7 @@
 #include "graph/declarations.h"
 #include "graph/node.h"
 #include "graph/statement.h"
+#include "graph/update_expression.h"
 #include "graph/variable.h"
 #include "lattice.h"
 #include "modulo.h"
@@ -18,6 +19,7 @@
 #include "power.h"
 #include "subtraction.h"
 #include "unary_operation.h"
+#include "update.h"
 
 /** @brief Sets or clears the unreachable flag on a node and all descendants. */
 static void set_subtree_flag(node_t *node, bool unreachable) {
@@ -171,6 +173,26 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
             /* A closure or built-in may change any captured binding. */
             forget_values(*state);
             return make_top_element();
+        case NODE_PREFIX_INCREMENT:
+        case NODE_PREFIX_DECREMENT:
+        case NODE_POSTFIX_INCREMENT:
+        case NODE_POSTFIX_DECREMENT: {
+            node_t *target = get_node_child(node, 0);
+            const lattice_element_t *old = visit(target, state, collector);
+            const lattice_element_t *value =
+                lattice_update((*state)->arena, old, update_is_decrement(node->vtbl->type));
+            const declarator_t *decl = ((variable_t *)target)->declarator;
+            if (decl && decl != get_builtin_declarator()
+                && decl->base.vtbl->type == NODE_CONSTANT_DECLARATOR)
+                value = make_bottom_element();
+            if (value->type == LATTICE_BOTTOM)
+                (*state)->control_flow = FLOW_UNREACHABLE;
+            if ((*state)->control_flow != FLOW_NORMAL)
+                return make_bottom_element();
+            if (decl != get_builtin_declarator())
+                set_in_abstract_state(*state, decl, value);
+            return update_is_postfix(node->vtbl->type) ? old : value;
+        }
         case NODE_UNARY_PLUS:
         case NODE_UNARY_MINUS: {
             const lattice_element_t *value = visit(get_node_child(node, 0), state, collector);

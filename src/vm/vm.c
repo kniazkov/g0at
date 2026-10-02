@@ -120,6 +120,19 @@ static bool exec_POP(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     return true;
 }
 
+/** @brief Executes @ref DUP. */
+static bool exec_DUP(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *obj = peek_object_from_stack(thread->data_stack, 0);
+    if (!obj) {
+        runtime->status = 1;
+        return false;
+    }
+    INCREF(obj);
+    push_object_onto_stack(thread->data_stack, obj);
+    thread->instr_id++;
+    return true;
+}
+
 /** @brief Executes @ref NIL. */
 static bool exec_NIL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     push_object_onto_stack(thread->data_stack, get_null_object());
@@ -246,6 +259,8 @@ static bool exec_CONST(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
+static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
+
 /** @brief Executes @ref STORE. */
 static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
@@ -261,6 +276,10 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     bool changed = false;
     model_status_t result = set_object_property(context, key, value);
     assert(result != MSTAT_IMMUTABLE_OBJECT);
+    if (result == MSTAT_PROPERTY_IS_CONSTANT)
+        return dispatch_exception(runtime,
+                                  thread,
+                                  (exception_t){get_exception_property_is_constant()});
     if (result == MSTAT_OK) {
         changed = true;
     } else if (result == MSTAT_PROPERTY_NOT_FOUND) {
@@ -268,6 +287,10 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
         size_t index = 0;
         do {
             result = set_object_property(proto.items[index], key, value);
+            if (result == MSTAT_PROPERTY_IS_CONSTANT)
+                return dispatch_exception(runtime,
+                                          thread,
+                                          (exception_t){get_exception_property_is_constant()});
             if (result == MSTAT_IMMUTABLE_OBJECT) {
                 break;
             }
@@ -288,9 +311,6 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
-/** @brief Unwinds to a handler, transferring ownership of the thrown object. */
-static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
-
 /** @brief Consumes one operand and transfers its result or exception. */
 static bool execute_unary_operation(runtime_t *runtime,
                                     thread_t *thread,
@@ -307,6 +327,16 @@ static bool execute_unary_operation(runtime_t *runtime,
     push_object_onto_stack(thread->data_stack, result.value);
     thread->instr_id++;
     return true;
+}
+
+/** @brief Executes @ref INC. */
+static bool exec_INC(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_unary_operation(runtime, thread, increment_object);
+}
+
+/** @brief Executes @ref DEC. */
+static bool exec_DEC(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_unary_operation(runtime, thread, decrement_object);
 }
 
 /** @brief Executes @ref UPLUS. */
@@ -620,6 +650,7 @@ static instr_executor_t executors[] = {
     exec_JUMP,    /**< Unconditionally jumps to another instruction. */
     exec_JIF,     /**< Jumps to another instruction if the stack contains `false`. */
     exec_POP,     /**< Pops an object off the data stack. */
+    exec_DUP,     /**< Duplicates the top stack value. */
     exec_NIL,     /**< Pushes a null object onto the data stack. */
     exec_TRUE,    /**< Pushes the boolean value true onto the data stack. */
     exec_FALSE,   /**< Pushes the boolean value false onto the data stack. */
@@ -633,6 +664,8 @@ static instr_executor_t executors[] = {
     exec_STORE,   /**< Stores to existing variable or creates new if not found. */
     exec_UPLUS,   /**< Applies unary plus to the top value. */
     exec_UMINUS,  /**< Negates the top value. */
+    exec_INC,     /**< Applies numeric increment. */
+    exec_DEC,     /**< Applies numeric decrement. */
     exec_ADD,     /**< Adds the top two objects of the stack. */
     exec_SUB,     /**< Subtracts the top two objects of the stack. */
     exec_MUL,     /**< Multiplies the top two objects on the data stack. */

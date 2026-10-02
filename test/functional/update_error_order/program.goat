@@ -1,0 +1,1 @@
+var x="x"; var y=0; try { var z=x++ + ++y; }catch(e){print(e);}print("|");print(y);

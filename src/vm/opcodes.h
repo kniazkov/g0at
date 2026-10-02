@@ -20,6 +20,8 @@ typedef enum {
 
     POP, /**< Removes the top object from the data stack. */
 
+    DUP, /**< Retains and duplicates the top stack value. */
+
     NIL, /**< Pushes a null object onto the data stack. */
 
     TRUE, /**< Pushes the boolean value true onto the data stack. */
@@ -45,6 +47,10 @@ typedef enum {
     UPLUS, /**< Applies unary plus to the top value. */
 
     UMINUS, /**< Negates the top value. */
+
+    INC, /**< Replaces the top value with its numeric successor. */
+
+    DEC, /**< Replaces the top value with its numeric predecessor. */
 
     ADD, /**< Adds the top two objects on the data stack. */
 

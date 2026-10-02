@@ -505,6 +505,24 @@ and propagate numeric domains; negated intervals reverse their bounds and widen 
 `INTEGER` when wrapping cannot be represented. Source regeneration groups unary expressions
 to preserve their meaning when used as power operands.
 
+### Increment and decrement
+
+`++x`, `--x`, `x++`, and `x--` update a variable once. Prefix forms return the
+new value; postfix forms return the old value. Parenthesized variables are accepted.
+These operators bind more tightly than power and unary signs. Adjacent `++` and
+`--` are single tokens: write `- -x` for two unary negations.
+
+Integer updates wrap modulo 2^64. Real updates add or subtract 1.0 and retain the
+real type, including IEEE infinity, NaN, and rounding behavior. Other types throw
+`Exceptions.INVALID_OPERATION`; updating a constant throws
+`Exceptions.PROPERTY_IS_CONSTANT`. Existing aliases retain their original value.
+
+The model supplies `increment` and `decrement`; the VM uses `INC` and `DEC`.
+Prefix variable updates emit `VLOAD INC/DEC STORE`. Postfix updates emit
+`VLOAD DUP INC/DEC STORE POP`; `DUP` retains a reference to the original value.
+Abstract interpretation records the new variable value while returning the correct
+old or new expression value. Reachability uses the same numeric transfer function.
+
 ### Lattice semantics
 
 `join` computes a least upper bound; `meet` computes a greatest lower bound. Empty integer

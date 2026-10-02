@@ -16,6 +16,10 @@
 #include <memory.h>
 #include <stdbool.h>
 
+/** @brief Reduces postfix updates before prefix updates. */
+compilation_error_t *parsing_postfix_updates(token_t *, parser_memory_t *, token_groups_t *);
+compilation_error_t *parsing_prefix_updates(token_t *, parser_memory_t *, token_groups_t *);
+
 /** @brief Rule for handling comparison operators, followed by expressions on both sides. */
 compilation_error_t *
 parsing_comparison_operators(token_t *operator, parser_memory_t * memory, token_groups_t *groups);
@@ -371,6 +375,8 @@ apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory, parsing_r
     APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
     APPLY_FORWARD(unprocessed_parenthesized_expressions, preparsing_parenthesized_expressions);
     APPLY_FORWARD(identifiers, parsing_single_identifiers);
+    APPLY_FORWARD(update_operators, parsing_postfix_updates);
+    APPLY_BACKWARD(update_operators, parsing_prefix_updates);
     APPLY_BACKWARD(additive_operators, parsing_unary_operators);
     APPLY_BACKWARD(power_operators, parsing_power_operators);
     APPLY_FORWARD(multiplicative_operators, parsing_multiplicative_operators);

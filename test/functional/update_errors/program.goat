@@ -1,0 +1,3 @@
+var x="text"; try { print(x++); }catch(e){print(e);}print("|");print(x);print("|");
+var y=null; try { ++y; }catch(e){print(e);}print("|");print(y);print("|");
+var z=true; try { z--; }catch(e){print(e);}print("|");print(z);

@@ -1,0 +1,3 @@
+const x = 1;
+var a = ++x;
+var after = 1;

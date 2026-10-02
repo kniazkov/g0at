@@ -12,7 +12,7 @@
 #include <assert.h>
 
 /**
- * @brief Rule for handling assignment operators (plus and minus).
+ * @brief Rule for handling assignment operators.
  * @return A pointer to a `compilation_error_t` if an error occurs, or `NULL` if no error.
  */
 compilation_error_t *
@@ -25,7 +25,7 @@ parsing_assignment_operators(token_t *operator, parser_memory_t * memory, token_
                                                              operator,
                                                              CRITICAL,
                                                              get_messages()->expected_lvalue,
-                                                             operator->text);
+                                                             operator->text.data);
         return error;
     }
     if (left_token->type != TOKEN_EXPRESSION || !left_token->node->vtbl->is_assignable_expression) {
@@ -33,7 +33,7 @@ parsing_assignment_operators(token_t *operator, parser_memory_t * memory, token_
                                                              left_token,
                                                              CRITICAL,
                                                              get_messages()->expected_lvalue,
-                                                             left_token->text);
+                                                             operator->text.data);
         return error;
     }
 
@@ -43,7 +43,7 @@ parsing_assignment_operators(token_t *operator, parser_memory_t * memory, token_
                                                              operator,
                                                              CRITICAL,
                                                              get_messages()->expected_expression,
-                                                             operator->text);
+                                                             operator->text.data);
         return error;
     }
     if (right_token->type != TOKEN_EXPRESSION) {
@@ -51,7 +51,7 @@ parsing_assignment_operators(token_t *operator, parser_memory_t * memory, token_
                                                              right_token,
                                                              CRITICAL,
                                                              get_messages()->expected_expression,
-                                                             right_token->text);
+                                                             operator->text.data);
         return error;
     }
 

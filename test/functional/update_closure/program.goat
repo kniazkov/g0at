@@ -1,0 +1,1 @@
+var x=1; var f=func { return x++; }; print(f()); print("|"); print(f()); print("|"); print(x);

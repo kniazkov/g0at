@@ -1,0 +1,1 @@
+var x=9000; var a=x;var b=x++;print(a);print("|");print(b);print("|");print(x);

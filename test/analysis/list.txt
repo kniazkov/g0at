@@ -114,3 +114,12 @@ modulo_effects
 modulo_invalid
 modulo_bottom_left
 modulo_bottom_right
+update_values
+update_real
+update_limits
+update_range
+update_condition
+update_invalid
+update_constant
+update_order
+update_overflow_range
