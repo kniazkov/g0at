@@ -89,6 +89,8 @@ static object_vtbl_t integer_proto_vtbl = {.type = TYPE_OTHER,
                                            .set_property = set_property_on_immutable,
                                            .unary_plus = stub_unary_operation,
                                            .unary_minus = stub_unary_operation,
+                                           .increment = stub_unary_operation,
+                                           .decrement = stub_unary_operation,
                                            .add = stub_add,
                                            .subtract = stub_subtract,
                                            .multiply = stub_multiply,
@@ -228,6 +230,19 @@ static operation_result_t unary_minus(process_t *process, object_t *obj) {
     return operation_success(
         create_integer_object(process,
                               subtract_int64_wrapping(0, get_object_integer_value(obj).value)));
+}
+
+/** @brief Implements @ref object_vtbl_t::increment. */
+static operation_result_t increment(process_t *process, object_t *obj) {
+    return operation_success(
+        create_integer_object(process, add_int64_wrapping(get_object_integer_value(obj).value, 1)));
+}
+
+/** @brief Implements @ref object_vtbl_t::decrement. */
+static operation_result_t decrement(process_t *process, object_t *obj) {
+    return operation_success(
+        create_integer_object(process,
+                              subtract_int64_wrapping(get_object_integer_value(obj).value, 1)));
 }
 
 /** @brief Implements @ref object_vtbl_t::add. */
@@ -376,6 +391,8 @@ static object_vtbl_t static_vtbl = {.type = TYPE_NUMBER,
                                     .set_property = set_property_on_immutable,
                                     .unary_plus = numeric_unary_plus,
                                     .unary_minus = unary_minus,
+                                    .increment = increment,
+                                    .decrement = decrement,
                                     .add = add,
                                     .subtract = subtract,
                                     .multiply = multiply,
@@ -442,6 +459,8 @@ static object_vtbl_t dynamic_vtbl = {.type = TYPE_NUMBER,
                                      .set_property = set_property_on_immutable,
                                      .unary_plus = numeric_unary_plus,
                                      .unary_minus = unary_minus,
+                                     .increment = increment,
+                                     .decrement = decrement,
                                      .add = add,
                                      .subtract = subtract,
                                      .multiply = multiply,

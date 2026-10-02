@@ -1,0 +1,1 @@
+var x=9223372036854775807; print(x++); print("|"); print(x); print("|"); print(x--); print("|"); print(x);

@@ -167,6 +167,11 @@ typedef struct {
     /** @brief Unary numeric negation; returns an owned result or exception. */
     operation_result_t (*unary_minus)(process_t *process, object_t *obj);
 
+    /** @brief Numeric successor; returns an owned result or exception. */
+    operation_result_t (*increment)(process_t *process, object_t *obj);
+    /** @brief Numeric predecessor; returns an owned result or exception. */
+    operation_result_t (*decrement)(process_t *process, object_t *obj);
+
     /** @brief Adding two objects. */
     operation_result_t (*add)(process_t *process, object_t *obj1, object_t *obj2);
 
@@ -373,6 +378,16 @@ create_object_property(object_t *obj, object_t *key, object_t *value, bool const
 /** @brief Sets a property on an object. */
 static inline model_status_t set_object_property(object_t *obj, object_t *key, object_t *value) {
     return obj->vtbl->set_property(obj, key, value);
+}
+
+/** @brief Returns the numeric successor or an exception. */
+static inline operation_result_t increment_object(process_t *process, object_t *obj) {
+    return obj->vtbl->increment(process, obj);
+}
+
+/** @brief Returns the numeric predecessor or an exception. */
+static inline operation_result_t decrement_object(process_t *process, object_t *obj) {
+    return obj->vtbl->decrement(process, obj);
 }
 
 /** @brief Applies unary plus. */

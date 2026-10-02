@@ -1,0 +1,1 @@
+var x=2; print(-x++ ** 2); print("|"); print(2 ** --x); print("|"); print(++((x))); print("|"); print((x)++); print("|"); print(x);

@@ -1,0 +1,4 @@
+one unreachable 2 0 - -
+one unreachable 5 0 - -
+one write 4 4 a int=1
+one write 7 7 b int=0

@@ -1,0 +1,1 @@
+const x=4; var f=func { x++; }; try { f(); }catch(e){print(e);}print("|");print(x);

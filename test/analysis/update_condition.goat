@@ -1,0 +1,7 @@
+var x = 0;
+if (x++) { print("dead"); }
+else { }
+var a = x;
+if (--x) { print("dead"); }
+else { }
+var b = x;

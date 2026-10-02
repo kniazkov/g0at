@@ -231,8 +231,7 @@ bool test_vm_throw_cleanup(void) {
 }
 
 bool test_vm_exception_invalid_bytecode(void) {
-    instruction_t cases[][3] = {{{.opcode = THROW}, {.opcode = END}, {.opcode = END}},
-                                {{.opcode = TRY, .arg1 = 3}, {.opcode = END}, {.opcode = END}},
+    instruction_t cases[][3] = {{{.opcode = TRY, .arg1 = 3}, {.opcode = END}, {.opcode = END}},
                                 {{.opcode = RESTORE}, {.opcode = RESTORE}, {.opcode = END}}};
     for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
         bytecode_t *code = CODE(cases[i]);

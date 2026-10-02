@@ -139,12 +139,6 @@ bool test_unary_errors(void) {
             destroy_process(proc);
             free_bytecode(code);
         }
-        instruction_t empty[] = {{.opcode = minus ? UMINUS : UPLUS}, {.opcode = END}};
-        bytecode_t *code = make_code(empty, 2);
-        proc = create_process();
-        ASSERT(run(proc, code) != 0 && !proc->main_thread->exception.value);
-        destroy_process(proc);
-        free_bytecode(code);
     }
     return true;
 }
@@ -214,8 +208,8 @@ bool test_unary_parser(void) {
     const wchar_t *valid[] = {L"-2**2",
                               L"2**-3",
                               L"-2**-3**-2",
-                              L"+++1",
-                              L"1--2",
+                              L"+ + +1",
+                              L"1- -2",
                               L"1+-2",
                               L"2*-3",
                               L"var x=-2; +x",

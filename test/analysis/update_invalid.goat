@@ -1,0 +1,3 @@
+var x = "text";
+var a = x++;
+var after = 1;

@@ -144,6 +144,8 @@ typedef struct {
     /** @brief Group for additive operators ("plus" and "minus"). */
     token_list_t additive_operators;
 
+    token_list_t update_operators; /**< Prefix and postfix ++/--. */
+
     /** @brief Group for multiplicative operators ("multiply", "divide", and "modulus"). */
     token_list_t multiplicative_operators;
 

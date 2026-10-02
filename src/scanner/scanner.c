@@ -145,6 +145,8 @@ typedef struct {
 } operator_mapping_t;
 
 static const operator_mapping_t operator_mappings[] = {
+    {L"++", offsetof(token_groups_t, update_operators)},
+    {L"--", offsetof(token_groups_t, update_operators)},
     {L"+", offsetof(token_groups_t, additive_operators)},
     {L"-", offsetof(token_groups_t, additive_operators)},
     {L"*", offsetof(token_groups_t, multiplicative_operators)},
@@ -350,7 +352,9 @@ token_t *get_token(scanner_t *scan) {
     } else if (is_operator(ch)) {
         token->type = TOKEN_OPERATOR;
         if (ch == L'+' || ch == L'-') {
-            next_char(scan);
+            wchar_t sign = ch;
+            if (next_char(scan) == sign)
+                next_char(scan);
         } else {
             do {
                 ch = next_char(scan);

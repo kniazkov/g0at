@@ -44,6 +44,8 @@ static object_vtbl_t function_proto_vtbl = {.type = TYPE_STRING,
                                             .set_property = set_property_on_immutable,
                                             .unary_plus = stub_unary_operation,
                                             .unary_minus = stub_unary_operation,
+                                            .increment = stub_unary_operation,
+                                            .decrement = stub_unary_operation,
                                             .add = stub_add,
                                             .subtract = stub_subtract,
                                             .multiply = stub_multiply,
@@ -122,6 +124,7 @@ static object_array_t get_topology(const object_t *obj) {
  * @return `true` indicating the call was successful.
  */
 static bool static_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
+    require_object_stack_size(thread->data_stack, arg_count);
     object_static_function_t *sfobj = (object_static_function_t *)obj;
     object_t *ret_val;
     if (arg_count == 0) {
@@ -162,6 +165,8 @@ static object_vtbl_t static_vtbl = {.type = TYPE_OTHER,
                                     .set_property = set_property_on_immutable,
                                     .unary_plus = stub_unary_operation,
                                     .unary_minus = stub_unary_operation,
+                                    .increment = stub_unary_operation,
+                                    .decrement = stub_unary_operation,
                                     .add = stub_add,
                                     .subtract = stub_subtract,
                                     .multiply = stub_multiply,
@@ -338,6 +343,7 @@ static string_value_t dynamic_to_string_notation(const object_t *obj) {
  * @return `true` indicating the call was successful.
  */
 static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
+    require_object_stack_size(thread->data_stack, arg_count);
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
     context_t *ctx = create_context(thread->process, thread->context, dfobj->closure);
     ctx->control_flow = FLOW_RETURN;
@@ -378,6 +384,8 @@ static object_vtbl_t dynamic_vtbl = {.type = TYPE_OTHER,
                                      .set_property = set_property_on_immutable,
                                      .unary_plus = stub_unary_operation,
                                      .unary_minus = stub_unary_operation,
+                                     .increment = stub_unary_operation,
+                                     .decrement = stub_unary_operation,
                                      .add = stub_add,
                                      .subtract = stub_subtract,
                                      .multiply = stub_multiply,

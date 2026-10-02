@@ -24,12 +24,17 @@
 #include "test_scanner.h"
 #include "test_subtraction.h"
 #include "test_unary.h"
+#include "test_update.h"
 
 static bool stub() {
     return true;
 }
 
 static test_description_t test_list[] = {
+    {"update models and VM", test_update_models_vm},
+    {"update errors and DUP ownership", test_update_errors},
+    {"update AST and parser", test_update_ast_parser},
+    {"update domains", test_update_domains},
     {"unary models and VM", test_unary_models_and_vm},
     {"unary errors", test_unary_errors},
     {"unary AST and domains", test_unary_ast_and_domains},

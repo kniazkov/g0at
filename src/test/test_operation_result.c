@@ -140,19 +140,6 @@ bool test_operation_vm_dispatch(void) {
             destroy_process(proc);
             free_bytecode(code);
         }
-        for (int operands = 0; operands < 2; operands++) {
-            instruction_t list[] = {{.opcode = opcodes[op]}, {.opcode = END}};
-            bytecode_t *code = make_code(list, 2);
-            process_t *proc = create_process();
-            if (operands)
-                push_object_onto_stack(proc->main_thread->data_stack,
-                                       create_integer_object(proc, 9000));
-            ASSERT(run(proc, code) != 0);
-            ASSERT(proc->main_thread->data_stack->size == 0);
-            ASSERT(!proc->main_thread->exception.value);
-            destroy_process(proc);
-            free_bytecode(code);
-        }
     }
     return true;
 }

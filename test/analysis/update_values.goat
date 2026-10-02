@@ -1,0 +1,6 @@
+var x = 1;
+var a = x++;
+var b = ++x;
+var c = x--;
+var d = --x;
+var last = x;

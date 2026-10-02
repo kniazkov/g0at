@@ -88,6 +88,11 @@ typedef enum {
     /** @brief Subtraction operation node type. */
     NODE_SUBTRACTION,
 
+    NODE_PREFIX_INCREMENT,  /**< Prefix increment. */
+    NODE_PREFIX_DECREMENT,  /**< Prefix decrement. */
+    NODE_POSTFIX_INCREMENT, /**< Postfix increment. */
+    NODE_POSTFIX_DECREMENT, /**< Postfix decrement. */
+
     NODE_UNARY_PLUS,  /**< Unary numeric identity. */
     NODE_UNARY_MINUS, /**< Unary numeric negation. */
 
