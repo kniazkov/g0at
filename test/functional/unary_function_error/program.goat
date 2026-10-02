@@ -1,0 +1,1 @@
+var f=func { return -null; }; try { print(+f()); } catch(e) { print(e); } print("after");

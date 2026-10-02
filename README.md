@@ -262,7 +262,7 @@ code after unconditional returns. Known conditions eliminate one branch; unknown
 merge continuing states. Function bodies are left unclassified because they may execute later.
 A function created inside a proven dead subtree is dead along with that subtree.
 
-The pass uses literals, propagated values, addition and subtraction. Other arithmetic/comparison
+The pass uses literals, propagated values, addition, subtraction and unary signs. Other arithmetic/comparison
 results remain unknown until their abstract semantics match the VM. Calls invalidate known variable values
 because captured bindings may change. Call arguments follow bytecode order: right to left,
 then the callee. An unset flag means **not proven unreachable**, not necessarily reachable.
@@ -349,6 +349,25 @@ not an exception payload. Unknown receivers and future array models remain conse
 Both abstract interpretation and reachability use this transfer function. Tests cover
 operand order, exception short-circuiting, noncommutative interval bounds, integer limits,
 mixed precision, NaNs, infinities and signed zero.
+
+### Unary plus and minus
+
+Prefix `+` preserves a numeric object's value and type; `-` negates it. Integer negation
+wraps modulo 2^64, so negating `INT64_MIN` returns `INT64_MIN`. Real negation preserves
+IEEE behavior, including flipping the sign of zero and infinity. Both operations throw
+`INVALID_OPERATION` for nonnumeric receivers.
+
+Power binds more tightly than a sign on its left: `-2 ** 2` is `-(2 ** 2)`, while
+`(-2) ** 2` squares the negative base. Signed exponents work (`2 ** -3`), power remains
+right-associative, and sign chains associate from the right. Adjacent signs are separate
+operators: `1--2` means `1 - (-2)`; there are no increment/decrement operators.
+
+The object vtable exposes `unary_plus` and `unary_minus`, both returning
+`operation_result_t`. Bytecode uses `UPLUS` and `UMINUS`. AST nodes share the
+`unary_expression_t` base with one operand. Analysis and reachability fold numeric constants
+and propagate numeric domains; negated intervals reverse their bounds and widen to
+`INTEGER` when wrapping cannot be represented. Source regeneration groups unary expressions
+to preserve their meaning when used as power operands.
 
 ### Lattice semantics
 

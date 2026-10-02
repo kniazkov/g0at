@@ -161,6 +161,12 @@ typedef struct {
     /** @brief Sets a property on an object. */
     model_status_t (*set_property)(object_t *obj, object_t *key, object_t *value);
 
+    /** @brief Unary numeric identity; returns an owned result or exception. */
+    operation_result_t (*unary_plus)(process_t *process, object_t *obj);
+
+    /** @brief Unary numeric negation; returns an owned result or exception. */
+    operation_result_t (*unary_minus)(process_t *process, object_t *obj);
+
     /** @brief Adding two objects. */
     operation_result_t (*add)(process_t *process, object_t *obj1, object_t *obj2);
 
@@ -364,6 +370,16 @@ static inline model_status_t create_object_property(object_t *obj, object_t *key
 /** @brief Sets a property on an object. */
 static inline model_status_t set_object_property(object_t *obj, object_t *key, object_t *value) {
     return obj->vtbl->set_property(obj, key, value);
+}
+
+/** @brief Applies unary plus. */
+static inline operation_result_t unary_plus_object(process_t *process, object_t *obj) {
+    return obj->vtbl->unary_plus(process, obj);
+}
+
+/** @brief Applies unary minus. */
+static inline operation_result_t unary_minus_object(process_t *process, object_t *obj) {
+    return obj->vtbl->unary_minus(process, obj);
 }
 
 /** @brief Adds two objects. */

@@ -1,0 +1,1 @@
+var f=func { print("wrong"); return 1; }; try { print((-null)+f()); } catch(e) { print(e); }

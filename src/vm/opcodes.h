@@ -80,5 +80,7 @@ typedef enum {
 
     TRY, /**< Creates an exception context; arg1 is the handler address. */
 
-    THROW /**< Transfers the top value to the nearest handler after unwinding. */
+    THROW, /**< Transfers the top value to the nearest handler after unwinding. */
+    UPLUS, /**< Applies unary plus to the top value. */
+    UMINUS /**< Negates the top value. */
 } opcode_t;

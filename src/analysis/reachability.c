@@ -8,6 +8,7 @@
 #include "lattice.h"
 #include "addition.h"
 #include "subtraction.h"
+#include "unary_operation.h"
 #include "graph/node.h"
 #include "graph/statement.h"
 #include "graph/variable.h"
@@ -159,6 +160,14 @@ static const lattice_element_t *visit(node_t *node, abstract_state_t **state,
             /* A closure or built-in may change any captured binding. */
             forget_values(*state);
             return make_top_element();
+        case NODE_UNARY_PLUS:
+        case NODE_UNARY_MINUS: {
+            const lattice_element_t *value = visit(get_node_child(node, 0), state, collector);
+            const lattice_element_t *result = lattice_unary((*state)->arena, value,
+                node->vtbl->type == NODE_UNARY_MINUS);
+            if (result->type == LATTICE_BOTTOM) (*state)->control_flow = FLOW_UNREACHABLE;
+            return result;
+        }
         case NODE_ADDITION:
         case NODE_SUBTRACTION: {
             const lattice_element_t *left = visit(get_node_child(node, 0), state, collector);

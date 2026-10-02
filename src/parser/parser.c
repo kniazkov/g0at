@@ -81,6 +81,8 @@ compilation_error_t *parsing_returns(token_t *token, parser_memory_t *memory,
 compilation_error_t *parsing_flow_keywords(token_t *token, parser_memory_t *memory,
         token_groups_t *groups);
 
+compilation_error_t *parsing_unary_operators(token_t*, parser_memory_t*, token_groups_t*);
+
 compilation_error_t *preparsing_catch(token_t*, parser_memory_t*, token_groups_t*);
 compilation_error_t *parsing_unmatched_catch(token_t*, parser_memory_t*, token_groups_t*);
 compilation_error_t *parsing_throw(token_t*, parser_memory_t*, token_groups_t*);
@@ -375,6 +377,7 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
     APPLY_FORWARD(unprocessed_parenthesized_expressions, preparsing_parenthesized_expressions);
     APPLY_FORWARD(identifiers, parsing_single_identifiers);
+    APPLY_BACKWARD(additive_operators, parsing_unary_operators);
     APPLY_BACKWARD(power_operators, parsing_power_operators);
     APPLY_FORWARD(multiplicative_operators, parsing_multiplicative_operators);
     APPLY_FORWARD(additive_operators, parsing_additive_operators);

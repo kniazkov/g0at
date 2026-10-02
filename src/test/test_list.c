@@ -7,6 +7,7 @@
 #include "test_list.h"
 #include "test_addition.h"
 #include "test_subtraction.h"
+#include "test_unary.h"
 #include "test_operation_result.h"
 #include "test_lib.h"
 #include "test_scanner.h"
@@ -25,7 +26,11 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
-      { "parsing function calls", test_parsing_function_calls }
+      { "unary models and VM", test_unary_models_and_vm }
+    , { "unary errors", test_unary_errors }
+    , { "unary AST and domains", test_unary_ast_and_domains }
+    , { "unary parser", test_unary_parser }
+    , { "parsing function calls", test_parsing_function_calls }
     , { "exception parser", test_exception_parser }
     , { "catch binding", test_catch_binding }
     , { "unclosed bracket", test_unclosed_bracket }

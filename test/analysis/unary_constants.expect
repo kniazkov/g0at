@@ -1,0 +1,6 @@
+one write 1 1 a int=-2
+one write 2 2 b real=0.5
+one write 3 3 c real=-0.5
+one write 4 4 d int=-9223372036854775808
+one write 5 5 e int=-9223372036854775808
+one write 6 6 f int=-1

@@ -588,6 +588,33 @@ static bool exec_THROW(runtime_t *runtime, instruction_t instr, thread_t *thread
     return dispatch_exception(runtime, thread, exception);
 }
 
+/** @brief Consumes one operand and transfers its result or exception. */
+static bool execute_unary_operation(runtime_t *runtime, thread_t *thread,
+        operation_result_t (*operation)(process_t *, object_t *)) {
+    object_t *operand = pop_object_from_stack(thread->data_stack);
+    if (!operand) {
+        runtime->status = 1;
+        return false;
+    }
+    operation_result_t result = operation(thread->process, operand);
+    DECREF(operand);
+    if (result.is_exception)
+        return dispatch_exception(runtime, thread, (exception_t){result.value});
+    push_object_onto_stack(thread->data_stack, result.value);
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Executes @ref UPLUS. */
+static bool exec_UPLUS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_unary_operation(runtime, thread, unary_plus_object);
+}
+
+/** @brief Executes @ref UMINUS. */
+static bool exec_UMINUS(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_unary_operation(runtime, thread, unary_minus_object);
+}
+
 /** @brief Array of instruction execution functions for the Goat virtual machine. */
 static instr_executor_t executors[] = {
     exec_NOP,     /**< No operation - does nothing. */
@@ -626,7 +653,9 @@ static instr_executor_t executors[] = {
     exec_LEAVE,   /**< Restores the parent and pushes the departed context's data. */
     exec_RESTORE, /**< Restores the parent without a stack result. */
     exec_TRY,     /**< Creates an exception-handler context. */
-    exec_THROW    /**< Unwinds to the nearest exception handler. */
+    exec_THROW,   /**< Unwinds to the nearest exception handler. */
+    exec_UPLUS,
+    exec_UMINUS
     // Additional opcodes can be added here in the future...
 };
 
