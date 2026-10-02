@@ -31,13 +31,21 @@ static bool value_matches(const lattice_element_t *value, const char *text) {
                && ((const integer_range_element_t *)value)->min == a
                && ((const integer_range_element_t *)value)->max == b;
     }
-    double real;
-    if (sscanf(text, "real=%lf%n", &real, &used) == 1 && !text[used]) {
+    if (!strncmp(text, "real=", 5)) {
         if (value->type != LATTICE_REAL_CONSTANT)
             return false;
         double actual = ((const real_constant_element_t *)value)->value;
-        return (isnan(real) && isnan(actual))
-               || (actual == real && (real != 0 || !!signbit(real) == !!signbit(actual)));
+        const char *expected = text + 5;
+        /* Do not delegate special values to the platform's scanf implementation. */
+        if (!strcmp(expected, "nan"))
+            return isnan(actual);
+        if (!strcmp(expected, "inf") || !strcmp(expected, "+inf"))
+            return isinf(actual) && !signbit(actual);
+        if (!strcmp(expected, "-inf"))
+            return isinf(actual) && signbit(actual);
+        double real;
+        return sscanf(expected, "%lf%n", &real, &used) == 1 && !expected[used] && isfinite(real)
+               && actual == real && (real != 0 || !!signbit(real) == !!signbit(actual));
     }
     if (!strncmp(text, "string=", 7)) {
         if (value->type != LATTICE_STRING_CONSTANT)
@@ -70,6 +78,29 @@ static bool value_matches(const lattice_element_t *value, const char *text) {
             return value->type == types[i].type
                    || (types[i].type == LATTICE_FUNCTION && value->type == LATTICE_KNOWN_FUNCTION);
     }
+    return false;
+}
+
+/** @brief Display names use underscores instead of spaces in expectation selectors. */
+static bool node_type_matches(const node_t *node, const wchar_t *expected) {
+    const wchar_t *actual = node->vtbl->type_name;
+    for (; *actual && *expected; actual++, expected++) {
+        if ((*actual == L' ' ? L'_' : *actual) != *expected)
+            return false;
+    }
+    return *actual == *expected;
+}
+
+/** @brief Stable flag spelling for source-level expectations. */
+static bool flags_match(uint32_t flags, const char *expected) {
+    if (!strcmp(expected, "none"))
+        return flags == 0;
+    if (!strcmp(expected, "unreachable"))
+        return flags == NODE_FLAG_UNREACHABLE;
+    if (!strcmp(expected, "pure"))
+        return flags == NODE_FLAG_PURE;
+    if (!strcmp(expected, "pure|c-compatible"))
+        return flags == (NODE_FLAG_PURE | NODE_FLAG_C_COMPATIBLE);
     return false;
 }
 
@@ -114,7 +145,10 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
             query.kind = ANALYSIS_STATE_JOIN;
         else if (!strcmp(kind, "summary"))
             query.kind = ANALYSIS_DECLARATION_SUMMARY;
-        else if (!strcmp(kind, "unreachable"))
+        else if (!strcmp(kind, "flags")) {
+            query.kind = ANALYSIS_NODE_FLAGS;
+            query.column = decl_row;
+        } else if (!strcmp(kind, "unreachable"))
             query.kind = ANALYSIS_UNREACHABLE;
         else {
             fprintf(stderr, "%s.expect:%zu: invalid event kind\n", name, line_number);
@@ -123,6 +157,7 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
         if (!strcmp(mode, "none") && strcmp(expected, "-"))
             return false;
         bool unreachable = query.kind == ANALYSIS_UNREACHABLE;
+        bool flags = query.kind == ANALYSIS_NODE_FLAGS;
         if (unreachable && (decl_row || strcmp(variable, "-") || strcmp(expected, "-")))
             return false;
         string_value_t wide = decode_utf8(variable);
@@ -132,7 +167,10 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
         const analysis_event_t *last = NULL;
         for (const analysis_event_t *event = find_analysis_event(collector, NULL, &query); event;
              event = find_analysis_event(collector, event, &query)) {
-            if (!unreachable) {
+            if (flags) {
+                if (!node_type_matches(event->node, wide.data))
+                    continue;
+            } else if (!unreachable) {
                 string_view_t actual = event->declarator->name;
                 if (actual.length != wide.length || wmemcmp(actual.data, wide.data, wide.length))
                     continue;
@@ -147,7 +185,9 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
         bool ok = !strcmp(mode, "none")
                       ? matches == 0
                       : last && (!strcmp(mode, "last") || matches == 1)
-                            && (unreachable || value_matches(last->value, expected));
+                            && (unreachable
+                                || (flags ? flags_match(last->flags, expected)
+                                          : value_matches(last->value, expected)));
         if (!ok) {
             fprintf(stderr,
                     "%s.expect:%zu: %s (selector matched %zu events)\n",

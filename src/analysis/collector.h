@@ -8,6 +8,8 @@
 #include "lib/arena.h"
 #include "lib/value.h"
 
+#include <stdint.h>
+
 typedef struct node_t node_t;
 typedef struct declarator_t declarator_t;
 typedef struct lattice_element_t lattice_element_t;
@@ -18,7 +20,8 @@ typedef enum {
     ANALYSIS_VALUE_WRITE,
     ANALYSIS_STATE_JOIN,
     ANALYSIS_DECLARATION_SUMMARY,
-    ANALYSIS_UNREACHABLE /**< Subtree root; declarator and value are NULL. */
+    ANALYSIS_UNREACHABLE, /**< Subtree root; declarator and value are NULL. */
+    ANALYSIS_NODE_FLAGS   /**< Final proof snapshot, including zero (no proof). */
 } analysis_event_kind_t;
 
 /** @brief One observation, not a mutable reference to an abstract state. */
@@ -29,6 +32,7 @@ struct analysis_event_t {
     const node_t *node;
     const declarator_t *declarator;
     const lattice_element_t *value;
+    uint32_t flags; /**< Snapshot for ANALYSIS_NODE_FLAGS, independent of later node changes. */
     const char *file_name;
     size_t row;
     size_t column;
@@ -47,7 +51,7 @@ typedef struct {
     size_t count;
 } analysis_collector_t;
 
-/** @brief All specified fields must match; NULL pointers and zero numbers are wildcards. */
+/** @brief All selectors must match; zero positions and kind are wildcards. Flags use flags_mask. */
 typedef struct {
     analysis_event_kind_t kind;
     const node_t *node;
@@ -55,6 +59,8 @@ typedef struct {
     const char *file_name;
     size_t row;
     size_t column;
+    uint32_t flags_mask; /**< Nonzero selects flag events with matching masked bits. */
+    uint32_t flags;
 } analysis_event_query_t;
 
 /** @brief Creates an empty collector in a non-NULL arena. */
@@ -62,7 +68,7 @@ analysis_collector_t *create_analysis_collector(arena_t *arena);
 
 /**
  * @brief Appends in O(1); NULL collector disables recording.
- * Unreachable events require a node and NULL declaration/value; value events require both.
+ * Unreachable and flag events require a node and NULL declaration/value; value events require both.
  */
 const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
                                            analysis_event_kind_t kind,

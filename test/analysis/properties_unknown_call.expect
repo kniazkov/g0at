@@ -1,0 +1,4 @@
+one flags 2 0 variable pure|c-compatible
+one flags 3 0 function_object none
+one flags 4 0 function_call none
+one flags 5 0 variable pure

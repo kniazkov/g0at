@@ -1,0 +1,5 @@
+var x = 1;
+x;
+var f = func() { x = "text"; };
+f();
+x;

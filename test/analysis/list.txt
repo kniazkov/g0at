@@ -207,3 +207,15 @@ native_invalid_sqrt
 native_invalid_atan_first
 native_invalid_atan_second
 native_print_shadow
+
+# Node proof flags
+properties_numeric
+properties_unknown_call
+properties_functions
+properties_native
+properties_dead
+properties_parameters
+properties_writes
+properties_joins
+properties_native_alias
+properties_conditions

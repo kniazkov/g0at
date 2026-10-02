@@ -1,0 +1,6 @@
+one flags 2 0 postfix_increment none
+one flags 3 0 prefix_decrement none
+one flags 4 0 assignment none
+one flags 5 0 try-catch none
+one flags 5 0 throw none
+one flags 6 0 function_object none

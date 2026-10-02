@@ -169,7 +169,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     instr_index_t first = generate_bytecode_from_expression(expr->left_operand, code, data);
     opcode_t op = opcode(node->vtbl->type);
     if (op == LAND || op == LOR) {
-        if (expr->right_operand->base.unreachable) {
+        if (node_has_flag(&expr->right_operand->base, NODE_FLAG_UNREACHABLE)) {
             add_instruction(code, (instruction_t){.opcode = BOOL});
         } else {
             instr_index_t jump = add_instruction(code, (instruction_t){.opcode = op});

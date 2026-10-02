@@ -1,0 +1,5 @@
+one flags 1 0 variable pure
+one flags 1 0 unary_plus pure
+one flags 1 0 function_object pure
+one flags 5 0 variable pure
+one flags 5 0 function_object pure

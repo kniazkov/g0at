@@ -1,0 +1,5 @@
+false && print(1);
+if (false) { print(2); } else { 3; }
+var f = func() { if (false) { print(4); } return 5; };
+return;
+6;

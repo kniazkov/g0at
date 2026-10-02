@@ -19,7 +19,7 @@
 #include <wchar.h>
 
 static bool subtree_has_flag(const node_t *node, bool flag) {
-    if (node->unreachable != flag)
+    if (node_has_flag(node, NODE_FLAG_UNREACHABLE) != flag)
         return false;
     for (size_t i = 0; i < get_node_child_count(node); i++) {
         if (!subtree_has_flag(get_node_child(node, i), flag))
@@ -55,7 +55,7 @@ bool test_reachability_flags() {
     ASSERT(wcsstr(text.data, L"test.goat, 2.12: unreachable statement expression"));
     FREE_STRING(text);
     /* Re-running proofs resets old flags, including untouched function bodies. */
-    get_node_child(root, 2)->unreachable = true;
+    get_node_child(root, 2)->flags |= NODE_FLAG_UNREACHABLE;
     mark_unreachable_code(root, arena, NULL);
     ASSERT(subtree_has_flag(get_node_child(root, 2), false));
     ASSERT(subtree_has_flag(dead, true));
@@ -146,7 +146,9 @@ bool test_reachability_graph() {
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t dot = generate_graph_dot(root);
     ASSERT(wcsstr(dot.data, L"fontcolor=gray70 tooltip=\"unreachable\""));
-    ASSERT(!wcsstr(dot.data, L"filled") && !wcsstr(dot.data, L"fillcolor"));
+    ASSERT(wcsstr(dot.data, L"color=forestgreen style=\"rounded,filled\" fillcolor=\"#f2faf2\""));
+    ASSERT(wcsstr(dot.data, L"color=black style=\"rounded,filled\" fillcolor=\"#f2faf2\""));
+    ASSERT(wcsstr(dot.data, L"color=lightgray fontcolor=gray70 tooltip=\"unreachable\"];"));
     ASSERT(wcsstr(dot.data, L"font color='gray70'>\"dead\"</font>"));
     ASSERT(wcsstr(dot.data, L"color=lightgray fontcolor=gray70"));
     ASSERT(wcsstr(dot.data, L"style=dashed, color=lightgray, fontcolor=gray70"));

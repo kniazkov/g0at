@@ -1,0 +1,6 @@
+var x = 1;
+x++;
+--x;
+x = 2;
+try { throw 1; } catch (e) { x = 3; }
+var local = func() { var n = 1; return n; };

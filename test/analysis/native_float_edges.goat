@@ -4,3 +4,5 @@ var c=sign(-(0**-1));
 var d=sqrt(-1);
 var e=sqrt(-0.0);
 var f=sqrt(0**-1);
+var g = -sqrt(0 ** -1);
+var h = sqrt(4);
