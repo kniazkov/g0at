@@ -380,6 +380,27 @@ Node-specific behavior lives beside the node implementation. `graph/common_metho
 shared traversal/property implementations and conservative stubs; lattice operations, state
 joining, collector storage and call budgets remain shared analysis infrastructure.
 
+### Function summary foundation
+
+Each function object owns an arena-backed `function_summary_t` describing its body,
+separate from the effects of creating a closure and from cached node flags. The record
+reserves parameter and return types, possible effects, analysis status, and C-subset support.
+
+This is storage only: no specialization or new function proof is computed yet. Every
+record starts with `TOP` types, unknown effects, and unknown C support, and is reset on
+each `analyze` call, including `--optimize=none`.
+
+The statuses are `unanalyzed`, `analyzing`, `analyzed`, and `inconclusive`. An inconclusive
+attempt is distinct from a function never examined; even `analyzed` does not itself prove
+purity or C support. Those facts have their own fields. Possible exceptions will be
+modelled separately from observable effects in a later step.
+
+With analysis enabled, `function-summary` events expose these provisional records in
+`--print-analysis` and `--save-analysis`. Events copy the record and parameter slots;
+later changes do not alter earlier observations. C tests can select them with
+`ANALYSIS_FUNCTION_SUMMARY` and inspect `event->function_summary`. The source-based
+`.expect` selector language is unchanged for now.
+
 ### Proven unreachable code
 
 `--optimize none` stops after required AST preparation: parents, scopes, node IDs,

@@ -5,7 +5,9 @@
  */
 #include "collector.h"
 
+#include "function_summary.h"
 #include "graph/declarations.h"
+#include "graph/expression.h"
 #include "lattice.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
@@ -28,8 +30,9 @@ const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
     if (!collector) {
         return NULL;
     }
-    assert(kind >= ANALYSIS_VALUE_WRITE && kind <= ANALYSIS_NODE_FLAGS);
+    assert(kind >= ANALYSIS_VALUE_WRITE && kind <= ANALYSIS_FUNCTION_SUMMARY);
     assert(kind == ANALYSIS_UNREACHABLE || kind == ANALYSIS_NODE_FLAGS
+                   || kind == ANALYSIS_FUNCTION_SUMMARY
                ? node && !declarator && !value
                : declarator && value);
     analysis_event_t *event = alloc_zeroed_from_arena(collector->arena, sizeof(*event));
@@ -40,6 +43,9 @@ const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
     event->value = value;
     if (kind == ANALYSIS_NODE_FLAGS)
         event->flags = node->flags;
+    if (kind == ANALYSIS_FUNCTION_SUMMARY)
+        event->function_summary =
+            snapshot_function_summary(collector->arena, get_function_summary(node));
     const node_t *located = node;
     while (located && (!located->position || !located->position->begin)) {
         located = located->parent;
@@ -105,11 +111,12 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
     string_value_t result = EMPTY_STRING_VALUE;
     for (const analysis_event_t *event = collector ? collector->head : NULL; event;
          event = event->next) {
-        const wchar_t *kind = event->kind == ANALYSIS_VALUE_WRITE   ? L"write"
-                              : event->kind == ANALYSIS_STATE_JOIN  ? L"join"
-                              : event->kind == ANALYSIS_UNREACHABLE ? L"unreachable"
-                              : event->kind == ANALYSIS_NODE_FLAGS  ? L"flags"
-                                                                    : L"summary";
+        const wchar_t *kind = event->kind == ANALYSIS_VALUE_WRITE        ? L"write"
+                              : event->kind == ANALYSIS_STATE_JOIN       ? L"join"
+                              : event->kind == ANALYSIS_UNREACHABLE      ? L"unreachable"
+                              : event->kind == ANALYSIS_NODE_FLAGS       ? L"flags"
+                              : event->kind == ANALYSIS_FUNCTION_SUMMARY ? L"function-summary"
+                                                                         : L"summary";
         string_value_t filename =
             event->file_name ? decode_utf8(event->file_name) : STATIC_STRING(L"<unknown>");
         string_value_t value = event->value ? lattice_to_string(event->value) : EMPTY_STRING_VALUE;
@@ -120,7 +127,11 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
                                             event->column,
                                             kind);
         append_string_value(&builder, line);
-        if (event->kind == ANALYSIS_NODE_FLAGS) {
+        if (event->kind == ANALYSIS_FUNCTION_SUMMARY) {
+            string_value_t summary = function_summary_to_string(event->function_summary);
+            append_string_value(&builder, summary);
+            FREE_STRING(summary);
+        } else if (event->kind == ANALYSIS_NODE_FLAGS) {
             append_string(&builder, event->node->vtbl->type_name);
             append_static_string(&builder, L" = ");
             if (!event->flags)

@@ -21,4 +21,6 @@ void classify_node_properties(node_t *node, analysis_collector_t *collector) {
             node->flags |= NODE_FLAG_C_COMPATIBLE;
     }
     add_analysis_event(collector, ANALYSIS_NODE_FLAGS, node, NULL, NULL);
+    if (node->vtbl->type == NODE_FUNCTION_OBJECT)
+        add_analysis_event(collector, ANALYSIS_FUNCTION_SUMMARY, node, NULL, NULL);
 }
