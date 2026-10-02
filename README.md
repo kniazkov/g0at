@@ -357,6 +357,29 @@ none flags 3 0 function_call -
 means no matching event. API queries can select any combination, including absent
 bits, with `flags_mask` and `flags`. Snapshots survive subsequent changes to nodes.
 
+### Virtual analysis methods
+
+`node_vtbl_t` owns three proof operations:
+
+- `analyze_reachability(node, state**, collector)` follows immediate execution and may replace
+  the state when joining branches. Children go through the common traversal, which marks dead
+  subtrees. This is deliberately separate from `calculate`/`execute`, which can inspect specific
+  user-function calls; deferred bodies are never specialized by the reachability pass.
+- `is_pure(node)` uses classified child caches and any resolved native-call proof. Function-object
+  purity describes its body, while constructing that object does not execute it.
+- `can_generate_c_code(node, value)` checks the initial numeric C subset. `value` is an optional
+  pointwise abstract result; absent facts must not be replaced with declaration summaries.
+  The method proves eligibility, not the availability of the still-unimplemented C emitter.
+
+Reachability seeds pointwise proofs; the postorder property pass refines them and writes
+`NODE_FLAG_PURE`/`NODE_FLAG_C_COMPATIBLE`. These and `NODE_FLAG_UNREACHABLE` remain in the node
+as caches consumed by visualization and code generation. Collector events capture immutable
+snapshots. Rerun full analysis after AST changes to invalidate the caches.
+
+Node-specific behavior lives beside the node implementation. `graph/common_methods` contains
+shared traversal/property implementations and conservative stubs; lattice operations, state
+joining, collector storage and call budgets remain shared analysis infrastructure.
+
 ### Proven unreachable code
 
 `--optimize none` stops after required AST preparation: parents, scopes, node IDs,

@@ -4,6 +4,7 @@
  */
 #include "unary_expression.h"
 
+#include "analysis/reachability.h"
 #include "analysis/unary_operation.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
@@ -68,9 +69,23 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
+/** @brief Implements node_vtbl_t::analyze_reachability. */
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    const lattice_element_t *value =
+        visit_reachable_node(get_node_child(node, 0), state, collector);
+    const lattice_element_t *result =
+        lattice_unary((*state)->arena, value, node->vtbl->type == NODE_UNARY_MINUS);
+    if (result->type == LATTICE_BOTTOM)
+        (*state)->control_flow = FLOW_UNREACHABLE;
+    return result;
+}
+
 /** @brief Virtual table for unary sign operations. */
 static node_vtbl_t unary_plus_vtbl = {
     .type = NODE_UNARY_PLUS,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = children_are_pure,
     .type_name = L"unary plus",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -88,7 +103,7 @@ static node_vtbl_t unary_plus_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = child_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
@@ -98,6 +113,8 @@ static node_vtbl_t unary_plus_vtbl = {
 /** @brief Virtual table for unary sign operations. */
 static node_vtbl_t unary_minus_vtbl = {
     .type = NODE_UNARY_MINUS,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = children_are_pure,
     .type_name = L"unary minus",
     .get_data = no_data,
     .get_property_count = no_properties,

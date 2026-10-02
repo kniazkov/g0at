@@ -6,8 +6,11 @@
 #include "test_node_properties.h"
 
 #include "analysis/analysis.h"
+#include "analysis/properties.h"
+#include "analysis/reachability.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "graph/common_methods.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
@@ -100,6 +103,58 @@ bool test_node_property_reset() {
     options->optimization_level = OPTIMIZATION_ALL;
     ASSERT(!analyze(root, &memory, options, NULL));
     ASSERT(node_has_flag(root, NODE_FLAG_PURE));
+    destroy_options(options);
+    destroy_arena(arena);
+    return true;
+}
+
+static size_t reachability_calls;
+
+/** @brief Test override: the driver must dispatch through the table and accept a replaced state. */
+static const lattice_element_t *
+custom_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    reachability_calls++;
+    abstract_state_t *replacement = clone_abstract_state(*state);
+    destroy_abstract_state(*state);
+    *state = replacement;
+    return make_integer_constant_element(replacement->arena, 19);
+}
+
+static bool custom_c_subset(const node_t *node, const lattice_element_t *value) {
+    return value && value->type == LATTICE_INTEGER_CONSTANT
+           && ((const integer_constant_element_t *)value)->value == 19;
+}
+
+bool test_node_virtual_analysis() {
+    arena_t *arena = create_arena(16);
+    parser_memory_t memory = {arena, arena, arena, arena};
+    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(L"7;"));
+    ASSERT(root);
+    node_t *literal = get_node_child(get_node_child(root, 0), 0);
+    node_vtbl_t overridden = *literal->vtbl;
+    overridden.analyze_reachability = custom_reachability;
+    overridden.is_pure = not_pure;
+    overridden.can_generate_c_code = custom_c_subset;
+    literal->vtbl = &overridden;
+    reachability_calls = 0;
+    options_t *options = create_options();
+    analysis_collector_t *collector = create_analysis_collector(arena);
+    ASSERT(!analyze(root, &memory, options, collector));
+    ASSERT(reachability_calls == 1);
+    /* Type is still INTEGER: a hard-coded type switch would produce the wrong flags. */
+    ASSERT(literal->flags == NODE_FLAG_C_COMPATIBLE);
+    ASSERT(!can_generate_c_code_from_node(literal, NULL));
+    analysis_event_query_t query = {.kind = ANALYSIS_NODE_FLAGS, .node = literal};
+    const analysis_event_t *event = find_last_analysis_event(collector, &query);
+    ASSERT(event && event->flags == NODE_FLAG_C_COMPATIBLE);
+    abstract_state_t *state = create_abstract_state(arena);
+    state->control_flow = FLOW_RETURN;
+    ASSERT(visit_reachable_node(literal, &state, collector)->type == LATTICE_BOTTOM);
+    ASSERT(reachability_calls == 1);
+    classify_node_properties(literal, collector);
+    ASSERT(literal->flags == NODE_FLAG_UNREACHABLE);
+    ASSERT(event->flags == NODE_FLAG_C_COMPATIBLE);
+    destroy_abstract_state(state);
     destroy_options(options);
     destroy_arena(arena);
     return true;

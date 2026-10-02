@@ -106,6 +106,8 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
 
 static node_vtbl_t vtbl = {
     .type = NODE_TRY_CATCH,
+    .analyze_reachability = reachability_unknown,
+    .is_pure = not_pure,
     .type_name = L"try-catch",
     .get_data = get_data,
     .get_property_count = no_properties,

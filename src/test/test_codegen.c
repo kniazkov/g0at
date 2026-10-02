@@ -79,7 +79,7 @@ bool test_node_codegen_stubs() {
     size_t data_size = data->data_size;
     add_static_source(source, 1, L"sentinel");
 
-    ASSERT(!can_generate_c_code_from_node(node));
+    ASSERT(can_generate_c_code_from_node(node, NULL));
     string_value_t result = generate_c_code_from_node(node);
     ASSERT(result.data == NULL && result.length == 0 && !result.should_free);
     generate_indented_c_code_from_node(node, source, 2);

@@ -67,6 +67,8 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
 /** @brief Virtual table for integer expressions. */
 static node_vtbl_t integer_vtbl = {
     .type = NODE_INTEGER,
+    .analyze_reachability = reachability_literal,
+    .is_pure = children_are_pure,
     .type_name = L"integer",
     .get_data = get_data,
     .get_property_count = no_properties,
@@ -84,7 +86,7 @@ static node_vtbl_t integer_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = numeric_literal_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

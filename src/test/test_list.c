@@ -41,6 +41,7 @@ static test_description_t test_list[] = {
     {"native int domains", test_native_int_domains},
     {"input lines", test_input_lines},
     {"node property events", test_node_property_events},
+    {"node virtual analysis", test_node_virtual_analysis},
     {"node property reset", test_node_property_reset},
     {"builtin registry", test_builtin_registry},
     {"builtin numeric results", test_builtin_numeric_results},

@@ -5,6 +5,7 @@
  */
 
 #include "analysis/lattice.h"
+#include "analysis/reachability.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -53,9 +54,17 @@ arg_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) 
     return BAD_INSTR_INDEX;
 }
 
+/** @brief Implements node_vtbl_t::analyze_reachability. */
+static const lattice_element_t *
+fobj_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    return make_function_element();
+}
+
 /** @brief Virtual table for function argument nodes. */
 static node_vtbl_t arg_vtbl = {
     .type = NODE_ARGUMENT,
+    .analyze_reachability = reachability_unknown,
+    .is_pure = children_are_pure,
     .type_name = L"argument",
     .get_data = arg_get_data,
     .get_property_count = get_property_count_of_declarator,
@@ -145,6 +154,8 @@ alist_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data
 /** @brief Virtual table for function argument list nodes. */
 static node_vtbl_t alist_vtbl = {
     .type = NODE_ARGUMENT_LIST,
+    .analyze_reachability = reachability_unknown,
+    .is_pure = children_are_pure,
     .type_name = L"argument list",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -245,6 +256,8 @@ fbody_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data
 /** @brief Virtual table for function_body node operations. */
 static node_vtbl_t function_body_vtbl = {
     .type = NODE_FUNCTION_BODY,
+    .analyze_reachability = reachability_unknown,
+    .is_pure = children_are_pure,
     .type_name = L"function body",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -429,6 +442,8 @@ fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *code, data_b
 /** @brief Virtual table for function object node operations. */
 static node_vtbl_t fo_vtbl = {
     .type = NODE_FUNCTION_OBJECT,
+    .analyze_reachability = fobj_reachability,
+    .is_pure = children_are_pure,
     .type_name = L"function object",
     .get_data = no_data,
     .get_property_count = no_properties,

@@ -6,6 +6,7 @@
 
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "analysis/reachability.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -206,9 +207,50 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
+/** @brief Proves branches using immediate execution only. */
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    const lattice_element_t *condition =
+        visit_reachable_node(get_node_child(node, 0), state, collector);
+    node_t *yes = get_node_child(node, 1);
+    node_t *no = get_node_child_count(node) == 3 ? get_node_child(node, 2) : NULL;
+    if ((*state)->control_flow != FLOW_NORMAL) {
+        set_if_else_condition_truth(node, ABSTRACT_NEVER);
+        mark_unreachable_subtree(yes, collector);
+        if (no)
+            mark_unreachable_subtree(no, collector);
+        return make_top_element();
+    }
+    abstract_truth_t truth = lattice_truth(condition);
+    set_if_else_condition_truth(node, truth);
+    if (truth == ABSTRACT_TRUE) {
+        if (no)
+            mark_unreachable_subtree(no, collector);
+        visit_reachable_node(yes, state, collector);
+    } else if (truth == ABSTRACT_FALSE) {
+        mark_unreachable_subtree(yes, collector);
+        if (no)
+            visit_reachable_node(no, state, collector);
+    } else {
+        abstract_state_t *left = clone_abstract_state(*state);
+        abstract_state_t *right = clone_abstract_state(*state);
+        visit_reachable_node(yes, &left, collector);
+        if (no)
+            visit_reachable_node(no, &right, collector);
+        abstract_state_t *merged = join_abstract_states(left, right);
+        destroy_abstract_state(left);
+        destroy_abstract_state(right);
+        destroy_abstract_state(*state);
+        *state = merged;
+    }
+    return make_top_element();
+}
+
 /** @brief Virtual table for if-else nodes. */
 static node_vtbl_t if_else_vtbl = {
     .type = NODE_IF_ELSE,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = children_are_pure,
     .type_name = L"if-else",
     .get_data = no_data,
     .get_property_count = no_properties,

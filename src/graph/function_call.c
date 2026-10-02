@@ -8,6 +8,7 @@
 
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "analysis/reachability.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
@@ -15,6 +16,7 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "model/builtin_function.h"
 
 #include <assert.h>
 
@@ -135,9 +137,38 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
+/** @brief Implements node_vtbl_t::analyze_reachability. */
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    size_t count = get_node_child_count(node) - 1;
+    const lattice_element_t **args = alloc_from_arena((*state)->arena, (count + 1) * sizeof(*args));
+    for (size_t i = count; i > 0; i--)
+        args[i - 1] = visit_reachable_node(get_node_child(node, i), state, collector);
+    const lattice_element_t *callee =
+        visit_reachable_node(get_node_child(node, 0), state, collector);
+    if ((*state)->control_flow != FLOW_NORMAL)
+        return make_bottom_element();
+    if (callee->type == LATTICE_KNOWN_FUNCTION
+        && ((const known_function_element_t *)callee)->builtin) {
+        const builtin_function_t *builtin = ((const known_function_element_t *)callee)->builtin;
+        if (builtin->effects == BUILTIN_EFFECT_NONE)
+            node->flags |= NODE_FLAG_PURE;
+        return interpret_function_call(callee, args, count, *state);
+    }
+    forget_abstract_values(*state);
+    return make_top_element();
+}
+
+/** @brief Refines the resolved callee proof with effects of argument/callee evaluation. */
+static bool is_pure(const node_t *node) {
+    return node_has_flag(node, NODE_FLAG_PURE) && children_are_pure(node);
+}
+
 /** @brief Virtual table for function call expressions. */
 static node_vtbl_t function_call_vtbl = {
     .type = NODE_FUNCTION_CALL,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = is_pure,
     .type_name = L"function call",
     .get_data = no_data,
     .get_property_count = no_properties,

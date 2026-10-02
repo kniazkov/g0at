@@ -6,6 +6,7 @@
 
 #include "analysis/division.h"
 
+#include "analysis/reachability.h"
 #include "binary_operation.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
@@ -58,9 +59,17 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
+/** @brief Implements node_vtbl_t::analyze_reachability. */
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    return visit_reachable_binary(node, state, collector, lattice_divide);
+}
+
 /** @brief Virtual table for division operations. */
 static node_vtbl_t division_vtbl = {
     .type = NODE_DIVISION,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = children_are_pure,
     .type_name = L"division",
     .get_data = no_data,
     .get_property_count = no_properties,

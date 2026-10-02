@@ -5,6 +5,7 @@
 #include "logic.h"
 
 #include "analysis/bitwise.h"
+#include "analysis/reachability.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
@@ -163,6 +164,61 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
     append_formatted_source(builder, generate_goat_code(node));
 }
 
+/** @brief Visits only feasible short-circuit paths. */
+static const lattice_element_t *analyze_short_reachability(node_t *node,
+                                                           abstract_state_t **state,
+                                                           analysis_collector_t *collector) {
+    const lattice_element_t *left = visit_reachable_node(get_node_child(node, 0), state, collector);
+    node_t *right_node = get_node_child(node, 1);
+    if ((*state)->control_flow != FLOW_NORMAL) {
+        mark_unreachable_subtree(right_node, collector);
+        return make_bottom_element();
+    }
+    bool is_or = node->vtbl->type == NODE_LOGICAL_OR;
+    abstract_truth_t truth = lattice_truth(left);
+    const lattice_element_t *skipped = is_or ? make_true_element() : make_false_element();
+    if (truth == (is_or ? ABSTRACT_TRUE : ABSTRACT_FALSE)) {
+        mark_unreachable_subtree(right_node, collector);
+        return skipped;
+    }
+    if (truth != ABSTRACT_EITHER)
+        return lattice_boolean(visit_reachable_node(right_node, state, collector), false);
+    abstract_state_t *right = clone_abstract_state(*state);
+    const lattice_element_t *value =
+        lattice_boolean(visit_reachable_node(right_node, &right, collector), false);
+    if (right->control_flow != FLOW_NORMAL)
+        value = make_bottom_element();
+    abstract_state_t *merged = join_abstract_states(*state, right);
+    destroy_abstract_state(right);
+    destroy_abstract_state(*state);
+    *state = merged;
+    return lattice_join(merged->arena, skipped, value);
+}
+
+/** @brief Implements node_vtbl_t::analyze_reachability. */
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    node_type_t type = node->vtbl->type;
+    if (type == NODE_LOGICAL_NOT || type == NODE_BOOLEAN_CONVERSION || type == NODE_BITWISE_NOT) {
+        const lattice_element_t *value =
+            visit_reachable_node(get_node_child(node, 0), state, collector);
+        value = node->vtbl->type == NODE_BITWISE_NOT
+                    ? lattice_bitwise_not((*state)->arena, value)
+                    : lattice_boolean(value, node->vtbl->type == NODE_LOGICAL_NOT);
+        if (value->type == LATTICE_BOTTOM)
+            (*state)->control_flow = FLOW_UNREACHABLE;
+        return value;
+    }
+    const lattice_element_t *left = visit_reachable_node(get_node_child(node, 0), state, collector);
+    const lattice_element_t *right =
+        visit_reachable_node(get_node_child(node, 1), state, collector);
+    const lattice_element_t *value =
+        lattice_bitwise((*state)->arena, left, right, node_bitwise_kind(node->vtbl->type));
+    if (value->type == LATTICE_BOTTOM)
+        (*state)->control_flow = FLOW_UNREACHABLE;
+    return value;
+}
+
 /** @brief Preserves left effects even when reachability excludes the right operand. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     binary_operation_t *expr = (binary_operation_t *)node;
@@ -188,6 +244,8 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
 static node_vtbl_t vtables[] = {
     {
         .type = NODE_LOGICAL_NOT,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"logical not",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -213,6 +271,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_BOOLEAN_CONVERSION,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"boolean conversion",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -238,6 +298,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_BITWISE_NOT,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"bitwise not",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -263,6 +325,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_LOGICAL_AND,
+        .analyze_reachability = analyze_short_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"logical and",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -288,6 +352,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_LOGICAL_OR,
+        .analyze_reachability = analyze_short_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"logical or",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -313,6 +379,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_BITWISE_AND,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"bitwise and",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -338,6 +406,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_BITWISE_OR,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"bitwise or",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -363,6 +433,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_BITWISE_XOR,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"bitwise xor",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -388,6 +460,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_SHIFT_LEFT,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"shift left",
         .get_data = no_data,
         .get_property_count = no_properties,
@@ -413,6 +487,8 @@ static node_vtbl_t vtables[] = {
     },
     {
         .type = NODE_SHIFT_RIGHT,
+        .analyze_reachability = analyze_reachability,
+        .is_pure = children_are_pure,
         .type_name = L"shift right",
         .get_data = no_data,
         .get_property_count = no_properties,

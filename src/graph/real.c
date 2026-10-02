@@ -61,6 +61,8 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
 /** @brief Virtual table for real number literal expressions. */
 static node_vtbl_t real_vtbl = {
     .type = NODE_REAL,
+    .analyze_reachability = reachability_literal,
+    .is_pure = children_are_pure,
     .type_name = L"real number",
     .get_data = get_data,
     .get_property_count = no_properties,
@@ -78,7 +80,7 @@ static node_vtbl_t real_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = numeric_literal_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

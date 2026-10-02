@@ -57,6 +57,8 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
  */
 static node_vtbl_t null_vtbl = {
     .type = NODE_NULL,
+    .analyze_reachability = reachability_literal,
+    .is_pure = children_are_pure,
     .type_name = L"null",
     .get_data = no_data,
     .get_property_count = no_properties,

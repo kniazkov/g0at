@@ -6,12 +6,14 @@
 
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "analysis/reachability.h"
 #include "assignment.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "declarations.h"
+#include "graph/variable.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
@@ -72,9 +74,27 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
+/** @brief Implements node_vtbl_t::analyze_reachability. */
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    const lattice_element_t *value =
+        visit_reachable_node(get_node_child(node, 1), state, collector);
+    node_t *target = get_node_child(node, 0);
+    if ((*state)->control_flow == FLOW_NORMAL) {
+        if (target->vtbl->type == NODE_VARIABLE) {
+            set_in_abstract_state(*state, ((variable_t *)target)->declarator, value);
+        } else {
+            forget_abstract_values(*state);
+        }
+    }
+    return value;
+}
+
 /** @brief Virtual table for simple assignment operations. */
 static node_vtbl_t simple_assignment_vtbl = {
     .type = NODE_SIMPLE_ASSIGNMENT,
+    .analyze_reachability = analyze_reachability,
+    .is_pure = not_pure,
     .type_name = L"assignment",
     .get_data = no_data,
     .get_property_count = no_properties,

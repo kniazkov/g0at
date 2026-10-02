@@ -84,6 +84,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 /** @brief Virtual table for parenthesized expression operations. */
 static node_vtbl_t expression_parenthesized_vtbl = {
     .type = NODE_EXPRESSION_PARENTHESIZED,
+    .analyze_reachability = visit_reachable_child,
+    .is_pure = children_are_pure,
     .type_name = L"parenthesized expression",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -101,7 +103,7 @@ static node_vtbl_t expression_parenthesized_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = child_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

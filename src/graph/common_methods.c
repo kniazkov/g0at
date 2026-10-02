@@ -7,6 +7,7 @@
 #include "common_methods.h"
 
 #include "analysis/lattice.h"
+#include "analysis/reachability.h"
 #include "expression.h"
 
 node_display_value_t no_data(const node_t *node) {
@@ -73,7 +74,7 @@ abstract_state_t *execute_nothing(node_t *node, abstract_state_t *state, arena_t
     return state;
 }
 
-bool cannot_generate_c_code(const node_t *node) {
+bool cannot_generate_c_code(const node_t *node, const lattice_element_t *value) {
     return false;
 }
 
@@ -91,4 +92,66 @@ no_bytecode_assignment(const node_t *node, code_builder_t *code, data_builder_t 
 
 bool no_deferred_bytecode(const node_t *node, code_builder_t *code, data_builder_t *data) {
     return true;
+}
+
+bool children_are_pure(const node_t *node) {
+    for (size_t i = 0; i < get_node_child_count(node); i++) {
+        const node_t *child = get_node_child(node, i);
+        /* Creating a closure does not execute its body. */
+        if (!node_has_flag(child, NODE_FLAG_UNREACHABLE)
+            && child->vtbl->type != NODE_FUNCTION_OBJECT && !node_has_flag(child, NODE_FLAG_PURE))
+            return false;
+    }
+    return true;
+}
+
+bool not_pure(const node_t *node) {
+    return false;
+}
+
+bool numeric_literal_c_code(const node_t *node, const lattice_element_t *value) {
+    return true;
+}
+
+bool child_c_code(const node_t *node, const lattice_element_t *value) {
+    return node_has_flag(get_node_child(node, 0), NODE_FLAG_C_COMPATIBLE);
+}
+
+const lattice_element_t *
+reachability_literal(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    return calculate_node(node, *state, (*state)->arena);
+}
+
+const lattice_element_t *
+reachability_unknown(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    forget_abstract_values(*state);
+    return make_top_element();
+}
+
+const lattice_element_t *
+visit_reachable_child(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    return visit_reachable_node(get_node_child(node, 0), state, collector);
+}
+
+const lattice_element_t *
+visit_reachable_children(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    for (size_t i = 0; i < get_node_child_count(node); i++)
+        visit_reachable_node(get_node_child(node, i), state, collector);
+    return make_top_element();
+}
+
+const lattice_element_t *
+visit_reachable_binary(node_t *node,
+                       abstract_state_t **state,
+                       analysis_collector_t *collector,
+                       const lattice_element_t *(*operation)(arena_t *,
+                                                             const lattice_element_t *,
+                                                             const lattice_element_t *)) {
+    const lattice_element_t *left = visit_reachable_node(get_node_child(node, 0), state, collector);
+    const lattice_element_t *right =
+        visit_reachable_node(get_node_child(node, 1), state, collector);
+    const lattice_element_t *value = operation((*state)->arena, left, right);
+    if (value->type == LATTICE_BOTTOM)
+        (*state)->control_flow = FLOW_UNREACHABLE;
+    return value;
 }
