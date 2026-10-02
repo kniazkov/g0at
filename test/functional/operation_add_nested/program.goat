@@ -1,0 +1,1 @@
+try { try { var x = 1 + "bad"; } catch (inner) { print(inner); var y = null + 2; } } catch (outer) { print(outer); } print("after");

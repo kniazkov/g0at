@@ -240,82 +240,89 @@ static object_array_t get_topology(const object_t *obj) {
 }
 
 /** @brief Implements @ref object_vtbl_t::add. */
-static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t add(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     if (is_integer_object(obj2)) {
         int_value_t second_int = get_object_integer_value(obj2);
-        return create_integer_object(process, add_int64_wrapping(first.value, second_int.value));
+        return operation_success(create_integer_object(process,
+            add_int64_wrapping(first.value, second_int.value)));
     }
     real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
-        return create_real_number_object(process, integer_to_double(first.value) + second_real.value);
+        return operation_success(create_real_number_object(process,
+            integer_to_double(first.value) + second_real.value));
     }
-    return NULL;
+    return operation_exception(get_exception_invalid_argument());
 }
 
 /** @brief Implements @ref object_vtbl_t::subtract. */
-static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t subtract(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     int_value_t second_int = get_object_integer_value(obj2);
     if (second_int.has_value) {
-        return create_integer_object(process, first.value - second_int.value);
+        return operation_success(create_integer_object(process, first.value - second_int.value));
     }
     real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
-        return create_real_number_object(process, first.value - second_real.value);
+        return operation_success(create_real_number_object(process, first.value - second_real.value));
     }
-    return NULL;
+    return operation_exception(get_exception_invalid_argument());
 }
 
 /** @brief Implements @ref object_vtbl_t::multiply. */
-static object_t *multiply(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t multiply(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     int_value_t second_int = get_object_integer_value(obj2);
     if (second_int.has_value) {
-        return create_integer_object(process, first.value * second_int.value);
+        return operation_success(create_integer_object(process, first.value * second_int.value));
     }
     real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
-        return create_real_number_object(process, first.value * second_real.value);
+        return operation_success(create_real_number_object(process, first.value * second_real.value));
     }
-    return NULL;
+    return operation_exception(get_exception_invalid_argument());
 }
 
 /** @brief Implements @ref object_vtbl_t::divide. */
-static object_t *divide(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t divide(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     real_value_t second = get_object_real_value(obj2);
     if (second.has_value) {
         if (second.value == 0) {
-            return NULL;
+            return operation_exception(get_exception_division_by_zero());
         }
         double result = (double)first.value / second.value;
         if (result == trunc(result) && result >= (double)INT64_MIN && result <= (double)INT64_MAX) {
-            return create_integer_object(process, (int64_t)result);
+            return operation_success(create_integer_object(process, (int64_t)result));
         }
-        return create_real_number_object(process, result);
+        return operation_success(create_real_number_object(process, result));
     }
-    return NULL;
+    return operation_exception(get_exception_invalid_argument());
 }
 
 /** @brief Implements @ref object_vtbl_t::modulo. */
-static object_t *modulo(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t modulo(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     int_value_t second_int = get_object_integer_value(obj2);
     if (second_int.has_value) {
-        return create_integer_object(process, first.value % second_int.value);
+        if (second_int.value == 0)
+            return operation_exception(get_exception_division_by_zero());
+        if (first.value == INT64_MIN && second_int.value == -1)
+            return operation_success(get_integer_zero());
+        return operation_success(create_integer_object(process, first.value % second_int.value));
     }
-    return NULL;
+    return operation_exception(get_exception_invalid_argument());
 }
 
 /** @brief Implements @ref object_vtbl_t::power. */
-static object_t *power(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t power(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
     real_value_t second = get_object_real_value(obj2);
     if (second.has_value) {
-        return create_real_number_object(process, pow((double)first.value, second.value));
+        return operation_success(create_real_number_object(process,
+            pow((double)first.value, second.value)));
     }
-    return NULL;
+    return operation_exception(get_exception_invalid_argument());
 }
 
 /** @brief Implements @ref object_vtbl_t::get_boolean_value. */

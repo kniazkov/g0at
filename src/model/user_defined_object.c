@@ -310,33 +310,33 @@ static model_status_t set_property(object_t *obj, object_t *key, object_t *value
 }
 
 /** @brief Implements @ref object_vtbl_t::add. */
-static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+static operation_result_t add(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
 /** @brief Implements @ref object_vtbl_t::subtract. */
-static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+static operation_result_t subtract(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
 /** @brief Implements @ref object_vtbl_t::multiply. */
-static object_t *multiply(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+static operation_result_t multiply(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
 /** @brief Implements @ref object_vtbl_t::divide. */
-static object_t *divide(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+static operation_result_t divide(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
 /** @brief Implements @ref object_vtbl_t::modulo. */
-static object_t *modulo(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+static operation_result_t modulo(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
 /** @brief Implements @ref object_vtbl_t::power. */
-static object_t *power(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+static operation_result_t power(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
 /** @brief Implements @ref object_vtbl_t::get_boolean_value. */

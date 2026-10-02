@@ -81,28 +81,28 @@ model_status_t set_property_on_immutable(object_t *obj, object_t *key, object_t 
     return MSTAT_IMMUTABLE_OBJECT;
 }
 
-object_t *stub_add(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+operation_result_t stub_add(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
-object_t *stub_subtract(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+operation_result_t stub_subtract(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
-object_t *stub_multiply(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+operation_result_t stub_multiply(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
-object_t *stub_divide(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+operation_result_t stub_divide(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
-object_t *stub_modulo(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+operation_result_t stub_modulo(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
-object_t *stub_power(process_t *process, object_t *obj1, object_t *obj2) {
-    return NULL;
+operation_result_t stub_power(process_t *process, object_t *obj1, object_t *obj2) {
+    return operation_exception(get_exception_invalid_operation());
 }
 
 bool common_less(const object_t *obj1, const object_t *obj2) {

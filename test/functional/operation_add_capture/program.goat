@@ -1,0 +1,1 @@
+var saved; try { var x = true + 1; } catch (e) { saved = func { return e; }; } print(saved());

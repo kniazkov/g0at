@@ -1,0 +1,1 @@
+Uncaught exception: DIVISION_BY_ZERO

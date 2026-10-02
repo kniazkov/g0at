@@ -1,0 +1,1 @@
+var right = func { print("right"); return 1; }; try { var x = true + right(); } catch (e) { print(e); } try { var x = (true + 1) + right(); } catch (e) { print(e); }

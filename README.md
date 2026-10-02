@@ -410,8 +410,7 @@ are ordinary string constants whose contents equal their names:
 | `PROPERTY_NOT_FOUND` | An operation requires a missing property. |
 
 Native code can use `get_exceptions_object()` and the `get_exception_*()` getters.
-These values are intended for built-in throws; operator failure behavior has not yet been
-converted to exceptions. Property access is available
+Arithmetic operations use these values for exceptions. Property access is available
 through the object model; source syntax such as `Exceptions.INVALID_ARGUMENT` is not yet
 supported by the parser. Programs can already refer to and print `Exceptions`.
 
@@ -453,9 +452,17 @@ try { throw "failed"; } catch (error) { print(error); }
 ```
 
 An uncaught exception prints `Uncaught exception: <value>` to stderr in the selected language
-before process cleanup and returns a failing exit status. Operators and built-ins are not
-yet connected to this mechanism; explicit throws are covered by source-level functional tests
-with optimization both disabled and enabled.
+before process cleanup and returns a failing exit status. Arithmetic methods (`add`, `subtract`,
+`multiply`, `divide`, `modulo`, `power`) return `operation_result_t`: a non-NULL `value` and
+`is_exception`. Either result owns one reference, transferred to the VM stack or exception
+handler. The same object may also be an operand; implementations must retain that reference.
+
+Unsupported arithmetic throws `INVALID_OPERATION`; numeric operations with an incompatible
+right operand throw `INVALID_ARGUMENT`; division or integer modulo by zero throws
+`DIVISION_BY_ZERO`. The VM dispatches these through the same handlers as explicit `throw`,
+without printing caught exceptions. Native function calls are not yet converted.
+Functional tests exercise both explicit and arithmetic exceptions with optimization disabled
+and enabled.
 
 ## Author and license
 

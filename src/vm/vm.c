@@ -5,7 +5,6 @@
  */
 
 #include <assert.h>
-#include <stdio.h>
 #include <stdbool.h>
 
 #include "vm.h"
@@ -294,110 +293,58 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
-/** @brief Executes @ref ADD. */
-static bool exec_ADD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+/** @brief Unwinds to a handler, transferring ownership of the thrown object. */
+static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
+
+/** @brief Consumes operands and transfers the result to the stack or exception handler. */
+static bool execute_binary_operation(runtime_t *runtime, thread_t *thread,
+        operation_result_t (*operation)(process_t *, object_t *, object_t *)) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        object_t *result = add_objects(thread->process, first, second);
-        if (result) {
-            DECREF(first);
-            DECREF(second);
-            push_object_onto_stack(thread->data_stack, result);
-            thread->instr_id++;
-            return true;
-        }
+    if (!first || !second) {
+        DECREFIF(first);
+        DECREFIF(second);
+        runtime->status = 1;
+        return false;
     }
-    DECREFIF(first);
-    DECREFIF(second);
-    runtime->status = 1;
-    fputs("Invalid operands for addition.\n", stderr);
-    return false;
+    operation_result_t result = operation(thread->process, first, second);
+    DECREF(first);
+    DECREF(second);
+    if (result.is_exception)
+        return dispatch_exception(runtime, thread, (exception_t){result.value});
+    push_object_onto_stack(thread->data_stack, result.value);
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Executes @ref ADD. */
+static bool exec_ADD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_binary_operation(runtime, thread, add_objects);
 }
 
 /** @brief Executes @ref SUB. */
 static bool exec_SUB(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *second = pop_object_from_stack(thread->data_stack);
-    object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        object_t *result = subtract_objects(thread->process, first, second);
-        if (result) {
-            DECREF(first);
-            DECREF(second);
-            push_object_onto_stack(thread->data_stack, result);
-            thread->instr_id++;
-            return true;
-        }
-    }
-    return false;
+    return execute_binary_operation(runtime, thread, subtract_objects);
 }
 
 /** @brief Executes @ref MUL. */
 static bool exec_MUL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *second = pop_object_from_stack(thread->data_stack);
-    object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        object_t *result = multiply_objects(thread->process, first, second);
-        if (result) {
-            DECREF(first);
-            DECREF(second);
-            push_object_onto_stack(thread->data_stack, result);
-            thread->instr_id++;
-            return true;
-        }
-    }
-    return false;
+    return execute_binary_operation(runtime, thread, multiply_objects);
 }
 
 /** @brief Executes @ref DIVIDE. */
 static bool exec_DIVIDE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *second = pop_object_from_stack(thread->data_stack);
-    object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        object_t *result = divide_objects(thread->process, first, second);
-        if (result) {
-            DECREF(first);
-            DECREF(second);
-            push_object_onto_stack(thread->data_stack, result);
-            thread->instr_id++;
-            return true;
-        }
-    }
-    return false;
+    return execute_binary_operation(runtime, thread, divide_objects);
 }
 
 /** @brief Executes @ref MODULO. */
 static bool exec_MODULO(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *second = pop_object_from_stack(thread->data_stack);
-    object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        object_t *result = modulo_objects(thread->process, first, second);
-        if (result) {
-            DECREF(first);
-            DECREF(second);
-            push_object_onto_stack(thread->data_stack, result);
-            thread->instr_id++;
-            return true;
-        }
-    }
-    return false;
+    return execute_binary_operation(runtime, thread, modulo_objects);
 }
 
 /** @brief Executes @ref POWER. */
 static bool exec_POWER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    object_t *second = pop_object_from_stack(thread->data_stack);
-    object_t *first = pop_object_from_stack(thread->data_stack);
-    if (first && second) {
-        object_t *result = power_objects(thread->process, first, second);
-        if (result) {
-            DECREF(first);
-            DECREF(second);
-            push_object_onto_stack(thread->data_stack, result);
-            thread->instr_id++;
-            return true;
-        }
-    }
-    return false;
+    return execute_binary_operation(runtime, thread, power_objects);
 }
 
 /** @brief Executes @ref LESS. */

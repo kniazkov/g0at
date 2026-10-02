@@ -259,27 +259,27 @@ static object_t *dynamic_get_property(const object_t *obj, const object_t *key) 
 }
 
 /** @brief Implements @ref object_vtbl_t::add. */
-static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t add(process_t *process, object_t *obj1, object_t *obj2) {
     string_value_t first = convert_object_to_string(obj1);
     if (first.length == 0) {
         if (obj2->vtbl->type == TYPE_STRING) {
             INCREF(obj2);
-            return obj2;
+            return operation_success(obj2);
         }
-        return create_string_object(process, convert_object_to_string(obj2));
+        return operation_success(create_string_object(process, convert_object_to_string(obj2)));
     }
     string_value_t second = convert_object_to_string(obj2);
     if (second.length == 0) {
         FREE_STRING(second);
         INCREF(obj1);
-        return obj1;
+        return operation_success(obj1);
     }
     string_builder_t builder;
     init_string_builder(&builder, first.length + second.length);
     append_string_value(&builder, first);
     string_value_t result = append_string_value(&builder, second);
     FREE_STRING(second);
-    return create_string_object(process, result);
+    return operation_success(create_string_object(process, result));
 }
 
 /** @brief Implements @ref object_vtbl_t::get_boolean_value. */

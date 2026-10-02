@@ -243,56 +243,56 @@ static object_array_t get_topology(const object_t *obj) {
 }
 
 /** @brief Implements @ref object_vtbl_t::add. */
-static object_t *add(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t add(process_t *process, object_t *obj1, object_t *obj2) {
     real_value_t first = get_object_real_value(obj1);
     real_value_t second = get_object_real_value(obj2);
     if (!second.has_value) {
-        return NULL;
+        return operation_exception(get_exception_invalid_argument());
     }
-    return create_real_number_object(process, first.value + second.value);
+    return operation_success(create_real_number_object(process, first.value + second.value));
 }
 
 /** @brief Implements @ref object_vtbl_t::subtract. */
-static object_t *subtract(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t subtract(process_t *process, object_t *obj1, object_t *obj2) {
     real_value_t first = get_object_real_value(obj1);
     real_value_t second = get_object_real_value(obj2);
     if (!second.has_value) {
-        return NULL;
+        return operation_exception(get_exception_invalid_argument());
     }
-    return create_real_number_object(process, first.value - second.value);
+    return operation_success(create_real_number_object(process, first.value - second.value));
 }
 
 /** @brief Implements @ref object_vtbl_t::multiply. */
-static object_t *multiply(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t multiply(process_t *process, object_t *obj1, object_t *obj2) {
     real_value_t first = get_object_real_value(obj1);
     real_value_t second = get_object_real_value(obj2);
     if (!second.has_value) {
-        return NULL;
+        return operation_exception(get_exception_invalid_argument());
     }
-    return create_real_number_object(process, first.value * second.value);
+    return operation_success(create_real_number_object(process, first.value * second.value));
 }
 
 /** @brief Implements @ref object_vtbl_t::divide. */
-static object_t *divide(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t divide(process_t *process, object_t *obj1, object_t *obj2) {
     real_value_t first = get_object_real_value(obj1);
     real_value_t second = get_object_real_value(obj2);
     if (!second.has_value) {
-        return NULL;
+        return operation_exception(get_exception_invalid_argument());
     }
     if (second.value == 0) {
-        return NULL;
+        return operation_exception(get_exception_division_by_zero());
     }
-    return create_real_number_object(process, first.value / second.value);
+    return operation_success(create_real_number_object(process, first.value / second.value));
 }
 
 /** @brief Implements @ref object_vtbl_t::power. */
-static object_t *power(process_t *process, object_t *obj1, object_t *obj2) {
+static operation_result_t power(process_t *process, object_t *obj1, object_t *obj2) {
     real_value_t first = get_object_real_value(obj1);
     real_value_t second = get_object_real_value(obj2);
     if (!second.has_value) {
-        return NULL;
+        return operation_exception(get_exception_invalid_argument());
     }
-    return create_real_number_object(process, pow(first.value, second.value));
+    return operation_success(create_real_number_object(process, pow(first.value, second.value)));
 }
 
 /** @brief Implements @ref object_vtbl_t::get_boolean_value. */
