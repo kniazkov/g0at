@@ -12,6 +12,7 @@
 /**
  * @brief Runs bytecode in proc; the caller retains both objects.
  * The process is initialized automatically if needed.
- * Returns nonzero on ADD failure; other instruction diagnostics remain incomplete.
+ * Returns nonzero on ADD failure, uncaught THROW or invalid exception bytecode.
+ * Uncaught values remain in the originating thread's exception field; other diagnostics are incomplete.
  */
 int run(process_t *proc, bytecode_t *code);

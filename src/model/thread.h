@@ -10,6 +10,7 @@
 #include <stddef.h>
 
 #include "object_stack.h"
+#include "exception.h"
 #include "common/types.h"
 
 typedef struct process_t process_t;
@@ -37,6 +38,9 @@ struct thread_t {
 
     /** @brief The current execution context of the thread. */
     context_t *context;
+
+    /** @brief Unhandled exception, retained until thread destruction. */
+    exception_t exception;
 
     /** @brief The data stack used by the thread. */
     object_stack_t *data_stack;

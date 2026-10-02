@@ -86,3 +86,12 @@ bool test_root_object_call();
 
 /** @brief Tests built-in exception strings and their immutable namespace. */
 bool test_exceptions_object(void);
+
+/** @brief Tests VM exception instructions and context unwinding. */
+bool test_vm_restore(void);
+bool test_vm_throw_values(void);
+bool test_vm_throw_nested(void);
+bool test_vm_throw_calls(void);
+bool test_vm_throw_uncaught(void);
+bool test_vm_exception_invalid_bytecode(void);
+bool test_vm_throw_cleanup(void);

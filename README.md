@@ -411,9 +411,32 @@ are ordinary string constants whose contents equal their names:
 
 Native code can use `get_exceptions_object()` and the `get_exception_*()` getters.
 This supplies the values for the upcoming exception mechanism; it does not yet implement
-`throw`, `try`/`catch`, or change operator failure behavior. Property access is available
+source-level `throw`, `try`/`catch`, or change operator failure behavior. Property access is available
 through the object model; source syntax such as `Exceptions.INVALID_ARGUMENT` is not yet
 supported by the parser. Programs can already refer to and print `Exceptions`.
+
+## Exception bytecode
+
+The VM supports context-based exception handlers without a separate handler stack:
+
+| Instruction | Effect |
+| --- | --- |
+| `TRY address` | Creates a child context and saves the handler address and data-stack boundary. |
+| `RESTORE` | Destroys one context and restores its parent; leaves the data stack unchanged. |
+| `THROW` | Pops any value, unwinds to the nearest TRY, and pushes the same value at handler entry. |
+
+`THROW` removes the accepting TRY context before entering the handler. Nested handlers can
+therefore rethrow outward. Temporary stack values above the saved boundary are released;
+values below it survive. Calls and ordinary block contexts are unwound along the same chain.
+`RET` also removes intervening TRY contexts without activating their handlers.
+Unlike `RESTORE`, `LEAVE` pushes the departed context's data object.
+
+An uncaught throw unwinds to the root context and empties the data stack. `run()` returns
+nonzero, and the originating thread retains the thrown object in `exception.value` until
+thread destruction. This one-field structure owns a reference and is a GC root; Goat `null`
+is a valid thrown object, while a C NULL pointer means there is no pending exception.
+No diagnostic formatting or exception syntax is added yet. Operators and built-ins are not
+yet connected to this mechanism; tests exercise the instructions directly through bytecode.
 
 ## Author and license
 

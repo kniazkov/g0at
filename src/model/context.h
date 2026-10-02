@@ -34,8 +34,7 @@ struct context_t {
     /**
      * @brief Jump targets used when unwinding this context.
      *
-     * For example, a function-call context uses the `FLOW_RETURN` target to resume execution after
-     * the call.
+     * Slot 0 resumes the caller for FLOW_RETURN or enters the handler for FLOW_THROW.
      */
     instr_index_t jump_address[2];
 
