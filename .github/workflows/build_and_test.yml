@@ -8,6 +8,23 @@ on:
 permissions:
   contents: read
 jobs:
+  code-style:
+    name: Code style (clang-format 18)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-format 18
+        run: sudo apt-get update && sudo apt-get install -y clang-format-18
+      - name: Check all C sources and headers
+        shell: bash
+        run: bash scripts/check_style.sh 2>&1 | tee code-style.log
+      - name: Preserve code style diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-style-diagnostics
+          path: code-style.log
+          if-no-files-found: ignore
   linux:
     name: Build and test (Linux, ${{ matrix.name }})
     runs-on: ubuntu-latest

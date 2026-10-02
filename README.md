@@ -228,6 +228,28 @@ Each functional test has a directory containing `program.goat` and an `expected_
 
 When extending the language, keep parsing, AST behavior, bytecode generation, and runtime semantics consistent, and add a focused regression test for the new behavior. The existing tests are useful executable examples, but do not cover every subsystem or edge case.
 
+### Code style
+
+[clang-format 18](https://releases.llvm.org/18.1.8/tools/clang/docs/ClangFormat.html)
+checks every tracked `.c` and `.h` file, including unit tests, against [`.clang-format`](.clang-format).
+The rules use four-space indentation, no tabs, a 100-column formatting target, attached
+braces, right-aligned pointer stars, sorted includes, and no single-line functions,
+conditionals or loops. Argument and parameter lists are not packed onto continuation lines.
+
+Install `clang-format-18` and run:
+
+```bash
+bash scripts/check_style.sh
+```
+
+For a differently named executable of the same major version, set `CLANG_FORMAT`.
+The script verifies the version and configuration, then runs `--dry-run --Werror` without
+editing source files. This is a formatting check, not a naming or correctness analyzer.
+CI treats any formatting violation as a failure and saves the full diagnostics in the
+`code-style-diagnostics` artifact. There is no changed-lines-only filter or legacy baseline:
+existing inconsistencies are reported too. The initial integration intentionally leaves
+those violations for a separate cleanup.
+
 ### Source-based analysis tests
 
 `test/analysis/list.txt` lists fixture names. Each has a `.goat` source and an `.expect` file.
