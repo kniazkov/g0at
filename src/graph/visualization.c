@@ -180,12 +180,14 @@ static int node_to_dot(const node_t *node,
     const wchar_t *name = node->vtbl->type_name;
     node_display_value_t value = get_node_data(node);
     string_value_t properties = build_node_properties_html(node);
-    const wchar_t *node_color = node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L"lightgray"
-                                : node->id                                 ? L"black"
-                                                                           : L"silver";
-    const wchar_t *node_style = node_has_flag(node, NODE_FLAG_UNREACHABLE)
-                                    ? L" fontcolor=gray70 tooltip=\"unreachable\""
-                                    : L"";
+    const wchar_t *node_color = node_has_flag(node, NODE_FLAG_UNREACHABLE)    ? L"lightgray"
+                                : node_has_flag(node, NODE_FLAG_C_COMPATIBLE) ? L"forestgreen"
+                                : node->id                                    ? L"black"
+                                                                              : L"silver";
+    const wchar_t *node_style =
+        node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L" fontcolor=gray70 tooltip=\"unreachable\""
+        : node_has_flag(node, NODE_FLAG_PURE)      ? L" style=filled fillcolor=\"#f2faf2\""
+                                                   : L"";
     if (value.text.length > 0) {
         const wchar_t *font_color = L"blue";
         if (value.kind == NODE_DISPLAY_VALUE_PREDEFINED) {

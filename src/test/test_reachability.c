@@ -146,7 +146,9 @@ bool test_reachability_graph() {
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t dot = generate_graph_dot(root);
     ASSERT(wcsstr(dot.data, L"fontcolor=gray70 tooltip=\"unreachable\""));
-    ASSERT(!wcsstr(dot.data, L"filled") && !wcsstr(dot.data, L"fillcolor"));
+    ASSERT(wcsstr(dot.data, L"color=forestgreen style=filled fillcolor=\"#f2faf2\""));
+    ASSERT(wcsstr(dot.data, L"color=black style=filled fillcolor=\"#f2faf2\""));
+    ASSERT(wcsstr(dot.data, L"color=lightgray fontcolor=gray70 tooltip=\"unreachable\"];"));
     ASSERT(wcsstr(dot.data, L"font color='gray70'>\"dead\"</font>"));
     ASSERT(wcsstr(dot.data, L"color=lightgray fontcolor=gray70"));
     ASSERT(wcsstr(dot.data, L"style=dashed, color=lightgray, fontcolor=gray70"));
