@@ -1,0 +1,7 @@
+var x = -2;
+if (1 < 2) { x = 3; }
+var a = x ** 2;
+var b = 2 ** x;
+var c = x ** 0;
+var d = 1 ** x;
+var e = 0 ** x;

@@ -1,0 +1,2 @@
+var y = null ** 0;
+var after = 1;

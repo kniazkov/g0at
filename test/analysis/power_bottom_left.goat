@@ -1,0 +1,3 @@
+var x = 0;
+var y = (null ** 1) ** (x = 2);
+var after = 3;

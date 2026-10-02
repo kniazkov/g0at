@@ -1,0 +1,4 @@
+if (0 ** 2) { print("dead"); }
+else { print("live"); }
+if (2 ** -3) { print("live"); }
+else { print("dead"); }

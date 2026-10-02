@@ -1,0 +1,4 @@
+if (0 ** -1) { print("infinity"); } else { print("bad"); }
+if ((-4) ** 0.5) { print("|nan"); } else { print("bad"); }
+if (2 ** -1075) { print("bad"); } else { print("|underflow"); }
+print("|"); print(((-4) ** 0.5) ** 0);

@@ -18,6 +18,7 @@
 #include "test_operation_result.h"
 #include "test_optimization.h"
 #include "test_parser.h"
+#include "test_power.h"
 #include "test_reachability.h"
 #include "test_scanner.h"
 #include "test_subtraction.h"
@@ -84,6 +85,10 @@ static test_description_t test_list[] = {
     {"addition models and constants", test_addition_models_and_constants},
     {"addition domains", test_addition_domains},
     {"mixed numeric arithmetic", test_mixed_arithmetic},
+    {"power models and constants", test_power_models_and_constants},
+    {"power independent expectations", test_power_expected},
+    {"power domains", test_power_domains},
+    {"power ranges", test_power_ranges},
     {"division models and constants", test_division_models_and_constants},
     {"division domains", test_division_domains},
     {"division ranges", test_division_ranges},

@@ -448,6 +448,26 @@ The same rules drive AST analysis and reachability. Tests cover model/VM agreeme
 independent boundary expectations, mixed types, zero divisors, IEEE values, intervals,
 collector events and source programs in both optimization modes.
 
+### Power
+
+`**` evaluates operands left to right and groups right to left: `2 ** 3 ** 2` is
+`2 ** (3 ** 2)`. Its result is always real, including two integer operands. Both
+operands are converted to double before calling `pow`, so large integers can lose
+precision (including the parity of an integer exponent above `2^53`).
+
+The existing real `pow` behavior is preserved: `0 ** 0` is `1.0`, zero to a negative
+power gives infinity, and a negative finite base with a fractional finite exponent
+produces NaN. Overflow/underflow produce infinity/zero as appropriate; signed zero
+is retained. Unlike `/`, these numeric cases do not throw. Nonnumeric arguments to
+numbers throw `INVALID_ARGUMENT`; unsupported receivers throw `INVALID_OPERATION`.
+
+`lattice_power()` folds constants and returns `REAL` for general numeric domains and
+intervals. Numeric `x ** 0` and `1 ** x` yield real one, including NaN inputs, after
+both operands have been evaluated. Unknown receivers remain conservative. The same
+transfer function drives interpretation and reachability. Tests cover mixed types,
+large integers, fractional/negative exponents, IEEE special values, precedence,
+evaluation order and exceptions, with optimization both disabled and enabled.
+
 ### Unary plus and minus
 
 Prefix `+` preserves a numeric object's value and type; `-` negates it. Integer negation
