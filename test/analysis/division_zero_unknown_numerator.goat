@@ -1,0 +1,4 @@
+var x = 1;
+if (1 < 2) { x = 2; }
+var y = x / 0;
+var after = 3;

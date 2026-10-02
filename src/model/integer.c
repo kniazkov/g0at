@@ -280,19 +280,27 @@ static operation_result_t multiply(process_t *process, object_t *obj1, object_t 
 
 /** @brief Implements @ref object_vtbl_t::divide. */
 static operation_result_t divide(process_t *process, object_t *obj1, object_t *obj2) {
-    int_value_t first = get_object_integer_value(obj1);
-    real_value_t second = get_object_real_value(obj2);
-    if (second.has_value) {
-        if (second.value == 0) {
+    int64_t first = get_object_integer_value(obj1).value;
+    if (is_integer_object(obj2)) {
+        int64_t second = get_object_integer_value(obj2).value;
+        if (second == 0)
             return operation_exception(get_exception_division_by_zero());
-        }
-        double result = (double)first.value / second.value;
-        if (result == trunc(result) && result >= (double)INT64_MIN && result <= (double)INT64_MAX) {
-            return operation_success(create_integer_object(process, (int64_t)result));
-        }
-        return operation_success(create_real_number_object(process, result));
+        /* Neither / nor % is defined for this pair in C. */
+        if (first == INT64_MIN && second == -1)
+            return operation_success(create_real_number_object(process, 0x1p63));
+        if (first % second == 0)
+            return operation_success(create_integer_object(process, first / second));
+        return operation_success(
+            create_real_number_object(process,
+                                      integer_to_double(first) / integer_to_double(second)));
     }
-    return operation_exception(get_exception_invalid_argument());
+    real_value_t second = get_object_real_value(obj2);
+    if (!second.has_value)
+        return operation_exception(get_exception_invalid_argument());
+    if (second.value == 0)
+        return operation_exception(get_exception_division_by_zero());
+    return operation_success(
+        create_real_number_object(process, integer_to_double(first) / second.value));
 }
 
 /** @brief Implements @ref object_vtbl_t::modulo. */

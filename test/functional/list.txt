@@ -163,3 +163,17 @@ multiplication_error_function
 multiplication_invalid_string
 multiplication_uncaught
 mixed_add_sub
+division_mixed
+division_limits
+division_precision
+division_precedence
+division_condition
+division_zero
+division_zero_effects
+division_nonzero_range
+division_call_order
+division_error_order
+division_error_function
+division_invalid_string
+division_uncaught
+division_zero_uncaught
