@@ -1,0 +1,1 @@
+infinity|nan|underflow|1.0

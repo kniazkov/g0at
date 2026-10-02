@@ -1,0 +1,3 @@
+var x = 0; print((x = 3) ** 0); print("|"); print(x); print("|");
+try { print(null ** 0); } catch (e) { print(e); } print("|");
+try { print(1 ** null); } catch (e) { print(e); }

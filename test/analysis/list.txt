@@ -93,3 +93,13 @@ division_invalid
 division_unknown
 division_bottom_left
 division_bottom_right
+power_constants
+power_ranges
+power_reachability
+power_identity_effect
+power_identity_invalid
+power_effects
+power_invalid
+power_unknown
+power_bottom_left
+power_bottom_right

@@ -1,0 +1,10 @@
+one write 1 1 a real=8
+one write 2 2 b real=0.125
+one write 3 3 c real=2
+one write 4 4 d real=0.25
+one write 5 5 e real=-8
+one write 6 6 f real=512
+one write 7 7 g real=-4
+one write 8 8 h real=1
+one write 9 9 i real=9007199254740992
+one write 10 10 j real=1

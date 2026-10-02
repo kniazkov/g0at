@@ -177,3 +177,14 @@ division_error_function
 division_invalid_string
 division_uncaught
 division_zero_uncaught
+power_mixed
+power_precedence
+power_precision
+power_condition
+power_identity_effects
+power_ieee_condition
+power_call_order
+power_error_order
+power_error_function
+power_invalid_string
+power_uncaught
