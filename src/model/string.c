@@ -1,5 +1,5 @@
 /**
- * @file string.с
+ * @file string.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementations of an object representing a string.
  */
