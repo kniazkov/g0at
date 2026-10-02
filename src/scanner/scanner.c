@@ -176,6 +176,9 @@ static const keyword_lookup_t keywords[] = {
         NULL,
         offsetof(token_groups_t, return_keywords)
     },
+    { L"try", 3, TOKEN_TRY, NULL, offsetof(token_groups_t, control_flow_keywords) },
+    { L"catch", 5, TOKEN_CATCH, NULL, offsetof(token_groups_t, catch_keywords) },
+    { L"throw", 5, TOKEN_THROW, NULL, offsetof(token_groups_t, throw_keywords) },
     {
         L"if",
         2,

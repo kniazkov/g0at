@@ -1,0 +1,1 @@
+var f = func { try return 17; catch (e) { return 99; } }; print(f());

@@ -1,0 +1,1 @@
+var e = "outer"; try throw "inner" catch (e) { print(e); } print(e);

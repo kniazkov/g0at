@@ -50,6 +50,13 @@ typedef struct {
     const wchar_t const *expected_statement_after_else;
     const wchar_t const *else_without_if;
     const wchar_t const *duplicate_else_branch;
+    const wchar_t *expected_try_statement;
+    const wchar_t *expected_catch;
+    const wchar_t *invalid_catch_binding;
+    const wchar_t *expected_catch_block;
+    const wchar_t *catch_without_try;
+    const wchar_t *expected_throw_value;
+    const wchar_t *uncaught_exception;
     // add other
 } messages_t;
 

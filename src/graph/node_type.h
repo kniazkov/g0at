@@ -132,6 +132,9 @@ typedef enum {
     /** @brief Return statement node type. */
     NODE_RETURN,
 
+    /** @brief Explicit throw statement. */
+    NODE_THROW,
+
     /** @brief Exception-handling statement. */
     NODE_TRY_CATCH,
 

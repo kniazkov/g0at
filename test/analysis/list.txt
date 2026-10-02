@@ -52,3 +52,5 @@ addition_invalid
 addition_bottom_right
 addition_unknown_right
 addition_wrapped_condition
+throw_stops_analysis
+try_conservative_analysis

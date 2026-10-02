@@ -1,0 +1,1 @@
+var f; try throw "captured" catch (e) { f = func { return e; }; } print(f());

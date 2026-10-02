@@ -24,6 +24,8 @@ static bool stub() {
 
 static test_description_t test_list[] = {
       { "parsing function calls", test_parsing_function_calls }
+    , { "exception parser", test_exception_parser }
+    , { "catch binding", test_catch_binding }
     , { "unclosed bracket", test_unclosed_bracket }
     , { "missing opening bracket", test_missing_opening_bracket }
     , { "closing bracket does not match opening", test_closing_bracket_does_not_match_opening }

@@ -28,6 +28,8 @@ compilation_error_t *parsing_single_identifiers(token_t *identifier, parser_memo
                        || identifier->left->type == TOKEN_SEMICOLON
                        || identifier->left->type == TOKEN_VAR
                        || identifier->left->type == TOKEN_CONST
+                       || identifier->left->type == TOKEN_THROW
+                       || identifier->left->type == TOKEN_TRY
                        || identifier->left->type == TOKEN_RETURN
                        ;
         if (!valid_left) {
@@ -42,6 +44,7 @@ compilation_error_t *parsing_single_identifiers(token_t *identifier, parser_memo
                         || identifier->right->type == TOKEN_COMMA
                         || identifier->right->type == TOKEN_SEMICOLON
                         || identifier->right->type == TOKEN_VAR
+                        || identifier->right->type == TOKEN_CATCH
                         || identifier->right->type == TOKEN_CONST
                         ;
         if (!valid_right) {

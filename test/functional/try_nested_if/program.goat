@@ -1,0 +1,1 @@
+try if (true) { throw "yes"; } else { print("bad"); } catch (e) { print(e); }

@@ -81,6 +81,10 @@ compilation_error_t *parsing_returns(token_t *token, parser_memory_t *memory,
 compilation_error_t *parsing_flow_keywords(token_t *token, parser_memory_t *memory,
         token_groups_t *groups);
 
+compilation_error_t *preparsing_catch(token_t*, parser_memory_t*, token_groups_t*);
+compilation_error_t *parsing_unmatched_catch(token_t*, parser_memory_t*, token_groups_t*);
+compilation_error_t *parsing_throw(token_t*, parser_memory_t*, token_groups_t*);
+
 /** @brief Rule for handling `else` keywords. */
 compilation_error_t *parsing_else_keywords(token_t *token, parser_memory_t *memory,
         token_groups_t *groups);
@@ -365,6 +369,7 @@ static list_t *collect_nodes_from_group(token_list_t *tokens, arena_t *arena) {
 compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory,
         parsing_result_t *result) {
     compilation_error_t *error = NULL;
+    APPLY_FORWARD(catch_keywords, preparsing_catch);
     APPLY_FORWARD(scope_blocks, parsing_scopes_and_functions);
     result->functions = collect_nodes_from_group(&groups->function_objects, memory->graph);
     APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
@@ -379,8 +384,10 @@ compilation_error_t *apply_reduction_rules(token_groups_t *groups, parser_memory
     APPLY_FORWARD(var_keywords, parsing_variable_declarations);
     APPLY_FORWARD(const_keywords, parsing_constant_declarations);
     APPLY_FORWARD(return_keywords, parsing_returns);
+    APPLY_FORWARD(throw_keywords, parsing_throw);
     APPLY_BACKWARD(control_flow_keywords, parsing_flow_keywords);
     APPLY_BACKWARD(else_keywords, parsing_else_keywords);
+    APPLY_FORWARD(catch_keywords, parsing_unmatched_catch);
     APPLY_FORWARD(statement_lists, parsing_statement_list_bodies);
     APPLY_FORWARD(function_objects, parsing_function_bodies);
     APPLY_FORWARD(preprocessed_parenthesized_expressions, parsing_parenthesized_expressions);
