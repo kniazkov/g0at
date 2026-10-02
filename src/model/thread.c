@@ -4,15 +4,16 @@
  * @brief Implements functions for managing threads in the Goat programming language.
  */
 
+#include "thread.h"
+
+#include "context.h"
+#include "lib/allocate.h"
+#include "object.h"
+#include "object_stack.h"
+#include "process.h"
+
 #include <stdlib.h>
 #include <string.h>
-
-#include "thread.h"
-#include "process.h"
-#include "context.h"
-#include "object_stack.h"
-#include "object.h"
-#include "lib/allocate.h"
 
 /** @brief ID of the last created thread. */
 static uint64_t last_thread_id = 0;

@@ -4,9 +4,9 @@
  * @brief Implementation of functions for managing object lists in Goat language.
  */
 
-#include <assert.h>
-
 #include "object_list.h"
+
+#include <assert.h>
 
 void init_object_list(object_list_t *list) {
     list->head = NULL;

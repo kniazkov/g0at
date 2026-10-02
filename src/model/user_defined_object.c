@@ -4,16 +4,16 @@
  * @brief Definitions and methods for user-defined objects in the Goat programming language.
  */
 
-#include <assert.h>
-
-#include "object.h"
-#include "object_state.h"
-#include "process.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/avl_tree.h"
-#include "lib/vector.h"
 #include "lib/string_ext.h"
+#include "lib/vector.h"
+#include "object.h"
+#include "object_state.h"
+#include "process.h"
+
+#include <assert.h>
 
 /**
  * @brief Defines the maximum capacity of the object pool.
@@ -60,8 +60,8 @@ typedef struct {
 } property_value_t;
 
 /** @brief Creates an empty user-defined object. */
-static object_user_defined_t *create_empty_user_defined_object(process_t* process,
-        object_array_t prototypes);
+static object_user_defined_t *create_empty_user_defined_object(process_t *process,
+                                                               object_array_t prototypes);
 
 /**
  * @brief Decrements the reference count of a key-value pair in the user-defined object's children.
@@ -145,7 +145,7 @@ static void mark(object_t *obj) {
         uobj->state = MARKED;
         avl_tree_for_each(uobj->properties, mark_child_pair, NULL);
         for (size_t index = 0; index < uobj->proto->size; index++) {
-            mark_object((object_t*)uobj->proto->data[index]);
+            mark_object((object_t *)uobj->proto->data[index]);
         }
     }
 }
@@ -172,9 +172,9 @@ static void clear_properties(void *unused, void *key, value_t value) {
 /** @brief Implements @ref object_vtbl_t::release. */
 static void release(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    remove_object_from_list(
-        uobj->state == ZOMBIE ? &obj->process->user_defined_objects : &obj->process->objects, obj
-    );
+    remove_object_from_list(uobj->state == ZOMBIE ? &obj->process->user_defined_objects
+                                                  : &obj->process->objects,
+                            obj);
     destroy_vector(uobj->proto);
     destroy_vector(uobj->topology);
     destroy_vector(uobj->keys);
@@ -196,7 +196,7 @@ static void copy_child_pair(void *data, void *key, value_t value) {
     append_to_vector(copy->keys, key);
     property_value_t *copy_ref = (property_value_t *)ALLOC(sizeof(property_value_t));
     memcpy(copy_ref, ref, sizeof(property_value_t));
-    set_in_avl_tree(copy->properties, key, (value_t){ .ptr = copy_ref });
+    set_in_avl_tree(copy->properties, key, (value_t){.ptr = copy_ref});
 }
 
 /** @brief Implements @ref object_vtbl_t::clone. */
@@ -204,8 +204,7 @@ static object_t *clone(process_t *process, object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     object_user_defined_t *copy = create_empty_user_defined_object(
         process,
-        (object_array_t){ (object_t *const *)uobj->proto->data, uobj->proto->size }
-    );
+        (object_array_t){(object_t *const *)uobj->proto->data, uobj->proto->size});
     avl_tree_for_each(uobj->properties, copy_child_pair, copy);
     return &copy->base;
 }
@@ -253,19 +252,19 @@ static string_value_t to_string(const object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::get_prototypes. */
 static object_array_t get_prototypes(const object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    return (object_array_t){ (object_t **)uobj->proto->data, uobj->proto->size };
+    return (object_array_t){(object_t **)uobj->proto->data, uobj->proto->size};
 }
 
 /** @brief Implements @ref object_vtbl_t::get_topology. */
 static object_array_t get_topology(const object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    return (object_array_t){ (object_t **)uobj->topology->data, uobj->topology->size };
+    return (object_array_t){(object_t **)uobj->topology->data, uobj->topology->size};
 }
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    return (object_array_t){ (object_t *const *)uobj->keys->data, uobj->keys->size };
+    return (object_array_t){(object_t *const *)uobj->keys->data, uobj->keys->size};
 }
 
 /** @brief Implements @ref object_vtbl_t::get_property. */
@@ -276,8 +275,8 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
 }
 
 /** @brief Implements @ref object_vtbl_t::create_property. */
-static model_status_t create_property(object_t *obj, object_t *key, object_t *value,
-        bool constant) {
+static model_status_t
+create_property(object_t *obj, object_t *key, object_t *value, bool constant) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
     if (ref) {
@@ -286,10 +285,10 @@ static model_status_t create_property(object_t *obj, object_t *key, object_t *va
     INCREF(key);
     INCREF(value);
     append_to_vector(uobj->keys, key);
-    ref = (property_value_t*)ALLOC(sizeof(property_value_t));
+    ref = (property_value_t *)ALLOC(sizeof(property_value_t));
     ref->object = value;
     ref->is_constant = constant;
-    set_in_avl_tree(uobj->properties, key, (value_t){ .ptr = ref });
+    set_in_avl_tree(uobj->properties, key, (value_t){.ptr = ref});
     return MSTAT_OK;
 }
 
@@ -347,42 +346,40 @@ static bool get_boolean_value(const object_t *obj) {
 }
 
 /** @brief Virtual table defining the behavior of the user-defined object. */
-static object_vtbl_t vtbl = {
-    .type = TYPE_USER_DEFINED_OBJECT,
-    .inc_ref = inc_ref,
-    .dec_ref = dec_ref,
-    .mark = mark,
-    .sweep = sweep,
-    .release = release,
-    .compare = compare_object_addresses,
-    .clone = clone,
-    .to_string = to_string,
-    .to_string_notation = to_string_notation,
-    .get_prototypes = get_prototypes,
-    .get_topology = get_topology,
-    .get_keys = get_keys,
-    .get_property = get_property,
-    .create_property = create_property,
-    .set_property = set_property,
-    .unary_plus = stub_unary_operation,
-    .unary_minus = stub_unary_operation,
-    .add = add,
-    .subtract = subtract,
-    .multiply = multiply,
-    .divide = divide,
-    .modulo = modulo,
-    .power = power,
-    .less = common_less,
-    .less_or_equal = common_less_or_equal,
-    .greater = common_greater,
-    .greater_or_equal = common_greater_or_equal,
-    .equal = common_equal,
-    .not_equal = common_not_equal,
-    .get_boolean_value = get_boolean_value,
-    .get_integer_value = stub_get_integer_value,
-    .get_real_value = stub_get_real_value,
-    .call = stub_call
-};
+static object_vtbl_t vtbl = {.type = TYPE_USER_DEFINED_OBJECT,
+                             .inc_ref = inc_ref,
+                             .dec_ref = dec_ref,
+                             .mark = mark,
+                             .sweep = sweep,
+                             .release = release,
+                             .compare = compare_object_addresses,
+                             .clone = clone,
+                             .to_string = to_string,
+                             .to_string_notation = to_string_notation,
+                             .get_prototypes = get_prototypes,
+                             .get_topology = get_topology,
+                             .get_keys = get_keys,
+                             .get_property = get_property,
+                             .create_property = create_property,
+                             .set_property = set_property,
+                             .unary_plus = stub_unary_operation,
+                             .unary_minus = stub_unary_operation,
+                             .add = add,
+                             .subtract = subtract,
+                             .multiply = multiply,
+                             .divide = divide,
+                             .modulo = modulo,
+                             .power = power,
+                             .less = common_less,
+                             .less_or_equal = common_less_or_equal,
+                             .greater = common_greater,
+                             .greater_or_equal = common_greater_or_equal,
+                             .equal = common_equal,
+                             .not_equal = common_not_equal,
+                             .get_boolean_value = get_boolean_value,
+                             .get_integer_value = stub_get_integer_value,
+                             .get_real_value = stub_get_real_value,
+                             .call = stub_call};
 
 /** @brief Compares two keys for use in the user-defined object's AVL tree. */
 static int key_comparator(const void *first, const void *second) {
@@ -411,7 +408,7 @@ static void topological_sorting(object_t *obj, avl_tree_t *processed, vector_t *
         } while (index > 0);
     }
     append_to_vector(topology, obj);
-    set_in_avl_tree(processed, obj, (value_t){ .ptr = obj } );
+    set_in_avl_tree(processed, obj, (value_t){.ptr = obj});
 }
 
 /** @brief Builds the topological order of an object's prototype chain. */
@@ -420,9 +417,8 @@ static void build_topology(object_array_t proto, vector_t *topology) {
     size_t index;
     if (proto.size > 1) {
         // multiple inheritance
-        avl_tree_t *processed = create_avl_tree(
-            (int (*)(const void *, const void *))compare_object_addresses
-        );
+        avl_tree_t *processed =
+            create_avl_tree((int (*)(const void *, const void *))compare_object_addresses);
         index = proto.size;
         do {
             index--;
@@ -441,14 +437,13 @@ static void build_topology(object_array_t proto, vector_t *topology) {
     }
 }
 
-static object_user_defined_t *create_empty_user_defined_object(process_t* process,
-        object_array_t proto) {
+static object_user_defined_t *create_empty_user_defined_object(process_t *process,
+                                                               object_array_t proto) {
     assert(proto.size > 0);
     object_user_defined_t *uobj;
     if (process->user_defined_objects.size > 0) {
-        uobj = (object_user_defined_t *)remove_first_object_from_list(
-            &process->user_defined_objects
-        );
+        uobj =
+            (object_user_defined_t *)remove_first_object_from_list(&process->user_defined_objects);
     } else {
         uobj = (object_user_defined_t *)CALLOC(sizeof(object_user_defined_t));
         uobj->base.vtbl = &vtbl;
@@ -469,6 +464,6 @@ static object_user_defined_t *create_empty_user_defined_object(process_t* proces
     return uobj;
 }
 
-object_t *create_user_defined_object(process_t* process, object_array_t prototypes) {
+object_t *create_user_defined_object(process_t *process, object_array_t prototypes) {
     return &create_empty_user_defined_object(process, prototypes)->base;
 }

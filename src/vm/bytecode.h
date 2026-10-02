@@ -5,11 +5,11 @@
  */
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
-
-#include "opcodes.h"
 #include "lib/value.h"
+#include "opcodes.h"
+
+#include <stddef.h>
+#include <stdint.h>
 
 /** @brief Signature added to the beginning of each binary file. */
 #define BINARY_FILE_SIGNATURE "goat v.1"
@@ -41,7 +41,8 @@ typedef struct {
  * The structure is packed to ensure it occupies exactly 12 bytes with 4-byte alignment.
  */
 typedef struct {
-    /** @brief Offset (8 bytes) from the beginning of the data segment to the start of the data block. */
+    /** @brief Offset (8 bytes) from the beginning of the data segment to the start of the data
+     * block. */
     uint64_t offset;
 
     /** @brief Size (4 bytes) of the data block. */

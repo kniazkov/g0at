@@ -36,7 +36,8 @@ object_array_t common_get_prototypes(const object_t *obj);
 object_array_t common_get_topology(const object_t *obj);
 
 /** @brief Implements @ref object_vtbl_t::create_property. */
-model_status_t create_property_on_immutable(object_t *obj, object_t *key, object_t *value, bool constant);
+model_status_t
+create_property_on_immutable(object_t *obj, object_t *key, object_t *value, bool constant);
 
 /** @brief Implements @ref object_vtbl_t::set_property. */
 model_status_t set_property_on_immutable(object_t *obj, object_t *key, object_t *value);

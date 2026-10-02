@@ -7,8 +7,8 @@
 #pragma once
 
 #include "common/types.h"
-#include "model_status.h"
 #include "lib/value.h"
+#include "model_status.h"
 
 typedef struct object_t object_t;
 
@@ -112,7 +112,7 @@ typedef struct {
      * @note The cloned object should be independent of the original. Depending on the type of
      * object, additional cloning operations may be implemented.
      */
-    object_t* (*clone)(process_t *process, object_t *obj);
+    object_t *(*clone)(process_t *process, object_t *obj);
 
     /**
      * @brief Converting an object to its string representation.
@@ -149,7 +149,7 @@ typedef struct {
      * If the property does not exist, the function returns NULL.
      * @return A pointer to the value of the property, or NULL if the property does not exist.
      */
-    object_t* (*get_property)(const object_t *obj, const object_t *key);
+    object_t *(*get_property)(const object_t *obj, const object_t *key);
 
     /**
      * @brief Adds a new property to an object.
@@ -278,7 +278,7 @@ struct object_t {
  * object's virtual table.
  * `obj`: The object whose reference count is to be incremented.
  */
-#define INCREF(obj)  (((object_t*)(obj))->vtbl->inc_ref((object_t*)(obj)))
+#define INCREF(obj) (((object_t *)(obj))->vtbl->inc_ref((object_t *)(obj)))
 
 /**
  * @brief Macro to decrement the reference count of an object.
@@ -287,10 +287,13 @@ struct object_t {
  * object's virtual table. If the reference count reaches zero, the object is released or cleared.
  * `obj`: The object whose reference count is to be decremented.
  */
-#define DECREF(obj)  (((object_t*)(obj))->vtbl->dec_ref((object_t*)(obj)))
+#define DECREF(obj) (((object_t *)(obj))->vtbl->dec_ref((object_t *)(obj)))
 
 /** @brief Decrements the reference count unless the pointer is NULL. */
-#define DECREFIF(obj)  if ((obj) != NULL) { ((object_t*)(obj))->vtbl->dec_ref((object_t*)(obj)); }
+#define DECREFIF(obj)                                                                              \
+    if ((obj) != NULL) {                                                                           \
+        ((object_t *)(obj))->vtbl->dec_ref((object_t *)(obj));                                     \
+    }
 
 /** @brief Marks an object during garbage collection. */
 static inline void mark_object(object_t *obj) {
@@ -362,8 +365,8 @@ static inline object_t *get_object_property(const object_t *obj, const object_t 
 }
 
 /** @brief Creates a property on an object. */
-static inline model_status_t create_object_property(object_t *obj, object_t *key,
-        object_t *value, bool constant) {
+static inline model_status_t
+create_object_property(object_t *obj, object_t *key, object_t *value, bool constant) {
     return obj->vtbl->create_property(obj, key, value, constant);
 }
 
@@ -388,22 +391,26 @@ static inline operation_result_t add_objects(process_t *process, object_t *obj1,
 }
 
 /** @brief Subtracts one object from another. */
-static inline operation_result_t subtract_objects(process_t *process, object_t *obj1, object_t *obj2) {
+static inline operation_result_t
+subtract_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->subtract(process, obj1, obj2);
 }
 
 /** @brief Multiplies two objects. */
-static inline operation_result_t multiply_objects(process_t *process, object_t *obj1, object_t *obj2) {
+static inline operation_result_t
+multiply_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->multiply(process, obj1, obj2);
 }
 
 /** @brief Divides one object by another. */
-static inline operation_result_t divide_objects(process_t *process, object_t *obj1, object_t *obj2) {
+static inline operation_result_t
+divide_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->divide(process, obj1, obj2);
 }
 
 /** @brief Computes the modulo of two objects. */
-static inline operation_result_t modulo_objects(process_t *process, object_t *obj1, object_t *obj2) {
+static inline operation_result_t
+modulo_objects(process_t *process, object_t *obj1, object_t *obj2) {
     return obj1->vtbl->modulo(process, obj1, obj2);
 }
 
@@ -561,7 +568,7 @@ object_t *get_string_proto();
 object_t *create_string_object(process_t *process, string_value_t value);
 
 /** @brief Creates a new user-defined object. */
-object_t *create_user_defined_object(process_t* process, object_array_t proto);
+object_t *create_user_defined_object(process_t *process, object_array_t proto);
 
 /**
  * @brief Creates a new dynamic function object.
@@ -571,12 +578,14 @@ object_t *create_user_defined_object(process_t* process, object_array_t proto);
  * internally during object cleanup.
  * `arg_names`: Array of argument name objects. Ownership is transferred.
  */
-object_t *create_function_object(process_t *process, object_t **arg_names, size_t arg_count,
-        instr_index_t first_instr_id, object_t *closure);
+object_t *create_function_object(process_t *process,
+                                 object_t **arg_names,
+                                 size_t arg_count,
+                                 instr_index_t first_instr_id,
+                                 object_t *closure);
 
 /** @brief Macro to declare a getter function for a static object. */
-#define DECLARE_STATIC_OBJECT(name) \
-    object_t *get_##name();
+#define DECLARE_STATIC_OBJECT(name) object_t *get_##name();
 
 /** @brief Declares getter functions for common static string objects. */
 DECLARE_STATIC_OBJECT(empty_string)

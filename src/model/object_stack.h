@@ -12,9 +12,9 @@ typedef struct object_t object_t;
 
 /** @brief Stack structure for storing Goat objects. */
 typedef struct {
-    object_t **objects;  /**< Array of Goat objects. */
-    size_t size;         /**< Number of elements currently in the stack. */
-    size_t capacity;     /**< Maximum number of elements the stack can hold. */
+    object_t **objects; /**< Array of Goat objects. */
+    size_t size;        /**< Number of elements currently in the stack. */
+    size_t capacity;    /**< Maximum number of elements the stack can hold. */
 } object_stack_t;
 
 /** @brief Creates a new object stack. */

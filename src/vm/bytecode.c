@@ -4,66 +4,65 @@
  * @brief Implements functions for managing bytecode.
  */
 
-#include <stdbool.h>
-#include <string.h>
-
 #include "bytecode.h"
+
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
+
+#include <stdbool.h>
+#include <string.h>
 
 /** @brief Describes the properties of a bytecode instruction. */
 typedef struct {
     const wchar_t *code; /**< The opcode name as a wide-character string. */
-    bool has_flags; /**< Indicates if the instruction has flag bits. */
-    bool has_arg_0; /**< Indicates if the instruction has a first argument (`arg0`). */
+    bool has_flags;      /**< Indicates if the instruction has flag bits. */
+    bool has_arg_0;      /**< Indicates if the instruction has a first argument (`arg0`). */
     bool arg_1_is_unsigned_integer; /**< Indicates if `arg1` is an unsigned integer. */
-    bool arg_1_is_signed_integer; /**< Indicates if `arg1` is a signed integer. */
-    bool arg_1_is_string; /**< Indicates if `arg1` is a string reference. */
+    bool arg_1_is_signed_integer;   /**< Indicates if `arg1` is a signed integer. */
+    bool arg_1_is_string;           /**< Indicates if `arg1` is a string reference. */
 } instruction_descriptor_t;
 
 /** @brief An array of instruction descriptors defining the available bytecode instructions. */
-static instruction_descriptor_t descriptors[] =
-{
-      { .code = L"NOP" }
-    , { .code = L"ARG", .arg_1_is_unsigned_integer = true }
-    , { .code = L"END" }
-    , { .code = L"JUMP", .arg_1_is_unsigned_integer = true }
-    , { .code = L"JIF", .arg_1_is_unsigned_integer = true }
-    , { .code = L"POP" }
-    , { .code = L"NIL" }
-    , { .code = L"TRUE" }
-    , { .code = L"FALSE" }
-    , { .code = L"ILOAD32", .arg_1_is_signed_integer = true }
-    , { .code = L"ILOAD64", .arg_1_is_unsigned_integer = true }
-    , { .code = L"RLOAD", .arg_1_is_unsigned_integer = true }
-    , { .code = L"SLOAD", .arg_1_is_string = true }
-    , { .code = L"VLOAD", .arg_1_is_string = true }
-    , { .code = L"VAR", .arg_1_is_string = true }
-    , { .code = L"CONST", .arg_1_is_string = true }
-    , { .code = L"STORE", .arg_1_is_string = true }
-    , { .code = L"UPLUS" }
-    , { .code = L"UMINUS" }
-    , { .code = L"ADD" }
-    , { .code = L"SUB" }
-    , { .code = L"MUL" }
-    , { .code = L"DIVIDE" }
-    , { .code = L"MODULO" }
-    , { .code = L"POWER" }
-    , { .code = L"LESS" }
-    , { .code = L"LEQ" }
-    , { .code = L"GREATER" }
-    , { .code = L"GREQ" }
-    , { .code = L"EQUAL" }
-    , { .code = L"DIFF" }
-    , { .code = L"FUNC", .has_arg_0 = true, .arg_1_is_unsigned_integer = true }
-    , { .code = L"CALL", .has_arg_0 = true }
-    , { .code = L"RET" }
-    , { .code = L"ENTER" }
-    , { .code = L"LEAVE" }
-    , { .code = L"RESTORE" }
-    , { .code = L"TRY", .arg_1_is_unsigned_integer = true }
-    , { .code = L"THROW" }
-};
+static instruction_descriptor_t descriptors[] = {
+    {.code = L"NOP"},
+    {.code = L"ARG", .arg_1_is_unsigned_integer = true},
+    {.code = L"END"},
+    {.code = L"JUMP", .arg_1_is_unsigned_integer = true},
+    {.code = L"JIF", .arg_1_is_unsigned_integer = true},
+    {.code = L"POP"},
+    {.code = L"NIL"},
+    {.code = L"TRUE"},
+    {.code = L"FALSE"},
+    {.code = L"ILOAD32", .arg_1_is_signed_integer = true},
+    {.code = L"ILOAD64", .arg_1_is_unsigned_integer = true},
+    {.code = L"RLOAD", .arg_1_is_unsigned_integer = true},
+    {.code = L"SLOAD", .arg_1_is_string = true},
+    {.code = L"VLOAD", .arg_1_is_string = true},
+    {.code = L"VAR", .arg_1_is_string = true},
+    {.code = L"CONST", .arg_1_is_string = true},
+    {.code = L"STORE", .arg_1_is_string = true},
+    {.code = L"UPLUS"},
+    {.code = L"UMINUS"},
+    {.code = L"ADD"},
+    {.code = L"SUB"},
+    {.code = L"MUL"},
+    {.code = L"DIVIDE"},
+    {.code = L"MODULO"},
+    {.code = L"POWER"},
+    {.code = L"LESS"},
+    {.code = L"LEQ"},
+    {.code = L"GREATER"},
+    {.code = L"GREQ"},
+    {.code = L"EQUAL"},
+    {.code = L"DIFF"},
+    {.code = L"FUNC", .has_arg_0 = true, .arg_1_is_unsigned_integer = true},
+    {.code = L"CALL", .has_arg_0 = true},
+    {.code = L"RET"},
+    {.code = L"ENTER"},
+    {.code = L"LEAVE"},
+    {.code = L"RESTORE"},
+    {.code = L"TRY", .arg_1_is_unsigned_integer = true},
+    {.code = L"THROW"}};
 
 /** @brief Defines the column width for instruction numbers in the bytecode text representation. */
 #define NUMBER_COLUMN_SIZE 8
@@ -74,10 +73,12 @@ static instruction_descriptor_t descriptors[] =
 /** @brief Defines the column width for flag bits in the bytecode text representation. */
 #define FLAGS_COLUMN_SIZE 9
 
-/** @brief Defines the column width for the first argument (arg0) in the bytecode text representation. */
+/** @brief Defines the column width for the first argument (arg0) in the bytecode text
+ * representation. */
 #define ARG0_COLUMN_SIZE 6
 
-/** @brief Defines the column width for the second argument (arg1) in the bytecode text representation. */
+/** @brief Defines the column width for the second argument (arg1) in the bytecode text
+ * representation. */
 #define ARG1_COLUMN_SIZE 12
 
 string_value_t bytecode_to_text(const bytecode_t *code) {
@@ -138,18 +139,14 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
                 data_descriptor_t data = code->data_descriptors[instr.arg1];
                 string_value_t str = string_to_string_notation(
                     L"",
-                    (string_value_t) {
-                        (wchar_t*)(code->data + data.offset),
-                        data.size / sizeof(wchar_t) - 1,
-                        false
-                    }
-                );
+                    (string_value_t){(wchar_t *)(code->data + data.offset),
+                                     data.size / sizeof(wchar_t) - 1,
+                                     false});
                 append_char(&builder, L' ');
                 append_string_value(&builder, str);
                 FREE_STRING(str);
             }
-        }
-        else if (descr.arg_1_is_signed_integer) {
+        } else if (descr.arg_1_is_signed_integer) {
             string_value_t value = format_string(L"%i", instr.arg1);
             string_value_t aligned = align_text(value, ARG1_COLUMN_SIZE - 1, ALIGN_RIGHT);
             append_string_value(&builder, aligned);

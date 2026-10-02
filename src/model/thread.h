@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
-
-#include "object_stack.h"
-#include "exception.h"
 #include "common/types.h"
+#include "exception.h"
+#include "object_stack.h"
+
+#include <stddef.h>
+#include <stdint.h>
 
 typedef struct process_t process_t;
 
