@@ -62,5 +62,5 @@ full_position_t *copy_full_position_to_arena(arena_t *arena, const full_position
 short_position_t *create_short_position_from_full(arena_t *arena, const full_position_t *position);
 
 /** @brief Creates a new source range in the specified memory arena. */
-position_range_t *create_position_range(arena_t *arena, full_position_t *begin,
-        short_position_t *end);
+position_range_t *
+create_position_range(arena_t *arena, full_position_t *begin, short_position_t *end);

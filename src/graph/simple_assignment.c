@@ -4,21 +4,21 @@
  * @brief Implementation of the simple assignment expression node.
  */
 
-#include <assert.h>
-
-#include "assignment.h"
-#include "statement.h"
-#include "declarations.h"
-#include "common_methods.h"
-#include "variable.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
-#include "lib/allocate.h"
+#include "assignment.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
+#include "common_methods.h"
+#include "declarations.h"
+#include "lib/allocate.h"
+#include "lib/arena.h"
+#include "lib/string_ext.h"
+#include "statement.h"
+#include "variable.h"
+
+#include <assert.h>
 
 /** @brief A simple assignment operation expression node. */
 
@@ -31,8 +31,9 @@ typedef struct {
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const assignment_t *expr = (const assignment_t *)node;
     const lattice_element_t *value = calculate_expression(expr->right_operand, state, arena);
-    if (state->control_flow == FLOW_NORMAL && expr->left_operand->base.base.vtbl->type == NODE_VARIABLE) {
-        variable_t *var = (variable_t*)(expr->left_operand);
+    if (state->control_flow == FLOW_NORMAL
+        && expr->left_operand->base.base.vtbl->type == NODE_VARIABLE) {
+        variable_t *var = (variable_t *)(expr->left_operand);
         set_in_abstract_state_at(state, var->declarator, value, node);
     }
     return value;
@@ -41,10 +42,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const simple_assignment_t *expr = (const simple_assignment_t *)node;
-    string_value_t left =
-        generate_goat_code_from_node(&expr->base.left_operand->base.base);
-    string_value_t right =
-        generate_goat_code_from_expression(expr->base.right_operand);
+    string_value_t left = generate_goat_code_from_node(&expr->base.left_operand->base.base);
+    string_value_t right = generate_goat_code_from_expression(expr->base.right_operand);
     string_value_t result = format_string(L"%s = %s", left.data, right.data);
     FREE_STRING(left);
     FREE_STRING(right);
@@ -52,21 +51,18 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-            size_t indent) {
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const simple_assignment_t *expr = (const simple_assignment_t *)node;
-    generate_indented_goat_code_from_node(
-        &expr->base.left_operand->base.base, builder, indent);
+    generate_indented_goat_code_from_node(&expr->base.left_operand->base.base, builder, indent);
     append_static_source(builder, L" = ");
     generate_indented_goat_code_from_expression(expr->base.right_operand, builder, indent);
 }
 
 /** @brief Generates bytecode for simple assignment operation. */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const simple_assignment_t *expr = (const simple_assignment_t *)node;
-    instr_index_t first = generate_bytecode_from_expression(
-        expr->base.right_operand, code, data);
+    instr_index_t first = generate_bytecode_from_expression(expr->base.right_operand, code, data);
     generate_bytecode_assign_from_node(&expr->base.left_operand->base.base, code, data);
     return first;
 }
@@ -98,12 +94,11 @@ static node_vtbl_t simple_assignment_vtbl = {
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
-expression_t *create_simple_assignment_node(arena_t *arena, assignable_expression_t *left_operand,
-        expression_t *right_operand) {
-    simple_assignment_t *expr = (simple_assignment_t *)alloc_zeroed_from_arena(
-        arena,
-        sizeof(simple_assignment_t)
-    );
+expression_t *create_simple_assignment_node(arena_t *arena,
+                                            assignable_expression_t *left_operand,
+                                            expression_t *right_operand) {
+    simple_assignment_t *expr =
+        (simple_assignment_t *)alloc_zeroed_from_arena(arena, sizeof(simple_assignment_t));
     expr->base.base.base.vtbl = &simple_assignment_vtbl;
     expr->base.left_operand = left_operand;
     expr->base.right_operand = right_operand;
@@ -116,7 +111,8 @@ declarator_spec_t *create_declarator_from_simple_assignment(const node_t *expr) 
     if (assign->base.left_operand->base.base.vtbl->type != NODE_VARIABLE) {
         return NULL;
     }
-    declarator_spec_t *decl = create_declarator_from_variable(&assign->base.left_operand->base.base);
+    declarator_spec_t *decl =
+        create_declarator_from_variable(&assign->base.left_operand->base.base);
     decl->initial = assign->base.right_operand;
     return decl;
 }

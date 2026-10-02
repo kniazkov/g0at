@@ -4,10 +4,11 @@
  * @brief A program for running unit tests.
  */
 
+#include "lib/allocate.h"
+#include "test/test_list.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "test/test_list.h"
-#include "lib/allocate.h"
 
 /**
  * @brief Executes the registered unit tests and reports the results.

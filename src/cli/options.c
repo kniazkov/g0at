@@ -4,14 +4,15 @@
  * @brief Implementation of command-line options parsing functions.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <memory.h>
-
 #include "options.h"
+
 #include "lib/allocate.h"
 #include "lib/io.h"
 #include "resources/messages.h"
+
+#include <memory.h>
+#include <stdio.h>
+#include <string.h>
 
 /** @brief Accepts nonempty PNG or SVG output names. */
 static bool check_graph_file(const char *filename) {
@@ -70,8 +71,10 @@ options_t *parse_options(int argc, char **argv) {
                     goto error;
                 }
                 const char *level = argv[++index];
-                if (strcmp(level, "none") == 0) opt->optimization_level = OPTIMIZATION_NONE;
-                else if (strcmp(level, "all") == 0) opt->optimization_level = OPTIMIZATION_ALL;
+                if (strcmp(level, "none") == 0)
+                    opt->optimization_level = OPTIMIZATION_NONE;
+                else if (strcmp(level, "all") == 0)
+                    opt->optimization_level = OPTIMIZATION_ALL;
                 else {
                     fprintf_utf8(stderr, get_messages()->bad_optimization_level, level);
                     goto error;
@@ -111,7 +114,7 @@ options_t *parse_options(int argc, char **argv) {
                 }
                 opt->graph_output_file = create_path(argv[++index]);
                 if (strcasecmp(opt->graph_output_file->extension, "png") != 0
-                        && strcasecmp(opt->graph_output_file->extension, "svg") != 0) {
+                    && strcasecmp(opt->graph_output_file->extension, "svg") != 0) {
                     fprintf_utf8(stderr, get_messages()->bad_graph_file);
                     goto error;
                 }
@@ -119,7 +122,7 @@ options_t *parse_options(int argc, char **argv) {
             }
 
             if (strcmp(arg, "-l") == 0 || strcmp(arg, "--lang") == 0
-                    || strcmp(arg, "--language") == 0) {
+                || strcmp(arg, "--language") == 0) {
                 if (index + 1 >= argc || argv[index + 1][0] == '-') {
                     fprintf_utf8(stderr, get_messages()->missing_specification, arg);
                     goto error;

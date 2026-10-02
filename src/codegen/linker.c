@@ -5,10 +5,11 @@
  * for the Goat virtual machine.
  */
 
-#include <memory.h>
-
 #include "linker.h"
+
 #include "lib/allocate.h"
+
+#include <memory.h>
 
 bytecode_t *link_code_and_data(code_builder_t *code_builder, data_builder_t *data_builder) {
     size_t instructions_size = code_builder->size * sizeof(instruction_t);
@@ -19,7 +20,7 @@ bytecode_t *link_code_and_data(code_builder_t *code_builder, data_builder_t *dat
 
     void *buffer = ALLOC(total_size);
 
-    goat_binary_header_t *header = (goat_binary_header_t*)buffer;
+    goat_binary_header_t *header = (goat_binary_header_t *)buffer;
     memcpy(header->signature, BINARY_FILE_SIGNATURE, 8);
 
     uint64_t instructions_offset = sizeof(goat_binary_header_t);
@@ -30,14 +31,14 @@ bytecode_t *link_code_and_data(code_builder_t *code_builder, data_builder_t *dat
     header->data_descriptors_offset = data_descriptors_offset;
     header->data_offset = data_offset;
 
-    instruction_t *instructions_start = (instruction_t*)((uint8_t*)buffer + instructions_offset);
+    instruction_t *instructions_start = (instruction_t *)((uint8_t *)buffer + instructions_offset);
     memcpy(instructions_start, code_builder->instructions, instructions_size);
 
     data_descriptor_t *descriptors_start =
-        (data_descriptor_t*)((uint8_t*)buffer + data_descriptors_offset);
+        (data_descriptor_t *)((uint8_t *)buffer + data_descriptors_offset);
     memcpy(descriptors_start, data_builder->descriptors, descriptors_size);
 
-    uint8_t *data_start = (uint8_t*)buffer + data_offset;
+    uint8_t *data_start = (uint8_t *)buffer + data_offset;
     memcpy(data_start, data_builder->data, data_size);
 
     bytecode_t *result = (bytecode_t *)ALLOC(sizeof(bytecode_t));

@@ -4,11 +4,12 @@
  * @brief Implementation of the source builder for code generation.
  */
 
-#include <memory.h>
-
 #include "source_builder.h"
+
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
+
+#include <memory.h>
 
 /** @brief Define initial capacity for the source builder's lines array */
 #define INITIAL_CAPACITY 64
@@ -24,8 +25,8 @@ source_builder_t *create_source_builder() {
 void add_formatted_source(source_builder_t *builder, size_t indent, string_value_t text) {
     if (builder->count == builder->capacity) {
         builder->capacity *= 2;
-        line_of_code_t *new_lines = (line_of_code_t *)ALLOC(
-            builder->capacity * sizeof(line_of_code_t));
+        line_of_code_t *new_lines =
+            (line_of_code_t *)ALLOC(builder->capacity * sizeof(line_of_code_t));
         memcpy(new_lines, builder->lines, builder->count * sizeof(line_of_code_t));
         FREE(builder->lines);
         builder->lines = new_lines;
@@ -36,7 +37,7 @@ void add_formatted_source(source_builder_t *builder, size_t indent, string_value
 }
 
 void append_formatted_source(source_builder_t *builder, string_value_t text) {
-    if(builder->count == 0) {
+    if (builder->count == 0) {
         add_formatted_source(builder, 0, text);
         return;
     }
@@ -74,7 +75,7 @@ static wchar_t *tabulation = L"    ";
 
 string_value_t build_source(source_builder_t *builder) {
     string_builder_t code_builder;
-    string_value_t result = { NULL, 0, false };
+    string_value_t result = {NULL, 0, false};
     init_string_builder(&code_builder, 0);
     for (size_t index = 0; index < builder->count; index++) {
         line_of_code_t line = builder->lines[index];

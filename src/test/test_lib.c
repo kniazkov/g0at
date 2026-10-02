@@ -4,17 +4,18 @@
  * @brief A set of tests for testing extensions to the С standard library.
  */
 
+#include "test_lib.h"
+
+#include "lib/allocate.h"
+#include "lib/avl_tree.h"
+#include "lib/pair.h"
+#include "lib/string_ext.h"
+#include "lib/vector.h"
+#include "test_macro.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <wchar.h>
-
-#include "test_lib.h"
-#include "test_macro.h"
-#include "lib/allocate.h"
-#include "lib/avl_tree.h"
-#include "lib/vector.h"
-#include "lib/string_ext.h"
-#include "lib/pair.h"
 
 bool test_memory_allocation() {
     size_t allocated_before = get_allocated_memory_size();
@@ -78,13 +79,11 @@ bool test_string_builder() {
 }
 
 bool test_binary_search() {
-    pair_t pairs[] = {
-        { L"fifth", L"five" },
-        { L"first", L"one" },
-        { L"fourth", L"four" },
-        { L"second", L"two" },
-        { L"third", L"three" }
-    };
+    pair_t pairs[] = {{L"fifth", L"five"},
+                      {L"first", L"one"},
+                      {L"fourth", L"four"},
+                      {L"second", L"two"},
+                      {L"third", L"three"}};
     ASSERT(wcscmp(L"one", (wchar_t *)binary_search(pairs, 5, L"first", string_comparator)) == 0);
     ASSERT(wcscmp(L"two", (wchar_t *)binary_search(pairs, 5, L"second", string_comparator)) == 0);
     ASSERT(wcscmp(L"three", (wchar_t *)binary_search(pairs, 5, L"third", string_comparator)) == 0);

@@ -6,11 +6,11 @@
 
 #pragma once
 
-#include <stddef.h>
-#include <wchar.h>
-
 #include "common/position.h"
 #include "lib/value.h"
+
+#include <stddef.h>
+#include <wchar.h>
 
 typedef struct token_t token_t;
 
@@ -25,23 +25,23 @@ typedef struct node_t node_t;
  * lexical analysis.
  */
 typedef enum {
-    TOKEN_IDENTIFIER,             /**< An identifier (variable, function name, etc.) */
-    TOKEN_BRACKET,                /**< A bracket (e.g., '(', ')', '{', '}', '[', ']', etc.) */
-    TOKEN_OPERATOR,               /**< An operator (e.g., '+', '-', '*', '/', '=', '==', etc.) */
-    TOKEN_COMMA,                  /**< Comma ',' used in parameter lists, array literals, etc. */
-    TOKEN_SEMICOLON,              /**< Semicolon ';' used as statement terminator */
-    TOKEN_ERROR,                  /**< An invalid token (error case) */
+    TOKEN_IDENTIFIER, /**< An identifier (variable, function name, etc.) */
+    TOKEN_BRACKET,    /**< A bracket (e.g., '(', ')', '{', '}', '[', ']', etc.) */
+    TOKEN_OPERATOR,   /**< An operator (e.g., '+', '-', '*', '/', '=', '==', etc.) */
+    TOKEN_COMMA,      /**< Comma ',' used in parameter lists, array literals, etc. */
+    TOKEN_SEMICOLON,  /**< Semicolon ';' used as statement terminator */
+    TOKEN_ERROR,      /**< An invalid token (error case) */
 
-    TOKEN_VAR,                    /**< The 'var' keyword for variable declarations */
-    TOKEN_CONST,                  /**< The 'const' keyword for constant declarations */
-    TOKEN_FUNC,                   /**< The 'func' keyword for function declarations */
-    TOKEN_RETURN,                 /**< The 'return' keyword used in return statements */
-    TOKEN_IF,                     /**< The 'if' keyword used in if-else statements */
-    TOKEN_TRY,                   /**< The try keyword. */
-    TOKEN_CATCH,                 /**< The catch keyword. */
-    TOKEN_THROW,                 /**< The throw keyword. */
-    TOKEN_CATCH_BINDING,         /**< Validated catch identifier in parentheses. */
-    TOKEN_ELSE,                   /**< The 'else' keyword used in if-else statements */
+    TOKEN_VAR,           /**< The 'var' keyword for variable declarations */
+    TOKEN_CONST,         /**< The 'const' keyword for constant declarations */
+    TOKEN_FUNC,          /**< The 'func' keyword for function declarations */
+    TOKEN_RETURN,        /**< The 'return' keyword used in return statements */
+    TOKEN_IF,            /**< The 'if' keyword used in if-else statements */
+    TOKEN_TRY,           /**< The try keyword. */
+    TOKEN_CATCH,         /**< The catch keyword. */
+    TOKEN_THROW,         /**< The throw keyword. */
+    TOKEN_CATCH_BINDING, /**< Validated catch identifier in parentheses. */
+    TOKEN_ELSE,          /**< The 'else' keyword used in if-else statements */
 
     TOKEN_BRACKET_PAIR,           /**< A pair of brackets and all tokens between them */
     TOKEN_EXPRESSION,             /**< An expression token, which contains an attached
@@ -171,10 +171,12 @@ typedef struct {
     /** @brief Tokens containing statement lists whose bodies have not yet been processed. */
     token_list_t statement_lists;
 
-    /** @brief Tokens containing expressions in parentheses that have not yet been processed at all. */
+    /** @brief Tokens containing expressions in parentheses that have not yet been processed at all.
+     */
     token_list_t unprocessed_parenthesized_expressions;
 
-    /** @brief Tokens containing expressions in parentheses that have passed the first part of processing. */
+    /** @brief Tokens containing expressions in parentheses that have passed the first part of
+     * processing. */
     token_list_t preprocessed_parenthesized_expressions;
 
     /** @brief Tokens containing function objects whose bodies have not yet been processed. */

@@ -20,7 +20,7 @@ bool is_graphviz_available();
  * @return Boolean `true` if image generation succeeded, `false` on any error.
  * @warning Requires GraphViz to be installed and accessible in system PATH.
  */
-bool generate_image(const node_t* root_node, const char *graph_output_file);
+bool generate_image(const node_t *root_node, const char *graph_output_file);
 
 /** @brief Builds DOT without invoking Graphviz; caller frees the returned string. */
 string_value_t generate_graph_dot(const node_t *root_node);

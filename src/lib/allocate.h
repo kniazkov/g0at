@@ -23,16 +23,16 @@ void _FREE(void *ptr);
  * sites and checks trailing guard bytes on FREE().
  */
 #ifdef MEMORY_DEBUG
-#define ALLOC(size) _ALLOC(size, __FILE__, __LINE__)
+#    define ALLOC(size) _ALLOC(size, __FILE__, __LINE__)
 #else
-#define ALLOC(size) _ALLOC(size)
+#    define ALLOC(size) _ALLOC(size)
 #endif
 
 /** @brief Like ALLOC(), with the requested bytes zeroed. */
 #ifdef MEMORY_DEBUG
-#define CALLOC(size) _CALLOC(size, __FILE__, __LINE__)
+#    define CALLOC(size) _CALLOC(size, __FILE__, __LINE__)
 #else
-#define CALLOC(size) _CALLOC(size)
+#    define CALLOC(size) _CALLOC(size)
 #endif
 
 /**

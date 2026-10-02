@@ -5,11 +5,12 @@
  */
 
 #include "statement_sequence.h"
+
+#include "lib/allocate.h"
+#include "lib/linked_list.h"
+#include "lib/string_ext.h"
 #include "node.h"
 #include "statement.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
-#include "lib/linked_list.h"
 
 bool insert_statement_to_list_before(list_t *list, node_t *new_child, node_t *before_child) {
     if (!is_statement(new_child->vtbl->type)) {
@@ -25,16 +26,12 @@ bool insert_statement_to_list_before(list_t *list, node_t *new_child, node_t *be
     if (!item) {
         return false;
     }
-    insert_item_to_linked_list_before_existing(
-        list,
-        item,
-        (value_t){ .ptr = new_child }
-    );
+    insert_item_to_linked_list_before_existing(list, item, (value_t){.ptr = new_child});
     return true;
 }
 
-string_value_t generate_goat_code_from_statement_list(list_t *list,
-        string_builder_t *builder, bool brackets) {
+string_value_t
+generate_goat_code_from_statement_list(list_t *list, string_builder_t *builder, bool brackets) {
     if (list->size == 0) {
         if (builder->length > 0) { // there is already a header
             return append_static_string(builder, L"{ }");
@@ -58,7 +55,7 @@ string_value_t generate_goat_code_from_statement_list(list_t *list,
         }
         has_previous = true;
 
-        statement_t *stmt = (statement_t*)item->value.ptr;
+        statement_t *stmt = (statement_t *)item->value.ptr;
         string_value_t stmt_as_string = generate_goat_code_from_statement(stmt);
         result = append_string_value(builder, stmt_as_string);
         FREE_STRING(stmt_as_string);

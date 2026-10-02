@@ -7,11 +7,11 @@
  */
 #pragma once
 
-#include <stdbool.h>
-#include <stdint.h>
-
 #include "lib/arena.h"
 #include "lib/value.h"
+
+#include <stdbool.h>
+#include <stdint.h>
 
 typedef struct arena_t arena_t;
 
@@ -136,9 +136,8 @@ typedef struct {
  * @return true if the type belongs to the integer domain.
  */
 static inline bool is_integer_lattice_type(lattice_type_t type) {
-    return type == LATTICE_INTEGER ||
-           type == LATTICE_INTEGER_RANGE ||
-           type == LATTICE_INTEGER_CONSTANT;
+    return type == LATTICE_INTEGER || type == LATTICE_INTEGER_RANGE
+           || type == LATTICE_INTEGER_CONSTANT;
 }
 
 /**
@@ -154,8 +153,7 @@ static inline bool is_integer_lattice_element(const lattice_element_t *element) 
  * @return true if the type belongs to the real domain.
  */
 static inline bool is_real_lattice_type(lattice_type_t type) {
-    return type == LATTICE_REAL ||
-           type == LATTICE_REAL_CONSTANT;
+    return type == LATTICE_REAL || type == LATTICE_REAL_CONSTANT;
 }
 
 /**
@@ -171,9 +169,7 @@ static inline bool is_real_lattice_element(const lattice_element_t *element) {
  * @return true if the type belongs to the numeric domain.
  */
 static inline bool is_numeric_lattice_type(lattice_type_t type) {
-    return type == LATTICE_NUMERIC ||
-           is_integer_lattice_type(type) ||
-           is_real_lattice_type(type);
+    return type == LATTICE_NUMERIC || is_integer_lattice_type(type) || is_real_lattice_type(type);
 }
 
 /**
@@ -189,8 +185,7 @@ static inline bool is_numeric_lattice_element(const lattice_element_t *element) 
  * @return true if the type belongs to the string domain.
  */
 static inline bool is_string_lattice_type(lattice_type_t type) {
-    return type == LATTICE_STRING ||
-           type == LATTICE_STRING_CONSTANT;
+    return type == LATTICE_STRING || type == LATTICE_STRING_CONSTANT;
 }
 
 /**
@@ -206,9 +201,7 @@ static inline bool is_string_lattice_element(const lattice_element_t *element) {
  * @return true if the type belongs to the boolean domain.
  */
 static inline bool is_boolean_lattice_type(lattice_type_t type) {
-    return type == LATTICE_BOOLEAN ||
-           type == LATTICE_TRUE ||
-           type == LATTICE_FALSE;
+    return type == LATTICE_BOOLEAN || type == LATTICE_TRUE || type == LATTICE_FALSE;
 }
 
 /**
@@ -224,8 +217,7 @@ static inline bool is_boolean_lattice_element(const lattice_element_t *element) 
  * @return true if the type belongs to the array domain.
  */
 static inline bool is_array_lattice_type(lattice_type_t type) {
-    return type == LATTICE_ARRAY ||
-           type == LATTICE_TYPED_ARRAY;
+    return type == LATTICE_ARRAY || type == LATTICE_TYPED_ARRAY;
 }
 
 /**
@@ -257,12 +249,9 @@ static inline bool is_user_defined_object_lattice_element(const lattice_element_
  * @return true if the type is accepted by abstract addition.
  */
 static inline bool is_addable_lattice_type(lattice_type_t type) {
-    return type == LATTICE_TOP ||
-           type == LATTICE_NOT_NULL ||
-           is_numeric_lattice_type(type) ||
-           is_string_lattice_type(type) ||
-           is_array_lattice_type(type) ||
-           is_user_defined_object_lattice_type(type);
+    return type == LATTICE_TOP || type == LATTICE_NOT_NULL || is_numeric_lattice_type(type)
+           || is_string_lattice_type(type) || is_array_lattice_type(type)
+           || is_user_defined_object_lattice_type(type);
 }
 
 /**
@@ -353,12 +342,12 @@ const lattice_element_t *make_user_defined_object_element();
 const lattice_element_t *make_bottom_element();
 
 /** @brief Computes the least upper bound of two lattice elements. */
-const lattice_element_t *lattice_join(arena_t *arena,
-        const lattice_element_t *left, const lattice_element_t *right);
+const lattice_element_t *
+lattice_join(arena_t *arena, const lattice_element_t *left, const lattice_element_t *right);
 
 /** @brief Computes the greatest lower bound of two lattice elements. */
-const lattice_element_t *lattice_meet(arena_t *arena,
-        const lattice_element_t *left, const lattice_element_t *right);
+const lattice_element_t *
+lattice_meet(arena_t *arena, const lattice_element_t *left, const lattice_element_t *right);
 
 /** @brief Converts a lattice element to a human-readable string. */
 string_value_t lattice_to_string(const lattice_element_t *element);

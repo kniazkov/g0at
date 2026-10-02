@@ -10,8 +10,8 @@
 
 /** @brief A single unit test. */
 typedef struct {
-    const char *name;       /**< The name of the test. */
-    bool (*test)();         /**< Function pointer to the test implementation. */
+    const char *name; /**< The name of the test. */
+    bool (*test)();   /**< Function pointer to the test implementation. */
 } test_description_t;
 
 /** @brief Retrieves the total number of unit tests. */

@@ -4,16 +4,16 @@
  * @brief Implementation of the null expression.
  */
 
-#include <memory.h>
-
-#include "expression.h"
-#include "common_methods.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
 #include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
+#include "common_methods.h"
+#include "expression.h"
+#include "lib/arena.h"
+#include "lib/string_ext.h"
+
+#include <memory.h>
 
 /**
  * @brief A null expression node.
@@ -38,15 +38,14 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-            size_t indent) {
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     append_static_source(builder, L"null");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
-    return add_instruction(code, (instruction_t){ .opcode = NIL });
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    return add_instruction(code, (instruction_t){.opcode = NIL});
 }
 
 /**

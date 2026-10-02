@@ -5,36 +5,32 @@
  */
 
 #include "scope.h"
+
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 
 scope_t *create_scope(arena_t *arena, scope_t *parent) {
     static unsigned int last_id = 0;
-    scope_t *scope = (scope_t*)alloc_from_arena(arena, sizeof(scope_t));
+    scope_t *scope = (scope_t *)alloc_from_arena(arena, sizeof(scope_t));
     scope->id = ++last_id;
     scope->parent = parent;
     scope->bindings = create_avl_tree_arena(arena, string_comparator);
     return scope;
 }
 
-declarator_t* add_symbol_to_scope(scope_t *scope, const wchar_t *name,
-        const declarator_t *node) {
-    return (declarator_t*)set_in_avl_tree_arena(
-        scope->bindings,
-        (void*)name,
-        (value_t){.ptr = (void*)node}
-    ).ptr;
+declarator_t *add_symbol_to_scope(scope_t *scope, const wchar_t *name, const declarator_t *node) {
+    return (declarator_t *)set_in_avl_tree_arena(scope->bindings,
+                                                 (void *)name,
+                                                 (value_t){.ptr = (void *)node})
+        .ptr;
 }
 
-declarator_t* find_symbol_in_scope(const scope_t *scope, const wchar_t *name) {
-    return (declarator_t*)get_from_avl_tree(
-        &scope->bindings->base,
-        (void*)name
-    ).ptr;
+declarator_t *find_symbol_in_scope(const scope_t *scope, const wchar_t *name) {
+    return (declarator_t *)get_from_avl_tree(&scope->bindings->base, (void *)name).ptr;
 }
 
-declarator_t* find_symbol_in_scope_and_parents(const scope_t *scope, const wchar_t *name) {
-    declarator_t* node = find_symbol_in_scope(scope, name);
+declarator_t *find_symbol_in_scope_and_parents(const scope_t *scope, const wchar_t *name) {
+    declarator_t *node = find_symbol_in_scope(scope, name);
     if (node) {
         return node;
     }

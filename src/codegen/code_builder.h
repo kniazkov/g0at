@@ -7,10 +7,11 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
-#include "vm/bytecode.h"
 #include "common/types.h"
+#include "vm/bytecode.h"
+
+#include <stddef.h>
+#include <stdint.h>
 
 typedef struct code_builder_t code_builder_t;
 

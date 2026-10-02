@@ -25,10 +25,10 @@ typedef struct {
 } data_type_t;
 
 /** @brief Helper macro for defining built-in data types. */
-#define BUILT_IN_DATA_TYPE(c_type_name) \
-    {\
-        .c_equivalent = { \
-            .data = (c_type_name), \
-            .length = sizeof(c_type_name) / sizeof(wchar_t) - 1 \
-        }\
+#define BUILT_IN_DATA_TYPE(c_type_name)                                                            \
+    {                                                                                              \
+        .c_equivalent = {                                                                          \
+            .data = (c_type_name),                                                                 \
+            .length = sizeof(c_type_name) / sizeof(wchar_t) - 1                                    \
+        }                                                                                          \
     }

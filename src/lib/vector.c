@@ -5,6 +5,7 @@
  */
 
 #include "vector.h"
+
 #include "allocate.h"
 
 vector_t *create_vector() {

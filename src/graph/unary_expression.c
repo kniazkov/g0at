@@ -3,49 +3,68 @@
  * @brief Unary plus and minus AST nodes.
  */
 #include "unary_expression.h"
-#include "common_methods.h"
+
 #include "analysis/unary_operation.h"
-#include "lib/arena.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
+#include "common_methods.h"
+#include "lib/allocate.h"
+#include "lib/arena.h"
+#include "lib/string_ext.h"
 
 /** @brief Implements node_vtbl_t::get_child_count. */
-static size_t get_child_count(const node_t *node) { return 1; }
+static size_t get_child_count(const node_t *node) {
+    return 1;
+}
+
 /** @brief Implements node_vtbl_t::get_child. */
 static node_t *get_child(const node_t *node, size_t index) {
     return index == 0 ? &((const unary_expression_t *)node)->operand->base : NULL;
 }
+
 /** @brief Implements node_vtbl_t::get_child_tag. */
 static const wchar_t *get_child_tag(const node_t *node, size_t index) {
     return index == 0 ? L"operand" : NULL;
 }
+
 /** @brief Implements node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
-    const lattice_element_t *value = calculate_expression(((unary_expression_t *)node)->operand,
-        state, arena);
+    const lattice_element_t *value =
+        calculate_expression(((unary_expression_t *)node)->operand, state, arena);
     return lattice_unary(arena, value, node->vtbl->type == NODE_UNARY_MINUS);
 }
+
 /** @brief Implements node_vtbl_t::generate_goat_code, preserving operand grouping. */
 static string_value_t generate_goat_code(const node_t *node) {
-    string_value_t operand = generate_goat_code_from_expression(((const unary_expression_t *)node)->operand);
+    string_value_t operand =
+        generate_goat_code_from_expression(((const unary_expression_t *)node)->operand);
     string_value_t result = format_string(L"(%s(%s))",
-        node->vtbl->type == NODE_UNARY_MINUS ? L"-" : L"+", operand.data);
+                                          node->vtbl->type == NODE_UNARY_MINUS ? L"-" : L"+",
+                                          operand.data);
     FREE_STRING(operand);
     return result;
 }
+
 /** @brief Implements node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
-    if (node->vtbl->type == NODE_UNARY_MINUS) append_static_source(builder, L"(-(");
-    else append_static_source(builder, L"(+(");
-    generate_indented_goat_code_from_expression(((const unary_expression_t *)node)->operand, builder, indent);
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
+    if (node->vtbl->type == NODE_UNARY_MINUS)
+        append_static_source(builder, L"(-(");
+    else
+        append_static_source(builder, L"(+(");
+    generate_indented_goat_code_from_expression(((const unary_expression_t *)node)->operand,
+                                                builder,
+                                                indent);
     append_static_source(builder, L"))");
 }
+
 /** @brief Implements node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
-    instr_index_t first = generate_bytecode_from_expression(((unary_expression_t *)node)->operand, code, data);
-    add_instruction(code, (instruction_t){.opcode = node->vtbl->type == NODE_UNARY_MINUS ? UMINUS : UPLUS});
+    instr_index_t first =
+        generate_bytecode_from_expression(((unary_expression_t *)node)->operand, code, data);
+    add_instruction(
+        code,
+        (instruction_t){.opcode = node->vtbl->type == NODE_UNARY_MINUS ? UMINUS : UPLUS});
     return first;
 }
 

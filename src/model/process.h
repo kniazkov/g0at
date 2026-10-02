@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <stdint.h>
-
 #include "object_list.h"
+
+#include <stdint.h>
 
 typedef struct process_t process_t;
 

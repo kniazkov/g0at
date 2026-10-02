@@ -5,6 +5,7 @@
  */
 
 #include "code_builder.h"
+
 #include "lib/allocate.h"
 
 /** @brief Initial capacity for the instruction list */

@@ -4,16 +4,16 @@
  * @brief Implementation of the static string expression.
  */
 
-#include <memory.h>
-
-#include "expression.h"
-#include "common_methods.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
 #include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
+#include "common_methods.h"
+#include "expression.h"
+#include "lib/arena.h"
+#include "lib/string_ext.h"
+
+#include <memory.h>
 
 /**
  * @brief A static string expression node.
@@ -31,10 +31,8 @@ typedef struct {
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t get_data(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
-    return (node_display_value_t){
-        .text = VIEW_TO_VALUE(expr->element.value),
-        .kind = NODE_DISPLAY_VALUE_STRING_LITERAL
-    };
+    return (node_display_value_t){.text = VIEW_TO_VALUE(expr->element.value),
+                                  .kind = NODE_DISPLAY_VALUE_STRING_LITERAL};
 }
 
 /** @brief Implements @ref node_vtbl_t::calculate. */
@@ -50,21 +48,18 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-        size_t indent) {
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const static_string_t *expr = (const static_string_t *)node;
-    append_formatted_source(
-        builder,
-        string_to_string_notation(L"", VIEW_TO_VALUE(expr->element.value))
-    );
+    append_formatted_source(builder,
+                            string_to_string_notation(L"", VIEW_TO_VALUE(expr->element.value)));
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const static_string_t *expr = (const static_string_t *)node;
     uint32_t index = add_string_to_data_segment_ex(data, expr->element.value);
-    return add_instruction(code, (instruction_t){ .opcode = SLOAD, .arg1 = index });
+    return add_instruction(code, (instruction_t){.opcode = SLOAD, .arg1 = index});
 }
 
 /** @brief Virtual table for static string expressions. */
@@ -95,7 +90,8 @@ static node_vtbl_t static_string_vtbl = {
 };
 
 node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length) {
-    static_string_t *expr = (static_string_t *)alloc_zeroed_from_arena(arena, sizeof(static_string_t));
+    static_string_t *expr =
+        (static_string_t *)alloc_zeroed_from_arena(arena, sizeof(static_string_t));
     expr->base.base.vtbl = &static_string_vtbl;
     expr->element.base.type = LATTICE_STRING_CONSTANT;
     expr->element.value = copy_string_to_arena(arena, data, length);

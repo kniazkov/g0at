@@ -6,18 +6,15 @@
 
 #pragma once
 
-#include <stdbool.h>
-
 #include "lib/path.h"
 #include "lib/vector.h"
+
+#include <stdbool.h>
 
 typedef struct options_t options_t;
 
 /** @brief Optional analysis and code optimization level. */
-typedef enum {
-    OPTIMIZATION_NONE,
-    OPTIMIZATION_ALL
-} optimization_level_t;
+typedef enum { OPTIMIZATION_NONE, OPTIMIZATION_ALL } optimization_level_t;
 
 /** @brief Storing parsed command-line options. */
 struct options_t {

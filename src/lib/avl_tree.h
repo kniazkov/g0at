@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <stdbool.h>
-
 #include "value.h"
+
+#include <stdbool.h>
 
 typedef struct arena_t arena_t;
 
@@ -27,7 +27,7 @@ typedef struct {
     avl_node_t *root;
 
     /** @brief Comparator function to compare keys in the tree. */
-    int (*comparator)(const void*, const void*);
+    int (*comparator)(const void *, const void *);
 
     /**
      * @brief Optional key copy function.
@@ -70,15 +70,15 @@ typedef struct {
     avl_tree_t base;
 
     /** @brief Memory arena used for allocations. */
-    arena_t   *arena;
+    arena_t *arena;
 } avl_tree_arena_t;
 
 /** @brief Creates an empty heap-owned AVL tree with the supplied ordering. */
-avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*));
+avl_tree_t *create_avl_tree(int (*comparator)(const void *, const void *));
 
 /** @brief Creates an empty AVL tree that allocates from the given arena. */
 avl_tree_arena_t *create_avl_tree_arena(arena_t *arena,
-        int (*comparator)(const void*, const void*));
+                                        int (*comparator)(const void *, const void *));
 
 /**
  * @brief Inserts or replaces a value using the tree copy callbacks.
@@ -105,7 +105,8 @@ value_t get_from_avl_tree(const avl_tree_t *tree, const void *key);
 
 /** @brief Applies a function to each key-value pair in the AVL tree, with user data. */
 void avl_tree_for_each(const avl_tree_t *tree,
-    void (*func)(void* user_data, void* key, value_t value), void *user_data);
+                       void (*func)(void *user_data, void *key, value_t value),
+                       void *user_data);
 
 /**
  * @brief Clones an AVL tree preserving its exact shape and node heights.

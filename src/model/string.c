@@ -4,14 +4,14 @@
  * @brief Implementations of an object representing a string.
  */
 
-#include <assert.h>
-
-#include "object.h"
-#include "object_state.h"
-#include "process.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
+#include "object.h"
+#include "object_state.h"
+#include "process.h"
+
+#include <assert.h>
 
 /**
  * @brief Defines the maximum capacity of the object pool.
@@ -27,7 +27,7 @@
  * Static strings are immutable and exist for the entire duration of the program's execution.
  */
 typedef struct {
-    object_t base; ///< The base object that provides common functionality.
+    object_t base;        ///< The base object that provides common functionality.
     string_view_t string; ///< The string.
 } object_static_string_t;
 
@@ -38,19 +38,19 @@ typedef struct {
  * operations.
  */
 typedef struct {
-    object_t base; ///< The base object that provides common functionality.
-    int refs; ///< Reference count used for garbage collection.
+    object_t base;        ///< The base object that provides common functionality.
+    int refs;             ///< Reference count used for garbage collection.
     object_state_t state; ///< The state of the object (e.g., unmarked, marked, or zombie).
     string_view_t string; ///< The string.
 } object_dynamic_string_t;
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
-    static object_t *keys[1] = { NULL };
+    static object_t *keys[1] = {NULL};
     if (keys[0] == NULL) {
         keys[0] = get_string_length();
     }
-    return (object_array_t){ keys, sizeof(keys) / sizeof(object_t*) };
+    return (object_array_t){keys, sizeof(keys) / sizeof(object_t *)};
 }
 
 /** @brief Implements @ref object_vtbl_t::get_property. */
@@ -66,47 +66,43 @@ static object_t *proto_get_property(const object_t *obj, const object_t *key) {
 }
 
 /** @brief Virtual table defining the behavior of the prototype string object. */
-static object_vtbl_t string_proto_vtbl = {
-    .type = TYPE_OTHER,
-    .inc_ref = stub_memory_function,
-    .dec_ref = stub_memory_function,
-    .mark = stub_memory_function,
-    .sweep = no_sweep,
-    .release = stub_memory_function,
-    .compare = compare_object_addresses,
-    .clone = clone_singleton,
-    .to_string = common_to_string,
-    .to_string_notation = common_to_string_notation,
-    .get_prototypes = common_get_prototypes,
-    .get_topology = common_get_topology,
-    .get_keys = get_keys,
-    .get_property = proto_get_property,
-    .create_property = create_property_on_immutable,
-    .set_property = set_property_on_immutable,
-    .unary_plus = stub_unary_operation,
-    .unary_minus = stub_unary_operation,
-    .add = stub_add,
-    .subtract = stub_subtract,
-    .multiply = stub_multiply,
-    .divide = stub_divide,
-    .modulo = stub_modulo,
-    .power = stub_power,
-    .less = common_less,
-    .less_or_equal = common_less_or_equal,
-    .greater = common_greater,
-    .greater_or_equal = common_greater_or_equal,
-    .equal = common_equal,
-    .not_equal = common_not_equal,
-    .get_boolean_value = stub_get_boolean_value,
-    .get_integer_value = stub_get_integer_value,
-    .get_real_value = stub_get_real_value,
-    .call = stub_call
-};
+static object_vtbl_t string_proto_vtbl = {.type = TYPE_OTHER,
+                                          .inc_ref = stub_memory_function,
+                                          .dec_ref = stub_memory_function,
+                                          .mark = stub_memory_function,
+                                          .sweep = no_sweep,
+                                          .release = stub_memory_function,
+                                          .compare = compare_object_addresses,
+                                          .clone = clone_singleton,
+                                          .to_string = common_to_string,
+                                          .to_string_notation = common_to_string_notation,
+                                          .get_prototypes = common_get_prototypes,
+                                          .get_topology = common_get_topology,
+                                          .get_keys = get_keys,
+                                          .get_property = proto_get_property,
+                                          .create_property = create_property_on_immutable,
+                                          .set_property = set_property_on_immutable,
+                                          .unary_plus = stub_unary_operation,
+                                          .unary_minus = stub_unary_operation,
+                                          .add = stub_add,
+                                          .subtract = stub_subtract,
+                                          .multiply = stub_multiply,
+                                          .divide = stub_divide,
+                                          .modulo = stub_modulo,
+                                          .power = stub_power,
+                                          .less = common_less,
+                                          .less_or_equal = common_less_or_equal,
+                                          .greater = common_greater,
+                                          .greater_or_equal = common_greater_or_equal,
+                                          .equal = common_equal,
+                                          .not_equal = common_not_equal,
+                                          .get_boolean_value = stub_get_boolean_value,
+                                          .get_integer_value = stub_get_integer_value,
+                                          .get_real_value = stub_get_real_value,
+                                          .call = stub_call};
 
 /** @brief The prototype string object. */
-static object_t string_proto = {
-    .vtbl = &string_proto_vtbl
-};
+static object_t string_proto = {.vtbl = &string_proto_vtbl};
 
 object_t *get_string_proto() {
     return &string_proto;
@@ -114,14 +110,14 @@ object_t *get_string_proto() {
 
 /** @brief Releases or clears a dynamic string object. */
 static void release_or_clear(object_dynamic_string_t *dsobj) {
-    FREE((wchar_t*)(dsobj->string.data));
+    FREE((wchar_t *)(dsobj->string.data));
     remove_object_from_list(&dsobj->base.process->objects, &dsobj->base);
     if (dsobj->base.process->dynamic_strings.size == POOL_CAPACITY) {
         FREE(dsobj);
     } else {
         dsobj->refs = 0;
         dsobj->state = ZOMBIE;
-        dsobj->string = ( string_view_t ){ NULL, 0 };
+        dsobj->string = (string_view_t){NULL, 0};
         add_object_to_list(&dsobj->base.process->dynamic_strings, &dsobj->base);
     }
 }
@@ -165,10 +161,10 @@ static bool sweep(object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::release. */
 static void release(object_t *obj) {
     object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
-    remove_object_from_list(
-        dsobj->state == ZOMBIE ? &obj->process->dynamic_strings : &obj->process->objects, obj
-    );
-    FREE((wchar_t*)(dsobj->string.data));
+    remove_object_from_list(dsobj->state == ZOMBIE ? &obj->process->dynamic_strings
+                                                   : &obj->process->objects,
+                            obj);
+    FREE((wchar_t *)(dsobj->string.data));
     FREE(obj);
 }
 
@@ -209,30 +205,22 @@ static string_value_t to_string_notation(const object_t *obj) {
 }
 
 /** @brief Array of prototypes for the string object. */
-static object_t* prototypes[] = {
-    &string_proto
-};
+static object_t *prototypes[] = {&string_proto};
 
 /** @brief Implements @ref object_vtbl_t::get_prototypes. */
 static object_array_t get_prototypes(const object_t *obj) {
-    object_array_t result = {
-        .items = prototypes,
-        .size = 1
-    };
+    object_array_t result = {.items = prototypes, .size = 1};
     return result;
 }
 
 /** @brief Implements @ref object_vtbl_t::get_topology. */
 static object_array_t get_topology(const object_t *obj) {
-    static object_t* topology[2] = {0};
+    static object_t *topology[2] = {0};
     if (topology[0] == NULL) {
         topology[0] = &string_proto;
         topology[1] = get_root_object();
     }
-    object_array_t result = {
-        .items = topology,
-        .size = 2
-    };
+    object_array_t result = {.items = topology, .size = 2};
     return result;
 }
 
@@ -292,48 +280,48 @@ static bool get_boolean_value(const object_t *obj) {
 }
 
 /** @brief Virtual table defining the behavior of the static string object. */
-static object_vtbl_t static_string_vtbl = {
-    .type = TYPE_STRING,
-    .inc_ref = stub_memory_function,
-    .dec_ref = stub_memory_function,
-    .mark = stub_memory_function,
-    .sweep = no_sweep,
-    .release = stub_memory_function,
-    .compare = compare,
-    .clone = clone,
-    .to_string = static_to_string,
-    .to_string_notation = to_string_notation,
-    .get_prototypes = get_prototypes,
-    .get_topology = get_topology,
-    .get_keys = get_keys,
-    .get_property = static_get_property,
-    .create_property = create_property_on_immutable,
-    .set_property = set_property_on_immutable,
-    .unary_plus = stub_unary_operation,
-    .unary_minus = stub_unary_operation,
-    .add = add,
-    .subtract = stub_subtract,
-    .multiply = stub_multiply,
-    .divide = stub_divide,
-    .modulo = stub_modulo,
-    .power = stub_power,
-    .less = common_less,
-    .less_or_equal = common_less_or_equal,
-    .greater = common_greater,
-    .greater_or_equal = common_greater_or_equal,
-    .equal = common_equal,
-    .not_equal = common_not_equal,
-    .get_boolean_value = get_boolean_value,
-    .get_integer_value = stub_get_integer_value,
-    .get_real_value = stub_get_real_value,
-    .call = stub_call
-};
+static object_vtbl_t static_string_vtbl = {.type = TYPE_STRING,
+                                           .inc_ref = stub_memory_function,
+                                           .dec_ref = stub_memory_function,
+                                           .mark = stub_memory_function,
+                                           .sweep = no_sweep,
+                                           .release = stub_memory_function,
+                                           .compare = compare,
+                                           .clone = clone,
+                                           .to_string = static_to_string,
+                                           .to_string_notation = to_string_notation,
+                                           .get_prototypes = get_prototypes,
+                                           .get_topology = get_topology,
+                                           .get_keys = get_keys,
+                                           .get_property = static_get_property,
+                                           .create_property = create_property_on_immutable,
+                                           .set_property = set_property_on_immutable,
+                                           .unary_plus = stub_unary_operation,
+                                           .unary_minus = stub_unary_operation,
+                                           .add = add,
+                                           .subtract = stub_subtract,
+                                           .multiply = stub_multiply,
+                                           .divide = stub_divide,
+                                           .modulo = stub_modulo,
+                                           .power = stub_power,
+                                           .less = common_less,
+                                           .less_or_equal = common_less_or_equal,
+                                           .greater = common_greater,
+                                           .greater_or_equal = common_greater_or_equal,
+                                           .equal = common_equal,
+                                           .not_equal = common_not_equal,
+                                           .get_boolean_value = get_boolean_value,
+                                           .get_integer_value = stub_get_integer_value,
+                                           .get_real_value = stub_get_real_value,
+                                           .call = stub_call};
 
 /** @brief Macro to declare a static string object and provide access to it. */
-#define DECLARE_STATIC_STRING(name, string) \
-    static object_static_string_t name = \
-        { { &static_string_vtbl, NULL, NULL, NULL }, { (string), sizeof(string) / sizeof(wchar_t) - 1 } }; \
-    object_t *get_##name() { return &name.base; }
+#define DECLARE_STATIC_STRING(name, string)                                                        \
+    static object_static_string_t name = {{&static_string_vtbl, NULL, NULL, NULL},                 \
+                                          {(string), sizeof(string) / sizeof(wchar_t) - 1}};       \
+    object_t *get_##name() {                                                                       \
+        return &name.base;                                                                         \
+    }
 
 /** @brief Declares some common static string objects. */
 DECLARE_STATIC_STRING(empty_string, L"")
@@ -353,42 +341,40 @@ DECLARE_STATIC_STRING(string_sign, L"sign")
 DECLARE_STATIC_STRING(string_sqrt, L"sqrt")
 
 /** @brief Virtual table defining the behavior of the dynamic string object. */
-static object_vtbl_t dynamic_string_vtbl = {
-    .type = TYPE_STRING,
-    .inc_ref = inc_ref,
-    .dec_ref = dec_ref,
-    .mark = mark,
-    .sweep = sweep,
-    .release = release,
-    .compare = compare,
-    .clone = clone,
-    .to_string = dynamic_to_string,
-    .to_string_notation = to_string_notation,
-    .get_prototypes = get_prototypes,
-    .get_topology = get_topology,
-    .get_keys = get_keys,
-    .get_property = dynamic_get_property,
-    .create_property = create_property_on_immutable,
-    .set_property = set_property_on_immutable,
-    .unary_plus = stub_unary_operation,
-    .unary_minus = stub_unary_operation,
-    .add = add,
-    .subtract = stub_subtract,
-    .multiply = stub_multiply,
-    .divide = stub_divide,
-    .modulo = stub_modulo,
-    .power = stub_power,
-    .less = common_less,
-    .less_or_equal = common_less_or_equal,
-    .greater = common_greater,
-    .greater_or_equal = common_greater_or_equal,
-    .equal = common_equal,
-    .not_equal = common_not_equal,
-    .get_boolean_value = get_boolean_value,
-    .get_integer_value = stub_get_integer_value,
-    .get_real_value = stub_get_real_value,
-    .call = stub_call
-};
+static object_vtbl_t dynamic_string_vtbl = {.type = TYPE_STRING,
+                                            .inc_ref = inc_ref,
+                                            .dec_ref = dec_ref,
+                                            .mark = mark,
+                                            .sweep = sweep,
+                                            .release = release,
+                                            .compare = compare,
+                                            .clone = clone,
+                                            .to_string = dynamic_to_string,
+                                            .to_string_notation = to_string_notation,
+                                            .get_prototypes = get_prototypes,
+                                            .get_topology = get_topology,
+                                            .get_keys = get_keys,
+                                            .get_property = dynamic_get_property,
+                                            .create_property = create_property_on_immutable,
+                                            .set_property = set_property_on_immutable,
+                                            .unary_plus = stub_unary_operation,
+                                            .unary_minus = stub_unary_operation,
+                                            .add = add,
+                                            .subtract = stub_subtract,
+                                            .multiply = stub_multiply,
+                                            .divide = stub_divide,
+                                            .modulo = stub_modulo,
+                                            .power = stub_power,
+                                            .less = common_less,
+                                            .less_or_equal = common_less_or_equal,
+                                            .greater = common_greater,
+                                            .greater_or_equal = common_greater_or_equal,
+                                            .equal = common_equal,
+                                            .not_equal = common_not_equal,
+                                            .get_boolean_value = get_boolean_value,
+                                            .get_integer_value = stub_get_integer_value,
+                                            .get_real_value = stub_get_real_value,
+                                            .call = stub_call};
 
 object_t *create_string_object(process_t *process, string_value_t value) {
     if (value.length == 0) {

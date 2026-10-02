@@ -4,12 +4,13 @@
  * @brief Implements the functions for managing data building in the Goat virtual machine.
  */
 
-#include <stdlib.h>
-#include <memory.h>
-
 #include "data_builder.h"
+
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
+
+#include <memory.h>
+#include <stdlib.h>
 
 /** @brief Initial capacity for the descriptors list */
 #define INITIAL_DESCRIPTORS_LIST_CAPACITY 16
@@ -19,9 +20,8 @@
 
 data_builder_t *create_data_builder(void) {
     data_builder_t *builder = (data_builder_t *)ALLOC(sizeof(data_builder_t));
-    builder->descriptors = (data_descriptor_t *)ALLOC(
-        INITIAL_DESCRIPTORS_LIST_CAPACITY * sizeof(data_descriptor_t)
-    );
+    builder->descriptors =
+        (data_descriptor_t *)ALLOC(INITIAL_DESCRIPTORS_LIST_CAPACITY * sizeof(data_descriptor_t));
     builder->data = (uint8_t *)ALLOC(INITIAL_DATA_ARRAY_CAPACITY * sizeof(uint8_t));
     builder->data_size = 0;
     builder->data_capacity = INITIAL_DATA_ARRAY_CAPACITY;
@@ -62,10 +62,7 @@ uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t si
         builder->descriptors = new_descriptors;
     }
     uint32_t index = (uint32_t)builder->descriptors_count++;
-    data_descriptor_t descriptor = {
-        .offset = (uint64_t)offset,
-        .size = (uint32_t)size
-    };
+    data_descriptor_t descriptor = {.offset = (uint64_t)offset, .size = (uint32_t)size};
     builder->descriptors[index] = descriptor;
     return index;
 }
@@ -76,10 +73,11 @@ uint32_t add_string_to_data_segment(data_builder_t *builder, const wchar_t *stri
         return old_index - 1;
     }
     size_t len = (wcslen(string) + 1) * sizeof(wchar_t);
-    uint32_t index = add_data_to_data_segment(builder, (void*)string, len);
+    uint32_t index = add_data_to_data_segment(builder, (void *)string, len);
     data_descriptor_t *descriptor = &builder->descriptors[index];
-    set_in_avl_tree(builder->strings, &builder->data[descriptor->offset],
-        (value_t){.uint32_val = index + 1});
+    set_in_avl_tree(builder->strings,
+                    &builder->data[descriptor->offset],
+                    (value_t){.uint32_val = index + 1});
     return index;
 }
 
@@ -89,10 +87,11 @@ uint32_t add_string_to_data_segment_ex(data_builder_t *builder, string_view_t st
         return old_index - 1;
     }
     size_t len = (string.length + 1) * sizeof(wchar_t);
-    uint32_t index = add_data_to_data_segment(builder, (void*)string.data, len);
+    uint32_t index = add_data_to_data_segment(builder, (void *)string.data, len);
     data_descriptor_t *descriptor = &builder->descriptors[index];
-    set_in_avl_tree(builder->strings, &builder->data[descriptor->offset],
-        (value_t){.uint32_val = index + 1});
+    set_in_avl_tree(builder->strings,
+                    &builder->data[descriptor->offset],
+                    (value_t){.uint32_val = index + 1});
     return index;
 }
 

@@ -7,12 +7,12 @@
 
 #pragma once
 
+#include "lib/avl_tree.h"
+#include "vm/bytecode.h"
+
 #include <stddef.h>
 #include <stdint.h>
 #include <wchar.h>
-
-#include "vm/bytecode.h"
-#include "lib/avl_tree.h"
 
 typedef struct data_builder_t data_builder_t;
 

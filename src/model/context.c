@@ -6,15 +6,14 @@
  */
 
 #include "context.h"
-#include "object.h"
+
 #include "lib/allocate.h"
+#include "object.h"
 
 context_t *create_context(process_t *process, context_t *caller, object_t *proto) {
     context_t *ctx = (context_t *)ALLOC(sizeof(context_t));
-    ctx->data = create_user_defined_object(
-        process,
-        (object_array_t){ proto ? &proto : &caller->data, 1 }
-    );
+    ctx->data =
+        create_user_defined_object(process, (object_array_t){proto ? &proto : &caller->data, 1});
     ctx->previous = caller;
     ctx->control_flow = FLOW_NORMAL;
     ctx->jump_address[0] = BAD_INSTR_INDEX;

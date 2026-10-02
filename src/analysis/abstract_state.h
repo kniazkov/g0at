@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "lib/value.h"
-#include "lib/avl_tree.h"
-#include "common/control_flow.h"
 #include "collector.h"
+#include "common/control_flow.h"
+#include "lib/avl_tree.h"
+#include "lib/value.h"
 
 typedef struct abstract_state_t abstract_state_t;
 
@@ -40,7 +40,8 @@ struct abstract_state_t {
     /** @brief Current abstract control-flow mode. */
     control_flow_t control_flow;
 
-    /** @brief Borrowed return-summary accumulator (NULL/BOTTOM initially); shared across branches. */
+    /** @brief Borrowed return-summary accumulator (NULL/BOTTOM initially); shared across branches.
+     */
     const lattice_element_t **return_value;
 };
 
@@ -66,7 +67,8 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state);
  * @return Previous current abstract value if the declarator was already present, otherwise NULL.
  */
 const lattice_element_t *set_in_abstract_state(abstract_state_t *state,
-        const declarator_t *declarator, const lattice_element_t *value);
+                                               const declarator_t *declarator,
+                                               const lattice_element_t *value);
 
 /**
  * @brief Gets the current abstract value for a declarator.
@@ -75,14 +77,13 @@ const lattice_element_t *set_in_abstract_state(abstract_state_t *state,
  * @return Current abstract value if present, otherwise NULL.
  */
 const lattice_element_t *get_from_abstract_state(const abstract_state_t *state,
-        const declarator_t *declarator);
+                                                 const declarator_t *declarator);
 
 /**
  * @brief Checks whether the state contains a declarator entry.
  * @return `true` if the declarator exists in the state, `false` otherwise.
  */
-bool abstract_state_contains(const abstract_state_t *state,
-        const declarator_t *declarator);
+bool abstract_state_contains(const abstract_state_t *state, const declarator_t *declarator);
 
 /**
  * @brief Joins two abstract states.
@@ -91,8 +92,7 @@ bool abstract_state_contains(const abstract_state_t *state,
  * Missing current entries on continuing paths mean NULL. Keeps declarations from either input.
  * @return Newly allocated joined abstract state, or NULL if either input state is NULL.
  */
-abstract_state_t *join_abstract_states(const abstract_state_t *left,
-        const abstract_state_t *right);
+abstract_state_t *join_abstract_states(const abstract_state_t *left, const abstract_state_t *right);
 
 /** @brief Writes accumulated summaries from the state into AST declarators. */
 void flush_abstract_state(const abstract_state_t *state);
@@ -102,7 +102,9 @@ void destroy_abstract_state(abstract_state_t *state);
 
 /** @brief Records a write at its source node; the ordinary setter uses the declaration node. */
 const lattice_element_t *set_in_abstract_state_at(abstract_state_t *state,
-        const declarator_t *declarator, const lattice_element_t *value, const node_t *node);
+                                                  const declarator_t *declarator,
+                                                  const lattice_element_t *value,
+                                                  const node_t *node);
 
 /** @brief Records current values after merging branches at node. */
 void collect_joined_abstract_state(const abstract_state_t *state, const node_t *node);

@@ -6,10 +6,11 @@
 
 #pragma once
 
+#include "alignment.h"
+#include "value.h"
+
 #include <stddef.h>
 #include <wchar.h>
-
-#include "value.h"
 
 typedef struct arena_t arena_t;
 
@@ -22,7 +23,7 @@ struct chunk_t {
      *
      * If this chunk is the last in the chain, this pointer will be `NULL`.
      */
-    _Alignas(max_align_t) struct chunk_t *next;
+    _Alignas(memory_alignment_t) struct chunk_t *next;
 
     /** @brief Pointer to the first byte of allocated memory in this chunk. */
     char *begin;
@@ -62,7 +63,7 @@ struct arena_t {
 arena_t *create_arena(size_t chunk_size_kb);
 
 /**
- * @brief Allocates storage aligned to _Alignof(max_align_t); zero size reserves one byte.
+ * @brief Allocates storage aligned to _Alignof(memory_alignment_t); zero size reserves one byte.
  * Storage remains valid until destroy_arena(). Large objects get dedicated chunks.
  */
 void *alloc_from_arena(arena_t *arena, size_t size);

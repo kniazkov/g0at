@@ -4,9 +4,9 @@
  * @brief Provides functions for manipulating tokens in token lists.
  */
 
-#include <assert.h>
-
 #include "token.h"
+
+#include <assert.h>
 
 void append_token_to_neighbors(token_list_t *neighbors, token_t *token) {
     assert(neighbors != NULL);

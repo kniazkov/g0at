@@ -5,14 +5,16 @@
  */
 
 #include "gc.h"
+
+#include "model/context.h"
 #include "model/object.h"
 #include "model/thread.h"
-#include "model/context.h"
 
 /** @brief Marks the objects on a thread's data stack and context data. */
 static void mark_objects_in_context_and_stack(thread_t *thread) {
     mark_object(thread->context->data);
-    if (thread->exception.value) mark_object(thread->exception.value);
+    if (thread->exception.value)
+        mark_object(thread->exception.value);
     for (size_t index = 0; index < thread->data_stack->size; index++) {
         object_t *obj = thread->data_stack->objects[index];
         mark_object(obj);

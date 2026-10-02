@@ -4,13 +4,14 @@
  * @brief Extension of the standard C library for working with strings.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <inttypes.h>
-#include <stdlib.h>
-
 #include "string_ext.h"
+
 #include "allocate.h"
+
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define INITIAL_STRING_BUILDER_CAPACITY 16
 
@@ -78,11 +79,11 @@ string_value_t append_char(string_builder_t *builder, wchar_t symbol) {
     }
     builder->data[builder->length++] = symbol;
     builder->data[builder->length] = 0;
-    return (string_value_t){ builder->data, builder->length, true };
+    return (string_value_t){builder->data, builder->length, true};
 }
 
-string_value_t append_substring(string_builder_t *builder, const wchar_t *wstr,
-        size_t wstr_length) {
+string_value_t
+append_substring(string_builder_t *builder, const wchar_t *wstr, size_t wstr_length) {
     if (wstr_length != 0) {
         size_t new_length = builder->length + wstr_length;
         if (new_length > builder->capacity) {
@@ -92,7 +93,7 @@ string_value_t append_substring(string_builder_t *builder, const wchar_t *wstr,
         builder->length += wstr_length;
         builder->data[builder->length] = 0;
     }
-    return (string_value_t){ builder->data, builder->length, builder->data != NULL };
+    return (string_value_t){builder->data, builder->length, builder->data != NULL};
 }
 
 string_value_t append_string_value(string_builder_t *builder, string_value_t value) {
@@ -122,7 +123,7 @@ string_value_t append_ascii_string(string_builder_t *builder, const char *str) {
         builder->length += str_length;
         builder->data[builder->length] = 0;
     }
-    return (string_value_t){ builder->data, builder->length, builder->data != NULL };
+    return (string_value_t){builder->data, builder->length, builder->data != NULL};
 }
 
 string_value_t append_repeated_char(string_builder_t *builder, wchar_t symbol, size_t count) {
@@ -136,7 +137,7 @@ string_value_t append_repeated_char(string_builder_t *builder, wchar_t symbol, s
         }
         builder->data[builder->length] = 0;
     }
-    return (string_value_t){ builder->data, builder->length, builder->data != NULL };
+    return (string_value_t){builder->data, builder->length, builder->data != NULL};
 }
 
 /**
@@ -250,8 +251,7 @@ string_value_t decode_utf8(const char *str) {
             scalar = (scalar << 6) | (next & 0x3F);
         }
         /* Reject overlong encodings, surrogate code points, and values above Unicode. */
-        if (scalar < minimum || scalar > 0x10FFFF ||
-                (scalar >= 0xD800 && scalar <= 0xDFFF)) {
+        if (scalar < minimum || scalar > 0x10FFFF || (scalar >= 0xD800 && scalar <= 0xDFFF)) {
             goto error;
         }
 #if WCHAR_MAX <= 0xFFFF
@@ -331,15 +331,17 @@ string_value_t format_string_vargs(const wchar_t *format, va_list args) {
     }
     if (*ch == L'\0') {
         // no control symbols
-        return (string_value_t) { (wchar_t*)format, size, false };
+        return (string_value_t){(wchar_t *)format, size, false};
     }
     string_builder_t builder;
-    init_string_builder(&builder, size < INITIAL_STRING_BUILDER_CAPACITY ? INITIAL_STRING_BUILDER_CAPACITY : size);
+    init_string_builder(&builder,
+                        size < INITIAL_STRING_BUILDER_CAPACITY ? INITIAL_STRING_BUILDER_CAPACITY
+                                                               : size);
     append_substring(&builder, format, size);
-    while(*ch != L'\0') {
+    while (*ch != L'\0') {
         if (*ch == L'%') {
-            switch(*(++ch)) {
-                case L'%' :
+            switch (*(++ch)) {
+                case L'%':
                     append_char(&builder, L'%');
                     break;
                 case L'c': {
@@ -412,7 +414,7 @@ string_value_t format_string_vargs(const wchar_t *format, va_list args) {
         }
         ch++;
     }
-    return (string_value_t) { builder.data, builder.length, true };
+    return (string_value_t){builder.data, builder.length, true};
 }
 
 string_value_t align_text(string_value_t text, size_t size, alignment_t alignment) {
@@ -446,5 +448,5 @@ string_value_t align_text(string_value_t text, size_t size, alignment_t alignmen
         }
     }
     buff[size] = L'\0';
-    return (string_value_t){ buff, size, true };
+    return (string_value_t){buff, size, true};
 }

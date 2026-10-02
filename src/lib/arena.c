@@ -4,15 +4,16 @@
  * @brief Implementation of memory arena management functions.
  */
 
-#include <memory.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-
 #include "arena.h"
+
 #include "allocate.h"
 #include "string_ext.h"
+
+#include <memory.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 /** @brief Allocates a new chunk with the specified payload size. */
 static chunk_t *create_chunk(size_t size) {
@@ -62,7 +63,7 @@ void *alloc_from_arena(arena_t *arena, size_t size) {
     }
 
     /* Round every allocation, not just chunk beginnings, to fundamental alignment. */
-    const size_t alignment = _Alignof(max_align_t);
+    const size_t alignment = _Alignof(memory_alignment_t);
     size_t padding = (alignment - size % alignment) % alignment;
     if (size > SIZE_MAX - padding) {
         fprintf(stderr, "\nArena size overflow.\n");
@@ -117,7 +118,7 @@ string_view_t copy_string_to_arena(arena_t *arena, const wchar_t *string, size_t
     copied_string = (wchar_t *)alloc_from_arena(arena, (length + 1) * sizeof(wchar_t));
     memcpy(copied_string, string, length * sizeof(wchar_t));
     copied_string[length] = L'\0';
-    return (string_view_t){ copied_string, length };
+    return (string_view_t){copied_string, length};
 }
 
 string_view_t format_string_to_arena(arena_t *arena, const wchar_t *format, ...) {
@@ -135,7 +136,7 @@ string_view_t format_string_to_arena(arena_t *arena, const wchar_t *format, ...)
     memcpy(buffer, value.data, data_length);
     FREE_STRING(value);
 
-    return (string_view_t){ buffer, value.length };
+    return (string_view_t){buffer, value.length};
 }
 
 void destroy_arena(arena_t *arena) {

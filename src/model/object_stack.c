@@ -4,11 +4,12 @@
  * @brief Implements the stack structure and operations for managing Goat objects.
  */
 
-#include <assert.h>
-
 #include "object_stack.h"
-#include "object.h"
+
 #include "lib/allocate.h"
+#include "object.h"
+
+#include <assert.h>
 
 /** @brief Default initial capacity for the stack. */
 #define DEFAULT_CAPACITY 128

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "node.h"
 #include "analysis/lattice.h"
+#include "node.h"
 
 typedef struct declarator_spec_t declarator_spec_t;
 typedef struct statement_list_t statement_list_t;
@@ -56,8 +56,8 @@ static inline const wchar_t *get_statement_child_tag(const statement_t *stmt, si
  * @brief Executes abstract interpretation for a statement.
  * @return Output abstract state after interpreting this statement.
  */
-static inline abstract_state_t *execute_statement(statement_t *stmt, abstract_state_t *state,
-        arena_t *arena) {
+static inline abstract_state_t *
+execute_statement(statement_t *stmt, abstract_state_t *state, arena_t *arena) {
     return execute_node(&stmt->base, state, arena);
 }
 
@@ -68,7 +68,8 @@ static inline string_value_t generate_goat_code_from_statement(const statement_t
 
 /** @brief Generates indented Goat source code from a statement. */
 static inline void generate_indented_goat_code_from_statement(const statement_t *stmt,
-        source_builder_t *builder, size_t indent) {
+                                                              source_builder_t *builder,
+                                                              size_t indent) {
     generate_indented_goat_code_from_node(&stmt->base, builder, indent);
 }
 
@@ -91,13 +92,14 @@ static inline string_value_t generate_c_code_from_statement(const statement_t *s
 
 /** @brief Generates indented C source code from a statement. */
 static inline void generate_indented_c_code_from_statement(const statement_t *stmt,
-        source_builder_t *builder, size_t indent) {
+                                                           source_builder_t *builder,
+                                                           size_t indent) {
     generate_indented_c_code_from_node(&stmt->base, builder, indent);
 }
 
 /** @brief Generates bytecode from a statement. */
-static inline instr_index_t generate_bytecode_from_statement(statement_t *stmt,
-        code_builder_t *code, data_builder_t *data) {
+static inline instr_index_t
+generate_bytecode_from_statement(statement_t *stmt, code_builder_t *code, data_builder_t *data) {
     return generate_bytecode_from_node(&stmt->base, code, data);
 }
 
@@ -106,7 +108,8 @@ static inline instr_index_t generate_bytecode_from_statement(statement_t *stmt,
  * @return `true` if deferred bytecode was successfully generated in this pass; `false` otherwise.
  */
 static inline bool generate_deferred_bytecode_from_statement(const statement_t *stmt,
-        code_builder_t *code, data_builder_t *data) {
+                                                             code_builder_t *code,
+                                                             data_builder_t *data) {
     return generate_deferred_bytecode_from_node(&stmt->base, code, data);
 }
 
@@ -124,8 +127,10 @@ node_t *create_return_node(arena_t *arena, expression_t *value);
  * `false_branch`: Statement executed when the condition is false, or NULL when there is no else
  * branch.
  */
-node_t *create_if_else_node(arena_t *arena, expression_t *condition, statement_t *true_branch,
-        statement_t *false_branch);
+node_t *create_if_else_node(arena_t *arena,
+                            expression_t *condition,
+                            statement_t *true_branch,
+                            statement_t *false_branch);
 
 /** @brief Stores the condition truth proven by the reachability pass. */
 void set_if_else_condition_truth(node_t *node, abstract_truth_t truth);
@@ -135,8 +140,10 @@ void set_if_else_condition_truth(node_t *node, abstract_truth_t truth);
  * Copies the nonempty identifier to arena; handler is a block expression.
  * Exceptional abstract interpretation is conservative until path tracking is implemented.
  */
-node_t *create_try_catch_node(arena_t *arena, statement_t *body,
-        string_view_t exception_name, statement_list_t *handler);
+node_t *create_try_catch_node(arena_t *arena,
+                              statement_t *body,
+                              string_view_t exception_name,
+                              statement_list_t *handler);
 
 /** @brief Creates a throw with a required expression. */
 node_t *create_throw_node(arena_t *arena, expression_t *value);

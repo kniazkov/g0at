@@ -4,9 +4,10 @@
  * @brief Shared parser setup for analysis tests.
  */
 #include "analysis_test_support.h"
-#include "scanner/scanner.h"
-#include "parser/parser.h"
+
 #include "lib/allocate.h"
+#include "parser/parser.h"
+#include "scanner/scanner.h"
 
 node_t *parse_analysis_test_program(parser_memory_t *memory, string_value_t source) {
     token_groups_t *groups = CALLOC(sizeof(*groups));
@@ -24,4 +25,3 @@ node_t *parse_analysis_test_program(parser_memory_t *memory, string_value_t sour
     FREE(groups);
     return error ? NULL : root;
 }
-

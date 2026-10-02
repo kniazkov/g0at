@@ -3,12 +3,13 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Lattice examples, boundaries, and algebraic laws.
  */
-#include <stdio.h>
-#include <math.h>
-
 #include "test_lattice.h"
-#include "test_macro.h"
+
 #include "analysis/lattice.h"
+#include "test_macro.h"
+
+#include <math.h>
+#include <stdio.h>
 
 /** @brief Compares abstract values without using join, meet, or display strings. */
 static bool equal(const lattice_element_t *a, const lattice_element_t *b) {
@@ -17,8 +18,8 @@ static bool equal(const lattice_element_t *a, const lattice_element_t *b) {
     }
     switch (a->type) {
         case LATTICE_INTEGER_CONSTANT:
-            return ((const integer_constant_element_t *)a)->value ==
-                ((const integer_constant_element_t *)b)->value;
+            return ((const integer_constant_element_t *)a)->value
+                   == ((const integer_constant_element_t *)b)->value;
         case LATTICE_INTEGER_RANGE: {
             const integer_range_element_t *x = (const integer_range_element_t *)a;
             const integer_range_element_t *y = (const integer_range_element_t *)b;
@@ -41,8 +42,8 @@ static bool equal(const lattice_element_t *a, const lattice_element_t *b) {
             return x.length == y.length && (!x.length || !wmemcmp(x.data, y.data, x.length));
         }
         case LATTICE_TYPED_ARRAY:
-            return ((const typed_array_element_t *)a)->element_type ==
-                ((const typed_array_element_t *)b)->element_type;
+            return ((const typed_array_element_t *)a)->element_type
+                   == ((const typed_array_element_t *)b)->element_type;
         default:
             return true;
     }
@@ -55,30 +56,36 @@ bool test_lattice_examples() {
     const lattice_element_t *r13 = make_integer_range_element(arena, 1, 3);
     const lattice_element_t *r35 = make_integer_range_element(arena, 3, 5);
     const lattice_element_t *real = make_real_constant_element(arena, 1.0);
-    const lattice_element_t *str = make_string_constant_element(arena, (string_view_t){ L"a", 1 });
-    const lattice_element_t *str_copy = make_string_constant_element(arena,
-        (string_view_t){ L"a!", 1 });
-    const lattice_element_t *other = make_string_constant_element(arena, (string_view_t){ L"b", 1 });
+    const lattice_element_t *str = make_string_constant_element(arena, (string_view_t){L"a", 1});
+    const lattice_element_t *str_copy =
+        make_string_constant_element(arena, (string_view_t){L"a!", 1});
+    const lattice_element_t *other = make_string_constant_element(arena, (string_view_t){L"b", 1});
+
     struct {
         const lattice_element_t *left, *right, *join, *meet;
     } cases[] = {
-        { one, three, r13, make_bottom_element() },
-        { r13, r35, make_integer_range_element(arena, 1, 5), three },
-        { r13, one, r13, one },
-        { r13, make_integer_range_element(arena, 5, 8),
-            make_integer_range_element(arena, 1, 8), make_bottom_element() },
-        { one, real, make_numeric_element(), make_bottom_element() },
-        { make_integer_element(), make_real_element(), make_numeric_element(), make_bottom_element() },
-        { make_numeric_element(), one, make_numeric_element(), one },
-        { make_true_element(), make_false_element(), make_boolean_element(), make_bottom_element() },
-        { make_boolean_element(), make_true_element(), make_boolean_element(), make_true_element() },
-        { str, str_copy, str, str },
-        { str, other, make_string_element(), make_bottom_element() },
-        { str, make_string_element(), make_string_element(), str },
-        { one, str, make_not_null_element(), make_bottom_element() },
-        { one, make_null_element(), make_top_element(), make_bottom_element() },
-        { make_null_element(), make_not_null_element(), make_top_element(), make_bottom_element() }
-    };
+        {one, three, r13, make_bottom_element()},
+        {r13, r35, make_integer_range_element(arena, 1, 5), three},
+        {r13, one, r13, one},
+        {r13,
+         make_integer_range_element(arena, 5, 8),
+         make_integer_range_element(arena, 1, 8),
+         make_bottom_element()},
+        {one, real, make_numeric_element(), make_bottom_element()},
+        {make_integer_element(),
+         make_real_element(),
+         make_numeric_element(),
+         make_bottom_element()},
+        {make_numeric_element(), one, make_numeric_element(), one},
+        {make_true_element(), make_false_element(), make_boolean_element(), make_bottom_element()},
+        {make_boolean_element(), make_true_element(), make_boolean_element(), make_true_element()},
+        {str, str_copy, str, str},
+        {str, other, make_string_element(), make_bottom_element()},
+        {str, make_string_element(), make_string_element(), str},
+        {one, str, make_not_null_element(), make_bottom_element()},
+        {one, make_null_element(), make_top_element(), make_bottom_element()},
+        {make_null_element(), make_not_null_element(), make_top_element(), make_bottom_element()}};
+
     for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
         ASSERT(equal(lattice_join(arena, cases[i].left, cases[i].right), cases[i].join));
         ASSERT(equal(lattice_join(arena, cases[i].right, cases[i].left), cases[i].join));
@@ -99,8 +106,10 @@ bool test_lattice_boundaries() {
     const lattice_element_t *low = make_integer_constant_element(arena, INT64_MIN);
     const lattice_element_t *high = make_integer_constant_element(arena, INT64_MAX);
     ASSERT(lattice_join(arena, low, high)->type == LATTICE_INTEGER);
-    ASSERT(equal(lattice_meet(arena, make_integer_range_element(arena, INT64_MIN, 0),
-        make_integer_range_element(arena, 0, INT64_MAX)), make_integer_constant_element(arena, 0)));
+    ASSERT(equal(lattice_meet(arena,
+                              make_integer_range_element(arena, INT64_MIN, 0),
+                              make_integer_range_element(arena, 0, INT64_MAX)),
+                 make_integer_constant_element(arena, 0)));
     ASSERT(equal(lattice_join(arena, make_integer_range_element(arena, 5, 1), high), high));
     ASSERT(equal(make_integer_range_element(arena, INT64_MIN, INT64_MIN), low));
     ASSERT(equal(make_integer_range_element(arena, INT64_MAX, INT64_MAX), high));
@@ -131,19 +140,21 @@ bool test_lattice_boundaries() {
 
 bool test_lattice_arrays() {
     arena_t *arena = create_arena(8);
-    struct { lattice_type_t left, right, join, meet; } cases[] = {
-        { LATTICE_INTEGER, LATTICE_NUMERIC, LATTICE_NUMERIC, LATTICE_INTEGER },
-        { LATTICE_INTEGER, LATTICE_REAL, LATTICE_NUMERIC, LATTICE_BOTTOM },
-        { LATTICE_INTEGER, LATTICE_STRING, LATTICE_NOT_NULL, LATTICE_BOTTOM },
-        { LATTICE_TRUE, LATTICE_FALSE, LATTICE_BOOLEAN, LATTICE_BOTTOM },
-        { LATTICE_TRUE, LATTICE_BOOLEAN, LATTICE_BOOLEAN, LATTICE_TRUE },
-        { LATTICE_NULL, LATTICE_INTEGER, LATTICE_TOP, LATTICE_BOTTOM },
-        { LATTICE_NULL, LATTICE_NOT_NULL, LATTICE_TOP, LATTICE_BOTTOM },
-        { LATTICE_BOTTOM, LATTICE_INTEGER, LATTICE_INTEGER, LATTICE_BOTTOM },
-        { LATTICE_TOP, LATTICE_INTEGER, LATTICE_TOP, LATTICE_INTEGER },
-        { LATTICE_ARRAY, LATTICE_NOT_NULL, LATTICE_NOT_NULL, LATTICE_ARRAY },
-        { LATTICE_FUNCTION, LATTICE_FUNCTION, LATTICE_FUNCTION, LATTICE_FUNCTION }
-    };
+
+    struct {
+        lattice_type_t left, right, join, meet;
+    } cases[] = {{LATTICE_INTEGER, LATTICE_NUMERIC, LATTICE_NUMERIC, LATTICE_INTEGER},
+                 {LATTICE_INTEGER, LATTICE_REAL, LATTICE_NUMERIC, LATTICE_BOTTOM},
+                 {LATTICE_INTEGER, LATTICE_STRING, LATTICE_NOT_NULL, LATTICE_BOTTOM},
+                 {LATTICE_TRUE, LATTICE_FALSE, LATTICE_BOOLEAN, LATTICE_BOTTOM},
+                 {LATTICE_TRUE, LATTICE_BOOLEAN, LATTICE_BOOLEAN, LATTICE_TRUE},
+                 {LATTICE_NULL, LATTICE_INTEGER, LATTICE_TOP, LATTICE_BOTTOM},
+                 {LATTICE_NULL, LATTICE_NOT_NULL, LATTICE_TOP, LATTICE_BOTTOM},
+                 {LATTICE_BOTTOM, LATTICE_INTEGER, LATTICE_INTEGER, LATTICE_BOTTOM},
+                 {LATTICE_TOP, LATTICE_INTEGER, LATTICE_TOP, LATTICE_INTEGER},
+                 {LATTICE_ARRAY, LATTICE_NOT_NULL, LATTICE_NOT_NULL, LATTICE_ARRAY},
+                 {LATTICE_FUNCTION, LATTICE_FUNCTION, LATTICE_FUNCTION, LATTICE_FUNCTION}};
+
     for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
         const lattice_element_t *left = make_typed_array_element(arena, cases[i].left);
         const lattice_element_t *right = make_typed_array_element(arena, cases[i].right);
@@ -173,17 +184,25 @@ bool test_lattice_laws() {
     arena_t *values = create_arena(8);
     const lattice_element_t *samples[64];
     size_t count = 0;
-    const lattice_element_t *generic[] = {
-        make_top_element(), make_not_null_element(), make_null_element(), make_numeric_element(),
-        make_integer_element(), make_real_element(), make_string_element(), make_boolean_element(),
-        make_true_element(), make_false_element(), make_function_element(), make_array_element(),
-        make_user_defined_object_element(), make_bottom_element()
-    };
+    const lattice_element_t *generic[] = {make_top_element(),
+                                          make_not_null_element(),
+                                          make_null_element(),
+                                          make_numeric_element(),
+                                          make_integer_element(),
+                                          make_real_element(),
+                                          make_string_element(),
+                                          make_boolean_element(),
+                                          make_true_element(),
+                                          make_false_element(),
+                                          make_function_element(),
+                                          make_array_element(),
+                                          make_user_defined_object_element(),
+                                          make_bottom_element()};
     for (size_t i = 0; i < sizeof(generic) / sizeof(*generic); i++) {
         samples[count++] = generic[i];
         samples[count++] = make_typed_array_element(values, generic[i]->type);
     }
-    int64_t integers[] = { INT64_MIN, -1, 0, 1, INT64_MAX };
+    int64_t integers[] = {INT64_MIN, -1, 0, 1, INT64_MAX};
     for (size_t i = 0; i < sizeof(integers) / sizeof(*integers); i++) {
         samples[count++] = make_integer_constant_element(values, integers[i]);
     }
@@ -191,14 +210,14 @@ bool test_lattice_laws() {
     samples[count++] = make_integer_range_element(values, -2, 1);
     samples[count++] = make_integer_range_element(values, 0, INT64_MAX);
     samples[count++] = make_integer_range_element(values, 2, 3);
-    double reals[] = { -INFINITY, -1.5, -0.0, 0.0, 1.5, INFINITY, NAN, -NAN };
+    double reals[] = {-INFINITY, -1.5, -0.0, 0.0, 1.5, INFINITY, NAN, -NAN};
     for (size_t i = 0; i < sizeof(reals) / sizeof(*reals); i++) {
         samples[count++] = make_real_constant_element(values, reals[i]);
     }
-    samples[count++] = make_string_constant_element(values, (string_view_t){ L"", 0 });
-    samples[count++] = make_string_constant_element(values, (string_view_t){ L"a", 1 });
-    samples[count++] = make_string_constant_element(values, (string_view_t){ L"b", 1 });
-    samples[count++] = make_string_constant_element(values, (string_view_t){ L"a\0b", 3 });
+    samples[count++] = make_string_constant_element(values, (string_view_t){L"", 0});
+    samples[count++] = make_string_constant_element(values, (string_view_t){L"a", 1});
+    samples[count++] = make_string_constant_element(values, (string_view_t){L"b", 1});
+    samples[count++] = make_string_constant_element(values, (string_view_t){L"a\0b", 3});
     for (size_t i = 0; i < count; i++) {
         arena_t *arena = create_arena(8);
         const lattice_element_t *a = samples[i];
@@ -219,9 +238,17 @@ bool test_lattice_laws() {
             for (size_t k = 0; k < count; k++) {
                 const lattice_element_t *c = samples[k];
                 ASSERT(law(equal(lattice_join(arena, join, c),
-                    lattice_join(arena, a, lattice_join(arena, b, c))), "join associativity", i, j, k));
+                                 lattice_join(arena, a, lattice_join(arena, b, c))),
+                           "join associativity",
+                           i,
+                           j,
+                           k));
                 ASSERT(law(equal(lattice_meet(arena, meet, c),
-                    lattice_meet(arena, a, lattice_meet(arena, b, c))), "meet associativity", i, j, k));
+                                 lattice_meet(arena, a, lattice_meet(arena, b, c))),
+                           "meet associativity",
+                           i,
+                           j,
+                           k));
             }
         }
         destroy_arena(arena);

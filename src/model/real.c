@@ -3,16 +3,16 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Implementation of an object representing a real number.
  */
-#include <assert.h>
-#include <stdio.h>
-#include <math.h>
-
-#include "object.h"
-#include "object_state.h"
-#include "process.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
+#include "object.h"
+#include "object_state.h"
+#include "process.h"
+
+#include <assert.h>
+#include <math.h>
+#include <stdio.h>
 
 /**
  * @brief Defines the maximum capacity of the object pool.
@@ -30,15 +30,15 @@
  */
 typedef struct {
     object_t base; ///< The base object that provides common functionality.
-    double value; ///< The double-precision floating-point value of the object.
+    double value;  ///< The double-precision floating-point value of the object.
 } object_static_real_t;
 
 /** @brief A dynamic real number object. */
 typedef struct {
-    object_t base; ///< The base object that provides common functionality.
-    int refs; ///< Reference count for garbage collection.
+    object_t base;        ///< The base object that provides common functionality.
+    int refs;             ///< Reference count for garbage collection.
     object_state_t state; ///< The state of the object (unmarked, marked, or zombie).
-    double value; ///< The double-precision floating-point value of the object.
+    double value;         ///< The double-precision floating-point value of the object.
 } object_dynamic_real_t;
 
 /** @brief Implements @ref object_vtbl_t::get_prototypes. */
@@ -47,30 +47,24 @@ static object_array_t proto_get_prototypes(const object_t *obj) {
     if (!proto) {
         proto = get_numeric_proto();
     }
-    object_array_t result = {
-        .items = &proto,
-        .size = 1
-    };
+    object_array_t result = {.items = &proto, .size = 1};
     return result;
 }
 
 /** @brief Implements @ref object_vtbl_t::get_topology. */
 static object_array_t proto_get_topology(const object_t *obj) {
-    static object_t* topology[2] = {0};
+    static object_t *topology[2] = {0};
     if (topology[0] == NULL) {
         topology[0] = get_numeric_proto();
         topology[1] = get_root_object();
     }
-    object_array_t result = {
-        .items = topology,
-        .size = 2
-    };
+    object_array_t result = {.items = topology, .size = 2};
     return result;
 }
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
-    return (object_array_t){ NULL, 0 };
+    return (object_array_t){NULL, 0};
 }
 
 /** @brief Implements @ref object_vtbl_t::get_property. */
@@ -79,47 +73,43 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
 }
 
 /** @brief Virtual table defining the behavior of the real number prototype object. */
-static object_vtbl_t real_proto_vtbl = {
-    .type = TYPE_OTHER,
-    .inc_ref = stub_memory_function,
-    .dec_ref = stub_memory_function,
-    .mark = stub_memory_function,
-    .sweep = no_sweep,
-    .release = stub_memory_function,
-    .compare = compare_object_addresses,
-    .clone = clone_singleton,
-    .to_string = common_to_string,
-    .to_string_notation = common_to_string_notation,
-    .get_prototypes = proto_get_prototypes,
-    .get_topology = proto_get_topology,
-    .get_keys = get_keys,
-    .get_property = get_property,
-    .create_property = create_property_on_immutable,
-    .set_property = set_property_on_immutable,
-    .unary_plus = stub_unary_operation,
-    .unary_minus = stub_unary_operation,
-    .add = stub_add,
-    .subtract = stub_subtract,
-    .multiply = stub_multiply,
-    .divide = stub_divide,
-    .modulo = stub_modulo,
-    .power = stub_power,
-    .less = common_less,
-    .less_or_equal = common_less_or_equal,
-    .greater = common_greater,
-    .greater_or_equal = common_greater_or_equal,
-    .equal = common_equal,
-    .not_equal = common_not_equal,
-    .get_boolean_value = stub_get_boolean_value,
-    .get_integer_value = stub_get_integer_value,
-    .get_real_value = stub_get_real_value,
-    .call = stub_call
-};
+static object_vtbl_t real_proto_vtbl = {.type = TYPE_OTHER,
+                                        .inc_ref = stub_memory_function,
+                                        .dec_ref = stub_memory_function,
+                                        .mark = stub_memory_function,
+                                        .sweep = no_sweep,
+                                        .release = stub_memory_function,
+                                        .compare = compare_object_addresses,
+                                        .clone = clone_singleton,
+                                        .to_string = common_to_string,
+                                        .to_string_notation = common_to_string_notation,
+                                        .get_prototypes = proto_get_prototypes,
+                                        .get_topology = proto_get_topology,
+                                        .get_keys = get_keys,
+                                        .get_property = get_property,
+                                        .create_property = create_property_on_immutable,
+                                        .set_property = set_property_on_immutable,
+                                        .unary_plus = stub_unary_operation,
+                                        .unary_minus = stub_unary_operation,
+                                        .add = stub_add,
+                                        .subtract = stub_subtract,
+                                        .multiply = stub_multiply,
+                                        .divide = stub_divide,
+                                        .modulo = stub_modulo,
+                                        .power = stub_power,
+                                        .less = common_less,
+                                        .less_or_equal = common_less_or_equal,
+                                        .greater = common_greater,
+                                        .greater_or_equal = common_greater_or_equal,
+                                        .equal = common_equal,
+                                        .not_equal = common_not_equal,
+                                        .get_boolean_value = stub_get_boolean_value,
+                                        .get_integer_value = stub_get_integer_value,
+                                        .get_real_value = stub_get_real_value,
+                                        .call = stub_call};
 
 /** @brief The real number prototype object. */
-static object_t real_proto = {
-    .vtbl = &real_proto_vtbl
-};
+static object_t real_proto = {.vtbl = &real_proto_vtbl};
 
 object_t *get_real_proto() {
     return &real_proto;
@@ -177,16 +167,15 @@ static bool sweep(object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::release. */
 static void release(object_t *obj) {
     object_dynamic_real_t *diobj = (object_dynamic_real_t *)obj;
-    remove_object_from_list(
-        diobj->state == ZOMBIE ? &obj->process->real_numbers : &obj->process->objects, obj
-    );
+    remove_object_from_list(diobj->state == ZOMBIE ? &obj->process->real_numbers
+                                                   : &obj->process->objects,
+                            obj);
     FREE(obj);
 }
 
 /** @brief Implements @ref object_vtbl_t::compare. */
 static int compare(const object_t *obj1, const object_t *obj2) {
-    double diff = get_object_real_value(obj1).value
-        - get_object_real_value(obj2).value;
+    double diff = get_object_real_value(obj1).value - get_object_real_value(obj2).value;
     if (diff > 0) {
         return 1;
     } else if (diff < 0) {
@@ -216,31 +205,23 @@ static string_value_t to_string_notation(const object_t *obj) {
 }
 
 /** @brief Array of prototypes for the real number object. */
-static object_t* prototypes[] = {
-    &real_proto
-};
+static object_t *prototypes[] = {&real_proto};
 
 /** @brief Implements @ref object_vtbl_t::get_prototypes. */
 static object_array_t get_prototypes(const object_t *obj) {
-    object_array_t result = {
-        .items = prototypes,
-        .size = 1
-    };
+    object_array_t result = {.items = prototypes, .size = 1};
     return result;
 }
 
 /** @brief Implements @ref object_vtbl_t::get_topology. */
 static object_array_t get_topology(const object_t *obj) {
-    static object_t* topology[3] = {0};
+    static object_t *topology[3] = {0};
     if (topology[0] == NULL) {
         topology[0] = &real_proto;
         topology[1] = get_numeric_proto();
         topology[2] = get_root_object();
     }
-    object_array_t result = {
-        .items = topology,
-        .size = 3
-    };
+    object_array_t result = {.items = topology, .size = 3};
     return result;
 }
 
@@ -309,7 +290,7 @@ static bool get_boolean_value(const object_t *obj) {
 
 /** @brief Implements @ref object_vtbl_t::get_integer_value. */
 static int_value_t static_get_integer_value(const object_t *obj) {
-    return (int_value_t){ false, 0 };
+    return (int_value_t){false, 0};
 }
 
 /** @brief Implements @ref object_vtbl_t::get_integer_value. */
@@ -317,110 +298,101 @@ static int_value_t dynamic_get_integer_value(const object_t *obj) {
     object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
     double value = drobj->value;
     if (value == trunc(value) && value >= (double)INT64_MIN && value <= (double)INT64_MAX) {
-        return (int_value_t){ true, (int64_t)value };
+        return (int_value_t){true, (int64_t)value};
     }
-    return (int_value_t){ false, 0 };
+    return (int_value_t){false, 0};
 }
 
 /** @brief Implements @ref object_vtbl_t::get_real_value. */
 static real_value_t static_get_real_value(const object_t *obj) {
     object_static_real_t *srobj = (object_static_real_t *)obj;
-    return (real_value_t){ true, srobj->value };
+    return (real_value_t){true, srobj->value};
 }
 
 /** @brief Implements @ref object_vtbl_t::get_real_value. */
 static real_value_t dynamic_get_real_value(const object_t *obj) {
     object_dynamic_real_t *drobj = (object_dynamic_real_t *)obj;
-    return (real_value_t){ true, drobj->value };
+    return (real_value_t){true, drobj->value};
 }
 
 /** @brief This virtual table defines the behavior of the static real number object. */
-static object_vtbl_t static_vtbl = {
-    .type = TYPE_NUMBER,
-    .inc_ref = stub_memory_function,
-    .dec_ref = stub_memory_function,
-    .mark = stub_memory_function,
-    .sweep = no_sweep,
-    .release = stub_memory_function,
-    .compare = compare,
-    .clone = clone,
-    .to_string = to_string,
-    .to_string_notation = to_string_notation,
-    .get_prototypes = get_prototypes,
-    .get_topology = get_topology,
-    .get_keys = get_keys,
-    .get_property = get_property,
-    .create_property = create_property_on_immutable,
-    .set_property = set_property_on_immutable,
-    .unary_plus = numeric_unary_plus,
-    .unary_minus = unary_minus,
-    .add = add,
-    .subtract = subtract,
-    .multiply = multiply,
-    .divide = divide,
-    .modulo = stub_modulo,
-    .power = power,
-    .less = common_less,
-    .less_or_equal = common_less_or_equal,
-    .greater = common_greater,
-    .greater_or_equal = common_greater_or_equal,
-    .equal = common_equal,
-    .not_equal = common_not_equal,
-    .get_boolean_value = get_boolean_value,
-    .get_integer_value = static_get_integer_value,
-    .get_real_value = static_get_real_value,
-    .call = stub_call
-};
+static object_vtbl_t static_vtbl = {.type = TYPE_NUMBER,
+                                    .inc_ref = stub_memory_function,
+                                    .dec_ref = stub_memory_function,
+                                    .mark = stub_memory_function,
+                                    .sweep = no_sweep,
+                                    .release = stub_memory_function,
+                                    .compare = compare,
+                                    .clone = clone,
+                                    .to_string = to_string,
+                                    .to_string_notation = to_string_notation,
+                                    .get_prototypes = get_prototypes,
+                                    .get_topology = get_topology,
+                                    .get_keys = get_keys,
+                                    .get_property = get_property,
+                                    .create_property = create_property_on_immutable,
+                                    .set_property = set_property_on_immutable,
+                                    .unary_plus = numeric_unary_plus,
+                                    .unary_minus = unary_minus,
+                                    .add = add,
+                                    .subtract = subtract,
+                                    .multiply = multiply,
+                                    .divide = divide,
+                                    .modulo = stub_modulo,
+                                    .power = power,
+                                    .less = common_less,
+                                    .less_or_equal = common_less_or_equal,
+                                    .greater = common_greater,
+                                    .greater_or_equal = common_greater_or_equal,
+                                    .equal = common_equal,
+                                    .not_equal = common_not_equal,
+                                    .get_boolean_value = get_boolean_value,
+                                    .get_integer_value = static_get_integer_value,
+                                    .get_real_value = static_get_real_value,
+                                    .call = stub_call};
 
 /** @brief Static real number object representing the mathematical constant π (Pi). */
-static object_static_real_t pi_object = {
-    .base = {
-        .vtbl = &static_vtbl
-    },
-    .value = M_PI
-};
+static object_static_real_t pi_object = {.base = {.vtbl = &static_vtbl}, .value = M_PI};
 
-object_t* get_pi_object() {
+object_t *get_pi_object() {
     return &pi_object.base;
 }
 
 /** @brief This virtual table defines the behavior of the dynamic real number object. */
-static object_vtbl_t dynamic_vtbl = {
-    .type = TYPE_NUMBER,
-    .inc_ref = inc_ref,
-    .dec_ref = dec_ref,
-    .mark = mark,
-    .sweep = sweep,
-    .release = release,
-    .compare = compare,
-    .clone = clone,
-    .to_string = to_string,
-    .to_string_notation = to_string_notation,
-    .get_prototypes = get_prototypes,
-    .get_topology = get_topology,
-    .get_keys = get_keys,
-    .get_property = get_property,
-    .create_property = create_property_on_immutable,
-    .set_property = set_property_on_immutable,
-    .unary_plus = numeric_unary_plus,
-    .unary_minus = unary_minus,
-    .add = add,
-    .subtract = subtract,
-    .multiply = multiply,
-    .divide = divide,
-    .modulo = stub_modulo,
-    .power = power,
-    .less = common_less,
-    .less_or_equal = common_less_or_equal,
-    .greater = common_greater,
-    .greater_or_equal = common_greater_or_equal,
-    .equal = common_equal,
-    .not_equal = common_not_equal,
-    .get_boolean_value = get_boolean_value,
-    .get_integer_value = dynamic_get_integer_value,
-    .get_real_value = dynamic_get_real_value,
-    .call = stub_call
-};
+static object_vtbl_t dynamic_vtbl = {.type = TYPE_NUMBER,
+                                     .inc_ref = inc_ref,
+                                     .dec_ref = dec_ref,
+                                     .mark = mark,
+                                     .sweep = sweep,
+                                     .release = release,
+                                     .compare = compare,
+                                     .clone = clone,
+                                     .to_string = to_string,
+                                     .to_string_notation = to_string_notation,
+                                     .get_prototypes = get_prototypes,
+                                     .get_topology = get_topology,
+                                     .get_keys = get_keys,
+                                     .get_property = get_property,
+                                     .create_property = create_property_on_immutable,
+                                     .set_property = set_property_on_immutable,
+                                     .unary_plus = numeric_unary_plus,
+                                     .unary_minus = unary_minus,
+                                     .add = add,
+                                     .subtract = subtract,
+                                     .multiply = multiply,
+                                     .divide = divide,
+                                     .modulo = stub_modulo,
+                                     .power = power,
+                                     .less = common_less,
+                                     .less_or_equal = common_less_or_equal,
+                                     .greater = common_greater,
+                                     .greater_or_equal = common_greater_or_equal,
+                                     .equal = common_equal,
+                                     .not_equal = common_not_equal,
+                                     .get_boolean_value = get_boolean_value,
+                                     .get_integer_value = dynamic_get_integer_value,
+                                     .get_real_value = dynamic_get_real_value,
+                                     .call = stub_call};
 
 object_t *create_real_number_object(process_t *process, double value) {
     object_dynamic_real_t *obj;

@@ -4,16 +4,17 @@
  * @brief Goat virtual machine.
  */
 
-#include <assert.h>
-#include <stdbool.h>
-
 #include "vm.h"
+
 #include "gc.h"
-#include "model/context.h"
-#include "model/thread.h"
 #include "lib/allocate.h"
 #include "lib/avl_tree.h"
 #include "lib/split64.h"
+#include "model/context.h"
+#include "model/thread.h"
+
+#include <assert.h>
+#include <stdbool.h>
 
 /** @brief The runtime environment for the Goat virtual machine. */
 typedef struct {
@@ -60,12 +61,9 @@ static object_t *load_string(runtime_t *runtime, process_t *process, uint32_t st
         data_descriptor_t descriptor = runtime->code->data_descriptors[string_id];
         string = create_string_object(
             process,
-            (string_value_t) {
-                (wchar_t*)(runtime->code->data + descriptor.offset),
-                descriptor.size / sizeof(wchar_t) - 1,
-                false
-            }
-        );
+            (string_value_t){(wchar_t *)(runtime->code->data + descriptor.offset),
+                             descriptor.size / sizeof(wchar_t) - 1,
+                             false});
         process->string_cache[string_id] = string;
     }
     return string;
@@ -173,10 +171,8 @@ static bool exec_RLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     split64_t s;
     s.parts[0] = thread->args[0];
     s.parts[1] = instr.arg1;
-    push_object_onto_stack(
-        thread->data_stack,
-        create_real_number_object(thread->process, s.real_value)
-    );
+    push_object_onto_stack(thread->data_stack,
+                           create_real_number_object(thread->process, s.real_value));
     thread->args_count = 0;
     thread->instr_id++;
     return true;
@@ -267,8 +263,7 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     assert(result != MSTAT_IMMUTABLE_OBJECT);
     if (result == MSTAT_OK) {
         changed = true;
-    }
-    else if (result == MSTAT_PROPERTY_NOT_FOUND) {
+    } else if (result == MSTAT_PROPERTY_NOT_FOUND) {
         object_array_t proto = get_object_topology(context);
         size_t index = 0;
         do {
@@ -297,8 +292,9 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
 
 /** @brief Consumes one operand and transfers its result or exception. */
-static bool execute_unary_operation(runtime_t *runtime, thread_t *thread,
-        operation_result_t (*operation)(process_t *, object_t *)) {
+static bool execute_unary_operation(runtime_t *runtime,
+                                    thread_t *thread,
+                                    operation_result_t (*operation)(process_t *, object_t *)) {
     object_t *operand = pop_object_from_stack(thread->data_stack);
     if (!operand) {
         runtime->status = 1;
@@ -324,8 +320,10 @@ static bool exec_UMINUS(runtime_t *runtime, instruction_t instr, thread_t *threa
 }
 
 /** @brief Consumes operands and transfers the result to the stack or exception handler. */
-static bool execute_binary_operation(runtime_t *runtime, thread_t *thread,
-        operation_result_t (*operation)(process_t *, object_t *, object_t *)) {
+static bool
+execute_binary_operation(runtime_t *runtime,
+                         thread_t *thread,
+                         operation_result_t (*operation)(process_t *, object_t *, object_t *)) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
     if (!first || !second) {
@@ -478,19 +476,14 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
         if (arg_count * sizeof(uint32_t) != descriptor.size) {
             return false; // bad bytecode
         }
-        uint32_t *strings = (uint32_t*)(runtime->code->data + descriptor.offset);
-        arg_names = ALLOC(arg_count * sizeof(object_t*));
+        uint32_t *strings = (uint32_t *)(runtime->code->data + descriptor.offset);
+        arg_names = ALLOC(arg_count * sizeof(object_t *));
         for (uint16_t index = 0; index < arg_count; index++) {
             arg_names[index] = load_string(runtime, thread->process, strings[index]);
         }
     }
-    object_t *function = create_function_object(
-        thread->process,
-        arg_names,
-        arg_count,
-        first_instr_id,
-        closure
-    );
+    object_t *function =
+        create_function_object(thread->process, arg_names, arg_count, first_instr_id, closure);
     push_object_onto_stack(thread->data_stack, function);
     thread->args_count = 0;
     thread->instr_id++;
@@ -509,7 +502,7 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
 /** @brief Executes @ref RET. */
 static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     context_t *ctx = thread->context;
-    assert (ctx->ret_value_index != BAD_STACK_INDEX);
+    assert(ctx->ret_value_index != BAD_STACK_INDEX);
     object_t *ret_value = pop_object_from_stack(thread->data_stack);
     if (ret_value == NULL) {
         return false; // stack is empty
@@ -567,7 +560,8 @@ static bool exec_TRY(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     context_t *ctx = create_context(thread->process, thread->context, NULL);
     ctx->control_flow = FLOW_THROW;
     ctx->jump_address[0] = instr.arg1;
-    ctx->unwinding_index = thread->data_stack->size ? thread->data_stack->size - 1 : BAD_STACK_INDEX;
+    ctx->unwinding_index =
+        thread->data_stack->size ? thread->data_stack->size - 1 : BAD_STACK_INDEX;
     thread->context = ctx;
     thread->instr_id++;
     return true;
@@ -577,16 +571,19 @@ static bool exec_TRY(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception) {
     context_t *root = get_root_context();
     context_t *handler = thread->context;
-    while (handler != root && handler->control_flow != FLOW_THROW) handler = handler->previous;
+    while (handler != root && handler->control_flow != FLOW_THROW)
+        handler = handler->previous;
     size_t size = handler == root || handler->unwinding_index == BAD_STACK_INDEX
-        ? 0 : handler->unwinding_index + 1;
+                      ? 0
+                      : handler->unwinding_index + 1;
     if (thread->data_stack->size < size) {
         /* Malformed bytecode consumed values below the saved boundary. */
         DECREF(exception.value);
         runtime->status = 1;
         return false;
     }
-    while (thread->context != handler) thread->context = destroy_context(thread->context);
+    while (thread->context != handler)
+        thread->context = destroy_context(thread->context);
     while (thread->data_stack->size > size) {
         object_t *value = pop_object_from_stack(thread->data_stack);
         DECREF(value);
@@ -660,13 +657,12 @@ static instr_executor_t executors[] = {
 };
 
 int run(process_t *proc, bytecode_t *code) {
-
     // preparing the environment
     runtime_t runtime;
     runtime.code = code;
     runtime.status = 0;
     if ((proc->string_cache_size = code->data_descriptor_count) > 0) {
-        proc->string_cache = CALLOC(code->data_descriptor_count * sizeof(object_t*));
+        proc->string_cache = CALLOC(code->data_descriptor_count * sizeof(object_t *));
     }
 
     // execution

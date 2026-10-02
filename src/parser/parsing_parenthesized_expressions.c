@@ -4,13 +4,13 @@
  * @brief Defines reduction rules for parenthesized expressions.
  */
 
-#include <assert.h>
-
-#include "parser.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
+#include "parser.h"
 #include "resources/messages.h"
+
+#include <assert.h>
 
 /**
  * @brief Pre-processes a bracket pair into a parenthesized expression shell.
@@ -20,15 +20,16 @@
  * parsing_parenthesized_expressions.
  * @return Always NULL (errors are reported in the parsing step).
  */
-compilation_error_t *preparsing_parenthesized_expressions(token_t *token, parser_memory_t *memory,
-        token_groups_t *groups) {
+compilation_error_t *preparsing_parenthesized_expressions(token_t *token,
+                                                          parser_memory_t *memory,
+                                                          token_groups_t *groups) {
     assert(token->type == TOKEN_BRACKET_PAIR && token->text.data[0] == '(');
     if (token->left && token->left->type == TOKEN_IF) { // if (...
         remove_token_from_group(token);
         return NULL;
     }
     node_t *node = create_parenthesized_expression_node(memory->graph);
-    token_t *expr = (token_t*)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
+    token_t *expr = (token_t *)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     expr->type = TOKEN_EXPRESSION;
     expr->position = token->position;
     expr->text = token->text;
@@ -48,8 +49,8 @@ compilation_error_t *preparsing_parenthesized_expressions(token_t *token, parser
  * TOKEN_EXPRESSION
  * @return NULL on success; error object on invalid syntax.
  */
-compilation_error_t *parsing_parenthesized_expressions(token_t *token, parser_memory_t *memory,
-        token_groups_t *groups) {
+compilation_error_t *
+parsing_parenthesized_expressions(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
     assert(token->type == TOKEN_EXPRESSION_IN_BRACKETS);
     if (token->children.count != 1) {
         goto error;
@@ -59,13 +60,11 @@ compilation_error_t *parsing_parenthesized_expressions(token_t *token, parser_me
     if (token->type != TOKEN_EXPRESSION) {
         goto error;
     }
-    fill_parenthesized_expression(node, (expression_t*)token->node);
+    fill_parenthesized_expression(node, (expression_t *)token->node);
     return NULL;
 error:
-    return create_error_from_token(
-        memory->errors,
-        token,
-        CRITICAL,
-        get_messages()->invalid_parenthesized_expression
-    );
+    return create_error_from_token(memory->errors,
+                                   token,
+                                   CRITICAL,
+                                   get_messages()->invalid_parenthesized_expression);
 }

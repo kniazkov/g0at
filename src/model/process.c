@@ -5,10 +5,11 @@
  */
 
 #include "process.h"
-#include "thread.h"
+
 #include "context.h"
 #include "lib/allocate.h"
 #include "object_list.h"
+#include "thread.h"
 
 /** @brief ID of the last created process. */
 static uint64_t last_process_id = 0;
@@ -36,7 +37,7 @@ static void destroy_all_objects_in_the_list(object_list_t *list) {
 }
 
 void destroy_process(process_t *process) {
-    while(process->main_thread) {
+    while (process->main_thread) {
         destroy_thread(process->main_thread);
     }
     destroy_all_objects_in_the_list(&process->objects);

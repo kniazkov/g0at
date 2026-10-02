@@ -65,19 +65,22 @@ analysis_collector_t *create_analysis_collector(arena_t *arena);
  * Unreachable events require a node and NULL declaration/value; value events require both.
  */
 const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
-        analysis_event_kind_t kind, const node_t *node, const declarator_t *declarator,
-        const lattice_element_t *value);
+                                           analysis_event_kind_t kind,
+                                           const node_t *node,
+                                           const declarator_t *declarator,
+                                           const lattice_element_t *value);
 
 /**
  * @brief Finds the next matching event in O(n); NULL query matches everything.
  * Starts at head when after is NULL, otherwise after must belong to this collector.
  */
 const analysis_event_t *find_analysis_event(const analysis_collector_t *collector,
-        const analysis_event_t *after, const analysis_event_query_t *query);
+                                            const analysis_event_t *after,
+                                            const analysis_event_query_t *query);
 
 /** @brief Finds the last recorded match, not a join or a fixed-point result. */
 const analysis_event_t *find_last_analysis_event(const analysis_collector_t *collector,
-        const analysis_event_query_t *query);
+                                                 const analysis_event_query_t *query);
 
 /** @brief Formats chronological observations; release with FREE_STRING(). NULL means empty. */
 string_value_t analysis_collector_to_text(const analysis_collector_t *collector);

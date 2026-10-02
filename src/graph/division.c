@@ -5,13 +5,13 @@
  */
 
 #include "binary_operation.h"
+#include "codegen/code_builder.h"
+#include "codegen/data_builder.h"
+#include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
-#include "codegen/code_builder.h"
-#include "codegen/data_builder.h"
-#include "codegen/source_builder.h"
 
 /** @brief A division operation expression node. */
 typedef struct {
@@ -31,8 +31,8 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-            size_t indent) {
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const division_t *expr = (const division_t *)node;
     generate_indented_goat_code_from_expression(expr->base.left_operand, builder, indent);
     append_static_source(builder, L" / ");
@@ -40,13 +40,11 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 }
 
 /** @brief Generates bytecode for a division operation node. */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const division_t *expr = (const division_t *)node;
-    instr_index_t first = generate_bytecode_from_expression(
-        expr->base.left_operand, code, data);
+    instr_index_t first = generate_bytecode_from_expression(expr->base.left_operand, code, data);
     generate_bytecode_from_expression(expr->base.right_operand, code, data);
-    add_instruction(code, (instruction_t){ .opcode = DIVIDE });
+    add_instruction(code, (instruction_t){.opcode = DIVIDE});
     return first;
 }
 
@@ -77,8 +75,8 @@ static node_vtbl_t division_vtbl = {
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
-expression_t *create_division_node(arena_t *arena, expression_t *left_operand,
-        expression_t *right_operand) {
+expression_t *
+create_division_node(arena_t *arena, expression_t *left_operand, expression_t *right_operand) {
     division_t *expr = (division_t *)alloc_zeroed_from_arena(arena, sizeof(division_t));
     expr->base.base.base.vtbl = &division_vtbl;
     expr->base.left_operand = left_operand;

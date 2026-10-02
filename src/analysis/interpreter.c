@@ -5,12 +5,12 @@
  */
 
 #include "interpreter.h"
-#include "abstract_state.h"
-#include "lib/arena.h"
-#include "graph/node.h"
 
-void interpret(node_t *root_node, parser_memory_t *memory,
-        analysis_collector_t *collector) {
+#include "abstract_state.h"
+#include "graph/node.h"
+#include "lib/arena.h"
+
+void interpret(node_t *root_node, parser_memory_t *memory, analysis_collector_t *collector) {
     abstract_state_t *initial = create_abstract_state(memory->graph);
     initial->collector = collector;
     abstract_state_t *resulting = execute_node(root_node, initial, memory->graph);

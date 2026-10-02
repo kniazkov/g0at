@@ -4,17 +4,17 @@
  * @brief Implementation of function call expressions.
  */
 
-#include <assert.h>
-
-#include "expression.h"
-#include "common_methods.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/string_ext.h"
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
+#include "common_methods.h"
+#include "expression.h"
+#include "lib/allocate.h"
+#include "lib/arena.h"
+#include "lib/string_ext.h"
+
+#include <assert.h>
 
 /** @brief A function call expression node. */
 typedef struct {
@@ -33,13 +33,13 @@ typedef struct {
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t get_child_count(const node_t *node) {
-    const function_call_t* expr = (const function_call_t*)node;
+    const function_call_t *expr = (const function_call_t *)node;
     return 1 + expr->args_count;
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
-static node_t* get_child(const node_t *node, size_t index) {
-    const function_call_t* expr = (const function_call_t*)node;
+static node_t *get_child(const node_t *node, size_t index) {
+    const function_call_t *expr = (const function_call_t *)node;
     if (index < 0) {
         return NULL;
     }
@@ -53,7 +53,7 @@ static node_t* get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t* get_child_tag(const node_t *node, size_t index) {
+static const wchar_t *get_child_tag(const node_t *node, size_t index) {
     if (index == 0) {
         return L"object";
     }
@@ -62,7 +62,7 @@ static const wchar_t* get_child_tag(const node_t *node, size_t index) {
 
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
-    const function_call_t* expr = (const function_call_t*)node;
+    const function_call_t *expr = (const function_call_t *)node;
     calculate_expression(expr->func_object, state, arena);
     for (size_t i = 0; i < expr->args_count && state->control_flow == FLOW_NORMAL; i++) {
         calculate_expression(expr->args[i], state, arena);
@@ -76,8 +76,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_builder_t builder;
     init_string_builder(&builder, 0);
 
-    string_value_t func_object_as_string =
-        generate_goat_code_from_expression(expr->func_object);
+    string_value_t func_object_as_string = generate_goat_code_from_expression(expr->func_object);
     append_string_value(&builder, func_object_as_string);
     FREE_STRING(func_object_as_string);
 
@@ -96,8 +95,8 @@ static string_value_t generate_goat_code(const node_t *node) {
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
-static void generate_indented_goat_code(const node_t *node, source_builder_t *builder,
-            size_t indent) {
+static void
+generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const function_call_t *expr = (const function_call_t *)node;
     generate_indented_goat_code_from_expression(expr->func_object, builder, indent);
     append_static_source(builder, L"(");
@@ -112,8 +111,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
-static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
-        data_builder_t *data) {
+static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const function_call_t *expr = (const function_call_t *)node;
     assert(expr->args_count < UINT16_MAX);
     instr_index_t first = code->size;
@@ -126,7 +124,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code,
         } while (index > 0);
     }
     generate_bytecode_from_expression(expr->func_object, code, data);
-    add_instruction(code, (instruction_t){ .opcode = CALL, .arg0 = (uint16_t)expr->args_count });
+    add_instruction(code, (instruction_t){.opcode = CALL, .arg0 = (uint16_t)expr->args_count});
     return first;
 }
 
@@ -158,15 +156,17 @@ static node_vtbl_t function_call_vtbl = {
 };
 
 node_t *create_function_call_node_without_args(arena_t *arena, expression_t *func_object) {
-    function_call_t *expr = (function_call_t *)alloc_zeroed_from_arena(
-        arena, sizeof(function_call_t));
+    function_call_t *expr =
+        (function_call_t *)alloc_zeroed_from_arena(arena, sizeof(function_call_t));
     expr->base.base.vtbl = &function_call_vtbl;
     expr->func_object = func_object;
     return &expr->base.base;
 }
 
-void set_function_call_arguments(node_t *node, arena_t *arena,
-        expression_t **args, size_t args_count) {
+void set_function_call_arguments(node_t *node,
+                                 arena_t *arena,
+                                 expression_t **args,
+                                 size_t args_count) {
     assert(node->vtbl->type == NODE_FUNCTION_CALL);
     function_call_t *expr = (function_call_t *)node;
     assert(expr->args == NULL);

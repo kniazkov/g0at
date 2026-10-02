@@ -5,6 +5,7 @@
  */
 
 #include "common_methods.h"
+
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 
@@ -61,10 +62,7 @@ object_array_t common_get_prototypes(const object_t *obj) {
     if (!root_obj) {
         root_obj = get_root_object();
     }
-    object_array_t result = {
-        .items = &root_obj,
-        .size = 1
-    };
+    object_array_t result = {.items = &root_obj, .size = 1};
     return result;
 }
 
@@ -72,8 +70,8 @@ object_array_t common_get_topology(const object_t *obj) {
     return common_get_prototypes(obj);
 }
 
-model_status_t create_property_on_immutable(
-        object_t *obj, object_t *key, object_t *value, bool constant) {
+model_status_t
+create_property_on_immutable(object_t *obj, object_t *key, object_t *value, bool constant) {
     return MSTAT_IMMUTABLE_OBJECT;
 }
 
@@ -138,11 +136,11 @@ bool stub_get_boolean_value(const object_t *obj) {
 }
 
 int_value_t stub_get_integer_value(const object_t *obj) {
-    return (int_value_t){ false, 0 };
+    return (int_value_t){false, 0};
 }
 
 real_value_t stub_get_real_value(const object_t *obj) {
-    return (real_value_t){ false, 0.0 };
+    return (real_value_t){false, 0.0};
 }
 
 bool stub_call(object_t *obj, uint16_t arg_count, thread_t *thread) {

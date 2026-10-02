@@ -6,11 +6,11 @@
 
 #pragma once
 
+#include "value.h"
+
+#include <stdarg.h>
 #include <string.h>
 #include <wchar.h>
-#include <stdarg.h>
-
-#include "value.h"
 
 /** @brief Returns an owned copy; NULL input produces an empty string. Free with FREE(). */
 wchar_t *WSTRDUP(const wchar_t *wstr);
@@ -31,9 +31,9 @@ int string_comparator(const void *first, const void *second);
  * Allocated buffers are null-terminated; an unallocated empty builder has data == NULL.
  */
 typedef struct {
-    wchar_t *data;      /**< Pointer to the dynamically allocated wide-character string buffer. */
-    size_t length;      /**< Current length of the string, excluding the null terminator. */
-    size_t capacity;    /**< Total capacity of the allocated buffer. */
+    wchar_t *data;   /**< Pointer to the dynamically allocated wide-character string buffer. */
+    size_t length;   /**< Current length of the string, excluding the null terminator. */
+    size_t capacity; /**< Total capacity of the allocated buffer. */
 } string_builder_t;
 
 /** @brief Initializes an empty builder; zero capacity defers allocation. */
@@ -62,7 +62,8 @@ string_value_t append_string_view(string_builder_t *builder, string_view_t view)
 string_value_t append_string(string_builder_t *builder, const wchar_t *wstr);
 
 /** @brief Appends a static wide string literal to the string builder. */
-#define append_static_string(builder, str) append_substring(builder, (str), sizeof(str) / sizeof(wchar_t) - 1)
+#define append_static_string(builder, str)                                                         \
+    append_substring(builder, (str), sizeof(str) / sizeof(wchar_t) - 1)
 
 /** @brief Appends ASCII bytes widened to wchar_t; does not decode UTF-8. */
 string_value_t append_ascii_string(string_builder_t *builder, const char *str);

@@ -4,26 +4,26 @@
  * @brief Implementation of functions for launching the compiler and virtual machine.
  */
 
-#include <stdio.h>
-
 #include "launcher.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "lib/io.h"
-#include "resources/messages.h"
-#include "scanner/scanner.h"
-#include "parser/parser.h"
+
 #include "analysis/analysis.h"
 #include "codegen/linker.h"
 #include "codegen/source_builder.h"
 #include "graph/node.h"
 #include "graph/visualization.h"
-#include "vm/vm.h"
-#include "model/thread.h"
+#include "lib/allocate.h"
+#include "lib/arena.h"
+#include "lib/io.h"
 #include "model/object.h"
+#include "model/thread.h"
+#include "parser/parser.h"
+#include "resources/messages.h"
+#include "scanner/scanner.h"
+#include "vm/vm.h"
+
+#include <stdio.h>
 
 int go(options_t *opt) {
-
     long previously_allocated = get_allocated_memory_size();
     if (opt->language) {
         set_language(opt->language);
@@ -41,13 +41,12 @@ int go(options_t *opt) {
         create_arena(128), // nodes
         create_arena(8)    // errors
     };
-    token_groups_t *groups = (token_groups_t*)ALLOC(sizeof(token_groups_t));
+    token_groups_t *groups = (token_groups_t *)ALLOC(sizeof(token_groups_t));
 
     compilation_error_t *error = NULL;
     int ret_code = -1;
 
     do {
-
         scanner_t *scan = create_scanner(opt->input_file->file_name, code, &memory, groups);
         token_list_t tokens;
         error = process_brackets(&memory, scan, &tokens, groups);
@@ -72,8 +71,9 @@ int go(options_t *opt) {
         destroy_arena(memory.tokens);
         memory.tokens = NULL;
 
-        analysis_collector_t *collector = (opt->print_analysis || opt->analysis_output_file) ?
-            create_analysis_collector(memory.graph) : NULL;
+        analysis_collector_t *collector = (opt->print_analysis || opt->analysis_output_file)
+                                              ? create_analysis_collector(memory.graph)
+                                              : NULL;
         error = analyze(root_node, &memory, opt, collector);
         compilation_error_severity_t severity = get_most_severe_compilation_error(error);
         if (severity > WARNING) {
@@ -84,14 +84,12 @@ int go(options_t *opt) {
             error = reverse_compilation_errors(error);
             const wchar_t const *error_msg_format = get_messages()->compilation_warning;
             while (error != NULL) {
-                fprintf_utf8(
-                    stderr,
-                    error_msg_format,
-                    error->position->begin->file_name,
-                    error->position->begin->row,
-                    error->position->begin->column,
-                    error->message.data
-                );
+                fprintf_utf8(stderr,
+                             error_msg_format,
+                             error->position->begin->file_name,
+                             error->position->begin->row,
+                             error->position->begin->column,
+                             error->message.data);
                 fprintf(stderr, "\n");
                 error = error->next;
             }
@@ -105,12 +103,13 @@ int go(options_t *opt) {
             if (opt->print_analysis) {
                 print_utf8(report.data);
             }
-            bool written = !opt->analysis_output_file ||
-                write_utf8_file(opt->analysis_output_file->full_path, report.data);
+            bool written = !opt->analysis_output_file
+                           || write_utf8_file(opt->analysis_output_file->full_path, report.data);
             FREE_STRING(report);
             if (!written) {
-                fprintf_utf8(stderr, get_messages()->cannot_write_analysis_file,
-                    opt->analysis_output_file->normal_path);
+                fprintf_utf8(stderr,
+                             get_messages()->cannot_write_analysis_file,
+                             opt->analysis_output_file->normal_path);
                 fprintf(stderr, "\n");
                 break;
             }
@@ -147,18 +146,17 @@ int go(options_t *opt) {
         do {
             processed_all = true;
             list_item_t *func_item = parsing_result.functions->head;
-            while(func_item) {
+            while (func_item) {
                 list_item_t *next_item = func_item->next;
-                node_t *func_obj = (node_t*)func_item->value.ptr;
-                if (generate_deferred_bytecode_from_node(func_obj, code_builder,
-                        data_builder)) {
+                node_t *func_obj = (node_t *)func_item->value.ptr;
+                if (generate_deferred_bytecode_from_node(func_obj, code_builder, data_builder)) {
                     remove_item_from_linked_list(parsing_result.functions, func_item);
                 } else {
                     processed_all = false;
                 }
                 func_item = next_item;
             }
-        } while(!processed_all);
+        } while (!processed_all);
         bytecode_t *bytecode = link_code_and_data(code_builder, data_builder);
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);
@@ -189,13 +187,13 @@ int go(options_t *opt) {
         destroy_process(process);
 
         free_bytecode(bytecode);
-    } while(false);
+    } while (false);
 
     if (error != NULL) {
         error = reverse_compilation_errors(error);
         while (error != NULL) {
             const wchar_t const *error_msg_format = NULL;
-            switch(error->severity) {
+            switch (error->severity) {
                 case WARNING:
                     error_msg_format = get_messages()->compilation_warning;
                     break;
@@ -206,14 +204,12 @@ int go(options_t *opt) {
                     error_msg_format = get_messages()->critical_compilation_error;
                     break;
             }
-            fprintf_utf8(
-                stderr,
-                error_msg_format,
-                error->position->begin->file_name,
-                error->position->begin->row,
-                error->position->begin->column,
-                error->message.data
-            );
+            fprintf_utf8(stderr,
+                         error_msg_format,
+                         error->position->begin->file_name,
+                         error->position->begin->row,
+                         error->position->begin->column,
+                         error->message.data);
             fprintf(stderr, "\n");
             error = error->next;
         }

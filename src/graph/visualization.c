@@ -4,14 +4,15 @@
  * @brief AST visualization using GraphViz DOT format.
  */
 
-#include "variable.h"
 #include "visualization.h"
+
+#include "codegen/source_builder.h"
 #include "lib/allocate.h"
 #include "lib/avl_tree.h"
 #include "lib/io.h"
 #include "lib/string_ext.h"
 #include "lib/vector.h"
-#include "codegen/source_builder.h"
+#include "variable.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,12 +47,21 @@ string_value_t trim_and_escape_html_entities(string_value_t input, bool quotes) 
 
         size_t char_len = 1;
         switch (c) {
-            case '\n': case '\r': case '\t':
-            case '\"': case '\'': case '\\':
+            case '\n':
+            case '\r':
+            case '\t':
+            case '\"':
+            case '\'':
+            case '\\':
                 char_len = 2;
                 break;
-            case '&': char_len = 5; break; // &amp;
-            case '<': case '>': char_len = 4; break; // &lt; &gt;
+            case '&':
+                char_len = 5;
+                break; // &amp;
+            case '<':
+            case '>':
+                char_len = 4;
+                break; // &lt; &gt;
         }
 
         if (char_len > remaining) {
@@ -60,15 +70,33 @@ string_value_t trim_and_escape_html_entities(string_value_t input, bool quotes) 
         }
 
         switch (c) {
-            case '\n': append_string(&builder, L"\\n"); break;
-            case '\r': append_string(&builder, L"\\r"); break;
-            case '\t': append_string(&builder, L"\\t"); break;
-            case '\"': append_string(&builder, L"\\\""); break;
-            case '\'': append_string(&builder, L"\\'"); break;
-            case '\\': append_string(&builder, L"\\\\"); break;
-            case '&': append_string(&builder, L"&amp;"); break;
-            case '<': append_string(&builder, L"&lt;"); break;
-            case '>': append_string(&builder, L"&gt;"); break;
+            case '\n':
+                append_string(&builder, L"\\n");
+                break;
+            case '\r':
+                append_string(&builder, L"\\r");
+                break;
+            case '\t':
+                append_string(&builder, L"\\t");
+                break;
+            case '\"':
+                append_string(&builder, L"\\\"");
+                break;
+            case '\'':
+                append_string(&builder, L"\\'");
+                break;
+            case '\\':
+                append_string(&builder, L"\\\\");
+                break;
+            case '&':
+                append_string(&builder, L"&amp;");
+                break;
+            case '<':
+                append_string(&builder, L"&lt;");
+                break;
+            case '>':
+                append_string(&builder, L"&gt;");
+                break;
             default:
                 if (c >= 32 || c == ' ') {
                     append_char(&builder, c);
@@ -87,7 +115,7 @@ string_value_t trim_and_escape_html_entities(string_value_t input, bool quotes) 
         append_char(&builder, L'"');
     }
 
-    return (string_value_t){ builder.data, builder.length, true };
+    return (string_value_t){builder.data, builder.length, true};
 }
 
 /** @brief Builds a table with additional node properties. */
@@ -113,8 +141,8 @@ static string_value_t build_node_properties_html(const node_t *node) {
         }
         append_string(&builder, L"<br/>");
         append_string(&builder, key);
-        append_string(&builder, node->unreachable ?
-            L": <font color='gray70'>" : L": <font color='blue'>");
+        append_string(&builder,
+                      node->unreachable ? L": <font color='gray70'>" : L": <font color='blue'>");
         append_string_value(&builder, escaped_value);
         result = append_string(&builder, L"</font>");
         FREE_STRING(escaped_value);
@@ -127,38 +155,40 @@ static string_value_t build_node_properties_html(const node_t *node) {
  * @brief Recursively converts an AST node and its child subtree to DOT format.
  * `node`: Node to convert. Must not be NULL.
  */
-static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all_nodes,
-        avl_tree_t* nodes_to_ids, unsigned int current_scope_id,
-        size_t indent, source_builder_t* builder) {
+static int node_to_dot(const node_t *node,
+                       uint32_t *last_node_id,
+                       vector_t *all_nodes,
+                       avl_tree_t *nodes_to_ids,
+                       unsigned int current_scope_id,
+                       size_t indent,
+                       source_builder_t *builder) {
     bool new_scope = false;
     if (node->scope->id != current_scope_id) {
         new_scope = true;
         add_formatted_source(
             builder,
             indent,
-            format_string(
-                L"subgraph cluster_%d { style=\"rounded,dashed\"; color=%s;",
-                node->scope->id, node->unreachable ? L"lightgray" : L"gray"
-            )
-        );
+            format_string(L"subgraph cluster_%d { style=\"rounded,dashed\"; color=%s;",
+                          node->scope->id,
+                          node->unreachable ? L"lightgray" : L"gray"));
         indent++;
     }
     uint32_t id = ++(*last_node_id);
-    append_to_vector(all_nodes, (void*)node);
-    set_in_avl_tree(nodes_to_ids, (void*)node, (value_t){ .uint32_val = id });
-    const wchar_t* name = node->vtbl->type_name;
+    append_to_vector(all_nodes, (void *)node);
+    set_in_avl_tree(nodes_to_ids, (void *)node, (value_t){.uint32_val = id});
+    const wchar_t *name = node->vtbl->type_name;
     node_display_value_t value = get_node_data(node);
     string_value_t properties = build_node_properties_html(node);
-    const wchar_t *node_color = node->unreachable ? L"lightgray" :
-        node->id ? L"black" : L"silver";
-    const wchar_t *node_style = node->unreachable ?
-        L" fontcolor=gray70 tooltip=\"unreachable\"" : L"";
+    const wchar_t *node_color = node->unreachable ? L"lightgray" : node->id ? L"black" : L"silver";
+    const wchar_t *node_style =
+        node->unreachable ? L" fontcolor=gray70 tooltip=\"unreachable\"" : L"";
     if (value.text.length > 0) {
         const wchar_t *font_color = L"blue";
         if (value.kind == NODE_DISPLAY_VALUE_PREDEFINED) {
             font_color = L"purple";
         }
-        if (node->unreachable) font_color = L"gray70";
+        if (node->unreachable)
+            font_color = L"gray70";
         string_value_t formatted_value = value.text;
         if (value.kind == NODE_DISPLAY_VALUE_STRING_LITERAL) {
             formatted_value = trim_and_escape_html_entities(value.text, true);
@@ -168,79 +198,62 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
         add_formatted_source(
             builder,
             indent,
-            format_string(
-                L"node_%u [label=<%s<br/><font color='%s'>%s</font>%s> color=%s%s];",
-                id,
-                name,
-                font_color,
-                formatted_value.data,
-                properties.data,
-                node_color, node_style
-            )
-        );
+            format_string(L"node_%u [label=<%s<br/><font color='%s'>%s</font>%s> color=%s%s];",
+                          id,
+                          name,
+                          font_color,
+                          formatted_value.data,
+                          properties.data,
+                          node_color,
+                          node_style));
         FREE_STRING(formatted_value);
         FREE_STRING(value.text);
     } else if (properties.length > 0) {
-        add_formatted_source(
-            builder,
-            indent,
-            format_string(
-                L"node_%u [label=<%s%s> color=%s%s];",
-                id,
-                name,
-                properties.data,
-                node_color, node_style
-            )
-        );
+        add_formatted_source(builder,
+                             indent,
+                             format_string(L"node_%u [label=<%s%s> color=%s%s];",
+                                           id,
+                                           name,
+                                           properties.data,
+                                           node_color,
+                                           node_style));
     } else {
         add_formatted_source(
             builder,
             indent,
-            format_string(
-                L"node_%u [label=\"%s\" color=%s%s];",
-                id,
-                name,
-                node_color, node_style
-            )
-        );
+            format_string(L"node_%u [label=\"%s\" color=%s%s];", id, name, node_color, node_style));
     }
     FREE_STRING(properties);
     size_t count = get_node_child_count(node);
     for (size_t index = 0; index < count; index++) {
-        int child_id = node_to_dot(
-            get_node_child(node, index),
-            last_node_id,
-            all_nodes,
-            nodes_to_ids,
-            node->scope->id,
-            indent,
-            builder
-        );
-        const wchar_t* tag = get_node_child_tag(node, index);
+        int child_id = node_to_dot(get_node_child(node, index),
+                                   last_node_id,
+                                   all_nodes,
+                                   nodes_to_ids,
+                                   node->scope->id,
+                                   indent,
+                                   builder);
+        const wchar_t *tag = get_node_child_tag(node, index);
         if (tag == NULL) {
-            add_formatted_source(
-                builder,
-                indent,
-                format_string(
-                    L"node_%u -> node_%u [label=\" %zu\"%s];",
-                    id,
-                    child_id,
-                    index,
-                    get_node_child(node, index)->unreachable ? L" color=lightgray fontcolor=gray70" : L""
-                )
-            );
+            add_formatted_source(builder,
+                                 indent,
+                                 format_string(L"node_%u -> node_%u [label=\" %zu\"%s];",
+                                               id,
+                                               child_id,
+                                               index,
+                                               get_node_child(node, index)->unreachable
+                                                   ? L" color=lightgray fontcolor=gray70"
+                                                   : L""));
         } else {
-            add_formatted_source(
-                builder,
-                indent,
-                format_string(
-                    L"node_%u -> node_%u [label=\" %s\"%s];",
-                    id,
-                    child_id,
-                    tag,
-                    get_node_child(node, index)->unreachable ? L" color=lightgray fontcolor=gray70" : L""
-                )
-            );
+            add_formatted_source(builder,
+                                 indent,
+                                 format_string(L"node_%u -> node_%u [label=\" %s\"%s];",
+                                               id,
+                                               child_id,
+                                               tag,
+                                               get_node_child(node, index)->unreachable
+                                                   ? L" color=lightgray fontcolor=gray70"
+                                                   : L""));
         }
     }
     if (new_scope) {
@@ -250,11 +263,13 @@ static int node_to_dot(const node_t* node, uint32_t* last_node_id, vector_t* all
 }
 
 /** @brief Emits DOT edges for non-child relations between AST nodes. */
-static void append_related_edges_to_dot(const vector_t *all_nodes, const avl_tree_t *nodes_to_ids,
-        size_t indent, source_builder_t *builder) {
+static void append_related_edges_to_dot(const vector_t *all_nodes,
+                                        const avl_tree_t *nodes_to_ids,
+                                        size_t indent,
+                                        source_builder_t *builder) {
     for (size_t node_index = 0; node_index < all_nodes->size; node_index++) {
-        const node_t *node = (const node_t*)all_nodes->data[node_index];
-        value_t source_id = get_from_avl_tree(nodes_to_ids, (void*)node);
+        const node_t *node = (const node_t *)all_nodes->data[node_index];
+        value_t source_id = get_from_avl_tree(nodes_to_ids, (void *)node);
         if (source_id.uint32_val == 0) {
             continue;
         }
@@ -282,9 +297,7 @@ static void append_related_edges_to_dot(const vector_t *all_nodes, const avl_tre
                     target_id.uint32_val,
                     relation_name.data,
                     node->unreachable || related_node->unreachable ? L"lightgray" : L"navy",
-                    node->unreachable || related_node->unreachable ? L"gray70" : L"black"
-                )
-            );
+                    node->unreachable || related_node->unreachable ? L"gray70" : L"black"));
         }
     }
 }
@@ -304,16 +317,13 @@ static int node_comparator(const void *first, const void *second) {
 }
 
 string_value_t generate_graph_dot(const node_t *root_node) {
-
     source_builder_t *builder = create_source_builder();
     add_static_source(builder, 0, L"digraph AST {");
-    add_static_source(
-        builder,
-        1,
-        L"node [shape=box, style=\"rounded\", fontname=\"serif\", fontsize=\"11\", penwidth=\"0.7\"];"
-    );
-    add_static_source(builder, 1,
-        L"edge [fontname=\"serif\", fontsize=\"11\", penwidth=\"0.7\"];");
+    add_static_source(builder,
+                      1,
+                      L"node [shape=box, style=\"rounded\", fontname=\"serif\", fontsize=\"11\", "
+                      L"penwidth=\"0.7\"];");
+    add_static_source(builder, 1, L"edge [fontname=\"serif\", fontsize=\"11\", penwidth=\"0.7\"];");
     add_static_source(builder, 1, L"graph [fontname=\"serif\", fontsize=\"11\"];");
     uint32_t last_node_id = 0;
     vector_t *all_nodes = create_vector();
@@ -328,11 +338,11 @@ string_value_t generate_graph_dot(const node_t *root_node) {
     return dot_code;
 }
 
-bool generate_image(const node_t* root_node, const char *graph_output_file) {
+bool generate_image(const node_t *root_node, const char *graph_output_file) {
     bool result = false;
     string_value_t dot_code = generate_graph_dot(root_node);
     size_t file_name_len = strlen(graph_output_file);
-    char *dot_file = (char*)ALLOC(file_name_len + 6); // name + ".dot"
+    char *dot_file = (char *)ALLOC(file_name_len + 6); // name + ".dot"
     sprintf(dot_file, "%s.dot", graph_output_file);
     bool flag = write_utf8_file(dot_file, dot_code.data);
     if (!flag) {
@@ -346,10 +356,10 @@ bool generate_image(const node_t* root_node, const char *graph_output_file) {
 #endif
     const char *file_type = strrchr(graph_output_file, '.');
     if (file_type == NULL) {
-       goto cleanup;
+        goto cleanup;
     }
     file_type++;
-    char* command = ALLOC(file_name_len * 2 + 64);
+    char *command = ALLOC(file_name_len * 2 + 64);
     sprintf(command, "%s -T%s -o \"%s\" \"%s\"", dot_exe, file_type, graph_output_file, dot_file);
     if (system(command) != 0) {
         goto cleanup;

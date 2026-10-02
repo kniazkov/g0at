@@ -7,7 +7,8 @@
 #pragma once
 
 /** @brief A simple assertion macro to check boolean expressions. */
-#define ASSERT(expr) if (!(expr)) { \
-    printf("Assertion failed on line %d\n", __LINE__); \
-    return false;\
-}
+#define ASSERT(expr)                                                                               \
+    if (!(expr)) {                                                                                 \
+        printf("Assertion failed on line %d\n", __LINE__);                                         \
+        return false;                                                                              \
+    }

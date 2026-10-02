@@ -6,19 +6,19 @@
 
 #include <string.h>
 #ifdef _WIN32
-#include <windows.h>
+#    include <windows.h>
 #else
-#include <limits.h>
-#include <stdlib.h>
+#    include <limits.h>
+#    include <stdlib.h>
 #endif
 
-#include "path.h"
 #include "lib/allocate.h"
+#include "path.h"
 
 #ifdef _WIN32
-#define PATH_SEPARATOR '\\'
+#    define PATH_SEPARATOR '\\'
 #else
-#define PATH_SEPARATOR '/'
+#    define PATH_SEPARATOR '/'
 #endif
 
 /**
@@ -26,9 +26,9 @@
  * @note The returned string is dynamically allocated. It is the caller's responsibility to free the
  * memory when it is no longer needed to avoid memory leaks.
  */
-static char *normalize_path(const char* path) {
+static char *normalize_path(const char *path) {
     size_t len = strlen(path);
-    char* normal = (char*)ALLOC(len + 1);
+    char *normal = (char *)ALLOC(len + 1);
     for (size_t index = 0; index < len; index++) {
         if (path[index] == '/' || path[index] == '\\') {
             normal[index] = PATH_SEPARATOR;
@@ -44,20 +44,20 @@ static char *normalize_path(const char* path) {
  * @brief Converts a relative path to absolute path.
  * @return Absolute path or NULL if absolute path can't be extracted.
  */
-static char *get_absolute_path(const char* rel_path) {
-    char* full_path = NULL;
+static char *get_absolute_path(const char *rel_path) {
+    char *full_path = NULL;
 #ifdef _WIN32
     DWORD size = GetFullPathNameA(rel_path, 0, NULL, NULL);
     if (size == 0) {
         return NULL;
     }
-    full_path = (char*)ALLOC(size);
+    full_path = (char *)ALLOC(size);
     if (GetFullPathNameA(rel_path, size, full_path, NULL) == 0) {
         FREE(full_path);
         return NULL;
     }
 #else
-    full_path = (char*)ALLOC(PATH_MAX);
+    full_path = (char *)ALLOC(PATH_MAX);
     if (!realpath(rel_path, full_path)) {
         FREE(full_path);
         return NULL;
@@ -67,7 +67,7 @@ static char *get_absolute_path(const char* rel_path) {
 }
 
 path_t *create_path(const char *input) {
-    path_t *p = (path_t*)CALLOC(sizeof(path_t));
+    path_t *p = (path_t *)CALLOC(sizeof(path_t));
     if (input && *input) {
         p->normal_path = normalize_path(input);
         p->full_path = get_absolute_path(p->normal_path);
@@ -92,7 +92,7 @@ path_t *create_path(const char *input) {
             p->file_name = p->full_path;
         }
         if (p->file_name) {
-            char* dot = strrchr(p->file_name, '.');
+            char *dot = strrchr(p->file_name, '.');
             if (dot && dot != p->file_name) {
                 p->extension = dot + 1;
             }

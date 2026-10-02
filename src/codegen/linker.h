@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "vm/bytecode.h"
-#include "data_builder.h"
 #include "code_builder.h"
+#include "data_builder.h"
+#include "vm/bytecode.h"
 
 /**
  * @brief Links code and data into a single bytecode structure.

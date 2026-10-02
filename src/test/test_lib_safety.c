@@ -4,38 +4,45 @@
  * @brief Regression tests for allocation, paths, search boundaries, and UTF-8 I/O.
  */
 
+#include <errno.h>
+#include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <sys/stat.h>
 #ifdef _WIN32
-#include <io.h>
-#include <process.h>
+#    include <io.h>
+#    include <process.h>
 #else
-#include <unistd.h>
+#    include <unistd.h>
 #endif
 
-#include "test_lib.h"
-#include "test_macro.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/io.h"
 #include "lib/pair.h"
 #include "lib/path.h"
 #include "lib/string_ext.h"
+#include "test_lib.h"
+#include "test_macro.h"
+
+/** @brief Alignment seen with project headers included before CRT headers. */
+unsigned int alignment_from_header_first(void);
 
 bool test_allocation_alignment() {
-    const size_t sizes[] = { 0, 1, 3, sizeof(max_align_t), 257 };
+    ASSERT(alignment_from_header_first() == _Alignof(memory_alignment_t));
+    ASSERT(_Alignof(memory_alignment_t) >= _Alignof(max_align_t));
+    const size_t sizes[] = {0, 1, 3, sizeof(max_align_t), 257};
     size_t before = get_allocated_memory_size();
     for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++) {
         unsigned char *p = ALLOC(sizes[i]);
         ASSERT((uintptr_t)p % _Alignof(max_align_t) == 0);
+        ASSERT((uintptr_t)p % _Alignof(memory_alignment_t) == 0);
         memset(p, 0x5A, sizes[i] ? sizes[i] : 1);
         FREE(p);
         p = CALLOC(sizes[i]);
         ASSERT((uintptr_t)p % _Alignof(max_align_t) == 0);
+        ASSERT((uintptr_t)p % _Alignof(memory_alignment_t) == 0);
         for (size_t j = 0; j < sizes[i]; j++) {
             ASSERT(p[j] == 0);
         }
@@ -61,6 +68,7 @@ bool test_arena_alignment_and_growth() {
             sizes[i] = i % 4 == 0 ? 513 : (i % 4 == 1 ? 255 : i % 37 + 1);
             blocks[i] = alloc_from_arena(arena, sizes[i]);
             ASSERT((uintptr_t)blocks[i] % _Alignof(max_align_t) == 0);
+            ASSERT((uintptr_t)blocks[i] % _Alignof(memory_alignment_t) == 0);
             memset(blocks[i], (unsigned char)i, sizes[i]);
         }
         for (size_t i = 0; i < 160; i++) {
@@ -77,9 +85,9 @@ bool test_arena_alignment_and_growth() {
             ASSERT(bytes[i] == 0);
         }
         *aligned = (max_align_t){0};
-        const unsigned char source[] = { 1, 2, 3 };
-        ASSERT(memcmp(copy_object_to_arena(arena, source, sizeof(source)),
-            source, sizeof(source)) == 0);
+        const unsigned char source[] = {1, 2, 3};
+        ASSERT(memcmp(copy_object_to_arena(arena, source, sizeof(source)), source, sizeof(source))
+               == 0);
         string_view_t text = copy_string_to_arena(arena, L"abc", 3);
         ASSERT(text.length == 3 && wcscmp(text.data, L"abc") == 0);
         destroy_arena(arena);
@@ -89,7 +97,7 @@ bool test_arena_alignment_and_growth() {
 }
 
 bool test_binary_search_boundaries() {
-    pair_t pairs[] = { { L"b", L"first" }, { L"d", L"last" } };
+    pair_t pairs[] = {{L"b", L"first"}, {L"d", L"last"}};
     ASSERT(binary_search(NULL, 0, L"a", string_comparator) == NULL);
     ASSERT(binary_search(pairs, 1, L"a", string_comparator) == NULL);
     ASSERT(binary_search(pairs, 1, L"c", string_comparator) == NULL);
@@ -138,18 +146,22 @@ static FILE *create_test_file(char *name, size_t capacity) {
         int fd = open(name, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
 #endif
         if (fd < 0) {
-            if (errno == EEXIST) continue;
+            if (errno == EEXIST)
+                continue;
             perror("create test file");
             return NULL;
         }
 #ifdef _WIN32
         FILE *file = _fdopen(fd, "w+b");
-        if (!file) _close(fd);
+        if (!file)
+            _close(fd);
 #else
         FILE *file = fdopen(fd, "w+b");
-        if (!file) close(fd);
+        if (!file)
+            close(fd);
 #endif
-        if (!file) remove(name);
+        if (!file)
+            remove(name);
         return file;
     }
     return NULL;
@@ -160,8 +172,12 @@ bool test_utf8_formatted_output() {
     FILE *file = create_test_file(name, sizeof(name));
     ASSERT(file != NULL);
     /* Percent signs supplied as data must never become a second format string. */
-    fprintf_utf8(file, L"%s | %a | %d%% | %s", L"100%% %s %n %", "file%name", 42,
-        L"\u041f\u0440\u0438\u0432\u0435\u0442");
+    fprintf_utf8(file,
+                 L"%s | %a | %d%% | %s",
+                 L"100%% %s %n %",
+                 "file%name",
+                 42,
+                 L"\u041f\u0440\u0438\u0432\u0435\u0442");
     ASSERT(fflush(file) == 0);
     rewind(file);
     char buffer[128] = {0};
@@ -170,7 +186,7 @@ bool test_utf8_formatted_output() {
     ASSERT(fclose(file) == 0);
     ASSERT(remove(name) == 0);
     const char expected[] = "100%% %s %n % | file%name | 42% | "
-        "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82";
+                            "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82";
     ASSERT(count == strlen(expected));
     ASSERT(strcmp(buffer, expected) == 0);
     return true;
@@ -188,8 +204,8 @@ bool test_utf8_file_io() {
     bool no_leak = get_allocated_memory_size() == before;
     bool written = write_utf8_file(name, L"hello\n\u041f\u0440\u0438\u0432\u0435\u0442\n100%");
     text = read_utf8_file(name);
-    bool roundtrip_ok = text.data &&
-        wcscmp(text.data, L"hello\n\u041f\u0440\u0438\u0432\u0435\u0442\n100%") == 0;
+    bool roundtrip_ok =
+        text.data && wcscmp(text.data, L"hello\n\u041f\u0440\u0438\u0432\u0435\u0442\n100%") == 0;
     FREE_STRING(text);
     int removed = remove(name);
     ASSERT(empty_ok && no_leak && written && roundtrip_ok && removed == 0);

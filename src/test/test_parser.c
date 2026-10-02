@@ -4,27 +4,23 @@
  * @brief A set of tests for testing parser.
  */
 
+#include "graph/node.h"
+#include "lib/allocate.h"
+#include "lib/arena.h"
+#include "parser/parser.h"
+#include "scanner/scanner.h"
+#include "test_macro.h"
+#include "test_scanner.h"
+
 #include <stdio.h>
 #include <string.h>
 
-#include "test_scanner.h"
-#include "test_macro.h"
-#include "lib/allocate.h"
-#include "lib/arena.h"
-#include "scanner/scanner.h"
-#include "parser/parser.h"
-#include "graph/node.h"
-
 bool test_brackets_one_level_nesting() {
     arena_t *arena = create_arena(8);
-    parser_memory_t memory = { arena, arena, arena, arena };
-    token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
-    scanner_t *scan = create_scanner(
-        "program.goat",
-        STATIC_STRING(L"aaa ( \"bbb\" ccc ) ddd "),
-        &memory,
-        groups
-    );
+    parser_memory_t memory = {arena, arena, arena, arena};
+    token_groups_t *groups = (token_groups_t *)CALLOC(sizeof(token_groups_t));
+    scanner_t *scan =
+        create_scanner("program.goat", STATIC_STRING(L"aaa ( \"bbb\" ccc ) ddd "), &memory, groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(&memory, scan, &tokens, groups);
     ASSERT(error == NULL);
@@ -44,14 +40,12 @@ bool test_brackets_one_level_nesting() {
 
 bool test_brackets_two_levels_nesting() {
     arena_t *arena = create_arena(8);
-    parser_memory_t memory = { arena, arena, arena, arena };
-    token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
-    scanner_t *scan = create_scanner(
-        "program.goat",
-        STATIC_STRING(L"aaa ( \"bbb\" [ ccc ddd ] ) eee "),
-        &memory,
-        groups
-    );
+    parser_memory_t memory = {arena, arena, arena, arena};
+    token_groups_t *groups = (token_groups_t *)CALLOC(sizeof(token_groups_t));
+    scanner_t *scan = create_scanner("program.goat",
+                                     STATIC_STRING(L"aaa ( \"bbb\" [ ccc ddd ] ) eee "),
+                                     &memory,
+                                     groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(&memory, scan, &tokens, groups);
     ASSERT(error == NULL);
@@ -74,14 +68,9 @@ bool test_brackets_two_levels_nesting() {
 
 bool test_unclosed_bracket() {
     arena_t *arena = create_arena(8);
-    parser_memory_t memory = { arena, arena, arena, arena };
-    token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
-    scanner_t *scan = create_scanner(
-        "program.goat",
-        STATIC_STRING(L"aaa ( bbb"),
-        &memory,
-        groups
-    );
+    parser_memory_t memory = {arena, arena, arena, arena};
+    token_groups_t *groups = (token_groups_t *)CALLOC(sizeof(token_groups_t));
+    scanner_t *scan = create_scanner("program.goat", STATIC_STRING(L"aaa ( bbb"), &memory, groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(&memory, scan, &tokens, groups);
     ASSERT(error != NULL);
@@ -92,7 +81,8 @@ bool test_unclosed_bracket() {
     ASSERT(error->position->end->row == 1);
     ASSERT(error->position->end->column == 10);
     ASSERT(wcscmp(L"Unclosed opening bracket: expected a closing bracket to match '('",
-        error->message.data) == 0);
+                  error->message.data)
+           == 0);
     FREE(groups);
     destroy_arena(arena);
     return true;
@@ -100,14 +90,10 @@ bool test_unclosed_bracket() {
 
 bool test_missing_opening_bracket() {
     arena_t *arena = create_arena(8);
-    parser_memory_t memory = { arena, arena, arena, arena };
-    token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
-    scanner_t *scan = create_scanner(
-        "program.goat",
-        STATIC_STRING(L"aaa \n bbb ] ccc"),
-        &memory,
-        groups
-    );
+    parser_memory_t memory = {arena, arena, arena, arena};
+    token_groups_t *groups = (token_groups_t *)CALLOC(sizeof(token_groups_t));
+    scanner_t *scan =
+        create_scanner("program.goat", STATIC_STRING(L"aaa \n bbb ] ccc"), &memory, groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(&memory, scan, &tokens, groups);
     ASSERT(error != NULL);
@@ -124,14 +110,10 @@ bool test_missing_opening_bracket() {
 
 bool test_closing_bracket_does_not_match_opening() {
     arena_t *arena = create_arena(8);
-    parser_memory_t memory = { arena, arena, arena, arena };
-    token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
-    scanner_t *scan = create_scanner(
-        "program.goat",
-        STATIC_STRING(L"aaa { bbb \n ccc ] ddd"),
-        &memory,
-        groups
-    );
+    parser_memory_t memory = {arena, arena, arena, arena};
+    token_groups_t *groups = (token_groups_t *)CALLOC(sizeof(token_groups_t));
+    scanner_t *scan =
+        create_scanner("program.goat", STATIC_STRING(L"aaa { bbb \n ccc ] ddd"), &memory, groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(&memory, scan, &tokens, groups);
     ASSERT(error != NULL);
@@ -140,8 +122,9 @@ bool test_closing_bracket_does_not_match_opening() {
     ASSERT(error->position->begin->code[0] == L'{');
     ASSERT(error->position->end->row == 2);
     ASSERT(error->position->end->column == 7);
-    ASSERT(wcscmp(L"Closing bracket ']' does not match the opening bracket '{'",
-        error->message.data) == 0);
+    ASSERT(
+        wcscmp(L"Closing bracket ']' does not match the opening bracket '{'", error->message.data)
+        == 0);
     FREE(groups);
     destroy_arena(arena);
     return true;
@@ -149,15 +132,13 @@ bool test_closing_bracket_does_not_match_opening() {
 
 bool test_parsing_function_calls() {
     arena_t *arena = create_arena(8);
-    parser_memory_t memory = { arena, arena, arena, arena };
-    token_groups_t *groups = (token_groups_t*)CALLOC(sizeof(token_groups_t));
+    parser_memory_t memory = {arena, arena, arena, arena};
+    token_groups_t *groups = (token_groups_t *)CALLOC(sizeof(token_groups_t));
     wchar_t *code = L"print(\"test\")";
-    scanner_t *scan = create_scanner(
-        "program.goat",
-        (string_value_t){ code, wcslen(code), false },
-        &memory,
-        groups
-    );
+    scanner_t *scan = create_scanner("program.goat",
+                                     (string_value_t){code, wcslen(code), false},
+                                     &memory,
+                                     groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(&memory, scan, &tokens, groups);
     ASSERT(error == NULL);

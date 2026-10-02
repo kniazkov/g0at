@@ -7,8 +7,9 @@
 
 #pragma once
 
-#include <wchar.h>
 #include "token.h"
+
+#include <wchar.h>
 
 typedef struct scanner_t scanner_t;
 
@@ -23,7 +24,7 @@ typedef struct parser_memory_t parser_memory_t;
  */
 struct scanner_t {
     /** @brief Code processed by the scanner. */
-    wchar_t* code;
+    wchar_t *code;
 
     /** @brief The current position in the source code. */
     full_position_t position;
@@ -45,8 +46,10 @@ struct scanner_t {
  * `groups`: A pointer to the `token_groups_t` structure, which organizes tokens by type or
  * role. The scanner populates these groups during lexical analysis.
  */
-scanner_t *create_scanner(const char *file_name, string_value_t code, parser_memory_t *memory,
-        token_groups_t *groups);
+scanner_t *create_scanner(const char *file_name,
+                          string_value_t code,
+                          parser_memory_t *memory,
+                          token_groups_t *groups);
 
 /**
  * @brief Extracts the next token from the source code.

@@ -3,12 +3,12 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Defines reduction rules for creating variable reference nodes.
  */
-#include <assert.h>
-
-#include "parser.h"
 #include "graph/expression.h"
 #include "lib/arena.h"
+#include "parser.h"
 #include "resources/messages.h"
+
+#include <assert.h>
 
 /**
  * @brief Converts single (isolated) identifiers or identifiers surrounded by operators or other
@@ -17,50 +17,36 @@
  * Does NOT match: - Function calls (`func()`) - Member access (`obj.prop`)
  * @return NULL on success, error if conversion fails.
  */
-compilation_error_t *parsing_single_identifiers(token_t *identifier, parser_memory_t *memory,
-        token_groups_t *groups) {
+compilation_error_t *
+parsing_single_identifiers(token_t *identifier, parser_memory_t *memory, token_groups_t *groups) {
     assert(identifier->type == TOKEN_IDENTIFIER);
 
     if (identifier->left != NULL) {
-        bool valid_left = identifier->left->type == TOKEN_OPERATOR
-                       || identifier->left->type == TOKEN_EXPRESSION
-                       || identifier->left->type == TOKEN_COMMA
-                       || identifier->left->type == TOKEN_SEMICOLON
-                       || identifier->left->type == TOKEN_VAR
-                       || identifier->left->type == TOKEN_CONST
-                       || identifier->left->type == TOKEN_THROW
-                       || identifier->left->type == TOKEN_TRY
-                       || identifier->left->type == TOKEN_RETURN
-                       ;
+        bool valid_left =
+            identifier->left->type == TOKEN_OPERATOR || identifier->left->type == TOKEN_EXPRESSION
+            || identifier->left->type == TOKEN_COMMA || identifier->left->type == TOKEN_SEMICOLON
+            || identifier->left->type == TOKEN_VAR || identifier->left->type == TOKEN_CONST
+            || identifier->left->type == TOKEN_THROW || identifier->left->type == TOKEN_TRY
+            || identifier->left->type == TOKEN_RETURN;
         if (!valid_left) {
             return NULL;
         }
     }
 
     if (identifier->right != NULL) {
-        bool valid_right = identifier->right->type == TOKEN_OPERATOR
-                        || identifier->right->type == TOKEN_EXPRESSION
-                        || identifier->right->type == TOKEN_IDENTIFIER
-                        || identifier->right->type == TOKEN_COMMA
-                        || identifier->right->type == TOKEN_SEMICOLON
-                        || identifier->right->type == TOKEN_VAR
-                        || identifier->right->type == TOKEN_CATCH
-                        || identifier->right->type == TOKEN_CONST
-                        ;
+        bool valid_right =
+            identifier->right->type == TOKEN_OPERATOR || identifier->right->type == TOKEN_EXPRESSION
+            || identifier->right->type == TOKEN_IDENTIFIER || identifier->right->type == TOKEN_COMMA
+            || identifier->right->type == TOKEN_SEMICOLON || identifier->right->type == TOKEN_VAR
+            || identifier->right->type == TOKEN_CATCH || identifier->right->type == TOKEN_CONST;
         if (!valid_right) {
             return NULL;
         }
     }
 
-    node_t *variable = (node_t*)create_variable_node(memory->graph, identifier->text);
+    node_t *variable = (node_t *)create_variable_node(memory->graph, identifier->text);
 
-    collapse_tokens_to_token(
-        memory,
-        identifier,
-        identifier,
-        TOKEN_EXPRESSION,
-        variable
-    );
+    collapse_tokens_to_token(memory, identifier, identifier, TOKEN_EXPRESSION, variable);
 
     return NULL;
 }
