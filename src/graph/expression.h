@@ -159,15 +159,6 @@ node_t *create_function_call_node_without_args(arena_t *arena, expression_t *fun
 void set_function_call_arguments(node_t *node, arena_t *arena,
         expression_t **args, size_t args_count);
 
-/** @brief Creates an empty statement_list node. */
-node_t *create_statement_list_node(arena_t *arena);
-
-/**
- * @brief Initializes a statement_list node with a provided list of statements.
- * `node`: Target node (must be of type `NODE_STATEMENT_LIST`).
- */
-void fill_statement_list_node(node_t *node, list_t *statements);
-
 /**
  * @brief Creates a function object node in the AST.
  *

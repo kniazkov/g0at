@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "test_macro.h"
 #include "graph/statement.h"
+#include "graph/statement_list.h"
 #include "graph/expression.h"
 #include "graph/declarations.h"
 #include "graph/visualization.h"
@@ -19,10 +20,10 @@
 #include "model/context.h"
 #include "vm/vm.h"
 
-static node_t *block(arena_t *arena, node_t *child) {
+static statement_list_t *block(arena_t *arena, node_t *child) {
     list_t *list = create_linked_list(arena);
     if (child) append_item_to_linked_list(list, (value_t){.ptr = child});
-    node_t *node = create_statement_list_node(arena);
+    statement_list_t *node = create_statement_list_node(arena);
     fill_statement_list_node(node, list);
     return node;
 }
@@ -30,14 +31,14 @@ static node_t *block(arena_t *arena, node_t *child) {
 bool test_try_catch_structure(void) {
     arena_t *arena = create_arena(8);
     statement_t *body = create_statement_expression_node(arena, (expression_t*)create_integer_node(arena, 1));
-    node_t *handler = block(arena, NULL);
+    statement_list_t *handler = block(arena, NULL);
     wchar_t name[] = L"error_extra";
     node_t *node = create_try_catch_node(arena, body, (string_view_t){name,5}, handler);
     name[0] = L'X';
     ASSERT(is_statement(node->vtbl->type));
     ASSERT(!is_expression(node->vtbl->type));
     ASSERT(get_node_child_count(node) == 2);
-    ASSERT(get_node_child(node,0) == &body->base && get_node_child(node,1) == handler);
+    ASSERT(get_node_child(node,0) == &body->base && get_node_child(node,1) == &handler->base.base);
     ASSERT(!get_node_child(node,2) && !get_node_child(node,SIZE_MAX));
     ASSERT(!wcscmp(get_node_child_tag(node,0),L"try"));
     ASSERT(!wcscmp(get_node_child_tag(node,1),L"catch"));
@@ -54,15 +55,15 @@ bool test_try_catch_structure(void) {
     ASSERT(wcsstr(source.data,L"try\n") && wcsstr(source.data,L"catch (error) { }"));
     FREE_STRING(source);
     destroy_source_builder(builder);
-    node->id=1; body->base.id=2; get_node_child(&body->base,0)->id=3; handler->id=4;
+    node->id=1; body->base.id=2; get_node_child(&body->base,0)->id=3; handler->base.base.id=4;
     scope_t *scope = create_scope(arena, NULL);
-    node->scope = body->base.scope = get_node_child(&body->base,0)->scope = handler->scope = scope;
+    node->scope = body->base.scope = get_node_child(&body->base,0)->scope = handler->base.base.scope = scope;
     source = generate_graph_dot(node);
     ASSERT(wcsstr(source.data,L"try-catch") && wcsstr(source.data,L"error"));
     FREE_STRING(source);
     ASSERT(!can_generate_c_code_from_node(node));
     ASSERT(!generate_c_code_from_node(node).data);
-    statement_t *empty_body = create_statement_expression_node(arena,(expression_t*)block(arena,NULL));
+    statement_t *empty_body = create_statement_expression_node(arena,&block(arena,NULL)->base);
     node_t *empty = create_try_catch_node(arena,empty_body,(string_view_t){L"e",1},block(arena,NULL));
     node_t *nested = create_try_catch_node(arena,(statement_t*)empty,(string_view_t){L"outer",5},block(arena,NULL));
     source=generate_goat_code_from_node(nested);
@@ -73,7 +74,7 @@ bool test_try_catch_structure(void) {
     source=build_source(builder);
     ASSERT(!wcscmp(source.data,L"try { }\ncatch (e) { }\n"));
     FREE_STRING(source); destroy_source_builder(builder);
-    node_t *container=block(arena,&body->base);
+    node_t *container=&block(arena,&body->base)->base.base;
     ASSERT(container->vtbl->insert_child_before(container,node,&body->base));
     ASSERT(get_node_child(container,0)==node);
     destroy_arena(arena);

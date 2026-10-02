@@ -5,6 +5,7 @@
 #include <assert.h>
 #include "statement.h"
 #include "expression.h"
+#include "statement_list.h"
 #include "common_methods.h"
 #include "analysis/abstract_state.h"
 #include "lib/allocate.h"
@@ -18,7 +19,7 @@ typedef struct {
     statement_t base;
     statement_t *body;
     string_view_t exception_name;
-    node_t *handler;
+    statement_list_t *handler;
 } try_catch_t;
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
@@ -33,7 +34,7 @@ static size_t get_child_count(const node_t *node) { return 2; }
 /** @brief Implements @ref node_vtbl_t::get_child. */
 static node_t *get_child(const node_t *node, size_t index) {
     const try_catch_t *stmt = (const try_catch_t*)node;
-    return index == 0 ? &stmt->body->base : index == 1 ? stmt->handler : NULL;
+    return index == 0 ? &stmt->body->base : index == 1 ? &stmt->handler->base.base : NULL;
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
@@ -57,7 +58,7 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
 static string_value_t generate_goat_code(const node_t *node) {
     const try_catch_t *stmt = (const try_catch_t*)node;
     string_value_t body = generate_goat_code_from_statement(stmt->body);
-    string_value_t handler = generate_goat_code_from_node(stmt->handler);
+    string_value_t handler = generate_goat_code_from_expression(&stmt->handler->base);
     string_value_t result = format_string(L"try %s catch (%s) %s",
         body.data, stmt->exception_name.data, handler.data);
     FREE_STRING(body);
@@ -79,7 +80,7 @@ static void generate_indented_goat_code(const node_t *node, source_builder_t *bu
         generate_indented_goat_code_from_statement(stmt->body, builder, indent + 1);
     }
     add_source(builder, indent, L"catch (%s) ", stmt->exception_name.data);
-    generate_indented_goat_code_from_node(stmt->handler, builder, indent);
+    generate_indented_goat_code_from_expression(&stmt->handler->base, builder, indent);
 }
 
 /** @brief Emits separate try/catch contexts, binding the thrown stack value in catch. */
@@ -94,8 +95,8 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     add_instruction(code, (instruction_t){.opcode = VAR,
         .arg1 = add_string_to_data_segment(data, stmt->exception_name.data)});
     /* The catch block shares the context that contains the exception binding. */
-    for (size_t i = 0; i < get_node_child_count(stmt->handler); i++)
-        generate_bytecode_from_node(get_node_child(stmt->handler, i), code, data);
+    for (size_t i = 0; i < get_node_child_count(&stmt->handler->base.base); i++)
+        generate_bytecode_from_node(get_node_child(&stmt->handler->base.base, i), code, data);
     add_instruction(code, (instruction_t){.opcode = RESTORE});
     get_instruction(code, skip)->arg1 = get_next_instruction_index(code);
     return first;
@@ -128,10 +129,10 @@ static node_vtbl_t vtbl = {
 };
 
 node_t *create_try_catch_node(arena_t *arena, statement_t *body,
-        string_view_t exception_name, node_t *handler) {
+        string_view_t exception_name, statement_list_t *handler) {
     assert(body && (is_statement(body->base.vtbl->type) || is_branch_or_loop(body->base.vtbl->type)));
     assert(exception_name.data && exception_name.length);
-    assert(handler && handler->vtbl->type == NODE_STATEMENT_LIST);
+    assert(handler && handler->base.base.vtbl->type == NODE_STATEMENT_LIST);
     try_catch_t *stmt = alloc_zeroed_from_arena(arena, sizeof(try_catch_t));
     stmt->base.base.vtbl = &vtbl;
     stmt->body = body;
