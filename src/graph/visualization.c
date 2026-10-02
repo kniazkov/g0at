@@ -186,8 +186,8 @@ static int node_to_dot(const node_t *node,
                                                                               : L"silver";
     const wchar_t *node_style =
         node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L" fontcolor=gray70 tooltip=\"unreachable\""
-        : node_has_flag(node, NODE_FLAG_PURE)      ? L" style=filled fillcolor=\"#f2faf2\""
-                                                   : L"";
+        : node_has_flag(node, NODE_FLAG_PURE) ? L" style=\"rounded,filled\" fillcolor=\"#f2faf2\""
+                                              : L"";
     if (value.text.length > 0) {
         const wchar_t *font_color = L"blue";
         if (value.kind == NODE_DISPLAY_VALUE_PREDEFINED) {
