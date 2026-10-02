@@ -4,6 +4,7 @@
  * @brief Provides the implementation of the scanner functions for lexical analysis.
  */
 
+#include "lib/integer_math.h"
 #include <assert.h>
 #include <memory.h>
 #include <stdbool.h>
@@ -288,7 +289,7 @@ static void parse_number(scanner_t *scan, token_t *token, bool negative) {
 
     token->type = TOKEN_EXPRESSION;
 
-    int64_t int_part = 0;
+    uint64_t int_part = 0;
     while (iswdigit(ch)) {
         int_part = int_part * 10 + (ch - '0');
         ch = next_char(scan);
@@ -341,7 +342,10 @@ static void parse_number(scanner_t *scan, token_t *token, bool negative) {
     if (is_real) {
         token->node = create_real_number_node(scan->memory->graph, negative ? -value : value);
     } else {
-        token->node = create_integer_node(scan->memory->graph, negative ? -int_part : int_part);
+        int64_t integer = int_part <= INT64_MAX ? (int64_t)int_part
+            : INT64_MIN + (int64_t)(int_part - ((uint64_t)INT64_MAX + 1));
+        token->node = create_integer_node(scan->memory->graph,
+            negative ? subtract_int64_wrapping(0, integer) : integer);
     }
 }
 
@@ -404,9 +408,13 @@ token_t *get_token(scanner_t *scan) {
     }
     else if (is_operator(ch)) {
         token->type = TOKEN_OPERATOR;
-        do {
-            ch = next_char(scan);
-        } while(is_operator(ch));
+        if (ch == L'+' || ch == L'-') {
+            next_char(scan);
+        } else {
+            do {
+                ch = next_char(scan);
+            } while (is_operator(ch) && ch != L'+' && ch != L'-');
+        }
     }
     else if (ch == L'{' || ch == L'}' || ch == L'(' || ch == L')' || ch == L'[' || ch == L']') {
         token->type = TOKEN_BRACKET;

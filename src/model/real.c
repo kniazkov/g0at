@@ -96,6 +96,8 @@ static object_vtbl_t real_proto_vtbl = {
     .get_property = get_property,
     .create_property = create_property_on_immutable,
     .set_property = set_property_on_immutable,
+    .unary_plus = stub_unary_operation,
+    .unary_minus = stub_unary_operation,
     .add = stub_add,
     .subtract = stub_subtract,
     .multiply = stub_multiply,
@@ -242,6 +244,11 @@ static object_array_t get_topology(const object_t *obj) {
     return result;
 }
 
+/** @brief Implements @ref object_vtbl_t::unary_minus. */
+static operation_result_t unary_minus(process_t *process, object_t *obj) {
+    return operation_success(create_real_number_object(process, -get_object_real_value(obj).value));
+}
+
 /** @brief Implements @ref object_vtbl_t::add. */
 static operation_result_t add(process_t *process, object_t *obj1, object_t *obj2) {
     real_value_t first = get_object_real_value(obj1);
@@ -345,6 +352,8 @@ static object_vtbl_t static_vtbl = {
     .get_property = get_property,
     .create_property = create_property_on_immutable,
     .set_property = set_property_on_immutable,
+    .unary_plus = numeric_unary_plus,
+    .unary_minus = unary_minus,
     .add = add,
     .subtract = subtract,
     .multiply = multiply,
@@ -393,6 +402,8 @@ static object_vtbl_t dynamic_vtbl = {
     .get_property = get_property,
     .create_property = create_property_on_immutable,
     .set_property = set_property_on_immutable,
+    .unary_plus = numeric_unary_plus,
+    .unary_minus = unary_minus,
     .add = add,
     .subtract = subtract,
     .multiply = multiply,

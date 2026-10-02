@@ -148,3 +148,12 @@ real_value_t stub_get_real_value(const object_t *obj) {
 bool stub_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     return false;
 }
+
+operation_result_t stub_unary_operation(process_t *process, object_t *obj) {
+    return operation_exception(get_exception_invalid_operation());
+}
+
+operation_result_t numeric_unary_plus(process_t *process, object_t *obj) {
+    INCREF(obj);
+    return operation_success(obj);
+}

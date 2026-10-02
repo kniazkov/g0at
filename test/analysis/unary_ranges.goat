@@ -1,0 +1,4 @@
+var x=-2;
+if (print()) { x=5; }
+var a=+x;
+var b=-x;

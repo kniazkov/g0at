@@ -91,3 +91,7 @@ real_value_t stub_get_real_value(const object_t *obj);
 
 /** @brief Implements @ref object_vtbl_t::call for non-callable objects. */
 bool stub_call(object_t *obj, uint16_t arg_count, thread_t *thread);
+/** @brief Implements unsupported object_vtbl_t::unary_plus/unary_minus. */
+operation_result_t stub_unary_operation(process_t *process, object_t *obj);
+/** @brief Implements numeric object_vtbl_t::unary_plus, retaining the operand. */
+operation_result_t numeric_unary_plus(process_t *process, object_t *obj);

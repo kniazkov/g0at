@@ -64,3 +64,10 @@ subtraction_bottom_left
 subtraction_bottom_right
 subtraction_wrapped_condition
 subtraction_unknown
+unary_constants
+unary_ranges
+unary_range_overflow
+unary_reachability
+unary_invalid
+unary_effects
+unary_bottom

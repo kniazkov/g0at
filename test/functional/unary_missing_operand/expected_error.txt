@@ -1,0 +1,1 @@
+Fatal error in 'program.goat', 1.7: Unexpected token '-', expression expected at this position
