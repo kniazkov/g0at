@@ -188,3 +188,15 @@ power_error_order
 power_error_function
 power_invalid_string
 power_uncaught
+modulo_signs
+modulo_limits
+modulo_precedence
+modulo_condition
+modulo_real_types
+modulo_zero_effects
+modulo_zero_uncaught
+modulo_call_order
+modulo_error_order
+modulo_error_function
+modulo_invalid_string
+modulo_uncaught

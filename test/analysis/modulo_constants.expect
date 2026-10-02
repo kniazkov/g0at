@@ -1,0 +1,8 @@
+one write 1 1 a int=2
+one write 2 2 b int=-2
+one write 3 3 c int=2
+one write 4 4 d int=-2
+one write 5 5 e int=0
+one write 6 6 f int=-2
+one write 7 7 g int=9223372036854775807
+one write 8 8 h int=1

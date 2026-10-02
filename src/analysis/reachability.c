@@ -13,6 +13,7 @@
 #include "graph/statement.h"
 #include "graph/variable.h"
 #include "lattice.h"
+#include "modulo.h"
 #include "multiplication.h"
 #include "power.h"
 #include "subtraction.h"
@@ -183,7 +184,8 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
         case NODE_SUBTRACTION:
         case NODE_MULTIPLICATION:
         case NODE_DIVISION:
-        case NODE_POWER: {
+        case NODE_POWER:
+        case NODE_MODULO: {
             const lattice_element_t *left = visit(get_node_child(node, 0), state, collector);
             const lattice_element_t *right = visit(get_node_child(node, 1), state, collector);
             const lattice_element_t *result;
@@ -200,15 +202,17 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
                 case NODE_DIVISION:
                     result = lattice_divide((*state)->arena, left, right);
                     break;
-                default:
+                case NODE_POWER:
                     result = lattice_power((*state)->arena, left, right);
+                    break;
+                default:
+                    result = lattice_modulo((*state)->arena, left, right);
                     break;
             }
             if (result->type == LATTICE_BOTTOM)
                 (*state)->control_flow = FLOW_UNREACHABLE;
             return result;
         }
-        case NODE_MODULO:
         case NODE_LESS:
         case NODE_LESS_OR_EQUAL:
         case NODE_GREATER:

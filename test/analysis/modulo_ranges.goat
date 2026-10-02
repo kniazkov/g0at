@@ -1,0 +1,7 @@
+var x = -10;
+if (1 < 2) { x = 10; }
+var a = x % 3;
+var b = x % -3;
+var c = x % -1;
+var d = 2 % x;
+var e = 0 % x;

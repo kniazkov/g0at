@@ -1,0 +1,1 @@
+var f = func { print("L"); return 8; }; var g = func { print("R"); return 3; }; print(f() % g());

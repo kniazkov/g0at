@@ -1,0 +1,4 @@
+if (6 % 3) { print("dead"); }
+else { print("live"); }
+if (-5 % 3) { print("live"); }
+else { print("dead"); }

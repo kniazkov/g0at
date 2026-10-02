@@ -448,6 +448,24 @@ The same rules drive AST analysis and reachability. Tests cover model/VM agreeme
 independent boundary expectations, mixed types, zero divisors, IEEE values, intervals,
 collector events and source programs in both optimization modes.
 
+### Remainder
+
+`%` accepts only integer operands, without real-to-integer conversion. Its result
+has the dividend's sign (or is zero): `-5 % 3` is `-2`, and `5 % -3` is `2`.
+`INT64_MIN % -1` safely returns zero. An integer zero divisor throws
+`DIVISION_BY_ZERO`. A noninteger right operand, including `2.0` or `-0.0`, throws
+`INVALID_ARGUMENT`; a noninteger receiver throws `INVALID_OPERATION`.
+
+`lattice_modulo()` is shared by interpretation and reachability. It folds constants,
+rejects known incompatible types and zero divisors, and bounds integer remainders
+using the dividend's sign and `abs(remainder) < abs(divisor)`. Magnitudes are computed
+without overflowing on `INT64_MIN`. Bounds describe successful evaluations; a divisor
+range containing zero may still throw. Numeric domains retain only their integer
+members on normal paths, while unknown receivers remain conservative.
+
+Tests cover signed limits, mixed-type rejection, integer ranges, evaluation order,
+precedence and caught/uncaught exceptions in both optimization modes.
+
 ### Power
 
 `**` evaluates operands left to right and groups right to left: `2 ** 3 ** 2` is

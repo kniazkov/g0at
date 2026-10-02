@@ -35,8 +35,7 @@ bool test_unknown_expression_values() {
                                 (expression_t *)create_null_node(arena),
                                 (expression_t *)create_true_node(arena),
                                 (expression_t *)create_static_string_node(arena, L"text", 4)};
-    expression_t *(*factories[])(arena_t *, expression_t *, expression_t *) = {create_modulo_node,
-                                                                               create_less_node,
+    expression_t *(*factories[])(arena_t *, expression_t *, expression_t *) = {create_less_node,
                                                                                create_greater_node};
     for (size_t op = 0; op < sizeof(factories) / sizeof(*factories); op++) {
         for (size_t i = 0; i < sizeof(operands) / sizeof(*operands); i++) {
@@ -61,7 +60,7 @@ bool test_unknown_expression_values() {
 }
 
 bool test_unknown_values_in_analysis() {
-    const wchar_t *expressions[] = {L"5 % 2", L"1 < 2", L"2 > 1", L"(2 + 3) % (4 - 1)"};
+    const wchar_t *expressions[] = {L"1 < 2", L"2 > 1", L"(2 + 3) < (4 - 1)"};
     for (size_t i = 0; i < sizeof(expressions) / sizeof(*expressions); i++) {
         arena_t *arena = create_arena(8);
         parser_memory_t memory = {arena, arena, arena, arena};
