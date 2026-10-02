@@ -1,0 +1,7 @@
+var f = func(a) { return +a; };
+f(1);
+f(2.5);
+var x = 4;
+var captured = func() { return x; };
+captured();
+x = "text";

@@ -307,6 +307,56 @@ Blank lines and lines starting with `#` are ignored. Empty expectation files, ma
 checks, missing files, parse errors, mismatches, and detected memory leaks fail the suite.
 On a mismatch the runner prints the expectation location and the actual analysis report.
 
+### Node property proofs
+
+`node_t.flags` is a 32-bit mask. The initial bits are `NODE_FLAG_UNREACHABLE`,
+`NODE_FLAG_PURE`, and `NODE_FLAG_C_COMPATIBLE`. A missing bit is **not a proof of the
+opposite**: the node may be unsupported or not analyzed. `--optimize none` clears
+these proofs; other reserved bits are preserved.
+
+After reachability, a postorder pass classifies each node. Purity means no state
+writes or I/O, **not** referential transparency or guaranteed normal completion.
+Reads may depend on mutable captures, and pure arithmetic may throw. Do not use
+this flag alone to discard, reorder, or cache expressions. For a function object,
+the flag describes its body; creating a closure does not execute that body.
+Literals, reads, supported operators and compositions of pure children qualify.
+Declarations, assignments, updates, `throw`, and `try/catch` remain conservative,
+even for local writes. Proven dead children do not contribute effects. Deferred
+bodies do not inherit reachability conclusions from particular calls.
+
+Native calls qualify only when immediate-execution analysis resolves their actual
+descriptor with no effects and their evaluated children are pure. Calls through
+unknown or user-defined bindings remain unproven. Names such as `print` or `sqrt` are not special cases.
+
+The initial C subset contains integer/real literals, variable reads proven to be
+integer or real **at that use**, parentheses, and unary plus. It does not use
+whole-declaration summaries or observed argument types to specialize deferred
+bodies. Mixed/unknown types, calls, arithmetic, statements, and whole functions
+are outside this first subset. The flag is groundwork for a future backend;
+it does not enable the existing C-emission stubs. Integer wrapping, exceptions,
+closure representation, and function signatures still need a translation contract.
+
+The collector appends an immutable `flags` snapshot for every node after classification,
+including `none` for nodes without proofs. For example:
+
+```text
+#5 program.goat, 1.9: flags integer = 6 pure c-compatible
+```
+
+Flag expectations use `mode flags ROW COLUMN NODE_TYPE FLAGS`. Spaces in display
+type names become underscores; zero row/column are wildcards. Supported exact
+values are `none`, `pure`, `pure|c-compatible`, and `unreachable`:
+
+```text
+one flags 1 9 integer pure|c-compatible
+one flags 2 0 function_call none
+none flags 3 0 function_call -
+```
+
+`none` in the last field means a recorded zero mask; `none` in the first field
+means no matching event. API queries can select any combination, including absent
+bits, with `flags_mask` and `flags`. Snapshots survive subsequent changes to nodes.
+
 ### Proven unreachable code
 
 `--optimize none` stops after required AST preparation: parents, scopes, node IDs,
@@ -315,7 +365,7 @@ proofs, produces no analysis events, and keeps both branches in bytecode. Bindin
 necessary to preserve implicit-variable and closure behavior. `--optimize all` enables all
 currently implemented analysis and optimization passes.
 
-A separate conservative pass marks `node_t.unreachable` after abstract interpretation.
+A separate conservative pass marks `NODE_FLAG_UNREACHABLE` in `node_t.flags` after abstract interpretation.
 It follows immediate execution through declarations, assignments, blocks, and `if`, including
 code after unconditional returns. Known conditions eliminate one branch; unknown conditions
 merge continuing states. Function bodies are left unclassified because they may execute later.

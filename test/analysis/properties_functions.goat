@@ -1,0 +1,5 @@
+var pure = func(a) { return a + 1; };
+pure(3);
+var writer = func() { print(1); };
+var reader = func() { return pure; };
+var factory = func() { return func() { print(2); }; };

@@ -19,6 +19,7 @@
 #include "graph/update_expression.h"
 #include "graph/variable.h"
 #include "lattice.h"
+#include "model/builtin_function.h"
 #include "modulo.h"
 #include "multiplication.h"
 #include "power.h"
@@ -26,9 +27,12 @@
 #include "unary_operation.h"
 #include "update.h"
 
-/** @brief Sets or clears the unreachable flag on a node and all descendants. */
+/** @brief Marks a dead subtree, or resets proofs before a fresh traversal. */
 static void set_subtree_flag(node_t *node, bool unreachable) {
-    node->unreachable = unreachable;
+    if (unreachable)
+        node->flags |= NODE_FLAG_UNREACHABLE;
+    else
+        node->flags &= ~(NODE_FLAG_UNREACHABLE | NODE_FLAG_PURE | NODE_FLAG_C_COMPATIBLE);
     if (!unreachable && node->vtbl->type == NODE_IF_ELSE) {
         set_if_else_condition_truth(node, ABSTRACT_EITHER);
     }
@@ -145,6 +149,8 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
             if (decl == get_builtin_declarator())
                 return calculate_node(node, *state, (*state)->arena);
             const lattice_element_t *value = get_from_abstract_state(*state, decl);
+            if (is_integer_lattice_element(value) || is_real_lattice_element(value))
+                node->flags |= NODE_FLAG_C_COMPATIBLE;
             return value ? value : make_top_element();
         }
         case NODE_EXPRESSION_PARENTHESIZED:
@@ -199,8 +205,13 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
             if ((*state)->control_flow != FLOW_NORMAL)
                 return make_bottom_element();
             if (callee->type == LATTICE_KNOWN_FUNCTION
-                && ((const known_function_element_t *)callee)->builtin)
+                && ((const known_function_element_t *)callee)->builtin) {
+                const builtin_function_t *builtin =
+                    ((const known_function_element_t *)callee)->builtin;
+                if (builtin->effects == BUILTIN_EFFECT_NONE)
+                    node->flags |= NODE_FLAG_PURE;
                 return interpret_function_call(callee, args, count, *state);
+            }
             forget_abstract_values(*state);
             return make_top_element();
         }

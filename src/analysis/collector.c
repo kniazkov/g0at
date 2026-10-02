@@ -28,14 +28,18 @@ const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
     if (!collector) {
         return NULL;
     }
-    assert(kind >= ANALYSIS_VALUE_WRITE && kind <= ANALYSIS_UNREACHABLE);
-    assert(kind == ANALYSIS_UNREACHABLE ? node && !declarator && !value : declarator && value);
+    assert(kind >= ANALYSIS_VALUE_WRITE && kind <= ANALYSIS_NODE_FLAGS);
+    assert(kind == ANALYSIS_UNREACHABLE || kind == ANALYSIS_NODE_FLAGS
+               ? node && !declarator && !value
+               : declarator && value);
     analysis_event_t *event = alloc_zeroed_from_arena(collector->arena, sizeof(*event));
     event->sequence = ++collector->count;
     event->kind = kind;
     event->node = node;
     event->declarator = declarator;
     event->value = value;
+    if (kind == ANALYSIS_NODE_FLAGS)
+        event->flags = node->flags;
     const node_t *located = node;
     while (located && (!located->position || !located->position->begin)) {
         located = located->parent;
@@ -63,7 +67,11 @@ static bool matches(const analysis_event_t *event, const analysis_event_query_t 
                && (!query->file_name
                    || (event->file_name && strcmp(event->file_name, query->file_name) == 0))
                && (!query->row || event->row == query->row)
-               && (!query->column || event->column == query->column));
+               && (!query->column || event->column == query->column)
+               && (!query->flags_mask
+                   || (event->kind == ANALYSIS_NODE_FLAGS
+                       && (event->flags & query->flags_mask)
+                              == (query->flags & query->flags_mask))));
 }
 
 const analysis_event_t *find_analysis_event(const analysis_collector_t *collector,
@@ -100,6 +108,7 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
         const wchar_t *kind = event->kind == ANALYSIS_VALUE_WRITE   ? L"write"
                               : event->kind == ANALYSIS_STATE_JOIN  ? L"join"
                               : event->kind == ANALYSIS_UNREACHABLE ? L"unreachable"
+                              : event->kind == ANALYSIS_NODE_FLAGS  ? L"flags"
                                                                     : L"summary";
         string_value_t filename =
             event->file_name ? decode_utf8(event->file_name) : STATIC_STRING(L"<unknown>");
@@ -111,7 +120,23 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
                                             event->column,
                                             kind);
         append_string_value(&builder, line);
-        if (event->kind == ANALYSIS_UNREACHABLE) {
+        if (event->kind == ANALYSIS_NODE_FLAGS) {
+            append_string(&builder, event->node->vtbl->type_name);
+            append_static_string(&builder, L" = ");
+            if (!event->flags)
+                append_static_string(&builder, L"none");
+            else {
+                string_value_t bits = format_string(L"%u", (unsigned)event->flags);
+                append_string_value(&builder, bits);
+                FREE_STRING(bits);
+                if (event->flags & NODE_FLAG_UNREACHABLE)
+                    append_static_string(&builder, L" unreachable");
+                if (event->flags & NODE_FLAG_PURE)
+                    append_static_string(&builder, L" pure");
+                if (event->flags & NODE_FLAG_C_COMPATIBLE)
+                    append_static_string(&builder, L" c-compatible");
+            }
+        } else if (event->kind == ANALYSIS_UNREACHABLE) {
             append_string(&builder, event->node->vtbl->type_name);
         } else {
             append_string_view(&builder, event->declarator->name);

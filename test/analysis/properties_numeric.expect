@@ -1,0 +1,12 @@
+one flags 1 0 integer pure|c-compatible
+one flags 2 0 variable pure|c-compatible
+one flags 3 0 variable pure
+one flags 4 0 variable pure|c-compatible
+one flags 4 0 unary_plus pure|c-compatible
+one flags 5 0 static_string pure
+one flags 6 0 variable pure
+one flags 0 0 parenthesized_expression pure|c-compatible
+one flags 8 0 unary_minus pure
+one flags 9 0 addition pure
+one flags 10 0 true pure
+one flags 11 0 null pure

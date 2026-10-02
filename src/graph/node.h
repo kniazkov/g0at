@@ -13,6 +13,15 @@
 #include "relation_type.h"
 #include "scope.h"
 
+#include <stdint.h>
+
+/** @brief Proven properties; an absent bit means unknown or unsupported. */
+typedef enum {
+    NODE_FLAG_UNREACHABLE = UINT32_C(1) << 0,
+    NODE_FLAG_PURE = UINT32_C(1) << 1,        /**< No state writes or I/O; may still throw. */
+    NODE_FLAG_C_COMPATIBLE = UINT32_C(1) << 2 /**< Supported by the initial numeric C subset. */
+} node_flag_t;
+
 typedef struct node_t node_t;
 
 typedef struct statement_t statement_t;
@@ -224,9 +233,14 @@ struct node_t {
      */
     unsigned int id;
 
-    /** @brief Proven unreachable; false also covers code not analyzed yet. */
-    bool unreachable;
+    /** @brief Analysis proofs; function-object purity describes its body, not allocation. */
+    uint32_t flags;
 };
+
+/** @brief Checks a single analysis flag. */
+static inline bool node_has_flag(const node_t *node, node_flag_t flag) {
+    return (node->flags & flag) != 0;
+}
 
 /** @brief Gets the primary display data associated with a node. */
 static inline node_display_value_t get_node_data(const node_t *node) {
@@ -363,7 +377,7 @@ generate_indented_c_code_from_node(const node_t *node, source_builder_t *builder
 /** @brief Generates bytecode from a node. */
 static inline instr_index_t
 generate_bytecode_from_node(node_t *node, code_builder_t *code, data_builder_t *data) {
-    if (node->unreachable)
+    if (node_has_flag(node, NODE_FLAG_UNREACHABLE))
         return BAD_INSTR_INDEX;
     return node->vtbl->generate_bytecode(node, code, data);
 }

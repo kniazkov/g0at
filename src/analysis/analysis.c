@@ -19,6 +19,7 @@
 #include "lib/vector.h"
 #include "model/context.h"
 #include "model/object.h"
+#include "properties.h"
 #include "reachability.h"
 #include "resources/messages.h"
 
@@ -51,7 +52,7 @@ static void assign_node_indexes_and_scopes(node_t *node,
                                            unsigned int *next_id) {
     node->parent = parent;
     node->scope = scope;
-    node->unreachable = false;
+    node->flags &= ~(NODE_FLAG_UNREACHABLE | NODE_FLAG_PURE | NODE_FLAG_C_COMPATIBLE);
     if (node->vtbl->type == NODE_IF_ELSE)
         set_if_else_condition_truth(node, ABSTRACT_EITHER);
     if (is_declarator(node->vtbl->type))
@@ -281,5 +282,6 @@ compilation_error_t *analyze(node_t *root_node,
     interpret(root_node, memory, collector);
 
     mark_unreachable_code(root_node, memory->graph, collector);
+    classify_node_properties(root_node, collector);
     return errors;
 }

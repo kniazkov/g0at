@@ -142,7 +142,8 @@ static string_value_t build_node_properties_html(const node_t *node) {
         append_string(&builder, L"<br/>");
         append_string(&builder, key);
         append_string(&builder,
-                      node->unreachable ? L": <font color='gray70'>" : L": <font color='blue'>");
+                      node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L": <font color='gray70'>"
+                                                                 : L": <font color='blue'>");
         append_string_value(&builder, escaped_value);
         result = append_string(&builder, L"</font>");
         FREE_STRING(escaped_value);
@@ -170,7 +171,7 @@ static int node_to_dot(const node_t *node,
             indent,
             format_string(L"subgraph cluster_%d { style=\"rounded,dashed\"; color=%s;",
                           node->scope->id,
-                          node->unreachable ? L"lightgray" : L"gray"));
+                          node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L"lightgray" : L"gray"));
         indent++;
     }
     uint32_t id = ++(*last_node_id);
@@ -179,15 +180,18 @@ static int node_to_dot(const node_t *node,
     const wchar_t *name = node->vtbl->type_name;
     node_display_value_t value = get_node_data(node);
     string_value_t properties = build_node_properties_html(node);
-    const wchar_t *node_color = node->unreachable ? L"lightgray" : node->id ? L"black" : L"silver";
-    const wchar_t *node_style =
-        node->unreachable ? L" fontcolor=gray70 tooltip=\"unreachable\"" : L"";
+    const wchar_t *node_color = node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L"lightgray"
+                                : node->id                                 ? L"black"
+                                                                           : L"silver";
+    const wchar_t *node_style = node_has_flag(node, NODE_FLAG_UNREACHABLE)
+                                    ? L" fontcolor=gray70 tooltip=\"unreachable\""
+                                    : L"";
     if (value.text.length > 0) {
         const wchar_t *font_color = L"blue";
         if (value.kind == NODE_DISPLAY_VALUE_PREDEFINED) {
             font_color = L"purple";
         }
-        if (node->unreachable)
+        if (node_has_flag(node, NODE_FLAG_UNREACHABLE))
             font_color = L"gray70";
         string_value_t formatted_value = value.text;
         if (value.kind == NODE_DISPLAY_VALUE_STRING_LITERAL) {
@@ -235,25 +239,27 @@ static int node_to_dot(const node_t *node,
                                    builder);
         const wchar_t *tag = get_node_child_tag(node, index);
         if (tag == NULL) {
-            add_formatted_source(builder,
-                                 indent,
-                                 format_string(L"node_%u -> node_%u [label=\" %zu\"%s];",
-                                               id,
-                                               child_id,
-                                               index,
-                                               get_node_child(node, index)->unreachable
-                                                   ? L" color=lightgray fontcolor=gray70"
-                                                   : L""));
+            add_formatted_source(
+                builder,
+                indent,
+                format_string(L"node_%u -> node_%u [label=\" %zu\"%s];",
+                              id,
+                              child_id,
+                              index,
+                              node_has_flag(get_node_child(node, index), NODE_FLAG_UNREACHABLE)
+                                  ? L" color=lightgray fontcolor=gray70"
+                                  : L""));
         } else {
-            add_formatted_source(builder,
-                                 indent,
-                                 format_string(L"node_%u -> node_%u [label=\" %s\"%s];",
-                                               id,
-                                               child_id,
-                                               tag,
-                                               get_node_child(node, index)->unreachable
-                                                   ? L" color=lightgray fontcolor=gray70"
-                                                   : L""));
+            add_formatted_source(
+                builder,
+                indent,
+                format_string(L"node_%u -> node_%u [label=\" %s\"%s];",
+                              id,
+                              child_id,
+                              tag,
+                              node_has_flag(get_node_child(node, index), NODE_FLAG_UNREACHABLE)
+                                  ? L" color=lightgray fontcolor=gray70"
+                                  : L""));
         }
     }
     if (new_scope) {
@@ -296,8 +302,14 @@ static void append_related_edges_to_dot(const vector_t *all_nodes,
                     source_id.uint32_val,
                     target_id.uint32_val,
                     relation_name.data,
-                    node->unreachable || related_node->unreachable ? L"lightgray" : L"navy",
-                    node->unreachable || related_node->unreachable ? L"gray70" : L"black"));
+                    node_has_flag(node, NODE_FLAG_UNREACHABLE)
+                            || node_has_flag(related_node, NODE_FLAG_UNREACHABLE)
+                        ? L"lightgray"
+                        : L"navy",
+                    node_has_flag(node, NODE_FLAG_UNREACHABLE)
+                            || node_has_flag(related_node, NODE_FLAG_UNREACHABLE)
+                        ? L"gray70"
+                        : L"black"));
         }
     }
 }

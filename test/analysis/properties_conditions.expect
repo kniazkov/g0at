@@ -1,0 +1,7 @@
+one flags 2 0 if-else none
+one flags 2 0 function_call unreachable
+one flags 3 0 logical_or pure
+one flags 3 0 function_call unreachable
+one flags 4 0 logical_and none
+one flags 5 0 division pure
+one flags 6 0 integer unreachable

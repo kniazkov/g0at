@@ -1,0 +1,7 @@
+var f = sqrt;
+f(4);
+f = print;
+f(1);
+var unknown = func() { sqrt = print; };
+unknown();
+sqrt(4);

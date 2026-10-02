@@ -20,6 +20,7 @@
 #include "test_model.h"
 #include "test_modulo.h"
 #include "test_multiplication.h"
+#include "test_node_properties.h"
 #include "test_operation_result.h"
 #include "test_optimization.h"
 #include "test_parser.h"
@@ -35,6 +36,8 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"node property events", test_node_property_events},
+    {"node property reset", test_node_property_reset},
     {"builtin registry", test_builtin_registry},
     {"builtin numeric results", test_builtin_numeric_results},
     {"builtin errors", test_builtin_errors},

@@ -1,0 +1,8 @@
+sqrt(4);
+print(1);
+var x = 1;
+sqrt(x = 4);
+var print = func(a) { return a; };
+print(5);
+var sqrt = func(a) { print(a); };
+sqrt(6);

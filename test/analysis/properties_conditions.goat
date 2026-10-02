@@ -1,0 +1,6 @@
+var x = 1;
+if (x = 2) { 3; } else { print(4); }
+true || print(5);
+true && print(6);
+1 / 0;
+99;

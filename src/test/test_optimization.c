@@ -31,7 +31,7 @@ bool test_optimization_options() {
 }
 
 static bool has_dead_node(const node_t *node) {
-    if (node->unreachable)
+    if (node_has_flag(node, NODE_FLAG_UNREACHABLE))
         return true;
     for (size_t i = 0; i < get_node_child_count(node); i++) {
         if (has_dead_node(get_node_child(node, i)))
