@@ -1,0 +1,12 @@
+one write 1 1 a real=3.5
+one write 2 2 b real=3.5
+one write 3 3 c real=2.5
+one write 4 4 d real=-2.5
+one write 5 5 e real=5
+one write 6 6 f real=5
+one write 7 7 g real=1
+one write 8 8 h real=-1
+one write 9 9 i real=9007199254740991
+one write 10 10 j real=-9007199254740991
+one write 11 11 k real=9007199254740992
+one write 12 12 l real=9007199254740992

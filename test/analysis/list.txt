@@ -71,3 +71,13 @@ unary_reachability
 unary_invalid
 unary_effects
 unary_bottom
+multiplication_constants
+multiplication_ranges
+multiplication_overflow_range
+multiplication_reachability
+multiplication_effects
+multiplication_invalid
+multiplication_unknown
+multiplication_bottom_left
+multiplication_bottom_right
+mixed_add_sub

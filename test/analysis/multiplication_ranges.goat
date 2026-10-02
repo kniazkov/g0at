@@ -1,0 +1,8 @@
+var x = -2;
+if (print()) { x = 3; }
+var a = x * -2;
+var b = -2 * x;
+var c = x * x;
+var d = x * 0.5;
+var e = 0.5 * x;
+var f = x * 0;

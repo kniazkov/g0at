@@ -1,0 +1,2 @@
+if (3 * 0.5) { print("mixed"); } else { print("bad"); }
+if (-9223372036854775808 * 2) { print("bad"); } else { print("|wrapped"); }

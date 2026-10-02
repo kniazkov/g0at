@@ -151,3 +151,15 @@ unary_exponent_sign
 unary_missing_operand
 unary_missing_exponent
 unary_missing_power_operand
+multiplication_mixed
+multiplication_wrapping
+multiplication_precision
+multiplication_precedence
+multiplication_condition
+multiplication_effects
+multiplication_call_order
+multiplication_error_order
+multiplication_error_function
+multiplication_invalid_string
+multiplication_uncaught
+mixed_add_sub

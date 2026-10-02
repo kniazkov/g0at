@@ -265,14 +265,15 @@ static operation_result_t subtract(process_t *process, object_t *obj1, object_t 
 /** @brief Implements @ref object_vtbl_t::multiply. */
 static operation_result_t multiply(process_t *process, object_t *obj1, object_t *obj2) {
     int_value_t first = get_object_integer_value(obj1);
-    int_value_t second_int = get_object_integer_value(obj2);
-    if (second_int.has_value) {
-        return operation_success(create_integer_object(process, first.value * second_int.value));
+    if (is_integer_object(obj2)) {
+        int_value_t second_int = get_object_integer_value(obj2);
+        return operation_success(
+            create_integer_object(process, multiply_int64_wrapping(first.value, second_int.value)));
     }
     real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
         return operation_success(
-            create_real_number_object(process, first.value * second_real.value));
+            create_real_number_object(process, integer_to_double(first.value) * second_real.value));
     }
     return operation_exception(get_exception_invalid_argument());
 }
