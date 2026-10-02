@@ -1,0 +1,1 @@
+var x=0;try{atan(x=1,sqrt("bad"));}catch(e){print(e);}print(x);

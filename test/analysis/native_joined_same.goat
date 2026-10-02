@@ -1,0 +1,3 @@
+var f=sign;
+if(pi){f=sign;}
+var result=f(-2);

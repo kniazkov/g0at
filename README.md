@@ -360,7 +360,8 @@ observations made on those paths. Abstract-state clones isolate current values a
 through copy-on-write. Blocks stop at `return`, whose expression is still evaluated.
 
 Integer/real zero, null, false, and empty strings are false; nonzero numbers, nonempty strings,
-true, and functions are true. Built-in symbols currently have abstract value `TOP`. Unknown types and ranges containing both zero and nonzero values
+true, and functions are true. Built-in functions retain their descriptors; built-in constants
+such as `pi` still have abstract value `TOP`. Unknown types and ranges containing both zero and nonzero values
 keep both branches. Parentheses forward evaluation. Unsupported arithmetic/comparison
 operators evaluate operands in order but still return `TOP`; their result semantics remain
 future work. Condition-based range narrowing is also not implemented.
@@ -378,15 +379,42 @@ passing. Immediately invoked nested closures can therefore read and update activ
 Different possible callees widen to the generic `function` domain. Unknown callees,
 recursive re-entry, escaped closures whose activation has ended, and bodies containing
 `try/catch` currently return `TOP` and invalidate variable facts. Analysis is bounded to
-32 active calls and 1024 body evaluations per pass. Direct built-ins keep their unknown
-result but do not invalidate bindings: the current native functions have no user callbacks
-or binding mutations.
+32 active calls and 1024 body evaluations per pass. Native functions use registered abstract
+executors through the same call dispatcher, including aliases and higher-order calls.
 
 These call summaries do not specialize shared AST bodies or mark their branches dead.
-The separate reachability pass still treats calls conservatively. Exceptional return-state
+The separate reachability pass uses native descriptors too, while user calls remain conservative. Exceptional return-state
 modelling, recursive fixed points, and persistent closure environments remain future work.
 
 AST transformation events can be added as transformations are implemented.
+
+### Built-in function descriptors
+
+Each native function has an immutable `builtin_function_t` descriptor in
+[`src/model/function.c`](src/model/function.c). It supplies the runtime executor, abstract
+executor, minimum argument count, name, singleton getter, and effect flags. Abstract
+executors live in [`src/analysis/builtin_function.c`](src/analysis/builtin_function.c).
+The AST call node has no list of special function names.
+
+| Function | Abstract normal result | Effects |
+| --- | --- | --- |
+| `sign(x)` | Exact sign for constants; sign interval for integer ranges | None |
+| `sqrt(x)` | Folded real constant or `REAL` | None |
+| `atan(y, x)` | Folded `atan2(y, x)` constant or `REAL` | None |
+| `print(x)` | `null`; analysis does not print | Console output |
+
+All functions require the arguments shown. Numeric functions reject nonnumeric arguments.
+Missing arguments and invalid types throw `Exceptions.INVALID_ARGUMENT`, including through
+aliases and callbacks. Extra arguments are evaluated and discarded. `sqrt` and `atan` retain
+IEEE floating-point behavior: for example, `sqrt(-1)` is NaN, and `sign(NaN)` is zero.
+A definitely invalid abstract call produces `BOTTOM`; partially known arguments describe
+only normal results. Existing `try/catch` analysis remains conservative.
+
+Output and binding mutation are separate flags. `print` has an observable effect but does
+not invalidate variable facts, and branch simplification retains the actual call. Unknown
+calls and untracked writes to built-in names invalidate assumptions about root bindings.
+Local declarations and parameters shadow native functions normally. Different possible
+function targets widen to the generic function domain.
 
 ### Addition
 
@@ -741,8 +769,10 @@ handler. The same object may also be an operand; implementations must retain tha
 Unsupported arithmetic throws `INVALID_OPERATION`; numeric operations with an incompatible
 right operand throw `INVALID_ARGUMENT`; division or integer modulo by zero throws
 `DIVISION_BY_ZERO`. The VM dispatches these through the same handlers as explicit `throw`,
-without printing caught exceptions. Native function calls are not yet converted.
-Functional tests exercise both explicit and arithmetic exceptions with optimization disabled
+without printing caught exceptions. Native executors also return `operation_result_t`; `CALL`
+transfers their pending exception to the same dispatcher. Pending and unhandled exceptions
+remain owned by the thread and traced by GC.
+Functional tests exercise explicit, arithmetic, and native exceptions with optimization disabled
 and enabled.
 
 ## Author and license

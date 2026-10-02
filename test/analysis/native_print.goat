@@ -1,0 +1,4 @@
+var x=4;
+var f=print;
+var result=f("once");
+var after=x;

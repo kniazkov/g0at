@@ -1,0 +1,5 @@
+var original=sign;
+sign=func(x){return 42;};
+var result=sign(-1);
+var unchanged=original(-1);
+print(result);print(",");print(unchanged);

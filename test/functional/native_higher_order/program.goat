@@ -1,0 +1,7 @@
+var apply=func(f,x){return f(x);};
+var a=apply(sign,-7);
+var b=apply(sqrt,25);
+var c=func(){return sign;};
+var f=c();
+var d=f(8);
+print(a);print(",");print(b);print(",");print(d);

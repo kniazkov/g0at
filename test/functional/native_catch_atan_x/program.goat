@@ -1,0 +1,1 @@
+try{atan(1,func(){});print("bad");}catch(e){print(e);}print("!");

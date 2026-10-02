@@ -1,0 +1,2 @@
+var sign=func(x){return x+10;};
+var result=sign(2);

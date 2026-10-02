@@ -1,0 +1,3 @@
+none write 1 1 dead -
+one write 1 1 live int=2
+one unreachable 1 0 - -

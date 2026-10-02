@@ -4,6 +4,8 @@
  * @brief Implementations of an object representing a function.
  */
 
+#include "analysis/builtin_function.h"
+#include "builtin_function.h"
 #include "common_methods.h"
 #include "context.h"
 #include "lib/allocate.h"
@@ -76,28 +78,16 @@ object_t *get_function_proto() {
     return &function_proto;
 }
 
-/**
- * @brief A static function object.
- *
- * The function returns an `object_t*` representing the result of the execution: - The returned
- * object cannot be `NULL`. - If the function has no return value, a special `null` object is
- * returned.
- */
+/** @brief Runtime singleton backed by a shared native descriptor. */
 typedef struct {
-    /** @brief The base object that provides common functionality. */
     object_t base;
-
-    /** @brief A wide-character string representing the name of the function. */
-    wchar_t *name;
-
-    /** @brief The wrapped executor function for the static function. */
-    object_t *(*exec)(object_t **args, uint16_t arg_count, thread_t *thread);
+    const builtin_function_t *descriptor;
 } object_static_function_t;
 
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t static_to_string(const object_t *obj) {
     object_static_function_t *sfobj = (object_static_function_t *)obj;
-    return (string_value_t){sfobj->name, wcslen(sfobj->name), false};
+    return (string_value_t){sfobj->descriptor->name, wcslen(sfobj->descriptor->name), false};
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string_notation. */
@@ -125,29 +115,25 @@ static object_array_t get_topology(const object_t *obj) {
     return result;
 }
 
-/**
- * @brief Executes a static function object.
- * @return `true` indicating the call was successful.
- */
+/** @brief Invokes a native descriptor; failed calls leave an owned pending exception. */
 static bool static_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     require_object_stack_size(thread->data_stack, arg_count);
-    object_static_function_t *sfobj = (object_static_function_t *)obj;
-    object_t *ret_val;
-    if (arg_count == 0) {
-        ret_val = sfobj->exec(NULL, 0, thread);
-    } else {
-        object_t **args = ALLOC(arg_count * sizeof(object_t *));
-        uint16_t index;
-        for (index = 0; index < arg_count; index++) {
-            args[index] = pop_object_from_stack(thread->data_stack);
-        }
-        ret_val = sfobj->exec(args, arg_count, thread);
-        for (index = 0; index < arg_count; index++) {
-            DECREF(args[index]);
-        }
-        FREE(args);
+    const builtin_function_t *descriptor = ((object_static_function_t *)obj)->descriptor;
+    object_t **args = arg_count ? ALLOC(arg_count * sizeof(*args)) : NULL;
+    for (size_t i = 0; i < arg_count; i++)
+        args[i] = pop_object_from_stack(thread->data_stack);
+    operation_result_t result = arg_count < descriptor->min_args
+                                    ? operation_exception(get_exception_invalid_argument())
+                                    : descriptor->execute(args, arg_count, thread);
+    for (size_t i = 0; i < arg_count; i++)
+        DECREF(args[i]);
+    FREE(args);
+    if (result.is_exception) {
+        DECREFIF(thread->exception.value);
+        thread->exception.value = result.value;
+        return false;
     }
-    push_object_onto_stack(thread->data_stack, ret_val);
+    push_object_onto_stack(thread->data_stack, result.value);
     thread->instr_id++;
     return true;
 }
@@ -198,49 +184,50 @@ static object_vtbl_t static_vtbl = {.type = TYPE_OTHER,
 
 /** @brief Macro for defining the start and end of a built-in function. */
 #define START_FUNCTION(func_name)                                                                  \
-    static object_t *func_name##_exec(object_t **args, uint16_t arg_count, thread_t *thread) {
-#define END_FUNCTION(func_name, func_label)                                                        \
+    static operation_result_t func_name##_exec(object_t **args,                                    \
+                                               uint16_t arg_count,                                 \
+                                               thread_t *thread) {
+#define END_FUNCTION(func_name, func_label, arity, effect_flags, abstract_exec)                    \
     }                                                                                              \
+    static const builtin_function_t func_name##_descriptor = {.name = func_label,                  \
+                                                              .min_args = arity,                   \
+                                                              .effects = effect_flags,             \
+                                                              .execute = func_name##_exec,         \
+                                                              .interpret = abstract_exec,          \
+                                                              .get_object = get_##func_name};      \
     static object_static_function_t func_name = {{&static_vtbl, NULL, NULL, NULL},                 \
-                                                 func_label,                                       \
-                                                 func_name##_exec};                                \
+                                                 &func_name##_descriptor};                         \
     object_t *get_##func_name() {                                                                  \
         return &func_name.base;                                                                    \
     }
 
 /** @brief Built-in atan2(y, x); requires two numeric arguments. */
 START_FUNCTION(function_atan)
-if (arg_count < 2) {
-    return NULL;
-}
 real_value_t y = get_object_real_value(args[0]);
 real_value_t x = get_object_real_value(args[1]);
 if (!x.has_value || !y.has_value) {
-    return NULL;
+    return operation_exception(get_exception_invalid_argument());
 }
 double result = atan2(y.value, x.value);
-return create_real_number_object(thread->process, result);
-END_FUNCTION(function_atan, L"atan");
+return operation_success(create_real_number_object(thread->process, result));
+END_FUNCTION(function_atan, L"atan", 2, BUILTIN_EFFECT_NONE, interpret_builtin_atan);
 
 /** @brief Built-in print; writes the first argument and returns the null object. */
 START_FUNCTION(function_print)
-if (arg_count < 1) {
-    return NULL;
-}
 string_value_t str = convert_object_to_string(args[0]);
 if (str.data) {
     print_utf8(str.data);
     FREE_STRING(str);
 }
-return get_null_object();
-END_FUNCTION(function_print, L"print");
+return operation_success(get_null_object());
+END_FUNCTION(function_print, L"print", 1, BUILTIN_EFFECT_OUTPUT, interpret_builtin_print);
 
 /** @brief Built-in function: determines the sign of a given number. */
 START_FUNCTION(function_sign)
-if (arg_count < 1) {
-    return NULL;
-}
-double value = get_object_real_value(args[0]).value;
+real_value_t argument = get_object_real_value(args[0]);
+if (!argument.has_value)
+    return operation_exception(get_exception_invalid_argument());
+double value = argument.value;
 int sign;
 if (value > 0) {
     sign = 1;
@@ -249,21 +236,41 @@ if (value > 0) {
 } else {
     sign = 0;
 }
-return get_static_integer_object(sign);
-END_FUNCTION(function_sign, L"sign");
+return operation_success(get_static_integer_object(sign));
+END_FUNCTION(function_sign, L"sign", 1, BUILTIN_EFFECT_NONE, interpret_builtin_sign);
 
 /**
  * @brief Built-in function: computes the square root of a number.
- * @return A new real number object representing the square root, or `NULL` on error.
+ * @return A real result, or INVALID_ARGUMENT for a nonnumeric argument.
  */
 START_FUNCTION(function_sqrt)
-if (arg_count < 1) {
+real_value_t argument = get_object_real_value(args[0]);
+if (!argument.has_value)
+    return operation_exception(get_exception_invalid_argument());
+double value = argument.value;
+double result = sqrt(value);
+return operation_success(create_real_number_object(thread->process, result));
+END_FUNCTION(function_sqrt, L"sqrt", 1, BUILTIN_EFFECT_NONE, interpret_builtin_sqrt);
+
+const builtin_function_t *const *get_builtin_functions(size_t *count) {
+    static const builtin_function_t *const functions[] = {&function_atan_descriptor,
+                                                          &function_print_descriptor,
+                                                          &function_sign_descriptor,
+                                                          &function_sqrt_descriptor};
+    *count = sizeof(functions) / sizeof(*functions);
+    return functions;
+}
+
+const builtin_function_t *find_builtin_function(string_view_t name) {
+    size_t count;
+    const builtin_function_t *const *functions = get_builtin_functions(&count);
+    for (size_t i = 0; i < count; i++) {
+        if (wcslen(functions[i]->name) == name.length
+            && !wmemcmp(functions[i]->name, name.data, name.length))
+            return functions[i];
+    }
     return NULL;
 }
-double value = get_object_real_value(args[0]).value;
-double result = sqrt(value);
-return create_real_number_object(thread->process, result);
-END_FUNCTION(function_sqrt, L"sqrt");
 
 /** @brief Function body address, argument names, and captured context. */
 typedef struct {

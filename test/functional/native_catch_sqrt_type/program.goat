@@ -1,0 +1,1 @@
+try{sqrt("4");print("bad");}catch(e){print(e);}print("!");

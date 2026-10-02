@@ -7,6 +7,7 @@
 
 #include "analysis/lattice.h"
 #include "graph/node.h"
+#include "model/builtin_function.h"
 #include "test_macro.h"
 
 #include <math.h>
@@ -45,7 +46,7 @@ static bool equal(const lattice_element_t *a, const lattice_element_t *b) {
         case LATTICE_KNOWN_FUNCTION: {
             const known_function_element_t *x = (const known_function_element_t *)a;
             const known_function_element_t *y = (const known_function_element_t *)b;
-            return x->node == y->node && x->owner == y->owner;
+            return x->node == y->node && x->owner == y->owner && x->builtin == y->builtin;
         }
         case LATTICE_TYPED_ARRAY:
             return ((const typed_array_element_t *)a)->element_type
@@ -212,6 +213,10 @@ bool test_lattice_laws() {
     samples[count++] = make_known_function_element(values, &function_a, NULL);
     samples[count++] = make_known_function_element(values, &function_a, NULL);
     samples[count++] = make_known_function_element(values, &function_b, NULL);
+    size_t builtin_count;
+    const builtin_function_t *const *builtins = get_builtin_functions(&builtin_count);
+    for (size_t i = 0; i < builtin_count; i++)
+        samples[count++] = make_builtin_function_element(values, builtins[i]);
     int64_t integers[] = {INT64_MIN, -1, 0, 1, INT64_MAX};
     for (size_t i = 0; i < sizeof(integers) / sizeof(*integers); i++) {
         samples[count++] = make_integer_constant_element(values, integers[i]);

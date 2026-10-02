@@ -1,0 +1,5 @@
+var f=func(){sign=func(x){return 8;};};
+if(pi){f=func(){sign=func(x){return 9;};};}
+f();
+var result=sign(1);
+print(result);

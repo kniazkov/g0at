@@ -47,6 +47,9 @@ struct abstract_state_t {
     /** @brief Borrowed activation and shared evaluation budget. */
     struct abstract_call_frame_t *call_frame;
     size_t *call_budget;
+
+    /** @brief An untracked write may have shadowed root-provided names. */
+    bool builtin_bindings_unknown;
 };
 
 /**

@@ -55,7 +55,7 @@ bool test_unknown_expression_values() {
 }
 
 bool test_unknown_values_in_analysis() {
-    const wchar_t *expressions[] = {L"pi", L"print()", L"(pi)"};
+    const wchar_t *expressions[] = {L"pi", L"(pi)"};
     for (size_t i = 0; i < sizeof(expressions) / sizeof(*expressions); i++) {
         arena_t *arena = create_arena(8);
         parser_memory_t memory = {arena, arena, arena, arena};

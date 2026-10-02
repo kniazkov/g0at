@@ -1,0 +1,2 @@
+var result=sign(true);
+var after=1;

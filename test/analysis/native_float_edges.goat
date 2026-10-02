@@ -1,0 +1,6 @@
+var a=sign((-1)**0.5);
+var b=sign(0**-1);
+var c=sign(-(0**-1));
+var d=sqrt(-1);
+var e=sqrt(-0.0);
+var f=sqrt(0**-1);

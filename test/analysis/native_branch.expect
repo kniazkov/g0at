@@ -1,0 +1,4 @@
+none write 2 2 no -
+none write 3 3 dead -
+last unreachable 2 0 - -
+one unreachable 3 0 - -

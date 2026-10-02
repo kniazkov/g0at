@@ -1,5 +1,5 @@
 var x = 1;
-if (print()) { x = 3; }
+if (pi) { x = 3; }
 var a = x - 2;
 var b = 10 - x;
 var c = x - x;

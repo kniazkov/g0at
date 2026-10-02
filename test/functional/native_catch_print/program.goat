@@ -1,0 +1,1 @@
+try{print();print("bad");}catch(e){print(e);}print("!");

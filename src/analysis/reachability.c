@@ -10,6 +10,7 @@
 #include "bitwise.h"
 #include "comparison.h"
 #include "division.h"
+#include "function_call.h"
 #include "graph/comparison.h"
 #include "graph/declarations.h"
 #include "graph/logic.h"
@@ -40,16 +41,6 @@ static void set_subtree_flag(node_t *node, bool unreachable) {
 static void mark_dead(node_t *node, analysis_collector_t *collector) {
     set_subtree_flag(node, true);
     add_analysis_event(collector, ANALYSIS_UNREACHABLE, node, NULL, NULL);
-}
-
-/** @brief AVL callback: replaces one variable value with TOP. */
-static void forget_entry(void *context, void *key, value_t ignored) {
-    set_in_abstract_state(context, key, make_top_element());
-}
-
-/** @brief Discards variable facts after effects that this pass cannot track. */
-static void forget_values(abstract_state_t *state) {
-    avl_tree_for_each(state->values, forget_entry, state);
 }
 
 static const lattice_element_t *
@@ -152,7 +143,7 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
         case NODE_VARIABLE: {
             const declarator_t *decl = ((variable_t *)node)->declarator;
             if (decl == get_builtin_declarator())
-                return make_top_element();
+                return calculate_node(node, *state, (*state)->arena);
             const lattice_element_t *value = get_from_abstract_state(*state, decl);
             return value ? value : make_top_element();
         }
@@ -182,7 +173,7 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
                 if (target->vtbl->type == NODE_VARIABLE) {
                     set_in_abstract_state(*state, ((variable_t *)target)->declarator, value);
                 } else {
-                    forget_values(*state);
+                    forget_abstract_values(*state);
                 }
             }
             return value;
@@ -198,14 +189,21 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
             visit_children(node, state, collector);
             (*state)->control_flow = FLOW_RETURN;
             return make_bottom_element();
-        case NODE_FUNCTION_CALL:
-            /* Match bytecode: arguments right-to-left, then the callee. */
-            for (size_t i = get_node_child_count(node); i > 0; i--) {
-                visit(get_node_child(node, i - 1), state, collector);
-            }
-            /* A closure or built-in may change any captured binding. */
-            forget_values(*state);
+        case NODE_FUNCTION_CALL: {
+            size_t count = get_node_child_count(node) - 1;
+            const lattice_element_t **args =
+                alloc_from_arena((*state)->arena, (count + 1) * sizeof(*args));
+            for (size_t i = count; i > 0; i--)
+                args[i - 1] = visit(get_node_child(node, i), state, collector);
+            const lattice_element_t *callee = visit(get_node_child(node, 0), state, collector);
+            if ((*state)->control_flow != FLOW_NORMAL)
+                return make_bottom_element();
+            if (callee->type == LATTICE_KNOWN_FUNCTION
+                && ((const known_function_element_t *)callee)->builtin)
+                return interpret_function_call(callee, args, count, *state);
+            forget_abstract_values(*state);
             return make_top_element();
+        }
         case NODE_LOGICAL_AND:
         case NODE_LOGICAL_OR:
             return visit_logical(node, state, collector);
@@ -311,7 +309,7 @@ visit(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
         }
         default:
             /* Unknown control flow (including future loops) is not traversed once. */
-            forget_values(*state);
+            forget_abstract_values(*state);
             return make_top_element();
     }
 }

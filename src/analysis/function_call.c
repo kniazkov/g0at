@@ -6,6 +6,7 @@
 
 #include "graph/declarations.h"
 #include "graph/node.h"
+#include "model/builtin_function.h"
 
 /** @brief Arena-owned identity; exit states live only while the invocation is active. */
 typedef struct abstract_call_frame_t {
@@ -46,6 +47,14 @@ const lattice_element_t *interpret_function_call(const lattice_element_t *functi
                                                  const lattice_element_t *const *args,
                                                  size_t count,
                                                  abstract_state_t *caller) {
+    if (caller->control_flow != FLOW_NORMAL)
+        return make_bottom_element();
+    for (size_t i = 0; i < count; i++) {
+        if (args[i]->type == LATTICE_BOTTOM) {
+            caller->control_flow = FLOW_UNREACHABLE;
+            return make_bottom_element();
+        }
+    }
     if (function->type != LATTICE_KNOWN_FUNCTION) {
         if (function->type == LATTICE_TOP || function->type == LATTICE_NOT_NULL
             || function->type == LATTICE_FUNCTION)
@@ -53,6 +62,19 @@ const lattice_element_t *interpret_function_call(const lattice_element_t *functi
         return make_top_element();
     }
     const known_function_element_t *known = (const known_function_element_t *)function;
+    if (known->builtin) {
+        const builtin_function_t *builtin = known->builtin;
+        if (count < builtin->min_args) {
+            caller->control_flow = FLOW_UNREACHABLE;
+            return make_bottom_element();
+        }
+        if (builtin->effects & BUILTIN_EFFECT_BINDINGS)
+            forget_abstract_values(caller);
+        const lattice_element_t *value = builtin->interpret(caller, args, count);
+        if (value->type == LATTICE_BOTTOM)
+            caller->control_flow = FLOW_UNREACHABLE;
+        return value;
+    }
     bool owner_active = known->owner == NULL;
     bool recursive = false;
     size_t depth = 0;

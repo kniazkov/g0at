@@ -1,0 +1,1 @@
+if(sign(-4)){print("A");}else{print("bad");}if(sqrt(0)){print("bad");}else{print("B");}

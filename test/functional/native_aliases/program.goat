@@ -1,0 +1,5 @@
+var f=sign;
+var s=sqrt;
+var a=f(-4);
+var b=s(16);
+print(a);print(",");print(b);

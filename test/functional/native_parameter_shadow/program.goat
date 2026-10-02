@@ -1,0 +1,3 @@
+var f=func(sign){return sign(9);};
+var result=f(sqrt);
+print(result);

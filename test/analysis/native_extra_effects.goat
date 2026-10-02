@@ -1,0 +1,4 @@
+var x=0;
+var a=sign(++x,++x);
+var b=sqrt(16,++x);
+var after=x;

@@ -15,7 +15,6 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
-#include "variable.h"
 
 #include <assert.h>
 
@@ -75,18 +74,6 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     const lattice_element_t *function = calculate_expression(expr->func_object, state, arena);
     if (state->control_flow != FLOW_NORMAL)
         return make_bottom_element();
-    node_t *callee = &expr->func_object->base;
-    while (callee->vtbl->type == NODE_EXPRESSION_PARENTHESIZED)
-        callee = get_node_child(callee, 0);
-    if (callee->vtbl->type == NODE_VARIABLE) {
-        variable_t *variable = (variable_t *)callee;
-        if (variable->declarator == get_builtin_declarator()
-            && !abstract_state_contains(state, get_builtin_declarator())
-            && (!wcscmp(variable->name.data, L"print") || !wcscmp(variable->name.data, L"atan")
-                || !wcscmp(variable->name.data, L"sign") || !wcscmp(variable->name.data, L"sqrt")))
-            /* These native functions neither mutate bindings nor invoke user callbacks. */
-            return make_top_element();
-    }
     return interpret_function_call(function, args, expr->args_count, state);
 }
 
