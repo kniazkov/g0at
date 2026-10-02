@@ -5,15 +5,16 @@
  * input/output.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <stdint.h>
-
 #include "io.h"
+
 #include "allocate.h"
 #include "string_ext.h"
+
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 bool init_io(void) {
     // platform-specific GPIO initialization...
@@ -30,12 +31,11 @@ string_value_t read_utf8_file(const char *filename) {
         return NULL_STRING_VALUE;
     }
     long file_size = ftell(file);
-    if (file_size < 0 || (uintmax_t)file_size >= SIZE_MAX ||
-            fseek(file, 0, SEEK_SET) != 0) {
+    if (file_size < 0 || (uintmax_t)file_size >= SIZE_MAX || fseek(file, 0, SEEK_SET) != 0) {
         fclose(file);
         return NULL_STRING_VALUE;
     }
-    char *buffer = (char*)ALLOC((size_t)file_size + 1);
+    char *buffer = (char *)ALLOC((size_t)file_size + 1);
     size_t bytes_read = fread(buffer, 1, file_size, file);
     buffer[bytes_read] = '\0';
     bool read_failed = ferror(file) != 0;
@@ -65,7 +65,7 @@ bool write_utf8_file(const char *filename, const wchar_t *content) {
 }
 
 void print_utf8(const wchar_t *content) {
-    char* buffer = encode_utf8(content);
+    char *buffer = encode_utf8(content);
     printf("%s", buffer);
     FREE(buffer);
 }
@@ -76,7 +76,7 @@ void fprintf_utf8(FILE *file, const wchar_t *format, ...) {
     string_value_t value = format_string_vargs(format, args);
     va_end(args);
     if (value.data) {
-        char* encoded_buffer = encode_utf8(value.data);
+        char *encoded_buffer = encode_utf8(value.data);
         fputs(encoded_buffer, file);
         FREE(encoded_buffer);
         FREE_STRING(value);

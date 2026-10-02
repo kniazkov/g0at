@@ -12,7 +12,7 @@
 
 /** @brief A union for storing different primitive types in a single collection element. */
 typedef union {
-    void *ptr; /**< A void pointer, capable of pointing to any type of data. */
+    void *ptr;           /**< A void pointer, capable of pointing to any type of data. */
     uint32_t uint32_val; /**< An unsigned 32-bit integer. */
 } value_t;
 
@@ -57,21 +57,27 @@ typedef struct {
 } string_value_t;
 
 /** @brief Wraps a wide string literal without taking ownership. */
-#define STATIC_STRING(str) \
-    (string_value_t){ \
-        .data = (str), \
-        .length = sizeof(str) / sizeof(wchar_t) - 1, \
-        .should_free = false \
+#define STATIC_STRING(str)                                                                         \
+    (string_value_t) {                                                                             \
+        .data = (str), .length = sizeof(str) / sizeof(wchar_t) - 1, .should_free = false           \
     }
 
 /** @brief Macro to create empty string value. */
-#define EMPTY_STRING_VALUE (string_value_t){ L"", 0, false }
+#define EMPTY_STRING_VALUE                                                                         \
+    (string_value_t) {                                                                             \
+        L"", 0, false                                                                              \
+    }
 
 /** @brief Macro for creating a null (non-existing) string value. */
-#define NULL_STRING_VALUE (string_value_t){ NULL, 0, false }
+#define NULL_STRING_VALUE                                                                          \
+    (string_value_t) {                                                                             \
+        NULL, 0, false                                                                             \
+    }
 
 /** @brief Macro to clear the memory of a string if it needs to be cleared. */
-#define FREE_STRING(v) if ((v).should_free) FREE((wchar_t*)((v).data))
+#define FREE_STRING(v)                                                                             \
+    if ((v).should_free)                                                                           \
+    FREE((wchar_t *)((v).data))
 
 /**
  * @brief Borrowed string; its backing storage must outlive the view.
@@ -82,19 +88,21 @@ typedef struct {
      * @brief Pointer to immutable string data (or NULL).
      * @note Unlike string_value_t, views never own their data.
      */
-    const wchar_t* data;
+    const wchar_t *data;
 
     /** @brief Precomputed length (excluding null terminator). */
     size_t length;
 } string_view_t;
 
 /** @brief Macro to create empty string view. */
-#define EMPTY_STRING_VIEW (string_view_t){ L"", 0 }
+#define EMPTY_STRING_VIEW                                                                          \
+    (string_view_t) {                                                                              \
+        L"", 0                                                                                     \
+    }
 
 /** @brief Borrows a view without transferring ownership. */
-#define VALUE_TO_VIEW(v) \
-    ((string_view_t){ .data = (v).data, .length = (v).length })
+#define VALUE_TO_VIEW(v) ((string_view_t){.data = (v).data, .length = (v).length})
 
 /** @brief Wraps a view as a non-owning string value. */
-#define VIEW_TO_VALUE(v) \
-    ((string_value_t){ .data = (v).data, .length = (v).length, .should_free = false })
+#define VIEW_TO_VALUE(v)                                                                           \
+    ((string_value_t){.data = (v).data, .length = (v).length, .should_free = false})

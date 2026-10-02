@@ -6,10 +6,10 @@
 
 #pragma once
 
+#include "value.h"
+
 #include <stddef.h>
 #include <wchar.h>
-
-#include "value.h"
 
 typedef struct arena_t arena_t;
 

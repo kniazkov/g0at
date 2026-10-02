@@ -4,11 +4,12 @@
  * @brief Implementations of functions that work with AVL tree.
  */
 
-#include <memory.h>
-
 #include "avl_tree.h"
+
 #include "lib/allocate.h"
 #include "lib/arena.h"
+
+#include <memory.h>
 
 /** @brief Returns the larger of two integers. */
 static inline int max(int a, int b) {
@@ -90,8 +91,8 @@ static avl_node_t *balance(avl_tree_t *tree, avl_node_t *node) {
  * @brief Inserts or replaces a value, then restores AVL balance.
  * Replaced values are destroyed through the callback, or returned through old_value.
  */
-static avl_node_t *insert(avl_tree_t *tree, avl_node_t *node, void *key,
-        value_t value, value_t *old_value) {
+static avl_node_t *
+insert(avl_tree_t *tree, avl_node_t *node, void *key, value_t value, value_t *old_value) {
     if (!node) {
         avl_node_t *new_node = (avl_node_t *)CALLOC(sizeof(avl_node_t));
         new_node->key = copy_key(tree, key);
@@ -127,8 +128,11 @@ static avl_node_t *insert(avl_tree_t *tree, avl_node_t *node, void *key,
  * @brief Arena-backed insertion helper.
  * @return The node where the key-value pair was inserted or `NULL` if the key already exists.
  */
-static avl_node_t *insert_arena(avl_tree_arena_t *tree, avl_node_t *node, void *key,
-        value_t value, value_t *old_value) {
+static avl_node_t *insert_arena(avl_tree_arena_t *tree,
+                                avl_node_t *node,
+                                void *key,
+                                value_t value,
+                                value_t *old_value) {
     if (!node) {
         avl_node_t *new_node =
             (avl_node_t *)alloc_zeroed_from_arena(tree->arena, sizeof(avl_node_t));
@@ -152,7 +156,8 @@ static avl_node_t *insert_arena(avl_tree_arena_t *tree, avl_node_t *node, void *
         } else {
             *old_value = node->value;
         }
-        node->value = copy_value(&tree->base, value);;
+        node->value = copy_value(&tree->base, value);
+        ;
         return node;
     }
 
@@ -166,7 +171,8 @@ static avl_node_t *insert_arena(avl_tree_arena_t *tree, avl_node_t *node, void *
  * @return A pointer to the node with the specified key, or `NULL` if no such node is found.
  */
 static avl_node_t *find(const avl_tree_t *tree, avl_node_t *node, const void *key) {
-    if (!node) return NULL;
+    if (!node)
+        return NULL;
 
     int cmp = tree->comparator(key, node->key);
 
@@ -181,7 +187,8 @@ static avl_node_t *find(const avl_tree_t *tree, avl_node_t *node, const void *ke
 
 /** @brief Recursively performs an in-order traversal of the AVL tree. */
 static void inorder_traversal(avl_node_t *node,
-        void (*func)(void* user_data, void* key, value_t value), void *user_data) {
+                              void (*func)(void *user_data, void *key, value_t value),
+                              void *user_data) {
     if (node) {
         inorder_traversal(node->left, func, user_data);
         func(user_data, node->key, node->value);
@@ -230,8 +237,8 @@ static avl_node_t *clone_nodes(const avl_tree_t *tree, const avl_node_t *node) {
  *
  * This does not insert nodes through AVL logic, so it runs in O(N) and does not rebalance.
  */
-static avl_node_t *clone_nodes_arena(arena_t *arena,
-        const avl_tree_t *tree, const avl_node_t *node) {
+static avl_node_t *
+clone_nodes_arena(arena_t *arena, const avl_tree_t *tree, const avl_node_t *node) {
     if (!node) {
         return NULL;
     }
@@ -244,7 +251,7 @@ static avl_node_t *clone_nodes_arena(arena_t *arena,
     return copy;
 }
 
-avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*)) {
+avl_tree_t *create_avl_tree(int (*comparator)(const void *, const void *)) {
     avl_tree_t *tree = (avl_tree_t *)CALLOC(sizeof(avl_tree_t));
     tree->root = NULL;
     tree->comparator = comparator;
@@ -252,7 +259,7 @@ avl_tree_t *create_avl_tree(int (*comparator)(const void*, const void*)) {
 }
 
 avl_tree_arena_t *create_avl_tree_arena(arena_t *arena,
-        int (*comparator)(const void*, const void*)) {
+                                        int (*comparator)(const void *, const void *)) {
     avl_tree_arena_t *tree =
         (avl_tree_arena_t *)alloc_zeroed_from_arena(arena, sizeof(avl_tree_arena_t));
     tree->base.root = NULL;
@@ -288,7 +295,8 @@ value_t get_from_avl_tree(const avl_tree_t *tree, const void *key) {
 }
 
 void avl_tree_for_each(const avl_tree_t *tree,
-    void (*func)(void* user_data, void* key, value_t value), void *user_data) {
+                       void (*func)(void *user_data, void *key, value_t value),
+                       void *user_data) {
     if (tree && tree->root) {
         inorder_traversal(tree->root, func, user_data);
     }

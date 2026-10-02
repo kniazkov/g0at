@@ -16,6 +16,6 @@ typedef union {
     /** @brief The 64-bit value represented as a `double` precision floating-point number. */
     double real_value;
 
-    uint32_t parts[2];  /**< Array for splitting or combining 64-bit values
-                             into two 32-bit parts. */
+    uint32_t parts[2]; /**< Array for splitting or combining 64-bit values
+                            into two 32-bit parts. */
 } split64_t;

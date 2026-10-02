@@ -5,6 +5,7 @@
  */
 
 #include "queue.h"
+
 #include "allocate.h"
 
 queue_t *create_queue() {
@@ -29,8 +30,7 @@ void enqueue(queue_t *queue, void *data) {
     if (queue->last == NULL) {
         queue->first = item;
         queue->last = item;
-    }
-    else {
+    } else {
         queue->last->next = item;
         queue->last = item;
     }

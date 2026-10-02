@@ -4,14 +4,12 @@
  * @brief Implementation of a doubly linked list using arena allocation.
  */
 
-#include "arena.h"
 #include "linked_list.h"
 
+#include "arena.h"
+
 static list_item_t *create_list_item(list_t *list, value_t value) {
-    list_item_t *node = (list_item_t *)alloc_zeroed_from_arena(
-        list->arena,
-        sizeof(list_item_t)
-    );
+    list_item_t *node = (list_item_t *)alloc_zeroed_from_arena(list->arena, sizeof(list_item_t));
     node->value = value;
     return node;
 }
@@ -45,8 +43,7 @@ void append_item_to_linked_list(list_t *list, value_t value) {
     list->size++;
 }
 
-void insert_item_to_linked_list_before_existing(list_t *list, list_item_t *before,
-        value_t value) {
+void insert_item_to_linked_list_before_existing(list_t *list, list_item_t *before, value_t value) {
     if (!before) {
         append_item_to_linked_list(list, value);
         return;
@@ -66,7 +63,7 @@ void insert_item_to_linked_list_before_existing(list_t *list, list_item_t *befor
 
 value_t get_linked_list_value(const list_t *list, size_t index) {
     if (!list || index >= list->size) {
-        return (value_t){ .ptr = NULL };
+        return (value_t){.ptr = NULL};
     }
 
     list_item_t *item = list->head;

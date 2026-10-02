@@ -5,6 +5,7 @@
  */
 
 #include "position.h"
+
 #include "lib/arena.h"
 
 /**
@@ -19,10 +20,9 @@ full_position_t *copy_full_position_to_arena(arena_t *arena, const full_position
  * @brief Creates a shortened position from a full position in arena memory.
  * @return Pointer to the created short position in arena memory, or `NULL` if `position` is `NULL`.
  */
-short_position_t *create_short_position_from_full(arena_t *arena,
-        const full_position_t *position) {
-    short_position_t *short_pos = (short_position_t *)alloc_from_arena(
-        arena, sizeof(short_position_t));
+short_position_t *create_short_position_from_full(arena_t *arena, const full_position_t *position) {
+    short_position_t *short_pos =
+        (short_position_t *)alloc_from_arena(arena, sizeof(short_position_t));
     short_pos->row = position->row;
     short_pos->column = position->column;
     short_pos->offset = position->offset;
@@ -30,10 +30,9 @@ short_position_t *create_short_position_from_full(arena_t *arena,
 }
 
 /** @brief Creates a source range in arena memory. */
-position_range_t *create_position_range(arena_t *arena, full_position_t *begin,
-        short_position_t *end) {
-    position_range_t *range = (position_range_t *)alloc_from_arena(
-        arena, sizeof(position_range_t));
+position_range_t *
+create_position_range(arena_t *arena, full_position_t *begin, short_position_t *end) {
+    position_range_t *range = (position_range_t *)alloc_from_arena(arena, sizeof(position_range_t));
     range->begin = begin;
     range->end = end;
     return range;

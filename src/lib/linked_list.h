@@ -42,8 +42,7 @@ void append_item_to_linked_list(list_t *list, value_t value);
  * @brief Inserts before an item; NULL before appends.
  * The item must belong to this list. Storage is owned by the list arena.
  */
-void insert_item_to_linked_list_before_existing(list_t *list, list_item_t *before,
-        value_t value);
+void insert_item_to_linked_list_before_existing(list_t *list, list_item_t *before, value_t value);
 
 /** @brief Returns the indexed value, or zero for a NULL list or out-of-range index. */
 value_t get_linked_list_value(const list_t *list, size_t index);

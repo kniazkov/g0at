@@ -6,10 +6,10 @@
 
 #pragma once
 
+#include "value.h"
+
 #include <stdbool.h>
 #include <wchar.h>
-
-#include "value.h"
 
 /**
  * @brief Initializes the input-output system.
