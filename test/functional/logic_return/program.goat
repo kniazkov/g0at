@@ -1,0 +1,1 @@
+var f=func(a){a && {return 7;};return 3;};print(f(false));print(f(true));var g=func(a){a || {return 8;};return 4;};print(g(true));print(g(false));

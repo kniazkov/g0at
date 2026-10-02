@@ -1,0 +1,1 @@
+var x=0;var f=func(a){return a&&++x;};print(f(false));print(f(true));print(x);var g=func(a){return a||++x;};print(g(true));print(g(false));print(x);

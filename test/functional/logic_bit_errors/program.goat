@@ -1,0 +1,17 @@
+try{~1.0;}catch(e){print(e);print("|");}
+try{~true;}catch(e){print(e);print("|");}
+try{~null;}catch(e){print(e);print("|");}
+try{1.0&1;}catch(e){print(e);print("|");}
+try{1&1.0;}catch(e){print(e);print("|");}
+try{false|1;}catch(e){print(e);print("|");}
+try{1^"1";}catch(e){print(e);print("|");}
+try{1<<-1;}catch(e){print(e);print("|");}
+try{0<<64;}catch(e){print(e);print("|");}
+try{0>>-1;}catch(e){print(e);print("|");}
+try{1>>64;}catch(e){print(e);print("|");}
+try{1<<1.0;}catch(e){print(e);print("|");}
+try{null>>1;}catch(e){print(e);print("|");}
+try{~{};}catch(e){print(e);print("|");}
+try{~!1;}catch(e){print(e);print("|");}
+try{1&2==2;}catch(e){print(e);print("|");}
+try{~2**2;}catch(e){print(e);print("|");}

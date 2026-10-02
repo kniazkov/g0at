@@ -528,6 +528,41 @@ A stack underflow is a fatal interpreter invariant violation: it prints
 the process with failure, including in release builds. Goat `try/catch` cannot
 intercept it. Process-isolated tests exercise malformed bytecode and stack access.
 
+### Logical and bitwise operators
+
+`!x` negates truthiness and `!!x` converts to boolean, using the same rules as `if`.
+`a && b` and `a || b` also return booleans. They evaluate the left operand once;
+`&&` skips the right operand when the left is false, and `||` skips it when true.
+Skipped operands have no effects and cannot throw. NaN is truthy, as with `if`.
+
+`~`, `&`, `|`, `^`, `<<`, and `>>` accept only integers: real values and booleans
+are not coerced. An unsupported left operand throws `INVALID_OPERATION`, and an
+incompatible right operand throws `INVALID_ARGUMENT`.
+
+Bit operations use 64-bit two's-complement patterns. Left shift discards high bits;
+right shift sign-extends (`-3 >> 1` is `-2`). Shift counts must be integers in `0..63`,
+otherwise `INVALID_ARGUMENT` is thrown, even when shifting zero. The implementation
+uses unsigned C operations to avoid signed overflow and undefined shifts.
+
+From higher to lower binary precedence: power, multiplication/division/remainder,
+addition/subtraction, shifts, ordering comparisons, equality, `&`, `^`, `|`, `&&`,
+`||`, assignment. Binary operations at each new level associate left to right.
+Prefix `!`, `!!`, and `~` follow the existing unary-sign precedence, below power.
+Thus `~2**2` tries to invert a real power result and throws. Parentheses override
+precedence. In particular, `1 & 2 == 2` tries to combine an integer with a boolean;
+write `(1 & 2) == 2` to compare the masked value.
+
+VM opcodes are `LNOT`, `BOOL`, `BNOT`, `BAND`, `BOR`, `BXOR`, `SHL`, and `SHR`.
+`LAND address` and `LOR address` either retain the short-circuit boolean and jump,
+or consume the left value and continue to the right operand's code and `BOOL`.
+
+Abstract execution splits and rejoins effects when the left truth value is unknown.
+It excludes skipped operands from analysis and preserves the continuing path when
+the other path throws or returns. Reachability marks proven skipped operands gray
+in graphs and omits their bytecode while preserving left-side effects. Integer
+analysis folds constants and handles inversion intervals, masks, identities, and
+invalid shift ranges; other normal bitwise results conservatively remain integer.
+
 ### Comparisons
 
 The six comparison operators evaluate left to right. Ordering (`<`, `<=`, `>`, `>=`)

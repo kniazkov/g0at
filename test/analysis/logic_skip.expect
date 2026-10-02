@@ -1,0 +1,7 @@
+none write 2 1 x -
+none write 3 1 x -
+one write 2 2 a false
+one write 3 3 b true
+one write 4 4 c int=0
+one unreachable 2 0 - -
+one unreachable 3 0 - -

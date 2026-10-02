@@ -1,0 +1,4 @@
+var n=64;
+if(pi){n=99;}
+var a=0<<n;
+var b=7;

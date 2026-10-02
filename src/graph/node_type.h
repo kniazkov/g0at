@@ -93,6 +93,17 @@ typedef enum {
     NODE_POSTFIX_INCREMENT, /**< Postfix increment. */
     NODE_POSTFIX_DECREMENT, /**< Postfix decrement. */
 
+    NODE_LOGICAL_NOT,
+    NODE_BOOLEAN_CONVERSION,
+    NODE_BITWISE_NOT,
+    NODE_LOGICAL_AND,
+    NODE_LOGICAL_OR,
+    NODE_BITWISE_AND,
+    NODE_BITWISE_OR,
+    NODE_BITWISE_XOR,
+    NODE_SHIFT_LEFT,
+    NODE_SHIFT_RIGHT,
+
     NODE_UNARY_PLUS,  /**< Unary numeric identity. */
     NODE_UNARY_MINUS, /**< Unary numeric negation. */
 

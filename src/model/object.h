@@ -191,6 +191,19 @@ typedef struct {
      */
     operation_result_t (*modulo)(process_t *process, object_t *obj1, object_t *obj2);
 
+    /** @brief Integer bitwise inversion. */
+    operation_result_t (*bitwise_not)(process_t *process, object_t *obj);
+    /** @brief Integer bitwise operation. */
+    operation_result_t (*bitwise_and)(process_t *process, object_t *left, object_t *right);
+    /** @brief Integer bitwise operation. */
+    operation_result_t (*bitwise_or)(process_t *process, object_t *left, object_t *right);
+    /** @brief Integer bitwise operation. */
+    operation_result_t (*bitwise_xor)(process_t *process, object_t *left, object_t *right);
+    /** @brief Integer bitwise operation. */
+    operation_result_t (*shift_left)(process_t *process, object_t *left, object_t *right);
+    /** @brief Integer bitwise operation. */
+    operation_result_t (*shift_right)(process_t *process, object_t *left, object_t *right);
+
     /** @brief Exponentiation (power). */
     operation_result_t (*power)(process_t *process, object_t *obj1, object_t *obj2);
 
@@ -598,3 +611,33 @@ DECLARE_STATIC_OBJECT(exception_invalid_operation)
 DECLARE_STATIC_OBJECT(exception_property_already_exists)
 DECLARE_STATIC_OBJECT(exception_property_is_constant)
 DECLARE_STATIC_OBJECT(exception_property_not_found)
+
+/** @brief Dispatches bitwise inversion with owned result or exception. */
+static inline operation_result_t bitwise_not_object(process_t *process, object_t *obj) {
+    return obj->vtbl->bitwise_not(process, obj);
+}
+
+static inline operation_result_t
+bitwise_and_objects(process_t *process, object_t *left, object_t *right) {
+    return left->vtbl->bitwise_and(process, left, right);
+}
+
+static inline operation_result_t
+bitwise_or_objects(process_t *process, object_t *left, object_t *right) {
+    return left->vtbl->bitwise_or(process, left, right);
+}
+
+static inline operation_result_t
+bitwise_xor_objects(process_t *process, object_t *left, object_t *right) {
+    return left->vtbl->bitwise_xor(process, left, right);
+}
+
+static inline operation_result_t
+shift_left_objects(process_t *process, object_t *left, object_t *right) {
+    return left->vtbl->shift_left(process, left, right);
+}
+
+static inline operation_result_t
+shift_right_objects(process_t *process, object_t *left, object_t *right) {
+    return left->vtbl->shift_right(process, left, right);
+}

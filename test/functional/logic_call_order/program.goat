@@ -1,0 +1,1 @@
+var x=0;var f=func(a,b){print(a);print(b);};f(x++&&++x,x++||++x);print(x);

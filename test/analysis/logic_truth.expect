@@ -1,0 +1,5 @@
+one write 1 1 a true
+one write 2 2 b true
+one write 3 3 c false
+one write 4 4 d false
+one write 5 5 e false

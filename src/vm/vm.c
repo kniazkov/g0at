@@ -346,6 +346,69 @@ execute_binary_operation(runtime_t *runtime,
     return true;
 }
 
+/** @brief Consumes a value and pushes its truth value or negation. */
+static bool boolean_unary(thread_t *thread, bool negate) {
+    object_t *value = pop_object_from_stack(thread->data_stack);
+    bool result = get_object_boolean_value(value) != negate;
+    DECREF(value);
+    push_object_onto_stack(thread->data_stack, get_boolean_object(result));
+    thread->instr_id++;
+    return true;
+}
+
+static bool exec_LNOT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return boolean_unary(thread, true);
+}
+
+static bool exec_BOOL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return boolean_unary(thread, false);
+}
+
+static bool exec_BNOT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_unary_operation(runtime, thread, bitwise_not_object);
+}
+
+/** @brief Short-circuits with a boolean result, or leaves room for the right operand. */
+static bool logical_jump(instruction_t instr, thread_t *thread, bool is_or) {
+    object_t *value = pop_object_from_stack(thread->data_stack);
+    bool truth = get_object_boolean_value(value);
+    DECREF(value);
+    if (truth == is_or) {
+        push_object_onto_stack(thread->data_stack, get_boolean_object(truth));
+        thread->instr_id = instr.arg1;
+    } else
+        thread->instr_id++;
+    return true;
+}
+
+static bool exec_LAND(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return logical_jump(instr, thread, false);
+}
+
+static bool exec_LOR(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return logical_jump(instr, thread, true);
+}
+
+static bool exec_BAND(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_binary_operation(runtime, thread, bitwise_and_objects);
+}
+
+static bool exec_BOR(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_binary_operation(runtime, thread, bitwise_or_objects);
+}
+
+static bool exec_BXOR(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_binary_operation(runtime, thread, bitwise_xor_objects);
+}
+
+static bool exec_SHL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_binary_operation(runtime, thread, shift_left_objects);
+}
+
+static bool exec_SHR(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_binary_operation(runtime, thread, shift_right_objects);
+}
+
 /** @brief Executes @ref ADD. */
 static bool exec_ADD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     return execute_binary_operation(runtime, thread, add_objects);
@@ -569,7 +632,9 @@ static instr_executor_t executors[] = {
     exec_UMINUS,  /**< Negates the top value. */
     exec_INC,     /**< Applies numeric increment. */
     exec_DEC,     /**< Applies numeric decrement. */
-    exec_ADD,     /**< Adds the top two objects of the stack. */
+    exec_LNOT,    exec_BOOL, exec_BNOT, exec_LAND, exec_LOR, exec_BAND,
+    exec_BOR,     exec_BXOR, exec_SHL,  exec_SHR,  exec_ADD, /**< Adds the top two objects of the
+                                                                stack. */
     exec_SUB,     /**< Subtracts the top two objects of the stack. */
     exec_MUL,     /**< Multiplies the top two objects on the data stack. */
     exec_DIVIDE,  /**< Divides the first object by the second on the data stack. */

@@ -1,0 +1,3 @@
+one join 2 1 x range=0,1
+one write 2 2 a true
+one write 3 3 b range=0,1

@@ -1,0 +1,1 @@
+var fail=func(){throw "yes";};try{true && fail();}catch(e){print(e);}try{false || fail();}catch(e){print(e);}try{!fail();}catch(e){print(e);}

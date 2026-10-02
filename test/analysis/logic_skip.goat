@@ -1,0 +1,4 @@
+var x=0;
+var a=false && ++x;
+var b=true || ++x;
+var c=x;

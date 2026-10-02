@@ -5,6 +5,7 @@
  */
 
 #include "graph/binary_operation.h"
+#include "graph/logic.h"
 #include "lib/arena.h"
 #include "parser.h"
 #include "resources/messages.h"
@@ -178,5 +179,32 @@ parsing_power_operators(token_t *operator, parser_memory_t * memory, token_group
                              operator->right,
                              TOKEN_EXPRESSION,
                              &operation->base);
+    return NULL;
+}
+
+/** @brief Reduces logical and integer bitwise binary operators. */
+compilation_error_t *
+parsing_logic_operators(token_t *op, parser_memory_t *memory, token_groups_t *groups) {
+    compilation_error_t *error = check_operands(op, memory);
+    if (error)
+        return error;
+    expression_t *left = (expression_t *)op->left->node, *right = (expression_t *)op->right->node,
+                 *expr = NULL;
+    if (!wcscmp(op->text.data, L"&&"))
+        expr = create_logical_and_node(memory->graph, left, right);
+    if (!wcscmp(op->text.data, L"||"))
+        expr = create_logical_or_node(memory->graph, left, right);
+    if (!wcscmp(op->text.data, L"&"))
+        expr = create_bitwise_and_node(memory->graph, left, right);
+    if (!wcscmp(op->text.data, L"|"))
+        expr = create_bitwise_or_node(memory->graph, left, right);
+    if (!wcscmp(op->text.data, L"^"))
+        expr = create_bitwise_xor_node(memory->graph, left, right);
+    if (!wcscmp(op->text.data, L"<<"))
+        expr = create_shift_left_node(memory->graph, left, right);
+    if (!wcscmp(op->text.data, L">>"))
+        expr = create_shift_right_node(memory->graph, left, right);
+    assert(expr);
+    collapse_tokens_to_token(memory, op->left, op->right, TOKEN_EXPRESSION, &expr->base);
     return NULL;
 }

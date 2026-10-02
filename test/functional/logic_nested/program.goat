@@ -1,0 +1,1 @@
+var x=0; print(false&&++x||true&&++x);print(x);print(true||false&&++x);print(x);print((false||true)&&!!++x);print(x);

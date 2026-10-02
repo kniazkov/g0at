@@ -52,6 +52,26 @@ typedef enum {
 
     DEC, /**< Replaces the top value with its numeric predecessor. */
 
+    LNOT, /**< Logical negation. */
+
+    BOOL, /**< Converts the top value to boolean. */
+
+    BNOT, /**< Integer bitwise inversion. */
+
+    LAND, /**< Converts and keeps false, jumping to arg1; otherwise pops and continues. */
+
+    LOR, /**< Converts and keeps true, jumping to arg1; otherwise pops and continues. */
+
+    BAND, /**< Integer bitwise and. */
+
+    BOR, /**< Integer bitwise or. */
+
+    BXOR, /**< Integer bitwise xor. */
+
+    SHL, /**< Integer shift left. */
+
+    SHR, /**< Integer shift right. */
+
     ADD, /**< Adds the top two objects on the data stack. */
 
     SUB, /**< Subtracts the top two objects on the data stack. */

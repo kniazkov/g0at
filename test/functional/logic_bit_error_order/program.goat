@@ -1,0 +1,1 @@
+var x=0;try{(1.0&1)&++x;}catch(e){print(e);}print(x);try{(x=1)<<(x=64);}catch(e){print(e);}print(x);

@@ -1,0 +1,5 @@
+one write 2 1 x int=1
+one write 3 1 x int=2
+one write 4 4 c int=2
+one write 2 2 a true
+one write 3 3 b true

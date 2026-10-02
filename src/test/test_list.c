@@ -14,6 +14,7 @@
 #include "test_division.h"
 #include "test_lattice.h"
 #include "test_lib.h"
+#include "test_logic.h"
 #include "test_model.h"
 #include "test_modulo.h"
 #include "test_multiplication.h"
@@ -32,6 +33,11 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"bitwise values", test_bitwise_values},
+    {"bitwise errors", test_bitwise_errors},
+    {"bitwise domains", test_bitwise_domains},
+    {"logical VM", test_logical_vm},
+    {"logical nodes", test_logic_nodes},
     {"comparison values", test_comparison_values},
     {"comparison ranges", test_comparison_ranges},
     {"comparison nodes", test_comparison_nodes},
