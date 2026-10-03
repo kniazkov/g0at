@@ -1,0 +1,2 @@
+const f=func(n){return n/0;}
+f(1)

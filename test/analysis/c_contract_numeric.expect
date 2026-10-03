@@ -1,0 +1,5 @@
+one c-support 1 0 integer unknown
+one c-blockers 1 0 integer body
+one c-support 1 0 real unknown
+one c-blockers 1 0 real body
+one c-blockers 4 0 - body

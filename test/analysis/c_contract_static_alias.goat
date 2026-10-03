@@ -1,0 +1,3 @@
+const f=func(n){if(n<1)return 0;return alias(n-1);}
+const alias=f
+f(0)

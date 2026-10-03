@@ -404,8 +404,8 @@ has no nullable-integer union.
 
 Captured bindings start at `TOP`, regardless of observed values at call sites. The pass
 does not emit ordinary writes, flush declaration facts, or change node flags. C support
-remains unknown; a separate pass computes effects. Signatures still do not distinguish captures or callable
-argument identities and must not be used as cached call results.
+is checked separately; another pass computes effects. Signatures still do not distinguish
+captures or callable argument identities and must not be used as cached call results.
 
 Completed attempts have status `analyzed`, which can legitimately have a `TOP` return.
 Calls outside supported recursive groups (including built-ins), and bodies containing `try/catch`, are currently
@@ -516,6 +516,26 @@ one purity 5 0 function unknown
 
 Snapshots copy call-site records as well as capture records. The existing `effects` selector
 continues to check direct effects; `total-effects` checks the propagated mask.
+
+### Initial C subset contract
+
+The [C subset contract](docs/c-subset.md) fixes the first native interface to `int64_t`
+and `double`, with proven purity and no captured data. Static references to known
+`const` functions are allowed; their bodies still need separate proofs. Unknown numeric
+unions are not converted silently, and boolean values are not yet interface types.
+
+The analyzer now records `c-support` and exact `c-blockers` in function summaries.
+Known excluded types/captures yield `unsupported`; incomplete evidence yields `unknown`.
+Every signature still has the `body` blocker: this step checks preconditions and does
+not claim complete C support, generate code, or change shared AST flags.
+
+```text
+one c-support 1 0 integer unknown
+one c-blockers 1 0 integer body
+```
+
+The contract also specifies wrapping integers, mixed numeric precision, floating-point
+special values, evaluation order and exception handling obligations for later lowering.
 
 ### Recursive return types
 

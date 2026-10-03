@@ -6,6 +6,7 @@
 
 #include "analysis.h"
 
+#include "c_contract.h"
 #include "cli/options.h"
 #include "common/compilation_error.h"
 #include "function_call_graph.h"
@@ -293,6 +294,7 @@ compilation_error_t *analyze(node_t *root_node,
     solve_function_recursion(calls, 64);
     analyze_function_direct_effects(root_node);
     propagate_function_effects(calls, 64);
+    analyze_function_c_contracts(root_node);
     mark_unreachable_code(root_node, memory->graph, collector);
     classify_node_properties(root_node, collector);
     add_call_graph_events(collector, calls);

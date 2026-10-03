@@ -35,7 +35,7 @@ bool test_function_effect_captures() {
     ASSERT(snapshot->effects
            == (FUNCTION_EFFECT_EXTERNAL_READ | FUNCTION_EFFECT_EXTERNAL_WRITE
                | FUNCTION_EFFECT_UNKNOWN));
-    ASSERT(snapshot->c_support == FUNCTION_C_UNKNOWN);
+    ASSERT(snapshot->c_support == FUNCTION_C_UNSUPPORTED);
     ASSERT(snapshot->has_calls);
     ASSERT(snapshot->direct_effects
            == (FUNCTION_EFFECT_EXTERNAL_READ | FUNCTION_EFFECT_EXTERNAL_WRITE));

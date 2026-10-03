@@ -1,0 +1,3 @@
+one purity 2 0 integer pure
+one c-support 2 0 integer unsupported
+one c-blockers 2 0 integer return|captures|body

@@ -4,6 +4,7 @@
  */
 #include "function_summary.h"
 
+#include "c_contract.h"
 #include "graph/declarations.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
@@ -35,6 +36,7 @@ void reset_function_summary(function_summary_t *summary) {
     summary->captures = NULL;
     summary->status = FUNCTION_UNANALYZED;
     summary->c_support = FUNCTION_C_UNKNOWN;
+    summary->c_blockers = C_BLOCKER_ANALYSIS;
     summary->iterations = 0;
 }
 
@@ -147,7 +149,11 @@ string_value_t function_summary_to_string(const function_summary_t *summary) {
         if (capture->access & FUNCTION_CAPTURE_WRITE)
             append_static_string(&builder, L"write");
     }
-    return append_char(&builder, L']');
+    append_static_string(&builder, L"] c-blockers=");
+    string_value_t blockers = c_blockers_to_string(summary->c_blockers);
+    string_value_t text = append_string_value(&builder, blockers);
+    FREE_STRING(blockers);
+    return text;
 }
 
 function_summary_set_t *
