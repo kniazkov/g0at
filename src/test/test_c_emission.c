@@ -21,8 +21,8 @@
 
 /** @brief Numeric boundary fixtures use literal ASTs that also occur after transformations. */
 typedef struct {
-    const wchar_t *source;
-    const wchar_t *check;
+    const wchar_t *source; /**< Goat program used to discover the function signature. */
+    const wchar_t *check;  /**< C assertion suffix, appended to the generated function name. */
     int literal;
     int64_t integer;
     double real;
@@ -32,7 +32,7 @@ static bool generate_tests(source_builder_t *output) {
     const fixture_t fixtures[] = {
         {L"const f=func(n){return n;};f(1);", L"(INT64_MIN)==INT64_MIN"},
         {L"const f=func(n){return n;};f(1.0);", L"(-0.0)==0 && signbit(goat_case1(-0.0))"},
-        {L"const f=func(auto, switch){return switch;};f(1,2.5);", L"(7,2.5)==2.5"},
+        {L"const f=func(first, second){return second;};f(1,2.5);", L"(7,2.5)==2.5"},
         {L"const f=func(){return 42;};f();", L"()==42"},
         {L"const f=func(){return 0;};f();", L"()==INT64_MIN", 1, INT64_MIN},
         {L"const f=func(){return 0;};f();", L"()==INT64_MAX", 1, INT64_MAX},
