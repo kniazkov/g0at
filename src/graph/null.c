@@ -59,6 +59,7 @@ static node_vtbl_t null_vtbl = {
     .type = NODE_NULL,
     .analyze_reachability = reachability_literal,
     .is_pure = children_are_pure,
+    .collect_direct_effects = collect_child_effects,
     .type_name = L"null",
     .get_data = no_data,
     .get_property_count = no_properties,

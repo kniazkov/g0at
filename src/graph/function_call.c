@@ -8,6 +8,7 @@
 
 #include "analysis/abstract_state.h"
 #include "analysis/function_call_graph.h"
+#include "analysis/function_effects.h"
 #include "analysis/function_return.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
@@ -169,11 +170,19 @@ static bool is_pure(const node_t *node) {
     return node_has_flag(node, NODE_FLAG_PURE) && children_are_pure(node);
 }
 
+/** @brief Implements node_vtbl_t::collect_direct_effects. */
+static void
+collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
+    summary->has_calls = true;
+    collect_child_effects(node, summary, arena);
+}
+
 /** @brief Virtual table for function call expressions. */
 static node_vtbl_t function_call_vtbl = {
     .type = NODE_FUNCTION_CALL,
     .analyze_reachability = analyze_reachability,
     .is_pure = is_pure,
+    .collect_direct_effects = collect_direct_effects,
     .type_name = L"function call",
     .get_data = no_data,
     .get_property_count = no_properties,

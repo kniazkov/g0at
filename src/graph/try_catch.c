@@ -108,6 +108,7 @@ static node_vtbl_t vtbl = {
     .type = NODE_TRY_CATCH,
     .analyze_reachability = reachability_unknown,
     .is_pure = not_pure,
+    .collect_direct_effects = collect_child_effects,
     .type_name = L"try-catch",
     .get_data = get_data,
     .get_property_count = no_properties,

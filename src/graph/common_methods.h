@@ -104,3 +104,12 @@ visit_reachable_binary(node_t *node,
                        const lattice_element_t *(*operation)(arena_t *,
                                                              const lattice_element_t *,
                                                              const lattice_element_t *));
+
+/** @brief Implements node_vtbl_t::collect_direct_effects by visiting all children. */
+void collect_child_effects(const node_t *node, function_summary_t *summary, arena_t *arena);
+
+/** @brief Implements node_vtbl_t::collect_direct_effects for deferred bodies. */
+void no_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena);
+
+/** @brief Implements node_vtbl_t::collect_direct_effects for unsupported nodes. */
+void unknown_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena);

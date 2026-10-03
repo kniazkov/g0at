@@ -8,6 +8,7 @@
 #include "analysis/function_effects.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "graph/common_methods.h"
 #include "graph/expression.h"
 #include "graph/variable.h"
 #include "lib/allocate.h"
@@ -86,6 +87,12 @@ bool test_function_effect_unknown() {
     node_vtbl_t future = *original;
     future.type = (node_type_t)999;
     ret->vtbl = &future;
+    analyze_function_direct_effects(root);
+    ASSERT(live->direct_effects == FUNCTION_EFFECT_NONE);
+    future.collect_direct_effects = unknown_direct_effects;
+    analyze_function_direct_effects(root);
+    ASSERT(live->direct_effects == FUNCTION_EFFECT_UNKNOWN);
+    future.collect_direct_effects = NULL;
     analyze_function_direct_effects(root);
     ASSERT(live->direct_effects == FUNCTION_EFFECT_UNKNOWN);
     ret->vtbl = original;

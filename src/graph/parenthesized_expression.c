@@ -86,6 +86,7 @@ static node_vtbl_t expression_parenthesized_vtbl = {
     .type = NODE_EXPRESSION_PARENTHESIZED,
     .analyze_reachability = visit_reachable_child,
     .is_pure = children_are_pure,
+    .collect_direct_effects = collect_child_effects,
     .type_name = L"parenthesized expression",
     .get_data = no_data,
     .get_property_count = no_properties,

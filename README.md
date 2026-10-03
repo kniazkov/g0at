@@ -453,7 +453,9 @@ This is a conservative body scan, identical across its type signatures. Both bra
 statements after a return, and short-circuited operands are included. Nested function
 bodies are skipped and scanned separately only if they have registered signatures.
 Creating a closure does not execute its body. `try/catch` scans both children; unsupported
-node kinds or unresolved bindings add `unknown`. Throwing itself is not a state or I/O effect.
+effect implementations or unresolved bindings add `unknown`. Each node selects its traversal
+and access behavior through `node_vtbl_t::collect_direct_effects`; ordinary nodes use
+the shared child visitor. Throwing itself is not a state or I/O effect.
 
 Calls contribute their argument/callee reads and writes and set `has_calls`; the called
 body's effects, including native I/O, are not propagated yet. Thus `direct-effects=none`

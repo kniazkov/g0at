@@ -4,6 +4,7 @@
  */
 #include "function_effects.h"
 
+#include "graph/common_methods.h"
 #include "graph/expression.h"
 #include "graph/variable.h"
 
@@ -21,8 +22,10 @@ const function_capture_t *find_function_capture(const function_summary_t *summar
 }
 
 /** @brief Parameters and block locals belong to their nearest enclosing function. */
-static void
-record_access(function_summary_t *summary, const node_t *node, uint32_t access, arena_t *arena) {
+void record_function_access(function_summary_t *summary,
+                            const node_t *node,
+                            uint32_t access,
+                            arena_t *arena) {
     if (node->vtbl->type != NODE_VARIABLE) {
         summary->direct_effects |= FUNCTION_EFFECT_UNKNOWN;
         return;
@@ -56,86 +59,11 @@ record_access(function_summary_t *summary, const node_t *node, uint32_t access, 
     capture->access |= access;
 }
 
-/** @brief Assignment targets are writes; creating a closure does not execute its body. */
-static void scan(function_summary_t *summary, const node_t *node, arena_t *arena) {
-    switch (node->vtbl->type) {
-        case NODE_FUNCTION_OBJECT:
-            return;
-        case NODE_VARIABLE:
-            record_access(summary, node, FUNCTION_CAPTURE_READ, arena);
-            return;
-        case NODE_SIMPLE_ASSIGNMENT:
-            scan(summary, get_node_child(node, 1), arena);
-            record_access(summary, get_node_child(node, 0), FUNCTION_CAPTURE_WRITE, arena);
-            return;
-        case NODE_PREFIX_INCREMENT:
-        case NODE_PREFIX_DECREMENT:
-        case NODE_POSTFIX_INCREMENT:
-        case NODE_POSTFIX_DECREMENT:
-            record_access(summary,
-                          get_node_child(node, 0),
-                          FUNCTION_CAPTURE_READ | FUNCTION_CAPTURE_WRITE,
-                          arena);
-            return;
-        case NODE_FUNCTION_CALL:
-            summary->has_calls = true;
-            break;
-        case NODE_ROOT:
-        case NODE_ARGUMENT_LIST:
-        case NODE_FUNCTION_BODY:
-        case NODE_ARGUMENT:
-        case NODE_VARIABLE_DECLARATOR:
-        case NODE_CONSTANT_DECLARATOR:
-        case NODE_STATEMENT_LIST:
-        case NODE_NULL:
-        case NODE_TRUE:
-        case NODE_FALSE:
-        case NODE_STATIC_STRING:
-        case NODE_INTEGER:
-        case NODE_REAL:
-        case NODE_EXPRESSION_PARENTHESIZED:
-        case NODE_ADDITION:
-        case NODE_SUBTRACTION:
-        case NODE_LOGICAL_NOT:
-        case NODE_BOOLEAN_CONVERSION:
-        case NODE_BITWISE_NOT:
-        case NODE_LOGICAL_AND:
-        case NODE_LOGICAL_OR:
-        case NODE_BITWISE_AND:
-        case NODE_BITWISE_OR:
-        case NODE_BITWISE_XOR:
-        case NODE_SHIFT_LEFT:
-        case NODE_SHIFT_RIGHT:
-        case NODE_UNARY_PLUS:
-        case NODE_UNARY_MINUS:
-        case NODE_MULTIPLICATION:
-        case NODE_DIVISION:
-        case NODE_MODULO:
-        case NODE_POWER:
-        case NODE_LESS:
-        case NODE_LESS_OR_EQUAL:
-        case NODE_GREATER:
-        case NODE_GREATER_OR_EQUAL:
-        case NODE_EQUAL:
-        case NODE_NOT_EQUAL:
-        case NODE_STATEMENT_EXPRESSION:
-        case NODE_VARIABLE_DECLARATION:
-        case NODE_CONSTANT_DECLARATION:
-        case NODE_RETURN:
-        case NODE_THROW:
-        case NODE_TRY_CATCH:
-        case NODE_IF_ELSE:
-        case NODE_FOR:
-        case NODE_FOR_IN:
-        case NODE_WHILE:
-        case NODE_DO_WHILE:
-            break;
-        default:
-            summary->direct_effects |= FUNCTION_EFFECT_UNKNOWN;
-            break;
-    }
-    for (size_t i = 0; i < get_node_child_count(node); i++)
-        scan(summary, get_node_child(node, i), arena);
+void collect_node_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
+    if (node->vtbl->collect_direct_effects)
+        node->vtbl->collect_direct_effects(node, summary, arena);
+    else
+        unknown_direct_effects(node, summary, arena);
 }
 
 void analyze_function_direct_effects(node_t *root) {
@@ -145,7 +73,7 @@ void analyze_function_direct_effects(node_t *root) {
             summary->direct_effects = FUNCTION_EFFECT_NONE;
             summary->has_calls = false;
             summary->captures = NULL;
-            scan(summary, get_node_child(root, 1), set->arena);
+            collect_node_direct_effects(get_node_child(root, 1), summary, set->arena);
         }
     }
     for (size_t i = 0; i < get_node_child_count(root); i++)

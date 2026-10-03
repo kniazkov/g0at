@@ -42,6 +42,7 @@ typedef struct lattice_element_t lattice_element_t;
 
 typedef struct abstract_state_t abstract_state_t;
 typedef struct analysis_collector_t analysis_collector_t;
+typedef struct function_summary_t function_summary_t;
 
 /**
  * @brief Classification hint for node data rendered in graph visualization.
@@ -168,6 +169,9 @@ typedef struct {
 
     /** @brief Proves no writes/I/O using child caches; a function object describes its body. */
     bool (*is_pure)(const node_t *node);
+
+    /** @brief Collects direct body effects, including the appropriate children. */
+    void (*collect_direct_effects)(const node_t *node, function_summary_t *summary, arena_t *arena);
 
     /** @brief Generates a single-line Goat source code representation of the node. */
     string_value_t (*generate_goat_code)(const node_t *node);

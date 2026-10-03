@@ -251,6 +251,7 @@ static node_vtbl_t if_else_vtbl = {
     .type = NODE_IF_ELSE,
     .analyze_reachability = analyze_reachability,
     .is_pure = children_are_pure,
+    .collect_direct_effects = collect_child_effects,
     .type_name = L"if-else",
     .get_data = no_data,
     .get_property_count = no_properties,

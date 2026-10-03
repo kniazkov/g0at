@@ -5,6 +5,7 @@
  */
 
 #include "analysis/abstract_state.h"
+#include "analysis/function_effects.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
 #include "assignment.h"
@@ -90,11 +91,19 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     return value;
 }
 
+/** @brief Implements node_vtbl_t::collect_direct_effects. */
+static void
+collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
+    collect_node_direct_effects(get_node_child(node, 1), summary, arena);
+    record_function_access(summary, get_node_child(node, 0), FUNCTION_CAPTURE_WRITE, arena);
+}
+
 /** @brief Virtual table for simple assignment operations. */
 static node_vtbl_t simple_assignment_vtbl = {
     .type = NODE_SIMPLE_ASSIGNMENT,
     .analyze_reachability = analyze_reachability,
     .is_pure = not_pure,
+    .collect_direct_effects = collect_direct_effects,
     .type_name = L"assignment",
     .get_data = no_data,
     .get_property_count = no_properties,

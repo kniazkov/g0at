@@ -94,6 +94,7 @@ static node_vtbl_t statement_expression_vtbl = {
     .type = NODE_STATEMENT_EXPRESSION,
     .analyze_reachability = visit_reachable_child,
     .is_pure = children_are_pure,
+    .collect_direct_effects = collect_child_effects,
     .type_name = L"statement expression",
     .get_data = no_data,
     .get_property_count = no_properties,

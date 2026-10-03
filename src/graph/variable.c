@@ -7,6 +7,7 @@
 #include "variable.h"
 
 #include "analysis/abstract_state.h"
+#include "analysis/function_effects.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
 #include "builtins/registry.h"
@@ -120,11 +121,18 @@ static bool can_generate_c_code(const node_t *node, const lattice_element_t *val
     return is_integer_lattice_element(value) || is_real_lattice_element(value);
 }
 
+/** @brief Implements node_vtbl_t::collect_direct_effects. */
+static void
+collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
+    record_function_access(summary, node, FUNCTION_CAPTURE_READ, arena);
+}
+
 /** @brief Virtual table for variable expressions. */
 static node_vtbl_t variable_vtbl = {
     .type = NODE_VARIABLE,
     .analyze_reachability = analyze_reachability,
     .is_pure = children_are_pure,
+    .collect_direct_effects = collect_direct_effects,
     .type_name = L"variable",
     .is_assignable_expression = true,
     .get_data = get_data,
