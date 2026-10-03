@@ -22,3 +22,11 @@ void record_function_access(function_summary_t *summary,
                             const node_t *node,
                             uint32_t access,
                             arena_t *arena);
+
+/** @brief Records a call dependency without interpreting its body. */
+void record_function_effect_call(function_summary_t *summary, const node_t *site, arena_t *arena);
+
+typedef struct function_call_graph_t function_call_graph_t;
+
+/** @brief Propagates may-effects to a fixed point; missing coverage or limits prevent purity. */
+void propagate_function_effects(function_call_graph_t *graph, size_t max_iterations);

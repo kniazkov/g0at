@@ -1,0 +1,2 @@
+const f=func(n){try {throw n;} catch(e) {return e;}}
+f(1)

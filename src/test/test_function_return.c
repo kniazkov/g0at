@@ -36,7 +36,7 @@ bool test_function_return_isolation() {
     ASSERT(set->head == set->tail);
     ASSERT(set->head->status == FUNCTION_ANALYZED);
     ASSERT(set->head->return_type->type == LATTICE_INTEGER);
-    ASSERT(set->head->effects == FUNCTION_EFFECT_UNKNOWN);
+    ASSERT(set->head->effects == FUNCTION_EFFECT_EXTERNAL_WRITE);
     ASSERT(set->head->c_support == FUNCTION_C_UNKNOWN);
     query.kind = ANALYSIS_DECLARATION_SUMMARY;
     query.row = 3;

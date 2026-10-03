@@ -1,0 +1,3 @@
+const leaf=func(n){return n;}
+const f=func(n){if(false){leaf(n);}return n;}
+f(1)

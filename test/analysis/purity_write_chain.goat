@@ -1,0 +1,5 @@
+var x=0
+const a=func(n){return b(n);}
+const b=func(n){return c(n);}
+const c=func(n){x=n;return n;}
+a(1)

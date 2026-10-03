@@ -113,7 +113,7 @@ bool test_function_summary_events() {
     ASSERT(find_last_analysis_event(collector, &query) == second);
     string_value_t before = analysis_collector_to_text(collector);
     ASSERT(wcsstr(before.data, L": function-summary analyzed ("));
-    ASSERT(wcsstr(before.data, L"effects=unknown c=unknown"));
+    ASSERT(wcsstr(before.data, L"effects=none c=unknown"));
     function_summary_set_t *set = get_function_summaries(second->node);
     function_summary_t *live = set->head;
     live->parameter_types[0] = make_real_element();

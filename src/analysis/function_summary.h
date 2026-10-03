@@ -47,12 +47,19 @@ typedef struct function_capture_t {
     uint32_t access;
 } function_capture_t;
 
+/** @brief Syntactic call site, including calls omitted by reachability-based discovery. */
+typedef struct function_effect_call_t {
+    struct function_effect_call_t *next;
+    const node_t *site;
+} function_effect_call_t;
+
 /**
  * @brief Arena-owned record; function and immutable lattice elements are borrowed.
  * Parameter storage belongs to the record's arena. Borrowed data must outlive the record.
  * Status describes the analysis attempt, not precision: ANALYZED may still contain TOP or UNKNOWN.
- * Capture declarations/names are borrowed from the AST; list links and access masks are owned.
- * Type signatures do not distinguish capture values; records are not result caches.
+ * Capture declarations/names are borrowed from the AST; list links and access masks are owned. Call
+ * sites borrow AST nodes. Type signatures do not distinguish capture values; records are not result
+ * caches.
  */
 typedef struct function_summary_t {
     struct function_summary_t *next; /**< Next specialization; NULL in snapshots. */
@@ -60,10 +67,11 @@ typedef struct function_summary_t {
     size_t parameter_count;
     const lattice_element_t **parameter_types; /**< Treat as immutable after registration. */
     const lattice_element_t *return_type;
-    uint32_t effects; /**< Transitive effects; UNKNOWN until call propagation is implemented. */
+    uint32_t effects; /**< Transitive may-effects; zero proves purity, UNKNOWN blocks the proof. */
     uint32_t direct_effects; /**< Syntactic body effects, excluding called and nested bodies. */
     bool has_calls;
-    function_capture_t *captures; /**< Arena-owned list, in first-access order. */
+    function_effect_call_t *effect_calls; /**< Arena-owned call sites, excluding nested bodies. */
+    function_capture_t *captures;         /**< Arena-owned list, in first-access order. */
     function_analysis_status_t status;
     function_c_support_t c_support;
     size_t iterations; /**< Fixed-point evaluations; zero for nonrecursive analysis. */
@@ -76,7 +84,7 @@ create_function_summary(arena_t *arena, const node_t *function, size_t parameter
 /** @brief Clears observations, preserving function identity and the parameter type key. */
 void reset_function_summary(function_summary_t *summary);
 
-/** @brief Copies mutable records, parameters, and captures; AST and lattice values remain borrowed.
+/** @brief Copies mutable records and their lists; AST nodes and lattice values remain borrowed.
  */
 const function_summary_t *snapshot_function_summary(arena_t *arena,
                                                     const function_summary_t *summary);
@@ -114,3 +122,6 @@ const lattice_element_t *function_summary_type(const lattice_element_t *value);
 
 /** @brief Formats only the parameter type tuple; release with FREE_STRING(). */
 string_value_t function_signature_to_string(const function_summary_t *summary);
+
+/** @brief Proves absence of ambient mutable reads, writes and I/O; may still throw or diverge. */
+bool function_summary_is_pure(const function_summary_t *summary);

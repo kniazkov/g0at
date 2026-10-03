@@ -259,3 +259,15 @@ effects_shadow_builtin
 effects_handlers
 effects_constant_capture
 effects_profiles
+purity_chain
+purity_write_chain
+purity_capture_reads
+purity_alias
+purity_unknown_argument
+purity_shadow_print
+purity_native_bindings
+purity_dead_call
+purity_recursive_write
+purity_recursive_unknown
+purity_nested_write
+purity_handlers

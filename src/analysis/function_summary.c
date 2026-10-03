@@ -31,6 +31,7 @@ void reset_function_summary(function_summary_t *summary) {
     summary->effects = FUNCTION_EFFECT_UNKNOWN;
     summary->direct_effects = FUNCTION_EFFECT_UNKNOWN;
     summary->has_calls = false;
+    summary->effect_calls = NULL;
     summary->captures = NULL;
     summary->status = FUNCTION_UNANALYZED;
     summary->c_support = FUNCTION_C_UNKNOWN;
@@ -56,6 +57,13 @@ const function_summary_t *snapshot_function_summary(arena_t *arena,
         tail = &(*tail)->next;
     }
     *tail = NULL;
+    function_effect_call_t **call_tail = &copy->effect_calls;
+    for (const function_effect_call_t *call = summary->effect_calls; call; call = call->next) {
+        *call_tail = alloc_from_arena(arena, sizeof(**call_tail));
+        **call_tail = *call;
+        call_tail = &(*call_tail)->next;
+    }
+    *call_tail = NULL;
     return copy;
 }
 
@@ -113,6 +121,8 @@ string_value_t function_summary_to_string(const function_summary_t *summary) {
         append_string_value(&builder, suffix);
         FREE_STRING(suffix);
     }
+    append_string(&builder,
+                  function_summary_is_pure(summary) ? L" purity=pure" : L" purity=unknown");
     append_static_string(&builder, L" direct-effects=");
     append_effects(&builder, summary->direct_effects);
     append_string(&builder,
@@ -232,4 +242,8 @@ string_value_t function_signature_to_string(const function_summary_t *summary) {
         FREE_STRING(type);
     }
     return append_char(&builder, L')');
+}
+
+bool function_summary_is_pure(const function_summary_t *summary) {
+    return summary->effects == FUNCTION_EFFECT_NONE;
 }

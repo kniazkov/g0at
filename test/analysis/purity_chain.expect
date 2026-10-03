@@ -1,0 +1,6 @@
+one purity 1 0 integer pure
+one purity 2 0 integer pure
+one purity 3 0 integer pure
+one total-effects 1 0 integer none
+# Effect proofs do not depend on the return-type pass succeeding.
+one function 1 0 integer inconclusive:top

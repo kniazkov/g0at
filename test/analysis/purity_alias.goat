@@ -1,0 +1,4 @@
+const leaf=func(n){return n;}
+const alias=leaf
+const f=func(n){return alias(n);}
+f(1)

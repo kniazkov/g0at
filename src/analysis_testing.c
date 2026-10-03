@@ -174,6 +174,10 @@ static bool
 function_matches(const function_summary_t *summary, const char *kind, const char *expected) {
     if (!strcmp(kind, "effects"))
         return effects_match(summary->direct_effects, expected);
+    if (!strcmp(kind, "total-effects"))
+        return effects_match(summary->effects, expected);
+    if (!strcmp(kind, "purity"))
+        return !strcmp(expected, function_summary_is_pure(summary) ? "pure" : "unknown");
     if (!strcmp(kind, "calls"))
         return !strcmp(expected, summary->has_calls ? "yes" : "no");
     return return_type_matches(summary, expected);
@@ -220,7 +224,8 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
             query.kind = ANALYSIS_STATE_JOIN;
         else if (!strcmp(kind, "summary"))
             query.kind = ANALYSIS_DECLARATION_SUMMARY;
-        else if (!strcmp(kind, "function") || !strcmp(kind, "effects") || !strcmp(kind, "calls")) {
+        else if (!strcmp(kind, "function") || !strcmp(kind, "effects") || !strcmp(kind, "calls")
+                 || !strcmp(kind, "total-effects") || !strcmp(kind, "purity")) {
             query.kind = ANALYSIS_FUNCTION_SUMMARY;
             query.column = decl_row;
         } else if (!strcmp(kind, "flags")) {
