@@ -4,6 +4,7 @@
  */
 #include "update_expression.h"
 
+#include "analysis/function_effects.h"
 #include "analysis/reachability.h"
 #include "analysis/update.h"
 #include "codegen/code_builder.h"
@@ -99,11 +100,21 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     return update_is_postfix(node->vtbl->type) ? old : value;
 }
 
+/** @brief Implements node_vtbl_t::collect_direct_effects. */
+static void
+collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
+    record_function_access(summary,
+                           get_node_child(node, 0),
+                           FUNCTION_CAPTURE_READ | FUNCTION_CAPTURE_WRITE,
+                           arena);
+}
+
 /** @brief Virtual table for update expressions. */
 static node_vtbl_t prefix_increment_vtbl = {
     .type = NODE_PREFIX_INCREMENT,
     .analyze_reachability = analyze_reachability,
     .is_pure = not_pure,
+    .collect_direct_effects = collect_direct_effects,
     .type_name = L"prefix increment",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -133,6 +144,7 @@ static node_vtbl_t prefix_decrement_vtbl = {
     .type = NODE_PREFIX_DECREMENT,
     .analyze_reachability = analyze_reachability,
     .is_pure = not_pure,
+    .collect_direct_effects = collect_direct_effects,
     .type_name = L"prefix decrement",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -162,6 +174,7 @@ static node_vtbl_t postfix_increment_vtbl = {
     .type = NODE_POSTFIX_INCREMENT,
     .analyze_reachability = analyze_reachability,
     .is_pure = not_pure,
+    .collect_direct_effects = collect_direct_effects,
     .type_name = L"postfix increment",
     .get_data = no_data,
     .get_property_count = no_properties,
@@ -191,6 +204,7 @@ static node_vtbl_t postfix_decrement_vtbl = {
     .type = NODE_POSTFIX_DECREMENT,
     .analyze_reachability = analyze_reachability,
     .is_pure = not_pure,
+    .collect_direct_effects = collect_direct_effects,
     .type_name = L"postfix decrement",
     .get_data = no_data,
     .get_property_count = no_properties,

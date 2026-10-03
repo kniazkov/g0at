@@ -100,6 +100,7 @@ static node_vtbl_t throw_vtbl = {
     .type = NODE_THROW,
     .analyze_reachability = analyze_reachability,
     .is_pure = not_pure,
+    .collect_direct_effects = collect_child_effects,
     .type_name = L"throw",
     .get_data = no_data,
     .get_property_count = no_properties,

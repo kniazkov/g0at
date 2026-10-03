@@ -6,6 +6,7 @@
 
 #include "common_methods.h"
 
+#include "analysis/function_effects.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
 #include "expression.h"
@@ -154,4 +155,17 @@ visit_reachable_binary(node_t *node,
     if (value->type == LATTICE_BOTTOM)
         (*state)->control_flow = FLOW_UNREACHABLE;
     return value;
+}
+
+void collect_child_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
+    for (size_t i = 0; i < get_node_child_count(node); i++)
+        collect_node_direct_effects(get_node_child(node, i), summary, arena);
+}
+
+void no_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
+}
+
+void unknown_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
+    summary->direct_effects |= FUNCTION_EFFECT_UNKNOWN;
+    collect_child_effects(node, summary, arena);
 }

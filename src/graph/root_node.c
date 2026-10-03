@@ -91,6 +91,7 @@ static node_vtbl_t root_node_vtbl = {
     .type = NODE_ROOT,
     .analyze_reachability = visit_reachable_children,
     .is_pure = children_are_pure,
+    .collect_direct_effects = collect_child_effects,
     .type_name = L"root",
     .get_data = no_data,
     .get_property_count = no_properties,

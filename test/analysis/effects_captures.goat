@@ -1,0 +1,4 @@
+var a=1
+var b=2
+const f=func(n){a=n;return b;}
+f(3)

@@ -70,6 +70,7 @@ static node_vtbl_t multiplication_vtbl = {
     .type = NODE_MULTIPLICATION,
     .analyze_reachability = analyze_reachability,
     .is_pure = children_are_pure,
+    .collect_direct_effects = collect_child_effects,
     .type_name = L"multiplication",
     .get_data = no_data,
     .get_property_count = no_properties,

@@ -106,6 +106,7 @@ static node_vtbl_t statement_list_vtbl = {
     .type = NODE_STATEMENT_LIST,
     .analyze_reachability = visit_reachable_children,
     .is_pure = children_are_pure,
+    .collect_direct_effects = collect_child_effects,
     .type_name = L"statement_list",
     .get_data = no_data,
     .get_property_count = no_properties,

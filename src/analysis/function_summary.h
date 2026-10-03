@@ -35,11 +35,24 @@ typedef enum {
     FUNCTION_EFFECT_UNKNOWN = 16
 } function_effect_t;
 
+typedef struct declarator_t declarator_t;
+
+typedef enum { FUNCTION_CAPTURE_READ = 1, FUNCTION_CAPTURE_WRITE = 2 } function_capture_access_t;
+
+/** @brief One external binding; names distinguish predefined bindings sharing a declarator. */
+typedef struct function_capture_t {
+    struct function_capture_t *next;
+    const declarator_t *declarator;
+    string_view_t name;
+    uint32_t access;
+} function_capture_t;
+
 /**
  * @brief Arena-owned record; function and immutable lattice elements are borrowed.
  * Parameter storage belongs to the record's arena. Borrowed data must outlive the record.
  * Status describes the analysis attempt, not precision: ANALYZED may still contain TOP or UNKNOWN.
- * Type signatures do not distinguish closure captures; records are not result caches.
+ * Capture declarations/names are borrowed from the AST; list links and access masks are owned.
+ * Type signatures do not distinguish capture values; records are not result caches.
  */
 typedef struct function_summary_t {
     struct function_summary_t *next; /**< Next specialization; NULL in snapshots. */
@@ -47,7 +60,10 @@ typedef struct function_summary_t {
     size_t parameter_count;
     const lattice_element_t **parameter_types; /**< Treat as immutable after registration. */
     const lattice_element_t *return_type;
-    uint32_t effects;
+    uint32_t effects; /**< Transitive effects; UNKNOWN until call propagation is implemented. */
+    uint32_t direct_effects; /**< Syntactic body effects, excluding called and nested bodies. */
+    bool has_calls;
+    function_capture_t *captures; /**< Arena-owned list, in first-access order. */
     function_analysis_status_t status;
     function_c_support_t c_support;
     size_t iterations; /**< Fixed-point evaluations; zero for nonrecursive analysis. */
@@ -60,7 +76,8 @@ create_function_summary(arena_t *arena, const node_t *function, size_t parameter
 /** @brief Clears observations, preserving function identity and the parameter type key. */
 void reset_function_summary(function_summary_t *summary);
 
-/** @brief Copies mutable record/parameter storage; immutable lattice values remain borrowed. */
+/** @brief Copies mutable records, parameters, and captures; AST and lattice values remain borrowed.
+ */
 const function_summary_t *snapshot_function_summary(arena_t *arena,
                                                     const function_summary_t *summary);
 

@@ -70,6 +70,7 @@ static node_vtbl_t modulo_vtbl = {
     .type = NODE_MODULO,
     .analyze_reachability = analyze_reachability,
     .is_pure = children_are_pure,
+    .collect_direct_effects = collect_child_effects,
     .type_name = L"modulo",
     .get_data = no_data,
     .get_property_count = no_properties,

@@ -248,3 +248,14 @@ mutual_capture_write
 mutual_reverse_order
 mutual_alias
 mutual_nullable
+effects_locals
+effects_captures
+effects_write_only
+effects_updates
+effects_nested
+effects_syntactic
+effects_calls
+effects_shadow_builtin
+effects_handlers
+effects_constant_capture
+effects_profiles

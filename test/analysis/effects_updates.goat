@@ -1,0 +1,3 @@
+var a=1
+const f=func(n){++a;a++;--a;a--;return n;}
+f(3)

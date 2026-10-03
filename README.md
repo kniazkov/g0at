@@ -439,6 +439,48 @@ checks both status and return type. `none` uses `-` as its expected result, as w
 selectors. Existing node flags still describe the original analysis; specialization-specific
 proofs will be connected in later steps.
 
+### Direct function effects and captures
+
+A separate syntactic pass records each registered function body's `direct_effects`,
+`has_calls`, and an arena-owned list of captured bindings. Parameters and block locals
+belong to their nearest enclosing function: assigning them is not an external write.
+Assignments to enclosing/root bindings contribute `external-write`; reads contribute
+`external-read`; prefix/postfix updates contribute both. Constant external bindings
+are recorded too. Captures use declaration identity, plus the name for predefined
+bindings which share a placeholder declaration.
+
+This is a conservative body scan, identical across its type signatures. Both branches,
+statements after a return, and short-circuited operands are included. Nested function
+bodies are skipped and scanned separately only if they have registered signatures.
+Creating a closure does not execute its body. `try/catch` scans both children; unsupported
+effect implementations or unresolved bindings add `unknown`. Each node selects its traversal
+and access behavior through `node_vtbl_t::collect_direct_effects`; ordinary nodes use
+the shared child visitor. Throwing itself is not a state or I/O effect.
+
+Calls contribute their argument/callee reads and writes and set `has_calls`; the called
+body's effects, including native I/O, are not propagated yet. Thus `direct-effects=none`
+is **not a purity proof**. The existing transitive `effects` remains `unknown`, and node
+flags and C eligibility are unchanged.
+
+Function-summary log entries now end with fields such as:
+
+```text
+direct-effects=external-read|external-write calls=no captures=[counter@1.1:read|write]
+```
+
+Capture locations refer to declarations (`0.0` for predefined bindings); list order follows
+first syntactic access. Collector snapshots copy the list, so reanalysis cannot change it.
+C tests can inspect `captures` or use `find_function_capture`. Source expectations select
+the same function event and parameter signature as `function` selectors:
+
+```text
+one effects 3 0 integer external-read|external-write
+one calls 3 0 integer no
+```
+
+`effects` checks the exact direct mask (`none`, or names joined by `|`); `calls` checks
+`yes`/`no`. These selectors also support `last` and `none`.
+
 ### Recursive return types
 
 After graph discovery, a separate fixed-point pass handles direct and mutual recursion.
