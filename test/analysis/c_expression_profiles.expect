@@ -1,0 +1,8 @@
+one c-expression 2 0 integer/addition int64
+one c-expression 2 0 real/addition double
+one c-expression 2 0 string/addition unknown
+one c-expression 2 0 integer/variable int64
+one c-expression 2 0 real/variable double
+one c-expression 2 0 string/variable unknown
+one c-support 1 0 integer unknown
+one c-blockers 1 0 integer body

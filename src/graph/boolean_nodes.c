@@ -12,6 +12,13 @@
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 
+/** @brief Boolean literals are temporaries, not part of the numeric interface. */
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    return context != NULL;
+}
+
 /** @brief A boolean literal `true` expression node. */
 typedef struct {
     /** @brief Base expression structure from which boolean_true_t inherits. */
@@ -70,7 +77,7 @@ static node_vtbl_t true_vtbl = {
     .generate_goat_code = generate_goat_code_true,
     .generate_indented_goat_code = generate_indented_goat_code_true,
     .generate_bytecode = generate_bytecode_true,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
@@ -129,7 +136,7 @@ static node_vtbl_t false_vtbl = {
     .generate_goat_code = generate_goat_code_false,
     .generate_indented_goat_code = generate_indented_goat_code_false,
     .generate_bytecode = generate_bytecode_false,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

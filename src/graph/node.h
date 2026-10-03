@@ -43,6 +43,7 @@ typedef struct lattice_element_t lattice_element_t;
 typedef struct abstract_state_t abstract_state_t;
 typedef struct analysis_collector_t analysis_collector_t;
 typedef struct function_summary_t function_summary_t;
+typedef struct c_expression_context_t c_expression_context_t;
 
 /**
  * @brief Classification hint for node data rendered in graph visualization.
@@ -184,8 +185,11 @@ typedef struct {
     /**
      * @brief Proves membership in the current C subset, not availability of a C emitter.
      * value is an optional pointwise fact; NULL must not infer a variable type from summaries.
+     * context supplies per-signature operand proofs; NULL uses only legacy node caches.
      */
-    bool (*can_generate_c_code)(const node_t *node, const lattice_element_t *value);
+    bool (*can_generate_c_code)(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context);
 
     /**
      * @brief Generates a single-line C source code representation of the node, if possible.
@@ -367,7 +371,7 @@ static inline void generate_indented_goat_code_from_node(const node_t *node,
 /** @brief Checks membership in the current C subset using optional pointwise facts. */
 static inline bool can_generate_c_code_from_node(const node_t *node,
                                                  const lattice_element_t *value) {
-    return node->vtbl->can_generate_c_code(node, value);
+    return node->vtbl->can_generate_c_code(node, value, NULL);
 }
 
 /**

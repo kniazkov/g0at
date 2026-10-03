@@ -1,8 +1,8 @@
 # Initial C subset contract
 
 This is the contract for a future backend, not an implemented backend or a public
-native-library ABI. The analyzer checks interface preconditions now. Expression,
-control-flow and call lowering must supply the remaining body proof in later steps.
+native-library ABI. The analyzer checks interface preconditions and pointwise numeric expressions.
+Control-flow and call proofs must establish complete bodies in later steps.
 
 ## Interface and environment
 
@@ -20,8 +20,7 @@ Each formal parameter and the normal return need one fixed representation. Zero
 parameters are allowed. Missing arguments are still `null`; extra arguments must
 still be evaluated by the caller, even when omitted from the specialization key.
 
-Boolean temporaries for comparisons and branch predicates may be introduced by a
-later body proof. This does not admit boolean parameters or returns into this first
+Boolean literals and comparison results are allowed as expression temporaries. This does not admit boolean parameters or returns into this first
 numeric interface. There is no boxed-value, string, object or closure ABI yet.
 
 Purity must be proven by the effect pass. Direct effects alone, an analyzed return
@@ -37,7 +36,8 @@ native functions require a future explicit bridge; names alone are insufficient.
 
 ## Required numerical behavior
 
-These are requirements for later lowering, not a list of operators enabled today.
+These are requirements for later lowering; the expression checker below proves
+eligibility under this contract, not the existence of an emitter.
 
 - Integers retain the full signed 64-bit range. Addition, subtraction,
   multiplication, negation and updates wrap modulo 2^64. Ordinary overflowing signed
@@ -102,3 +102,31 @@ For example, numeric Fibonacci reaches `c=unknown` with `c-blockers=body`.
 Collectors copy these decisions into existing function-summary events. Source tests
 use `c-support` and `c-blockers` selectors with the same function location and signature
 as `function` selectors. Blocker names use the order shown above, joined by `|`.
+
+## Pointwise expression proof
+
+`can_generate_c_code(node, value, context)` is also used during an isolated generic
+function evaluation. Its context owns per-node representations for one signature;
+ordinary analysis passes NULL and retains the existing shared-flag behavior.
+
+Supported expressions are numeric literals/reads, parentheses, unary signs, numeric
+addition/subtraction/multiplication, and all six numeric comparisons. Arithmetic
+requires proven numeric operands, not just a numeric result. Lowering must use wrapping
+integer helpers, explicit rounded integer conversions, and the exact comparison helpers
+specified above. Boolean comparison/literal temporaries do not extend the numeric ABI.
+No reassociation or direct overflowing signed C arithmetic is authorized by a proof.
+
+A read uses its generic program-point type, including preceding writes and branch joins.
+External captures start at TOP. Calls are unproven and conservatively forget state using
+the existing generic evaluator. No concrete invocation or shared node flag is evidence.
+Repeated observations intersect: incompatible representations or one failed proof leave
+`unknown`. Unknown is distinct from an excluded interface type, and may be refined by
+future analyses. Unsupported or unvisited expressions do not imply an eligible body.
+In particular, constant folding cannot hide an unsupported operand behind a numeric result.
+
+The arena-owned proof list is copied into collector snapshots. `c-expression` events carry
+the function signature, source node and representation. They neither update the shared AST
+flags nor clear `C_BLOCKER_BODY`. A variable read can have a representation even if the
+statement producing it is unsupported; the later body checker must validate every required
+statement and expression. Current absence of an exception ABI keeps division, modulo,
+shifts, power, updates and calls unproven in this incremental step.

@@ -1,0 +1,12 @@
+const f = func(n) {
+    var x = 0;
+    if (n) { x = 1; } else { x = 2.5; }
+    return x + 1;
+};
+f(1);
+const g = func(n) {
+    var x = 0;
+    if (n) { x = 1; } else { x = 2; }
+    return x + 1;
+};
+g(1);

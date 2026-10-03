@@ -13,6 +13,14 @@
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 
+/** @brief Numeric operations use the wrap, rounding and comparison rules of the C contract. */
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    return context ? c_numeric_operands(node, context)
+                   : node->vtbl->type == NODE_UNARY_PLUS && child_c_code(node, value, NULL);
+}
+
 /** @brief Implements node_vtbl_t::get_child_count. */
 static size_t get_child_count(const node_t *node) {
     return 1;
@@ -104,7 +112,7 @@ static node_vtbl_t unary_plus_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = child_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
@@ -134,7 +142,7 @@ static node_vtbl_t unary_minus_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

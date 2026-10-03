@@ -5,6 +5,7 @@
  */
 #include "collector.h"
 
+#include "c_expression.h"
 #include "function_call_graph.h"
 #include "function_summary.h"
 #include "graph/declarations.h"
@@ -75,6 +76,13 @@ const analysis_event_t *add_function_summary_event(analysis_collector_t *collect
     analysis_event_t *event =
         append_event(collector, ANALYSIS_FUNCTION_SUMMARY, summary->function, NULL, NULL);
     event->function_summary = snapshot_function_summary(collector->arena, summary);
+    for (const c_expression_proof_t *proof = event->function_summary->c_expressions; proof;
+         proof = proof->next) {
+        analysis_event_t *expression =
+            append_event(collector, ANALYSIS_C_EXPRESSION, proof->node, NULL, NULL);
+        expression->function_summary = event->function_summary;
+        expression->c_expression = proof;
+    }
     return event;
 }
 
@@ -190,6 +198,7 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
                               : event->kind == ANALYSIS_FUNCTION_SUMMARY ? L"function-summary"
                               : event->kind == ANALYSIS_CALL_EDGE        ? L"call-edge"
                               : event->kind == ANALYSIS_CALL_GROUP       ? L"call-group"
+                              : event->kind == ANALYSIS_C_EXPRESSION     ? L"c-expression"
                                                                          : L"summary";
         string_value_t filename =
             event->file_name ? decode_utf8(event->file_name) : STATIC_STRING(L"<unknown>");
@@ -205,6 +214,14 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
             string_value_t graph = graph_event_to_string(event);
             append_string_value(&builder, graph);
             FREE_STRING(graph);
+        } else if (event->kind == ANALYSIS_C_EXPRESSION) {
+            string_value_t signature = function_signature_to_string(event->function_summary);
+            append_string_value(&builder, signature);
+            append_char(&builder, L' ');
+            append_string(&builder, event->node->vtbl->type_name);
+            append_static_string(&builder, L" = ");
+            append_string(&builder, c_expression_type_name(event->c_expression->type));
+            FREE_STRING(signature);
         } else if (event->kind == ANALYSIS_FUNCTION_SUMMARY) {
             string_value_t summary = function_summary_to_string(event->function_summary);
             append_string_value(&builder, summary);

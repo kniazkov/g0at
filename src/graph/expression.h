@@ -7,6 +7,7 @@
 #pragma once
 
 #include "analysis/abstract_state.h"
+#include "analysis/c_expression.h"
 #include "analysis/lattice.h"
 #include "data_type.h"
 #include "node.h"
@@ -62,6 +63,7 @@ calculate_expression(expression_t *expr, abstract_state_t *state, arena_t *arena
     if (state->control_flow != FLOW_NORMAL)
         return make_bottom_element();
     const lattice_element_t *value = calculate_node(&expr->base, state, arena);
+    record_c_expression(state->c_expressions, &expr->base, value);
     if (value->type == LATTICE_BOTTOM && state->control_flow == FLOW_NORMAL) {
         state->control_flow = FLOW_UNREACHABLE;
     }

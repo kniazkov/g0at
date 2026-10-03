@@ -1,0 +1,10 @@
+const f = func(n) {
+    return n + abs(n);
+};
+f(2);
+const g = func(n) {
+    const inner = func() { n = "s"; };
+    inner();
+    return n + 1;
+};
+g(2);

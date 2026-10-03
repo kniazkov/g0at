@@ -117,7 +117,9 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 }
 
 /** @brief Numeric representation must be proven at this particular read. */
-static bool can_generate_c_code(const node_t *node, const lattice_element_t *value) {
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
     return is_integer_lattice_element(value) || is_real_lattice_element(value);
 }
 

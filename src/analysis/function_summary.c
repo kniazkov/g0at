@@ -5,6 +5,7 @@
 #include "function_summary.h"
 
 #include "c_contract.h"
+#include "c_expression.h"
 #include "graph/declarations.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
@@ -37,6 +38,7 @@ void reset_function_summary(function_summary_t *summary) {
     summary->status = FUNCTION_UNANALYZED;
     summary->c_support = FUNCTION_C_UNKNOWN;
     summary->c_blockers = C_BLOCKER_ANALYSIS;
+    summary->c_expressions = NULL;
     summary->iterations = 0;
 }
 
@@ -66,6 +68,13 @@ const function_summary_t *snapshot_function_summary(arena_t *arena,
         call_tail = &(*call_tail)->next;
     }
     *call_tail = NULL;
+    c_expression_proof_t **proof_tail = &copy->c_expressions;
+    for (const c_expression_proof_t *proof = summary->c_expressions; proof; proof = proof->next) {
+        *proof_tail = alloc_from_arena(arena, sizeof(**proof_tail));
+        **proof_tail = *proof;
+        proof_tail = &(*proof_tail)->next;
+    }
+    *proof_tail = NULL;
     return copy;
 }
 

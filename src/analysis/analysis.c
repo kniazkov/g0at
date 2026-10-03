@@ -295,6 +295,7 @@ compilation_error_t *analyze(node_t *root_node,
     analyze_function_direct_effects(root_node);
     propagate_function_effects(calls, 64);
     analyze_function_c_contracts(root_node);
+    analyze_function_c_expressions(root_node);
     mark_unreachable_code(root_node, memory->graph, collector);
     classify_node_properties(root_node, collector);
     add_call_graph_events(collector, calls);

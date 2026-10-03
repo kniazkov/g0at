@@ -328,13 +328,11 @@ Native calls qualify only when immediate-execution analysis resolves their actua
 descriptor with no effects and their evaluated children are pure. Calls through
 unknown or user-defined bindings remain unproven. Names such as `print` or `sqrt` are not special cases.
 
-The initial C subset contains integer/real literals, variable reads proven to be
+The shared AST C flag currently covers integer/real literals, variable reads proven to be
 integer or real **at that use**, parentheses, and unary plus. It does not use
 whole-declaration summaries or observed argument types to specialize deferred
-bodies. Mixed/unknown types, calls, arithmetic, statements, and whole functions
-are outside this first subset. The flag is groundwork for a future backend;
-it does not enable the existing C-emission stubs. Integer wrapping, exceptions,
-closure representation, and function signatures still need a translation contract.
+bodies. Per-signature expression proofs below cover more operations without promoting
+these shared flags. The flag does not enable the existing C-emission stubs.
 
 The collector appends an immutable `flags` snapshot for every node after classification,
 including `none` for nodes without proofs. For example:
@@ -367,8 +365,9 @@ bits, with `flags_mask` and `flags`. Snapshots survive subsequent changes to nod
   user-function calls; deferred bodies are never specialized by the reachability pass.
 - `is_pure(node)` uses classified child caches and any resolved native-call proof. Function-object
   purity describes its body, while constructing that object does not execute it.
-- `can_generate_c_code(node, value)` checks the initial numeric C subset. `value` is an optional
+- `can_generate_c_code(node, value, context)` checks the initial numeric C subset. `value` is an optional
   pointwise abstract result; absent facts must not be replaced with declaration summaries.
+  An optional context supplies isolated per-signature operand proofs instead of shared flags.
   The method proves eligibility, not the availability of the still-unimplemented C emitter.
 
 Reachability seeds pointwise proofs; the postorder property pass refines them and writes
@@ -536,6 +535,36 @@ one c-blockers 1 0 integer body
 
 The contract also specifies wrapping integers, mixed numeric precision, floating-point
 special values, evaluation order and exception handling obligations for later lowering.
+
+### Numeric C expression proofs
+
+A separate generic evaluation records expression representations for each signature:
+`int64`, `double`, `bool` (an intermediate only), or `unknown`. The existing node virtual
+method checks operand proofs for `+`, `-`, `*`, unary signs and all six numeric comparisons.
+Literals, numeric variable reads and parentheses also participate. These decisions assume
+[the numeric lowering rules](docs/c-subset.md), including wrapping integers, exact mixed
+comparisons and VM-compatible floating-point behavior; they are not C source generation.
+
+The collector emits, for example:
+
+```text
+#42 program.goat, 2.12: c-expression (integer) addition = int64
+```
+
+Source tests can select a signature and optionally a node kind after `/`:
+
+```text
+one c-expression 2 0 integer/addition int64
+one c-expression 2 0 real/addition double
+one c-expression 2 0 string/addition unknown
+```
+
+The fourth field is the column (`0` means any). Node-kind spaces become underscores.
+Proofs use pointwise generic state, so assignments, branch joins and unknown calls can
+remove type information. No concrete call result or declaration-wide summary supplies a
+proof. Division, modulo, power, shifts, updates, calls and short-circuit operations remain
+unproven here. A skipped expression has no event; that absence never proves C support.
+The function's `body` blocker remains until control flow and calls are checked.
 
 ### Recursive return types
 
