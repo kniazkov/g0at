@@ -93,3 +93,6 @@ function_summary_t *register_function_specialization(function_summary_set_t *set
 
 /** @brief Removes value refinements from a type; preserves BOTTOM for no normal return. */
 const lattice_element_t *function_summary_type(const lattice_element_t *value);
+
+/** @brief Formats only the parameter type tuple; release with FREE_STRING(). */
+string_value_t function_signature_to_string(const function_summary_t *summary);

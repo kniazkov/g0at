@@ -412,7 +412,7 @@ Reached calls (including built-ins) and bodies containing `try/catch` are curren
 `inconclusive` with a `TOP` result: call dependencies and exceptional-flow proofs are
 not solved by this step. Calls on paths the type pass proves dead do not block analysis.
 Nested function bodies are deferred; returning a closure produces type `function`.
-Unobserved signatures are not invented. The statuses `unanalyzed` and `analyzing` describe
+The call graph can discover further signatures from generic bodies. The statuses `unanalyzed` and `analyzing` describe
 records before and during this pass. No status alone proves purity or C support.
 
 With analysis enabled, one `function-summary` event per observed signature appears in
@@ -438,6 +438,40 @@ is the comma-separated parameter signature, or `-` for zero parameters. The last
 checks both status and return type. `none` uses `-` as its expected result, as with other
 selectors. Existing node flags still describe the original analysis; specialization-specific
 proofs will be connected in later steps.
+
+### Call graph and recursive groups
+
+A bounded pass builds a may-call graph over observed specializations and signatures
+newly discovered from their generic bodies. Each vertex is a function node plus a type
+signature, not a function name. Local callable values follow abstract execution;
+constant function initializers and immutable aliases can identify additional targets.
+This static identity does not prove the declaration has already executed: external
+values remain unknown for branch decisions. Mutable external bindings, generic callable
+parameters, and unresolved built-ins produce unknown targets. Deferred closure bodies
+are scanned only when a signature for that function is discovered.
+
+Each reached call site records an edge. Calls on proven-dead paths are omitted; handlers
+are still unsupported and make coverage partial. Call results remain unknown, so subsequent
+arguments can lose precision. The pass does not solve recursive return types or infer purity.
+Discovery is limited to 1,024 vertices; exhaustion is explicit and cannot prove completeness.
+
+The log adds two event kinds, with graph-local vertex and component IDs:
+
+```text
+#20 program.goat, 2.30: call-edge f1 (integer) -> f2 (integer)
+#21 program.goat, 1.11: call-group f2 (integer) = g1 recursive size=2 complete
+```
+
+`call-edge` is located at the call expression and snapshots caller/callee signatures;
+`unknown` or `limit` replaces the target when necessary. `call-group` is located at the
+function and records its strongly connected component, size, and direct-call coverage.
+`acyclic` describes only the known-target subgraph. `partial` means missing information,
+so an acyclic component is not proof that the function cannot recurse. `complete` does
+not prove termination or purity and does not describe transitive coverage.
+
+C tests query `ANALYSIS_CALL_EDGE` and `ANALYSIS_CALL_GROUP` through the existing collector
+API. IDs, component metadata, and signature arrays are snapshots: reanalysis cannot change
+old events. These graph events do not yet have dedicated `.expect` selectors.
 
 ### Proven unreachable code
 

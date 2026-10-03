@@ -15,15 +15,18 @@ typedef struct declarator_t declarator_t;
 typedef struct lattice_element_t lattice_element_t;
 typedef struct analysis_event_t analysis_event_t;
 typedef struct function_summary_t function_summary_t;
+typedef struct function_call_graph_t function_call_graph_t;
 
 typedef enum {
     ANALYSIS_EVENT_ANY = 0, /**< Query wildcard; never recorded. */
     ANALYSIS_VALUE_WRITE,
     ANALYSIS_STATE_JOIN,
     ANALYSIS_DECLARATION_SUMMARY,
-    ANALYSIS_UNREACHABLE,     /**< Subtree root; declarator and value are NULL. */
-    ANALYSIS_NODE_FLAGS,      /**< Final proof snapshot, including zero (no proof). */
-    ANALYSIS_FUNCTION_SUMMARY /**< Function-body facts, independent of later analysis. */
+    ANALYSIS_UNREACHABLE,      /**< Subtree root; declarator and value are NULL. */
+    ANALYSIS_NODE_FLAGS,       /**< Final proof snapshot, including zero (no proof). */
+    ANALYSIS_FUNCTION_SUMMARY, /**< Function-body facts, independent of later analysis. */
+    ANALYSIS_CALL_EDGE,        /**< Call-site target; NULL callee means unknown or graph limit. */
+    ANALYSIS_CALL_GROUP        /**< Strongly connected component membership. */
 } analysis_event_kind_t;
 
 /** @brief One observation, not a mutable reference to an abstract state. */
@@ -35,6 +38,10 @@ struct analysis_event_t {
     const declarator_t *declarator;
     const lattice_element_t *value;
     const function_summary_t *function_summary; /**< Snapshot for ANALYSIS_FUNCTION_SUMMARY. */
+    const function_summary_t *callee_summary;
+    size_t caller_id, callee_id;
+    size_t component, component_size;
+    bool recursive, complete, limited;
     uint32_t flags; /**< Snapshot for ANALYSIS_NODE_FLAGS, independent of later node changes. */
     const char *file_name;
     size_t row;
@@ -83,6 +90,9 @@ const analysis_event_t *add_analysis_event(analysis_collector_t *collector,
 /** @brief Appends an isolated signature snapshot; NULL collector disables recording. */
 const analysis_event_t *add_function_summary_event(analysis_collector_t *collector,
                                                    const function_summary_t *summary);
+
+/** @brief Appends graph edges and component snapshots; NULL collector disables recording. */
+void add_call_graph_events(analysis_collector_t *collector, const function_call_graph_t *graph);
 
 /**
  * @brief Finds the next matching event in O(n); NULL query matches everything.

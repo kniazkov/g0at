@@ -58,15 +58,11 @@ string_value_t function_summary_to_string(const function_summary_t *summary) {
     string_builder_t builder;
     init_string_builder(&builder, 0);
     append_string(&builder, status);
-    append_static_string(&builder, L" (");
-    for (size_t i = 0; i < summary->parameter_count; i++) {
-        if (i)
-            append_static_string(&builder, L", ");
-        string_value_t type = lattice_to_string(summary->parameter_types[i]);
-        append_string_value(&builder, type);
-        FREE_STRING(type);
-    }
-    append_static_string(&builder, L") -> ");
+    append_char(&builder, L' ');
+    string_value_t signature = function_signature_to_string(summary);
+    append_string_value(&builder, signature);
+    FREE_STRING(signature);
+    append_static_string(&builder, L" -> ");
     string_value_t result = lattice_to_string(summary->return_type);
     append_string_value(&builder, result);
     FREE_STRING(result);
@@ -176,4 +172,18 @@ function_summary_t *register_function_specialization(function_summary_set_t *set
         set->head = summary;
     set->tail = summary;
     return summary;
+}
+
+string_value_t function_signature_to_string(const function_summary_t *summary) {
+    string_builder_t builder;
+    init_string_builder(&builder, 0);
+    append_char(&builder, L'(');
+    for (size_t i = 0; i < summary->parameter_count; i++) {
+        if (i)
+            append_static_string(&builder, L", ");
+        string_value_t type = lattice_to_string(summary->parameter_types[i]);
+        append_string_value(&builder, type);
+        FREE_STRING(type);
+    }
+    return append_char(&builder, L')');
 }
