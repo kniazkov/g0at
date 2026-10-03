@@ -50,7 +50,9 @@ bool test_specialization_graph() {
     node_t *function = (node_t *)event->node;
     function_summary_set_t *set = get_function_summaries(function);
     const function_summary_t *view = select_function_c_view(set);
-    ASSERT(view && view->parameter_types[0]->type == LATTICE_REAL);
+    ASSERT(view && view->parameter_types[0]->type == LATTICE_INTEGER);
+    ASSERT(get_node_child(get_node_child(get_node_child(root, 1), 0), 0)->vtbl->type
+           == NODE_FUNCTION_CALL);
     ASSERT(function->flags & NODE_FLAG_PURE);
     /* Discovery also contains an unknown-argument profile; it must not acquire C support. */
     ASSERT(!(function->flags & NODE_FLAG_C_COMPATIBLE));
@@ -58,7 +60,7 @@ bool test_specialization_graph() {
     uint32_t flags = function->flags;
     string_value_t dot = generate_graph_dot(function);
     ASSERT(wcsstr(dot.data, L"C view"));
-    ASSERT(wcsstr(dot.data, L"(real)"));
+    ASSERT(wcsstr(dot.data, L"(integer)"));
     ASSERT(wcsstr(dot.data, L"C=supported") && wcsstr(dot.data, L"C=unknown"));
     ASSERT(occurrences(dot.data, L"color=forestgreen") == nodes(function));
     ASSERT(occurrences(dot.data, L"style=\"rounded,filled\" fillcolor=\"#f2faf2\"")

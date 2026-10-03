@@ -69,6 +69,8 @@ bool test_builtin_numeric_results() {
                           {true, 9},
                           {false, 0, -0.0},
                           {false, 0, 0.25},
+                          {false, 0, -2.0},
+                          {false, 0, 0x1p63},
                           {false, 0, -1.5},
                           {false, 0, INFINITY},
                           {false, 0, -INFINITY},
@@ -110,11 +112,14 @@ bool test_builtin_numeric_results() {
                 ASSERT(!proc->main_thread->exception.value
                        && proc->main_thread->data_stack->size == 1);
                 object_t *actual = pop_object_from_stack(proc->main_thread->data_stack);
-                if (descriptor == &builtin_sign) {
+                if (descriptor == &builtin_sign
+                    || (descriptor == &builtin_abs && selected[0].integer)) {
+                    ASSERT(is_integer_object(actual));
                     ASSERT(value->type == LATTICE_INTEGER_CONSTANT);
                     ASSERT(get_object_integer_value(actual).value
                            == ((const integer_constant_element_t *)value)->value);
                 } else {
+                    ASSERT(!is_integer_object(actual));
                     ASSERT(value->type == LATTICE_REAL_CONSTANT);
                     double expected = ((const real_constant_element_t *)value)->value;
                     double number = get_object_real_value(actual).value;
@@ -229,6 +234,47 @@ bool test_builtin_domains() {
     args[0] = make_string_element();
     ASSERT(interpret_function_call(sign, args, 1, state)->type == LATTICE_BOTTOM);
     ASSERT(state->control_flow == FLOW_UNREACHABLE);
+    destroy_abstract_state(state);
+    destroy_arena(arena);
+    return true;
+}
+
+bool test_abs_domains() {
+    arena_t *arena = create_arena(8);
+    abstract_state_t *state = create_abstract_state(arena);
+    const lattice_element_t *args[] = {NULL};
+    const lattice_element_t *domains[] = {make_integer_element(),
+                                          make_integer_range_element(arena, -9, 4),
+                                          make_real_element(),
+                                          make_numeric_element(),
+                                          make_top_element(),
+                                          make_not_null_element(),
+                                          make_true_element(),
+                                          make_string_element(),
+                                          make_null_element(),
+                                          make_bottom_element()};
+    const lattice_type_t expected[] = {LATTICE_INTEGER,
+                                       LATTICE_INTEGER,
+                                       LATTICE_REAL,
+                                       LATTICE_NUMERIC,
+                                       LATTICE_NUMERIC,
+                                       LATTICE_NUMERIC,
+                                       LATTICE_BOTTOM,
+                                       LATTICE_BOTTOM,
+                                       LATTICE_BOTTOM,
+                                       LATTICE_BOTTOM};
+    for (size_t i = 0; i < sizeof(domains) / sizeof(*domains); i++) {
+        args[0] = domains[i];
+        ASSERT(builtin_abs.interpret(state, args, 1)->type == expected[i]);
+    }
+    const int64_t inputs[] = {INT64_MIN, INT64_MAX, -9007199254740993LL, -7, 0, 7};
+    const int64_t results[] = {INT64_MIN, INT64_MAX, 9007199254740993LL, 7, 0, 7};
+    for (size_t i = 0; i < sizeof(inputs) / sizeof(*inputs); i++) {
+        args[0] = make_integer_constant_element(arena, inputs[i]);
+        const lattice_element_t *value = builtin_abs.interpret(state, args, 1);
+        ASSERT(value->type == LATTICE_INTEGER_CONSTANT);
+        ASSERT(((const integer_constant_element_t *)value)->value == results[i]);
+    }
     destroy_abstract_state(state);
     destroy_arena(arena);
     return true;

@@ -616,7 +616,11 @@ Try the original Fibonacci experiment:
 ./goat --save-graph fibonacci.svg example/fibonacci_analysis.goat
 ```
 
-The full function appears green under `C view: (real)`, including both recursive calls.
+`abs` preserves numeric types: integer inputs produce integers and real inputs produce
+reals. Integer overflow follows unary negation: `abs(INT64_MIN)` remains `INT64_MIN`.
+Real absolute values follow `fabs`, including positive zero, infinities and NaN.
+
+The full function appears green under `C view: (integer)`, including both recursive calls.
 The unknown-argument signature discovered by the call graph stays explicitly unproven.
 Linux/GCC CI renders this example with Graphviz and uploads the SVG as an artifact.
 
@@ -626,7 +630,7 @@ After analysis, a separate pass asks each node's `simplify` method for an equiva
 smaller subtree. Scalar constant folding and removable `if` conditions produce
 `expression replacement` or `statement replacement` nodes. Each has two labelled
 children: `original` and `replacement`. Only the latter is executed or emitted as source
-and bytecode; the graph preserves both and gives replacements a pale purple fill.
+and bytecode; the graph preserves both and gives replacements a pale purple fill and a purple contour.
 
 Folding uses pointwise immediate-execution facts, never a variable's aggregate summary
 or one observed function call. Closed literal expressions can also fold inside function

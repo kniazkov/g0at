@@ -2,4 +2,4 @@ one flags 1 0 function_object pure
 one flags 6 0 addition pure
 one flags 6 12 function_call pure
 one flags 6 23 function_call pure
-one c-support 1 0 real supported
+one c-support 1 0 integer supported

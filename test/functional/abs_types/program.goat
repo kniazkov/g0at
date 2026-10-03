@@ -1,0 +1,11 @@
+print(abs(-7)%4);print(":");
+print(abs(-9007199254740993));print(":");
+print(abs(-9223372036854775807-1));print(":");
+print(abs(-2.0));print(":");
+try {abs(-2.0)%1;} catch(e) {print("real:");}
+var x=0;print(abs(x=-3));print(":");print(x);print(":");
+print(abs(-5,x=8));print(":");print(x);print(":");
+try {abs();} catch(e) {print("missing:");}
+try {abs(true);} catch(e) {print("type:");}
+const alias=abs;var abs=func(n){return n-1;};
+print(abs(2));print(":");print(alias(-2));
