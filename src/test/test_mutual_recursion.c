@@ -12,6 +12,7 @@
 #include "lib/allocate.h"
 #include "test_macro.h"
 
+#include <stdio.h>
 #include <wchar.h>
 
 bool test_mutual_recursion_limits() {
