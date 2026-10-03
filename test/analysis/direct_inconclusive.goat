@@ -1,0 +1,6 @@
+const other=func(n){return n;}
+const uncertain=func(n){if(n < 1)return 0;var v=uncertain(n-1);return other(v);}
+uncertain(0)
+const a=func(n){if(n < 1)return 0;return b(n-1);}
+const b=func(n){if(n < 1)return 0;return a(n-1);}
+a(0)

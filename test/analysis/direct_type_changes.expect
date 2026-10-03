@@ -1,0 +1,6 @@
+one function 1 0 integer analyzed:integer
+one function 1 0 real analyzed:integer
+one function 3 0 real analyzed:integer
+one function 3 0 top analyzed:integer
+# The solver uses the covering TOP signature without modifying the call graph.
+none function 3 0 integer -

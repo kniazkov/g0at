@@ -1,0 +1,10 @@
+const numeric = func(n) { if(n < 1) return 0; return numeric(n-1) + 0.5; }
+numeric(0)
+const text = func(n) { if(n < 1) return "x"; return text(n-1) + n; }
+text(0)
+const empty = func(n) { if(n < 1) return; return empty(n-1); }
+empty(0)
+const fallthrough = func(n) { if(n < 1) return fallthrough(n-1); }
+fallthrough(1)
+const spin = func(n) { return spin(n); }
+spin(1)

@@ -102,7 +102,8 @@ bool test_call_graph_recursion() {
     ASSERT(self->recursive && self->component_size == 1 && self->component != even->component);
     const analysis_event_t *edge = at(collector, ANALYSIS_CALL_EDGE, 4);
     ASSERT(edge && edge->caller_id == edge->callee_id);
-    ASSERT(self->function_summary->status == FUNCTION_INCONCLUSIVE);
+    ASSERT(self->function_summary->status == FUNCTION_ANALYZED);
+    ASSERT(self->function_summary->return_type->type == LATTICE_INTEGER);
     const analysis_event_t *mutual = at(collector, ANALYSIS_CALL_EDGE, 1);
     ASSERT(mutual && mutual->callee_summary);
     string_value_t before = analysis_collector_to_text(collector);

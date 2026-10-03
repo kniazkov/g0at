@@ -30,6 +30,7 @@ void reset_function_summary(function_summary_t *summary) {
     summary->effects = FUNCTION_EFFECT_UNKNOWN;
     summary->status = FUNCTION_UNANALYZED;
     summary->c_support = FUNCTION_C_UNKNOWN;
+    summary->iterations = 0;
 }
 
 const function_summary_t *snapshot_function_summary(arena_t *arena,
@@ -91,7 +92,13 @@ string_value_t function_summary_to_string(const function_summary_t *summary) {
         }
     }
     append_static_string(&builder, L" c=");
-    return append_string(&builder, support);
+    string_value_t value = append_string(&builder, support);
+    if (summary->iterations) {
+        string_value_t suffix = format_string(L" iterations=%zu", summary->iterations);
+        value = append_string_value(&builder, suffix);
+        FREE_STRING(suffix);
+    }
+    return value;
 }
 
 function_summary_set_t *

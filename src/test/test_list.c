@@ -12,6 +12,7 @@
 #include "test_builtin_functions.h"
 #include "test_codegen.h"
 #include "test_comparison.h"
+#include "test_direct_recursion.h"
 #include "test_division.h"
 #include "test_function_analysis.h"
 #include "test_function_call_graph.h"
@@ -51,6 +52,8 @@ static test_description_t test_list[] = {
     {"builtin numeric results", test_builtin_numeric_results},
     {"builtin errors", test_builtin_errors},
     {"builtin domains", test_builtin_domains},
+    {"direct recursion limits", test_direct_recursion_limits},
+    {"direct recursion captures", test_direct_recursion_captures},
     {"call graph discovery", test_call_graph_discovery},
     {"call graph recursion", test_call_graph_recursion},
     {"call graph bindings", test_call_graph_bindings},

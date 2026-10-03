@@ -75,6 +75,7 @@ abstract_state_t *create_abstract_state(arena_t *arena) {
     state->builtin_bindings_unknown = false;
     state->type_analysis_incomplete = NULL;
     state->call_graph_node = NULL;
+    state->recursive_signatures = NULL;
     state->call_budget = alloc_from_arena(arena, sizeof(size_t));
     *state->call_budget = 1024;
     return state;
@@ -95,6 +96,7 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     copy->call_budget = state->call_budget;
     copy->type_analysis_incomplete = state->type_analysis_incomplete;
     copy->call_graph_node = state->call_graph_node;
+    copy->recursive_signatures = state->recursive_signatures;
     return copy;
 }
 
@@ -194,6 +196,7 @@ abstract_state_t *join_abstract_states(const abstract_state_t *left,
     result->call_budget = left->call_budget;
     result->type_analysis_incomplete = left->type_analysis_incomplete;
     result->call_graph_node = left->call_graph_node;
+    result->recursive_signatures = left->recursive_signatures;
     join_context_t context = {left, right, result};
     avl_tree_for_each(left->values, join_abstract_state_entry, &context);
     avl_tree_for_each(right->values, join_abstract_state_entry, &context);
@@ -299,4 +302,17 @@ static void reset_local(void *context, void *key, value_t value) {
 void reset_abstract_call_locals(abstract_state_t *state, const node_t *function) {
     call_copy_t copy = {state, function};
     avl_tree_for_each(state->values, reset_local, &copy);
+}
+
+/** @brief Shared bindings belong to an enclosing activation, not the current one. */
+static void forget_capture(void *context, void *key, value_t ignored) {
+    call_copy_t *copy = context;
+    if (local_owner(key) != copy->function)
+        set_in_abstract_state(copy->caller, key, make_top_element());
+}
+
+void forget_captured_abstract_values(abstract_state_t *state, const node_t *function) {
+    state->builtin_bindings_unknown = true;
+    call_copy_t context = {.caller = state, .function = function};
+    avl_tree_for_each(state->values, forget_capture, &context);
 }
