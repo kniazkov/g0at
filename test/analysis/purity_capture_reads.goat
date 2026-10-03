@@ -1,0 +1,6 @@
+var x=1
+const y=2
+const read_mutable=func(n){return x+n;}
+const read_constant=func(n){return y+n;}
+read_mutable(1)
+read_constant(1)

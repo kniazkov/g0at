@@ -42,7 +42,7 @@ bool test_direct_recursion_limits() {
     ASSERT(event && event->function_summary->status == FUNCTION_ANALYZED);
     ASSERT(event->function_summary->return_type->type == LATTICE_INTEGER);
     ASSERT(event->function_summary->iterations >= 2);
-    ASSERT(event->function_summary->effects == FUNCTION_EFFECT_UNKNOWN);
+    ASSERT(event->function_summary->effects == FUNCTION_EFFECT_NONE);
     ASSERT(event->function_summary->c_support == FUNCTION_C_UNKNOWN);
     string_value_t before = analysis_collector_to_text(collector);
     ASSERT(wcsstr(before.data, L"iterations="));

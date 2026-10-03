@@ -1,0 +1,5 @@
+one total-effects 3 0 integer external-read
+one purity 3 0 integer unknown
+one effects 4 0 integer external-read
+one total-effects 4 0 integer none
+one purity 4 0 integer pure

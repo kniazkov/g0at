@@ -1,0 +1,3 @@
+# No edge for a syntactic call is incomplete coverage, not an effect-free callee.
+one total-effects 2 0 integer unknown
+one purity 2 0 integer unknown

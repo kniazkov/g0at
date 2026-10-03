@@ -403,8 +403,8 @@ body can fall through. Constants and ranges in the result collapse to base types
 has no nullable-integer union.
 
 Captured bindings start at `TOP`, regardless of observed values at call sites. The pass
-does not emit ordinary writes, flush declaration facts, or change node flags. Effects
-and C support remain unknown. Signatures still do not distinguish captures or callable
+does not emit ordinary writes, flush declaration facts, or change node flags. C support
+remains unknown; a separate pass computes effects. Signatures still do not distinguish captures or callable
 argument identities and must not be used as cached call results.
 
 Completed attempts have status `analyzed`, which can legitimately have a `TOP` return.
@@ -419,7 +419,7 @@ With analysis enabled, one `function-summary` event per observed signature appea
 `--print-analysis` and `--save-analysis`, for example:
 
 ```text
-#12 program.goat, 1.11: function-summary analyzed (integer) -> integer effects=unknown c=unknown
+#12 program.goat, 1.11: function-summary analyzed (integer) -> integer effects=none c=unknown purity=pure direct-effects=none calls=no captures=[]
 ```
 
 Events snapshot the record and parameter slots, without linking to other signatures.
@@ -458,9 +458,8 @@ and access behavior through `node_vtbl_t::collect_direct_effects`; ordinary node
 the shared child visitor. Throwing itself is not a state or I/O effect.
 
 Calls contribute their argument/callee reads and writes and set `has_calls`; the called
-body's effects, including native I/O, are not propagated yet. Thus `direct-effects=none`
-is **not a purity proof**. The existing transitive `effects` remains `unknown`, and node
-flags and C eligibility are unchanged.
+body's effects are handled by the separate propagation pass below. Thus `direct-effects=none`
+is **not a purity proof**. Node flags and C eligibility are unchanged.
 
 Function-summary log entries now end with fields such as:
 
@@ -480,6 +479,43 @@ one calls 3 0 integer no
 
 `effects` checks the exact direct mask (`none`, or names joined by `|`); `calls` checks
 `yes`/`no`. These selectors also support `last` and `none`.
+
+### Transitive effects and purity
+
+After direct collection, a bounded fixed-point pass unions effects along known call-graph
+edges. Pure direct or mutually recursive groups can converge to `effects=none`;
+external writes, mutable reads and unknown calls propagate to callers. Reads of immutable
+`const` bindings are excluded from transitive mutable-state dependencies, but remain in
+the direct-effects/capture log. This includes references to recursive function declarations.
+
+The collector keeps every syntactic call site, separately from the graph's reached edges.
+Each site needs known target coverage: missing, unknown or limited edges contribute
+`unknown`. Consequently a call in a dead branch can still prevent this conservative purity
+proof. A truncated graph or an exhausted propagation budget (64 rounds) also prevents
+purity; a fresh direct scan invalidates earlier propagated results.
+
+`function_summary_is_pure` and `purity=pure` mean `effects=none`. Every other mask yields
+`purity=unknown`, not a claim that a side effect definitely occurs. A pure function may
+throw or diverge. Return-type status is independent: an inconclusive return type can still
+have proven purity. These summaries do not yet recolor shared AST nodes, authorize
+memoization, prove termination, or establish C eligibility.
+
+Propagation remains conservative about closures: a callee's write to a caller-local binding
+is not discharged as local to the caller yet. Mutable root names such as `print` and `abs`
+are not assumed to retain their native identities in generic summaries; unresolved native
+calls remain unknown rather than importing a descriptor by name. A locally defined user
+function named `print` is analyzed through its actual graph target.
+
+Source tests can inspect the propagated mask and proof independently:
+
+```text
+one total-effects 1 0 integer none
+one purity 1 0 integer pure
+one purity 5 0 function unknown
+```
+
+Snapshots copy call-site records as well as capture records. The existing `effects` selector
+continues to check direct effects; `total-effects` checks the propagated mask.
 
 ### Recursive return types
 
@@ -502,7 +538,7 @@ on subsequent rounds; unrelated groups retain their own results. Exhaustion disc
 partial results for the whole group.
 
 `BOTTOM` after convergence means no normal return was found, not a termination proof.
-The pass does not infer effects or C support, change shared AST facts, or replace ordinary
+The return-type pass does not infer effects or C support, change shared AST facts, or replace ordinary
 call interpretation. Function-summary events snapshot the final result and iteration count.
 
 ### Call graph and recursive groups

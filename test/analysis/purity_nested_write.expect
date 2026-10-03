@@ -1,0 +1,3 @@
+# Writes to a caller's locals are not yet discharged during propagation.
+one total-effects 1 9 integer external-write
+one purity 1 9 integer unknown

@@ -32,7 +32,9 @@ bool test_function_effect_captures() {
     const analysis_event_t *event = find_analysis_event(collector, NULL, &query);
     ASSERT(event && !find_analysis_event(collector, event, &query));
     const function_summary_t *snapshot = event->function_summary;
-    ASSERT(snapshot->effects == FUNCTION_EFFECT_UNKNOWN);
+    ASSERT(snapshot->effects
+           == (FUNCTION_EFFECT_EXTERNAL_READ | FUNCTION_EFFECT_EXTERNAL_WRITE
+               | FUNCTION_EFFECT_UNKNOWN));
     ASSERT(snapshot->c_support == FUNCTION_C_UNKNOWN);
     ASSERT(snapshot->has_calls);
     ASSERT(snapshot->direct_effects

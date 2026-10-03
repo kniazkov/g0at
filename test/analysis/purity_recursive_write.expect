@@ -1,0 +1,3 @@
+one total-effects 2 0 integer external-read|external-write
+one total-effects 3 0 integer external-read|external-write
+one purity 2 0 integer unknown

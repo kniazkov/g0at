@@ -1,3 +1,5 @@
 one function 1 0 real analyzed:integer
 # Ordinary concrete interpretation is still bounded and is not replaced by the proof.
 last write 7 7 x top
+one purity 1 0 real pure
+one total-effects 1 0 real none

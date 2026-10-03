@@ -173,7 +173,7 @@ static bool is_pure(const node_t *node) {
 /** @brief Implements node_vtbl_t::collect_direct_effects. */
 static void
 collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
-    summary->has_calls = true;
+    record_function_effect_call(summary, node, arena);
     collect_child_effects(node, summary, arena);
 }
 

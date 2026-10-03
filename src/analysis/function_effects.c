@@ -72,10 +72,21 @@ void analyze_function_direct_effects(node_t *root) {
         for (function_summary_t *summary = set->head; summary; summary = summary->next) {
             summary->direct_effects = FUNCTION_EFFECT_NONE;
             summary->has_calls = false;
+            summary->effect_calls = NULL;
+            summary->effects = FUNCTION_EFFECT_UNKNOWN;
             summary->captures = NULL;
             collect_node_direct_effects(get_node_child(root, 1), summary, set->arena);
         }
     }
     for (size_t i = 0; i < get_node_child_count(root); i++)
         analyze_function_direct_effects(get_node_child(root, i));
+}
+
+void record_function_effect_call(function_summary_t *summary, const node_t *site, arena_t *arena) {
+    summary->has_calls = true;
+    function_effect_call_t **tail = &summary->effect_calls;
+    while (*tail)
+        tail = &(*tail)->next;
+    *tail = alloc_zeroed_from_arena(arena, sizeof(**tail));
+    (*tail)->site = site;
 }
