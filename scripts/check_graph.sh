@@ -6,6 +6,7 @@ set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 mkdir -p build
+rm -f build/fibonacci-analysis.svg
 goat_binary="${GOAT_BINARY:-./goat}"
 "$goat_binary" --save-graph build/fibonacci-analysis.svg example/fibonacci_analysis.goat > build/fibonacci-output.txt
 python3 - <<'PY'
