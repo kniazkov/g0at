@@ -5,6 +5,7 @@
  */
 #include "collector.h"
 
+#include "function_call_graph.h"
 #include "function_summary.h"
 #include "graph/declarations.h"
 #include "lattice.h"
@@ -77,6 +78,65 @@ const analysis_event_t *add_function_summary_event(analysis_collector_t *collect
     return event;
 }
 
+void add_call_graph_events(analysis_collector_t *collector, const function_call_graph_t *graph) {
+    if (!collector)
+        return;
+    for (const function_call_graph_node_t *node = graph->head; node; node = node->next) {
+        const function_summary_t *snapshot =
+            snapshot_function_summary(collector->arena, node->summary);
+        analysis_event_t *group =
+            append_event(collector, ANALYSIS_CALL_GROUP, node->summary->function, NULL, NULL);
+        group->function_summary = snapshot;
+        group->caller_id = node->id;
+        group->component = node->component;
+        group->component_size = node->component_size;
+        group->recursive = node->recursive;
+        group->complete = node->complete && !graph->truncated;
+        for (const function_call_edge_t *edge = node->edges; edge; edge = edge->next) {
+            analysis_event_t *event =
+                append_event(collector, ANALYSIS_CALL_EDGE, edge->site, NULL, NULL);
+            event->function_summary = snapshot;
+            event->caller_id = node->id;
+            event->limited = edge->kind == CALL_TARGET_LIMIT;
+            if (edge->target) {
+                event->callee_id = edge->target->id;
+                event->callee_summary =
+                    snapshot_function_summary(collector->arena, edge->target->summary);
+            }
+        }
+    }
+}
+
+/** @brief Formats graph-local identities together with their type signatures. */
+static string_value_t graph_event_to_string(const analysis_event_t *event) {
+    string_value_t caller = function_signature_to_string(event->function_summary);
+    string_value_t text;
+    if (event->kind == ANALYSIS_CALL_GROUP) {
+        text = format_string(L"f%zu %s = g%zu %s size=%zu %s",
+                             event->caller_id,
+                             caller.data,
+                             event->component,
+                             event->recursive ? L"recursive" : L"acyclic",
+                             event->component_size,
+                             event->complete ? L"complete" : L"partial");
+    } else if (event->callee_summary) {
+        string_value_t target = function_signature_to_string(event->callee_summary);
+        text = format_string(L"f%zu %s -> f%zu %s",
+                             event->caller_id,
+                             caller.data,
+                             event->callee_id,
+                             target.data);
+        FREE_STRING(target);
+    } else {
+        text = format_string(L"f%zu %s -> %s",
+                             event->caller_id,
+                             caller.data,
+                             event->limited ? L"limit" : L"unknown");
+    }
+    FREE_STRING(caller);
+    return text;
+}
+
 static bool matches(const analysis_event_t *event, const analysis_event_query_t *query) {
     return !query
            || ((!query->kind || event->kind == query->kind)
@@ -128,6 +188,8 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
                               : event->kind == ANALYSIS_UNREACHABLE      ? L"unreachable"
                               : event->kind == ANALYSIS_NODE_FLAGS       ? L"flags"
                               : event->kind == ANALYSIS_FUNCTION_SUMMARY ? L"function-summary"
+                              : event->kind == ANALYSIS_CALL_EDGE        ? L"call-edge"
+                              : event->kind == ANALYSIS_CALL_GROUP       ? L"call-group"
                                                                          : L"summary";
         string_value_t filename =
             event->file_name ? decode_utf8(event->file_name) : STATIC_STRING(L"<unknown>");
@@ -139,7 +201,11 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
                                             event->column,
                                             kind);
         append_string_value(&builder, line);
-        if (event->kind == ANALYSIS_FUNCTION_SUMMARY) {
+        if (event->kind == ANALYSIS_CALL_EDGE || event->kind == ANALYSIS_CALL_GROUP) {
+            string_value_t graph = graph_event_to_string(event);
+            append_string_value(&builder, graph);
+            FREE_STRING(graph);
+        } else if (event->kind == ANALYSIS_FUNCTION_SUMMARY) {
             string_value_t summary = function_summary_to_string(event->function_summary);
             append_string_value(&builder, summary);
             FREE_STRING(summary);

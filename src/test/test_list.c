@@ -14,6 +14,7 @@
 #include "test_comparison.h"
 #include "test_division.h"
 #include "test_function_analysis.h"
+#include "test_function_call_graph.h"
 #include "test_function_return.h"
 #include "test_function_specialization.h"
 #include "test_function_summary.h"
@@ -50,6 +51,10 @@ static test_description_t test_list[] = {
     {"builtin numeric results", test_builtin_numeric_results},
     {"builtin errors", test_builtin_errors},
     {"builtin domains", test_builtin_domains},
+    {"call graph discovery", test_call_graph_discovery},
+    {"call graph recursion", test_call_graph_recursion},
+    {"call graph bindings", test_call_graph_bindings},
+    {"call graph limits", test_call_graph_limits},
     {"function return isolation", test_function_return_isolation},
     {"function signature types", test_function_signature_types},
     {"function signature arguments", test_function_signature_arguments},

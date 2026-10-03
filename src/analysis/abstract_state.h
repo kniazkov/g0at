@@ -54,6 +54,9 @@ struct abstract_state_t {
     /** @brief Shared failure flag for isolated return-type analysis; NULL during normal analysis.
      */
     bool *type_analysis_incomplete;
+
+    /** @brief Optional caller vertex during isolated call-graph discovery. */
+    struct function_call_graph_node_t *call_graph_node;
 };
 
 /**
