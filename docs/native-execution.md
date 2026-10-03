@@ -1,7 +1,8 @@
 # Native execution contract
 
 This document describes the planned C backend and VM bridge. Neither C emission,
-dynamic compilation/loading nor the `NATIVE` opcode is implemented yet. The
+dynamic compilation/loading nor native dispatch for compiled Goat functions is
+implemented yet. The
 [C subset contract](c-subset.md) defines the numerical semantics and the proofs
 already produced by the analyzer; this document defines how a backend may use them.
 
@@ -78,28 +79,48 @@ interpretation must remain dependency-free.
 
 ## VM call and fallback
 
-Initially, the caller still executes ordinary `CALL`. It evaluates arguments and
-the callee in Goat's existing order and establishes the normal function context.
-The called function's bytecode starts with `NATIVE <descriptor-id>`, followed by
-its ordinary bytecode body.
+The caller uses ordinary `CALL argc`, with the existing `uint16_t` argument count
+and stack convention. Arguments are evaluated right to left, then the callee;
+the function object is on top of the stack, followed by the first argument. No
+`NATIVE` opcode is introduced. `CALL` delegates to the object's call method as it
+does today; native selection belongs to the implementation of the function object.
 
-`NATIVE` selects an adapter using the actual function identity and exact runtime
-types of the bound formal parameters. It must not dispatch by a variable's name
-or coerce an integer to real to find an adapter. Aliases of the same function may
-use its adapters; rebinding the variable to another function cannot reuse them.
+Function-creation metadata in the bytecode associates the parameter names and
+bytecode entry with an optional native descriptor reference. `FUNC` transfers
+that association into the created function object. Keep the descriptor reference
+separate from the parameter-name array. Its exact encoding is deferred to the
+implementation step; bytecode must not contain raw loaded-library addresses.
+The loader resolves descriptors to validated adapters.
+
+The function object contains everything needed to choose between native and
+bytecode execution. Its optional descriptor maps ordered formal-parameter types
+to adapters and may be shared by objects created from the same function definition.
+It follows the runtime ownership rules above, independently of the AST arena.
+
+Before creating a call context or binding parameter names, the function's call
+method inspects the already evaluated arguments and selects an exact runtime-type
+match. Missing arguments count as `null`; extras do not affect selection. It must
+not dispatch by a variable's name or coerce an integer to real to find an adapter.
+Aliases use the actual object's descriptor; rebinding a variable selects the new
+object's call behavior. Built-in functions retain their existing call path.
 
 There are three outcomes:
 
-| Outcome | VM action |
+| Outcome | Function call action |
 | --- | --- |
-| No matching ready adapter | Continue into the bytecode body with stack and context unchanged. |
-| Native success | Box the numeric result and complete the call through normal `RET` semantics. |
-| Controlled native resource limit | Discard the incomplete native result and restart the pure call in its bytecode body. |
+| No matching ready adapter | Create the ordinary call context, bind parameters and enter the bytecode body. |
+| Native success | Consume the arguments, box and push the result, and continue after `CALL`, without creating a call context. |
+| Controlled native resource limit | Discard the incomplete native result and enter the ordinary bytecode call path with the original arguments. |
 
-On success, result ownership, stack cleanup and context restoration must match
-ordinary bytecode return. On fallback, arguments and the callee are not evaluated
-again. A retry must disable native entry for that call and its descendants until
-it returns, otherwise recursion could repeatedly hit the same native limit.
+On native success, stack balance and result ownership must match an ordinary
+completed call, including disposal of extra arguments. The caller's context stays
+unchanged; no `RET` instruction or callee-context restoration is needed. Keep the
+function object and arguments alive for the attempt, and preserve the arguments
+until native success is committed or bytecode fallback takes ownership.
+
+On fallback, arguments and the callee are not evaluated again. A resource-limit
+retry must disable native entry for that call and its descendants until it returns,
+otherwise recursion could repeatedly hit the same native limit.
 
 The resource limit must be checked before exhausting the host C stack. A crash,
 undefined behavior or corrupted state is not a recoverable retry signal. Retrying
@@ -123,6 +144,8 @@ These are implementation gates, not claims about tests that exist today:
 | `f(10)` and `f(10.0)` | Select distinct integer and real signatures, or fall back for an unavailable one. |
 | Missing numeric argument | Preserve `null` semantics through bytecode fallback. |
 | Extra argument with a side effect | Evaluate it exactly once, on both native success and fallback. |
+| Native success | No callee context allocation; arguments are consumed once and one result replaces the call. |
+| No descriptor or unmatched signature | Ordinary bytecode call with the original arguments. |
 | Function alias or rebinding | Dispatch by actual function identity. |
 | Unsupported callee in a recursive group | Do not publish incomplete native callers. |
 | Compiler/load/ABI failure | Keep ordinary execution available and identify the failing stage. |

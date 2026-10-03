@@ -539,7 +539,9 @@ special values, evaluation order and exception handling obligations for later lo
 The [native execution contract](docs/native-execution.md) describes the planned next
 stage: whole-function specializations, one generated C module, typed adapters and
 VM fallback. Analyzer eligibility, emitter support and a callable native implementation
-are separate decisions. No C emitter, dynamic loader or `NATIVE` opcode exists yet.
+are separate decisions. Native dispatch will live in the function object's call
+method, using metadata supplied during function creation; `CALL` keeps its format
+and no `NATIVE` opcode is planned. No C emitter or dynamic loader exists yet.
 
 ### Numeric C expression proofs
 
