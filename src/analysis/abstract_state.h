@@ -55,11 +55,11 @@ struct abstract_state_t {
      */
     bool *type_analysis_incomplete;
 
-    /** @brief Optional caller vertex during isolated call-graph discovery. */
+    /** @brief Optional caller vertex during call discovery or recursive type solving. */
     struct function_call_graph_node_t *call_graph_node;
 
-    /** @brief Type signatures of the body being solved; never used by ordinary interpretation. */
-    struct function_summary_set_t *recursive_signatures;
+    /** @brief Recursive type group being solved; never used by ordinary interpretation. */
+    struct recursive_type_group_t *recursive_group;
 };
 
 /**

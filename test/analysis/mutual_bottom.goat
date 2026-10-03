@@ -1,0 +1,3 @@
+const a=func(n){return b(n);}
+const b=func(n){return a(n);}
+a(0)

@@ -239,3 +239,12 @@ direct_type_changes
 direct_locals_and_captures
 direct_inconclusive
 direct_fibonacci_integer
+mutual_even_odd
+mutual_three_domains
+mutual_profiles
+mutual_bottom
+mutual_late_unknown
+mutual_capture_write
+mutual_reverse_order
+mutual_alias
+mutual_nullable

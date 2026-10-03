@@ -25,6 +25,7 @@
 #include "test_model.h"
 #include "test_modulo.h"
 #include "test_multiplication.h"
+#include "test_mutual_recursion.h"
 #include "test_native_conversion.h"
 #include "test_node_properties.h"
 #include "test_operation_result.h"
@@ -52,6 +53,7 @@ static test_description_t test_list[] = {
     {"builtin numeric results", test_builtin_numeric_results},
     {"builtin errors", test_builtin_errors},
     {"builtin domains", test_builtin_domains},
+    {"mutual recursion limits", test_mutual_recursion_limits},
     {"direct recursion limits", test_direct_recursion_limits},
     {"direct recursion captures", test_direct_recursion_captures},
     {"call graph discovery", test_call_graph_discovery},

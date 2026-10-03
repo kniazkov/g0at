@@ -408,7 +408,7 @@ and C support remain unknown. Signatures still do not distinguish captures or ca
 argument identities and must not be used as cached call results.
 
 Completed attempts have status `analyzed`, which can legitimately have a `TOP` return.
-Calls other than supported self-calls (including built-ins), and bodies containing `try/catch`, are currently
+Calls outside supported recursive groups (including built-ins), and bodies containing `try/catch`, are currently
 `inconclusive` with a `TOP` result: call dependencies and exceptional-flow proofs are
 not solved in those cases. Calls on paths the type pass proves dead do not block analysis.
 Nested function bodies are deferred; returning a closure produces type `function`.
@@ -439,20 +439,25 @@ checks both status and return type. `none` uses `-` as its expected result, as w
 selectors. Existing node flags still describe the original analysis; specialization-specific
 proofs will be connected in later steps.
 
-### Direct recursive return types
+### Recursive return types
 
-After graph discovery, a separate fixed-point pass handles recursive groups whose
-signatures all belong to the same function body. It starts return approximations at
+After graph discovery, a separate fixed-point pass handles direct and mutual recursion.
+Each group closes over strongly connected components and all registered signatures of
+their function bodies. It starts return approximations at
 `BOTTOM` and repeatedly joins normal returns until their types stop changing. Fibonacci
 therefore gets `(integer) -> integer` and `(real) -> integer`, without evaluating every
 recursive call. Summaries include `iterations=N` in the analysis log.
 
-All registered signatures of the body are solved together. A self-call uses an exact
+All signatures in a group are solved together. A call within the group uses an exact
 argument-type signature when available, otherwise a covering existing signature; no
 signatures are created during solving. This fallback can lose precision. Caller locals
-survive a self-call, while captured bindings become unknown. Unsupported calls or missing
+survive a self-call, while captured bindings become unknown. Calls to another body
+conservatively invalidate all variable facts, since it may be a closure that modifies
+the caller's locals. Unsupported calls, calls outside the group, or missing
 coverage produce `inconclusive`, as do exhausted iteration limits (64 rounds). A truncated
-call graph disables this pass. Mutual recursion remains unsupported.
+call graph disables this pass. A late unsupported call invalidates dependent summaries
+on subsequent rounds; unrelated groups retain their own results. Exhaustion discards
+partial results for the whole group.
 
 `BOTTOM` after convergence means no normal return was found, not a termination proof.
 The pass does not infer effects or C support, change shared AST facts, or replace ordinary

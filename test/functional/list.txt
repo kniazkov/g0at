@@ -303,3 +303,4 @@ quadratic_double
 quadratic_none
 quadratic_linear
 quadratic_degenerate
+mutual_even_odd

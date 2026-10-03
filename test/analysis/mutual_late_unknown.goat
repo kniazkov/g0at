@@ -1,0 +1,6 @@
+const helper=func(n){return n;}
+const a=func(n){if(n==0)return 1;return b(n-1);}
+const b=func(n){var x=a(n-1);return helper(x);}
+a(0)
+const independent=func(n){if(n==0)return 1;return independent(n-1);}
+independent(0)
