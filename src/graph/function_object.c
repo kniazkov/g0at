@@ -8,6 +8,7 @@
 #include "analysis/function_summary.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
+#include "codegen/c_lowering.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -290,7 +291,7 @@ static node_vtbl_t function_body_vtbl = {
     .generate_bytecode = fbody_generate_bytecode,
     .can_generate_c_code = c_body_children,
     .generate_c_code = no_c_code,
-    .generate_indented_c_code = no_indented_c_code,
+    .generate_indented_c_code = c_emit_body,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
@@ -527,7 +528,7 @@ static node_vtbl_t fo_vtbl = {
     .generate_bytecode_deferred = fobj_generate_bytecode_deferred,
     .can_generate_c_code = cannot_generate_c_code,
     .generate_c_code = no_c_code,
-    .generate_indented_c_code = no_indented_c_code,
+    .generate_indented_c_code = c_emit_function,
     .generate_bytecode_assign = no_bytecode_assignment,
 };
 

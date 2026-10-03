@@ -1,8 +1,8 @@
 # Initial C subset contract
 
-This is the contract for a future backend, not an implemented backend or a public
-native-library ABI. The analyzer checks interfaces, numeric expressions, structured bodies and static calls.
-Supported means eligibility under this contract; no C emitter or runtime bridge exists yet.
+This defines the first C subset, not a public native-library ABI. The analyzer checks interfaces, numeric expressions, structured bodies and static calls.
+Supported means eligibility under this contract, not emitter availability. A minimal
+C emitter handles numeric literals, parameters and explicit returns; no runtime bridge exists yet.
 The [native execution contract](native-execution.md) describes how future generation,
 specialization dispatch and bytecode fallback will consume these proofs.
 

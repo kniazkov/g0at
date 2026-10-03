@@ -5,6 +5,7 @@
  */
 
 #include "analysis/lattice.h"
+#include "codegen/c_lowering.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -64,6 +65,12 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
+/** @brief Implements node_vtbl_t::generate_c_code. */
+static c_generated_expression_t generate_c_code(const node_t *node,
+                                                c_generation_context_t *context) {
+    return c_integer_literal(node, context, ((const integer_t *)node)->element.value);
+}
+
 /** @brief Virtual table for integer expressions. */
 static node_vtbl_t integer_vtbl = {
     .type = NODE_INTEGER,
@@ -89,7 +96,7 @@ static node_vtbl_t integer_vtbl = {
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
     .can_generate_c_code = numeric_literal_c_code,
-    .generate_c_code = no_c_code,
+    .generate_c_code = generate_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,

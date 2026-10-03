@@ -1,8 +1,8 @@
 # Native execution contract
 
-This document describes the planned C backend and VM bridge. Neither C emission,
-dynamic compilation/loading nor native dispatch for compiled Goat functions is
-implemented yet. The
+This document describes the C backend and planned VM bridge. Minimal whole-function
+C emission is implemented; dynamic compilation/loading and VM native dispatch are
+not implemented yet. The
 [C subset contract](c-subset.md) defines the numerical semantics and the proofs
 already produced by the analyzer; this document defines how a backend may use them.
 
@@ -57,9 +57,24 @@ then use the value. Release both with `destroy_c_expression`. Statement lowering
 returns success explicitly. A failed function attempt discards all accumulated
 source without changing the analyzer's summary.
 
-Concrete emitters are still absent; even a proven function currently reports
-`C_GENERATION_UNSUPPORTED`. Replacement nodes delegate C lowering to their
-original children, including nested replacements.
+The initial emitters support numeric literal expressions, parameter reads and a
+body containing one explicit return. Generated parameter names use declaration
+identity, so Goat names need not be valid C identifiers. Function names are backend
+ASCII identifiers prefixed with `goat_`. Unsupported operators/control flow still
+report `C_GENERATION_UNSUPPORTED`, even when analysis proves C eligibility.
+Replacement nodes delegate C lowering to their original children.
+
+Each successful result is standalone C11 source with the required standard headers.
+Integers use `INT64_C` with a safe spelling for `INT64_MIN`. Finite doubles use exact
+hexadecimal literals; negative zero, subnormals, NaN and infinities are covered.
+The initial target requires binary64 doubles. No arithmetic or implicit numeric
+return conversion is emitted in this step.
+
+`scripts/check_c_generation.sh UNIT_BINARY OUTPUT_DIR` generates test source,
+compiles it with `${CC:-gcc}` and executes numeric assertions at `-O2`. CI runs it
+with Linux GCC/Clang and all Windows GCC targets, and preserves generated source
+as an artifact. The unit executable's `--emit-c-tests` is test-only; user-facing
+source output options remain a later step.
 
 Replacement nodes preserve an original subtree and a simplified subtree. Native
 generation currently always uses the original subtree. Reusing a simplified

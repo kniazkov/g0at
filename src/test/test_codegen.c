@@ -84,7 +84,7 @@ bool test_node_codegen_stubs() {
     c_generation_context_t context = {.summary = &summary};
     c_generated_expression_t result = generate_c_code_from_node(node, &context);
     ASSERT(!result.success && !result.value.data && !result.prelude);
-    ASSERT(context.status == C_GENERATION_UNSUPPORTED && context.failed_node == node);
+    ASSERT(context.status == C_GENERATION_NOT_PROVEN && context.failed_node == node);
     context.status = C_GENERATION_OK;
     ASSERT(!generate_indented_c_code_from_node(node, &context, source, 2));
     ASSERT(context.status == C_GENERATION_UNSUPPORTED);

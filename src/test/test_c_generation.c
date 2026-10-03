@@ -87,7 +87,7 @@ bool test_c_generation_transaction(void) {
     arena_t *arena = create_arena(32);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, STATIC_STRING(L"const f=func(n){return n;};f(1);"));
+        parse_analysis_test_program(&memory, STATIC_STRING(L"const f=func(n){return n+1;};f(1);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -103,7 +103,7 @@ bool test_c_generation_transaction(void) {
     ASSERT(summary.c_support == FUNCTION_C_SUPPORTED);
     ASSERT(summary.c_blockers == 0);
     node_vtbl_t overridden = *function->vtbl;
-    const node_vtbl_t *original = function->vtbl;
+    node_vtbl_t *original = function->vtbl;
     function->vtbl = &overridden;
     overridden.generate_indented_c_code = partial_function;
     result = generate_c_function(&summary, name, NULL, NULL);
