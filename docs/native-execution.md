@@ -72,6 +72,29 @@ Lowering does not restore or mutate the AST, its parents, flags or proof records
 Statement replacements retain the original control structure for C lowering,
 including branches absent from the executable bytecode subtree.
 
+## Module inventory
+
+`create_c_module` builds a compilation-time inventory from the original AST and
+already proven numeric summaries. Functions receive preorder ordinals; signatures
+are sorted by parameter count and lattice type order. Module entry IDs and C names
+are deterministic for the same tree/signatures, independent of AST node numbers,
+addresses and signature registration order. They are not persistent identifiers
+across source edits. Names encode a function ordinal and integer/real parameters.
+
+Generic C body analysis now retains exact call-site targets in `c_calls`. The
+inventory uses these records rather than the broader may-call graph. It deduplicates
+repeated observations, supplies callee names to the generation context and keeps
+self/mutual-recursive dependencies. A missing or ambiguous target blocks the caller;
+blocking propagates to callers until stable, leaving independent entries available.
+Availability proves dependency closure only, not emitter or runtime readiness.
+
+Inventory storage and names belong to the supplied arena; AST and summary pointers
+are borrowed. Rebuild the inventory after reanalysis. Summary snapshots copy call
+records but borrow target identities, whose parameter keys remain immutable.
+No compiler, source module assembly or VM dispatch is introduced here.
+
+The remaining stages are listed in the [implementation roadmap](native-roadmap.md).
+
 ## Generated module
 
 One C source file contains the selected specializations, forward declarations,

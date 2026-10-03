@@ -53,6 +53,13 @@ typedef struct function_effect_call_t {
     const node_t *site;
 } function_effect_call_t;
 
+/** @brief Generic C call proof; target is a borrowed specialization identity, not a snapshot. */
+typedef struct c_call_t {
+    struct c_call_t *next;
+    const node_t *site;
+    const struct function_summary_t *target;
+} c_call_t;
+
 /**
  * @brief Arena-owned record; function and immutable lattice elements are borrowed.
  * Parameter storage belongs to the record's arena. Borrowed data must outlive the record.
@@ -75,6 +82,7 @@ typedef struct function_summary_t {
     function_analysis_status_t status;
     function_c_support_t c_support;
     struct c_expression_proof_t *c_expressions; /**< Arena-owned pointwise expression proofs. */
+    c_call_t *c_calls;   /**< Arena-owned generic call records, separate from may-call edges. */
     uint32_t c_blockers; /**< Cached failed/pending checks from the numeric C contract. */
     size_t iterations;   /**< Fixed-point evaluations; zero for nonrecursive analysis. */
 } function_summary_t;

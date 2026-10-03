@@ -16,13 +16,6 @@ typedef struct c_binding_t {
     c_value_type_t type;
 } c_binding_t;
 
-/** @brief A resolved invocation; several visits must all remain supported. */
-typedef struct c_call_t {
-    struct c_call_t *next;
-    const node_t *site;
-    const function_summary_t *target;
-} c_call_t;
-
 bool c_body_node_supported(const node_t *node, const c_expression_context_t *context) {
     if (!context || !context->graph || !node)
         return false;
@@ -171,6 +164,7 @@ static bool check_body(function_call_graph_t *graph, function_summary_t *summary
     bool incomplete = false;
     const lattice_element_t *result = evaluate_function_c_signature(summary, &context, &incomplete);
     summary->c_expressions = context.head;
+    summary->c_calls = context.calls;
     return !incomplete && result->type == summary->return_type->type
            && c_body_node_supported(get_node_child(summary->function, 1), &context);
 }
@@ -179,6 +173,7 @@ void analyze_function_c_bodies(function_call_graph_t *graph, size_t max_iteratio
     bool ready = !graph->truncated && refine_returns(graph, max_iterations);
     for (function_call_graph_node_t *node = graph->head; node; node = node->next) {
         check_function_c_contract(node->summary);
+        node->summary->c_calls = NULL;
         if (!ready)
             node->summary->c_expressions = NULL;
         if (ready && node->summary->c_blockers == C_BLOCKER_BODY)
