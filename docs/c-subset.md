@@ -3,6 +3,8 @@
 This is the contract for a future backend, not an implemented backend or a public
 native-library ABI. The analyzer checks interfaces, numeric expressions, structured bodies and static calls.
 Supported means eligibility under this contract; no C emitter or runtime bridge exists yet.
+The [native execution contract](native-execution.md) describes how future generation,
+specialization dispatch and bytecode fallback will consume these proofs.
 
 ## Interface and environment
 
