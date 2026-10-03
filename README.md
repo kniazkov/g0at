@@ -408,9 +408,9 @@ and C support remain unknown. Signatures still do not distinguish captures or ca
 argument identities and must not be used as cached call results.
 
 Completed attempts have status `analyzed`, which can legitimately have a `TOP` return.
-Reached calls (including built-ins) and bodies containing `try/catch` are currently
+Calls other than supported self-calls (including built-ins), and bodies containing `try/catch`, are currently
 `inconclusive` with a `TOP` result: call dependencies and exceptional-flow proofs are
-not solved by this step. Calls on paths the type pass proves dead do not block analysis.
+not solved in those cases. Calls on paths the type pass proves dead do not block analysis.
 Nested function bodies are deferred; returning a closure produces type `function`.
 The call graph can discover further signatures from generic bodies. The statuses `unanalyzed` and `analyzing` describe
 records before and during this pass. No status alone proves purity or C support.
@@ -439,6 +439,25 @@ checks both status and return type. `none` uses `-` as its expected result, as w
 selectors. Existing node flags still describe the original analysis; specialization-specific
 proofs will be connected in later steps.
 
+### Direct recursive return types
+
+After graph discovery, a separate fixed-point pass handles recursive groups whose
+signatures all belong to the same function body. It starts return approximations at
+`BOTTOM` and repeatedly joins normal returns until their types stop changing. Fibonacci
+therefore gets `(integer) -> integer` and `(real) -> integer`, without evaluating every
+recursive call. Summaries include `iterations=N` in the analysis log.
+
+All registered signatures of the body are solved together. A self-call uses an exact
+argument-type signature when available, otherwise a covering existing signature; no
+signatures are created during solving. This fallback can lose precision. Caller locals
+survive a self-call, while captured bindings become unknown. Unsupported calls or missing
+coverage produce `inconclusive`, as do exhausted iteration limits (64 rounds). A truncated
+call graph disables this pass. Mutual recursion remains unsupported.
+
+`BOTTOM` after convergence means no normal return was found, not a termination proof.
+The pass does not infer effects or C support, change shared AST facts, or replace ordinary
+call interpretation. Function-summary events snapshot the final result and iteration count.
+
 ### Call graph and recursive groups
 
 A bounded pass builds a may-call graph over observed specializations and signatures
@@ -452,7 +471,7 @@ are scanned only when a signature for that function is discovered.
 
 Each reached call site records an edge. Calls on proven-dead paths are omitted; handlers
 are still unsupported and make coverage partial. Call results remain unknown, so subsequent
-arguments can lose precision. The pass does not solve recursive return types or infer purity.
+arguments can lose precision. Graph discovery itself does not infer return types or purity.
 Discovery is limited to 1,024 vertices; exhaustion is explicit and cannot prove completeness.
 
 The log adds two event kinds, with graph-local vertex and component IDs:
@@ -551,7 +570,8 @@ executors through the same call dispatcher, including aliases and higher-order c
 
 These call summaries do not specialize shared AST bodies or mark their branches dead.
 The separate reachability pass uses native descriptors too, while user calls remain conservative. Exceptional return-state
-modelling, recursive fixed points, and persistent closure environments remain future work.
+modelling and persistent closure environments remain future work. Recursive type summaries
+are computed separately and do not replace this bounded call interpreter.
 
 AST transformation events can be added as transformations are implemented.
 

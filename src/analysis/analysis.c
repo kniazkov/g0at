@@ -289,6 +289,7 @@ compilation_error_t *analyze(node_t *root_node,
 
     function_call_graph_t *calls = build_function_call_graph(root_node, memory->graph, 1024);
     analyze_function_return_types(root_node);
+    solve_direct_function_recursion(calls, 64);
     mark_unreachable_code(root_node, memory->graph, collector);
     classify_node_properties(root_node, collector);
     add_call_graph_events(collector, calls);

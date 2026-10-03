@@ -57,6 +57,9 @@ struct abstract_state_t {
 
     /** @brief Optional caller vertex during isolated call-graph discovery. */
     struct function_call_graph_node_t *call_graph_node;
+
+    /** @brief Type signatures of the body being solved; never used by ordinary interpretation. */
+    struct function_summary_set_t *recursive_signatures;
 };
 
 /**
@@ -133,3 +136,6 @@ void apply_abstract_call_state(abstract_state_t *caller,
 
 /** @brief Resets locals from an earlier invocation of the same function. */
 void reset_abstract_call_locals(abstract_state_t *state, const node_t *function);
+
+/** @brief Invalidates shared captures after self-call, preserving the caller's own locals. */
+void forget_captured_abstract_values(abstract_state_t *state, const node_t *function);

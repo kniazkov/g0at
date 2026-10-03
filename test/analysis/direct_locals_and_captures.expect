@@ -1,0 +1,3 @@
+one function 1 0 integer analyzed:integer
+# Caller locals survive; shared external bindings do not retain pre-call facts.
+one function 4 0 integer analyzed:top

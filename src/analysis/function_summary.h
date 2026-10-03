@@ -50,6 +50,7 @@ typedef struct function_summary_t {
     uint32_t effects;
     function_analysis_status_t status;
     function_c_support_t c_support;
+    size_t iterations; /**< Fixed-point evaluations; zero for nonrecursive analysis. */
 } function_summary_t;
 
 /** @brief Creates an unanalysed record with TOP types and unknown effects/C support. */

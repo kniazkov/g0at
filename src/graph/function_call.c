@@ -8,6 +8,7 @@
 
 #include "analysis/abstract_state.h"
 #include "analysis/function_call_graph.h"
+#include "analysis/function_return.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
 #include "codegen/code_builder.h"
@@ -77,6 +78,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     const lattice_element_t *function = calculate_expression(expr->func_object, state, arena);
     if (state->control_flow != FLOW_NORMAL)
         return make_bottom_element();
+    if (state->recursive_signatures)
+        return interpret_self_call(node, function, args, expr->args_count, state);
     observe_function_call(state->call_graph_node, node, function, args, expr->args_count);
     return interpret_function_call(function, args, expr->args_count, state);
 }

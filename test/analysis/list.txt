@@ -231,3 +231,11 @@ function_return_exits
 function_return_captures
 function_return_unsupported
 function_return_closures
+
+# Direct recursive return types
+direct_fibonacci
+direct_return_domains
+direct_type_changes
+direct_locals_and_captures
+direct_inconclusive
+direct_fibonacci_integer

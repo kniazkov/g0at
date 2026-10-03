@@ -1,0 +1,5 @@
+const local = func(n) { if(n < 1) return 0; var saved=n; local(n-1); return saved; }
+local(0)
+var external=0
+const captured = func(n) { if(n < 1) { external="changed"; return 0; } external=1; captured(n-1); return external; }
+captured(0)
