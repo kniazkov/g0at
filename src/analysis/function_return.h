@@ -9,7 +9,6 @@
 
 typedef struct function_summary_t function_summary_t;
 typedef struct c_expression_context_t c_expression_context_t;
-
 typedef struct node_t node_t;
 
 /** @brief Analyzes signatures using generic parameters and unknown captures, without AST facts. */

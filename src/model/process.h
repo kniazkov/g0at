@@ -11,7 +11,6 @@
 #include <stdint.h>
 
 typedef struct process_t process_t;
-
 typedef struct thread_t thread_t;
 
 /** @brief A process in Goat. */

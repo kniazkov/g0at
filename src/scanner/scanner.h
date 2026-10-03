@@ -12,7 +12,6 @@
 #include <wchar.h>
 
 typedef struct scanner_t scanner_t;
-
 typedef struct parser_memory_t parser_memory_t;
 
 /**

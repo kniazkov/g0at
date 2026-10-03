@@ -9,9 +9,7 @@
 #include "value.h"
 
 typedef struct list_t list_t;
-
 typedef struct list_item_t list_item_t;
-
 typedef struct arena_t arena_t;
 
 /** @brief A node in a doubly linked list. */

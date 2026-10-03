@@ -14,9 +14,7 @@
 #include <stdint.h>
 
 typedef struct process_t process_t;
-
 typedef struct context_t context_t;
-
 typedef struct thread_t thread_t;
 
 /** @brief Defines the maximum number of arguments that can be stored in the argument array. */

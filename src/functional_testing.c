@@ -4,6 +4,8 @@
  * @brief A program for performing functional tests on the project's output.
  */
 
+#include "test/test_output.h"
+
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -171,39 +173,39 @@ int main(int argc, char **argv) {
         printf("Usage: functional_testing <interpreter> <list of tests>\n");
         return -1;
     }
+    test_output_start("functional");
     fix_path_separator(argv[1]);
     FILE *list = fopen(argv[2], "r");
     if (!list) {
-        printf("Could not open '%s'\n", argv[2]);
+        fprintf(stderr, "Could not open '%s'\n", argv[2]);
+        test_output_case(false, "test list (unreadable)");
+        test_output_summary("Functional", 0, 1);
         return -1;
     }
 
     int passed = 0;
     int failed = 0;
     char test_name[128];
-    while (!feof(list)) {
-        if (fgets(test_name, 128, list)) {
-            char *test_name_trim = trim(test_name);
-            if (strlen(test_name_trim) > 0 && test_name_trim[0] != '#') {
-                const char *levels[] = {"none", "all"};
-                for (size_t level = 0; level < 2; level++) {
-                    int result = do_test(argv[1], test_name_trim, levels[level]);
-                    if (result) {
-                        printf("[ ok ]");
-                        passed++;
-                    } else {
-                        printf("[fail]");
-                        failed++;
-                    }
-                    printf(" %s (optimize=%s)\n", test_name_trim, levels[level]);
+    while (fgets(test_name, sizeof(test_name), list)) {
+        char *test_name_trim = trim(test_name);
+        if (strlen(test_name_trim) > 0 && test_name_trim[0] != '#') {
+            const char *levels[] = {"none", "all"};
+            for (size_t level = 0; level < 2; level++) {
+                int result = do_test(argv[1], test_name_trim, levels[level]);
+                if (result) {
+                    passed++;
+                } else {
+                    failed++;
                 }
+                test_output_case(result, "%s (optimize=%s)", test_name_trim, levels[level]);
             }
         }
     }
-    printf("\nFunctional testing done; total: %d, passed: %d, failed: %d.",
-           passed + failed,
-           passed,
-           failed);
+    if (ferror(list)) {
+        test_output_case(false, "test list (unreadable)");
+        failed++;
+    }
+    test_output_summary("Functional", passed, failed);
 
     fclose(list);
     if (failed > 0)

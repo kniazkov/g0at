@@ -6,6 +6,7 @@
 
 #include "lib/allocate.h"
 #include "test/test_list.h"
+#include "test/test_output.h"
 #include "test/test_stack_underflow.h"
 
 #include <stdio.h>
@@ -17,6 +18,7 @@
  * @return `true` if all tests passed, `false` if any test failed.
  */
 static bool unit_testing() {
+    test_output_start("unit");
     int passed = 0;
     int failed = 0;
     int count = get_number_of_tests();
@@ -27,18 +29,17 @@ static bool unit_testing() {
         if (result) {
             size_t diff = get_allocated_memory_size() - memory_size;
             if (diff > 0) {
-                failed++;
-                printf("Test '%s' finished with a memory leak (%zu bytes)\n", tests[i].name, diff);
-            } else {
-                passed++;
+                fprintf(stderr, "Test '%s' leaked %zu bytes\n", tests[i].name, diff);
+                result = false;
             }
-        } else {
-            failed++;
-            printf("Test '%s' failed\n", tests[i].name);
         }
+        test_output_case(result, "%s", tests[i].name);
+        if (result)
+            passed++;
+        else
+            failed++;
     }
-
-    printf("Unit testing done; total: %d, passed: %d, failed: %d\n", count, passed, failed);
+    test_output_summary("Unit", passed, failed);
     return failed == 0;
 }
 

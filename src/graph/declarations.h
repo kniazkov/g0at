@@ -9,7 +9,6 @@
 #include "node.h"
 
 typedef struct expression_t expression_t;
-
 typedef struct lattice_element_t lattice_element_t;
 
 /**

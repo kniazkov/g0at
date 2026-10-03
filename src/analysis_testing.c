@@ -15,6 +15,7 @@
 #include "lib/string_ext.h"
 #include "parser/parser.h"
 #include "scanner/scanner.h"
+#include "test/test_output.h"
 
 #include <inttypes.h>
 #include <math.h>
@@ -402,12 +403,18 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Usage: analysis_testing <fixture-directory>\n");
         return 1;
     }
+    test_output_start("analysis");
     char path[1024], line[256];
-    if (snprintf(path, sizeof(path), "%s/list.txt", argv[1]) >= sizeof(path))
+    if (snprintf(path, sizeof(path), "%s/list.txt", argv[1]) >= sizeof(path)) {
+        test_output_case(false, "test list (path too long)");
+        test_output_summary("Analysis", 0, 1);
         return 1;
+    }
     FILE *list = fopen(path, "r");
     if (!list) {
         perror(path);
+        test_output_case(false, "test list (unreadable)");
+        test_output_summary("Analysis", 0, 1);
         return 1;
     }
     size_t total = 0, passed = 0;
@@ -422,11 +429,15 @@ int main(int argc, char **argv) {
         }
         total++;
         bool ok = run_case(argv[1], name);
-        printf("[%s] %s\n", ok ? "ok" : "FAIL", name);
+        test_output_case(ok, "%s", name);
         passed += ok;
     }
     valid = valid && !ferror(list);
     fclose(list);
-    printf("Analysis testing: %zu/%zu passed\n", passed, total);
+    if (!valid || !total) {
+        test_output_case(false, "test list (%s)", valid ? "empty" : "invalid or unreadable");
+        total++;
+    }
+    test_output_summary("Analysis", passed, total - passed);
     return valid && total && passed == total ? 0 : 1;
 }

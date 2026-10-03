@@ -12,9 +12,7 @@
 #include "lib/value.h"
 
 typedef struct abstract_state_t abstract_state_t;
-
 typedef struct declarator_t declarator_t;
-
 typedef struct lattice_element_t lattice_element_t;
 
 /**

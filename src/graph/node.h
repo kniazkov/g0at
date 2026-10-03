@@ -23,23 +23,14 @@ typedef enum {
 } node_flag_t;
 
 typedef struct node_t node_t;
-
 typedef struct statement_t statement_t;
-
 typedef struct expression_t expression_t;
-
 typedef struct source_builder_t source_builder_t;
-
 typedef struct code_builder_t code_builder_t;
-
 typedef struct data_builder_t data_builder_t;
-
 typedef struct arena_t arena_t;
-
 typedef struct list_t list_t;
-
 typedef struct lattice_element_t lattice_element_t;
-
 typedef struct abstract_state_t abstract_state_t;
 typedef struct analysis_collector_t analysis_collector_t;
 typedef struct function_summary_t function_summary_t;
