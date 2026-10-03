@@ -328,11 +328,11 @@ Native calls qualify only when immediate-execution analysis resolves their actua
 descriptor with no effects and their evaluated children are pure. Calls through
 unknown or user-defined bindings remain unproven. Names such as `print` or `sqrt` are not special cases.
 
-The shared AST C flag currently covers integer/real literals, variable reads proven to be
-integer or real **at that use**, parentheses, and unary plus. It does not use
-whole-declaration summaries or observed argument types to specialize deferred
-bodies. Per-signature expression proofs below cover more operations without promoting
-these shared flags. The flag does not enable the existing C-emission stubs.
+Outside function bodies, the shared AST C flag covers numeric literals and pointwise
+reads/wrappers. Inside a function it also incorporates expression and complete-body
+proofs shared by all registered signatures. It never substitutes declaration-wide or
+concrete-call observations for a generic proof. See the specialization-color rules below;
+these flags do not enable the existing C-emission stubs.
 
 The collector appends an immutable `flags` snapshot for every node after classification,
 including `none` for nodes without proofs. For example:
@@ -583,7 +583,42 @@ A bounded descending fixed point checks recursive candidates together: rejecting
 also rejects its callers. Numeric Fibonacci now has `c=supported` and `c-blockers=none` for
 both integer and real parameters. These results are available in the existing function
 summary events and `c-support`/`c-blockers` test selectors. They prove neither termination
-nor the availability of a C emitter; graph flags are unchanged at this step.
+nor the availability of a C emitter. The property and visualization passes consume these
+proofs as described below.
+
+### Specialization colors and shared flags
+
+Shared AST flags are conservative across **all registered signatures**. A function gets
+`PURE` only when each signature has proven purity; an unobserved function gets no body
+proof. Complete C support across all signatures marks its body, while individual expression
+proofs can mark smaller subtrees. Different integer/double specializations remain separate
+implementations: a shared flag is not permission to use one unguarded native ABI for all calls.
+Local assignments may be C-compatible without being expression-pure. Nested functions start
+a new proof scope, and unreachable nodes retain their grey contour/text without filling.
+
+For visualization, each function with a complete C proof selects the **first supported
+signature in registration order**. Its node explicitly labels this `C view` and lists every
+signature's return type, purity and C status. The selected body has pale green filling and
+a green contour, with rounded corners. Here filling expresses purity relative to the selected
+function boundary: local mutation can be internal to that pure function. The border describes
+the proven body lowering, including static callable references; it does not make functions
+first-class numeric values.
+
+The view is read-only and does not overwrite the shared flags. An unknown or excluded
+signature does not inherit the selected signature's proof. Existing `flags` collector events
+still report shared caches; function-summary and `c-expression` events retain the individual
+proofs. With no supported signature, the graph uses shared flags alone. Optimization-disabled
+analysis produces no specialization colors.
+
+Try the original Fibonacci experiment:
+
+```bash
+./goat --save-graph fibonacci.svg example/fibonacci_analysis.goat
+```
+
+The full function appears green under `C view: (real)`, including both recursive calls.
+The unknown-argument signature discovered by the call graph stays explicitly unproven.
+Linux/GCC CI renders this example with Graphviz and uploads the SVG as an artifact.
 
 ### Recursive return types
 

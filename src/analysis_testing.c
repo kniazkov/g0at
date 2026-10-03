@@ -135,6 +135,8 @@ static bool flags_match(uint32_t flags, const char *expected) {
         return flags == 0;
     if (!strcmp(expected, "unreachable"))
         return flags == NODE_FLAG_UNREACHABLE;
+    if (!strcmp(expected, "c-compatible"))
+        return flags == NODE_FLAG_C_COMPATIBLE;
     if (!strcmp(expected, "pure"))
         return flags == NODE_FLAG_PURE;
     if (!strcmp(expected, "pure|c-compatible"))

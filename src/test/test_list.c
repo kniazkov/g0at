@@ -39,6 +39,7 @@
 #include "test_power.h"
 #include "test_reachability.h"
 #include "test_scanner.h"
+#include "test_specialization_graph.h"
 #include "test_subtraction.h"
 #include "test_unary.h"
 #include "test_update.h"
@@ -60,6 +61,8 @@ static test_description_t test_list[] = {
     {"builtin domains", test_builtin_domains},
     {"C expression edges", test_c_expression_edges},
     {"C expression isolation", test_c_expression_isolation},
+    {"specialization graph", test_specialization_graph},
+    {"specialization graph boundaries", test_specialization_graph_boundaries},
     {"C body limits", test_c_body_limits},
     {"C body virtual", test_c_body_virtual},
     {"C contract types", test_c_contract_types},

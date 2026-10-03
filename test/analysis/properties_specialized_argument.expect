@@ -1,0 +1,3 @@
+one flags 2 0 function_object pure|c-compatible
+one flags 2 0 function_call c-compatible
+one flags 2 0 assignment c-compatible

@@ -1,0 +1,4 @@
+one flags 1 0 function_object pure|c-compatible
+one flags 2 0 addition pure|c-compatible
+one flags 2 0 return pure|c-compatible
+one flags 2 0 variable pure|c-compatible

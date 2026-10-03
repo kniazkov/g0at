@@ -300,3 +300,8 @@ c_body_effects
 c_body_constant_branch
 c_body_shadow
 c_body_reals
+properties_specialized
+properties_specialized_mixed
+properties_specialized_fibonacci
+properties_specialized_writes
+properties_specialized_argument

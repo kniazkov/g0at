@@ -1,9 +1,9 @@
-one flags 1 0 function_object pure
-one flags 1 0 variable pure
-one flags 1 0 addition pure
+one flags 1 0 function_object pure|c-compatible
+one flags 1 0 variable pure|c-compatible
+one flags 1 0 addition pure|c-compatible
 one flags 2 0 function_call none
 one flags 3 0 function_object none
-one flags 4 0 function_object pure
+one flags 4 0 function_object none
 one flags 4 0 variable pure
-one flags 5 15 function_object pure
+one flags 5 15 function_object none
 one flags 5 31 function_object none
