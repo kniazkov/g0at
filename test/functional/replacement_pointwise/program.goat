@@ -1,0 +1,9 @@
+var x=1;
+var a=x+1;
+x=8;
+var b=x+1;
+print(a);print(":");print(b);print(":");print(x);
+++x;
+print(":");print(x++);print(":");print(x);
+x=3+4;
+print(":");print(x);

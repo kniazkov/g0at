@@ -95,11 +95,22 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     return make_bottom_element();
 }
 
+/** @brief Implements node_vtbl_t::replace_child for the expression slot. */
+static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    throw_t *owner = (throw_t *)node;
+    if (!owner->value || (node_t *)owner->value != old_child
+        || !is_expression(new_child->vtbl->type))
+        return false;
+    owner->value = (expression_t *)new_child;
+    return true;
+}
+
 /** @brief Virtual table for throw nodes. */
 static node_vtbl_t throw_vtbl = {
     .type = NODE_THROW,
     .analyze_reachability = analyze_reachability,
     .is_pure = not_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"throw",
     .get_data = no_data,
@@ -109,7 +120,7 @@ static node_vtbl_t throw_vtbl = {
     .get_child = get_child,
     .get_child_tag = get_child_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,

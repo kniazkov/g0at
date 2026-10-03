@@ -27,6 +27,9 @@ struct expression_t {
      * inferred/unknown at the current stage.
      */
     const data_type_t *data_type;
+
+    /** @brief Pointwise value from immediate reachability; never a call specialization. */
+    const lattice_element_t *immediate_value;
 };
 
 /** @brief Gets the primary display data associated with an expression. */

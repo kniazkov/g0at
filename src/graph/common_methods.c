@@ -138,7 +138,8 @@ reachability_unknown(node_t *node, abstract_state_t **state, analysis_collector_
 
 const lattice_element_t *
 visit_reachable_child(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
-    return visit_reachable_node(get_node_child(node, 0), state, collector);
+    node_t *child = get_node_child(node, 0);
+    return child ? visit_reachable_node(child, state, collector) : make_top_element();
 }
 
 const lattice_element_t *
@@ -175,4 +176,8 @@ void no_direct_effects(const node_t *node, function_summary_t *summary, arena_t 
 void unknown_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
     summary->direct_effects |= FUNCTION_EFFECT_UNKNOWN;
     collect_child_effects(node, summary, arena);
+}
+
+node_t *no_simplification(node_t *node, arena_t *arena) {
+    return node;
 }

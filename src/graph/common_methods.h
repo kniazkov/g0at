@@ -119,3 +119,6 @@ void no_direct_effects(const node_t *node, function_summary_t *summary, arena_t 
 
 /** @brief Implements node_vtbl_t::collect_direct_effects for unsupported nodes. */
 void unknown_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena);
+
+/** @brief Implements node_vtbl_t::simplify without changing the node. */
+node_t *no_simplification(node_t *node, arena_t *arena);

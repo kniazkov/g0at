@@ -29,6 +29,7 @@
 #include "properties.h"
 #include "reachability.h"
 #include "resources/messages.h"
+#include "simplification.h"
 
 #include <assert.h>
 
@@ -62,6 +63,8 @@ static void assign_node_indexes_and_scopes(node_t *node,
     if (node->vtbl->type == NODE_FUNCTION_OBJECT)
         reset_function_summary_set(get_function_summaries(node));
     node->flags &= ~(NODE_FLAG_UNREACHABLE | NODE_FLAG_PURE | NODE_FLAG_C_COMPATIBLE);
+    if (is_expression(node->vtbl->type))
+        ((expression_t *)node)->immediate_value = NULL;
     if (node->vtbl->type == NODE_IF_ELSE)
         set_if_else_condition_truth(node, ABSTRACT_EITHER);
     if (is_declarator(node->vtbl->type))
@@ -258,6 +261,7 @@ compilation_error_t *analyze(node_t *root_node,
                              parser_memory_t *memory,
                              options_t *options,
                              analysis_collector_t *collector) {
+    restore_graph(root_node);
     scope_t *root_scope = create_scope_from_root_context(memory->graph);
 
     /* Queue functions in enclosing-before-nested order. */
@@ -301,5 +305,6 @@ compilation_error_t *analyze(node_t *root_node,
     mark_unreachable_code(root_node, memory->graph, collector);
     classify_node_properties(root_node, collector);
     add_call_graph_events(collector, calls);
+    simplify_graph(root_node, memory->graph);
     return errors;
 }

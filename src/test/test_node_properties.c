@@ -11,6 +11,7 @@
 #include "analysis_test_support.h"
 #include "cli/options.h"
 #include "graph/common_methods.h"
+#include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
@@ -18,6 +19,8 @@
 #include <wchar.h>
 
 static size_t count_nodes(const node_t *node) {
+    if (is_replacement(node))
+        return count_nodes(get_node_child(node, 0));
     size_t count = 1;
     for (size_t i = 0; i < get_node_child_count(node); i++)
         count += count_nodes(get_node_child(node, i));

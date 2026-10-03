@@ -187,11 +187,30 @@ static bool can_generate_c_code(const node_t *node,
     return c_call_supported(node, context);
 }
 
+/** @brief Implements node_vtbl_t::replace_child for the callee or an argument. */
+static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    function_call_t *call = (function_call_t *)node;
+    if (!is_expression(new_child->vtbl->type))
+        return false;
+    if ((node_t *)call->func_object == old_child) {
+        call->func_object = (expression_t *)new_child;
+        return true;
+    }
+    for (size_t i = 0; i < call->args_count; i++) {
+        if ((node_t *)call->args[i] == old_child) {
+            call->args[i] = (expression_t *)new_child;
+            return true;
+        }
+    }
+    return false;
+}
+
 /** @brief Virtual table for function call expressions. */
 static node_vtbl_t function_call_vtbl = {
     .type = NODE_FUNCTION_CALL,
     .analyze_reachability = analyze_reachability,
     .is_pure = is_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_direct_effects,
     .type_name = L"function call",
     .get_data = no_data,
@@ -201,7 +220,7 @@ static node_vtbl_t function_call_vtbl = {
     .get_child = get_child,
     .get_child_tag = get_child_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,

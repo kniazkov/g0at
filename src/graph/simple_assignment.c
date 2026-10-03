@@ -111,11 +111,22 @@ collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t 
     record_function_access(summary, get_node_child(node, 0), FUNCTION_CAPTURE_WRITE, arena);
 }
 
+/** @brief Implements node_vtbl_t::replace_child for the expression slot. */
+static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    assignment_t *owner = (assignment_t *)node;
+    if (!owner->right_operand || (node_t *)owner->right_operand != old_child
+        || !is_expression(new_child->vtbl->type))
+        return false;
+    owner->right_operand = (expression_t *)new_child;
+    return true;
+}
+
 /** @brief Virtual table for simple assignment operations. */
 static node_vtbl_t simple_assignment_vtbl = {
     .type = NODE_SIMPLE_ASSIGNMENT,
     .analyze_reachability = analyze_reachability,
     .is_pure = not_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_direct_effects,
     .type_name = L"assignment",
     .get_data = no_data,
@@ -125,7 +136,7 @@ static node_vtbl_t simple_assignment_vtbl = {
     .get_child = assignment_get_child,
     .get_child_tag = assignment_get_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,

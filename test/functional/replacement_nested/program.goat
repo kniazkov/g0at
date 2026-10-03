@@ -1,0 +1,2 @@
+const f=func(n){if(n) {if(1+2==3) return 7 else return 9;} return 0;};
+print(f(true));print(":");print(f(false));

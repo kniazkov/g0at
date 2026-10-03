@@ -1,0 +1,6 @@
+var x = 2 + 3 * 4
+if (x == 14) {
+    print("result: ");print(x)
+} else {
+    print("unreachable")
+}

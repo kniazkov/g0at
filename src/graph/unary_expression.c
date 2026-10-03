@@ -5,6 +5,7 @@
 #include "unary_expression.h"
 
 #include "analysis/reachability.h"
+#include "analysis/simplification.h"
 #include "analysis/unary_operation.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
@@ -89,11 +90,22 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     return result;
 }
 
+/** @brief Implements node_vtbl_t::replace_child for the expression slot. */
+static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    unary_expression_t *owner = (unary_expression_t *)node;
+    if (!owner->operand || (node_t *)owner->operand != old_child
+        || !is_expression(new_child->vtbl->type))
+        return false;
+    owner->operand = (expression_t *)new_child;
+    return true;
+}
+
 /** @brief Virtual table for unary sign operations. */
 static node_vtbl_t unary_plus_vtbl = {
     .type = NODE_UNARY_PLUS,
     .analyze_reachability = analyze_reachability,
     .is_pure = children_are_pure,
+    .simplify = simplify_constant_expression,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"unary plus",
     .get_data = no_data,
@@ -103,7 +115,7 @@ static node_vtbl_t unary_plus_vtbl = {
     .get_child = get_child,
     .get_child_tag = get_child_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
@@ -124,6 +136,7 @@ static node_vtbl_t unary_minus_vtbl = {
     .type = NODE_UNARY_MINUS,
     .analyze_reachability = analyze_reachability,
     .is_pure = children_are_pure,
+    .simplify = simplify_constant_expression,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"unary minus",
     .get_data = no_data,
@@ -133,7 +146,7 @@ static node_vtbl_t unary_minus_vtbl = {
     .get_child = get_child,
     .get_child_tag = get_child_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,

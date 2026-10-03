@@ -11,6 +11,7 @@
 #include "analysis/function_effects.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
+#include "analysis/simplification.h"
 #include "builtins/registry.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
@@ -142,6 +143,7 @@ static node_vtbl_t variable_vtbl = {
     .type = NODE_VARIABLE,
     .analyze_reachability = analyze_reachability,
     .is_pure = children_are_pure,
+    .simplify = simplify_constant_expression,
     .collect_direct_effects = collect_direct_effects,
     .type_name = L"variable",
     .is_assignable_expression = true,

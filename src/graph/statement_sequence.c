@@ -68,3 +68,15 @@ generate_goat_code_from_statement_list(list_t *list, string_builder_t *builder, 
     }
     return result;
 }
+
+bool replace_statement_in_list(list_t *list, node_t *old_child, node_t *new_child) {
+    if (!is_statement(new_child->vtbl->type) && !is_branch_or_loop(new_child->vtbl->type))
+        return false;
+    for (list_item_t *item = list->head; item; item = item->next) {
+        if (item->value.ptr == old_child) {
+            item->value.ptr = new_child;
+            return true;
+        }
+    }
+    return false;
+}

@@ -8,6 +8,7 @@
 #include "analysis/c_body.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
+#include "analysis/simplification.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -16,6 +17,7 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "replacement.h"
 #include "statement.h"
 
 /** @brief Implements node_vtbl_t::can_generate_c_code for a complete numeric body. */
@@ -254,11 +256,61 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     return make_top_element();
 }
 
+/** @brief Implements node_vtbl_t::replace_child with expression/statement checks. */
+static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    if_else_t *stmt = (if_else_t *)node;
+    if ((node_t *)stmt->condition == old_child && is_expression(new_child->vtbl->type)) {
+        stmt->condition = (expression_t *)new_child;
+        return true;
+    }
+    if (!is_statement(new_child->vtbl->type) && !is_branch_or_loop(new_child->vtbl->type))
+        return false;
+    if ((node_t *)stmt->true_branch == old_child)
+        stmt->true_branch = (statement_t *)new_child;
+    else if (stmt->false_branch && (node_t *)stmt->false_branch == old_child)
+        stmt->false_branch = (statement_t *)new_child;
+    else
+        return false;
+    return true;
+}
+
+/** @brief Implements node_vtbl_t::simplify when the condition can be discarded. */
+static node_t *simplify(node_t *node, arena_t *arena) {
+    if_else_t *stmt = (if_else_t *)node;
+    if (!can_discard_expression((node_t *)stmt->condition))
+        return node;
+    abstract_truth_t truth = stmt->condition_truth;
+    if (truth == ABSTRACT_EITHER) {
+        const expression_t *condition =
+            (const expression_t *)replacement_result((node_t *)stmt->condition);
+        if (condition->immediate_value) {
+            truth = lattice_truth(condition->immediate_value);
+        } else {
+            /* Only a literal can be discardable without a pointwise proof. */
+            abstract_state_t *state = create_abstract_state(arena);
+            truth = lattice_truth(calculate_node((node_t *)condition, state, arena));
+            destroy_abstract_state(state);
+        }
+    }
+    if (truth == ABSTRACT_TRUE)
+        return (node_t *)stmt->true_branch;
+    if (truth != ABSTRACT_FALSE)
+        return node;
+    if (stmt->false_branch)
+        return (node_t *)stmt->false_branch;
+    node_t *empty = (node_t *)create_statement_expression_node(arena, NULL);
+    empty->scope = node->scope;
+    empty->position = node->position;
+    empty->flags = NODE_FLAG_PURE;
+    return empty;
+}
+
 /** @brief Virtual table for if-else nodes. */
 static node_vtbl_t if_else_vtbl = {
     .type = NODE_IF_ELSE,
     .analyze_reachability = analyze_reachability,
     .is_pure = children_are_pure,
+    .simplify = simplify,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"if-else",
     .get_data = no_data,
@@ -268,7 +320,7 @@ static node_vtbl_t if_else_vtbl = {
     .get_child = get_child,
     .get_child_tag = get_child_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,

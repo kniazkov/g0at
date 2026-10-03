@@ -4,11 +4,15 @@
  */
 #include "reachability.h"
 
+#include "graph/expression.h"
 #include "graph/node.h"
 #include "graph/statement.h"
+#include "simplification.h"
 
 /** @brief Marks a dead subtree, or resets proofs before a fresh traversal. */
 static void set_subtree_flag(node_t *node, bool unreachable) {
+    if (is_expression(node->vtbl->type))
+        ((expression_t *)node)->immediate_value = NULL;
     if (unreachable)
         node->flags |= NODE_FLAG_UNREACHABLE;
     else
@@ -36,10 +40,13 @@ visit_reachable_node(node_t *node, abstract_state_t **state, analysis_collector_
     const lattice_element_t *value = node->vtbl->analyze_reachability(node, state, collector);
     if ((*state)->control_flow == FLOW_NORMAL && can_generate_c_code_from_node(node, value))
         node->flags |= NODE_FLAG_C_COMPATIBLE;
+    if (is_expression(node->vtbl->type) && (*state)->control_flow == FLOW_NORMAL)
+        ((expression_t *)node)->immediate_value = value;
     return value;
 }
 
 void mark_unreachable_code(node_t *root, arena_t *arena, analysis_collector_t *collector) {
+    restore_graph(root);
     set_subtree_flag(root, false);
     abstract_state_t *state = create_abstract_state(arena);
     visit_reachable_node(root, &state, collector);

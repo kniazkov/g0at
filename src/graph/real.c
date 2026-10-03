@@ -63,6 +63,7 @@ static node_vtbl_t real_vtbl = {
     .type = NODE_REAL,
     .analyze_reachability = reachability_literal,
     .is_pure = children_are_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"real number",
     .get_data = get_data,

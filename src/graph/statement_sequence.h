@@ -18,3 +18,6 @@ bool insert_statement_to_list_before(list_t *list, node_t *new_child, node_t *be
 /** @brief Generates compact Goat source code from a list of statements. */
 string_value_t
 generate_goat_code_from_statement_list(list_t *list, string_builder_t *builder, bool brackets);
+
+/** @brief Replaces an existing statement without changing list order. */
+bool replace_statement_in_list(list_t *list, node_t *old_child, node_t *new_child);
