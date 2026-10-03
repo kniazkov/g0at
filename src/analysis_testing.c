@@ -4,6 +4,7 @@
  * @brief Source-file tests against structured analysis observations.
  */
 #include "analysis/analysis.h"
+#include "analysis/c_contract.h"
 #include "analysis/function_summary.h"
 #include "analysis/lattice.h"
 #include "cli/options.h"
@@ -170,8 +171,25 @@ static bool effects_match(uint32_t effects, const char *expected) {
     return effects == mask;
 }
 
+static bool c_blockers_match(uint32_t blockers, const char *expected) {
+    string_value_t actual = c_blockers_to_string(blockers);
+    string_value_t wanted = decode_utf8(expected);
+    bool matches = wanted.data && !wcscmp(actual.data, wanted.data);
+    FREE_STRING(actual);
+    FREE_STRING(wanted);
+    return matches;
+}
+
 static bool
 function_matches(const function_summary_t *summary, const char *kind, const char *expected) {
+    if (!strcmp(kind, "c-support")) {
+        const char *support = summary->c_support == FUNCTION_C_SUPPORTED     ? "supported"
+                              : summary->c_support == FUNCTION_C_UNSUPPORTED ? "unsupported"
+                                                                             : "unknown";
+        return !strcmp(expected, support);
+    }
+    if (!strcmp(kind, "c-blockers"))
+        return c_blockers_match(summary->c_blockers, expected);
     if (!strcmp(kind, "effects"))
         return effects_match(summary->direct_effects, expected);
     if (!strcmp(kind, "total-effects"))
@@ -225,7 +243,8 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
         else if (!strcmp(kind, "summary"))
             query.kind = ANALYSIS_DECLARATION_SUMMARY;
         else if (!strcmp(kind, "function") || !strcmp(kind, "effects") || !strcmp(kind, "calls")
-                 || !strcmp(kind, "total-effects") || !strcmp(kind, "purity")) {
+                 || !strcmp(kind, "total-effects") || !strcmp(kind, "purity")
+                 || !strcmp(kind, "c-support") || !strcmp(kind, "c-blockers")) {
             query.kind = ANALYSIS_FUNCTION_SUMMARY;
             query.column = decl_row;
         } else if (!strcmp(kind, "flags")) {

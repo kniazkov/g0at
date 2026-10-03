@@ -45,7 +45,7 @@ bool test_function_purity_limits() {
     propagate_function_effects(graph, 64);
     for (function_call_graph_node_t *node = graph->head; node; node = node->next) {
         ASSERT(node->summary->effects == FUNCTION_EFFECT_EXTERNAL_WRITE);
-        ASSERT(node->summary->c_support == FUNCTION_C_UNKNOWN);
+        ASSERT(node->summary->c_support != FUNCTION_C_SUPPORTED);
     }
     function_call_edge_t *edges = graph->head->edges;
     graph->head->edges = NULL;

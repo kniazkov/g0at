@@ -271,3 +271,11 @@ purity_recursive_write
 purity_recursive_unknown
 purity_nested_write
 purity_handlers
+c_contract_numeric
+c_contract_excluded
+c_contract_unknown
+c_contract_data_capture
+c_contract_external_write
+c_contract_static_alias
+c_contract_callable
+c_contract_body_pending

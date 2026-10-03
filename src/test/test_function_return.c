@@ -37,7 +37,7 @@ bool test_function_return_isolation() {
     ASSERT(set->head->status == FUNCTION_ANALYZED);
     ASSERT(set->head->return_type->type == LATTICE_INTEGER);
     ASSERT(set->head->effects == FUNCTION_EFFECT_EXTERNAL_WRITE);
-    ASSERT(set->head->c_support == FUNCTION_C_UNKNOWN);
+    ASSERT(set->head->c_support == FUNCTION_C_UNSUPPORTED);
     query.kind = ANALYSIS_DECLARATION_SUMMARY;
     query.row = 3;
     const analysis_event_t *result = find_analysis_event(collector, NULL, &query);

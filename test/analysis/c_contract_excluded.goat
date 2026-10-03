@@ -1,0 +1,4 @@
+const f=func(n){return n;}
+f("hello")
+f(true)
+f()
