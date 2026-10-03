@@ -14,6 +14,7 @@
 #include "test_c_contract.h"
 #include "test_c_expression.h"
 #include "test_c_generation.h"
+#include "test_c_replacement.h"
 #include "test_codegen.h"
 #include "test_comparison.h"
 #include "test_direct_recursion.h"
@@ -51,6 +52,9 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"C replacement expression", test_c_replacement_expression},
+    {"C replacement statement", test_c_replacement_statement},
+    {"C replacement analysis", test_c_replacement_analysis},
     {"C generation context", test_c_generation_context},
     {"C generation transaction", test_c_generation_transaction},
     {"C generation expression", test_c_generation_expression},

@@ -21,3 +21,7 @@ static inline bool is_replacement(const node_t *node) {
 
 /** @brief Follows executable children, ignoring archived originals. */
 const node_t *replacement_result(const node_t *node);
+
+/** @brief Follows archived originals for specialization-wide C lowering; leaves the graph intact.
+ */
+const node_t *replacement_original(const node_t *node);
