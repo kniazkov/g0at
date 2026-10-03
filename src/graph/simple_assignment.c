@@ -5,6 +5,7 @@
  */
 
 #include "analysis/abstract_state.h"
+#include "analysis/c_body.h"
 #include "analysis/function_effects.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
@@ -22,6 +23,18 @@
 #include "variable.h"
 
 #include <assert.h>
+
+/** @brief Implements node_vtbl_t::can_generate_c_code for a complete numeric body. */
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    const node_t *left = get_node_child(node, 0);
+    if (!context || !context->graph || left->vtbl->type != NODE_VARIABLE)
+        return false;
+    const declarator_t *decl = ((const variable_t *)left)->declarator;
+    return decl && decl->base.vtbl->type != NODE_CONSTANT_DECLARATOR
+           && c_local_binding(context, decl, c_expression_type(context, get_node_child(node, 1)));
+}
 
 /** @brief A simple assignment operation expression node. */
 
@@ -121,7 +134,7 @@ static node_vtbl_t simple_assignment_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

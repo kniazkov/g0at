@@ -1,5 +1,5 @@
 one c-support 1 0 integer supported
 one c-blockers 1 0 integer none
 one c-support 1 0 real supported
-one c-blockers 1 0 real none
-one c-blockers 4 0 - none
+one c-expression 4 0 integer/assignment int64
+one c-expression 4 0 real/assignment double

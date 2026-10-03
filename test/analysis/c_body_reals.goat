@@ -1,0 +1,5 @@
+const f = func(n) { if (n) { return n + 1.0; } else { return -n; } };
+f(1.0);
+f(-0.0);
+f(sqrt(-1));
+f(1 ** -1);

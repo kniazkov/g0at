@@ -5,6 +5,7 @@
  */
 
 #include "analysis/abstract_state.h"
+#include "analysis/c_body.h"
 #include "analysis/function_call.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
@@ -17,6 +18,15 @@
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 #include "statement.h"
+
+/** @brief Implements node_vtbl_t::can_generate_c_code for a complete numeric body. */
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    return context && context->graph && get_node_child_count(node) == 1
+           && c_expression_type(context, get_node_child(node, 0))
+                  == classify_c_value_type(context->summary->return_type->type);
+}
 
 /** @brief AST node representing a return statement. */
 typedef struct {
@@ -151,7 +161,7 @@ static node_vtbl_t return_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

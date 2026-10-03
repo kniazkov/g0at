@@ -1,0 +1,8 @@
+one c-support 1 0 integer unknown
+one c-blockers 1 0 integer return|body
+one c-support 3 0 integer unknown
+one c-blockers 3 0 integer return|body
+one c-support 5 0 integer unsupported
+one c-support 7 0 integer supported
+# Unvisited syntax is not yet a proof of safe dead-code elimination.
+one c-support 9 0 integer unknown

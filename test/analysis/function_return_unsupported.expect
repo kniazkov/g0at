@@ -1,5 +1,5 @@
 one function 1 0 integer analyzed:integer
-one function 2 0 integer inconclusive:top
+one function 2 0 integer analyzed:integer
 one function 4 0 integer inconclusive:top
 # The boolean specialization now solves its direct recursive edge.
 one function 6 0 boolean analyzed:integer

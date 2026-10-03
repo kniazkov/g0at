@@ -7,6 +7,7 @@
 #include "declarations.h"
 
 #include "analysis/abstract_state.h"
+#include "analysis/c_body.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
 #include "codegen/code_builder.h"
@@ -24,6 +25,20 @@
 size_t get_property_count_of_declarator(const node_t *node) {
     const declarator_t *decl = (const declarator_t *)node;
     return decl->abstract_value ? 1 : 0;
+}
+
+/** @brief Implements node_vtbl_t::can_generate_c_code for a complete numeric body. */
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    if (!context || !context->graph)
+        return false;
+    if (!is_declarator(node->vtbl->type))
+        return c_body_children(node, value, context);
+    return get_node_child_count(node) == 1
+           && c_local_binding(context,
+                              (const declarator_t *)node,
+                              c_expression_type(context, get_node_child(node, 0)));
 }
 
 /** @brief Implements @ref node_vtbl_t::get_property. */
@@ -167,7 +182,7 @@ static node_vtbl_t vdeclr_vtbl = {
     .generate_goat_code = vdeclr_generate_goat_code,
     .generate_indented_goat_code = vdeclr_generate_indented_goat_code,
     .generate_bytecode = vdeclr_generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
@@ -301,7 +316,7 @@ static node_vtbl_t vdecln_vtbl = {
     .generate_goat_code = vdecln_generate_goat_code,
     .generate_indented_goat_code = vdecln_generate_indented_goat_code,
     .generate_bytecode = vdecln_generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
@@ -429,7 +444,7 @@ static node_vtbl_t cdeclr_vtbl = {
     .generate_goat_code = cdeclr_generate_goat_code,
     .generate_indented_goat_code = cdeclr_generate_indented_goat_code,
     .generate_bytecode = cdeclr_generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
@@ -561,7 +576,7 @@ static node_vtbl_t cdecln_vtbl = {
     .generate_goat_code = cdecln_generate_goat_code,
     .generate_indented_goat_code = cdecln_generate_indented_goat_code,
     .generate_bytecode = cdecln_generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

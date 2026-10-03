@@ -4,6 +4,7 @@
  * @brief Implementation of function object expressions.
  */
 
+#include "analysis/c_body.h"
 #include "analysis/function_summary.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
@@ -279,7 +280,7 @@ static node_vtbl_t function_body_vtbl = {
     .generate_goat_code = fbody_generate_goat_code,
     .generate_indented_goat_code = fbody_generate_indented_goat_code,
     .generate_bytecode = fbody_generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = c_body_children,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

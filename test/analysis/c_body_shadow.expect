@@ -1,0 +1,4 @@
+one c-support 1 0 integer supported
+one c-support 3 0 integer supported
+one purity 3 0 integer pure
+one c-expression 3 0 integer/function_call int64

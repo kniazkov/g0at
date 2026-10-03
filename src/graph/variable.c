@@ -7,6 +7,7 @@
 #include "variable.h"
 
 #include "analysis/abstract_state.h"
+#include "analysis/c_body.h"
 #include "analysis/function_effects.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
@@ -120,6 +121,13 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 static bool can_generate_c_code(const node_t *node,
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context) {
+    if (context && context->graph && value) {
+        c_value_type_t type = classify_c_value_type(value->type);
+        if (value->type == LATTICE_BOOLEAN || value->type == LATTICE_TRUE
+            || value->type == LATTICE_FALSE)
+            type = C_VALUE_BOOL;
+        return c_local_binding(context, ((const variable_t *)node)->declarator, type);
+    }
     return is_integer_lattice_element(value) || is_real_lattice_element(value);
 }
 

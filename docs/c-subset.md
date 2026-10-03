@@ -1,8 +1,8 @@
 # Initial C subset contract
 
 This is the contract for a future backend, not an implemented backend or a public
-native-library ABI. The analyzer checks interface preconditions and pointwise numeric expressions.
-Control-flow and call proofs must establish complete bodies in later steps.
+native-library ABI. The analyzer checks interfaces, numeric expressions, structured bodies and static calls.
+Supported means eligibility under this contract; no C emitter or runtime bridge exists yet.
 
 ## Interface and environment
 
@@ -80,7 +80,8 @@ and recursive native-call integration remain obligations of the future runtime b
 
 ## Cached decisions and diagnostics
 
-`check_function_c_contract` writes `function_summary_t.c_support` and `c_blockers`.
+`check_function_c_contract` writes preliminary `function_summary_t.c_support` and `c_blockers`.
+`analyze_function_c_bodies` can then discharge the body obligation.
 It does not modify the shared AST's `NODE_FLAG_C_COMPATIBLE`, generate C, load a library,
 or change VM execution.
 
@@ -95,9 +96,8 @@ or change VM execution.
 
 `unsupported` means a known interface type or capture is excluded by this initial
 contract, not that equivalent C is impossible in principle. Insufficient type or effect
-information yields `unknown`. Rechecking replaces stale results. `body` is always present
-at this step, so passing every other check still yields `unknown`, never `supported`.
-For example, numeric Fibonacci reaches `c=unknown` with `c-blockers=body`.
+information yields `unknown`. Rechecking replaces stale results. Complete body proofs yield `supported` and no blockers;
+otherwise `body` remains. Numeric Fibonacci now reaches `c=supported` with `c-blockers=none`.
 
 Collectors copy these decisions into existing function-summary events. Source tests
 use `c-support` and `c-blockers` selectors with the same function location and signature
@@ -117,16 +117,55 @@ specified above. Boolean comparison/literal temporaries do not extend the numeri
 No reassociation or direct overflowing signed C arithmetic is authorized by a proof.
 
 A read uses its generic program-point type, including preceding writes and branch joins.
-External captures start at TOP. Calls are unproven and conservatively forget state using
-the existing generic evaluator. No concrete invocation or shared node flag is evidence.
+External captures start at TOP. The expression-only pass conservatively forgets state at calls; the body pass below
+can preserve it for resolved pure static callees. No concrete invocation or shared node flag is evidence.
 Repeated observations intersect: incompatible representations or one failed proof leave
 `unknown`. Unknown is distinct from an excluded interface type, and may be refined by
 future analyses. Unsupported or unvisited expressions do not imply an eligible body.
 In particular, constant folding cannot hide an unsupported operand behind a numeric result.
 
 The arena-owned proof list is copied into collector snapshots. `c-expression` events carry
-the function signature, source node and representation. They neither update the shared AST
-flags nor clear `C_BLOCKER_BODY`. A variable read can have a representation even if the
-statement producing it is unsupported; the later body checker must validate every required
-statement and expression. Current absence of an exception ABI keeps division, modulo,
-shifts, power, updates and calls unproven in this incremental step.
+the function signature, source node and representation. Expression observations do not update shared AST flags or independently clear
+`C_BLOCKER_BODY`. A variable read can have a representation even if the
+statement producing it is unsupported; the body checker must validate every required
+statement and expression. The absence of an exception ABI keeps division, modulo, shifts, power and updates
+unproven. Calls require the additional proof below.
+
+## Complete bodies and static calls
+
+The body pass uses the same generic evaluator and node virtual methods. It admits
+initialized scalar locals, assignments to local mutable bindings, expression statements,
+blocks, numeric/boolean conditions, `if`/`else`, and explicit numeric returns. Every
+parameter/local binding has one fixed representation; changing an integer slot to a real
+slot is rejected even if the eventual return type is known. Boolean temporaries
+may be stored locally, but remain excluded from parameters and returns. Block expressions
+used as object values, closure values, implicit null initialization, exceptions/handlers,
+and unsupported operators are outside this subset.
+
+The checker requires proofs for all syntactic branches and statements. It deliberately
+does not use shared reachability flags or silently delete unvisited syntax. Consequently,
+a constant condition with an unvisited nonempty branch, or code after an unconditional
+return, may prevent support. Implicit fallthrough contributes null; mixed integer/real
+returns are not coerced into a single representation.
+
+A call must resolve through a literal function or immutable aliases to an existing exact
+numeric specialization in the call graph. Mutable, higher-order and native bindings are
+not guessed by name. Every supplied argument must have an expression proof, including
+extra arguments discarded by the callee. Missing numeric arguments are rejected. The
+existing evaluation order (arguments right to left, callee last) is preserved. Callee
+identity may be lowered statically without a boxed function value, but any required
+captured data still blocks support.
+
+Pure static callees with established numeric return domains can refine previously unknown
+caller returns. This bounded refinement never substitutes a concrete call observation and
+does not prove absence of exceptions. A separate descending fixed point starts with
+interface/purity/capture candidates and removes bodies that fail their virtual checks or
+call a removed candidate. Direct and mutual recursion may therefore be supported without
+assuming that purity alone establishes C compatibility. A failed member invalidates its
+callers; unrelated valid functions remain supported. Truncated graphs or exhausted limits
+never expose tentative positive results. Final expression logs are refreshed after
+candidate elimination so rejected calls do not retain tentative proofs.
+
+Neither a complete body proof nor `c=supported` proves termination or supplies native
+stack/resource handling. Actual C emission, target/compiler validation, loading and VM
+fallback remain separate work. Shared AST/visualization flags remain unchanged here.

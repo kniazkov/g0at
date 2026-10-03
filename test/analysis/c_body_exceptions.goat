@@ -1,0 +1,8 @@
+const f = func(n) { if (n) throw "bad"; return 1; };
+f(0);
+const caller = func(n) { return f(n); };
+caller(0);
+const handler = func(n) { try { return n; } catch (e) { return 0; } };
+handler(1);
+const division = func(n) { var x = 1 / n; return 1; };
+division(1);

@@ -1,0 +1,7 @@
+var mutable = func(n) { return n; };
+const a = func(n) { return mutable(n); };
+a(1);
+const b = func(fn, n) { return fn(n); };
+b(mutable, 1);
+const c = func(n) { return abs(n); };
+c(1);

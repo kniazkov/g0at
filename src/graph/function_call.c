@@ -7,6 +7,7 @@
 #include "analysis/function_call.h"
 
 #include "analysis/abstract_state.h"
+#include "analysis/c_body.h"
 #include "analysis/function_call_graph.h"
 #include "analysis/function_effects.h"
 #include "analysis/function_return.h"
@@ -79,6 +80,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     const lattice_element_t *function = calculate_expression(expr->func_object, state, arena);
     if (state->control_flow != FLOW_NORMAL)
         return make_bottom_element();
+    if (state->c_expressions && state->c_expressions->graph)
+        return interpret_c_call(node, args, expr->args_count, state);
     if (state->recursive_group)
         return interpret_recursive_call(node, function, args, expr->args_count, state);
     observe_function_call(state->call_graph_node, node, function, args, expr->args_count);
@@ -177,6 +180,13 @@ collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t 
     collect_child_effects(node, summary, arena);
 }
 
+/** @brief A static numeric call needs a supported target and all evaluated arguments. */
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    return c_call_supported(node, context);
+}
+
 /** @brief Virtual table for function call expressions. */
 static node_vtbl_t function_call_vtbl = {
     .type = NODE_FUNCTION_CALL,
@@ -200,7 +210,7 @@ static node_vtbl_t function_call_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

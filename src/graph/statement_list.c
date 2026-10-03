@@ -7,6 +7,7 @@
 #include "statement_list.h"
 
 #include "analysis/abstract_state.h"
+#include "analysis/c_body.h"
 #include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
@@ -124,7 +125,7 @@ static node_vtbl_t statement_list_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = c_body_children,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

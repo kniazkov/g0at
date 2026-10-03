@@ -1,0 +1,10 @@
+const f = func(n) { if (n) return 1; };
+f(1);
+const g = func(n) { if (n) return 1; return 1.5; };
+g(1);
+const h = func(n) { return; };
+h(1);
+const branch = func(n) { if (n) { return 1; } else { return 2; } };
+branch(1);
+const dead = func(n) { return n; return n + 1; };
+dead(1);
