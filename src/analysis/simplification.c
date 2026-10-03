@@ -105,10 +105,6 @@ node_t *simplify_constant_expression(node_t *node, arena_t *arena) {
             value = NULL;
         destroy_abstract_state(state);
     }
-    return fold_constant_value(node, arena, value);
-}
-
-node_t *fold_constant_value(node_t *node, arena_t *arena, const lattice_element_t *value) {
     node_t *literal = literal_from_value(arena, value);
     if (!literal)
         return node;

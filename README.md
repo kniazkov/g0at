@@ -616,7 +616,11 @@ Try the original Fibonacci experiment:
 ./goat --save-graph fibonacci.svg example/fibonacci_analysis.goat
 ```
 
-The full function appears green under `C view: (real)`, including both recursive calls.
+`abs` preserves numeric types: integer inputs produce integers and real inputs produce
+reals. Integer overflow follows unary negation: `abs(INT64_MIN)` remains `INT64_MIN`.
+Real absolute values follow `fabs`, including positive zero, infinities and NaN.
+
+The full function appears green under `C view: (integer)`, including both recursive calls.
 The unknown-argument signature discovered by the call graph stays explicitly unproven.
 Linux/GCC CI renders this example with Graphviz and uploads the SVG as an artifact.
 
@@ -631,9 +635,6 @@ and bytecode; the graph preserves both and gives replacements a pale purple fill
 Folding uses pointwise immediate-execution facts, never a variable's aggregate summary
 or one observed function call. Closed literal expressions can also fold inside function
 bodies. Calls, writes, uncertain operands, and potentially failing evaluation are retained.
-Native descriptors may explicitly allow constant folding: currently `abs` does so. Its
-resolved identity, concrete result, and removable evaluation of every argument (including
-ignored extras) are required. A user-defined `abs` is not treated as the built-in.
 A known `if` becomes its selected statement only when evaluating its condition can be
 safely omitted; a false `if` without `else` becomes an empty statement. Existing block
 scopes remain intact. Assignment and increment targets remain assignable expressions.

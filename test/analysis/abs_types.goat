@@ -1,0 +1,7 @@
+var a=abs(-7);
+var b=abs(-2.0);
+var c=abs(-9007199254740993);
+var d=abs(-9223372036854775807-1);
+var e=abs(-0.0);
+const f=func(n){return n+1;};
+var x=f(abs(10));

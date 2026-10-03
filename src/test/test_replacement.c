@@ -181,7 +181,7 @@ bool test_replacement_boundaries() {
         STATIC_STRING(L"const f=func(n){return n+1;};f(1);f(2);\n"
                       L"const closed=func(n){return n+(2*3);};closed(4);\n"
                       L"var x=0;if ((x=1)) print(x);++x;x++;\n"
-                      L"if (sqrt(1)) print(x);\n"
+                      L"if (abs(1)) print(x);\n"
                       L"try { 1 + true; } catch(e) { print(e); }"));
     ASSERT(root);
     options_t *options = create_options();
@@ -226,59 +226,6 @@ bool test_replacement_reset() {
     ASSERT(!wcsstr(second.data, L"#f5efff"));
     FREE_STRING(second);
     FREE_STRING(first);
-    destroy_options(options);
-    destroy_arena(arena);
-    return true;
-}
-
-bool test_replacement_abs() {
-    arena_t *arena = create_arena(16);
-    parser_memory_t memory = {arena, arena, arena, arena};
-    node_t *root = parse_analysis_test_program(
-        &memory,
-        STATIC_STRING(L"var a=abs(10); var b=abs(-0.0); var c=abs((-1)**0.5);\n"
-                      L"var d=abs(-(0**-1)); const alias=abs; var e=alias(-5);\n"
-                      L"var f=abs(abs(-3)); var g=abs(2,3);"));
-    options_t *options = create_options();
-    ASSERT(root && !analyze(root, &memory, options, NULL));
-    ASSERT(!count_type(root, NODE_FUNCTION_CALL));
-    const size_t indices[] = {0, 1, 2, 3, 5, 6, 7};
-    const double expected[] = {10.0, 0.0, NAN, INFINITY, 5.0, 3.0, 2.0};
-    abstract_state_t *state = create_abstract_state(arena);
-    for (size_t i = 0; i < sizeof(indices) / sizeof(*indices); i++) {
-        node_t *expr = initializer(root, indices[i]);
-        ASSERT(is_replacement(expr));
-        ASSERT(get_node_child(expr, 0)->vtbl->type == NODE_FUNCTION_CALL);
-        const lattice_element_t *value = calculate_node(expr, state, arena);
-        ASSERT(value->type == LATTICE_REAL_CONSTANT);
-        double number = ((const real_constant_element_t *)value)->value;
-        ASSERT(isnan(expected[i]) ? isnan(number) : number == expected[i]);
-        if (i == 1) {
-            ASSERT(!signbit(number));
-        }
-    }
-    code_builder_t *code = create_code_builder();
-    data_builder_t *data = create_data_builder();
-    generate_bytecode_from_node(root, code, data);
-    ASSERT(!opcode_count(code, CALL));
-    string_value_t dot = generate_graph_dot(root);
-    ASSERT(wcsstr(dot.data, L"color=purple style=\"rounded,filled\" fillcolor=\"#f5efff\""));
-    FREE_STRING(dot);
-    destroy_data_builder(data);
-    destroy_code_builder(code);
-    destroy_abstract_state(state);
-    destroy_options(options);
-    destroy_arena(arena);
-
-    arena = create_arena(16);
-    memory = (parser_memory_t){arena, arena, arena, arena};
-    root = parse_analysis_test_program(&memory,
-                                       STATIC_STRING(L"var x=0;abs(x=1);abs(1,x=2);\n"
-                                                     L"var abs=func(n){return n+1;};abs(3);"));
-    options = create_options();
-    ASSERT(root && !analyze(root, &memory, options, NULL));
-    ASSERT(count_type(root, NODE_FUNCTION_CALL) == 3);
-    ASSERT(count_type(root, NODE_SIMPLE_ASSIGNMENT) == 2);
     destroy_options(options);
     destroy_arena(arena);
     return true;

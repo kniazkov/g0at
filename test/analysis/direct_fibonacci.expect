@@ -1,7 +1,7 @@
-one function 1 0 real analyzed:integer
+one function 1 0 integer analyzed:integer
 # Ordinary concrete interpretation is still bounded and is not replaced by the proof.
 last write 7 7 x top
-one purity 1 0 real pure
-one total-effects 1 0 real none
-one c-support 1 0 real supported
-one c-blockers 1 0 real none
+one purity 1 0 integer pure
+one total-effects 1 0 integer none
+one c-support 1 0 integer supported
+one c-blockers 1 0 integer none

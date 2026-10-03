@@ -17,7 +17,7 @@ from xml.etree import ElementTree as ET
 assert Path('build/fibonacci-output.txt').read_text().strip() == '55'
 root = ET.parse('build/fibonacci-analysis.svg').getroot()
 text = ''.join(root.itertext())
-assert 'C view:' in text and '(real)' in text and 'C=supported' in text
+assert 'C view:' in text and '(integer)' in text and 'C=supported' in text
 assert any(node.get('stroke') == 'forestgreen' for node in root.iter())
 assert any(node.get('fill') == '#f2faf2' for node in root.iter())
 assert Path('build/replacements-output.txt').read_text().strip() == 'result: 14'

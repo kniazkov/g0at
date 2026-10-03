@@ -305,3 +305,5 @@ properties_specialized_mixed
 properties_specialized_fibonacci
 properties_specialized_writes
 properties_specialized_argument
+
+abs_types

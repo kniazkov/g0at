@@ -25,8 +25,6 @@ typedef struct builtin_function_t {
     const wchar_t *name;
     size_t min_args;
     unsigned effects;
-    /** @brief A concrete normal result on constant arguments proves removable evaluation. */
-    bool fold_constants;
     /** @brief Executors receive at least min_args; runtime results own a non-NULL value. */
     operation_result_t (*execute)(object_t **args, uint16_t count, thread_t *thread);
     const lattice_element_t *(*interpret)(abstract_state_t *state,

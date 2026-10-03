@@ -137,7 +137,8 @@ bool test_native_int_domains() {
             continue;
         args[0] = make_numeric_element();
         args[1] = make_top_element();
-        ASSERT(math->interpret(state, args, math->min_args)->type == LATTICE_REAL);
+        ASSERT(math->interpret(state, args, math->min_args)->type
+               == (math == &builtin_abs ? LATTICE_NUMERIC : LATTICE_REAL));
         for (size_t bad = 0; bad < math->min_args; bad++) {
             args[0] = args[1] = make_real_element();
             args[bad] = make_string_element();

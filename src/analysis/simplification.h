@@ -13,6 +13,3 @@ void restore_graph(node_t *root);
 node_t *simplify_constant_expression(node_t *node, arena_t *arena);
 /** @brief Proves evaluation removable; purity alone does not exclude calls or throws. */
 bool can_discard_expression(const node_t *node);
-
-/** @brief Builds a scalar constant after the caller has proved evaluation removable. */
-node_t *fold_constant_value(node_t *node, arena_t *arena, const lattice_element_t *value);
