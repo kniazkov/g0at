@@ -47,11 +47,12 @@ static bool generate_tests(source_builder_t *output) {
         {L"const f=func(){return 0.0;};f();", L"()==INFINITY", 2, 0, INFINITY},
         {L"const f=func(){return 0.0;};f();", L"()==-INFINITY", 2, 0, -INFINITY},
         {L"const f=func(){return 0.0;};f();", L"()!=goat_case12()", 2, 0, NAN},
-        {L"const f=func(){return 1.2345678901234567;};f();", L"()==1.2345678901234567"},
+        {L"const f=func(){return 1.2345678901234567;};f();", L"()==expected_decimal"},
         {L"const f=func(n){return n;};f(1.0);", L"(INFINITY)==INFINITY"},
         {L"const f=func(n){return n;};f(1.0);", L"(NAN)!=goat_case15(NAN)"}};
     source_builder_t *checks = create_source_builder();
     add_static_source(checks, 0, L"int main(void) {");
+    add_static_source(checks, 1, L"volatile double expected_decimal = 1.2345678901234567;");
     bool success = true;
     for (size_t i = 0; i < sizeof(fixtures) / sizeof(*fixtures) && success; i++) {
         const fixture_t *fixture = &fixtures[i];

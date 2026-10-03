@@ -72,7 +72,7 @@ return conversion is emitted in this step.
 
 `scripts/check_c_generation.sh UNIT_BINARY OUTPUT_DIR` generates test source,
 compiles it with `${CC:-gcc}` and executes numeric assertions at `-O2`. CI runs it
-with Linux GCC/Clang and all Windows GCC targets, and preserves generated source
+with Linux GCC/Clang and all Windows GCC targets (plus GCC x87 evaluation), and preserves generated source
 as an artifact. The unit executable's `--emit-c-tests` is test-only; user-facing
 source output options remain a later step.
 
