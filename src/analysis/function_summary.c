@@ -39,6 +39,7 @@ void reset_function_summary(function_summary_t *summary) {
     summary->c_support = FUNCTION_C_UNKNOWN;
     summary->c_blockers = C_BLOCKER_ANALYSIS;
     summary->c_expressions = NULL;
+    summary->c_calls = NULL;
     summary->iterations = 0;
 }
 
@@ -75,6 +76,13 @@ const function_summary_t *snapshot_function_summary(arena_t *arena,
         proof_tail = &(*proof_tail)->next;
     }
     *proof_tail = NULL;
+    c_call_t **c_tail = &copy->c_calls;
+    for (const c_call_t *call = summary->c_calls; call; call = call->next) {
+        *c_tail = alloc_from_arena(arena, sizeof(**c_tail));
+        **c_tail = *call;
+        c_tail = &(*c_tail)->next;
+    }
+    *c_tail = NULL;
     return copy;
 }
 

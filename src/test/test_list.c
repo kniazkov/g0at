@@ -14,6 +14,7 @@
 #include "test_c_contract.h"
 #include "test_c_expression.h"
 #include "test_c_generation.h"
+#include "test_c_module.h"
 #include "test_c_replacement.h"
 #include "test_codegen.h"
 #include "test_comparison.h"
@@ -52,6 +53,9 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"C module identity", test_c_module_identity},
+    {"C module dependencies", test_c_module_dependencies},
+    {"C module call lifetime", test_c_module_call_lifetime},
     {"C replacement expression", test_c_replacement_expression},
     {"C replacement statement", test_c_replacement_statement},
     {"C replacement analysis", test_c_replacement_analysis},
