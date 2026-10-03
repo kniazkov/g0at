@@ -53,7 +53,9 @@ unknown_abstract_value(node_t *node, abstract_state_t *state, arena_t *arena);
 abstract_state_t *execute_nothing(node_t *node, abstract_state_t *state, arena_t *arena);
 
 /** @brief Implements @ref node_vtbl_t::can_generate_c_code for unsupported nodes. */
-bool cannot_generate_c_code(const node_t *node, const lattice_element_t *value);
+bool cannot_generate_c_code(const node_t *node,
+                            const lattice_element_t *value,
+                            const c_expression_context_t *context);
 
 /** @brief Implements @ref node_vtbl_t::generate_c_code; returns NULL_STRING_VALUE. */
 string_value_t no_c_code(const node_t *node);
@@ -75,10 +77,14 @@ bool children_are_pure(const node_t *node);
 bool not_pure(const node_t *node);
 
 /** @brief Implements node_vtbl_t::can_generate_c_code for numeric literals. */
-bool numeric_literal_c_code(const node_t *node, const lattice_element_t *value);
+bool numeric_literal_c_code(const node_t *node,
+                            const lattice_element_t *value,
+                            const c_expression_context_t *context);
 
 /** @brief Implements node_vtbl_t::can_generate_c_code for numeric identity wrappers. */
-bool child_c_code(const node_t *node, const lattice_element_t *value);
+bool child_c_code(const node_t *node,
+                  const lattice_element_t *value,
+                  const c_expression_context_t *context);
 
 /** @brief Implements node_vtbl_t::analyze_reachability for literal values. */
 const lattice_element_t *

@@ -279,3 +279,11 @@ c_contract_external_write
 c_contract_static_alias
 c_contract_callable
 c_contract_body_pending
+c_expression_profiles
+c_expression_arithmetic
+c_expression_comparisons
+c_expression_pending
+c_expression_pointwise
+c_expression_branch
+c_expression_calls
+c_expression_fibonacci

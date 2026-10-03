@@ -75,7 +75,9 @@ abstract_state_t *execute_nothing(node_t *node, abstract_state_t *state, arena_t
     return state;
 }
 
-bool cannot_generate_c_code(const node_t *node, const lattice_element_t *value) {
+bool cannot_generate_c_code(const node_t *node,
+                            const lattice_element_t *value,
+                            const c_expression_context_t *context) {
     return false;
 }
 
@@ -110,12 +112,17 @@ bool not_pure(const node_t *node) {
     return false;
 }
 
-bool numeric_literal_c_code(const node_t *node, const lattice_element_t *value) {
+bool numeric_literal_c_code(const node_t *node,
+                            const lattice_element_t *value,
+                            const c_expression_context_t *context) {
     return true;
 }
 
-bool child_c_code(const node_t *node, const lattice_element_t *value) {
-    return node_has_flag(get_node_child(node, 0), NODE_FLAG_C_COMPATIBLE);
+bool child_c_code(const node_t *node,
+                  const lattice_element_t *value,
+                  const c_expression_context_t *context) {
+    return context ? c_expression_type(context, get_node_child(node, 0)) != C_VALUE_UNKNOWN
+                   : node_has_flag(get_node_child(node, 0), NODE_FLAG_C_COMPATIBLE);
 }
 
 const lattice_element_t *

@@ -60,6 +60,9 @@ struct abstract_state_t {
 
     /** @brief Recursive type group being solved; never used by ordinary interpretation. */
     struct recursive_type_group_t *recursive_group;
+
+    /** @brief Optional expression proof accumulator; never used by ordinary interpretation. */
+    struct c_expression_context_t *c_expressions;
 };
 
 /**

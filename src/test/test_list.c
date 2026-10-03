@@ -11,6 +11,7 @@
 #include "test_analysis.h"
 #include "test_builtin_functions.h"
 #include "test_c_contract.h"
+#include "test_c_expression.h"
 #include "test_codegen.h"
 #include "test_comparison.h"
 #include "test_direct_recursion.h"
@@ -56,6 +57,8 @@ static test_description_t test_list[] = {
     {"builtin numeric results", test_builtin_numeric_results},
     {"builtin errors", test_builtin_errors},
     {"builtin domains", test_builtin_domains},
+    {"C expression edges", test_c_expression_edges},
+    {"C expression isolation", test_c_expression_isolation},
     {"C contract types", test_c_contract_types},
     {"C contract checks", test_c_contract_checks},
     {"function purity limits", test_function_purity_limits},

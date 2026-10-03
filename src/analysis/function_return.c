@@ -42,9 +42,11 @@ static const lattice_element_t *evaluate_signature(function_summary_set_t *set,
                                                    function_summary_t *summary,
                                                    function_call_graph_node_t *graph_node,
                                                    recursive_type_group_t *group,
-                                                   bool *incomplete) {
+                                                   bool *incomplete,
+                                                   c_expression_context_t *expressions) {
     abstract_state_t *state = create_abstract_state(set->arena);
     state->type_analysis_incomplete = incomplete;
+    state->c_expressions = expressions;
     state->recursive_group = group;
     state->call_graph_node = graph_node;
     /* A type-only key does not prove that root bindings have not been replaced. */
@@ -76,7 +78,8 @@ static void analyze_signature(function_summary_set_t *set, function_summary_t *s
     reset_function_summary(summary);
     summary->status = FUNCTION_ANALYZING;
     bool incomplete = false;
-    const lattice_element_t *result = evaluate_signature(set, summary, NULL, NULL, &incomplete);
+    const lattice_element_t *result =
+        evaluate_signature(set, summary, NULL, NULL, &incomplete, NULL);
     summary->status = incomplete ? FUNCTION_INCONCLUSIVE : FUNCTION_ANALYZED;
     summary->return_type = incomplete ? make_top_element() : result;
 }
@@ -97,7 +100,8 @@ void inspect_function_calls(function_call_graph_node_t *node) {
                        node->summary,
                        node,
                        NULL,
-                       &incomplete);
+                       &incomplete,
+                       NULL);
 }
 
 /** @brief Coverage between normalized type domains, not concrete argument values. */
@@ -186,7 +190,8 @@ static void solve_group(recursive_type_group_t *group, size_t max_iterations) {
             function_summary_set_t *set = get_function_summaries(s->function);
             bool incomplete = false;
             s->iterations++;
-            const lattice_element_t *result = evaluate_signature(set, s, node, group, &incomplete);
+            const lattice_element_t *result =
+                evaluate_signature(set, s, node, group, &incomplete, NULL);
             if (incomplete) {
                 s->status = FUNCTION_INCONCLUSIVE;
                 s->return_type = make_top_element();
@@ -252,4 +257,18 @@ void solve_function_recursion(function_call_graph_t *graph, size_t max_iteration
         for (size_t i = 0; i < group.count; i++)
             done.members[done.count++] = group.members[i];
     }
+}
+
+void analyze_function_c_expressions(node_t *root) {
+    if (root->vtbl->type == NODE_FUNCTION_OBJECT) {
+        function_summary_set_t *set = get_function_summaries(root);
+        for (function_summary_t *summary = set->head; summary; summary = summary->next) {
+            c_expression_context_t context = {.arena = set->arena};
+            bool incomplete = false;
+            evaluate_signature(set, summary, NULL, NULL, &incomplete, &context);
+            summary->c_expressions = context.head;
+        }
+    }
+    for (size_t i = 0; i < get_node_child_count(root); i++)
+        analyze_function_c_expressions(get_node_child(root, i));
 }

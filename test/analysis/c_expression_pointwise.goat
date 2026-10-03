@@ -1,0 +1,11 @@
+const f = func(n) {
+    var a = n + 1;
+    n = "s";
+    return n + 1;
+};
+f(2);
+const g = func(n) {
+    if (n) { n = "s"; }
+    return n + 1;
+};
+g(0);

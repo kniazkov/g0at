@@ -120,7 +120,9 @@ custom_reachability(node_t *node, abstract_state_t **state, analysis_collector_t
     return make_integer_constant_element(replacement->arena, 19);
 }
 
-static bool custom_c_subset(const node_t *node, const lattice_element_t *value) {
+static bool custom_c_subset(const node_t *node,
+                            const lattice_element_t *value,
+                            const c_expression_context_t *context) {
     return value && value->type == LATTICE_INTEGER_CONSTANT
            && ((const integer_constant_element_t *)value)->value == 19;
 }

@@ -74,6 +74,7 @@ typedef struct function_summary_t {
     function_capture_t *captures;         /**< Arena-owned list, in first-access order. */
     function_analysis_status_t status;
     function_c_support_t c_support;
+    struct c_expression_proof_t *c_expressions; /**< Arena-owned pointwise expression proofs. */
     uint32_t c_blockers; /**< Cached failed/pending checks from the numeric C contract. */
     size_t iterations;   /**< Fixed-point evaluations; zero for nonrecursive analysis. */
 } function_summary_t;

@@ -26,7 +26,8 @@ typedef enum {
     ANALYSIS_NODE_FLAGS,       /**< Final proof snapshot, including zero (no proof). */
     ANALYSIS_FUNCTION_SUMMARY, /**< Function-body facts, independent of later analysis. */
     ANALYSIS_CALL_EDGE,        /**< Call-site target; NULL callee means unknown or graph limit. */
-    ANALYSIS_CALL_GROUP        /**< Strongly connected component membership. */
+    ANALYSIS_CALL_GROUP,       /**< Strongly connected component membership. */
+    ANALYSIS_C_EXPRESSION      /**< Per-signature pointwise C expression proof. */
 } analysis_event_kind_t;
 
 /** @brief One observation, not a mutable reference to an abstract state. */
@@ -39,6 +40,7 @@ struct analysis_event_t {
     const lattice_element_t *value;
     const function_summary_t *function_summary; /**< Snapshot for ANALYSIS_FUNCTION_SUMMARY. */
     const function_summary_t *callee_summary;
+    const struct c_expression_proof_t *c_expression; /**< Borrowed from the event snapshot. */
     size_t caller_id, callee_id;
     size_t component, component_size;
     bool recursive, complete, limited;

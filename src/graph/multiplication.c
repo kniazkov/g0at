@@ -16,6 +16,13 @@
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 
+/** @brief Numeric operations use the wrap, rounding and comparison rules of the C contract. */
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    return c_numeric_operands(node, context);
+}
+
 /** @brief A multiplication operation expression node. */
 typedef struct {
     /** @brief Base binary operation structure from which multiplication_t inherits. */
@@ -88,7 +95,7 @@ static node_vtbl_t multiplication_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,

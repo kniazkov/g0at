@@ -5,6 +5,7 @@
  */
 #include "analysis/analysis.h"
 #include "analysis/c_contract.h"
+#include "analysis/c_expression.h"
 #include "analysis/function_summary.h"
 #include "analysis/lattice.h"
 #include "cli/options.h"
@@ -171,6 +172,13 @@ static bool effects_match(uint32_t effects, const char *expected) {
     return effects == mask;
 }
 
+static bool c_expression_matches(c_value_type_t type, const char *expected) {
+    string_value_t wanted = decode_utf8(expected);
+    bool matches = wanted.data && !wcscmp(c_expression_type_name(type), wanted.data);
+    FREE_STRING(wanted);
+    return matches;
+}
+
 static bool c_blockers_match(uint32_t blockers, const char *expected) {
     string_value_t actual = c_blockers_to_string(blockers);
     string_value_t wanted = decode_utf8(expected);
@@ -247,6 +255,9 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
                  || !strcmp(kind, "c-support") || !strcmp(kind, "c-blockers")) {
             query.kind = ANALYSIS_FUNCTION_SUMMARY;
             query.column = decl_row;
+        } else if (!strcmp(kind, "c-expression")) {
+            query.kind = ANALYSIS_C_EXPRESSION;
+            query.column = decl_row;
         } else if (!strcmp(kind, "flags")) {
             query.kind = ANALYSIS_NODE_FLAGS;
             query.column = decl_row;
@@ -261,6 +272,7 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
         bool unreachable = query.kind == ANALYSIS_UNREACHABLE;
         bool flags = query.kind == ANALYSIS_NODE_FLAGS;
         bool function = query.kind == ANALYSIS_FUNCTION_SUMMARY;
+        bool expression = query.kind == ANALYSIS_C_EXPRESSION;
         if (unreachable && (decl_row || strcmp(variable, "-") || strcmp(expected, "-")))
             return false;
         string_value_t wide = decode_utf8(variable);
@@ -270,8 +282,18 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
         const analysis_event_t *last = NULL;
         for (const analysis_event_t *event = find_analysis_event(collector, NULL, &query); event;
              event = find_analysis_event(collector, event, &query)) {
-            if (function) {
-                if (!signature_matches(event->function_summary, variable))
+            if (function || expression) {
+                char *separator = expression ? strchr(variable, '/') : NULL;
+                if (separator)
+                    *separator = 0;
+                bool selected = signature_matches(event->function_summary, variable);
+                if (separator) {
+                    *separator = '/';
+                    string_value_t node_type = decode_utf8(separator + 1);
+                    selected &= node_type.data && node_type_matches(event->node, node_type.data);
+                    FREE_STRING(node_type);
+                }
+                if (!selected)
                     continue;
             } else if (flags) {
                 if (!node_type_matches(event->node, wide.data))
@@ -294,8 +316,10 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
                 : last && (!strcmp(mode, "last") || matches == 1)
                       && (unreachable
                           || (function ? function_matches(last->function_summary, kind, expected)
-                              : flags  ? flags_match(last->flags, expected)
-                                       : value_matches(last->value, expected)));
+                              : expression
+                                  ? c_expression_matches(last->c_expression->type, expected)
+                              : flags ? flags_match(last->flags, expected)
+                                      : value_matches(last->value, expected)));
         if (!ok) {
             fprintf(stderr,
                     "%s.expect:%zu: %s (selector matched %zu events)\n",

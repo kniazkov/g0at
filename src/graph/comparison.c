@@ -38,6 +38,13 @@ comparison_kind_t node_comparison_kind(node_type_t type) {
 static const wchar_t *symbols[] = {L"<", L"<=", L">", L">=", L"==", L"!="};
 static const opcode_t opcodes[] = {LESS, LEQ, GREATER, GREQ, EQUAL, DIFF};
 
+/** @brief Numeric operations use the wrap, rounding and comparison rules of the C contract. */
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    return c_numeric_operands(node, context);
+}
+
 /** @brief Implements node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     binary_operation_t *expr = (binary_operation_t *)node;
@@ -112,7 +119,7 @@ static node_vtbl_t vtables[] = {
         .generate_goat_code = generate_goat_code,
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
-        .can_generate_c_code = cannot_generate_c_code,
+        .can_generate_c_code = can_generate_c_code,
         .generate_c_code = no_c_code,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
@@ -140,7 +147,7 @@ static node_vtbl_t vtables[] = {
         .generate_goat_code = generate_goat_code,
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
-        .can_generate_c_code = cannot_generate_c_code,
+        .can_generate_c_code = can_generate_c_code,
         .generate_c_code = no_c_code,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
@@ -168,7 +175,7 @@ static node_vtbl_t vtables[] = {
         .generate_goat_code = generate_goat_code,
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
-        .can_generate_c_code = cannot_generate_c_code,
+        .can_generate_c_code = can_generate_c_code,
         .generate_c_code = no_c_code,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
@@ -196,7 +203,7 @@ static node_vtbl_t vtables[] = {
         .generate_goat_code = generate_goat_code,
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
-        .can_generate_c_code = cannot_generate_c_code,
+        .can_generate_c_code = can_generate_c_code,
         .generate_c_code = no_c_code,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
@@ -224,7 +231,7 @@ static node_vtbl_t vtables[] = {
         .generate_goat_code = generate_goat_code,
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
-        .can_generate_c_code = cannot_generate_c_code,
+        .can_generate_c_code = can_generate_c_code,
         .generate_c_code = no_c_code,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
@@ -252,7 +259,7 @@ static node_vtbl_t vtables[] = {
         .generate_goat_code = generate_goat_code,
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
-        .can_generate_c_code = cannot_generate_c_code,
+        .can_generate_c_code = can_generate_c_code,
         .generate_c_code = no_c_code,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,

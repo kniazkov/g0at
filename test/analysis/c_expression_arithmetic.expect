@@ -1,0 +1,16 @@
+one c-expression 2 0 integer,integer/addition int64
+one c-expression 3 0 integer,integer/subtraction int64
+one c-expression 4 0 integer,integer/multiplication int64
+one c-expression 2 0 integer,real/addition double
+one c-expression 3 0 integer,real/subtraction double
+one c-expression 4 0 integer,real/multiplication double
+one c-expression 2 0 real,integer/addition double
+one c-expression 3 0 real,integer/subtraction double
+one c-expression 4 0 real,integer/multiplication double
+one c-expression 2 0 real,real/addition double
+one c-expression 3 0 real,real/subtraction double
+one c-expression 4 0 real,real/multiplication double
+one c-expression 5 0 integer,real/unary_plus int64
+one c-expression 6 0 integer,real/unary_minus double
+one c-expression 5 0 real,integer/unary_plus double
+one c-expression 6 0 real,integer/unary_minus int64

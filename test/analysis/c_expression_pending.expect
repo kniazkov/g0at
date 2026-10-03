@@ -1,0 +1,6 @@
+one c-expression 2 0 integer/division unknown
+one c-expression 3 0 integer/modulo unknown
+one c-expression 4 0 integer/power unknown
+one c-expression 5 0 integer/shift_left unknown
+one c-expression 10 0 integer/addition unknown
+one c-blockers 1 0 integer return|body
