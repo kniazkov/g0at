@@ -65,6 +65,7 @@ c_generation_result_t generate_c_function(const function_summary_t *summary,
 /** @brief Internal lowering helpers; use generate_c_function to obtain executable source. */
 c_value_type_t c_generation_parameter_type(const c_generation_context_t *context, size_t index);
 c_value_type_t c_generation_return_type(const c_generation_context_t *context);
+/** @brief Uses the original node identity for replacement expressions. */
 c_value_type_t c_generation_expression_type(const c_generation_context_t *context,
                                             const node_t *node);
 

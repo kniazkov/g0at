@@ -1,6 +1,6 @@
 /** @file replacement.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Replacement nodes keep history but execute only their right child.
+ * @brief Replacement nodes retain history; bytecode uses the result, C uses the original.
  */
 #include "replacement.h"
 
@@ -36,6 +36,12 @@ static const replacement_children_t *children(const node_t *node) {
 const node_t *replacement_result(const node_t *node) {
     while (is_replacement(node))
         node = children(node)->result;
+    return node;
+}
+
+const node_t *replacement_original(const node_t *node) {
+    while (is_replacement(node))
+        node = children(node)->original;
     return node;
 }
 
@@ -99,6 +105,20 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
     generate_indented_goat_code_from_node(children(node)->result, builder, indent);
 }
 
+/** @brief Implements node_vtbl_t::generate_c_code through the unsimplified expression. */
+static c_generated_expression_t generate_c_code(const node_t *node,
+                                                c_generation_context_t *context) {
+    return generate_c_code_from_node(replacement_original(node), context);
+}
+
+/** @brief Implements node_vtbl_t::generate_indented_c_code through the original statement. */
+static bool generate_indented_c_code(const node_t *node,
+                                     c_generation_context_t *context,
+                                     source_builder_t *builder,
+                                     size_t indent) {
+    return generate_indented_c_code_from_node(replacement_original(node), context, builder, indent);
+}
+
 /** @brief Implements node_vtbl_t::generate_bytecode without emitting the original. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     return generate_bytecode_from_node(children(node)->result, code, data);
@@ -134,8 +154,8 @@ static node_vtbl_t expression_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .can_generate_c_code = can_generate_c_code,
-    .generate_c_code = no_c_code,
-    .generate_indented_c_code = no_indented_c_code,
+    .generate_c_code = generate_c_code,
+    .generate_indented_c_code = generate_indented_c_code,
     .generate_bytecode = generate_bytecode,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = generate_bytecode_deferred,
@@ -178,8 +198,8 @@ static node_vtbl_t statement_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .can_generate_c_code = can_generate_c_code,
-    .generate_c_code = no_c_code,
-    .generate_indented_c_code = no_indented_c_code,
+    .generate_c_code = generate_c_code,
+    .generate_indented_c_code = generate_indented_c_code,
     .generate_bytecode = generate_bytecode,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = generate_bytecode_deferred,

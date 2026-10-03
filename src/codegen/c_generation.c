@@ -5,6 +5,7 @@
 #include "c_generation.h"
 
 #include "graph/node.h"
+#include "graph/replacement.h"
 #include "lib/allocate.h"
 
 c_value_type_t c_generation_parameter_type(const c_generation_context_t *context, size_t index) {
@@ -25,7 +26,7 @@ c_value_type_t c_generation_expression_type(const c_generation_context_t *contex
                                             const node_t *node) {
     c_expression_context_t proofs = {
         .head = context && context->summary ? context->summary->c_expressions : NULL};
-    return c_expression_type(&proofs, node);
+    return node ? c_expression_type(&proofs, replacement_original(node)) : C_VALUE_UNKNOWN;
 }
 
 bool fail_c_generation(c_generation_context_t *context,

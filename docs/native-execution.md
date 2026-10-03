@@ -58,14 +58,19 @@ returns success explicitly. A failed function attempt discards all accumulated
 source without changing the analyzer's summary.
 
 Concrete emitters are still absent; even a proven function currently reports
-`C_GENERATION_UNSUPPORTED`. Replacement nodes also reject lowering until the
-next step defines how to select their specialization-safe subtree.
+`C_GENERATION_UNSUPPORTED`. Replacement nodes delegate C lowering to their
+original children, including nested replacements.
 
 Replacement nodes preserve an original subtree and a simplified subtree. Native
-generation must use the original subtree unless the replacement is justified for
-the entire selected signature. A constant observed for `f(10)` cannot specialize
+generation currently always uses the original subtree. Reusing a simplified
+subtree would require a separate proof for the entire selected signature. A constant observed for `f(10)` cannot specialize
 the implementation of `f(integer)` to that value. This does not change which
-subtree ordinary bytecode generation uses.
+subtree ordinary bytecode generation uses. Expression-type lookup unwraps the
+same original nodes to find the selected summary's pre-rewrite proofs. Missing
+proofs stay unknown; neither a replacement literal nor shared flags fill the gap.
+Lowering does not restore or mutate the AST, its parents, flags or proof records.
+Statement replacements retain the original control structure for C lowering,
+including branches absent from the executable bytecode subtree.
 
 ## Generated module
 
