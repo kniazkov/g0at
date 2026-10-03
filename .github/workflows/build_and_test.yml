@@ -67,6 +67,10 @@ jobs:
         run: bash scripts/check_c_generation.sh build/${{ matrix.compiler }}/unit_testing build/${{ matrix.compiler }}/c-generation
         env:
           CC: ${{ matrix.compiler }}
+      - name: Check generated C with undefined-behavior sanitizer
+        run: bash scripts/check_c_generation.sh build/${{ matrix.compiler }}/unit_testing build/${{ matrix.compiler }}/c-generation-ubsan -fsanitize=undefined,float-cast-overflow -fno-sanitize-recover=all
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Check generated C with x87 evaluation
         if: matrix.compiler == 'gcc'
         run: bash scripts/check_c_generation.sh build/gcc/unit_testing build/gcc/c-generation-x87 -mfpmath=387

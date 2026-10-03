@@ -5,13 +5,17 @@
 #include "test_c_emission.h"
 
 #include "analysis/analysis.h"
+#include "analysis/c_expression.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "codegen/c_lowering.h"
 #include "codegen/c_module.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/io.h"
 #include "lib/string_ext.h"
+#include "model/object.h"
+#include "model/process.h"
 #include "test_macro.h"
 
 #include <float.h>
@@ -27,6 +31,148 @@ typedef struct {
     int64_t integer;
     double real;
 } fixture_t;
+
+/** @brief Uses the literal writer only for test inputs and model-produced expected values. */
+static string_value_t object_literal(object_t *object) {
+    node_vtbl_t vtbl = {.type = NODE_INTEGER};
+    node_t node = {.vtbl = &vtbl};
+    c_expression_proof_t proof = {.node = &node,
+                                  .type =
+                                      is_integer_object(object) ? C_VALUE_INT64 : C_VALUE_DOUBLE};
+    function_summary_t summary = {.c_expressions = &proof};
+    c_generation_context_t context = {.summary = &summary};
+    c_generated_expression_t value =
+        is_integer_object(object)
+            ? c_integer_literal(&node, &context, get_object_integer_value(object).value)
+            : c_real_literal(&node, &context, get_object_real_value(object).value);
+    return value.value;
+}
+
+/** @brief Compares generated arithmetic with runtime operations over all numeric type pairs. */
+static bool arithmetic_tests(source_builder_t *output, source_builder_t *checks) {
+    const int64_t integers[] =
+        {0, 1, -1, INT64_MIN, INT64_MAX, INT64_C(9007199254740993), INT64_C(4294967296), -129};
+    const double reals[] = {0.0,
+                            -0.0,
+                            0.5,
+                            -1.25,
+                            DBL_MAX,
+                            DBL_MIN,
+                            0x0.0000000000001p-1022,
+                            INFINITY,
+                            -INFINITY,
+                            NAN,
+                            9007199254740992.0};
+    process_t *process = create_process();
+    bool success = true;
+    for (size_t op = 0; op < 5 && success; op++) {
+        for (size_t pair = 0; pair < (op < 3 ? 4 : 2) && success; pair++) {
+            bool left_real = pair & 1, right_real = pair & 2;
+            arena_t *arena = create_arena(32);
+            parser_memory_t memory = {arena, arena, arena, arena};
+            string_value_t source =
+                op < 3 ? format_string(L"const f=func(a,b){return a%c b;};f(%s,%s);",
+                                       L"+-*"[op],
+                                       left_real ? L"1.0" : L"1",
+                                       right_real ? L"2.0" : L"2")
+                       : format_string(L"const f=func(a){return %ca;};f(%s);",
+                                       op == 3 ? L'+' : L'-',
+                                       left_real ? L"1.0" : L"1");
+            node_t *root = parse_analysis_test_program(&memory, source);
+            options_t *options = create_options();
+            success = root && !analyze(root, &memory, options, NULL);
+            c_module_t *module = success ? create_c_module(arena, root) : NULL;
+            success = module && module->available_count == 1;
+            string_value_t name = format_string(L"goat_arithmetic%zu_%zu", op, pair);
+            if (success) {
+                c_generation_result_t result =
+                    generate_c_function(module->head->summary,
+                                        (string_view_t){name.data, name.length},
+                                        NULL,
+                                        NULL);
+                success = result.status == C_GENERATION_OK;
+                if (success)
+                    add_formatted_source(output, 0, result.source);
+                else
+                    FREE_STRING(result.source);
+            }
+            size_t left_count =
+                left_real ? sizeof(reals) / sizeof(*reals) : sizeof(integers) / sizeof(*integers);
+            size_t right_count = op >= 3      ? 1
+                                 : right_real ? sizeof(reals) / sizeof(*reals)
+                                              : sizeof(integers) / sizeof(*integers);
+            for (size_t i = 0; i < left_count && success; i++) {
+                for (size_t j = 0; j < right_count && success; j++) {
+                    object_t *left = left_real ? create_real_number_object(process, reals[i])
+                                               : create_integer_object(process, integers[i]);
+                    object_t *right = right_real ? create_real_number_object(process, reals[j])
+                                                 : create_integer_object(process, integers[j]);
+                    operation_result_t result = op == 0   ? add_objects(process, left, right)
+                                                : op == 1 ? subtract_objects(process, left, right)
+                                                : op == 2 ? multiply_objects(process, left, right)
+                                                : op == 3 ? unary_plus_object(process, left)
+                                                          : unary_minus_object(process, left);
+                    success = !result.is_exception && result.value;
+                    if (success) {
+                        string_value_t a = object_literal(left), b = object_literal(right),
+                                       expected = object_literal(result.value);
+                        add_static_source(checks, 1, L"{");
+                        add_source(checks,
+                                   2,
+                                   L"volatile %s a = %s;",
+                                   left_real ? L"double" : L"int64_t",
+                                   a.data);
+                        if (op < 3)
+                            add_source(checks,
+                                       2,
+                                       L"volatile %s b = %s;",
+                                       right_real ? L"double" : L"int64_t",
+                                       b.data);
+                        bool real = !is_integer_object(result.value);
+                        add_source(checks,
+                                   2,
+                                   L"volatile %s actual = %s(%s);",
+                                   real ? L"double" : L"int64_t",
+                                   name.data,
+                                   op < 3 ? L"a,b" : L"a");
+                        add_source(checks,
+                                   2,
+                                   L"volatile %s expected = %s;",
+                                   real ? L"double" : L"int64_t",
+                                   expected.data);
+                        add_source(
+                            checks,
+                            2,
+                            L"if (!(%s)) { fprintf(stderr, \"arithmetic %zu/%zu/%zu/%zu "
+                            L"failed\\n\"); return 100; }",
+                            real ? L"(isnan(actual) && isnan(expected)) || (actual == expected && "
+                                   L"(actual != 0 || !!signbit(actual) == !!signbit(expected)))"
+                                 : L"actual == expected",
+                            op,
+                            pair,
+                            i,
+                            j);
+                        add_static_source(checks, 1, L"}");
+                        FREE_STRING(a);
+                        FREE_STRING(b);
+                        FREE_STRING(expected);
+                    }
+                    DECREF(result.value);
+                    DECREF(left);
+                    DECREF(right);
+                }
+            }
+            if (!success)
+                fprintf(stderr, "Arithmetic emission %zu/%zu failed\n", op, pair);
+            FREE_STRING(name);
+            FREE_STRING(source);
+            destroy_options(options);
+            destroy_arena(arena);
+        }
+    }
+    destroy_process(process);
+    return success;
+}
 
 static bool generate_tests(source_builder_t *output) {
     const fixture_t fixtures[] = {
@@ -49,7 +195,16 @@ static bool generate_tests(source_builder_t *output) {
         {L"const f=func(){return 0.0;};f();", L"()!=goat_case12()", 2, 0, NAN},
         {L"const f=func(){return 1.2345678901234567;};f();", L"()==expected_decimal"},
         {L"const f=func(n){return n;};f(1.0);", L"(INFINITY)==INFINITY"},
-        {L"const f=func(n){return n;};f(1.0);", L"(NAN)!=goat_case15(NAN)"}};
+        {L"const f=func(n){return n;};f(1.0);", L"(NAN)!=goat_case15(NAN)"},
+        {L"const f=func(a,b){return -(a+b)*(a-b);};f(1,2);", L"(7,3)==-40"},
+        {L"const f=func(a,b){return a+b;};f(1,2);", L"(INT64_MAX,1)==INT64_MIN"},
+        {L"const f=func(a,b){return a-b;};f(1,2);", L"(INT64_MIN,1)==INT64_MAX"},
+        {L"const f=func(a,b){return a*b;};f(1,2);", L"(INT64_MIN,-1)==INT64_MIN"},
+        {L"const f=func(a){return -a;};f(1);", L"(INT64_MIN)==INT64_MIN"},
+        {L"const f=func(a,b){return (a+b)-a;};f(1.0,2.0);", L"(0x1p53,1.0)==0.0"},
+        {L"const f=func(a,b){return a*b-1.0;};f(1.0,2.0);",
+         L"(0x1.0000000000001p0,0x1.ffffffffffffep-1)==0.0"}};
+    add_static_source(output, 0, L"#include <stdio.h>");
     source_builder_t *checks = create_source_builder();
     add_static_source(checks, 0, L"int main(void) {");
     add_static_source(checks, 1, L"volatile double expected_decimal = 1.2345678901234567;");
@@ -100,6 +255,8 @@ static bool generate_tests(source_builder_t *output) {
         destroy_options(options);
         destroy_arena(arena);
     }
+    if (success)
+        success = arithmetic_tests(output, checks);
     add_static_source(checks, 1, L"return 0;");
     add_static_source(checks, 0, L"}");
     if (success)
@@ -133,7 +290,7 @@ bool test_c_emission_rejections(void) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
         parse_analysis_test_program(&memory,
-                                    STATIC_STRING(L"const f=func(n){return n;};f(1);f(1.0);"));
+                                    STATIC_STRING(L"const f=func(n){return n+1;};f(1);f(1.0);"));
     ASSERT(root);
     options_t *options = create_options();
     ASSERT(!analyze(root, &memory, options, NULL));
