@@ -11,9 +11,7 @@
 #include "common/types.h"
 
 typedef struct object_t object_t;
-
 typedef struct context_t context_t;
-
 typedef struct process_t process_t;
 
 /** @brief The execution context in the Goat programming language. */

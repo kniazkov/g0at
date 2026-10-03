@@ -13,9 +13,7 @@
 #include <wchar.h>
 
 typedef struct token_t token_t;
-
 typedef struct token_list_t token_list_t;
-
 typedef struct node_t node_t;
 
 /**

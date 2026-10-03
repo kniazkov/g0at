@@ -14,7 +14,6 @@
 #include <stdint.h>
 
 typedef struct arena_t arena_t;
-
 typedef struct lattice_element_t lattice_element_t;
 
 /** @brief Abstract domains; enum order does not define lattice ordering. */

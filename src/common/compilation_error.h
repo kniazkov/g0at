@@ -10,11 +10,8 @@
 #include "position.h"
 
 typedef struct compilation_error_t compilation_error_t;
-
 typedef struct token_t token_t;
-
 typedef struct node_t node_t;
-
 typedef struct arena_t arena_t;
 
 /** @brief Enumeration of diagnostic severity levels. */

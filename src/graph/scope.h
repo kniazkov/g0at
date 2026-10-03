@@ -10,9 +10,7 @@
 #include "lib/value.h"
 
 typedef struct scope_t scope_t;
-
 typedef struct node_t node_t;
-
 typedef struct declarator_t declarator_t;
 
 /**

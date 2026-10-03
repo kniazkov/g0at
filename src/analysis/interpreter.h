@@ -9,7 +9,6 @@
 #include "collector.h"
 
 typedef struct node_t node_t;
-
 typedef struct parser_memory_t parser_memory_t;
 
 /**

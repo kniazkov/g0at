@@ -8,6 +8,7 @@
 #include "model/context.h"
 #include "model/process.h"
 #include "model/thread.h"
+#include "test_output.h"
 #include "vm/vm.h"
 
 #include <stdio.h>
@@ -94,6 +95,8 @@ void run_stack_underflow_case(int index) {
 }
 
 bool test_stack_underflow(const char *executable) {
+    test_output_start("fatal stack");
+    size_t passed = 0;
     const char *file = "stack-underflow-test-error.txt";
     size_t count = sizeof(cases) / sizeof(*cases) + 8;
     for (size_t i = 0; i < count; i++) {
@@ -122,16 +125,19 @@ bool test_stack_underflow(const char *executable) {
         if (stream)
             fclose(stream);
         remove(file);
-        if (!exited || !length
-            || strcmp(message, "FATAL: Stack underflow! The interpreter is broken. Aborting.\n")) {
+        bool ok =
+            exited && length
+            && !strcmp(message, "FATAL: Stack underflow! The interpreter is broken. Aborting.\n");
+        test_output_case(ok, "stack underflow case %zu", i);
+        passed += ok;
+        if (!ok) {
             fprintf(stderr,
                     "Stack underflow case %zu failed: status=%d, stderr=%s\n",
                     i,
                     status,
                     message);
-            return false;
         }
     }
-    printf("Fatal stack testing: %zu/%zu passed\n", count, count);
-    return true;
+    test_output_summary("Fatal stack", passed, count - passed);
+    return passed == count;
 }

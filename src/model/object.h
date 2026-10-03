@@ -29,7 +29,6 @@ static inline operation_result_t operation_exception(object_t *value) {
 }
 
 typedef struct process_t process_t;
-
 typedef struct thread_t thread_t;
 
 /** @brief Enumeration of object types in the Goat virtual machine. */

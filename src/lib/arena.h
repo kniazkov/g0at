@@ -13,7 +13,6 @@
 #include <wchar.h>
 
 typedef struct arena_t arena_t;
-
 typedef struct chunk_t chunk_t;
 
 /** @brief The memory chunk structure. */

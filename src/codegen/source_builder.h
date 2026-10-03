@@ -11,7 +11,6 @@
 #include <stddef.h>
 
 typedef struct line_of_code_t line_of_code_t;
-
 typedef struct source_builder_t source_builder_t;
 
 /** @brief A single line of code in the source code generation process. */

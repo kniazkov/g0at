@@ -9,11 +9,8 @@
 #include "collector.h"
 
 typedef struct compilation_error_t compilation_error_t;
-
 typedef struct node_t node_t;
-
 typedef struct parser_memory_t parser_memory_t;
-
 typedef struct options_t options_t;
 
 /**
