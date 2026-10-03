@@ -536,6 +536,13 @@ one c-blockers 1 0 integer none
 The contract also specifies wrapping integers, mixed numeric precision, floating-point
 special values, evaluation order and exception handling obligations for later lowering.
 
+The [native execution contract](docs/native-execution.md) describes the planned next
+stage: whole-function specializations, one generated C module, typed adapters and
+VM fallback. Analyzer eligibility, emitter support and a callable native implementation
+are separate decisions. Native dispatch will live in the function object's call
+method, using metadata supplied during function creation; `CALL` keeps its format
+and no `NATIVE` opcode is planned. No C emitter or dynamic loader exists yet.
+
 ### Numeric C expression proofs
 
 A separate generic evaluation records expression representations for each signature:
