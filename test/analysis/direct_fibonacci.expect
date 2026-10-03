@@ -3,5 +3,5 @@ one function 1 0 real analyzed:integer
 last write 7 7 x top
 one purity 1 0 real pure
 one total-effects 1 0 real none
-one c-support 1 0 real unknown
-one c-blockers 1 0 real body
+one c-support 1 0 real supported
+one c-blockers 1 0 real none

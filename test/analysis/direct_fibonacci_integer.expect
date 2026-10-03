@@ -1,4 +1,4 @@
 one function 1 0 integer analyzed:integer
 one purity 1 0 integer pure
-one c-support 1 0 integer unknown
-one c-blockers 1 0 integer body
+one c-support 1 0 integer supported
+one c-blockers 1 0 integer none

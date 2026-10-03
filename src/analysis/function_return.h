@@ -4,7 +4,11 @@
  */
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
+
+typedef struct function_summary_t function_summary_t;
+typedef struct c_expression_context_t c_expression_context_t;
 
 typedef struct node_t node_t;
 
@@ -29,3 +33,8 @@ const lattice_element_t *interpret_recursive_call(const node_t *site,
                                                   const lattice_element_t *const *args,
                                                   size_t count,
                                                   abstract_state_t *state);
+
+/** @brief Reuses generic evaluation for C proofs without changing ordinary observations. */
+const lattice_element_t *evaluate_function_c_signature(function_summary_t *summary,
+                                                       c_expression_context_t *context,
+                                                       bool *incomplete);

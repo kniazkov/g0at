@@ -17,6 +17,10 @@ typedef struct c_expression_proof_t {
 typedef struct c_expression_context_t {
     arena_t *arena;
     c_expression_proof_t *head, *tail;
+    struct function_call_graph_t *graph; /**< NULL for expression-only checking. */
+    const function_summary_t *summary;
+    struct c_binding_t **bindings; /**< Borrowed storage accumulator; shared across paths. */
+    struct c_call_t *calls;
 } c_expression_context_t;
 
 /** @brief Finds a recorded proof without consulting shared AST flags. */

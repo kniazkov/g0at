@@ -272,3 +272,14 @@ void analyze_function_c_expressions(node_t *root) {
     for (size_t i = 0; i < get_node_child_count(root); i++)
         analyze_function_c_expressions(get_node_child(root, i));
 }
+
+const lattice_element_t *evaluate_function_c_signature(function_summary_t *summary,
+                                                       c_expression_context_t *context,
+                                                       bool *incomplete) {
+    return evaluate_signature(get_function_summaries(summary->function),
+                              summary,
+                              NULL,
+                              NULL,
+                              incomplete,
+                              context);
+}

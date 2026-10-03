@@ -1,0 +1,4 @@
+const print = func(n) { return n + 1; };
+const alias = print;
+const f = func(n) { return alias(n); };
+f(1);

@@ -1,0 +1,5 @@
+const a = func(n) { return b(n) + 1; };
+const b = func(n) { return c(n); };
+const c = func(n) { return n * 2; };
+a(3);
+a(3.5);

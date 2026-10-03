@@ -1,0 +1,8 @@
+var x = 0;
+const f = func(n) { x = n; return n; };
+f(1);
+const caller = func(n) { return f(n); };
+caller(1);
+const k = 1;
+const captured = func(n) { var unused = k; return n; };
+captured(1);

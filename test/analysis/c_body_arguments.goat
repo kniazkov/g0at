@@ -1,0 +1,9 @@
+const leaf = func(n) { return n; };
+const extra = func(n) { return leaf(n, n + 1); };
+extra(1);
+const bad = func(n) { return leaf(n, 1 / n); };
+bad(1);
+const missing = func(n) { return leaf(); };
+missing(1);
+const reordered = func(n) { return leaf(n, n = n + 1); };
+reordered(1);

@@ -1,8 +1,9 @@
 one c-expression 2 0 integer/less bool
 one c-expression 3 0 integer/equal bool
-# Left argument is proven before the first unsupported call forgets local facts.
+# Pure recursive calls preserve local facts for both operands.
 one c-expression 4 14 integer/subtraction int64
-one c-expression 4 0 integer/addition unknown
+one c-expression 4 0 integer/addition int64
 one purity 1 0 integer pure
-one c-support 1 0 integer unknown
-one c-blockers 1 0 integer body
+one c-support 1 0 integer supported
+one c-blockers 1 0 integer none
+one c-expression 4 25 integer/subtraction int64

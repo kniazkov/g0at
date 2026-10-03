@@ -64,7 +64,7 @@ bool test_call_graph_discovery() {
     ASSERT(signature_at(collector, ANALYSIS_FUNCTION_SUMMARY, 1, LATTICE_INTEGER)
                ->function_summary->return_type->type
            == LATTICE_INTEGER);
-    ASSERT(caller->function_summary->status == FUNCTION_INCONCLUSIVE);
+    ASSERT(caller->function_summary->status == FUNCTION_ANALYZED);
     ASSERT(at(collector, ANALYSIS_VALUE_WRITE, 3)->value->type == LATTICE_INTEGER_CONSTANT);
     ASSERT(
         ((const integer_constant_element_t *)at(collector, ANALYSIS_VALUE_WRITE, 3)->value)->value

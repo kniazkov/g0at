@@ -1,0 +1,7 @@
+one purity 1 0 integer pure
+one purity 2 0 integer pure
+one c-support 1 0 integer unknown
+one c-support 2 0 integer unknown
+one c-blockers 1 0 integer body
+one c-blockers 2 0 integer body
+one c-expression 1 0 integer/function_call unknown

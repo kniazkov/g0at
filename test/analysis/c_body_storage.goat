@@ -1,0 +1,10 @@
+const mixed = func(n) { var x = 0; x = 1.5; return x; };
+mixed(1);
+const parameter = func(n) { n = 1.5; return n; };
+parameter(1);
+const same = func(n) { n = n + 1; return n; };
+same(1);
+const uninitialized = func(n) { var x; x = n; return x; };
+uninitialized(1);
+const boolean = func(n) { var test = n < 1; if (test) return 0; return 1; };
+boolean(1);

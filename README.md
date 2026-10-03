@@ -525,12 +525,12 @@ unions are not converted silently, and boolean values are not yet interface type
 
 The analyzer now records `c-support` and exact `c-blockers` in function summaries.
 Known excluded types/captures yield `unsupported`; incomplete evidence yields `unknown`.
-Every signature still has the `body` blocker: this step checks preconditions and does
-not claim complete C support, generate code, or change shared AST flags.
+The body pass can clear `body` when all remaining checks succeed. This proves eligibility
+under the contract; it does not generate code or change shared AST flags.
 
 ```text
-one c-support 1 0 integer unknown
-one c-blockers 1 0 integer body
+one c-support 1 0 integer supported
+one c-blockers 1 0 integer none
 ```
 
 The contract also specifies wrapping integers, mixed numeric precision, floating-point
@@ -562,9 +562,28 @@ one c-expression 2 0 string/addition unknown
 The fourth field is the column (`0` means any). Node-kind spaces become underscores.
 Proofs use pointwise generic state, so assignments, branch joins and unknown calls can
 remove type information. No concrete call result or declaration-wide summary supplies a
-proof. Division, modulo, power, shifts, updates, calls and short-circuit operations remain
-unproven here. A skipped expression has no event; that absence never proves C support.
-The function's `body` blocker remains until control flow and calls are checked.
+proof. Division, modulo, power, shifts, updates and short-circuit operations remain
+unproven. Static calls require the body proof described below. A skipped expression has no
+event; that absence never proves C support.
+Expression proofs alone do not clear the function's `body` blocker.
+
+### Complete C body proofs
+
+The analyzer now checks blocks, initialized scalar locals, local assignments, `if`/`else`,
+and explicit numeric returns through node virtual methods. Each local/parameter must keep
+one fixed representation. All syntactic branches and statements need proofs; unvisited
+code is conservatively rejected rather than removed using shared AST reachability flags.
+
+Calls must resolve to existing exact numeric signatures through static function identities.
+Pure callees can refine previously unknown caller returns. All arguments are checked,
+including ignored extras. Mutable/higher-order calls, arbitrary native calls, captured data
+and potentially throwing unsupported operations still prevent a body proof.
+
+A bounded descending fixed point checks recursive candidates together: rejecting a callee
+also rejects its callers. Numeric Fibonacci now has `c=supported` and `c-blockers=none` for
+both integer and real parameters. These results are available in the existing function
+summary events and `c-support`/`c-blockers` test selectors. They prove neither termination
+nor the availability of a C emitter; graph flags are unchanged at this step.
 
 ### Recursive return types
 

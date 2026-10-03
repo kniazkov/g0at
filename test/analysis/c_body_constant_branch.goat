@@ -1,0 +1,4 @@
+const f = func(n) { if (true) { return n; } else { return n + 1; } };
+f(1);
+const g = func(n) { if (false) { n / 0; } return n; };
+g(1);

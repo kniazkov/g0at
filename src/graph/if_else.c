@@ -5,6 +5,7 @@
  */
 
 #include "analysis/abstract_state.h"
+#include "analysis/c_body.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
 #include "codegen/code_builder.h"
@@ -16,6 +17,13 @@
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 #include "statement.h"
+
+/** @brief Implements node_vtbl_t::can_generate_c_code for a complete numeric body. */
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    return c_body_children(node, value, context);
+}
 
 /** @brief AST node representing an if-else statement. */
 typedef struct {
@@ -269,7 +277,7 @@ static node_vtbl_t if_else_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
