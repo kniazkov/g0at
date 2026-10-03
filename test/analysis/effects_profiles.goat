@@ -1,0 +1,4 @@
+var x=0
+const f=func(n){x=n;return n;}
+f(1)
+f(1.5)

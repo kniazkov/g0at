@@ -1,0 +1,4 @@
+var x=0
+const make=func(n){return func(){x=n;return x;};}
+var f=make(1)
+f()

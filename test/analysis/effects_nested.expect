@@ -1,0 +1,3 @@
+one effects 2 12 integer none
+one calls 2 12 integer no
+one effects 2 27 - external-read|external-write

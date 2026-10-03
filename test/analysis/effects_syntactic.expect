@@ -1,0 +1,2 @@
+# This pass scans syntax, including unreachable statements.
+one effects 2 0 integer external-write

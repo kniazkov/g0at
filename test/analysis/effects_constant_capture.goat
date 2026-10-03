@@ -1,0 +1,3 @@
+const x=1
+const f=func(n){return x+n;}
+f(1)

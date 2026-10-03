@@ -16,6 +16,7 @@
 #include "test_division.h"
 #include "test_function_analysis.h"
 #include "test_function_call_graph.h"
+#include "test_function_effects.h"
 #include "test_function_return.h"
 #include "test_function_specialization.h"
 #include "test_function_summary.h"
@@ -53,6 +54,8 @@ static test_description_t test_list[] = {
     {"builtin numeric results", test_builtin_numeric_results},
     {"builtin errors", test_builtin_errors},
     {"builtin domains", test_builtin_domains},
+    {"function capture effects", test_function_effect_captures},
+    {"function unknown effects", test_function_effect_unknown},
     {"mutual recursion limits", test_mutual_recursion_limits},
     {"direct recursion limits", test_direct_recursion_limits},
     {"direct recursion captures", test_direct_recursion_captures},

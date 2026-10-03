@@ -140,6 +140,45 @@ static bool flags_match(uint32_t flags, const char *expected) {
     return false;
 }
 
+/** @brief Exact masks, so unexpected extra effects fail the test. */
+static bool effects_match(uint32_t effects, const char *expected) {
+    if (!strcmp(expected, "none"))
+        return effects == 0;
+    const char *names[] = {"input", "output", "external-read", "external-write", "unknown"};
+    const uint32_t bits[] = {FUNCTION_EFFECT_INPUT,
+                             FUNCTION_EFFECT_OUTPUT,
+                             FUNCTION_EFFECT_EXTERNAL_READ,
+                             FUNCTION_EFFECT_EXTERNAL_WRITE,
+                             FUNCTION_EFFECT_UNKNOWN};
+    uint32_t mask = 0;
+    while (*expected) {
+        size_t length = strcspn(expected, "|");
+        size_t i = 0;
+        while (i < sizeof(bits) / sizeof(*bits)
+               && (strlen(names[i]) != length || strncmp(names[i], expected, length)))
+            i++;
+        if (i == sizeof(bits) / sizeof(*bits) || (mask & bits[i]))
+            return false;
+        mask |= bits[i];
+        expected += length;
+        if (*expected) {
+            expected++;
+            if (!*expected)
+                return false;
+        }
+    }
+    return effects == mask;
+}
+
+static bool
+function_matches(const function_summary_t *summary, const char *kind, const char *expected) {
+    if (!strcmp(kind, "effects"))
+        return effects_match(summary->direct_effects, expected);
+    if (!strcmp(kind, "calls"))
+        return !strcmp(expected, summary->has_calls ? "yes" : "no");
+    return return_type_matches(summary, expected);
+}
+
 static size_t declaration_row(const declarator_t *decl) {
     const node_t *node = &decl->base;
     while (node && (!node->position || !node->position->begin))
@@ -181,7 +220,7 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
             query.kind = ANALYSIS_STATE_JOIN;
         else if (!strcmp(kind, "summary"))
             query.kind = ANALYSIS_DECLARATION_SUMMARY;
-        else if (!strcmp(kind, "function")) {
+        else if (!strcmp(kind, "function") || !strcmp(kind, "effects") || !strcmp(kind, "calls")) {
             query.kind = ANALYSIS_FUNCTION_SUMMARY;
             query.column = decl_row;
         } else if (!strcmp(kind, "flags")) {
@@ -225,13 +264,14 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
         }
         FREE_STRING(wide);
         checks++;
-        bool ok = !strcmp(mode, "none")
-                      ? matches == 0
-                      : last && (!strcmp(mode, "last") || matches == 1)
-                            && (unreachable
-                                || (function ? return_type_matches(last->function_summary, expected)
-                                    : flags  ? flags_match(last->flags, expected)
-                                             : value_matches(last->value, expected)));
+        bool ok =
+            !strcmp(mode, "none")
+                ? matches == 0
+                : last && (!strcmp(mode, "last") || matches == 1)
+                      && (unreachable
+                          || (function ? function_matches(last->function_summary, kind, expected)
+                              : flags  ? flags_match(last->flags, expected)
+                                       : value_matches(last->value, expected)));
         if (!ok) {
             fprintf(stderr,
                     "%s.expect:%zu: %s (selector matched %zu events)\n",
