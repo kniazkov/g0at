@@ -85,20 +85,18 @@ static inline void generate_indented_goat_code_from_expression(const expression_
     generate_indented_goat_code_from_node(&expr->base, builder, indent);
 }
 
-/**
- * @brief Generates a single-line C source code representation from an expression.
- * @return A `string_value_t` containing the generated C code or NULL string if conversion is not
- * possible.
- */
-static inline string_value_t generate_c_code_from_expression(const expression_t *expr) {
-    return generate_c_code_from_node(&expr->base);
+/** @brief Internal expression lowering within a function specialization. */
+static inline c_generated_expression_t
+generate_c_code_from_expression(const expression_t *expr, c_generation_context_t *context) {
+    return generate_c_code_from_node(&expr->base, context);
 }
 
-/** @brief Generates indented C source code from an expression. */
-static inline void generate_indented_c_code_from_expression(const expression_t *expr,
+/** @brief Internal statement lowering within a function specialization. */
+static inline bool generate_indented_c_code_from_expression(const expression_t *expr,
+                                                            c_generation_context_t *context,
                                                             source_builder_t *builder,
                                                             size_t indent) {
-    generate_indented_c_code_from_node(&expr->base, builder, indent);
+    return generate_indented_c_code_from_node(&expr->base, context, builder, indent);
 }
 
 /** @brief Generates bytecode from an expression. */

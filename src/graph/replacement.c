@@ -99,16 +99,6 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
     generate_indented_goat_code_from_node(children(node)->result, builder, indent);
 }
 
-/** @brief Implements node_vtbl_t::generate_c_code. */
-static string_value_t generate_c_code(const node_t *node) {
-    return generate_c_code_from_node(children(node)->result);
-}
-
-/** @brief Implements node_vtbl_t::generate_indented_c_code. */
-static void generate_indented_c_code(const node_t *node, source_builder_t *builder, size_t indent) {
-    generate_indented_c_code_from_node(children(node)->result, builder, indent);
-}
-
 /** @brief Implements node_vtbl_t::generate_bytecode without emitting the original. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     return generate_bytecode_from_node(children(node)->result, code, data);
@@ -144,8 +134,8 @@ static node_vtbl_t expression_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .can_generate_c_code = can_generate_c_code,
-    .generate_c_code = generate_c_code,
-    .generate_indented_c_code = generate_indented_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode = generate_bytecode,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = generate_bytecode_deferred,
@@ -188,8 +178,8 @@ static node_vtbl_t statement_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .can_generate_c_code = can_generate_c_code,
-    .generate_c_code = generate_c_code,
-    .generate_indented_c_code = generate_indented_c_code,
+    .generate_c_code = no_c_code,
+    .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode = generate_bytecode,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = generate_bytecode_deferred,

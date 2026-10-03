@@ -44,7 +44,22 @@ analyzer's proof as `unsupported`. Report the failing stage separately.
 Generation uses the specialization's generic expression and body proofs, not
 shared node flags or concrete values observed at one call. Its context must carry
 the signature, result and expression representations, C bindings and known callee
-specializations. Node emission methods will receive that context in a later PR.
+specializations. Node emission methods now receive a `c_generation_context_t`.
+`generate_c_function` is the external entry point: it accepts one proven function
+summary and borrowed C names/bindings/callees, and returns either complete source
+or a failure status and the first failing node. Node-level helpers are internal
+lowering operations, not independent compilation units.
+
+Expression lowering returns a typed value expression and an optional ordered
+prelude of statements. The caller must place that prelude at the expression's
+evaluation point (inside the appropriate branch for conditional evaluation),
+then use the value. Release both with `destroy_c_expression`. Statement lowering
+returns success explicitly. A failed function attempt discards all accumulated
+source without changing the analyzer's summary.
+
+Concrete emitters are still absent; even a proven function currently reports
+`C_GENERATION_UNSUPPORTED`. Replacement nodes also reject lowering until the
+next step defines how to select their specialization-safe subtree.
 
 Replacement nodes preserve an original subtree and a simplified subtree. Native
 generation must use the original subtree unless the replacement is justified for

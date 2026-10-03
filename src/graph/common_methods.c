@@ -81,11 +81,16 @@ bool cannot_generate_c_code(const node_t *node,
     return false;
 }
 
-string_value_t no_c_code(const node_t *node) {
-    return NULL_STRING_VALUE;
+c_generated_expression_t no_c_code(const node_t *node, c_generation_context_t *context) {
+    fail_c_generation(context, node, C_GENERATION_UNSUPPORTED);
+    return (c_generated_expression_t){0};
 }
 
-void no_indented_c_code(const node_t *node, source_builder_t *builder, size_t indent) {
+bool no_indented_c_code(const node_t *node,
+                        c_generation_context_t *context,
+                        source_builder_t *builder,
+                        size_t indent) {
+    return fail_c_generation(context, node, C_GENERATION_UNSUPPORTED);
 }
 
 instr_index_t
