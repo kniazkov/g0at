@@ -620,6 +620,30 @@ The full function appears green under `C view: (real)`, including both recursive
 The unknown-argument signature discovered by the call graph stays explicitly unproven.
 Linux/GCC CI renders this example with Graphviz and uploads the SVG as an artifact.
 
+### Visible AST simplification
+
+After analysis, a separate pass asks each node's `simplify` method for an equivalent,
+smaller subtree. Scalar constant folding and removable `if` conditions produce
+`expression replacement` or `statement replacement` nodes. Each has two labelled
+children: `original` and `replacement`. Only the latter is executed or emitted as source
+and bytecode; the graph preserves both and gives replacements a pale purple fill.
+
+Folding uses pointwise immediate-execution facts, never a variable's aggregate summary
+or one observed function call. Closed literal expressions can also fold inside function
+bodies. Calls, writes, uncertain operands, and potentially failing evaluation are retained.
+A known `if` becomes its selected statement only when evaluating its condition can be
+safely omitted; a false `if` without `else` becomes an empty statement. Existing block
+scopes remain intact. Assignment and increment targets remain assignable expressions.
+
+History can share nodes with the executable subtree: parent links follow the executable
+tree, and the graph draws a shared node once. Reanalysis restores the originals before
+binding; `--optimize none` also restores the unoptimized tree. Analysis events describe
+the proofs computed before rewriting, while the graph shows the subsequent replacements.
+
+```bash
+./goat --save-graph replacements.svg example/replacements.goat
+```
+
 ### Recursive return types
 
 After graph discovery, a separate fixed-point pass handles direct and mutual recursion.

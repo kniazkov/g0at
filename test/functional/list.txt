@@ -304,3 +304,13 @@ quadratic_none
 quadratic_linear
 quadratic_degenerate
 mutual_even_odd
+
+# Post-analysis AST replacements
+replacement_values
+replacement_pointwise
+replacement_scope
+replacement_effects
+replacement_call_order
+replacement_deferred
+replacement_throw
+replacement_nested

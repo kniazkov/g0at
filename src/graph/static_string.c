@@ -67,6 +67,7 @@ static node_vtbl_t static_string_vtbl = {
     .type = NODE_STATIC_STRING,
     .analyze_reachability = reachability_literal,
     .is_pure = children_are_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"static string",
     .get_data = get_data,

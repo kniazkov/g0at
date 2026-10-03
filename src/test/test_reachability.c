@@ -10,6 +10,7 @@
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "graph/expression.h"
+#include "graph/replacement.h"
 #include "graph/statement.h"
 #include "graph/visualization.h"
 #include "lib/allocate.h"
@@ -42,6 +43,8 @@ bool test_reachability_flags() {
     analysis_collector_t *collector = create_analysis_collector(arena);
     ASSERT(!analyze(root, &memory, options, collector));
     node_t *conditional = get_node_child(root, 1);
+    ASSERT(is_replacement(conditional));
+    conditional = get_node_child(conditional, 0);
     node_t *dead = get_node_child(conditional, 1);
     ASSERT(subtree_has_flag(dead, true));
     ASSERT(subtree_has_flag(get_node_child(conditional, 2), false));

@@ -105,7 +105,7 @@ static inline bool generate_deferred_bytecode_from_statement(const statement_t *
     return generate_deferred_bytecode_from_node(&stmt->base, code, data);
 }
 
-/** @brief Creates a new statement expression node. */
+/** @brief Creates a statement expression; NULL produces an empty statement. */
 statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrapped);
 
 /**

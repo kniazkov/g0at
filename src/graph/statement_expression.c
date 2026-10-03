@@ -20,6 +20,8 @@ static bool can_generate_c_code(const node_t *node,
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context) {
     const node_t *child = get_node_child(node, 0);
+    if (!child)
+        return true;
     return child->vtbl->type == NODE_STATEMENT_LIST ? c_body_children(child, NULL, context)
                                                     : c_body_node_supported(child, context);
 }
@@ -35,13 +37,13 @@ typedef struct {
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
 static size_t get_child_count(const node_t *node) {
-    return 1;
+    return ((const statement_expression_t *)node)->wrapped ? 1 : 0;
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child. */
 static node_t *get_child(const node_t *node, size_t index) {
     const statement_expression_t *expr = (const statement_expression_t *)node;
-    if (index == 0) {
+    if (index == 0 && expr->wrapped) {
         return &expr->wrapped->base;
     }
     return NULL;
@@ -49,7 +51,7 @@ static node_t *get_child(const node_t *node, size_t index) {
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
 static const wchar_t *get_child_tag(const node_t *node, size_t index) {
-    if (index == 0) {
+    if (index == 0 && ((const statement_expression_t *)node)->wrapped) {
         return L"expression";
     }
     return NULL;
@@ -58,13 +60,16 @@ static const wchar_t *get_child_tag(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::execute. */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
-    calculate_expression(stmt->wrapped, state, arena);
+    if (stmt->wrapped)
+        calculate_expression(stmt->wrapped, state, arena);
     return state;
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
+    if (!stmt->wrapped)
+        return STATIC_STRING(L";");
     string_value_t expr_as_string = generate_goat_code_from_expression(stmt->wrapped);
     if (stmt->wrapped->base.vtbl->type != NODE_STATEMENT_LIST) {
         string_builder_t builder;
@@ -81,6 +86,10 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
+    if (!stmt->wrapped) {
+        add_static_source(builder, indent, L";");
+        return;
+    }
     if (stmt->wrapped->base.vtbl->type == NODE_STATEMENT_LIST && stmt->base.base.parent != NULL
         && is_branch_or_loop(stmt->base.base.parent->vtbl->type)) {
         generate_indented_goat_code_from_expression(stmt->wrapped, builder, indent - 1);
@@ -94,9 +103,21 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
+    if (!stmt->wrapped)
+        return get_next_instruction_index(code);
     instr_index_t first = generate_bytecode_from_expression(stmt->wrapped, code, data);
     add_instruction(code, (instruction_t){.opcode = POP});
     return first;
+}
+
+/** @brief Implements node_vtbl_t::replace_child for the expression slot. */
+static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    statement_expression_t *owner = (statement_expression_t *)node;
+    if (!owner->wrapped || (node_t *)owner->wrapped != old_child
+        || !is_expression(new_child->vtbl->type))
+        return false;
+    owner->wrapped = (expression_t *)new_child;
+    return true;
 }
 
 /** @brief Virtual table for statement expression operations. */
@@ -104,6 +125,7 @@ static node_vtbl_t statement_expression_vtbl = {
     .type = NODE_STATEMENT_EXPRESSION,
     .analyze_reachability = visit_reachable_child,
     .is_pure = children_are_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"statement expression",
     .get_data = no_data,
@@ -113,7 +135,7 @@ static node_vtbl_t statement_expression_vtbl = {
     .get_child = get_child,
     .get_child_tag = get_child_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
@@ -134,6 +156,6 @@ statement_t *create_statement_expression_node(arena_t *arena, expression_t *wrap
         (statement_expression_t *)alloc_zeroed_from_arena(arena, sizeof(statement_expression_t));
     expr->base.base.vtbl = &statement_expression_vtbl;
     expr->wrapped = wrapped;
-    expr->base.base.position = wrapped->base.position;
+    expr->base.base.position = wrapped ? wrapped->base.position : NULL;
     return &expr->base;
 }

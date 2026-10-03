@@ -69,6 +69,8 @@ typedef enum {
     /** @brief Parenthesized expression node type. */
     NODE_EXPRESSION_PARENTHESIZED,
 
+    NODE_EXPRESSION_REPLACEMENT, /**< Original and simplified expressions. */
+
     /**
      * @brief Function object expression node type.
      *
@@ -141,6 +143,8 @@ typedef enum {
 
     /** @brief Statement expression node type. */
     NODE_STATEMENT_EXPRESSION,
+
+    NODE_STATEMENT_REPLACEMENT, /**< Original and simplified statements. */
 
     /** @brief Variable declaration statement node type. */
     NODE_VARIABLE_DECLARATION,

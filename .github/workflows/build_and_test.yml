@@ -70,18 +70,18 @@ jobs:
           BUILD_DIR: build/release-${{ matrix.compiler }}
       - name: Smoke test release
         run: ./goat example/hello_world.goat
-      - name: Render specialization graph
+      - name: Render analysis graphs
         if: matrix.compiler == 'gcc'
         run: |
           sudo apt-get update
           sudo apt-get install -y graphviz
           bash scripts/check_graph.sh
-      - name: Preserve specialization graph
+      - name: Preserve analysis graphs
         if: matrix.compiler == 'gcc'
         uses: actions/upload-artifact@v4
         with:
-          name: fibonacci-analysis-graph
-          path: build/fibonacci-analysis.svg
+          name: analysis-graphs
+          path: build/*-analysis.svg
           if-no-files-found: error
       - name: Preserve failed functional outputs
         if: failure()

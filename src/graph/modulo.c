@@ -7,6 +7,7 @@
 #include "analysis/modulo.h"
 
 #include "analysis/reachability.h"
+#include "analysis/simplification.h"
 #include "binary_operation.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
@@ -70,6 +71,7 @@ static node_vtbl_t modulo_vtbl = {
     .type = NODE_MODULO,
     .analyze_reachability = analyze_reachability,
     .is_pure = children_are_pure,
+    .simplify = simplify_constant_expression,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"modulo",
     .get_data = no_data,
@@ -79,7 +81,7 @@ static node_vtbl_t modulo_vtbl = {
     .get_child = binop_get_child,
     .get_child_tag = binop_get_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = binop_replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,

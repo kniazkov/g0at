@@ -1,0 +1,9 @@
+var x=0;
+if ((x=1)) print("T") else print("bad");
+const effect=func(){print("E");return true;};
+if (effect()) print("T");
+print(":");print(x);
+var a=(x=2)+3;
+print(":");print(a);print(":");print(x);
+false && effect();
+true || effect();

@@ -87,3 +87,6 @@ expression_t *create_equal_node(arena_t *arena, expression_t *left, expression_t
 
 /** @brief Creates a not equal comparison. */
 expression_t *create_not_equal_node(arena_t *arena, expression_t *left, expression_t *right);
+
+/** @brief Implements node_vtbl_t::replace_child for binary operands. */
+bool binop_replace_child(node_t *node, node_t *old_child, node_t *new_child);

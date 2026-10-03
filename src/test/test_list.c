@@ -38,6 +38,7 @@
 #include "test_parser.h"
 #include "test_power.h"
 #include "test_reachability.h"
+#include "test_replacement.h"
 #include "test_scanner.h"
 #include "test_specialization_graph.h"
 #include "test_subtraction.h"
@@ -49,6 +50,11 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"replacement nodes", test_replacement_nodes},
+    {"replacement folding", test_replacement_folding},
+    {"replacement branches", test_replacement_branches},
+    {"replacement boundaries", test_replacement_boundaries},
+    {"replacement reset", test_replacement_reset},
     {"native int", test_native_int},
     {"native int domains", test_native_int_domains},
     {"input lines", test_input_lines},

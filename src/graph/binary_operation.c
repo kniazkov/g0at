@@ -30,3 +30,16 @@ const wchar_t *binop_get_tag(const node_t *node, size_t index) {
     }
     return NULL;
 }
+
+bool binop_replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    binary_operation_t *expr = (binary_operation_t *)node;
+    if (!is_expression(new_child->vtbl->type))
+        return false;
+    if ((node_t *)expr->left_operand == old_child)
+        expr->left_operand = (expression_t *)new_child;
+    else if (expr->right_operand && (node_t *)expr->right_operand == old_child)
+        expr->right_operand = (expression_t *)new_child;
+    else
+        return false;
+    return true;
+}

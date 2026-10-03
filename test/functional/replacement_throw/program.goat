@@ -1,0 +1,4 @@
+const fail=func(){throw "caught";return 1;};
+try {if (fail()) print("bad");} catch(e) {print(e);}
+try {var x=1+true; print("bad");} catch(e) {print(":type");}
+try {var x=1%0; print("bad");} catch(e) {print(":zero");}

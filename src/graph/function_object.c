@@ -67,6 +67,7 @@ static node_vtbl_t arg_vtbl = {
     .type = NODE_ARGUMENT,
     .analyze_reachability = reachability_unknown,
     .is_pure = children_are_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"argument",
     .get_data = arg_get_data,
@@ -159,6 +160,7 @@ static node_vtbl_t alist_vtbl = {
     .type = NODE_ARGUMENT_LIST,
     .analyze_reachability = reachability_unknown,
     .is_pure = children_are_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"argument list",
     .get_data = no_data,
@@ -257,11 +259,17 @@ fbody_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data
     return BAD_INSTR_INDEX;
 }
 
+/** @brief Implements node_vtbl_t::replace_child for a statement sequence. */
+static bool fbody_replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    return replace_statement_in_list(((function_body_t *)node)->statements, old_child, new_child);
+}
+
 /** @brief Virtual table for function_body node operations. */
 static node_vtbl_t function_body_vtbl = {
     .type = NODE_FUNCTION_BODY,
     .analyze_reachability = reachability_unknown,
     .is_pure = children_are_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"function body",
     .get_data = no_data,
@@ -271,7 +279,7 @@ static node_vtbl_t function_body_vtbl = {
     .get_child = fbody_get_child,
     .get_child_tag = no_tags,
     .insert_child_before = fbody_insert_child_before,
-    .replace_child = no_child_replacement,
+    .replace_child = fbody_replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
@@ -497,6 +505,7 @@ static node_vtbl_t fo_vtbl = {
     .type = NODE_FUNCTION_OBJECT,
     .analyze_reachability = fobj_reachability,
     .is_pure = fobj_is_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = no_direct_effects,
     .type_name = L"function object",
     .get_data = no_data,

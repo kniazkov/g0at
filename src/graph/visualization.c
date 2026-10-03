@@ -14,6 +14,7 @@
 #include "lib/io.h"
 #include "lib/string_ext.h"
 #include "lib/vector.h"
+#include "replacement.h"
 #include "variable.h"
 
 #include <stdio.h>
@@ -166,6 +167,9 @@ static int node_to_dot(const node_t *node,
                        size_t indent,
                        source_builder_t *builder,
                        const function_summary_t *view) {
+    value_t existing = get_from_avl_tree(nodes_to_ids, node);
+    if (existing.uint32_val)
+        return existing.uint32_val;
     if (node->vtbl->type == NODE_FUNCTION_OBJECT)
         view = select_function_c_view(get_function_summaries(node));
     uint32_t display_flags = node->flags;
@@ -194,6 +198,7 @@ static int node_to_dot(const node_t *node,
                                                                            : L"silver";
     const wchar_t *node_style =
         node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L" fontcolor=gray70 tooltip=\"unreachable\""
+        : is_replacement(node) ? L" style=\"rounded,filled\" fillcolor=\"#f5efff\" ordering=out"
         : (display_flags & NODE_FLAG_PURE) ? L" style=\"rounded,filled\" fillcolor=\"#f2faf2\""
                                            : L"";
     if (value.text.length > 0) {

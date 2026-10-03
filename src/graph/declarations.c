@@ -73,6 +73,16 @@ typedef struct {
     expression_t *initial;
 } variable_declarator_t;
 
+/** @brief Implements node_vtbl_t::replace_child for the expression slot. */
+static bool vdeclr_replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    variable_declarator_t *owner = (variable_declarator_t *)node;
+    if (!owner->initial || (node_t *)owner->initial != old_child
+        || !is_expression(new_child->vtbl->type))
+        return false;
+    owner->initial = (expression_t *)new_child;
+    return true;
+}
+
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t vdeclr_get_data(const node_t *node) {
     const variable_declarator_t *decl = (const variable_declarator_t *)node;
@@ -164,6 +174,7 @@ static node_vtbl_t vdeclr_vtbl = {
     .type = NODE_VARIABLE_DECLARATOR,
     .analyze_reachability = declarator_reachability,
     .is_pure = not_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"variable declarator",
     .get_data = vdeclr_get_data,
@@ -173,7 +184,7 @@ static node_vtbl_t vdeclr_vtbl = {
     .get_child = vdeclr_get_child,
     .get_child_tag = vdeclr_get_child_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = vdeclr_replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
@@ -298,6 +309,7 @@ static node_vtbl_t vdecln_vtbl = {
     .type = NODE_VARIABLE_DECLARATION,
     .analyze_reachability = visit_reachable_children,
     .is_pure = not_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"variable declaration",
     .get_data = no_data,
@@ -359,6 +371,16 @@ typedef struct {
      */
     expression_t *initial;
 } constant_declarator_t;
+
+/** @brief Implements node_vtbl_t::replace_child for the expression slot. */
+static bool cdeclr_replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    constant_declarator_t *owner = (constant_declarator_t *)node;
+    if (!owner->initial || (node_t *)owner->initial != old_child
+        || !is_expression(new_child->vtbl->type))
+        return false;
+    owner->initial = (expression_t *)new_child;
+    return true;
+}
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t cdeclr_get_data(const node_t *node) {
@@ -426,6 +448,7 @@ static node_vtbl_t cdeclr_vtbl = {
     .type = NODE_CONSTANT_DECLARATOR,
     .analyze_reachability = declarator_reachability,
     .is_pure = not_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"constant declarator",
     .get_data = cdeclr_get_data,
@@ -435,7 +458,7 @@ static node_vtbl_t cdeclr_vtbl = {
     .get_child = cdeclr_get_child,
     .get_child_tag = cdeclr_get_child_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = cdeclr_replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
@@ -558,6 +581,7 @@ static node_vtbl_t cdecln_vtbl = {
     .type = NODE_CONSTANT_DECLARATION,
     .analyze_reachability = visit_reachable_children,
     .is_pure = not_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"constant declaration",
     .get_data = no_data,

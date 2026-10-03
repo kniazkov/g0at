@@ -102,11 +102,17 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
+/** @brief Implements node_vtbl_t::replace_child for a statement sequence. */
+static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    return replace_statement_in_list(((statement_list_t *)node)->statements, old_child, new_child);
+}
+
 /** @brief Virtual table for the statement_list node operations. */
 static node_vtbl_t statement_list_vtbl = {
     .type = NODE_STATEMENT_LIST,
     .analyze_reachability = visit_reachable_children,
     .is_pure = children_are_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"statement_list",
     .get_data = no_data,
@@ -116,7 +122,7 @@ static node_vtbl_t statement_list_vtbl = {
     .get_child = get_child,
     .get_child_tag = no_tags,
     .insert_child_before = insert_child_before,
-    .replace_child = no_child_replacement,
+    .replace_child = replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,

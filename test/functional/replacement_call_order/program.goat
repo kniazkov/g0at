@@ -1,0 +1,6 @@
+var x=1;
+const pair=func(a,b){print(a);print(":");print(b);};
+pair(x, x=2);
+print(":");print(x);
+const change=func(){x=9;return 3;};
+print(":");print(x+change());print(":");print(x);

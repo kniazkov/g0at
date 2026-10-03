@@ -174,6 +174,9 @@ typedef struct {
     /** @brief Collects direct body effects, including the appropriate children. */
     void (*collect_direct_effects)(const node_t *node, function_summary_t *summary, arena_t *arena);
 
+    /** @brief Returns a simpler equivalent node, or the original node. */
+    node_t *(*simplify)(node_t *node, arena_t *arena);
+
     /** @brief Generates a single-line Goat source code representation of the node. */
     string_value_t (*generate_goat_code)(const node_t *node);
 
@@ -230,7 +233,7 @@ struct node_t {
     /** @brief Pointer to the node's virtual table. */
     node_vtbl_t *vtbl;
 
-    /** @brief A pointer to the node that contains this node as a child. */
+    /** @brief Parent in the executable tree; archived replacement edges may share children. */
     node_t *parent;
 
     /** @brief A pointer to the source range occupied by this node. */

@@ -104,10 +104,21 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
+/** @brief Implements node_vtbl_t::replace_child for the try statement. */
+static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
+    try_catch_t *stmt = (try_catch_t *)node;
+    if ((node_t *)stmt->body != old_child
+        || (!is_statement(new_child->vtbl->type) && !is_branch_or_loop(new_child->vtbl->type)))
+        return false;
+    stmt->body = (statement_t *)new_child;
+    return true;
+}
+
 static node_vtbl_t vtbl = {
     .type = NODE_TRY_CATCH,
     .analyze_reachability = reachability_unknown,
     .is_pure = not_pure,
+    .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
     .type_name = L"try-catch",
     .get_data = get_data,
@@ -117,7 +128,7 @@ static node_vtbl_t vtbl = {
     .get_child = get_child,
     .get_child_tag = get_child_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = replace_child,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
