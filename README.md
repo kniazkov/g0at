@@ -395,27 +395,49 @@ Missing arguments become `null`; extra arguments are evaluated normally but are 
 part of the formal-parameter key. An impossible argument prevents registration.
 Different function nodes always have separate lists. Uncalled functions have no signatures.
 
-These records describe observed type signatures only. Return types remain `TOP`, effects
-and C support remain unknown, and status stays `unanalyzed`. No new result, purity, or
-C-compatibility proof is computed yet. Registration follows existing bounded analysis;
-it does not discover every possible call. A signature does not distinguish captured
-values or callable argument identities and must not be used as a cached call result.
+An isolated pass now computes return types from the generic parameter types, not from
+values seen at the first call. It joins all normal returns and includes `null` when the
+body can fall through. Constants and ranges in the result collapse to base types;
+`BOTTOM` means no normal return. For example, integer and real branches produce
+`numeric`; integer and null branches currently widen to `TOP` because the lattice
+has no nullable-integer union.
 
-The other statuses reserved for later analysis are `analyzing`, `analyzed`, and
-`inconclusive`. Completing analysis alone does not prove purity or C support.
+Captured bindings start at `TOP`, regardless of observed values at call sites. The pass
+does not emit ordinary writes, flush declaration facts, or change node flags. Effects
+and C support remain unknown. Signatures still do not distinguish captures or callable
+argument identities and must not be used as cached call results.
+
+Completed attempts have status `analyzed`, which can legitimately have a `TOP` return.
+Reached calls (including built-ins) and bodies containing `try/catch` are currently
+`inconclusive` with a `TOP` result: call dependencies and exceptional-flow proofs are
+not solved by this step. Calls on paths the type pass proves dead do not block analysis.
+Nested function bodies are deferred; returning a closure produces type `function`.
+Unobserved signatures are not invented. The statuses `unanalyzed` and `analyzing` describe
+records before and during this pass. No status alone proves purity or C support.
 
 With analysis enabled, one `function-summary` event per observed signature appears in
 `--print-analysis` and `--save-analysis`, for example:
 
 ```text
-#12 program.goat, 1.11: function-summary unanalyzed (integer) -> ⊤ effects=unknown c=unknown
+#12 program.goat, 1.11: function-summary analyzed (integer) -> integer effects=unknown c=unknown
 ```
 
 Events snapshot the record and parameter slots, without linking to other signatures.
 Later changes or reanalysis do not alter earlier observations. C tests can select them
 with `ANALYSIS_FUNCTION_SUMMARY` and inspect `event->function_summary`. The source-based
-`.expect` selector language is unchanged for now. Existing node flags still describe the
-original analysis; specialization-specific proofs will be connected in later steps.
+`.expect` format now accepts `function` selectors:
+
+```text
+one function 1 11 integer analyzed:integer
+one function 5 0 integer,real analyzed:numeric
+one function 9 0 - inconclusive:top
+```
+
+The two numbers select the function's row and column (`0` is a wildcard); the next field
+is the comma-separated parameter signature, or `-` for zero parameters. The last field
+checks both status and return type. `none` uses `-` as its expected result, as with other
+selectors. Existing node flags still describe the original analysis; specialization-specific
+proofs will be connected in later steps.
 
 ### Proven unreachable code
 

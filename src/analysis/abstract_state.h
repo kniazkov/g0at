@@ -50,6 +50,10 @@ struct abstract_state_t {
 
     /** @brief An untracked write may have shadowed root-provided names. */
     bool builtin_bindings_unknown;
+
+    /** @brief Shared failure flag for isolated return-type analysis; NULL during normal analysis.
+     */
+    bool *type_analysis_incomplete;
 };
 
 /**

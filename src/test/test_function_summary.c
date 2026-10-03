@@ -101,7 +101,7 @@ bool test_function_summary_events() {
     ASSERT(!analyze(root, &memory, options, collector));
     analysis_event_query_t query = {.kind = ANALYSIS_FUNCTION_SUMMARY};
     const analysis_event_t *first = find_analysis_event(collector, NULL, &query);
-    ASSERT(first && first->function_summary->status == FUNCTION_UNANALYZED);
+    ASSERT(first && first->function_summary->status == FUNCTION_ANALYZED);
     const analysis_event_t *second = find_analysis_event(collector, first, &query);
     ASSERT(second && !find_analysis_event(collector, second, &query));
     ASSERT(first->function_summary->function != second->function_summary->function);
@@ -112,7 +112,7 @@ bool test_function_summary_events() {
     query.node = second->node;
     ASSERT(find_last_analysis_event(collector, &query) == second);
     string_value_t before = analysis_collector_to_text(collector);
-    ASSERT(wcsstr(before.data, L": function-summary unanalyzed ("));
+    ASSERT(wcsstr(before.data, L": function-summary analyzed ("));
     ASSERT(wcsstr(before.data, L"effects=unknown c=unknown"));
     function_summary_set_t *set = get_function_summaries(second->node);
     function_summary_t *live = set->head;

@@ -1,0 +1,8 @@
+var external = 10
+const read = func() { return external; }
+var a = read()
+external = "changed"
+var b = read()
+const write = func(n) { external = 99; return n + 1; }
+var c = write(4)
+var d = external

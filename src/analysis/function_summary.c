@@ -112,7 +112,7 @@ void reset_function_summary_set(function_summary_set_t *set) {
 }
 
 /** @brief Removes value refinements and identities from a specialization key. */
-static const lattice_element_t *parameter_type(const lattice_element_t *value) {
+const lattice_element_t *function_summary_type(const lattice_element_t *value) {
     switch (value->type) {
         case LATTICE_INTEGER_CONSTANT:
         case LATTICE_INTEGER_RANGE:
@@ -134,6 +134,8 @@ static const lattice_element_t *parameter_type(const lattice_element_t *value) {
         case LATTICE_TYPED_ARRAY:
         case LATTICE_ARRAY:
             return make_array_element();
+        case LATTICE_BOTTOM:
+            return make_bottom_element();
         case LATTICE_NULL:
             return make_null_element();
         case LATTICE_NUMERIC:
@@ -158,7 +160,7 @@ function_summary_t *register_function_specialization(function_summary_set_t *set
         size_t i = 0;
         while (i < set->parameter_count
                && summary->parameter_types[i]
-                      == parameter_type(i < count ? args[i] : make_null_element()))
+                      == function_summary_type(i < count ? args[i] : make_null_element()))
             i++;
         if (i == set->parameter_count)
             return summary;
@@ -166,7 +168,8 @@ function_summary_t *register_function_specialization(function_summary_set_t *set
     function_summary_t *summary =
         create_function_summary(set->arena, set->function, set->parameter_count);
     for (size_t i = 0; i < set->parameter_count; i++)
-        summary->parameter_types[i] = parameter_type(i < count ? args[i] : make_null_element());
+        summary->parameter_types[i] =
+            function_summary_type(i < count ? args[i] : make_null_element());
     if (set->tail)
         set->tail->next = summary;
     else

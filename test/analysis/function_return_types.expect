@@ -1,0 +1,11 @@
+one function 1 0 integer analyzed:integer
+one function 1 0 real analyzed:real
+one function 1 0 boolean analyzed:boolean
+one function 1 0 string analyzed:string
+one function 1 0 null analyzed:null
+none function 1 0 numeric -
+one function 8 0 integer,integer analyzed:integer
+one function 8 0 integer,real analyzed:real
+# Calling only choice(1) must not restrict its integer signature to that branch.
+one function 11 0 integer analyzed:not_null
+one function 13 0 boolean analyzed:numeric

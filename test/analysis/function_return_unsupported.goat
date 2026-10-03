@@ -1,0 +1,9 @@
+const leaf = func(n) { return n; }
+const call = func(n) { return leaf(n); }
+call(3)
+const caught = func(n) { try { return n; } catch (e) { return 0; } }
+caught(1)
+const recurse = func(n) { if (n) return 1; return recurse(n); }
+recurse(true)
+const branchcall = func(n) { if (n) print(n); return 1; }
+branchcall(false)

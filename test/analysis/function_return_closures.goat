@@ -1,0 +1,3 @@
+const closure = func(n) { return func() { return n; }; }
+var inner = closure(3)
+var result = inner()

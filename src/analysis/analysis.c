@@ -8,6 +8,7 @@
 
 #include "cli/options.h"
 #include "common/compilation_error.h"
+#include "function_return.h"
 #include "function_summary.h"
 #include "graph/declarations.h"
 #include "graph/expression.h"
@@ -285,6 +286,7 @@ compilation_error_t *analyze(node_t *root_node,
 
     interpret(root_node, memory, collector);
 
+    analyze_function_return_types(root_node);
     mark_unreachable_code(root_node, memory->graph, collector);
     classify_node_properties(root_node, collector);
     return errors;

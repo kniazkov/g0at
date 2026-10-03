@@ -1,0 +1,14 @@
+const empty = func() {}
+empty()
+const bare = func(n) { return; }
+bare(1)
+const partial = func(n) { if (n) return 7; }
+partial(true)
+const complete = func(n) { if (n) { return 7; } else { return 9; } }
+complete(true)
+const dead = func() { return 2; print("never"); }
+dead()
+const branches = func(n) { if (n) throw "error"; return 1; }
+branches(false)
+const throwing = func() { throw "error"; }
+throwing()

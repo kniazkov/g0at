@@ -1,0 +1,8 @@
+one function 1 0 - analyzed:null
+one function 3 0 integer analyzed:null
+one function 5 0 boolean analyzed:top
+one function 7 0 boolean analyzed:integer
+one function 9 0 - analyzed:integer
+one function 11 0 boolean analyzed:integer
+# No normal return, distinct from a null return and from failed analysis.
+one function 13 0 - analyzed:bottom
