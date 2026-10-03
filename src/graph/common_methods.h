@@ -57,11 +57,14 @@ bool cannot_generate_c_code(const node_t *node,
                             const lattice_element_t *value,
                             const c_expression_context_t *context);
 
-/** @brief Implements @ref node_vtbl_t::generate_c_code; returns NULL_STRING_VALUE. */
-string_value_t no_c_code(const node_t *node);
+/** @brief Implements @ref node_vtbl_t::generate_c_code; reports unsupported lowering. */
+c_generated_expression_t no_c_code(const node_t *node, c_generation_context_t *context);
 
-/** @brief Implements @ref node_vtbl_t::generate_indented_c_code without emitting text. */
-void no_indented_c_code(const node_t *node, source_builder_t *builder, size_t indent);
+/** @brief Implements @ref node_vtbl_t::generate_indented_c_code; reports unsupported lowering. */
+bool no_indented_c_code(const node_t *node,
+                        c_generation_context_t *context,
+                        source_builder_t *builder,
+                        size_t indent);
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode_assign; returns BAD_INSTR_INDEX. */
 instr_index_t

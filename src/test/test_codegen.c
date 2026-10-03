@@ -80,9 +80,14 @@ bool test_node_codegen_stubs() {
     add_static_source(source, 1, L"sentinel");
 
     ASSERT(can_generate_c_code_from_node(node, NULL));
-    string_value_t result = generate_c_code_from_node(node);
-    ASSERT(result.data == NULL && result.length == 0 && !result.should_free);
-    generate_indented_c_code_from_node(node, source, 2);
+    function_summary_t summary = {0};
+    c_generation_context_t context = {.summary = &summary};
+    c_generated_expression_t result = generate_c_code_from_node(node, &context);
+    ASSERT(!result.success && !result.value.data && !result.prelude);
+    ASSERT(context.status == C_GENERATION_UNSUPPORTED && context.failed_node == node);
+    context.status = C_GENERATION_OK;
+    ASSERT(!generate_indented_c_code_from_node(node, &context, source, 2));
+    ASSERT(context.status == C_GENERATION_UNSUPPORTED);
     ASSERT(source->count == 1 && source->lines[0].indent == 1);
     ASSERT(wcscmp(source->lines[0].text.data, L"sentinel") == 0);
     ASSERT(generate_bytecode_assign_from_node(node, code, data) == BAD_INSTR_INDEX);

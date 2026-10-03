@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "codegen/c_generation.h"
 #include "common/position.h"
 #include "common/types.h"
 #include "lib/value.h"
@@ -185,17 +186,15 @@ typedef struct {
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context);
 
-    /**
-     * @brief Generates a single-line C source code representation of the node, if possible.
-     *
-     * If the node cannot be represented in C, it returns NULL string.
-     * @return A `string_value_t` containing the generated C code or NULL string if conversion is
-     * not possible.
-     */
-    string_value_t (*generate_c_code)(const node_t *node);
+    /** @brief Internal expression lowering with ordered prelude statements and explicit failure. */
+    c_generated_expression_t (*generate_c_code)(const node_t *node,
+                                                c_generation_context_t *context);
 
-    /** @brief Generates indented C source code for the node, if applicable. */
-    void (*generate_indented_c_code)(const node_t *node, source_builder_t *builder, size_t indent);
+    /** @brief Internal statement/function lowering; false aborts the whole function output. */
+    bool (*generate_indented_c_code)(const node_t *node,
+                                     c_generation_context_t *context,
+                                     source_builder_t *builder,
+                                     size_t indent);
 
     /** @brief Generates bytecode for the given node. */
     instr_index_t (*generate_bytecode)(node_t *node, code_builder_t *code, data_builder_t *data);
@@ -368,19 +367,30 @@ static inline bool can_generate_c_code_from_node(const node_t *node,
     return node->vtbl->can_generate_c_code(node, value, NULL);
 }
 
-/**
- * @brief Generates a single-line C source code representation from a node.
- * @return A `string_value_t` containing the generated C code or NULL string if conversion is not
- * possible.
- */
-static inline string_value_t generate_c_code_from_node(const node_t *node) {
-    return node->vtbl->generate_c_code(node);
+/** @brief Internal expression dispatch within a function specialization. */
+static inline c_generated_expression_t generate_c_code_from_node(const node_t *node,
+                                                                 c_generation_context_t *context) {
+    if (!context || !context->summary || context->status != C_GENERATION_OK)
+        return (c_generated_expression_t){0};
+    c_generated_expression_t result = node->vtbl->generate_c_code(node, context);
+    if (!result.success || context->status != C_GENERATION_OK) {
+        fail_c_generation(context, node, C_GENERATION_UNSUPPORTED);
+        destroy_c_expression(&result);
+    }
+    return result;
 }
 
-/** @brief Generates indented C source code from a node. */
-static inline void
-generate_indented_c_code_from_node(const node_t *node, source_builder_t *builder, size_t indent) {
-    node->vtbl->generate_indented_c_code(node, builder, indent);
+/** @brief Internal statement dispatch within a function specialization. */
+static inline bool generate_indented_c_code_from_node(const node_t *node,
+                                                      c_generation_context_t *context,
+                                                      source_builder_t *builder,
+                                                      size_t indent) {
+    if (!context || !context->summary || context->status != C_GENERATION_OK)
+        return false;
+    bool success = node->vtbl->generate_indented_c_code(node, context, builder, indent);
+    if (!success)
+        fail_c_generation(context, node, C_GENERATION_UNSUPPORTED);
+    return success && context->status == C_GENERATION_OK;
 }
 
 /** @brief Generates bytecode from a node. */

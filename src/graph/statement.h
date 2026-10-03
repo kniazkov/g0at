@@ -73,20 +73,18 @@ static inline void generate_indented_goat_code_from_statement(const statement_t 
     generate_indented_goat_code_from_node(&stmt->base, builder, indent);
 }
 
-/**
- * @brief Generates a single-line C source code representation from a statement.
- * @return A `string_value_t` containing the generated C code or NULL string if conversion is not
- * possible.
- */
-static inline string_value_t generate_c_code_from_statement(const statement_t *stmt) {
-    return generate_c_code_from_node(&stmt->base);
+/** @brief Internal expression lowering within a function specialization. */
+static inline c_generated_expression_t
+generate_c_code_from_statement(const statement_t *stmt, c_generation_context_t *context) {
+    return generate_c_code_from_node(&stmt->base, context);
 }
 
-/** @brief Generates indented C source code from a statement. */
-static inline void generate_indented_c_code_from_statement(const statement_t *stmt,
+/** @brief Internal statement lowering within a function specialization. */
+static inline bool generate_indented_c_code_from_statement(const statement_t *stmt,
+                                                           c_generation_context_t *context,
                                                            source_builder_t *builder,
                                                            size_t indent) {
-    generate_indented_c_code_from_node(&stmt->base, builder, indent);
+    return generate_indented_c_code_from_node(&stmt->base, context, builder, indent);
 }
 
 /** @brief Generates bytecode from a statement. */
