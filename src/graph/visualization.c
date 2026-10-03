@@ -22,9 +22,9 @@
 
 bool is_graphviz_available() {
 #if defined(_WIN32) || defined(_WIN64)
-    return system("dot.exe --version > NUL 2>&1") == 0;
+    return system("dot.exe -V > NUL 2>&1") == 0;
 #else
-    return system("dot --version >/dev/null 2>&1") == 0;
+    return system("dot -V >/dev/null 2>&1") == 0;
 #endif
 }
 
