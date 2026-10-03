@@ -138,6 +138,27 @@ collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t 
     record_function_access(summary, node, FUNCTION_CAPTURE_READ, arena);
 }
 
+/** @brief Implements node_vtbl_t::generate_c_code using declaration identity. */
+static c_generated_expression_t generate_c_code(const node_t *node,
+                                                c_generation_context_t *context) {
+    const variable_t *variable = (const variable_t *)node;
+    for (const c_generation_binding_t *binding = context->bindings; binding;
+         binding = binding->next) {
+        if (variable->declarator && binding->declaration == &variable->declarator->base) {
+            if (binding->type != c_generation_expression_type(context, node))
+                break;
+            string_builder_t text;
+            init_string_builder(&text, binding->name.length);
+            return (c_generated_expression_t){
+                .success = true,
+                .type = binding->type,
+                .value = append_substring(&text, binding->name.data, binding->name.length)};
+        }
+    }
+    fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+    return (c_generated_expression_t){0};
+}
+
 /** @brief Virtual table for variable expressions. */
 static node_vtbl_t variable_vtbl = {
     .type = NODE_VARIABLE,
@@ -165,7 +186,7 @@ static node_vtbl_t variable_vtbl = {
     .generate_bytecode = generate_bytecode,
     .generate_bytecode_assign = generate_bytecode_assign,
     .can_generate_c_code = can_generate_c_code,
-    .generate_c_code = no_c_code,
+    .generate_c_code = generate_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_deferred = no_deferred_bytecode,
 };

@@ -63,6 +63,20 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
           BUILD_DIR: build/${{ matrix.compiler }}
+      - name: Compile and execute generated C
+        run: bash scripts/check_c_generation.sh build/${{ matrix.compiler }}/unit_testing build/${{ matrix.compiler }}/c-generation
+        env:
+          CC: ${{ matrix.compiler }}
+      - name: Check generated C with x87 evaluation
+        if: matrix.compiler == 'gcc'
+        run: bash scripts/check_c_generation.sh build/gcc/unit_testing build/gcc/c-generation-x87 -mfpmath=387
+      - name: Preserve generated C
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-C-Linux-${{ matrix.name }}
+          path: build/${{ matrix.compiler }}/c-generation/generated.c
+          if-no-files-found: ignore
       - name: Build release
         run: bash scripts/build_release.sh
         env:
@@ -115,6 +129,16 @@ jobs:
       - name: Build and test
         shell: msys2 {0}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_mingw.cmd'
+      - name: Compile and execute generated C
+        shell: msys2 {0}
+        run: bash scripts/check_c_generation.sh build/unit_testing.exe build/c-generation
+      - name: Preserve generated C
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-C-Windows-${{ matrix.msystem }}
+          path: build/c-generation/generated.c
+          if-no-files-found: ignore
       - name: Build release
         shell: msys2 {0}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_release_mingw.cmd'

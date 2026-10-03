@@ -46,12 +46,25 @@ void destroy_c_expression(c_generated_expression_t *expression) {
     *expression = (c_generated_expression_t){0};
 }
 
+/** @brief Backend-owned names avoid C keywords and arbitrary source fragments. */
+static bool valid_function_name(string_view_t name) {
+    if (!name.data || name.length < 6 || wmemcmp(name.data, L"goat_", 5))
+        return false;
+    for (size_t i = 5; i < name.length; i++) {
+        wchar_t c = name.data[i];
+        if (c != L'_' && !(c >= L'a' && c <= L'z') && !(c >= L'A' && c <= L'Z')
+            && !(c >= L'0' && c <= L'9'))
+            return false;
+    }
+    return true;
+}
+
 c_generation_result_t generate_c_function(const function_summary_t *summary,
                                           string_view_t name,
                                           const c_generation_binding_t *bindings,
                                           const c_generation_callee_t *callees) {
     const node_t *function = summary ? summary->function : NULL;
-    if (!function || function->vtbl->type != NODE_FUNCTION_OBJECT || !name.data || !name.length)
+    if (!function || function->vtbl->type != NODE_FUNCTION_OBJECT || !valid_function_name(name))
         return (c_generation_result_t){.status = C_GENERATION_INVALID_REQUEST,
                                        .failed_node = function};
     if (summary->status != FUNCTION_ANALYZED || summary->c_support != FUNCTION_C_SUPPORTED

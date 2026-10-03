@@ -12,6 +12,7 @@
 #include "test_builtin_functions.h"
 #include "test_c_body.h"
 #include "test_c_contract.h"
+#include "test_c_emission.h"
 #include "test_c_expression.h"
 #include "test_c_generation.h"
 #include "test_c_module.h"
@@ -53,6 +54,8 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"C emission", test_c_emission},
+    {"C emission rejections", test_c_emission_rejections},
     {"C module identity", test_c_module_identity},
     {"C module dependencies", test_c_module_dependencies},
     {"C module call lifetime", test_c_module_call_lifetime},

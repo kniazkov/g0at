@@ -541,7 +541,9 @@ stage: whole-function specializations, one generated C module, typed adapters an
 VM fallback. Analyzer eligibility, emitter support and a callable native implementation
 are separate decisions. Native dispatch will live in the function object's call
 method, using metadata supplied during function creation; `CALL` keeps its format
-and no `NATIVE` opcode is planned. No C emitter or dynamic loader exists yet.
+and no `NATIVE` opcode is planned. The minimal C emitter now handles numeric
+parameters/literals and a single explicit return; CI compiles and executes its
+output. Dynamic loading and native execution in the VM are not implemented yet.
 
 ### Numeric C expression proofs
 
