@@ -1,0 +1,5 @@
+const f = func(n) {
+    n = n + 1;
+    return n;
+};
+f(1);

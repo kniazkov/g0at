@@ -262,3 +262,24 @@ string_value_t function_signature_to_string(const function_summary_t *summary) {
 bool function_summary_is_pure(const function_summary_t *summary) {
     return summary->effects == FUNCTION_EFFECT_NONE;
 }
+
+uint32_t function_summary_flags(const function_summary_set_t *set) {
+    uint32_t flags = set->head ? NODE_FLAG_PURE | NODE_FLAG_C_COMPATIBLE : 0;
+    for (const function_summary_t *s = set->head; s; s = s->next) {
+        if (!function_summary_is_pure(s))
+            flags &= ~NODE_FLAG_PURE;
+        if (s->c_support != FUNCTION_C_SUPPORTED)
+            flags &= ~NODE_FLAG_C_COMPATIBLE;
+    }
+    if (!(flags & NODE_FLAG_PURE))
+        flags &= ~NODE_FLAG_C_COMPATIBLE;
+    return flags;
+}
+
+const function_summary_t *select_function_c_view(const function_summary_set_t *set) {
+    for (const function_summary_t *s = set->head; s; s = s->next) {
+        if (s->c_support == FUNCTION_C_SUPPORTED && function_summary_is_pure(s))
+            return s;
+    }
+    return NULL;
+}

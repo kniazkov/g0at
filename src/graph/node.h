@@ -19,7 +19,7 @@
 typedef enum {
     NODE_FLAG_UNREACHABLE = UINT32_C(1) << 0,
     NODE_FLAG_PURE = UINT32_C(1) << 1,        /**< No state writes or I/O; may still throw. */
-    NODE_FLAG_C_COMPATIBLE = UINT32_C(1) << 2 /**< Supported by the initial numeric C subset. */
+    NODE_FLAG_C_COMPATIBLE = UINT32_C(1) << 2 /**< C eligibility across registered signatures. */
 } node_flag_t;
 
 typedef struct node_t node_t;

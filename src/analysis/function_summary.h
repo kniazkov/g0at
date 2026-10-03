@@ -127,3 +127,9 @@ string_value_t function_signature_to_string(const function_summary_t *summary);
 
 /** @brief Proves absence of ambient mutable reads, writes and I/O; may still throw or diverge. */
 bool function_summary_is_pure(const function_summary_t *summary);
+
+/** @brief Intersection over registered signatures; an empty set proves nothing. */
+uint32_t function_summary_flags(const function_summary_set_t *set);
+
+/** @brief First complete C specialization for a labelled view; NULL if none is proven. */
+const function_summary_t *select_function_c_view(const function_summary_set_t *set);

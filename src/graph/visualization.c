@@ -6,7 +6,9 @@
 
 #include "visualization.h"
 
+#include "analysis/function_summary.h"
 #include "codegen/source_builder.h"
+#include "expression.h"
 #include "lib/allocate.h"
 #include "lib/avl_tree.h"
 #include "lib/io.h"
@@ -162,7 +164,13 @@ static int node_to_dot(const node_t *node,
                        avl_tree_t *nodes_to_ids,
                        unsigned int current_scope_id,
                        size_t indent,
-                       source_builder_t *builder) {
+                       source_builder_t *builder,
+                       const function_summary_t *view) {
+    if (node->vtbl->type == NODE_FUNCTION_OBJECT)
+        view = select_function_c_view(get_function_summaries(node));
+    uint32_t display_flags = node->flags;
+    if (view && !node_has_flag(node, NODE_FLAG_UNREACHABLE))
+        display_flags |= NODE_FLAG_PURE | NODE_FLAG_C_COMPATIBLE;
     bool new_scope = false;
     if (node->scope->id != current_scope_id) {
         new_scope = true;
@@ -180,14 +188,14 @@ static int node_to_dot(const node_t *node,
     const wchar_t *name = node->vtbl->type_name;
     node_display_value_t value = get_node_data(node);
     string_value_t properties = build_node_properties_html(node);
-    const wchar_t *node_color = node_has_flag(node, NODE_FLAG_UNREACHABLE)    ? L"lightgray"
-                                : node_has_flag(node, NODE_FLAG_C_COMPATIBLE) ? L"forestgreen"
-                                : node->id                                    ? L"black"
-                                                                              : L"silver";
+    const wchar_t *node_color = node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L"lightgray"
+                                : (display_flags & NODE_FLAG_C_COMPATIBLE) ? L"forestgreen"
+                                : node->id                                 ? L"black"
+                                                                           : L"silver";
     const wchar_t *node_style =
         node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L" fontcolor=gray70 tooltip=\"unreachable\""
-        : node_has_flag(node, NODE_FLAG_PURE) ? L" style=\"rounded,filled\" fillcolor=\"#f2faf2\""
-                                              : L"";
+        : (display_flags & NODE_FLAG_PURE) ? L" style=\"rounded,filled\" fillcolor=\"#f2faf2\""
+                                           : L"";
     if (value.text.length > 0) {
         const wchar_t *font_color = L"blue";
         if (value.kind == NODE_DISPLAY_VALUE_PREDEFINED) {
@@ -238,7 +246,8 @@ static int node_to_dot(const node_t *node,
                                    nodes_to_ids,
                                    node->scope->id,
                                    indent,
-                                   builder);
+                                   builder,
+                                   view);
         const wchar_t *tag = get_node_child_tag(node, index);
         if (tag == NULL) {
             add_formatted_source(
@@ -342,7 +351,7 @@ string_value_t generate_graph_dot(const node_t *root_node) {
     uint32_t last_node_id = 0;
     vector_t *all_nodes = create_vector();
     avl_tree_t *nodes_to_ids = create_avl_tree(node_comparator);
-    node_to_dot(root_node, &last_node_id, all_nodes, nodes_to_ids, 0, 1, builder);
+    node_to_dot(root_node, &last_node_id, all_nodes, nodes_to_ids, 0, 1, builder, NULL);
     append_related_edges_to_dot(all_nodes, nodes_to_ids, 1, builder);
     destroy_avl_tree(nodes_to_ids);
     destroy_vector(all_nodes);

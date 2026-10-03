@@ -1,7 +1,7 @@
 /**
  * @file properties.h
  * @copyright 2026 Ivan Kniazkov
- * @brief Conservative purity and initial C-subset proofs.
+ * @brief Conservative structural and registered-specialization proof caches.
  */
 #pragma once
 

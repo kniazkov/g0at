@@ -168,4 +168,6 @@ candidate elimination so rejected calls do not retain tentative proofs.
 
 Neither a complete body proof nor `c=supported` proves termination or supplies native
 stack/resource handling. Actual C emission, target/compiler validation, loading and VM
-fallback remain separate work. Shared AST/visualization flags remain unchanged here.
+fallback remain separate work. The final property pass conservatively aggregates registered proofs; the visualization can
+show a labelled supported specialization without changing those caches. See the README
+section on specialization colors for the distinction between shared and scoped proofs.

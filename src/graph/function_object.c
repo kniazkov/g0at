@@ -447,16 +447,61 @@ fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *code, data_b
     return true;
 }
 
+/** @brief Function purity describes all registered bodies, not closure allocation. */
+static bool fobj_is_pure(const node_t *node) {
+    return function_summary_flags(get_function_summaries(node)) & NODE_FLAG_PURE;
+}
+
+/** @brief Signature results and the explicitly selected visualization context. */
+static size_t fobj_get_property_count(const node_t *node) {
+    const function_summary_set_t *set = get_function_summaries(node);
+    size_t count = select_function_c_view(set) ? 1 : 0;
+    for (const function_summary_t *s = set->head; s; s = s->next)
+        count++;
+    return count;
+}
+
+/** @brief Implements node_vtbl_t::get_property. */
+static const wchar_t *
+fobj_get_property(const node_t *node, size_t index, node_display_value_t *out) {
+    const function_summary_set_t *set = get_function_summaries(node);
+    const function_summary_t *view = select_function_c_view(set);
+    if (view && index == 0) {
+        *out = (node_display_value_t){.text = function_signature_to_string(view)};
+        return L"C view";
+    }
+    if (view)
+        index--;
+    const function_summary_t *s = set->head;
+    while (s && index--)
+        s = s->next;
+    if (!s)
+        return NULL;
+    string_value_t signature = function_signature_to_string(s);
+    string_value_t result = lattice_to_string(s->return_type);
+    out->kind = NODE_DISPLAY_VALUE_PLAIN;
+    out->text = format_string(L"%s \u2192 %s; %s; C=%s",
+                              signature.data,
+                              result.data,
+                              function_summary_is_pure(s) ? L"pure" : L"unknown purity",
+                              s->c_support == FUNCTION_C_SUPPORTED     ? L"supported"
+                              : s->c_support == FUNCTION_C_UNSUPPORTED ? L"unsupported"
+                                                                       : L"unknown");
+    FREE_STRING(signature);
+    FREE_STRING(result);
+    return L"specialization";
+}
+
 /** @brief Virtual table for function object node operations. */
 static node_vtbl_t fo_vtbl = {
     .type = NODE_FUNCTION_OBJECT,
     .analyze_reachability = fobj_reachability,
-    .is_pure = children_are_pure,
+    .is_pure = fobj_is_pure,
     .collect_direct_effects = no_direct_effects,
     .type_name = L"function object",
     .get_data = no_data,
-    .get_property_count = no_properties,
-    .get_property = no_property,
+    .get_property_count = fobj_get_property_count,
+    .get_property = fobj_get_property,
     .get_child_count = fobj_get_child_count,
     .get_child = fobj_get_child,
     .get_child_tag = fobj_get_child_tag,
