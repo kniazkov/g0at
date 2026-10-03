@@ -1,0 +1,12 @@
+print(abs(-10));print(":");
+const alias=abs;
+print(alias(-0.0));print(":");print(abs(abs(-3)));print(":");
+var x=0;
+print(abs(x=-2));print(":");print(x);print(":");
+print(abs(-4,x=5));print(":");print(x);print(":");
+try {abs();} catch(e) {print("missing:");}
+try {abs("x");} catch(e) {print("type:");}
+const fail=func(){throw "error";};
+try {abs(2,fail());} catch(e) {print("extra:");}
+var abs=func(n){return n+1;};
+print(abs(-2));print(":");print(alias(-6));

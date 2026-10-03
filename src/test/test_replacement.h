@@ -10,3 +10,4 @@ bool test_replacement_folding();
 bool test_replacement_branches();
 bool test_replacement_boundaries();
 bool test_replacement_reset();
+bool test_replacement_abs();

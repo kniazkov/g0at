@@ -314,3 +314,4 @@ replacement_call_order
 replacement_deferred
 replacement_throw
 replacement_nested
+replacement_abs

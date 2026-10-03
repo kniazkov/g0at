@@ -50,6 +50,7 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"replacement abs", test_replacement_abs},
     {"replacement nodes", test_replacement_nodes},
     {"replacement folding", test_replacement_folding},
     {"replacement branches", test_replacement_branches},

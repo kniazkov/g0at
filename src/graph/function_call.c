@@ -13,6 +13,7 @@
 #include "analysis/function_return.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
+#include "analysis/simplification.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
@@ -205,12 +206,33 @@ static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
     return false;
 }
 
+/** @brief Implements node_vtbl_t::simplify for explicitly foldable native descriptors. */
+static node_t *simplify(node_t *node, arena_t *arena) {
+    const function_call_t *call = (const function_call_t *)node;
+    const expression_t *callee = call->func_object;
+    /* A variable lookup has no evaluation effects; resolve identity, never its spelling. */
+    if (callee->base.vtbl->type != NODE_VARIABLE || !callee->immediate_value
+        || callee->immediate_value->type != LATTICE_KNOWN_FUNCTION)
+        return node;
+    const builtin_function_t *builtin =
+        ((const known_function_element_t *)callee->immediate_value)->builtin;
+    if (!builtin || !builtin->fold_constants || builtin->effects != BUILTIN_EFFECT_NONE
+        || call->args_count < builtin->min_args || !call->base.immediate_value)
+        return node;
+    /* Even ignored extra arguments are evaluated by the VM. */
+    for (size_t i = 0; i < call->args_count; i++) {
+        if (!can_discard_expression((node_t *)call->args[i]))
+            return node;
+    }
+    return fold_constant_value(node, arena, call->base.immediate_value);
+}
+
 /** @brief Virtual table for function call expressions. */
 static node_vtbl_t function_call_vtbl = {
     .type = NODE_FUNCTION_CALL,
     .analyze_reachability = analyze_reachability,
     .is_pure = is_pure,
-    .simplify = no_simplification,
+    .simplify = simplify,
     .collect_direct_effects = collect_direct_effects,
     .type_name = L"function call",
     .get_data = no_data,

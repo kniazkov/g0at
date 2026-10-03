@@ -626,11 +626,14 @@ After analysis, a separate pass asks each node's `simplify` method for an equiva
 smaller subtree. Scalar constant folding and removable `if` conditions produce
 `expression replacement` or `statement replacement` nodes. Each has two labelled
 children: `original` and `replacement`. Only the latter is executed or emitted as source
-and bytecode; the graph preserves both and gives replacements a pale purple fill.
+and bytecode; the graph preserves both and gives replacements a pale purple fill and a purple contour.
 
 Folding uses pointwise immediate-execution facts, never a variable's aggregate summary
 or one observed function call. Closed literal expressions can also fold inside function
 bodies. Calls, writes, uncertain operands, and potentially failing evaluation are retained.
+Native descriptors may explicitly allow constant folding: currently `abs` does so. Its
+resolved identity, concrete result, and removable evaluation of every argument (including
+ignored extras) are required. A user-defined `abs` is not treated as the built-in.
 A known `if` becomes its selected statement only when evaluating its condition can be
 safely omitted; a false `if` without `else` becomes an empty statement. Existing block
 scopes remain intact. Assignment and increment targets remain assignable expressions.

@@ -25,5 +25,5 @@ root = ET.parse('build/replacements-analysis.svg').getroot()
 text = ''.join(root.itertext())
 assert 'expression replacement' in text and 'statement replacement' in text
 assert 'original' in text and 'replacement' in text and 'if-else' in text
-assert any(node.get('fill') == '#f5efff' for node in root.iter())
+assert any(node.get('fill') == '#f5efff' and node.get('stroke') == 'purple' for node in root.iter())
 PY
