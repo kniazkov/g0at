@@ -1,5 +1,5 @@
 # The first approximation hides the unsupported call; a later iteration must reject the proof.
 one function 2 0 integer inconclusive:top
-# Mutual recursion is deliberately deferred to step 6.
-one function 4 0 integer inconclusive:top
-one function 5 0 integer inconclusive:top
+# Mutual recursion now converges as a group.
+one function 4 0 integer analyzed:integer
+one function 5 0 integer analyzed:integer

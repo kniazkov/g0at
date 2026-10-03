@@ -1,0 +1,6 @@
+const even=func(n){if(n==0)return true;return odd(n-1);}
+const odd=func(n){if(n==0)return false;return even(n-1);}
+print(even(10))
+print(odd(10))
+print(even(11))
+print(odd(11))

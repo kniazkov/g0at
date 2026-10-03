@@ -20,12 +20,12 @@ typedef struct function_call_graph_t function_call_graph_t;
 typedef struct abstract_state_t abstract_state_t;
 typedef struct lattice_element_t lattice_element_t;
 
-/** @brief Solves direct recursion only; exhaustion leaves TOP/inconclusive. */
-void solve_direct_function_recursion(function_call_graph_t *graph, size_t max_iterations);
+/** @brief Solves recursive type groups; exhaustion leaves TOP/inconclusive. */
+void solve_function_recursion(function_call_graph_t *graph, size_t max_iterations);
 
-/** @brief Uses current same-body approximations; other calls invalidate the proof. */
-const lattice_element_t *interpret_self_call(const node_t *site,
-                                             const lattice_element_t *callee,
-                                             const lattice_element_t *const *args,
-                                             size_t count,
-                                             abstract_state_t *state);
+/** @brief Uses current group approximations; outside calls invalidate the proof. */
+const lattice_element_t *interpret_recursive_call(const node_t *site,
+                                                  const lattice_element_t *callee,
+                                                  const lattice_element_t *const *args,
+                                                  size_t count,
+                                                  abstract_state_t *state);

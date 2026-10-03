@@ -1,0 +1,4 @@
+const a=func(n){if(n==0)return "done";return alias(n-1);}
+const b=func(n){return a(n);}
+const alias=b
+a(0)

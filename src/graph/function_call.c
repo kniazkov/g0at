@@ -78,8 +78,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     const lattice_element_t *function = calculate_expression(expr->func_object, state, arena);
     if (state->control_flow != FLOW_NORMAL)
         return make_bottom_element();
-    if (state->recursive_signatures)
-        return interpret_self_call(node, function, args, expr->args_count, state);
+    if (state->recursive_group)
+        return interpret_recursive_call(node, function, args, expr->args_count, state);
     observe_function_call(state->call_graph_node, node, function, args, expr->args_count);
     return interpret_function_call(function, args, expr->args_count, state);
 }

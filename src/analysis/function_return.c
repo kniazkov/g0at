@@ -10,6 +10,12 @@
 #include "graph/expression.h"
 #include "graph/variable.h"
 
+/** @brief Same-body signatures and recursive components are solved together. */
+typedef struct recursive_type_group_t {
+    function_call_graph_node_t **members;
+    size_t count;
+} recursive_type_group_t;
+
 /** @brief Seeds external bindings with TOP; nested closure bodies are deferred. */
 static bool prepare_body(node_t *node, const node_t *function, abstract_state_t *state) {
     if (node->vtbl->type == NODE_FUNCTION_OBJECT)
@@ -35,11 +41,11 @@ static bool prepare_body(node_t *node, const node_t *function, abstract_state_t 
 static const lattice_element_t *evaluate_signature(function_summary_set_t *set,
                                                    function_summary_t *summary,
                                                    function_call_graph_node_t *graph_node,
-                                                   bool recursive,
+                                                   recursive_type_group_t *group,
                                                    bool *incomplete) {
     abstract_state_t *state = create_abstract_state(set->arena);
     state->type_analysis_incomplete = incomplete;
-    state->recursive_signatures = recursive ? set : NULL;
+    state->recursive_group = group;
     state->call_graph_node = graph_node;
     /* A type-only key does not prove that root bindings have not been replaced. */
     state->builtin_bindings_unknown = true;
@@ -70,7 +76,7 @@ static void analyze_signature(function_summary_set_t *set, function_summary_t *s
     reset_function_summary(summary);
     summary->status = FUNCTION_ANALYZING;
     bool incomplete = false;
-    const lattice_element_t *result = evaluate_signature(set, summary, NULL, false, &incomplete);
+    const lattice_element_t *result = evaluate_signature(set, summary, NULL, NULL, &incomplete);
     summary->status = incomplete ? FUNCTION_INCONCLUSIVE : FUNCTION_ANALYZED;
     summary->return_type = incomplete ? make_top_element() : result;
 }
@@ -90,7 +96,7 @@ void inspect_function_calls(function_call_graph_node_t *node) {
     evaluate_signature(get_function_summaries(node->summary->function),
                        node->summary,
                        node,
-                       false,
+                       NULL,
                        &incomplete);
 }
 
@@ -102,9 +108,8 @@ static bool covers_type(lattice_type_t domain, lattice_type_t value) {
 }
 
 /** @brief Prefer an exact key; a broader existing signature is a safe fallback. */
-static function_summary_t *find_self_signature(function_summary_set_t *set,
-                                               const lattice_element_t *const *args,
-                                               size_t count) {
+static function_summary_t *
+find_signature(function_summary_set_t *set, const lattice_element_t *const *args, size_t count) {
     function_summary_t *fallback = NULL;
     for (function_summary_t *s = set->head; s; s = s->next) {
         bool exact = true, covers = true;
@@ -123,11 +128,11 @@ static function_summary_t *find_self_signature(function_summary_set_t *set,
     return fallback;
 }
 
-const lattice_element_t *interpret_self_call(const node_t *site,
-                                             const lattice_element_t *callee,
-                                             const lattice_element_t *const *args,
-                                             size_t count,
-                                             abstract_state_t *state) {
+const lattice_element_t *interpret_recursive_call(const node_t *site,
+                                                  const lattice_element_t *callee,
+                                                  const lattice_element_t *const *args,
+                                                  size_t count,
+                                                  abstract_state_t *state) {
     for (size_t i = 0; i < count; i++) {
         if (args[i]->type == LATTICE_BOTTOM) {
             state->control_flow = FLOW_UNREACHABLE;
@@ -140,43 +145,48 @@ const lattice_element_t *interpret_self_call(const node_t *site,
     else if (callee->type == LATTICE_TOP || callee->type == LATTICE_NOT_NULL
              || callee->type == LATTICE_FUNCTION)
         function = resolve_immutable_function(get_node_child(site, 0));
-    function_summary_set_t *set = state->recursive_signatures;
+    recursive_type_group_t *group = state->recursive_group;
     function_summary_t *target =
-        function == set->function ? find_self_signature(set, args, count) : NULL;
+        function ? find_signature(get_function_summaries(function), args, count) : NULL;
+    bool member = false;
+    for (size_t i = 0; i < group->count; i++)
+        member |= group->members[i]->summary == target;
+    if (!member)
+        target = NULL;
     if (!target || target->status == FUNCTION_INCONCLUSIVE) {
         *state->type_analysis_incomplete = true;
         forget_abstract_values(state);
         return make_top_element();
     }
-    /* A self-call gets a fresh activation; only shared captures may change. */
-    forget_captured_abstract_values(state, function);
+    /* Another body may be a closure that can write the caller's locals. */
+    if (function == state->call_graph_node->summary->function)
+        forget_captured_abstract_values(state, function);
+    else
+        forget_abstract_values(state);
     if (target->return_type->type == LATTICE_BOTTOM)
         state->control_flow = FLOW_UNREACHABLE;
     return target->return_type;
 }
 
-static void fail_signatures(function_summary_set_t *set) {
-    for (function_summary_t *s = set->head; s; s = s->next) {
-        s->status = FUNCTION_INCONCLUSIVE;
-        s->return_type = make_top_element();
-    }
-}
-
-/** @brief All specializations of one body share a finite-height, type-only iteration. */
-static void solve_function(function_summary_set_t *set, size_t max_iterations) {
-    for (function_summary_t *s = set->head; s; s = s->next) {
+/** @brief Monotone iteration over an entire recursive type group. */
+static void solve_group(recursive_type_group_t *group, size_t max_iterations) {
+    for (size_t i = 0; i < group->count; i++) {
+        function_summary_t *s = group->members[i]->summary;
         reset_function_summary(s);
         s->status = FUNCTION_ANALYZING;
         s->return_type = make_bottom_element();
     }
     for (size_t iteration = 0; iteration < max_iterations; iteration++) {
         bool changed = false;
-        for (function_summary_t *s = set->head; s; s = s->next) {
+        for (size_t i = 0; i < group->count; i++) {
+            function_call_graph_node_t *node = group->members[i];
+            function_summary_t *s = node->summary;
             if (s->status == FUNCTION_INCONCLUSIVE)
                 continue;
+            function_summary_set_t *set = get_function_summaries(s->function);
             bool incomplete = false;
             s->iterations++;
-            const lattice_element_t *result = evaluate_signature(set, s, NULL, true, &incomplete);
+            const lattice_element_t *result = evaluate_signature(set, s, node, group, &incomplete);
             if (incomplete) {
                 s->status = FUNCTION_INCONCLUSIVE;
                 s->return_type = make_top_element();
@@ -189,41 +199,57 @@ static void solve_function(function_summary_set_t *set, size_t max_iterations) {
             }
         }
         if (!changed) {
-            for (function_summary_t *s = set->head; s; s = s->next) {
+            for (size_t i = 0; i < group->count; i++) {
+                function_summary_t *s = group->members[i]->summary;
                 if (s->status == FUNCTION_ANALYZING)
                     s->status = FUNCTION_ANALYZED;
             }
             return;
         }
     }
-    fail_signatures(set);
+    for (size_t i = 0; i < group->count; i++) {
+        function_summary_t *s = group->members[i]->summary;
+        s->status = FUNCTION_INCONCLUSIVE;
+        s->return_type = make_top_element();
+    }
 }
 
-/** @brief A recursive component must contain only specializations of this same body. */
-static bool has_direct_cycle(const function_call_graph_t *graph, const node_t *function) {
-    for (const function_call_graph_node_t *node = graph->head; node; node = node->next) {
-        if (node->summary->function != function || !node->recursive)
-            continue;
-        bool same_body = true;
-        for (const function_call_graph_node_t *other = graph->head; other; other = other->next) {
-            if (other->component == node->component && other->summary->function != function)
-                same_body = false;
-        }
-        if (same_body)
+static bool contains(const recursive_type_group_t *group, const function_call_graph_node_t *node) {
+    for (size_t i = 0; i < group->count; i++) {
+        if (group->members[i] == node)
             return true;
     }
     return false;
 }
 
-void solve_direct_function_recursion(function_call_graph_t *graph, size_t max_iterations) {
+/** @brief Include every profile of a body, closing over its recursive components. */
+static void expand_group(recursive_type_group_t *group, const function_call_graph_t *graph) {
+    for (size_t i = 0; i < group->count; i++) {
+        const function_call_graph_node_t *member = group->members[i];
+        for (function_call_graph_node_t *node = graph->head; node; node = node->next) {
+            if ((node->component == member->component
+                 || node->summary->function == member->summary->function)
+                && !contains(group, node))
+                group->members[group->count++] = node;
+        }
+    }
+}
+
+void solve_function_recursion(function_call_graph_t *graph, size_t max_iterations) {
     if (graph->truncated)
         return;
+    recursive_type_group_t done = {
+        .members = alloc_from_arena(graph->arena, (graph->count + 1) * sizeof(*done.members))};
+    recursive_type_group_t group = {
+        .members = alloc_from_arena(graph->arena, (graph->count + 1) * sizeof(*group.members))};
     for (function_call_graph_node_t *node = graph->head; node; node = node->next) {
-        const node_t *function = node->summary->function;
-        bool seen = false;
-        for (function_call_graph_node_t *prior = graph->head; prior != node; prior = prior->next)
-            seen |= prior->summary->function == function;
-        if (!seen && has_direct_cycle(graph, function))
-            solve_function(get_function_summaries(function), max_iterations);
+        if (!node->recursive || contains(&done, node))
+            continue;
+        group.count = 1;
+        group.members[0] = node;
+        expand_group(&group, graph);
+        solve_group(&group, max_iterations);
+        for (size_t i = 0; i < group.count; i++)
+            done.members[done.count++] = group.members[i];
     }
 }

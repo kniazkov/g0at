@@ -49,19 +49,19 @@ bool test_direct_recursion_limits() {
     function_summary_set_t *set = get_function_summaries(event->node);
     function_call_graph_t *graph = build_function_call_graph(root, arena, 1024);
     size_t node_count = graph->count;
-    solve_direct_function_recursion(graph, 1);
+    solve_function_recursion(graph, 1);
     for (function_summary_t *s = set->head; s; s = s->next) {
         ASSERT(s->status == FUNCTION_INCONCLUSIVE && s->return_type->type == LATTICE_TOP);
     }
-    solve_direct_function_recursion(graph, 0);
+    solve_function_recursion(graph, 0);
     ASSERT(set->head->status == FUNCTION_INCONCLUSIVE && !set->head->iterations);
-    solve_direct_function_recursion(graph, 64);
+    solve_function_recursion(graph, 64);
     ASSERT(set->head->status == FUNCTION_ANALYZED && graph->count == node_count);
     ASSERT(set->head->return_type->type == LATTICE_INTEGER);
     analyze_function_return_types(root);
     graph = build_function_call_graph(root, arena, 1);
     ASSERT(graph->truncated);
-    solve_direct_function_recursion(graph, 64);
+    solve_function_recursion(graph, 64);
     ASSERT(set->head->status == FUNCTION_INCONCLUSIVE);
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));

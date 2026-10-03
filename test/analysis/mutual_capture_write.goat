@@ -1,0 +1,2 @@
+const a=func(n){var x=1;const b=func(k){x="changed";if(k==0)return 0;return a(k-1);};if(n==0)return 0;b(n-1);return x;}
+a(0)

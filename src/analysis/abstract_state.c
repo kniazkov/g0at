@@ -75,7 +75,7 @@ abstract_state_t *create_abstract_state(arena_t *arena) {
     state->builtin_bindings_unknown = false;
     state->type_analysis_incomplete = NULL;
     state->call_graph_node = NULL;
-    state->recursive_signatures = NULL;
+    state->recursive_group = NULL;
     state->call_budget = alloc_from_arena(arena, sizeof(size_t));
     *state->call_budget = 1024;
     return state;
@@ -96,7 +96,7 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     copy->call_budget = state->call_budget;
     copy->type_analysis_incomplete = state->type_analysis_incomplete;
     copy->call_graph_node = state->call_graph_node;
-    copy->recursive_signatures = state->recursive_signatures;
+    copy->recursive_group = state->recursive_group;
     return copy;
 }
 
@@ -196,7 +196,7 @@ abstract_state_t *join_abstract_states(const abstract_state_t *left,
     result->call_budget = left->call_budget;
     result->type_analysis_incomplete = left->type_analysis_incomplete;
     result->call_graph_node = left->call_graph_node;
-    result->recursive_signatures = left->recursive_signatures;
+    result->recursive_group = left->recursive_group;
     join_context_t context = {left, right, result};
     avl_tree_for_each(left->values, join_abstract_state_entry, &context);
     avl_tree_for_each(right->values, join_abstract_state_entry, &context);
