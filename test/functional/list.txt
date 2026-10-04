@@ -339,3 +339,14 @@ for_bare_const
 for_wrap
 for_fresh_scope
 for_implicit
+
+# Invalid loop syntax
+for_missing_header
+for_missing_separator
+for_extra_separator
+for_missing_body
+for_invalid_initial
+for_invalid_condition
+for_invalid_step
+for_invalid_body
+for_analysis_budget

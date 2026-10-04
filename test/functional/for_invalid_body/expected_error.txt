@@ -1,0 +1,1 @@
+Fatal error in 'program.goat', 1.5: Expected statement after for header
