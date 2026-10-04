@@ -4,6 +4,7 @@
  */
 #include "c_generation.h"
 
+#include "c_lowering.h"
 #include "graph/node.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
@@ -59,10 +60,11 @@ bool c_function_name_is_valid(string_view_t name) {
     return true;
 }
 
-c_generation_result_t generate_c_function(const function_summary_t *summary,
-                                          string_view_t name,
-                                          const c_generation_binding_t *bindings,
-                                          const c_generation_callee_t *callees) {
+static c_generation_result_t generate_function(const function_summary_t *summary,
+                                               string_view_t name,
+                                               const c_generation_binding_t *bindings,
+                                               const c_generation_callee_t *callees,
+                                               bool definition) {
     const node_t *function = summary ? summary->function : NULL;
     if (!function || function->vtbl->type != NODE_FUNCTION_OBJECT
         || !c_function_name_is_valid(name))
@@ -74,7 +76,8 @@ c_generation_result_t generate_c_function(const function_summary_t *summary,
     c_generation_context_t context = {.summary = summary,
                                       .function_name = name,
                                       .bindings = bindings,
-                                      .callees = callees};
+                                      .callees = callees,
+                                      .module_definition = definition};
     if (c_generation_return_type(&context) != C_VALUE_INT64
         && c_generation_return_type(&context) != C_VALUE_DOUBLE)
         return (c_generation_result_t){.status = C_GENERATION_NOT_PROVEN, .failed_node = function};
@@ -93,4 +96,17 @@ c_generation_result_t generate_c_function(const function_summary_t *summary,
         result.source = build_source(builder);
     destroy_source_builder(builder);
     return result;
+}
+
+c_generation_result_t generate_c_function(const function_summary_t *summary,
+                                          string_view_t name,
+                                          const c_generation_binding_t *bindings,
+                                          const c_generation_callee_t *callees) {
+    return generate_function(summary, name, bindings, callees, false);
+}
+
+c_generation_result_t c_generate_definition(const function_summary_t *summary,
+                                            string_view_t name,
+                                            const c_generation_callee_t *callees) {
+    return generate_function(summary, name, NULL, callees, true);
 }

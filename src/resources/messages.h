@@ -17,6 +17,7 @@ typedef struct {
     const wchar_t const *missing_specification;
     const wchar_t const *bad_graph_file;
     const wchar_t const *bad_optimization_level;
+    const wchar_t *bad_c_options, *cannot_write_c_file, *c_omitted;
     const wchar_t const *no_graphviz;
     const wchar_t const *graphviz_failed;
     const wchar_t const *duplicate_parameter;

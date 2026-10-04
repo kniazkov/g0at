@@ -19,6 +19,7 @@
 #include "test_c_generation.h"
 #include "test_c_locals.h"
 #include "test_c_module.h"
+#include "test_c_module_output.h"
 #include "test_c_recursion.h"
 #include "test_c_replacement.h"
 #include "test_codegen.h"
@@ -65,6 +66,8 @@ static test_description_t test_list[] = {
     {"C static call rejections", test_c_call_rejections},
     {"C recursive bindings", test_c_recursive_bindings},
     {"C module identity", test_c_module_identity},
+    {"C module output", test_c_module_output},
+    {"C output options", test_c_output_options},
     {"C module dependencies", test_c_module_dependencies},
     {"C module call lifetime", test_c_module_call_lifetime},
     {"C replacement expression", test_c_replacement_expression},

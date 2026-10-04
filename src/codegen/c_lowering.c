@@ -146,17 +146,10 @@ bool c_emit_function(const node_t *node,
     }
     if (count)
         context->bindings = &bindings[count - 1];
-    add_static_source(builder, 0, L"#include <stdint.h>");
-    add_static_source(builder, 0, L"#include <stdbool.h>");
-    add_static_source(builder, 0, L"#include <math.h>");
-    add_static_source(builder, 0, L"#include <float.h>");
-    add_static_source(builder,
-                      0,
-                      L"_Static_assert(sizeof(double)==8 && FLT_RADIX==2 && DBL_MANT_DIG==53 && "
-                      L"DBL_MAX_EXP==1024, \"binary64 required\");");
-    c_arithmetic_helpers(builder);
-    c_control_helpers(builder);
-    bool prototypes = c_emit_callee_prototypes(context, builder);
+    if (!context->module_definition)
+        c_emit_headers(builder);
+    bool prototypes =
+        c_emit_callee_prototypes(context, context->module_definition ? NULL : builder);
     add_formatted_source(builder, indent, append_string(&signature, L") {"));
     for (size_t i = 0; i < count; i++)
         add_source(builder, indent + 1, L"(void)%s;", bindings[i].name.data);
@@ -174,4 +167,17 @@ bool c_emit_function(const node_t *node,
         FREE((void *)bindings[i].name.data);
     FREE(bindings);
     return success;
+}
+
+void c_emit_headers(source_builder_t *builder) {
+    add_static_source(builder, 0, L"#include <stdint.h>");
+    add_static_source(builder, 0, L"#include <stdbool.h>");
+    add_static_source(builder, 0, L"#include <math.h>");
+    add_static_source(builder, 0, L"#include <float.h>");
+    add_static_source(builder,
+                      0,
+                      L"_Static_assert(sizeof(double)==8 && FLT_RADIX==2 && DBL_MANT_DIG==53 && "
+                      L"DBL_MAX_EXP==1024, \"binary64 required\");");
+    c_arithmetic_helpers(builder);
+    c_control_helpers(builder);
 }

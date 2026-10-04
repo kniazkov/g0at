@@ -46,6 +46,9 @@ struct options_t {
     /** @brief Print chronological analysis observations to stdout. */
     bool print_analysis;
 
+    /** @brief C source-only export; save uses the input basename with a .c extension. */
+    bool print_c, save_c;
+
     /** @brief Optional UTF-8 analysis report destination. */
     path_t *analysis_output_file;
 

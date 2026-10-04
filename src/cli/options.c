@@ -82,6 +82,14 @@ options_t *parse_options(int argc, char **argv) {
                 continue;
             }
 
+            if (strcmp(arg, "--print-c") == 0 || strcmp(arg, "--save-c") == 0) {
+                if (strcmp(arg, "--print-c") == 0)
+                    opt->print_c = true;
+                else
+                    opt->save_c = true;
+                continue;
+            }
+
             if (strcmp(arg, "--print-bytecode") == 0) {
                 opt->print_bytecode = true;
                 continue;
@@ -147,6 +155,12 @@ options_t *parse_options(int argc, char **argv) {
         goto error;
     }
 
+    if ((opt->print_c || opt->save_c)
+        && (opt->optimization_level == OPTIMIZATION_NONE || opt->print_analysis
+            || opt->print_source_code || opt->print_bytecode)) {
+        fprintf_utf8(stderr, get_messages()->bad_c_options);
+        goto error;
+    }
     return opt;
 
 error:

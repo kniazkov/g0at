@@ -9,3 +9,8 @@
 c_generated_expression_t c_call(const node_t *node, c_generation_context_t *context);
 /** @brief Validates callee bindings and emits their numeric prototypes. */
 bool c_emit_callee_prototypes(c_generation_context_t *context, source_builder_t *builder);
+
+/** @brief Emits a prototype for an already validated numeric specialization. */
+void c_emit_prototype(const function_summary_t *summary,
+                      string_view_t name,
+                      source_builder_t *builder);
