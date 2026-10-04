@@ -86,9 +86,9 @@ static bool empty_function(const node_t *node,
 bool test_c_generation_transaction(void) {
     arena_t *arena = create_arena(32);
     parser_memory_t memory = {arena, arena, arena, arena};
-    node_t *root =
-        parse_analysis_test_program(&memory,
-                                    STATIC_STRING(L"const f=func(n){var x=n;return x;};f(1);"));
+    node_t *root = parse_analysis_test_program(
+        &memory,
+        STATIC_STRING(L"const f=func(n){if(n<1)return 0;return f(n-1);};f(1);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);

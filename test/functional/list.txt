@@ -315,3 +315,4 @@ replacement_deferred
 replacement_throw
 replacement_nested
 abs_types
+native_local_semantics

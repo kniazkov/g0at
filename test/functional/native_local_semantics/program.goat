@@ -1,0 +1,36 @@
+const sequence = func(n) {
+    var x = n;
+    const y = (x = x + 1), z = (x = x + 2);
+    return y * 10 + z;
+};
+const chain = func(n) {
+    var x = n, y = n;
+    x = y = n + 3;
+    return x * 10 + y;
+};
+const snapshot = func(n) {
+    var x = n;
+    return x + (x = 2);
+};
+const nested = func(n) {
+    var x = n;
+    { var y = x; { var x = y + 2; y = x; } x = y; }
+    return x;
+};
+const conditional = func(n) {
+    if (n) var x = 1;
+    x = 2;
+    return x;
+};
+const rounded = func(n) {
+    var x = n;
+    x = x + 1.0;
+    return x - n;
+};
+print(sequence(3)); print("\n");
+print(chain(2)); print("\n");
+print(snapshot(9)); print("\n");
+print(nested(7)); print("\n");
+print(conditional(0)); print("\n");
+print(conditional(1)); print("\n");
+print(rounded(9007199254740992.0)); print("\n");
