@@ -20,8 +20,13 @@ CC="$REAL_CC" "$interpreter" --lang en --save-library "$output_dir/program.goat"
 test ! -s "$output_dir/stdout.txt"
 test ! -s "$output_dir/stderr.txt"
 test ! -e "$output_dir/program.c"
-compile -DGOAT_ABI_NO_MAIN "$repo_root/test/functional/native_abi/driver.c" "$repo_root/test/functional/native_windows/dll_host.c" -lm -o "$output_dir/host.exe"
+compile -static -static-libgcc -DGOAT_ABI_NO_MAIN "$repo_root/test/functional/native_abi/driver.c" "$repo_root/test/functional/native_windows/dll_host.c" -lm -o "$output_dir/host.exe"
 "$output_dir/host.exe" "$output_dir/program.dll"
+ok
+current='native DLL runs without MinGW runtime DLLs or compiler PATH'
+mkdir -p "$output_dir/isolated"
+cp "$output_dir/host.exe" "$output_dir/program.dll" "$output_dir/isolated/"
+(cd "$output_dir/isolated" && env PATH="$(cygpath -u "$WINDIR")/System32" ./host.exe ./program.dll)
 ok
 current='numeric compatibility on the current Windows target'
 cp "$repo_root/test/functional/native_numeric/program.goat" "$output_dir/numeric.goat"
@@ -125,5 +130,15 @@ wait "$first"
 wait "$second"
 "$output_dir/host.exe" "$output_dir/program.dll"
 "$output_dir/host.exe" "$output_dir/concurrent.dll"
+ok
+current='generated DLL imports do not require MinGW runtime DLLs'
+objdump_tool="$("$compiler" -print-prog-name=objdump)"
+for library in "$output_dir/program.dll" "$output_dir/numeric.dll" "$output_dir/empty.dll"; do
+    "$objdump_tool" -p "$library" > "$library.imports.txt"
+    grep -i 'DLL Name:' "$library.imports.txt"
+    if grep -Ei 'DLL Name:.*(libgcc_s|libwinpthread|libstdc\+\+|libssp)' "$library.imports.txt"; then
+        false
+    fi
+done
 ok
 printf 'Windows native library testing done; total: %d, passed: %d, failed: 0\n' "$passed" "$passed"

@@ -53,6 +53,14 @@ provider must use the same build define. Query and adapter pointers use explicit
 `goat_native_query_v1_t` is the public query pointer type. The exported lookup name
 is exactly `goat_native_query_v1`, verified through `GetProcAddress` in tests.
 
+Generated DLLs link MinGW support libraries statically (`-shared -static -static-libgcc`),
+including any required POSIX thread support. Users do not need to copy
+`libgcc_s_*.dll` or `libwinpthread-1.dll` beside Goat. Windows system DLLs and the
+selected Windows C runtime remain OS dependencies. The compiler installation must
+provide the static runtime archives; this policy applies to newly compiled DLLs,
+so existing artifacts must be recompiled. It does not change how `goat.exe` itself
+is linked or broaden the loader's DLL search path.
+
 `SearchPathA` resolves one executable, then `CreateProcessA` receives that explicit
 application path and a CRT-quoted command line. Spaces, quotes and backslashes are
 handled without `cmd.exe`, environment expansion or shell operators. Batch/shell

@@ -77,6 +77,9 @@ static DWORD run_compiler(const char *compiler,
                           "-std=c11",
                           "-O2",
                           "-shared",
+                          /* Keep MinGW runtimes inside the DLL, including POSIX threads. */
+                          "-static",
+                          "-static-libgcc",
                           "-DGOAT_NATIVE_BUILD",
 #    ifdef _WIN64
                           "-m64",
