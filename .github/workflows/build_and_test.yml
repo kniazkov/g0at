@@ -140,6 +140,10 @@ jobs:
         run: bash scripts/check_binary_program.sh build/release-${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/functional_testing "build/${{ matrix.compiler }}/binary programs release"
         env:
           CC: ${{ matrix.compiler }}
+      - name: Compare precompiled VM and native performance
+        run: python3 scripts/check_native_performance.py build/release-${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native performance"
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Preserve native execution reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -150,6 +154,7 @@ jobs:
             build/${{ matrix.compiler }}/native modes release
             build/${{ matrix.compiler }}/binary programs
             build/${{ matrix.compiler }}/binary programs release
+            build/${{ matrix.compiler }}/native performance
           if-no-files-found: ignore
       - name: Render analysis graphs
         if: matrix.compiler == 'gcc'
@@ -186,6 +191,10 @@ jobs:
             prefix: mingw-w64-ucrt-x86_64
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        id: benchmark-python
+        with:
+          python-version: '3.12'
       - uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
@@ -248,6 +257,11 @@ jobs:
       - name: Compile and execute persisted programs
         shell: msys2 {0}
         run: bash scripts/check_binary_program.sh build/release/goat.exe build/functional_testing.exe "build/binary programs release"
+      - name: Compare precompiled VM and native performance
+        shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
+        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_performance.py build/release/goat.exe "build/native performance"'
       - name: Preserve native execution reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -258,6 +272,7 @@ jobs:
             build/native modes release
             build/binary programs
             build/binary programs release
+            build/native performance
           if-no-files-found: ignore
       - name: Preserve failed functional outputs
         if: failure()
