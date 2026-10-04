@@ -13,6 +13,7 @@
 #include "analysis/function_return.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
+#include "codegen/c_call.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
@@ -230,7 +231,7 @@ static node_vtbl_t function_call_vtbl = {
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
     .can_generate_c_code = can_generate_c_code,
-    .generate_c_code = no_c_code,
+    .generate_c_code = c_call,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,

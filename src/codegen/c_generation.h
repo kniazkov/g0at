@@ -81,3 +81,6 @@ bool fail_c_generation(c_generation_context_t *context,
 
 /** @brief Releases expression output, including partially generated output after failure. */
 void destroy_c_expression(c_generated_expression_t *expression);
+
+/** @brief Checks backend-owned ASCII identifiers before emitting definitions or references. */
+bool c_function_name_is_valid(string_view_t name);

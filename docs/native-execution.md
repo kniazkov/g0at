@@ -87,7 +87,7 @@ Mixed integer/real comparisons preserve the integer exactly: the helper checks
 NaN and the int64 range before casting, compares the truncated whole part, then
 uses the fractional part to distinguish equality. It never rounds a large integer
 to double. Unordered comparisons are false except for `!=`. Logical `!`, `!!`,
-`&&` and `||`, and calls are not lowered yet.
+`&&` and `||` are not lowered yet.
 
 Local variables and constants have one int64, double or bool representation per
 signature. `goat_lN` names identify declarations, including shadowed names. Storage
@@ -99,6 +99,22 @@ than relying on a C `const` qualifier. Double storage is volatile to retain bina
 rounding on writes. Assignment expressions snapshot their result into a temporary
 before later operands can change the destination. Uninitialized declarations,
 representation changes and captured storage remain outside this subset.
+
+Static user-function calls use the selected caller summary's `c_calls` records
+and exact function identity plus parameter types. Immutable aliases are accepted;
+source names do not identify built-ins. Callee bindings supply backend names and
+validated numeric prototypes, so the callee definition may follow its caller.
+Missing or ambiguous proofs, missing bindings and incompatible representations
+fail the whole function; no argument coercion or dynamic dispatch is invented.
+
+Goat evaluates call arguments right to left, then evaluates the callee. Each
+argument is captured in that order before the C call, which receives the required
+parameters in their original positions. Extra arguments are evaluated and discarded;
+missing numeric arguments are rejected. Static callee resolution is effect-free,
+so no runtime function-object lookup is emitted. The call result is captured once,
+with binary64 rounding for doubles. Built-in and mutable/dynamic calls still lack
+C lowering. Recursive execution tests and complete-module assembly remain later
+roadmap steps.
 
 `scripts/check_c_generation.sh UNIT_BINARY OUTPUT_DIR` generates test source,
 compiles it with `${CC:-gcc}` and executes numeric assertions at `-O2`. CI runs it
