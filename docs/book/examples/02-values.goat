@@ -1,0 +1,10 @@
+var value = 6;
+value = value / 4;
+print(value); print("\n");
+const limit = 10;
+if (value < limit && value != 0) {
+    print("within limit\n");
+}
+print(9223372036854775807 + 1); print("\n");
+print(!!""); print("\n");
+print(!!{}); print("\n");

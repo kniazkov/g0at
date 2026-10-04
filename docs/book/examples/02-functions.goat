@@ -1,0 +1,12 @@
+const make_counter = func(start) {
+    var value = start;
+    return func() {
+        value = value + 1;
+        return value;
+    };
+};
+const next = make_counter(10);
+print(next()); print("\n");
+print(next()); print("\n");
+const first = func(a, b) { return a; };
+print(first()); print("\n");

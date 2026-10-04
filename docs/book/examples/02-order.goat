@@ -1,0 +1,6 @@
+var x = 0;
+const show = func(a, b) {
+    print(a); print("|"); print(b); print("\n");
+};
+show(x++, x++);
+print(x); print("\n");

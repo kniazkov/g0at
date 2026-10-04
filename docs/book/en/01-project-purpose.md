@@ -1,6 +1,6 @@
 # 1. Project Purpose
 
-[Contents](index.md) · [Русский](../ru/01-project-purpose.md)
+[Contents](index.md) · [Русский](../ru/01-project-purpose.md) · [Next chapter](02-implemented-language.md)
 
 Edition 1. Implementation described: [commit 09d0cff, after PR #93](https://github.com/kniazkov/g0at/tree/09d0cffb08303b07c1c3af27ccbfc6af94466b97).
 

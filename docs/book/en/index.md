@@ -5,8 +5,8 @@
 ### Part I. Purpose and Overall Structure
 
 1. [Project Purpose](01-project-purpose.md)
-2. The Implemented Language
-3. A Program Through the System
+2. [The Implemented Language](02-implemented-language.md)
+3. [A Program Through the System](03-program-pipeline.md)
 
 ### Part II. Source Text and Program Representation
 
