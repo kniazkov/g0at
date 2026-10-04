@@ -15,6 +15,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 /** @brief The runtime environment for the Goat virtual machine. */
 typedef struct {
@@ -690,6 +691,13 @@ int run(process_t *proc, bytecode_t *code) {
     bool flag = true;
     thread_t *thread = proc->main_thread;
     while (flag) {
+        if (thread->instr_id >= code->instructions_count
+            || code->instructions[thread->instr_id].opcode
+                   >= sizeof(executors) / sizeof(*executors)) {
+            fprintf(stderr, "Invalid bytecode instruction address or opcode.\n");
+            runtime.status = 1;
+            break;
+        }
         instruction_t instr = code->instructions[thread->instr_id];
         instr_executor_t exec = executors[instr.opcode];
         flag = exec(&runtime, instr, thread);

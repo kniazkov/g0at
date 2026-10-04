@@ -33,16 +33,21 @@ static const char *status_name(native_prepare_status_t status) {
     return "unknown";
 }
 
-bool prepare_native_program(const options_t *options,
-                            const node_t *root,
-                            bytecode_t *code,
-                            native_execution_report_t *report) {
+static bool prepare(const options_t *options,
+                    const node_t *root,
+                    bytecode_t *code,
+                    native_execution_report_t *report,
+                    const char *destination) {
     *report = (native_execution_report_t){.preparation = "disabled"};
     if (options->native_execution == NATIVE_OFF)
         return true;
     const char *compiler = getenv("CC");
     native_prepare_result_t prepared =
-        prepare_native_execution(root, code, compiler && *compiler ? compiler : NULL);
+        destination ? prepare_native_artifact(root,
+                                              code,
+                                              compiler && *compiler ? compiler : NULL,
+                                              destination)
+                    : prepare_native_execution(root, code, compiler && *compiler ? compiler : NULL);
     report->preparation = status_name(prepared.status);
     report->bound_functions = prepared.bound_functions;
     report->omitted_specializations = prepared.omitted_specializations;
@@ -108,4 +113,19 @@ bool output_native_report(const options_t *options,
     }
     FREE_STRING(text);
     return written;
+}
+
+bool prepare_native_program(const options_t *options,
+                            const node_t *root,
+                            bytecode_t *code,
+                            native_execution_report_t *report) {
+    return prepare(options, root, code, report, NULL);
+}
+
+bool prepare_native_program_artifact(const options_t *options,
+                                     const node_t *root,
+                                     bytecode_t *code,
+                                     native_execution_report_t *report,
+                                     const char *destination) {
+    return prepare(options, root, code, report, destination);
 }

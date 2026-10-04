@@ -83,6 +83,10 @@ jobs:
         run: bash scripts/check_native_modes.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/functional_testing "build/${{ matrix.compiler }}/native modes"
         env:
           CC: ${{ matrix.compiler }}
+      - name: Compile and execute persisted programs
+        run: bash scripts/check_binary_program.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/functional_testing "build/${{ matrix.compiler }}/binary programs"
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Check numeric adapter ABI
         run: bash scripts/check_native_abi.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native-abi
         env:
@@ -132,6 +136,10 @@ jobs:
         run: bash scripts/check_native_modes.sh build/release-${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/functional_testing "build/${{ matrix.compiler }}/native modes release"
         env:
           CC: ${{ matrix.compiler }}
+      - name: Compile and execute persisted programs
+        run: bash scripts/check_binary_program.sh build/release-${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/functional_testing "build/${{ matrix.compiler }}/binary programs release"
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Preserve native execution reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -140,6 +148,8 @@ jobs:
           path: |
             build/${{ matrix.compiler }}/native modes
             build/${{ matrix.compiler }}/native modes release
+            build/${{ matrix.compiler }}/binary programs
+            build/${{ matrix.compiler }}/binary programs release
           if-no-files-found: ignore
       - name: Render analysis graphs
         if: matrix.compiler == 'gcc'
@@ -205,6 +215,9 @@ jobs:
       - name: Compare native modes and verify actual adapter entry
         shell: msys2 {0}
         run: bash scripts/check_native_modes.sh build/goat.exe build/functional_testing.exe "build/native modes"
+      - name: Compile and execute persisted programs
+        shell: msys2 {0}
+        run: bash scripts/check_binary_program.sh build/goat.exe build/functional_testing.exe "build/binary programs"
       - name: Check numeric adapter ABI
         shell: msys2 {0}
         run: bash scripts/check_native_abi.sh build/goat.exe build/native-abi
@@ -232,6 +245,9 @@ jobs:
       - name: Compare release native modes
         shell: msys2 {0}
         run: bash scripts/check_native_modes.sh build/release/goat.exe build/functional_testing.exe "build/native modes release"
+      - name: Compile and execute persisted programs
+        shell: msys2 {0}
+        run: bash scripts/check_binary_program.sh build/release/goat.exe build/functional_testing.exe "build/binary programs release"
       - name: Preserve native execution reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -240,6 +256,8 @@ jobs:
           path: |
             build/native modes
             build/native modes release
+            build/binary programs
+            build/binary programs release
           if-no-files-found: ignore
       - name: Preserve failed functional outputs
         if: failure()

@@ -6,6 +6,7 @@
 
 #include "options.h"
 
+#include "binary_program.h"
 #include "lib/allocate.h"
 #include "lib/io.h"
 #include "resources/messages.h"
@@ -48,6 +49,7 @@ options_t *parse_options(int argc, char **argv) {
 
     options_t *opt = create_options();
 
+    bool native_explicit = false, optimization_explicit = false;
     for (int index = 1; index < argc; index++) {
         char *arg = argv[index];
 
@@ -65,7 +67,16 @@ options_t *parse_options(int argc, char **argv) {
                 continue;
             }
 
+            if (!strcmp(arg, "--compile")) {
+                opt->compile_only = true;
+                continue;
+            }
+            if (!strcmp(arg, "--run")) {
+                opt->run_binary = true;
+                continue;
+            }
             if (strcmp(arg, "--optimize") == 0) {
+                optimization_explicit = true;
                 if (index + 1 >= argc || !argv[index + 1][0] || argv[index + 1][0] == '-') {
                     fprintf_utf8(stderr, get_messages()->missing_specification, arg);
                     goto error;
@@ -83,6 +94,7 @@ options_t *parse_options(int argc, char **argv) {
             }
 
             if (strcmp(arg, "--native") == 0) {
+                native_explicit = true;
                 if (index + 1 >= argc || !argv[index + 1][0] || argv[index + 1][0] == '-') {
                     fprintf_utf8(stderr, get_messages()->missing_specification, arg);
                     goto error;
@@ -192,6 +204,17 @@ options_t *parse_options(int argc, char **argv) {
         goto error;
     }
 
+    if ((opt->compile_only && opt->run_binary)
+        || ((opt->compile_only || opt->run_binary)
+            && (opt->print_c || opt->save_c || opt->save_library))
+        || (opt->run_binary
+            && (optimization_explicit || opt->print_analysis || opt->analysis_output_file
+                || opt->graph_output_file || opt->print_source_code || opt->enable_warnings))) {
+        fprintf(stderr, "Incompatible --compile/--run options.\n");
+        goto error;
+    }
+    if (opt->run_binary && !native_explicit)
+        opt->native_execution = NATIVE_AUTO;
     if ((opt->print_c || opt->save_c || opt->save_library)
         && (opt->optimization_level == OPTIMIZATION_NONE || opt->print_analysis
             || opt->print_source_code || opt->print_bytecode)) {
@@ -209,6 +232,8 @@ options_t *parse_options(int argc, char **argv) {
         fprintf_utf8(stderr, get_messages()->native_report_conflict);
         goto error;
     }
+    if (!binary_program_options_valid(opt))
+        goto error;
     return opt;
 
 error:

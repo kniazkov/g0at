@@ -7,8 +7,10 @@
 #include "c_module_output.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
+#include "lib/binary_file.h"
 #include "model/native_library.h"
 #include "native_compiler.h"
+#include "vm/binary.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -57,8 +59,8 @@ static bool validate(const c_module_t *module,
     return true;
 }
 
-native_prepare_result_t
-prepare_native_execution(const node_t *root, bytecode_t *code, const char *compiler) {
+static native_prepare_result_t
+prepare(const node_t *root, bytecode_t *code, const char *compiler, const char *destination) {
     native_prepare_result_t result = {.status = NATIVE_PREPARE_BIND_ERROR};
     if (!root || !code || code->native_functions) {
         result.diagnostic =
@@ -105,14 +107,25 @@ prepare_native_execution(const node_t *root, bytecode_t *code, const char *compi
         result.diagnostic = copy_native_library_diagnostic(loaded.diagnostic);
         goto done;
     }
-    set_native_library_cleanup(loaded.library, workspace, cleanup_workspace);
-    workspace = NULL;
     if (!validate(module, &output, loaded.library, code)) {
         result.status = NATIVE_PREPARE_BIND_ERROR;
         result.diagnostic =
             copy_native_library_diagnostic("Generated native metadata does not match bytecode");
         goto done;
     }
+    if (destination) {
+        size_t size;
+        void *bytes = read_binary_file(workspace->library, GOAT_BINARY_LIMIT, &size);
+        bool written = bytes && write_binary_file(destination, bytes, size);
+        FREE(bytes);
+        if (!written) {
+            result.status = NATIVE_PREPARE_IO_ERROR;
+            result.diagnostic = copy_native_library_diagnostic("Cannot save native library");
+            goto done;
+        }
+    }
+    set_native_library_cleanup(loaded.library, workspace, cleanup_workspace);
+    workspace = NULL;
     for (const c_module_function_t *entry = module->head; entry; entry = entry->next) {
         instr_index_t index = get_function_bytecode_instruction(entry->summary->function);
         if (!emitted(&output, entry) || index == BAD_INSTR_INDEX
@@ -145,4 +158,16 @@ done:
 void destroy_native_prepare_result(native_prepare_result_t *result) {
     FREE(result->diagnostic);
     result->diagnostic = NULL;
+}
+
+native_prepare_result_t
+prepare_native_execution(const node_t *root, bytecode_t *code, const char *compiler) {
+    return prepare(root, code, compiler, NULL);
+}
+
+native_prepare_result_t prepare_native_artifact(const node_t *root,
+                                                bytecode_t *code,
+                                                const char *compiler,
+                                                const char *destination) {
+    return prepare(root, code, compiler, destination);
 }

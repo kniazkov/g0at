@@ -23,3 +23,9 @@ bool prepare_native_program(const options_t *options,
 bool output_native_report(const options_t *options,
                           const native_execution_report_t *report,
                           const process_t *process);
+
+bool prepare_native_program_artifact(const options_t *options,
+                                     const node_t *root,
+                                     bytecode_t *code,
+                                     native_execution_report_t *report,
+                                     const char *destination);

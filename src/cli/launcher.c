@@ -7,6 +7,7 @@
 #include "launcher.h"
 
 #include "analysis/analysis.h"
+#include "binary_program.h"
 #include "c_output.h"
 #include "codegen/linker.h"
 #include "codegen/source_builder.h"
@@ -30,6 +31,15 @@ int go(options_t *opt) {
     long previously_allocated = get_allocated_memory_size();
     if (opt->language) {
         set_language(opt->language);
+    }
+
+    if (opt->run_binary) {
+        int status = run_binary_program(opt);
+        if (get_allocated_memory_size() != previously_allocated) {
+            fprintf(stderr, "Memory leak after compiled execution.\n");
+            return -1;
+        }
+        return status;
     }
 
     string_value_t code = read_utf8_file(opt->input_file->full_path);
@@ -169,6 +179,17 @@ int go(options_t *opt) {
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);
 
+        if (opt->compile_only) {
+            if (opt->print_bytecode) {
+                string_value_t text = bytecode_to_text(bytecode);
+                print_utf8(text.data);
+                FREE_STRING(text);
+            }
+            ret_code = compile_binary_program(opt, root_node, bytecode) ? 0 : -1;
+            free_bytecode(bytecode);
+            break;
+        }
+
         native_execution_report_t native;
         if (!prepare_native_program(opt, root_node, bytecode, &native)) {
             output_native_report(opt, &native, NULL);
@@ -176,34 +197,12 @@ int go(options_t *opt) {
             break;
         }
 
-        if (opt->print_bytecode) {
-            string_value_t text = bytecode_to_text(bytecode);
-            print_utf8(text.data);
-            FREE_STRING(text);
-        }
-
         destroy_arena(memory.graph);
         memory.graph = NULL;
         FREE_STRING(code);
         code = NULL_STRING_VALUE;
 
-        process_t *process = create_process();
-        ret_code = run(process, bytecode);
-        thread_t *thread = process->main_thread;
-        do {
-            if (thread->native_status)
-                fprintf(stderr, "Native backend failed (status %u).\n", thread->native_status);
-            if (thread->exception.value) {
-                string_value_t text = convert_object_to_string(thread->exception.value);
-                fprintf_utf8(stderr, get_messages()->uncaught_exception, text.data);
-                fprintf(stderr, "\n");
-                FREE_STRING(text);
-            }
-            thread = thread->next;
-        } while (thread != process->main_thread);
-        if (!output_native_report(opt, &native, process))
-            ret_code = -1;
-        destroy_process(process);
+        ret_code = execute_program(opt, bytecode, &native);
 
         free_bytecode(bytecode);
     } while (false);

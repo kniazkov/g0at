@@ -4,3 +4,5 @@ build
 goat.exe
 functional_testing.exe
 doxygen
+
+*.gbin
