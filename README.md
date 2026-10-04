@@ -1284,6 +1284,10 @@ remain owned by the thread and traced by GC.
 Functional tests exercise explicit, arithmetic, and native exceptions with optimization disabled
 and enabled.
 
+The runtime now provides [native library loading](docs/native-loading.md) with ABI validation,
+owned metadata snapshots and reference-counted function descriptors. Linux and Windows
+loader tests cover invalid providers and library lifetime; VM dispatch is a later step.
+
 ## Author and license
 
 Created by [Ivan Kniazkov](https://github.com/kniazkov).

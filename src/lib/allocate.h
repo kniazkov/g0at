@@ -42,7 +42,7 @@ void _FREE(void *ptr);
 #define FREE _FREE
 
 /** @brief Returns live payload bytes, excluding allocator overhead. */
-size_t get_allocated_memory_size();
+size_t get_allocated_memory_size(void);
 
 /** @brief Lists live allocations to stderr; a no-op without MEMORY_DEBUG. */
-void print_list_of_memory_blocks();
+void print_list_of_memory_blocks(void);

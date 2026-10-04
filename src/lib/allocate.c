@@ -145,11 +145,11 @@ void _FREE(void *ptr) {
     free(header->allocation);
 }
 
-size_t get_allocated_memory_size() {
+size_t get_allocated_memory_size(void) {
     return allocated_memory_size;
 }
 
-void print_list_of_memory_blocks() {
+void print_list_of_memory_blocks(void) {
 #ifdef MEMORY_DEBUG
     memory_header_t *header = first_block;
     while (header) {

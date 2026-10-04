@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.10)
 project(goat LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-include_directories(.)
+include_directories(. ../include)
 
 file(GLOB core_sources
   lib/*.c
@@ -24,6 +24,9 @@ file(GLOB core_sources
   cli/*.c
 )
 add_library(core STATIC ${core_sources})
+if(CMAKE_DL_LIBS)
+  target_link_libraries(core PUBLIC ${CMAKE_DL_LIBS})
+endif()
 if(WIN32)
   target_link_libraries(core PUBLIC bcrypt)
 endif()
