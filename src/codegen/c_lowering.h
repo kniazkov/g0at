@@ -27,7 +27,7 @@ bool c_emit_return(const node_t *node,
                    size_t indent);
 
 /** @brief Shared headers and numerical helpers, emitted once per module. */
-void c_emit_headers(source_builder_t *builder);
+void c_emit_headers(source_builder_t *builder, unsigned helpers);
 /** @brief Internal transactional definition without headers or prototypes. */
 c_generation_result_t c_generate_definition(const function_summary_t *summary,
                                             string_view_t name,

@@ -18,7 +18,8 @@ compile() {
 cat > "$output_dir/recursive sample.goat" <<'GOAT'
 const fib=func(n){if(n<1)return 0;if(n==1)return 1;return fib(n-1)+fib(n-2);};
 const twice=func(n){return n+n;};
-twice(1);twice(1.5);fib(2);
+const mixed=func(n){if(n<0.5)return n+1;return n;};
+twice(1);twice(1.5);mixed(1);fib(2);
 print("THIS MUST NOT RUN");
 throw "NEITHER SHOULD THIS";
 GOAT
@@ -36,9 +37,11 @@ cat > "$output_dir/driver.c" <<'C'
 #include "recursive sample.c"
 int main(void) {
     return goat_f1_i_(10)!=55 || goat_f1_i_(11)!=89 ||
-           goat_f2_i_(4)!=8 || goat_f2_r_(0.25)!=0.5;
+           goat_f2_i_(4)!=8 || goat_f2_r_(0.25)!=0.5 ||
+           goat_f3_i_(0)!=1 || goat_f3_i_(2)!=2;
 }
 C
+compile -c "$output_dir/recursive sample.c" -o "$output_dir/module.o"
 compile "$output_dir/driver.c" -lm -o "$output_dir/driver.exe"
 "$output_dir/driver.exe"
 ok
@@ -62,6 +65,7 @@ cat > "$output_dir/partial_driver.c" <<'C'
 #include "partial.c"
 int main(void) { return goat_f4_i_(41)!=42; }
 C
+compile -c "$output_dir/partial.c" -o "$output_dir/partial.o"
 compile "$output_dir/partial_driver.c" -lm -o "$output_dir/partial.exe"
 "$output_dir/partial.exe"
 ok

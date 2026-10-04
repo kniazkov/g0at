@@ -30,12 +30,15 @@ typedef struct c_generation_callee_t {
     string_view_t name;
 } c_generation_callee_t;
 
+enum { C_HELPER_INTEGER = 1, C_HELPER_COMPARISON = 2 };
+
 /** @brief One generation attempt; all input records are borrowed and immutable. */
 typedef struct c_generation_context_t {
     const function_summary_t *summary;
     string_view_t function_name;
     const c_generation_binding_t *bindings;
     const c_generation_callee_t *callees;
+    unsigned helper_flags;  /**< Helpers referenced by successfully lowered operations. */
     bool module_definition; /**< Headers and prototypes are supplied by the module. */
     bool terminates;        /**< Whether the last emitted statement returns on every path. */
     size_t local_count;     /**< Unique local names across nested scopes. */
@@ -59,6 +62,7 @@ typedef struct c_generation_result_t {
     c_generation_status_t status;
     const node_t *failed_node;
     string_value_t source; /**< Release with FREE_STRING(). */
+    unsigned helper_flags;
 } c_generation_result_t;
 
 /** @brief External entry point; inputs are borrowed. Names must be ASCII identifiers starting with

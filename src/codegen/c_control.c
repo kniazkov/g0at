@@ -47,6 +47,7 @@ c_generated_expression_t c_comparison(const node_t *node, c_generation_context_t
         static const wchar_t *symbols[] = {L"<", L"<=", L">", L">=", L"==", L"!="};
         add_source(prelude, 0, L"bool %s = %s %s %s;", value.data, a.data, symbols[kind], b.data);
     } else {
+        context->helper_flags |= C_HELPER_COMPARISON;
         /* Helper bits: less=1, equal=2, greater=4, unordered=8. */
         static const unsigned masks[] = {1, 3, 4, 6, 2, 13};
         static const unsigned reversed[] = {4, 6, 1, 3, 2, 13};

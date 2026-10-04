@@ -95,6 +95,7 @@ bool test_c_module_output(void) {
     function->vtbl = original;
     first = generate_c_module(arena, NULL);
     ASSERT(!first.generated_count && !first.omitted_count && first.source.data);
+    ASSERT(!wcsstr(first.source.data, L"static inline"));
     FREE_STRING(first.source);
     destroy_arena(arena);
     return true;

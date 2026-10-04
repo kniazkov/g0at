@@ -92,8 +92,18 @@ static c_generation_result_t generate_function(const function_summary_t *summary
     if (!success || !builder->count)
         fail_c_generation(&context, function, C_GENERATION_UNSUPPORTED);
     c_generation_result_t result = {.status = context.status, .failed_node = context.failed_node};
-    if (result.status == C_GENERATION_OK)
-        result.source = build_source(builder);
+    if (result.status == C_GENERATION_OK) {
+        result.helper_flags = context.helper_flags;
+        if (definition) {
+            result.source = build_source(builder);
+        } else {
+            source_builder_t *complete = create_source_builder();
+            c_emit_headers(complete, context.helper_flags);
+            add_formatted_source(complete, 0, build_source(builder));
+            result.source = build_source(complete);
+            destroy_source_builder(complete);
+        }
+    }
     destroy_source_builder(builder);
     return result;
 }
