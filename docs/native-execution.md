@@ -58,12 +58,19 @@ returns success explicitly. A failed function attempt discards all accumulated
 source without changing the analyzer's summary.
 
 The emitters support numeric literals, parameter reads, parentheses, unary signs,
-and binary addition, subtraction and multiplication, within a
-body containing one explicit return. Generated parameter names use declaration
-identity, so Goat names need not be valid C identifiers. Function names are backend
+binary addition, subtraction and multiplication, and all six numeric comparisons.
+Bodies support statement sequences, nested blocks, `if/else`, expression statements
+and early returns. Conditions accept numeric and boolean expressions: NaN is true,
+and either signed zero is false. Boolean temporaries are not function interface types.
+Generated parameter names use declaration identity, so Goat names need not be valid C identifiers. Function names are backend
 ASCII identifiers prefixed with `goat_`. Unsupported operators/control flow still
 report `C_GENERATION_UNSUPPORTED`, even when analysis proves C eligibility.
-Replacement nodes delegate C lowering to their original children.
+Replacement nodes delegate C lowering to their original children. Branch generation
+uses signature-scoped expression proofs, not shared reachability flags. Each
+condition's setup runs once before its `if`; branch setup stays inside that branch.
+Termination is tracked through node emitters; generation rejects an uncovered
+fallthrough instead of inventing a return value. Literal truth may establish that
+a return is unconditional, without reusing concrete-call observations.
 
 Each successful result is standalone C11 source with the required standard headers.
 Integers use `INT64_C` with a safe spelling for `INT64_MIN`. Finite doubles use exact
@@ -75,6 +82,12 @@ operand once, left to right; volatile double temporaries round conversions and
 each result, preventing excess precision and multiply-add contraction across
 operations. Fast-math compilation is rejected. Implicit numeric return conversion
 is not emitted.
+
+Mixed integer/real comparisons preserve the integer exactly: the helper checks
+NaN and the int64 range before casting, compares the truncated whole part, then
+uses the fractional part to distinguish equality. It never rounds a large integer
+to double. Unordered comparisons are false except for `!=`. Logical `!`, `!!`,
+`&&` and `||`, locals and calls are not lowered yet.
 
 `scripts/check_c_generation.sh UNIT_BINARY OUTPUT_DIR` generates test source,
 compiles it with `${CC:-gcc}` and executes numeric assertions at `-O2`. CI runs it

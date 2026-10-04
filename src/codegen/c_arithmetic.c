@@ -14,10 +14,10 @@ static bool numeric(c_value_type_t type) {
 }
 
 /** @brief Copies prelude statements before evaluating and rounding the operand once. */
-static string_value_t capture(source_builder_t *prelude,
-                              c_generation_context_t *context,
-                              const c_generated_expression_t *operand,
-                              c_value_type_t type) {
+string_value_t c_capture_operand(source_builder_t *prelude,
+                                 c_generation_context_t *context,
+                                 const c_generated_expression_t *operand,
+                                 c_value_type_t type) {
     for (size_t i = 0; operand->prelude && i < operand->prelude->count; i++) {
         const line_of_code_t *line = &operand->prelude->lines[i];
         add_source(prelude, line->indent, L"%s", line->text.data);
@@ -58,8 +58,8 @@ c_binary_arithmetic(const node_t *node, c_generation_context_t *context, wchar_t
         return (c_generated_expression_t){0};
     }
     source_builder_t *prelude = create_source_builder();
-    string_value_t a = capture(prelude, context, &left, type);
-    string_value_t b = capture(prelude, context, &right, type);
+    string_value_t a = c_capture_operand(prelude, context, &left, type);
+    string_value_t b = c_capture_operand(prelude, context, &right, type);
     string_value_t value = format_string(L"goat_t%zu", context->temporary_count++);
     if (type == C_VALUE_INT64)
         add_source(prelude,
@@ -100,7 +100,7 @@ c_unary_arithmetic(const node_t *node, c_generation_context_t *context, bool neg
     if (!negative)
         return operand;
     source_builder_t *prelude = create_source_builder();
-    string_value_t argument = capture(prelude, context, &operand, operand.type);
+    string_value_t argument = c_capture_operand(prelude, context, &operand, operand.type);
     string_value_t value = format_string(L"goat_t%zu", context->temporary_count++);
     if (operand.type == C_VALUE_INT64)
         add_source(prelude,
@@ -111,16 +111,23 @@ c_unary_arithmetic(const node_t *node, c_generation_context_t *context, bool neg
     else
         add_source(prelude, 0, L"volatile double %s = -%s;", value.data, argument.data);
     c_value_type_t type = operand.type;
+    abstract_truth_t truth = operand.literal_truth;
     FREE_STRING(argument);
     destroy_c_expression(&operand);
     return (c_generated_expression_t){.success = true,
                                       .type = type,
+                                      .literal_truth = truth,
                                       .value = value,
                                       .prelude = prelude};
 }
 
 c_generated_expression_t c_parenthesized(const node_t *node, c_generation_context_t *context) {
-    return c_unary_arithmetic(node, context, false);
+    c_generated_expression_t operand = generate_c_code_from_node(get_node_child(node, 0), context);
+    if (operand.success && c_generation_expression_type(context, node) != operand.type) {
+        destroy_c_expression(&operand);
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+    }
+    return operand;
 }
 
 void c_arithmetic_helpers(source_builder_t *builder) {

@@ -15,7 +15,7 @@ bool c_emit_function(const node_t *node,
                      c_generation_context_t *context,
                      source_builder_t *builder,
                      size_t indent);
-/** @brief Implements node_vtbl_t::generate_indented_c_code for a straight-line body. */
+/** @brief Implements node_vtbl_t::generate_indented_c_code for a statement sequence. */
 bool c_emit_body(const node_t *node,
                  c_generation_context_t *context,
                  source_builder_t *builder,

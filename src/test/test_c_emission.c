@@ -16,6 +16,7 @@
 #include "lib/string_ext.h"
 #include "model/object.h"
 #include "model/process.h"
+#include "test_c_control.h"
 #include "test_macro.h"
 
 #include <float.h>
@@ -257,6 +258,8 @@ static bool generate_tests(source_builder_t *output) {
     }
     if (success)
         success = arithmetic_tests(output, checks);
+    if (success)
+        success = append_c_control_tests(output, checks);
     add_static_source(checks, 1, L"return 0;");
     add_static_source(checks, 0, L"}");
     if (success)

@@ -4,6 +4,7 @@
  */
 
 #include "analysis/lattice.h"
+#include "codegen/c_control.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -79,7 +80,7 @@ static node_vtbl_t true_vtbl = {
     .generate_indented_goat_code = generate_indented_goat_code_true,
     .generate_bytecode = generate_bytecode_true,
     .can_generate_c_code = can_generate_c_code,
-    .generate_c_code = no_c_code,
+    .generate_c_code = c_boolean,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
@@ -139,7 +140,7 @@ static node_vtbl_t false_vtbl = {
     .generate_indented_goat_code = generate_indented_goat_code_false,
     .generate_bytecode = generate_bytecode_false,
     .can_generate_c_code = can_generate_c_code,
-    .generate_c_code = no_c_code,
+    .generate_c_code = c_boolean,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
