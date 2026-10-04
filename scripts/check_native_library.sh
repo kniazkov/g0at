@@ -22,6 +22,12 @@ test ! -e "$output_dir/program.c"
 compile "$repo_root/test/functional/native_abi/driver.c" "$output_dir/program.so" -lm -o "$output_dir/host"
 "$output_dir/host"
 ok
+current='numeric compatibility across shared-library calls'
+cp "$repo_root/test/functional/native_numeric/program.goat" "$output_dir/numeric.goat"
+CC="$compiler" "$interpreter" --save-library "$output_dir/numeric.goat"
+compile "$repo_root/test/functional/native_numeric/driver.c" "$output_dir/numeric.so" -lm -o "$output_dir/numeric-host"
+"$output_dir/numeric-host"
+ok
 current='ordinary interpretation needs no compiler'
 printf 'print(42);\n' > "$output_dir/interpreted.goat"
 "$interpreter" "$output_dir/interpreted.goat" > "$output_dir/expected.txt"

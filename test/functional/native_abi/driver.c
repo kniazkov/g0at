@@ -20,11 +20,11 @@ find(const goat_native_module_v1_t *module, uint64_t function, uint32_t first) {
     return 0;
 }
 
-int main(void) {
-    assert(!goat_native_query_v1(0));
-    assert(!goat_native_query_v1(GOAT_NATIVE_ABI_VERSION + 1));
-    const goat_native_module_v1_t *module = goat_native_query_v1(GOAT_NATIVE_ABI_VERSION);
-    assert(module && module == goat_native_query_v1(GOAT_NATIVE_ABI_VERSION));
+int test_native_abi(goat_native_query_v1_t query) {
+    assert(!query(0));
+    assert(!query(GOAT_NATIVE_ABI_VERSION + 1));
+    const goat_native_module_v1_t *module = query(GOAT_NATIVE_ABI_VERSION);
+    assert(module && module == query(GOAT_NATIVE_ABI_VERSION));
     assert(module->abi_version == GOAT_NATIVE_ABI_VERSION);
     assert(module->struct_size == sizeof(*module));
     assert(module->value_size == sizeof(goat_native_value_v1_t));
@@ -109,3 +109,9 @@ int main(void) {
     assert(!memcmp(before, &result, sizeof(result)));
     return 0;
 }
+
+#ifndef GOAT_ABI_NO_MAIN
+int main(void) {
+    return test_native_abi(goat_native_query_v1);
+}
+#endif

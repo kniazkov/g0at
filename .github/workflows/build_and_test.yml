@@ -158,6 +158,9 @@ jobs:
       - name: Build and test
         shell: msys2 {0}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_mingw.cmd'
+      - name: Compile Windows DLLs and check numeric compatibility
+        shell: msys2 {0}
+        run: bash scripts/check_native_windows.sh build/goat.exe build/native-windows
       - name: Check numeric adapter ABI
         shell: msys2 {0}
         run: bash scripts/check_native_abi.sh build/goat.exe build/native-abi
@@ -176,6 +179,8 @@ jobs:
             build/c-generation/generated.c
             build/c-module/*.c
             build/native-abi/*.c
+            build/native-windows/program.c
+            build/native-windows/program.dll
           if-no-files-found: ignore
       - name: Build release
         shell: msys2 {0}

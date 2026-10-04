@@ -5,6 +5,7 @@
 #pragma once
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <wchar.h>
 
 typedef enum {
@@ -18,7 +19,9 @@ typedef enum {
 typedef struct {
     native_compile_status_t status;
     int system_error;
-    int exit_code;
+    int64_t exit_code;
+    uint32_t windows_error;
+    uint32_t windows_cleanup_error;
     int signal_number;
     int cleanup_error;
     char *diagnostics;
@@ -31,3 +34,6 @@ native_compile_result_t
 compile_native_library(const wchar_t *source, const char *compiler, const char *destination);
 /** @brief Releases captured diagnostics. */
 void destroy_native_compile_result(native_compile_result_t *result);
+
+/** @brief Reads bounded compiler output; shared by the platform implementations. */
+void native_compiler_read_diagnostics(native_compile_result_t *result, const char *path);

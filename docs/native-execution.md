@@ -220,7 +220,7 @@ values and explicit sequencing. Compiler settings must preserve these rules.
 A C compiler is required only when native compilation is requested; ordinary
 interpretation must remain dependency-free.
 
-Linux library compilation is implemented by `--save-library`; see the
+Linux and Windows library compilation is implemented by `--save-library`; see the
 [compilation contract](native-compilation.md). Loading and VM dispatch remain separate steps.
 
 ## VM call and fallback

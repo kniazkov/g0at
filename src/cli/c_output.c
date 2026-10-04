@@ -38,7 +38,11 @@ path_t *c_output_path(const path_t *input) {
 }
 
 static bool save_library(const options_t *options, const wchar_t *source) {
+#ifdef _WIN32
+    path_t *path = output_path(options->input_file, "dll");
+#else
     path_t *path = output_path(options->input_file, "so");
+#endif
     if (!path) {
         fprintf_utf8(stderr, get_messages()->native_input_conflict);
         fprintf(stderr, "\n");
@@ -46,7 +50,12 @@ static bool save_library(const options_t *options, const wchar_t *source) {
     }
     const char *compiler = getenv("CC");
     if (!compiler || !compiler[0])
-        compiler = "cc";
+        compiler =
+#ifdef _WIN32
+            "gcc";
+#else
+            "cc";
+#endif
     /* Keep the final component unresolved: rename replaces a symlink, never its target. */
     native_compile_result_t result = compile_native_library(source, compiler, path->normal_path);
     if (result.diagnostics_length) {
@@ -63,7 +72,8 @@ static bool save_library(const options_t *options, const wchar_t *source) {
                             : result.status == NATIVE_COMPILE_START_ERROR ? L"cannot start compiler"
                             : result.status == NATIVE_COMPILE_FAILED      ? L"compiler failed"
                                                                      : L"file operation failed";
-    bool success = result.status == NATIVE_COMPILE_OK && !result.cleanup_error;
+    bool success = result.status == NATIVE_COMPILE_OK && !result.cleanup_error
+                   && !result.windows_cleanup_error;
     if (!success) {
         fprintf_utf8(stderr,
                      get_messages()->native_compile_failed,
@@ -73,7 +83,9 @@ static bool save_library(const options_t *options, const wchar_t *source) {
                      result.exit_code,
                      result.signal_number,
                      result.system_error ? strerror(result.system_error) : "-",
-                     result.cleanup_error ? strerror(result.cleanup_error) : "-");
+                     result.cleanup_error ? strerror(result.cleanup_error) : "-",
+                     result.windows_error,
+                     result.windows_cleanup_error);
         fprintf(stderr, "\n");
     }
     destroy_native_compile_result(&result);

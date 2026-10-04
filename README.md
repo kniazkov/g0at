@@ -199,15 +199,17 @@ accessible through `goat_native_query_v1`. The public boundary is documented in
 [`docs/native-abi.md`](docs/native-abi.md). Dynamic loading and VM dispatch are not
 yet connected.
 
-### Compile a native library (Linux)
+### Compile a native library (Linux / Windows)
 
 ```sh
 CC=gcc ./goat --save-library test/functional/native_abi/program.goat
 # Writes test/functional/native_abi/program.so without executing the Goat program.
 ```
 
+On Windows, `goat.exe --save-library program.goat` writes `program.dll`.
+
 `--save-library` builds numeric specializations using a C compiler (`CC`, default
-`cc`). It can be combined with `--save-c` / `--print-c` and requires `--optimize all`.
+`cc` on Linux and `gcc` on Windows). It can be combined with `--save-c` / `--print-c` and requires `--optimize all`.
 The compiler is invoked directly; `CC` is one executable name or path, not shell
 syntax. Compilation failures preserve the previous library and report diagnostics
 on stderr. Private temporary files are removed after success or failure. The library

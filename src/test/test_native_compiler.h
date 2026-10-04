@@ -5,3 +5,4 @@
 #pragma once
 #include <stdbool.h>
 bool test_native_compiler_request(void);
+bool test_windows_command_line(void);
