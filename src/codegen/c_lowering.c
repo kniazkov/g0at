@@ -6,6 +6,7 @@
 
 #include "c_arithmetic.h"
 #include "c_control.h"
+#include "c_locals.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
@@ -100,12 +101,14 @@ bool c_emit_body(const node_t *node,
                  c_generation_context_t *context,
                  source_builder_t *builder,
                  size_t indent) {
+    const c_generation_binding_t *saved = context->bindings;
     context->terminates = false;
-    for (size_t i = 0; i < get_node_child_count(node) && !context->terminates; i++) {
-        if (!generate_indented_c_code_from_node(get_node_child(node, i), context, builder, indent))
-            return false;
-    }
-    return true;
+    bool success = c_prepare_locals(node, context, builder, indent);
+    for (size_t i = 0; success && i < get_node_child_count(node) && !context->terminates; i++)
+        success =
+            generate_indented_c_code_from_node(get_node_child(node, i), context, builder, indent);
+    c_release_locals(context, saved);
+    return success;
 }
 
 bool c_emit_function(const node_t *node,

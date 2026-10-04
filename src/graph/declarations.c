@@ -10,6 +10,7 @@
 #include "analysis/c_body.h"
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
+#include "codegen/c_locals.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -195,7 +196,7 @@ static node_vtbl_t vdeclr_vtbl = {
     .generate_bytecode = vdeclr_generate_bytecode,
     .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
-    .generate_indented_c_code = no_indented_c_code,
+    .generate_indented_c_code = c_emit_declarator,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
@@ -330,7 +331,7 @@ static node_vtbl_t vdecln_vtbl = {
     .generate_bytecode = vdecln_generate_bytecode,
     .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
-    .generate_indented_c_code = no_indented_c_code,
+    .generate_indented_c_code = c_emit_declarations,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
@@ -469,7 +470,7 @@ static node_vtbl_t cdeclr_vtbl = {
     .generate_bytecode = cdeclr_generate_bytecode,
     .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
-    .generate_indented_c_code = no_indented_c_code,
+    .generate_indented_c_code = c_emit_declarator,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
@@ -602,7 +603,7 @@ static node_vtbl_t cdecln_vtbl = {
     .generate_bytecode = cdecln_generate_bytecode,
     .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
-    .generate_indented_c_code = no_indented_c_code,
+    .generate_indented_c_code = c_emit_declarations,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
 };

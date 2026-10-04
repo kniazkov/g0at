@@ -37,6 +37,7 @@ typedef struct c_generation_context_t {
     const c_generation_binding_t *bindings;
     const c_generation_callee_t *callees;
     bool terminates;        /**< Whether the last emitted statement returns on every path. */
+    size_t local_count;     /**< Unique local names across nested scopes. */
     size_t temporary_count; /**< Unique within one emitted function. */
     c_generation_status_t status;
     const node_t *failed_node; /**< First failure, retained while unwinding. */

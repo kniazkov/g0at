@@ -16,6 +16,7 @@
 #include "test_c_emission.h"
 #include "test_c_expression.h"
 #include "test_c_generation.h"
+#include "test_c_locals.h"
 #include "test_c_module.h"
 #include "test_c_replacement.h"
 #include "test_codegen.h"
@@ -58,6 +59,7 @@ static test_description_t test_list[] = {
     {"C emission", test_c_emission},
     {"C emission rejections", test_c_emission_rejections},
     {"C control flow rejections", test_c_control_rejections},
+    {"C local storage rejections", test_c_local_rejections},
     {"C module identity", test_c_module_identity},
     {"C module dependencies", test_c_module_dependencies},
     {"C module call lifetime", test_c_module_call_lifetime},

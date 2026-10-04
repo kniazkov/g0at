@@ -87,7 +87,18 @@ Mixed integer/real comparisons preserve the integer exactly: the helper checks
 NaN and the int64 range before casting, compares the truncated whole part, then
 uses the fractional part to distinguish equality. It never rounds a large integer
 to double. Unordered comparisons are false except for `!=`. Logical `!`, `!!`,
-`&&` and `||`, locals and calls are not lowered yet.
+`&&` and `||`, and calls are not lowered yet.
+
+Local variables and constants have one int64, double or bool representation per
+signature. `goat_lN` names identify declarations, including shadowed names. Storage
+is reserved at the start of the corresponding Goat scope (function or braced
+block); initializers still run in source order at the declaration site. An `if`
+without braces does not introduce a Goat scope. Constant storage is initialized
+at its declaration site too; assignment lowering rejects writes to it rather
+than relying on a C `const` qualifier. Double storage is volatile to retain binary64
+rounding on writes. Assignment expressions snapshot their result into a temporary
+before later operands can change the destination. Uninitialized declarations,
+representation changes and captured storage remain outside this subset.
 
 `scripts/check_c_generation.sh UNIT_BINARY OUTPUT_DIR` generates test source,
 compiles it with `${CC:-gcc}` and executes numeric assertions at `-O2`. CI runs it
