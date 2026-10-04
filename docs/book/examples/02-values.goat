@@ -1,10 +1,10 @@
 var value = 6;
 value = value / 4;
-print(value); print("\n");
+println(value);
 const limit = 10;
 if (value < limit && value != 0) {
-    print("within limit\n");
+    println("within limit");
 }
-print(9223372036854775807 + 1); print("\n");
-print(!!""); print("\n");
-print(!!{}); print("\n");
+println(9223372036854775807 + 1);
+println(!!"");
+println(!!{});

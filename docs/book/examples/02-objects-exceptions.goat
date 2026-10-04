@@ -2,14 +2,14 @@ const point = {
     var x = 2;
     var y = 3;
 };
-print(point); print("\n");
+println(point);
 try {
-    print(1 / 0);
+    println(1 / 0);
 } catch (error) {
-    print("caught: "); print(error); print("\n");
+    print("caught: "); println(error);
 }
 try {
     throw "stop";
 } catch (error) {
-    print(error); print("\n");
+    println(error);
 }

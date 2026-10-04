@@ -7,4 +7,4 @@ const f = func(n) {
 }
 var v = abs(10)
 var x = f(v)
-print(x)
+println(x)

@@ -1,0 +1,2 @@
+const f=func(n){const println=func(x){return x;};return println(n);}
+f(1)

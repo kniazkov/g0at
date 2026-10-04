@@ -318,3 +318,6 @@ abs_types
 native_local_semantics
 native_call_semantics
 native_recursion
+
+# Line-oriented output
+println

@@ -1,0 +1,19 @@
+prefix:Привет, мир!
+42
+1.5
+true
+null
+{"x":2}
+
+line
+
+result
+null
+1
+2
+alias
+INVALID_ARGUMENT
+DIVISION_BY_ZERO
+7
+condition
+else

@@ -77,6 +77,9 @@ object_t *get_function_pow(void);
 extern const builtin_function_t builtin_print;
 object_t *get_function_print(void);
 
+extern const builtin_function_t builtin_println;
+object_t *get_function_println(void);
+
 extern const builtin_function_t builtin_round;
 object_t *get_function_round(void);
 

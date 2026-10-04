@@ -1,0 +1,23 @@
+print("prefix:"); println("Привет, мир!");
+println(42);
+println(1.5);
+println(true);
+println(null);
+println({ var x = 2; });
+println("");
+println("line\n");
+var result = println("result");
+println(result);
+var x = 0;
+println(x++, x++);
+println(x);
+const output = println;
+output("alias");
+try { println(); } catch (error) { println(error); }
+try { println(1 / 0); } catch (error) { println(error); }
+const local = func() {
+    const println = func(x) { return x + 1; };
+    return println(6);
+};
+println(local());
+if (println("condition")) { println("unexpected"); } else { println("else"); }

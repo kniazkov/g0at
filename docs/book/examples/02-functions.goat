@@ -6,7 +6,7 @@ const make_counter = func(start) {
     };
 };
 const next = make_counter(10);
-print(next()); print("\n");
-print(next()); print("\n");
+println(next());
+println(next());
 const first = func(a, b) { return a; };
-print(first()); print("\n");
+println(first());
