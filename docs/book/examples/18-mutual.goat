@@ -1,0 +1,9 @@
+const even = func(n) {
+    if (n == 0) { return 1; }
+    return odd(n - 1);
+};
+const odd = func(n) {
+    if (n == 0) { return 0; }
+    return even(n - 1);
+};
+println(even(6));

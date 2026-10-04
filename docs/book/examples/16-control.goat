@@ -1,0 +1,7 @@
+var count = 0;
+false && ++count;
+true || ++count;
+var result = 10;
+if (input()) { result = 20; } else { result = 30; }
+println(count);
+println(result);

@@ -1,6 +1,6 @@
 # 13. Встроенные функции
 
-[Оглавление](index.md) · [English](../en/13-builtins.md) · [Предыдущая глава](12-exceptions.md)
+[Оглавление](index.md) · [English](../en/13-builtins.md) · [Предыдущая глава](12-exceptions.md) · [Следующая глава](14-abstract-values.md)
 
 Редакция 2. Описываемая реализация: [commit 8d1fe86, с функцией `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
 
