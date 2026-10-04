@@ -43,6 +43,8 @@ parsing_if_else(token_t *token, parser_memory_t *memory, token_groups_t *groups)
         true_branch = create_statement_expression_node(memory->graph, (expression_t *)next->node);
     }
 
+    if (next->right && next->right->type == TOKEN_SEMICOLON)
+        next = next->right;
     if (!next->right || next->right->type != TOKEN_ELSE) {
         // no else branch
         result = create_if_else_node(memory->graph, condition, true_branch, NULL);
@@ -78,6 +80,8 @@ parsing_if_else(token_t *token, parser_memory_t *memory, token_groups_t *groups)
     return false;
 }
 
+compilation_error_t *parsing_for(token_t *, parser_memory_t *, token_groups_t *);
+
 compilation_error_t *parsing_try_catch(token_t *, parser_memory_t *, token_groups_t *);
 
 /**
@@ -89,6 +93,8 @@ parsing_flow_keywords(token_t *token, parser_memory_t *memory, token_groups_t *g
     switch (token->type) {
         case TOKEN_TRY:
             return parsing_try_catch(token, memory, groups);
+        case TOKEN_FOR:
+            return parsing_for(token, memory, groups);
         case TOKEN_IF:
             return parsing_if_else(token, memory, groups);
         // add other parsers

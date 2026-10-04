@@ -321,3 +321,10 @@ native_recursion
 
 # Line-oriented output
 println
+
+# C-style loops
+for_basic
+for_nested
+for_scope_return
+for_effects
+for_analysis_safety

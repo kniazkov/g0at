@@ -96,6 +96,7 @@ static void assign_node_indexes_and_scopes(node_t *node,
                                                &inner_counter);
                 break;
             }
+            case NODE_FOR:
             case NODE_STATEMENT_LIST: {
                 /* Ordinary blocks keep the enclosing ID sequence. */
                 scope_t *inner_scope = create_scope(arena, scope);

@@ -34,6 +34,7 @@ typedef enum {
     TOKEN_CONST,         /**< The 'const' keyword for constant declarations */
     TOKEN_FUNC,          /**< The 'func' keyword for function declarations */
     TOKEN_RETURN,        /**< The 'return' keyword used in return statements */
+    TOKEN_FOR,           /**< The C-style for keyword. */
     TOKEN_IF,            /**< The 'if' keyword used in if-else statements */
     TOKEN_TRY,           /**< The try keyword. */
     TOKEN_CATCH,         /**< The catch keyword. */

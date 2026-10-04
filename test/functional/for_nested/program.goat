@@ -1,0 +1,8 @@
+var sum = 0;
+for (var i = 0; i < 3; i++)
+    for (var j = 0; j < 4; j++) sum = sum + i * 10 + j;
+println(sum);
+if (true) for (var i = 0; i < 2; i++) println(i); else println("bad");
+for (var i = 0; i < 4; i++) if (i < 2) println("small"); else println("large");
+for (var i = 0; i < 2; i++) { for (var j = 0; j < 2; j++) { println(i * 10 + j); } }
+if (false) for (;;) println("bad"); else println("else");

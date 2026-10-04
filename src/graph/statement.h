@@ -122,6 +122,13 @@ node_t *create_if_else_node(arena_t *arena,
                             statement_t *true_branch,
                             statement_t *false_branch);
 
+/** @brief Creates a scoped C-style loop; all four children are non-NULL. */
+node_t *create_for_node(arena_t *arena,
+                        statement_t *initial,
+                        expression_t *condition,
+                        statement_t *step,
+                        statement_t *body);
+
 /** @brief Stores the condition truth proven by the reachability pass. */
 void set_if_else_condition_truth(node_t *node, abstract_truth_t truth);
 

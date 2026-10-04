@@ -1,0 +1,7 @@
+ICBSCBSC
+2
+0
+step
+initial
+condition
+alive

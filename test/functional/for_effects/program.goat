@@ -1,0 +1,12 @@
+var events = "";
+var i = 0;
+const initial = func() { events = events + "I"; return 0; };
+const condition = func() { events = events + "C"; return i < 2; };
+const step = func() { events = events + "S"; i++; };
+for (i = initial(); condition(); step()) events = events + "B";
+println(events);
+try { for (var j = 0; j < 5; j++) { if (j == 2) throw j; } } catch (e) { println(e); }
+try { for (i = 0; i < 2; i = 1 / 0) println(i); } catch (e) { println("step"); }
+try { for (i = 1 / 0; true; i++) println("bad"); } catch (e) { println("initial"); }
+try { for (; 1 / 0;) println("bad"); } catch (e) { println("condition"); }
+println("alive");
