@@ -1,0 +1,15 @@
+var x = 10;
+{
+    var x = 20;
+    println(x);
+}
+println(x);
+const make = func() {
+    const read = func() { return value; };
+    var value = 30;
+    return read;
+};
+const read = make();
+println(read());
+try { throw 40; } catch (x) { println(x); }
+println(x);

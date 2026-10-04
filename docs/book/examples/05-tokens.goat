@@ -1,0 +1,5 @@
+// Names, literals, and operators.
+var число = 12;
+const scale = 2.5e+1;
+println(число + scale);
+println("A\tB");

@@ -208,4 +208,9 @@ Built-in functions (functions whose implementations are supplied with the interp
 
 Built-in functions are collected in a [single registry](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/registry.c). This registry associates a name with its implementation and analysis information. Spelling alone does not guarantee built-in behavior: a local declaration of `print` can shadow the built-in function.
 
-For the following chapters, keep three questions separate. Can a construct be written in source code? Can the VM execute it? Can the analyzer prove enough properties to generate C? For example, a counter with a mutable captured variable works in the VM but falls outside the supported native numeric subset. Objects being available in the language likewise does not imply a native representation for arbitrary objects. Next, we will follow these boundaries through a single program.
+For the following chapters, keep three questions separate. Can a construct be written in source code? Can the VM execute it? Can the analyzer prove enough properties to generate C?
+
+> [!CAUTION]
+> For example, a counter with a mutable captured variable works in the VM but falls outside the supported native numeric subset. Objects being available in the language likewise does not imply a native representation for arbitrary objects.
+
+Next, we will follow these boundaries through a single program.
