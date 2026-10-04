@@ -25,9 +25,8 @@ throw "NEITHER SHOULD THIS";
 GOAT
 "$interpreter" --lang en --print-c --save-c "$output_dir/recursive sample.goat" > "$output_dir/printed.c" 2> "$output_dir/errors.txt"
 test ! -s "$output_dir/errors.txt"
-# Windows stdout uses CRLF; file output is UTF-8 with LF.
-tr -d '\r' < "$output_dir/printed.c" > "$output_dir/normalized.c"
-cmp "$output_dir/normalized.c" "$output_dir/recursive sample.c"
+# Both stdout and saved files use the platform text-mode newline convention.
+cmp "$output_dir/printed.c" "$output_dir/recursive sample.c"
 "$interpreter" --print-c "$output_dir/recursive sample.goat" > "$output_dir/repeated.c"
 cmp "$output_dir/printed.c" "$output_dir/repeated.c"
 test "$(grep -c '#include <stdint.h>' "$output_dir/printed.c")" = 1
