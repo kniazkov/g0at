@@ -1,6 +1,6 @@
 var x = 0;
 const show = func(a, b) {
-    print(a); print("|"); print(b); print("\n");
+    print(a); print("|"); println(b);
 };
 show(x++, x++);
-print(x); print("\n");
+println(x);

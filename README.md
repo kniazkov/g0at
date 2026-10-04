@@ -70,7 +70,7 @@ See [the functional tests](test) for more examples, including nested objects, cl
 - Lexical scopes, first-class functions, arguments, closures, recursion, and `return`.
 - `if` / `else`, including nested branches and block bodies.
 - Block-based object construction and a runtime object model with prototype lookup.
-- A small built-in environment: `print`, `sign`, `sqrt`, `atan`, and `pi`.
+- A small built-in environment: `print`, `println`, `sign`, `sqrt`, `atan`, and `pi`.
 - UTF-8 source-file input and English/Russian compiler messages.
 
 ### Implementation and inspection tools
@@ -910,6 +910,10 @@ stdin is empty, so a test can never accidentally wait for keyboard input.
 
 ### Built-in function descriptors
 
+`println(x)` prints the same value as `print(x)` and appends one newline. Both return
+`null` and require at least one argument; use `println("")` for an empty line. Extra
+arguments are evaluated but are not printed, as with `print`.
+
 Native functions live in [`src/builtins/`](src/builtins). Each function has one file
 (for example, [`sqrt.c`](src/builtins/sqrt.c)) with four ordinary C definitions:
 
@@ -935,7 +939,7 @@ result, effects, and errors; tests execute programs with optimization both disab
 | `sign(x)` | Exact sign for constants; sign interval for integer ranges | None |
 | `sqrt(x)` | Folded real constant or `REAL` | None |
 | `atan(y, x)` | Folded `atan2(y, x)` constant or `REAL` | None |
-| `print(x)` | `null`; analysis does not print | Console output |
+| `print(x)`, `println(x)` | `null`; analysis does not print | Console output |
 
 All functions require the arguments shown. Numeric functions reject nonnumeric arguments.
 Missing arguments and invalid types throw `Exceptions.INVALID_ARGUMENT`, including through
@@ -944,7 +948,7 @@ IEEE floating-point behavior: for example, `sqrt(-1)` is NaN, and `sign(NaN)` is
 A definitely invalid abstract call produces `BOTTOM`; partially known arguments describe
 only normal results. Existing `try/catch` analysis remains conservative.
 
-Output and binding mutation are separate flags. `print` has an observable effect but does
+Output and binding mutation are separate flags. `print` and `println` have an observable effect but do
 not invalidate variable facts, and branch simplification retains the actual call. Unknown
 calls and untracked writes to built-in names invalidate assumptions about root bindings.
 Local declarations and parameters shadow native functions normally. Different possible

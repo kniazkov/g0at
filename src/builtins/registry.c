@@ -5,12 +5,12 @@
 #include "registry.h"
 
 static const builtin_function_t *const functions[] = {
-    &builtin_abs,   &builtin_acos,  &builtin_asin,  &builtin_atan, &builtin_cbrt,  &builtin_ceil,
-    &builtin_cos,   &builtin_cosh,  &builtin_exp,   &builtin_exp2, &builtin_expm1, &builtin_floor,
-    &builtin_fmod,  &builtin_hypot, &builtin_input, &builtin_int,  &builtin_log,   &builtin_log10,
-    &builtin_log1p, &builtin_log2,  &builtin_max,   &builtin_min,  &builtin_pow,   &builtin_print,
-    &builtin_round, &builtin_sign,  &builtin_sin,   &builtin_sinh, &builtin_sqrt,  &builtin_tan,
-    &builtin_tanh,  &builtin_trunc};
+    &builtin_abs,     &builtin_acos,  &builtin_asin,  &builtin_atan, &builtin_cbrt,  &builtin_ceil,
+    &builtin_cos,     &builtin_cosh,  &builtin_exp,   &builtin_exp2, &builtin_expm1, &builtin_floor,
+    &builtin_fmod,    &builtin_hypot, &builtin_input, &builtin_int,  &builtin_log,   &builtin_log10,
+    &builtin_log1p,   &builtin_log2,  &builtin_max,   &builtin_min,  &builtin_pow,   &builtin_print,
+    &builtin_println, &builtin_round, &builtin_sign,  &builtin_sin,  &builtin_sinh,  &builtin_sqrt,
+    &builtin_tan,     &builtin_tanh,  &builtin_trunc};
 
 const builtin_function_t *const *get_builtin_functions(size_t *count) {
     *count = sizeof(functions) / sizeof(*functions);

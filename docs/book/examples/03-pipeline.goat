@@ -2,5 +2,4 @@ const step = func(x) {
     if (x < 0) { return 0; }
     return x + 1;
 };
-print(step(4));
-print("\n");
+println(step(4));

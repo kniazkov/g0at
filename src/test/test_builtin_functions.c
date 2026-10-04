@@ -23,7 +23,7 @@ static const builtin_function_t *lookup(const wchar_t *name) {
 bool test_builtin_registry() {
     size_t count;
     const builtin_function_t *const *functions = get_builtin_functions(&count);
-    ASSERT(count == 32);
+    ASSERT(count == 33);
     ASSERT(get_object_keys(get_root_context()->data).size == count + 2);
     for (size_t i = 0; i < count; i++) {
         const builtin_function_t *f = functions[i];
@@ -36,7 +36,8 @@ bool test_builtin_registry() {
         DECREF(key);
         destroy_process(proc);
         ASSERT(f->effects
-               == (!wcscmp(f->name, L"print")   ? BUILTIN_EFFECT_OUTPUT
+               == ((!wcscmp(f->name, L"print") || !wcscmp(f->name, L"println"))
+                       ? BUILTIN_EFFECT_OUTPUT
                    : !wcscmp(f->name, L"input") ? BUILTIN_EFFECT_INPUT
                                                 : BUILTIN_EFFECT_NONE));
     }
@@ -79,8 +80,8 @@ bool test_builtin_numeric_results() {
     const builtin_function_t *const *functions = get_builtin_functions(&total);
     for (size_t f = 0; f < total; f++) {
         const builtin_function_t *descriptor = functions[f];
-        if (descriptor == &builtin_print || descriptor == &builtin_input
-            || descriptor == &builtin_int)
+        if (descriptor == &builtin_print || descriptor == &builtin_println
+            || descriptor == &builtin_input || descriptor == &builtin_int)
             continue;
         for (size_t i = 0; i < sizeof(samples) / sizeof(*samples); i++) {
             for (size_t j = 0;
@@ -167,7 +168,8 @@ bool test_builtin_errors() {
     }
     for (size_t i = 0; i < count; i++) {
         const builtin_function_t *f = functions[i];
-        if (f == &builtin_print || f == &builtin_input || f == &builtin_int)
+        if (f == &builtin_print || f == &builtin_println || f == &builtin_input
+            || f == &builtin_int)
             continue;
         for (size_t bad = 0; bad < f->min_args; bad++) {
             for (int kind = 0; kind < 5; kind++) {
@@ -224,6 +226,14 @@ bool test_builtin_domains() {
         interpret_function_call(make_builtin_function_element(arena, printer), args, 1, state)->type
         == LATTICE_NULL);
     ASSERT(get_from_abstract_state(state, &sentinel) == saved);
+    ASSERT(interpret_function_call(make_builtin_function_element(arena, lookup(L"println")),
+                                   args,
+                                   1,
+                                   state)
+               ->type
+           == LATTICE_NULL);
+    ASSERT(get_from_abstract_state(state, &sentinel) == saved);
+    ASSERT(!state->builtin_bindings_unknown);
     builtin_function_t mutating = *printer;
     mutating.effects = BUILTIN_EFFECT_BINDINGS;
     ASSERT(interpret_function_call(make_builtin_function_element(arena, &mutating), args, 1, state)
