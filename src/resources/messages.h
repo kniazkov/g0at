@@ -18,6 +18,11 @@ typedef struct {
     const wchar_t const *bad_graph_file;
     const wchar_t const *bad_optimization_level;
     const wchar_t const *bad_c_options;
+    const wchar_t const *bad_native_mode;
+    const wchar_t const *bad_native_options;
+    const wchar_t const *native_report_conflict;
+    const wchar_t const *cannot_write_native_report;
+    const wchar_t const *native_prepare_failed;
     const wchar_t const *cannot_write_c_file;
     const wchar_t const *c_omitted;
     const wchar_t const *native_compile_failed;

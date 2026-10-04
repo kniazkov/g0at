@@ -149,6 +149,28 @@ This script builds the interpreter and runs all three test suites.
 For a release build without tests, run `scripts\build_release_mingw.cmd`.
 The helper `scripts\create_test.cmd` creates a runtime fixture from root-level `program.goat`.
 
+## Native execution
+
+Ordinary execution needs no C compiler. Native execution is opt-in:
+
+```bash
+./goat --native auto test/functional/fibonacci/program.goat
+./goat --native required --save-native native.txt test/functional/fibonacci/program.goat
+```
+
+`off` is the default. `auto` uses eligible numeric specializations and keeps bytecode
+available if compilation or loading fails, reporting the failed stage on stderr.
+`required` demands at least one successfully bound function before the program runs.
+It does not require every call to be native: unmatched signatures and resource-limited
+calls still use bytecode. A prepared function need not be reached at runtime; inspect
+`succeeded` in the report to verify actual native execution.
+
+Both enabled modes require `--optimize all`. `CC` selects one compiler executable,
+including a path with spaces; unset or empty means `cc` on Linux and `gcc` on Windows.
+Execution modes and reports cannot be combined with C/library export. Native code is
+compiled afresh into a private temporary workspace, unloaded and cleaned up after use.
+See the [execution contract](docs/native-execution.md) for report fields and limits.
+
 ## Inspect a program
 
 The following commands assume the root-level executable produced by `scripts/build.sh`:
@@ -165,6 +187,9 @@ The inspection commands above also execute the program after compilation. Graph 
 | Option | Purpose |
 | --- | --- |
 | `--optimize <none|all>` | Select optimizations; defaults to `all`. |
+| `--native <off|auto|required>` | Select native execution; defaults to `off`. |
+| `--print-native` | Print preparation status and native call counters after execution. |
+| `--save-native <file>` | Save the same counters separately from program output. |
 | `--print-c` | Export a complete C module to stdout without running the program. |
 | `--save-c` | Save the module beside the input, replacing its extension with `.c`. |
 | `--print-analysis` | Print chronological abstract-analysis observations before execution. |
@@ -196,8 +221,8 @@ still produces a valid C translation unit. Export succeeds when the remaining
 module is written, even if some candidates were omitted. Parser and output errors
 return failure. The module includes versioned numeric adapters and an immutable signature table
 accessible through `goat_native_query_v1`. The public boundary is documented in
-[`docs/native-abi.md`](docs/native-abi.md). Dynamic loading and VM dispatch are not
-yet connected.
+[`docs/native-abi.md`](docs/native-abi.md). `--native auto` connects generation,
+compilation, loading and dispatch through ordinary `CALL`.
 
 ### Compile a native library (Linux / Windows)
 
@@ -583,7 +608,7 @@ are separate decisions. Native dispatch will live in the function object's call
 method, using metadata supplied during function creation; `CALL` keeps its format
 and no `NATIVE` opcode is planned. The minimal C emitter now handles numeric
 parameters/literals and a single explicit return; CI compiles and executes its
-output. Dynamic loading and native execution in the VM are not implemented yet.
+output. Dynamic loading and native execution through `CALL` are available with `--native auto`.
 
 ### Numeric C expression proofs
 
@@ -1288,10 +1313,10 @@ The runtime now provides [native library loading](docs/native-loading.md) with A
 owned metadata snapshots and reference-counted function descriptors. Linux and Windows
 loader tests cover invalid providers and library lifetime. Optional descriptors bound to
 `FUNC` metadata now select exact numeric specializations through ordinary `CALL`,
-before allocating a context. Unmatched calls retain the bytecode path. Automatic
-The internal launcher pipeline can now generate, compile, load and bind these descriptors.
+before allocating a context. Unmatched calls retain the bytecode path.
+The launcher pipeline generates, compiles, loads and binds these descriptors with `--native auto`.
 Generated adapters enforce recursion/call limits; pure resource-limited calls retry in
-bytecode without reevaluating arguments. CLI execution modes follow in the next step.
+bytecode without reevaluating arguments. `--native required` rejects preparation failure or an empty inventory before execution.
 
 ## Author and license
 

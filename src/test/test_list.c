@@ -42,6 +42,7 @@
 #include "test_mutual_recursion.h"
 #include "test_native_compiler.h"
 #include "test_native_conversion.h"
+#include "test_native_options.h"
 #include "test_node_properties.h"
 #include "test_operation_result.h"
 #include "test_optimization.h"
@@ -60,6 +61,7 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"native execution options", test_native_options},
     {"C emission", test_c_emission},
     {"C emission rejections", test_c_emission_rejections},
     {"C control flow rejections", test_c_control_rejections},

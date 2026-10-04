@@ -68,24 +68,26 @@ static int get_file_size(FILE *file) {
 
 /** @brief Executes a test by running the project's binary and comparing its output with expected
  * results. */
-int do_test(char *interpreter, char *test_name, const char *optimization) {
+int do_test(char *interpreter, char *test_name, const char *optimization, const char *native) {
     int result = 0;
 
     char cmd[1024], path_actual_output[256], path_expected_output[256], path_actual_error[256],
         path_expected_error[256], path_input[256];
     snprintf(path_actual_output,
              256,
-             "%s%cactual_output_%s.txt",
+             "%s%cactual_output_%s_%s.txt",
              test_name,
              path_separator(),
-             optimization);
+             optimization,
+             native);
     snprintf(path_expected_output, 256, "%s%cexpected_output.txt", test_name, path_separator());
     snprintf(path_actual_error,
              256,
-             "%s%cactual_error_%s.txt",
+             "%s%cactual_error_%s_%s.txt",
              test_name,
              path_separator(),
-             optimization);
+             optimization,
+             native);
     snprintf(path_expected_error, 256, "%s%cexpected_error.txt", test_name, path_separator());
     snprintf(path_input, sizeof(path_input), "%s%cinput.txt", test_name, path_separator());
     FILE *input = fopen(path_input, "r");
@@ -99,23 +101,26 @@ int do_test(char *interpreter, char *test_name, const char *optimization) {
 #endif
     }
 #ifdef _WIN32
-    const char *command_format =
-        "\"\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" < \"%s\" 1> \"%s\" 2> \"%s\"\"";
+    const char *command_format = "\"\"%s\" --lang en --optimize %s --native %s "
+                                 "\"%s%cprogram.goat\" < \"%s\" 1> \"%s\" 2> \"%s\"\"";
 #else
-    const char *command_format =
-        "\"%s\" --lang en --optimize %s \"%s%cprogram.goat\" < \"%s\" 1> \"%s\" 2> \"%s\"";
+    const char *command_format = "\"%s\" --lang en --optimize %s --native %s \"%s%cprogram.goat\" "
+                                 "< \"%s\" 1> \"%s\" 2> \"%s\"";
 #endif
-    snprintf(cmd,
-             sizeof(cmd),
-             command_format,
-             interpreter,
-             optimization,
-             test_name,
-             path_separator(),
-             path_input,
-             path_actual_output,
-             path_actual_error);
+    int length = snprintf(cmd,
+                          sizeof(cmd),
+                          command_format,
+                          interpreter,
+                          optimization,
+                          native,
+                          test_name,
+                          path_separator(),
+                          path_input,
+                          path_actual_output,
+                          path_actual_error);
 
+    if (length < 0 || (size_t)length >= sizeof(cmd))
+        return 0;
     int status = system(cmd);
 
     FILE *actual_output = NULL, *expected_output = NULL, *actual_error = NULL,
@@ -169,10 +174,13 @@ cleanup:
  * @return 0 if all tests passed, non-zero if any test failed.
  */
 int main(int argc, char **argv) {
-    if (argc < 3) {
-        printf("Usage: functional_testing <interpreter> <list of tests>\n");
+    if (argc < 3 || argc > 4
+        || (argc == 4 && strcmp(argv[3], "off") && strcmp(argv[3], "auto")
+            && strcmp(argv[3], "required"))) {
+        printf("Usage: functional_testing <interpreter> <list of tests> [off|auto|required]\n");
         return -1;
     }
+    const char *native = argc == 4 ? argv[3] : "off";
     test_output_start("functional");
     fix_path_separator(argv[1]);
     FILE *list = fopen(argv[2], "r");
@@ -190,14 +198,18 @@ int main(int argc, char **argv) {
         char *test_name_trim = trim(test_name);
         if (strlen(test_name_trim) > 0 && test_name_trim[0] != '#') {
             const char *levels[] = {"none", "all"};
-            for (size_t level = 0; level < 2; level++) {
-                int result = do_test(argv[1], test_name_trim, levels[level]);
+            for (size_t level = strcmp(native, "off") ? 1 : 0; level < 2; level++) {
+                int result = do_test(argv[1], test_name_trim, levels[level], native);
                 if (result) {
                     passed++;
                 } else {
                     failed++;
                 }
-                test_output_case(result, "%s (optimize=%s)", test_name_trim, levels[level]);
+                test_output_case(result,
+                                 "%s (optimize=%s, native=%s)",
+                                 test_name_trim,
+                                 levels[level],
+                                 native);
             }
         }
     }

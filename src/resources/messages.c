@@ -16,6 +16,9 @@ static messages_t english = {
             L"\n"
             L"Options:\n"
             L"  --optimize <none|all>         Optimization level (default: all)\n"
+            L"  --native <off|auto|required>  Native execution (default: off)\n"
+            L"  --print-native               Print native execution counters\n"
+            L"  --save-native <file>         Save native execution counters\n"
             L"  --print-analysis              Print analysis observations\n"
             L"  --save-analysis <file>      Save analysis observations as UTF-8\n"
             L"  --print-c                    Print C module without executing the program\n"
@@ -32,6 +35,12 @@ static messages_t english = {
     .unknown_option = L"Unknown option: '%a'",
     .missing_specification = L"Missing value for parameter '%a'",
     .bad_optimization_level = L"Unknown optimization level: '%a' (expected none or all)",
+    .bad_native_mode = L"Unknown native mode: '%a' (expected off, auto or required)",
+    .bad_native_options = L"Native execution requires --optimize all; C/library export cannot be "
+                          L"combined with native execution or reports",
+    .native_report_conflict = L"Native report must not overwrite its input",
+    .cannot_write_native_report = L"Could not write native report to '%a'",
+    .native_prepare_failed = L"Native preparation failed (%a): %a",
     .bad_c_options =
         L"C export requires --optimize all and cannot be combined with other --print options",
     .cannot_write_c_file = L"Could not write C source to '%a' (the input must not be overwritten)",
@@ -93,6 +102,9 @@ static messages_t russian = {
             L"\n"
             L"Параметры:\n"
             L"  --optimize <none|all>         Уровень оптимизаций (по умолчанию: all)\n"
+            L"  --native <off|auto|required>  Нативное исполнение (по умолчанию: off)\n"
+            L"  --print-native               Напечатать счётчики нативных вызовов\n"
+            L"  --save-native <file>         Сохранить счётчики нативных вызовов\n"
             L"  --print-analysis              Вывести события анализа\n"
             L"  --save-analysis <file>      Сохранить события анализа в UTF-8\n"
             L"  --print-c                    Вывести C-модуль без исполнения программы\n"
@@ -109,6 +121,12 @@ static messages_t russian = {
                              L"Win32 %u, очистка Win32 %u",
     .native_diagnostics_truncated = L"Вывод компилятора обрезан до 65536 байт",
     .native_input_conflict = L"Библиотека не должна перезаписывать исходный файл",
+    .bad_native_mode = L"Неизвестный нативный режим: '%a' (ожидается off, auto или required)",
+    .bad_native_options = L"Нативное исполнение требует --optimize all; экспорт C/библиотеки "
+                          L"несовместим с нативным исполнением и отчётами",
+    .native_report_conflict = L"Нативный отчёт не должен перезаписывать исходный файл",
+    .cannot_write_native_report = L"Не удалось записать нативный отчёт в '%a'",
+    .native_prepare_failed = L"Ошибка нативной подготовки (%a): %a",
     .bad_c_options = L"Экспорт C требует --optimize all и несовместим с другими опциями --print",
     .cannot_write_c_file = L"Не удалось записать C-код в '%a' (перезапись исходника запрещена)",
     .c_omitted = L"Генерация C пропустила %s: %s",

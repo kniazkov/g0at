@@ -286,7 +286,7 @@ static bool large_frame(void) {
 static bool launcher(void) {
     options_t *options = create_options();
     options->input_file = create_path(program_path);
-    options->native_execution = true;
+    options->native_execution = NATIVE_REQUIRED;
     int status = go(options);
     destroy_options(options);
     ASSERT(!status);

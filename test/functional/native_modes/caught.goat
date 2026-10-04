@@ -1,0 +1,8 @@
+const identity = func(n) { return n; }
+print(identity(4)); print("\n")
+try {
+    throw identity(7)
+} catch (e) {
+    print(e); print("\n")
+}
+print(identity(9)); print("\n")
