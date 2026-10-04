@@ -19,6 +19,7 @@
 #include "test_c_calls.h"
 #include "test_c_control.h"
 #include "test_c_locals.h"
+#include "test_c_recursion.h"
 #include "test_macro.h"
 
 #include <float.h>
@@ -266,6 +267,8 @@ static bool generate_tests(source_builder_t *output) {
         success = append_c_local_tests(output, checks);
     if (success)
         success = append_c_call_tests(output, checks);
+    if (success)
+        success = append_c_recursion_tests(output, checks);
     add_static_source(checks, 1, L"return 0;");
     add_static_source(checks, 0, L"}");
     if (success)

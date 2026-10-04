@@ -55,7 +55,8 @@ bool c_emit_callee_prototypes(c_generation_context_t *context, source_builder_t 
                                      context->summary->function,
                                      C_GENERATION_INVALID_REQUEST);
         bool self = same_signature(callee->summary, context->summary);
-        if (self != same_name(callee->name, context->function_name))
+        if (self != same_name(callee->name, context->function_name)
+            || (self && callee->summary->return_type->type != context->summary->return_type->type))
             return fail_c_generation(context,
                                      context->summary->function,
                                      C_GENERATION_INVALID_REQUEST);
