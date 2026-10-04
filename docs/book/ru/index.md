@@ -47,17 +47,17 @@
 
 ### Часть VI. Проверка и исследование реализации
 
-27. Наблюдение за работой системы
-28. Тестирование
-29. Измерение производительности
+27. [Наблюдение за работой системы](27-observability.md)
+28. [Тестирование](28-testing.md)
+29. [Измерение производительности](29-performance-measurement.md)
 
 ### Приложения
 
-- А. Термины
-- Б. Язык
-- В. Инструкции VM
-- Г. Встроенные функции
-- Д. Интерфейсы запуска
-- Е. Карта реализации
-- Ж. Границы реализации
-- З. История решений
+- [А. Термины](appendix-a-terminology.md)
+- [Б. Язык](appendix-b-language.md)
+- [В. Инструкции VM](appendix-c-vm-instructions.md)
+- [Г. Встроенные функции](appendix-d-builtins.md)
+- [Д. Интерфейсы запуска](appendix-e-launch-interfaces.md)
+- [Е. Карта реализации](appendix-f-implementation-map.md)
+- [Ж. Границы реализации](appendix-g-implementation-boundaries.md)
+- [З. История решений](appendix-h-decision-history.md)

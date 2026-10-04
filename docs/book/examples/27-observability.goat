@@ -1,0 +1,4 @@
+var value = 2;
+if (false) { value = 100; }
+const twice = func(x) { return x * 2; };
+println(twice(value));

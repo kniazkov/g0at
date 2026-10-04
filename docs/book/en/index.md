@@ -47,17 +47,17 @@ Red callouts mark limitations and known defects of the implementation described.
 
 ### Part VI. Testing and Investigation of the Implementation
 
-27. Observability
-28. Testing
-29. Performance Measurement
+27. [Observability](27-observability.md)
+28. [Testing](28-testing.md)
+29. [Performance Measurement](29-performance-measurement.md)
 
 ### Appendices
 
-- A. Terminology
-- B. Language
-- C. VM Instructions
-- D. Built-in Functions
-- E. Launch Interfaces
-- F. Implementation Map
-- G. Implementation Boundaries
-- H. Decision History
+- [A. Terminology](appendix-a-terminology.md)
+- [B. Language](appendix-b-language.md)
+- [C. VM Instructions](appendix-c-vm-instructions.md)
+- [D. Built-in Functions](appendix-d-builtins.md)
+- [E. Launch Interfaces](appendix-e-launch-interfaces.md)
+- [F. Implementation Map](appendix-f-implementation-map.md)
+- [G. Implementation Boundaries](appendix-g-implementation-boundaries.md)
+- [H. Decision History](appendix-h-decision-history.md)

@@ -1,6 +1,6 @@
 # 26. Раздельная компиляция
 
-[Оглавление](index.md) · [English](../en/26-separate-compilation.md) · [Предыдущая глава](25-native-dispatch-and-vm-fallback.md)
+[Оглавление](index.md) · [English](../en/26-separate-compilation.md) · [Предыдущая глава](25-native-dispatch-and-vm-fallback.md) · [Следующая глава](27-observability.md)
 
 Редакция 2. Описываемая реализация: [commit 8d1fe86, с функцией `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
 
