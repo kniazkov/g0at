@@ -1,0 +1,14 @@
+if (1 + 2 == 3) { println("selected"); } else { println("dead"); }
+const signal = func() { println("effect"); return 0; };
+if (signal()) { println("unselected"); }
+const step = func(x) {
+    if (x < 0) { return 0; }
+    return x + 1;
+};
+println(step(4));
+println(step(-4));
+var count = 0;
+const pair = func(a, b) { return a * 10 + b; };
+println(pair(count++, count++));
+try { println(1 / 0); } catch (error) { println(error); }
+println(-0.0);

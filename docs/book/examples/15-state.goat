@@ -1,0 +1,5 @@
+var x = 0;
+x = 10;
+println(x);
+x = 20;
+println(x);

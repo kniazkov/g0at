@@ -1,0 +1,8 @@
+const offset = 2;
+var total = 0;
+const local = func(x) { var y = x; y = y + 1; return y; };
+const captured = func(x) { return x + offset; };
+const changed = func(x) { total = total + x; return total; };
+println(local(3));
+println(captured(3));
+println(changed(3));

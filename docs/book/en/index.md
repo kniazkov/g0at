@@ -28,14 +28,14 @@ Red callouts mark limitations and known defects of the implementation described.
 
 ### Part IV. Static Analysis
 
-14. Abstract Values and the Lattice
-15. Abstract State
-16. Expression and Control-Flow Analysis
-17. Call Analysis and Specializations
-18. Call Graph and Recursion
-19. Effects and Purity
-20. Native Compilation Eligibility
-21. AST Transformations and Semantic Preservation
+14. [Abstract Values and the Lattice](14-abstract-values.md)
+15. [Abstract State](15-abstract-state.md)
+16. [Expression and Control-Flow Analysis](16-expression-and-control-analysis.md)
+17. [Call Analysis and Specializations](17-call-analysis-and-specializations.md)
+18. [Call Graph and Recursion](18-call-graph-and-recursion.md)
+19. [Effects and Purity](19-effects-and-purity.md)
+20. [Native Compilation Eligibility](20-native-eligibility.md)
+21. [AST Transformations and Semantic Preservation](21-ast-transformations.md)
 
 ### Part V. Native Backend
 

@@ -1,0 +1,8 @@
+const twice = func(x) { return x * 2; };
+const outer = func(x) { return twice(x) + 1; };
+const half = func(x) { return x / 2; };
+const offset = 2;
+const captured = func(x) { return x + offset; };
+println(outer(3));
+println(half(3));
+println(captured(3));

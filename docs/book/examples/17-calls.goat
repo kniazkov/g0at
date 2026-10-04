@@ -1,0 +1,10 @@
+var total = 0;
+const add = func(x) { total = total + x; return total; };
+println(add(2));
+println(add(3));
+const choose = func(x) {
+    if (x) { return 1; }
+    return "zero";
+};
+println(choose(1));
+println(choose(0));
