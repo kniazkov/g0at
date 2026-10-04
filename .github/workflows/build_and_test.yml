@@ -191,6 +191,10 @@ jobs:
             prefix: mingw-w64-ucrt-x86_64
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        id: benchmark-python
+        with:
+          python-version: '3.12'
       - uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
@@ -255,7 +259,9 @@ jobs:
         run: bash scripts/check_binary_program.sh build/release/goat.exe build/functional_testing.exe "build/binary programs release"
       - name: Compare precompiled VM and native performance
         shell: msys2 {0}
-        run: python scripts/check_native_performance.py build/release/goat.exe "build/native performance"
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
+        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_performance.py build/release/goat.exe "build/native performance"'
       - name: Preserve native execution reports
         if: always()
         uses: actions/upload-artifact@v4
