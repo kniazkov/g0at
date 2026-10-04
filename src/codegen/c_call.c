@@ -72,21 +72,8 @@ bool c_emit_callee_prototypes(c_generation_context_t *context, source_builder_t 
         }
         if (duplicate)
             continue;
-        c_generation_context_t target = {.summary = callee->summary};
-        string_builder_t declaration;
-        init_string_builder(&declaration, 64);
-        append_string(&declaration, c_type_name(c_generation_return_type(&target)));
-        append_char(&declaration, L' ');
-        append_substring(&declaration, callee->name.data, callee->name.length);
-        append_char(&declaration, L'(');
-        if (!callee->summary->parameter_count)
-            append_string(&declaration, L"void");
-        for (size_t i = 0; i < callee->summary->parameter_count; i++) {
-            if (i)
-                append_string(&declaration, L", ");
-            append_string(&declaration, c_type_name(c_generation_parameter_type(&target, i)));
-        }
-        add_formatted_source(builder, 0, append_string(&declaration, L");"));
+        if (builder)
+            c_emit_prototype(callee->summary, callee->name, builder);
     }
     return true;
 }
@@ -190,4 +177,24 @@ c_generated_expression_t c_call(const node_t *node, c_generation_context_t *cont
                                       .type = type,
                                       .value = value,
                                       .prelude = prelude};
+}
+
+void c_emit_prototype(const function_summary_t *summary,
+                      string_view_t name,
+                      source_builder_t *builder) {
+    c_generation_context_t target = {.summary = summary};
+    string_builder_t declaration;
+    init_string_builder(&declaration, 64);
+    append_string(&declaration, c_type_name(c_generation_return_type(&target)));
+    append_char(&declaration, L' ');
+    append_substring(&declaration, name.data, name.length);
+    append_char(&declaration, L'(');
+    if (!summary->parameter_count)
+        append_string(&declaration, L"void");
+    for (size_t i = 0; i < summary->parameter_count; i++) {
+        if (i)
+            append_string(&declaration, L", ");
+        append_string(&declaration, c_type_name(c_generation_parameter_type(&target, i)));
+    }
+    add_formatted_source(builder, 0, append_string(&declaration, L");"));
 }

@@ -63,6 +63,10 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
           BUILD_DIR: build/${{ matrix.compiler }}
+      - name: Export, compile and execute C modules
+        run: bash scripts/check_c_module.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/c-module
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Compile and execute generated C
         run: bash scripts/check_c_generation.sh build/${{ matrix.compiler }}/unit_testing build/${{ matrix.compiler }}/c-generation
         env:
@@ -79,7 +83,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: generated-C-Linux-${{ matrix.name }}
-          path: build/${{ matrix.compiler }}/c-generation/generated.c
+          path: |
+            build/${{ matrix.compiler }}/c-generation/generated.c
+            build/${{ matrix.compiler }}/c-module/*.c
           if-no-files-found: ignore
       - name: Build release
         run: bash scripts/build_release.sh
@@ -127,12 +133,16 @@ jobs:
         with:
           msystem: ${{ matrix.msystem }}
           install: >-
+            diffutils
             ${{ matrix.prefix }}-gcc
             ${{ matrix.prefix }}-cmake
             ${{ matrix.prefix }}-make
       - name: Build and test
         shell: msys2 {0}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_mingw.cmd'
+      - name: Export, compile and execute C modules
+        shell: msys2 {0}
+        run: bash scripts/check_c_module.sh build/goat.exe build/c-module
       - name: Compile and execute generated C
         shell: msys2 {0}
         run: bash scripts/check_c_generation.sh build/unit_testing.exe build/c-generation
@@ -141,7 +151,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: generated-C-Windows-${{ matrix.msystem }}
-          path: build/c-generation/generated.c
+          path: |
+            build/c-generation/generated.c
+            build/c-module/*.c
           if-no-files-found: ignore
       - name: Build release
         shell: msys2 {0}

@@ -7,6 +7,7 @@
 #include "launcher.h"
 
 #include "analysis/analysis.h"
+#include "c_output.h"
 #include "codegen/linker.h"
 #include "codegen/source_builder.h"
 #include "graph/node.h"
@@ -137,6 +138,11 @@ int go(options_t *opt) {
                 fprintf_utf8(stderr, get_messages()->no_graphviz);
                 fprintf(stderr, "\n");
             }
+        }
+
+        if (opt->print_c || opt->save_c) {
+            ret_code = output_c_module(opt, memory.graph, root_node) ? 0 : -1;
+            break;
         }
 
         code_builder_t *code_builder = create_code_builder();

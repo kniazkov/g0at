@@ -61,7 +61,8 @@ c_binary_arithmetic(const node_t *node, c_generation_context_t *context, wchar_t
     string_value_t a = c_capture_operand(prelude, context, &left, type);
     string_value_t b = c_capture_operand(prelude, context, &right, type);
     string_value_t value = format_string(L"goat_t%zu", context->temporary_count++);
-    if (type == C_VALUE_INT64)
+    if (type == C_VALUE_INT64) {
+        context->helper_flags |= C_HELPER_INTEGER;
         add_source(prelude,
                    0,
                    L"int64_t %s = goat_i64_bits((uint64_t)%s %c (uint64_t)%s);",
@@ -69,7 +70,7 @@ c_binary_arithmetic(const node_t *node, c_generation_context_t *context, wchar_t
                    a.data,
                    operation,
                    b.data);
-    else
+    } else
         add_source(prelude,
                    0,
                    L"volatile double %s = %s %c %s;",
@@ -102,13 +103,14 @@ c_unary_arithmetic(const node_t *node, c_generation_context_t *context, bool neg
     source_builder_t *prelude = create_source_builder();
     string_value_t argument = c_capture_operand(prelude, context, &operand, operand.type);
     string_value_t value = format_string(L"goat_t%zu", context->temporary_count++);
-    if (operand.type == C_VALUE_INT64)
+    if (operand.type == C_VALUE_INT64) {
+        context->helper_flags |= C_HELPER_INTEGER;
         add_source(prelude,
                    0,
                    L"int64_t %s = goat_i64_bits(UINT64_C(0) - (uint64_t)%s);",
                    value.data,
                    argument.data);
-    else
+    } else
         add_source(prelude, 0, L"volatile double %s = -%s;", value.data, argument.data);
     c_value_type_t type = operand.type;
     abstract_truth_t truth = operand.literal_truth;
@@ -131,11 +133,6 @@ c_generated_expression_t c_parenthesized(const node_t *node, c_generation_contex
 }
 
 void c_arithmetic_helpers(source_builder_t *builder) {
-    add_static_source(builder, 0, L"#ifdef __FAST_MATH__");
-    add_static_source(builder,
-                      0,
-                      L"#error Goat C arithmetic requires strict floating-point semantics");
-    add_static_source(builder, 0, L"#endif");
     add_static_source(builder, 0, L"#ifndef GOAT_C_NUMERIC_HELPERS");
     add_static_source(builder, 0, L"#define GOAT_C_NUMERIC_HELPERS");
     add_static_source(builder, 0, L"static inline int64_t goat_i64_bits(uint64_t value) {");

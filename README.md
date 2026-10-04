@@ -160,11 +160,13 @@ The following commands assume the root-level executable produced by `scripts/bui
 ./goat --enable-warnings --lang en example/hello_world.goat
 ```
 
-These inspection options also execute the program after compilation. Graph output requires Graphviz; both `.svg` and `.png` are supported.
+The inspection commands above also execute the program after compilation. Graph output requires Graphviz; both `.svg` and `.png` are supported.
 
 | Option | Purpose |
 | --- | --- |
 | `--optimize <none|all>` | Select optimizations; defaults to `all`. |
+| `--print-c` | Export a complete C module to stdout without running the program. |
+| `--save-c` | Save the module beside the input, replacing its extension with `.c`. |
 | `--print-analysis` | Print chronological abstract-analysis observations before execution. |
 | `--save-analysis <file>` | Save the same report to a UTF-8 text file. |
 | `--print-bytecode` | Print the generated instructions and referenced static data. |
@@ -175,6 +177,25 @@ These inspection options also execute the program after compilation. Graph outpu
 | `-h`, `--help`, `/?` | Show command-line help. |
 
 The `GOAT_LANGUAGE` environment variable can also select the diagnostic language.
+
+C export requires `--optimize all` (the default) and cannot be combined with other
+`--print-*` modes. `--print-c` and `--save-c` may be used together; analysis files
+and graphs may also be saved. No C compiler is needed to export source:
+
+```bash
+./goat --save-c test/functional/fibonacci/program.goat
+./goat --print-c test/functional/fibonacci/program.goat > fibonacci.c
+cc -std=c11 -O2 -c fibonacci.c -o fibonacci.o
+```
+
+The file contains proven numeric function specializations, not the top-level Goat
+program or a `main`. Headers and helpers appear once, followed by prototypes and
+complete definitions in deterministic order. Unsupported specializations and their
+callers are omitted; backend omissions are reported on stderr. An empty inventory
+still produces a valid C translation unit. Export succeeds when the remaining
+module is written, even if some candidates were omitted. Parser and output errors
+return failure. The module does not yet include VM adapters or dynamic loading.
+
 
 ## How it works
 

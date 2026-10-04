@@ -1,6 +1,6 @@
 # Native execution contract
 
-This document describes the C backend and planned VM bridge. Minimal whole-function
+This document describes the C backend and planned VM bridge. Whole-module numeric
 C emission is implemented; dynamic compilation/loading and VM native dispatch are
 not implemented yet. The
 [C subset contract](c-subset.md) defines the numerical semantics and the proofs
@@ -119,7 +119,7 @@ must agree with the current definition's name and return type. Standalone tests
 compile and execute Fibonacci, factorial, two- and three-function cycles, recursive
 aliases, mixed-type cycles and ignored arguments with local side effects. They
 exercise inputs beyond the concrete analysis seeds, integer wrapping and binary64
-rounding. Complete-module assembly remains the next roadmap step.
+rounding. Complete-module assembly retains only successfully lowered dependency closures.
 
 These tests use bounded recursion depths. Native VM execution is still disabled;
 host-stack limits and controlled bytecode retry remain prerequisites for enabling it.
@@ -129,8 +129,9 @@ compiles it with `${CC:-gcc}` and executes numeric assertions at `-O2`. CI runs 
 with Linux GCC/Clang and all Windows GCC targets, plus Linux sanitizers and GCC
 x87 evaluation. Arithmetic checks compare all numeric type pairs with the object
 model at boundary values, including signed zeros, NaN and infinities. CI preserves generated source
-as an artifact. The unit executable's `--emit-c-tests` is test-only; user-facing
-source output options remain a later step.
+as an artifact. The unit executable's `--emit-c-tests` is test-only.
+`scripts/check_c_module.sh GOAT_BINARY OUTPUT_DIR` additionally exercises the public
+CLI and compiles/executes its exported modules on every CI compiler target.
 
 Replacement nodes preserve an original subtree and a simplified subtree. Native
 generation currently always uses the original subtree. Reusing a simplified
@@ -162,11 +163,35 @@ Availability proves dependency closure only, not emitter or runtime readiness.
 Inventory storage and names belong to the supplied arena; AST and summary pointers
 are borrowed. Rebuild the inventory after reanalysis. Summary snapshots copy call
 records but borrow target identities, whose parameter keys remain immutable.
-No compiler, source module assembly or VM dispatch is introduced here.
+The inventory does not compile code or enable VM dispatch.
 
 The remaining stages are listed in the [implementation roadmap](native-roadmap.md).
 
 ## Generated module
+
+`generate_c_module` first emits each candidate definition transactionally, then
+propagates backend failures through exact dependencies until stable. Successful
+independent functions survive a failed recursive group. Neither inventory
+availability nor analysis proofs are modified. Omission records belong to the
+supplied arena and distinguish direct emission failures from blocked dependencies;
+source text is separately owned by the caller. Counts refer to inventory candidates,
+not all function declarations in the program.
+
+Output has shared headers/helpers once, all retained prototypes, then definitions
+in inventory order. It contains no addresses, timestamps or input filenames.
+Zero retained functions still yields a valid C11 translation unit. Assembly adds
+no VM adapters yet.
+
+`--print-c` and `--save-c` select source-only export after analysis and before
+bytecode generation: the Goat program is not executed. Both require `--optimize all`
+and reject other `--print-*` modes, keeping stdout usable as C. Graph and analysis
+sidecar files remain available. `--save-c` takes no argument: it replaces the input
+extension with `.c` in the same directory; the filename helper uses `generated.c`
+when no source filename exists. The current CLI still requires an input file.
+An input already ending in `.c` (case-insensitive) is rejected for saving to avoid
+overwriting it. Printing that input is allowed. Existing output files are replaced.
+Backend omissions are reported on stderr; a successfully written partial or empty
+module is a successful export. Parse and I/O errors fail the command.
 
 One C source file contains the selected specializations, forward declarations,
 numerical helpers and VM adapters. Use module-wide specialization identifiers;
