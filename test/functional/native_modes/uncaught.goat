@@ -1,0 +1,3 @@
+const identity = func(n) { return n; }
+print(identity(4)); print("\n")
+throw identity(7)

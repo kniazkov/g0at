@@ -16,6 +16,9 @@ typedef struct options_t options_t;
 /** @brief Optional analysis and code optimization level. */
 typedef enum { OPTIMIZATION_NONE, OPTIMIZATION_ALL } optimization_level_t;
 
+/** @brief Optional whole-function native execution. */
+typedef enum { NATIVE_OFF, NATIVE_AUTO, NATIVE_REQUIRED } native_execution_mode_t;
+
 /** @brief Storing parsed command-line options. */
 struct options_t {
     /** @brief Path to the input file. */
@@ -53,8 +56,12 @@ struct options_t {
     /** @brief Compile a shared library without executing Goat code. */
     bool save_library;
 
-    /** @brief Internal opt-in; command-line execution modes follow separately. */
-    bool native_execution;
+    /** @brief Defaults to NATIVE_OFF; required demands at least one bound function. */
+    native_execution_mode_t native_execution;
+
+    /** @brief Optional execution counters, separate from the program output. */
+    bool print_native;
+    path_t *native_output_file;
 
     /** @brief Optional UTF-8 analysis report destination. */
     path_t *analysis_output_file;

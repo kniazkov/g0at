@@ -1,0 +1,2 @@
+const f = func(n) { return n; }
+print(f(1)); print(" "); print(f()); print(" "); print(f(false)); print(" "); print(f("hello")); print(" "); print(f({})); print("\n")

@@ -1,0 +1,5 @@
+const eligible = func(n) { return n + 1; }
+print(eligible(4)); print("\n")
+var captured = 2
+const mutate = func(n) { captured = captured + n; return captured; }
+print(mutate(3)); print(" "); print(captured); print("\n")

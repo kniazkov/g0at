@@ -82,6 +82,38 @@ options_t *parse_options(int argc, char **argv) {
                 continue;
             }
 
+            if (strcmp(arg, "--native") == 0) {
+                if (index + 1 >= argc || !argv[index + 1][0] || argv[index + 1][0] == '-') {
+                    fprintf_utf8(stderr, get_messages()->missing_specification, arg);
+                    goto error;
+                }
+                const char *mode = argv[++index];
+                if (!strcmp(mode, "off"))
+                    opt->native_execution = NATIVE_OFF;
+                else if (!strcmp(mode, "auto"))
+                    opt->native_execution = NATIVE_AUTO;
+                else if (!strcmp(mode, "required"))
+                    opt->native_execution = NATIVE_REQUIRED;
+                else {
+                    fprintf_utf8(stderr, get_messages()->bad_native_mode, mode);
+                    goto error;
+                }
+                continue;
+            }
+            if (strcmp(arg, "--print-native") == 0) {
+                opt->print_native = true;
+                continue;
+            }
+            if (strcmp(arg, "--save-native") == 0) {
+                if (index + 1 >= argc || !argv[index + 1][0] || argv[index + 1][0] == '-') {
+                    fprintf_utf8(stderr, get_messages()->missing_specification, arg);
+                    goto error;
+                }
+                free_path(opt->native_output_file);
+                opt->native_output_file = create_path(argv[++index]);
+                continue;
+            }
+
             if (strcmp(arg, "--save-library") == 0) {
                 opt->save_library = true;
                 continue;
@@ -166,6 +198,17 @@ options_t *parse_options(int argc, char **argv) {
         fprintf_utf8(stderr, get_messages()->bad_c_options);
         goto error;
     }
+    if ((opt->native_execution != NATIVE_OFF && opt->optimization_level == OPTIMIZATION_NONE)
+        || ((opt->print_c || opt->save_c || opt->save_library)
+            && (opt->native_execution != NATIVE_OFF || opt->print_native
+                || opt->native_output_file))) {
+        fprintf_utf8(stderr, get_messages()->bad_native_options);
+        goto error;
+    }
+    if (paths_refer_to_same_file(opt->input_file, opt->native_output_file)) {
+        fprintf_utf8(stderr, get_messages()->native_report_conflict);
+        goto error;
+    }
     return opt;
 
 error:
@@ -182,6 +225,7 @@ void destroy_options(options_t *opt) {
     free_path(opt->input_file);
     free_path(opt->graph_output_file);
     free_path(opt->analysis_output_file);
+    free_path(opt->native_output_file);
     destroy_vector(opt->script_args);
     FREE(opt);
 }

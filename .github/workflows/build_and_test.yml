@@ -79,6 +79,10 @@ jobs:
         run: bash scripts/check_native_pipeline.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/unit_testing "build/${{ matrix.compiler }}/native pipeline"
         env:
           CC: ${{ matrix.compiler }}
+      - name: Compare native modes and verify actual adapter entry
+        run: bash scripts/check_native_modes.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/functional_testing "build/${{ matrix.compiler }}/native modes"
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Check numeric adapter ABI
         run: bash scripts/check_native_abi.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native-abi
         env:
@@ -124,6 +128,19 @@ jobs:
           BUILD_DIR: build/release-${{ matrix.compiler }}
       - name: Smoke test release
         run: ./goat example/hello_world.goat
+      - name: Compare release native modes
+        run: bash scripts/check_native_modes.sh build/release-${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/functional_testing "build/${{ matrix.compiler }}/native modes release"
+        env:
+          CC: ${{ matrix.compiler }}
+      - name: Preserve native execution reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-execution-Linux-${{ matrix.name }}
+          path: |
+            build/${{ matrix.compiler }}/native modes
+            build/${{ matrix.compiler }}/native modes release
+          if-no-files-found: ignore
       - name: Render analysis graphs
         if: matrix.compiler == 'gcc'
         run: |
@@ -185,6 +202,9 @@ jobs:
       - name: Execute generated libraries and retry bounded native calls
         shell: msys2 {0}
         run: bash scripts/check_native_pipeline.sh build/goat.exe build/unit_testing.exe "build/native pipeline"
+      - name: Compare native modes and verify actual adapter entry
+        shell: msys2 {0}
+        run: bash scripts/check_native_modes.sh build/goat.exe build/functional_testing.exe "build/native modes"
       - name: Check numeric adapter ABI
         shell: msys2 {0}
         run: bash scripts/check_native_abi.sh build/goat.exe build/native-abi
@@ -209,6 +229,18 @@ jobs:
       - name: Build release
         shell: msys2 {0}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_release_mingw.cmd'
+      - name: Compare release native modes
+        shell: msys2 {0}
+        run: bash scripts/check_native_modes.sh build/release/goat.exe build/functional_testing.exe "build/native modes release"
+      - name: Preserve native execution reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-execution-Windows-${{ matrix.msystem }}
+          path: |
+            build/native modes
+            build/native modes release
+          if-no-files-found: ignore
       - name: Preserve failed functional outputs
         if: failure()
         uses: actions/upload-artifact@v4

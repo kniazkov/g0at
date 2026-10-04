@@ -1,0 +1,5 @@
+const down = func(n) { if (n <= 0) return 0; return down(n - 1) + 1; }
+const fib = func(n) { if (n < 2) return n; return fib(n - 1) + fib(n - 2); }
+var n = 199
+var ignored = 0
+print(down(++n, ++ignored)); print(" "); print(n); print(" "); print(ignored); print(" "); print(down(3)); print(" "); print(fib(10)); print("\n")

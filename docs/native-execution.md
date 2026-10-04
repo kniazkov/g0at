@@ -1,8 +1,8 @@
 # Native execution contract
 
 Whole-module numeric C emission, compilation/loading, function-object dispatch and
-bounded recursion with bytecode retry are implemented. The launcher pipeline has an
-internal opt-in; user-facing execution modes remain for step 18. The
+bounded recursion with bytecode retry are implemented. The launcher exposes
+`--native off|auto|required` and optional execution reports. The
 [C subset contract](c-subset.md) defines the numerical semantics and the proofs
 already produced by the analyzer; this document defines how a backend may use them.
 
@@ -223,8 +223,7 @@ interpretation must remain dependency-free.
 Linux and Windows library compilation is implemented by `--save-library`; see the
 [compilation contract](native-compilation.md). `prepare_native_execution` now connects
 generation, compilation, loading and `FUNC` binding. The launcher uses this pipeline
-when its internal `native_execution` option is set and optimization is enabled. No
-command-line execution mode is introduced in step 17.
+when native execution is enabled and `--optimize all` is selected.
 
 ## VM call and fallback
 
@@ -294,11 +293,10 @@ is valid only for proven pure execution without observable partial effects. Nati
 resource handling is a prerequisite for enabling recursive code in the VM, even
 if earlier standalone emitter tests already compile recursive functions.
 
-Build/load failures leave the bytecode path available. Explicit diagnostic modes
-may instead fail with a clear error when requested native execution cannot be
-provided. The later CLI step will define that policy; this PR adds no options.
-The planned initial default keeps native execution disabled. Source inspection
-and saving must also work independently of compiling or loading a library.
+Build/load failures leave the bytecode path available in `auto` mode. `required`
+stops before program execution if preparation fails or no function can be bound.
+The default is `off`; source inspection and saving remain independent of native
+execution.
 
 ## Acceptance cases for later steps
 
@@ -370,3 +368,53 @@ actual native entry, direct/mutual recursion, shallow call-budget exhaustion, th
 guards, small-stack refusal, compile/load/binding failure, frame-size omission, launcher
 integration and temporary-file cleanup. Native-call tests additionally cover exception
 unwinding out of a retry scope. Both suites run in all five compiler/platform CI jobs.
+
+## Execution modes and reports (step 18)
+
+| Mode | Preparation policy |
+| --- | --- |
+| `--native off` (default) | Never invoke a compiler or loader for execution. |
+| `--native auto` | Bind available generated code. Empty inventory is normal; preparation failures are diagnosed on stderr and execution continues in bytecode. |
+| `--native required` | Require at least one bound function. Empty inventory or preparation failure exits unsuccessfully before any Goat program code runs. |
+
+`required` is a preparation requirement, not an all-native execution guarantee. The
+program may never reach a prepared function; unmatched calls and controlled resource
+limits still fall back. Non-resource backend failures always stop execution in both
+enabled modes. No native compiler is necessary for `off` or source-only export.
+
+Enabled modes require `--optimize all`, regardless of option order. C/library export
+cannot be combined with enabled native execution or native reports. `--print-native`
+prints a report after execution, separated by a newline from program output;
+`--save-native <file>` writes the same UTF-8 report
+without changing program stdout. Reports are also written after VM exceptions and
+required-mode preparation failures, but not parser/analysis failures. A report write
+failure makes the command fail; execution may already have happened. Existing input
+files, including links to them, cannot be overwritten by a native report.
+
+Reports have stable, language-independent `key=value` lines:
+
+| Key | Meaning |
+| --- | --- |
+| `mode` | `off`, `auto`, or `required`. |
+| `preparation` | `disabled`, `ready`, `empty`, `io-error`, `compile-error`, `load-error`, or `bind-error`. |
+| `bound` | Number of function identities with attached descriptors, not specialization count. |
+| `omitted` | Specializations rejected during C lowering or because a dependency was omitted. |
+| `attempts` | Calls that entered an ABI adapter from the VM. |
+| `succeeded` | Calls that returned a validated native result. |
+| `retries` | Resource-limit fallback scopes, including refusal before adapter entry for insufficient stack headroom. |
+
+Counters aggregate runtime threads; C-to-C calls within an adapter are not separate
+VM attempts. Preparation does not increment execution counters. A success count of
+zero must never be used as evidence that native execution was tested.
+
+`scripts/check_native_modes.sh GOAT FUNCTIONAL_BINARY OUTPUT_DIR` reruns the entire
+functional suite with `auto`, then compares checked expectations, stdout, stderr and
+exit status across all three modes. Focused cases assert nonzero native success counts,
+exact retry counts, numeric representation, boundary values, aliases, argument effects,
+missing/extra arguments, captures and caught/uncaught exceptions. Failure-policy tests
+cover unavailable compilers, malformed/unrelated libraries, empty inventories, invalid
+options, report failures and source protection. CI runs this against Debug and Release
+executables on Linux GCC/Clang and Windows MINGW32/MINGW64/UCRT64, preserving reports.
+
+The functional runner accepts an optional `off|auto|required` argument after its test
+list. Default/off retains both optimization levels; enabled modes test `all` only.

@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 /**
  * @brief A filesystem path with decomposed components.
  *
@@ -27,3 +29,6 @@ path_t *create_path(const char *input);
 
 /** @brief Frees all resources associated with path_t. */
 void free_path(path_t *path);
+
+/** @brief Compares normalized names and existing file identities, following links. */
+bool paths_refer_to_same_file(const path_t *left, const path_t *right);

@@ -1,0 +1,15 @@
+const identity = func(n) { return n; }
+const sub = func(a, b) { return a - b; }
+print(identity(9223372036854775807)); print(" "); print(sub(-9223372036854775808, 1)); print("\n")
+print(sub(9007199254740993, 9007199254740992.0)); print(" "); print(sub(9007199254740992.0, 9007199254740993)); print("\n")
+var zero = identity(-0.0)
+if (atan(zero, -1) >= 0)
+    throw "negative zero lost"
+var nan = identity(sqrt(-1))
+if (nan == nan)
+    throw "NaN changed"
+var infinity = identity(2 ** 1024)
+if (infinity != 2 ** 1024)
+    throw "infinity changed"
+print(atan(zero, -1) < 0); print(" "); print(nan != nan); print(" "); print(infinity > 1); print("\n")
+print("edges ok\n")

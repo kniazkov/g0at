@@ -9,7 +9,6 @@
 #include "analysis/analysis.h"
 #include "c_output.h"
 #include "codegen/linker.h"
-#include "codegen/native_pipeline.h"
 #include "codegen/source_builder.h"
 #include "graph/node.h"
 #include "graph/visualization.h"
@@ -18,6 +17,7 @@
 #include "lib/io.h"
 #include "model/object.h"
 #include "model/thread.h"
+#include "native_execution.h"
 #include "parser/parser.h"
 #include "resources/messages.h"
 #include "scanner/scanner.h"
@@ -169,12 +169,11 @@ int go(options_t *opt) {
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);
 
-        if (opt->native_execution && opt->optimization_level == OPTIMIZATION_ALL) {
-            native_prepare_result_t native =
-                prepare_native_execution(root_node, bytecode, getenv("CC"));
-            if (native.diagnostic)
-                fprintf(stderr, "%s\n", native.diagnostic);
-            destroy_native_prepare_result(&native);
+        native_execution_report_t native;
+        if (!prepare_native_program(opt, root_node, bytecode, &native)) {
+            output_native_report(opt, &native, NULL);
+            free_bytecode(bytecode);
+            break;
         }
 
         if (opt->print_bytecode) {
@@ -202,6 +201,8 @@ int go(options_t *opt) {
             }
             thread = thread->next;
         } while (thread != process->main_thread);
+        if (!output_native_report(opt, &native, process))
+            ret_code = -1;
         destroy_process(process);
 
         free_bytecode(bytecode);

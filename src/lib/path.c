@@ -10,6 +10,7 @@
 #else
 #    include <limits.h>
 #    include <stdlib.h>
+#    include <sys/stat.h>
 #endif
 
 #include "lib/allocate.h"
@@ -109,4 +110,43 @@ void free_path(path_t *path) {
     FREE(path->full_path);
     FREE(path->dir_name);
     FREE(path);
+}
+
+bool paths_refer_to_same_file(const path_t *left, const path_t *right) {
+    if (!left || !right || !left->full_path || !right->full_path)
+        return false;
+#ifdef _WIN32
+    if (!strcasecmp(left->full_path, right->full_path))
+        return true;
+    HANDLE a = CreateFileA(left->full_path,
+                           FILE_READ_ATTRIBUTES,
+                           FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                           NULL,
+                           OPEN_EXISTING,
+                           0,
+                           NULL);
+    HANDLE b = CreateFileA(right->full_path,
+                           FILE_READ_ATTRIBUTES,
+                           FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                           NULL,
+                           OPEN_EXISTING,
+                           0,
+                           NULL);
+    BY_HANDLE_FILE_INFORMATION x, y;
+    bool same = a != INVALID_HANDLE_VALUE && b != INVALID_HANDLE_VALUE
+                && GetFileInformationByHandle(a, &x) && GetFileInformationByHandle(b, &y)
+                && x.dwVolumeSerialNumber == y.dwVolumeSerialNumber
+                && x.nFileIndexHigh == y.nFileIndexHigh && x.nFileIndexLow == y.nFileIndexLow;
+    if (a != INVALID_HANDLE_VALUE)
+        CloseHandle(a);
+    if (b != INVALID_HANDLE_VALUE)
+        CloseHandle(b);
+    return same;
+#else
+    if (!strcmp(left->full_path, right->full_path))
+        return true;
+    struct stat a, b;
+    return !stat(left->full_path, &a) && !stat(right->full_path, &b) && a.st_dev == b.st_dev
+           && a.st_ino == b.st_ino;
+#endif
 }

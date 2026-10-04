@@ -52,13 +52,13 @@ uint32_t invoke(uint32_t version,
 ```
 
 Arguments are already evaluated and stored in source parameter order: element 0
-is the first argument. The future VM bridge must preserve Goat's right-to-left
+is the first argument. The VM bridge preserves Goat's right-to-left
 argument evaluation before invoking the adapter. There is no evaluation or boxing
 of Goat expressions at this boundary.
 
 The adapter checks version, pointers, count and formal parameter tags before calling
 the typed C function. It does not convert integer to real or real to integer.
-A missing formal argument rejects the specialization; a future VM bridge must
+A missing formal argument rejects the specialization; the VM bridge must
 preserve Goat's missing-argument `null` semantics through bytecode fallback.
 Extra arguments are accepted and ignored: their tags, reserved fields and payloads
 are not inspected. The VM remains responsible for their original evaluation and

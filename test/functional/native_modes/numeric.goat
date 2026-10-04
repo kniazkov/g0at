@@ -1,0 +1,23 @@
+const identity = func(n) { return n; }
+const sub = func(a, b) { return a - b; }
+const twice = func(n) { return n * 2; }
+const wrapper = func(n) { return twice(n) + 1; }
+var a = identity(10)
+var b = identity(10.0)
+print(a); print(" "); print(b); print(" "); print(sub(8, 0.5)); print(" "); print(sub(0.5, 8)); print(" "); print(wrapper(7)); print("\n")
+print(identity()); print(" "); print(identity(true)); print(" "); print(identity("text")); print("\n")
+var f = identity
+print(f(11)); print("\n")
+f = twice
+print(f(11)); print("\n")
+var extra = 0
+print(identity(12, ++extra)); print(" "); print(extra); print("\n")
+if ((a & 0) != 0)
+    throw "integer result type changed"
+try {
+    var probe = b & 0
+    throw "real result type changed"
+} catch (e) {
+    if (e != "INVALID_OPERATION")
+        throw e
+}
