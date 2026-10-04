@@ -1,0 +1,9 @@
+const twice = func(x) { return x * 2; };
+const calculate = func(x) {
+    var result = twice(x);
+    if (result < 0) { return -result; }
+    return result + 1;
+};
+println(calculate(3));
+println(calculate(-3));
+println(calculate(1.5));

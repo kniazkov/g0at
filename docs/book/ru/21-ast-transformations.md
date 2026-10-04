@@ -1,6 +1,6 @@
 # 21. Преобразования AST и сохранение семантики
 
-[Оглавление](index.md) · [English](../en/21-ast-transformations.md) · [Предыдущая глава](20-native-eligibility.md)
+[Оглавление](index.md) · [English](../en/21-ast-transformations.md) · [Предыдущая глава](20-native-eligibility.md) · [Следующая глава](22-c-code-generation.md)
 
 Редакция 2. Описываемая реализация: [commit 8d1fe86, с функцией `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
 
