@@ -3,8 +3,10 @@
  * @brief Scoped C-style loops with conservative abstract execution.
  */
 #include "analysis/abstract_state.h"
+#include "analysis/c_body.h"
 #include "analysis/function_call_graph.h"
 #include "analysis/lattice.h"
+#include "codegen/c_control.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
@@ -64,7 +66,8 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
     for (size_t pass = 0; pass < 16 && *state->call_budget; pass++) {
         --*state->call_budget;
         abstract_state_t *back = clone_abstract_state(head);
-        const lattice_element_t *condition = calculate_node(get_child(node, 1), back, arena);
+        const lattice_element_t *condition =
+            calculate_expression((expression_t *)get_child(node, 1), back, arena);
         if (back->control_flow == FLOW_NORMAL && lattice_truth(condition) != ABSTRACT_FALSE) {
             execute_node(get_child(node, 3), back, arena);
             if (back->control_flow == FLOW_NORMAL)
@@ -80,7 +83,8 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
             break;
     }
     if (stable) {
-        const lattice_element_t *condition = calculate_node(get_child(node, 1), head, arena);
+        const lattice_element_t *condition =
+            calculate_expression((expression_t *)get_child(node, 1), head, arena);
         if (head->control_flow == FLOW_NORMAL && lattice_truth(condition) == ABSTRACT_TRUE)
             head->control_flow = FLOW_UNREACHABLE;
     } else {
@@ -184,9 +188,9 @@ static node_vtbl_t for_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
+    .can_generate_c_code = c_body_children,
     .generate_c_code = no_c_code,
-    .generate_indented_c_code = no_indented_c_code,
+    .generate_indented_c_code = c_emit_for,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
 };

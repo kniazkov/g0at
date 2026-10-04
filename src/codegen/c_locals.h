@@ -24,3 +24,6 @@ bool c_emit_declarator(const node_t *node,
                        size_t indent);
 /** @brief Implements node_vtbl_t::generate_c_code for assignment to local storage. */
 c_generated_expression_t c_assignment(const node_t *node, c_generation_context_t *context);
+
+/** @brief Lowers prefix/postfix updates of fixed numeric local storage. */
+c_generated_expression_t c_update(const node_t *node, c_generation_context_t *context);

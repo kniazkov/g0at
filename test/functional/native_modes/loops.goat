@@ -1,0 +1,49 @@
+const sum = func(n) {
+    var result = 0;
+    for (var i = 0; i < n; i++) result = result + i;
+    return result;
+};
+const nested = func(n) {
+    var result = 0;
+    for (var i = 0; i < n; ++i)
+        for (var j = 0; j < n; j++)
+            if (i == 0) result = result + j; else result = result + i + j;
+    return result;
+};
+const early = func(n) {
+    for (var i = 0; i < n; i++) { if (i == 3) return i; }
+    return -1;
+};
+const updates = func(n) {
+    var a = n++;
+    var b = ++n;
+    var c = n--;
+    var d = --n;
+    return a * 1000 + b * 100 + c * 10 + d;
+};
+const increment = func(n) { return ++n; };
+const decrement = func(n) { return --n; };
+const condition = func(n) {
+    var i = 0;
+    var result = 0;
+    for (; (i = i + 1) < n;) result = result + i;
+    return result * 10 + i;
+};
+const shadow = func(n) {
+    var i = 99;
+    var result = 0;
+    for (var i = 0; i < n; i++) { var i = 7; result = result + i; }
+    return result + i;
+};
+println(sum(10));
+println(sum(10.0));
+println(sum(5000));
+println(nested(3));
+println(early(10));
+println(early(0));
+println(updates(2));
+println(updates(2.0));
+println(increment(9223372036854775807));
+println(decrement(-9223372036854775808));
+println(condition(4));
+println(shadow(3));

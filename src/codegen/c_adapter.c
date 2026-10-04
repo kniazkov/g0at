@@ -136,6 +136,11 @@ void c_emit_native_guard(source_builder_t *builder) {
         L"    goat_guard->depth++;",
         L"    goat_guard->fuel--;",
         L"}",
+        L"static inline void goat_guard_step(void) {",
+        L"    if (!goat_guard) return;",
+        L"    if (!goat_guard->fuel) longjmp(goat_guard->recovery, 1);",
+        L"    goat_guard->fuel--;",
+        L"}",
         L"static inline void goat_guard_leave(void) {",
         L"    if (goat_guard) goat_guard->depth--;",
         L"}"};

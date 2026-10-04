@@ -5,6 +5,7 @@
 #include "c_control.h"
 
 #include "c_arithmetic.h"
+#include "c_locals.h"
 #include "c_lowering.h"
 #include "graph/comparison.h"
 #include "graph/replacement.h"
@@ -178,4 +179,46 @@ void c_control_helpers(source_builder_t *builder) {
     add_static_source(builder, 1, L"return fraction > 0 ? 1 : fraction < 0 ? 4 : 2;");
     add_static_source(builder, 0, L"}");
     add_static_source(builder, 0, L"#endif");
+}
+
+bool c_emit_for(const node_t *node,
+                c_generation_context_t *context,
+                source_builder_t *builder,
+                size_t indent) {
+    const c_generation_binding_t *saved = context->bindings;
+    add_static_source(builder, indent, L"{");
+    bool success = c_prepare_locals(node, context, builder, indent + 1)
+                   && generate_indented_c_code_from_node(get_node_child(node, 0),
+                                                         context,
+                                                         builder,
+                                                         indent + 1);
+    c_generated_expression_t condition = {0};
+    if (success) {
+        condition = generate_c_code_from_node(get_node_child(node, 1), context);
+        success = condition.success;
+    }
+    if (success) {
+        add_static_source(builder, indent + 1, L"for (;;) {");
+        c_emit_prelude(condition.prelude, builder, indent + 2);
+        add_source(builder, indent + 2, L"if (!(%s)) break;", condition.value.data);
+        if (context->module_definition)
+            add_static_source(builder, indent + 2, L"goat_guard_step();");
+        context->terminates = false;
+        success = generate_indented_c_code_from_node(get_node_child(node, 3),
+                                                     context,
+                                                     builder,
+                                                     indent + 2);
+        if (success && !context->terminates)
+            success = generate_indented_c_code_from_node(get_node_child(node, 2),
+                                                         context,
+                                                         builder,
+                                                         indent + 2);
+        add_static_source(builder, indent + 1, L"}");
+    }
+    destroy_c_expression(&condition);
+    c_release_locals(context, saved);
+    context->terminates =
+        c_generation_condition_truth(context, get_node_child(node, 1)) == ABSTRACT_TRUE;
+    add_static_source(builder, indent, L"}");
+    return success;
 }
