@@ -1,0 +1,6 @@
+const identity = func(x) { return x; };
+println(identity(3));
+println(identity(1.5));
+println(identity("text"));
+println(identity());
+println(identity(7, println("extra")));

@@ -1,0 +1,10 @@
+const increment = func(x) { return x + 1; };
+const equal = func(x, y) {
+    if (x == y) { return 1; }
+    return 0;
+};
+const pair = func(a, b) { return a * 10 + b; };
+const order = func(x) { return pair(x = x + 1, x = x + 1); };
+println(increment(9223372036854775807));
+println(equal(9007199254740993, 9007199254740992.0));
+println(order(0));

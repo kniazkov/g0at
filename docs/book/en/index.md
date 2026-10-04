@@ -39,11 +39,11 @@ Red callouts mark limitations and known defects of the implementation described.
 
 ### Part V. Native Backend
 
-22. C Code Generation
-23. Native ABI
-24. Library Compilation and Loading
-25. Native Dispatch and VM Fallback
-26. Separate Compilation
+22. [C Code Generation](22-c-code-generation.md)
+23. [Native ABI](23-native-abi.md)
+24. [Library Compilation and Loading](24-library-compilation-and-loading.md)
+25. [Native Dispatch and VM Fallback](25-native-dispatch-and-vm-fallback.md)
+26. [Separate Compilation](26-separate-compilation.md)
 
 ### Part VI. Testing and Investigation of the Implementation
 
