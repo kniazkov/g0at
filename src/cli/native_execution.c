@@ -88,8 +88,10 @@ bool output_native_report(const options_t *options,
                                         attempts,
                                         successes,
                                         retries);
-    if (options->print_native)
+    if (options->print_native) {
+        fputc('\n', stdout);
         print_utf8(text.data);
+    }
     bool written = true;
     if (options->native_output_file) {
         if (paths_refer_to_same_file(options->input_file, options->native_output_file)) {

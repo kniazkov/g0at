@@ -90,7 +90,11 @@ ok
 current='print report agrees with sidecar and preserves program output'
 run printed --native required --print-native --save-native "$output_dir/printed.report" "$fixtures/caught.goat"
 [[ $(cat "$output_dir/printed.status") == 0 && ! -s "$output_dir/printed.err" ]]
-cat "$fixtures/caught.out" "$output_dir/printed.report" > "$output_dir/printed.expected"
+{
+    cat "$fixtures/caught.out"
+    printf '\n'
+    cat "$output_dir/printed.report"
+} > "$output_dir/printed.expected"
 same_text "$output_dir/printed.expected" "$output_dir/printed.out"
 ok
 for mode in auto required; do

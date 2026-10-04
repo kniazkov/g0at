@@ -384,7 +384,8 @@ enabled modes. No native compiler is necessary for `off` or source-only export.
 
 Enabled modes require `--optimize all`, regardless of option order. C/library export
 cannot be combined with enabled native execution or native reports. `--print-native`
-prints a report after execution; `--save-native <file>` writes the same UTF-8 report
+prints a report after execution, separated by a newline from program output;
+`--save-native <file>` writes the same UTF-8 report
 without changing program stdout. Reports are also written after VM exceptions and
 required-mode preparation failures, but not parser/analysis failures. A report write
 failure makes the command fail; execution may already have happened. Existing input
