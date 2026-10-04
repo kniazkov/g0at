@@ -1,6 +1,6 @@
 # 1. Назначение проекта
 
-[Оглавление](index.md) · [English](../en/01-project-purpose.md)
+[Оглавление](index.md) · [English](../en/01-project-purpose.md) · [Следующая глава](02-implemented-language.md)
 
 Редакция 1. Описываемая реализация: [commit 09d0cff, после PR №93](https://github.com/kniazkov/g0at/tree/09d0cffb08303b07c1c3af27ccbfc6af94466b97).
 
