@@ -36,6 +36,7 @@ typedef struct c_generation_context_t {
     string_view_t function_name;
     const c_generation_binding_t *bindings;
     const c_generation_callee_t *callees;
+    size_t temporary_count; /**< Unique within one emitted function. */
     c_generation_status_t status;
     const node_t *failed_node; /**< First failure, retained while unwinding. */
 } c_generation_context_t;

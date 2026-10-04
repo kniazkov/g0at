@@ -57,7 +57,8 @@ then use the value. Release both with `destroy_c_expression`. Statement lowering
 returns success explicitly. A failed function attempt discards all accumulated
 source without changing the analyzer's summary.
 
-The initial emitters support numeric literal expressions, parameter reads and a
+The emitters support numeric literals, parameter reads, parentheses, unary signs,
+and binary addition, subtraction and multiplication, within a
 body containing one explicit return. Generated parameter names use declaration
 identity, so Goat names need not be valid C identifiers. Function names are backend
 ASCII identifiers prefixed with `goat_`. Unsupported operators/control flow still
@@ -67,12 +68,19 @@ Replacement nodes delegate C lowering to their original children.
 Each successful result is standalone C11 source with the required standard headers.
 Integers use `INT64_C` with a safe spelling for `INT64_MIN`. Finite doubles use exact
 hexadecimal literals; negative zero, subnormals, NaN and infinities are covered.
-The initial target requires binary64 doubles. No arithmetic or implicit numeric
-return conversion is emitted in this step.
+The target requires binary64 doubles. Integer arithmetic wraps modulo 2^64 using
+unsigned operations and a range-safe conversion back to int64_t. Mixed operands
+convert to double before arithmetic. Ordered `goat_tN` temporaries evaluate each
+operand once, left to right; volatile double temporaries round conversions and
+each result, preventing excess precision and multiply-add contraction across
+operations. Fast-math compilation is rejected. Implicit numeric return conversion
+is not emitted.
 
 `scripts/check_c_generation.sh UNIT_BINARY OUTPUT_DIR` generates test source,
 compiles it with `${CC:-gcc}` and executes numeric assertions at `-O2`. CI runs it
-with Linux GCC/Clang and all Windows GCC targets (plus GCC x87 evaluation), and preserves generated source
+with Linux GCC/Clang and all Windows GCC targets, plus Linux sanitizers and GCC
+x87 evaluation. Arithmetic checks compare all numeric type pairs with the object
+model at boundary values, including signed zeros, NaN and infinities. CI preserves generated source
 as an artifact. The unit executable's `--emit-c-tests` is test-only; user-facing
 source output options remain a later step.
 

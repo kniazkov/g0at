@@ -4,6 +4,7 @@
  */
 #include "c_lowering.h"
 
+#include "c_arithmetic.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
@@ -140,6 +141,7 @@ bool c_emit_function(const node_t *node,
                       0,
                       L"_Static_assert(sizeof(double)==8 && FLT_RADIX==2 && DBL_MANT_DIG==53 && "
                       L"DBL_MAX_EXP==1024, \"binary64 required\");");
+    c_arithmetic_helpers(builder);
     add_formatted_source(builder, indent, append_string(&signature, L") {"));
     for (size_t i = 0; i < count; i++)
         add_source(builder, indent + 1, L"(void)%s;", bindings[i].name.data);

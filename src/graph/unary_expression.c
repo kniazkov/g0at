@@ -7,6 +7,7 @@
 #include "analysis/reachability.h"
 #include "analysis/simplification.h"
 #include "analysis/unary_operation.h"
+#include "codegen/c_arithmetic.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
@@ -100,6 +101,12 @@ static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
     return true;
 }
 
+/** @brief Implements node_vtbl_t::generate_c_code for unary signs. */
+static c_generated_expression_t generate_c_code(const node_t *node,
+                                                c_generation_context_t *context) {
+    return c_unary_arithmetic(node, context, node->vtbl->type == NODE_UNARY_MINUS);
+}
+
 /** @brief Virtual table for unary sign operations. */
 static node_vtbl_t unary_plus_vtbl = {
     .type = NODE_UNARY_PLUS,
@@ -125,7 +132,7 @@ static node_vtbl_t unary_plus_vtbl = {
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
     .can_generate_c_code = can_generate_c_code,
-    .generate_c_code = no_c_code,
+    .generate_c_code = generate_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
@@ -156,7 +163,7 @@ static node_vtbl_t unary_minus_vtbl = {
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
     .can_generate_c_code = can_generate_c_code,
-    .generate_c_code = no_c_code,
+    .generate_c_code = generate_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
