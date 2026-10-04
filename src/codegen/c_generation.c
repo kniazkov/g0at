@@ -98,6 +98,7 @@ static c_generation_result_t generate_function(const function_summary_t *summary
             result.source = build_source(builder);
         } else {
             source_builder_t *complete = create_source_builder();
+            add_static_source(complete, 0, L"#include <stdint.h>");
             c_emit_headers(complete, context.helper_flags);
             add_formatted_source(complete, 0, build_source(builder));
             result.source = build_source(complete);

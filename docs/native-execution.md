@@ -183,8 +183,8 @@ not all function declarations in the program.
 
 Output has shared headers/helpers once, all retained prototypes, then definitions
 in inventory order. It contains no addresses, timestamps or input filenames.
-Zero retained functions still yields a valid C11 translation unit. Assembly adds
-no VM adapters yet.
+Zero retained functions still yields a valid C11 translation unit. Assembly adds numeric adapters and an immutable module descriptor for the
+[version 1 ABI](native-abi.md).
 
 `--print-c` and `--save-c` select source-only export after analysis and before
 bytecode generation: the Goat program is not executed. Both require `--optimize all`
@@ -206,7 +206,7 @@ emission of its callers, without preventing unrelated functions from being emitt
 Emit a specialization completely or reject it. Never expose a partial function
 or silently call back into arbitrary Goat bytecode from generated C. Generated
 calls use typed C signatures; the VM uses a uniform, versioned adapter interface.
-The exact ABI layout belongs to the adapter implementation step, not this contract.
+The exact layout and status rules are specified in the [numeric ABI](native-abi.md).
 
 The ABI exchanges numeric values and an explicit execution status. It does not
 expose internal `object_t` layouts or pointers into the analysis arena. Runtime

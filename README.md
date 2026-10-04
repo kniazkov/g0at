@@ -194,7 +194,10 @@ complete definitions in deterministic order. Unsupported specializations and the
 callers are omitted; backend omissions are reported on stderr. An empty inventory
 still produces a valid C translation unit. Export succeeds when the remaining
 module is written, even if some candidates were omitted. Parser and output errors
-return failure. The module does not yet include VM adapters or dynamic loading.
+return failure. The module includes versioned numeric adapters and an immutable signature table
+accessible through `goat_native_query_v1`. The public boundary is documented in
+[`docs/native-abi.md`](docs/native-abi.md). Dynamic loading and VM dispatch are not
+yet connected.
 
 
 ## How it works
@@ -215,6 +218,7 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 | Path | Responsibility |
 | --- | --- |
 | [`scripts/`](scripts) | Build scripts and the Windows fixture-creation helper. |
+| [`include/goat/`](include/goat/) | Public headers for native adapters and external hosts. |
 | [`src/main.c`](src/main.c) | Executable entry point. |
 | [`src/cli/`](src/cli) | Command-line options and compilation/execution orchestration. |
 | [`src/scanner/`](src/scanner) | Tokenization, token groups, and token lists. |

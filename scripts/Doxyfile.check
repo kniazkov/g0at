@@ -1,6 +1,6 @@
 # Lightweight documentation validation; run from the repository root.
 @INCLUDE = src/Doxyfile
-INPUT = src
+INPUT = src include
 FILE_PATTERNS = *.c *.h
 OUTPUT_DIRECTORY = build/doxygen-check
 EXTRACT_ALL = YES

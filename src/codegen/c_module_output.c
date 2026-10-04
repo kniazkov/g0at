@@ -4,6 +4,7 @@
  */
 #include "c_module_output.h"
 
+#include "c_adapter.h"
 #include "c_call.h"
 #include "c_lowering.h"
 #include "lib/allocate.h"
@@ -46,6 +47,7 @@ c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
     for (size_t i = 0; i < count; i++)
         if (results[i].status == C_GENERATION_OK)
             helpers |= results[i].helper_flags;
+    c_emit_native_abi(builder);
     c_emit_headers(builder, helpers);
     c_module_failure_t **tail = &output.failures;
     for (const c_module_function_t *entry = module ? module->head : NULL; entry;
@@ -75,10 +77,12 @@ c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
         c_generation_result_t *result = &results[entry->id];
         if (result->status == C_GENERATION_OK) {
             add_formatted_source(builder, 0, result->source);
+            c_emit_adapter(builder, entry);
         } else {
             FREE_STRING(result->source);
         }
     }
+    c_emit_native_module(builder, module, results, output.generated_count);
     output.source = build_source(builder);
     destroy_source_builder(builder);
     FREE(results);

@@ -1,6 +1,6 @@
 .vscode
 build
-goat
+/goat
 goat.exe
 functional_testing.exe
 doxygen
