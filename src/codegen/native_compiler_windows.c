@@ -2,6 +2,8 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief MinGW DLL compilation without a shell; failed builds preserve the previous DLL.
  */
+#include "lib/windows_target.h"
+
 #ifdef _WIN32
 #    include <windows.h>
 #endif

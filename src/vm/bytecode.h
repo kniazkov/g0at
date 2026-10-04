@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include "common/types.h"
 #include "lib/value.h"
 #include "opcodes.h"
 
@@ -70,6 +71,8 @@ typedef struct {
 
 #pragma pack(pop)
 
+typedef struct native_function_descriptor_t native_function_descriptor_t;
+
 /** @brief A loaded bytecode file in memory. */
 typedef struct {
     /** @brief Pointer to the entire loaded bytecode file in memory. */
@@ -92,6 +95,9 @@ typedef struct {
 
     /** @brief Pointer to the actual data (type: uint8_t*). */
     uint8_t *data;
+
+    /** @brief Optional owned descriptors indexed by FUNC instruction; never serialized. */
+    native_function_descriptor_t **native_functions;
 } bytecode_t;
 
 /**
@@ -104,3 +110,11 @@ string_value_t bytecode_to_text(const bytecode_t *code);
 
 /** @brief Frees the memory allocated by the bytecode structure. */
 void free_bytecode(bytecode_t *code);
+
+/** @brief Binds or clears FUNC metadata before execution; retains the descriptor on success. */
+bool bind_bytecode_native_function(bytecode_t *code,
+                                   instr_index_t instruction,
+                                   native_function_descriptor_t *function);
+/** @brief Borrows the descriptor associated with a FUNC instruction. */
+native_function_descriptor_t *get_bytecode_native_function(const bytecode_t *code,
+                                                           instr_index_t instruction);

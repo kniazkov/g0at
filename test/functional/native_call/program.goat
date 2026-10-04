@@ -1,0 +1,8 @@
+const identity = func(n) { return n; }
+identity(1)
+identity(1.0)
+const difference = func(a, b) { return a - b; }
+difference(1, 0.5)
+difference(1.5, 1)
+const constant = func() { return 42; }
+constant()

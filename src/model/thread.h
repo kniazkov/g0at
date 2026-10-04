@@ -40,6 +40,9 @@ struct thread_t {
     /** @brief Pending native-call or unhandled exception, owned and traced by GC. */
     exception_t exception;
 
+    /** @brief Backend failure status; independent of Goat exceptions. */
+    uint32_t native_status;
+
     /** @brief The data stack used by the thread. */
     object_stack_t *data_stack;
 

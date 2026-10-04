@@ -7,6 +7,7 @@
 #include "lib/allocate.h"
 #include "test/test_c_emission.h"
 #include "test/test_list.h"
+#include "test/test_native_call.h"
 #include "test/test_output.h"
 #include "test/test_stack_underflow.h"
 
@@ -46,6 +47,8 @@ static bool unit_testing() {
 
 /** @brief Entry point. */
 int main(int argc, char **argv) {
+    if (argc == 5 && !strcmp(argv[1], "--native-call-tests"))
+        return test_native_calls(argv[2], argv[3], argv[4]) ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 3 && !strcmp(argv[1], "--emit-c-tests"))
         return write_c_emission_tests(argv[2]) ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 3 && !strcmp(argv[1], "--stack-underflow-case")) {

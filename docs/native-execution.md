@@ -1,8 +1,8 @@
 # Native execution contract
 
-This document describes the C backend and planned VM bridge. Whole-module numeric
-C emission is implemented; dynamic compilation/loading and VM native dispatch are
-not implemented yet. The
+This document describes the C backend and planned VM bridge. Whole-module numeric C emission, library compilation/loading and optional native
+dispatch through function objects are implemented. Automatic pipeline integration
+and bounded native recursion remain for step 17. The
 [C subset contract](c-subset.md) defines the numerical semantics and the proofs
 already produced by the analyzer; this document defines how a backend may use them.
 
@@ -125,8 +125,9 @@ aliases, mixed-type cycles and ignored arguments with local side effects. They
 exercise inputs beyond the concrete analysis seeds, integer wrapping and binary64
 rounding. Complete-module assembly retains only successfully lowered dependency closures.
 
-These tests use bounded recursion depths. Native VM execution is still disabled;
-host-stack limits and controlled bytecode retry remain prerequisites for enabling it.
+These standalone recursion tests use bounded depths. The CLI does not attach native
+descriptors yet; host-stack limits and controlled bytecode retry remain prerequisites
+for enabling recursive adapters through the pipeline.
 
 `scripts/check_c_generation.sh UNIT_BINARY OUTPUT_DIR` generates test source,
 compiles it with `${CC:-gcc}` and executes numeric assertions at `-O2`. CI runs it
@@ -221,7 +222,8 @@ A C compiler is required only when native compilation is requested; ordinary
 interpretation must remain dependency-free.
 
 Linux and Windows library compilation is implemented by `--save-library`; see the
-[compilation contract](native-compilation.md). Loading and VM dispatch remain separate steps.
+[compilation contract](native-compilation.md). Loading and optional VM dispatch are available through internal APIs; the CLI does
+not connect the full pipeline yet.
 
 ## VM call and fallback
 
@@ -234,9 +236,17 @@ does today; native selection belongs to the implementation of the function objec
 Function-creation metadata in the bytecode associates the parameter names and
 bytecode entry with an optional native descriptor reference. `FUNC` transfers
 that association into the created function object. Keep the descriptor reference
-separate from the parameter-name array. Its exact encoding is deferred to the
-implementation step; bytecode must not contain raw loaded-library addresses.
-The loader resolves descriptors to validated adapters.
+separate from the parameter-name array. The in-memory `bytecode_t.native_functions` table is indexed by the instruction
+position of `FUNC` and allocated only on the first binding.
+`bind_bytecode_native_function` validates the opcode and formal arity, then retains
+the descriptor; NULL removes the association. Bindings are established before
+execution. The table is separate from serialized `buffer` bytes: the file format,
+`ARG`/`FUNC` instruction operands, and parameter-name arrays remain unchanged.
+`FUNC` retains the selected descriptor in each newly created function object.
+`free_bytecode` releases table references; object DECREF, tracing GC and process
+destruction release object references independently. The binder checks structure,
+not semantic equivalence: its caller must associate the correct function definition
+and only adapters safe to execute, including any recursion constraints.
 
 The function object contains everything needed to choose between native and
 bytecode execution. Its optional descriptor maps ordered formal-parameter types
@@ -250,13 +260,23 @@ not dispatch by a variable's name or coerce an integer to real to find an adapte
 Aliases use the actual object's descriptor; rebinding a variable selects the new
 object's call behavior. Built-in functions retain their existing call path.
 
-There are three outcomes:
+The final contract has three outcomes:
 
 | Outcome | Function call action |
 | --- | --- |
 | No matching ready adapter | Create the ordinary call context, bind parameters and enter the bytecode body. |
 | Native success | Consume the arguments, box and push the result, and continue after `CALL`, without creating a call context. |
 | Controlled native resource limit | Discard the incomplete native result and enter the ordinary bytecode call path with the original arguments. |
+
+Step 16 implements exact selection, native success and unmatched-signature fallback.
+The adapter receives only formal numeric arguments, with zeroed reserved fields.
+An integral-valued real remains real; booleans and convertible strings never match.
+A successful result must have the declared return tag and a zero reserved field.
+All nonzero adapter statuses currently stop `run` with a nonzero return and are
+preserved in `thread.native_status`; malformed success becomes `BAD_REQUEST`.
+They are backend failures, not catchable Goat exceptions, and do not trigger a
+retry. `RESOURCE_LIMIT` retry is intentionally deferred to step 17, together with
+bounded recursion and suppression of native entry in fallback descendants.
 
 On native success, stack balance and result ownership must match an ordinary
 completed call, including disposal of extra arguments. The caller's context stays
@@ -282,7 +302,7 @@ and saving must also work independently of compiling or loading a library.
 
 ## Acceptance cases for later steps
 
-These are implementation gates, not claims about tests that exist today:
+These are acceptance gates for the complete pipeline:
 
 | Case | Required behavior |
 | --- | --- |
@@ -301,3 +321,13 @@ These are implementation gates, not claims about tests that exist today:
 Cross-mode tests must compare values, runtime types, output and exceptions, and
 also verify that successful native tests actually entered native code. Otherwise
 a backend that always falls back could appear correct.
+
+
+Step 16 tests run with `scripts/check_native_call.sh GOAT UNIT_BINARY OUTPUT_DIR`.
+They parse source, generate bytecode, bind loaded descriptors and free the analysis
+arena before execution. A counting provider verifies actual native entry; a generated
+provider is also exercised with bytecode bodies disabled. Tests cover all ordered
+numeric signatures, extra/missing arguments, aliases/rebinding, builtins, backend
+failures, numeric edges, unchanged contexts, and library unload through DECREF,
+unreachable closure-cycle collection and process destruction. They run on Linux
+GCC/Clang and all three Windows targets.

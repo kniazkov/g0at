@@ -41,7 +41,7 @@ bytecode_t *link_code_and_data(code_builder_t *code_builder, data_builder_t *dat
     uint8_t *data_start = (uint8_t *)buffer + data_offset;
     memcpy(data_start, data_builder->data, data_size);
 
-    bytecode_t *result = (bytecode_t *)ALLOC(sizeof(bytecode_t));
+    bytecode_t *result = (bytecode_t *)CALLOC(sizeof(bytecode_t));
     result->buffer = buffer;
     result->buffer_size = total_size;
     result->instructions = instructions_start;

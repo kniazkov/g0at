@@ -84,5 +84,6 @@ shared descriptor ownership and actual unload notifications. A generated Fibonac
 adapter is called after destroying the original load result. The script runs in both
 Linux compiler jobs and all three Windows jobs.
 
-This step provides loading and ownership only. Attaching descriptors to Goat function
-objects, dispatching from `CALL`, and automatic compile/load fallback follow separately.
+Descriptors can now be attached to `FUNC` metadata and retained by Goat function
+objects for dispatch through ordinary `CALL`; see the [execution contract](native-execution.md).
+Automatic compile/load integration and bounded-recursion retry follow separately.

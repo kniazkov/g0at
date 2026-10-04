@@ -8,6 +8,7 @@
 
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
+#include "model/native_library.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -174,6 +175,39 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
 }
 
 void free_bytecode(bytecode_t *code) {
+    if (code->native_functions) {
+        for (size_t i = 0; i < code->instructions_count; i++)
+            release_native_function_descriptor(code->native_functions[i]);
+        FREE(code->native_functions);
+    }
     FREE(code->buffer);
     FREE(code);
+}
+
+bool bind_bytecode_native_function(bytecode_t *code,
+                                   instr_index_t instruction,
+                                   native_function_descriptor_t *function) {
+    if (!code || instruction >= code->instructions_count
+        || code->instructions[instruction].opcode != FUNC)
+        return false;
+    for (uint32_t i = 0; i < get_native_function_entry_count(function); i++)
+        if (get_native_function_entry(function, i)->parameter_count
+            != code->instructions[instruction].arg0)
+            return false;
+    if (!code->native_functions) {
+        if (!function)
+            return true;
+        code->native_functions = CALLOC(code->instructions_count * sizeof(*code->native_functions));
+    }
+    retain_native_function_descriptor(function);
+    release_native_function_descriptor(code->native_functions[instruction]);
+    code->native_functions[instruction] = function;
+    return true;
+}
+
+native_function_descriptor_t *get_bytecode_native_function(const bytecode_t *code,
+                                                           instr_index_t instruction) {
+    return code && code->native_functions && instruction < code->instructions_count
+               ? code->native_functions[instruction]
+               : NULL;
 }

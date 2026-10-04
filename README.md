@@ -1286,7 +1286,10 @@ and enabled.
 
 The runtime now provides [native library loading](docs/native-loading.md) with ABI validation,
 owned metadata snapshots and reference-counted function descriptors. Linux and Windows
-loader tests cover invalid providers and library lifetime; VM dispatch is a later step.
+loader tests cover invalid providers and library lifetime. Optional descriptors bound to
+`FUNC` metadata now select exact numeric specializations through ordinary `CALL`,
+before allocating a context. Unmatched calls retain the bytecode path. Automatic
+CLI attachment and bounded native recursion are not enabled yet.
 
 ## Author and license
 

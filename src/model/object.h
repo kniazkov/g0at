@@ -30,6 +30,7 @@ static inline operation_result_t operation_exception(object_t *value) {
 
 typedef struct process_t process_t;
 typedef struct thread_t thread_t;
+typedef struct native_function_descriptor_t native_function_descriptor_t;
 
 /** @brief Enumeration of object types in the Goat virtual machine. */
 typedef enum {
@@ -551,6 +552,8 @@ object_t *create_integer_object(process_t *process, int64_t value);
 
 /** @brief Tests representation rather than convertibility to an integer. */
 bool is_integer_object(const object_t *obj);
+/** @brief Checks the real representation without numeric conversion. */
+bool is_real_object(const object_t *obj);
 
 /** @brief Gets the singleton instance of the Pi constant object. */
 object_t *get_pi_object();
@@ -583,12 +586,14 @@ object_t *create_user_defined_object(process_t *process, object_array_t proto);
  * function. Ownership of this array is transferred to the function object, and it will be freed
  * internally during object cleanup.
  * `arg_names`: Array of argument name objects. Ownership is transferred.
+ * The optional native descriptor is retained independently of the bytecode.
  */
 object_t *create_function_object(process_t *process,
                                  object_t **arg_names,
                                  size_t arg_count,
                                  instr_index_t first_instr_id,
-                                 object_t *closure);
+                                 object_t *closure,
+                                 native_function_descriptor_t *native_function);
 
 /** @brief Macro to declare a getter function for a static object. */
 #define DECLARE_STATIC_OBJECT(name) object_t *get_##name();

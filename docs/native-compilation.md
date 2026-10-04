@@ -132,3 +132,12 @@ loading does not implement the production loader planned for step 15.
 
 Process construction follows Microsoft's [CreateProcess documentation](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa)
 and [C runtime quoting rules](https://learn.microsoft.com/en-us/cpp/c-language/parsing-c-command-line-arguments).
+
+
+The Windows native backend targets Windows 8 APIs or newer. Its platform sources
+include `lib/windows_target.h` before system headers, raising older MinGW defaults
+for `_WIN32_WINNT` and `WINVER` to at least `0x0602` while preserving newer targets.
+This makes `STARTUPINFOEXA`, restricted handle inheritance and safe DLL search
+available independently of the toolchain's default target. It does not add support
+for Windows XP or update an SDK that lacks these declarations entirely.
+Windows CI compiles both platform sources with XP-era and Windows 10 target macros.
