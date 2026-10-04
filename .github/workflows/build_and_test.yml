@@ -133,6 +133,7 @@ jobs:
         with:
           msystem: ${{ matrix.msystem }}
           install: >-
+            diffutils
             ${{ matrix.prefix }}-gcc
             ${{ matrix.prefix }}-cmake
             ${{ matrix.prefix }}-make
