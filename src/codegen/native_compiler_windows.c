@@ -206,7 +206,13 @@ native_compile_result_t compile_native_library_windows(const wchar_t *source,
         return result;
     }
     char *input = join(directory, "\\module.c");
-    char *output = join(directory, "\\module.dll");
+    /* PE's export directory stores this basename; moving module.dll would break imports. */
+    const char *name = target;
+    for (const char *p = target; *p; p++)
+        if (*p == '\\' || *p == '/')
+            name = p + 1;
+    char *output = ALLOC(strlen(directory) + strlen(name) + 2);
+    sprintf(output, "%s\\%s", directory, name);
     char *log = join(directory, "\\compiler.log");
     if (!write_utf8_file(input, source)) {
         result.system_error = errno ? errno : EIO;

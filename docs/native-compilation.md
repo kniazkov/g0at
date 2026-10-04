@@ -63,7 +63,9 @@ ANSI code page), not a new UTF-8 filesystem contract. The current path-length li
 still apply. Broad Unicode filesystem support is a separate task.
 
 A random sibling directory is created exclusively; it inherits its parent's ACL.
-Random names use Windows' built-in BCrypt service, linked only on Windows; no external
+The temporary DLL already uses the final basename so that PE import metadata
+continues to work after publication. Random directory names use Windows' built-in
+BCrypt service, linked only on Windows; no external
 library or C++ compiler is added. A nonempty regular, non-reparse output is published
 with `MoveFileExA(REPLACE_EXISTING | WRITE_THROUGH)`. The destination is never deleted
 first. In-use DLLs can block replacement: this is an error preserving the old DLL,
