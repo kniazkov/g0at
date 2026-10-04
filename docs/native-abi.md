@@ -84,7 +84,7 @@ not promised. On every rejection the result storage is unchanged, byte for byte.
 | `GOAT_NATIVE_TYPE_MISMATCH` | 1 | Missing formal argument or a nonmatching type tag. |
 | `GOAT_NATIVE_BAD_REQUEST` | 2 | Missing required pointer or a nonzero reserved field on a formal argument. |
 | `GOAT_NATIVE_ABI_MISMATCH` | 3 | Unsupported invocation version. |
-| `GOAT_NATIVE_RESOURCE_LIMIT` | 4 | Reserved for controlled resource exhaustion and bytecode retry. |
+| `GOAT_NATIVE_RESOURCE_LIMIT` | 4 | Controlled resource exhaustion; pure calls may retry in bytecode. |
 | `GOAT_NATIVE_EXTERNAL_ERROR` | 5 | External execution failed; effects may already have occurred. Never retry automatically. |
 
 Version is checked first, then pointers and the minimum argument count. Formal
@@ -92,11 +92,11 @@ arguments are checked in index order, reserved field before type tag. These stat
 are backend outcomes, not Goat exceptions. Numeric eligibility currently excludes
 throwing paths; this ABI does not transport arbitrary exception objects.
 
-Resource-limit reporting is reserved but not implemented yet. Recursive adapters
-currently execute ordinary C recursion, just like the standalone emitter tests.
-They must not be enabled as the VM's native path until bounded native recursion and
-controlled retry are implemented in step 17. No signal/stack-overflow recovery is
-implied by the reserved status.
+Generated adapters now bound recursive depth, call count and stack use, returning
+`RESOURCE_LIMIT` without changing the output on exhaustion. The VM retries only
+`GOAT_NATIVE_PURE` entries, suppressing native calls in the fallback subtree. See the
+[execution contract](native-execution.md) for bounds and stack-headroom checks. This
+is not signal or stack-overflow recovery.
 
 ## Validation
 
@@ -141,7 +141,7 @@ must have no external effects. Once external execution starts, failure is
 result is unchanged, device state may have changed: the caller must not replay such
 a call through bytecode or another adapter. A provider may return the reserved
 resource-limit status only if execution is safe to retry, with no observable effects.
-The future VM bridge must report external failures without automatic retry; mapping
+The VM reports external failures without automatic retry; mapping
 them to Goat exceptions is a separate task.
 
 Version 1 remains synchronous and numeric. An adapter must wait for device work

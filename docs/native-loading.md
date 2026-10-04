@@ -86,4 +86,6 @@ Linux compiler jobs and all three Windows jobs.
 
 Descriptors can now be attached to `FUNC` metadata and retained by Goat function
 objects for dispatch through ordinary `CALL`; see the [execution contract](native-execution.md).
-Automatic compile/load integration and bounded-recursion retry follow separately.
+`prepare_native_execution` compiles into a private workspace and binds validated
+generated descriptors. Workspace cleanup follows the final library reference and
+runs after OS unloading; bounded-recursion retry is implemented in the VM.

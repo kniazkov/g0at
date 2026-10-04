@@ -1,8 +1,8 @@
 # Native execution contract
 
-This document describes the C backend and planned VM bridge. Whole-module numeric C emission, library compilation/loading and optional native
-dispatch through function objects are implemented. Automatic pipeline integration
-and bounded native recursion remain for step 17. The
+Whole-module numeric C emission, compilation/loading, function-object dispatch and
+bounded recursion with bytecode retry are implemented. The launcher pipeline has an
+internal opt-in; user-facing execution modes remain for step 18. The
 [C subset contract](c-subset.md) defines the numerical semantics and the proofs
 already produced by the analyzer; this document defines how a backend may use them.
 
@@ -125,9 +125,8 @@ aliases, mixed-type cycles and ignored arguments with local side effects. They
 exercise inputs beyond the concrete analysis seeds, integer wrapping and binary64
 rounding. Complete-module assembly retains only successfully lowered dependency closures.
 
-These standalone recursion tests use bounded depths. The CLI does not attach native
-descriptors yet; host-stack limits and controlled bytecode retry remain prerequisites
-for enabling recursive adapters through the pipeline.
+Standalone typed C entry points remain unguarded when called directly. Generated
+ABI adapters establish the bounded execution scope described below.
 
 `scripts/check_c_generation.sh UNIT_BINARY OUTPUT_DIR` generates test source,
 compiles it with `${CC:-gcc}` and executes numeric assertions at `-O2`. CI runs it
@@ -222,8 +221,10 @@ A C compiler is required only when native compilation is requested; ordinary
 interpretation must remain dependency-free.
 
 Linux and Windows library compilation is implemented by `--save-library`; see the
-[compilation contract](native-compilation.md). Loading and optional VM dispatch are available through internal APIs; the CLI does
-not connect the full pipeline yet.
+[compilation contract](native-compilation.md). `prepare_native_execution` now connects
+generation, compilation, loading and `FUNC` binding. The launcher uses this pipeline
+when its internal `native_execution` option is set and optimization is enabled. No
+command-line execution mode is introduced in step 17.
 
 ## VM call and fallback
 
@@ -272,11 +273,10 @@ Step 16 implements exact selection, native success and unmatched-signature fallb
 The adapter receives only formal numeric arguments, with zeroed reserved fields.
 An integral-valued real remains real; booleans and convertible strings never match.
 A successful result must have the declared return tag and a zero reserved field.
-All nonzero adapter statuses currently stop `run` with a nonzero return and are
-preserved in `thread.native_status`; malformed success becomes `BAD_REQUEST`.
-They are backend failures, not catchable Goat exceptions, and do not trigger a
-retry. `RESOURCE_LIMIT` retry is intentionally deferred to step 17, together with
-bounded recursion and suppression of native entry in fallback descendants.
+A pure adapter reporting `RESOURCE_LIMIT` enters bytecode with the original arguments.
+Other nonzero statuses stop `run` and remain in `thread.native_status`; malformed
+success becomes `BAD_REQUEST`. These backend failures are reported by the launcher
+and cannot be caught as Goat exceptions. An impure resource failure is never retried.
 
 On native success, stack balance and result ownership must match an ordinary
 completed call, including disposal of extra arguments. The caller's context stays
@@ -331,3 +331,42 @@ numeric signatures, extra/missing arguments, aliases/rebinding, builtins, backen
 failures, numeric edges, unchanged contexts, and library unload through DECREF,
 unreachable closure-cycle collection and process destruction. They run on Linux
 GCC/Clang and all three Windows targets.
+
+## Bounded execution and pipeline ownership (step 17)
+
+The VM checks at least 512 KiB of remaining stack before entering an adapter. Linux
+uses the current pthread stack bounds; Windows uses the stack allocation reported by
+`VirtualQuery`. An unavailable or insufficient bound selects bytecode directly.
+
+Generated adapters install a thread-local guard. Each emitted function checks a
+32-frame depth limit, a 4096-entry call budget and a 64 KiB stack-distance budget.
+`setjmp`/`longjmp` returns control to the adapter on exhaustion, without publishing a
+partial result. This is a controlled exit from proven pure numeric code, not recovery
+from stack overflow or a signal. The previous thread-local guard is restored on both
+success and exhaustion. Direct typed C calls outside adapters have no such guard.
+
+Module emission excludes functions with more than 128 scalar parameter/local/temporary
+slots and prevents inlining of function bodies, bounding individual frames before the
+entry check. The supported compilers are GCC and Clang. The large headroom reserve
+also covers adapter setup and numeric helpers; arbitrary handwritten native code must
+provide its own resource guarantees under the trusted-provider ABI contract.
+
+A retry context suppresses native entry in all descendant contexts. Returning or
+unwinding an exception discards that scope; subsequent calls may use native code again.
+Arguments, including ignored extras, have already been evaluated and remain owned by
+the VM until success or bytecode binding. Thread counters record attempts, successes
+and retries (a stack-headroom refusal counts as a retry without an attempt).
+
+Preparation validates the entire loaded specialization table against the generated
+inventory before binding any function. Compilation, loading or metadata failure leaves
+the fresh bytecode executable. Empty inventories do not invoke a compiler. A private
+temporary directory contains the generated library; its ownership follows library
+references through bytecode descriptors and function objects. Final release unloads the
+library before removing the file and directory. Analysis arenas can be destroyed before
+execution.
+
+`scripts/check_native_pipeline.sh GOAT UNIT_BINARY OUTPUT_DIR` tests the complete path,
+actual native entry, direct/mutual recursion, shallow call-budget exhaustion, thread-local
+guards, small-stack refusal, compile/load/binding failure, frame-size omission, launcher
+integration and temporary-file cleanup. Native-call tests additionally cover exception
+unwinding out of a retry scope. Both suites run in all five compiler/platform CI jobs.

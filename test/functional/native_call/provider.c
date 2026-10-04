@@ -75,6 +75,17 @@ static uint32_t GOAT_NATIVE_CALL counter(uint32_t version,
     return GOAT_NATIVE_OK;
 }
 
+static uint32_t GOAT_NATIVE_CALL limited(uint32_t version,
+                                         uint32_t count,
+                                         const goat_native_value_v1_t *args,
+                                         goat_native_value_v1_t *result) {
+    (void)version;
+    (void)count;
+    (void)args;
+    (void)result;
+    return GOAT_NATIVE_RESOURCE_LIMIT;
+}
+
 static const uint32_t integer[] = {GOAT_NATIVE_I64};
 static const uint32_t real[] = {GOAT_NATIVE_F64};
 static const uint32_t ir[] = {GOAT_NATIVE_I64, GOAT_NATIVE_F64};
@@ -87,7 +98,8 @@ static const goat_native_entry_v1_t entries[] = {
     {4, 3, 0, GOAT_NATIVE_I64, NULL, constant, NULL, GOAT_NATIVE_PURE},
     {5, 4, 1, GOAT_NATIVE_I64, integer, failure, NULL, 0},
     {6, 5, 1, GOAT_NATIVE_I64, integer, identity, NULL, GOAT_NATIVE_PURE},
-    {7, 90, 0, GOAT_NATIVE_I64, NULL, counter, NULL, 0}};
+    {7, 90, 0, GOAT_NATIVE_I64, NULL, counter, NULL, 0},
+    {8, 6, 1, GOAT_NATIVE_I64, integer, limited, NULL, GOAT_NATIVE_PURE}};
 static const goat_native_module_v1_t module = {GOAT_NATIVE_ABI_VERSION,
                                                sizeof(goat_native_module_v1_t),
                                                sizeof(goat_native_value_v1_t),

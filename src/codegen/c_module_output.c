@@ -49,6 +49,8 @@ c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
             helpers |= results[i].helper_flags;
     c_emit_native_abi(builder);
     c_emit_headers(builder, helpers);
+    if (count)
+        c_emit_native_guard(builder);
     c_module_failure_t **tail = &output.failures;
     for (const c_module_function_t *entry = module ? module->head : NULL; entry;
          entry = entry->next) {

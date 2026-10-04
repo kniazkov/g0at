@@ -8,7 +8,7 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 compiler="$(command -v "${CC:-gcc}")"
 ext=so
 shared=(-shared -fPIC)
-libs=(-ldl)
+libs=(-ldl -pthread)
 compiler_env="$compiler"
 if [[ ${OS:-} == Windows_NT ]]; then
     ext=dll

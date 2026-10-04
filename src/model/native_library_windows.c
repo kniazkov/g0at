@@ -65,4 +65,13 @@ bool get_native_library_query(void *handle, goat_native_query_v1_t *query, char 
 void close_native_library_handle(void *handle) {
     FreeLibrary((HMODULE)handle);
 }
+
+bool native_stack_has_headroom(void) {
+    void *position = __builtin_frame_address(0);
+    MEMORY_BASIC_INFORMATION information;
+    if (!VirtualQuery(position, &information, sizeof(information)))
+        return false;
+    uintptr_t here = (uintptr_t)position, low = (uintptr_t)information.AllocationBase;
+    return here >= low && here - low >= 512 * 1024;
+}
 #endif

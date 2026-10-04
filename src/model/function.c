@@ -316,6 +316,7 @@ invoke_native_entry(const goat_native_entry_v1_t *entry, uint16_t count, thread_
             args[i].value.real = get_object_real_value(arg).value;
     }
     goat_native_value_v1_t result = {0};
+    thread->native_attempts++;
     uint32_t status = entry->invoke(GOAT_NATIVE_ABI_VERSION, entry->parameter_count, args, &result);
     FREE(args);
     if (status == GOAT_NATIVE_OK && (result.type != entry->return_type || result.reserved))
@@ -323,6 +324,7 @@ invoke_native_entry(const goat_native_entry_v1_t *entry, uint16_t count, thread_
     thread->native_status = status;
     if (status != GOAT_NATIVE_OK)
         return false;
+    thread->native_successes++;
     object_t *value = result.type == GOAT_NATIVE_I64
                           ? create_integer_object(thread->process, result.value.integer)
                           : create_real_number_object(thread->process, result.value.real);
@@ -339,10 +341,29 @@ invoke_native_entry(const goat_native_entry_v1_t *entry, uint16_t count, thread_
 static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     require_object_stack_size(thread->data_stack, arg_count);
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
-    const goat_native_entry_v1_t *entry = select_native_entry(dfobj, arg_count, thread->data_stack);
-    if (entry)
-        return invoke_native_entry(entry, arg_count, thread);
+    const goat_native_entry_v1_t *entry =
+        thread->context->native_disabled
+            ? NULL
+            : select_native_entry(dfobj, arg_count, thread->data_stack);
+    bool retry = false;
+    if (entry) {
+        if (!native_stack_has_headroom()) {
+            retry = true;
+        } else if (invoke_native_entry(entry, arg_count, thread)) {
+            return true;
+        } else if (thread->native_status == GOAT_NATIVE_RESOURCE_LIMIT
+                   && (entry->flags & GOAT_NATIVE_PURE)) {
+            retry = true;
+        } else {
+            return false;
+        }
+    }
+    if (retry) {
+        thread->native_retries++;
+        thread->native_status = GOAT_NATIVE_OK;
+    }
     context_t *ctx = create_context(thread->process, thread->context, dfobj->closure);
+    ctx->native_disabled |= retry;
     ctx->control_flow = FLOW_RETURN;
     ctx->jump_address[0] = thread->instr_id + 1;
     uint16_t index;

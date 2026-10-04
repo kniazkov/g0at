@@ -202,3 +202,6 @@ node_t *create_true_node(arena_t *arena);
  * @return Pointer to the created `false` literal node.
  */
 node_t *create_false_node(arena_t *arena);
+
+/** @brief Returns the emitted FUNC position, or BAD_INSTR_INDEX for an unemitted function. */
+instr_index_t get_function_bytecode_instruction(const node_t *node);

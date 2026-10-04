@@ -9,6 +9,7 @@
 #include "analysis/analysis.h"
 #include "c_output.h"
 #include "codegen/linker.h"
+#include "codegen/native_pipeline.h"
 #include "codegen/source_builder.h"
 #include "graph/node.h"
 #include "graph/visualization.h"
@@ -23,6 +24,7 @@
 #include "vm/vm.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 int go(options_t *opt) {
     long previously_allocated = get_allocated_memory_size();
@@ -167,6 +169,14 @@ int go(options_t *opt) {
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);
 
+        if (opt->native_execution && opt->optimization_level == OPTIMIZATION_ALL) {
+            native_prepare_result_t native =
+                prepare_native_execution(root_node, bytecode, getenv("CC"));
+            if (native.diagnostic)
+                fprintf(stderr, "%s\n", native.diagnostic);
+            destroy_native_prepare_result(&native);
+        }
+
         if (opt->print_bytecode) {
             string_value_t text = bytecode_to_text(bytecode);
             print_utf8(text.data);
@@ -182,6 +192,8 @@ int go(options_t *opt) {
         ret_code = run(process, bytecode);
         thread_t *thread = process->main_thread;
         do {
+            if (thread->native_status)
+                fprintf(stderr, "Native backend failed (status %u).\n", thread->native_status);
             if (thread->exception.value) {
                 string_value_t text = convert_object_to_string(thread->exception.value);
                 fprintf_utf8(stderr, get_messages()->uncaught_exception, text.data);

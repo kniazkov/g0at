@@ -257,4 +257,36 @@ cleanup:
     FREE(target);
     return result;
 }
+
+native_workspace_t *create_native_workspace(void) {
+    DWORD size = GetTempPathA(0, NULL);
+    if (!size)
+        return NULL;
+    char *base = ALLOC((size_t)size + 1);
+    DWORD length = GetTempPathA(size + 1, base);
+    if (!length || length > size) {
+        FREE(base);
+        return NULL;
+    }
+    char *prefix = join(base, "goat-native");
+    FREE(base);
+    char *directory = create_directory(prefix);
+    FREE(prefix);
+    if (!directory)
+        return NULL;
+    native_workspace_t *workspace = ALLOC(sizeof(*workspace));
+    workspace->directory = directory;
+    workspace->library = join(directory, "/module.dll");
+    return workspace;
+}
+
+void destroy_native_workspace(native_workspace_t *workspace) {
+    if (!workspace)
+        return;
+    remove(workspace->library);
+    RemoveDirectoryA(workspace->directory);
+    FREE(workspace->library);
+    FREE(workspace->directory);
+    FREE(workspace);
+}
 #endif

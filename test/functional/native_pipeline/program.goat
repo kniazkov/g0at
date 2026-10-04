@@ -1,0 +1,9 @@
+const f = func(n) {
+    if (n <= 0)
+        return 0
+    return f(n - 1) + 1
+}
+if (f(200) != 200)
+    throw "incorrect recursive result"
+if (f(3) != 3)
+    throw "incorrect result after retry"

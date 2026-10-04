@@ -53,6 +53,9 @@ struct options_t {
     /** @brief Compile a shared library without executing Goat code. */
     bool save_library;
 
+    /** @brief Internal opt-in; command-line execution modes follow separately. */
+    bool native_execution;
+
     /** @brief Optional UTF-8 analysis report destination. */
     path_t *analysis_output_file;
 
