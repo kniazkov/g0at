@@ -2,9 +2,6 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Native selection, bytecode fallback and descriptor ownership through FUNC/CALL.
  */
-#if !defined(_WIN32) && !defined(_POSIX_C_SOURCE)
-#    define _POSIX_C_SOURCE 200809L
-#endif
 #include "test_native_call.h"
 
 #include "analysis/analysis.h"
@@ -26,9 +23,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _WIN32
-#    include <windows.h>
-#endif
 
 static native_library_t *library;
 
@@ -338,13 +332,6 @@ static bool lifetime(const char *path, const char *marker) {
 }
 
 bool test_native_calls(const char *provider, const char *generated, const char *marker) {
-#ifdef _WIN32
-    if (!SetEnvironmentVariableA("GOAT_CALL_UNLOAD", marker))
-        return false;
-#else
-    if (setenv("GOAT_CALL_UNLOAD", marker, 1))
-        return false;
-#endif
     remove(marker);
     test_output_start("native call");
     native_library_result_t loaded = load_native_library(provider);
