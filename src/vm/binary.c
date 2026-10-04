@@ -4,6 +4,7 @@
  */
 #include "binary.h"
 
+#include "codegen/native_compiler.h"
 #include "lib/allocate.h"
 #include "lib/binary_file.h"
 #include "model/native_library.h"
@@ -195,16 +196,30 @@ done:
     return result;
 }
 
+static void cleanup_library_copy(void *workspace) {
+    destroy_native_workspace(workspace);
+}
+
 bool bind_binary_library(binary_program_t *program, const char *path) {
     if (!program->code || !program->binding_count || program->code->native_functions)
         return false;
     size_t size;
     void *bytes = read_binary_file(path, GOAT_BINARY_LIMIT, &size);
     bool matches = bytes && binary_checksum(bytes, size) == program->library_checksum;
+    native_workspace_t *workspace = matches ? create_native_workspace() : NULL;
+    bool copied = workspace && write_binary_file(workspace->library, bytes, size);
     FREE(bytes);
-    if (!matches)
+    if (!copied) {
+        destroy_native_workspace(workspace);
         return false;
-    native_library_result_t loaded = load_native_library(path);
+    }
+    /* Load precisely the bytes checked above, even if the companion is replaced meanwhile. */
+    native_library_result_t loaded = load_native_library(workspace->library);
+    if (loaded.library) {
+        set_native_library_cleanup(loaded.library, workspace, cleanup_library_copy);
+        workspace = NULL;
+    }
+    destroy_native_workspace(workspace);
     bool ok = loaded.status == NATIVE_LIBRARY_OK;
     for (size_t i = 0; ok && i < program->binding_count; i++) {
         size_t index = program->bindings[2 * i];

@@ -34,8 +34,10 @@ Renaming both files or moving them together preserves the bindings.
 
 Native dispatch still uses `CALL` and function-object descriptors. Exact signature
 selection, unmatched-call fallback, recursion/resource retry, exception reporting
-and library reference ownership are unchanged. The persistent library is never
-removed by runtime cleanup. `required` requires bound native functions, not that
+and library reference ownership are unchanged. The loader snapshots the checksum-verified library into a private workspace, so a
+concurrent replacement cannot change the code being loaded. This private copy is
+removed after its last function descriptor is released; the persistent companion is
+never removed by runtime cleanup. `required` requires bound native functions, not that
 every call or every instruction runs natively.
 
 ## Format version 1

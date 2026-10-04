@@ -121,4 +121,7 @@ mkdir -p "$output/blocked.gbin"
 if "$interpreter" --compile "$output/blocked.goat" > "$output/blocked.out" 2> "$output/blocked.err"; then false; fi
 [[ ! -s "$output/blocked.out" && -s "$output/blocked.err" ]]
 ok
+current='private native workspaces are removed'
+[[ -z $(find "$output/temporary" -mindepth 1 -print -quit) ]]
+ok
 printf 'Binary program testing done; total: %d, passed: %d, failed: 0\n' "$passed" "$passed"
