@@ -218,6 +218,7 @@ Runtime values share an object interface. Execution contexts hold bindings, func
 | Path | Responsibility |
 | --- | --- |
 | [`scripts/`](scripts) | Build scripts and the Windows fixture-creation helper. |
+| [`include/goat/`](include/goat/) | Public headers for native adapters and external hosts. |
 | [`src/main.c`](src/main.c) | Executable entry point. |
 | [`src/cli/`](src/cli) | Command-line options and compilation/execution orchestration. |
 | [`src/scanner/`](src/scanner) | Tokenization, token groups, and token lists. |

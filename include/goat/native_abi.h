@@ -19,8 +19,15 @@ enum {
     GOAT_NATIVE_TYPE_MISMATCH = 1,
     GOAT_NATIVE_BAD_REQUEST = 2,
     GOAT_NATIVE_ABI_MISMATCH = 3,
-    GOAT_NATIVE_RESOURCE_LIMIT = 4
+    GOAT_NATIVE_RESOURCE_LIMIT = 4,
+    GOAT_NATIVE_EXTERNAL_ERROR = 5
 };
+
+enum { GOAT_NATIVE_PURE = 1 };
+
+#    ifdef __cplusplus
+extern "C" {
+#    endif
 
 typedef struct goat_native_value_v1_t {
     uint32_t type;
@@ -44,6 +51,8 @@ typedef struct goat_native_entry_v1_t {
     uint32_t return_type;
     const uint32_t *parameter_types;
     goat_native_adapter_v1_t invoke;
+    const char *binding_name;
+    uint32_t flags;
 } goat_native_entry_v1_t;
 
 typedef struct goat_native_module_v1_t {
@@ -58,5 +67,8 @@ typedef struct goat_native_module_v1_t {
 } goat_native_module_v1_t;
 
 const goat_native_module_v1_t *goat_native_query_v1(uint32_t version);
+#    ifdef __cplusplus
+}
+#    endif
 #endif
 /* ABI declarations end. */

@@ -2,7 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Calls a separately compiled generated module through the public ABI only.
  */
-#include "codegen/native_abi.h"
+#include "goat/native_abi.h"
 
 #include <assert.h>
 #include <math.h>
@@ -34,6 +34,8 @@ int main(void) {
     assert(module->entry_count == 6 && module->entries);
     for (uint32_t i = 0; i < module->entry_count; i++) {
         assert(module->entries[i].invoke);
+        assert(module->entries[i].flags == GOAT_NATIVE_PURE);
+        assert(!module->entries[i].binding_name);
         for (uint32_t j = 0; j < i; j++)
             assert(module->entries[i].specialization_id != module->entries[j].specialization_id);
     }

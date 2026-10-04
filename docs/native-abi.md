@@ -1,6 +1,6 @@
 # Numeric adapter ABI, version 1
 
-The public C header is `src/codegen/native_abi.h`. Generated modules embed the same
+The public C header is `include/goat/native_abi.h` (`#include <goat/native_abi.h>`, `-Iinclude`). Generated modules embed the same
 declarations and remain standalone C11 files. CI compares the embedded declarations
 with the header (ignoring whitespace) and compiles the caller and module as separate
 translation units. This ABI contains no `object_t`, AST, arena or allocator pointers.
@@ -83,6 +83,7 @@ not promised. On every rejection the result storage is unchanged, byte for byte.
 | `GOAT_NATIVE_BAD_REQUEST` | 2 | Missing required pointer or a nonzero reserved field on a formal argument. |
 | `GOAT_NATIVE_ABI_MISMATCH` | 3 | Unsupported invocation version. |
 | `GOAT_NATIVE_RESOURCE_LIMIT` | 4 | Reserved for controlled resource exhaustion and bytecode retry. |
+| `GOAT_NATIVE_EXTERNAL_ERROR` | 5 | External execution failed; effects may already have occurred. Never retry automatically. |
 
 Version is checked first, then pointers and the minimum argument count. Formal
 arguments are checked in index order, reserved field before type tag. These statuses
@@ -104,6 +105,58 @@ recursion, version/type/count/pointer rejection, result aliasing and unchanged o
 on failure. Empty inventories expose an empty descriptor. Unit tests ensure omitted
 recursive definitions do not receive adapters. CI runs GCC/Clang, all three Windows
 GCC targets, Linux UBSan and GCC x87 evaluation.
+
+## Handwritten adapters and precompiled archives
+
+The same ABI can be implemented manually without the Goat compiler. Compile a thin
+adapter with this public header and link it with the vendor's static archive or
+shared library. Only the adapter must obey this ABI; the wrapped code can use a
+vendor API, C++, GPU/NPU toolchain or another private calling convention. The header
+provides C linkage when included from C++; no C++ exceptions may cross the boundary.
+A C++ toolchain is not required to build Goat.
+
+Each entry has an optional library-owned UTF-8 `binding_name` and a `uint32_t flags`.
+Manual providers use nonempty names (for example `device.read`) for future explicit
+import binding. Overloads share a name and differ in ordered parameter tags;
+duplicate name/signature pairs are invalid. IDs are provider-local, not AST IDs:
+specialization IDs are unique in a module and overloads share a function ID. Generated
+entries keep NULL names and use the existing inventory IDs. Name lookup must remain
+scoped to an explicitly imported module, never override a lexical Goat variable.
+Import syntax and VM binding are not implemented by this change.
+
+Flags default to zero: effectful or unknown. `GOAT_NATIVE_PURE` is a provider's
+promise of no observable side effects or dependence on mutable external state;
+generated entries carry it because numeric eligibility already requires purity.
+Reading a device, submitting work, or reading a mutable clock is not pure. This
+metadata is not permission for the analyzer to execute arbitrary external code,
+and does not provide an abstract evaluator. Unknown flag bits must be rejected by
+a future loader. Purity alone does not guarantee termination or successful execution.
+
+The adapter validates the entire request before entering vendor code, leaves the
+result untouched on failure, and publishes it only on success. Validation failures
+must have no external effects. Once external execution starts, failure is
+`GOAT_NATIVE_EXTERNAL_ERROR`, not a type mismatch or a retry request. Even though the
+result is unchanged, device state may have changed: the caller must not replay such
+a call through bytecode or another adapter. A provider may return the reserved
+resource-limit status only if execution is safe to retry, with no observable effects.
+The future VM bridge must report external failures without automatic retry; mapping
+them to Goat exceptions is a separate task.
+
+Version 1 remains synchronous and numeric. An adapter must wait for device work
+before returning its numeric result. Buffers, strings, device handles, per-instance
+state, asynchronous completion and init/shutdown hooks need a separate future ABI;
+do not pass pointers disguised as integers. Provider-private resources and locking
+are the provider's responsibility. Dependencies must stay loaded with the provider.
+One final module owns one `goat_native_query_v1` and one combined entry table; vendor
+archives should not each export competing query symbols. Independently loaded
+providers are queried separately by library handle in the future loader.
+
+`test/functional/native_abi/manual/` is a working example: vendor code is compiled
+into an archive first, a handwritten adapter links against it, and a separate host
+uses only the public header. Tests check named binding, conservative purity, exact
+validation, ignored extras, aliasing, and a simulated device failure after a side
+effect. The host links the archive transitively through the adapter, with no AST or
+VM headers. This models the boundary, not an actual GPU SDK integration.
 
 This step does not load libraries, select specializations inside the VM, or change
 `CALL`. Those are later stages of the native backend roadmap.

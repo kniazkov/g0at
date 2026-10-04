@@ -21,17 +21,26 @@ void c_emit_native_abi(source_builder_t *builder) {
     add_static_source(builder, 0, L"    GOAT_NATIVE_I64 = 1,");
     add_static_source(builder, 0, L"    GOAT_NATIVE_F64 = 2");
     add_static_source(builder, 0, L"};");
+    add_static_source(builder, 0, L"");
     add_static_source(builder, 0, L"enum {");
     add_static_source(builder, 0, L"    GOAT_NATIVE_OK = 0,");
     add_static_source(builder, 0, L"    GOAT_NATIVE_TYPE_MISMATCH = 1,");
     add_static_source(builder, 0, L"    GOAT_NATIVE_BAD_REQUEST = 2,");
     add_static_source(builder, 0, L"    GOAT_NATIVE_ABI_MISMATCH = 3,");
-    add_static_source(builder, 0, L"    GOAT_NATIVE_RESOURCE_LIMIT = 4");
+    add_static_source(builder, 0, L"    GOAT_NATIVE_RESOURCE_LIMIT = 4,");
+    add_static_source(builder, 0, L"    GOAT_NATIVE_EXTERNAL_ERROR = 5");
     add_static_source(builder, 0, L"};");
+    add_static_source(builder, 0, L"");
+    add_static_source(builder, 0, L"enum { GOAT_NATIVE_PURE = 1 };");
+    add_static_source(builder, 0, L"");
+    add_static_source(builder, 0, L"#ifdef __cplusplus");
+    add_static_source(builder, 0, L"extern \"C\" {");
+    add_static_source(builder, 0, L"#endif");
     add_static_source(builder, 0, L"");
     add_static_source(builder, 0, L"typedef struct goat_native_value_v1_t {");
     add_static_source(builder, 0, L"    uint32_t type;");
     add_static_source(builder, 0, L"    uint32_t reserved;");
+    add_static_source(builder, 0, L"");
     add_static_source(builder, 0, L"    union {");
     add_static_source(builder, 0, L"        int64_t integer;");
     add_static_source(builder, 0, L"        double real;");
@@ -43,15 +52,15 @@ void c_emit_native_abi(source_builder_t *builder) {
                       L"typedef uint32_t (*goat_native_adapter_v1_t)(uint32_t version,");
     add_static_source(builder,
                       0,
-                      L"                                           uint32_t argument_count,");
+                      L"                                             uint32_t argument_count,");
     add_static_source(
         builder,
         0,
-        L"                                           const goat_native_value_v1_t *arguments,");
+        L"                                             const goat_native_value_v1_t *arguments,");
     add_static_source(
         builder,
         0,
-        L"                                           goat_native_value_v1_t *result);");
+        L"                                             goat_native_value_v1_t *result);");
     add_static_source(builder, 0, L"");
     add_static_source(builder, 0, L"typedef struct goat_native_entry_v1_t {");
     add_static_source(builder, 0, L"    uint64_t specialization_id;");
@@ -60,6 +69,8 @@ void c_emit_native_abi(source_builder_t *builder) {
     add_static_source(builder, 0, L"    uint32_t return_type;");
     add_static_source(builder, 0, L"    const uint32_t *parameter_types;");
     add_static_source(builder, 0, L"    goat_native_adapter_v1_t invoke;");
+    add_static_source(builder, 0, L"    const char *binding_name;");
+    add_static_source(builder, 0, L"    uint32_t flags;");
     add_static_source(builder, 0, L"} goat_native_entry_v1_t;");
     add_static_source(builder, 0, L"");
     add_static_source(builder, 0, L"typedef struct goat_native_module_v1_t {");
@@ -76,6 +87,9 @@ void c_emit_native_abi(source_builder_t *builder) {
     add_static_source(builder,
                       0,
                       L"const goat_native_module_v1_t *goat_native_query_v1(uint32_t version);");
+    add_static_source(builder, 0, L"#ifdef __cplusplus");
+    add_static_source(builder, 0, L"}");
+    add_static_source(builder, 0, L"#endif");
     add_static_source(builder, 0, L"#endif");
     add_static_source(builder, 0, L"/* ABI declarations end. */");
 }
@@ -162,7 +176,7 @@ void c_emit_native_module(source_builder_t *builder,
                                             : STATIC_STRING(L"0");
             add_source(builder,
                        1,
-                       L"{%zu, %zu, %zu, %s, %s, goat_adapter_%zu},",
+                       L"{%zu, %zu, %zu, %s, %s, goat_adapter_%zu, 0, GOAT_NATIVE_PURE},",
                        entry->id,
                        entry->function_id,
                        entry->summary->parameter_count,
