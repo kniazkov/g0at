@@ -13,6 +13,10 @@ may remain if the subsequent library build fails. An input already named with th
 is rejected to avoid overwriting it. Other platforms still return an explicit
 unsupported-platform failure.
 
+The compiler uses one header, `src/codegen/native_compiler.h`. The common
+`native_compiler.c` owns diagnostics and result cleanup; `native_compiler_linux.c`
+and `native_compiler_windows.c` implement the same entry point on their platforms.
+
 ## Compiler invocation
 
 `CC` selects one executable name or path; unset or empty uses `cc` on Linux and `gcc` on Windows. It must accept

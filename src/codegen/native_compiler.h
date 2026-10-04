@@ -34,3 +34,6 @@ native_compile_result_t
 compile_native_library(const wchar_t *source, const char *compiler, const char *destination);
 /** @brief Releases captured diagnostics. */
 void destroy_native_compile_result(native_compile_result_t *result);
+
+/** @brief Reads bounded compiler output; shared by the platform implementations. */
+void native_compiler_read_diagnostics(native_compile_result_t *result, const char *path);

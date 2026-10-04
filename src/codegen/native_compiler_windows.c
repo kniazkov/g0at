@@ -5,7 +5,7 @@
 #ifdef _WIN32
 #    include <windows.h>
 #endif
-#include "native_compiler_internal.h"
+#include "native_compiler.h"
 
 #ifdef _WIN32
 #    include "lib/allocate.h"
@@ -179,9 +179,8 @@ static void remove_file(native_compile_result_t *result, const char *path) {
     }
 }
 
-native_compile_result_t compile_native_library_windows(const wchar_t *source,
-                                                       const char *compiler,
-                                                       const char *destination) {
+native_compile_result_t
+compile_native_library(const wchar_t *source, const char *compiler, const char *destination) {
     native_compile_result_t result = {.status = NATIVE_COMPILE_IO_ERROR, .exit_code = -1};
     if (!source || !compiler || !compiler[0] || !destination || !destination[0]) {
         result.system_error = EINVAL;
