@@ -172,9 +172,8 @@ binary_program_t decode_binary_program(const void *data, size_t size) {
     checksum = extend_binary_checksum(checksum, bytes + HEADER_SIZE, size - HEADER_SIZE);
     uint64_t code_size = read64(bytes + 24), count = read64(bytes + 32);
     if (memcmp(bytes, "GOATBIN1", 8) || read64(bytes + 8) != FORMAT_VERSION
-        || read64(bytes + 16) != platform() || read64(bytes + 48)
-        || expected != checksum || code_size > size - HEADER_SIZE
-        || count > (size - HEADER_SIZE - code_size) / 16
+        || read64(bytes + 16) != platform() || read64(bytes + 48) || expected != checksum
+        || code_size > size - HEADER_SIZE || count > (size - HEADER_SIZE - code_size) / 16
         || size != HEADER_SIZE + code_size + count * 16)
         goto done;
     result.code = CALLOC(sizeof(bytecode_t));
