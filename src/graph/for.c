@@ -3,6 +3,7 @@
  * @brief Scoped C-style loops with conservative abstract execution.
  */
 #include "analysis/abstract_state.h"
+#include "analysis/function_call_graph.h"
 #include "analysis/lattice.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
@@ -51,21 +52,51 @@ static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
     return false;
 }
 
-/** @brief Keeps zero-trip facts; other loops conservatively invalidate all mutable facts. */
+/** @brief Computes a widened loop invariant without executing an unbounded number of passes. */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
     if (state->control_flow != FLOW_NORMAL)
         return state;
     execute_node(get_child(node, 0), state, arena);
     if (state->control_flow != FLOW_NORMAL)
         return state;
-    const lattice_element_t *condition = calculate_node(get_child(node, 1), state, arena);
-    if (state->control_flow != FLOW_NORMAL || lattice_truth(condition) == ABSTRACT_FALSE)
-        return state;
-    forget_abstract_values(state);
-    if (state->return_value)
-        *state->return_value = make_top_element();
-    if (state->type_analysis_incomplete)
-        *state->type_analysis_incomplete = true;
+    abstract_state_t *head = clone_abstract_state(state);
+    bool stable = false;
+    for (size_t pass = 0; pass < 16 && *state->call_budget; pass++) {
+        --*state->call_budget;
+        abstract_state_t *back = clone_abstract_state(head);
+        const lattice_element_t *condition = calculate_node(get_child(node, 1), back, arena);
+        if (back->control_flow == FLOW_NORMAL && lattice_truth(condition) != ABSTRACT_FALSE) {
+            execute_node(get_child(node, 3), back, arena);
+            if (back->control_flow == FLOW_NORMAL)
+                execute_node(get_child(node, 2), back, arena);
+        } else {
+            back->control_flow = FLOW_UNREACHABLE;
+        }
+        abstract_state_t *next = widen_loop_state(head, back, &stable);
+        destroy_abstract_state(back);
+        destroy_abstract_state(head);
+        head = next;
+        if (stable)
+            break;
+    }
+    if (stable) {
+        const lattice_element_t *condition = calculate_node(get_child(node, 1), head, arena);
+        if (head->control_flow == FLOW_NORMAL && lattice_truth(condition) == ABSTRACT_TRUE)
+            head->control_flow = FLOW_UNREACHABLE;
+    } else {
+        forget_abstract_values(head);
+        if (head->call_graph_node)
+            head->call_graph_node->complete = false;
+        if (head->return_value)
+            *head->return_value = make_top_element();
+        if (head->type_analysis_incomplete)
+            *head->type_analysis_incomplete = true;
+    }
+    /* Keep the state address held by expression and function callers. */
+    abstract_state_t previous = *state;
+    *state = *head;
+    *head = previous;
+    destroy_abstract_state(head);
     return state;
 }
 

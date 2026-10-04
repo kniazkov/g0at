@@ -307,3 +307,10 @@ properties_specialized_writes
 properties_specialized_argument
 
 abs_types
+
+# Loop invariants
+for_zero_trip
+for_widening
+for_type_change
+for_return
+for_infinite_return

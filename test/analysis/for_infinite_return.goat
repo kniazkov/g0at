@@ -1,0 +1,5 @@
+const f = func() {
+    for (;;) return 7;
+    return "unreachable";
+};
+f();

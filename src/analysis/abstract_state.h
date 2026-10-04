@@ -140,3 +140,9 @@ void reset_abstract_call_locals(abstract_state_t *state, const node_t *function)
 
 /** @brief Invalidates shared captures after self-call, preserving the caller's own locals. */
 void forget_captured_abstract_values(abstract_state_t *state, const node_t *function);
+
+/** @brief Joins a loop back edge and widens changing payloads to type domains.
+ * Returns a new state; stable means its current facts match the previous head.
+ */
+abstract_state_t *
+widen_loop_state(const abstract_state_t *head, const abstract_state_t *back_edge, bool *stable);
