@@ -89,8 +89,11 @@ bool write_binary_file(const char *path, const void *data, size_t size) {
 }
 
 uint64_t binary_checksum(const void *data, size_t size) {
+    return extend_binary_checksum(UINT64_C(14695981039346656037), data, size);
+}
+
+uint64_t extend_binary_checksum(uint64_t value, const void *data, size_t size) {
     const unsigned char *bytes = data;
-    uint64_t value = UINT64_C(14695981039346656037);
     for (size_t i = 0; i < size; i++)
         value = (value ^ bytes[i]) * UINT64_C(1099511628211);
     return value;

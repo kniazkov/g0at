@@ -153,17 +153,27 @@ bool save_binary_program(const char *path, const bytecode_t *code, uint64_t libr
 }
 
 binary_program_t load_binary_program(const char *path) {
-    binary_program_t result = {0};
     size_t size;
     uint8_t *bytes = read_binary_file(path, GOAT_BINARY_LIMIT, &size);
-    if (!bytes || size < HEADER_SIZE)
+    binary_program_t result = decode_binary_program(bytes, size);
+    FREE(bytes);
+    return result;
+}
+
+binary_program_t decode_binary_program(const void *data, size_t size) {
+    binary_program_t result = {0};
+    const uint8_t *bytes = data;
+    if (!bytes || size < HEADER_SIZE || size > GOAT_BINARY_LIMIT)
         goto done;
     uint64_t expected = read64(bytes + 56);
-    write64(bytes + 56, 0);
+    const uint8_t zero_checksum[8] = {0};
+    uint64_t checksum = binary_checksum(bytes, 56);
+    checksum = extend_binary_checksum(checksum, zero_checksum, sizeof(zero_checksum));
+    checksum = extend_binary_checksum(checksum, bytes + HEADER_SIZE, size - HEADER_SIZE);
     uint64_t code_size = read64(bytes + 24), count = read64(bytes + 32);
     if (memcmp(bytes, "GOATBIN1", 8) || read64(bytes + 8) != FORMAT_VERSION
         || read64(bytes + 16) != platform() || read64(bytes + 48)
-        || expected != binary_checksum(bytes, size) || code_size > size - HEADER_SIZE
+        || expected != checksum || code_size > size - HEADER_SIZE
         || count > (size - HEADER_SIZE - code_size) / 16
         || size != HEADER_SIZE + code_size + count * 16)
         goto done;
@@ -192,7 +202,6 @@ binary_program_t load_binary_program(const char *path) {
 invalid:
     destroy_binary_program(&result);
 done:
-    FREE(bytes);
     return result;
 }
 
