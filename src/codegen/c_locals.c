@@ -27,7 +27,14 @@ static bool prepare(const node_t *node,
                     c_generation_context_t *context,
                     source_builder_t *builder,
                     size_t indent) {
-    node = replacement_original(node);
+    node = c_generation_replacement(context, node);
+    if (node->vtbl->type == NODE_IF_ELSE) {
+        abstract_truth_t truth = c_generation_condition_truth(context, get_node_child(node, 0));
+        if (truth == ABSTRACT_TRUE || truth == ABSTRACT_FALSE) {
+            const node_t *chosen = get_node_child(node, truth == ABSTRACT_TRUE ? 1 : 2);
+            return !chosen || prepare(chosen, context, builder, indent);
+        }
+    }
     if (node->vtbl->type == NODE_FUNCTION_OBJECT || node->vtbl->type == NODE_STATEMENT_LIST)
         return true;
     if (node->vtbl->type == NODE_VARIABLE_DECLARATOR

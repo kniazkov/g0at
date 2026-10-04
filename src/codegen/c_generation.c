@@ -25,6 +25,8 @@ c_value_type_t c_generation_return_type(const c_generation_context_t *context) {
 
 c_value_type_t c_generation_expression_type(const c_generation_context_t *context,
                                             const node_t *node) {
+    if (context && context->replacement_proof && context->replacement_proof->node == node)
+        return context->replacement_proof->type;
     c_expression_context_t proofs = {
         .head = context && context->summary ? context->summary->c_expressions : NULL};
     return node ? c_expression_type(&proofs, replacement_original(node)) : C_VALUE_UNKNOWN;
@@ -124,4 +126,44 @@ c_generation_result_t c_generate_definition(const function_summary_t *summary,
                                             string_view_t name,
                                             const c_generation_callee_t *callees) {
     return generate_function(summary, name, NULL, callees, true);
+}
+
+static const lattice_element_t *constant(const c_generation_context_t *context,
+                                         const node_t *node) {
+    c_expression_context_t proofs = {
+        .head = context && context->summary ? context->summary->c_expressions : NULL};
+    return c_expression_constant(&proofs, replacement_original(node));
+}
+
+abstract_truth_t c_generation_condition_truth(const c_generation_context_t *context,
+                                              const node_t *condition) {
+    const lattice_element_t *value = constant(context, condition);
+    return value ? lattice_truth(value) : ABSTRACT_EITHER;
+}
+
+const node_t *c_generation_replacement(const c_generation_context_t *context, const node_t *node) {
+    if (!is_replacement(node))
+        return node;
+    const node_t *original = replacement_original(node);
+    const node_t *result = replacement_result(node);
+    if (node->vtbl->type == NODE_EXPRESSION_REPLACEMENT) {
+        node_type_t type = result->vtbl->type;
+        if (type == NODE_INTEGER || type == NODE_REAL || type == NODE_TRUE || type == NODE_FALSE) {
+            /* Literal calculation returns its immutable payload and needs no state. */
+            const lattice_element_t *value = calculate_node((node_t *)result, NULL, NULL);
+            if (c_constants_equal(constant(context, original), value))
+                return result;
+        }
+    } else if (original->vtbl->type == NODE_IF_ELSE) {
+        abstract_truth_t truth = c_generation_condition_truth(context, get_node_child(original, 0));
+        if (truth == ABSTRACT_TRUE || truth == ABSTRACT_FALSE) {
+            const node_t *chosen = get_node_child(original, truth == ABSTRACT_TRUE ? 1 : 2);
+            if (chosen && replacement_original(chosen) == replacement_original(result))
+                return chosen;
+            if (!chosen && result->vtbl->type == NODE_STATEMENT_EXPRESSION
+                && !get_node_child_count(result))
+                return result;
+        }
+    }
+    return original;
 }

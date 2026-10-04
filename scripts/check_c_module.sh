@@ -123,4 +123,23 @@ if "$interpreter" --save-c "$output_dir/bad.goat" > "$output_dir/stdout.txt" 2> 
 test ! -e "$output_dir/bad.c"
 test -s "$output_dir/error.txt"
 ok
+current='replacement proofs survive compilation and unobserved arguments'
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+"$interpreter" --print-c "$repo_root/test/functional/native_modes/replacement.goat" > "$output_dir/replacement.c"
+cat > "$output_dir/replacement_driver.c" <<'C'
+#include "replacement.c"
+int main(void) {
+    return goat_f1_i_(100)!=105 || goat_f1_r_(0.25)!=5.25 ||
+           goat_f2_i_(-10)!=-9 || goat_f3_i_(-7)!=-7 ||
+           goat_f4_i_(INT64_MAX)!=INT64_MIN+4 ||
+           goat_f4_r_(-0.25)!=4.75 || goat_f4_r_(0x1p63)!=0x1p63 ||
+           !isnan(goat_f4_r_(NAN)) || goat_f4_r_(INFINITY)!=INFINITY ||
+           goat_f5_i_(100)!=2 || goat_f6_i_(-10)!=-4 ||
+           !signbit(goat_f7_i_(0)) || goat_f8_i_(-1)!=INT64_MAX;
+}
+C
+compile -c "$output_dir/replacement.c" -o "$output_dir/replacement.o"
+compile "$output_dir/replacement_driver.c" -lm -o "$output_dir/replacement.exe"
+"$output_dir/replacement.exe"
+ok
 printf 'C module testing done; total: %d, passed: %d, failed: 0\n' "$passed" "$passed"

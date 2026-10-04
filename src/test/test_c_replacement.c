@@ -1,6 +1,6 @@
 /** @file test_c_replacement.c
  * @copyright 2026 Ivan Kniazkov
- * @brief C lowering follows original nodes while VM lowering keeps replacements.
+ * @brief C replacement proofs, conservative fallbacks and specialization isolation.
  */
 #include "test_c_replacement.h"
 
@@ -15,6 +15,7 @@
 #include "lib/allocate.h"
 #include "test_macro.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <wchar.h>
 
@@ -205,6 +206,181 @@ bool test_c_replacement_analysis(void) {
     ASSERT(get_node_child(wrapper, 0) == original);
     ASSERT(replacement_result(wrapper)->vtbl->type == NODE_INTEGER);
     destroy_options(options);
+    destroy_arena(arena);
+    return true;
+}
+
+bool test_c_replacement_proofs(void) {
+    arena_t *arena = create_arena(32);
+    abstract_state_t *state = create_abstract_state(arena);
+    c_expression_context_t proofs = {.arena = arena};
+    state->c_expressions = &proofs;
+    expression_t *sum = create_addition_node(arena,
+                                             (expression_t *)create_integer_node(arena, 2),
+                                             (expression_t *)create_integer_node(arena, 3));
+    const lattice_element_t *value = calculate_expression(sum, state, arena);
+    function_summary_t summary = {.c_expressions = proofs.head};
+    c_generation_context_t context = {.summary = &summary};
+    node_t *five = create_integer_node(arena, 5);
+    node_t *wrapper = (node_t *)create_expression_replacement(arena, sum, (expression_t *)five);
+    ASSERT(c_generation_replacement(&context, wrapper) == five);
+    c_generated_expression_t code = generate_c_code_from_node(wrapper, &context);
+    ASSERT(code.success && code.type == C_VALUE_INT64 && !code.prelude);
+    ASSERT(!wcscmp(code.value.data, L"INT64_C(5)"));
+    ASSERT(!context.replacement_proof);
+    destroy_c_expression(&code);
+    node_t *wrong_type = (node_t *)create_expression_replacement(
+        arena,
+        sum,
+        (expression_t *)create_real_number_node(arena, 5.0));
+    ASSERT(c_generation_replacement(&context, wrong_type) == (node_t *)sum);
+    node_t *wrong_value =
+        (node_t *)create_expression_replacement(arena,
+                                                sum,
+                                                (expression_t *)create_integer_node(arena, 6));
+    ASSERT(c_generation_replacement(&context, wrong_value) == (node_t *)sum);
+    node_t *nested = (node_t *)create_expression_replacement(arena,
+                                                             (expression_t *)wrong_value,
+                                                             (expression_t *)five);
+    ASSERT(c_generation_replacement(&context, nested) == five);
+    nested = (node_t *)create_expression_replacement(arena,
+                                                     (expression_t *)wrapper,
+                                                     (expression_t *)create_integer_node(arena, 6));
+    ASSERT(c_generation_replacement(&context, nested) == (node_t *)sum);
+    /* Repeated visits can only lose a constant, even if the representation stays fixed. */
+    record_c_expression(&proofs, (node_t *)sum, make_integer_constant_element(arena, 6));
+    ASSERT(!c_expression_constant(&proofs, (node_t *)sum));
+    record_c_expression(&proofs, (node_t *)sum, value);
+    ASSERT(!c_expression_constant(&proofs, (node_t *)sum));
+    ASSERT(c_generation_replacement(&context, wrapper) == (node_t *)sum);
+    destroy_abstract_state(state);
+    destroy_arena(arena);
+    return true;
+}
+
+bool test_c_replacement_real_edges(void) {
+    arena_t *arena = create_arena(32);
+    const double values[] = {-0.0, 0.0, INFINITY, -INFINITY, NAN, 0x1p-1074, 0x1p63};
+    for (size_t i = 0; i < sizeof(values) / sizeof(*values); i++) {
+        abstract_state_t *state = create_abstract_state(arena);
+        c_expression_context_t proofs = {.arena = arena};
+        state->c_expressions = &proofs;
+        expression_t *original = (expression_t *)create_real_number_node(arena, values[i]);
+        calculate_expression(original, state, arena);
+        function_summary_t summary = {.c_expressions = proofs.head};
+        c_generation_context_t context = {.summary = &summary};
+        node_t *literal = create_real_number_node(arena, values[i]);
+        node_t *wrapper =
+            (node_t *)create_expression_replacement(arena, original, (expression_t *)literal);
+        ASSERT(c_generation_replacement(&context, wrapper)
+               == (isnan(values[i]) ? (node_t *)original : literal));
+        if (values[i] == 0.0) {
+            node_t *opposite = create_real_number_node(arena, -values[i]);
+            wrapper =
+                (node_t *)create_expression_replacement(arena, original, (expression_t *)opposite);
+            ASSERT(c_generation_replacement(&context, wrapper) == (node_t *)original);
+        }
+        destroy_abstract_state(state);
+    }
+    destroy_arena(arena);
+    return true;
+}
+
+bool test_c_replacement_specializations(void) {
+    arena_t *arena = create_arena(32);
+    parser_memory_t memory = {arena, arena, arena, arena};
+    node_t *root = parse_analysis_test_program(
+        &memory,
+        STATIC_STRING(L"const f=func(n){if(n<=9223372036854775807){return n+(2+3);}else{return "
+                      L"n-1;}};f(1);f(1.5);"));
+    options_t *options = create_options();
+    ASSERT(root && !analyze(root, &memory, options, NULL));
+    node_t *function = find_type(root, NODE_FUNCTION_OBJECT);
+    node_t *branch = find_type(function, NODE_IF_ELSE);
+    node_t *parent = branch->parent;
+    uint32_t flags = branch->flags;
+    size_t count = 0;
+    for (function_summary_t *s = get_function_summaries(function)->head; s; s = s->next) {
+        ASSERT(s->c_support == FUNCTION_C_SUPPORTED);
+        c_generation_result_t code =
+            generate_c_function(s, (string_view_t){L"goat_test", 9}, NULL, NULL);
+        ASSERT(code.status == C_GENERATION_OK);
+        bool integer = s->parameter_types[0]->type == LATTICE_INTEGER;
+        ASSERT((wcsstr(code.source.data, L"if (") == NULL) == integer);
+        ASSERT(wcsstr(code.source.data, L"INT64_C(5)"));
+        ASSERT(!wcsstr(code.source.data, L"INT64_C(2)"));
+        FREE_STRING(code.source);
+        count++;
+    }
+    ASSERT(count == 2 && branch->parent == parent && branch->flags == flags);
+    ASSERT(get_node_child(parent, 0) == branch);
+    destroy_options(options);
+    destroy_arena(arena);
+    return true;
+}
+
+bool test_c_replacement_branches(void) {
+    arena_t *arena = create_arena(32);
+    parser_memory_t memory = {arena, arena, arena, arena};
+    node_t *root = parse_analysis_test_program(
+        &memory,
+        STATIC_STRING(L"const f=func(n){if(2<3){return n;}else{return n/2;}};f(1);"));
+    options_t *options = create_options();
+    ASSERT(root && !analyze(root, &memory, options, NULL));
+    node_t *function = find_type(root, NODE_FUNCTION_OBJECT);
+    function_summary_t *s = get_function_summaries(function)->head;
+    ASSERT(s->c_support == FUNCTION_C_SUPPORTED);
+    node_t *wrapper = find_type(function, NODE_STATEMENT_REPLACEMENT);
+    ASSERT(wrapper);
+    node_t *original = get_node_child(wrapper, 0);
+    node_t *chosen = get_node_child(wrapper, 1);
+    c_generation_context_t context = {.summary = s};
+    ASSERT(c_generation_replacement(&context, wrapper) == chosen);
+    node_t *bad =
+        (node_t *)create_statement_replacement(arena,
+                                               (statement_t *)original,
+                                               (statement_t *)get_node_child(original, 2));
+    ASSERT(c_generation_replacement(&context, bad) == original);
+    bad = (node_t *)create_statement_replacement(arena,
+                                                 (statement_t *)wrapper,
+                                                 create_statement_expression_node(arena, NULL));
+    ASSERT(c_generation_replacement(&context, bad) == original);
+    c_generation_result_t code =
+        generate_c_function(s, (string_view_t){L"goat_test", 9}, NULL, NULL);
+    ASSERT(code.status == C_GENERATION_OK && !wcsstr(code.source.data, L"if ("));
+    ASSERT(wcsstr(code.source.data, L"return goat_p0;"));
+    FREE_STRING(code.source);
+    destroy_options(options);
+    destroy_arena(arena);
+    return true;
+}
+
+bool test_c_replacement_effects(void) {
+    arena_t *arena = create_arena(32);
+    parser_memory_t memory = {arena, arena, arena, arena};
+    const wchar_t *sources[] = {L"const f=func(n){var x=0;return (x=1)+x;};f(1);",
+                                L"const f=func(n){if(n<1)return 1;return f(n-1);};f(2);"};
+    for (size_t i = 0; i < 2; i++) {
+        node_t *root = parse_analysis_test_program(
+            &memory,
+            (string_value_t){.data = sources[i], .length = wcslen(sources[i])});
+        options_t *options = create_options();
+        ASSERT(root && !analyze(root, &memory, options, NULL));
+        node_t *function = find_type(root, NODE_FUNCTION_OBJECT);
+        function_summary_t *s = get_function_summaries(function)->head;
+        ASSERT(s && function_summary_is_pure(s));
+        node_t *original = find_type(function, i ? NODE_FUNCTION_CALL : NODE_ADDITION);
+        ASSERT(original);
+        node_t *wrapper = (node_t *)create_expression_replacement(
+            arena,
+            (expression_t *)original,
+            (expression_t *)create_integer_node(arena, i ? 1 : 2));
+        c_generation_context_t context = {.summary = s};
+        ASSERT(c_generation_replacement(&context, wrapper) == original);
+        c_expression_context_t proofs = {.head = s->c_expressions};
+        ASSERT(!c_expression_constant(&proofs, original));
+        destroy_options(options);
+    }
     destroy_arena(arena);
     return true;
 }

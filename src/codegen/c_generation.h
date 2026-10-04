@@ -42,6 +42,7 @@ enum {
 /** @brief One generation attempt; all input records are borrowed and immutable. */
 typedef struct c_generation_context_t {
     const function_summary_t *summary;
+    const c_expression_proof_t *replacement_proof; /**< Scoped literal proof transfer. */
     string_view_t function_name;
     const c_generation_binding_t *bindings;
     const c_generation_callee_t *callees;
@@ -82,7 +83,7 @@ c_generation_result_t generate_c_function(const function_summary_t *summary,
 /** @brief Internal lowering helpers; use generate_c_function to obtain executable source. */
 c_value_type_t c_generation_parameter_type(const c_generation_context_t *context, size_t index);
 c_value_type_t c_generation_return_type(const c_generation_context_t *context);
-/** @brief Uses the original node identity for replacement expressions. */
+/** @brief Uses original proofs, with a scoped transfer for an equivalent replacement literal. */
 c_value_type_t c_generation_expression_type(const c_generation_context_t *context,
                                             const node_t *node);
 
@@ -96,3 +97,10 @@ void destroy_c_expression(c_generated_expression_t *expression);
 
 /** @brief Checks backend-owned ASCII identifiers before emitting definitions or references. */
 bool c_function_name_is_valid(string_view_t name);
+
+/** @brief Selects a proven replacement, otherwise retains the original subtree. */
+const node_t *c_generation_replacement(const c_generation_context_t *context, const node_t *node);
+
+/** @brief Signature-wide, discardable condition truth; shared AST flags are ignored. */
+abstract_truth_t c_generation_condition_truth(const c_generation_context_t *context,
+                                              const node_t *condition);

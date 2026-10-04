@@ -1,6 +1,6 @@
 /** @file replacement.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Replacement nodes retain history; bytecode uses the result, C uses the original.
+ * @brief Replacement nodes retain history; bytecode uses the result, C requires a proof.
  */
 #include "replacement.h"
 
@@ -105,18 +105,28 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
     generate_indented_goat_code_from_node(children(node)->result, builder, indent);
 }
 
-/** @brief Implements node_vtbl_t::generate_c_code through the unsimplified expression. */
+/** @brief Implements node_vtbl_t::generate_c_code with a signature-wide replacement proof. */
 static c_generated_expression_t generate_c_code(const node_t *node,
                                                 c_generation_context_t *context) {
-    return generate_c_code_from_node(replacement_original(node), context);
+    const node_t *selected = c_generation_replacement(context, node);
+    c_expression_proof_t proof = {.node = selected,
+                                  .type = c_generation_expression_type(context, node)};
+    const c_expression_proof_t *saved = context->replacement_proof;
+    context->replacement_proof = &proof;
+    c_generated_expression_t result = generate_c_code_from_node(selected, context);
+    context->replacement_proof = saved;
+    return result;
 }
 
-/** @brief Implements node_vtbl_t::generate_indented_c_code through the original statement. */
+/** @brief Implements node_vtbl_t::generate_indented_c_code through a proven branch. */
 static bool generate_indented_c_code(const node_t *node,
                                      c_generation_context_t *context,
                                      source_builder_t *builder,
                                      size_t indent) {
-    return generate_indented_c_code_from_node(replacement_original(node), context, builder, indent);
+    return generate_indented_c_code_from_node(c_generation_replacement(context, node),
+                                              context,
+                                              builder,
+                                              indent);
 }
 
 /** @brief Implements node_vtbl_t::generate_bytecode without emitting the original. */
