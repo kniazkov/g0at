@@ -17,6 +17,8 @@ typedef struct {
 
 bool save_binary_program(const char *path, const bytecode_t *code, uint64_t library_checksum);
 binary_program_t load_binary_program(const char *path);
+/** @brief Decodes borrowed bytes without modifying them; the result owns its data. */
+binary_program_t decode_binary_program(const void *data, size_t size);
 /** @brief Validates and attaches a matching trusted library without compiling anything. */
 bool bind_binary_library(binary_program_t *program, const char *path);
 void destroy_binary_program(binary_program_t *program);

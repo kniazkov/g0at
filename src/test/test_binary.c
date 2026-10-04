@@ -51,10 +51,10 @@ static void put64(unsigned char *bytes, size_t offset, uint64_t value) {
 }
 
 static bool rejected(const void *bytes, size_t size) {
-    if (!write_binary_file(filename, bytes, size))
-        return false;
-    binary_program_t loaded = load_binary_program(filename);
+    binary_program_t loaded = decode_binary_program(bytes, size);
     bool result = !loaded.code;
+    if (!result)
+        printf("Decoder accepted a corrupted binary (%zu bytes)\n", size);
     destroy_binary_program(&loaded);
     return result;
 }
@@ -65,13 +65,24 @@ bool test_binary_rejection(void) {
     size_t size;
     unsigned char *bytes = read_binary_file(filename, GOAT_BINARY_LIMIT, &size);
     ASSERT(bytes);
+    uint64_t checksum = binary_checksum(bytes, size);
+    binary_program_t loaded = decode_binary_program(bytes, size);
+    ASSERT(loaded.code);
+    ASSERT(!memcmp(loaded.code->buffer, code->buffer, code->buffer_size));
+    ASSERT(binary_checksum(bytes, size) == checksum);
+    destroy_binary_program(&loaded);
+    ASSERT(rejected(NULL, size));
+    ASSERT(rejected(bytes, (size_t)GOAT_BINARY_LIMIT + 1));
     for (size_t length = 0; length < size; length++)
         ASSERT(rejected(bytes, length));
     unsigned char *copy = ALLOC(size + 1);
     for (size_t offset = 0; offset < size; offset++) {
         memcpy(copy, bytes, size);
         copy[offset] ^= 0x80;
-        ASSERT(rejected(copy, size));
+        bool invalid = rejected(copy, size);
+        if (!invalid)
+            printf("Corrupted byte offset: %zu\n", offset);
+        ASSERT(invalid);
     }
     memcpy(copy, bytes, size);
     copy[size] = 0;
