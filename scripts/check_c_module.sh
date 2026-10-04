@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copyright 2026 Ivan Kniazkov
-set -euo pipefail
+set -Eeuo pipefail
 interpreter="${1:?goat executable required}"
 output_dir="${2:?output directory required}"
 mkdir -p "$output_dir"
@@ -13,7 +13,7 @@ ok() {
     passed=$((passed+1))
 }
 compile() {
-    "${CC:-gcc}" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 "$@" -lm
+    "${CC:-gcc}" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 "$@"
 }
 cat > "$output_dir/recursive sample.goat" <<'GOAT'
 const fib=func(n){if(n<1)return 0;if(n==1)return 1;return fib(n-1)+fib(n-2);};
@@ -39,7 +39,7 @@ int main(void) {
            goat_f2_i_(4)!=8 || goat_f2_r_(0.25)!=0.5;
 }
 C
-compile "$output_dir/driver.c" -o "$output_dir/driver.exe"
+compile "$output_dir/driver.c" -lm -o "$output_dir/driver.exe"
 "$output_dir/driver.exe"
 ok
 current='save-only mode and analysis sidecar'
@@ -62,7 +62,7 @@ cat > "$output_dir/partial_driver.c" <<'C'
 #include "partial.c"
 int main(void) { return goat_f4_i_(41)!=42; }
 C
-compile "$output_dir/partial_driver.c" -o "$output_dir/partial.exe"
+compile "$output_dir/partial_driver.c" -lm -o "$output_dir/partial.exe"
 "$output_dir/partial.exe"
 ok
 current='empty module is a valid translation unit'
