@@ -40,6 +40,7 @@
 #include "test_modulo.h"
 #include "test_multiplication.h"
 #include "test_mutual_recursion.h"
+#include "test_native_compiler.h"
 #include "test_native_conversion.h"
 #include "test_node_properties.h"
 #include "test_operation_result.h"
@@ -67,6 +68,7 @@ static test_description_t test_list[] = {
     {"C recursive bindings", test_c_recursive_bindings},
     {"C module identity", test_c_module_identity},
     {"C module output", test_c_module_output},
+    {"native compiler request", test_native_compiler_request},
     {"C output options", test_c_output_options},
     {"C module dependencies", test_c_module_dependencies},
     {"C module call lifetime", test_c_module_call_lifetime},

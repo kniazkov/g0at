@@ -63,6 +63,10 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
           BUILD_DIR: build/${{ matrix.compiler }}
+      - name: Compile Linux shared libraries
+        run: bash scripts/check_native_library.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native-library
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Check numeric adapter ABI
         run: bash scripts/check_native_abi.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native-abi
         env:
@@ -98,6 +102,8 @@ jobs:
             build/${{ matrix.compiler }}/c-generation/generated.c
             build/${{ matrix.compiler }}/c-module/*.c
             build/${{ matrix.compiler }}/native-abi/*.c
+            build/${{ matrix.compiler }}/native-library/program.c
+            build/${{ matrix.compiler }}/native-library/program.so
           if-no-files-found: ignore
       - name: Build release
         run: bash scripts/build_release.sh

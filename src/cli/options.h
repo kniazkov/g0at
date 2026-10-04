@@ -47,7 +47,11 @@ struct options_t {
     bool print_analysis;
 
     /** @brief C source-only export; save uses the input basename with a .c extension. */
-    bool print_c, save_c;
+    bool print_c;
+    bool save_c;
+
+    /** @brief Compile a shared library without executing Goat code. */
+    bool save_library;
 
     /** @brief Optional UTF-8 analysis report destination. */
     path_t *analysis_output_file;

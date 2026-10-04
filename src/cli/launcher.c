@@ -140,7 +140,7 @@ int go(options_t *opt) {
             }
         }
 
-        if (opt->print_c || opt->save_c) {
+        if (opt->print_c || opt->save_c || opt->save_library) {
             ret_code = output_c_module(opt, memory.graph, root_node) ? 0 : -1;
             break;
         }
