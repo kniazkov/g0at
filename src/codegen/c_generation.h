@@ -30,7 +30,14 @@ typedef struct c_generation_callee_t {
     string_view_t name;
 } c_generation_callee_t;
 
-enum { C_HELPER_INTEGER = 1, C_HELPER_COMPARISON = 2 };
+enum {
+    C_HELPER_I64_ADD = 1,
+    C_HELPER_I64_SUB = 2,
+    C_HELPER_I64_MUL = 4,
+    C_HELPER_I64_NEG = 8,
+    C_HELPER_COMPARISON = 16,
+    C_HELPER_INTEGER = C_HELPER_I64_ADD | C_HELPER_I64_SUB | C_HELPER_I64_MUL | C_HELPER_I64_NEG
+};
 
 /** @brief One generation attempt; all input records are borrowed and immutable. */
 typedef struct c_generation_context_t {

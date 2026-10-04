@@ -13,8 +13,8 @@ c_generated_expression_t
 c_unary_arithmetic(const node_t *node, c_generation_context_t *context, bool negative);
 /** @brief Implements node_vtbl_t::generate_c_code for parentheses. */
 c_generated_expression_t c_parenthesized(const node_t *node, c_generation_context_t *context);
-/** @brief Emits the guarded conversion helper shared by generated functions. */
-void c_arithmetic_helpers(source_builder_t *builder);
+/** @brief Emits the conversion helper and only the requested integer operations. */
+void c_arithmetic_helpers(source_builder_t *builder, unsigned helpers);
 
 /** @brief Appends an operand's prelude and evaluates it once into a typed temporary. */
 string_value_t c_capture_operand(source_builder_t *prelude,
