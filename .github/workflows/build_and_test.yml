@@ -166,6 +166,9 @@ jobs:
       - name: Build and test
         shell: msys2 {0}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_mingw.cmd'
+      - name: Check Windows API target compatibility
+        shell: msys2 {0}
+        run: bash scripts/check_windows_target.sh build/windows-target
       - name: Compile Windows DLLs and check numeric compatibility
         shell: msys2 {0}
         run: bash scripts/check_native_windows.sh build/goat.exe build/native-windows
