@@ -1,5 +1,7 @@
 # Goat Internals: Interpreter, Static Analyzer, and Native Backend
 
+Red callouts mark limitations and known defects of the implementation described.
+
 ## Contents
 
 ### Part I. Purpose and Overall Structure
@@ -10,10 +12,10 @@
 
 ### Part II. Source Text and Program Representation
 
-4. Implementation Structure in C
-5. Lexical Analysis
-6. Syntax Analysis
-7. AST, Scopes, and Name Binding
+4. [Implementation Structure in C](04-implementation-in-c.md)
+5. [Lexical Analysis](05-lexical-analysis.md)
+6. [Syntax Analysis](06-syntax-analysis.md)
+7. [AST, Scopes, and Name Binding](07-ast-and-name-binding.md)
 
 ### Part III. Bytecode and Runtime
 

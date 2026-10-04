@@ -105,8 +105,10 @@ A link to a specific code revision makes it possible to revisit the same explana
 
 ## 1.6. Where the Boundaries Lie
 
-An experimental project is particularly useful when its limitations are visible. Goat's analyzer handles supported constructs within computational limits. The native backend accepts a subset of numeric functions. If the necessary properties of a specialization could not be established, there is no basis for generating its native implementation.
+> [!CAUTION]
+> An experimental project is particularly useful when its limitations are visible. Goat's analyzer handles supported constructs within computational limits. The native backend accepts a subset of numeric functions. If the necessary properties of a specialization could not be established, there is no basis for generating its native implementation.
 
 Throughout the book, we will encounter properties that must be kept distinct. A function may leave external state unchanged while calling itself forever. Proven purity therefore does not prove termination. Similarly, a successful example run confirms that case, and a measured speedup applies to a particular program and environment.
 
-Goat provides material for studying these distinctions, but its current mechanisms do not establish production readiness, future-version compatibility, or safe execution of untrusted code. In particular, a native library executes machine code without isolation. This book examines the existing implementation at the stated revision; possible future extensions are not treated as working capabilities.
+> [!CAUTION]
+> Goat provides material for studying these distinctions, but its current mechanisms do not establish production readiness, future-version compatibility, or safe execution of untrusted code. In particular, a native library executes machine code without isolation. This book examines the existing implementation at the stated revision; possible future extensions are not treated as working capabilities.

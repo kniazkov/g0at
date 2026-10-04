@@ -1,6 +1,6 @@
 # 3. A Program Through the System
 
-[Contents](index.md) · [Русский](../ru/03-program-pipeline.md) · [Previous chapter](02-implemented-language.md)
+[Contents](index.md) · [Русский](../ru/03-program-pipeline.md) · [Previous chapter](02-implemented-language.md) · [Next chapter](04-implementation-in-c.md)
 
 Edition 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
 
@@ -180,9 +180,15 @@ In Windows PowerShell:
 
 The first command saves bytecode in `pipeline.gbin`; the second executes it and prints `5`. The third saves `pipeline.gbin` again, now with an association to a native library: `pipeline.so` on Linux or `pipeline.dll` on Windows appears alongside it. The fourth loads this pair and also prints `5`. Commands with `--compile` do not execute the user program.
 
-A separate run no longer needs the original `.goat` file or a C compiler. The Goat runtime and, for the native variant, a compatible library are still required. A `.gbin` file is not a standalone operating-system executable and does not promise portability across arbitrary platforms or versions.
+A separate run no longer needs the original `.goat` file or a C compiler. The Goat runtime and, for the native variant, a compatible library are still required.
 
-[Loading a prepared program](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/binary_program.c) follows a separate path: it validates the binary format and, when using native mode, the corresponding library, then passes bytecode to the VM. Integrity checks help detect damaged or mismatched files; they do not make someone else's machine code safe to execute.
+> [!CAUTION]
+> A `.gbin` file is not a standalone operating-system executable and does not promise portability across arbitrary platforms or versions.
+
+[Loading a prepared program](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/binary_program.c) follows a separate path: it validates the binary format and, when using native mode, the corresponding library, then passes bytecode to the VM.
+
+> [!CAUTION]
+> Integrity checks help detect damaged or mismatched files; they do not make someone else's machine code safe to execute.
 
 <a id="section-3-7"></a>
 
