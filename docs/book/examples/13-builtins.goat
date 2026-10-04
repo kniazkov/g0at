@@ -1,0 +1,14 @@
+println(abs(-3));
+println(sqrt(9));
+println(min(4, 2));
+println(int("  -12  "));
+println(int(3.9));
+println(int("bad", "fallback"));
+println(int("bad"));
+const output = println;
+{
+    const println = func(x) { return x + 1; };
+    output(println(4));
+}
+println("");
+try { println(); } catch (error) { output(error); }

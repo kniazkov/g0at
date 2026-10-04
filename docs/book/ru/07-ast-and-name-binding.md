@@ -1,6 +1,6 @@
 # 7. AST, области видимости и связывание имён
 
-[Оглавление](index.md) · [English](../en/07-ast-and-name-binding.md) · [Предыдущая глава](06-syntax-analysis.md)
+[Оглавление](index.md) · [English](../en/07-ast-and-name-binding.md) · [Предыдущая глава](06-syntax-analysis.md) · [Следующая глава](08-bytecode-generation.md)
 
 Редакция 2. Описываемая реализация: [commit 8d1fe86, с функцией `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
 

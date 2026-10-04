@@ -19,12 +19,12 @@ Red callouts mark limitations and known defects of the implementation described.
 
 ### Part III. Bytecode and Runtime
 
-8. Bytecode Generation
-9. Virtual Machine and Value Model
-10. Contexts, Functions, and Closures
-11. Memory Management
-12. Exceptions and Runtime Errors
-13. Built-in Functions
+8. [Bytecode Generation](08-bytecode-generation.md)
+9. [Virtual Machine and Value Model](09-vm-and-values.md)
+10. [Contexts, Functions, and Closures](10-contexts-and-closures.md)
+11. [Memory Management](11-memory-management.md)
+12. [Exceptions and Runtime Errors](12-exceptions.md)
+13. [Built-in Functions](13-builtins.md)
 
 ### Part IV. Static Analysis
 
