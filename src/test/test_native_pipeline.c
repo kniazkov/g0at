@@ -17,6 +17,7 @@
 #include "model/object.h"
 #include "model/process.h"
 #include "model/thread.h"
+#include "native_test_thread.h"
 #include "test_macro.h"
 #include "test_output.h"
 #include "vm/vm.h"
@@ -235,13 +236,7 @@ static bool small_stack(void) {
     bytecode_t *code = compile(L"const f=func(n){return n;};var x=f(7);", compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     stack_task_t task = {.code = code, .proc = create_process()};
-    pthread_attr_t attributes;
-    pthread_t thread;
-    ASSERT(!pthread_attr_init(&attributes));
-    ASSERT(!pthread_attr_setstacksize(&attributes, 128 * 1024));
-    ASSERT(!pthread_create(&thread, &attributes, small_stack_worker, &task));
-    ASSERT(!pthread_attr_destroy(&attributes));
-    ASSERT(!pthread_join(thread, NULL));
+    ASSERT(run_on_small_stack(small_stack_worker, &task));
     ASSERT(task.success);
     destroy_process(task.proc);
     free_bytecode(code);
