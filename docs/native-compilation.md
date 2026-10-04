@@ -1,27 +1,28 @@
-# Linux native compilation
+# Native library compilation
 
 `goat --save-library program.goat` analyzes and emits the same dependency-closed
 numeric module as `--print-c`, compiles it, and writes `program.so` beside the
-input. It does not execute the Goat program or load the library. Empty inventories
+input on Linux, or `program.dll` on Windows. It does not execute the Goat program or load the library. Empty inventories
 produce valid libraries with empty ABI descriptors. Unsupported specializations
 remain omitted; compilation success does not mean the whole program is native.
 
 The option requires `--optimize all`, permits `--save-c`, `--print-c`, analysis-file
 and graph output, and rejects other `--print` modes. Without `--save-c`, the temporary
 C file is removed. Explicit source/analysis exports are independent artifacts and
-may remain if the subsequent library build fails. An input already named `.so`
-is rejected to avoid overwriting it. Windows and other platforms currently return
-an explicit unsupported-platform failure; DLL support belongs to step 14.
+may remain if the subsequent library build fails. An input already named with the target library extension
+is rejected to avoid overwriting it. Other platforms still return an explicit
+unsupported-platform failure.
 
 ## Compiler invocation
 
-`CC` selects one executable name or path; unset or empty uses `cc`. It must accept
-GCC/Clang-style C and Linux linker options. Names without slashes are searched in
+`CC` selects one executable name or path; unset or empty uses `cc` on Linux and `gcc` on Windows. It must accept
+GCC/Clang-style C and platform linker options. Windows support targets MinGW GCC
+(MINGW32, MINGW64 and UCRT64), not the MSVC command-line interface. Names without slashes are searched in
 `PATH`. Paths with spaces are supported. No shell is involved: `CC="cc -O3"` is an
 executable name, not a command line. Use a trusted executable wrapper for a compiler
 launcher. The project and its ordinary interpreter do not require a C++ compiler.
 
-The fixed argument vector is:
+The Linux argument vector is:
 
 ```
 cc -std=c11 -O2 -fPIC -shared -fno-fast-math -ffp-contract=off -Wl,-z,defs \
@@ -36,10 +37,44 @@ environment are trusted build configuration, not a sandbox or cross-compilation
 interface. Third-party archives are not linked automatically by this source-export
 path; the public ABI supports separately built providers.
 
+## Windows compilation and exports
+
+Windows uses `-shared -DGOAT_NATIVE_BUILD -m32` or `-m64` matching the interpreter,
+`-fno-fast-math -ffp-contract=off -Wl,--no-undefined -Wl,--exclude-all-symbols`,
+`-std=c11 -O2`, the output/source paths and `-lm`. `-fPIC` is unnecessary for PE.
+The public header marks the query with `__declspec(dllexport)` when
+`GOAT_NATIVE_BUILD` is defined; other symbols are not auto-exported. A handwritten
+provider must use the same build define. Query and adapter pointers use explicit
+`GOAT_NATIVE_CALL` (`__cdecl` on Windows, ordinary C elsewhere), including on i686.
+`goat_native_query_v1_t` is the public query pointer type. The exported lookup name
+is exactly `goat_native_query_v1`, verified through `GetProcAddress` in tests.
+
+`SearchPathA` resolves one executable, then `CreateProcessA` receives that explicit
+application path and a CRT-quoted command line. Spaces, quotes and backslashes are
+handled without `cmd.exe`, environment expansion or shell operators. Batch/shell
+scripts are not executable wrappers on this path; use a native executable. Only the
+NUL input and compiler-log output handles are inherited. Process, thread, file and
+attribute-list resources are released on handled completion. Full unsigned Windows
+process exit codes fit the result's `int64_t exit_code`; Win32 API and cleanup errors
+have separate fields from errno.
+
+Paths use the existing project's narrow Windows path convention (active Windows
+ANSI code page), not a new UTF-8 filesystem contract. The current path-length limits
+still apply. Broad Unicode filesystem support is a separate task.
+
+A random sibling directory is created exclusively; it inherits its parent's ACL.
+Random names use Windows' built-in BCrypt service, linked only on Windows; no external
+library or C++ compiler is added. A nonempty regular, non-reparse output is published
+with `MoveFileExA(REPLACE_EXISTING | WRITE_THROUGH)`. The destination is never deleted
+first. In-use DLLs can block replacement: this is an error preserving the old DLL,
+not a reason to unload somebody else's module or retry execution. Parallel builds
+have separate temporary directories; concurrent publication to the same Windows
+file may fail under sharing restrictions.
+
 ## Publication and cleanup
 
 `compile_native_library` in `src/codegen/native_compiler.h` accepts generated source,
-a compiler executable and a destination. It owns a fresh private `mkdtemp` directory
+a compiler executable and a destination. On Linux it owns a fresh private `mkdtemp` directory
 beside that destination, with a fixed source, output and log filename. Standard input
 is `/dev/null`; compiler stdout and stderr are redirected to the log. `posix_spawnp`
 passes arguments directly, and `waitpid` retries interrupted waits.
@@ -81,3 +116,13 @@ invalid C, unresolved symbols, missing artifacts, large logs, publication failur
 input/symlink/hardlink protection, concurrent builds and temporary-file cleanup.
 Unit tests cover request validation and the unsupported-platform stub without needing
 a compiler. Linux CI runs the integration suite with both GCC and Clang.
+
+`scripts/check_native_windows.sh` adds real DLL export lookup, loaded-DLL replacement
+failure, native executable wrappers, large Windows exit codes and fast-math rejection
+on all three Windows targets. The numeric suite calls real library adapters for
+wrapping integer arithmetic, exact mixed comparisons beyond 2^53, NaN/infinities,
+signed zero, subnormals and binary64 rounding (including i686 x87). Test-only Windows
+loading does not implement the production loader planned for step 15.
+
+Process construction follows Microsoft's [CreateProcess documentation](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa)
+and [C runtime quoting rules](https://learn.microsoft.com/en-us/cpp/c-language/parsing-c-command-line-arguments).

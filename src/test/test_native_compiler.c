@@ -5,13 +5,16 @@
 #include "test_native_compiler.h"
 
 #include "codegen/native_compiler.h"
+#include "lib/allocate.h"
+#include "lib/windows_command_line.h"
 #include "test_macro.h"
 
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
 bool test_native_compiler_request(void) {
-#ifdef __linux__
+#if defined(__linux__) || defined(_WIN32)
     const wchar_t *sources[] = {NULL, L"", L"", L"", L""};
     const char *compilers[] = {"cc", NULL, "", "cc", "cc"};
     const char *destinations[] = {"unused.so", "unused.so", "unused.so", NULL, ""};
@@ -32,5 +35,24 @@ bool test_native_compiler_request(void) {
     ASSERT(!result.diagnostics && !result.diagnostics_length);
     destroy_native_compile_result(&result);
 #endif
+    return true;
+}
+
+bool test_windows_command_line(void) {
+    const char *args[] = {"compiler path.exe", "", "a b", "a\"b", "C:\\tail\\", "&%x%!", NULL};
+    char *line = create_windows_command_line(args);
+    ASSERT(line
+           && !strcmp(line,
+                      "\"compiler path.exe\" \"\" \"a b\" \"a\\\"b\" \"C:\\tail\\\\\" \"&%x%!\""));
+    FREE(line);
+    char large[17000];
+    memset(large, 'x', sizeof(large) - 1);
+    large[sizeof(large) - 1] = 0;
+    const char *long_args[] = {large, NULL};
+    ASSERT(!create_windows_command_line(long_args));
+    const char *empty[] = {NULL};
+    line = create_windows_command_line(empty);
+    ASSERT(line && !line[0]);
+    FREE(line);
     return true;
 }

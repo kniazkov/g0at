@@ -69,6 +69,7 @@ static test_description_t test_list[] = {
     {"C module identity", test_c_module_identity},
     {"C module output", test_c_module_output},
     {"native compiler request", test_native_compiler_request},
+    {"Windows command line", test_windows_command_line},
     {"C output options", test_c_output_options},
     {"C module dependencies", test_c_module_dependencies},
     {"C module call lifetime", test_c_module_call_lifetime},

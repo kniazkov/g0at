@@ -7,6 +7,18 @@
 #    define GOAT_NATIVE_ABI_V1_H
 #    include <stdint.h>
 
+#    ifdef _WIN32
+#        define GOAT_NATIVE_CALL __cdecl
+#        ifdef GOAT_NATIVE_BUILD
+#            define GOAT_NATIVE_API __declspec(dllexport)
+#        else
+#            define GOAT_NATIVE_API
+#        endif
+#    else
+#        define GOAT_NATIVE_CALL
+#        define GOAT_NATIVE_API
+#    endif
+
 enum {
     GOAT_NATIVE_ABI_VERSION = 1,
     GOAT_NATIVE_INVALID = 0,
@@ -39,10 +51,11 @@ typedef struct goat_native_value_v1_t {
     } value;
 } goat_native_value_v1_t;
 
-typedef uint32_t (*goat_native_adapter_v1_t)(uint32_t version,
-                                             uint32_t argument_count,
-                                             const goat_native_value_v1_t *arguments,
-                                             goat_native_value_v1_t *result);
+typedef uint32_t(GOAT_NATIVE_CALL *goat_native_adapter_v1_t)(
+    uint32_t version,
+    uint32_t argument_count,
+    const goat_native_value_v1_t *arguments,
+    goat_native_value_v1_t *result);
 
 typedef struct goat_native_entry_v1_t {
     uint64_t specialization_id;
@@ -66,7 +79,9 @@ typedef struct goat_native_module_v1_t {
     const goat_native_entry_v1_t *entries;
 } goat_native_module_v1_t;
 
-const goat_native_module_v1_t *goat_native_query_v1(uint32_t version);
+typedef const goat_native_module_v1_t *(GOAT_NATIVE_CALL *goat_native_query_v1_t)(uint32_t version);
+GOAT_NATIVE_API const goat_native_module_v1_t *GOAT_NATIVE_CALL
+goat_native_query_v1(uint32_t version);
 #    ifdef __cplusplus
 }
 #    endif

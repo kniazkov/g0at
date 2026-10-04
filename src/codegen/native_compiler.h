@@ -5,6 +5,7 @@
 #pragma once
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <wchar.h>
 
 typedef enum {
@@ -18,7 +19,9 @@ typedef enum {
 typedef struct {
     native_compile_status_t status;
     int system_error;
-    int exit_code;
+    int64_t exit_code;
+    uint32_t windows_error;
+    uint32_t windows_cleanup_error;
     int signal_number;
     int cleanup_error;
     char *diagnostics;

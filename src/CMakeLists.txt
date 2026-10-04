@@ -24,6 +24,9 @@ file(GLOB core_sources
   cli/*.c
 )
 add_library(core STATIC ${core_sources})
+if(WIN32)
+  target_link_libraries(core PUBLIC bcrypt)
+endif()
 # Keep the allocator API consistent between core and its consumers.
 target_compile_definitions(core PUBLIC "$<$<NOT:$<CONFIG:Release>>:MEMORY_DEBUG>")
 message(STATUS "Found core sources: ${core_sources}")

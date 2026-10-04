@@ -26,11 +26,13 @@ pointer. Descriptor validation and dynamic-library ownership will be implemented
 in the loader step.
 
 Version 1 requires the host and module to use the same target architecture and
-compatible default C calling convention and structure layout. It is an in-process
+compatible C calling convention and structure layout. `GOAT_NATIVE_CALL` explicitly
+selects cdecl on Windows (also on 32-bit builds); it is empty elsewhere. It is an in-process
 ABI, not a portable serialized format. No packing pragmas or nondefault ABI flags
 are supported. A future loader must validate the reported sizes/alignment before
-reading entries. Shared-library exports and Windows export annotations belong to
-the following compilation steps.
+reading entries. Windows providers define `GOAT_NATIVE_BUILD` when building the library to export
+`goat_native_query_v1` through `GOAT_NATIVE_API`. The query typedef is
+`goat_native_query_v1_t`; provider adapters use `GOAT_NATIVE_CALL` too.
 
 ## Values and invocation
 

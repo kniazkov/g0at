@@ -6,10 +6,10 @@
 
 #include <goat/native_abi.h>
 
-static uint32_t read_device(uint32_t version,
-                            uint32_t count,
-                            const goat_native_value_v1_t *args,
-                            goat_native_value_v1_t *result) {
+static uint32_t GOAT_NATIVE_CALL read_device(uint32_t version,
+                                             uint32_t count,
+                                             const goat_native_value_v1_t *args,
+                                             goat_native_value_v1_t *result) {
     if (version != GOAT_NATIVE_ABI_VERSION)
         return GOAT_NATIVE_ABI_MISMATCH;
     if (!result || (count && !args))
@@ -49,6 +49,7 @@ static const goat_native_module_v1_t module = {
     .entries = entries,
 };
 
-const goat_native_module_v1_t *goat_native_query_v1(uint32_t version) {
+GOAT_NATIVE_API const goat_native_module_v1_t *GOAT_NATIVE_CALL
+goat_native_query_v1(uint32_t version) {
     return version == GOAT_NATIVE_ABI_VERSION ? &module : 0;
 }

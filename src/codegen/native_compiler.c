@@ -1,20 +1,41 @@
 /** @file native_compiler.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Linux shared-library compilation with private temporary files and no shell.
+ * @brief Shared-library compilation with private temporary files and no shell.
  */
 #if defined(__linux__) && !defined(_POSIX_C_SOURCE)
 #    define _POSIX_C_SOURCE 200809L
 #endif
-#include "native_compiler.h"
-
 #include "lib/allocate.h"
 #include "lib/io.h"
+#include "native_compiler_internal.h"
+
+#include <errno.h>
+#include <stdio.h>
+
+/** @brief Caps captured diagnostics at 64 KiB; file redirection avoids pipe deadlocks. */
+void native_compiler_read_diagnostics(native_compile_result_t *result, const char *path) {
+    FILE *file = fopen(path, "rb");
+    if (!file) {
+        result->system_error = errno;
+        result->status = NATIVE_COMPILE_IO_ERROR;
+        return;
+    }
+    const size_t limit = 65536;
+    result->diagnostics = ALLOC(limit + 1);
+    size_t length = fread(result->diagnostics, 1, limit + 1, file);
+    result->diagnostics_truncated = length > limit;
+    result->diagnostics_length = length > limit ? limit : length;
+    result->diagnostics[result->diagnostics_length] = '\0';
+    if (ferror(file)) {
+        result->system_error = errno ? errno : EIO;
+        result->status = NATIVE_COMPILE_IO_ERROR;
+    }
+    fclose(file);
+}
 
 #ifdef __linux__
-#    include <errno.h>
 #    include <fcntl.h>
 #    include <spawn.h>
-#    include <stdio.h>
 #    include <stdlib.h>
 #    include <string.h>
 #    include <sys/stat.h>
@@ -69,27 +90,6 @@ static int start_compiler(const char *compiler,
     return error;
 }
 
-/** @brief Caps captured diagnostics at 64 KiB; file redirection avoids pipe deadlocks. */
-static void read_diagnostics(native_compile_result_t *result, const char *path) {
-    FILE *file = fopen(path, "rb");
-    if (!file) {
-        result->system_error = errno;
-        result->status = NATIVE_COMPILE_IO_ERROR;
-        return;
-    }
-    const size_t limit = 65536;
-    result->diagnostics = ALLOC(limit + 1);
-    size_t length = fread(result->diagnostics, 1, limit + 1, file);
-    result->diagnostics_truncated = length > limit;
-    result->diagnostics_length = length > limit ? limit : length;
-    result->diagnostics[result->diagnostics_length] = '\0';
-    if (ferror(file)) {
-        result->system_error = errno ? errno : EIO;
-        result->status = NATIVE_COMPILE_IO_ERROR;
-    }
-    fclose(file);
-}
-
 static void remove_file(native_compile_result_t *result, const char *path) {
     if (unlink(path) && errno != ENOENT && !result->cleanup_error)
         result->cleanup_error = errno;
@@ -141,7 +141,7 @@ compile_native_library(const wchar_t *source, const char *compiler, const char *
         result.exit_code = WEXITSTATUS(status);
     else if (WIFSIGNALED(status))
         result.signal_number = WTERMSIG(status);
-    read_diagnostics(&result, log);
+    native_compiler_read_diagnostics(&result, log);
     if (result.exit_code != 0 || result.system_error)
         goto cleanup;
     result.status = NATIVE_COMPILE_IO_ERROR;
@@ -170,6 +170,8 @@ cleanup:
     FREE(log);
     FREE(directory);
     FREE(target);
+#elif defined(_WIN32)
+    result = compile_native_library_windows(source, compiler, destination);
 #else
     (void)source;
     (void)compiler;

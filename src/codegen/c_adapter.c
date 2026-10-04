@@ -15,6 +15,18 @@ void c_emit_native_abi(source_builder_t *builder) {
     add_static_source(builder, 0, L"#define GOAT_NATIVE_ABI_V1_H");
     add_static_source(builder, 0, L"#include <stdint.h>");
     add_static_source(builder, 0, L"");
+    add_static_source(builder, 0, L"#ifdef _WIN32");
+    add_static_source(builder, 0, L"#define GOAT_NATIVE_CALL __cdecl");
+    add_static_source(builder, 0, L"#ifdef GOAT_NATIVE_BUILD");
+    add_static_source(builder, 0, L"#define GOAT_NATIVE_API __declspec(dllexport)");
+    add_static_source(builder, 0, L"#else");
+    add_static_source(builder, 0, L"#define GOAT_NATIVE_API");
+    add_static_source(builder, 0, L"#endif");
+    add_static_source(builder, 0, L"#else");
+    add_static_source(builder, 0, L"#define GOAT_NATIVE_CALL");
+    add_static_source(builder, 0, L"#define GOAT_NATIVE_API");
+    add_static_source(builder, 0, L"#endif");
+    add_static_source(builder, 0, L"");
     add_static_source(builder, 0, L"enum {");
     add_static_source(builder, 0, L"    GOAT_NATIVE_ABI_VERSION = 1,");
     add_static_source(builder, 0, L"    GOAT_NATIVE_INVALID = 0,");
@@ -47,9 +59,10 @@ void c_emit_native_abi(source_builder_t *builder) {
     add_static_source(builder, 0, L"    } value;");
     add_static_source(builder, 0, L"} goat_native_value_v1_t;");
     add_static_source(builder, 0, L"");
-    add_static_source(builder,
-                      0,
-                      L"typedef uint32_t (*goat_native_adapter_v1_t)(uint32_t version,");
+    add_static_source(
+        builder,
+        0,
+        L"typedef uint32_t (GOAT_NATIVE_CALL *goat_native_adapter_v1_t)(uint32_t version,");
     add_static_source(builder,
                       0,
                       L"                                             uint32_t argument_count,");
@@ -86,7 +99,12 @@ void c_emit_native_abi(source_builder_t *builder) {
     add_static_source(builder, 0, L"");
     add_static_source(builder,
                       0,
-                      L"const goat_native_module_v1_t *goat_native_query_v1(uint32_t version);");
+                      L"typedef const goat_native_module_v1_t *(GOAT_NATIVE_CALL "
+                      L"*goat_native_query_v1_t)(uint32_t version);");
+    add_static_source(builder,
+                      0,
+                      L"GOAT_NATIVE_API const goat_native_module_v1_t *GOAT_NATIVE_CALL "
+                      L"goat_native_query_v1(uint32_t version);");
     add_static_source(builder, 0, L"#ifdef __cplusplus");
     add_static_source(builder, 0, L"}");
     add_static_source(builder, 0, L"#endif");
@@ -107,10 +125,11 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
             add_source(builder, 1, L"%s,", type_tag(c_generation_parameter_type(&context, i)));
         add_static_source(builder, 0, L"};");
     }
-    add_source(builder,
-               0,
-               L"static uint32_t goat_adapter_%zu(uint32_t version, uint32_t count,",
-               entry->id);
+    add_source(
+        builder,
+        0,
+        L"static uint32_t GOAT_NATIVE_CALL goat_adapter_%zu(uint32_t version, uint32_t count,",
+        entry->id);
     add_static_source(builder,
                       1,
                       L"const goat_native_value_v1_t *args, goat_native_value_v1_t *result) {");
@@ -197,7 +216,8 @@ void c_emit_native_module(source_builder_t *builder,
     add_static_source(builder, 0, L"};");
     add_static_source(builder,
                       0,
-                      L"const goat_native_module_v1_t *goat_native_query_v1(uint32_t version) {");
+                      L"GOAT_NATIVE_API const goat_native_module_v1_t *GOAT_NATIVE_CALL "
+                      L"goat_native_query_v1(uint32_t version) {");
     add_static_source(builder,
                       1,
                       L"return version == GOAT_NATIVE_ABI_VERSION ? &goat_native_module : 0;");
