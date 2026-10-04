@@ -1,6 +1,6 @@
 # 7. AST, Scopes, and Name Binding
 
-[Contents](index.md) · [Русский](../ru/07-ast-and-name-binding.md) · [Previous chapter](06-syntax-analysis.md)
+[Contents](index.md) · [Русский](../ru/07-ast-and-name-binding.md) · [Previous chapter](06-syntax-analysis.md) · [Next chapter](08-bytecode-generation.md)
 
 Edition 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
 

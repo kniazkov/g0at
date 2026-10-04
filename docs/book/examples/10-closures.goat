@@ -1,0 +1,17 @@
+const make = func(start) {
+    var value = start;
+    return func() { value = value + 1; return value; };
+};
+const a = make(10);
+const b = make(20);
+println(a());
+println(a());
+println(b());
+const first = func(x) { return x; };
+println(first());
+println(first(7, 8));
+const factorial = func(n) {
+    if (n <= 1) { return 1; }
+    return n * factorial(n - 1);
+};
+println(factorial(5));

@@ -1,0 +1,2 @@
+const text = input();
+println(int(text, -1) + 1);

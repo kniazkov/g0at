@@ -1,0 +1,6 @@
+println(6 / 3);
+println(3 / 2);
+println("value=" + 3);
+println(!"");
+println(!{});
+println({ var x = 2; const y = 3; });

@@ -1,0 +1,12 @@
+const divide = func(x) { return 10 / x; };
+try {
+    println(100 + divide(0));
+} catch (error) {
+    println(error);
+}
+try {
+    try { throw "stop"; } catch (inner) { throw inner; }
+} catch (outer) {
+    println(outer);
+}
+println(2 + 3);
