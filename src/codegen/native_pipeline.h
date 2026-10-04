@@ -26,3 +26,9 @@ typedef struct {
 native_prepare_result_t
 prepare_native_execution(const node_t *root, bytecode_t *code, const char *compiler);
 void destroy_native_prepare_result(native_prepare_result_t *result);
+
+/** @brief Saves a validated library and retains its bindings for bytecode serialization. */
+native_prepare_result_t prepare_native_artifact(const node_t *root,
+                                                bytecode_t *code,
+                                                const char *compiler,
+                                                const char *destination);

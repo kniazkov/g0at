@@ -10,3 +10,6 @@
 path_t *c_output_path(const path_t *input);
 /** @brief Exports a C module/library and reports omissions without running Goat code. */
 bool output_c_module(const options_t *options, arena_t *arena, const node_t *root);
+
+/** @brief Changes the basename extension; NULL prevents overwriting identically named input. */
+path_t *output_path(const path_t *input, const char *extension);

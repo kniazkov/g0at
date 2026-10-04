@@ -1318,6 +1318,26 @@ The launcher pipeline generates, compiles, loads and binds these descriptors wit
 Generated adapters enforce recursion/call limits; pure resource-limited calls retry in
 bytecode without reevaluating arguments. `--native required` rejects preparation failure or an empty inventory before execution.
 
+## Separate compilation and execution
+
+```sh
+# Compile without running; no C compiler is needed.
+./goat --compile example/fibonacci_analysis.goat
+./goat --run example/fibonacci_analysis.gbin
+
+# Also build a native companion for eligible functions.
+./goat --compile --native required example/fibonacci_analysis.goat
+./goat --run --native required example/fibonacci_analysis.gbin
+```
+
+Compilation saves `<name>.gbin` and, when requested and available, `<name>.so` on
+Linux or `<name>.dll` on Windows. Execution needs neither the source nor a C
+compiler. Move the pair together, keeping their basenames equal. `--run` defaults
+to `--native auto`: it uses the matching companion or falls back to bytecode.
+Use `--native off` to ignore it, or `required` to reject missing native support.
+The format is versioned and checks platform representation and file integrity;
+see [compiled programs](docs/compiled-programs.md) for compatibility and failure rules.
+
 ## Author and license
 
 Created by [Ivan Kniazkov](https://github.com/kniazkov).

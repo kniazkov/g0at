@@ -9,6 +9,7 @@
 #include "test_abstract_state.h"
 #include "test_addition.h"
 #include "test_analysis.h"
+#include "test_binary.h"
 #include "test_builtin_functions.h"
 #include "test_c_body.h"
 #include "test_c_calls.h"
@@ -62,6 +63,9 @@ static bool stub() {
 
 static test_description_t test_list[] = {
     {"native execution options", test_native_options},
+    {"binary roundtrip", test_binary_roundtrip},
+    {"binary rejection", test_binary_rejection},
+    {"binary options", test_binary_options},
     {"C emission", test_c_emission},
     {"C emission rejections", test_c_emission_rejections},
     {"C control flow rejections", test_c_control_rejections},

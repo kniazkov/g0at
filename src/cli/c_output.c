@@ -14,15 +14,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-static path_t *output_path(const path_t *input, const char *extension) {
-    if (input && input->extension && !strcasecmp(input->extension, extension))
-        return NULL;
+path_t *output_path(const path_t *input, const char *extension) {
     const char *name =
         input && input->file_name && input->file_name[0] ? input->normal_path : "generated";
-    size_t length = strlen(name);
-    const char *dot = input && input->file_name ? strrchr(input->file_name, '.') : NULL;
-    if (dot && dot != input->file_name)
-        length -= strlen(dot);
+    const char *base = name;
+    for (const char *p = name; *p; p++)
+        if (*p == '/' || *p == '\\')
+            base = p + 1;
+    const char *dot = strrchr(base, '.');
+    if (dot == base)
+        dot = NULL;
+    if (dot && !strcasecmp(dot + 1, extension))
+        return NULL;
+    size_t length = dot ? (size_t)(dot - name) : strlen(name);
     size_t suffix = strlen(extension);
     char *buffer = ALLOC(length + suffix + 2);
     memcpy(buffer, name, length);

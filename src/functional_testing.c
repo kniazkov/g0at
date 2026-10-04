@@ -70,6 +70,7 @@ static int get_file_size(FILE *file) {
  * results. */
 int do_test(char *interpreter, char *test_name, const char *optimization, const char *native) {
     int result = 0;
+    int compiled = !strcmp(native, "compiled");
 
     char cmd[1024], path_actual_output[256], path_expected_output[256], path_actual_error[256],
         path_expected_error[256], path_input[256];
@@ -101,18 +102,20 @@ int do_test(char *interpreter, char *test_name, const char *optimization, const 
 #endif
     }
 #ifdef _WIN32
-    const char *command_format = "\"\"%s\" --lang en --optimize %s --native %s "
+    const char *command_format = "\"\"%s\" %s--lang en --optimize %s --native %s "
                                  "\"%s%cprogram.goat\" < \"%s\" 1> \"%s\" 2> \"%s\"\"";
 #else
-    const char *command_format = "\"%s\" --lang en --optimize %s --native %s \"%s%cprogram.goat\" "
-                                 "< \"%s\" 1> \"%s\" 2> \"%s\"";
+    const char *command_format =
+        "\"%s\" %s--lang en --optimize %s --native %s \"%s%cprogram.goat\" "
+        "< \"%s\" 1> \"%s\" 2> \"%s\"";
 #endif
     int length = snprintf(cmd,
                           sizeof(cmd),
                           command_format,
                           interpreter,
+                          compiled ? "--compile " : "",
                           optimization,
-                          native,
+                          compiled ? "off" : native,
                           test_name,
                           path_separator(),
                           path_input,
@@ -122,6 +125,28 @@ int do_test(char *interpreter, char *test_name, const char *optimization, const 
     if (length < 0 || (size_t)length >= sizeof(cmd))
         return 0;
     int status = system(cmd);
+    char binary[256];
+    snprintf(binary, sizeof(binary), "%s%cprogram.gbin", test_name, path_separator());
+    if (compiled && status == 0) {
+#ifdef _WIN32
+        const char *run_format =
+            "\"\"%s\" --lang en --run --native off \"%s\" < \"%s\" 1>> \"%s\" 2>> \"%s\"\"";
+#else
+        const char *run_format =
+            "\"%s\" --lang en --run --native off \"%s\" < \"%s\" 1>> \"%s\" 2>> \"%s\"";
+#endif
+        length = snprintf(cmd,
+                          sizeof(cmd),
+                          run_format,
+                          interpreter,
+                          binary,
+                          path_input,
+                          path_actual_output,
+                          path_actual_error);
+        status = length < 0 || (size_t)length >= sizeof(cmd) ? -1 : system(cmd);
+    }
+    if (compiled)
+        remove(binary);
 
     FILE *actual_output = NULL, *expected_output = NULL, *actual_error = NULL,
          *expected_error = NULL;
@@ -176,8 +201,9 @@ cleanup:
 int main(int argc, char **argv) {
     if (argc < 3 || argc > 4
         || (argc == 4 && strcmp(argv[3], "off") && strcmp(argv[3], "auto")
-            && strcmp(argv[3], "required"))) {
-        printf("Usage: functional_testing <interpreter> <list of tests> [off|auto|required]\n");
+            && strcmp(argv[3], "required") && strcmp(argv[3], "compiled"))) {
+        printf("Usage: functional_testing <interpreter> <list of tests> "
+               "[off|auto|required|compiled]\n");
         return -1;
     }
     const char *native = argc == 4 ? argv[3] : "off";
@@ -198,7 +224,9 @@ int main(int argc, char **argv) {
         char *test_name_trim = trim(test_name);
         if (strlen(test_name_trim) > 0 && test_name_trim[0] != '#') {
             const char *levels[] = {"none", "all"};
-            for (size_t level = strcmp(native, "off") ? 1 : 0; level < 2; level++) {
+            for (size_t level = (strcmp(native, "off") && strcmp(native, "compiled")) ? 1 : 0;
+                 level < 2;
+                 level++) {
                 int result = do_test(argv[1], test_name_trim, levels[level], native);
                 if (result) {
                     passed++;

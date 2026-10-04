@@ -24,6 +24,9 @@ struct options_t {
     /** @brief Path to the input file. */
     path_t *input_file;
 
+    bool compile_only; /**< Save a .gbin artifact without executing it. */
+    bool run_binary;   /**< Load a .gbin artifact without parsing or compiling. */
+
     /** @brief Defaults to OPTIMIZATION_ALL. */
     optimization_level_t optimization_level;
 
