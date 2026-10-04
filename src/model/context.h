@@ -10,6 +10,8 @@
 #include "common/control_flow.h"
 #include "common/types.h"
 
+#include <stdbool.h>
+
 typedef struct object_t object_t;
 typedef struct context_t context_t;
 typedef struct process_t process_t;
@@ -18,6 +20,9 @@ typedef struct process_t process_t;
 struct context_t {
     /** @brief A data associated with the current execution context. */
     object_t *data;
+
+    /** @brief Inherited by retry descendants, discarded on return or exception unwinding. */
+    bool native_disabled;
 
     /** @brief A pointer to the previous context in the stack. */
     context_t *previous;

@@ -536,6 +536,7 @@ node_t *create_function_object_node(arena_t *arena, string_view_t *arg_list, siz
     function_object_t *fobj =
         (function_object_t *)alloc_zeroed_from_arena(arena, sizeof(function_object_t));
     fobj->base.base.vtbl = &fo_vtbl;
+    fobj->code_instr_index = BAD_INSTR_INDEX;
     fobj->arguments = create_argument_list_node(arena, arg_list, arg_count);
     fobj->body = create_function_body_node(arena);
     fobj->summaries = create_function_summary_set(arena, &fobj->base.base, arg_count);
@@ -552,4 +553,10 @@ void fill_function_body(node_t *node, list_t *statements) {
 function_summary_set_t *get_function_summaries(const node_t *node) {
     assert(node->vtbl->type == NODE_FUNCTION_OBJECT);
     return ((const function_object_t *)node)->summaries;
+}
+
+instr_index_t get_function_bytecode_instruction(const node_t *node) {
+    assert(node->vtbl->type == NODE_FUNCTION_OBJECT);
+    instr_index_t index = ((const function_object_t *)node)->code_instr_index;
+    return index == BAD_INSTR_INDEX ? index : index + 1;
 }

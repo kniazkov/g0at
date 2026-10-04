@@ -89,6 +89,10 @@ static c_generation_result_t generate_function(const function_summary_t *summary
     }
     source_builder_t *builder = create_source_builder();
     bool success = generate_indented_c_code_from_node(function, &context, builder, 0);
+    /* Bound the frame allocated before its entry guard. */
+    if (definition
+        && summary->parameter_count + context.local_count + context.temporary_count > 128)
+        success = false;
     if (!success || !builder->count)
         fail_c_generation(&context, function, C_GENERATION_UNSUPPORTED);
     c_generation_result_t result = {.status = context.status, .failed_node = context.failed_node};

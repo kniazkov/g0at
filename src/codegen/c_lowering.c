@@ -91,6 +91,8 @@ bool c_emit_return(const node_t *node,
     bool valid = expression.type == c_generation_return_type(context);
     if (valid) {
         c_emit_prelude(expression.prelude, builder, indent);
+        if (context->module_definition)
+            add_static_source(builder, indent, L"goat_guard_leave();");
         add_source(builder, indent, L"return %s;", expression.value.data);
     }
     context->terminates = valid;
@@ -126,6 +128,8 @@ bool c_emit_function(const node_t *node,
     const c_generation_binding_t *saved = context->bindings;
     string_builder_t signature;
     init_string_builder(&signature, 64);
+    if (context->module_definition)
+        append_string(&signature, L"__attribute__((noinline)) ");
     append_string(&signature, c_type_name(c_generation_return_type(context)));
     append_char(&signature, L' ');
     append_substring(&signature, context->function_name.data, context->function_name.length);
@@ -149,6 +153,8 @@ bool c_emit_function(const node_t *node,
     bool prototypes =
         c_emit_callee_prototypes(context, context->module_definition ? NULL : builder);
     add_formatted_source(builder, indent, append_string(&signature, L") {"));
+    if (context->module_definition)
+        add_static_source(builder, indent + 1, L"goat_guard_enter();");
     for (size_t i = 0; i < count; i++)
         add_source(builder, indent + 1, L"(void)%s;", bindings[i].name.data);
     bool success = prototypes

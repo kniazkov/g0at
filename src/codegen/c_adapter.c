@@ -112,6 +112,37 @@ void c_emit_native_abi(source_builder_t *builder) {
     add_static_source(builder, 0, L"/* ABI declarations end. */");
 }
 
+void c_emit_native_guard(source_builder_t *builder) {
+    static const wchar_t *const lines[] = {
+        L"#include <setjmp.h>",
+        L"#if !defined(__GNUC__) && !defined(__clang__)",
+        L"#error Bounded Goat functions require GCC or Clang noinline support",
+        L"#endif",
+        L"typedef struct {",
+        L"    jmp_buf recovery;",
+        L"    unsigned depth;",
+        L"    unsigned fuel;",
+        L"    uintptr_t origin;",
+        L"} goat_native_guard_t;",
+        L"static _Thread_local goat_native_guard_t *goat_guard;",
+        L"static inline void goat_guard_enter(void) {",
+        L"    if (!goat_guard) return;",
+        L"    char position;",
+        L"    uintptr_t here = (uintptr_t)&position;",
+        L"    uintptr_t distance = here > goat_guard->origin ? here - goat_guard->origin : "
+        L"goat_guard->origin - here;",
+        L"    if (goat_guard->depth >= 32 || !goat_guard->fuel || distance >= 65536)",
+        L"        longjmp(goat_guard->recovery, 1);",
+        L"    goat_guard->depth++;",
+        L"    goat_guard->fuel--;",
+        L"}",
+        L"static inline void goat_guard_leave(void) {",
+        L"    if (goat_guard) goat_guard->depth--;",
+        L"}"};
+    for (size_t i = 0; i < sizeof(lines) / sizeof(*lines); i++)
+        add_formatted_source(builder, 0, (string_value_t){lines[i], wcslen(lines[i]), false});
+}
+
 static const wchar_t *type_tag(c_value_type_t type) {
     return type == C_VALUE_INT64 ? L"GOAT_NATIVE_I64" : L"GOAT_NATIVE_F64";
 }
@@ -150,6 +181,14 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
                        type_tag(c_generation_parameter_type(&context, i)));
         }
     }
+    add_static_source(builder, 1, L"goat_native_guard_t guard = {.depth = 0, .fuel = 4096};");
+    add_static_source(builder, 1, L"guard.origin = (uintptr_t)&guard;");
+    add_static_source(builder, 1, L"goat_native_guard_t *previous = goat_guard;");
+    add_static_source(builder, 1, L"if (setjmp(guard.recovery)) {");
+    add_static_source(builder, 2, L"goat_guard = previous;");
+    add_static_source(builder, 2, L"return GOAT_NATIVE_RESOURCE_LIMIT;");
+    add_static_source(builder, 1, L"}");
+    add_static_source(builder, 1, L"goat_guard = &guard;");
     add_static_source(builder, 1, L"goat_native_value_v1_t value = {0};");
     add_source(builder, 1, L"value.type = %s;", type_tag(c_generation_return_type(&context)));
     string_builder_t call;
@@ -173,6 +212,7 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
                c_generation_return_type(&context) == C_VALUE_INT64 ? L"integer" : L"real",
                expression.data);
     FREE_STRING(expression);
+    add_static_source(builder, 1, L"goat_guard = previous;");
     add_static_source(builder, 1, L"*result = value;");
     add_static_source(builder, 1, L"return GOAT_NATIVE_OK;");
     add_static_source(builder, 0, L"}");

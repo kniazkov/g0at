@@ -51,3 +51,9 @@ void *open_native_library_handle(const char *path, char **diagnostic);
 bool get_native_library_query(void *handle, goat_native_query_v1_t *query, char **diagnostic);
 void close_native_library_handle(void *handle);
 char *copy_native_library_diagnostic(const char *text);
+
+/** @brief Requires conservative stack headroom before entering a native adapter. */
+bool native_stack_has_headroom(void);
+
+/** @brief Registers one owned resource, released after the final OS handle is closed. */
+void set_native_library_cleanup(native_library_t *library, void *resource, void (*cleanup)(void *));

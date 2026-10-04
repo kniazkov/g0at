@@ -37,3 +37,12 @@ void destroy_native_compile_result(native_compile_result_t *result);
 
 /** @brief Reads bounded compiler output; shared by the platform implementations. */
 void native_compiler_read_diagnostics(native_compile_result_t *result, const char *path);
+
+/** @brief Private output location, retained until its loaded library is released. */
+typedef struct {
+    char *directory;
+    char *library;
+} native_workspace_t;
+
+native_workspace_t *create_native_workspace(void);
+void destroy_native_workspace(native_workspace_t *workspace);

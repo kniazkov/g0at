@@ -38,6 +38,14 @@ compile_native_library(const wchar_t *source, const char *compiler, const char *
     (void)destination;
     return (native_compile_result_t){.status = NATIVE_COMPILE_UNSUPPORTED, .exit_code = -1};
 }
+
+native_workspace_t *create_native_workspace(void) {
+    return NULL;
+}
+
+void destroy_native_workspace(native_workspace_t *workspace) {
+    (void)workspace;
+}
 #endif
 
 void destroy_native_compile_result(native_compile_result_t *result) {

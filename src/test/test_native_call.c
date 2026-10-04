@@ -331,6 +331,24 @@ static bool lifetime(const char *path, const char *marker) {
     return true;
 }
 
+/** @brief A bytecode exception must unwind the retry scope, including nested TRY contexts. */
+static bool retry_exception(void) {
+    bytecode_t *code = compile(L"const g=func(n){return n;};"
+                               L"const f=func(n){try {g(n);throw n;}catch(e){g(e);throw e;}};"
+                               L"var caught=0;try {f(4);}catch(e){caught=e;}var after=g(7);");
+    ASSERT(code && bind_function(code, 0, 1) && bind_function(code, 1, 6));
+    process_t *proc = create_process();
+    ASSERT(!run(proc, code));
+    thread_t *thread = proc->main_thread;
+    ASSERT(integer_variable(proc, L"caught", 4) && integer_variable(proc, L"after", 7));
+    ASSERT(thread->native_attempts == 2 && thread->native_retries == 1
+           && thread->native_successes == 1 && !thread->context->native_disabled
+           && !thread->native_status && !thread->exception.value && !thread->data_stack->size);
+    free_bytecode(code);
+    destroy_process(proc);
+    return true;
+}
+
 bool test_native_calls(const char *provider, const char *generated, const char *marker) {
     remove(marker);
     test_output_start("native call");
@@ -355,7 +373,8 @@ bool test_native_calls(const char *provider, const char *generated, const char *
         {"evaluation order, extras, aliases, rebinding and builtins", evaluation_and_identity},
         {"native call preserves context, stack and numeric edges", native_without_context},
         {"backend failures stop without retry or Goat catch", backend_failures},
-        {"unmatched signature preserves bytecode throw/catch", fallback_exception}};
+        {"unmatched signature preserves bytecode throw/catch", fallback_exception},
+        {"resource retry scope restores native entry after exception unwind", retry_exception}};
 
     for (size_t i = 0; i < sizeof(tests) / sizeof(*tests); i++) {
         size_t memory = get_allocated_memory_size();

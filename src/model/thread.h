@@ -43,6 +43,11 @@ struct thread_t {
     /** @brief Backend failure status; independent of Goat exceptions. */
     uint32_t native_status;
 
+    /** @brief Observable backend outcomes for integration tests and diagnostics. */
+    size_t native_attempts;
+    size_t native_successes;
+    size_t native_retries;
+
     /** @brief The data stack used by the thread. */
     object_stack_t *data_stack;
 

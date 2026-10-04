@@ -148,4 +148,29 @@ cleanup:
     FREE(target);
     return result;
 }
+
+native_workspace_t *create_native_workspace(void) {
+    const char *base = getenv("TMPDIR");
+    if (!base || !*base)
+        base = "/tmp";
+    char *directory = join(base, "/goat-native-XXXXXX");
+    if (!mkdtemp(directory)) {
+        FREE(directory);
+        return NULL;
+    }
+    native_workspace_t *workspace = ALLOC(sizeof(*workspace));
+    workspace->directory = directory;
+    workspace->library = join(directory, "/module.so");
+    return workspace;
+}
+
+void destroy_native_workspace(native_workspace_t *workspace) {
+    if (!workspace)
+        return;
+    remove(workspace->library);
+    rmdir(workspace->directory);
+    FREE(workspace->library);
+    FREE(workspace->directory);
+    FREE(workspace);
+}
 #endif

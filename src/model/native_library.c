@@ -6,6 +6,7 @@
 
 #include "lib/allocate.h"
 
+#include <assert.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +15,8 @@
 struct native_library_t {
     atomic_size_t references;
     void *handle;
+    void *resource;
+    void (*cleanup)(void *);
     uint32_t entry_count;
     goat_native_entry_v1_t *entries;
 };
@@ -257,6 +260,8 @@ void release_native_library(native_library_t *library) {
     }
     FREE(library->entries);
     close_native_library_handle(library->handle);
+    if (library->cleanup)
+        library->cleanup(library->resource);
     FREE(library);
 }
 
@@ -325,4 +330,16 @@ get_native_function_entry(const native_function_descriptor_t *function, uint32_t
 void close_native_library_handle(void *handle) {
     (void)handle;
 }
+
+bool native_stack_has_headroom(void) {
+    return false;
+}
 #endif
+
+void set_native_library_cleanup(native_library_t *library,
+                                void *resource,
+                                void (*cleanup)(void *)) {
+    assert(library && !library->cleanup && cleanup);
+    library->resource = resource;
+    library->cleanup = cleanup;
+}

@@ -1289,7 +1289,9 @@ owned metadata snapshots and reference-counted function descriptors. Linux and W
 loader tests cover invalid providers and library lifetime. Optional descriptors bound to
 `FUNC` metadata now select exact numeric specializations through ordinary `CALL`,
 before allocating a context. Unmatched calls retain the bytecode path. Automatic
-CLI attachment and bounded native recursion are not enabled yet.
+The internal launcher pipeline can now generate, compile, load and bind these descriptors.
+Generated adapters enforce recursion/call limits; pure resource-limited calls retry in
+bytecode without reevaluating arguments. CLI execution modes follow in the next step.
 
 ## Author and license
 
