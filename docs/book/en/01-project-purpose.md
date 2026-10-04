@@ -6,31 +6,37 @@ Edition 1. Implementation described: [commit 09d0cff, after PR #93](https://gith
 
 <a id="section-1-1"></a>
 
-## 1.1. Goals
+## 1.1. Why Build a Language
 
-Goat is an experimental programming language and its implementation in C, developed by Ivan Kniazkov. The project is intended to investigate mechanisms for processing and executing programs, validate selected solutions, and demonstrate the results of this work.
+A short line of code rests on a whole sequence of decisions. Names and operations must be recognized, names must be associated with variables, evaluation order must be chosen, and values must be placed in memory. Even adding two numbers requires a contract: what happens on overflow, and what happens when one number is an integer and the other is real?
 
-The repository also serves as the author's technical portfolio. It provides material for consultations, presentations, and professional discussions: source code, examples, tests, and a change history. A statement about the system's design can be associated with a specific implementation and checked by running the relevant example or test.
+Goat provides a working system in which to examine these decisions. It is an experimental programming language and its implementation in C, developed by Ivan Kniazkov. It lets us follow the path from source text to a result, change an individual mechanism, and check the consequences. Static analysis and native code generation offer particularly useful examples: information about a program becomes evidence for choosing how to execute it.
 
-This book describes the design of the existing system. The description is tied to the stated code revision. Planned capabilities are not included in the list of implemented mechanisms. The change history is used to explain decisions; current behavior is established from source code and the tests that check it.
+The project also has a personal purpose: to demonstrate its author's engineering work. During a consultation or technical discussion, it is useful to be able to open a specific algorithm, show a test, and reproduce a result. The repository provides that basis: its sources, examples, and change history are available for inspection.
+
+This book is organized around those same decisions. We will examine the problem each mechanism solves, the data it needs, and the limits of its capabilities. No prior knowledge of compiler design is required to begin: the necessary concepts are introduced as they appear.
 
 <a id="section-1-2"></a>
 
-## 1.2. Subject of Investigation
+## 1.2. From Text to Execution
 
-A language defines how a program is written and what its constructs mean. A language implementation reads the source text, checks its structure, builds an internal representation, and executes the program.
+For a person, a program begins as text. To execute it, Goat transforms that text into several internal representations. First it recognizes individual elements of the notation, then assembles them into a program tree. The tree records the structure of expressions and statements: for example, which two expressions are added and which condition a branch belongs to.
 
-Goat uses bytecode for ordinary execution: a sequence of instructions for its own virtual machine. The virtual machine is a program written in C that executes these instructions and manages values and execution contexts. The sequence of the main stages is defined in the [launcher module](https://github.com/kniazkov/g0at/blob/09d0cffb08303b07c1c3af27ccbfc6af94466b97/src/cli/launcher.c).
+The ordinary execution path uses bytecode: a sequence of instructions for Goat's own virtual machine. The virtual machine is written in C; it executes these instructions, stores intermediate values, and manages function calls. The main stages are connected in the [launcher module](https://github.com/kniazkov/g0at/blob/09d0cffb08303b07c1c3af27ccbfc6af94466b97/src/cli/launcher.c).
 
-Static analysis may run before execution: it computes information about a program without running it in the ordinary way. In particular, the analyzer determines possible values and types, call dependencies, and side effects. A side effect here means an observable action, such as output or a change to state external to a function. Unknown information remains unknown; it is not treated as proof that a transformation is permitted.
+Before execution, the analyzer tries to establish what is already known about the program. For example, it can obtain an exact value for the expression `2 + 3`. When constants are replaced with function parameters, less information may be available: the type is known, but the particular numbers are not. Computing this information without running the program in the ordinary way is called static analysis.
 
-Native execution is available for some functions. The analyzer checks eligibility conditions, the generator produces C code, an external compiler builds machine code in a dynamic library, and Goat loads that library and calls a suitable function implementation. Such an implementation is called a specialization: it corresponds to a particular function and an ordered set of parameter types. Machine code is produced by the external C compiler; Goat generates its source text and arranges the use of the result.
+Besides values, the analyzer considers the program's actions. A function may print text or change a variable in an enclosing environment. Such actions are called side effects. They matter when transforming code: returning the same number does not by itself mean that two versions of a function behave identically.
 
-This sequence makes it possible to investigate the relationship between information obtained by the analyzer and the transformations that the execution system permits on that basis.
+For some functions, Goat can prepare a native implementation. The analyzer checks the necessary conditions, the generator writes suitable C code, an external compiler creates a dynamic library containing machine code, and Goat loads it. An implementation for a particular function and an ordered set of parameter types is called a specialization.
+
+This raises one of the book's central questions: what information is sufficient to select such an implementation while preserving program behavior? The answer combines analysis of types, effects, the function body, and its calls. An unknown property cannot simply be assumed suitable: switching to native code requires evidence.
 
 <a id="section-1-3"></a>
 
-## 1.3. Implemented Mechanisms
+## 1.3. A Map of the System
+
+The names of the subsystems can make a language implementation difficult to navigate. The following table provides reference points, from reading source text to saving a prepared program. Later chapters examine each of these areas separately.
 
 | Area | Implementation | Main sources |
 |---|---|---|
@@ -42,39 +48,49 @@ This sequence makes it possible to investigate the relationship between informat
 | Native backend | C generation for supported numeric specializations, library compilation and loading, implementation selection at calls, and conditional fallback to the VM | [native_pipeline.c](https://github.com/kniazkov/g0at/blob/09d0cffb08303b07c1c3af27ccbfc6af94466b97/src/codegen/native_pipeline.c), [function.c](https://github.com/kniazkov/g0at/blob/09d0cffb08303b07c1c3af27ccbfc6af94466b97/src/model/function.c) |
 | Separate compilation | Saving and loading `.gbin`, association with a native library, and execution of a prepared artifact without source code or a compiler | [binary_program.c](https://github.com/kniazkov/g0at/blob/09d0cffb08303b07c1c3af27ccbfc6af94466b97/src/cli/binary_program.c), [binary.c](https://github.com/kniazkov/g0at/blob/09d0cffb08303b07c1c3af27ccbfc6af94466b97/src/vm/binary.c) |
 
-The table lists areas of implementation. It does not imply that every language construct is supported at every stage. In particular, the ability to execute a function in the VM does not imply that C can be generated for it.
+These subsystems have different support boundaries. The VM can execute a function for which the C generator does not yet have the necessary mechanisms. This distinction will matter when reading analysis and native execution reports.
 
 <a id="section-1-4"></a>
 
-## 1.4. A Reproducible Example
+## 1.4. One Program, Two Paths
 
-The repository contains a [Fibonacci example](https://github.com/kniazkov/g0at/blob/09d0cffb08303b07c1c3af27ccbfc6af94466b97/example/fibonacci_analysis.goat). It defines a recursive function, that is, a function that calls itself, and computes the result for the argument `10`.
+We can already observe the difference between VM and native execution. The repository includes a [Fibonacci example](https://github.com/kniazkov/g0at/blob/09d0cffb08303b07c1c3af27ccbfc6af94466b97/example/fibonacci_analysis.goat). Its function is recursive: to compute a result, it calls itself with smaller arguments. The program computes the value for the argument `10`.
 
-After building Goat, run the following commands from the repository root on Linux:
+Let us run the same source in two ways. After building Goat, from the repository root on Linux:
 
 ```sh
 ./goat --native off --save-analysis analysis.txt example/fibonacci_analysis.goat
 ./goat --native required --save-native native.txt example/fibonacci_analysis.goat
 ```
 
-In Windows PowerShell, use:
+For Windows PowerShell:
 
 ```powershell
 .\goat.exe --native off --save-analysis analysis.txt example/fibonacci_analysis.goat
 .\goat.exe --native required --save-native native.txt example/fibonacci_analysis.goat
 ```
 
-The second run requires an available compatible C compiler: `cc` on Linux or `gcc` on Windows by default. The `CC` environment variable selects a different compiler executable. The first run executes the program in the VM and saves an analysis log to `analysis.txt`. The second prepares a native library and saves a report of its use to `native.txt`. The report files are written to the current directory.
+The first run uses the VM and writes the analyzer's information to `analysis.txt`. The second prepares a native library and writes a report to `native.txt`. It requires a compatible C compiler: `cc` on Linux or `gcc` on Windows by default. The `CC` environment variable can select a different executable. Reports are saved in the current directory.
 
-Both runs print `55` without a trailing newline. For the second run, the report contains `preparation=ready`, `succeeded=1`, and `retries=0`: the library was prepared, one call completed successfully in native code, and no VM retries occurred.
+Both runs display `55`, without a trailing newline. That number alone does not show which path was taken. We therefore inspect `native.txt`:
 
-The matching result in this example confirms that the two execution paths work for this case. The successful-call counter distinguishes actual native execution from library preparation alone. The example does not establish equivalence for all possible programs and is not a performance measurement.
+```text
+preparation=ready
+succeeded=1
+retries=0
+```
+
+This is an excerpt from the report: the library was prepared, one call completed successfully in native code, and no VM retries occurred. The counter records entry through the native adapter; recursive calls within the generated function do not increase `succeeded`.
+
+The example thus has two observable results: the computed number and confirmation of the execution path taken. It provides a starting point for the investigation that follows. Checking general properties and measuring performance are covered in separate chapters.
 
 <a id="section-1-5"></a>
 
-## 1.5. Evidence for Technical Conclusions
+## 1.5. Checking the Explanation
 
-The repository provides several kinds of verifiable material:
+When reading the book, it helps to move between the explanation and the code. The source shows how a mechanism works; a small test helps explain the behavior expected of it. An overflow boundary case, for example, often explains the choice of an algorithm better than an ordinary successful run.
+
+The repository provides several kinds of material for this purpose:
 
 - source code defines algorithms, structures, and failure conditions;
 - [unit tests](https://github.com/kniazkov/g0at/tree/09d0cffb08303b07c1c3af27ccbfc6af94466b97/src/test) check individual mechanisms and their interactions;
@@ -83,14 +99,14 @@ The repository provides several kinds of verifiable material:
 - the [CI configuration](https://github.com/kniazkov/g0at/blob/09d0cffb08303b07c1c3af27ccbfc6af94466b97/.github/workflows/build_and_test.yml) specifies checks for Linux with GCC and Clang and for Windows with MinGW variants;
 - the commit and PR history records the sequence of changes and the discussion of decisions.
 
-When citing a result, identify the code revision and the specific check. For measurements, also identify the platform, build configuration, and methodology. The presence of a check in the repository and its successful execution in a particular environment are distinct statements.
+A link to a specific code revision makes it possible to revisit the same explanation after later changes. A test result should also identify the test itself and the environment in which it passed. A speed measurement needs the platform, build configuration, and methodology: without them, the number loses much of its meaning.
 
 <a id="section-1-6"></a>
 
-## 1.6. Limits of the Results
+## 1.6. Where the Boundaries Lie
 
-Static analysis is constrained by the supported constructs and computational limits. The native backend handles a subset of numeric functions. The absence of a proof leaves a function without the corresponding native specialization. Even proven function purity does not establish termination or the absence of exceptions; these properties require separate evidence.
+An experimental project is particularly useful when its limitations are visible. Goat's analyzer handles supported constructs within computational limits. The native backend accepts a subset of numeric functions. If the necessary properties of a specialization could not be established, there is no basis for generating its native implementation.
 
-Testing checks selected cases and conditions. It is not a complete proof of implementation correctness. An individual performance test characterizes its program and environment, rather than the speed of the language for an arbitrary workload.
+Throughout the book, we will encounter properties that must be kept distinct. A function may leave external state unchanged while calling itself forever. Proven purity therefore does not prove termination. Similarly, a successful example run confirms that case, and a measured speedup applies to a particular program and environment.
 
-The presence of a compiler, VM, analyzer, and native backend does not establish production readiness. These mechanisms do not imply guarantees of future-version compatibility, suitability for arbitrary workloads, or safe execution of untrusted code. In particular, a loaded dynamic library contains machine code and does not constitute an isolated execution environment.
+Goat provides material for studying these distinctions, but its current mechanisms do not establish production readiness, future-version compatibility, or safe execution of untrusted code. In particular, a native library executes machine code without isolation. This book examines the existing implementation at the stated revision; possible future extensions are not treated as working capabilities.
