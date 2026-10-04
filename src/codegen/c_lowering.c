@@ -5,6 +5,7 @@
 #include "c_lowering.h"
 
 #include "c_arithmetic.h"
+#include "c_call.h"
 #include "c_control.h"
 #include "c_locals.h"
 #include "graph/replacement.h"
@@ -155,11 +156,15 @@ bool c_emit_function(const node_t *node,
                       L"DBL_MAX_EXP==1024, \"binary64 required\");");
     c_arithmetic_helpers(builder);
     c_control_helpers(builder);
+    bool prototypes = c_emit_callee_prototypes(context, builder);
     add_formatted_source(builder, indent, append_string(&signature, L") {"));
     for (size_t i = 0; i < count; i++)
         add_source(builder, indent + 1, L"(void)%s;", bindings[i].name.data);
-    bool success =
-        generate_indented_c_code_from_node(get_node_child(node, 1), context, builder, indent + 1);
+    bool success = prototypes
+                   && generate_indented_c_code_from_node(get_node_child(node, 1),
+                                                         context,
+                                                         builder,
+                                                         indent + 1);
     if (success && !context->terminates)
         success = fail_c_generation(context, node, C_GENERATION_UNSUPPORTED);
     if (success)

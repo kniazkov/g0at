@@ -1,0 +1,36 @@
+const pair = func(a, b) { return a * 10 + b; };
+const identity = func(n) { return n; };
+const twice = func(n) { return n * 2; };
+const fixed = func() { return 7; };
+const order = func(n) {
+    var x = n;
+    return pair((x = x + 1), (x = x + 2));
+};
+const snapshot = func(n) {
+    var x = n;
+    return pair(x, (x = x + 1));
+};
+const extra = func(n) {
+    var x = n;
+    var v = identity(x, (x = x + 2));
+    return v * 10 + x;
+};
+const all_extra = func(n) {
+    var x = n;
+    var v = fixed((x = x + 1), (x = x + 2));
+    return v * 10 + x;
+};
+const nested = func(n) {
+    var x = n;
+    return pair(twice(x = x + 1), twice(x = x + 2));
+};
+const sum = func(n) {
+    var x = n;
+    return identity(x = x + 1) + identity(x = x + 2);
+};
+print(order(3)); print("\n");
+print(snapshot(3)); print("\n");
+print(extra(3)); print("\n");
+print(all_extra(3)); print("\n");
+print(nested(3)); print("\n");
+print(sum(3)); print("\n");

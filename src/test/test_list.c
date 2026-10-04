@@ -11,6 +11,7 @@
 #include "test_analysis.h"
 #include "test_builtin_functions.h"
 #include "test_c_body.h"
+#include "test_c_calls.h"
 #include "test_c_contract.h"
 #include "test_c_control.h"
 #include "test_c_emission.h"
@@ -60,6 +61,7 @@ static test_description_t test_list[] = {
     {"C emission rejections", test_c_emission_rejections},
     {"C control flow rejections", test_c_control_rejections},
     {"C local storage rejections", test_c_local_rejections},
+    {"C static call rejections", test_c_call_rejections},
     {"C module identity", test_c_module_identity},
     {"C module dependencies", test_c_module_dependencies},
     {"C module call lifetime", test_c_module_call_lifetime},
