@@ -65,8 +65,8 @@ and either signed zero is false. Boolean temporaries are not function interface 
 Generated parameter names use declaration identity, so Goat names need not be valid C identifiers. Function names are backend
 ASCII identifiers prefixed with `goat_`. Unsupported operators/control flow still
 report `C_GENERATION_UNSUPPORTED`, even when analysis proves C eligibility.
-Replacement nodes delegate C lowering to their original children. Branch generation
-uses signature-scoped expression proofs, not shared reachability flags. Each
+Replacement nodes use a simplified child only after a signature-wide proof; otherwise
+they retain the original. Branch generation uses the same proofs, not shared reachability flags. Each
 condition's setup runs once before its `if`; branch setup stays inside that branch.
 Termination is tracked through node emitters; generation rejects an uncovered
 fallthrough instead of inventing a return value. Literal truth may establish that
@@ -137,16 +137,36 @@ as an artifact. The unit executable's `--emit-c-tests` is test-only.
 `scripts/check_c_module.sh GOAT_BINARY OUTPUT_DIR` additionally exercises the public
 CLI and compiles/executes its exported modules on every CI compiler target.
 
-Replacement nodes preserve an original subtree and a simplified subtree. Native
-generation currently always uses the original subtree. Reusing a simplified
-subtree would require a separate proof for the entire selected signature. A constant observed for `f(10)` cannot specialize
-the implementation of `f(integer)` to that value. This does not change which
-subtree ordinary bytecode generation uses. Expression-type lookup unwraps the
-same original nodes to find the selected summary's pre-rewrite proofs. Missing
-proofs stay unknown; neither a replacement literal nor shared flags fill the gap.
-Lowering does not restore or mutate the AST, its parents, flags or proof records.
-Statement replacements retain the original control structure for C lowering,
-including branches absent from the executable bytecode subtree.
+Replacement nodes preserve an original subtree and a simplified subtree. The shared
+simplifier still makes only immediate-execution or closed-scalar rewrites; it never
+installs a result observed for one call into a deferred function body. Native C has
+an additional obligation: a replacement must hold for the entire selected type
+signature, not merely for `f(10)`.
+
+Generic expression proofs retain an exact numeric/boolean constant only when every
+visit agrees and evaluation is total and discardable. The initial discardable
+subset is literals, proven scalar reads, parentheses, unary signs, addition,
+subtraction, multiplication and numeric comparisons, with discardable operands.
+Calls, assignments and other operators do not qualify. Purity alone cannot justify
+removing a call: it may throw or fail to terminate. Conflicting visits permanently
+drop the constant; shared node flags and immediate values cannot supply one.
+
+For expression replacements, C compares the final literal against the original's
+signature proof, including its representation and the sign of zero. NaNs are not
+reused as replacement constants. A successful match transfers the original's type
+proof to the literal only for that emission; missing or mismatched proofs fall back
+to the original. Nested replacement history is checked against the ultimate original.
+For statement replacements, a discardable constant condition must choose exactly
+the retained branch (or an empty statement for a false `if` without `else`).
+
+The body checker, local-storage preparation and emitter also skip a branch proved
+impossible for a signature, even without a shared replacement node. For example,
+`n <= INT64_MAX` is always true for an integer parameter, but not a real parameter.
+This decision stays in that specialization's proofs and emission context: lowering
+does not mutate AST nodes, parents, flags or summaries. Eligibility still requires
+whole-function purity and the existing call/capture contract; this change does not
+relax those checks or remove call dependencies. Unsupported replacement shapes
+continue through their originals.
 
 ## Module inventory
 

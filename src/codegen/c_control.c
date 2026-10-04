@@ -86,6 +86,12 @@ bool c_emit_if(const node_t *node,
                c_generation_context_t *context,
                source_builder_t *builder,
                size_t indent) {
+    abstract_truth_t proven = c_generation_condition_truth(context, get_node_child(node, 0));
+    if (proven == ABSTRACT_TRUE || proven == ABSTRACT_FALSE) {
+        context->terminates = false;
+        const node_t *chosen = get_node_child(node, proven == ABSTRACT_TRUE ? 1 : 2);
+        return !chosen || generate_indented_c_code_from_node(chosen, context, builder, indent);
+    }
     c_generated_expression_t condition =
         generate_c_code_from_node(get_node_child(node, 0), context);
     if (!condition.success)

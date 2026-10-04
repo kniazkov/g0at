@@ -1,0 +1,30 @@
+const folded = func(n) { return n + (2 + 3); }
+const selected = func(n) {
+    if (2 < 3) {
+        var x = n + 1
+        { var x = n + 2; x; }
+        return x
+    } else {
+        return n / 2
+    }
+}
+const empty = func(n) { if (false) { var gone = n / 2; } return n; }
+const typed = func(n) {
+    if (n <= 9223372036854775807) { return n + (2 + 3); }
+    else { return n - 1; }
+}
+const writes = func(n) { var x = n; return (x = 1) + x; }
+const calling = func(n) { return folded(n) + 1; }
+const negzero = func(n) { return -0.0; }
+const wrapping = func(n) { return n + (9223372036854775807 + 1); }
+print(folded(3)); print("\n");
+print(folded(1.5)); print("\n");
+print(selected(4)); print("\n");
+print(empty(5)); print("\n");
+print(typed(1)); print("\n");
+print(typed(1.5)); print("\n");
+print(typed(1e20) == 1e20); print("\n");
+print(writes(7)); print("\n");
+print(calling(4)); print("\n");
+print(negzero(1)); print("\n");
+print(wrapping(0)); print("\n");

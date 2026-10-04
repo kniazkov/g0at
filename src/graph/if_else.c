@@ -25,6 +25,14 @@
 static bool can_generate_c_code(const node_t *node,
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context) {
+    if (!context || !context->graph)
+        return false;
+    const lattice_element_t *condition = c_expression_constant(context, get_node_child(node, 0));
+    abstract_truth_t truth = condition ? lattice_truth(condition) : ABSTRACT_EITHER;
+    if (truth == ABSTRACT_TRUE || truth == ABSTRACT_FALSE) {
+        const node_t *chosen = get_node_child(node, truth == ABSTRACT_TRUE ? 1 : 2);
+        return !chosen || c_body_node_supported(chosen, context);
+    }
     return c_body_children(node, value, context);
 }
 

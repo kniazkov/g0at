@@ -26,6 +26,6 @@ Each step is intended as a separate reviewable PR. The
     simplified subtrees per specialization, prefer proven replacements for C, and
     keep specialization-only rewrites separate from the shared AST.
 
-Until step 19, the original-subtree policy from step 3 remains in effect. It is a
-conservative proof-reuse policy, not a claim that current shared-AST replacements
-are unsafe for ordinary bytecode execution.
+Step 19 replaces the original-only baseline with signature-wide constant and
+branch proofs. Unproven replacements still use the original subtree. Shared-AST
+simplification and specialization-only C decisions remain separate.

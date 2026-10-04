@@ -11,6 +11,8 @@ typedef struct c_expression_proof_t {
     struct c_expression_proof_t *next;
     const node_t *node;
     c_value_type_t type;
+    bool discardable;                  /**< Total scalar evaluation with no writes or calls. */
+    const lattice_element_t *constant; /**< Exact across every generic visit, or NULL. */
 } c_expression_proof_t;
 
 /** @brief Shared by branch states during one isolated generic evaluation. */
@@ -39,3 +41,10 @@ const wchar_t *c_expression_type_name(c_value_type_t type);
 
 /** @brief Checks expressions with generic parameters; calls/control still need a body proof. */
 void analyze_function_c_expressions(node_t *root);
+
+/** @brief Returns a discardable constant proved for every visit of this signature. */
+const lattice_element_t *c_expression_constant(const c_expression_context_t *context,
+                                               const node_t *node);
+
+/** @brief Exact scalar equality, preserving signed zero; NaNs are not reused. */
+bool c_constants_equal(const lattice_element_t *left, const lattice_element_t *right);
