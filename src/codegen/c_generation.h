@@ -36,6 +36,7 @@ typedef struct c_generation_context_t {
     string_view_t function_name;
     const c_generation_binding_t *bindings;
     const c_generation_callee_t *callees;
+    bool terminates;        /**< Whether the last emitted statement returns on every path. */
     size_t temporary_count; /**< Unique within one emitted function. */
     c_generation_status_t status;
     const node_t *failed_node; /**< First failure, retained while unwinding. */
@@ -46,6 +47,7 @@ typedef struct c_generation_context_t {
 typedef struct c_generated_expression_t {
     bool success;
     c_value_type_t type;
+    abstract_truth_t literal_truth; /**< Optional literal truth; zero means not supplied. */
     string_value_t value;
     source_builder_t *prelude; /**< Ordered statements, relative indentation; NULL if empty. */
 } c_generated_expression_t;

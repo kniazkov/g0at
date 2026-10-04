@@ -7,6 +7,7 @@
 #include "analysis/comparison.h"
 #include "analysis/reachability.h"
 #include "analysis/simplification.h"
+#include "codegen/c_control.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
@@ -122,7 +123,7 @@ static node_vtbl_t vtables[] = {
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
         .can_generate_c_code = can_generate_c_code,
-        .generate_c_code = no_c_code,
+        .generate_c_code = c_comparison,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
         .generate_bytecode_deferred = no_deferred_bytecode,
@@ -151,7 +152,7 @@ static node_vtbl_t vtables[] = {
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
         .can_generate_c_code = can_generate_c_code,
-        .generate_c_code = no_c_code,
+        .generate_c_code = c_comparison,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
         .generate_bytecode_deferred = no_deferred_bytecode,
@@ -180,7 +181,7 @@ static node_vtbl_t vtables[] = {
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
         .can_generate_c_code = can_generate_c_code,
-        .generate_c_code = no_c_code,
+        .generate_c_code = c_comparison,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
         .generate_bytecode_deferred = no_deferred_bytecode,
@@ -209,7 +210,7 @@ static node_vtbl_t vtables[] = {
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
         .can_generate_c_code = can_generate_c_code,
-        .generate_c_code = no_c_code,
+        .generate_c_code = c_comparison,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
         .generate_bytecode_deferred = no_deferred_bytecode,
@@ -238,7 +239,7 @@ static node_vtbl_t vtables[] = {
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
         .can_generate_c_code = can_generate_c_code,
-        .generate_c_code = no_c_code,
+        .generate_c_code = c_comparison,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
         .generate_bytecode_deferred = no_deferred_bytecode,
@@ -267,7 +268,7 @@ static node_vtbl_t vtables[] = {
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
         .can_generate_c_code = can_generate_c_code,
-        .generate_c_code = no_c_code,
+        .generate_c_code = c_comparison,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
         .generate_bytecode_deferred = no_deferred_bytecode,

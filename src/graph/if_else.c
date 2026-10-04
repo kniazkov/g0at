@@ -9,6 +9,7 @@
 #include "analysis/lattice.h"
 #include "analysis/reachability.h"
 #include "analysis/simplification.h"
+#include "codegen/c_control.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -331,7 +332,7 @@ static node_vtbl_t if_else_vtbl = {
     .generate_bytecode = generate_bytecode,
     .can_generate_c_code = can_generate_c_code,
     .generate_c_code = no_c_code,
-    .generate_indented_c_code = no_indented_c_code,
+    .generate_indented_c_code = c_emit_if,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
