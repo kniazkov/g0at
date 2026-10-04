@@ -5,28 +5,80 @@
 #include "c_output.h"
 
 #include "codegen/c_module_output.h"
+#include "codegen/native_compiler.h"
 #include "lib/allocate.h"
 #include "lib/io.h"
 #include "resources/messages.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-path_t *c_output_path(const path_t *input) {
-    if (!input || !input->file_name || !input->file_name[0])
-        return create_path("generated.c");
-    if (input->extension && !strcasecmp(input->extension, "c"))
+static path_t *output_path(const path_t *input, const char *extension) {
+    if (input && input->extension && !strcasecmp(input->extension, extension))
         return NULL;
-    size_t length = strlen(input->normal_path);
-    const char *dot = strrchr(input->file_name, '.');
+    const char *name =
+        input && input->file_name && input->file_name[0] ? input->normal_path : "generated";
+    size_t length = strlen(name);
+    const char *dot = input && input->file_name ? strrchr(input->file_name, '.') : NULL;
     if (dot && dot != input->file_name)
         length -= strlen(dot);
-    char *name = ALLOC(length + 3);
-    memcpy(name, input->normal_path, length);
-    memcpy(name + length, ".c", 3);
-    path_t *result = create_path(name);
-    FREE(name);
+    size_t suffix = strlen(extension);
+    char *buffer = ALLOC(length + suffix + 2);
+    memcpy(buffer, name, length);
+    buffer[length] = '.';
+    memcpy(buffer + length + 1, extension, suffix + 1);
+    path_t *result = create_path(buffer);
+    FREE(buffer);
     return result;
+}
+
+path_t *c_output_path(const path_t *input) {
+    return output_path(input, "c");
+}
+
+static bool save_library(const options_t *options, const wchar_t *source) {
+    path_t *path = output_path(options->input_file, "so");
+    if (!path) {
+        fprintf_utf8(stderr, get_messages()->native_input_conflict);
+        fprintf(stderr, "\n");
+        return false;
+    }
+    const char *compiler = getenv("CC");
+    if (!compiler || !compiler[0])
+        compiler = "cc";
+    /* Keep the final component unresolved: rename replaces a symlink, never its target. */
+    native_compile_result_t result = compile_native_library(source, compiler, path->normal_path);
+    if (result.diagnostics_length) {
+        fwrite(result.diagnostics, 1, result.diagnostics_length, stderr);
+        if (result.diagnostics[result.diagnostics_length - 1] != '\n')
+            fputc('\n', stderr);
+    }
+    if (result.diagnostics_truncated) {
+        fprintf(stderr, "\n");
+        fprintf_utf8(stderr, get_messages()->native_diagnostics_truncated);
+        fprintf(stderr, "\n");
+    }
+    const wchar_t *reason = result.status == NATIVE_COMPILE_UNSUPPORTED   ? L"unsupported platform"
+                            : result.status == NATIVE_COMPILE_START_ERROR ? L"cannot start compiler"
+                            : result.status == NATIVE_COMPILE_FAILED      ? L"compiler failed"
+                                                                     : L"file operation failed";
+    bool success = result.status == NATIVE_COMPILE_OK && !result.cleanup_error;
+    if (!success) {
+        fprintf_utf8(stderr,
+                     get_messages()->native_compile_failed,
+                     reason,
+                     compiler,
+                     path->normal_path,
+                     result.exit_code,
+                     result.signal_number,
+                     result.system_error ? strerror(result.system_error) : "-",
+                     result.cleanup_error ? strerror(result.cleanup_error) : "-");
+        fprintf(stderr, "\n");
+    }
+    destroy_native_compile_result(&result);
+    free_path(path);
+    return success;
 }
 
 bool output_c_module(const options_t *options, arena_t *arena, const node_t *root) {
@@ -57,6 +109,8 @@ bool output_c_module(const options_t *options, arena_t *arena, const node_t *roo
         }
         free_path(path);
     }
+    if (success && options->save_library)
+        success = save_library(options, output.source.data);
     if (success && options->print_c) {
         print_utf8(output.source.data);
         success = fflush(stdout) == 0 && !ferror(stdout);
