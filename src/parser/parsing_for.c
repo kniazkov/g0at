@@ -4,6 +4,7 @@
  */
 #include "graph/expression.h"
 #include "graph/statement.h"
+#include "graph/statement_list.h"
 #include "parser.h"
 #include "resources/messages.h"
 
@@ -52,11 +53,20 @@ compilation_error_t *parsing_for(token_t *token, parser_memory_t *memory, token_
         slots[1] ? (expression_t *)slots[1]->node : (expression_t *)create_true_node(memory->graph);
     if (!slots[1])
         condition->base.position = header->position;
+    statement_t *body_statement = as_statement(body, memory);
+    if (body->type != TOKEN_EXPRESSION || body->node->vtbl->type != NODE_STATEMENT_LIST) {
+        statement_list_t *scope = create_statement_list_node(memory->graph);
+        list_t *statements = create_linked_list(memory->graph);
+        append_item_to_linked_list(statements, (value_t){.ptr = body_statement});
+        fill_statement_list_node(scope, statements);
+        scope->base.base.position = body->position;
+        body_statement = create_statement_expression_node(memory->graph, &scope->base);
+    }
     node_t *node = create_for_node(memory->graph,
                                    as_statement(slots[0], memory),
                                    condition,
                                    as_statement(slots[2], memory),
-                                   as_statement(body, memory));
+                                   body_statement);
     collapse_tokens_to_token(memory, token, body, TOKEN_STATEMENT, node);
     return NULL;
 invalid:

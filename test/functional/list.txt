@@ -328,3 +328,14 @@ for_nested
 for_scope_return
 for_effects
 for_analysis_safety
+
+# Nested control flow and iteration scope
+for_dangling
+for_else_for
+for_for_try
+for_bare_decl
+for_multiple_decl
+for_bare_const
+for_wrap
+for_fresh_scope
+for_implicit

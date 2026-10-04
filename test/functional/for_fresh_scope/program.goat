@@ -1,0 +1,1 @@
+var f=null;var g=null; for(var i=0;i<2;i++) {var x=i; if(i==0) f=func(){return x;}; else g=func(){return x;};} println(f());println(g());

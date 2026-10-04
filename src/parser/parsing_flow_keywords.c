@@ -68,13 +68,6 @@ parsing_if_else(token_t *token, parser_memory_t *memory, token_groups_t *groups)
         false_branch = create_statement_expression_node(memory->graph, (expression_t *)next->node);
     }
 
-    if (next->right && next->right->type == TOKEN_ELSE) {
-        return create_error_from_token(memory->errors,
-                                       next->right,
-                                       CRITICAL,
-                                       get_messages()->duplicate_else_branch);
-    }
-
     result = create_if_else_node(memory->graph, condition, true_branch, false_branch);
     collapse_tokens_to_token(memory, token, next, TOKEN_STATEMENT, result);
     return false;
@@ -110,5 +103,9 @@ parsing_else_keywords(token_t *token, parser_memory_t *memory, token_groups_t *g
     return create_error_from_token(memory->errors,
                                    token,
                                    CRITICAL,
-                                   get_messages()->else_without_if);
+                                   token->left && token->left->type == TOKEN_STATEMENT
+                                           && token->left->node->vtbl->type == NODE_IF_ELSE
+                                           && get_node_child_count(token->left->node) == 3
+                                       ? get_messages()->duplicate_else_branch
+                                       : get_messages()->else_without_if);
 }
