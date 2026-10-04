@@ -1,0 +1,6 @@
+const identity=func(n){return n;};
+const mixed=func(a,b){return a-b;};
+const constant=func(){return 42;};
+const fib=func(n){if(n<1)return 0;if(n==1)return 1;return fib(n-1)+fib(n-2);};
+identity(1);identity(1.5);mixed(1,0.5);mixed(0.5,1);constant();fib(2);
+print("MUST NOT EXECUTE");

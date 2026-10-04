@@ -77,6 +77,10 @@ bool test_c_module_output(void) {
     first = generate_c_module(arena, module);
     ASSERT(first.generated_count == 1 && first.omitted_count == 3);
     ASSERT(!wcsstr(first.source.data, L"partial definition"));
+    ASSERT(!wcsstr(first.source.data, L"goat_adapter_0(")
+           && !wcsstr(first.source.data, L"goat_adapter_1(")
+           && !wcsstr(first.source.data, L"goat_adapter_2(")
+           && wcsstr(first.source.data, L"goat_adapter_3("));
     ASSERT(!wcsstr(first.source.data, L"goat_f1_") && !wcsstr(first.source.data, L"goat_f2_")
            && !wcsstr(first.source.data, L"goat_f3_") && wcsstr(first.source.data, L"goat_f4_i_"));
     size_t failures = 0, propagated = 0;

@@ -168,7 +168,6 @@ bool c_emit_function(const node_t *node,
 }
 
 void c_emit_headers(source_builder_t *builder, unsigned helpers) {
-    add_static_source(builder, 0, L"#include <stdint.h>");
     add_static_source(builder, 0, L"#include <stdbool.h>");
     add_static_source(builder, 0, L"#include <math.h>");
     add_static_source(builder, 0, L"#include <float.h>");

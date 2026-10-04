@@ -63,6 +63,17 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
           BUILD_DIR: build/${{ matrix.compiler }}
+      - name: Check numeric adapter ABI
+        run: bash scripts/check_native_abi.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native-abi
+        env:
+          CC: ${{ matrix.compiler }}
+      - name: Check numeric adapter ABI with sanitizers
+        run: bash scripts/check_native_abi.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native-abi-ubsan -fsanitize=undefined,float-cast-overflow -fno-sanitize-recover=all
+        env:
+          CC: ${{ matrix.compiler }}
+      - name: Check numeric adapter ABI with x87 evaluation
+        if: matrix.compiler == 'gcc'
+        run: bash scripts/check_native_abi.sh build/gcc/goat build/gcc/native-abi-x87 -mfpmath=387
       - name: Export, compile and execute C modules
         run: bash scripts/check_c_module.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/c-module
         env:
@@ -86,6 +97,7 @@ jobs:
           path: |
             build/${{ matrix.compiler }}/c-generation/generated.c
             build/${{ matrix.compiler }}/c-module/*.c
+            build/${{ matrix.compiler }}/native-abi/*.c
           if-no-files-found: ignore
       - name: Build release
         run: bash scripts/build_release.sh
@@ -140,6 +152,9 @@ jobs:
       - name: Build and test
         shell: msys2 {0}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_mingw.cmd'
+      - name: Check numeric adapter ABI
+        shell: msys2 {0}
+        run: bash scripts/check_native_abi.sh build/goat.exe build/native-abi
       - name: Export, compile and execute C modules
         shell: msys2 {0}
         run: bash scripts/check_c_module.sh build/goat.exe build/c-module
@@ -154,6 +169,7 @@ jobs:
           path: |
             build/c-generation/generated.c
             build/c-module/*.c
+            build/native-abi/*.c
           if-no-files-found: ignore
       - name: Build release
         shell: msys2 {0}
