@@ -433,3 +433,7 @@ object_t *create_real_number_object(process_t *process, double value) {
     add_object_to_list(&process->objects, &obj->base);
     return &obj->base;
 }
+
+bool is_real_object(const object_t *obj) {
+    return obj->vtbl == &static_vtbl || obj->vtbl == &dynamic_vtbl;
+}

@@ -489,7 +489,12 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
         }
     }
     object_t *function =
-        create_function_object(thread->process, arg_names, arg_count, first_instr_id, closure);
+        create_function_object(thread->process,
+                               arg_names,
+                               arg_count,
+                               first_instr_id,
+                               closure,
+                               get_bytecode_native_function(runtime->code, thread->instr_id));
     push_object_onto_stack(thread->data_stack, function);
     thread->args_count = 0;
     thread->instr_id++;
@@ -508,6 +513,8 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
         thread->exception.value = NULL;
         return dispatch_exception(runtime, thread, exception);
     }
+    if (!result)
+        runtime->status = 1;
     return result;
 }
 

@@ -8,6 +8,7 @@
 #include "common_methods.h"
 #include "context.h"
 #include "lib/allocate.h"
+#include "native_library.h"
 #include "object.h"
 #include "object_state.h"
 #include "process.h"
@@ -105,7 +106,7 @@ static object_array_t get_topology(const object_t *obj) {
     return result;
 }
 
-/** @brief Invokes a native descriptor; failed calls leave an owned pending exception. */
+/** @brief Invokes a builtin; failed calls leave an owned pending exception. */
 static bool static_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     require_object_stack_size(thread->data_stack, arg_count);
     const builtin_function_t *descriptor = ((builtin_function_object_t *)obj)->descriptor;
@@ -203,6 +204,9 @@ typedef struct {
 
     /** @brief The lexical closure environment of the function. */
     object_t *closure;
+
+    /** @brief Keeps specialization metadata and library code alive. */
+    native_function_descriptor_t *native_function;
 } object_dynamic_function_t;
 
 /** @brief Releases or clears a dynamic function object. */
@@ -214,6 +218,7 @@ static void clear(object_dynamic_function_t *dfobj, bool deep_cleaning) {
         }
         DECREF(dfobj->closure);
     }
+    release_native_function_descriptor(dfobj->native_function);
     FREE(dfobj->arg_names);
     FREE(dfobj);
 }
@@ -235,7 +240,12 @@ static void dec_ref(object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::mark. */
 static void mark(object_t *obj) {
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
+    if (dfobj->state == MARKED)
+        return;
     dfobj->state = MARKED;
+    mark_object(dfobj->closure);
+    for (size_t i = 0; i < dfobj->arg_count; i++)
+        mark_object(dfobj->arg_names[i]);
 }
 
 /** @brief Implements @ref object_vtbl_t::sweep. */
@@ -266,13 +276,72 @@ static string_value_t dynamic_to_string_notation(const object_t *obj) {
     return dynamic_to_string(obj);
 }
 
-/**
- * @brief Executes a dynamic function object.
- * @return `true` indicating the call was successful.
- */
+/** @brief Selects an exact formal-parameter signature without consuming arguments. */
+static const goat_native_entry_v1_t *select_native_entry(const object_dynamic_function_t *function,
+                                                         uint16_t count,
+                                                         object_stack_t *stack) {
+    if (count < function->arg_count)
+        return NULL;
+    for (uint32_t i = 0; i < get_native_function_entry_count(function->native_function); i++) {
+        const goat_native_entry_v1_t *entry =
+            get_native_function_entry(function->native_function, i);
+        if (entry->parameter_count != function->arg_count)
+            continue;
+        size_t j = 0;
+        for (; j < function->arg_count; j++) {
+            object_t *arg = peek_object_from_stack(stack, j);
+            uint32_t type = is_integer_object(arg) ? GOAT_NATIVE_I64
+                            : is_real_object(arg)  ? GOAT_NATIVE_F64
+                                                   : GOAT_NATIVE_INVALID;
+            if (entry->parameter_types[j] != type)
+                break;
+        }
+        if (j == function->arg_count)
+            return entry;
+    }
+    return NULL;
+}
+
+/** @brief Commits one numeric result; backend failures never execute the body a second time. */
+static bool
+invoke_native_entry(const goat_native_entry_v1_t *entry, uint16_t count, thread_t *thread) {
+    goat_native_value_v1_t *args =
+        entry->parameter_count ? CALLOC(entry->parameter_count * sizeof(*args)) : NULL;
+    for (uint32_t i = 0; i < entry->parameter_count; i++) {
+        object_t *arg = peek_object_from_stack(thread->data_stack, i);
+        args[i].type = entry->parameter_types[i];
+        if (args[i].type == GOAT_NATIVE_I64)
+            args[i].value.integer = get_object_integer_value(arg).value;
+        else
+            args[i].value.real = get_object_real_value(arg).value;
+    }
+    goat_native_value_v1_t result = {0};
+    uint32_t status = entry->invoke(GOAT_NATIVE_ABI_VERSION, entry->parameter_count, args, &result);
+    FREE(args);
+    if (status == GOAT_NATIVE_OK && (result.type != entry->return_type || result.reserved))
+        status = GOAT_NATIVE_BAD_REQUEST;
+    thread->native_status = status;
+    if (status != GOAT_NATIVE_OK)
+        return false;
+    object_t *value = result.type == GOAT_NATIVE_I64
+                          ? create_integer_object(thread->process, result.value.integer)
+                          : create_real_number_object(thread->process, result.value.real);
+    for (uint16_t i = 0; i < count; i++) {
+        object_t *arg = pop_object_from_stack(thread->data_stack);
+        DECREF(arg);
+    }
+    push_object_onto_stack(thread->data_stack, value);
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Chooses native execution before allocating a bytecode call context. */
 static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     require_object_stack_size(thread->data_stack, arg_count);
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
+    const goat_native_entry_v1_t *entry = select_native_entry(dfobj, arg_count, thread->data_stack);
+    if (entry)
+        return invoke_native_entry(entry, arg_count, thread);
     context_t *ctx = create_context(thread->process, thread->context, dfobj->closure);
     ctx->control_flow = FLOW_RETURN;
     ctx->jump_address[0] = thread->instr_id + 1;
@@ -346,7 +415,8 @@ object_t *create_function_object(process_t *process,
                                  object_t **arg_names,
                                  size_t arg_count,
                                  instr_index_t first_instr_id,
-                                 object_t *closure) {
+                                 object_t *closure,
+                                 native_function_descriptor_t *native_function) {
     object_dynamic_function_t *obj =
         (object_dynamic_function_t *)CALLOC(sizeof(object_dynamic_function_t));
     obj->base.vtbl = &dynamic_vtbl;
@@ -359,6 +429,7 @@ object_t *create_function_object(process_t *process,
         INCREF(arg_names[index]);
     }
     obj->first_instr_id = first_instr_id;
+    obj->native_function = retain_native_function_descriptor(native_function);
     obj->closure = closure;
     INCREF(closure);
     add_object_to_list(&process->objects, &obj->base);

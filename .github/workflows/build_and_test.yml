@@ -71,6 +71,10 @@ jobs:
         run: bash scripts/check_native_loader.sh build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native loader"
         env:
           CC: ${{ matrix.compiler }}
+      - name: Dispatch native adapters through CALL
+        run: bash scripts/check_native_call.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/unit_testing "build/${{ matrix.compiler }}/native call"
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Check numeric adapter ABI
         run: bash scripts/check_native_abi.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native-abi
         env:
@@ -168,6 +172,9 @@ jobs:
       - name: Load and validate native libraries
         shell: msys2 {0}
         run: bash scripts/check_native_loader.sh build/goat.exe "build/native loader"
+      - name: Dispatch native adapters through CALL
+        shell: msys2 {0}
+        run: bash scripts/check_native_call.sh build/goat.exe build/unit_testing.exe "build/native call"
       - name: Check numeric adapter ABI
         shell: msys2 {0}
         run: bash scripts/check_native_abi.sh build/goat.exe build/native-abi
