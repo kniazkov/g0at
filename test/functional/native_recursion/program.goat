@@ -1,0 +1,34 @@
+const fib = func(n) {
+    if (n < 1) return 0;
+    if (n == 1) return 1;
+    return fib(n - 1) + fib(n - 2);
+}
+const factorial = func(n) {
+    if (n < 2) return 1;
+    var saved = n;
+    var child = factorial(n - 1);
+    return saved * child;
+}
+const even = func(n) {
+    if (n < 1) return 1;
+    return odd(n - 1);
+}
+const odd = func(n) {
+    if (n < 1) return 0;
+    return even(n - 1);
+}
+const swapped = func(n, a, b) {
+    if (n < 1) return a - b;
+    return swapped(n - 1, b, a);
+}
+const extra = func(n, x) {
+    if (n < 1) return x;
+    var y = x;
+    return extra(n - 1, y, y = y + 2);
+}
+print(fib(10)); print("\n")
+print(factorial(21)); print("\n")
+print(even(11)); print("\n")
+print(odd(11)); print("\n")
+print(swapped(3, 5, 0.5)); print("\n")
+print(extra(4, 3)); print("\n")

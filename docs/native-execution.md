@@ -113,8 +113,16 @@ parameters in their original positions. Extra arguments are evaluated and discar
 missing numeric arguments are rejected. Static callee resolution is effect-free,
 so no runtime function-object lookup is emitted. The call result is captured once,
 with binary64 rounding for doubles. Built-in and mutable/dynamic calls still lack
-C lowering. Recursive execution tests and complete-module assembly remain later
-roadmap steps.
+C lowering. Direct and mutual recursion use the same typed calls and prototypes,
+including recursive transitions between numeric specializations. Self-bindings
+must agree with the current definition's name and return type. Standalone tests
+compile and execute Fibonacci, factorial, two- and three-function cycles, recursive
+aliases, mixed-type cycles and ignored arguments with local side effects. They
+exercise inputs beyond the concrete analysis seeds, integer wrapping and binary64
+rounding. Complete-module assembly remains the next roadmap step.
+
+These tests use bounded recursion depths. Native VM execution is still disabled;
+host-stack limits and controlled bytecode retry remain prerequisites for enabling it.
 
 `scripts/check_c_generation.sh UNIT_BINARY OUTPUT_DIR` generates test source,
 compiles it with `${CC:-gcc}` and executes numeric assertions at `-O2`. CI runs it
