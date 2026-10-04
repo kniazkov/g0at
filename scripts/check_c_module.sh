@@ -73,6 +73,32 @@ printf 'print("DO NOT RUN");\n' > "$output_dir/empty.goat"
 "$interpreter" --print-c "$output_dir/empty.goat" > "$output_dir/empty.c"
 compile -c "$output_dir/empty.c" -o "$output_dir/empty.o"
 ok
+current='emit only the required integer operation helpers'
+for operation in add sub mul neg plus real; do
+    case "$operation" in
+        add) expression='a+b'; seed='f(1,2);' ;;
+        sub) expression='a-b'; seed='f(1,2);' ;;
+        mul) expression='a*b'; seed='f(1,2);' ;;
+        neg) expression='-a'; seed='f(1,2);' ;;
+        plus) expression='+a'; seed='f(1,2);' ;;
+        real) expression='a+b'; seed='f(1.5,2.5);' ;;
+    esac
+    printf 'const f=func(a,b){return %s;};%s\n' "$expression" "$seed" > "$output_dir/$operation.goat"
+    "$interpreter" --print-c "$output_dir/$operation.goat" > "$output_dir/$operation.c"
+    compile -c "$output_dir/$operation.c" -o "$output_dir/$operation.o"
+    for helper in add sub mul neg; do
+        if test "$helper" = "$operation"; then
+            test "$(grep -c "static inline int64_t goat_i64_$helper(" "$output_dir/$operation.c")" = 1
+            test "$(grep -c "= goat_i64_$helper(" "$output_dir/$operation.c")" = 1
+        elif grep -q "goat_i64_$helper(" "$output_dir/$operation.c"; then
+            false
+        fi
+    done
+    if test "$operation" = plus || test "$operation" = real; then
+        if grep -q 'goat_i64_bits' "$output_dir/$operation.c"; then false; fi
+    fi
+done
+ok
 current='invalid export options'
 for option in '--optimize none' '--print-bytecode' '--print-analysis' '--print-source-code'; do
     # Each case intentionally consists of one or two separate arguments.

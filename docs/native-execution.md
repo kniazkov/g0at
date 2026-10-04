@@ -76,7 +76,11 @@ Each successful result is standalone C11 source with the required standard heade
 Integers use `INT64_C` with a safe spelling for `INT64_MIN`. Finite doubles use exact
 hexadecimal literals; negative zero, subnormals, NaN and infinities are covered.
 The target requires binary64 doubles. Integer arithmetic wraps modulo 2^64 using
-unsigned operations and a range-safe conversion back to int64_t. Mixed operands
+unsigned operations and a range-safe conversion back to int64_t. Generated integer
+operations call `goat_i64_add`, `goat_i64_sub`, `goat_i64_mul` and `goat_i64_neg`:
+small `static inline` functions sharing `goat_i64_bits`. Only used helpers are emitted.
+Unary plus needs no helper. Operands remain explicitly sequenced in temporaries;
+function-call argument evaluation order in C is not used to order Goat operations. Mixed operands
 convert to double before arithmetic. Ordered `goat_tN` temporaries evaluate each
 operand once, left to right; volatile double temporaries round conversions and
 each result, preventing excess precision and multiply-add contraction across

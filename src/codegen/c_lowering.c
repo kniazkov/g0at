@@ -182,7 +182,7 @@ void c_emit_headers(source_builder_t *builder, unsigned helpers) {
                       L"#error Goat C arithmetic requires strict floating-point semantics");
     add_static_source(builder, 0, L"#endif");
     if (helpers & C_HELPER_INTEGER)
-        c_arithmetic_helpers(builder);
+        c_arithmetic_helpers(builder, helpers);
     if (helpers & C_HELPER_COMPARISON)
         c_control_helpers(builder);
 }
