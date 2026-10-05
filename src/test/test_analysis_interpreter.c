@@ -8,6 +8,7 @@
 #include "analysis_test_support.h"
 #include "cli/options.h"
 #include "graph/declarations.h"
+#include "graph/replacement.h"
 #include "test_analysis.h"
 #include "test_macro.h"
 
@@ -51,7 +52,7 @@ bool test_analysis_observations() {
                                     STATIC_STRING(L"var x = 1;\nx = 3;\nconst y = x + 1;\n"));
     ASSERT(plain && !analyze(plain, &memory, options, NULL));
     node_t *declaration = get_node_child(plain, 2);
-    declarator_t *y = (declarator_t *)get_node_child(declaration, 0);
+    declarator_t *y = (declarator_t *)replacement_original(get_node_child(declaration, 0));
     ASSERT(y->abstract_value->type == LATTICE_INTEGER_CONSTANT);
     ASSERT(((const integer_constant_element_t *)y->abstract_value)->value == 4);
     destroy_options(options);

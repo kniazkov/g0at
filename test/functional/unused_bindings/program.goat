@@ -1,0 +1,21 @@
+a = 2;
+b = 3;
+x = a + b;
+println(x);
+const trace = func(n) { println(n); return n; };
+var unused = trace(7);
+var first = trace(1), second = trace(2);
+println(second);
+println(another = trace(3));
+try { const bad = 1 / 0; } catch (e) { println("caught"); }
+var captured = 1;
+const read = func() { return captured; };
+println(read());
+captured = 2;
+println(read());
+for (var once = trace(4); false; ) println("wrong");
+const uncalled = func() { throw "wrong"; };
+var chain1 = 8;
+var chain2 = chain1;
+var chain3 = chain2;
+println("done");

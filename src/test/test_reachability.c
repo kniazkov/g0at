@@ -20,6 +20,7 @@
 #include <wchar.h>
 
 static bool subtree_has_flag(const node_t *node, bool flag) {
+    node = replacement_original(node);
     if (node_has_flag(node, NODE_FLAG_UNREACHABLE) != flag)
         return false;
     for (size_t i = 0; i < get_node_child_count(node); i++) {
@@ -94,7 +95,7 @@ bool test_reachability_bytecode() {
             branches++;
         }
     }
-    ASSERT(writes == 2 && live == 1 && branches == 0);
+    ASSERT(writes == 0 && live == 0 && branches == 0);
     destroy_data_builder(data);
     destroy_code_builder(code);
     destroy_options(options);

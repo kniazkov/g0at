@@ -28,7 +28,7 @@ static size_t opcode_count(const code_builder_t *code, opcode_t opcode) {
 }
 
 static node_t *initializer(node_t *root, size_t index) {
-    return get_node_child(get_node_child(get_node_child(root, index), 0), 0);
+    return get_node_child(replacement_original(get_node_child(get_node_child(root, index), 0)), 0);
 }
 
 /** @brief Counts executable nodes, excluding historical edges. */
@@ -128,7 +128,7 @@ bool test_replacement_folding() {
     data_builder_t *data = create_data_builder();
     generate_bytecode_from_node(root, code, data);
     ASSERT(!opcode_count(code, ADD) && !opcode_count(code, MUL));
-    ASSERT(opcode_count(code, STORE) == 1);
+    ASSERT(opcode_count(code, STORE) == 0);
     destroy_data_builder(data);
     destroy_code_builder(code);
     destroy_options(options);
