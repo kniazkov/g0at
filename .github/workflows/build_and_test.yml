@@ -83,6 +83,10 @@ jobs:
         run: bash scripts/check_native_modes.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/functional_testing "build/${{ matrix.compiler }}/native modes"
         env:
           CC: ${{ matrix.compiler }}
+      - name: Check native artifact integrity
+        run: python3 scripts/check_native_integrity.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native integrity"
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Check for loops and source round trips
         run: python3 scripts/check_for.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/for loops"
         env:
@@ -228,6 +232,11 @@ jobs:
       - name: Compare native modes and verify actual adapter entry
         shell: msys2 {0}
         run: bash scripts/check_native_modes.sh build/goat.exe build/functional_testing.exe "build/native modes"
+      - name: Check native artifact integrity
+        shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
+        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_integrity.py build/goat.exe "build/native integrity"'
       - name: Check for loops and source round trips
         shell: msys2 {0}
         env:

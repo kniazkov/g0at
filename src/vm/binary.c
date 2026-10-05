@@ -12,8 +12,8 @@
 #include <float.h>
 #include <string.h>
 
-#define HEADER_SIZE 64
-#define FORMAT_VERSION 1
+#define HEADER_SIZE 96
+#define FORMAT_VERSION 2
 
 static uint64_t read64(const uint8_t *p) {
     uint64_t value = 0;
@@ -120,22 +120,27 @@ static bool decode(bytecode_t *code) {
     return true;
 }
 
-bool save_binary_program(const char *path, const bytecode_t *code, uint64_t library_checksum) {
+bool save_binary_program(const char *path,
+                         const bytecode_t *code,
+                         const uint8_t library_digest[SHA256_SIZE]) {
     size_t count = 0;
     for (size_t i = 0; i < code->instructions_count; i++)
         if (get_bytecode_native_function(code, i))
             count++;
+    if (count && !library_digest)
+        return false;
     if (code->buffer_size > GOAT_BINARY_LIMIT - HEADER_SIZE
         || count > (GOAT_BINARY_LIMIT - HEADER_SIZE - code->buffer_size) / 16)
         return false;
     size_t size = HEADER_SIZE + code->buffer_size + count * 16;
     uint8_t *bytes = CALLOC(size);
-    memcpy(bytes, "GOATBIN1", 8);
+    memcpy(bytes, "GOATBIN2", 8);
     write64(bytes + 8, FORMAT_VERSION);
     write64(bytes + 16, platform());
     write64(bytes + 24, code->buffer_size);
     write64(bytes + 32, count);
-    write64(bytes + 40, count ? library_checksum : 0);
+    if (count)
+        memcpy(bytes + 64, library_digest, SHA256_SIZE);
     memcpy(bytes + HEADER_SIZE, code->buffer, code->buffer_size);
     uint8_t *binding = bytes + HEADER_SIZE + code->buffer_size;
     for (size_t i = 0; i < code->instructions_count; i++) {
@@ -169,11 +174,12 @@ binary_program_t decode_binary_program(const void *data, size_t size) {
     const uint8_t zero_checksum[8] = {0};
     uint64_t checksum = binary_checksum(bytes, 56);
     checksum = extend_binary_checksum(checksum, zero_checksum, sizeof(zero_checksum));
-    checksum = extend_binary_checksum(checksum, bytes + HEADER_SIZE, size - HEADER_SIZE);
+    checksum = extend_binary_checksum(checksum, bytes + 64, size - 64);
     uint64_t code_size = read64(bytes + 24), count = read64(bytes + 32);
-    if (memcmp(bytes, "GOATBIN1", 8) || read64(bytes + 8) != FORMAT_VERSION
-        || read64(bytes + 16) != platform() || read64(bytes + 48) || expected != checksum
-        || code_size > size - HEADER_SIZE || count > (size - HEADER_SIZE - code_size) / 16
+    if (memcmp(bytes, "GOATBIN2", 8) || read64(bytes + 8) != FORMAT_VERSION
+        || read64(bytes + 16) != platform() || read64(bytes + 40) || read64(bytes + 48)
+        || expected != checksum || code_size > size - HEADER_SIZE
+        || count > (size - HEADER_SIZE - code_size) / 16
         || size != HEADER_SIZE + code_size + count * 16)
         goto done;
     result.code = CALLOC(sizeof(bytecode_t));
@@ -183,8 +189,9 @@ binary_program_t decode_binary_program(const void *data, size_t size) {
     if (!decode(result.code))
         goto invalid;
     result.binding_count = (size_t)count;
-    result.library_checksum = read64(bytes + 40);
-    if (!count && result.library_checksum)
+    memcpy(result.library_digest, bytes + 64, SHA256_SIZE);
+    const uint8_t empty_digest[SHA256_SIZE] = {0};
+    if (!count && memcmp(result.library_digest, empty_digest, SHA256_SIZE))
         goto invalid;
     result.bindings = count ? ALLOC((size_t)count * 2 * sizeof(uint64_t)) : NULL;
     const uint8_t *binding = bytes + HEADER_SIZE + code_size;
@@ -213,7 +220,10 @@ bool bind_binary_library(binary_program_t *program, const char *path) {
         return false;
     size_t size;
     void *bytes = read_binary_file(path, GOAT_BINARY_LIMIT, &size);
-    bool matches = bytes && binary_checksum(bytes, size) == program->library_checksum;
+    uint8_t digest[SHA256_SIZE] = {0};
+    if (bytes)
+        sha256(bytes, size, digest);
+    bool matches = bytes && !memcmp(digest, program->library_digest, SHA256_SIZE);
     native_workspace_t *workspace = matches ? create_native_workspace() : NULL;
     bool copied = workspace && write_binary_file(workspace->library, bytes, size);
     FREE(bytes);

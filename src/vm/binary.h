@@ -4,6 +4,7 @@
  */
 #pragma once
 #include "bytecode.h"
+#include "lib/sha256.h"
 
 #define GOAT_BINARY_LIMIT (256u * 1024u * 1024u)
 
@@ -12,10 +13,12 @@ typedef struct {
     bytecode_t *code;
     uint64_t *bindings; /**< Pairs: FUNC instruction index, native function ID. */
     size_t binding_count;
-    uint64_t library_checksum;
+    uint8_t library_digest[SHA256_SIZE];
 } binary_program_t;
 
-bool save_binary_program(const char *path, const bytecode_t *code, uint64_t library_checksum);
+bool save_binary_program(const char *path,
+                         const bytecode_t *code,
+                         const uint8_t library_digest[SHA256_SIZE]);
 binary_program_t load_binary_program(const char *path);
 /** @brief Decodes borrowed bytes without modifying them; the result owns its data. */
 binary_program_t decode_binary_program(const void *data, size_t size);
