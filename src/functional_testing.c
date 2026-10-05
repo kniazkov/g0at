@@ -219,31 +219,29 @@ int main(int argc, char **argv) {
 
     int passed = 0;
     int failed = 0;
-    char test_name[128];
-    while (fgets(test_name, sizeof(test_name), list)) {
-        char *test_name_trim = trim(test_name);
-        if (strlen(test_name_trim) > 0 && test_name_trim[0] != '#') {
-            const char *levels[] = {"none", "all"};
-            for (size_t level = (strcmp(native, "off") && strcmp(native, "compiled")) ? 1 : 0;
-                 level < 2;
-                 level++) {
+    const char *levels[] = {"none", "all"};
+    for (size_t level = (strcmp(native, "off") && strcmp(native, "compiled")) ? 1 : 0; level < 2;
+         level++) {
+        rewind(list);
+        printf("\nConfiguration: optimize=%s, native=%s\n", levels[level], native);
+        char test_name[128];
+        while (fgets(test_name, sizeof(test_name), list)) {
+            char *test_name_trim = trim(test_name);
+            if (strlen(test_name_trim) > 0 && test_name_trim[0] != '#') {
                 int result = do_test(argv[1], test_name_trim, levels[level], native);
                 if (result) {
                     passed++;
                 } else {
                     failed++;
                 }
-                test_output_case(result,
-                                 "%s (optimize=%s, native=%s)",
-                                 test_name_trim,
-                                 levels[level],
-                                 native);
+                test_output_case(result, "%s", test_name_trim);
             }
         }
-    }
-    if (ferror(list)) {
-        test_output_case(false, "test list (unreadable)");
-        failed++;
+        if (ferror(list)) {
+            test_output_case(false, "test list (unreadable)");
+            failed++;
+            break;
+        }
     }
     test_output_summary("Functional", passed, failed);
 
