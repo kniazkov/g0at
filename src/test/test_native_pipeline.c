@@ -153,7 +153,7 @@ static bool mutual(void) {
     return true;
 }
 
-static bool fuel(void) {
+static bool shallow_calls(void) {
     bytecode_t *code = compile(L"const f=func(n){if(n<=0)return 1;return f(n-1)+f(n-1);};"
                                L"var value=f(12);var small=f(2);",
                                compiler);
@@ -161,7 +161,7 @@ static bool fuel(void) {
     process_t *proc = create_process();
     ASSERT(!run(proc, code));
     ASSERT(integer(proc, L"value", 4096) && integer(proc, L"small", 4));
-    ASSERT(counters(proc, 2, 1, 1));
+    ASSERT(counters(proc, 2, 2, 0));
     free_bytecode(code);
     destroy_process(proc);
     return true;
@@ -310,7 +310,7 @@ bool test_native_pipeline(const char *command,
         {"generated numeric dispatch after graph destruction", dispatch},
         {"depth retry preserves arguments and disables descendant native calls", recursion},
         {"mutual recursion retries once", mutual},
-        {"fuel exhaustion at shallow depth retries once", fuel},
+        {"many shallow calls remain native without retry", shallow_calls},
         {"adapter guards reset, preserve output and isolate threads", adapter_guards},
         {"small thread stack falls back before adapter entry", small_stack},
         {"compile, load and metadata failures preserve bytecode", failures},
