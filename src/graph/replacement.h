@@ -25,3 +25,14 @@ const node_t *replacement_result(const node_t *node);
 /** @brief Follows archived originals for identity and proof lookup; leaves the graph intact.
  */
 const node_t *replacement_original(const node_t *node);
+
+/** @brief Tests an optimization history node without executable children. */
+static inline bool is_deletion(const node_t *node) {
+    return node->vtbl->type == NODE_EXPRESSION_DELETION
+           || node->vtbl->type == NODE_STATEMENT_DELETION;
+}
+
+/** @brief Archives an unused expression; only valid in a discarded-value position. */
+expression_t *create_expression_deletion(arena_t *arena, expression_t *original);
+/** @brief Archives an unused statement or declarator. */
+statement_t *create_statement_deletion(arena_t *arena, node_t *original);

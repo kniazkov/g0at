@@ -91,10 +91,11 @@ static bool counters(process_t *proc, size_t attempts, size_t successes, size_t 
            && !thread->context->native_disabled && !thread->data_stack->size;
 }
 
+/* Deferred readers keep the storage inspected by the host observable to analysis. */
 static bool dispatch(void) {
     bytecode_t *code = compile(L"const f=func(n){return n;};const g=func(a,b){return a-b;};"
                                L"const z=func(){return 42;};var a=f(7);var b=f(2.5);"
-                               L"var c=g(8,0.5);var d=z();",
+                               L"var c=g(8,0.5);var d=z();func(){a;b;c;d;};",
                                compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     /* A missing native binding must not silently pass through the original body. */
@@ -123,7 +124,7 @@ static bool dispatch(void) {
 static const wchar_t *const recursion_source =
     L"const f=func(n){if(n<=0)return 0;return f(n-1)+1;};"
     L"var hits=199;var extras=0;"
-    L"var value=f(++hits,++extras);var small=f(3);";
+    L"var value=f(++hits,++extras);var small=f(3);func(){value;small;hits;extras;};";
 
 static bool recursion(void) {
     bytecode_t *code = compile(recursion_source, compiler);
@@ -141,7 +142,7 @@ static bool recursion(void) {
 static bool mutual(void) {
     bytecode_t *code = compile(L"const a=func(n){if(n<=0)return 0;return b(n-1)+1;};"
                                L"const b=func(n){if(n<=0)return 0;return a(n-1)+1;};"
-                               L"var value=a(150);var small=b(4);",
+                               L"var value=a(150);var small=b(4);func(){value;small;};",
                                compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     process_t *proc = create_process();
@@ -155,7 +156,7 @@ static bool mutual(void) {
 
 static bool shallow_calls(void) {
     bytecode_t *code = compile(L"const f=func(n){if(n<=0)return 1;return f(n-1)+f(n-1);};"
-                               L"var value=f(12);var small=f(2);",
+                               L"var value=f(12);var small=f(2);func(){value;small;};",
                                compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     process_t *proc = create_process();
@@ -233,7 +234,7 @@ static void *small_stack_worker(void *data) {
 }
 
 static bool small_stack(void) {
-    bytecode_t *code = compile(L"const f=func(n){return n;};var x=f(7);", compiler);
+    bytecode_t *code = compile(L"const f=func(n){return n;};var x=f(7);func(){x;};", compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     stack_task_t task = {.code = code, .proc = create_process()};
     ASSERT(run_on_small_stack(small_stack_worker, &task));
@@ -249,7 +250,8 @@ static bool failures(void) {
                                                 NATIVE_PREPARE_LOAD_ERROR,
                                                 NATIVE_PREPARE_BIND_ERROR};
     for (size_t i = 0; i < 3; i++) {
-        bytecode_t *code = compile(L"const f=func(n){return n+1;};var x=f(7);", commands[i]);
+        bytecode_t *code =
+            compile(L"const f=func(n){return n+1;};var x=f(7);func(){x;};", commands[i]);
         ASSERT(code && preparation == statuses[i] && !code->native_functions);
         process_t *proc = create_process();
         ASSERT(!run(proc, code) && integer(proc, L"x", 8) && counters(proc, 0, 0, 0));
@@ -272,7 +274,7 @@ static bool large_frame(void) {
     append_string(&source, L"const f=func(n){var x=n;");
     for (size_t i = 0; i < 80; i++)
         append_string(&source, L"x=x+n;");
-    string_value_t text = append_string(&source, L"return x;};var value=f(1);");
+    string_value_t text = append_string(&source, L"return x;};var value=f(1);func(){value;};");
     bytecode_t *code = compile(text.data, "goat-missing-compiler-7f01");
     FREE_STRING(text);
     ASSERT(code && preparation == NATIVE_PREPARE_EMPTY && omitted && !code->native_functions);

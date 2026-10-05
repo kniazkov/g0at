@@ -6,6 +6,7 @@
 
 #include "analysis/function_effects.h"
 #include "analysis/reachability.h"
+#include "codegen/code_builder.h"
 #include "common_methods.h"
 #include "lib/arena.h"
 
@@ -28,7 +29,8 @@ typedef struct {
 } statement_replacement_t;
 
 static const replacement_children_t *children(const node_t *node) {
-    return node->vtbl->type == NODE_EXPRESSION_REPLACEMENT
+    return (node->vtbl->type == NODE_EXPRESSION_REPLACEMENT
+            || node->vtbl->type == NODE_EXPRESSION_DELETION)
                ? &((const expression_replacement_t *)node)->children
                : &((const statement_replacement_t *)node)->children;
 }
@@ -40,8 +42,8 @@ const node_t *replacement_result(const node_t *node) {
 }
 
 const node_t *replacement_original(const node_t *node) {
-    while (is_replacement(node))
-        node = children(node)->original;
+    while (is_replacement(node) || is_deletion(node))
+        node = get_node_child(node, 0);
     return node;
 }
 
@@ -53,6 +55,15 @@ static size_t get_child_count(const node_t *node) {
 /** @brief Implements node_vtbl_t::get_child. */
 static node_t *get_child(const node_t *node, size_t index) {
     return index == 0 ? children(node)->original : index == 1 ? children(node)->result : NULL;
+}
+
+/** @brief Only the executable edge may be transformed by later passes. */
+static bool replace_result(node_t *node, node_t *old_child, node_t *new_child) {
+    replacement_children_t *edges = (replacement_children_t *)children(node);
+    if (edges->result != old_child)
+        return false;
+    edges->result = new_child;
+    return true;
 }
 
 /** @brief Implements node_vtbl_t::get_child_tag. */
@@ -151,7 +162,7 @@ static node_vtbl_t expression_vtbl = {
     .get_child = get_child,
     .get_child_tag = get_child_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = replace_result,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
@@ -195,7 +206,7 @@ static node_vtbl_t statement_vtbl = {
     .get_child = get_child,
     .get_child_tag = get_child_tag,
     .insert_child_before = no_child_insertion,
-    .replace_child = no_child_replacement,
+    .replace_child = replace_result,
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
@@ -223,5 +234,82 @@ create_statement_replacement(arena_t *arena, statement_t *original, statement_t 
     node->base.base.vtbl = &statement_vtbl;
     node->base.base.flags = replacement->base.flags;
     node->children = (replacement_children_t){&original->base, &replacement->base};
+    return &node->base;
+}
+
+/** @brief A deletion stores its original in the same child layout as a replacement. */
+static size_t deletion_child_count(const node_t *node) {
+    return 1;
+}
+
+static instr_index_t deletion_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    return get_next_instruction_index(code);
+}
+
+static string_value_t deletion_source(const node_t *node) {
+    return STATIC_STRING(L";");
+}
+
+static void deletion_indented_source(const node_t *node, source_builder_t *builder, size_t indent) {
+    add_static_source(builder, indent, L";");
+}
+
+static bool deletion_pure(const node_t *node) {
+    return true;
+}
+
+/** @brief Native proofs predate deletion; retain their original operations conservatively. */
+static bool deletion_c(const node_t *node,
+                       c_generation_context_t *context,
+                       source_builder_t *builder,
+                       size_t indent) {
+    return generate_indented_c_code_from_node(get_node_child(node, 0), context, builder, indent);
+}
+
+static c_generated_expression_t deletion_c_expression(const node_t *node,
+                                                      c_generation_context_t *context) {
+    return generate_c_code_from_node(get_node_child(node, 0), context);
+}
+
+static node_vtbl_t deletion_vtbl(bool expression) {
+    node_vtbl_t result = statement_vtbl;
+    result.type = expression ? NODE_EXPRESSION_DELETION : NODE_STATEMENT_DELETION;
+    result.type_name = expression ? L"expression deletion" : L"statement deletion";
+    result.get_child_count = deletion_child_count;
+    result.replace_child = no_child_replacement;
+    result.execute = execute_nothing;
+    result.calculate = no_abstract_value;
+    result.analyze_reachability = reachability_literal;
+    result.is_pure = deletion_pure;
+    result.collect_direct_effects = no_direct_effects;
+    result.generate_bytecode = deletion_bytecode;
+    result.generate_bytecode_deferred = no_deferred_bytecode;
+    result.generate_goat_code = deletion_source;
+    result.generate_indented_goat_code = deletion_indented_source;
+    result.generate_c_code = deletion_c_expression;
+    result.generate_indented_c_code = deletion_c;
+    result.can_generate_c_code = cannot_generate_c_code;
+    return result;
+}
+
+expression_t *create_expression_deletion(arena_t *arena, expression_t *original) {
+    static node_vtbl_t vtbl;
+    vtbl = deletion_vtbl(true);
+    expression_replacement_t *node = alloc_zeroed_from_arena(arena, sizeof(*node));
+    node->base.base = original->base;
+    node->base.base.vtbl = &vtbl;
+    node->base.base.flags = NODE_FLAG_PURE;
+    node->children.original = &original->base;
+    return &node->base;
+}
+
+statement_t *create_statement_deletion(arena_t *arena, node_t *original) {
+    static node_vtbl_t vtbl;
+    vtbl = deletion_vtbl(false);
+    statement_replacement_t *node = alloc_zeroed_from_arena(arena, sizeof(*node));
+    node->base.base = *original;
+    node->base.base.vtbl = &vtbl;
+    node->base.base.flags = NODE_FLAG_PURE;
+    node->children.original = original;
     return &node->base;
 }

@@ -7,6 +7,7 @@
 #include "analysis/analysis.h"
 #include "analysis/function_return.h"
 #include "analysis/function_summary.h"
+#include "analysis/simplification.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
 #include "graph/declarations.h"
@@ -46,6 +47,7 @@ bool test_function_return_isolation() {
     const lattice_element_t *fact = result->declarator->abstract_value;
     uint32_t flags = function->flags;
     string_value_t before = analysis_collector_to_text(collector);
+    restore_graph(root);
     analyze_function_return_types(root);
     analyze_function_return_types(root);
     string_value_t after = analysis_collector_to_text(collector);

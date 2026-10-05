@@ -1,9 +1,8 @@
+#include "graph/replacement.h"
 /** @file test_specialization_graph.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Specialization views must not mutate or overstate shared proof caches.
  */
-#include "test_specialization_graph.h"
-
 #include "analysis/analysis.h"
 #include "analysis/function_summary.h"
 #include "analysis/properties.h"
@@ -13,6 +12,7 @@
 #include "graph/visualization.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
+#include "test_specialization_graph.h"
 
 #include <stdio.h>
 #include <wchar.h>
@@ -51,7 +51,8 @@ bool test_specialization_graph() {
     function_summary_set_t *set = get_function_summaries(function);
     const function_summary_t *view = select_function_c_view(set);
     ASSERT(view && view->parameter_types[0]->type == LATTICE_INTEGER);
-    ASSERT(get_node_child(get_node_child(get_node_child(root, 1), 0), 0)->vtbl->type
+    ASSERT(get_node_child(replacement_original(get_node_child(get_node_child(root, 1), 0)), 0)
+               ->vtbl->type
            == NODE_FUNCTION_CALL);
     ASSERT(function->flags & NODE_FLAG_PURE);
     /* Discovery also contains an unknown-argument profile; it must not acquire C support. */

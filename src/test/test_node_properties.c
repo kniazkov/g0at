@@ -19,7 +19,7 @@
 #include <wchar.h>
 
 static size_t count_nodes(const node_t *node) {
-    if (is_replacement(node))
+    if (is_replacement(node) || is_deletion(node))
         return count_nodes(get_node_child(node, 0));
     size_t count = 1;
     for (size_t i = 0; i < get_node_child_count(node); i++)

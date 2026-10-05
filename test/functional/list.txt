@@ -350,3 +350,6 @@ for_invalid_condition
 for_invalid_step
 for_invalid_body
 for_analysis_budget
+
+# Dead storage and retained initialization effects
+unused_bindings

@@ -192,14 +192,17 @@ static int node_to_dot(const node_t *node,
     const wchar_t *name = node->vtbl->type_name;
     node_display_value_t value = get_node_data(node);
     string_value_t properties = build_node_properties_html(node);
-    const wchar_t *node_color = is_replacement(node)                         ? L"purple"
+    const wchar_t *node_color = is_deletion(node)                            ? L"darkred"
+                                : is_replacement(node)                       ? L"purple"
                                 : node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L"lightgray"
+                                : !node->id                                  ? L"midnightblue"
                                 : (display_flags & NODE_FLAG_C_COMPATIBLE)   ? L"forestgreen"
-                                : node->id                                   ? L"black"
-                                                                             : L"brown";
+                                                                             : L"black";
     const wchar_t *node_style =
         node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L" fontcolor=gray70 tooltip=\"unreachable\""
+        : is_deletion(node)    ? L" style=\"rounded,filled\" fillcolor=\"#ffe5e5\" ordering=out"
         : is_replacement(node) ? L" style=\"rounded,filled\" fillcolor=\"#f5efff\" ordering=out"
+        : !node->id            ? L" style=\"rounded,filled\" fillcolor=\"#eaf1fa\""
         : (display_flags & NODE_FLAG_PURE) ? L" style=\"rounded,filled\" fillcolor=\"#f2faf2\""
                                            : L"";
     if (value.text.length > 0) {

@@ -9,7 +9,10 @@
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "graph/declarations.h"
+#include "graph/replacement.h"
 #include "graph/variable.h"
+#include "graph/visualization.h"
+#include "lib/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>
@@ -61,12 +64,13 @@ bool test_optimization_modes() {
         ASSERT(!analyze(root, &memory, options, collector));
         ASSERT((collector->count == 0) == disabled);
         ASSERT(has_dead_node(root) == !disabled);
-        declarator_t *x = (declarator_t *)get_node_child(get_node_child(root, 0), 0);
+        declarator_t *x =
+            (declarator_t *)replacement_original(get_node_child(get_node_child(root, 0), 0));
         ASSERT((x->abstract_value == NULL) == disabled);
         code_builder_t *code = create_code_builder();
         data_builder_t *data = create_data_builder();
         generate_bytecode_from_node(root, code, data);
-        ASSERT(code->size == (disabled ? 22 : 13));
+        ASSERT(code->size == (disabled ? 22 : 8));
         ASSERT(opcode_count(code, TRUE) == disabled);
         ASSERT(opcode_count(code, JIF) == disabled);
         ASSERT(opcode_count(code, JUMP) == disabled);
@@ -100,8 +104,8 @@ bool test_optimized_if_bytecode() {
                  {L"if ((true)) { }", 0, 0, 1, 0},
                  {L"if (false) { }", 0, 0, 0, 0},
                  {L"if (null) { } else { }", 0, 0, 1, 0},
-                 {L"var x = 0; if ((x = 1)) { } else { }", 0, 1, 2, 0},
-                 {L"var x = 1; if ((x = 0)) { }", 0, 1, 1, 0},
+                 {L"var x = 0; if ((x = 1)) { } else { }", 0, 0, 2, 0},
+                 {L"var x = 1; if ((x = 0)) { }", 0, 0, 1, 0},
                  {L"var x = 1; if (x) { }", 0, 0, 1, 0},
                  {L"if (func() {}) { }", 0, 0, 2, 1},
                  {L"if (1 < 2) { } else { }", 0, 0, 1, 0},
@@ -125,6 +129,60 @@ bool test_optimized_if_bytecode() {
         ASSERT(opcode_count(code, POP) == cases[c].pops);
         ASSERT(opcode_count(code, FUNC) == cases[c].functions);
         ASSERT(!opcode_count(code, TRUE) && !opcode_count(code, FALSE));
+        destroy_data_builder(data);
+        destroy_code_builder(code);
+        destroy_options(options);
+        destroy_arena(arena);
+    }
+    return true;
+}
+
+bool test_unused_bindings() {
+    struct {
+        const wchar_t *source;
+        size_t vars, stores, calls;
+    } cases[] = {
+        {L"a=2;b=3;x=a+b;println(x);", 0, 0, 1},
+        {L"var a=1;var b=a;const c=b;", 0, 0, 0},
+        {L"var a=input();", 0, 0, 1},
+        {L"var a=input(); const unused=func(){return a;};", 0, 0, 1},
+        {L"var a=input(),b=input();println(b);", 1, 0, 3},
+        {L"println(a=input());", 0, 0, 2},
+        {L"var a=1;const f=func(){return a;};println(f());", 1, 0, 2},
+        {L"var a=1; a++;", 1, 1, 0},
+        {L"const a=1;try{a=2;}catch(e){println(e);}", 1, 1, 1},
+    };
+
+    for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
+        arena_t *arena = create_arena(16);
+        parser_memory_t memory = {arena, arena, arena, arena};
+        node_t *root = parse_analysis_test_program(
+            &memory,
+            (string_value_t){cases[i].source, wcslen(cases[i].source), false});
+        options_t *options = create_options();
+        ASSERT(root && !analyze(root, &memory, options, NULL));
+        code_builder_t *code = create_code_builder();
+        data_builder_t *data = create_data_builder();
+        generate_bytecode_from_node(root, code, data);
+        ASSERT(opcode_count(code, VAR) == cases[i].vars);
+        ASSERT(opcode_count(code, STORE) == cases[i].stores);
+        ASSERT(opcode_count(code, CALL) == cases[i].calls);
+        if (i == 0) {
+            ASSERT(code->size == 5 && code->instructions[0].opcode == ILOAD32
+                   && code->instructions[0].arg1 == 5);
+            const node_t *deleted = get_node_child(get_node_child(root, 0), 0);
+            ASSERT(is_deletion(deleted) && get_node_child_count(deleted) == 1);
+            string_value_t dot = generate_graph_dot(root);
+            ASSERT(wcsstr(dot.data, L"darkred") && wcsstr(dot.data, L"#ffe5e5"));
+            ASSERT(wcsstr(dot.data, L"midnightblue") && wcsstr(dot.data, L"#eaf1fa"));
+            FREE_STRING(dot);
+            options->optimization_level = OPTIMIZATION_NONE;
+            ASSERT(!analyze(root, &memory, options, NULL));
+            ASSERT(get_node_child(get_node_child(root, 0), 0)->vtbl->type
+                   == NODE_VARIABLE_DECLARATOR);
+            options->optimization_level = OPTIMIZATION_ALL;
+            ASSERT(!analyze(root, &memory, options, NULL));
+        }
         destroy_data_builder(data);
         destroy_code_builder(code);
         destroy_options(options);

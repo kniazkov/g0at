@@ -149,7 +149,7 @@ void simplify_graph(node_t *node, arena_t *arena) {
 void restore_graph(node_t *node) {
     for (size_t i = 0; i < get_node_child_count(node); i++) {
         node_t *child = get_node_child(node, i);
-        if (is_replacement(child)) {
+        while (is_replacement(child) || is_deletion(child)) {
             node_t *original = get_node_child(child, 0);
             bool replaced = replace_child_node(node, child, original);
             assert(replaced);

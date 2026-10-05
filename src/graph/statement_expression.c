@@ -14,6 +14,7 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "replacement.h"
 #include "statement.h"
 
 /** @brief Implements node_vtbl_t::can_generate_c_code for a complete numeric body. */
@@ -69,7 +70,7 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
-    if (!stmt->wrapped)
+    if (!stmt->wrapped || is_deletion(&stmt->wrapped->base))
         return STATIC_STRING(L";");
     string_value_t expr_as_string = generate_goat_code_from_expression(stmt->wrapped);
     if (stmt->wrapped->base.vtbl->type != NODE_STATEMENT_LIST) {
@@ -87,7 +88,7 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
-    if (!stmt->wrapped) {
+    if (!stmt->wrapped || is_deletion(&stmt->wrapped->base)) {
         add_static_source(builder, indent, L";");
         return;
     }
@@ -104,7 +105,7 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
-    if (!stmt->wrapped)
+    if (!stmt->wrapped || is_deletion(&stmt->wrapped->base))
         return get_next_instruction_index(code);
     instr_index_t first = generate_bytecode_from_expression(stmt->wrapped, code, data);
     add_instruction(code, (instruction_t){.opcode = POP});

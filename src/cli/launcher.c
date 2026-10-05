@@ -160,21 +160,23 @@ int go(options_t *opt) {
         code_builder_t *code_builder = create_code_builder();
         data_builder_t *data_builder = create_data_builder();
         generate_bytecode_from_node(root_node, code_builder, data_builder);
-        bool processed_all;
+        bool processed_all, progressed;
         do {
             processed_all = true;
+            progressed = false;
             list_item_t *func_item = parsing_result.functions->head;
             while (func_item) {
                 list_item_t *next_item = func_item->next;
                 node_t *func_obj = (node_t *)func_item->value.ptr;
                 if (generate_deferred_bytecode_from_node(func_obj, code_builder, data_builder)) {
                     remove_item_from_linked_list(parsing_result.functions, func_item);
+                    progressed = true;
                 } else {
                     processed_all = false;
                 }
                 func_item = next_item;
             }
-        } while (!processed_all);
+        } while (!processed_all && progressed);
         bytecode_t *bytecode = link_code_and_data(code_builder, data_builder);
         destroy_code_builder(code_builder);
         destroy_data_builder(data_builder);
