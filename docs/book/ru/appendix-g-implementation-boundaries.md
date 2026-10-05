@@ -2,7 +2,7 @@
 
 [Оглавление](index.md) · [English](../en/appendix-g-implementation-boundaries.md) · [Назад](appendix-f-implementation-map.md) · [Далее](appendix-h-decision-history.md)
 
-Редакция 3. Описываемая реализация: [commit cf51b8c, с оператором `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Редакция 4. Описываемая реализация: [commit d8eb008, без накопительного бюджета нативного исполнения](https://github.com/kniazkov/g0at/tree/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7).
 
 <a id="section-g-1"></a>
 
@@ -44,7 +44,7 @@
 > Анализ ограничен по глубине, числу специализаций и итераций. Исчерпание лимита означает потерю доказательства, а не разрешение сделать оптимистичное предположение. Отношения между переменными и уточнение ветвей по произвольным условиям не образуют полноценного реляционного анализа. Исключения исполняются в VM точнее, чем моделируются анализатором.
 
 > [!CAUTION]
-> Нативный ABI ограничен int64/double, генератор — доказанными чистыми телами. Подготовка требует совместимого внешнего компилятора и загрузчика Linux/Windows. Ограничения глубины, бюджета вызовов и стека могут перевести даже успешно скомпилированную функцию обратно в VM. Библиотека исполняется в процессе без изоляции.
+> Нативный ABI ограничен int64/double, генератор — доказанными чистыми телами. Подготовка требует совместимого внешнего компилятора и загрузчика Linux/Windows. Ограничения глубины и стека могут перевести даже успешно скомпилированную функцию обратно в VM. Библиотека исполняется в процессе без изоляции.
 
 > [!CAUTION]
 > Обработка лексических ошибок имеет известные неполные случаи из главы 5. Двоичный загрузчик проверяет структуру и контрольные суммы, но не доказывает безопасность чужого байткода. В Windows остаются ограничения ANSI API для путей и диагностик. Эти пункты не следует скрывать успешным числовым примером.
@@ -53,6 +53,6 @@
 
 ## Ж.3. Где уточнять статус
 
-Синтаксис проверяется по [parser.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parser.c); исполняемые операции — по [vm.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/vm.c) и [object.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/object.h); абстрактные сведения — по [lattice.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_call.c) и [c_body.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/c_body.c); нативная граница — по [native_abi.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/include/goat/native_abi.h) и [c_generation.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/c_generation.c).
+Синтаксис проверяется по [parser.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/parser/parser.c); исполняемые операции — по [vm.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/vm/vm.c) и [object.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/model/object.h); абстрактные сведения — по [lattice.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/function_call.c) и [c_body.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/c_body.c); нативная граница — по [native_abi.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/include/goat/native_abi.h) и [c_generation.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/codegen/c_generation.c).
 
 Практический маршрут: сначала воспроизвести программу в VM, затем проверить журнал нужной сигнатуры, затем полученный C и лишь после этого отчёт исполнения. Поддержка на предыдущем шаге не доказывает следующий. Подробные основания матрицы находятся в главах 5–7, 9, 16–20 и 22–26.

@@ -2,13 +2,13 @@
 
 [Contents](index.md) · [Русский](../ru/29-performance-measurement.md) · [Previous](28-testing.md) · [Next](appendix-a-terminology.md)
 
-Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Revision 4. Implementation described: [commit d8eb008, without a cumulative native execution budget](https://github.com/kniazkov/g0at/tree/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7).
 
 <a id="section-29-1"></a>
 
 ## 29.1. The experiment's question
 
-[check_native_performance.py](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_performance.py) compares two executions of one workload: saved bytecode in the VM and a saved program with a native library. It tests a narrow claim: for this numeric call tree, median native-process time must be lower than median VM-process time.
+[check_native_performance.py](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/scripts/check_native_performance.py) compares two executions of one workload: saved bytecode in the VM and a saved program with a native library. It tests a narrow claim: for this numeric call tree, median native-process time must be lower than median VM-process time.
 
 This is not a language ranking or an estimate for an arbitrary application. The workload deliberately contains many calls to pure numeric functions, the area served by the current backend. It does not represent input, strings, objects, or exceptions.
 
@@ -20,7 +20,7 @@ The generator creates `leaf(n)`, computing `n * n + 3 * n + 7`, and functions `l
 
 At depth 12, one tree contains \(2^{12}-1=4095\) function entries, for 4,193,280 entries overall. The longest chain is shallow, but the call count is large. The generator writes out top-level calls individually, requiring no Goat loops.
 
-The native adapter's budget is 4096 entries, so one tree fits; the next top-level call starts a new budget. The report should show 1024 adapter entries, not millions of internal C calls.
+There is no cumulative budget for native function entries. This shallow call tree remains within the depth and stack limits regardless of its total call count. The report should show 1024 adapter entries, not millions of internal C calls.
 
 Python computes the expected sum independently through binomial coefficients: over 11 levels, the number of paths with a given count of `2` increments is known combinatorially. This checks the answer by a different method from recursive Goat execution.
 

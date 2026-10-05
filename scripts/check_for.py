@@ -75,10 +75,24 @@ def main():
     check(run("--run", "--native", "required", "--save-native", report,
               native_source.with_suffix(".gbin"), env=without_compiler), expected)
     fields = dict(line.split("=", 1) for line in report.read_text(encoding="utf-8").splitlines())
-    assert fields["preparation"] == "ready" and int(fields["succeeded"]) > 0, fields
-    assert int(fields["retries"]) == 1, fields
-    print("[ ok ] persisted native loops, successful entry and bounded VM retry")
-    print(f"For-loop checks passed: {passed} fixtures and 2 integration checks")
+    assert fields["preparation"] == "ready" and int(fields["succeeded"]) == 12, fields
+    assert int(fields["attempts"]) == 12 and int(fields["retries"]) == 0, fields
+    print("[ ok ] persisted native loops, all entries succeed without VM retry")
+    # Long loops and many shallow calls must not exhaust a cumulative native budget.
+    long_source = output / "long-native.goat"
+    long_source.write_text((fixtures / "native_modes" / "long_loops.goat").read_text(encoding="utf-8"),
+                           encoding="utf-8")
+    check(run("--compile", "--native", "required", long_source), "")
+    long_source.unlink()
+    check(run("--run", "--native", "required", "--save-native", report,
+              long_source.with_suffix(".gbin"), env=without_compiler),
+          "499999500000\n500000500000\n750000\n")
+    fields = dict(line.split("=", 1) for line in report.read_text(encoding="utf-8").splitlines())
+    assert fields["preparation"] == "ready", fields
+    assert int(fields["attempts"]) == int(fields["succeeded"]) == 3, fields
+    assert int(fields["retries"]) == 0, fields
+    print("[ ok ] million-iteration loops and shallow call trees remain native")
+    print(f"For-loop checks passed: {passed} fixtures and 3 integration checks")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-g-implementation-boundaries.md) · [Previous](appendix-f-implementation-map.md) · [Next](appendix-h-decision-history.md)
 
-Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Revision 4. Implementation described: [commit d8eb008, without a cumulative native execution budget](https://github.com/kniazkov/g0at/tree/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7).
 
 <a id="section-g-1"></a>
 
@@ -44,7 +44,7 @@ Revision 3. Implementation described: [commit cf51b8c, including `for`](https://
 > Analysis bounds depth, specialization counts, and iterations. Exhausting a limit loses a proof rather than authorizing an optimistic assumption. Variable relationships and branch refinement from arbitrary conditions do not form a complete relational analysis. Exceptions execute more precisely in the VM than the analyzer models them.
 
 > [!CAUTION]
-> The native ABI is limited to int64/double, and generation to proven pure bodies. Preparation requires a compatible external compiler and Linux/Windows loader. Depth, call-budget, and stack limits can return even a successfully compiled function to the VM. Libraries execute in-process without isolation.
+> The native ABI is limited to int64/double, and generation to proven pure bodies. Preparation requires a compatible external compiler and Linux/Windows loader. Depth and stack limits can return even a successfully compiled function to the VM. Libraries execute in-process without isolation.
 
 > [!CAUTION]
 > Lexical-error handling has known incomplete cases described in chapter 5. The binary loader checks structure and checksums without proving untrusted bytecode safe. Windows retains ANSI-API limitations for paths and diagnostics. A successful numeric example must not hide these points.
@@ -53,6 +53,6 @@ Revision 3. Implementation described: [commit cf51b8c, including `for`](https://
 
 ## G.3. Where to establish status
 
-Check syntax in [parser.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parser.c); executable operations in [vm.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/vm.c) and [object.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/object.h); abstract facts in [lattice.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_call.c), and [c_body.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/c_body.c); the native boundary in [native_abi.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/include/goat/native_abi.h) and [c_generation.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/c_generation.c).
+Check syntax in [parser.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/parser/parser.c); executable operations in [vm.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/vm/vm.c) and [object.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/model/object.h); abstract facts in [lattice.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/function_call.c), and [c_body.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/c_body.c); the native boundary in [native_abi.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/include/goat/native_abi.h) and [c_generation.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/codegen/c_generation.c).
 
 A practical route is to reproduce a program in the VM, inspect the relevant signature's log, inspect generated C, and only then read the execution report. Support at one step does not prove the next. Chapters 5–7, 9, 16–20, and 22–26 give the matrix's detailed foundations.
