@@ -74,7 +74,7 @@ typedef struct c_generation_result_t {
 } c_generation_result_t;
 
 /** @brief External entry point; inputs are borrowed. Names must be ASCII identifiers starting with
- * goat_. */
+ * g_ (or the legacy goat_ prefix). */
 c_generation_result_t generate_c_function(const function_summary_t *summary,
                                           string_view_t name,
                                           const c_generation_binding_t *bindings,

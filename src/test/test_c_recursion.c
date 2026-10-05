@@ -32,49 +32,49 @@ bool append_c_recursion_tests(source_builder_t *output, source_builder_t *checks
     } fixtures[] = {
         {L"const f=func(n){if(n<1)return 0;if(n==1)return 1;return f(n-1)+f(n-2);};f(2);",
          L"for(int i=0;i<21;i++){int64_t a=0,b=1;for(int j=0;j<i;j++){int64_t c=a+b;a=b;b=c;}"
-         L"if(goat_rec0_goat_f1_i_(i)!=a)return 110;}"
-         L"if(goat_rec0_goat_f1_i_(-1)!=0)return 110;",
+         L"if(goat_rec0_g_f1_i_(i)!=a)return 110;}"
+         L"if(goat_rec0_g_f1_i_(-1)!=0)return 110;",
          1},
         {L"const f=func(n){if(n<2)return 1;var saved=n;var child=f(n-1);return saved*child;};f(3);",
-         L"if(goat_rec1_goat_f1_i_(0)!=1 || goat_rec1_goat_f1_i_(10)!=3628800 || "
-         L"goat_rec1_goat_f1_i_(21)!=-INT64_C(4249290049419214848))return 111;",
+         L"if(goat_rec1_g_f1_i_(0)!=1 || goat_rec1_g_f1_i_(10)!=3628800 || "
+         L"goat_rec1_g_f1_i_(21)!=-INT64_C(4249290049419214848))return 111;",
          1},
         {L"const even=func(n){if(n<1)return 1;return odd(n-1);};"
          L"const odd=func(n){if(n<1)return 0;return even(n-1);};even(2);",
-         L"for(int i=0;i<100;i++){if(goat_rec2_goat_f1_i_(i)!=(1-i%2) || "
-         L"goat_rec2_goat_f2_i_(i)!=i%2)return 112;}",
+         L"for(int i=0;i<100;i++){if(goat_rec2_g_f1_i_(i)!=(1-i%2) || "
+         L"goat_rec2_g_f2_i_(i)!=i%2)return 112;}",
          2},
         {L"const first=func(n){if(n<1)return 10;return second(n-1)+1;};"
          L"const second=func(n){if(n<1)return 20;return third(n-1)+2;};"
          L"const third=func(n){if(n<1)return 30;return first(n-1)+3;};first(3);",
-         L"if(goat_rec3_goat_f1_i_(0)!=10 || goat_rec3_goat_f1_i_(1)!=21 || "
-         L"goat_rec3_goat_f1_i_(2)!=33 || goat_rec3_goat_f1_i_(3)!=16 || "
-         L"goat_rec3_goat_f3_i_(4)!=19)return 113;",
+         L"if(goat_rec3_g_f1_i_(0)!=10 || goat_rec3_g_f1_i_(1)!=21 || "
+         L"goat_rec3_g_f1_i_(2)!=33 || goat_rec3_g_f1_i_(3)!=16 || "
+         L"goat_rec3_g_f3_i_(4)!=19)return 113;",
          3},
         {L"const f=func(n,x){if(n<1)return x;return f(n-1,x+x);};f(0,1);f(0,1.5);",
-         L"if(goat_rec4_goat_f1_i_i_(3,2)!=16 || goat_rec4_goat_f1_i_i_(1,INT64_MAX)!=-2 || "
-         L"goat_rec4_goat_f1_i_r_(3,0.25)!=2.0 || !signbit(goat_rec4_goat_f1_i_r_(3,-0.0)) || "
-         L"!isnan(goat_rec4_goat_f1_i_r_(3,NAN)) || "
-         L"goat_rec4_goat_f1_i_r_(3,INFINITY)!=INFINITY)return 114;",
+         L"if(goat_rec4_g_f1_i_i_(3,2)!=16 || goat_rec4_g_f1_i_i_(1,INT64_MAX)!=-2 || "
+         L"goat_rec4_g_f1_i_r_(3,0.25)!=2.0 || !signbit(goat_rec4_g_f1_i_r_(3,-0.0)) || "
+         L"!isnan(goat_rec4_g_f1_i_r_(3,NAN)) || "
+         L"goat_rec4_g_f1_i_r_(3,INFINITY)!=INFINITY)return 114;",
          2},
         {L"const f=func(n){if(n<1)return n+0.0;return f(n-1.0)+1.0;};f(2);",
-         L"if(goat_rec5_goat_f1_i_(5)!=5.0 || goat_rec5_goat_f1_r_(2.5)!=2.5 || "
-         L"goat_rec5_goat_f1_r_(-0.5)!=-0.5)return 115;",
+         L"if(goat_rec5_g_f1_i_(5)!=5.0 || goat_rec5_g_f1_r_(2.5)!=2.5 || "
+         L"goat_rec5_g_f1_r_(-0.5)!=-0.5)return 115;",
          2},
         {L"const f=func(n,a,b){if(n<1)return a-b;return f(n-1,b,a);};f(2,5,0.5);",
-         L"if(goat_rec6_goat_f1_i_i_r_(4,5,0.5)!=4.5 || "
-         L"goat_rec6_goat_f1_i_i_r_(3,5,0.5)!=-4.5 || "
-         L"goat_rec6_goat_f1_i_r_i_(3,0.5,5)!=4.5)return 116;",
+         L"if(goat_rec6_g_f1_i_i_r_(4,5,0.5)!=4.5 || "
+         L"goat_rec6_g_f1_i_i_r_(3,5,0.5)!=-4.5 || "
+         L"goat_rec6_g_f1_i_r_i_(3,0.5,5)!=4.5)return 116;",
          2},
         {L"const f=func(n){if(n<1)return 7;return alias(n-1)+2;};const alias=f;alias(2);",
-         L"if(goat_rec7_goat_f1_i_(0)!=7 || goat_rec7_goat_f1_i_(12)!=31)return 117;",
+         L"if(goat_rec7_g_f1_i_(0)!=7 || goat_rec7_g_f1_i_(12)!=31)return 117;",
          1},
         {L"const f=func(n,x){if(n<1)return x;var y=x;return f(n-1,y,y=y+2);};f(2,1);",
-         L"if(goat_rec8_goat_f1_i_i_(4,3)!=11)return 118;",
+         L"if(goat_rec8_g_f1_i_i_(4,3)!=11)return 118;",
          1},
         {L"const f=func(n,x){if(n<1)return x;return f(n-1,x+1.0);};f(2,1.5);",
-         L"if(goat_rec9_goat_f1_i_r_(4,0x1p53)!=0x1p53 || "
-         L"goat_rec9_goat_f1_i_r_(4,0.5)!=4.5)return 119;",
+         L"if(goat_rec9_g_f1_i_r_(4,0x1p53)!=0x1p53 || "
+         L"goat_rec9_g_f1_i_r_(4,0.5)!=4.5)return 119;",
          1}};
 
     for (size_t i = 0; i < sizeof(fixtures) / sizeof(*fixtures); i++) {

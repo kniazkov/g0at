@@ -43,7 +43,7 @@ c_generated_expression_t c_comparison(const node_t *node, c_generation_context_t
     string_value_t a = c_capture_operand(prelude, context, &left, left.type);
     string_value_t b = c_capture_operand(prelude, context, &right, right.type);
     comparison_kind_t kind = node_comparison_kind(node->vtbl->type);
-    string_value_t value = format_string(L"goat_t%zu", context->temporary_count++);
+    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
     if (left.type == right.type) {
         static const wchar_t *symbols[] = {L"<", L"<=", L">", L">=", L"==", L"!="};
         add_source(prelude, 0, L"bool %s = %s %s %s;", value.data, a.data, symbols[kind], b.data);
@@ -55,7 +55,7 @@ c_generated_expression_t c_comparison(const node_t *node, c_generation_context_t
         bool integer_left = left.type == C_VALUE_INT64;
         add_source(prelude,
                    0,
-                   L"bool %s = (goat_compare_i64_double(%s, %s) & %u) != 0;",
+                   L"bool %s = (g_compare_i64_double(%s, %s) & %u) != 0;",
                    value.data,
                    integer_left ? a.data : b.data,
                    integer_left ? b.data : a.data,
@@ -162,12 +162,13 @@ bool c_emit_statement(const node_t *node,
 }
 
 void c_control_helpers(source_builder_t *builder) {
+    add_static_source(builder, 0, L"");
     add_static_source(builder, 0, L"#ifndef GOAT_C_COMPARISON_HELPERS");
     add_static_source(builder, 0, L"#define GOAT_C_COMPARISON_HELPERS");
     add_static_source(
         builder,
         0,
-        L"static inline unsigned goat_compare_i64_double(int64_t integer, double real) {");
+        L"static inline unsigned g_compare_i64_double(int64_t integer, double real) {");
     add_static_source(builder, 1, L"if (isnan(real)) return 8;");
     add_static_source(builder, 1, L"if (real >= 0x1p63) return 1;");
     add_static_source(builder, 1, L"if (real < -0x1p63) return 4;");

@@ -22,7 +22,7 @@ string_value_t c_capture_operand(source_builder_t *prelude,
         const line_of_code_t *line = &operand->prelude->lines[i];
         add_source(prelude, line->indent, L"%s", line->text.data);
     }
-    string_value_t name = format_string(L"goat_t%zu", context->temporary_count++);
+    string_value_t name = format_string(L"g_t%zu", context->temporary_count++);
     add_source(prelude,
                0,
                L"%s%s %s = (%s)(%s);",
@@ -60,14 +60,14 @@ c_binary_arithmetic(const node_t *node, c_generation_context_t *context, wchar_t
     source_builder_t *prelude = create_source_builder();
     string_value_t a = c_capture_operand(prelude, context, &left, type);
     string_value_t b = c_capture_operand(prelude, context, &right, type);
-    string_value_t value = format_string(L"goat_t%zu", context->temporary_count++);
+    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
     if (type == C_VALUE_INT64) {
         context->helper_flags |= operation == L'+'   ? C_HELPER_I64_ADD
                                  : operation == L'-' ? C_HELPER_I64_SUB
                                                      : C_HELPER_I64_MUL;
         add_source(prelude,
                    0,
-                   L"int64_t %s = goat_i64_%s(%s, %s);",
+                   L"int64_t %s = g_i64_%s(%s, %s);",
                    value.data,
                    operation == L'+'   ? L"add"
                    : operation == L'-' ? L"sub"
@@ -106,10 +106,10 @@ c_unary_arithmetic(const node_t *node, c_generation_context_t *context, bool neg
         return operand;
     source_builder_t *prelude = create_source_builder();
     string_value_t argument = c_capture_operand(prelude, context, &operand, operand.type);
-    string_value_t value = format_string(L"goat_t%zu", context->temporary_count++);
+    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
     if (operand.type == C_VALUE_INT64) {
         context->helper_flags |= C_HELPER_I64_NEG;
-        add_source(prelude, 0, L"int64_t %s = goat_i64_neg(%s);", value.data, argument.data);
+        add_source(prelude, 0, L"int64_t %s = g_i64_neg(%s);", value.data, argument.data);
     } else
         add_source(prelude, 0, L"volatile double %s = -%s;", value.data, argument.data);
     c_value_type_t type = operand.type;
@@ -133,9 +133,10 @@ c_generated_expression_t c_parenthesized(const node_t *node, c_generation_contex
 }
 
 void c_arithmetic_helpers(source_builder_t *builder, unsigned helpers) {
+    add_static_source(builder, 0, L"");
     add_static_source(builder, 0, L"#ifndef GOAT_C_NUMERIC_HELPERS");
     add_static_source(builder, 0, L"#define GOAT_C_NUMERIC_HELPERS");
-    add_static_source(builder, 0, L"static inline int64_t goat_i64_bits(uint64_t value) {");
+    add_static_source(builder, 0, L"static inline int64_t g_i64_bits(uint64_t value) {");
     add_static_source(builder, 1, L"return value <= INT64_MAX ? (int64_t)value :");
     add_static_source(builder, 2, L"INT64_MIN + (int64_t)(value - ((uint64_t)INT64_MAX + 1));");
     add_static_source(builder, 0, L"}");
@@ -153,24 +154,26 @@ void c_arithmetic_helpers(source_builder_t *builder, unsigned helpers) {
     for (size_t i = 0; i < sizeof(binary) / sizeof(*binary); i++) {
         if (!(helpers & binary[i].flag))
             continue;
+        add_static_source(builder, 0, L"");
         add_source(builder, 0, L"#ifndef GOAT_C_I64_%s", binary[i].guard);
         add_source(builder, 0, L"#define GOAT_C_I64_%s", binary[i].guard);
         add_source(builder,
                    0,
-                   L"static inline int64_t goat_i64_%s(int64_t a, int64_t b) {",
+                   L"static inline int64_t g_i64_%s(int64_t a, int64_t b) {",
                    binary[i].name);
         add_source(builder,
                    1,
-                   L"return goat_i64_bits((uint64_t)a %c (uint64_t)b);",
+                   L"return g_i64_bits((uint64_t)a %c (uint64_t)b);",
                    binary[i].operation);
         add_static_source(builder, 0, L"}");
         add_static_source(builder, 0, L"#endif");
     }
     if (helpers & C_HELPER_I64_NEG) {
+        add_static_source(builder, 0, L"");
         add_static_source(builder, 0, L"#ifndef GOAT_C_I64_NEG");
         add_static_source(builder, 0, L"#define GOAT_C_I64_NEG");
-        add_static_source(builder, 0, L"static inline int64_t goat_i64_neg(int64_t value) {");
-        add_static_source(builder, 1, L"return goat_i64_bits(UINT64_C(0) - (uint64_t)value);");
+        add_static_source(builder, 0, L"static inline int64_t g_i64_neg(int64_t value) {");
+        add_static_source(builder, 1, L"return g_i64_bits(UINT64_C(0) - (uint64_t)value);");
         add_static_source(builder, 0, L"}");
         add_static_source(builder, 0, L"#endif");
     }

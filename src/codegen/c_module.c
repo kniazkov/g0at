@@ -55,7 +55,7 @@ static string_view_t
 make_name(arena_t *arena, size_t function_id, const function_summary_t *summary) {
     string_builder_t builder;
     init_string_builder(&builder, 32);
-    string_value_t prefix = format_string(L"goat_f%zu", function_id);
+    string_value_t prefix = format_string(L"g_f%zu", function_id);
     append_string_value(&builder, prefix);
     FREE_STRING(prefix);
     for (size_t i = 0; i < summary->parameter_count; i++)

@@ -156,7 +156,7 @@ c_generated_expression_t c_call(const node_t *node, c_generation_context_t *cont
             append_string_value(&call, arguments[i]);
         }
         string_value_t expression = append_char(&call, L')');
-        value = format_string(L"goat_t%zu", context->temporary_count++);
+        value = format_string(L"g_t%zu", context->temporary_count++);
         add_source(prelude,
                    0,
                    L"%s%s %s = %s;",

@@ -51,9 +51,10 @@ void destroy_c_expression(c_generated_expression_t *expression) {
 
 /** @brief Backend-owned names avoid C keywords and arbitrary source fragments. */
 bool c_function_name_is_valid(string_view_t name) {
-    if (!name.data || name.length < 6 || wmemcmp(name.data, L"goat_", 5))
+    size_t prefix = name.data && name.length > 2 && !wmemcmp(name.data, L"g_", 2) ? 2 : 5;
+    if (!name.data || name.length <= prefix || (prefix == 5 && wmemcmp(name.data, L"goat_", 5)))
         return false;
-    for (size_t i = 5; i < name.length; i++) {
+    for (size_t i = prefix; i < name.length; i++) {
         wchar_t c = name.data[i];
         if (c != L'_' && !(c >= L'a' && c <= L'z') && !(c >= L'A' && c <= L'Z')
             && !(c >= L'0' && c <= L'9'))

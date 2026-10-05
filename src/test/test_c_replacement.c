@@ -348,7 +348,7 @@ bool test_c_replacement_branches(void) {
     c_generation_result_t code =
         generate_c_function(s, (string_view_t){L"goat_test", 9}, NULL, NULL);
     ASSERT(code.status == C_GENERATION_OK && !wcsstr(code.source.data, L"if ("));
-    ASSERT(wcsstr(code.source.data, L"return goat_p0;"));
+    ASSERT(wcsstr(code.source.data, L"return g_p0;"));
     FREE_STRING(code.source);
     destroy_options(options);
     destroy_arena(arena);
