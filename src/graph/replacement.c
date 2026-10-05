@@ -258,17 +258,24 @@ static bool deletion_pure(const node_t *node) {
     return true;
 }
 
-/** @brief Native proofs predate deletion; retain their original operations conservatively. */
+/** @brief Omit deleted statements unless this signature still reads their storage. */
 static bool deletion_c(const node_t *node,
                        c_generation_context_t *context,
                        source_builder_t *builder,
                        size_t indent) {
-    return generate_indented_c_code_from_node(get_node_child(node, 0), context, builder, indent);
+    const node_t *selected = c_generation_replacement(context, node);
+    if (selected == node) {
+        context->terminates = false;
+        return true;
+    }
+    return generate_indented_c_code_from_node(selected, context, builder, indent);
 }
 
 static c_generated_expression_t deletion_c_expression(const node_t *node,
                                                       c_generation_context_t *context) {
-    return generate_c_code_from_node(get_node_child(node, 0), context);
+    const node_t *selected = c_generation_replacement(context, node);
+    return selected == node ? (c_generated_expression_t){0}
+                            : generate_c_code_from_node(selected, context);
 }
 
 static node_vtbl_t deletion_vtbl(bool expression) {

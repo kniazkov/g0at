@@ -28,7 +28,11 @@ static bool prepare(const node_t *node,
                     c_generation_context_t *context,
                     source_builder_t *builder,
                     size_t indent) {
-    node = c_generation_replacement(context, node);
+    const node_t *selected = c_generation_replacement(context, node);
+    if (selected != node)
+        return prepare(selected, context, builder, indent);
+    if (is_deletion(node))
+        return true;
     if (node->vtbl->type == NODE_IF_ELSE) {
         abstract_truth_t truth = c_generation_condition_truth(context, get_node_child(node, 0));
         if (truth == ABSTRACT_TRUE || truth == ABSTRACT_FALSE) {

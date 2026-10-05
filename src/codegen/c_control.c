@@ -146,6 +146,8 @@ bool c_emit_statement(const node_t *node,
                       size_t indent) {
     context->terminates = false;
     const node_t *child = get_node_child(node, 0);
+    if (child && is_deletion(child) && c_generation_replacement(context, child) == child)
+        return true;
     if (!child) {
         add_static_source(builder, indent, L";");
         return true;

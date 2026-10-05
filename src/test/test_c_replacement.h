@@ -14,3 +14,6 @@ bool test_c_replacement_real_edges(void);
 bool test_c_replacement_specializations(void);
 bool test_c_replacement_branches(void);
 bool test_c_replacement_effects(void);
+
+/** @brief Restores native storage transitively when VM-only replacements lack generic proofs. */
+bool test_c_deletion_liveness(void);

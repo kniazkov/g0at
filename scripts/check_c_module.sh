@@ -142,4 +142,41 @@ compile -c "$output_dir/replacement.c" -o "$output_dir/replacement.o"
 compile "$output_dir/replacement_driver.c" -lm -o "$output_dir/replacement.exe"
 "$output_dir/replacement.exe"
 ok
+current='deleted bindings stay absent from generated C while initializers still execute'
+cat > "$output_dir/deleted.goat" <<'GOAT'
+const f=func(n){var x=20;return n*1.0;};
+const chain=func(n){var a=20;var b=a;return n;};
+const assigned=func(n){var unused=0;return unused=n+1;};
+const helper=func(n){return n+1;};
+const kept_call=func(n){var unused=helper(n);return n;};
+const kept_argument=func(n){var unused=(n=n+1);return n;};
+const observed=func(n){var x=n+1;return x;};
+const nested=func(n){var x=n;return x=(x=1)+2;};
+f(10);f(0.5);chain(10);assigned(10);helper(10);kept_call(10);
+kept_argument(10);observed(10);observed(0.5);nested(10);
+GOAT
+"$interpreter" --print-c "$output_dir/deleted.goat" > "$output_dir/deleted.c"
+for function in g_f1_i_ g_f1_r_ g_f2_i_ g_f3_i_ g_f5_i_ g_f6_i_; do
+    # Inspect only the function definition, excluding adapters and helper functions.
+    sed -n "/^__attribute__((noinline)).* $function(/,/^}/p" "$output_dir/deleted.c" > "$output_dir/body.c"
+    test -s "$output_dir/body.c"
+    if grep -q 'g_l[0-9]' "$output_dir/body.c"; then false; fi
+done
+sed -n '/^__attribute__((noinline)).* g_f1_i_(/,/^}/p' "$output_dir/deleted.c" > "$output_dir/body.c"
+if grep -q 'INT64_C(20)' "$output_dir/body.c"; then false; fi
+sed -n '/^__attribute__((noinline)).* g_f5_i_(/,/^}/p' "$output_dir/deleted.c" > "$output_dir/body.c"
+grep -q 'g_f4_i_(' "$output_dir/body.c"
+cat > "$output_dir/deleted_driver.c" <<'C'
+#include "deleted.c"
+int main(void) {
+    return g_f1_i_(-7)!=-7.0 || g_f1_r_(0.25)!=0.25 ||
+           !isnan(g_f1_r_(NAN)) || !signbit(g_f1_r_(-0.0)) ||
+           g_f2_i_(INT64_MIN)!=INT64_MIN || g_f3_i_(INT64_MAX)!=INT64_MIN ||
+           g_f5_i_(9)!=9 || g_f6_i_(9)!=10 ||
+           g_f7_i_(41)!=42 || g_f7_r_(0.25)!=1.25 || g_f8_i_(9)!=3;
+}
+C
+compile "$output_dir/deleted_driver.c" -lm -o "$output_dir/deleted.exe"
+"$output_dir/deleted.exe"
+ok
 printf 'C module testing done; total: %d, passed: %d, failed: 0\n' "$passed" "$passed"
