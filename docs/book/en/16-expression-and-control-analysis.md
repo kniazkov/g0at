@@ -80,6 +80,8 @@ A first visit with `i = 0` cannot justify replacing `i < n` or a branch inside t
 
 [`widen_loop_state`](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/abstract_state.c) broadens changing constants and intervals to type domains. For example, a counter growing from `0` and `1` becomes `integer` instead of producing an endless chain of larger intervals. Unchanged facts remain available. When the current facts stabilize, the condition is evaluated from that invariant to describe exit. A false first condition preserves zero-trip facts; an always-true invariant condition provides no normal exit. This is not a proof of termination.
 
+An invariant describes the allowed states at every entry to the condition, not the final result. For example, in `var total = 0; for (var i = 0; i < n; i++) total = total + i;`, the initial facts are `i = 0` and `total = 0`. After widening, it is sufficient to retain “`i` and `total` are integers”: another abstract pass no longer changes these facts. This stable state is called a fixed point. It permits integer operations in C even when the final sum is unknown. Analysis does not repeat the body `n` times: a billion actual iterations does not mean a billion abstract passes. The analysis budget limits compiler work, not program execution time.
+
 The ordinary reachability pass uses this abstract execution without recording a first iteration as a shared AST constant. Specialization-specific expression proofs intersect observations across passes, so an early constant cannot survive a later incompatible observation.
 
 > [!CAUTION]
