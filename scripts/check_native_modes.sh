@@ -74,7 +74,12 @@ for name in numeric edges recursive caught uncaught unmatched effects replacemen
                 field "$report" bound 8
                 field "$report" succeeded 11
             fi
-            if [[ $name == recursive || $name == loops ]]; then field "$report" retries 1; fi
+            if [[ $name == recursive ]]; then field "$report" retries 1; fi
+            if [[ $name == loops ]]; then
+                field "$report" attempts 12
+                field "$report" succeeded 12
+                field "$report" retries 0
+            fi
         fi
         if [[ $mode != off ]]; then
             same_text "$output_dir/$name-off.out" "$output_dir/$stem.out"

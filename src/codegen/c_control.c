@@ -201,8 +201,6 @@ bool c_emit_for(const node_t *node,
         add_static_source(builder, indent + 1, L"for (;;) {");
         c_emit_prelude(condition.prelude, builder, indent + 2);
         add_source(builder, indent + 2, L"if (!(%s)) break;", condition.value.data);
-        if (context->module_definition)
-            add_static_source(builder, indent + 2, L"goat_guard_step();");
         context->terminates = false;
         success = generate_indented_c_code_from_node(get_node_child(node, 3),
                                                      context,

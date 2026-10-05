@@ -121,25 +121,18 @@ void c_emit_native_guard(source_builder_t *builder) {
         L"typedef struct {",
         L"    jmp_buf recovery;",
         L"    unsigned depth;",
-        L"    unsigned fuel;",
         L"    uintptr_t origin;",
         L"} goat_native_guard_t;",
         L"static _Thread_local goat_native_guard_t *goat_guard;",
-        L"static inline void goat_guard_step(void) {",
-        L"    if (!goat_guard) return;",
-        L"    if (!goat_guard->fuel) longjmp(goat_guard->recovery, 1);",
-        L"    goat_guard->fuel--;",
-        L"}",
         L"static inline void goat_guard_enter(void) {",
         L"    if (!goat_guard) return;",
         L"    char position;",
         L"    uintptr_t here = (uintptr_t)&position;",
         L"    uintptr_t distance = here > goat_guard->origin ? here - goat_guard->origin : "
         L"goat_guard->origin - here;",
-        L"    if (goat_guard->depth >= 32 || !goat_guard->fuel || distance >= 65536)",
+        L"    if (goat_guard->depth >= 32 || distance >= 65536)",
         L"        longjmp(goat_guard->recovery, 1);",
         L"    goat_guard->depth++;",
-        L"    goat_guard_step();",
         L"}",
         L"static inline void goat_guard_leave(void) {",
         L"    if (goat_guard) goat_guard->depth--;",
@@ -186,7 +179,7 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
                        type_tag(c_generation_parameter_type(&context, i)));
         }
     }
-    add_static_source(builder, 1, L"goat_native_guard_t guard = {.depth = 0, .fuel = 4096};");
+    add_static_source(builder, 1, L"goat_native_guard_t guard = {.depth = 0};");
     add_static_source(builder, 1, L"guard.origin = (uintptr_t)&guard;");
     add_static_source(builder, 1, L"goat_native_guard_t *previous = goat_guard;");
     add_static_source(builder, 1, L"if (setjmp(guard.recovery)) {");

@@ -1,0 +1,23 @@
+const sum = func(n) {
+    var result = 0;
+    for (var i = 0; i < n; i++) result = result + i;
+    return result;
+};
+const increment = func(n) { return n + 1; };
+const calls = func(n) {
+    var result = 0;
+    for (var i = 0; i < n; i++) result = result + increment(i);
+    return result;
+};
+const tree = func(n) {
+    if (n <= 0) return 1;
+    return tree(n - 1) + tree(n - 1);
+};
+const trees = func(n) {
+    var result = 0;
+    for (var i = 0; i < n; i++) result = result + tree(3);
+    return result;
+};
+println(sum(1000000));
+println(calls(1000000));
+println(trees(93750));
