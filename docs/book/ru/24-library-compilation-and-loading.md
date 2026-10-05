@@ -2,7 +2,7 @@
 
 [Оглавление](index.md) · [English](../en/24-library-compilation-and-loading.md) · [Предыдущая глава](23-native-abi.md) · [Следующая глава](25-native-dispatch-and-vm-fallback.md)
 
-Редакция 2. Описываемая реализация: [commit 8d1fe86, с функцией `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Редакция 3. Описываемая реализация: [commit cf51b8c, с оператором `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-24-1"></a>
 
@@ -12,7 +12,7 @@
 
 Есть два близких сценария. `--save-library` сохраняет библиотеку рядом с исходником, не запуская Goat-программу. Подготовка нативного исполнения создаёт библиотеку во временной рабочей области, загружает её, проверяет и привязывает к байткоду. Само успешное создание файла ещё не доказывает пригодность библиотеки для данного байткода.
 
-Координация подготовки находится в [native_pipeline.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen/native_pipeline.c), выдача сохранённого C и библиотеки — в [c_output.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/c_output.c).
+Координация подготовки находится в [native_pipeline.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/native_pipeline.c), выдача сохранённого C и библиотеки — в [c_output.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/c_output.c).
 
 <a id="section-24-2"></a>
 
@@ -20,7 +20,7 @@
 
 Исполняемый файл выбирается из непустой переменной окружения `CC`; иначе используются `cc` в Linux и `gcc` в Windows. Значение `CC` — имя или путь одного исполняемого файла, а не строка команды с дополнительными флагами.
 
-На Linux [native_compiler_linux.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen/native_compiler_linux.c) вызывает `posix_spawnp` с массивом аргументов. В Windows [native_compiler_windows.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen/native_compiler_windows.c) находит программу через `SearchPathA`, формирует экранированную командную строку и использует `CreateProcessA`. Командная оболочка для интерпретации аргументов не запускается.
+На Linux [native_compiler_linux.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/native_compiler_linux.c) вызывает `posix_spawnp` с массивом аргументов. В Windows [native_compiler_windows.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/native_compiler_windows.c) находит программу через `SearchPathA`, формирует экранированную командную строку и использует `CreateProcessA`. Командная оболочка для интерпретации аргументов не запускается.
 
 | Назначение | Linux | Windows / MinGW |
 |---|---|---|
@@ -67,7 +67,7 @@ Linux получает абсолютный путь и вызывает `dlopen
 
 Нативный конвейер проверяет весь ожидаемый набор записей перед установкой привязок. Если привязка не удалась, уже установленные связи очищаются. Состояние `ready` требует хотя бы одной привязанной функции.
 
-Дескриптор функции (структура со ссылками на её специализации) удерживает ссылку на библиотеку. Объекты функций и байткод могут удерживать дескрипторы. При освобождении последней ссылки библиотека выгружается, затем очищается её рабочая область. Поэтому указатель адаптера не должен пережить содержащий его машинный код. Общая часть владения находится в [native_library.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/native_library.c), платформенная — в [native_library_linux.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/native_library_linux.c) и [native_library_windows.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/native_library_windows.c).
+Дескриптор функции (структура со ссылками на её специализации) удерживает ссылку на библиотеку. Объекты функций и байткод могут удерживать дескрипторы. При освобождении последней ссылки библиотека выгружается, затем очищается её рабочая область. Поэтому указатель адаптера не должен пережить содержащий его машинный код. Общая часть владения находится в [native_library.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/native_library.c), платформенная — в [native_library_linux.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/native_library_linux.c) и [native_library_windows.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/native_library_windows.c).
 
 > [!CAUTION]
 > Загрузка не является песочницей (изолированной средой исполнения). Инициализаторы библиотеки могут выполниться ещё до проверки таблицы ABI. Компилятор и загружаемый код должны быть доверенными. В Windows текущие операции с путями и системными сообщениями используют варианты API `A`; полноценная поддержка всех Unicode-путей и корректный UTF-8 для любой локализованной ошибки не обеспечены.
@@ -97,4 +97,4 @@ Copy-Item .\docs\book\examples\22-native-module.goat .\build\book-native\module.
 
 Сохраняемая библиотека здесь называется `module.dll`. Обе платформы должны получить `7`, `6`, `4.0`, затем отчёт с `preparation=ready`. Ошибка запуска компилятора, ошибка компиляции и ошибка загрузки — разные стадии; точный статус и диагностика полезнее общего утверждения «нативный код не работает».
 
-Поведение внешнего инструмента и сохранность результата проверяют [check_native_library.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_native_library.sh); Windows-случаи, включая линковку, — [check_native_windows.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_native_windows.sh); целую подготовку — [check_native_pipeline.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_native_pipeline.sh).
+Поведение внешнего инструмента и сохранность результата проверяют [check_native_library.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_library.sh); Windows-случаи, включая линковку, — [check_native_windows.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_windows.sh); целую подготовку — [check_native_pipeline.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_pipeline.sh).

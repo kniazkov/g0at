@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/26-separate-compilation.md) · [Previous chapter](25-native-dispatch-and-vm-fallback.md) · [Next chapter](27-observability.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-26-1"></a>
 
@@ -18,7 +18,7 @@ The saved artifact is a VM program with an optional native addition. A missing l
 
 ## 26.2. Three file regions
 
-The format is implemented in [binary.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/binary.c). An outer header occupies 64 bytes. It is followed by an inner bytecode image and a native-binding table. Total size is capped at 256 MiB.
+The format is implemented in [binary.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/binary.c). An outer header occupies 64 bytes. It is followed by an inner bytecode image and a native-binding table. Total size is capped at 256 MiB.
 
 | Offset | Size | Outer-header field |
 |---:|---:|---|
@@ -31,7 +31,7 @@ The format is implemented in [binary.c](https://github.com/kniazkov/g0at/blob/8d
 | 48 | 8 | Reserved, must be 0 |
 | 56 | 8 | Checksum of the complete `.gbin` |
 
-Numeric outer-header fields use little-endian encoding (least significant byte first). Checksum calculation treats the field at offset 56 as zero-filled. The algorithm is 64-bit FNV-1a from [binary_file.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/lib/binary_file.c).
+Numeric outer-header fields use little-endian encoding (least significant byte first). Checksum calculation treats the field at offset 56 as zero-filled. The algorithm is 64-bit FNV-1a from [binary_file.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/lib/binary_file.c).
 
 The inner image is chapter 8's buffer: its own header, instructions, data descriptors, and data. It is not another serialization of the AST. Analysis proofs, VM-object addresses, and native-code pointers are not persisted.
 
@@ -71,7 +71,7 @@ This snapshot removes the gap between validating one file and loading different 
 
 This checks integrity and pair consistency, not file provenance. If both files are changed and checksums recomputed, the author's authenticity cannot be established. Releasing the library removes its temporary snapshot.
 
-Publishing an individual file in [binary_file.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/lib/binary_file.c) uses a temporary file beside the destination followed by replacement. The two output files nevertheless remain two operations.
+Publishing an individual file in [binary_file.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/lib/binary_file.c) uses a temporary file beside the destination followed by replacement. The two output files nevertheless remain two operations.
 
 > [!CAUTION]
 > Publishing `.gbin` and its native library is not one atomic transaction. Failure between replacements can leave a mismatched pair. The loader detects the mismatch, but there is no automatic restoration of the previous pair.
@@ -129,4 +129,4 @@ To save bytecode alone, use `--compile` without enabling native mode. An old lib
 
 `--run` neither reconstructs the source nor attempts to rebuild a missing library. Even with a valid pair, individual calls may remain in the VM or fall back after a resource limit, as described in chapter 25.
 
-The CLI sequence is in [binary_program.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/binary_program.c); the saved-program interface is in [binary.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/binary.h). [check_binary_program.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_binary_program.sh) checks moving pairs to another directory, execution without source or compiler, missing and mismatched libraries, damaged files, and failure modes. This completes the path from a proven specialization to a reusable executable artifact. The next part addresses observing, testing, and measuring this implementation.
+The CLI sequence is in [binary_program.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/binary_program.c); the saved-program interface is in [binary.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/binary.h). [check_binary_program.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_binary_program.sh) checks moving pairs to another directory, execution without source or compiler, missing and mismatched libraries, damaged files, and failure modes. This completes the path from a proven specialization to a reusable executable artifact. The next part addresses observing, testing, and measuring this implementation.

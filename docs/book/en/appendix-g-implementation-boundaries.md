@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-g-implementation-boundaries.md) · [Previous](appendix-f-implementation-map.md) · [Next](appendix-h-decision-history.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-g-1"></a>
 
@@ -20,7 +20,7 @@ Revision 2. Implementation described: [commit 8d1fe86, including `println`](http
 | Division, remainder, power | Yes | Yes | Abstract handlers | No general execution |
 | Comparisons | Yes | Numbers, strings, bool; object equality | Precision depends on operands | Numeric |
 | Logical and bitwise operations | Yes | Yes | Including short circuit | No general execution |
-| ++ / -- | Yes | Yes | Modify state | No general execution |
+| ++ / -- | Yes | Yes | Modify state | Mutable numeric parameters/locals |
 | if / else | Yes | Yes | Branch selection/merging | With proven condition and body |
 | Functions, return | Yes | Yes | Calls and signatures | Pure numeric subset |
 | Direct/mutual recursion | Through functions | Yes | SCCs and bounded fixed point | With proofs; resource fallback |
@@ -32,7 +32,8 @@ Revision 2. Implementation described: [commit 8d1fe86, including `println`](http
 | Block object | Yes | Context object | Limited information | Not as a general object value |
 | Arbitrary properties and prototypes | No general access | Model C API exists | Not equivalent to syntax support | No |
 | Arrays | No | No complete user-facing path | Domain element exists | No |
-| Loops, imports | No | No path from such source syntax | No complete mechanism | No |
+| for | Yes | Scoped loop, nested statements | Widened invariant; bounded passes | Proven numeric bodies; resource fallback |
+| while, do/while, break, continue, imports | No | No path from such source syntax | No complete mechanism | No |
 | User threads | No | Internal process/thread structures exist | Not a user-threading model | No interface |
 
 <a id="section-g-2"></a>
@@ -52,6 +53,6 @@ Revision 2. Implementation described: [commit 8d1fe86, including `println`](http
 
 ## G.3. Where to establish status
 
-Check syntax in [parser.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/parser/parser.c); executable operations in [vm.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/vm.c) and [object.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/object.h); abstract facts in [lattice.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/function_call.c), and [c_body.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/c_body.c); the native boundary in [native_abi.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/include/goat/native_abi.h) and [c_generation.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen/c_generation.c).
+Check syntax in [parser.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parser.c); executable operations in [vm.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/vm.c) and [object.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/object.h); abstract facts in [lattice.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_call.c), and [c_body.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/c_body.c); the native boundary in [native_abi.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/include/goat/native_abi.h) and [c_generation.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/c_generation.c).
 
 A practical route is to reproduce a program in the VM, inspect the relevant signature's log, inspect generated C, and only then read the execution report. Support at one step does not prove the next. Chapters 5–7, 9, 16–20, and 22–26 give the matrix's detailed foundations.

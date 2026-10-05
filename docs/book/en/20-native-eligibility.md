@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/20-native-eligibility.md) · [Previous chapter](19-effects-and-purity.md) · [Next chapter](21-ast-transformations.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-20-1"></a>
 
@@ -18,7 +18,7 @@ These checks precede C generation. `supported` means proven membership in the cu
 
 ## 20.2. The numeric contract
 
-[c_contract.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/c_contract.c) classifies parameters and results. `integer` maps to `int64`, and `real` to `double`. `numeric` is insufficient: it combines two representations rather than selecting one. `TOP`, `not null`, and `BOTTOM` likewise specify no required concrete interface.
+[c_contract.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/c_contract.c) classifies parameters and results. `integer` maps to `int64`, and `real` to `double`. `numeric` is insufficient: it combines two representations rather than selecting one. `TOP`, `not null`, and `BOTTOM` likewise specify no required concrete interface.
 
 Strings, booleans, and other known nonnumeric types are outside the current external contract. A boolean may nevertheless exist inside a body, for example as a comparison result. Call-boundary restrictions differ from internal-computation restrictions.
 
@@ -31,7 +31,7 @@ Purity is checked, followed by captures. An immutable reference to a statically 
 
 ## 20.3. Proof at an expression point
 
-[c_expression.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/c_expression.c) records a node's C representation, possible constant, and `discardable` flag—whether its evaluation may be removed. Records belong to a particular signature. A declaration summary such as `[0..20]` cannot replace one.
+[c_expression.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/c_expression.c) records a node's C representation, possible constant, and `discardable` flag—whether its evaluation may be removed. Records belong to a particular signature. A declaration summary such as `[0..20]` cannot replace one.
 
 If one node is visited with incompatible representations, its proof becomes `unknown`. A constant survives only if observations agree. Signed zero matters; `NaN` is not accepted as a stable constant by this equality check. This is a stricter task than comparing lattice descriptions.
 
@@ -41,14 +41,16 @@ A permitted result does not yet permit removing the expression. Assignment and c
 
 ## 20.4. Locals and the complete body
 
-[c_body.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/c_body.c) reanalyzes a specialization and checks body syntax. Each local declaration receives one representation: `int64`, `double`, or `bool`. Every write must agree with it. Parameters already have fixed representations from the signature.
+[c_body.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/c_body.c) reanalyzes a specialization and checks body syntax. Each local declaration receives one representation: `int64`, `double`, or `bool`. Every write must agree with it. Parameters already have fixed representations from the signature.
 
-Supported constructs include numeric literals, suitable local-variable reads, unary `+` and `-`, `+`, `-`, `*`, numeric comparisons, local declarations and assignments, branches, numeric returns, and proven static calls. Individual node methods also check operands and context; an operator-name list cannot replace these conditions.
+Supported constructs include numeric literals, suitable local-variable reads, unary `+` and `-`, `+`, `-`, `*`, numeric comparisons, local declarations and assignments, numeric `++`/`--`, branches, `for` loops, numeric returns, and proven static calls. Individual node methods also check operands and context; an operator-name list cannot replace these conditions.
 
 Checking covers the body, rather than only expressions successfully visited in one run. `if` has a specific allowance: if its condition is proven constant and discardable in this specialization, checking the chosen branch suffices. An arbitrary unvisited branch cannot simply be ignored.
 
 > [!CAUTION]
-> This revision's native subset has no general execution of `/`, `%`, `**`, logical and bitwise operators, `++`/`--`, `try/catch`, `throw`, closure creation, or arbitrary objects. Eliminating an unreachable branch and folding a constant are separate transformations; they do not constitute general operator support.
+> This revision's native subset has no general execution of `/`, `%`, `**`, logical and bitwise operators, `try/catch`, `throw`, closure creation, or arbitrary objects. Eliminating an unreachable branch and folding a constant are separate transformations; they do not constitute general operator support.
+
+A loop additionally needs stable representations through its back edge. All four parts must have body/expression proofs. Prefix and postfix updates are admitted only for mutable numeric parameters or locals, with their distinct old/new results preserved. Changing a local from integer to real, writing captured storage, or exceeding the loop-analysis budget prevents this route. A body that was not visited is not automatically approved.
 
 <a id="section-20-5"></a>
 

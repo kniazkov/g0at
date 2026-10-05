@@ -2,13 +2,13 @@
 
 [Contents](index.md) · [Русский](../ru/10-contexts-and-closures.md) · [Previous chapter](09-vm-and-values.md) · [Next chapter](11-memory-management.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-10-1"></a>
 
 ## 10.1. Scope becomes data
 
-In chapter 7, a scope connected a name to an AST declaration. Execution needs to store concrete values instead. This is the role of `context_t` in [context.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/context.h): a data object, a link to the previous context, and fields controlling returns or exceptions.
+In chapter 7, a scope connected a name to an AST declaration. Execution needs to store concrete values instead. This is the role of `context_t` in [context.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/context.h): a data object, a link to the previous context, and fields controlling returns or exceptions.
 
 `create_context` creates a new user-defined object. Its prototype is either an explicitly supplied environment or the caller context's data. Declarations create own properties on this object. A nested block can therefore see outer names, while its own declaration can shadow one of them.
 
@@ -18,7 +18,7 @@ There are two distinct links: `previous` leads backward through execution, while
 
 ## 10.2. What a function retains
 
-At `FUNC`, the VM creates a dynamic function object. It stores the first body instruction's address, formal parameter names, a reference to the current context's data, and an optional descriptor of native specializations. Reference counting retains the data reference. The implementation is in [function.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/function.c).
+At `FUNC`, the VM creates a dynamic function object. It stores the first body instruction's address, formal parameter names, a reference to the current context's data, and an optional descriptor of native specializations. Reference counting retains the data reference. The implementation is in [function.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/function.c).
 
 A closure is a function together with its saved lexical environment. Goat retains the environment object, rather than a snapshot of individual values or a pointer to a temporary C context structure. A write to an outer variable is therefore visible to later calls of the same function. Separate calls of a factory function create separate environments.
 
@@ -57,6 +57,8 @@ Argument evaluation remains right to left. Binding arguments to parameters proce
 Ordinary block completion differs: `LEAVE` retains the block's data object, destroys the context wrapper, and pushes the object. `RESTORE` only removes the context. These instructions are not interchangeable: they have different stack effects.
 
 Destroying a context decrements its data's reference count. It need not destroy that data immediately. If a function retains the environment, the values remain available after the call that created them returns.
+
+A `for` loop owns one context for header bindings and creates a nested body context per iteration. Retaining a closure over a body-local variable retains that iteration's object; retaining the header counter observes its later updates. A body written without braces receives the same nested scope. Return and exception handling unwind these contexts through their existing runtime paths.
 
 <a id="section-10-5"></a>
 
@@ -106,7 +108,7 @@ The recursive `factorial` finds its own name through the environment. Each call 
 
 ## 10.6. Processes and threads in this implementation
 
-[process.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/process.c) creates a process with an identifier, object lists, and one main thread. [thread.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/thread.c) creates a thread with a current context, stack, instruction index, auxiliary operands, and exception state. The thread also holds native-attempt counters.
+[process.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/process.c) creates a process with an identifier, object lists, and one main thread. [thread.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/thread.c) creates a thread with a current context, stack, instruction index, auxiliary operands, and exception state. The thread also holds native-attempt counters.
 
 Thread links form a circular list. After an instruction, the VM loop selects `thread->next`. With one thread, this is the same thread again. These are the internal structures through which execution and garbage collection operate.
 

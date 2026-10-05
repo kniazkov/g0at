@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/24-library-compilation-and-loading.md) · [Previous chapter](23-native-abi.md) · [Next chapter](25-native-dispatch-and-vm-fallback.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-24-1"></a>
 
@@ -12,7 +12,7 @@ C compilation is a separate operation performed by an external tool. Goat prepar
 
 There are two related scenarios. `--save-library` saves a library beside the source without running the Goat program. Native-execution preparation builds a library in a temporary workspace, loads and validates it, then binds it to bytecode. Successfully creating a file does not by itself establish that it is suitable for that bytecode.
 
-Preparation is coordinated by [native_pipeline.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen/native_pipeline.c); saved C and library output is handled by [c_output.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/c_output.c).
+Preparation is coordinated by [native_pipeline.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/native_pipeline.c); saved C and library output is handled by [c_output.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/c_output.c).
 
 <a id="section-24-2"></a>
 
@@ -20,7 +20,7 @@ Preparation is coordinated by [native_pipeline.c](https://github.com/kniazkov/g0
 
 The executable comes from a nonempty `CC` environment variable; otherwise Linux uses `cc` and Windows uses `gcc`. `CC` specifies one executable name or path, not a command string with additional flags.
 
-On Linux, [native_compiler_linux.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen/native_compiler_linux.c) calls `posix_spawnp` with an argument array. On Windows, [native_compiler_windows.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen/native_compiler_windows.c) locates the program through `SearchPathA`, constructs a quoted command line, and calls `CreateProcessA`. No command shell is started to interpret the arguments.
+On Linux, [native_compiler_linux.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/native_compiler_linux.c) calls `posix_spawnp` with an argument array. On Windows, [native_compiler_windows.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/native_compiler_windows.c) locates the program through `SearchPathA`, constructs a quoted command line, and calls `CreateProcessA`. No command shell is started to interpret the arguments.
 
 | Purpose | Linux | Windows / MinGW |
 |---|---|---|
@@ -67,7 +67,7 @@ Linux obtains an absolute path and calls `dlopen` with `RTLD_NOW | RTLD_LOCAL`: 
 
 The native pipeline checks the entire expected inventory before installing bindings. If binding fails, already installed bindings are cleared. A `ready` state requires at least one bound function.
 
-A function descriptor (a structure referring to its specializations) retains the library. Function objects and bytecode can retain descriptors. Releasing the final reference unloads the library and then cleans up its workspace. An adapter pointer must therefore not outlive the machine code containing it. Shared ownership logic is in [native_library.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/native_library.c); platform code is in [native_library_linux.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/native_library_linux.c) and [native_library_windows.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/native_library_windows.c).
+A function descriptor (a structure referring to its specializations) retains the library. Function objects and bytecode can retain descriptors. Releasing the final reference unloads the library and then cleans up its workspace. An adapter pointer must therefore not outlive the machine code containing it. Shared ownership logic is in [native_library.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/native_library.c); platform code is in [native_library_linux.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/native_library_linux.c) and [native_library_windows.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/native_library_windows.c).
 
 > [!CAUTION]
 > Loading is not a sandbox (an isolated execution environment). Library initializers may execute before ABI-table validation. The compiler and loaded code must be trusted. Current Windows path operations and system messages use the `A` API variants; full support for all Unicode paths and correct UTF-8 for every localized error is not provided.
@@ -97,4 +97,4 @@ Copy-Item .\docs\book\examples\22-native-module.goat .\build\book-native\module.
 
 The saved library is named `module.dll` here. Both platforms should produce `7`, `6`, `4.0`, followed by a report with `preparation=ready`. Compiler-start failure, compilation failure, and loading failure are different stages; an exact status and diagnostic are more useful than merely saying that native code does not work.
 
-External-tool behavior and output preservation are checked by [check_native_library.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_native_library.sh); Windows cases, including linking, by [check_native_windows.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_native_windows.sh); complete preparation by [check_native_pipeline.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_native_pipeline.sh).
+External-tool behavior and output preservation are checked by [check_native_library.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_library.sh); Windows cases, including linking, by [check_native_windows.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_windows.sh); complete preparation by [check_native_pipeline.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_pipeline.sh).

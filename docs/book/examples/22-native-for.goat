@@ -1,0 +1,7 @@
+const sum = func(n) {
+    var result = 0;
+    for (var i = 0; i < n; i++) result = result + i;
+    return result;
+};
+println(sum(10));
+println(sum(5000));

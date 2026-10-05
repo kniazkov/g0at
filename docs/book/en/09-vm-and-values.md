@@ -2,13 +2,13 @@
 
 [Contents](index.md) · [Русский](../ru/09-vm-and-values.md) · [Previous chapter](08-bytecode-generation.md) · [Next chapter](10-contexts-and-closures.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-9-1"></a>
 
 ## 9.1. An executor that reads instructions
 
-After generation, the VM no longer has the source tree. It receives a `bytecode_t` and a process holding execution state. The main loop in [vm.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/vm.c) takes the instruction index from `thread->instr_id`, checks bounds, selects a handler by `opcode`, and calls it. The handler table matches the opcode enumeration.
+After generation, the VM no longer has the source tree. It receives a `bytecode_t` and a process holding execution state. The main loop in [vm.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/vm.c) takes the instruction index from `thread->instr_id`, checks bounds, selects a handler by `opcode`, and calls it. The handler table matches the opcode enumeration.
 
 An ordinary handler advances the instruction index. A jump writes another index; calls and returns change it along with the context. The loop therefore does not perform an unconditional `instr_id++`: that would skip the first instruction after a jump. `END` stops execution. An invalid address or unknown opcode produces a diagnostic and a nonzero status.
 
@@ -18,7 +18,7 @@ This loop performs dispatch (selecting an action by its operation code). Goat im
 
 ## 9.2. The stack holds object pointers
 
-[object_stack.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/object_stack.c) implements a growing array of `object_t *`. Its initial capacity is 128 elements, doubling when full. The value `3` is not stored in a stack cell as an embedded integer: the cell refers to an object representing the number.
+[object_stack.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/object_stack.c) implements a growing array of `object_t *`. Its initial capacity is 128 elements, doubling when full. The value `3` is not stored in a stack cell as an embedded integer: the cell refers to an object representing the number.
 
 `push` and `pop` do not themselves increment or decrement reference counts. They transfer ownership of a reference between their caller and the stack. The VM's `POP` instruction does remove a value and call `DECREF`. `DUP` creates a second owning reference and first calls `INCREF`. This distinction explains why mechanically inserting another `push` can break memory management.
 
@@ -28,7 +28,7 @@ Operations check that the stack contains enough values. Breaking this internal c
 
 ## 9.3. A shared header, different contents
 
-[object.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/object.h) defines the common object structure and `object_vtbl_t`, a method table (addresses of C functions implementing value operations). Concrete types add fields and select their methods.
+[object.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/object.h) defines the common object structure and `object_vtbl_t`, a method table (addresses of C functions implementing value operations). Concrete types add fields and select their methods.
 
 | Value | Representation and behavior |
 |---|---|
@@ -52,7 +52,7 @@ A binary-operation handler pops two objects, passes them to the appropriate meth
 
 Thus, `ADD` need not itself know every form of addition. Numeric methods implement arithmetic, while the string method joins a string with the right operand's text representation. Model methods return an appropriate error result for unsupported operations.
 
-The language rules remain those from chapter 2: integer arithmetic uses its specified overflow behavior, and dividing two integers may return a real when the quotient is fractional. This follows the principle of least surprise: `3 / 2` preserves its fractional part. Mixed comparisons have special precision checks; describing them as unconditional conversion of both numbers to `double` would be incorrect. Implementations are in [integer.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/real.c), and [string.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/string.c).
+The language rules remain those from chapter 2: integer arithmetic uses its specified overflow behavior, and dividing two integers may return a real when the quotient is fractional. This follows the principle of least surprise: `3 / 2` preserves its fractional part. Mixed comparisons have special precision checks; describing them as unconditional conversion of both numbers to `double` would be incorrect. Implementations are in [integer.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/real.c), and [string.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/string.c).
 
 <a id="section-9-5"></a>
 
@@ -90,7 +90,7 @@ The braces in the final source line form a block expression. `ENTER` creates a c
 
 ## 9.6. Properties and prototypes
 
-A prototype is an object in which inherited properties can be sought. A user-defined object stores its own properties in an AVL tree, its keys, and references to prototypes. It precomputes a topology (an ordered list of objects to search next) for ancestor traversal. Building it accounts for shared ancestors. The code is in [user_defined_object.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/user_defined_object.c).
+A prototype is an object in which inherited properties can be sought. A user-defined object stores its own properties in an AVL tree, its keys, and references to prototypes. It precomputes a topology (an ordered list of objects to search next) for ancestor traversal. Building it accounts for shared ancestors. The code is in [user_defined_object.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/user_defined_object.c).
 
 When loading a variable, the VM first requests an own property of the current context's data object, then checks ancestors in topology order. If no property is found, the result is `null`. When writing, `STORE` looks for an existing writable location; an attempt to modify a constant raises an exception. If no suitable property exists, it creates a local one.
 

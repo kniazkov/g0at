@@ -2,7 +2,7 @@
 
 [Оглавление](index.md) · [English](../en/appendix-a-terminology.md) · [Назад](29-performance-measurement.md) · [Далее](appendix-b-language.md)
 
-Редакция 2. Описываемая реализация: [commit 8d1fe86, с функцией `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Редакция 3. Описываемая реализация: [commit cf51b8c, с оператором `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 Словарь фиксирует употребление терминов в этой книге. Английские имена структур и флагов в исходниках сохраняются без перевода. Одинаковое слово «сводка» не делает сводку объявления и доказательство специализации одной структурой.
 

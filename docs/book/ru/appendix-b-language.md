@@ -2,7 +2,7 @@
 
 [Оглавление](index.md) · [English](../en/appendix-b-language.md) · [Назад](appendix-a-terminology.md) · [Далее](appendix-c-vm-instructions.md)
 
-Редакция 2. Описываемая реализация: [commit 8d1fe86, с функцией `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Редакция 3. Описываемая реализация: [commit cf51b8c, с оператором `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-b-1"></a>
 
@@ -13,7 +13,12 @@
 Функция записывается как `func(a, b) { ... }`, вызов — `f(a, b)`, возврат — `return e;` или `return;`. Без явного возврата результат равен `null`. Условие — `if (e) statement` с необязательным `else`. Исключение — `throw e;`, обработчик — `try statement catch (name) { ... }`. Блок `{ ... }` является выражением, возвращающим объект своего контекста. Разделители `;` делают границы явными; перевод строки сам по себе не является правилом завершения инструкции.
 
 > [!CAUTION]
-> Нет общего синтаксиса массивов, доступа `obj.name` / `obj[key]`, циклов `while` / `for`, вызова `f()()` и системы импортов. Объект `Exceptions` доступен как значение, но запись `Exceptions.INVALID_ARGUMENT` не является поддержанным доступом к свойству. Имена ошибок ниже обозначают обычные строки, которые реально выдаёт VM.
+> Нет общего синтаксиса массивов, доступа `obj.name` / `obj[key]`, циклов `while` / `do/while`, вызова `f()()` и системы импортов. Объект `Exceptions` доступен как значение, но запись `Exceptions.INVALID_ARGUMENT` не является поддержанным доступом к свойству. Имена ошибок ниже обозначают обычные строки, которые реально выдаёт VM.
+
+`for (initial; condition; step) statement` выполняет инициализацию один раз и проверяет условие перед каждой итерацией. После успешной проверки выполняются тело и шаг. Инициализация принимает одно выражение или объявление `var`/`const`, в том числе нескольких переменных; условие и шаг принимают по одному выражению. Любую часть можно пропустить, но обе точки с запятой обязательны. Пропущенное условие истинно; `;` обозначает пустое тело. Объявления заголовка имеют область цикла, а тело получает свежую вложенную область на каждой итерации. Возврат и исключение пропускают остаток тела и шаг. Примеры приведены в [главе 2](02-implemented-language.md).
+
+> [!CAUTION]
+> `break`, `continue` и последовательности выражений через запятую не реализованы. Эти слова не предоставляют операций управления циклом.
 
 <a id="section-b-2"></a>
 
@@ -39,7 +44,7 @@
 | 14 | `\|\|` | Слева направо; короткое замыкание |
 | 15 | `=` | Справа налево |
 
-Степень требует оговорки: `-2 ** 2` означает `-(2 ** 2)`, но `2 ** -2` тоже допустимо. Цепочка `2 ** 3 ** 2` означает `2 ** (3 ** 2)`. Реальный порядок проходов и разбор префиксов находятся в [parser.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/parser/parser.c) и [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/parser/parsing_unary_operations.c).
+Степень требует оговорки: `-2 ** 2` означает `-(2 ** 2)`, но `2 ** -2` тоже допустимо. Цепочка `2 ** 3 ** 2` означает `2 ** (3 ** 2)`. Реальный порядок проходов и разбор префиксов находятся в [parser.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parser.c) и [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parsing_unary_operations.c).
 
 <a id="section-b-3"></a>
 
@@ -77,4 +82,4 @@
 
 Ошибки разбора, нативного ABI и аварийная проверка пустого стека не являются этими исключениями языка. Лексические ограничения вынесены в главу 5, границы реализации — в приложение Ж.
 
-Основные источники: [integer.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/real.c), [string.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/string.c), [common_methods.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/common_methods.c), [bitwise.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/lib/bitwise.h), [exceptions.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/exceptions.c). Примеры в главах 2, 6, 9 и 12 показывают исполняемые случаи этих правил.
+Основные источники: [integer.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/real.c), [string.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/string.c), [common_methods.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/common_methods.c), [bitwise.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/lib/bitwise.h), [exceptions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/exceptions.c). Примеры в главах 2, 6, 9 и 12 показывают исполняемые случаи этих правил.

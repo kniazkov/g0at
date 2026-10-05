@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-e-launch-interfaces.md) · [Previous](appendix-d-builtins.md) · [Next](appendix-f-implementation-map.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-e-1"></a>
 
@@ -12,7 +12,7 @@ Revision 2. Implementation described: [commit 8d1fe86, including `println`](http
 goat [options] <input_file> [script arguments...]
 ```
 
-Options are also recognized after the input filename. Option values are separate arguments; `--native=auto` is not supported. The first non-option word becomes the input path; subsequent words are retained as script arguments. Parsing is implemented in [options.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/options.c).
+Options are also recognized after the input filename. Option values are separate arguments; `--native=auto` is not supported. The first non-option word becomes the input path; subsequent words are retained as script arguments. Parsing is implemented in [options.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/options.c).
 
 > [!CAUTION]
 > The `--` separator is not implemented. The retained script-argument list is not yet exposed to the program through a dedicated built-in interface. `--help` prints help, but current `main` returns nonzero because option parsing returns `NULL`; automation should account for this.
@@ -71,4 +71,4 @@ Program output and `--print-*` use stdout. Diagnostics use stderr. `--save-analy
 
 Native reports contain `key=value` lines. Keys are `mode`, `preparation`, `bound`, `omitted`, `attempts`, `succeeded`, and `retries`. Preparation states are `disabled`, `ready`, `empty`, `io-error`, `compile-error`, `load-error`, and `bind-error`; separate execution with a damaged library uses `load-error`. `bound` counts functions; `omitted` counts rejected generator candidates; the other three numbers count adapter-entry attempts, successful adapter completions, and VM retries. They do not count every internal machine-code call.
 
-Ordinary success returns 0; launch, compilation, and execution errors return nonzero, normalized by `main` through `EXIT_FAILURE`. Chapter 27 describes the Graphviz exception. Sources: [main.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/main.c), [launcher.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/launcher.c), [native_execution.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/native_execution.c), [binary_program.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/binary_program.c), [messages.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/resources/messages.c). Option checks: [test_native_options.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_native_options.c).
+Ordinary success returns 0; launch, compilation, and execution errors return nonzero, normalized by `main` through `EXIT_FAILURE`. Chapter 27 describes the Graphviz exception. Sources: [main.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/main.c), [launcher.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/launcher.c), [native_execution.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/native_execution.c), [binary_program.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/binary_program.c), [messages.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/resources/messages.c). Option checks: [test_native_options.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_native_options.c).

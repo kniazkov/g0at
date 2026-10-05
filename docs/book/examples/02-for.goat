@@ -1,0 +1,6 @@
+var sum = 0;
+for (var i = 0; i < 5; i++) sum = sum + i;
+println(sum);
+for (var row = 0; row < 2; row++)
+    for (var column = 0; column < 2; column++)
+        println(row * 10 + column);

@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-a-terminology.md) · [Previous](29-performance-measurement.md) · [Next](appendix-b-language.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 This glossary fixes terminology used in the book. English structure and flag names remain unchanged in source references. Sharing the word “summary” does not make a declaration summary and a specialization proof the same structure.
 

@@ -39,10 +39,20 @@ println(add_two(3));
 
 Output: `5`, followed by a newline. See the [book examples](docs/book/examples) and [functional tests](test/functional) for more programs.
 
-Goat supports dynamically typed values, lexical scopes, functions and recursion, conditional branches, block-based objects, exceptions, and mathematical and input/output built-ins. Static analysis tracks approximate values, function calls, effects, and numeric specializations. Eligible functions can be translated to C and executed as machine code through a shared library (native execution).
+A C-style loop uses the same values and scopes:
+
+```text
+var sum = 0;
+for (var i = 0; i < 5; i++) sum = sum + i;
+println(sum);
+```
+
+This prints `10`. Header slots can be empty; the body may be a single statement or a block. [Chapter 2](docs/book/en/02-implemented-language.md) describes scope and control flow; [chapter 22](docs/book/en/22-c-code-generation.md) shows a native numeric loop.
+
+Goat supports dynamically typed values, lexical scopes, functions and recursion, conditional branches, C-style `for` loops, block-based objects, exceptions, and mathematical and input/output built-ins. Static analysis tracks approximate values, function calls, effects, and numeric specializations. Eligible functions can be translated to C and executed as machine code through a shared library (native execution).
 
 > [!CAUTION]
-> Goat is an experimental implementation. There is no loop syntax, array indexing, property-access syntax, or module import syntax. Native generation covers a restricted numeric subset; the VM executes other supported language constructs. The book marks implementation limitations with red callouts.
+> Goat is an experimental implementation. There is no `while`, `break`, `continue`, array indexing, property-access syntax, or module import syntax. Native generation covers a restricted numeric subset; the VM executes other supported language constructs. The book marks implementation limitations with red callouts.
 
 ## Build and run
 

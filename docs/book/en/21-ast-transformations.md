@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/21-ast-transformations.md) · [Previous chapter](20-native-eligibility.md) · [Next chapter](22-c-code-generation.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-21-1"></a>
 
@@ -10,7 +10,7 @@ Revision 2. Implementation described: [commit 8d1fe86, including `println`](http
 
 Analysis may know that `2 + 3` equals `5`. Optimization takes the next step: replacing the expression with a number node. This changes program representation, so a pleasing log result is insufficient. Return values, effect order, exceptions, and possible nontermination must be preserved.
 
-In [analysis.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/analysis.c), transformations follow function analysis, reachability, and property classification. With `--optimize none`, analysis ends after name binding; these optimizing passes do not run. Comparing the two modes therefore exposes the optimizer's changes.
+In [analysis.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/analysis.c), transformations follow function analysis, reachability, and property classification. With `--optimize none`, analysis ends after name binding; these optimizing passes do not run. Comparing the two modes therefore exposes the optimizer's changes.
 
 The shared AST still represents the program for all its valid calls. Properties of one native specialization do not permit changing it as though other types or arguments did not exist.
 
@@ -18,9 +18,9 @@ The shared AST still represents the program for all its valid calls. Properties 
 
 ## 21.2. An unreachable path and an unnecessary computation
 
-[reachability.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/reachability.c) marks subtrees that do not execute on a proven path. In an `if` with known truthiness, one branch can disappear from bytecode. But evaluating the condition itself cannot always be removed.
+[reachability.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/reachability.c) marks subtrees that do not execute on a proven path. In an `if` with known truthiness, one branch can disappear from bytecode. But evaluating the condition itself cannot always be removed.
 
-If a condition prints a line and returns false, falsity does not cancel the print. The generator in [if_else.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/graph/if_else.c) can retain a nonliteral condition's evaluation, discard its result with `POP`, and keep only the chosen branch. For `ABSTRACT_NEVER`, evaluating the condition itself remains: it has no normal continuation.
+If a condition prints a line and returns false, falsity does not cancel the print. The generator in [if_else.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/if_else.c) can retain a nonliteral condition's evaluation, discard its result with `POP`, and keep only the chosen branch. For `ABSTRACT_NEVER`, evaluating the condition itself remains: it has no normal continuation.
 
 Replacing the entire `if` with its chosen branch requires something stronger: the condition must be safely discardable. `can_discard_expression` is deliberately separate from knowing truthiness.
 
@@ -28,7 +28,7 @@ Replacing the entire `if` with its chosen branch requires something stronger: th
 
 ## 21.3. Constant folding
 
-[simplification.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/simplification.c) visits children before parents. If a scalar expression has a proven value and its computation can be replaced, a corresponding literal is created. Integer and real values go directly to node constructors, without printing and reparsing.
+[simplification.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/simplification.c) visits children before parents. If a scalar expression has a proven value and its computation can be replaced, a corresponding literal is created. Integer and real values go directly to node constructors, without printing and reparsing.
 
 Purity and subtree composition are checked. Calls, function creation, and object blocks are not accepted as arbitrarily discardable scalar operations. A call can throw or diverge even if all its normal returns produce one constant.
 
@@ -40,13 +40,13 @@ If no constant is proven or the path has ended, no literal is created. Optimizat
 
 ## 21.4. The original does not disappear
 
-A replacement is stored in a special node from [replacement.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/graph/replacement.c). It links the original and resulting representations. Execution and generation use the result; the original structure remains available for restoration and history display.
+A replacement is stored in a special node from [replacement.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/replacement.c). It links the original and resulting representations. Execution and generation use the result; the original structure remains available for restoration and history display.
 
 This is not a deep copy of the whole tree: subtrees may be shared. Parent links follow the executable structure, and historical links must not be treated as additional ownership of independent node copies. The arena still owns memory.
 
 Before another analysis, `restore_graph` puts originals back in place of replacements and repairs parent links. Previous facts are then reset, and scopes and summaries are rebuilt. Otherwise, reanalysis could mistake an earlier optimization result for the original program and lose alternative paths.
 
-[test_replacement.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_replacement.c) checks these contracts, including restoration. A correct first-run result does not prove repeated processing of the same graph is correct.
+[test_replacement.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_replacement.c) checks these contracts, including restoration. A correct first-run result does not prove repeated processing of the same graph is correct.
 
 <a id="section-21-5"></a>
 
@@ -118,7 +118,7 @@ From the repository root, reconstructed source can be inspected in both modes:
 
 These commands also execute the program, so its output follows the reconstructed source. Use `--print-bytecode` to compare instructions. The representations may differ; the comparison should concern preserved behavior rather than identical listings.
 
-[test_c_replacement.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_c_replacement.c) checks constant use in C representation, while functional examples compare results with and without optimization. Error cases also require attention to `stderr` and exit status, rather than only successful output.
+[test_c_replacement.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_c_replacement.c) checks constant use in C representation, while functional examples compare results with and without optimization. Error cases also require attention to `stderr` and exit status, rather than only successful output.
 
 <a id="section-21-8"></a>
 
