@@ -2,7 +2,7 @@
 
 [Оглавление](index.md) · [English](../en/appendix-g-implementation-boundaries.md) · [Назад](appendix-f-implementation-map.md) · [Далее](appendix-h-decision-history.md)
 
-Редакция 4. Описываемая реализация: [commit d8eb008, без накопительного бюджета нативного исполнения](https://github.com/kniazkov/g0at/tree/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7).
+Редакция 6. Описываемая реализация: [commit fc4af9d](https://github.com/kniazkov/g0at/tree/fc4af9d85d2a45925e9e370a1e988ccb077b056e).
 
 <a id="section-g-1"></a>
 
@@ -27,7 +27,7 @@
 | Захват изменяемых данных | Да | Замыкания | Консервативный учёт эффектов | Нет |
 | Захват const-числа | Да | Да | Учёт захвата | Нет по текущему контракту |
 | Ссылка на неизменяемую функцию | Да | Да | Разрешение статической цели | При пригодной точной сигнатуре |
-| Встроенные функции | Вызов по имени | 33 реализации | Дескриптор и абстрактный обработчик | Общих вызовов нет; свёртка отдельно |
+| Встроенные функции | Вызов по имени | 33 реализации | Дескриптор и абстрактный обработчик | Числовой `abs` с доказательством привязки; общих вызовов остальных нет |
 | try / catch / throw | Да | Да | Ограниченная модель; не полный поток исключений | Нет |
 | Блок-объект | Да | Объект контекста | Ограниченные сведения | Не как общее объектное значение |
 | Произвольные свойства и прототипы | Нет общего доступа | Есть C API модели | Не равнозначно поддержке синтаксиса | Нет |
@@ -53,6 +53,6 @@
 
 ## Ж.3. Где уточнять статус
 
-Синтаксис проверяется по [parser.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/parser/parser.c); исполняемые операции — по [vm.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/vm/vm.c) и [object.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/model/object.h); абстрактные сведения — по [lattice.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/function_call.c) и [c_body.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/c_body.c); нативная граница — по [native_abi.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/include/goat/native_abi.h) и [c_generation.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/codegen/c_generation.c).
+Синтаксис проверяется по [parser.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/parser/parser.c); исполняемые операции — по [vm.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/vm/vm.c) и [object.h](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/model/object.h); абстрактные сведения — по [lattice.h](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/function_call.c) и [c_body.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/c_body.c); нативная граница — по [native_abi.h](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/include/goat/native_abi.h) и [c_generation.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/codegen/c_generation.c).
 
 Практический маршрут: сначала воспроизвести программу в VM, затем проверить журнал нужной сигнатуры, затем полученный C и лишь после этого отчёт исполнения. Поддержка на предыдущем шаге не доказывает следующий. Подробные основания матрицы находятся в главах 5–7, 9, 16–20 и 22–26.

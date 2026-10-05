@@ -1,0 +1,7 @@
+const sum = func(n) {
+    var result = 0;
+    for (var i = -n + 1; i < n; i++)
+        result = result + abs(i);
+    return result;
+};
+println(sum(100));

@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/22-c-code-generation.md) · [Previous chapter](21-ast-transformations.md) · [Next chapter](23-native-abi.md)
 
-Revision 5. Implementation described: [commit c50dc2a, with readable generated C](https://github.com/kniazkov/g0at/tree/c50dc2af7fba16b207d01f1c88cc592f67bc82c4).
+Revision 6. Implementation described: [commit fc4af9d](https://github.com/kniazkov/g0at/tree/fc4af9d85d2a45925e9e370a1e988ccb077b056e).
 
 <a id="section-22-1"></a>
 
@@ -18,7 +18,7 @@ The inputs are the AST and the proofs from part IV. The outputs are module sourc
 
 ## 22.2. Module inventory and dependencies
 
-[c_module.c](https://github.com/kniazkov/g0at/blob/c50dc2af7fba16b207d01f1c88cc592f67bc82c4/src/codegen/c_module.c) traverses the tree while accounting for preserved original nodes. Candidates are analyzed, pure specializations marked `supported`, without blockers, and with integer or real parameters and results.
+[c_module.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/codegen/c_module.c) traverses the tree while accounting for preserved original nodes. Candidates are analyzed, pure specializations marked `supported`, without blockers, and with integer or real parameters and results.
 
 Functions receive ordinal identifiers starting at 1; specialization entries start at 0. Signatures are sorted by parameter count and types, so call-observation order does not determine output order. A name such as `g_f1_i_` denotes the first function's integer specialization; `r_` denotes a real parameter. These are generator names, not source variable names.
 
@@ -34,7 +34,7 @@ Each static call requires another module entry with the exact signature. If a de
 
 C's argument-evaluation order does not establish the order Goat requires. The generator therefore cannot merely copy an expression into a string. An expression representation contains its type, value text, and a *prelude*: actions to perform before using that value.
 
-[c_arithmetic.c](https://github.com/kniazkov/g0at/blob/c50dc2af7fba16b207d01f1c88cc592f67bc82c4/src/codegen/c_arithmetic.c) transfers those actions into the surrounding sequence and saves operands in temporaries named `g_t0`, `g_t1`, and so on. Binary arithmetic evaluates the left operand before the right. [c_call.c](https://github.com/kniazkov/g0at/blob/c50dc2af7fba16b207d01f1c88cc592f67bc82c4/src/codegen/c_call.c) handles arguments right to left; the C call itself receives already evaluated temporaries in parameter order. Extra arguments are also evaluated, although the called function does not use them.
+[c_arithmetic.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/codegen/c_arithmetic.c) transfers those actions into the surrounding sequence and saves operands in temporaries named `g_t0`, `g_t1`, and so on. Binary arithmetic evaluates the left operand before the right. [c_call.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/codegen/c_call.c) handles arguments right to left; the C call itself receives already evaluated temporaries in parameter order. Extra arguments are also evaluated, although the called function does not use them.
 
 Each local has one proven representation: `int64_t`, `double`, or `bool`. Declarations and assignments preserve it. A condition becomes a branch; `return` returns the required numeric type. The generator uses proofs for the particular specialization and accepts an optimized AST replacement only where it agrees with those proofs.
 
@@ -46,7 +46,7 @@ Signed C overflow cannot implement Goat overflow: it is undefined behavior in C.
 
 Real computations require binary64 (a 64-bit representation with 53 significant binary digits). Finite constants are emitted as exact hexadecimal C literals, including signed zero. Intermediate values are stored in `volatile double` so that rounding occurs at the intended operation boundaries. Compilation disables fast-math and multiplication/addition contraction; the source also rejects `__FAST_MATH__`.
 
-An integer/real comparison cannot always be reduced to converting the integer to `double`: a large integer may round. [c_control.c](https://github.com/kniazkov/g0at/blob/c50dc2af7fba16b207d01f1c88cc592f67bc82c4/src/codegen/c_control.c) emits helpers that preserve the distinction and also handle `NaN`, infinities, and range boundaries.
+An integer/real comparison cannot always be reduced to converting the integer to `double`: a large integer may round. [c_control.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/codegen/c_control.c) emits helpers that preserve the distinction and also handle `NaN`, infinities, and range boundaries.
 
 File [22-numeric-semantics.goat](../examples/22-numeric-semantics.goat):
 
@@ -77,9 +77,9 @@ The last line follows from argument order: the right assignment produces `1`, th
 
 ## 22.5. A complete function or a failure
 
-[c_generation.c](https://github.com/kniazkov/g0at/blob/c50dc2af7fba16b207d01f1c88cc592f67bc82c4/src/codegen/c_generation.c) builds a function in a private buffer. If it encounters an unsupported node, lacks a proof, or cannot finish the body with a valid return, partial text never reaches the module. The reason and first failing node are retained.
+[c_generation.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/codegen/c_generation.c) builds a function in a private buffer. If it encounters an unsupported node, lacks a proof, or cannot finish the body with a valid return, partial text never reaches the module. The reason and first failing node are retained.
 
-[c_module_output.c](https://github.com/kniazkov/g0at/blob/c50dc2af7fba16b207d01f1c88cc592f67bc82c4/src/codegen/c_module_output.c) then also removes dependent functions. Successful independent specializations remain available. Generation is transactional at function level: publication follows successful completion, rather than the first successfully emitted line.
+[c_module_output.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/codegen/c_module_output.c) then also removes dependent functions. Successful independent specializations remain available. Generation is transactional at function level: publication follows successful completion, rather than the first successfully emitted line.
 
 > [!CAUTION]
 > The supported numeric subset is the one in [chapter 20](20-native-eligibility.md): literals, locals, `+`, `-`, `*`, numeric comparisons, `++`/`--`, branches, `for` loops, returns, and proven static calls. General generation of division, strings, objects, exceptions, and closures is absent. A function definition is additionally rejected when its combined count of parameters, locals, and temporaries exceeds 128. This bounds the frame before the native stack check.
@@ -88,7 +88,7 @@ The omitted-specialization counter describes candidates rejected while forming t
 
 ### Lowering a loop
 
-[`c_emit_for`](https://github.com/kniazkov/g0at/blob/c50dc2af7fba16b207d01f1c88cc592f67bc82c4/src/codegen/c_control.c) emits a C scope, local storage, the initializer, and a repeated block. Condition setup stays inside that block, followed by a false-condition exit, the body, and step setup. It is not moved before the loop: a call or assignment in the condition must execute on each check. Nested body scopes keep their own storage. Integer updates use the same wrapping helpers as addition and subtraction; real updates round through a `volatile double` temporary. Postfix update keeps a separate copy of the old value.
+[`c_emit_for`](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/codegen/c_control.c) emits a C scope, local storage, the initializer, and a repeated block. Condition setup stays inside that block, followed by a false-condition exit, the body, and step setup. It is not moved before the loop: a call or assignment in the condition must execute on each check. Nested body scopes keep their own storage. Integer updates use the same wrapping helpers as addition and subtraction; real updates round through a `volatile double` temporary. Postfix update keeps a separate copy of the old value.
 
 Loop iterations and sequential function calls have no cumulative execution budget. A long loop remains native regardless of its iteration count. Calls inside the loop still check simultaneous call depth and stack distance under the policy of chapter 25.
 
@@ -105,6 +105,25 @@ println(sum(5000));
 ```
 
 `./goat --native required --print-native docs/book/examples/22-native-for.goat` prints `45` and `12497500`. With sufficient stack headroom, the report has two successful native entries and no retries. Neither loop is limited by its iteration count. In PowerShell, use `.\goat.exe` in place of `./goat`.
+
+### The built-in absolute value
+
+[Example](../examples/22-native-abs.goat):
+
+```goat
+const sum = func(n) {
+    var result = 0;
+    for (var i = -n + 1; i < n; i++)
+        result = result + abs(i);
+    return result;
+};
+println(sum(100));
+```
+
+With `--native required`, the example prints `9900`; `sum` executes natively. The integer operation selects the argument or its wrapping negation. Consequently, `abs(INT64_MIN)` still equals `INT64_MIN`. The real operation uses C `fabs`: negative zero becomes positive zero, infinity becomes positive infinity, and NaN remains NaN. All arguments are evaluated right to left, including unused extra arguments. No separate native adapter is generated for the built-in.
+
+> [!CAUTION]
+> This support is specific to the proven original `abs`. Mutable aliases, unresolved targets, missing or nonnumeric arguments do not gain a native implementation through this rule. Other built-ins still lack general native calls; constant folding is a separate mechanism.
 
 <a id="section-22-6"></a>
 
@@ -142,4 +161,4 @@ cp docs/book/examples/22-native-module.goat build/book-native/module.goat
 
 This creates `module.c` beside the source. Look for integer and real specializations of both functions, temporaries, forward declarations, and adapters. `calculate` calls the typed C function for `twice` directly; no ABI packing is needed between these two functions.
 
-Body lowering is implemented in [c_lowering.c](https://github.com/kniazkov/g0at/blob/c50dc2af7fba16b207d01f1c88cc592f67bc82c4/src/codegen/c_lowering.c). Numeric-semantics and module-inventory checks are in [check_c_generation.sh](https://github.com/kniazkov/g0at/blob/c50dc2af7fba16b207d01f1c88cc592f67bc82c4/scripts/check_c_generation.sh) and [check_c_module.sh](https://github.com/kniazkov/g0at/blob/c50dc2af7fba16b207d01f1c88cc592f67bc82c4/scripts/check_c_module.sh). The next chapter explains the adapter code surrounding the computations themselves.
+Body lowering is implemented in [c_lowering.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/codegen/c_lowering.c). Numeric-semantics and module-inventory checks are in [check_c_generation.sh](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/scripts/check_c_generation.sh) and [check_c_module.sh](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/scripts/check_c_module.sh). The next chapter explains the adapter code surrounding the computations themselves.
