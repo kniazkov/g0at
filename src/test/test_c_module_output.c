@@ -42,12 +42,17 @@ bool test_c_module_output(void) {
     ASSERT(module->count == 2 && module->available_count == 2);
     c_module_output_t first = generate_c_module(arena, module);
     ASSERT(first.generated_count == 2 && !first.omitted_count && !first.failures);
-    ASSERT(wcsstr(first.source.data, L"int64_t goat_f1_i_(int64_t);"));
-    ASSERT(wcsstr(first.source.data, L"double goat_f1_r_(double);"));
+    ASSERT(wcsstr(first.source.data, L"int64_t g_f1_i_(int64_t);"));
+    ASSERT(wcsstr(first.source.data, L"double g_f1_r_(double);"));
+    ASSERT(wcsstr(first.source.data, L"/* Goat function: f(n)"));
+    ASSERT(wcsstr(first.source.data, L"\n\n/* Goat function:"));
+    ASSERT(wcsstr(first.source.data, L"\n\n/* Native ABI adapter for g_f1_i_. */"));
+    ASSERT(wcsstr(first.source.data, L"goat_native_query_v1(uint32_t version)"));
+    ASSERT(!wcsstr(first.source.data, L"goat_guard") && !wcsstr(first.source.data, L"goat_t0"));
     const wchar_t *header = wcsstr(first.source.data, L"#include <stdint.h>");
     ASSERT(header && !wcsstr(header + 1, L"#include <stdint.h>"));
-    const wchar_t *helper = wcsstr(first.source.data, L"static inline int64_t goat_i64_bits");
-    ASSERT(helper && !wcsstr(helper + 1, L"static inline int64_t goat_i64_bits"));
+    const wchar_t *helper = wcsstr(first.source.data, L"static inline int64_t g_i64_bits");
+    ASSERT(helper && !wcsstr(helper + 1, L"static inline int64_t g_i64_bits"));
     function_summary_set_t *set = get_function_summaries(module->head->summary->function);
     function_summary_t *a = set->head, *b = a->next;
     ASSERT(b && !b->next);
@@ -77,12 +82,12 @@ bool test_c_module_output(void) {
     first = generate_c_module(arena, module);
     ASSERT(first.generated_count == 1 && first.omitted_count == 3);
     ASSERT(!wcsstr(first.source.data, L"partial definition"));
-    ASSERT(!wcsstr(first.source.data, L"goat_adapter_0(")
-           && !wcsstr(first.source.data, L"goat_adapter_1(")
-           && !wcsstr(first.source.data, L"goat_adapter_2(")
-           && wcsstr(first.source.data, L"goat_adapter_3("));
-    ASSERT(!wcsstr(first.source.data, L"goat_f1_") && !wcsstr(first.source.data, L"goat_f2_")
-           && !wcsstr(first.source.data, L"goat_f3_") && wcsstr(first.source.data, L"goat_f4_i_"));
+    ASSERT(!wcsstr(first.source.data, L"g_adapter_0(")
+           && !wcsstr(first.source.data, L"g_adapter_1(")
+           && !wcsstr(first.source.data, L"g_adapter_2(")
+           && wcsstr(first.source.data, L"g_adapter_3("));
+    ASSERT(!wcsstr(first.source.data, L"g_f1_") && !wcsstr(first.source.data, L"g_f2_")
+           && !wcsstr(first.source.data, L"g_f3_") && wcsstr(first.source.data, L"g_f4_i_"));
     size_t failures = 0, propagated = 0;
     for (const c_module_failure_t *failure = first.failures; failure; failure = failure->next) {
         ASSERT(failure->status != C_GENERATION_OK && failure->failed_node);

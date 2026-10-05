@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     assert(module);
     FARPROC address = GetProcAddress(module, "goat_native_query_v1");
     assert(address);
-    assert(!GetProcAddress(module, "goat_f1_i_"));
+    assert(!GetProcAddress(module, "g_f1_i_"));
     goat_native_query_v1_t query;
     _Static_assert(sizeof(query) == sizeof(address), "Windows function pointers");
     memcpy(&query, &address, sizeof(query));

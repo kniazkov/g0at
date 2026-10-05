@@ -9,6 +9,7 @@
 #include "c_control.h"
 #include "c_locals.h"
 #include "graph/replacement.h"
+#include "graph/variable.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 
@@ -92,7 +93,7 @@ bool c_emit_return(const node_t *node,
     if (valid) {
         c_emit_prelude(expression.prelude, builder, indent);
         if (context->module_definition)
-            add_static_source(builder, indent, L"goat_guard_leave();");
+            add_static_source(builder, indent, L"g_guard_leave();");
         add_source(builder, indent, L"return %s;", expression.value.data);
     }
     context->terminates = valid;
@@ -112,6 +113,43 @@ bool c_emit_body(const node_t *node,
             generate_indented_c_code_from_node(get_node_child(node, i), context, builder, indent);
     c_release_locals(context, saved);
     return success;
+}
+
+/** @brief Identifies the original declaration without using its name as a C identifier. */
+static void function_comment(const node_t *node, source_builder_t *builder, size_t indent) {
+    const node_t *parent = node->parent;
+    while (parent && parent->vtbl->type == NODE_EXPRESSION_PARENTHESIZED)
+        parent = parent->parent;
+    string_view_t name = {L"<anonymous>", 11};
+    if (parent
+        && (parent->vtbl->type == NODE_CONSTANT_DECLARATOR
+            || parent->vtbl->type == NODE_VARIABLE_DECLARATOR))
+        name = ((const declarator_t *)parent)->name;
+    else if (parent && parent->vtbl->type == NODE_SIMPLE_ASSIGNMENT) {
+        const node_t *target = get_node_child(parent, 0);
+        if (target->vtbl->type == NODE_VARIABLE)
+            name = ((const variable_t *)target)->name;
+    }
+    string_builder_t comment;
+    init_string_builder(&comment, 64);
+    append_string(&comment, L"/* Goat function: ");
+    append_string_view(&comment, name);
+    append_char(&comment, L'(');
+    const node_t *parameters = get_node_child(node, 0);
+    for (size_t i = 0; i < get_node_child_count(parameters); i++) {
+        if (i)
+            append_string(&comment, L", ");
+        append_string_view(&comment, ((const declarator_t *)get_node_child(parameters, i))->name);
+    }
+    append_string(&comment, L")");
+    if (node->position && node->position->begin) {
+        string_value_t location = format_string(L" at %zu:%zu",
+                                                node->position->begin->row,
+                                                node->position->begin->column);
+        append_string_value(&comment, location);
+        FREE_STRING(location);
+    }
+    add_formatted_source(builder, indent, append_string(&comment, L". */"));
 }
 
 bool c_emit_function(const node_t *node,
@@ -137,7 +175,7 @@ bool c_emit_function(const node_t *node,
     if (!count)
         append_string(&signature, L"void");
     for (size_t i = 0; i < count; i++) {
-        string_value_t name = format_string(L"goat_p%zu", i);
+        string_value_t name = format_string(L"g_p%zu", i);
         bindings[i] = (c_generation_binding_t){.next = i ? &bindings[i - 1] : saved,
                                                .declaration = get_node_child(parameters, i),
                                                .name = {name.data, name.length},
@@ -152,9 +190,11 @@ bool c_emit_function(const node_t *node,
         context->bindings = &bindings[count - 1];
     bool prototypes =
         c_emit_callee_prototypes(context, context->module_definition ? NULL : builder);
+    add_static_source(builder, 0, L"");
+    function_comment(node, builder, indent);
     add_formatted_source(builder, indent, append_string(&signature, L") {"));
     if (context->module_definition)
-        add_static_source(builder, indent + 1, L"goat_guard_enter();");
+        add_static_source(builder, indent + 1, L"g_guard_enter();");
     for (size_t i = 0; i < count; i++)
         add_source(builder, indent + 1, L"(void)%s;", bindings[i].name.data);
     bool success = prototypes

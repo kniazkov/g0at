@@ -312,8 +312,8 @@ bool test_c_emission_rejections(void) {
         c_generation_result_t result = generate_c_function(entry->summary, entry->name, NULL, NULL);
         ASSERT(result.status == C_GENERATION_OK);
         const wchar_t *type = entry->summary->parameter_types[0]->type == LATTICE_INTEGER
-                                  ? L"int64_t goat_p0"
-                                  : L"double goat_p0";
+                                  ? L"int64_t g_p0"
+                                  : L"double g_p0";
         ASSERT(wcsstr(result.source.data, type));
         FREE_STRING(result.source);
     }

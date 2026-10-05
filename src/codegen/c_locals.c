@@ -45,7 +45,7 @@ static bool prepare(const node_t *node,
         c_value_type_t type = c_generation_expression_type(context, initial);
         if (!initial || !c_type_name(type) || find_binding(context, node))
             return fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
-        string_value_t name = format_string(L"goat_l%zu", context->local_count++);
+        string_value_t name = format_string(L"g_l%zu", context->local_count++);
         c_generation_binding_t *binding = ALLOC(sizeof(*binding));
         *binding = (c_generation_binding_t){.next = context->bindings,
                                             .declaration = node,
@@ -169,13 +169,13 @@ c_generated_expression_t c_update(const node_t *node, c_generation_context_t *co
     source_builder_t *prelude = create_source_builder();
     string_value_t old = c_capture_operand(prelude, context, &operand, binding->type);
     destroy_c_expression(&operand);
-    string_value_t next = format_string(L"goat_t%zu", context->temporary_count++);
+    string_value_t next = format_string(L"g_t%zu", context->temporary_count++);
     bool decrement = update_is_decrement(node->vtbl->type);
     if (binding->type == C_VALUE_INT64) {
         context->helper_flags |= decrement ? C_HELPER_I64_SUB : C_HELPER_I64_ADD;
         add_source(prelude,
                    0,
-                   L"int64_t %s = goat_i64_%s(%s, INT64_C(1));",
+                   L"int64_t %s = g_i64_%s(%s, INT64_C(1));",
                    next.data,
                    decrement ? L"sub" : L"add",
                    old.data);

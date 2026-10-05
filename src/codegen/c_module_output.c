@@ -47,10 +47,15 @@ c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
     for (size_t i = 0; i < count; i++)
         if (results[i].status == C_GENERATION_OK)
             helpers |= results[i].helper_flags;
+    add_static_source(builder, 0, L"");
     c_emit_native_abi(builder);
+    add_static_source(builder, 0, L"");
     c_emit_headers(builder, helpers);
-    if (count)
+    if (count) {
+        add_static_source(builder, 0, L"");
         c_emit_native_guard(builder);
+    }
+    add_static_source(builder, 0, L"");
     c_module_failure_t **tail = &output.failures;
     for (const c_module_function_t *entry = module ? module->head : NULL; entry;
          entry = entry->next) {
@@ -69,6 +74,7 @@ c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
             output.omitted_count++;
         }
     }
+    add_static_source(builder, 0, L"");
     add_source(builder,
                0,
                L"/* Specializations: %zu emitted, %zu omitted. */",

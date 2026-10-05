@@ -34,9 +34,9 @@ static bool append_profiles(source_builder_t *output, source_builder_t *checks) 
         const wchar_t *name = integer ? L"goat_local_integer" : L"goat_local_real";
         c_generation_result_t result =
             generate_c_function(entry->summary, (string_view_t){name, wcslen(name)}, NULL, NULL);
-        success = result.status == C_GENERATION_OK
-                  && wcsstr(result.source.data,
-                            integer ? L"int64_t goat_l0;" : L"volatile double goat_l0;");
+        success =
+            result.status == C_GENERATION_OK
+            && wcsstr(result.source.data, integer ? L"int64_t g_l0;" : L"volatile double g_l0;");
         if (success) {
             add_formatted_source(output, 0, result.source);
             add_source(
@@ -93,7 +93,7 @@ bool append_c_local_tests(source_builder_t *output, source_builder_t *checks) {
         {L"const f=func(n){var x=n;{const first=x;var x=first+1;x=x+2;}return x;};f(1);",
          L"(7)==7"},
         {L"const f=func(n){var unused=n;unused=n+2;return n;};f(1);", L"(7)==7"},
-        {L"const f=func(n){var goat_l0=n,goat_t0=n+1;return goat_l0+goat_t0;};f(1);", L"(3)==7"},
+        {L"const f=func(n){var g_l0=n,g_t0=n+1;return g_l0+g_t0;};f(1);", L"(3)==7"},
         {L"const f=func(n){var значение=n;значение=значение+1;return значение;};f(1);", L"(3)==4"},
         {L"const f=func(n){var x=n;x=x+1.0;return x-n;};f(1.0);", L"(0x1p53)==0.0"},
         {L"const f=func(n){var x=n,y=0.0;return (y=x)+((x=2.0)-y);};f(1.0);", L"(0x1p53)==2.0"},
