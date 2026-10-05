@@ -5,6 +5,7 @@
 #include "function_call_graph.h"
 #include "function_effects.h"
 #include "graph/declarations.h"
+#include "native_builtin.h"
 
 /** @brief Immutable binding reads are stable; the direct capture log retains them. */
 static uint32_t own_effects(const function_summary_t *summary) {
@@ -14,6 +15,8 @@ static uint32_t own_effects(const function_summary_t *summary) {
         if (!(capture->access & FUNCTION_CAPTURE_READ))
             continue;
         read = true;
+        if (native_abs_capture(summary, capture))
+            continue;
         mutable_read |= !capture->declarator || capture->declarator == get_builtin_declarator()
                         || capture->declarator->base.vtbl->type != NODE_CONSTANT_DECLARATOR;
     }
@@ -29,6 +32,8 @@ static uint32_t called_effects(const function_call_graph_node_t *node) {
     if (summary->has_calls && !summary->effect_calls)
         effects |= FUNCTION_EFFECT_UNKNOWN;
     for (const function_effect_call_t *call = summary->effect_calls; call; call = call->next) {
+        if (resolve_native_abs(get_node_child(call->site, 0)))
+            continue;
         bool found = false;
         for (const function_call_edge_t *edge = node->edges; edge; edge = edge->next) {
             if (edge->site != call->site)

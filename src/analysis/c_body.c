@@ -5,9 +5,11 @@
 #include "c_body.h"
 
 #include "abstract_state.h"
+#include "builtins/registry.h"
 #include "function_return.h"
 #include "graph/expression.h"
 #include "graph/variable.h"
+#include "native_builtin.h"
 
 /** @brief One local storage decision, shared by all paths of a signature. */
 typedef struct c_binding_t {
@@ -85,6 +87,8 @@ const lattice_element_t *interpret_c_call(const node_t *site,
                                           size_t count,
                                           abstract_state_t *state) {
     c_expression_context_t *context = state->c_expressions;
+    if (count && resolve_native_abs(get_node_child(site, 0)))
+        return builtin_abs.interpret(state, args, count);
     function_summary_t *target = call_target(site, args, count, context);
     c_call_t *call = alloc_from_arena(context->arena, sizeof(*call));
     *call = (c_call_t){.next = context->calls, .site = site, .target = target};
@@ -102,6 +106,10 @@ bool c_call_supported(const node_t *site, const c_expression_context_t *context)
     if (!context || !context->graph)
         return false;
     bool found = false;
+    if (get_node_child_count(site) >= 2 && resolve_native_abs(get_node_child(site, 0))) {
+        c_value_type_t type = c_expression_type(context, get_node_child(site, 1));
+        found = type == C_VALUE_INT64 || type == C_VALUE_DOUBLE;
+    }
     for (const c_call_t *call = context->calls; call; call = call->next) {
         if (call->site != site)
             continue;

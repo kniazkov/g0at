@@ -3,5 +3,5 @@ const a = func(n) { return mutable(n); };
 a(1);
 const b = func(fn, n) { return fn(n); };
 b(mutable, 1);
-const c = func(n) { return abs(n); };
+const c = func(n) { return sqrt(n); };
 c(1);

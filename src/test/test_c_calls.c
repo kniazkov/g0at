@@ -295,7 +295,7 @@ bool test_c_call_rejections(void) {
         L"var leaf=func(n){return n;};const f=func(n){return leaf(n);};f(1);",
         L"const leaf=func(a,b){return a+b;};const f=func(n){return leaf(n);};f(1);",
         L"const leaf=func(n){return n;};const f=func(n){return leaf(n,1/n);};f(1);",
-        L"const f=func(n){return abs(n);};f(1);"};
+        L"const f=func(n){return sqrt(n);};f(1);"};
     for (size_t i = 0; i < sizeof(unsupported) / sizeof(*unsupported); i++) {
         arena = create_arena(32);
         root = analyzed(arena, unsupported[i]);
