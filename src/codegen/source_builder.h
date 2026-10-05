@@ -49,6 +49,12 @@ void add_formatted_source(source_builder_t *builder, size_t indent, string_value
 #define add_static_source(builder, indent, text)                                                   \
     add_formatted_source(builder, indent, STATIC_STRING(text))
 
+/** @brief Adds count borrowed lines with a common indent; strings must outlive the builder. */
+void add_source_lines(source_builder_t *builder,
+                      size_t indent,
+                      const wchar_t *const *lines,
+                      size_t count);
+
 /** @brief Appends to the last line, consuming text according to its should_free flag. */
 void append_formatted_source(source_builder_t *builder, string_value_t text);
 

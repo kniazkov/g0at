@@ -36,6 +36,14 @@ void add_formatted_source(source_builder_t *builder, size_t indent, string_value
     builder->count++;
 }
 
+void add_source_lines(source_builder_t *builder,
+                      size_t indent,
+                      const wchar_t *const *lines,
+                      size_t count) {
+    for (size_t i = 0; i < count; i++)
+        add_formatted_source(builder, indent, (string_value_t){lines[i], wcslen(lines[i]), false});
+}
+
 void append_formatted_source(source_builder_t *builder, string_value_t text) {
     if (builder->count == 0) {
         add_formatted_source(builder, 0, text);
