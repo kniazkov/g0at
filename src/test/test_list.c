@@ -81,6 +81,7 @@ static test_description_t test_list[] = {
     {"C module dependencies", test_c_module_dependencies},
     {"C module call lifetime", test_c_module_call_lifetime},
     {"C replacement expression", test_c_replacement_expression},
+    {"C deletion liveness", test_c_deletion_liveness},
     {"C replacement statement", test_c_replacement_statement},
     {"C replacement analysis", test_c_replacement_analysis},
     {"C replacement proofs", test_c_replacement_proofs},

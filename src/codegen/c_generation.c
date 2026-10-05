@@ -7,6 +7,7 @@
 #include "c_lowering.h"
 #include "graph/node.h"
 #include "graph/replacement.h"
+#include "graph/variable.h"
 #include "lib/allocate.h"
 
 c_value_type_t c_generation_parameter_type(const c_generation_context_t *context, size_t index) {
@@ -63,6 +64,37 @@ bool c_function_name_is_valid(string_view_t name) {
     return true;
 }
 
+/** @brief Monotone liveness for the selected C tree, including restored initializers. */
+static void collect_required_bindings(const node_t *node, c_generation_context_t *context) {
+    const node_t *selected = c_generation_replacement(context, node);
+    if (selected != node) {
+        collect_required_bindings(selected, context);
+        return;
+    }
+    if (is_deletion(node))
+        return;
+    if (node->vtbl->type == NODE_VARIABLE) {
+        const declarator_t *binding = ((const variable_t *)node)->declarator;
+        for (size_t i = 0; i < context->required_bindings->size; i++)
+            if (context->required_bindings->data[i] == binding)
+                return;
+        append_to_vector(context->required_bindings, (void *)binding);
+        return;
+    }
+    if (node->vtbl->type == NODE_IF_ELSE) {
+        abstract_truth_t truth = c_generation_condition_truth(context, get_node_child(node, 0));
+        if (truth == ABSTRACT_TRUE || truth == ABSTRACT_FALSE) {
+            const node_t *branch = get_node_child(node, truth == ABSTRACT_TRUE ? 1 : 2);
+            if (branch)
+                collect_required_bindings(branch, context);
+            return;
+        }
+    }
+    /* Untransformed stores also require storage, including those in restored subtrees. */
+    for (size_t i = 0; i < get_node_child_count(node); i++)
+        collect_required_bindings(get_node_child(node, i), context);
+}
+
 static c_generation_result_t generate_function(const function_summary_t *summary,
                                                string_view_t name,
                                                const c_generation_binding_t *bindings,
@@ -90,6 +122,12 @@ static c_generation_result_t generate_function(const function_summary_t *summary
             return (c_generation_result_t){.status = C_GENERATION_NOT_PROVEN,
                                            .failed_node = function};
     }
+    context.required_bindings = create_vector();
+    size_t previous;
+    do {
+        previous = context.required_bindings->size;
+        collect_required_bindings(get_node_child(function, 1), &context);
+    } while (context.required_bindings->size != previous);
     source_builder_t *builder = create_source_builder();
     bool success = generate_indented_c_code_from_node(function, &context, builder, 0);
     /* Bound the frame allocated before its entry guard. */
@@ -113,6 +151,7 @@ static c_generation_result_t generate_function(const function_summary_t *summary
         }
     }
     destroy_source_builder(builder);
+    destroy_vector(context.required_bindings);
     return result;
 }
 
@@ -143,8 +182,26 @@ abstract_truth_t c_generation_condition_truth(const c_generation_context_t *cont
 }
 
 const node_t *c_generation_replacement(const c_generation_context_t *context, const node_t *node) {
-    if (!is_replacement(node))
+    if (!is_replacement(node) && !is_deletion(node))
         return node;
+    const node_t *archived = get_node_child(node, 0);
+    const node_t *binding = NULL;
+    if (archived->vtbl->type == NODE_VARIABLE_DECLARATOR
+        || archived->vtbl->type == NODE_CONSTANT_DECLARATOR)
+        binding = archived;
+    else if (archived->vtbl->type == NODE_SIMPLE_ASSIGNMENT) {
+        const node_t *left = get_node_child(archived, 0);
+        if (left->vtbl->type == NODE_VARIABLE)
+            binding = (const node_t *)((const variable_t *)left)->declarator;
+    }
+    if (binding && context && context->required_bindings) {
+        for (size_t i = 0; i < context->required_bindings->size; i++)
+            if (context->required_bindings->data[i] == binding)
+                return archived;
+        return is_deletion(node) ? node : get_node_child(node, 1);
+    }
+    if (is_deletion(node))
+        return archived;
     const node_t *original = replacement_original(node);
     const node_t *result = replacement_result(node);
     if (node->vtbl->type == NODE_EXPRESSION_REPLACEMENT) {

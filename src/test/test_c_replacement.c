@@ -384,3 +384,50 @@ bool test_c_replacement_effects(void) {
     destroy_arena(arena);
     return true;
 }
+
+bool test_c_deletion_liveness(void) {
+    arena_t *arena = create_arena(32);
+    parser_memory_t memory = {arena, arena, arena, arena};
+    node_t *root = parse_analysis_test_program(
+        &memory,
+        STATIC_STRING(L"const f=func(n){var a=n;var b=a+1;return b;};f(1);"));
+    options_t *options = create_options();
+    ASSERT(root && !analyze(root, &memory, options, NULL));
+    node_t *function = find_type(root, NODE_FUNCTION_OBJECT);
+    node_t *body = get_node_child(function, 1);
+    /* Model a VM-only observation: deleted locals and a folded return of 2.
+       The generic integer specialization must restore b, then a, to accept other inputs. */
+    for (size_t i = 0; i < 2; i++) {
+        node_t *declaration = get_node_child(body, i);
+        node_t *child = get_node_child(declaration, 0);
+        node_t *original = (node_t *)replacement_original(child);
+        node_t *wrapper = (node_t *)create_statement_deletion(arena, original);
+        ASSERT(replace_child_node(declaration, child, wrapper));
+        wrapper->parent = declaration;
+        original->parent = wrapper;
+    }
+    node_t *ret = get_node_child(body, 2);
+    node_t *child = get_node_child(ret, 0);
+    node_t *original = (node_t *)replacement_original(child);
+    node_t *wrapper =
+        (node_t *)create_expression_replacement(arena,
+                                                (expression_t *)original,
+                                                (expression_t *)create_integer_node(arena, 2));
+    ASSERT(replace_child_node(ret, child, wrapper));
+    wrapper->parent = ret;
+    original->parent = wrapper;
+    get_node_child(wrapper, 1)->parent = wrapper;
+    const function_summary_t *summary = select_function_c_view(get_function_summaries(function));
+    ASSERT(summary);
+    c_generation_result_t result =
+        generate_c_function(summary, ((string_view_t){L"g_restored", 10}), NULL, NULL);
+    ASSERT(result.status == C_GENERATION_OK);
+    ASSERT(wcsstr(result.source.data, L"int64_t g_l0;")
+           && wcsstr(result.source.data, L"int64_t g_l1;")
+           && wcsstr(result.source.data, L"g_l0 = g_p0;")
+           && wcsstr(result.source.data, L"return g_l1;"));
+    FREE_STRING(result.source);
+    destroy_options(options);
+    destroy_arena(arena);
+    return true;
+}

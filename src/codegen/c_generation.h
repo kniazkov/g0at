@@ -3,8 +3,8 @@
  * @brief Whole-function C emission and specialization-scoped lowering state.
  */
 #pragma once
-
 #include "analysis/c_expression.h"
+#include "lib/vector.h"
 #include "source_builder.h"
 
 /** @brief Backend outcomes, independent of analyzer eligibility. */
@@ -45,6 +45,7 @@ typedef struct c_generation_context_t {
     const c_expression_proof_t *replacement_proof; /**< Scoped literal proof transfer. */
     string_view_t function_name;
     const c_generation_binding_t *bindings;
+    vector_t *required_bindings; /**< Storage references in this signature-selected C tree. */
     const c_generation_callee_t *callees;
     unsigned helper_flags;  /**< Helpers referenced by successfully lowered operations. */
     bool module_definition; /**< Headers and prototypes are supplied by the module. */
