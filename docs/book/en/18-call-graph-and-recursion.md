@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/18-call-graph-and-recursion.md) · [Previous chapter](17-call-analysis-and-specializations.md) · [Next chapter](19-effects-and-purity.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-18-1"></a>
 
@@ -18,7 +18,7 @@ One body with `(integer)` and `(real)` signatures may therefore occupy two verti
 
 ## 18.2. Discovering targets
 
-[function_call_graph.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/function_call_graph.c) first creates vertices for registered signatures. It then inspects their bodies using type-level parameters. Newly discovered signatures are appended; the list also acts as a work queue.
+[function_call_graph.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_call_graph.c) first creates vertices for registered signatures. It then inspects their bodies using type-level parameters. Newly discovered signatures are appended; the list also acts as a work queue.
 
 A known function value directly identifies its body. Without one, the analyzer tries to resolve an immutable reference: through parentheses and `const` declarations to a function node. This finds direct and mutual calls without relying on one run's incidental state.
 
@@ -41,7 +41,7 @@ The useful result is knowing which types must be reconciled together. A componen
 
 ## 18.4. Initial approximation and fixed point
 
-[function_return.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/function_return.c) solves a recursive group iteratively. Each member initially has return type `BOTTOM`. This is an initial absence of known normal returns, rather than a claim that the function is broken.
+[function_return.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_return.c) solves a recursive group iteratively. Each member initially has return type `BOTTOM`. This is an initial absence of known normal returns, rather than a claim that the function is broken.
 
 The body is analyzed with general parameter types. A recursive call uses the current return-type approximation of its target specialization. The new result joins the previous one and is normalized to a type. Possible-result information may expand, but an established type is not discarded for a narrower guess.
 
@@ -112,4 +112,4 @@ These examples deliberately use separate files: ordinary analysis may forget cur
 
 Calls account for possible environment changes: a self-call forgets captures, while a call to another body uses broader forgetting. This reduces precision but prevents retaining a false constant that a closure can modify.
 
-Even stable `BOTTOM` means no normal result in the model, rather than a proven exception text. [test_function_call_graph.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_function_call_graph.c) and [test_function_return.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_function_return.c) check graph and recursive types. After types, the analyzer still needs to establish what the function can change outside itself.
+Even stable `BOTTOM` means no normal result in the model, rather than a proven exception text. [test_function_call_graph.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_function_call_graph.c) and [test_function_return.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_function_return.c) check graph and recursive types. After types, the analyzer still needs to establish what the function can change outside itself.

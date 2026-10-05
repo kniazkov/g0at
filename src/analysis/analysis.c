@@ -96,6 +96,7 @@ static void assign_node_indexes_and_scopes(node_t *node,
                                                &inner_counter);
                 break;
             }
+            case NODE_FOR:
             case NODE_STATEMENT_LIST: {
                 /* Ordinary blocks keep the enclosing ID sequence. */
                 scope_t *inner_scope = create_scope(arena, scope);
@@ -221,7 +222,7 @@ static void bind_variables_from_node_and_children(node_t *node,
             insertion->before = statement;
             append_to_vector(insertions, insertion);
             var->declarator = pair.declarator;
-            add_symbol_to_scope(node->scope, var->name.data, pair.declarator);
+            add_symbol_to_scope(statement->parent->scope, var->name.data, pair.declarator);
         } else {
             var->declarator = declarator;
         }

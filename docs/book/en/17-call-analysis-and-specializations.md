@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/17-call-analysis-and-specializations.md) · [Previous chapter](16-expression-and-control-analysis.md) · [Next chapter](18-call-graph-and-recursion.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-17-1"></a>
 
@@ -18,7 +18,7 @@ For a built-in, the known descriptor selects the `interpret` method from chapter
 
 ## 17.2. Analyzing one known call
 
-[function_call.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/function_call.c) first checks that the path and arguments have normal values. For a user function, it then registers a type specialization, creates an abstract activation, and clones caller state. Local values from a previous traversal of that function are reset.
+[function_call.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_call.c) first checks that the path and arguments have normal values. For a user function, it then registers a type specialization, creates an abstract activation, and clones caller state. Local values from a previous traversal of that function are reset.
 
 Parameters receive actual-argument descriptions. Missing parameters receive `null`; extras create no parameters, but have already been evaluated and can end the path. The body is traversed until normal execution ends. Each `return` contributes a value and saves a normal-exit state. Reaching the end contributes `null`.
 
@@ -41,7 +41,7 @@ An unknown call must not receive an invented result either. Possible binding cha
 
 ## 17.4. How a specialization is formed
 
-`function_summary_set_t` stores records keyed by an ordered tuple of formal parameter types. Registration in [function_summary.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/function_summary.c) removes refinements: integer constants and ranges become `integer`, real constants become `real`, known functions become `function`, and typed arrays become `array`.
+`function_summary_set_t` stores records keyed by an ordered tuple of formal parameter types. Registration in [function_summary.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_summary.c) removes refinements: integer constants and ranges become `integer`, real constants become `real`, known functions become `function`, and typed arrays become `array`.
 
 Calls with `2` and `3` therefore register one `(integer)` signature, while a call with `2.5` registers `(real)`. Order matters: `(integer, real)` differs from `(real, integer)`. Missing parameters enter the key as `null`; extras do not enter it. However, `BOTTOM` even in an extra evaluated argument prevents registering a completed call.
 
@@ -51,7 +51,7 @@ A function with no registered call receives no invented “just in case” speci
 
 ## 17.5. Reanalysis for every value of a type
 
-A summary contains a return type, effects, captures, analysis status, and an independent C-eligibility status. To obtain a signature's return type, [function_return.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/function_return.c) investigates the body again: parameters now have the key's general types, while external bindings receive no incidental values from one call.
+A summary contains a return type, effects, captures, analysis status, and an independent C-eligibility status. To obtain a signature's return type, [function_return.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_return.c) investigates the body again: parameters now have the key's general types, while external bindings receive no incidental values from one call.
 
 This analysis must account for branches not selected by the original concrete argument. Returning a number for `x = 1` does not exclude a string for `x = 0`, even though both inputs have type `integer`.
 
@@ -97,4 +97,4 @@ A summary stores proofs and approximations, rather than a result that can replac
 
 Analysis events retain snapshots of mutable summary records; AST pointers and immutable elements remain borrowed. Diagnostic history must therefore not change retroactively when the current summary is refined again.
 
-[test_function_specialization.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_function_specialization.c) and [test_function_summary.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_function_summary.c) check registration and the separation of these meanings. The next task is connecting specializations through calls, including cycles, to obtain information a single body traversal cannot provide.
+[test_function_specialization.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_function_specialization.c) and [test_function_summary.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_function_summary.c) check registration and the separation of these meanings. The next task is connecting specializations through calls, including cycles, to obtain information a single body traversal cannot provide.

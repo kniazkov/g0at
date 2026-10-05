@@ -1,0 +1,1 @@
+for(var i=0;i<3;i++) try {if(i==1) throw i; println(i);} catch(e) {println(e+10);}

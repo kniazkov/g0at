@@ -321,3 +321,32 @@ native_recursion
 
 # Line-oriented output
 println
+
+# C-style loops
+for_basic
+for_nested
+for_scope_return
+for_effects
+for_analysis_safety
+
+# Nested control flow and iteration scope
+for_dangling
+for_else_for
+for_for_try
+for_bare_decl
+for_multiple_decl
+for_bare_const
+for_wrap
+for_fresh_scope
+for_implicit
+
+# Invalid loop syntax
+for_missing_header
+for_missing_separator
+for_extra_separator
+for_missing_body
+for_invalid_initial
+for_invalid_condition
+for_invalid_step
+for_invalid_body
+for_analysis_budget

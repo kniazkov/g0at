@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/15-abstract-state.md) · [Previous chapter](14-abstract-values.md) · [Next chapter](16-expression-and-control-analysis.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-15-1"></a>
 
@@ -10,7 +10,7 @@ Revision 2. Implementation described: [commit 8d1fe86, including `println`](http
 
 A program may have several variables named `x` in different scopes. A “name → value” table would confuse them. Abstract state therefore uses declaration identity: its key is a pointer to the AST declarator bound to the variable. Chapter 7's name binding has already determined which declaration is meant.
 
-`abstract_state_t` in [abstract_state.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/abstract_state.h) contains an AVL tree of these entries, control mode, references to an arena and event collector, and call-analysis data. This is analyzer state. It is not a VM `context_t` and holds no runtime number or string objects.
+`abstract_state_t` in [abstract_state.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/abstract_state.h) contains an AVL tree of these entries, control mode, references to an arena and event collector, and call-analysis data. This is analyzer state. It is not a VM `context_t` and holds no runtime number or string objects.
 
 State changes as the program is traversed. An entry describes what is known at the current point, rather than what a variable will hold in every future run.
 
@@ -18,7 +18,7 @@ State changes as the program is traversed. An entry describes what is known at t
 
 ## 15.2. Current value and summary
 
-Each entry in [abstract_state.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/abstract_state.c) contains `current` and `summary`. Writing a new value replaces `current` and joins `summary` with the new value.
+Each entry in [abstract_state.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/abstract_state.c) contains `current` and `summary`. Writing a new value replaces `current` and joins `summary` with the new value.
 
 | Step | `current` for `x` | `summary` for `x` |
 |---|---|---|
@@ -96,12 +96,12 @@ Known calls use more precise state transfer. Changes to external variables retur
 
 This field must not be confused with `expression->immediate_value`, which concerns one point of immediate execution, or with a function summary for a parameter-type tuple. An expression, declaration, and function ask different questions: a result here, values over a declaration's history, and behavior of an entire specialization.
 
-The pass order in [analysis.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/analysis.c) preserves this distinction. Ordinary abstract interpretation and declaration summaries come first, followed by function analysis; later, a separate reachability pass establishes facts for safely changing the shared AST.
+The pass order in [analysis.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/analysis.c) preserves this distinction. Ordinary abstract interpretation and declaration summaries come first, followed by function analysis; later, a separate reachability pass establishes facts for safely changing the shared AST.
 
 <a id="section-15-7"></a>
 
 ## 15.7. Contracts that can be tested
 
-[test_abstract_state.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_abstract_state.c) checks clone independence, joining current values and summaries, and releasing shared records. These checks matter even with correct `join` formulas: an ownership error can silently change a neighboring branch.
+[test_abstract_state.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_abstract_state.c) checks clone independence, joining current values and summaries, and releasing shared records. These checks matter even with correct `join` formulas: an ownership error can silently change a neighboring branch.
 
 The analysis log is a sequence of observations from several stages. An early `write x = 10` does not promise that every later read equals `10`. Nor does the final summary replace pointwise knowledge. Entries must be read with their kind and coordinates, rather than as one table of final values.

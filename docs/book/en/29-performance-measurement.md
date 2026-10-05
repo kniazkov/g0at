@@ -2,13 +2,13 @@
 
 [Contents](index.md) · [Русский](../ru/29-performance-measurement.md) · [Previous](28-testing.md) · [Next](appendix-a-terminology.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-29-1"></a>
 
 ## 29.1. The experiment's question
 
-[check_native_performance.py](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_native_performance.py) compares two executions of one workload: saved bytecode in the VM and a saved program with a native library. It tests a narrow claim: for this numeric call tree, median native-process time must be lower than median VM-process time.
+[check_native_performance.py](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_performance.py) compares two executions of one workload: saved bytecode in the VM and a saved program with a native library. It tests a narrow claim: for this numeric call tree, median native-process time must be lower than median VM-process time.
 
 This is not a language ranking or an estimate for an arbitrary application. The workload deliberately contains many calls to pure numeric functions, the area served by the current backend. It does not represent input, strings, objects, or exceptions.
 

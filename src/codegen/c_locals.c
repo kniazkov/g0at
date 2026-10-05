@@ -8,6 +8,7 @@
 #include "c_control.h"
 #include "c_lowering.h"
 #include "graph/replacement.h"
+#include "graph/update_expression.h"
 #include "graph/variable.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
@@ -35,7 +36,8 @@ static bool prepare(const node_t *node,
             return !chosen || prepare(chosen, context, builder, indent);
         }
     }
-    if (node->vtbl->type == NODE_FUNCTION_OBJECT || node->vtbl->type == NODE_STATEMENT_LIST)
+    if (node->vtbl->type == NODE_FUNCTION_OBJECT || node->vtbl->type == NODE_STATEMENT_LIST
+        || node->vtbl->type == NODE_FOR)
         return true;
     if (node->vtbl->type == NODE_VARIABLE_DECLARATOR
         || node->vtbl->type == NODE_CONSTANT_DECLARATOR) {
@@ -143,6 +145,56 @@ c_generated_expression_t c_assignment(const node_t *node, c_generation_context_t
     string_value_t value = c_capture_operand(prelude, context, &right, binding->type);
     add_source(prelude, 0, L"%s = %s;", binding->name.data, value.data);
     destroy_c_expression(&right);
+    return (c_generated_expression_t){.success = true,
+                                      .type = binding->type,
+                                      .value = value,
+                                      .prelude = prelude};
+}
+
+c_generated_expression_t c_update(const node_t *node, c_generation_context_t *context) {
+    const node_t *target = get_node_child(node, 0);
+    const declarator_t *decl = target && target->vtbl->type == NODE_VARIABLE
+                                   ? ((const variable_t *)target)->declarator
+                                   : NULL;
+    const c_generation_binding_t *binding = decl ? find_binding(context, &decl->base) : NULL;
+    if (!binding || decl->base.vtbl->type == NODE_CONSTANT_DECLARATOR
+        || (binding->type != C_VALUE_INT64 && binding->type != C_VALUE_DOUBLE)
+        || c_generation_expression_type(context, node) != binding->type) {
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    c_generated_expression_t operand = generate_c_code_from_node(target, context);
+    if (!operand.success)
+        return operand;
+    source_builder_t *prelude = create_source_builder();
+    string_value_t old = c_capture_operand(prelude, context, &operand, binding->type);
+    destroy_c_expression(&operand);
+    string_value_t next = format_string(L"goat_t%zu", context->temporary_count++);
+    bool decrement = update_is_decrement(node->vtbl->type);
+    if (binding->type == C_VALUE_INT64) {
+        context->helper_flags |= decrement ? C_HELPER_I64_SUB : C_HELPER_I64_ADD;
+        add_source(prelude,
+                   0,
+                   L"int64_t %s = goat_i64_%s(%s, INT64_C(1));",
+                   next.data,
+                   decrement ? L"sub" : L"add",
+                   old.data);
+    } else {
+        add_source(prelude,
+                   0,
+                   L"volatile double %s = %s %s 1.0;",
+                   next.data,
+                   old.data,
+                   decrement ? L"-" : L"+");
+    }
+    add_source(prelude, 0, L"%s = %s;", binding->name.data, next.data);
+    bool postfix = update_is_postfix(node->vtbl->type);
+    string_value_t value = postfix ? old : next;
+    if (postfix) {
+        FREE_STRING(next);
+    } else {
+        FREE_STRING(old);
+    }
     return (c_generated_expression_t){.success = true,
                                       .type = binding->type,
                                       .value = value,

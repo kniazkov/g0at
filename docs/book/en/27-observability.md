@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/27-observability.md) · [Previous](26-separate-compilation.md) · [Next](28-testing.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-27-1"></a>
 
@@ -10,7 +10,7 @@ Revision 2. Implementation described: [commit 8d1fe86, including `println`](http
 
 The interpreter can show a program at several stages. Each output answers a different question: how text was parsed, what analysis established, which instructions were generated, and which execution path was actually used. Confusing these questions leads to false conclusions: a green function in a graph does not yet mean the processor executed its native version.
 
-[launcher.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/launcher.c) establishes the order: analysis, log, reconstructed source, graph, then C export or bytecode generation and execution. `--print-*` options usually add diagnostic output to ordinary execution rather than replacing it. C export and `--compile` are separate modes without body execution.
+[launcher.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/launcher.c) establishes the order: analysis, log, reconstructed source, graph, then C export or bytecode generation and execution. `--print-*` options usually add diagnostic output to ordinary execution rather than replacing it. C export and `--compile` are separate modes without body execution.
 
 <a id="section-27-2"></a>
 
@@ -57,7 +57,7 @@ The log includes:
 
 The `x = 2` summary comes from a particular observed call. The `function-summary` line describes a separate proof for all values in the `(integer)` signature. It reports analysis status, result type, effects, purity, and C eligibility. `c-expression` entries describe expression points within a signature; `call-group` entries describe call-graph components. An observation without effects cannot substitute for proven purity of the whole specialization.
 
-The collector and its text representation are in [collector.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/collector.c). Editing the program or changing passes may change event numbers; they are not persistent source identifiers.
+The collector and its text representation are in [collector.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/collector.c). Editing the program or changing passes may change event numbers; they are not persistent source identifiers.
 
 <a id="section-27-4"></a>
 
@@ -70,7 +70,7 @@ mkdir -p build/book-observe
 ./goat --save-graph build/book-observe/program.svg docs/book/examples/27-observability.goat
 ```
 
-[visualization.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/graph/visualization.c) builds DOT, invokes Graphviz, and removes the intermediate `.dot`. Supported extensions are `.svg` and `.png`.
+[visualization.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/visualization.c) builds DOT, invokes Graphviz, and removes the intermediate `.dot`. Supported extensions are `.svg` and `.png`.
 
 | Appearance | Meaning |
 |---|---|
@@ -81,7 +81,7 @@ mkdir -p build/book-observe
 | Dashed blue edge | Additional relation, such as a declaration reference |
 | Dashed group outline | Scope |
 
-A function may carry a `C view:` label identifying a selected signature. [function_summary.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/function_summary.c) selects the first pure `supported` specialization; the visualizer propagates its display properties through the reachable subtree. This is a display layer, not a mutation of general AST flags or a promise about other signatures. Read colors together with `C view` and the log.
+A function may carry a `C view:` label identifying a selected signature. [function_summary.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_summary.c) selects the first pure `supported` specialization; the visualizer propagates its display properties through the reachable subtree. This is a display layer, not a mutation of general AST flags or a promise about other signatures. Read colors together with `C view` and the log.
 
 > [!CAUTION]
 > The graph shows one selected C specialization, not all variants simultaneously. Long string labels are shortened. A Graphviz error is printed to stderr but does not necessarily make Goat's final exit status unsuccessful: check the image's existence and the diagnostics.
@@ -114,4 +114,4 @@ Use files to keep logs separate from program output:
 ./goat --save-analysis build/book-observe/analysis.txt --native required --save-native build/book-observe/native.txt docs/book/examples/27-observability.goat
 ```
 
-Only the program result remains on stdout. Errors still go to stderr. Options and prohibited combinations are collected in [appendix E](appendix-e-launch-interfaces.md); color and selected-view checks are in [check_graph.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_graph.sh).
+Only the program result remains on stdout. Errors still go to stderr. Options and prohibited combinations are collected in [appendix E](appendix-e-launch-interfaces.md); color and selected-view checks are in [check_graph.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_graph.sh).

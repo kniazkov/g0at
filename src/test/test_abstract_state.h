@@ -11,3 +11,4 @@ bool test_abstract_state_many_declarations();
 bool test_abstract_state_join_isolation();
 bool test_abstract_state_clone_metadata();
 bool test_abstract_state_branch_program();
+bool test_abstract_state_loop_widening();

@@ -2,13 +2,13 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-c-vm-instructions.md) · [Previous](appendix-b-language.md) · [Next](appendix-d-builtins.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-c-1"></a>
 
 ## C.1. Format and notation
 
-[bytecode.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/bytecode.h) defines an 8-byte instruction: `opcode` (8 bits), `flags` (8), `arg0` (16), and `arg1` (32). The table lists all 52 codes in [opcodes.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/opcodes.h) order. Handlers are in [vm.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/vm.c). Numeric codes belong to this format revision, not a promise that the enum will never change.
+[bytecode.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/bytecode.h) defines an 8-byte instruction: `opcode` (8 bits), `flags` (8), `arg0` (16), and `arg1` (32). The table lists all 52 codes in [opcodes.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/opcodes.h) order. Handlers are in [vm.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/vm.c). Numeric codes belong to this format revision, not a promise that the enum will never change.
 
 `S` is the retained stack prefix; the top is on the right. `result` is a normal result without an exception. `target`, `body`, and `handler` are instruction indices; `data id` / `name id` are data-descriptor indices, not pointers. Unused operands are `—`. The auxiliary `ARG` buffer is not the object stack.
 

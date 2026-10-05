@@ -232,3 +232,36 @@ bool test_abstract_state_branch_program() {
     destroy_arena(arena);
     return true;
 }
+
+bool test_abstract_state_loop_widening() {
+    arena_t *arena = create_arena(8);
+    declarator_t counter = {.name = {L"i", 1}};
+    declarator_t invariant = {.name = {L"n", 1}};
+    abstract_state_t *head = create_abstract_state(arena);
+    set_in_abstract_state(head, &counter, make_integer_constant_element(arena, 0));
+    set_in_abstract_state(head, &invariant, make_integer_constant_element(arena, 10));
+    abstract_state_t *back = clone_abstract_state(head);
+    set_in_abstract_state(back, &counter, make_integer_constant_element(arena, 1));
+    bool stable = true;
+    abstract_state_t *wide = widen_loop_state(head, back, &stable);
+    ASSERT(!stable && get_from_abstract_state(wide, &counter)->type == LATTICE_INTEGER);
+    ASSERT(integer_is(get_from_abstract_state(wide, &invariant), 10));
+    ASSERT(integer_is(get_from_abstract_state(head, &counter), 0));
+    ASSERT(integer_is(get_from_abstract_state(back, &counter), 1));
+    abstract_state_t *fixed = widen_loop_state(wide, back, &stable);
+    ASSERT(stable && get_from_abstract_state(fixed, &counter)->type == LATTICE_INTEGER);
+    set_in_abstract_state(back, &counter, make_string_element());
+    abstract_state_t *changed = widen_loop_state(wide, back, &stable);
+    ASSERT(!stable && get_from_abstract_state(changed, &counter)->type == LATTICE_NOT_NULL);
+    back->control_flow = FLOW_RETURN;
+    abstract_state_t *returned = widen_loop_state(head, back, &stable);
+    ASSERT(stable && integer_is(get_from_abstract_state(returned, &counter), 0));
+    destroy_abstract_state(head);
+    destroy_abstract_state(back);
+    destroy_abstract_state(wide);
+    destroy_abstract_state(fixed);
+    destroy_abstract_state(changed);
+    destroy_abstract_state(returned);
+    destroy_arena(arena);
+    return true;
+}

@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/23-native-abi.md) · [Previous chapter](22-c-code-generation.md) · [Next chapter](24-library-compilation-and-loading.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-23-1"></a>
 
@@ -10,7 +10,7 @@ Revision 2. Implementation described: [commit 8d1fe86, including `println`](http
 
 The VM is compiled ahead of time; a library is built later from a particular program. They must agree on number representations, memory layouts, and function calls. That contract is an ABI: an application binary interface. Matching function names alone is insufficient.
 
-The contract is defined in [native_abi.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/include/goat/native_abi.h). Its current version is 1. Windows uses `__cdecl` (the convention for passing arguments and managing the stack), and the exported entry point uses `__declspec(dllexport)`. C++ declarations have `extern "C"` linkage, without C++ name mangling.
+The contract is defined in [native_abi.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/include/goat/native_abi.h). Its current version is 1. Windows uses `__cdecl` (the convention for passing arguments and managing the stack), and the exported entry point uses `__declspec(dllexport)`. C++ declarations have `extern "C"` linkage, without C++ name mangling.
 
 VM objects, AST nodes, and closure contexts do not cross this interface. The boundary is much narrower: numeric arguments, a numeric result, specialization metadata, and a completion status.
 
@@ -44,7 +44,7 @@ uint32_t (GOAT_NATIVE_CALL *invoke)(
     goat_native_value_v1_t *result);
 ```
 
-[c_adapter.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen/c_adapter.c) first checks the version, pointers, sufficient argument count, tags, and zero reserved fields of arguments in use. There may be more arguments than formal parameters. Missing arguments or an unsuitable type prevent the body from being called.
+[c_adapter.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/c_adapter.c) first checks the version, pointers, sufficient argument count, tags, and zero reserved fields of arguments in use. There may be more arguments than formal parameters. Missing arguments or an unsuitable type prevent the body from being called.
 
 The adapter then extracts numbers, calls the internal C function, and writes a result with the required tag. It prepares the result in a local structure and copies it to `*result` only on success. A generated adapter's failure preserves the previous result contents.
 
@@ -73,7 +73,7 @@ Generated modules set `binding_name` to `NULL` and mark entries as pure. Program
 
 ## 23.5. What the receiving side checks
 
-[native_library.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/native_library.c) checks the version and sizes, table alignment, valid numeric tags, adapter pointer, flags, and duplicate identifiers and signatures. Entry count is capped at 65,536, parameter count at `UINT16_MAX`, and the copying budget for type tables and names at 64 MiB. An optional name must be nonempty UTF-8 of at most 4096 bytes.
+[native_library.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/native_library.c) checks the version and sizes, table alignment, valid numeric tags, adapter pointer, flags, and duplicate identifiers and signatures. Entry count is capped at 65,536, parameter count at `UINT16_MAX`, and the copying budget for type tables and names at 64 MiB. An optional name must be nonempty UTF-8 of at most 4096 bytes.
 
 Metadata is copied into loader-owned structures. Code pointers remain tied to the loaded library. Beyond general ABI validation, the native pipeline compares entries with the expected module: identifiers, signatures, purity, and corresponding `FUNC` instructions.
 
@@ -103,4 +103,4 @@ On `OK`, the VM also checks the result tag and reserved field. An invalid result
 
 For chapter 22's module, querying version 1 yields a table of four specializations: two functions, each with integer and real variants. Another version yields `NULL`. Calling the integer adapter for `calculate` with argument `3` produces `OK` and integer `7`; a real tag is rejected before the body runs.
 
-The generator embeds ABI definitions in standalone C text, so compiling a saved module does not require the Goat header tree. This creates an obligation to keep two forms of the same contract synchronized. [check_native_abi.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_native_abi.sh) checks the generated interface with a consumer using the public header, including failures and preservation of the output value. Loading and metadata checks are in [check_native_loader.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_native_loader.sh).
+The generator embeds ABI definitions in standalone C text, so compiling a saved module does not require the Goat header tree. This creates an obligation to keep two forms of the same contract synchronized. [check_native_abi.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_abi.sh) checks the generated interface with a consumer using the public header, including failures and preservation of the output value. Loading and metadata checks are in [check_native_loader.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_loader.sh).

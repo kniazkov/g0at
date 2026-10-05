@@ -4,9 +4,11 @@
  */
 #include "update_expression.h"
 
+#include "analysis/c_body.h"
 #include "analysis/function_effects.h"
 #include "analysis/reachability.h"
 #include "analysis/update.h"
+#include "codegen/c_locals.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
@@ -109,6 +111,20 @@ collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t 
                            arena);
 }
 
+/** @brief Updates require mutable, numeric, signature-local storage. */
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    const node_t *target = get_node_child(node, 0);
+    if (!context || !context->graph || !target || target->vtbl->type != NODE_VARIABLE)
+        return false;
+    const declarator_t *decl = ((const variable_t *)target)->declarator;
+    c_value_type_t type = c_expression_type(context, target);
+    return decl && decl->base.vtbl->type != NODE_CONSTANT_DECLARATOR
+           && (type == C_VALUE_INT64 || type == C_VALUE_DOUBLE)
+           && classify_c_value_type(value->type) == type && c_local_binding(context, decl, type);
+}
+
 /** @brief Virtual table for update expressions. */
 static node_vtbl_t prefix_increment_vtbl = {
     .type = NODE_PREFIX_INCREMENT,
@@ -133,8 +149,8 @@ static node_vtbl_t prefix_increment_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
-    .generate_c_code = no_c_code,
+    .can_generate_c_code = can_generate_c_code,
+    .generate_c_code = c_update,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
@@ -164,8 +180,8 @@ static node_vtbl_t prefix_decrement_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
-    .generate_c_code = no_c_code,
+    .can_generate_c_code = can_generate_c_code,
+    .generate_c_code = c_update,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
@@ -195,8 +211,8 @@ static node_vtbl_t postfix_increment_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
-    .generate_c_code = no_c_code,
+    .can_generate_c_code = can_generate_c_code,
+    .generate_c_code = c_update,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,
@@ -226,8 +242,8 @@ static node_vtbl_t postfix_decrement_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
-    .generate_c_code = no_c_code,
+    .can_generate_c_code = can_generate_c_code,
+    .generate_c_code = c_update,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,

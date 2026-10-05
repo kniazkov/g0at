@@ -2,7 +2,7 @@
 
 [Оглавление](index.md) · [English](../en/appendix-e-launch-interfaces.md) · [Назад](appendix-d-builtins.md) · [Далее](appendix-f-implementation-map.md)
 
-Редакция 2. Описываемая реализация: [commit 8d1fe86, с функцией `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Редакция 3. Описываемая реализация: [commit cf51b8c, с оператором `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-e-1"></a>
 
@@ -12,7 +12,7 @@
 goat [options] <input_file> [script arguments...]
 ```
 
-Параметры распознаются и после имени входного файла. Значения опций передаются отдельными аргументами; записи `--native=auto` нет. Первое не являющееся опцией слово становится входным путём, последующие сохраняются как аргументы скрипта. Обработка находится в [options.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/options.c).
+Параметры распознаются и после имени входного файла. Значения опций передаются отдельными аргументами; записи `--native=auto` нет. Первое не являющееся опцией слово становится входным путём, последующие сохраняются как аргументы скрипта. Обработка находится в [options.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/options.c).
 
 > [!CAUTION]
 > Разделитель `--` не реализован. Сохранённый список аргументов скрипта пока не предоставлен программе через отдельный встроенный интерфейс. `--help` печатает справку, но текущий `main` возвращает ненулевой код, поскольку разбор опций возвращает `NULL`; это следует учитывать в автоматизации.
@@ -71,4 +71,4 @@ goat [options] <input_file> [script arguments...]
 
 Формат нативного отчёта — строки `key=value`. Ключи: `mode`, `preparation`, `bound`, `omitted`, `attempts`, `succeeded`, `retries`. Подготовка бывает `disabled`, `ready`, `empty`, `io-error`, `compile-error`, `load-error`, `bind-error`; отдельный запуск повреждённой библиотеки использует `load-error`. `bound` — число функций; `omitted` — отклонённых кандидатов генератора; остальные три числа — попытки входа, успешные завершения адаптера и повторы в VM. Это не счётчики всех внутренних машинных вызовов.
 
-Обычный успех возвращает 0; ошибки запуска, компиляции и исполнения приводят к ненулевому коду, нормализованному `main` через `EXIT_FAILURE`. Исключение Graphviz описано в главе 27. Источники: [main.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/main.c), [launcher.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/launcher.c), [native_execution.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/native_execution.c), [binary_program.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/binary_program.c), [messages.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/resources/messages.c). Проверки параметров: [test_native_options.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_native_options.c).
+Обычный успех возвращает 0; ошибки запуска, компиляции и исполнения приводят к ненулевому коду, нормализованному `main` через `EXIT_FAILURE`. Исключение Graphviz описано в главе 27. Источники: [main.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/main.c), [launcher.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/launcher.c), [native_execution.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/native_execution.c), [binary_program.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/binary_program.c), [messages.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/resources/messages.c). Проверки параметров: [test_native_options.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_native_options.c).

@@ -248,6 +248,7 @@ static test_description_t test_list[] = {
     {"abstract state many declarations", test_abstract_state_many_declarations},
     {"abstract state join isolation", test_abstract_state_join_isolation},
     {"abstract state clone metadata", test_abstract_state_clone_metadata},
+    {"abstract state loop widening", test_abstract_state_loop_widening},
     {"abstract state branch program", test_abstract_state_branch_program},
     {"abstract truthiness", test_abstract_truthiness},
     {"if dispatch", test_if_dispatch},

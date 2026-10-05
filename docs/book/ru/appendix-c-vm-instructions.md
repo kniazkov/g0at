@@ -2,13 +2,13 @@
 
 [Оглавление](index.md) · [English](../en/appendix-c-vm-instructions.md) · [Назад](appendix-b-language.md) · [Далее](appendix-d-builtins.md)
 
-Редакция 2. Описываемая реализация: [commit 8d1fe86, с функцией `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Редакция 3. Описываемая реализация: [commit cf51b8c, с оператором `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-c-1"></a>
 
 ## В.1. Формат и обозначения
 
-[bytecode.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/bytecode.h) задаёт 8-байтовую инструкцию: `opcode` (8 бит), `flags` (8), `arg0` (16), `arg1` (32). Таблица ниже перечисляет все 52 кода в порядке [opcodes.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/opcodes.h). Обработчики находятся в [vm.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/vm.c). Числа относятся к этой редакции формата, а не к обещанию неизменности enum.
+[bytecode.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/bytecode.h) задаёт 8-байтовую инструкцию: `opcode` (8 бит), `flags` (8), `arg0` (16), `arg1` (32). Таблица ниже перечисляет все 52 кода в порядке [opcodes.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/opcodes.h). Обработчики находятся в [vm.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/vm.c). Числа относятся к этой редакции формата, а не к обещанию неизменности enum.
 
 `S` — сохраняемый префикс стека; вершина справа. `result` — обычный результат без исключения. `target`, `body`, `handler` — индексы инструкций; `data id` / `name id` — индексы дескрипторов данных, не указатели. Неиспользуемые операнды обозначены `—`. Вспомогательный буфер `ARG` не является стеком объектов.
 

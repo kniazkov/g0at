@@ -319,3 +319,48 @@ void forget_captured_abstract_values(abstract_state_t *state, const node_t *func
     call_copy_t context = {.caller = state, .function = function};
     avl_tree_for_each(state->values, forget_capture, &context);
 }
+
+/** @brief Mutable context for one loop-head widening pass. */
+typedef struct {
+    const abstract_state_t *head;
+    abstract_state_t *joined;
+    bool stable;
+} loop_widening_t;
+
+/** @brief Payload changes lose precision once, bounding numeric ascending chains. */
+static void widen_loop_entry(void *user_data, void *key, value_t value) {
+    loop_widening_t *context = user_data;
+    const lattice_element_t *old = get_from_abstract_state(context->head, key);
+    if (!old)
+        old = make_null_element();
+    lattice_pair_t *pair = value.ptr;
+    const lattice_element_t *next = pair->current;
+    if (next != old) {
+        if (is_integer_lattice_element(next))
+            next = make_integer_element();
+        else if (is_real_lattice_element(next))
+            next = make_real_element();
+        else if (is_string_lattice_element(next))
+            next = make_string_element();
+        else if (is_boolean_lattice_element(next))
+            next = make_boolean_element();
+        else if (next->type == LATTICE_KNOWN_FUNCTION)
+            next = make_function_element();
+        else if (next->type == LATTICE_TYPED_ARRAY)
+            next = make_array_element();
+    }
+    pair->current = next;
+    pair->summary = lattice_join(context->joined->arena, pair->summary, next);
+    context->stable &= next == old;
+}
+
+abstract_state_t *
+widen_loop_state(const abstract_state_t *head, const abstract_state_t *back_edge, bool *stable) {
+    abstract_state_t *joined = join_abstract_states(head, back_edge);
+    loop_widening_t context = {head,
+                               joined,
+                               head->builtin_bindings_unknown == joined->builtin_bindings_unknown};
+    avl_tree_for_each(joined->values, widen_loop_entry, &context);
+    *stable = context.stable;
+    return joined;
+}

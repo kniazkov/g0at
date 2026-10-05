@@ -1,0 +1,14 @@
+var i = 42;
+for (var i = 0; i < 2; i++) { var i = 7; println(i); }
+println(i);
+const find = func(n) {
+    for (var i = 0;; i++) { if (i == n) return i; }
+    return -1;
+};
+println(find(5));
+const first = func() { for (;;) return 9; };
+println(first());
+var saved = null;
+for (var k = 0; k < 3; k++) { saved = func() { return k; }; }
+println(saved());
+println(k);

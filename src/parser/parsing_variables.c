@@ -27,7 +27,10 @@ parsing_single_identifiers(token_t *identifier, parser_memory_t *memory, token_g
             || identifier->left->type == TOKEN_COMMA || identifier->left->type == TOKEN_SEMICOLON
             || identifier->left->type == TOKEN_VAR || identifier->left->type == TOKEN_CONST
             || identifier->left->type == TOKEN_THROW || identifier->left->type == TOKEN_TRY
-            || identifier->left->type == TOKEN_RETURN;
+            || identifier->left->type == TOKEN_RETURN || identifier->left->type == TOKEN_ELSE
+            || (identifier->left->type == TOKEN_BRACKET_PAIR && identifier->left->left
+                && (identifier->left->left->type == TOKEN_IF
+                    || identifier->left->left->type == TOKEN_FOR));
         if (!valid_left) {
             return NULL;
         }

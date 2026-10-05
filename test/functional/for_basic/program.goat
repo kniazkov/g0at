@@ -1,0 +1,10 @@
+var sum = 0;
+for (var i = 0; i < 5; i++) { sum = sum + i; }
+println(sum);
+var j = 0;
+for (; j < 3;) j++;
+println(j);
+for (j = 0; j < 4; ++j);
+println(j);
+for (const k = 9; false; println("bad")) println(k);
+println("done");

@@ -2,13 +2,13 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-d-builtins.md) · [Previous](appendix-c-vm-instructions.md) · [Next](appendix-e-launch-interfaces.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-d-1"></a>
 
 ## D.1. Common call rules
 
-[registry.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/registry.c) registers 33 functions. The tables list all of them. `pi` and `Exceptions` are root-environment values, not functions. A name may be shadowed by a user declaration; handling follows the built-in function object, not its spelling alone.
+[registry.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/registry.c) registers 33 functions. The tables list all of them. `pi` and `Exceptions` are root-environment values, not functions. A name may be shadowed by a user declaration; handling follows the built-in function object, not its spelling alone.
 
 The shared wrapper checks minimum arity: too few arguments produce the string exception `INVALID_ARGUMENT`. Extra arguments are evaluated first and then ignored, except for `int`'s second argument, which supplies a fallback value. Even `println()` without an argument fails; print an empty line with `println("")`.
 
@@ -77,4 +77,4 @@ Common math handlers compute a constant for known numbers; otherwise they produc
 
 These facts describe normal results, not a complete exception graph. A built-in C implementation also does not mean its call is permitted inside a generated C specialization: that is chapter 20's separate contract.
 
-Sources: [math_function.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/math_function.c), [atan.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/atan.c), [int.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/int.c), [abs.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/abs.c), [sign.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/sign.c), [input.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/input.c), [println.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/println.c). Checks: [test_builtin_functions.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_builtin_functions.c).
+Sources: [math_function.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/math_function.c), [atan.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/atan.c), [int.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/int.c), [abs.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/abs.c), [sign.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/sign.c), [input.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/input.c), [println.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/println.c). Checks: [test_builtin_functions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_builtin_functions.c).

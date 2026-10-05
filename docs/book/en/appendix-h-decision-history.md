@@ -2,9 +2,9 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-h-decision-history.md) · [Previous](appendix-g-implementation-boundaries.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
-This is a change index, not a reconstruction of author motives from branch names. Links lead to specific PR discussions and diffs. Current rules come from code and book chapters: historical text may describe an intermediate stage. The numbers below are established by main-branch merge commits.
+This is a change index, not a reconstruction of author motives from branch names. Links lead to specific PR discussions and diffs. Current rules come from code and book chapters: historical text may describe an intermediate stage. Earlier entries are established by main-branch merge commits; PR #104 records the loop implementation described in this revision.
 
 | PR | Recorded change and place in the book |
 | --- | --- |
@@ -33,6 +33,7 @@ This is a change index, not a reconstruction of author motives from branch names
 | [#92](https://github.com/kniazkov/g0at/pull/92) | Corrupt-binary tests through the shared in-memory decoder; chapter 26. |
 | [#93](https://github.com/kniazkov/g0at/pull/93) | Static MinGW runtime linking in generated DLLs; chapter 24. |
 | [#97](https://github.com/kniazkov/g0at/pull/97) | println with runtime and abstract checks; chapter 13 and appendix D. |
+| [#104](https://github.com/kniazkov/g0at/pull/104) | Scoped C-style for loops, widened abstract execution, native loops and numeric updates; chapters 2, 6–8, 16, 20, 22, 25, 28. |
 
 <a id="section-h-1"></a>
 
@@ -40,6 +41,6 @@ This is a change index, not a reconstruction of author motives from branch names
 
 [PR #94](https://github.com/kniazkov/g0at/pull/94) recorded the plan; [#95](https://github.com/kniazkov/g0at/pull/95) added chapter 1; [#96](https://github.com/kniazkov/g0at/pull/96) added part I. These were followed by [part II, #98](https://github.com/kniazkov/g0at/pull/98), [part III, #99](https://github.com/kniazkov/g0at/pull/99), [part IV, #100](https://github.com/kniazkov/g0at/pull/100), and [part V, #101](https://github.com/kniazkov/g0at/pull/101).
 
-These documentation records also cover time after the described implementation commit. Adding println changed the available language, so the book carries revision 2 and references commit 8d1fe86. Adding further chapters does not itself extend interpreter capabilities.
+[Part VI and appendices, #102](https://github.com/kniazkov/g0at/pull/102), completed the book. [#103](https://github.com/kniazkov/g0at/pull/103) removed the temporary plan and superseded standalone notes. Adding println produced revision 2; support for for loops produces revision 3, pinned to commit cf51b8c. Adding chapters alone does not extend interpreter capabilities.
 
 For a stable technical fact, prefer pinned source or a book section at a specific commit. A PR is useful when showing the transition itself: what code appeared, which checks were added, and what changed relative to the parent state.

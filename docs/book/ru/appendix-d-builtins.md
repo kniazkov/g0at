@@ -2,13 +2,13 @@
 
 [Оглавление](index.md) · [English](../en/appendix-d-builtins.md) · [Назад](appendix-c-vm-instructions.md) · [Далее](appendix-e-launch-interfaces.md)
 
-Редакция 2. Описываемая реализация: [commit 8d1fe86, с функцией `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Редакция 3. Описываемая реализация: [commit cf51b8c, с оператором `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-d-1"></a>
 
 ## Г.1. Общие правила вызова
 
-В [registry.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/registry.c) зарегистрированы 33 функции. Таблицы перечисляют их все. `pi` и `Exceptions` — значения корневого окружения, не функции. Имя можно затенить своим объявлением; обработчик выбирается по объекту встроенной функции, а не по одному написанию имени.
+В [registry.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/registry.c) зарегистрированы 33 функции. Таблицы перечисляют их все. `pi` и `Exceptions` — значения корневого окружения, не функции. Имя можно затенить своим объявлением; обработчик выбирается по объекту встроенной функции, а не по одному написанию имени.
 
 Минимум аргументов проверяется общей обёрткой: недостаток даёт строковое исключение `INVALID_ARGUMENT`. Лишние аргументы предварительно вычисляются и затем игнорируются, кроме второго аргумента `int`, который задаёт резервное значение. Даже `println()` без аргумента вызывает ошибку; пустую строку печатают через `println("")`.
 
@@ -77,4 +77,4 @@
 
 Эти сведения описывают обычный результат, а не полный граф исключений. Встроенная C-реализация также не означает, что вызов разрешён внутри генерируемой C-специализации: это отдельный контракт главы 20.
 
-Источники: [math_function.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/math_function.c), [atan.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/atan.c), [int.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/int.c), [abs.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/abs.c), [sign.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/sign.c), [input.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/input.c), [println.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/builtins/println.c). Проверки: [test_builtin_functions.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_builtin_functions.c).
+Источники: [math_function.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/math_function.c), [atan.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/atan.c), [int.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/int.c), [abs.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/abs.c), [sign.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/sign.c), [input.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/input.c), [println.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/println.c). Проверки: [test_builtin_functions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_builtin_functions.c).

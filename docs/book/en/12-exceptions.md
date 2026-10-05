@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/12-exceptions.md) · [Previous chapter](11-memory-management.md) · [Next chapter](13-builtins.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-12-1"></a>
 
@@ -10,7 +10,7 @@ Revision 2. Implementation described: [commit 8d1fe86, including `println`](http
 
 An ordinary expression passes its result to the next operation. `throw` passes a value to a handler, skipping the unfinished computation. In Goat, any value can be an exception, including a string, number, object, or `null`. No particular exception class is required.
 
-Standard operation errors use strings such as `DIVISION_BY_ZERO`, `INVALID_ARGUMENT`, and `INVALID_OPERATION`. [exceptions.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/exceptions.c) provides an immutable `Exceptions` object with standard names. These strings remain ordinary values: returning an error text normally does not itself raise an exception.
+Standard operation errors use strings such as `DIVISION_BY_ZERO`, `INVALID_ARGUMENT`, and `INVALID_OPERATION`. [exceptions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/exceptions.c) provides an immutable `Exceptions` object with standard names. These strings remain ordinary values: returning an error text normally does not itself raise an exception.
 
 The language value `null` also differs from a null C pointer. It has an object. Thus, `throw null` means a real exception whose value is `null`, rather than an absence of error.
 
@@ -18,7 +18,7 @@ The language value `null` also differs from a null C pointer. It has an object. 
 
 ## 12.2. An operation result carries a flag
 
-In [object.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/object.h), `operation_result_t` contains a value pointer and `is_exception`. `operation_success` and `operation_exception` construct its two variants. The contract requires a non-null pointer to a value owned by the result.
+In [object.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/object.h), `operation_result_t` contains a value pointer and `is_exception`. `operation_success` and `operation_exception` construct its two variants. The contract requires a non-null pointer to a value owned by the result.
 
 An arithmetic VM handler pops its operands, calls an object method, and releases the consumed references. It then checks the result flag: a normal value goes on the stack; an exceptional one goes to `dispatch_exception`. One instruction can therefore handle both a successful computation and division by zero.
 
@@ -28,7 +28,7 @@ Built-ins return the same result type. Their common wrapper releases arguments a
 
 ## 12.3. How try/catch is compiled
 
-[try_catch.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/graph/try_catch.c) emits `TRY` with a handler address. At runtime, this instruction creates a context marked `FLOW_THROW`, saving the address and the entry stack boundary.
+[try_catch.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/try_catch.c) emits `TRY` with a handler address. At runtime, this instruction creates a context marked `FLOW_THROW`, saving the address and the entry stack boundary.
 
 After the protected body completes normally, `RESTORE` removes the handler context and `JUMP` skips `catch`. On the exceptional path, the VM itself transfers control to the handler and pushes the exception. Its beginning is `ENTER; VAR`: a new context receives the local exception name. The `catch` ends with `RESTORE`.
 
@@ -41,13 +41,13 @@ This is a control-flow scheme, rather than a promise to execute both blocks. If 
 
 ## 12.4. Finding a handler and cleaning up
 
-`THROW` pops a value and transfers its ownership to `dispatch_exception` in [vm.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/vm.c). That function follows `context->previous` to the nearest `FLOW_THROW`. This searches the execution chain: an error in a callee can reach the caller's `catch`.
+`THROW` pops a value and transfers its ownership to `dispatch_exception` in [vm.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/vm.c). That function follows `context->previous` to the nearest `FLOW_THROW`. This searches the execution chain: an error in a callee can reach the caller's `catch`.
 
 Nested contexts are then destroyed, and the stack is reduced to the saved boundary. Temporary values above it receive `DECREF`. The auxiliary `ARG` operand buffer is cleared. The exception value itself is retained separately and must not disappear with the context where it arose.
 
 When a handler is found, its service context is also removed, the exception is pushed, and the instruction index changes to the `catch` address. A new `throw` inside `catch` therefore searches for an outer handler: the old `TRY` does not remain active for its own handler.
 
-If no handler exists, unwinding reaches the root context, the temporary stack is cleared, and the value is saved in the thread. The VM stops with a nonzero status. [binary_program.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/binary_program.c) prints an uncaught-exception diagnostic. While that diagnostic needs it, the value remains a garbage-collector root.
+If no handler exists, unwinding reaches the root context, the temporary stack is cleared, and the value is saved in the thread. The VM stops with a nonzero status. [binary_program.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/binary_program.c) prints an uncaught-exception diagnostic. While that diagnostic needs it, the value remains a garbage-collector root.
 
 <a id="section-12-5"></a>
 
@@ -101,9 +101,9 @@ Retrying in the VM after a native call's protective limit has specific condition
 
 ## 12.7. What the tests check
 
-[test_vm_exceptions.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_vm_exceptions.c) checks handler transfer, call unwinding, returns through protected regions, temporary-value cleanup, and retention of an uncaught object. It separately checks that `null` can be an exception value. These test execution structure, rather than just matching output strings.
+[test_vm_exceptions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_vm_exceptions.c) checks handler transfer, call unwinding, returns through protected regions, temporary-value cleanup, and retention of an uncaught object. It separately checks that `null` can be an exception value. These test execution structure, rather than just matching output strings.
 
-[test_operation_result.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_operation_result.c) checks the contracts for normal and exceptional operation results. Both levels matter because a correct error value does not guarantee a correct stack afterward. If the next statement after `catch` receives leftovers from another expression, handling remains broken even when the first diagnostic line is correct.
+[test_operation_result.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_operation_result.c) checks the contracts for normal and exceptional operation results. Both levels matter because a correct error value does not guarantee a correct stack afterward. If the next statement after `catch` receives leftovers from another expression, handling remains broken even when the first diagnostic line is correct.
 
 > [!CAUTION]
 > Exception handling does not isolate arbitrary machine code and is not a sandbox. Internal crashes and memory errors in the C implementation have no general guarantee of safe interception at Goat level.

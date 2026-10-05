@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/14-abstract-values.md) · [Previous chapter](13-builtins.md) · [Next chapter](15-abstract-state.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-14-1"></a>
 
@@ -18,7 +18,7 @@ The goal is information reliable enough for later decisions: remove an unreachab
 
 ## 14.2. From one number to a set of possibilities
 
-The domains in [lattice.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/lattice.h) retain different amounts of information:
+The domains in [lattice.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/lattice.h) retain different amounts of information:
 
 | Abstract value | What it describes |
 |---|---|
@@ -39,7 +39,7 @@ Precision can be understood through set inclusion: `3` is more precise than `[2.
 
 ## 14.3. Why a lattice is needed
 
-A lattice is a structure defining a join and a meet for a pair of descriptions. In Goat these operations are `lattice_join` and `lattice_meet`, implemented in [lattice.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/lattice.c).
+A lattice is a structure defining a join and a meet for a pair of descriptions. In Goat these operations are `lattice_join` and `lattice_meet`, implemented in [lattice.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/lattice.c).
 
 A join is used when execution could arrive along different paths. It must cover both paths' possibilities. A meet expresses simultaneous constraints. The examples below concern domain operations, rather than special Goat syntax:
 
@@ -77,7 +77,7 @@ A real constant contains a `double`. When comparing descriptions, the lattice tr
 
 In contrast, `+0.0` and `-0.0` remain distinct. Their join is `real`, rather than either constant. Numeric comparison considers them equal, but their representation can affect other operations. The analyzer must not silently lose that sign when choosing a constant.
 
-Integer `3` and real `3.0` also differ: their join is `numeric`. Equal numeric magnitudes do not remove the representation distinction that matters to a native interface. [test_lattice.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_lattice.c) checks these boundaries.
+Integer `3` and real `3.0` also differ: their join is `numeric`. Equal numeric magnitudes do not remove the representation distinction that matters to a native interface. [test_lattice.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_lattice.c) checks these boundaries.
 
 <a id="section-14-6"></a>
 

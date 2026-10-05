@@ -45,7 +45,7 @@ run() {
 same_text() { diff -u <(tr -d '\r' < "$1") <(tr -d '\r' < "$2"); }
 field() { grep -qx "$2=$3" "$1"; }
 positive() { awk -F= -v key="$2" '$1==key && $2 ~ /^[0-9]+$/ && $2>0 {found=1} END {exit !found}' "$1"; }
-for name in numeric edges recursive caught uncaught unmatched effects replacement; do
+for name in numeric edges recursive caught uncaught unmatched effects replacement loops; do
     for mode in off auto required; do
         current="$name (native=$mode)"
         stem="$name-$mode"
@@ -74,7 +74,7 @@ for name in numeric edges recursive caught uncaught unmatched effects replacemen
                 field "$report" bound 8
                 field "$report" succeeded 11
             fi
-            if [[ $name == recursive ]]; then field "$report" retries 1; fi
+            if [[ $name == recursive || $name == loops ]]; then field "$report" retries 1; fi
         fi
         if [[ $mode != off ]]; then
             same_text "$output_dir/$name-off.out" "$output_dir/$stem.out"

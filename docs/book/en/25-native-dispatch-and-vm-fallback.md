@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/25-native-dispatch-and-vm-fallback.md) · [Previous chapter](24-library-compilation-and-loading.md) · [Next chapter](26-separate-compilation.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-25-1"></a>
 
@@ -12,7 +12,7 @@ A user writes an ordinary call such as `calculate(3)`. Selecting native code req
 
 Preparation binds a native-specialization descriptor to a `FUNC` instruction. When the VM creates the function object, it receives a reference to that descriptor alongside its ordinary data: parameters, bytecode address, and closure. The body bytecode remains available even when a native version exists.
 
-In [function.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/function.c), selection precedes allocation of the bytecode call context. This is where analysis results, a loaded library, and actual runtime arguments meet.
+In [function.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/function.c), selection precedes allocation of the bytecode call context. This is where analysis results, a loaded library, and actual runtime arguments meet.
 
 <a id="section-25-2"></a>
 
@@ -69,11 +69,11 @@ A separate guard operates inside the generated module:
 | Limit | Current value |
 |---|---:|
 | Simultaneous entries into generated functions | 32 |
-| Total function-entry budget per adapter call | 4096 |
+| Shared function-entry and loop-iteration budget per adapter call | 4096 |
 | Distance from the adapter's stack marker | 65,536 bytes |
 | Parameters + locals + temporaries in one definition | At most 128 |
 
-Sequential calls also spend the entry budget, whereas depth decreases on return. A broad call tree can therefore exhaust the budget without great depth. The limit of 128 is checked during generation; the others are checked during execution.
+Sequential calls and entered loop iterations spend the shared budget, whereas depth decreases on function return. A loop iteration spends one unit without changing depth. A broad call tree can therefore exhaust the budget without great depth. The limit of 128 is checked during generation; the others are checked during execution.
 
 The adapter installs local guard state through a thread-local pointer and `setjmp` (a destination for a nonlocal return in C). An entry check that exceeds a limit uses `longjmp`; the adapter then restores previous state and returns `RESOURCE_LIMIT`. Internal functions are marked `noinline` so external optimization does not remove the intended frame boundaries.
 
@@ -144,4 +144,4 @@ The default for an ordinary source file is `off`. For `--run` of a saved `.gbin`
 
 For `25-dispatch.goat` with normal stack headroom, the values are `bound=1`, `attempts=3`, `succeeded=3`, and `retries=0`. The other two `identity` calls execute in bytecode and are not failed native attempts. With `--compile`, there is no execution, so call counters remain zero even after successful preparation.
 
-CLI policy and reporting are in [native_execution.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/native_execution.c); the adapter guard is in [c_adapter.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen/c_adapter.c). [check_native_call.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_native_call.sh) checks the call boundary, while [check_native_modes.sh](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts/check_native_modes.sh) checks modes, effects, and VM fallback.
+CLI policy and reporting are in [native_execution.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/native_execution.c); the adapter guard is in [c_adapter.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/c_adapter.c). [check_native_call.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_call.sh) checks the call boundary, while [check_native_modes.sh](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts/check_native_modes.sh) checks modes, effects, and VM fallback.

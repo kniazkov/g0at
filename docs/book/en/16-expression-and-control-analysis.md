@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/16-expression-and-control-analysis.md) · [Previous chapter](15-abstract-state.md) · [Next chapter](17-call-analysis-and-specializations.md)
 
-Revision 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-16-1"></a>
 
@@ -18,11 +18,11 @@ This is not cosmetic. In `f(x++, x++)`, changing traversal order changes argumen
 
 ## 16.2. Arithmetic precision
 
-[addition.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/addition.c), [subtraction.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/subtraction.c), and [multiplication.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/multiplication.c) distinguish constants, integer ranges, and broad numeric types. Constants retain concrete results. Interval bounds are computed where possible.
+[addition.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/addition.c), [subtraction.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/subtraction.c), and [multiplication.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/multiplication.c) distinguish constants, integer ranges, and broad numeric types. Constants retain concrete results. Interval bounds are computed where possible.
 
 Integer overflow requires care. Constant operations use the language's arithmetic modulo `2^64`. But an interval crossing a representation boundary can no longer be described as an ordinary continuous interval between naively wrapped endpoints. Such results expand to `integer`.
 
-[division.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/division.c) accounts for zero, exact integer quotients, and real promotion. Dividing two arbitrary integers generally produces `numeric`: some arguments yield an integer, others a real. The minimum integer divided by `-1` is handled separately. `%` and `**` have their own rules in [modulo.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/modulo.c) and [power.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/power.c).
+[division.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/division.c) accounts for zero, exact integer quotients, and real promotion. Dividing two arbitrary integers generally produces `numeric`: some arguments yield an integer, others a real. The minimum integer divided by `-1` is handled separately. `%` and `**` have their own rules in [modulo.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/modulo.c) and [power.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/power.c).
 
 An abstract normal result does not always prove freedom from exceptions for every input. If a divisor may be zero or nonzero, describing successful quotients does not describe the error path. An optimizer therefore needs more than a suitable result type.
 
@@ -30,21 +30,21 @@ An abstract normal result does not always prove freedom from exceptions for ever
 
 ## 16.3. Comparisons, truthiness, and bits
 
-[comparison.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/comparison.c) computes a known boolean when constants or bounds prove it; otherwise, `boolean` remains. Integer endpoints are not unconditionally converted to `double`, which would lose some distinctions between large integers.
+[comparison.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/comparison.c) computes a known boolean when constants or bounds prove it; otherwise, `boolean` remains. Integer endpoints are not unconditionally converted to `double`, which would lose some distinctions between large integers.
 
 `lattice_truth` has four outcomes: `ABSTRACT_TRUE`, `ABSTRACT_FALSE`, `ABSTRACT_EITHER`, and `ABSTRACT_NEVER`. The last means no normal value, rather than another kind of boolean `false`. An interval excluding zero is true; an arbitrary string may be empty and therefore yields `EITHER`.
 
-Bitwise operations in [bitwise.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/bitwise.c) work in the integer domain, computing constants and selected useful constraints. A mask, for example, can bound a result range. An unsupported type or a known invalid shift must not turn into an arbitrary successful result.
+Bitwise operations in [bitwise.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/bitwise.c) work in the integer domain, computing constants and selected useful constraints. A mask, for example, can bound a result range. An unsupported type or a known invalid shift must not turn into an arbitrary successful result.
 
-Prefix and postfix updates use [update.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/update.c). Both write the new value, but return different descriptions: prefix returns the new value, postfix the old. Reducing both to one pure arithmetic expression would lose the state write.
+Prefix and postfix updates use [update.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/update.c). Both write the new value, but return different descriptions: prefix returns the new value, postfix the old. Reducing both to one pure arithmetic expression would lose the state write.
 
 <a id="section-16-4"></a>
 
 ## 16.4. if and short-circuit evaluation
 
-In [if_else.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/graph/if_else.c), a known condition selects one branch; an unknown condition clones state, executes both branches, and joins the results. An absent `else` means a second path without a body. A terminated branch contributes no current values to the continuation.
+In [if_else.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/if_else.c), a known condition selects one branch; an unknown condition clones state, executes both branches, and joins the results. An absent `else` means a second path without a body. A terminated branch contributes no current values to the continuation.
 
-Logical `&&` and `||` in [logic.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/graph/logic.c) also branch evaluation. If the left operand already determines the result, the right and its effects are skipped. With uncertain truthiness, analysis must account for both evaluating and skipping the right operand.
+Logical `&&` and `||` in [logic.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/logic.c) also branch evaluation. If the left operand already determines the result, the right and its effects are skipped. With uncertain truthiness, analysis must account for both evaluating and skipping the right operand.
 
 File [16-control.goat](../examples/16-control.goat):
 
@@ -74,6 +74,17 @@ With an empty line:
 
 Both `++count` expressions are skipped. Analysis must likewise not attribute an executed write to them. The final conditional's branch is unknown in advance, but the possible result values after joining are known.
 
+### A loop needs facts for every iteration
+
+A first visit with `i = 0` cannot justify replacing `i < n` or a branch inside the loop for all later visits. [`for.c`](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/for.c) therefore computes a loop-head invariant (facts covering every arrival at the condition). It evaluates one abstract condition/body/step pass, joins the continuing back edge with the previous head, and repeats. Returns contribute to function-return information but do not flow back to the condition.
+
+[`widen_loop_state`](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/abstract_state.c) broadens changing constants and intervals to type domains. For example, a counter growing from `0` and `1` becomes `integer` instead of producing an endless chain of larger intervals. Unchanged facts remain available. When the current facts stabilize, the condition is evaluated from that invariant to describe exit. A false first condition preserves zero-trip facts; an always-true invariant condition provides no normal exit. This is not a proof of termination.
+
+The ordinary reachability pass uses this abstract execution without recording a first iteration as a shared AST constant. Specialization-specific expression proofs intersect observations across passes, so an early constant cannot survive a later incompatible observation.
+
+> [!CAUTION]
+> A loop is limited to 16 abstract passes and shares the existing evaluation budget, initially 1024, with calls and nested loops. If stabilization fails, current facts and return information become unknown, and the signature cannot obtain native approval from the unfinished analysis. Exit tests do not narrow counter intervals; a known finite source loop may therefore retain only its variable types.
+
 <a id="section-16-5"></a>
 
 ## 16.5. Returns and unreachability
@@ -82,7 +93,7 @@ A `return` first analyzes its expression. Its normal result joins the shared ret
 
 With an unknown condition, one path may return while another continues. Thus, “the body contains a return” does not mean “the function always returns here.” Returned values, variable observations, and the possibility of ordinary continuation are combined separately.
 
-A later, separate pass in [reachability.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/reachability.c) sets `NODE_FLAG_UNREACHABLE` and `immediate_value`. This prepares proofs for changing the shared AST. It is more conservative than ordinary call analysis: a user call forgets current facts, and a function body does not execute merely because its creation expression is encountered. One investigated call's result does not become a global property of the shared body.
+A later, separate pass in [reachability.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/reachability.c) sets `NODE_FLAG_UNREACHABLE` and `immediate_value`. This prepares proofs for changing the shared AST. It is more conservative than ordinary call analysis: a user call forgets current facts, and a function body does not execute merely because its creation expression is encountered. One investigated call's result does not become a global property of the shared body.
 
 <a id="section-16-6"></a>
 
@@ -91,7 +102,7 @@ A later, separate pass in [reachability.c](https://github.com/kniazkov/g0at/blob
 In the VM, `try/catch` handles an exact thrown value and context unwinding. Equally precise abstract analysis would require separate exceptional-exit states and their transfer into the handler.
 
 > [!CAUTION]
-> The current implementation has no such model. The `try/catch` node's `execute` method in [try_catch.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/graph/try_catch.c) forgets known values and preserves possible continuation; it does not compute precise body and handler states. Ordinary known-call analysis declines precise traversal of a body containing `try/catch`, while type analysis marks the attempt incomplete.
+> The current implementation has no such model. The `try/catch` node's `execute` method in [try_catch.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/try_catch.c) forgets known values and preserves possible continuation; it does not compute precise body and handler states. Ordinary known-call analysis declines precise traversal of a body containing `try/catch`, while type analysis marks the attempt incomplete.
 
 An explicit `throw` or a definitely failing operation can end the normal path. This helps, but does not replace precise modeling of where the error is caught and which changed variables reach that handler. Executing a construct and analyzing it precisely are different capabilities.
 
@@ -104,4 +115,4 @@ Precision is lost for several reasons: the domain cannot express the result set,
 > [!CAUTION]
 > Condition analysis is currently not a constraint solver, and abstract operator support is broader than the native subset. A precise result for `%`, a shift, or a logical operator does not by itself permit generation of the corresponding C function.
 
-Programs listed in [list.txt](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/test/analysis/list.txt) and reachability tests in [test_reachability.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test/test_reachability.c) check behavior. They compare not only result types but also writes that should or should not occur under the specified evaluation order.
+Programs listed in [list.txt](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/analysis/list.txt) and reachability tests in [test_reachability.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_reachability.c) check behavior. They compare not only result types but also writes that should or should not occur under the specified evaluation order.

@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/01-project-purpose.md) · [Next chapter](02-implemented-language.md)
 
-Edition 2. Implementation described: [commit 8d1fe86, including `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Edition 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-1-1"></a>
 
@@ -22,7 +22,7 @@ This book is organized around those same decisions. We will examine the problem 
 
 For a person, a program begins as text. To execute it, Goat transforms that text into several internal representations. First it recognizes individual elements of the notation, then assembles them into a program tree. The tree records the structure of expressions and statements: for example, which two expressions are added and which condition a branch belongs to.
 
-The ordinary execution path uses bytecode: a sequence of instructions for Goat's own virtual machine. The virtual machine (a program that executes bytecode instructions; VM for short) is written in C; it executes these instructions, stores intermediate values, and manages function calls. The main stages are connected in the [launcher module](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/launcher.c).
+The ordinary execution path uses bytecode: a sequence of instructions for Goat's own virtual machine. The virtual machine (a program that executes bytecode instructions; VM for short) is written in C; it executes these instructions, stores intermediate values, and manages function calls. The main stages are connected in the [launcher module](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/launcher.c).
 
 Before execution, the analyzer tries to establish what is already known about the program. For example, it can obtain an exact value for the expression `2 + 3`. When constants are replaced with function parameters, less information may be available: the type is known, but the particular numbers are not. Computing this information without running the program in the ordinary way is called static analysis.
 
@@ -40,13 +40,13 @@ The names of the subsystems can make a language implementation difficult to navi
 
 | Area | Implementation | Main sources |
 |---|---|---|
-| Reading and parsing | Lexical analysis (recognizing names, numbers, and operator symbols in text), bracket grouping, reduction rules, and construction of the program tree | [scanner](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/scanner), [parser](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/parser) |
-| Program representation | Tree nodes, scopes, name binding, and retention of original subtrees during replacement | [graph](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/graph), [analysis.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/analysis.c) |
-| Execution | Bytecode generation, a stack-based virtual machine, objects, functions, closures (functions with a retained environment), and exceptions | [codegen](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen), [vm](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm), [model](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model) |
-| Memory management | Compiler arenas (memory regions for allocating and releasing data together), object reference counts, and mark-and-sweep garbage collection | [arena.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/lib/arena.c), [object.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/object.h), [gc.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/gc.c) |
-| Static analysis | Abstract values and states (descriptions of possible values and program states), call and recursion analysis, effect information, and C generation eligibility checks | [analysis](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis) |
-| Native backend (the subsystem that prepares machine code) | C generation for supported numeric specializations, library compilation and loading, implementation selection at calls, and conditional fallback to the VM | [native_pipeline.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen/native_pipeline.c), [function.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/function.c) |
-| Separate compilation | Saving and loading `.gbin`, association with a native library, and execution of a prepared artifact without source code or a compiler | [binary_program.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/cli/binary_program.c), [binary.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/binary.c) |
+| Reading and parsing | Lexical analysis (recognizing names, numbers, and operator symbols in text), bracket grouping, reduction rules, and construction of the program tree | [scanner](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd/src/scanner), [parser](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser) |
+| Program representation | Tree nodes, scopes, name binding, and retention of original subtrees during replacement | [graph](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph), [analysis.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/analysis.c) |
+| Execution | Bytecode generation, a stack-based virtual machine, objects, functions, closures (functions with a retained environment), and exceptions | [codegen](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen), [vm](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm), [model](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model) |
+| Memory management | Compiler arenas (memory regions for allocating and releasing data together), object reference counts, and mark-and-sweep garbage collection | [arena.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/lib/arena.c), [object.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/object.h), [gc.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/gc.c) |
+| Static analysis | Abstract values and states (descriptions of possible values and program states), call and recursion analysis, effect information, and C generation eligibility checks | [analysis](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis) |
+| Native backend (the subsystem that prepares machine code) | C generation for supported numeric specializations, library compilation and loading, implementation selection at calls, and conditional fallback to the VM | [native_pipeline.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/native_pipeline.c), [function.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/function.c) |
+| Separate compilation | Saving and loading `.gbin`, association with a native library, and execution of a prepared artifact without source code or a compiler | [binary_program.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/binary_program.c), [binary.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/binary.c) |
 
 These subsystems have different support boundaries. The VM can execute a function for which the C generator does not yet have the necessary mechanisms. This distinction will matter when reading analysis and native execution reports.
 
@@ -54,7 +54,7 @@ These subsystems have different support boundaries. The VM can execute a functio
 
 ## 1.4. One Program, Two Paths
 
-We can already observe the difference between VM and native execution. The repository includes a [Fibonacci example](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/example/fibonacci_analysis.goat). Its function is recursive: to compute a result, it calls itself with smaller arguments. The program computes the value for the argument `10`.
+We can already observe the difference between VM and native execution. The repository includes a [Fibonacci example](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/example/fibonacci_analysis.goat). Its function is recursive: to compute a result, it calls itself with smaller arguments. The program computes the value for the argument `10`.
 
 Let us run the same source in two ways. After building Goat, from the repository root on Linux:
 
@@ -93,10 +93,10 @@ When reading the book, it helps to move between the explanation and the code. Th
 The repository provides several kinds of material for this purpose:
 
 - source code defines algorithms, structures, and failure conditions;
-- [unit tests](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/test) check individual mechanisms and their interactions;
-- [analysis tests](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0/test/analysis) compare inferred information with expectations;
-- [functional tests](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0/test/functional) and [validation scripts](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0/scripts) check execution results and component integration;
-- the [CI configuration](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/.github/workflows/build_and_test.yml) (automated building and checking of changes) specifies checks for Linux with GCC and Clang and for Windows with MinGW variants;
+- [unit tests](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test) check individual mechanisms and their interactions;
+- [analysis tests](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd/test/analysis) compare inferred information with expectations;
+- [functional tests](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd/test/functional) and [validation scripts](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd/scripts) check execution results and component integration;
+- the [CI configuration](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/.github/workflows/build_and_test.yml) (automated building and checking of changes) specifies checks for Linux with GCC and Clang and for Windows with MinGW variants;
 - the commit and PR history records the sequence of changes and the discussion of decisions.
 
 A link to a specific code revision makes it possible to revisit the same explanation after later changes. A test result should also identify the test itself and the environment in which it passed. A speed measurement needs the platform, build configuration, and methodology: without them, the number loses much of its meaning.

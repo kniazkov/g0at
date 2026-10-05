@@ -2,7 +2,7 @@
 
 [Оглавление](index.md) · [English](../en/appendix-g-implementation-boundaries.md) · [Назад](appendix-f-implementation-map.md) · [Далее](appendix-h-decision-history.md)
 
-Редакция 2. Описываемая реализация: [commit 8d1fe86, с функцией `println`](https://github.com/kniazkov/g0at/tree/8d1fe867ff5272d8d59a44785871f0db1b454df0).
+Редакция 3. Описываемая реализация: [commit cf51b8c, с оператором `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-g-1"></a>
 
@@ -20,7 +20,7 @@
 | Деление, остаток, степень | Да | Да | Абстрактные обработчики | Нет общего исполнения |
 | Сравнения | Да | Числа, строки, bool; равенство объектов | Точность зависит от операндов | Числовые |
 | Логические и побитовые операции | Да | Да | Включая короткое замыкание | Нет общего исполнения |
-| ++ / -- | Да | Да | Изменяют состояние | Нет общего исполнения |
+| ++ / -- | Да | Да | Изменяют состояние | Изменяемые числовые параметры/локальные |
 | if / else | Да | Да | Выбор/объединение ветвей | При доказанном условии и теле |
 | Функции, return | Да | Да | Вызовы и сигнатуры | Чистое числовое подмножество |
 | Прямая/взаимная рекурсия | Через функции | Да | SCC и ограниченная неподвижная точка | При доказательствах; ресурсный повтор |
@@ -32,7 +32,8 @@
 | Блок-объект | Да | Объект контекста | Ограниченные сведения | Не как общее объектное значение |
 | Произвольные свойства и прототипы | Нет общего доступа | Есть C API модели | Не равнозначно поддержке синтаксиса | Нет |
 | Массивы | Нет | Нет полного пользовательского пути | Элемент домена существует | Нет |
-| Циклы, импорты | Нет | Нет доступного пути из такого синтаксиса | Нет полного механизма | Нет |
+| for | Да | Области цикла, вложенные операторы | Инвариант с расширением; ограниченные проходы | Доказанные числовые тела; ресурсный возврат |
+| while, do/while, break, continue, импорты | Нет | Нет доступного пути из такого синтаксиса | Нет полного механизма | Нет |
 | Пользовательские потоки | Нет | Есть внутренние структуры process/thread | Не модель пользовательской многопоточности | Нет интерфейса |
 
 <a id="section-g-2"></a>
@@ -52,6 +53,6 @@
 
 ## Ж.3. Где уточнять статус
 
-Синтаксис проверяется по [parser.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/parser/parser.c); исполняемые операции — по [vm.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/vm/vm.c) и [object.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/model/object.h); абстрактные сведения — по [lattice.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/function_call.c) и [c_body.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/analysis/c_body.c); нативная граница — по [native_abi.h](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/include/goat/native_abi.h) и [c_generation.c](https://github.com/kniazkov/g0at/blob/8d1fe867ff5272d8d59a44785871f0db1b454df0/src/codegen/c_generation.c).
+Синтаксис проверяется по [parser.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parser.c); исполняемые операции — по [vm.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/vm.c) и [object.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/object.h); абстрактные сведения — по [lattice.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_call.c) и [c_body.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/c_body.c); нативная граница — по [native_abi.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/include/goat/native_abi.h) и [c_generation.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/codegen/c_generation.c).
 
 Практический маршрут: сначала воспроизвести программу в VM, затем проверить журнал нужной сигнатуры, затем полученный C и лишь после этого отчёт исполнения. Поддержка на предыдущем шаге не доказывает следующий. Подробные основания матрицы находятся в главах 5–7, 9, 16–20 и 22–26.

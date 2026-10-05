@@ -24,7 +24,8 @@ compilation_error_t *preparsing_parenthesized_expressions(token_t *token,
                                                           parser_memory_t *memory,
                                                           token_groups_t *groups) {
     assert(token->type == TOKEN_BRACKET_PAIR && token->text.data[0] == '(');
-    if (token->left && token->left->type == TOKEN_IF) { // if (...
+    if (token->left
+        && (token->left->type == TOKEN_IF || token->left->type == TOKEN_FOR)) { // if (...
         remove_token_from_group(token);
         return NULL;
     }

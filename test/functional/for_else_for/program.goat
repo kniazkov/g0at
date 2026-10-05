@@ -1,0 +1,1 @@
+var x=0; for(var i=0;i<3;i++) if(i==0) x=x+1; else for(var j=0;j<2;j++) x=x+10; println(x);
