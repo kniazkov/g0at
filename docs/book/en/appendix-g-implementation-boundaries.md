@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-g-implementation-boundaries.md) · [Previous](appendix-f-implementation-map.md) · [Next](appendix-h-decision-history.md)
 
-Revision 4. Implementation described: [commit d8eb008, without a cumulative native execution budget](https://github.com/kniazkov/g0at/tree/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7).
+Revision 6. Implementation described: [commit fc4af9d](https://github.com/kniazkov/g0at/tree/fc4af9d85d2a45925e9e370a1e988ccb077b056e).
 
 <a id="section-g-1"></a>
 
@@ -27,7 +27,7 @@ Revision 4. Implementation described: [commit d8eb008, without a cumulative nati
 | Mutable-data capture | Yes | Closures | Conservative effect tracking | No |
 | Capturing a const number | Yes | Yes | Capture tracking | No under current contract |
 | Immutable function reference | Yes | Yes | Static-target resolution | With an eligible exact signature |
-| Built-ins | Named call | 33 implementations | Descriptor and abstract handler | No general calls; folding is separate |
+| Built-ins | Named call | 33 implementations | Descriptor and abstract handler | Numeric `abs` with binding proof; no general calls to other built-ins |
 | try / catch / throw | Yes | Yes | Limited model; not complete exception flow | No |
 | Block object | Yes | Context object | Limited information | Not as a general object value |
 | Arbitrary properties and prototypes | No general access | Model C API exists | Not equivalent to syntax support | No |
@@ -53,6 +53,6 @@ Revision 4. Implementation described: [commit d8eb008, without a cumulative nati
 
 ## G.3. Where to establish status
 
-Check syntax in [parser.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/parser/parser.c); executable operations in [vm.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/vm/vm.c) and [object.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/model/object.h); abstract facts in [lattice.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/function_call.c), and [c_body.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/analysis/c_body.c); the native boundary in [native_abi.h](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/include/goat/native_abi.h) and [c_generation.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/codegen/c_generation.c).
+Check syntax in [parser.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/parser/parser.c); executable operations in [vm.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/vm/vm.c) and [object.h](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/model/object.h); abstract facts in [lattice.h](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/lattice.h), [function_call.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/function_call.c), and [c_body.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/c_body.c); the native boundary in [native_abi.h](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/include/goat/native_abi.h) and [c_generation.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/codegen/c_generation.c).
 
 A practical route is to reproduce a program in the VM, inspect the relevant signature's log, inspect generated C, and only then read the execution report. Support at one step does not prove the next. Chapters 5–7, 9, 16–20, and 22–26 give the matrix's detailed foundations.

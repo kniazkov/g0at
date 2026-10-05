@@ -63,6 +63,7 @@ static bool stub() {
 
 static test_description_t test_list[] = {
     {"native execution options", test_native_options},
+    {"SHA-256 vectors", test_sha256},
     {"binary roundtrip", test_binary_roundtrip},
     {"binary rejection", test_binary_rejection},
     {"binary options", test_binary_options},

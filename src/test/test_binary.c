@@ -29,11 +29,33 @@ static bytecode_t *sample(void) {
     return result;
 }
 
+bool test_sha256(void) {
+    const char *inputs[] = {"", "abc", "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"};
+    const char *expected[] = {"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                              "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+                              "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"};
+    for (size_t i = 0; i < 4; i++) {
+        char *large = i == 3 ? ALLOC(1000000) : NULL;
+        if (large)
+            memset(large, 'a', 1000000);
+        uint8_t digest[SHA256_SIZE];
+        sha256(large ? large : inputs[i], large ? 1000000 : strlen(inputs[i]), digest);
+        FREE(large);
+        char hex[65];
+        for (size_t j = 0; j < SHA256_SIZE; j++)
+            sprintf(hex + 2 * j, "%02x", (unsigned)digest[j]);
+        ASSERT(!strcmp(hex,
+                       i == 3 ? "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0"
+                              : expected[i]));
+    }
+    return true;
+}
+
 bool test_binary_roundtrip(void) {
     bytecode_t *code = sample();
     ASSERT(save_binary_program(filename, code, 0));
     binary_program_t loaded = load_binary_program(filename);
-    ASSERT(loaded.code && !loaded.binding_count && !loaded.library_checksum);
+    ASSERT(loaded.code && !loaded.binding_count);
     ASSERT(loaded.code->buffer_size == code->buffer_size);
     ASSERT(!memcmp(loaded.code->buffer, code->buffer, code->buffer_size));
     ASSERT(loaded.code->instructions_count == 3 && loaded.code->data_descriptor_count == 1);
@@ -92,13 +114,15 @@ bool test_binary_rejection(void) {
                               16,
                               24,
                               32,
+                              40,
                               48,
-                              64 + 8,
-                              64 + 16,
-                              64 + 24,
-                              64 + sizeof(goat_binary_header_t),
-                              64 + sizeof(goat_binary_header_t) + 4,
-                              64 + sizeof(goat_binary_header_t) + 3 * sizeof(instruction_t)};
+                              64,
+                              96 + 8,
+                              96 + 16,
+                              96 + 24,
+                              96 + sizeof(goat_binary_header_t),
+                              96 + sizeof(goat_binary_header_t) + 4,
+                              96 + sizeof(goat_binary_header_t) + 3 * sizeof(instruction_t)};
     for (size_t i = 0; i < sizeof(offsets) / sizeof(*offsets); i++) {
         memcpy(copy, bytes, size);
         put64(copy, offsets[i], UINT64_MAX);

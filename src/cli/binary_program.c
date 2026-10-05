@@ -63,17 +63,17 @@ bool compile_binary_program(const options_t *options, const node_t *root, byteco
         ok = false;
         goto done;
     }
-    uint64_t checksum = 0;
+    uint8_t digest[SHA256_SIZE] = {0};
     if (report.bound_functions) {
         size_t size;
         void *bytes = read_binary_file(library->normal_path, GOAT_BINARY_LIMIT, &size);
         ok = bytes != NULL;
         if (ok)
-            checksum = binary_checksum(bytes, size);
+            sha256(bytes, size, digest);
         FREE(bytes);
     }
     if (ok)
-        ok = save_binary_program(binary->normal_path, code, checksum);
+        ok = save_binary_program(binary->normal_path, code, digest);
     if (!ok)
         fprintf(stderr, "Could not save compiled program.\n");
 done:

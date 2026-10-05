@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/20-native-eligibility.md) · [Previous chapter](19-effects-and-purity.md) · [Next chapter](21-ast-transformations.md)
 
-Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Revision 6. Implementation described: [commit fc4af9d](https://github.com/kniazkov/g0at/tree/fc4af9d85d2a45925e9e370a1e988ccb077b056e).
 
 <a id="section-20-1"></a>
 
@@ -18,7 +18,7 @@ These checks precede C generation. `supported` means proven membership in the cu
 
 ## 20.2. The numeric contract
 
-[c_contract.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/c_contract.c) classifies parameters and results. `integer` maps to `int64`, and `real` to `double`. `numeric` is insufficient: it combines two representations rather than selecting one. `TOP`, `not null`, and `BOTTOM` likewise specify no required concrete interface.
+[c_contract.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/c_contract.c) classifies parameters and results. `integer` maps to `int64`, and `real` to `double`. `numeric` is insufficient: it combines two representations rather than selecting one. `TOP`, `not null`, and `BOTTOM` likewise specify no required concrete interface.
 
 Strings, booleans, and other known nonnumeric types are outside the current external contract. A boolean may nevertheless exist inside a body, for example as a comparison result. Call-boundary restrictions differ from internal-computation restrictions.
 
@@ -31,7 +31,7 @@ Purity is checked, followed by captures. An immutable reference to a statically 
 
 ## 20.3. Proof at an expression point
 
-[c_expression.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/c_expression.c) records a node's C representation, possible constant, and `discardable` flag—whether its evaluation may be removed. Records belong to a particular signature. A declaration summary such as `[0..20]` cannot replace one.
+[c_expression.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/c_expression.c) records a node's C representation, possible constant, and `discardable` flag—whether its evaluation may be removed. Records belong to a particular signature. A declaration summary such as `[0..20]` cannot replace one.
 
 If one node is visited with incompatible representations, its proof becomes `unknown`. A constant survives only if observations agree. Signed zero matters; `NaN` is not accepted as a stable constant by this equality check. This is a stricter task than comparing lattice descriptions.
 
@@ -41,7 +41,7 @@ A permitted result does not yet permit removing the expression. Assignment and c
 
 ## 20.4. Locals and the complete body
 
-[c_body.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/c_body.c) reanalyzes a specialization and checks body syntax. Each local declaration receives one representation: `int64`, `double`, or `bool`. Every write must agree with it. Parameters already have fixed representations from the signature.
+[c_body.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/c_body.c) reanalyzes a specialization and checks body syntax. Each local declaration receives one representation: `int64`, `double`, or `bool`. Every write must agree with it. Parameters already have fixed representations from the signature.
 
 Supported constructs include numeric literals, suitable local-variable reads, unary `+` and `-`, `+`, `-`, `*`, numeric comparisons, local declarations and assignments, numeric `++`/`--`, branches, `for` loops, numeric returns, and proven static calls. Individual node methods also check operands and context; an operator-name list cannot replace these conditions.
 
@@ -131,3 +131,5 @@ With `--print-analysis`, integer signatures produce these outcomes:
 At the pass's end, there is more than a general AST color: signatures, expressions, local representations, and call targets have separate facts. The generator must use the appropriate proof rather than replace it with information from one concrete run.
 
 This part's final chapter examines analysis's second application: changing the AST itself. Requirements are equally strict because the changed tree serves ordinary bytecode generation as well as the native backend.
+
+The proven original built-in `abs` is another allowed reference, including immutable aliases. Native lowering requires at least one argument and a fixed integer or real representation for the first argument and result. Every supplied argument must have a C expression proof; extra arguments are still evaluated. See [chapter 22](22-c-code-generation.md) for the generated operation.

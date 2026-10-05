@@ -7,3 +7,6 @@
 bool test_binary_roundtrip(void);
 bool test_binary_rejection(void);
 bool test_binary_options(void);
+
+/** @brief Checks SHA-256 standard vectors and multiblock input. */
+bool test_sha256(void);

@@ -10,110 +10,98 @@
 
 /** @brief Kept in sync with native_abi.h by the ABI integration test. */
 void c_emit_native_abi(source_builder_t *builder) {
-    add_static_source(builder, 0, L"/* ABI declarations begin. */");
-    add_static_source(builder, 0, L"#ifndef GOAT_NATIVE_ABI_V1_H");
-    add_static_source(builder, 0, L"#define GOAT_NATIVE_ABI_V1_H");
-    add_static_source(builder, 0, L"#include <stdint.h>");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"#ifdef _WIN32");
-    add_static_source(builder, 0, L"#define GOAT_NATIVE_CALL __cdecl");
-    add_static_source(builder, 0, L"#ifdef GOAT_NATIVE_BUILD");
-    add_static_source(builder, 0, L"#define GOAT_NATIVE_API __declspec(dllexport)");
-    add_static_source(builder, 0, L"#else");
-    add_static_source(builder, 0, L"#define GOAT_NATIVE_API");
-    add_static_source(builder, 0, L"#endif");
-    add_static_source(builder, 0, L"#else");
-    add_static_source(builder, 0, L"#define GOAT_NATIVE_CALL");
-    add_static_source(builder, 0, L"#define GOAT_NATIVE_API");
-    add_static_source(builder, 0, L"#endif");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"enum {");
-    add_static_source(builder, 0, L"    GOAT_NATIVE_ABI_VERSION = 1,");
-    add_static_source(builder, 0, L"    GOAT_NATIVE_INVALID = 0,");
-    add_static_source(builder, 0, L"    GOAT_NATIVE_I64 = 1,");
-    add_static_source(builder, 0, L"    GOAT_NATIVE_F64 = 2");
-    add_static_source(builder, 0, L"};");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"enum {");
-    add_static_source(builder, 0, L"    GOAT_NATIVE_OK = 0,");
-    add_static_source(builder, 0, L"    GOAT_NATIVE_TYPE_MISMATCH = 1,");
-    add_static_source(builder, 0, L"    GOAT_NATIVE_BAD_REQUEST = 2,");
-    add_static_source(builder, 0, L"    GOAT_NATIVE_ABI_MISMATCH = 3,");
-    add_static_source(builder, 0, L"    GOAT_NATIVE_RESOURCE_LIMIT = 4,");
-    add_static_source(builder, 0, L"    GOAT_NATIVE_EXTERNAL_ERROR = 5");
-    add_static_source(builder, 0, L"};");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"enum { GOAT_NATIVE_PURE = 1 };");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"#ifdef __cplusplus");
-    add_static_source(builder, 0, L"extern \"C\" {");
-    add_static_source(builder, 0, L"#endif");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"typedef struct goat_native_value_v1_t {");
-    add_static_source(builder, 0, L"    uint32_t type;");
-    add_static_source(builder, 0, L"    uint32_t reserved;");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"    union {");
-    add_static_source(builder, 0, L"        int64_t integer;");
-    add_static_source(builder, 0, L"        double real;");
-    add_static_source(builder, 0, L"    } value;");
-    add_static_source(builder, 0, L"} goat_native_value_v1_t;");
-    add_static_source(builder, 0, L"");
-    add_static_source(
-        builder,
-        0,
-        L"typedef uint32_t (GOAT_NATIVE_CALL *goat_native_adapter_v1_t)(uint32_t version,");
-    add_static_source(builder,
-                      0,
-                      L"                                             uint32_t argument_count,");
-    add_static_source(
-        builder,
-        0,
-        L"                                             const goat_native_value_v1_t *arguments,");
-    add_static_source(
-        builder,
-        0,
-        L"                                             goat_native_value_v1_t *result);");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"typedef struct goat_native_entry_v1_t {");
-    add_static_source(builder, 0, L"    uint64_t specialization_id;");
-    add_static_source(builder, 0, L"    uint64_t function_id;");
-    add_static_source(builder, 0, L"    uint32_t parameter_count;");
-    add_static_source(builder, 0, L"    uint32_t return_type;");
-    add_static_source(builder, 0, L"    const uint32_t *parameter_types;");
-    add_static_source(builder, 0, L"    goat_native_adapter_v1_t invoke;");
-    add_static_source(builder, 0, L"    const char *binding_name;");
-    add_static_source(builder, 0, L"    uint32_t flags;");
-    add_static_source(builder, 0, L"} goat_native_entry_v1_t;");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"typedef struct goat_native_module_v1_t {");
-    add_static_source(builder, 0, L"    uint32_t abi_version;");
-    add_static_source(builder, 0, L"    uint32_t struct_size;");
-    add_static_source(builder, 0, L"    uint32_t value_size;");
-    add_static_source(builder, 0, L"    uint32_t value_alignment;");
-    add_static_source(builder, 0, L"    uint32_t entry_size;");
-    add_static_source(builder, 0, L"    uint32_t pointer_size;");
-    add_static_source(builder, 0, L"    uint32_t entry_count;");
-    add_static_source(builder, 0, L"    const goat_native_entry_v1_t *entries;");
-    add_static_source(builder, 0, L"} goat_native_module_v1_t;");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder,
-                      0,
-                      L"typedef const goat_native_module_v1_t *(GOAT_NATIVE_CALL "
-                      L"*goat_native_query_v1_t)(uint32_t version);");
-    add_static_source(builder, 0, L"");
-    add_static_source(builder,
-                      0,
-                      L"GOAT_NATIVE_API const goat_native_module_v1_t *GOAT_NATIVE_CALL "
-                      L"goat_native_query_v1(uint32_t version);");
-    add_static_source(builder, 0, L"#ifdef __cplusplus");
-    add_static_source(builder, 0, L"}");
-    add_static_source(builder, 0, L"#endif");
-    add_static_source(builder, 0, L"#endif");
-    add_static_source(builder, 0, L"/* ABI declarations end. */");
+    static const wchar_t *const lines[] = {
+        L"/* ABI declarations begin. */",
+        L"#ifndef GOAT_NATIVE_ABI_V1_H",
+        L"#define GOAT_NATIVE_ABI_V1_H",
+        L"#include <stdint.h>",
+        L"",
+        L"#ifdef _WIN32",
+        L"#define GOAT_NATIVE_CALL __cdecl",
+        L"#ifdef GOAT_NATIVE_BUILD",
+        L"#define GOAT_NATIVE_API __declspec(dllexport)",
+        L"#else",
+        L"#define GOAT_NATIVE_API",
+        L"#endif",
+        L"#else",
+        L"#define GOAT_NATIVE_CALL",
+        L"#define GOAT_NATIVE_API",
+        L"#endif",
+        L"",
+        L"enum {",
+        L"    GOAT_NATIVE_ABI_VERSION = 1,",
+        L"    GOAT_NATIVE_INVALID = 0,",
+        L"    GOAT_NATIVE_I64 = 1,",
+        L"    GOAT_NATIVE_F64 = 2",
+        L"};",
+        L"",
+        L"enum {",
+        L"    GOAT_NATIVE_OK = 0,",
+        L"    GOAT_NATIVE_TYPE_MISMATCH = 1,",
+        L"    GOAT_NATIVE_BAD_REQUEST = 2,",
+        L"    GOAT_NATIVE_ABI_MISMATCH = 3,",
+        L"    GOAT_NATIVE_RESOURCE_LIMIT = 4,",
+        L"    GOAT_NATIVE_EXTERNAL_ERROR = 5",
+        L"};",
+        L"",
+        L"enum { GOAT_NATIVE_PURE = 1 };",
+        L"",
+        L"#ifdef __cplusplus",
+        L"extern \"C\" {",
+        L"#endif",
+        L"",
+        L"",
+        L"typedef struct goat_native_value_v1_t {",
+        L"    uint32_t type;",
+        L"    uint32_t reserved;",
+        L"",
+        L"    union {",
+        L"        int64_t integer;",
+        L"        double real;",
+        L"    } value;",
+        L"} goat_native_value_v1_t;",
+        L"",
+        L"typedef uint32_t (GOAT_NATIVE_CALL *goat_native_adapter_v1_t)(uint32_t version,",
+        L"                                             uint32_t argument_count,",
+        L"                                             const goat_native_value_v1_t *arguments,",
+        L"                                             goat_native_value_v1_t *result);",
+        L"",
+        L"",
+        L"typedef struct goat_native_entry_v1_t {",
+        L"    uint64_t specialization_id;",
+        L"    uint64_t function_id;",
+        L"    uint32_t parameter_count;",
+        L"    uint32_t return_type;",
+        L"    const uint32_t *parameter_types;",
+        L"    goat_native_adapter_v1_t invoke;",
+        L"    const char *binding_name;",
+        L"    uint32_t flags;",
+        L"} goat_native_entry_v1_t;",
+        L"",
+        L"",
+        L"typedef struct goat_native_module_v1_t {",
+        L"    uint32_t abi_version;",
+        L"    uint32_t struct_size;",
+        L"    uint32_t value_size;",
+        L"    uint32_t value_alignment;",
+        L"    uint32_t entry_size;",
+        L"    uint32_t pointer_size;",
+        L"    uint32_t entry_count;",
+        L"    const goat_native_entry_v1_t *entries;",
+        L"} goat_native_module_v1_t;",
+        L"",
+        L"typedef const goat_native_module_v1_t *(GOAT_NATIVE_CALL "
+        L"*goat_native_query_v1_t)(uint32_t version);",
+        L"",
+        L"GOAT_NATIVE_API const goat_native_module_v1_t *GOAT_NATIVE_CALL "
+        L"goat_native_query_v1(uint32_t version);",
+        L"#ifdef __cplusplus",
+        L"}",
+        L"#endif",
+        L"#endif",
+        L"/* ABI declarations end. */",
+    };
+    add_source_lines(builder, 0, lines, sizeof(lines) / sizeof(*lines));
 }
 
 void c_emit_native_guard(source_builder_t *builder) {
@@ -144,8 +132,7 @@ void c_emit_native_guard(source_builder_t *builder) {
         L"static inline void g_guard_leave(void) {",
         L"    if (g_guard) g_guard->depth--;",
         L"}"};
-    for (size_t i = 0; i < sizeof(lines) / sizeof(*lines); i++)
-        add_formatted_source(builder, 0, (string_value_t){lines[i], wcslen(lines[i]), false});
+    add_source_lines(builder, 0, lines, sizeof(lines) / sizeof(*lines));
 }
 
 static const wchar_t *type_tag(c_value_type_t type) {

@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/19-effects-and-purity.md) · [Previous chapter](18-call-graph-and-recursion.md) · [Next chapter](20-native-eligibility.md)
 
-Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Revision 6. Implementation described: [commit fc4af9d](https://github.com/kniazkov/g0at/tree/fc4af9d85d2a45925e9e370a1e988ccb077b056e).
 
 <a id="section-19-1"></a>
 
@@ -18,7 +18,7 @@ Purity does not mean that a function must terminate or never throw. Those proper
 
 ## 19.2. Direct effects and captures
 
-[function_effects.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_effects.c) walks body syntax and invokes nodes' `collect_direct_effects` methods. A nested function body is analyzed for its own summary, rather than treated as executed when the outer body creates the function.
+[function_effects.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/function_effects.c) walks body syntax and invokes nodes' `collect_direct_effects` methods. A nested function body is analyzed for its own summary, rather than treated as executed when the outer body creates the function.
 
 For a variable access, analysis finds the nearest function owning its declaration. Access is local if that is the current function. Otherwise, it records a capture with read and write flags. A capture contains both declarator and name: the name distinguishes, among other things, built-in bindings sharing a synthetic declarator.
 
@@ -48,16 +48,18 @@ These are bit flags: several can coexist. The general effect vocabulary must be 
 
 ## 19.4. Immutable reads and propagation
 
-[function_purity.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/function_purity.c) starts from direct effects. If every recorded external read refers to a `const` declaration, it removes the external-read bit from the resulting own effects. The capture list remains: the later native contract still needs it.
+[function_purity.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/analysis/function_purity.c) starts from direct effects. If every recorded external read refers to a `const` declaration, it removes the external-read bit from the resulting own effects. The capture list remains: the later native contract still needs it.
 
 A root-provided built-in binding does not count as such a proven local `const`. Unknown effects and external writes do not disappear merely because some reads are immutable.
 
 Callee user-specialization effects then join caller effects. The pass repeats until nothing changes. A write in a third function thus becomes a possible effect of the first, even if the first only calls the second.
 
-Every syntactic call needs coverage by graph edges. A missing edge does not prove purity: `unknown` is added. This matters for calls in branches dependency discovery may have skipped.
+Every other syntactic call needs coverage by graph edges. A missing edge does not prove purity: `unknown` is added. This matters for calls in branches dependency discovery may have skipped.
 
 > [!CAUTION]
 > Direct effect collection is syntactic: it does not automatically exclude every unreachable action. Propagation is limited to 64 passes. A truncated graph or exhausted limit adds `unknown` to all its summaries so an unfinished result cannot appear to prove purity.
+
+A dedicated proof recognizes the original built-in `abs`, including immutable aliases such as `const magnitude = abs`. It follows declarations rather than names and checks the program for writes to the built-in binding. A user function named `abs` remains a user function. With this proof, reading the binding and calling the numeric operation add no external effects. Such calls do not require a user-specialization graph edge.
 
 <a id="section-19-5"></a>
 
@@ -104,6 +106,6 @@ The opposite mistake is treating missing observation as proof of absence. If the
 
 Purity is used in native-subset eligibility and in restricted VM retries after a native-path protective failure. Retrying a function with an external write could perform an action twice. A numeric result is therefore insufficient for that decision.
 
-[test_function_effects.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_function_effects.c) checks own accesses and captures; [test_function_purity.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_function_purity.c) checks propagation through dependencies. These checks are separate from return types: changing numeric-domain precision must not by itself turn an external write into a local one.
+[test_function_effects.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/test/test_function_effects.c) checks own accesses and captures; [test_function_purity.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/test/test_function_purity.c) checks propagation through dependencies. These checks are separate from return types: changing numeric-domain precision must not by itself turn an external write into a local one.
 
 The next chapter combines these facts with parameter, local, and return representations. Only then can a particular specialization be admitted to C generation.

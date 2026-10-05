@@ -2,13 +2,13 @@
 
 [Оглавление](index.md) · [English](../en/appendix-d-builtins.md) · [Назад](appendix-c-vm-instructions.md) · [Далее](appendix-e-launch-interfaces.md)
 
-Редакция 3. Описываемая реализация: [commit cf51b8c, с оператором `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Редакция 6. Описываемая реализация: [commit fc4af9d](https://github.com/kniazkov/g0at/tree/fc4af9d85d2a45925e9e370a1e988ccb077b056e).
 
 <a id="section-d-1"></a>
 
 ## Г.1. Общие правила вызова
 
-В [registry.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/registry.c) зарегистрированы 33 функции. Таблицы перечисляют их все. `pi` и `Exceptions` — значения корневого окружения, не функции. Имя можно затенить своим объявлением; обработчик выбирается по объекту встроенной функции, а не по одному написанию имени.
+В [registry.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/registry.c) зарегистрированы 33 функции. Таблицы перечисляют их все. `pi` и `Exceptions` — значения корневого окружения, не функции. Имя можно затенить своим объявлением; обработчик выбирается по объекту встроенной функции, а не по одному написанию имени.
 
 Минимум аргументов проверяется общей обёрткой: недостаток даёт строковое исключение `INVALID_ARGUMENT`. Лишние аргументы предварительно вычисляются и затем игнорируются, кроме второго аргумента `int`, который задаёт резервное значение. Даже `println()` без аргумента вызывает ошибку; пустую строку печатают через `println("")`.
 
@@ -77,4 +77,6 @@
 
 Эти сведения описывают обычный результат, а не полный граф исключений. Встроенная C-реализация также не означает, что вызов разрешён внутри генерируемой C-специализации: это отдельный контракт главы 20.
 
-Источники: [math_function.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/math_function.c), [atan.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/atan.c), [int.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/int.c), [abs.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/abs.c), [sign.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/sign.c), [input.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/input.c), [println.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/println.c). Проверки: [test_builtin_functions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_builtin_functions.c).
+Источники: [math_function.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/math_function.c), [atan.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/atan.c), [int.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/int.c), [abs.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/abs.c), [sign.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/sign.c), [input.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/input.c), [println.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/println.c). Проверки: [test_builtin_functions.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/test/test_builtin_functions.c).
+
+Для исходной встроенной `abs` также есть нативное целочисленное и вещественное преобразование внутри допущенных функций, при наличии доказательств привязки и числового типа. Порядок вычисления лишних аргументов сохраняется. См. [главу 22](22-c-code-generation.md); это не распространяет нативную поддержку на все встроенные функции.

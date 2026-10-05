@@ -214,18 +214,17 @@ bool c_emit_function(const node_t *node,
 }
 
 void c_emit_headers(source_builder_t *builder, unsigned helpers) {
-    add_static_source(builder, 0, L"#include <stdbool.h>");
-    add_static_source(builder, 0, L"#include <math.h>");
-    add_static_source(builder, 0, L"#include <float.h>");
-    add_static_source(builder,
-                      0,
-                      L"_Static_assert(sizeof(double)==8 && FLT_RADIX==2 && DBL_MANT_DIG==53 && "
-                      L"DBL_MAX_EXP==1024, \"binary64 required\");");
-    add_static_source(builder, 0, L"#ifdef __FAST_MATH__");
-    add_static_source(builder,
-                      0,
-                      L"#error Goat C arithmetic requires strict floating-point semantics");
-    add_static_source(builder, 0, L"#endif");
+    static const wchar_t *const lines[] = {
+        L"#include <stdbool.h>",
+        L"#include <math.h>",
+        L"#include <float.h>",
+        L"_Static_assert(sizeof(double)==8 && FLT_RADIX==2 && DBL_MANT_DIG==53 && "
+        L"DBL_MAX_EXP==1024, \"binary64 required\");",
+        L"#ifdef __FAST_MATH__",
+        L"#error Goat C arithmetic requires strict floating-point semantics",
+        L"#endif",
+    };
+    add_source_lines(builder, 0, lines, sizeof(lines) / sizeof(*lines));
     if (helpers & C_HELPER_INTEGER)
         c_arithmetic_helpers(builder, helpers);
     if (helpers & C_HELPER_COMPARISON)

@@ -2,13 +2,13 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-d-builtins.md) · [Previous](appendix-c-vm-instructions.md) · [Next](appendix-e-launch-interfaces.md)
 
-Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Revision 6. Implementation described: [commit fc4af9d](https://github.com/kniazkov/g0at/tree/fc4af9d85d2a45925e9e370a1e988ccb077b056e).
 
 <a id="section-d-1"></a>
 
 ## D.1. Common call rules
 
-[registry.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/registry.c) registers 33 functions. The tables list all of them. `pi` and `Exceptions` are root-environment values, not functions. A name may be shadowed by a user declaration; handling follows the built-in function object, not its spelling alone.
+[registry.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/registry.c) registers 33 functions. The tables list all of them. `pi` and `Exceptions` are root-environment values, not functions. A name may be shadowed by a user declaration; handling follows the built-in function object, not its spelling alone.
 
 The shared wrapper checks minimum arity: too few arguments produce the string exception `INVALID_ARGUMENT`. Extra arguments are evaluated first and then ignored, except for `int`'s second argument, which supplies a fallback value. Even `println()` without an argument fails; print an empty line with `println("")`.
 
@@ -77,4 +77,6 @@ Common math handlers compute a constant for known numbers; otherwise they produc
 
 These facts describe normal results, not a complete exception graph. A built-in C implementation also does not mean its call is permitted inside a generated C specialization: that is chapter 20's separate contract.
 
-Sources: [math_function.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/math_function.c), [atan.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/atan.c), [int.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/int.c), [abs.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/abs.c), [sign.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/sign.c), [input.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/input.c), [println.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/println.c). Checks: [test_builtin_functions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_builtin_functions.c).
+Sources: [math_function.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/math_function.c), [atan.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/atan.c), [int.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/int.c), [abs.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/abs.c), [sign.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/sign.c), [input.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/input.c), [println.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/println.c). Checks: [test_builtin_functions.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/test/test_builtin_functions.c).
+
+The original built-in `abs` also has native integer and real lowering inside eligible functions, with binding and numeric-type proofs. Extra arguments retain their evaluation order. See [chapter 22](22-c-code-generation.md); this does not extend native support to all built-ins.
