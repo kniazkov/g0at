@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/02-implemented-language.md) · [Previous chapter](01-project-purpose.md) · [Next chapter](03-program-pipeline.md)
 
-Edition 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Edition 4. Implementation described: [commit 64c80b9](https://github.com/kniazkov/g0at/tree/64c80b96ce695db13867266653f3fc6c0416dc26).
 
 <a id="section-2-1"></a>
 
@@ -73,21 +73,21 @@ The main values encountered in programs are:
 
 A scope (a region of the program in which a name is available) allows local variables to be declared. An inner declaration can shadow an outer one: identical spelling does not necessarily identify the same variable.
 
-This implementation also permits implicit declarations: when binding an unknown name, the analyzer adds a variable declaration for it. A misspelled name therefore does not necessarily cause a compilation error. The book's examples use explicit declarations to make each variable's origin visible. This mechanism is implemented in [name binding](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/analysis.c).
+This implementation also permits implicit declarations: when binding an unknown name, the analyzer adds a variable declaration for it. A misspelled name therefore does not necessarily cause a compilation error. The book's examples use explicit declarations to make each variable's origin visible. This mechanism is implemented in [name binding](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/analysis/analysis.c).
 
 <a id="section-2-3"></a>
 
 ## 2.3. Numbers: Familiar Operations, Specific Rules
 
-Integer addition, subtraction, and multiplication wrap modulo \(2^{64}\) on overflow (the low 64 bits of the result are retained). Adding one to the largest signed integer in the example therefore produces the smallest negative integer. Unary negation and increment or decrement also follow this rule.
+Integer addition, subtraction, and multiplication use saturation: a result above `INT64_MAX` becomes `INT64_MAX`, and a result below `INT64_MIN` becomes `INT64_MIN`. Unary negation and updates follow the same rule; `-INT64_MIN` and `abs(INT64_MIN)` produce `INT64_MAX`. The full signed 64-bit range is retained.
 
-Division follows the principle of least astonishment: `6 / 4` naturally suggests `1.5`, without losing the fractional part. This is a guide to choosing language behavior, not a universal expectation shared by every programmer: familiarity with integer division in C may suggest a different answer. The rule is therefore stated explicitly. `6 / 3` produces the integer `2`, whereas `6 / 4` produces the real number `1.5`. If an integer result does not fit in signed 64 bits, as when dividing the smallest integer by `-1`, a real number is returned. Division by zero raises an exception. The `%` operator computes the remainder for integer arguments; a nonzero remainder has the dividend's sign. `**` denotes exponentiation with a real result.
+Division follows the principle of least astonishment: `6 / 4` naturally suggests `1.5`, without losing the fractional part. This is a guide to choosing language behavior, not a universal expectation shared by every programmer: familiarity with integer division in C may suggest a different answer. The rule is therefore stated explicitly. `6 / 3` produces the integer `2`, whereas `6 / 4` produces the real number `1.5`. The exceptional integer quotient `INT64_MIN / -1` saturates to `INT64_MAX`. Division by zero raises an exception. The `%` operator computes the remainder for integer arguments; a nonzero remainder has the dividend's sign. `**` denotes exponentiation with a real result.
 
 In mixed arithmetic, such as `2 + 0.5`, the integer is converted to `double`. A large integer may be rounded by this conversion: the real representation cannot store every 64-bit integer exactly. Mixed comparisons, however, are implemented separately and do not simply convert both numbers to `double` unconditionally.
 
 There are also bitwise operations (operations on individual bits of an integer): `~`, `&`, `|`, `^`, `<<`, `>>`. These differ from the logical operators `!`, `!!`, `&&`, `||`. Comparisons use `<`, `<=`, `>`, `>=`, `==`, `!=`.
 
-These rules can be checked in the implementations of [integers](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/integer.c), [real numbers](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/real.c), and [shared numeric operations](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/number.c). They are requirements for the C generator we will examine later: translating an operator into a familiar C operator without checking its behavior can change a Goat program's result.
+These rules can be checked in the implementations of [integers](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/integer.c), [real numbers](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/real.c), and [shared numeric operations](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/number.c). They are requirements for the C generator we will examine later: translating an operator into a familiar C operator without checking its behavior can change a Goat program's result.
 
 <a id="section-2-4"></a>
 
@@ -95,7 +95,7 @@ These rules can be checked in the implementations of [integers](https://github.c
 
 `if` selects a branch using a value's truthiness (its interpretation as true or false). `null`, `false`, numeric zero, an empty string, and a user-defined object without properties are false. Nonzero numbers, nonempty strings, functions, and objects with properties are true. Real numbers are tested for inequality with zero; NaN (the special “not a number” value) is also true.
 
-`!` negates truthiness, while `!!` converts it to `true` or `false`. `&&` and `||` return booleans and use short-circuit evaluation (the right side is not evaluated when the result is already determined). Thus `false && f()` does not call `f`. These rules are checked in the [truthiness test](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/functional/logic_truth/program.goat) and [logical truth tables](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/functional/logic_truth_tables/program.goat).
+`!` negates truthiness, while `!!` converts it to `true` or `false`. `&&` and `||` return booleans and use short-circuit evaluation (the right side is not evaluated when the result is already determined). Thus `false && f()` does not call `f`. These rules are checked in the [truthiness test](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/test/functional/logic_truth/program.goat) and [logical truth tables](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/test/functional/logic_truth_tables/program.goat).
 
 Precedence determines expression grouping: `2 + 3 * 4` means `2 + (3 * 4)`. Evaluation order answers a different question: which action happens first? Ordinary binary operations evaluate the left operand before the right. Function calls use a different order: arguments are evaluated from right to left, followed by the expression identifying the function to call.
 
@@ -119,7 +119,7 @@ It prints:
 
 Postfix `x++` returns the old value and increments the variable. The right argument receives `0` first, then the left receives `1`. Parameters are not rearranged: `a` receives the left argument and `b` the right. Prefix `++x` returns the incremented value instead. The same distinction applies to `x--` and `--x`.
 
-Call order is explicit in [call bytecode generation and analysis](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/function_call.c). Optimization must preserve it, or expressions that change variables will begin producing different results.
+Call order is explicit in [call bytecode generation and analysis](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/graph/function_call.c). Optimization must preserve it, or expressions that change variables will begin producing different results.
 
 ### Repetition with for
 
@@ -186,7 +186,7 @@ null
 
 The call to `make_counter(10)` has finished, yet the returned function still accesses `value`. It retains access to the variable, not just the number `10`: the second call observes the first call's change. The constant `next` holds this function and is not reassigned.
 
-Functions can call themselves recursively (enter their own body again with new arguments). The Fibonacci example in Chapter 1 does exactly that. Environment creation, argument passing, and retention of captured data are implemented in the [function object](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/function.c).
+Functions can call themselves recursively (enter their own body again with new arguments). The Fibonacci example in Chapter 1 does exactly that. Environment creation, argument passing, and retention of captured data are implemented in the [function object](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/function.c).
 
 <a id="section-2-6"></a>
 
@@ -226,7 +226,7 @@ stop
 
 On division by zero, `println(1 / 0)` does not reach the point of printing a result: control transfers to the nearest applicable handler. Execution continues after the handler finishes. Without a handler, the exception is reported as an uncaught error and the run fails.
 
-Here `DIVISION_BY_ZERO` is a string error value, not an instance of a mandatory exception class. Such standard values are collected in the `Exceptions` object. Block-result construction is described in the [statement list](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/statement_list.c), and handler execution in the [VM](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/vm.c). Checking examples include [returning an object](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/functional/return_object/program.goat) and [an uncaught exception](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/functional/throw_uncaught/program.goat).
+Here `DIVISION_BY_ZERO` is a string error value, not an instance of a mandatory exception class. Such standard values are collected in the `Exceptions` object. Block-result construction is described in the [statement list](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/graph/statement_list.c), and handler execution in the [VM](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/vm/vm.c). Checking examples include [returning an object](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/test/functional/return_object/program.goat) and [an uncaught exception](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/test/functional/throw_uncaught/program.goat).
 
 <a id="section-2-7"></a>
 
@@ -234,7 +234,7 @@ Here `DIVISION_BY_ZERO` is a string error value, not an instance of a mandatory 
 
 Built-in functions (functions whose implementations are supplied with the interpreter) are available before user code runs. `print` outputs a value without adding a newline, while `println` appends `\n`. Both return `null` and require at least one argument; use `println("")` to print an empty line. Extra arguments are evaluated but are not printed. `input` reads input, and `int` converts to an integer. The numeric set includes, for example, `abs`, `sqrt`, `sin`, `cos`, `min`, `max`, `floor`, `ceil`, and `round`. `pi` and `Exceptions` are also available.
 
-Built-in functions are collected in a [single registry](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/builtins/registry.c). This registry associates a name with its implementation and analysis information. Spelling alone does not guarantee built-in behavior: a local declaration of `print` can shadow the built-in function.
+Built-in functions are collected in a [single registry](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/builtins/registry.c). This registry associates a name with its implementation and analysis information. Spelling alone does not guarantee built-in behavior: a local declaration of `print` can shadow the built-in function.
 
 For the following chapters, keep three questions separate. Can a construct be written in source code? Can the VM execute it? Can the analyzer prove enough properties to generate C?
 

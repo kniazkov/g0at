@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-b-language.md) · [Previous](appendix-a-terminology.md) · [Next](appendix-c-vm-instructions.md)
 
-Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Revision 4. Implementation described: [commit 64c80b9](https://github.com/kniazkov/g0at/tree/64c80b96ce695db13867266653f3fc6c0416dc26).
 
 <a id="section-b-1"></a>
 
@@ -44,7 +44,7 @@ The table goes from strongest binding to weakest. It describes grouping, not sid
 | 14 | `\|\|` | Left associative; short circuit |
 | 15 | `=` | Right associative |
 
-Power needs qualification: `-2 ** 2` means `-(2 ** 2)`, but `2 ** -2` is also valid. `2 ** 3 ** 2` means `2 ** (3 ** 2)`. Actual pass order and prefix handling are in [parser.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parser.c) and [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parsing_unary_operations.c).
+Power needs qualification: `-2 ** 2` means `-(2 ** 2)`, but `2 ** -2` is also valid. `2 ** 3 ** 2` means `2 ** (3 ** 2)`. Actual pass order and prefix handling are in [parser.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/parser/parser.c) and [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/parser/parsing_unary_operations.c).
 
 <a id="section-b-3"></a>
 
@@ -58,7 +58,9 @@ Missing user-function parameters receive `null`; extra arguments are evaluated a
 
 ## B.4. Numeric and string operations
 
-Integer `+`, `-`, `*`, unary minus, and updates wrap modulo \(2^{64}\). Mixed arithmetic produces a real. Division of two integers returns an integer for an exact representable quotient, otherwise a real: `3 / 2` produces `1.5`. This principle of least surprise preserves the fractional part. The special case `INT64_MIN / -1` produces real \(2^{63}\).
+Integer `+`, `-`, `*`, unary minus, `++` and `--` saturate to the full range from `-9223372036854775808` to `9223372036854775807`. Saturation occurs after each operation in evaluation order. `-INT64_MIN`, `abs(INT64_MIN)` and `INT64_MIN / -1` return integer `INT64_MAX`. Increment at the maximum and decrement at the minimum leave the value unchanged. Mixed and real arithmetic are unchanged. Division of two integers returns an integer for an exact quotient, subject to the saturation case above, otherwise a real: `3 / 2` produces `1.5`. This principle of least surprise preserves the fractional part. Integer literals outside the range are compilation errors; `-9223372036854775808` is valid. Bitwise operations, including shifts, do not saturate.
+
+Saturation is not associative: `(MAX + 1) - 1` gives `MAX - 1`, while `MAX + (1 - 1)` gives `MAX`. A loop counter incremented at `MAX` remains there; a loop must not rely on overflow to terminate.
 
 `%` accepts integers; a nonzero remainder follows the dividend's sign. `INT64_MIN % -1` is 0. A zero divisor in `/` or `%` produces `DIVISION_BY_ZERO`. `**` uses real `pow` and returns a real; special math-library results are not automatically converted into exceptions.
 
@@ -82,4 +84,4 @@ The model's ordinary exception strings are `DIVISION_BY_ZERO`, `IMMUTABLE_OBJECT
 
 Parse errors, native ABI failures, and the fatal empty-stack check are not these language exceptions. Chapter 5 describes lexical limitations; appendix G summarizes implementation boundaries.
 
-Main sources: [integer.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/real.c), [string.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/string.c), [common_methods.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/common_methods.c), [bitwise.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/lib/bitwise.h), [exceptions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/exceptions.c). Examples in chapters 2, 6, 9, and 12 demonstrate executable cases of these rules.
+Main sources: [integer.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/real.c), [string.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/string.c), [common_methods.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/common_methods.c), [bitwise.h](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/bitwise.h), [exceptions.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/exceptions.c). Examples in chapters 2, 6, 9, and 12 demonstrate executable cases of these rules.

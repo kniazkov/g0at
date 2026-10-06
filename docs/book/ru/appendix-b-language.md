@@ -2,7 +2,7 @@
 
 [Оглавление](index.md) · [English](../en/appendix-b-language.md) · [Назад](appendix-a-terminology.md) · [Далее](appendix-c-vm-instructions.md)
 
-Редакция 3. Описываемая реализация: [commit cf51b8c, с оператором `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Редакция 4. Описываемая реализация: [commit 64c80b9, с оператором `for`](https://github.com/kniazkov/g0at/tree/64c80b96ce695db13867266653f3fc6c0416dc26).
 
 <a id="section-b-1"></a>
 
@@ -44,7 +44,7 @@
 | 14 | `\|\|` | Слева направо; короткое замыкание |
 | 15 | `=` | Справа налево |
 
-Степень требует оговорки: `-2 ** 2` означает `-(2 ** 2)`, но `2 ** -2` тоже допустимо. Цепочка `2 ** 3 ** 2` означает `2 ** (3 ** 2)`. Реальный порядок проходов и разбор префиксов находятся в [parser.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parser.c) и [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parsing_unary_operations.c).
+Степень требует оговорки: `-2 ** 2` означает `-(2 ** 2)`, но `2 ** -2` тоже допустимо. Цепочка `2 ** 3 ** 2` означает `2 ** (3 ** 2)`. Реальный порядок проходов и разбор префиксов находятся в [parser.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/parser/parser.c) и [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/parser/parsing_unary_operations.c).
 
 <a id="section-b-3"></a>
 
@@ -58,7 +58,9 @@
 
 ## Б.4. Числовые и строковые операции
 
-Целые `+`, `-`, `*`, унарный минус и обновления используют переполнение по модулю \(2^{64}\). При смешанной арифметике получается вещественное значение. Деление двух целых возвращает целое при точном представимом частном, иначе вещественное: `3 / 2` даёт `1.5`. Это правило наименьшего удивления сохраняет дробную часть. Особый случай `INT64_MIN / -1` даёт вещественное \(2^{63}\).
+Целые `+`, `-`, `*`, унарный минус, `++` и `--` насыщаются до полного диапазона от `-9223372036854775808` до `9223372036854775807`. Насыщение происходит после каждой операции в порядке вычисления. `-INT64_MIN`, `abs(INT64_MIN)` и `INT64_MIN / -1` возвращают целое `INT64_MAX`. Увеличение максимума и уменьшение минимума оставляют значение неизменным. Смешанная и вещественная арифметика не меняются. Деление двух целых возвращает целое при точном частном с учётом указанного случая насыщения, иначе вещественное: `3 / 2` даёт `1.5`. Это правило наименьшего удивления сохраняет дробную часть. Целочисленные литералы вне диапазона являются ошибками компиляции; `-9223372036854775808` допустим. Битовые операции, включая сдвиги, не насыщаются.
+
+Насыщение не ассоциативно: `(MAX + 1) - 1` даёт `MAX - 1`, а `MAX + (1 - 1)` — `MAX`. Счётчик цикла при увеличении на границе `MAX` остаётся там; завершение цикла не должно зависеть от переполнения.
 
 `%` принимает целые; знак ненулевого остатка следует делимому. `INT64_MIN % -1` равен 0. Нулевой делитель в `/` и `%` даёт `DIVISION_BY_ZERO`. `**` использует вещественный `pow` и возвращает вещественное; специальные результаты математической библиотеки не превращаются автоматически в исключения.
 
@@ -82,4 +84,4 @@
 
 Ошибки разбора, нативного ABI и аварийная проверка пустого стека не являются этими исключениями языка. Лексические ограничения вынесены в главу 5, границы реализации — в приложение Ж.
 
-Основные источники: [integer.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/real.c), [string.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/string.c), [common_methods.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/common_methods.c), [bitwise.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/lib/bitwise.h), [exceptions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/exceptions.c). Примеры в главах 2, 6, 9 и 12 показывают исполняемые случаи этих правил.
+Основные источники: [integer.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/real.c), [string.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/string.c), [common_methods.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/common_methods.c), [bitwise.h](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/bitwise.h), [exceptions.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/exceptions.c). Примеры в главах 2, 6, 9 и 12 показывают исполняемые случаи этих правил.
