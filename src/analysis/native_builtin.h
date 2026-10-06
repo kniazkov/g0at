@@ -5,7 +5,15 @@
 #pragma once
 #include "function_summary.h"
 
-/** @brief Resolves abs through immutable aliases only when the program never writes it. */
-bool resolve_native_abs(const node_t *expression);
+/** @brief Native built-ins that the C generator lowers directly. */
+typedef enum {
+    NATIVE_BUILTIN_NONE = 0,
+    NATIVE_BUILTIN_ABS,
+    NATIVE_BUILTIN_ATAN
+} native_builtin_kind_t;
+
+/** @brief Resolves a native built-in through immutable aliases, or returns NONE. */
+native_builtin_kind_t resolve_native_builtin(const node_t *expression);
 /** @brief Tests a read-only capture against the same whole-program binding proof. */
-bool native_abs_capture(const function_summary_t *summary, const function_capture_t *capture);
+native_builtin_kind_t capture_native_builtin(const function_summary_t *summary,
+                                             const function_capture_t *capture);
