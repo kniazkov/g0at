@@ -58,7 +58,7 @@ All following functions accept integers and reals, convert operands to `double`,
 | `tan(x)` | 1 | Tangent |
 | `tanh(x)` | 1 | Hyperbolic tangent |
 | `trunc(x)` | 1 | Truncate toward zero |
-| `atan(y, x)` | 2 | Angle from y and x, C atan2(y, x) |
+| `atan(x)` / `atan(y, x)` | 1 | Arc tangent of x; angle from y and x, C atan2(y, x) |
 | `fmod(x, y)` | 2 | Floating remainder of x/y |
 | `hypot(x, y)` | 2 | Length from two components |
 | `max(x, y)` | 2 | Maximum of a pair, C fmax |

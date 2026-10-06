@@ -1,2 +1,2 @@
-var result=atan(1);
+var result=atan();
 var after=1;

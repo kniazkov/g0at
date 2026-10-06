@@ -55,7 +55,7 @@ The table lists every numeric function in the current registry. These are purpos
 |---|---|---:|
 | Absolute value and sign | `abs`, `sign` | 1 |
 | Trigonometry | `sin`, `cos`, `tan`, `asin`, `acos` | 1 |
-| Angle from two components | `atan(y, x)` (C `atan2`) | 2 |
+| Arc tangent | `atan(x)` (C `atan`); angle from two components `atan(y, x)` (C `atan2`) | 1 |
 | Hyperbolic functions | `sinh`, `cosh`, `tanh` | 1 |
 | Exponentials and logarithms | `exp`, `exp2`, `expm1`, `log`, `log2`, `log10`, `log1p` | 1 |
 | Roots | `sqrt`, `cbrt` | 1 |
