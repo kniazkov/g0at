@@ -142,7 +142,11 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
             return error;
         }
         if (token->type == TOKEN_ERROR) {
-            return create_error_from_token(memory->errors, token, CRITICAL, L"");
+            return create_error_from_token(memory->errors,
+                                           token,
+                                           CRITICAL,
+                                           L"%s",
+                                           token->text.data);
         }
         if (token->type == TOKEN_BRACKET) {
             wchar_t bracket = token->text.data[0];
@@ -380,6 +384,11 @@ apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory, parsing_r
     APPLY_FORWARD(update_operators, parsing_postfix_updates);
     APPLY_BACKWARD(update_operators, parsing_prefix_updates);
     APPLY_BACKWARD(additive_operators, parsing_unary_operators);
+    if (groups->integer_magnitudes.first)
+        return create_error_from_token(memory->errors,
+                                       groups->integer_magnitudes.first,
+                                       CRITICAL,
+                                       get_messages()->integer_literal_out_of_range);
     APPLY_BACKWARD(power_operators, parsing_power_operators);
     APPLY_FORWARD(multiplicative_operators, parsing_multiplicative_operators);
     APPLY_FORWARD(additive_operators, parsing_additive_operators);

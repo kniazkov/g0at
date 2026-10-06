@@ -18,7 +18,7 @@ def main():
 
     cases = {
         'numeric': ('const f=func(n){return abs(n);};println(f(-7));println(f(-3.5));'
-                    'println(f(-9223372036854775808));println(f(0));', '7\n3.5\n-9223372036854775808\n0\n'),
+                    'println(f(-9223372036854775808));println(f(0));', '7\n3.5\n9223372036854775807\n0\n'),
         'loop': ('const f=func(n){var r=0;for(var i=-n+1;i<n;i++)r=r+abs(i);return r;};'
                  'println(f(100));', '9900\n'),
         'alias': ('const magnitude=abs;const f=func(n){return magnitude(n);};println(f(-8));', '8\n'),
@@ -71,7 +71,7 @@ int main(void) {
             for(unsigned j=0;j<5;j++) {
                 a.value.integer=values[j];
                 assert(e->invoke(1,1,&a,&r)==GOAT_NATIVE_OK);
-                int64_t expected=values[j]==INT64_MIN?INT64_MIN:(values[j]<0?-values[j]:values[j]);
+                int64_t expected=values[j]==INT64_MIN?INT64_MAX:(values[j]<0?-values[j]:values[j]);
                 assert(r.type==GOAT_NATIVE_I64 && r.value.integer==expected);
             }
         } else {

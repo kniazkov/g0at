@@ -9,7 +9,6 @@
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
-#include "lib/integer_math.h"
 #include "lib/string_ext.h"
 #include "resources/messages.h"
 
@@ -237,10 +236,10 @@ cleanup:
  *
  * Parses a numeric literal starting at the current character, which must be a digit.
  * `scan`: The scanner instance used for lexical analysis.
- * @note No overflow checking is performed for integer literals.
+ * @note Integer literals must fit the signed 64-bit range, including a leading minus.
  * @note The exponent part must follow the format `[eE][+/-]digits`.
  */
-static void parse_number(scanner_t *scan, token_t *token, bool negative) {
+static void parse_number(scanner_t *scan, token_t *token) {
     wchar_t ch = get_char(scan);
     assert(iswdigit(ch));
 
@@ -248,8 +247,14 @@ static void parse_number(scanner_t *scan, token_t *token, bool negative) {
 
     const wchar_t *begin = scan->position.code;
     uint64_t int_part = 0;
+    uint64_t limit = (uint64_t)INT64_MAX + 1;
+    bool overflow = false;
     while (iswdigit(ch)) {
-        int_part = int_part * 10 + (ch - '0');
+        uint64_t digit = ch - '0';
+        if (int_part > (limit - digit) / 10)
+            overflow = true;
+        else if (!overflow)
+            int_part = int_part * 10 + digit;
         ch = next_char(scan);
     }
 
@@ -272,13 +277,19 @@ static void parse_number(scanner_t *scan, token_t *token, bool negative) {
     if (is_real) {
         /* Avoid overflowing integer accumulators for fractions and exponents. */
         double value = wcstod(begin, NULL);
-        token->node = create_real_number_node(scan->memory->graph, negative ? -value : value);
+        token->node = create_real_number_node(scan->memory->graph, value);
     } else {
-        int64_t integer = int_part <= INT64_MAX
-                              ? (int64_t)int_part
-                              : INT64_MIN + (int64_t)(int_part - ((uint64_t)INT64_MAX + 1));
-        token->node = create_integer_node(scan->memory->graph,
-                                          negative ? subtract_int64_wrapping(0, integer) : integer);
+        if (overflow) {
+            token->type = TOKEN_ERROR;
+            token->text.data = get_messages()->integer_literal_out_of_range;
+            return;
+        }
+        if (int_part == (uint64_t)INT64_MAX + 1) {
+            token->type = TOKEN_INTEGER_MAGNITUDE;
+            append_token_to_group(&scan->groups->integer_magnitudes, token);
+        } else {
+            token->node = create_integer_node(scan->memory->graph, (int64_t)int_part);
+        }
     }
 }
 
@@ -356,7 +367,7 @@ token_t *get_token(scanner_t *scan) {
     } else if (ch == L'"') {
         parse_string(scan, token);
     } else if (iswdigit(ch)) {
-        parse_number(scan, token, false);
+        parse_number(scan, token);
     } else if (ch == L',') {
         token->type = TOKEN_COMMA;
         token->text = (string_view_t){L",", 1};

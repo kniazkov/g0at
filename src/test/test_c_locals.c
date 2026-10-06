@@ -39,13 +39,14 @@ static bool append_profiles(source_builder_t *output, source_builder_t *checks) 
             && wcsstr(result.source.data, integer ? L"int64_t g_l0;" : L"volatile double g_l0;");
         if (success) {
             add_formatted_source(output, 0, result.source);
-            add_source(
-                checks,
-                1,
-                L"if (!(%s)) return 106;",
-                integer ? L"goat_local_integer(INT64_MAX)==-2 && goat_local_integer(INT64_MIN)==0"
-                        : L"goat_local_real(1.5)==3.0 && goat_local_real(INFINITY)==INFINITY && "
-                          L"isnan(goat_local_real(NAN))");
+            add_source(checks,
+                       1,
+                       L"if (!(%s)) return 106;",
+                       integer
+                           ? L"goat_local_integer(INT64_MAX)==INT64_MAX && "
+                             L"goat_local_integer(INT64_MIN)==INT64_MIN"
+                           : L"goat_local_real(1.5)==3.0 && goat_local_real(INFINITY)==INFINITY && "
+                             L"isnan(goat_local_real(NAN))");
         } else
             FREE_STRING(result.source);
     }
@@ -65,7 +66,7 @@ bool append_c_local_tests(source_builder_t *output, source_builder_t *checks) {
         {L"const f=func(n){var x=n;return x;};f(1.0);",
          L"(-0.0)==0 && signbit(goat_local1(-0.0)) && isnan(goat_local1(NAN))"},
         {L"const f=func(n){const x=n+1;return x*2;};f(1);", L"(4)==10"},
-        {L"const f=func(n){var x=n;x=x+1;return x;};f(1);", L"(INT64_MAX)==INT64_MIN"},
+        {L"const f=func(n){var x=n;x=x+1;return x;};f(1);", L"(INT64_MAX)==INT64_MAX"},
         {L"const f=func(n){n=n+2;return n;};f(1);", L"(5)==7"},
         {L"const f=func(n){var x=n,y=x+1;return x+y;};f(1);", L"(3)==7"},
         {L"const f=func(n){var x=n;const y=(x=x+1),z=(x=x+2);return y*10+z;};f(1);", L"(3)==46"},

@@ -1,6 +1,6 @@
 /** @file c_arithmetic.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Wrapping integers and sequenced binary64 expression evaluation.
+ * @brief Saturating integers and sequenced binary64 expression evaluation.
  */
 #include "c_arithmetic.h"
 
@@ -133,23 +133,36 @@ c_generated_expression_t c_parenthesized(const node_t *node, c_generation_contex
 }
 
 void c_arithmetic_helpers(source_builder_t *builder, unsigned helpers) {
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"#ifndef GOAT_C_NUMERIC_HELPERS");
-    add_static_source(builder, 0, L"#define GOAT_C_NUMERIC_HELPERS");
-    add_static_source(builder, 0, L"static inline int64_t g_i64_bits(uint64_t value) {");
-    add_static_source(builder, 1, L"return value <= INT64_MAX ? (int64_t)value :");
-    add_static_source(builder, 2, L"INT64_MIN + (int64_t)(value - ((uint64_t)INT64_MAX + 1));");
-    add_static_source(builder, 0, L"}");
-    add_static_source(builder, 0, L"#endif");
+    {
+        static const wchar_t *const configuration[] = {
+            L"",
+            L"#ifndef GOAT_C_NUMERIC_HELPERS",
+            L"#define GOAT_C_NUMERIC_HELPERS",
+            L"/** @brief Selects overflow intrinsics when supported; tests may force the portable "
+            L"path. */",
+            L"#if !defined(GOAT_FORCE_PORTABLE_INTEGER_MATH)",
+            L"#if defined(__has_builtin)",
+            L"#if __has_builtin(__builtin_add_overflow) && __has_builtin(__builtin_sub_overflow) "
+            L"&& __has_builtin(__builtin_mul_overflow)",
+            L"#define GOAT_INTEGER_OVERFLOW_BUILTINS 1",
+            L"#endif",
+            L"#elif defined(__GNUC__) && __GNUC__ >= 5",
+            L"#define GOAT_INTEGER_OVERFLOW_BUILTINS 1",
+            L"#endif",
+            L"#endif",
+            L"",
+            L"#endif",
+        };
+        add_source_lines(builder, 0, configuration, sizeof(configuration) / sizeof(*configuration));
+    }
 
     const struct {
         unsigned flag;
         const wchar_t *name;
         const wchar_t *guard;
-        wchar_t operation;
-    } binary[] = {{C_HELPER_I64_ADD, L"add", L"ADD", L'+'},
-                  {C_HELPER_I64_SUB, L"sub", L"SUB", L'-'},
-                  {C_HELPER_I64_MUL, L"mul", L"MUL", L'*'}};
+    } binary[] = {{C_HELPER_I64_ADD, L"add", L"ADD"},
+                  {C_HELPER_I64_SUB, L"sub", L"SUB"},
+                  {C_HELPER_I64_MUL, L"mul", L"MUL"}};
 
     for (size_t i = 0; i < sizeof(binary) / sizeof(*binary); i++) {
         if (!(helpers & binary[i].flag))
@@ -161,19 +174,70 @@ void c_arithmetic_helpers(source_builder_t *builder, unsigned helpers) {
                    0,
                    L"static inline int64_t g_i64_%s(int64_t a, int64_t b) {",
                    binary[i].name);
-        add_source(builder,
-                   1,
-                   L"return g_i64_bits((uint64_t)a %c (uint64_t)b);",
-                   binary[i].operation);
+        if (i == 0) {
+            static const wchar_t *const addition[] = {
+                L"#ifdef GOAT_INTEGER_OVERFLOW_BUILTINS",
+                L"    int64_t result;",
+                L"    if (__builtin_add_overflow(a, b, &result))",
+                L"        return a >= 0 ? INT64_MAX : INT64_MIN;",
+                L"    return result;",
+                L"#else",
+                L"    if (b > 0 && a > INT64_MAX - b) return INT64_MAX;",
+                L"    if (b < 0 && a < INT64_MIN - b) return INT64_MIN;",
+                L"    return a + b;",
+                L"#endif",
+            };
+            add_source_lines(builder, 0, addition, sizeof(addition) / sizeof(*addition));
+        } else if (i == 1) {
+            static const wchar_t *const subtraction[] = {
+                L"#ifdef GOAT_INTEGER_OVERFLOW_BUILTINS",
+                L"    int64_t result;",
+                L"    if (__builtin_sub_overflow(a, b, &result))",
+                L"        return a >= 0 ? INT64_MAX : INT64_MIN;",
+                L"    return result;",
+                L"#else",
+                L"    if (b < 0 && a > INT64_MAX + b) return INT64_MAX;",
+                L"    if (b > 0 && a < INT64_MIN + b) return INT64_MIN;",
+                L"    return a - b;",
+                L"#endif",
+            };
+            add_source_lines(builder, 0, subtraction, sizeof(subtraction) / sizeof(*subtraction));
+        } else if (i == 2) {
+            static const wchar_t *const multiplication[] = {
+                L"#ifdef GOAT_INTEGER_OVERFLOW_BUILTINS",
+                L"    int64_t result;",
+                L"    if (__builtin_mul_overflow(a, b, &result))",
+                L"        return (a < 0) == (b < 0) ? INT64_MAX : INT64_MIN;",
+                L"    return result;",
+                L"#else",
+                L"    uint64_t x = a < 0 ? UINT64_C(0) - (uint64_t)a : (uint64_t)a;",
+                L"    uint64_t y = b < 0 ? UINT64_C(0) - (uint64_t)b : (uint64_t)b;",
+                L"    int negative = (a < 0) != (b < 0);",
+                L"    uint64_t limit = negative ? (uint64_t)INT64_MAX + 1 : "
+                L"(uint64_t)INT64_MAX;",
+                L"    if (y != 0 && x > limit / y) return negative ? INT64_MIN : INT64_MAX;",
+                L"    uint64_t product = x * y;",
+                L"    if (negative && product == (uint64_t)INT64_MAX + 1) return INT64_MIN;",
+                L"    return negative ? -(int64_t)product : (int64_t)product;",
+                L"#endif",
+            };
+            add_source_lines(builder,
+                             0,
+                             multiplication,
+                             sizeof(multiplication) / sizeof(*multiplication));
+        }
         add_static_source(builder, 0, L"}");
         add_static_source(builder, 0, L"#endif");
     }
     if (helpers & C_HELPER_I64_NEG) {
-        add_static_source(builder, 0, L"");
-        add_static_source(builder, 0, L"#ifndef GOAT_C_I64_NEG");
-        add_static_source(builder, 0, L"#define GOAT_C_I64_NEG");
-        add_static_source(builder, 0, L"static inline int64_t g_i64_neg(int64_t value) {");
-        add_static_source(builder, 1, L"return g_i64_bits(UINT64_C(0) - (uint64_t)value);");
+        static const wchar_t *const negation[] = {
+            L"",
+            L"#ifndef GOAT_C_I64_NEG",
+            L"#define GOAT_C_I64_NEG",
+            L"static inline int64_t g_i64_neg(int64_t value) {",
+        };
+        add_source_lines(builder, 0, negation, sizeof(negation) / sizeof(*negation));
+        add_static_source(builder, 1, L"return value == INT64_MIN ? INT64_MAX : -value;");
         add_static_source(builder, 0, L"}");
         add_static_source(builder, 0, L"#endif");
     }

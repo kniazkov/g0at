@@ -9,9 +9,9 @@
 
 #include <math.h>
 
-/** @brief Matches the language's wrapping unary negation, including INT64_MIN. */
+/** @brief Matches the language's saturating unary negation, including INT64_MIN. */
 static int64_t absolute_integer(int64_t value) {
-    return value < 0 ? subtract_int64_wrapping(0, value) : value;
+    return value < 0 ? subtract_int64_saturating(0, value) : value;
 }
 
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {

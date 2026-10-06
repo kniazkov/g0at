@@ -37,7 +37,7 @@ bool append_c_recursion_tests(source_builder_t *output, source_builder_t *checks
          1},
         {L"const f=func(n){if(n<2)return 1;var saved=n;var child=f(n-1);return saved*child;};f(3);",
          L"if(goat_rec1_g_f1_i_(0)!=1 || goat_rec1_g_f1_i_(10)!=3628800 || "
-         L"goat_rec1_g_f1_i_(21)!=-INT64_C(4249290049419214848))return 111;",
+         L"goat_rec1_g_f1_i_(21)!=INT64_MAX)return 111;",
          1},
         {L"const even=func(n){if(n<1)return 1;return odd(n-1);};"
          L"const odd=func(n){if(n<1)return 0;return even(n-1);};even(2);",
@@ -52,7 +52,7 @@ bool append_c_recursion_tests(source_builder_t *output, source_builder_t *checks
          L"goat_rec3_g_f3_i_(4)!=19)return 113;",
          3},
         {L"const f=func(n,x){if(n<1)return x;return f(n-1,x+x);};f(0,1);f(0,1.5);",
-         L"if(goat_rec4_g_f1_i_i_(3,2)!=16 || goat_rec4_g_f1_i_i_(1,INT64_MAX)!=-2 || "
+         L"if(goat_rec4_g_f1_i_i_(3,2)!=16 || goat_rec4_g_f1_i_i_(1,INT64_MAX)!=INT64_MAX || "
          L"goat_rec4_g_f1_i_r_(3,0.25)!=2.0 || !signbit(goat_rec4_g_f1_i_r_(3,-0.0)) || "
          L"!isnan(goat_rec4_g_f1_i_r_(3,NAN)) || "
          L"goat_rec4_g_f1_i_r_(3,INFINITY)!=INFINITY)return 114;",

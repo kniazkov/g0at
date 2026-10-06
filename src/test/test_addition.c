@@ -155,10 +155,10 @@ bool test_addition_models_and_constants(void) {
     const lattice_element_t *min = make_integer_constant_element(arena, INT64_MIN);
     const lattice_element_t *one = make_integer_constant_element(arena, 1);
     const lattice_element_t *minus_one = make_integer_constant_element(arena, -1);
-    ASSERT(((const integer_constant_element_t *)lattice_add(arena, max, one))->value == INT64_MIN);
+    ASSERT(((const integer_constant_element_t *)lattice_add(arena, max, one))->value == INT64_MAX);
     ASSERT(((const integer_constant_element_t *)lattice_add(arena, min, minus_one))->value
-           == INT64_MAX);
-    ASSERT(((const integer_constant_element_t *)lattice_add(arena, min, min))->value == 0);
+           == INT64_MIN);
+    ASSERT(((const integer_constant_element_t *)lattice_add(arena, min, min))->value == INT64_MIN);
     for (size_t i = 0; i < count; i++)
         DECREF(cases[i].object);
     free_bytecode(code);
@@ -258,7 +258,8 @@ bool test_addition_ranges(void) {
     r = lattice_add(arena,
                     make_integer_range_element(arena, INT64_MAX - 1, INT64_MAX),
                     make_integer_constant_element(arena, 1));
-    ASSERT(r->type == LATTICE_INTEGER);
+    ASSERT(r->type == LATTICE_INTEGER_CONSTANT);
+    ASSERT(((const integer_constant_element_t *)r)->value == INT64_MAX);
     destroy_process(proc);
     destroy_arena(arena);
     return true;

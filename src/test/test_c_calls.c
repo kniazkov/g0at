@@ -53,7 +53,7 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
         bool real;
     } fixtures[] = {
         {L"const leaf=func(n){return n+1;};const f=func(n){return leaf(n)*2;};f(1);",
-         L"(4)==10 && goat_call_case0(INT64_MAX)==0",
+         L"(4)==10 && goat_call_case0(INT64_MAX)==INT64_MAX",
          2},
         {L"const f=func(n){return leaf(n);};const leaf=func(n){return n+2;};f(1);", L"(5)==7", 1},
         {L"const leaf=func(a,b){return a*10+b;};const f=func(n){var x=n;return "
@@ -80,7 +80,7 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
          L"(2)==5.0",
          2},
         {L"const leaf=func(n){return n+n;};const f=func(n){return leaf(n);};f(1);f(1.5);",
-         L"(INT64_MAX)==-2",
+         L"(INT64_MAX)==INT64_MAX",
          2},
         {L"const leaf=func(n){return n+n;};const f=func(n){return leaf(n);};f(1);f(1.5);",
          L"(1.5)==3.0 && signbit(goat_call_case9(-0.0)) && isnan(goat_call_case9(NAN)) && "

@@ -155,13 +155,13 @@ bool test_multiplication_models_and_constants(void) {
 
     struct {
         int64_t left, right, expected;
-    } boundaries[] = {{INT64_MIN, -1, INT64_MIN},
-                      {INT64_MAX, 2, -2},
-                      {INT64_MIN, 2, 0},
-                      {INT64_MIN, INT64_MIN, 0},
-                      {INT64_MAX, INT64_MAX, 1},
+    } boundaries[] = {{INT64_MIN, -1, INT64_MAX},
+                      {INT64_MAX, 2, INT64_MAX},
+                      {INT64_MIN, 2, INT64_MIN},
+                      {INT64_MIN, INT64_MIN, INT64_MAX},
+                      {INT64_MAX, INT64_MAX, INT64_MAX},
                       {INT64_MIN, INT64_MAX, INT64_MIN},
-                      {3037000500LL, 3037000500LL, -9223372036709301616LL},
+                      {3037000500LL, 3037000500LL, INT64_MAX},
                       {5, 3, 15},
                       {-5, 3, -15},
                       {-5, -3, 15},
@@ -323,12 +323,12 @@ bool test_multiplication_ranges(void) {
                             make_integer_range_element(arena, INT64_MIN, INT64_MIN + 2),
                             make_integer_constant_element(arena, -1))
                ->type
-           == LATTICE_INTEGER);
+           == LATTICE_INTEGER_RANGE);
     ASSERT(lattice_multiply(arena,
                             make_integer_constant_element(arena, INT64_MAX),
                             make_integer_range_element(arena, 1, 2))
                ->type
-           == LATTICE_INTEGER);
+           == LATTICE_INTEGER_CONSTANT);
     destroy_process(proc);
     destroy_arena(arena);
     return true;

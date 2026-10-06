@@ -131,11 +131,11 @@ cat > "$output_dir/replacement_driver.c" <<'C'
 int main(void) {
     return g_f1_i_(100)!=105 || g_f1_r_(0.25)!=5.25 ||
            g_f2_i_(-10)!=-9 || g_f3_i_(-7)!=-7 ||
-           g_f4_i_(INT64_MAX)!=INT64_MIN+4 ||
+           g_f4_i_(INT64_MAX)!=INT64_MAX ||
            g_f4_r_(-0.25)!=4.75 || g_f4_r_(0x1p63)!=0x1p63 ||
            !isnan(g_f4_r_(NAN)) || g_f4_r_(INFINITY)!=INFINITY ||
            g_f5_i_(100)!=2 || g_f6_i_(-10)!=-4 ||
-           !signbit(g_f7_i_(0)) || g_f8_i_(-1)!=INT64_MAX;
+           !signbit(g_f7_i_(0)) || g_f8_i_(-1)!=INT64_MAX-1;
 }
 C
 compile -c "$output_dir/replacement.c" -o "$output_dir/replacement.o"
@@ -171,7 +171,7 @@ cat > "$output_dir/deleted_driver.c" <<'C'
 int main(void) {
     return g_f1_i_(-7)!=-7.0 || g_f1_r_(0.25)!=0.25 ||
            !isnan(g_f1_r_(NAN)) || !signbit(g_f1_r_(-0.0)) ||
-           g_f2_i_(INT64_MIN)!=INT64_MIN || g_f3_i_(INT64_MAX)!=INT64_MIN ||
+           g_f2_i_(INT64_MIN)!=INT64_MIN || g_f3_i_(INT64_MAX)!=INT64_MAX ||
            g_f5_i_(9)!=9 || g_f6_i_(9)!=10 ||
            g_f7_i_(41)!=42 || g_f7_r_(0.25)!=1.25 || g_f8_i_(9)!=3;
 }

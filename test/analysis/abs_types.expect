@@ -1,6 +1,6 @@
 one write 1 1 a int=7
 one write 2 2 b real=2
 one write 3 3 c int=9007199254740993
-one write 4 4 d int=-9223372036854775808
+one write 4 4 d int=9223372036854775807
 one write 5 5 e real=0
 one function 6 0 integer analyzed:integer

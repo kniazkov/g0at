@@ -157,19 +157,19 @@ bool test_subtraction_models_and_constants(void) {
     const lattice_element_t *one = make_integer_constant_element(arena, 1);
     const lattice_element_t *minus_one = make_integer_constant_element(arena, -1);
     ASSERT(((const integer_constant_element_t *)lattice_subtract(arena, max, minus_one))->value
-           == INT64_MIN);
-    ASSERT(((const integer_constant_element_t *)lattice_subtract(arena, min, one))->value
            == INT64_MAX);
+    ASSERT(((const integer_constant_element_t *)lattice_subtract(arena, min, one))->value
+           == INT64_MIN);
     ASSERT(((const integer_constant_element_t *)lattice_subtract(arena, min, min))->value == 0);
 
     struct {
         int64_t left, right, expected;
-    } boundaries[] = {{INT64_MIN, 1, INT64_MAX},
-                      {INT64_MAX, -1, INT64_MIN},
-                      {0, INT64_MIN, INT64_MIN},
+    } boundaries[] = {{INT64_MIN, 1, INT64_MIN},
+                      {INT64_MAX, -1, INT64_MAX},
+                      {0, INT64_MIN, INT64_MAX},
                       {INT64_MIN, INT64_MIN, 0},
-                      {INT64_MAX, INT64_MIN, -1},
-                      {INT64_MIN, INT64_MAX, 1},
+                      {INT64_MAX, INT64_MIN, INT64_MAX},
+                      {INT64_MIN, INT64_MAX, INT64_MIN},
                       {5, 3, 2},
                       {3, 5, -2}};
 
@@ -317,12 +317,12 @@ bool test_subtraction_ranges(void) {
                             make_integer_range_element(arena, INT64_MIN, INT64_MIN + 2),
                             make_integer_constant_element(arena, 1))
                ->type
-           == LATTICE_INTEGER);
+           == LATTICE_INTEGER_RANGE);
     ASSERT(lattice_subtract(arena,
                             make_integer_constant_element(arena, INT64_MAX),
                             make_integer_range_element(arena, -1, 1))
                ->type
-           == LATTICE_INTEGER);
+           == LATTICE_INTEGER_RANGE);
     destroy_process(proc);
     destroy_arena(arena);
     return true;
