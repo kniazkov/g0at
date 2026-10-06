@@ -23,12 +23,13 @@ typedef struct node_t node_t;
  * lexical analysis.
  */
 typedef enum {
-    TOKEN_IDENTIFIER, /**< An identifier (variable, function name, etc.) */
-    TOKEN_BRACKET,    /**< A bracket (e.g., '(', ')', '{', '}', '[', ']', etc.) */
-    TOKEN_OPERATOR,   /**< An operator (e.g., '+', '-', '*', '/', '=', '==', etc.) */
-    TOKEN_COMMA,      /**< Comma ',' used in parameter lists, array literals, etc. */
-    TOKEN_SEMICOLON,  /**< Semicolon ';' used as statement terminator */
-    TOKEN_ERROR,      /**< An invalid token (error case) */
+    TOKEN_IDENTIFIER,        /**< An identifier (variable, function name, etc.) */
+    TOKEN_BRACKET,           /**< A bracket (e.g., '(', ')', '{', '}', '[', ']', etc.) */
+    TOKEN_OPERATOR,          /**< An operator (e.g., '+', '-', '*', '/', '=', '==', etc.) */
+    TOKEN_COMMA,             /**< Comma ',' used in parameter lists, array literals, etc. */
+    TOKEN_SEMICOLON,         /**< Semicolon ';' used as statement terminator */
+    TOKEN_INTEGER_MAGNITUDE, /**< 2^63, valid only as the operand of a unary minus. */
+    TOKEN_ERROR,             /**< An invalid token (error case) */
 
     TOKEN_VAR,           /**< The 'var' keyword for variable declarations */
     TOKEN_CONST,         /**< The 'const' keyword for constant declarations */
@@ -139,6 +140,8 @@ struct token_t {
 typedef struct {
     /** @brief Group for identifier tokens. */
     token_list_t identifiers;
+
+    token_list_t integer_magnitudes; /**< Pending minimum-integer literal magnitudes. */
 
     /** @brief Group for additive operators ("plus" and "minus"). */
     token_list_t additive_operators;

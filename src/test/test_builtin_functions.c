@@ -278,7 +278,7 @@ bool test_abs_domains() {
         ASSERT(builtin_abs.interpret(state, args, 1)->type == expected[i]);
     }
     const int64_t inputs[] = {INT64_MIN, INT64_MAX, -9007199254740993LL, -7, 0, 7};
-    const int64_t results[] = {INT64_MIN, INT64_MAX, 9007199254740993LL, 7, 0, 7};
+    const int64_t results[] = {INT64_MAX, INT64_MAX, 9007199254740993LL, 7, 0, 7};
     for (size_t i = 0; i < sizeof(inputs) / sizeof(*inputs); i++) {
         args[0] = make_integer_constant_element(arena, inputs[i]);
         const lattice_element_t *value = builtin_abs.interpret(state, args, 1);

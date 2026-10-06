@@ -83,6 +83,10 @@ jobs:
         run: bash scripts/check_native_modes.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/functional_testing "build/${{ matrix.compiler }}/native modes"
         env:
           CC: ${{ matrix.compiler }}
+      - name: Check saturating integer contract
+        run: python3 scripts/check_saturating_integers.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/saturation"
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Check native abs
         run: python3 scripts/check_native_abs.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native abs"
         env:
@@ -236,6 +240,11 @@ jobs:
       - name: Compare native modes and verify actual adapter entry
         shell: msys2 {0}
         run: bash scripts/check_native_modes.sh build/goat.exe build/functional_testing.exe "build/native modes"
+      - name: Check saturating integer contract
+        shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
+        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_saturating_integers.py build/goat.exe "build/saturation"'
       - name: Check native abs
         shell: msys2 {0}
         env:

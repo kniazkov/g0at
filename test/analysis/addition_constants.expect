@@ -1,7 +1,7 @@
 one write 1 1 a real=1.5
 one write 2 2 b real=1.5
-one write 3 3 c int=-9223372036854775808
-one write 4 4 d int=0
+one write 3 3 c int=9223372036854775807
+one write 4 4 d int=9223372036854775807
 one write 5 5 e string=null
 one write 6 6 f string=xtrue
 one write 7 7 g string=x1.5

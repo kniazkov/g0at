@@ -306,7 +306,7 @@ bool test_c_replacement_specializations(void) {
             generate_c_function(s, (string_view_t){L"goat_test", 9}, NULL, NULL);
         ASSERT(code.status == C_GENERATION_OK);
         bool integer = s->parameter_types[0]->type == LATTICE_INTEGER;
-        ASSERT((wcsstr(code.source.data, L"if (") == NULL) == integer);
+        ASSERT((wcsstr(wcsstr(code.source.data, L"goat_test("), L"if (") == NULL) == integer);
         ASSERT(wcsstr(code.source.data, L"INT64_C(5)"));
         ASSERT(!wcsstr(code.source.data, L"INT64_C(2)"));
         FREE_STRING(code.source);

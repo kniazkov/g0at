@@ -109,6 +109,12 @@ bool test_binary_rejection(void) {
     memcpy(copy, bytes, size);
     copy[size] = 0;
     ASSERT(rejected(copy, size + 1));
+    /* A valid old checksum cannot make wrapping-era bytecode compatible. */
+    memcpy(copy, bytes, size);
+    memcpy(copy, "GOATBIN2", 8);
+    put64(copy, 8, 2);
+    put64(copy, 56, binary_checksum(copy, size));
+    ASSERT(rejected(copy, size));
     /* Recompute checksums to exercise structural validation independently. */
     const size_t offsets[] = {8,
                               16,

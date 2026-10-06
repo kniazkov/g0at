@@ -36,10 +36,10 @@ call(uint64_t function, goat_native_value_v1_t a, goat_native_value_v1_t b) {
 int main(void) {
     module = goat_native_query_v1(GOAT_NATIVE_ABI_VERSION);
     assert(module && module->entry_count == 19);
-    assert(call(1, integer(INT64_MAX), integer(1)).value.integer == INT64_MIN);
-    assert(call(2, integer(INT64_MIN), integer(1)).value.integer == INT64_MAX);
-    assert(call(3, integer(INT64_MAX), integer(2)).value.integer == -2);
-    assert(call(6, integer(INT64_MIN), integer(0)).value.integer == INT64_MIN);
+    assert(call(1, integer(INT64_MAX), integer(1)).value.integer == INT64_MAX);
+    assert(call(2, integer(INT64_MIN), integer(1)).value.integer == INT64_MIN);
+    assert(call(3, integer(INT64_MAX), integer(2)).value.integer == INT64_MAX);
+    assert(call(6, integer(INT64_MIN), integer(0)).value.integer == INT64_MAX);
     for (unsigned f = 1; f <= 3; f++) {
         double expected = f == 1 ? 2.5 : f == 2 ? 1.5 : 1.0;
         assert(call(f, integer(2), real(0.5)).value.real == expected);

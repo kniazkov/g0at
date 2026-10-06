@@ -55,7 +55,7 @@ bool test_c_expression_edges() {
                                              (expression_t *)create_integer_node(arena, INT64_MAX),
                                              (expression_t *)create_integer_node(arena, 1));
     const lattice_element_t *value = calculate_expression(sum, state, arena);
-    ASSERT(((const integer_constant_element_t *)value)->value == INT64_MIN);
+    ASSERT(((const integer_constant_element_t *)value)->value == INT64_MAX);
     ASSERT(c_expression_type(&context, &sum->base) == C_VALUE_INT64);
     node_vtbl_t overridden = *sum->base.vtbl;
     overridden.can_generate_c_code = cannot_generate_c_code;

@@ -8,19 +8,6 @@
 #include "lib/integer_math.h"
 #include "lib/string_ext.h"
 
-/**
- * @brief Safely adds two int64_t values.
- * `out`: Output sum if there is no overflow.
- * @return `true` if addition succeeded without overflow, `false` otherwise.
- */
-static bool add_int64_checked(int64_t left, int64_t right, int64_t *out) {
-    if ((right > 0 && left > INT64_MAX - right) || (right < 0 && left < INT64_MIN - right)) {
-        return false;
-    }
-    *out = left + right;
-    return true;
-}
-
 /** @brief Calculates integer constant plus integer constant. */
 static const lattice_element_t *add_integer_constants(arena_t *arena,
                                                       const lattice_element_t *left,
@@ -28,7 +15,7 @@ static const lattice_element_t *add_integer_constants(arena_t *arena,
     const integer_constant_element_t *left_int = (const integer_constant_element_t *)left;
     const integer_constant_element_t *right_int = (const integer_constant_element_t *)right;
     return make_integer_constant_element(arena,
-                                         add_int64_wrapping(left_int->value, right_int->value));
+                                         add_int64_saturating(left_int->value, right_int->value));
 }
 
 /** @brief Calculates integer range plus integer constant. */
@@ -39,10 +26,8 @@ static const lattice_element_t *add_integer_range_and_constant(arena_t *arena,
     const integer_constant_element_t *int_constant = (const integer_constant_element_t *)constant;
     int64_t min;
     int64_t max;
-    if (!add_int64_checked(int_range->min, int_constant->value, &min)
-        || !add_int64_checked(int_range->max, int_constant->value, &max)) {
-        return make_integer_element();
-    }
+    min = add_int64_saturating(int_range->min, int_constant->value);
+    max = add_int64_saturating(int_range->max, int_constant->value);
     return make_integer_range_element(arena, min, max);
 }
 
@@ -53,10 +38,8 @@ add_integer_ranges(arena_t *arena, const lattice_element_t *left, const lattice_
     const integer_range_element_t *right_range = (const integer_range_element_t *)right;
     int64_t min;
     int64_t max;
-    if (!add_int64_checked(left_range->min, right_range->min, &min)
-        || !add_int64_checked(left_range->max, right_range->max, &max)) {
-        return make_integer_element();
-    }
+    min = add_int64_saturating(left_range->min, right_range->min);
+    max = add_int64_saturating(left_range->max, right_range->max);
     return make_integer_range_element(arena, min, max);
 }
 

@@ -37,8 +37,8 @@ static bytecode_t *make_code(const instruction_t *list, size_t count) {
 
 bool test_update_models_vm(void) {
     int64_t ints[] = {0, 1, -1, 9000, -9000, INT64_MAX, INT64_MIN};
-    int64_t expected_int[2][7] = {{1, 2, 0, 9001, -8999, INT64_MIN, INT64_MIN + 1},
-                                  {-1, 0, -2, 8999, -9001, INT64_MAX - 1, INT64_MAX}};
+    int64_t expected_int[2][7] = {{1, 2, 0, 9001, -8999, INT64_MAX, INT64_MIN + 1},
+                                  {-1, 0, -2, 8999, -9001, INT64_MAX - 1, INT64_MIN}};
     double reals[] = {0.0, -0.0, 0.5, -1.5, INFINITY, -INFINITY, NAN, 0x1p53};
     double expected_real[2][8] = {
         {1, 1, 1.5, -0.5, INFINITY, -INFINITY, NAN, 0x1p53},
@@ -266,10 +266,10 @@ bool test_update_domains(void) {
     }
     ASSERT(lattice_update(arena, make_integer_range_element(arena, INT64_MAX - 1, INT64_MAX), false)
                ->type
-           == LATTICE_INTEGER);
+           == LATTICE_INTEGER_CONSTANT);
     ASSERT(lattice_update(arena, make_integer_range_element(arena, INT64_MIN, INT64_MIN + 1), true)
                ->type
-           == LATTICE_INTEGER);
+           == LATTICE_INTEGER_CONSTANT);
     destroy_arena(arena);
     return true;
 }

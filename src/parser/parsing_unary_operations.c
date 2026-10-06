@@ -36,6 +36,22 @@ parsing_unary_operators(token_t *sign, parser_memory_t *memory, token_groups_t *
                                        sign->text.data);
     }
     token_t *operand = sign->right;
+    if (operand && operand->type == TOKEN_INTEGER_MAGNITUDE) {
+        token_t *tail = operand->right;
+        if (sign->text.data[0] != L'-'
+            || (tail && tail->type == TOKEN_OPERATOR && tail->text.length == 2
+                && tail->text.data[0] == L'*' && tail->text.data[1] == L'*'))
+            return create_error_from_token(memory->errors,
+                                           operand,
+                                           CRITICAL,
+                                           get_messages()->integer_literal_out_of_range);
+        collapse_tokens_to_token(memory,
+                                 sign,
+                                 operand,
+                                 TOKEN_EXPRESSION,
+                                 create_integer_node(memory->graph, INT64_MIN));
+        return NULL;
+    }
     if (!operand || operand->type != TOKEN_EXPRESSION)
         return create_error_from_token(memory->errors,
                                        sign,
