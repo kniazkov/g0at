@@ -6,14 +6,6 @@
 
 #include "lib/integer_math.h"
 
-/** @brief Subtracts endpoints only when signed arithmetic cannot overflow. */
-static bool subtract_checked(int64_t left, int64_t right, int64_t *out) {
-    if ((right > 0 && left < INT64_MIN + right) || (right < 0 && left > INT64_MAX + right))
-        return false;
-    *out = left - right;
-    return true;
-}
-
 static bool is_constant(const lattice_element_t *value) {
     return value->type == LATTICE_INTEGER_CONSTANT || value->type == LATTICE_REAL_CONSTANT;
 }
@@ -51,8 +43,8 @@ lattice_subtract(arena_t *arena, const lattice_element_t *left, const lattice_el
     if (left->type == LATTICE_INTEGER_CONSTANT && right->type == LATTICE_INTEGER_CONSTANT)
         return make_integer_constant_element(
             arena,
-            subtract_int64_wrapping(((const integer_constant_element_t *)left)->value,
-                                    ((const integer_constant_element_t *)right)->value));
+            subtract_int64_saturating(((const integer_constant_element_t *)left)->value,
+                                      ((const integer_constant_element_t *)right)->value));
     if (is_constant(left) && is_constant(right))
         return make_real_constant_element(arena, constant_real(left) - constant_real(right));
     if (is_real_lattice_element(left) || is_real_lattice_element(right))
@@ -64,8 +56,7 @@ lattice_subtract(arena_t *arena, const lattice_element_t *left, const lattice_el
     int64_t left_min, left_max, right_min, right_max, min, max;
     bounds(left, &left_min, &left_max);
     bounds(right, &right_min, &right_max);
-    if (!subtract_checked(left_min, right_max, &min)
-        || !subtract_checked(left_max, right_min, &max))
-        return make_integer_element();
+    min = subtract_int64_saturating(left_min, right_max);
+    max = subtract_int64_saturating(left_max, right_min);
     return make_integer_range_element(arena, min, max);
 }

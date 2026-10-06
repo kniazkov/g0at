@@ -20,14 +20,14 @@ lattice_unary(arena_t *arena, const lattice_element_t *value, bool negate) {
     if (value->type == LATTICE_INTEGER_CONSTANT)
         return make_integer_constant_element(
             arena,
-            subtract_int64_wrapping(0, ((const integer_constant_element_t *)value)->value));
+            subtract_int64_saturating(0, ((const integer_constant_element_t *)value)->value));
     if (value->type == LATTICE_REAL_CONSTANT)
         return make_real_constant_element(arena, -((const real_constant_element_t *)value)->value);
     if (value->type == LATTICE_INTEGER_RANGE) {
         const integer_range_element_t *range = (const integer_range_element_t *)value;
-        if (range->min == INT64_MIN)
-            return make_integer_element();
-        return make_integer_range_element(arena, -range->max, -range->min);
+        return make_integer_range_element(arena,
+                                          subtract_int64_saturating(0, range->max),
+                                          subtract_int64_saturating(0, range->min));
     }
     return value;
 }

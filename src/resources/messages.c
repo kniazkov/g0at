@@ -63,6 +63,7 @@ static messages_t english = {
     .compilation_error = L"Error in '%a', %zu.%zu: %s",
     .critical_compilation_error = L"Fatal error in '%a', %zu.%zu: %s",
     .unknown_symbol = L"Unknown symbol '%c'",
+    .integer_literal_out_of_range = L"Integer literal is outside the signed 64-bit range",
     .unclosed_quotation_mark = L"Unmatched quote found in string literal; expected closing quote",
     .invalid_escape_sequence = L"Invalid escape sequence '\\%c' in string literal",
     .unclosed_opening_bracket =
@@ -153,6 +154,7 @@ static messages_t russian = {
     .compilation_error = L"Ошибка в файле '%a', %zu.%zu: %s",
     .critical_compilation_error = L"Критическая ошибка в файле '%a', %zu.%zu: %s",
     .unknown_symbol = L"Неизвестный символ '%c'",
+    .integer_literal_out_of_range = L"Целочисленный литерал вне знакового 64-битного диапазона",
     .unclosed_quotation_mark = L"В строковом литерале пропущена закрывающая кавычка",
     .invalid_escape_sequence =
         L"Неправильная управляющая последовательность '\\%c' в строковом литерале",

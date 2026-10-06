@@ -36,7 +36,7 @@ lattice_divide(arena_t *arena, const lattice_element_t *left, const lattice_elem
         int64_t a = ((const integer_constant_element_t *)left)->value;
         int64_t b = ((const integer_constant_element_t *)right)->value;
         if (a == INT64_MIN && b == -1)
-            return make_real_constant_element(arena, 0x1p63);
+            return make_integer_constant_element(arena, INT64_MAX);
         if (a % b == 0)
             return make_integer_constant_element(arena, a / b);
     }
@@ -52,8 +52,7 @@ lattice_divide(arena_t *arena, const lattice_element_t *left, const lattice_elem
             int64_t divisor = ((const integer_constant_element_t *)right)->value;
             if (divisor == 1)
                 return left;
-            if (divisor == -1 && left->type == LATTICE_INTEGER_RANGE
-                && ((const integer_range_element_t *)left)->min > INT64_MIN)
+            if (divisor == -1)
                 return lattice_unary(arena, left, true);
         }
     }

@@ -255,7 +255,7 @@ bool test_division_ranges(void) {
                           make_integer_range_element(arena, INT64_MIN, INT64_MIN + 2),
                           make_integer_constant_element(arena, -1))
                ->type
-           == LATTICE_NUMERIC);
+           == LATTICE_INTEGER_RANGE);
     ASSERT(lattice_divide(arena, make_integer_constant_element(arena, 0), range)->type
            == LATTICE_INTEGER_CONSTANT);
     ASSERT(lattice_divide(arena, range, make_integer_constant_element(arena, 0))->type
@@ -277,7 +277,7 @@ bool test_division_expected(void) {
         {INT64_MAX, 1, true, INT64_MAX, 0},
         {INT64_MIN, 1, true, INT64_MIN, 0},
         {INT64_MAX, -1, true, -INT64_MAX, 0},
-        {INT64_MIN, -1, false, 0, 0x1p63},
+        {INT64_MIN, -1, true, INT64_MAX, 0},
         {INT64_MIN, INT64_MIN, true, 1, 0},
         {INT64_MAX, INT64_MAX, true, 1, 0},
         {9007199254740993LL, 3, true, 3002399751580331LL, 0},

@@ -37,7 +37,7 @@ static bytecode_t *make_code(const instruction_t *list, size_t count) {
 
 bool test_unary_models_and_vm(void) {
     int64_t ints[] = {0, 1, -1, 9000, -9000, INT64_MAX, INT64_MIN};
-    int64_t negated[] = {0, -1, 1, -9000, 9000, -INT64_MAX, INT64_MIN};
+    int64_t negated[] = {0, -1, 1, -9000, 9000, -INT64_MAX, INT64_MAX};
     double reals[] = {0.0, -0.0, 0.5, -1.5, INFINITY, -INFINITY, NAN};
     for (int minus = 0; minus < 2; minus++) {
         for (int real = 0; real < 2; real++) {
@@ -194,7 +194,7 @@ bool test_unary_ast_and_domains(void) {
         (const integer_range_element_t *)lattice_unary(arena, range, true);
     ASSERT(neg->base.type == LATTICE_INTEGER_RANGE && neg->min == -5 && neg->max == 2);
     ASSERT(lattice_unary(arena, make_integer_range_element(arena, INT64_MIN, -1), true)->type
-           == LATTICE_INTEGER);
+           == LATTICE_INTEGER_RANGE);
     ASSERT(lattice_unary(arena, make_null_element(), false)->type == LATTICE_BOTTOM);
     ASSERT(lattice_unary(arena, make_bottom_element(), true)->type == LATTICE_BOTTOM);
     ASSERT(lattice_unary(arena, make_real_element(), true)->type == LATTICE_REAL);

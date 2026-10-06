@@ -1,1 +1,1 @@
-var k=0; for(var i=9223372036854775806;i>0;i++) k++; println(k);
+var k=0; for(var i=9223372036854775806;k<3;i++) { println(i); k++; } println(k);

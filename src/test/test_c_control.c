@@ -246,7 +246,7 @@ bool append_c_control_tests(source_builder_t *output, source_builder_t *checks) 
         {L"const f=func(n){if(n)return 1;return 0;};f(1);",
          L"(INT64_MIN)==1 && goat_branch5(INT64_MAX)==1 && goat_branch5(0)==0"},
         {L"const f=func(n){if((n-1)<(n+1))return n*2 else return -n;};f(1);",
-         L"(4)==8 && goat_branch6(INT64_MAX)==-INT64_MAX"},
+         L"(4)==8 && goat_branch6(INT64_MAX)==INT64_MAX"},
         {L"const f=func(n){if((n<0)){return -n;}else if((n>0)){return n;}else{return 0;}};f(1);",
          L"(-3)==3 && goat_branch7(3)==3 && goat_branch7(0)==0"},
         {L"const f=func(n){if(n){}else{};return n;};f(1);", L"(4)==4 && goat_branch8(0)==0"},

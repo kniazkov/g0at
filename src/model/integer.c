@@ -260,20 +260,21 @@ static object_array_t get_topology(const object_t *obj) {
 static operation_result_t unary_minus(process_t *process, object_t *obj) {
     return operation_success(
         create_integer_object(process,
-                              subtract_int64_wrapping(0, get_object_integer_value(obj).value)));
+                              subtract_int64_saturating(0, get_object_integer_value(obj).value)));
 }
 
 /** @brief Implements @ref object_vtbl_t::increment. */
 static operation_result_t increment(process_t *process, object_t *obj) {
     return operation_success(
-        create_integer_object(process, add_int64_wrapping(get_object_integer_value(obj).value, 1)));
+        create_integer_object(process,
+                              add_int64_saturating(get_object_integer_value(obj).value, 1)));
 }
 
 /** @brief Implements @ref object_vtbl_t::decrement. */
 static operation_result_t decrement(process_t *process, object_t *obj) {
     return operation_success(
         create_integer_object(process,
-                              subtract_int64_wrapping(get_object_integer_value(obj).value, 1)));
+                              subtract_int64_saturating(get_object_integer_value(obj).value, 1)));
 }
 
 /** @brief Implements @ref object_vtbl_t::add. */
@@ -282,7 +283,7 @@ static operation_result_t add(process_t *process, object_t *obj1, object_t *obj2
     if (is_integer_object(obj2)) {
         int_value_t second_int = get_object_integer_value(obj2);
         return operation_success(
-            create_integer_object(process, add_int64_wrapping(first.value, second_int.value)));
+            create_integer_object(process, add_int64_saturating(first.value, second_int.value)));
     }
     real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
@@ -298,7 +299,8 @@ static operation_result_t subtract(process_t *process, object_t *obj1, object_t 
     if (is_integer_object(obj2)) {
         int_value_t second_int = get_object_integer_value(obj2);
         return operation_success(
-            create_integer_object(process, subtract_int64_wrapping(first.value, second_int.value)));
+            create_integer_object(process,
+                                  subtract_int64_saturating(first.value, second_int.value)));
     }
     real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
@@ -314,7 +316,8 @@ static operation_result_t multiply(process_t *process, object_t *obj1, object_t 
     if (is_integer_object(obj2)) {
         int_value_t second_int = get_object_integer_value(obj2);
         return operation_success(
-            create_integer_object(process, multiply_int64_wrapping(first.value, second_int.value)));
+            create_integer_object(process,
+                                  multiply_int64_saturating(first.value, second_int.value)));
     }
     real_value_t second_real = get_object_real_value(obj2);
     if (second_real.has_value) {
@@ -333,7 +336,7 @@ static operation_result_t divide(process_t *process, object_t *obj1, object_t *o
             return operation_exception(get_exception_division_by_zero());
         /* Neither / nor % is defined for this pair in C. */
         if (first == INT64_MIN && second == -1)
-            return operation_success(create_real_number_object(process, 0x1p63));
+            return operation_success(create_integer_object(process, INT64_MAX));
         if (first % second == 0)
             return operation_success(create_integer_object(process, first / second));
         return operation_success(

@@ -51,8 +51,8 @@ bool test_c_module_output(void) {
     ASSERT(!wcsstr(first.source.data, L"goat_guard") && !wcsstr(first.source.data, L"goat_t0"));
     const wchar_t *header = wcsstr(first.source.data, L"#include <stdint.h>");
     ASSERT(header && !wcsstr(header + 1, L"#include <stdint.h>"));
-    const wchar_t *helper = wcsstr(first.source.data, L"static inline int64_t g_i64_bits");
-    ASSERT(helper && !wcsstr(helper + 1, L"static inline int64_t g_i64_bits"));
+    const wchar_t *helper = wcsstr(first.source.data, L"static inline int64_t g_i64_sub");
+    ASSERT(helper && !wcsstr(helper + 1, L"static inline int64_t g_i64_sub"));
     function_summary_set_t *set = get_function_summaries(module->head->summary->function);
     function_summary_t *a = set->head, *b = a->next;
     ASSERT(b && !b->next);

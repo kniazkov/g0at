@@ -25,7 +25,7 @@ def main():
     assert result.returncode == 0, result.stderr
     binary, library = source.with_suffix('.gbin'), source.with_suffix(extension)
     artifact, original = binary.read_bytes(), library.read_bytes()
-    assert artifact[:8] == b'GOATBIN2'
+    assert artifact[:8] == b'GOATBIN3'
     assert artifact[64:96] == hashlib.sha256(original).digest()
     assert run('--run', '--native', 'required', binary).stdout == '42\n'
 

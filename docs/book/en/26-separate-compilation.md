@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/26-separate-compilation.md) · [Previous chapter](25-native-dispatch-and-vm-fallback.md) · [Next chapter](27-observability.md)
 
-Revision 6. Implementation described: [commit fc4af9d](https://github.com/kniazkov/g0at/tree/fc4af9d85d2a45925e9e370a1e988ccb077b056e).
+Revision 7. Implementation described: [commit 64c80b9](https://github.com/kniazkov/g0at/tree/64c80b96ce695db13867266653f3fc6c0416dc26).
 
 <a id="section-26-1"></a>
 
@@ -18,12 +18,12 @@ The saved artifact is a VM program with an optional native addition. A missing l
 
 ## 26.2. Three file regions
 
-The format is implemented in [binary.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/vm/binary.c). An outer header occupies 96 bytes. It is followed by an inner bytecode image and a native-binding table. Total size is capped at 256 MiB.
+The format is implemented in [binary.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/vm/binary.c). An outer header occupies 96 bytes. It is followed by an inner bytecode image and a native-binding table. Total size is capped at 256 MiB.
 
 | Offset | Size | Outer-header field |
 |---:|---:|---|
-| 0 | 8 | Signature `GOATBIN2` |
-| 8 | 8 | Format version, currently 2 |
+| 0 | 8 | Signature `GOATBIN3` |
+| 8 | 8 | Format version, currently 3 |
 | 16 | 8 | Platform tag |
 | 24 | 8 | Bytecode-image size |
 | 32 | 8 | Binding count |
@@ -32,7 +32,7 @@ The format is implemented in [binary.c](https://github.com/kniazkov/g0at/blob/fc
 | 56 | 8 | Checksum of the complete `.gbin` |
 | 64 | 32 | Library SHA-256; zero bytes without bindings |
 
-Numeric outer-header fields use little-endian encoding (least significant byte first). Checksum calculation treats the field at offset 56 as zero-filled. The algorithm is 64-bit FNV-1a from [binary_file.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/lib/binary_file.c).
+Numeric outer-header fields use little-endian encoding (least significant byte first). Checksum calculation treats the field at offset 56 as zero-filled. The algorithm is 64-bit FNV-1a from [binary_file.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/binary_file.c).
 
 The inner image is chapter 8's buffer: its own header, instructions, data descriptors, and data. It is not another serialization of the AST. Analysis proofs, VM-object addresses, and native-code pointers are not persisted.
 
@@ -47,7 +47,7 @@ The platform tag combines `wchar_t` size and a byte-order indicator. Inner instr
 The loader additionally requires a suitable `double` representation and validates the inner-image signature and structure. A native library has the OS, architecture, and ABI requirements described in earlier chapters.
 
 > [!CAUTION]
-> `.gbin` is not a universal cross-platform format. The platform tag does not contain a complete CPU, OS, or build identifier. Matching tags do not promise compatibility between arbitrary implementations, and version 2 is not a commitment that every future Goat version will read the file.
+> `.gbin` is not a universal cross-platform format. The platform tag does not contain a complete CPU, OS, or build identifier. Matching tags do not promise compatibility between arbitrary implementations, and version 3 is not a commitment that every future Goat version will read the file.
 
 <a id="section-26-4"></a>
 
@@ -72,7 +72,7 @@ This snapshot removes the gap between validating one file and loading different 
 
 This checks integrity and pair consistency, not file provenance. If both files are changed and checksums recomputed, the author's authenticity cannot be established. Releasing the library removes its temporary snapshot.
 
-Publishing an individual file in [binary_file.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/lib/binary_file.c) uses a temporary file beside the destination followed by replacement. The two output files nevertheless remain two operations.
+Publishing an individual file in [binary_file.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/binary_file.c) uses a temporary file beside the destination followed by replacement. The two output files nevertheless remain two operations.
 
 > [!CAUTION]
 > Publishing `.gbin` and its native library is not one atomic transaction. Failure between replacements can leave a mismatched pair. The loader detects the mismatch, but there is no automatic restoration of the previous pair.
@@ -130,6 +130,6 @@ To save bytecode alone, use `--compile` without enabling native mode. An old lib
 
 `--run` neither reconstructs the source nor attempts to rebuild a missing library. Even with a valid pair, individual calls may remain in the VM or fall back after a resource limit, as described in chapter 25.
 
-The CLI sequence is in [binary_program.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/cli/binary_program.c); the saved-program interface is in [binary.h](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/vm/binary.h). [check_binary_program.sh](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/scripts/check_binary_program.sh) checks moving pairs to another directory, execution without source or compiler, missing and mismatched libraries, damaged files, and failure modes. This completes the path from a proven specialization to a reusable executable artifact. The next part addresses observing, testing, and measuring this implementation.
+The CLI sequence is in [binary_program.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/cli/binary_program.c); the saved-program interface is in [binary.h](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/vm/binary.h). [check_binary_program.sh](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/scripts/check_binary_program.sh) checks moving pairs to another directory, execution without source or compiler, missing and mismatched libraries, damaged files, and failure modes. This completes the path from a proven specialization to a reusable executable artifact. The next part addresses observing, testing, and measuring this implementation.
 
-Format version 2 is incompatible with version 1: old `.gbin` files must be recompiled. SHA-256 binds the pair when the bytecode is trusted; it is not a digital signature and does not prevent replacement of both files and the hash. The container checksum remains FNV-1a for corruption detection.
+Format version 3 is incompatible with version 1: old `.gbin` files must be recompiled. SHA-256 binds the pair when the bytecode is trusted; it is not a digital signature and does not prevent replacement of both files and the hash. The container checksum remains FNV-1a for corruption detection.
