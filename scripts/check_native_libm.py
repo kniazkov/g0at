@@ -247,16 +247,19 @@ def main():
         else:
             edges = 'const f=func(n){return %s(n);};f(1);f(1.0);' % name
             template = HOST_ABS
-        path = output / ('edges-' + name + '.goat')
+        # --save-c writes the module beside the source as <name>.c, and the
+        # host templates include "edges.c", so a fixed source name is required.
+        path = output / 'edges.goat'
         path.write_text(edges, encoding='utf-8')
         result = run('--save-c', path)
         assert result.returncode == 0, result
         host = output / ('host-' + name + '.c')
         host.write_text(template.replace('@@LIBM@@', libm), encoding='utf-8')
         exe = output / ('host-' + name + '.exe')
-        subprocess.run([env.get('CC', 'gcc'), '-std=c11', '-Wall', '-Wextra', '-Werror', '-O2',
-                        str(host), '-lm', '-o', str(exe)], check=True, capture_output=True,
-                       timeout=60)
+        compiled = subprocess.run([env.get('CC', 'gcc'), '-std=c11', '-Wall', '-Wextra', '-Werror',
+                                   '-O2', str(host), '-lm', '-o', str(exe)], capture_output=True,
+                                  text=True, timeout=60)
+        assert compiled.returncode == 0, compiled
         subprocess.run([str(exe)], check=True, timeout=30)
         print('[ ok ] %s adapters: INT64 boundaries, signed zero, NaN and infinities' % name)
 
