@@ -14,7 +14,6 @@
 #include "analysis/lattice.h"
 #include "analysis/native_builtin.h"
 #include "analysis/reachability.h"
-#include "builtins/registry.h"
 #include "codegen/c_call.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
@@ -85,11 +84,9 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
         return make_bottom_element();
     if (state->c_expressions && state->c_expressions->graph)
         return interpret_c_call(node, args, expr->args_count, state);
-    native_builtin_kind_t kind = resolve_native_builtin(get_node_child(node, 0));
-    if (kind == NATIVE_BUILTIN_ABS && expr->args_count >= 1)
-        return builtin_abs.interpret(state, args, expr->args_count);
-    if (kind == NATIVE_BUILTIN_ATAN && expr->args_count >= 1)
-        return builtin_atan.interpret(state, args, expr->args_count);
+    const builtin_function_t *builtin = resolve_native_builtin(get_node_child(node, 0));
+    if (builtin && expr->args_count >= builtin->min_args)
+        return builtin->interpret(state, args, expr->args_count);
     if (state->recursive_group)
         return interpret_recursive_call(node, function, args, expr->args_count, state);
     observe_function_call(state->call_graph_node, node, function, args, expr->args_count);

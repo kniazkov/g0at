@@ -46,8 +46,7 @@ void check_function_c_contract(function_summary_t *summary) {
     if (!function_summary_is_pure(summary))
         blockers |= C_BLOCKER_EFFECTS;
     for (const function_capture_t *capture = summary->captures; capture; capture = capture->next) {
-        if (!static_function_capture(capture)
-            && capture_native_builtin(summary, capture) == NATIVE_BUILTIN_NONE) {
+        if (!static_function_capture(capture) && !capture_native_builtin(summary, capture)) {
             blockers |= C_BLOCKER_CAPTURES;
             unsupported = true;
         }
