@@ -16,6 +16,84 @@
 typedef c_generated_expression_t (*c_native_generator_t)(const node_t *node,
                                                          c_generation_context_t *context);
 
+/** @brief Maximum number of operands retained by a native call lowering. */
+#define NATIVE_MAX_ARGUMENTS 2
+
+/** @brief Decides whether an evaluated operand may be passed to a generator. */
+typedef bool (*native_argument_rule_t)(c_value_type_t type,
+                                       size_t index,
+                                       c_value_type_t result_type);
+
+/** @brief Accepts any operand with a named C type, matching the first to the result type. */
+static bool accept_abs_argument(c_value_type_t type, size_t index, c_value_type_t result_type) {
+    if (index == 1)
+        return type == result_type;
+    return c_type_name(type) != NULL;
+}
+
+/** @brief Accepts only numeric operands, as required by libm calls. */
+static bool accept_numeric_argument(c_value_type_t type, size_t index, c_value_type_t result_type) {
+    (void)index;
+    (void)result_type;
+    return type == C_VALUE_INT64 || type == C_VALUE_DOUBLE;
+}
+
+/**
+ * @brief Generates code for call arguments, retaining the first @p max_args operands
+ *        and evaluating any remaining ones for their effects only.
+ * @return true when every operand satisfied the acceptance rule.
+ */
+static bool capture_native_arguments(const node_t *node,
+                                     c_generation_context_t *context,
+                                     size_t max_args,
+                                     native_argument_rule_t accepts,
+                                     c_value_type_t result_type,
+                                     string_value_t *out,
+                                     source_builder_t *prelude) {
+    size_t count = get_node_child_count(node) - 1;
+    bool success = true;
+    for (size_t i = count; i > 0 && success; i--) {
+        c_generated_expression_t argument =
+            generate_c_code_from_node(get_node_child(node, i), context);
+        success = argument.success && accepts(argument.type, i, result_type);
+        if (success) {
+            string_value_t captured = c_capture_operand(prelude, context, &argument, argument.type);
+            if (i <= max_args)
+                out[i - 1] = captured;
+            else {
+                add_source(prelude, 0, L"(void)%s;", captured.data);
+                FREE_STRING(captured);
+            }
+        }
+        destroy_c_expression(&argument);
+    }
+    return success;
+}
+
+/** @brief Releases captured operand text. */
+static void free_native_arguments(string_value_t *arguments, size_t count) {
+    for (size_t i = 0; i < count; i++)
+        FREE_STRING(arguments[i]);
+}
+
+/** @brief Emits an arity-1 or arity-2 libm call rounded to binary64. */
+static void emit_native_call(source_builder_t *prelude,
+                             const wchar_t *name,
+                             const string_value_t *arguments,
+                             size_t arity,
+                             const wchar_t *value) {
+    if (arity == 2)
+        add_source(prelude,
+                   0,
+                   L"volatile double %s = %s(%s, %s);",
+                   value,
+                   name,
+                   arguments[0].data,
+                   arguments[1].data);
+    else
+        add_source(prelude, 0, L"volatile double %s = %s(%s);", value, name, arguments[0].data);
+}
+
 /** @brief Lowers proven abs calls, preserving unused argument effects and binary64 rounding. */
 static c_generated_expression_t native_abs(const node_t *node, c_generation_context_t *context) {
     size_t count = get_node_child_count(node) - 1;
@@ -25,26 +103,15 @@ static c_generated_expression_t native_abs(const node_t *node, c_generation_cont
         return (c_generated_expression_t){0};
     }
     source_builder_t *prelude = create_source_builder();
-    string_value_t input = {0};
-    bool success = true;
-    for (size_t i = count; i > 0 && success; i--) {
-        c_generated_expression_t argument =
-            generate_c_code_from_node(get_node_child(node, i), context);
-        success =
-            argument.success && c_type_name(argument.type) && (i != 1 || argument.type == type);
-        if (success) {
-            string_value_t captured = c_capture_operand(prelude, context, &argument, argument.type);
-            if (i == 1)
-                input = captured;
-            else {
-                add_source(prelude, 0, L"(void)%s;", captured.data);
-                FREE_STRING(captured);
-            }
-        }
-        destroy_c_expression(&argument);
-    }
-    if (!success) {
-        FREE_STRING(input);
+    string_value_t arguments[NATIVE_MAX_ARGUMENTS] = {0};
+    if (!capture_native_arguments(node,
+                                  context,
+                                  1,
+                                  accept_abs_argument,
+                                  type,
+                                  arguments,
+                                  prelude)) {
+        free_native_arguments(arguments, 1);
         destroy_source_builder(prelude);
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
         return (c_generated_expression_t){0};
@@ -56,13 +123,13 @@ static c_generated_expression_t native_abs(const node_t *node, c_generation_cont
                    0,
                    L"int64_t %s = %s < 0 ? g_i64_neg(%s) : %s;",
                    value.data,
-                   input.data,
-                   input.data,
-                   input.data);
+                   arguments[0].data,
+                   arguments[0].data,
+                   arguments[0].data);
     } else {
-        add_source(prelude, 0, L"volatile double %s = fabs(%s);", value.data, input.data);
+        add_source(prelude, 0, L"volatile double %s = fabs(%s);", value.data, arguments[0].data);
     }
-    FREE_STRING(input);
+    free_native_arguments(arguments, 1);
     return (c_generated_expression_t){.success = true,
                                       .type = type,
                                       .value = value,
@@ -78,43 +145,26 @@ static c_generated_expression_t native_atan(const node_t *node, c_generation_con
         return (c_generated_expression_t){0};
     }
     source_builder_t *prelude = create_source_builder();
-    string_value_t arguments[2] = {0};
-    bool success = true;
-    for (size_t i = count; i > 0 && success; i--) {
-        c_generated_expression_t argument =
-            generate_c_code_from_node(get_node_child(node, i), context);
-        success = argument.success && c_type_name(argument.type)
-                  && (argument.type == C_VALUE_INT64 || argument.type == C_VALUE_DOUBLE);
-        if (success) {
-            string_value_t captured = c_capture_operand(prelude, context, &argument, argument.type);
-            if (i <= 2)
-                arguments[i - 1] = captured;
-            else {
-                add_source(prelude, 0, L"(void)%s;", captured.data);
-                FREE_STRING(captured);
-            }
-        }
-        destroy_c_expression(&argument);
-    }
-    if (!success) {
-        for (size_t i = 0; i < 2; i++)
-            FREE_STRING(arguments[i]);
+    string_value_t arguments[NATIVE_MAX_ARGUMENTS] = {0};
+    if (!capture_native_arguments(node,
+                                  context,
+                                  2,
+                                  accept_numeric_argument,
+                                  C_VALUE_DOUBLE,
+                                  arguments,
+                                  prelude)) {
+        free_native_arguments(arguments, 2);
         destroy_source_builder(prelude);
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
         return (c_generated_expression_t){0};
     }
     string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
-    if (count == 1)
-        add_source(prelude, 0, L"volatile double %s = atan(%s);", value.data, arguments[0].data);
-    else
-        add_source(prelude,
-                   0,
-                   L"volatile double %s = atan2(%s, %s);",
-                   value.data,
-                   arguments[0].data,
-                   arguments[1].data);
-    for (size_t i = 0; i < 2; i++)
-        FREE_STRING(arguments[i]);
+    emit_native_call(prelude,
+                     count == 1 ? L"atan" : L"atan2",
+                     arguments,
+                     count > 1 ? 2 : 1,
+                     value.data);
+    free_native_arguments(arguments, 2);
     return (c_generated_expression_t){.success = true,
                                       .type = C_VALUE_DOUBLE,
                                       .value = value,
@@ -132,49 +182,22 @@ static c_generated_expression_t native_libm(const node_t *node,
         return (c_generated_expression_t){0};
     }
     source_builder_t *prelude = create_source_builder();
-    string_value_t arguments[2] = {0};
-    bool success = true;
-    for (size_t i = count; i > 0 && success; i--) {
-        c_generated_expression_t argument =
-            generate_c_code_from_node(get_node_child(node, i), context);
-        success = argument.success && c_type_name(argument.type)
-                  && (argument.type == C_VALUE_INT64 || argument.type == C_VALUE_DOUBLE);
-        if (success) {
-            string_value_t captured = c_capture_operand(prelude, context, &argument, argument.type);
-            if (i <= builtin->min_args)
-                arguments[i - 1] = captured;
-            else {
-                add_source(prelude, 0, L"(void)%s;", captured.data);
-                FREE_STRING(captured);
-            }
-        }
-        destroy_c_expression(&argument);
-    }
-    if (!success) {
-        for (size_t i = 0; i < 2; i++)
-            FREE_STRING(arguments[i]);
+    string_value_t arguments[NATIVE_MAX_ARGUMENTS] = {0};
+    if (!capture_native_arguments(node,
+                                  context,
+                                  builtin->min_args,
+                                  accept_numeric_argument,
+                                  C_VALUE_DOUBLE,
+                                  arguments,
+                                  prelude)) {
+        free_native_arguments(arguments, builtin->min_args);
         destroy_source_builder(prelude);
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
         return (c_generated_expression_t){0};
     }
     string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
-    if (builtin->min_args == 2)
-        add_source(prelude,
-                   0,
-                   L"volatile double %s = %s(%s, %s);",
-                   value.data,
-                   builtin->name,
-                   arguments[0].data,
-                   arguments[1].data);
-    else
-        add_source(prelude,
-                   0,
-                   L"volatile double %s = %s(%s);",
-                   value.data,
-                   builtin->name,
-                   arguments[0].data);
-    for (size_t i = 0; i < 2; i++)
-        FREE_STRING(arguments[i]);
+    emit_native_call(prelude, builtin->name, arguments, builtin->min_args, value.data);
+    free_native_arguments(arguments, builtin->min_args);
     return (c_generated_expression_t){.success = true,
                                       .type = C_VALUE_DOUBLE,
                                       .value = value,
