@@ -57,7 +57,7 @@ int main(void) {
                 a.value.integer=values[j];
                 assert(e->invoke(1,1,&a,&r)==GOAT_NATIVE_OK);
                 assert(r.type==GOAT_NATIVE_F64);
-                double expected=@@LIBM@@((double)values[j]);
+                volatile double expected=@@LIBM@@((double)values[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
                 else assert(r.value.real==expected);
             }
@@ -67,7 +67,7 @@ int main(void) {
             for (unsigned j=0;j<6;j++) {
                 a.value.real=values[j];
                 assert(e->invoke(1,1,&a,&r)==GOAT_NATIVE_OK && r.type==GOAT_NATIVE_F64);
-                double expected=@@LIBM@@(values[j]);
+                volatile double expected=@@LIBM@@(values[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
                 else assert(r.value.real==expected);
             }
@@ -96,7 +96,7 @@ int main(void) {
                 a[0].value.integer=x[j]; a[1].value.integer=y[j];
                 assert(e->invoke(1,2,a,&r)==GOAT_NATIVE_OK);
                 assert(r.type==GOAT_NATIVE_F64);
-                double expected=@@LIBM@@((double)x[j],(double)y[j]);
+                volatile double expected=@@LIBM@@((double)x[j],(double)y[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
                 else assert(r.value.real==expected);
             }
@@ -106,7 +106,7 @@ int main(void) {
             for (unsigned j=0;j<6;j++) {
                 a[0].value.real=x[j]; a[1].value.real=y[j];
                 assert(e->invoke(1,2,a,&r)==GOAT_NATIVE_OK && r.type==GOAT_NATIVE_F64);
-                double expected=@@LIBM@@(x[j],y[j]);
+                volatile double expected=@@LIBM@@(x[j],y[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
                 else assert(r.value.real==expected);
             }
