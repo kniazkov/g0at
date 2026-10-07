@@ -38,6 +38,14 @@ static bool accept_numeric_argument(c_value_type_t type, size_t index, c_value_t
     return type == C_VALUE_INT64 || type == C_VALUE_DOUBLE;
 }
 
+/** @brief Accepts a numeric source operand; later operands only need a named C type. */
+static bool accept_int_argument(c_value_type_t type, size_t index, c_value_type_t result_type) {
+    (void)result_type;
+    if (index == 1)
+        return type == C_VALUE_INT64 || type == C_VALUE_DOUBLE;
+    return c_type_name(type) != NULL;
+}
+
 /**
  * @brief Generates code for call arguments, retaining the first @p max_args operands
  *        and evaluating any remaining ones for their effects only.
@@ -78,20 +86,22 @@ static void free_native_arguments(string_value_t *arguments, size_t count) {
 
 /** @brief Emits an arity-1 or arity-2 libm call rounded to binary64. */
 static void emit_native_call(source_builder_t *prelude,
+                             c_generation_context_t *context,
                              const wchar_t *name,
                              const string_value_t *arguments,
                              size_t arity,
                              const wchar_t *value) {
-    if (arity == 2)
-        add_source(prelude,
-                   0,
-                   L"volatile double %s = %s(%s, %s);",
-                   value,
-                   name,
-                   arguments[0].data,
-                   arguments[1].data);
-    else
+    if (arity == 2) {
+        string_value_t a = format_string(L"g_t%zu", context->temporary_count++);
+        string_value_t b = format_string(L"g_t%zu", context->temporary_count++);
+        add_source(prelude, 0, L"double %s = %s;", a.data, arguments[0].data);
+        add_source(prelude, 0, L"double %s = %s;", b.data, arguments[1].data);
+        add_source(prelude, 0, L"volatile double %s = %s(%s, %s);", value, name, a.data, b.data);
+        FREE_STRING(a);
+        FREE_STRING(b);
+    } else {
         add_source(prelude, 0, L"volatile double %s = %s(%s);", value, name, arguments[0].data);
+    }
 }
 
 /** @brief Lowers proven abs calls, preserving unused argument effects and binary64 rounding. */
@@ -160,6 +170,7 @@ static c_generated_expression_t native_atan(const node_t *node, c_generation_con
     }
     string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
     emit_native_call(prelude,
+                     context,
                      count == 1 ? L"atan" : L"atan2",
                      arguments,
                      count > 1 ? 2 : 1,
@@ -171,10 +182,11 @@ static c_generated_expression_t native_atan(const node_t *node, c_generation_con
                                       .prelude = prelude};
 }
 
-/** @brief Shared libm lowering; the Goat name matches the C function and min_args its arity. */
+/** @brief Shared libm lowering; min_args fixes the arity and c_name the C function. */
 static c_generated_expression_t native_libm(const node_t *node,
                                             c_generation_context_t *context,
-                                            const builtin_function_t *builtin) {
+                                            const builtin_function_t *builtin,
+                                            const wchar_t *c_name) {
     size_t count = get_node_child_count(node) - 1;
     if (count < builtin->min_args
         || c_generation_expression_type(context, node) != C_VALUE_DOUBLE) {
@@ -196,10 +208,104 @@ static c_generated_expression_t native_libm(const node_t *node,
         return (c_generated_expression_t){0};
     }
     string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
-    emit_native_call(prelude, builtin->name, arguments, builtin->min_args, value.data);
+    emit_native_call(prelude, context, c_name, arguments, builtin->min_args, value.data);
     free_native_arguments(arguments, builtin->min_args);
     return (c_generated_expression_t){.success = true,
                                       .type = C_VALUE_DOUBLE,
+                                      .value = value,
+                                      .prelude = prelude};
+}
+
+/** @brief Lowers proven int casts, preserving fallback effects and the VM range check. */
+static c_generated_expression_t native_int(const node_t *node, c_generation_context_t *context) {
+    size_t count = get_node_child_count(node) - 1;
+    if (!count || c_generation_expression_type(context, node) != C_VALUE_INT64) {
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    c_value_type_t arg_type = c_generation_expression_type(context, get_node_child(node, 1));
+    if (arg_type != C_VALUE_INT64 && arg_type != C_VALUE_DOUBLE) {
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    bool double_arg = arg_type == C_VALUE_DOUBLE;
+    if (double_arg && count >= 2
+        && c_generation_expression_type(context, get_node_child(node, 2)) != C_VALUE_INT64) {
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    source_builder_t *prelude = create_source_builder();
+    string_value_t arguments[NATIVE_MAX_ARGUMENTS] = {0};
+    if (!capture_native_arguments(node,
+                                  context,
+                                  2,
+                                  accept_int_argument,
+                                  C_VALUE_INT64,
+                                  arguments,
+                                  prelude)) {
+        free_native_arguments(arguments, 2);
+        destroy_source_builder(prelude);
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    if (double_arg) {
+        string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+        add_source(prelude,
+                   0,
+                   L"int64_t %s = (isfinite(%s) && %s >= -0x1p63 && %s < 0x1p63)"
+                   L" ? (int64_t)%s : %s;",
+                   value.data,
+                   arguments[0].data,
+                   arguments[0].data,
+                   arguments[0].data,
+                   arguments[0].data,
+                   count >= 2 ? arguments[1].data : L"INT64_C(0)");
+        free_native_arguments(arguments, 2);
+        return (c_generated_expression_t){.success = true,
+                                          .type = C_VALUE_INT64,
+                                          .value = value,
+                                          .prelude = prelude};
+    }
+    if (count >= 2)
+        add_source(prelude, 0, L"(void)%s;", arguments[1].data);
+    FREE_STRING(arguments[1]);
+    return (c_generated_expression_t){.success = true,
+                                      .type = C_VALUE_INT64,
+                                      .value = arguments[0],
+                                      .prelude = prelude};
+}
+
+/** @brief Lowers proven sign calls; NaN and both signed zeros map to zero. */
+static c_generated_expression_t native_sign(const node_t *node, c_generation_context_t *context) {
+    size_t count = get_node_child_count(node) - 1;
+    if (!count || c_generation_expression_type(context, node) != C_VALUE_INT64) {
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    source_builder_t *prelude = create_source_builder();
+    string_value_t arguments[NATIVE_MAX_ARGUMENTS] = {0};
+    if (!capture_native_arguments(node,
+                                  context,
+                                  1,
+                                  accept_numeric_argument,
+                                  C_VALUE_INT64,
+                                  arguments,
+                                  prelude)) {
+        free_native_arguments(arguments, 1);
+        destroy_source_builder(prelude);
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+    add_source(prelude,
+               0,
+               L"int64_t %s = %s > 0 ? 1 : %s < 0 ? -1 : 0;",
+               value.data,
+               arguments[0].data,
+               arguments[0].data);
+    free_native_arguments(arguments, 1);
+    return (c_generated_expression_t){.success = true,
+                                      .type = C_VALUE_INT64,
                                       .value = value,
                                       .prelude = prelude};
 }
@@ -208,18 +314,25 @@ static c_generated_expression_t native_libm(const node_t *node,
 typedef struct c_native_entry_t {
     const builtin_function_t *builtin;
     c_native_generator_t generator;
+    const wchar_t *c_name; /**< C function name; NULL means the Goat name is used. */
 } c_native_entry_t;
 
 static const c_native_entry_t generators[] = {
-    {&builtin_abs, native_abs}, {&builtin_atan, native_atan}, {&builtin_acos, NULL},
-    {&builtin_asin, NULL},      {&builtin_cbrt, NULL},        {&builtin_ceil, NULL},
-    {&builtin_cos, NULL},       {&builtin_cosh, NULL},        {&builtin_exp, NULL},
-    {&builtin_exp2, NULL},      {&builtin_expm1, NULL},       {&builtin_floor, NULL},
-    {&builtin_fmod, NULL},      {&builtin_hypot, NULL},       {&builtin_log, NULL},
-    {&builtin_log10, NULL},     {&builtin_log1p, NULL},       {&builtin_log2, NULL},
-    {&builtin_pow, NULL},       {&builtin_round, NULL},       {&builtin_sin, NULL},
-    {&builtin_sinh, NULL},      {&builtin_sqrt, NULL},        {&builtin_tan, NULL},
-    {&builtin_tanh, NULL},      {&builtin_trunc, NULL}};
+    {&builtin_abs, native_abs, NULL}, {&builtin_atan, native_atan, NULL},
+    {&builtin_acos, NULL, NULL},      {&builtin_asin, NULL, NULL},
+    {&builtin_cbrt, NULL, NULL},      {&builtin_ceil, NULL, NULL},
+    {&builtin_cos, NULL, NULL},       {&builtin_cosh, NULL, NULL},
+    {&builtin_exp, NULL, NULL},       {&builtin_exp2, NULL, NULL},
+    {&builtin_expm1, NULL, NULL},     {&builtin_floor, NULL, NULL},
+    {&builtin_fmod, NULL, NULL},      {&builtin_hypot, NULL, NULL},
+    {&builtin_int, native_int, NULL}, {&builtin_log, NULL, NULL},
+    {&builtin_log10, NULL, NULL},     {&builtin_log1p, NULL, NULL},
+    {&builtin_log2, NULL, NULL},      {&builtin_max, NULL, L"fmax"},
+    {&builtin_min, NULL, L"fmin"},    {&builtin_pow, NULL, NULL},
+    {&builtin_round, NULL, NULL},     {&builtin_sign, native_sign, NULL},
+    {&builtin_sin, NULL, NULL},       {&builtin_sinh, NULL, NULL},
+    {&builtin_sqrt, NULL, NULL},      {&builtin_tan, NULL, NULL},
+    {&builtin_tanh, NULL, NULL},      {&builtin_trunc, NULL, NULL}};
 
 static const c_native_entry_t *find_generator(const builtin_function_t *builtin) {
     for (size_t i = 0; i < sizeof(generators) / sizeof(*generators); i++) {
@@ -243,5 +356,5 @@ c_generated_expression_t c_native_call(const node_t *node,
     }
     if (entry->generator)
         return entry->generator(node, context);
-    return native_libm(node, context, builtin);
+    return native_libm(node, context, builtin, entry->c_name ? entry->c_name : builtin->name);
 }
