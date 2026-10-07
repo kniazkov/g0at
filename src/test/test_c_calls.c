@@ -130,7 +130,7 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
         {L"const f=func(n){return atan(n,1);};f(1);", L"(2)==atan2(2.0,1.0)", 1},
         {L"const f=func(n){var x=n;return atan(x=x+1,x=x+2);};f(1);", L"(1)==atan2(4.0,3.0)", 1},
         {L"const f=func(n){return cos(n);};f(1);", L"(1)==cos(1.0)", 1},
-        {L"const f=func(n){return sin(n);};f(1.5);", L"(1)==sin(1.5)", 1, true},
+        {L"const f=func(n){return sin(n);};f(1.5);", L"(1.5)==sin(1.5)", 1, true},
         {L"const f=func(n){return sqrt(n);};f(1);", L"(1)==sqrt(1.0)", 1},
         {L"const f=func(n){return pow(n,2);};f(1);", L"(2)==pow(2.0,2.0)", 1},
         {L"const f=func(a,b){return fmod(a,b);};f(7,3);", L"(7,3)==fmod(7.0,3.0)", 1},
