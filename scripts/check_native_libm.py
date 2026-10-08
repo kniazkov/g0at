@@ -36,14 +36,9 @@ UNARY = {
     'trunc': [-2.5, -0.5, 0, 0.5, 2.5],
 }
 
-# min/max ties on signed zeros are implementation-defined in C: the VM is
-# compiled at -O0 (libm libcall) while the generated module is compiled at
-# -O2, where the compiler may fold fmin/fmax to minnum/maxnum and change the
-# sign of the zero.  Only non-tie pairs belong in the VM-equivalence check;
-# argument order and signed-zero handling are covered by the adapter tests.
 BINARY = {
-    'max': [(1, 2), (3.5, 2), (-1, -2), (1, 1)],
-    'min': [(1, 2), (3.5, 2), (-1, -2), (1, 1)],
+    'max': [(1, 2), (3.5, 2), (-1, -2), (1, 1), (-0.0, 0.0), (0.0, -0.0)],
+    'min': [(1, 2), (3.5, 2), (-1, -2), (1, 1), (-0.0, 0.0), (0.0, -0.0)],
     'pow': [(2, 3), (4, 0.5), (1, 10), (0.5, 2), (10, -1)],
     'fmod': [(7, 3), (7.5, 2), (-7, 3), (7, -3), (5, 2.5)],
     'hypot': [(3, 4), (1, 1), (0, 0), (5, 12), (10000000000, 10000000000)],
@@ -68,7 +63,8 @@ int main(void) {
                 assert(r.type==GOAT_NATIVE_F64);
                 volatile double expected=@@LIBM@@((double)values[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
-                else assert(r.value.real==expected);
+                else { assert(r.value.real==expected);
+                    if (expected==0.0) assert(!!signbit(r.value.real)==!!signbit(expected)); }
             }
         } else {
             assert(a.type==GOAT_NATIVE_F64);
@@ -78,7 +74,8 @@ int main(void) {
                 assert(e->invoke(1,1,&a,&r)==GOAT_NATIVE_OK && r.type==GOAT_NATIVE_F64);
                 volatile double expected=@@LIBM@@(values[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
-                else assert(r.value.real==expected);
+                else { assert(r.value.real==expected);
+                    if (expected==0.0) assert(!!signbit(r.value.real)==!!signbit(expected)); }
             }
         }
     }
@@ -107,7 +104,8 @@ int main(void) {
                 assert(r.type==GOAT_NATIVE_F64);
                 volatile double expected=@@LIBM@@((double)x[j],(double)y[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
-                else assert(r.value.real==expected);
+                else { assert(r.value.real==expected);
+                    if (expected==0.0) assert(!!signbit(r.value.real)==!!signbit(expected)); }
             }
         } else {
             assert(a[1].type==GOAT_NATIVE_F64);
@@ -117,7 +115,8 @@ int main(void) {
                 assert(e->invoke(1,2,a,&r)==GOAT_NATIVE_OK && r.type==GOAT_NATIVE_F64);
                 volatile double expected=@@LIBM@@(x[j],y[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
-                else assert(r.value.real==expected);
+                else { assert(r.value.real==expected);
+                    if (expected==0.0) assert(!!signbit(r.value.real)==!!signbit(expected)); }
             }
         }
     }
@@ -183,6 +182,20 @@ def main():
         assert int(fields['succeeded']) > 0 and fields['omitted'] == '0', fields
         assert fields['attempts'] == fields['succeeded'] and fields['retries'] == '0', fields
 
+    # Check a fixed language contract, including constant folding, against an oracle.
+    zeros = output / 'zero-contract.goat'
+    pairs = [('-0.0', '0.0'), ('0.0', '-0.0'), ('-0.0', '-0.0'), ('0.0', '0.0')]
+    for name, expected in [('min', '-0\n-0\n-0\n0\n'),
+                           ('max', '0\n0\n-0\n0\n')]:
+        direct = ''.join('println(%s(%s,%s));' % (name, a, b) for a, b in pairs)
+        calls = ''.join('println(f(%s,%s));' % (a, b) for a, b in pairs)
+        zeros.write_text('const f=func(a,b){return %s(a,b);};' % name + direct + calls,
+                         encoding='utf-8')
+        for optimize, native in [('none', 'off'), ('all', 'off'), ('all', 'required')]:
+            result = run('--optimize', optimize, '--native', native, zeros)
+            assert result.returncode == 0 and result.stdout == expected * 2, result
+    print('[ ok ] signed-zero contract: VM, folding and native')
+
     for name, values in UNARY.items():
         body = ';'.join('println(f(%s))' % value for value in values)
         verify_native('unary-' + name, 'const f=func(n){return %s(n);};%s;' % (name, body))
@@ -195,6 +208,10 @@ def main():
 
     # Rebinding, aliasing and argument effects must retain VM semantics.
     for case, source in {
+        'extra_bool': 'const f=func(n){return cos(n,true)+sign(n,false)+pow(n,2,true)'
+                      '+atan(n,1,false);};println(f(1));',
+        'extra_effect': 'const f=func(n){var x=n;var r=cos(n,x++>0);return r+x;};'
+                        'println(f(1));',
         'alias': 'const cosine=cos;const f=func(n){return cosine(n);};println(f(1));',
         'effects': 'const f=func(n){var x=n;var r=cos(x=x+1);return r*100+x;};println(f(1));',
         'effects_binary': 'const g=func(a,b){var x=a;var r=pow(x=x+1,b);return r+x;};'
@@ -264,7 +281,15 @@ def main():
         result = run('--save-c', path)
         assert result.returncode == 0, result
         host = output / ('host-' + name + '.c')
-        host.write_text(template.replace('@@LIBM@@', libm), encoding='utf-8')
+        host_source = template.replace('@@LIBM@@', libm)
+        if name in ('min', 'max'):
+            operator = '||' if name == 'min' else '&&'
+            host_source = host_source.replace(
+                'volatile double expected=%s(x[j],y[j]);' % libm,
+                'volatile double expected=(x[j]==0.0 && y[j]==0.0)'
+                ' ? ((signbit(x[j]) %s signbit(y[j])) ? -0.0 : 0.0)' % operator
+                + ' : %s(x[j],y[j]);' % libm)
+        host.write_text(host_source, encoding='utf-8')
         exe = output / ('host-' + name + '.exe')
         compiled = subprocess.run([env.get('CC', 'gcc'), '-std=c11', '-Wall', '-Wextra', '-Werror',
                                    '-O2', str(host), '-lm', '-o', str(exe)], capture_output=True,

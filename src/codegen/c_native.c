@@ -63,7 +63,9 @@ static bool capture_native_arguments(const node_t *node,
     for (size_t i = count; i > 0 && success; i--) {
         c_generated_expression_t argument =
             generate_c_code_from_node(get_node_child(node, i), context);
-        success = argument.success && accepts(argument.type, i, result_type);
+        success = argument.success
+                  && (i > max_args ? c_type_name(argument.type) != NULL
+                                   : accepts(argument.type, i, result_type));
         if (success) {
             string_value_t captured = c_capture_operand(prelude, context, &argument, argument.type);
             if (i <= max_args)
@@ -209,6 +211,18 @@ static c_generated_expression_t native_libm(const node_t *node,
     }
     string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
     emit_native_call(prelude, context, c_name, arguments, builtin->min_args, value.data);
+    if (builtin == &builtin_min || builtin == &builtin_max) {
+        add_source(prelude,
+                   0,
+                   L"if (%s == 0 && %s == 0) %s = (signbit((double)%s) %s "
+                   L"signbit((double)%s)) ? -0.0 : 0.0;",
+                   arguments[0].data,
+                   arguments[1].data,
+                   value.data,
+                   arguments[0].data,
+                   builtin == &builtin_min ? L"||" : L"&&",
+                   arguments[1].data);
+    }
     free_native_arguments(arguments, builtin->min_args);
     return (c_generated_expression_t){.success = true,
                                       .type = C_VALUE_DOUBLE,
