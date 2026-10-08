@@ -137,6 +137,8 @@ Replacement itself is deferred until binding traversal finishes: changing childr
 
 A constant is declared only when an undeclared name stands to the left of an assignment that is a standalone statement. In the chain `x = y = 10`, in a call argument such as `println(a = f(3))`, in a loop step `i++`, or in the header `for (i = 0; ...)`, an undeclared name cannot be turned into a constant unambiguously, so these cases are compile errors. A typo in a name being read can still go unnoticed, so enabling warnings helps reveal it. An implicit declaration is an implemented rule, not evidence that the analyzer has proven the author's intent.
 
+Writes to the same implicit constant inside its initializer, such as `x = x = 1` or `x = x++`, are also compile errors. The check distinguishes shadowed local names and does not reject recursive references in function bodies.
+
 <a id="section-7-7"></a>
 
 ## 7.7. The Original Tree and Analysis Results

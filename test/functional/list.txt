@@ -353,3 +353,9 @@ for_analysis_budget
 
 # Dead storage and retained initialization effects
 unused_bindings
+
+implicit_self_chain
+implicit_self_expression
+implicit_self_update
+implicit_self_block
+implicit_recursion

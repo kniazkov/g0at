@@ -1,0 +1,10 @@
+f = func(n) {
+    if (n == 0) return 1;
+    return n * f(n - 1);
+};
+println(f(5));
+x = { var x = 2; x = 3; println(x); };
+var y = 0;
+z = y = 4;
+println(z);
+println(y);

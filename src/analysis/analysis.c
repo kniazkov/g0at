@@ -171,6 +171,34 @@ typedef struct {
     bool replace;
 } insertion_t;
 
+/** @brief Detects a write inside a pending implicit constant's own initializer.
+ * Function bodies execute later; declaration identity distinguishes shadowed names.
+ */
+static bool writes_pending_constant(const node_t *node,
+                                    const declarator_t *binding,
+                                    const vector_t *insertions) {
+    const node_t *parent = node->parent;
+    if (!parent)
+        return false;
+    node_type_t type = parent->vtbl->type;
+    bool write = (type == NODE_SIMPLE_ASSIGNMENT && get_node_child(parent, 0) == node)
+                 || (type >= NODE_PREFIX_INCREMENT && type <= NODE_POSTFIX_DECREMENT);
+    if (!write)
+        return false;
+    for (size_t i = 0; i < insertions->size; i++) {
+        const insertion_t *insertion = insertions->data[i];
+        if (!insertion->replace || get_node_child(insertion->item, 0) != &binding->base)
+            continue;
+        for (const node_t *ancestor = parent; ancestor; ancestor = ancestor->parent) {
+            if (ancestor->vtbl->type == NODE_FUNCTION_OBJECT)
+                break;
+            if (ancestor == insertion->before)
+                return true;
+        }
+    }
+    return false;
+}
+
 /**
  * @brief Binds names within a subtree, skipping nested functions.
  * Implicit declarations are queued for insertion after traversal to avoid invalidating
@@ -269,6 +297,16 @@ static void bind_variables_from_node_and_children(node_t *node,
             }
         } else {
             var->declarator = declarator;
+            if (writes_pending_constant(node, declarator, insertions)) {
+                compilation_error_t *error =
+                    create_error_from_node(memory->errors,
+                                           node,
+                                           ERROR,
+                                           get_messages()->implicit_constant_declaration_invalid,
+                                           var->name.data);
+                error->next = *errors;
+                *errors = error;
+            }
         }
         return;
     }
