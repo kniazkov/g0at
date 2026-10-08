@@ -127,7 +127,8 @@ static void assign_node_indexes_and_scopes(node_t *node,
 static void assign_scope_to_subtree(node_t *node, node_t *parent, scope_t *scope) {
     node->parent = parent;
     node->scope = scope;
-
+    if (node->vtbl->type == NODE_FUNCTION_OBJECT)
+        return;
     const size_t child_count = get_node_child_count(node);
     for (size_t child_id = 0; child_id < child_count; child_id++) {
         node_t *child = get_node_child(node, child_id);
@@ -165,6 +166,9 @@ typedef struct {
 
     /** @brief Existing child before which `item` should be inserted. */
     node_t *before;
+
+    /** @brief Whether `item` replaces `before` instead of being inserted before it. */
+    bool replace;
 } insertion_t;
 
 /**
@@ -202,28 +206,69 @@ static void bind_variables_from_node_and_children(node_t *node,
         variable_t *var = (variable_t *)node;
         declarator_t *declarator = find_symbol_in_scope_and_parents(node->scope, var->name.data);
         if (declarator == NULL) {
-            /* Defer the synthetic declaration until traversal finishes. */
-            if (options->enable_warnings) {
+            node_t *parent = var->base.base.base.parent;
+            node_type_t parent_type = parent ? parent->vtbl->type : NODE_ROOT;
+            bool is_left_operand = parent_type == NODE_SIMPLE_ASSIGNMENT
+                                   && get_node_child(parent, 0) == (node_t *)var;
+            if (is_left_operand) {
+                node_t *assign_parent = parent->parent;
+                if (assign_parent && assign_parent->vtbl->type == NODE_STATEMENT_EXPRESSION
+                    && assign_parent->parent
+                    && is_statement_list(assign_parent->parent->vtbl->type)) {
+                    /* A standalone assignment to an undeclared name declares a constant. */
+                    node_t *statement = find_parent_statement(var);
+                    assert(is_statement_list(statement->parent->vtbl->type));
+                    expression_t *initial = (expression_t *)get_node_child(parent, 1);
+                    constant_declaration_pair_t pair =
+                        create_synthetic_constant_declaration_node(memory->graph,
+                                                                   var->name,
+                                                                   initial);
+                    insertion_t *insertion = ALLOC(sizeof(insertion_t));
+                    insertion->target = statement->parent;
+                    insertion->item = pair.declaration;
+                    insertion->before = statement;
+                    insertion->replace = true;
+                    append_to_vector(insertions, insertion);
+                    var->declarator = pair.declarator;
+                    add_symbol_to_scope(statement->parent->scope,
+                                        var->name.data,
+                                        pair.declarator);
+                } else {
+                    /* The assignment is not a standalone statement: the case is ambiguous. */
+                    compilation_error_t *error =
+                        create_error_from_node(memory->errors,
+                                               node,
+                                               ERROR,
+                                               get_messages()->implicit_constant_declaration_invalid,
+                                               var->name.data);
+                    error->next = *errors;
+                    *errors = error;
+                }
+            } else if (parent_type >= NODE_PREFIX_INCREMENT
+                       && parent_type <= NODE_POSTFIX_DECREMENT) {
+                /* An update of an undeclared name is ambiguous. */
                 compilation_error_t *error =
                     create_error_from_node(memory->errors,
                                            node,
-                                           WARNING,
-                                           get_messages()->variable_used_before_declaration,
+                                           ERROR,
+                                           get_messages()->implicit_constant_declaration_invalid,
                                            var->name.data);
                 error->next = *errors;
                 *errors = error;
+            } else {
+                /* A read of an undeclared name yields null and declares nothing. */
+                if (options->enable_warnings) {
+                    compilation_error_t *error =
+                        create_error_from_node(memory->errors,
+                                               node,
+                                               WARNING,
+                                               get_messages()->variable_used_before_declaration,
+                                               var->name.data);
+                    error->next = *errors;
+                    *errors = error;
+                }
+                var->declarator = NULL;
             }
-            node_t *statement = find_parent_statement(var);
-            assert(is_statement_list(statement->parent->vtbl->type));
-            variable_declaration_pair_t pair =
-                create_synthetic_variable_declaration_node(memory->graph, var->name);
-            insertion_t *insertion = ALLOC(sizeof(insertion_t));
-            insertion->target = statement->parent;
-            insertion->item = pair.declaration;
-            insertion->before = statement;
-            append_to_vector(insertions, insertion);
-            var->declarator = pair.declarator;
-            add_symbol_to_scope(statement->parent->scope, var->name.data, pair.declarator);
         } else {
             var->declarator = declarator;
         }
@@ -286,12 +331,17 @@ compilation_error_t *analyze(node_t *root_node,
     /* Traversal is complete; synthetic declarations can now be inserted. */
     for (size_t index = 0; index < insertions->size; index++) {
         insertion_t *insertion = (insertion_t *)insertions->data[index];
-        insert_child_node_before(insertion->target, insertion->item, insertion->before);
+        if (insertion->replace)
+            replace_child_node(insertion->target, insertion->before, insertion->item);
+        else
+            insert_child_node_before(insertion->target, insertion->item, insertion->before);
         assign_scope_to_subtree(insertion->item, insertion->target, insertion->target->scope);
     }
     destroy_vector_ex(insertions, FREE);
 
     if (options->optimization_level == OPTIMIZATION_NONE)
+        return errors;
+    if (get_most_severe_compilation_error(errors) > WARNING)
         return errors;
 
     interpret(root_node, memory, collector);

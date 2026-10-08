@@ -75,6 +75,8 @@ static void collect_required_bindings(const node_t *node, c_generation_context_t
         return;
     if (node->vtbl->type == NODE_VARIABLE) {
         const declarator_t *binding = ((const variable_t *)node)->declarator;
+        if (!binding)
+            return;
         for (size_t i = 0; i < context->required_bindings->size; i++)
             if (context->required_bindings->data[i] == binding)
                 return;

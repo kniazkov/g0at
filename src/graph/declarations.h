@@ -50,6 +50,15 @@ typedef struct {
     declarator_t *declarator;
 } variable_declaration_pair_t;
 
+/** @brief Pair of a constant declaration node and its single declarator. */
+typedef struct {
+    /** @brief Constant declaration statement node. */
+    node_t *declaration;
+
+    /** @brief Single constant declarator contained by the declaration. */
+    declarator_t *declarator;
+} constant_declaration_pair_t;
+
 /**
  * @brief Creates a new variable declaration AST node.
  *
@@ -72,6 +81,11 @@ create_constant_declaration_node(arena_t *arena, declarator_spec_t **decl_list, 
 /** @brief Creates a synthetic declaration of one variable without an initializer. */
 variable_declaration_pair_t create_synthetic_variable_declaration_node(arena_t *arena,
                                                                        string_view_t name);
+
+/** @brief Creates a synthetic declaration of one constant with the given initializer. */
+constant_declaration_pair_t create_synthetic_constant_declaration_node(arena_t *arena,
+                                                                       string_view_t name,
+                                                                       expression_t *initial);
 
 /**
  * @brief Gets the built-in declarator placeholder.

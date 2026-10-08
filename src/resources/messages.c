@@ -85,6 +85,8 @@ static messages_t english = {
     .invalid_function_argument = L"Function argument must be an identifier, but got '%s'",
     .invalid_parenthesized_expression = L"Inside parentheses there must be exactly one expression",
     .variable_used_before_declaration = L"Variable '%s' is used before its declaration",
+    .implicit_constant_declaration_invalid =
+        L"Implicit declaration of constant '%s' is only allowed for a standalone assignment",
     .invalid_for_header = L"Expected for (initial; condition; step)",
     .expected_statement_after_for = L"Expected statement after for header",
     .expected_condition_after_if = L"Expected parenthesized condition after 'if' keyword",
@@ -177,6 +179,8 @@ static messages_t russian = {
     .invalid_parenthesized_expression =
         L"Внутри круглых скобок должно быть выражение, причем ровно одно",
     .variable_used_before_declaration = L"Переменная '%s' используется до ее объявления",
+    .implicit_constant_declaration_invalid =
+        L"Неявное объявление константы '%s' допустимо только в виде отдельного оператора присваивания",
     .invalid_for_header = L"Ожидается for (инициализация; условие; шаг)",
     .expected_statement_after_for = L"Ожидается оператор после заголовка for",
     .expected_condition_after_if =

@@ -667,6 +667,28 @@ variable_declaration_pair_t create_synthetic_variable_declaration_node(arena_t *
                                          .declarator = &declarator->base};
 }
 
+constant_declaration_pair_t create_synthetic_constant_declaration_node(arena_t *arena,
+                                                                       string_view_t name,
+                                                                       expression_t *initial) {
+    assert(initial != NULL);
+    constant_declarator_t *declarator =
+        (constant_declarator_t *)alloc_zeroed_from_arena(arena, sizeof(constant_declarator_t));
+    declarator->base.base.vtbl = &cdeclr_vtbl;
+    declarator->base.name = name;
+    declarator->initial = initial;
+
+    constant_declaration_t *declaration =
+        (constant_declaration_t *)alloc_zeroed_from_arena(arena, sizeof(constant_declaration_t));
+    declaration->base.base.vtbl = &cdecln_vtbl;
+    declaration->decl_list =
+        (node_t **)alloc_from_arena(arena, sizeof(constant_declarator_t *) * 1);
+    declaration->decl_list[0] = (node_t *)declarator;
+    declaration->decl_count = 1;
+
+    return (constant_declaration_pair_t){.declaration = &declaration->base.base,
+                                         .declarator = &declarator->base};
+}
+
 /** @brief Invalid name used by the built-in declarator singleton. */
 static wchar_t builtin_declarator_name_data[] = L"*";
 

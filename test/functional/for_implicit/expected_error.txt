@@ -1,0 +1,2 @@
+Error in 'program.goat', 1.13: Implicit declaration of constant 'i' is only allowed for a standalone assignment
+Error in 'program.goat', 1.21: Implicit declaration of constant 'i' is only allowed for a standalone assignment

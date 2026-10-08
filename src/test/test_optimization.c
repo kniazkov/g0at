@@ -86,11 +86,24 @@ bool test_optimization_modes() {
     options_t *options = create_options();
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
-    ASSERT(get_node_child_count(root) == 2);
-    node_t *declaration = get_node_child(root, 0);
-    variable_t *use = (variable_t *)get_node_child(get_node_child(root, 1), 0);
-    ASSERT(use->declarator == (declarator_t *)get_node_child(declaration, 0));
+    ASSERT(get_node_child_count(root) == 1);
+    variable_t *use = (variable_t *)get_node_child(get_node_child(root, 0), 0);
+    ASSERT(use->declarator == NULL);
     ASSERT(use->base.base.base.parent && use->base.base.base.scope && use->base.base.base.id);
+    destroy_options(options);
+    destroy_arena(arena);
+    arena = create_arena(16);
+    memory = (parser_memory_t){arena, arena, arena, arena};
+    root = parse_analysis_test_program(&memory, STATIC_STRING(L"x = 1;"));
+    ASSERT(root);
+    options = create_options();
+    options->optimization_level = OPTIMIZATION_NONE;
+    ASSERT(!analyze(root, &memory, options, NULL));
+    ASSERT(get_node_child_count(root) == 1);
+    node_t *declaration = get_node_child(root, 0);
+    ASSERT(declaration->vtbl->type == NODE_CONSTANT_DECLARATION);
+    ASSERT(get_node_child_count(declaration) == 1);
+    ASSERT(get_node_child(declaration, 0)->vtbl->type == NODE_CONSTANT_DECLARATOR);
     destroy_options(options);
     destroy_arena(arena);
     return true;
@@ -147,7 +160,7 @@ bool test_unused_bindings() {
         {L"var a=input();", 0, 0, 1},
         {L"var a=input(); const unused=func(){return a;};", 0, 0, 1},
         {L"var a=input(),b=input();println(b);", 1, 0, 3},
-        {L"println(a=input());", 0, 0, 2},
+        {L"a=input();println(a);", 0, 0, 2},
         {L"var a=1;const f=func(){return a;};println(f());", 1, 0, 2},
         {L"var a=1; a++;", 1, 1, 0},
         {L"const a=1;try{a=2;}catch(e){println(e);}", 1, 1, 1},
@@ -179,7 +192,7 @@ bool test_unused_bindings() {
             options->optimization_level = OPTIMIZATION_NONE;
             ASSERT(!analyze(root, &memory, options, NULL));
             ASSERT(get_node_child(get_node_child(root, 0), 0)->vtbl->type
-                   == NODE_VARIABLE_DECLARATOR);
+                   == NODE_CONSTANT_DECLARATOR);
             options->optimization_level = OPTIMIZATION_ALL;
             ASSERT(!analyze(root, &memory, options, NULL));
         }
