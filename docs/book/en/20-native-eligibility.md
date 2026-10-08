@@ -132,4 +132,4 @@ At the pass's end, there is more than a general AST color: signatures, expressio
 
 This part's final chapter examines analysis's second application: changing the AST itself. Requirements are equally strict because the changed tree serves ordinary bytecode generation as well as the native backend.
 
-The proven original built-in `abs` is another allowed reference, including immutable aliases. Native lowering requires at least one argument and a fixed integer or real representation for the first argument and result. Every supplied argument must have a C expression proof; extra arguments are still evaluated. See [chapter 22](22-c-code-generation.md) for the generated operation.
+Proven original numeric built-ins are also allowed references, including immutable aliases. The supported functions and their restrictions are listed in [chapter 22](22-c-code-generation.md). For `abs`, native lowering requires at least one argument and a fixed integer or real representation for the first argument and result. Every supplied argument must have a C expression proof; extra arguments are still evaluated. See [chapter 22](22-c-code-generation.md) for the generated operation.
