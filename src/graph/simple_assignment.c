@@ -56,7 +56,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
             state->control_flow = FLOW_UNREACHABLE;
             return make_bottom_element();
         }
-        set_in_abstract_state_at(state, var->declarator, value, node);
+        if (var->declarator)
+            set_in_abstract_state_at(state, var->declarator, value, node);
     }
     return value;
 }
@@ -97,7 +98,9 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     node_t *target = get_node_child(node, 0);
     if ((*state)->control_flow == FLOW_NORMAL) {
         if (target->vtbl->type == NODE_VARIABLE) {
-            set_in_abstract_state(*state, ((variable_t *)target)->declarator, value);
+            const declarator_t *decl = ((variable_t *)target)->declarator;
+            if (decl)
+                set_in_abstract_state(*state, decl, value);
         } else {
             forget_abstract_values(*state);
         }

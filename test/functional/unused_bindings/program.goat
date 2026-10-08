@@ -6,7 +6,6 @@ const trace = func(n) { println(n); return n; };
 var unused = trace(7);
 var first = trace(1), second = trace(2);
 println(second);
-println(another = trace(3));
 try { const bad = 1 / 0; } catch (e) { println("caught"); }
 var captured = 1;
 const read = func() { return captured; };

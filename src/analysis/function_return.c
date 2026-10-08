@@ -24,11 +24,13 @@ static bool prepare_body(node_t *node, const node_t *function, abstract_state_t 
         return false;
     if (node->vtbl->type == NODE_VARIABLE) {
         declarator_t *decl = ((variable_t *)node)->declarator;
-        const node_t *owner = &decl->base;
-        while (owner && owner->vtbl->type != NODE_FUNCTION_OBJECT)
-            owner = owner->parent;
-        if (owner != function && decl != get_builtin_declarator())
-            set_in_abstract_state(state, decl, make_top_element());
+        if (decl && decl != get_builtin_declarator()) {
+            const node_t *owner = &decl->base;
+            while (owner && owner->vtbl->type != NODE_FUNCTION_OBJECT)
+                owner = owner->parent;
+            if (owner != function)
+                set_in_abstract_state(state, decl, make_top_element());
+        }
     }
     for (size_t i = 0; i < get_node_child_count(node); i++) {
         if (!prepare_body(get_node_child(node, i), function, state))

@@ -1,0 +1,1 @@
+Error in 'program.goat', 1.6: Implicit declaration of constant 'x' is only allowed for a standalone assignment

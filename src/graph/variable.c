@@ -69,6 +69,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
                    ? make_builtin_function_element(arena, builtin)
                    : make_top_element();
     }
+    if (!expr->declarator)
+        return make_null_element();
     const lattice_element_t *value = get_from_abstract_state(state, expr->declarator);
     if (!value) {
         value = make_null_element();
@@ -114,6 +116,8 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     const declarator_t *decl = ((variable_t *)node)->declarator;
     if (decl == get_builtin_declarator())
         return calculate_node(node, *state, (*state)->arena);
+    if (!decl)
+        return make_null_element();
     const lattice_element_t *value = get_from_abstract_state(*state, decl);
     return value ? value : make_top_element();
 }

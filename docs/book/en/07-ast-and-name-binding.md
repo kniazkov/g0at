@@ -45,7 +45,7 @@ The built-in environment's scope is created first. A traversal then sets node `p
 
 The traversal also clears previous analysis results: flags, pointwise expression values, function summaries, and other computed information. Repeated analysis must rebuild them rather than treat an old result as proof for a new tree state.
 
-`for` introduces a scope shared by its initializer, condition, step, and body. Its body has a nested scope even without explicit braces. `var i` in the header therefore shadows an outer `i`. By contrast, `for (i = 0; ...)` assigns an existing binding; an otherwise unknown `i` follows the ordinary implicit-declaration rule. That synthetic declaration is inserted and registered in the enclosing statement list, so later uses resolve to the same binding.
+`for` introduces a scope shared by its initializer, condition, step, and body. Its body has a nested scope even without explicit braces. `var i` in the header therefore shadows an outer `i`. By contrast, `for (i = 0; ...)` assigns an existing binding; an unknown `i` cannot be implicitly declared in the loop header and is a compile error (see Section 7.6).
 
 <a id="section-7-4"></a>
 
@@ -111,7 +111,7 @@ The AST records the declaration link. The [function object](https://github.com/k
 
 ## 7.6. An Unknown Name Creates a Declaration
 
-If lookup finds no name, the current implementation creates an implicit variable declaration without an initializer. It is inserted before the statement containing the use, in a suitable statement list. [Example](../examples/07-implicit.goat):
+If lookup finds no name, the behavior depends on how the name is used. A standalone assignment to an undeclared name declares a constant: `x = 10;` becomes `const x = 10;`, and the assignment statement is replaced by the declaration node. Reading an undeclared name declares nothing and yields `null`. [Example](../examples/07-implicit.goat):
 
 ```goat
 println(missing);
@@ -119,7 +119,7 @@ missing = 5;
 println(missing);
 ```
 
-It prints `null`, then `5`, each on a new line. To see the inserted declaration on Linux:
+It prints `null`, then `5`, each on a new line: the first `println` reads a name that is not declared yet and gets `null`, `missing = 5` then declares a constant with the value `5`, and the last call prints `5`. To see the inserted declaration on Linux:
 
 ```sh
 ./goat --optimize none --enable-warnings --print-source-code docs/book/examples/07-implicit.goat
@@ -131,11 +131,13 @@ In Windows PowerShell:
 .\goat.exe --optimize none --enable-warnings --print-source-code .\docs\book\examples\07-implicit.goat
 ```
 
-The reconstructed source contains `var missing;` before the first call. A warning identifies the use of `missing` before declaration; the program then executes. The warning and program output go to different streams, so their relative on-screen ordering may depend on the environment.
+In the reconstructed source, the second statement is replaced by `const missing = 5;`. A warning identifies the read of `missing` before declaration; the program then executes. The warning and program output go to different streams, so their relative on-screen ordering may depend on the environment.
 
-Insertion itself is deferred until binding traversal finishes: adding a child immediately would change the indices and sequence currently being visited. The new declarator is nevertheless registered in the scope at once so subsequent uses can find it. After insertion, the new subtree receives parent links and the existing scope.
+Replacement itself is deferred until binding traversal finishes: changing children immediately would alter the indices and sequence currently being visited. The right-hand side of the assignment becomes the constant's initializer, and the new declarator is registered in the scope at once so subsequent uses can find it. After replacement, the new subtree receives parent links and the existing scope.
 
-This behavior is convenient for short experiments, but a typo can become a new variable. Explicit `var` and `const`, together with warnings, help reveal this. An implicit declaration is an implemented rule, not evidence that the analyzer has proven the author's intent.
+A constant is declared only when an undeclared name stands to the left of an assignment that is a standalone statement. In the chain `x = y = 10`, in a call argument such as `println(a = f(3))`, in a loop step `i++`, or in the header `for (i = 0; ...)`, an undeclared name cannot be turned into a constant unambiguously, so these cases are compile errors. A typo in a name being read can still go unnoticed, so enabling warnings helps reveal it. An implicit declaration is an implemented rule, not evidence that the analyzer has proven the author's intent.
+
+Writes to the same implicit constant inside its initializer, such as `x = x = 1` or `x = x++`, are also compile errors. The check distinguishes shadowed local names and does not reject recursive references in function bodies.
 
 <a id="section-7-7"></a>
 

@@ -73,7 +73,7 @@ The main values encountered in programs are:
 
 A scope (a region of the program in which a name is available) allows local variables to be declared. An inner declaration can shadow an outer one: identical spelling does not necessarily identify the same variable.
 
-This implementation also permits implicit declarations: when binding an unknown name, the analyzer adds a variable declaration for it. A misspelled name therefore does not necessarily cause a compilation error. The book's examples use explicit declarations to make each variable's origin visible. This mechanism is implemented in [name binding](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/analysis/analysis.c).
+This implementation also permits implicit declarations: a standalone assignment to an unknown name adds a constant, while reading an unknown name yields `null`. A misspelled name therefore does not necessarily cause a compilation error. The book's examples use explicit declarations to make each variable's origin visible. This mechanism is implemented in [name binding](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/analysis/analysis.c).
 
 <a id="section-2-3"></a>
 
