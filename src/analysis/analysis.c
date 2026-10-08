@@ -208,8 +208,8 @@ static void bind_variables_from_node_and_children(node_t *node,
         if (declarator == NULL) {
             node_t *parent = var->base.base.base.parent;
             node_type_t parent_type = parent ? parent->vtbl->type : NODE_ROOT;
-            bool is_left_operand = parent_type == NODE_SIMPLE_ASSIGNMENT
-                                   && get_node_child(parent, 0) == (node_t *)var;
+            bool is_left_operand =
+                parent_type == NODE_SIMPLE_ASSIGNMENT && get_node_child(parent, 0) == (node_t *)var;
             if (is_left_operand) {
                 node_t *assign_parent = parent->parent;
                 if (assign_parent && assign_parent->vtbl->type == NODE_STATEMENT_EXPRESSION
@@ -230,17 +230,15 @@ static void bind_variables_from_node_and_children(node_t *node,
                     insertion->replace = true;
                     append_to_vector(insertions, insertion);
                     var->declarator = pair.declarator;
-                    add_symbol_to_scope(statement->parent->scope,
-                                        var->name.data,
-                                        pair.declarator);
+                    add_symbol_to_scope(statement->parent->scope, var->name.data, pair.declarator);
                 } else {
                     /* The assignment is not a standalone statement: the case is ambiguous. */
-                    compilation_error_t *error =
-                        create_error_from_node(memory->errors,
-                                               node,
-                                               ERROR,
-                                               get_messages()->implicit_constant_declaration_invalid,
-                                               var->name.data);
+                    compilation_error_t *error = create_error_from_node(
+                        memory->errors,
+                        node,
+                        ERROR,
+                        get_messages()->implicit_constant_declaration_invalid,
+                        var->name.data);
                     error->next = *errors;
                     *errors = error;
                 }
