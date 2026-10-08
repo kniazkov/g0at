@@ -27,7 +27,7 @@ UNARY = {
     'log1p': [-0.5, 0, 1, 10],
     'log2': [0.5, 1, 2, 10],
     'round': [-2.5, -0.5, 0, 0.5, 2.5],
-    'sign': [-9223372036854775808, -7, -3.5, 0, 5],
+    'sign': [-9223372036854775808, -7, -3.5, -0.0, 0, 5],
     'sin': [-10, -1, -0.5, 0, 0.5, 1, 10],
     'sinh': [-5, -1, 0, 1, 5],
     'sqrt': [0, 1, 2, 10],
@@ -36,9 +36,14 @@ UNARY = {
     'trunc': [-2.5, -0.5, 0, 0.5, 2.5],
 }
 
+# min/max ties on signed zeros are implementation-defined in C: the VM is
+# compiled at -O0 (libm libcall) while the generated module is compiled at
+# -O2, where the compiler may fold fmin/fmax to minnum/maxnum and change the
+# sign of the zero.  Only non-tie pairs belong in the VM-equivalence check;
+# argument order and signed-zero handling are covered by the adapter tests.
 BINARY = {
-    'max': [(1, 2), (3.5, 2), (-1, -2), (1, 1), (-0.0, 0.0), (0.0, -0.0)],
-    'min': [(1, 2), (3.5, 2), (-1, -2), (1, 1), (-0.0, 0.0), (0.0, -0.0)],
+    'max': [(1, 2), (3.5, 2), (-1, -2), (1, 1)],
+    'min': [(1, 2), (3.5, 2), (-1, -2), (1, 1)],
     'pow': [(2, 3), (4, 0.5), (1, 10), (0.5, 2), (10, -1)],
     'fmod': [(7, 3), (7.5, 2), (-7, 3), (7, -3), (5, 2.5)],
     'hypot': [(3, 4), (1, 1), (0, 0), (5, 12), (10000000000, 10000000000)],
@@ -106,7 +111,7 @@ int main(void) {
             }
         } else {
             assert(a[1].type==GOAT_NATIVE_F64);
-            double x[]={-0.0,0.0,-INFINITY,INFINITY,NAN,-3.5}, y[]={1.0,2.0,2.0,2.0,1.0,2.0};
+            double x[]={-0.0,0.0,-INFINITY,INFINITY,NAN,-3.5}, y[]={0.0,-0.0,2.0,2.0,1.0,2.0};
             for (unsigned j=0;j<6;j++) {
                 a[0].value.real=x[j]; a[1].value.real=y[j];
                 assert(e->invoke(1,2,a,&r)==GOAT_NATIVE_OK && r.type==GOAT_NATIVE_F64);
@@ -173,7 +178,7 @@ def main():
         assert expected.returncode == 0 and expected.stdout, expected
         report = output / (name + '.report')
         result = run('--native', 'required', '--save-native', report, path)
-        assert result.returncode == 0 and result.stdout == expected.stdout, result
+        assert result.returncode == 0 and result.stdout == expected.stdout, (result, expected)
         fields = dict(line.split('=', 1) for line in report.read_text().splitlines())
         assert int(fields['succeeded']) > 0 and fields['omitted'] == '0', fields
         assert fields['attempts'] == fields['succeeded'] and fields['retries'] == '0', fields
