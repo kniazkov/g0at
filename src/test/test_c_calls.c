@@ -125,7 +125,20 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
         {L"const leaf=func(n){return n+1;};const f=func(n){var x=n;if(n<0){return "
          L"leaf(x=x-1);}return leaf(x=x+1)+leaf(x=x+2);};f(1);",
          L"(3)==12 && goat_call_trace==2",
-         2}};
+         2},
+        {L"const f=func(n){return atan(n);};f(1);", L"(1)==atan(1.0)", 1},
+        {L"const f=func(n){return atan(n,1);};f(1);", L"(2)==atan2(2.0,1.0)", 1},
+        {L"const f=func(n){var x=n;return atan(x=x+1,x=x+2);};f(1);", L"(1)==atan2(4.0,3.0)", 1},
+        {L"const f=func(n){return cos(n);};f(1);", L"(1)==cos(1.0)", 1},
+        {L"const f=func(n){return sin(n);};f(1.5);", L"(1.5)==sin(1.5)", 1, true},
+        {L"const f=func(n){return sqrt(n);};f(1);", L"(1)==sqrt(1.0)", 1},
+        {L"const f=func(n){return pow(n,2);};f(1);", L"(2)==pow(2.0,2.0)", 1},
+        {L"const f=func(a,b){return fmod(a,b);};f(7,3);", L"(7,3)==fmod(7.0,3.0)", 1},
+        {L"const f=func(n){var x=n;return pow(x=x+1,x=x+2);};f(1);", L"(1)==64.0", 1},
+        {L"const f=func(n){return max(n,1);};f(1);", L"(1)==fmax(1.0,1.0)", 1},
+        {L"const f=func(n){return min(n,1);};f(1);", L"(1)==fmin(1.0,1.0)", 1},
+        {L"const f=func(n){return sign(n);};f(-3);", L"(-3)==-1", 1},
+        {L"const f=func(n){return int(n);};f(1.5);", L"(1.5)==1", 1, true}};
 
     for (size_t i = 0; i < sizeof(fixtures) / sizeof(*fixtures); i++) {
         arena_t *arena = create_arena(32);
@@ -295,14 +308,15 @@ bool test_c_call_rejections(void) {
         L"var leaf=func(n){return n;};const f=func(n){return leaf(n);};f(1);",
         L"const leaf=func(a,b){return a+b;};const f=func(n){return leaf(n);};f(1);",
         L"const leaf=func(n){return n;};const f=func(n){return leaf(n,1/n);};f(1);",
-        L"const f=func(n){return sqrt(n);};f(1);"};
+        L"const f=func(n){return min(n,\"x\");};f(1);",
+        L"const f=func(n){return atan(n,\"x\");};f(1);"};
     for (size_t i = 0; i < sizeof(unsupported) / sizeof(*unsupported); i++) {
         arena = create_arena(32);
         root = analyzed(arena, unsupported[i]);
         ASSERT(root);
         module = create_c_module(arena, root);
         for (const c_module_function_t *entry = module->head; entry; entry = entry->next)
-            ASSERT(entry->function_id != (i == 3 ? 1 : 2));
+            ASSERT(entry->function_id != (i == 3 || i == 4 ? 1 : 2));
         destroy_arena(arena);
     }
     return true;

@@ -122,8 +122,14 @@ println(sum(100));
 
 With `--native required`, the example prints `9900`; `sum` executes natively. The integer operation selects the argument or its saturating negation. Consequently, `abs(INT64_MIN)` equals `INT64_MAX`. The real operation uses C `fabs`: negative zero becomes positive zero, infinity becomes positive infinity, and NaN remains NaN. All arguments are evaluated right to left, including unused extra arguments. No separate native adapter is generated for the built-in.
 
+Native calls also support `acos`, `asin`, `atan`, `cbrt`, `ceil`, `cos`, `cosh`, `exp`, `exp2`, `expm1`, `floor`, `fmod`, `hypot`, `int`, `log`, `log10`, `log1p`, `log2`, `min`, `max`, `pow`, `round`, `sign`, `sin`, `sinh`, `sqrt`, `tan`, `tanh`, and `trunc`. The original built-in binding must be proven stable; immutable aliases are allowed. Arguments are evaluated right to left. Extra arguments are evaluated for their effects and discarded; they need a supported C representation, but need not be numeric.
+
+`atan(y)` maps to C `atan`, while `atan(y, x)` maps to `atan2`. Math functions use binary64 arguments and results. `sign` returns an integer; NaN and both zeros produce zero. For zero ties, `min` returns negative zero if either operand is negative zero, and `max` returns negative zero only if both operands are negative zero. This rule applies equally to the VM, constant folding, and native execution. Other values use C `fmin`/`fmax`, including their NaN handling.
+
+`int` preserves an integer argument and truncates a finite real argument toward zero when it lies in `[-2^63, 2^63)`. Otherwise it returns the supplied fallback or integer zero. The fallback is evaluated even when conversion succeeds.
+
 > [!CAUTION]
-> This support is specific to the proven original `abs`. Mutable aliases, unresolved targets, missing or nonnumeric arguments do not gain a native implementation through this rule. Other built-ins still lack general native calls; constant folding is a separate mechanism.
+> Native `int` currently accepts only integer and real source operands. For a real source operand, an explicit fallback must have integer representation. Boolean and string conversions remain available in the VM. Mutable aliases, unresolved targets, and expressions without a C representation prevent native lowering.
 
 <a id="section-22-6"></a>
 

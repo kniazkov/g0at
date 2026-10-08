@@ -6,6 +6,8 @@
 #include "analysis/lattice.h"
 #include "lib/integer_math.h"
 
+#include <math.h>
+
 /** @brief Extracts a numeric constant using the runtime's integer rounding. */
 static inline bool builtin_numeric_constant(const lattice_element_t *value, double *number) {
     if (value->type == LATTICE_INTEGER_CONSTANT) {
@@ -22,4 +24,18 @@ static inline bool builtin_numeric_constant(const lattice_element_t *value, doub
 /** @brief Whether the runtime type may be numeric or nonnumeric. */
 static inline bool builtin_unknown_type(const lattice_element_t *value) {
     return value->type == LATTICE_TOP || value->type == LATTICE_NOT_NULL;
+}
+
+/** @brief Minimum with a deterministic negative-zero tie and libm NaN handling. */
+static inline double builtin_minimum(double a, double b) {
+    if (a == 0.0 && b == 0.0)
+        return signbit(a) || signbit(b) ? -0.0 : 0.0;
+    return fmin(a, b);
+}
+
+/** @brief Maximum with a deterministic positive-zero tie and libm NaN handling. */
+static inline double builtin_maximum(double a, double b) {
+    if (a == 0.0 && b == 0.0)
+        return signbit(a) && signbit(b) ? -0.0 : 0.0;
+    return fmax(a, b);
 }

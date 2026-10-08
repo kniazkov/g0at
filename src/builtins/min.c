@@ -3,17 +3,18 @@
  * @brief Runtime and abstract implementations of min.
  */
 #include "math_function.h"
+#include "numeric.h"
 #include "registry.h"
 
 #include <math.h>
 
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
-    return execute_binary_math(args, thread, fmin);
+    return execute_binary_math(args, thread, builtin_minimum);
 }
 
 static const lattice_element_t *
 interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t count) {
-    return interpret_binary_math(state, args, fmin);
+    return interpret_binary_math(state, args, builtin_minimum);
 }
 
 const builtin_function_t builtin_min = {.name = L"min",

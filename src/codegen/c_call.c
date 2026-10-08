@@ -8,6 +8,7 @@
 #include "analysis/native_builtin.h"
 #include "c_arithmetic.h"
 #include "c_lowering.h"
+#include "c_native.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
@@ -113,62 +114,12 @@ static const c_generation_callee_t *resolve(const node_t *node, c_generation_con
     return NULL;
 }
 
-/** @brief Lowers proven abs calls, preserving unused argument effects and binary64 rounding. */
-static c_generated_expression_t native_abs(const node_t *node, c_generation_context_t *context) {
-    size_t count = get_node_child_count(node) - 1;
-    c_value_type_t type = c_generation_expression_type(context, node);
-    if (!count || (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE)) {
-        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
-        return (c_generated_expression_t){0};
-    }
-    source_builder_t *prelude = create_source_builder();
-    string_value_t input = {0};
-    bool success = true;
-    for (size_t i = count; i > 0 && success; i--) {
-        c_generated_expression_t argument =
-            generate_c_code_from_node(get_node_child(node, i), context);
-        success =
-            argument.success && c_type_name(argument.type) && (i != 1 || argument.type == type);
-        if (success) {
-            string_value_t captured = c_capture_operand(prelude, context, &argument, argument.type);
-            if (i == 1)
-                input = captured;
-            else {
-                add_source(prelude, 0, L"(void)%s;", captured.data);
-                FREE_STRING(captured);
-            }
-        }
-        destroy_c_expression(&argument);
-    }
-    if (!success) {
-        FREE_STRING(input);
-        destroy_source_builder(prelude);
-        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
-        return (c_generated_expression_t){0};
-    }
-    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
-    if (type == C_VALUE_INT64) {
-        context->helper_flags |= C_HELPER_I64_NEG;
-        add_source(prelude,
-                   0,
-                   L"int64_t %s = %s < 0 ? g_i64_neg(%s) : %s;",
-                   value.data,
-                   input.data,
-                   input.data,
-                   input.data);
-    } else {
-        add_source(prelude, 0, L"volatile double %s = fabs(%s);", value.data, input.data);
-    }
-    FREE_STRING(input);
-    return (c_generated_expression_t){.success = true,
-                                      .type = type,
-                                      .value = value,
-                                      .prelude = prelude};
-}
-
+/** @brief Lowers proven built-in calls through the descriptor registry, otherwise exact callees. */
 c_generated_expression_t c_call(const node_t *node, c_generation_context_t *context) {
-    if (resolve_native_abs(replacement_original(get_node_child(node, 0))))
-        return native_abs(node, context);
+    const builtin_function_t *builtin =
+        resolve_native_builtin(replacement_original(get_node_child(node, 0)));
+    if (builtin)
+        return c_native_call(node, context, builtin);
     const c_generation_callee_t *callee = resolve(node, context);
     if (!callee)
         return (c_generated_expression_t){0};

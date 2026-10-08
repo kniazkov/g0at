@@ -87,8 +87,8 @@ jobs:
         run: python3 scripts/check_saturating_integers.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/saturation"
         env:
           CC: ${{ matrix.compiler }}
-      - name: Check native abs
-        run: python3 scripts/check_native_abs.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native abs"
+      - name: Check native libm
+        run: python3 scripts/check_native_libm.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native libm"
         env:
           CC: ${{ matrix.compiler }}
       - name: Check native artifact integrity
@@ -245,11 +245,11 @@ jobs:
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_saturating_integers.py build/goat.exe "build/saturation"'
-      - name: Check native abs
+      - name: Check native libm
         shell: msys2 {0}
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
-        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_abs.py build/goat.exe "build/native abs"'
+        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_libm.py build/goat.exe "build/native libm"'
       - name: Check native artifact integrity
         shell: msys2 {0}
         env:
