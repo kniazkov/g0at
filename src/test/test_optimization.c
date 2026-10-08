@@ -154,16 +154,35 @@ bool test_unused_bindings() {
     struct {
         const wchar_t *source;
         size_t vars, stores, calls;
+        const wchar_t *printed;
     } cases[] = {
-        {L"a=2;b=3;x=a+b;println(x);", 0, 0, 1},
-        {L"var a=1;var b=a;const c=b;", 0, 0, 0},
-        {L"var a=input();", 0, 0, 1},
-        {L"var a=input(); const unused=func(){return a;};", 0, 0, 1},
-        {L"var a=input(),b=input();println(b);", 1, 0, 3},
-        {L"a=input();println(a);", 0, 0, 2},
-        {L"var a=1;const f=func(){return a;};println(f());", 1, 0, 2},
-        {L"var a=1; a++;", 1, 1, 0},
-        {L"const a=1;try{a=2;}catch(e){println(e);}", 1, 1, 1},
+        {L"a=2;b=3;x=a+b;println(x);", 0, 0, 1, L"println(5);"},
+        {L"var a=1;var b=a;const c=b;", 0, 0, 0, L""},
+        {L"var a=input();", 0, 0, 1, L"input();"},
+        {L"var a=input(); const unused=func(){return a;};", 0, 0, 1, L"input();"},
+        {L"var a=input(),b=input();println(b);", 1, 0, 3, L"input(); var b = input(); println(b);"},
+        {L"a=input();println(a);", 0, 0, 2, L"const a = input(); println(a);"},
+        {L"var a=1;const f=func(){return a;};println(f());",
+         1,
+         0,
+         2,
+         L"var a = 1; const f = func() {return a;}; println(f());"},
+        {L"var a=1; a++;", 1, 1, 0, L"var a = 1; (a++);"},
+        {L"const a=1;try{a=2;}catch(e){println(e);}",
+         1,
+         1,
+         1,
+         L"const a = 1; try {a = 2;} catch (e) {println(e);}"},
+        {L"for (var i = 0, j = 5; i < 2; i++) println(i);",
+         1,
+         1,
+         1,
+         L"for (var i = 0; (i < 2); (i++)) {println(i);}"},
+        {L"for (var i = 0, j = input(); i < 2; i++) println(i);",
+         1,
+         1,
+         2,
+         L"for (var i = 0, j = input(); (i < 2); (i++)) {println(i);}"},
     };
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
@@ -180,6 +199,9 @@ bool test_unused_bindings() {
         ASSERT(opcode_count(code, VAR) == cases[i].vars);
         ASSERT(opcode_count(code, STORE) == cases[i].stores);
         ASSERT(opcode_count(code, CALL) == cases[i].calls);
+        string_value_t printed = generate_goat_code_from_node(root);
+        ASSERT(!wcscmp(printed.data, cases[i].printed));
+        FREE_STRING(printed);
         if (i == 0) {
             ASSERT(code->size == 5 && code->instructions[0].opcode == ILOAD32
                    && code->instructions[0].arg1 == 5);
