@@ -298,6 +298,9 @@ static string_value_t run_captured_program(const wchar_t *source, const wchar_t 
             int saved_stdout = DUP_FD(FILENO_FD(stdout));
             DUP2_FD(FILENO_FD(input_file), FILENO_FD(stdin));
             DUP2_FD(FILENO_FD(output_file), FILENO_FD(stdout));
+            fseek(stdin, 0, SEEK_SET);
+            clearerr(stdin);
+            clearerr(stdout);
             process_t *proc = create_process();
             int status = run(proc, bytecode);
             fflush(stdout);
