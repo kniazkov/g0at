@@ -320,27 +320,62 @@ static bool in_single_statement_slot(const node_t *node) {
     return get_node_child(parent, 1) == node || get_node_child(parent, 2) == node;
 }
 
+/** @brief Checks whether any declarator survives optimization. */
+static bool has_kept_declarators(const node_t *const *decl_list, size_t decl_count) {
+    for (size_t index = 0; index < decl_count; index++)
+        if (!is_deletion(decl_list[index]) && !is_replacement(decl_list[index]))
+            return true;
+    return false;
+}
+
+/** @brief Emits a declaration's archived form as one statement, preserving its scope. */
+static string_value_t generate_original_declaration(const node_t *const *decl_list,
+                                                    size_t decl_count,
+                                                    const wchar_t *keyword) {
+    string_builder_t builder;
+    init_string_builder(&builder, 0);
+    append_string(&builder, keyword);
+    for (size_t index = 0; index < decl_count; index++) {
+        if (index > 0)
+            append_static_string(&builder, L", ");
+        string_value_t text = generate_goat_code_from_node(replacement_original(decl_list[index]));
+        append_string_value(&builder, text);
+        FREE_STRING(text);
+    }
+    return append_char(&builder, L';');
+}
+
+/** @brief Emits a declaration's archived form as one indented statement. */
+static void generate_indented_original_declaration(const node_t *const *decl_list,
+                                                   size_t decl_count,
+                                                   const wchar_t *keyword,
+                                                   source_builder_t *builder,
+                                                   size_t indent) {
+    add_formatted_source(builder, indent, (string_value_t){keyword, wcslen(keyword), false});
+    for (size_t index = 0; index < decl_count; index++) {
+        if (index > 0)
+            append_static_source(builder, L", ");
+        generate_indented_goat_code_from_node(replacement_original(decl_list[index]),
+                                              builder,
+                                              indent);
+    }
+    append_static_source(builder, L";");
+}
+
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t vdecln_generate_goat_code(const node_t *node) {
     const variable_declaration_t *decl = (const variable_declaration_t *)node;
     const node_t *const *children = (const node_t *const *)decl->decl_list;
     string_builder_t builder;
     init_string_builder(&builder, 0);
-    if (for_header_has_replaced_declarators(node, children, decl->decl_count)) {
-        append_static_string(&builder, L"var ");
-        for (size_t index = 0; index < decl->decl_count; index++) {
-            if (index > 0)
-                append_static_string(&builder, L", ");
-            string_value_t text = vdeclr_generate_goat_code(replacement_original(children[index]));
-            append_string_value(&builder, text);
-            FREE_STRING(text);
-        }
-        return append_char(&builder, L';');
-    }
+    if (for_header_has_replaced_declarators(node, children, decl->decl_count))
+        return generate_original_declaration(children, decl->decl_count, L"var ");
     declaration_output_t output = declaration_output(children, decl->decl_count);
     bool wrap = in_single_statement_slot(node) && output != DECLARATION_SINGLE_STATEMENT;
     if (wrap && output == DECLARATION_EMPTY)
         return STATIC_STRING(L"{ }");
+    if (wrap && has_kept_declarators(children, decl->decl_count))
+        return generate_original_declaration(children, decl->decl_count, L"var ");
     if (wrap)
         append_static_string(&builder, L"{ ");
     bool pending = false, has_previous = false;
@@ -388,21 +423,25 @@ vdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder
     const variable_declaration_t *decl = (const variable_declaration_t *)node;
     const node_t *const *children = (const node_t *const *)decl->decl_list;
     if (for_header_has_replaced_declarators(node, children, decl->decl_count)) {
-        add_static_source(builder, indent, L"var ");
-        for (size_t index = 0; index < decl->decl_count; index++) {
-            if (index > 0)
-                append_static_source(builder, L", ");
-            vdeclr_generate_indented_goat_code(replacement_original(children[index]),
+        generate_indented_original_declaration(children,
+                                               decl->decl_count,
+                                               L"var ",
                                                builder,
                                                indent);
-        }
-        append_static_source(builder, L";");
         return;
     }
     declaration_output_t output = declaration_output(children, decl->decl_count);
     bool wrap = in_single_statement_slot(node) && output != DECLARATION_SINGLE_STATEMENT;
     if (wrap && output == DECLARATION_EMPTY) {
         append_static_source(builder, L"{ }");
+        return;
+    }
+    if (wrap && has_kept_declarators(children, decl->decl_count)) {
+        generate_indented_original_declaration(children,
+                                               decl->decl_count,
+                                               L"var ",
+                                               builder,
+                                               indent);
         return;
     }
     if (wrap)
@@ -687,21 +726,14 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
     const node_t *const *children = (const node_t *const *)decl->decl_list;
     string_builder_t builder;
     init_string_builder(&builder, 0);
-    if (for_header_has_replaced_declarators(node, children, decl->decl_count)) {
-        append_static_string(&builder, L"const ");
-        for (size_t index = 0; index < decl->decl_count; index++) {
-            if (index > 0)
-                append_static_string(&builder, L", ");
-            string_value_t text = cdeclr_generate_goat_code(replacement_original(children[index]));
-            append_string_value(&builder, text);
-            FREE_STRING(text);
-        }
-        return append_char(&builder, L';');
-    }
+    if (for_header_has_replaced_declarators(node, children, decl->decl_count))
+        return generate_original_declaration(children, decl->decl_count, L"const ");
     declaration_output_t output = declaration_output(children, decl->decl_count);
     bool wrap = in_single_statement_slot(node) && output != DECLARATION_SINGLE_STATEMENT;
     if (wrap && output == DECLARATION_EMPTY)
         return STATIC_STRING(L"{ }");
+    if (wrap && has_kept_declarators(children, decl->decl_count))
+        return generate_original_declaration(children, decl->decl_count, L"const ");
     if (wrap)
         append_static_string(&builder, L"{ ");
     bool pending = false, has_previous = false;
@@ -749,21 +781,25 @@ cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder
     const constant_declaration_t *decl = (const constant_declaration_t *)node;
     const node_t *const *children = (const node_t *const *)decl->decl_list;
     if (for_header_has_replaced_declarators(node, children, decl->decl_count)) {
-        add_static_source(builder, indent, L"const ");
-        for (size_t index = 0; index < decl->decl_count; index++) {
-            if (index > 0)
-                append_static_source(builder, L", ");
-            cdeclr_generate_indented_goat_code(replacement_original(children[index]),
+        generate_indented_original_declaration(children,
+                                               decl->decl_count,
+                                               L"const ",
                                                builder,
                                                indent);
-        }
-        append_static_source(builder, L";");
         return;
     }
     declaration_output_t output = declaration_output(children, decl->decl_count);
     bool wrap = in_single_statement_slot(node) && output != DECLARATION_SINGLE_STATEMENT;
     if (wrap && output == DECLARATION_EMPTY) {
         append_static_source(builder, L"{ }");
+        return;
+    }
+    if (wrap && has_kept_declarators(children, decl->decl_count)) {
+        generate_indented_original_declaration(children,
+                                               decl->decl_count,
+                                               L"const ",
+                                               builder,
+                                               indent);
         return;
     }
     if (wrap)
