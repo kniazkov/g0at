@@ -187,7 +187,7 @@ bool test_unused_bindings() {
          0,
          2,
          L"var a = 1; const f = func() {return a;}; println(f());"},
-        {L"var a=1; a++;", 1, 1, 0, L"var a = 1; (a++);"},
+        {L"var a=1; a++;", 1, 1, 0, L"var a = 1; a++;"},
         {L"const a=1;try{a=2;}catch(e){println(e);}",
          1,
          1,
@@ -197,12 +197,12 @@ bool test_unused_bindings() {
          1,
          1,
          1,
-         L"for (var i = 0; (i < 2); (i++)) {println(i);}"},
+         L"for (var i = 0; i < 2; i++) {println(i);}"},
         {L"for (var i = 0, j = input(); i < 2; i++) println(i);",
          1,
          1,
          2,
-         L"for (var i = 0, j = input(); (i < 2); (i++)) {println(i);}"},
+         L"for (var i = 0, j = input(); i < 2; i++) {println(i);}"},
     };
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {

@@ -158,7 +158,7 @@ bool test_unary_ast_and_domains(void) {
         ASSERT(!wcscmp(get_node_child_tag(&node->base, 0), L"operand"));
         ASSERT(!get_node_child_tag(&node->base, 1));
         string_value_t source = generate_goat_code_from_expression(node);
-        ASSERT(!wcscmp(source.data, minus ? L"(-(2 + 3))" : L"(+(2 + 3))"));
+        ASSERT(!wcscmp(source.data, minus ? L"-2 + 3" : L"+2 + 3"));
         source_builder_t *builder = create_source_builder();
         generate_indented_goat_code_from_expression(node, builder, 0);
         string_value_t indented = build_source(builder);
