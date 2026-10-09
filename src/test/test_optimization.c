@@ -21,7 +21,19 @@
 #include "vm/bytecode.h"
 #include "vm/vm.h"
 
-#include <io.h>
+#ifdef _WIN32
+#    include <io.h>
+#    define DUP_FD _dup
+#    define DUP2_FD _dup2
+#    define CLOSE_FD _close
+#    define FILENO_FD _fileno
+#else
+#    include <unistd.h>
+#    define DUP_FD dup
+#    define DUP2_FD dup2
+#    define CLOSE_FD close
+#    define FILENO_FD fileno
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
@@ -282,17 +294,17 @@ static string_value_t run_captured_program(const wchar_t *source, const wchar_t 
             rewind(input_file);
             FILE *output_file = fopen(output_path, "w+b");
             fflush(stdout);
-            int saved_stdin = _dup(_fileno(stdin));
-            int saved_stdout = _dup(_fileno(stdout));
-            _dup2(_fileno(input_file), _fileno(stdin));
-            _dup2(_fileno(output_file), _fileno(stdout));
+            int saved_stdin = DUP_FD(FILENO_FD(stdin));
+            int saved_stdout = DUP_FD(FILENO_FD(stdout));
+            DUP2_FD(FILENO_FD(input_file), FILENO_FD(stdin));
+            DUP2_FD(FILENO_FD(output_file), FILENO_FD(stdout));
             process_t *proc = create_process();
             int status = run(proc, bytecode);
             fflush(stdout);
-            _dup2(saved_stdout, _fileno(stdout));
-            _dup2(saved_stdin, _fileno(stdin));
-            _close(saved_stdin);
-            _close(saved_stdout);
+            DUP2_FD(saved_stdout, FILENO_FD(stdout));
+            DUP2_FD(saved_stdin, FILENO_FD(stdin));
+            CLOSE_FD(saved_stdin);
+            CLOSE_FD(saved_stdout);
             if (!status) {
                 rewind(output_file);
                 output = read_captured_file(output_file);
