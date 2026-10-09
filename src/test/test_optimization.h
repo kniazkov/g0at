@@ -11,3 +11,6 @@ bool test_optimized_if_bytecode();
 
 /** @brief Dead storage, retained effects, visual history, and restoration. */
 bool test_unused_bindings();
+
+/** @brief Recompiles and reruns printed source in both forms for var and const declarations. */
+bool test_printed_source_recompiles();
