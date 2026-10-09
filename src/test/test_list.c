@@ -170,6 +170,7 @@ static test_description_t test_list[] = {
     {"optimization options", test_optimization_options},
     {"optimization modes", test_optimization_modes},
     {"unused bindings", test_unused_bindings},
+    {"printed source recompiles", test_printed_source_recompiles},
     {"optimized if bytecode", test_optimized_if_bytecode},
     {"reachability flags and events", test_reachability_flags},
     {"reachability bytecode", test_reachability_bytecode},

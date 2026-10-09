@@ -55,8 +55,8 @@ static string_value_t generate_goat_code(const node_t *node) {
         generate_goat_code_from_expression(((const unary_expression_t *)node)->operand);
     const wchar_t *op = update_is_decrement(node->vtbl->type) ? L"--" : L"++";
     string_value_t result = update_is_postfix(node->vtbl->type)
-                                ? format_string(L"(%s%s)", operand.data, op)
-                                : format_string(L"(%s%s)", op, operand.data);
+                                ? format_string(L"%s%s", operand.data, op)
+                                : format_string(L"%s%s", op, operand.data);
     FREE_STRING(operand);
     return result;
 }

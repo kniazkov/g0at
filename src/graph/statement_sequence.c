@@ -47,17 +47,18 @@ generate_goat_code_from_statement_list(list_t *list, string_builder_t *builder, 
     }
     bool has_previous = false;
     list_item_t *item = list->head;
-    string_value_t result;
+    string_value_t result = EMPTY_STRING_VALUE;
 
     while (item) {
-        if (has_previous) {
-            append_char(builder, L' ');
-        }
-        has_previous = true;
-
         statement_t *stmt = (statement_t *)item->value.ptr;
         string_value_t stmt_as_string = generate_goat_code_from_statement(stmt);
-        result = append_string_value(builder, stmt_as_string);
+        if (stmt_as_string.length > 0) {
+            if (has_previous) {
+                append_char(builder, L' ');
+            }
+            has_previous = true;
+            result = append_string_value(builder, stmt_as_string);
+        }
         FREE_STRING(stmt_as_string);
 
         item = item->next;

@@ -60,7 +60,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     const binary_operation_t *expr = (const binary_operation_t *)node;
     string_value_t left = generate_goat_code_from_expression(expr->left_operand);
     string_value_t right = generate_goat_code_from_expression(expr->right_operand);
-    string_value_t result = format_string(L"(%s %s %s)",
+    string_value_t result = format_string(L"%s %s %s",
                                           left.data,
                                           symbols[node_comparison_kind(node->vtbl->type)],
                                           right.data);

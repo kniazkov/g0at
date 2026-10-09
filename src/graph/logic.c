@@ -152,10 +152,13 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_value_t left = generate_goat_code_from_expression(expr->left_operand), result;
     if (expr->right_operand) {
         string_value_t right = generate_goat_code_from_expression(expr->right_operand);
-        result = format_string(L"(%s %s %s)", left.data, symbol(node->vtbl->type), right.data);
+        result = format_string(L"%s %s %s", left.data, symbol(node->vtbl->type), right.data);
         FREE_STRING(right);
-    } else
-        result = format_string(L"(%s(%s))", symbol(node->vtbl->type), left.data);
+    } else {
+        const wchar_t *op = symbol(node->vtbl->type);
+        result = left.data[0] == op[0] ? format_string(L"%s %s", op, left.data)
+                                       : format_string(L"%s%s", op, left.data);
+    }
     FREE_STRING(left);
     return result;
 }

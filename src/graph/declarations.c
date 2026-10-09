@@ -262,39 +262,215 @@ static abstract_state_t *vdecln_execute(node_t *node, abstract_state_t *state, a
     return state;
 }
 
+/**
+ * @brief Detects a for-header initializer whose declarators were replaced by side effects.
+ *
+ * A `for` header slot holds a single statement, so a preserved side effect cannot be emitted
+ * alongside surviving declarators; such declarations keep their archived form. The same applies
+ * when every declarator was replaced, because the slot would otherwise expand into several
+ * statements.
+ */
+static bool for_header_has_replaced_declarators(const node_t *node,
+                                                const node_t *const *decl_list,
+                                                size_t decl_count) {
+    const node_t *parent = node->parent;
+    if (!parent || parent->vtbl->type != NODE_FOR || get_node_child(parent, 0) != node)
+        return false;
+    for (size_t index = 0; index < decl_count; index++)
+        if (is_replacement(decl_list[index]))
+            return true;
+    return false;
+}
+
+/** @brief How many statements an optimized declaration expands to. */
+typedef enum {
+    DECLARATION_EMPTY,
+    DECLARATION_SINGLE_STATEMENT,
+    DECLARATION_MULTIPLE_STATEMENTS
+} declaration_output_t;
+
+static declaration_output_t declaration_output(const node_t *const *decl_list, size_t decl_count) {
+    size_t statements = 0;
+    bool kept = false;
+    for (size_t index = 0; index < decl_count; index++) {
+        if (is_deletion(decl_list[index]))
+            continue;
+        if (is_replacement(decl_list[index]))
+            statements++;
+        else
+            kept = true;
+    }
+    if (kept)
+        statements++;
+    if (statements == 0)
+        return DECLARATION_EMPTY;
+    return statements == 1 ? DECLARATION_SINGLE_STATEMENT : DECLARATION_MULTIPLE_STATEMENTS;
+}
+
+/**
+ * @brief Detects a declaration used as a single-statement slot of a branch.
+ *
+ * A branch may hold only one statement; an empty or multi-statement expansion must be wrapped in
+ * braces to preserve control flow.
+ */
+static bool in_single_statement_slot(const node_t *node) {
+    const node_t *parent = node->parent;
+    if (!parent || parent->vtbl->type != NODE_IF_ELSE)
+        return false;
+    return get_node_child(parent, 1) == node || get_node_child(parent, 2) == node;
+}
+
+/** @brief Checks whether any declarator survives optimization. */
+static bool has_kept_declarators(const node_t *const *decl_list, size_t decl_count) {
+    for (size_t index = 0; index < decl_count; index++)
+        if (!is_deletion(decl_list[index]) && !is_replacement(decl_list[index]))
+            return true;
+    return false;
+}
+
+/** @brief Emits a declaration's archived form as one statement, preserving its scope. */
+static string_value_t generate_original_declaration(const node_t *const *decl_list,
+                                                    size_t decl_count,
+                                                    const wchar_t *keyword) {
+    string_builder_t builder;
+    init_string_builder(&builder, 0);
+    append_string(&builder, keyword);
+    for (size_t index = 0; index < decl_count; index++) {
+        if (index > 0)
+            append_static_string(&builder, L", ");
+        string_value_t text = generate_goat_code_from_node(replacement_original(decl_list[index]));
+        append_string_value(&builder, text);
+        FREE_STRING(text);
+    }
+    return append_char(&builder, L';');
+}
+
+/** @brief Emits a declaration's archived form as one indented statement. */
+static void generate_indented_original_declaration(const node_t *const *decl_list,
+                                                   size_t decl_count,
+                                                   const wchar_t *keyword,
+                                                   source_builder_t *builder,
+                                                   size_t indent) {
+    add_formatted_source(builder, indent, (string_value_t){keyword, wcslen(keyword), false});
+    for (size_t index = 0; index < decl_count; index++) {
+        if (index > 0)
+            append_static_source(builder, L", ");
+        generate_indented_goat_code_from_node(replacement_original(decl_list[index]),
+                                              builder,
+                                              indent);
+    }
+    append_static_source(builder, L";");
+}
+
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t vdecln_generate_goat_code(const node_t *node) {
     const variable_declaration_t *decl = (const variable_declaration_t *)node;
+    const node_t *const *children = (const node_t *const *)decl->decl_list;
     string_builder_t builder;
     init_string_builder(&builder, 0);
-    append_static_string(&builder, L"var ");
+    if (for_header_has_replaced_declarators(node, children, decl->decl_count))
+        return generate_original_declaration(children, decl->decl_count, L"var ");
+    declaration_output_t output = declaration_output(children, decl->decl_count);
+    bool wrap = in_single_statement_slot(node) && output != DECLARATION_SINGLE_STATEMENT;
+    if (wrap && output == DECLARATION_EMPTY)
+        return STATIC_STRING(L"{ }");
+    if (wrap && has_kept_declarators(children, decl->decl_count))
+        return generate_original_declaration(children, decl->decl_count, L"var ");
+    if (wrap)
+        append_static_string(&builder, L"{ ");
+    bool pending = false, has_previous = false;
+    string_value_t result = EMPTY_STRING_VALUE;
     for (size_t index = 0; index < decl->decl_count; index++) {
-        if (index > 0) {
-            append_static_string(&builder, L", ");
+        node_t *child = decl->decl_list[index];
+        if (is_deletion(child))
+            continue;
+        if (is_replacement(child)) {
+            if (pending) {
+                result = append_char(&builder, L';');
+                pending = false;
+            }
+            if (has_previous)
+                result = append_char(&builder, L' ');
+            has_previous = true;
+            string_value_t text = generate_goat_code_from_node(replacement_result(child));
+            result = append_string_value(&builder, text);
+            FREE_STRING(text);
+        } else {
+            if (!pending) {
+                if (has_previous)
+                    result = append_char(&builder, L' ');
+                result = append_static_string(&builder, L"var ");
+                pending = true;
+                has_previous = true;
+            } else {
+                result = append_static_string(&builder, L", ");
+            }
+            string_value_t text = vdeclr_generate_goat_code(child);
+            result = append_string_value(&builder, text);
+            FREE_STRING(text);
         }
-        variable_declarator_t *vdr =
-            (variable_declarator_t *)replacement_original(decl->decl_list[index]);
-        string_value_t vdr_as_string = vdeclr_generate_goat_code(&vdr->base.base);
-        append_string_value(&builder, vdr_as_string);
-        FREE_STRING(vdr_as_string);
     }
-    return append_char(&builder, L';');
+    if (pending)
+        result = append_char(&builder, L';');
+    if (wrap)
+        result = append_static_string(&builder, L" }");
+    return result;
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void
 vdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const variable_declaration_t *decl = (const variable_declaration_t *)node;
-    add_static_source(builder, indent, L"var ");
-    for (size_t index = 0; index < decl->decl_count; index++) {
-        if (index > 0) {
-            append_static_source(builder, L", ");
-        }
-        variable_declarator_t *vdr =
-            (variable_declarator_t *)replacement_original(decl->decl_list[index]);
-        vdeclr_generate_indented_goat_code(&vdr->base.base, builder, indent);
+    const node_t *const *children = (const node_t *const *)decl->decl_list;
+    if (for_header_has_replaced_declarators(node, children, decl->decl_count)) {
+        generate_indented_original_declaration(children,
+                                               decl->decl_count,
+                                               L"var ",
+                                               builder,
+                                               indent);
+        return;
     }
-    append_static_source(builder, L";");
+    declaration_output_t output = declaration_output(children, decl->decl_count);
+    bool wrap = in_single_statement_slot(node) && output != DECLARATION_SINGLE_STATEMENT;
+    if (wrap && output == DECLARATION_EMPTY) {
+        append_static_source(builder, L"{ }");
+        return;
+    }
+    if (wrap && has_kept_declarators(children, decl->decl_count)) {
+        generate_indented_original_declaration(children,
+                                               decl->decl_count,
+                                               L"var ",
+                                               builder,
+                                               indent);
+        return;
+    }
+    if (wrap)
+        append_static_source(builder, L"{");
+    bool pending = false;
+    for (size_t index = 0; index < decl->decl_count; index++) {
+        node_t *child = decl->decl_list[index];
+        if (is_deletion(child))
+            continue;
+        if (is_replacement(child)) {
+            if (pending) {
+                append_static_source(builder, L";");
+                pending = false;
+            }
+            generate_indented_goat_code_from_node(replacement_result(child), builder, indent);
+        } else {
+            if (!pending) {
+                add_static_source(builder, indent, L"var ");
+                pending = true;
+            } else {
+                append_static_source(builder, L", ");
+            }
+            vdeclr_generate_indented_goat_code(child, builder, indent);
+        }
+    }
+    if (pending)
+        append_static_source(builder, L";");
+    if (wrap)
+        add_static_source(builder, indent - 1, L"}");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
@@ -547,36 +723,112 @@ static abstract_state_t *cdecln_execute(node_t *node, abstract_state_t *state, a
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t cdecln_generate_goat_code(const node_t *node) {
     const constant_declaration_t *decl = (const constant_declaration_t *)node;
+    const node_t *const *children = (const node_t *const *)decl->decl_list;
     string_builder_t builder;
     init_string_builder(&builder, 0);
-    append_static_string(&builder, L"const ");
+    if (for_header_has_replaced_declarators(node, children, decl->decl_count))
+        return generate_original_declaration(children, decl->decl_count, L"const ");
+    declaration_output_t output = declaration_output(children, decl->decl_count);
+    bool wrap = in_single_statement_slot(node) && output != DECLARATION_SINGLE_STATEMENT;
+    if (wrap && output == DECLARATION_EMPTY)
+        return STATIC_STRING(L"{ }");
+    if (wrap && has_kept_declarators(children, decl->decl_count))
+        return generate_original_declaration(children, decl->decl_count, L"const ");
+    if (wrap)
+        append_static_string(&builder, L"{ ");
+    bool pending = false, has_previous = false;
+    string_value_t result = EMPTY_STRING_VALUE;
     for (size_t index = 0; index < decl->decl_count; index++) {
-        if (index > 0) {
-            append_static_string(&builder, L", ");
+        node_t *child = decl->decl_list[index];
+        if (is_deletion(child))
+            continue;
+        if (is_replacement(child)) {
+            if (pending) {
+                result = append_char(&builder, L';');
+                pending = false;
+            }
+            if (has_previous)
+                result = append_char(&builder, L' ');
+            has_previous = true;
+            string_value_t text = generate_goat_code_from_node(replacement_result(child));
+            result = append_string_value(&builder, text);
+            FREE_STRING(text);
+        } else {
+            if (!pending) {
+                if (has_previous)
+                    result = append_char(&builder, L' ');
+                result = append_static_string(&builder, L"const ");
+                pending = true;
+                has_previous = true;
+            } else {
+                result = append_static_string(&builder, L", ");
+            }
+            string_value_t text = cdeclr_generate_goat_code(child);
+            result = append_string_value(&builder, text);
+            FREE_STRING(text);
         }
-        constant_declarator_t *cdr =
-            (constant_declarator_t *)replacement_original(decl->decl_list[index]);
-        string_value_t cdr_as_string = generate_goat_code_from_node(&cdr->base.base);
-        append_string_value(&builder, cdr_as_string);
-        FREE_STRING(cdr_as_string);
     }
-    return append_char(&builder, L';');
+    if (pending)
+        result = append_char(&builder, L';');
+    if (wrap)
+        result = append_static_string(&builder, L" }");
+    return result;
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void
 cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const constant_declaration_t *decl = (const constant_declaration_t *)node;
-    add_static_source(builder, indent, L"const ");
-    for (size_t index = 0; index < decl->decl_count; index++) {
-        if (index > 0) {
-            append_static_source(builder, L", ");
-        }
-        constant_declarator_t *cdr =
-            (constant_declarator_t *)replacement_original(decl->decl_list[index]);
-        cdeclr_generate_indented_goat_code(&cdr->base.base, builder, indent);
+    const node_t *const *children = (const node_t *const *)decl->decl_list;
+    if (for_header_has_replaced_declarators(node, children, decl->decl_count)) {
+        generate_indented_original_declaration(children,
+                                               decl->decl_count,
+                                               L"const ",
+                                               builder,
+                                               indent);
+        return;
     }
-    append_static_source(builder, L";");
+    declaration_output_t output = declaration_output(children, decl->decl_count);
+    bool wrap = in_single_statement_slot(node) && output != DECLARATION_SINGLE_STATEMENT;
+    if (wrap && output == DECLARATION_EMPTY) {
+        append_static_source(builder, L"{ }");
+        return;
+    }
+    if (wrap && has_kept_declarators(children, decl->decl_count)) {
+        generate_indented_original_declaration(children,
+                                               decl->decl_count,
+                                               L"const ",
+                                               builder,
+                                               indent);
+        return;
+    }
+    if (wrap)
+        append_static_source(builder, L"{");
+    bool pending = false;
+    for (size_t index = 0; index < decl->decl_count; index++) {
+        node_t *child = decl->decl_list[index];
+        if (is_deletion(child))
+            continue;
+        if (is_replacement(child)) {
+            if (pending) {
+                append_static_source(builder, L";");
+                pending = false;
+            }
+            generate_indented_goat_code_from_node(replacement_result(child), builder, indent);
+        } else {
+            if (!pending) {
+                add_static_source(builder, indent, L"const ");
+                pending = true;
+            } else {
+                append_static_source(builder, L", ");
+            }
+            cdeclr_generate_indented_goat_code(child, builder, indent);
+        }
+    }
+    if (pending)
+        append_static_source(builder, L";");
+    if (wrap)
+        add_static_source(builder, indent - 1, L"}");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */

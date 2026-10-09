@@ -49,9 +49,9 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 static string_value_t generate_goat_code(const node_t *node) {
     string_value_t operand =
         generate_goat_code_from_expression(((const unary_expression_t *)node)->operand);
-    string_value_t result = format_string(L"(%s(%s))",
-                                          node->vtbl->type == NODE_UNARY_MINUS ? L"-" : L"+",
-                                          operand.data);
+    const wchar_t *op = node->vtbl->type == NODE_UNARY_MINUS ? L"-" : L"+";
+    string_value_t result = operand.data[0] == op[0] ? format_string(L"%s %s", op, operand.data)
+                                                     : format_string(L"%s%s", op, operand.data);
     FREE_STRING(operand);
     return result;
 }
@@ -59,14 +59,7 @@ static string_value_t generate_goat_code(const node_t *node) {
 /** @brief Implements node_vtbl_t::generate_indented_goat_code. */
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
-    if (node->vtbl->type == NODE_UNARY_MINUS)
-        append_static_source(builder, L"(-(");
-    else
-        append_static_source(builder, L"(+(");
-    generate_indented_goat_code_from_expression(((const unary_expression_t *)node)->operand,
-                                                builder,
-                                                indent);
-    append_static_source(builder, L"))");
+    append_formatted_source(builder, generate_goat_code(node));
 }
 
 /** @brief Implements node_vtbl_t::generate_bytecode. */
