@@ -359,3 +359,12 @@ implicit_self_expression
 implicit_self_update
 implicit_self_block
 implicit_recursion
+
+# Characters
+character
+character_operations
+ord_chr
+character_empty_literal
+character_multiple_chars
+character_bad_escape
+character_unclosed

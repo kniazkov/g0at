@@ -63,6 +63,9 @@ typedef enum {
     /** @brief Real number node type. */
     NODE_REAL,
 
+    /** @brief Character literal node type. */
+    NODE_CHARACTER,
+
     /** @brief Variable node type. */
     NODE_VARIABLE,
 

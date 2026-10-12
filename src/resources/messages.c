@@ -66,6 +66,9 @@ static messages_t english = {
     .integer_literal_out_of_range = L"Integer literal is outside the signed 64-bit range",
     .unclosed_quotation_mark = L"Unmatched quote found in string literal; expected closing quote",
     .invalid_escape_sequence = L"Invalid escape sequence '\\%c' in string literal",
+    .empty_character_literal = L"Empty character literal: expected a single character in quotes",
+    .invalid_character_literal =
+        L"Invalid character literal: expected a single character in quotes",
     .unclosed_opening_bracket =
         L"Unclosed opening bracket: expected a closing bracket to match '%c'",
     .missing_opening_bracket = L"Missing opening bracket corresponding to '%c'",
@@ -160,6 +163,9 @@ static messages_t russian = {
     .unclosed_quotation_mark = L"В строковом литерале пропущена закрывающая кавычка",
     .invalid_escape_sequence =
         L"Неправильная управляющая последовательность '\\%c' в строковом литерале",
+    .empty_character_literal = L"Пустой символьный литерал: в кавычках должен быть один символ",
+    .invalid_character_literal =
+        L"Неправильный символьный литерал: в кавычках должен быть один символ",
     .unclosed_opening_bracket = L"Нет закрывающей скобки, соответствующей '%c'",
     .missing_opening_bracket = L"Нет открывающей скобки, соответствующей '%c'",
     .brackets_do_not_match = L"Закрывающая скобка '%c' не соответствует открывающей '%c'",

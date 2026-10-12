@@ -23,7 +23,7 @@ static const builtin_function_t *lookup(const wchar_t *name) {
 bool test_builtin_registry() {
     size_t count;
     const builtin_function_t *const *functions = get_builtin_functions(&count);
-    ASSERT(count == 33);
+    ASSERT(count == 35);
     ASSERT(get_object_keys(get_root_context()->data).size == count + 2);
     for (size_t i = 0; i < count; i++) {
         const builtin_function_t *f = functions[i];
@@ -81,7 +81,8 @@ bool test_builtin_numeric_results() {
     for (size_t f = 0; f < total; f++) {
         const builtin_function_t *descriptor = functions[f];
         if (descriptor == &builtin_print || descriptor == &builtin_println
-            || descriptor == &builtin_input || descriptor == &builtin_int)
+            || descriptor == &builtin_input || descriptor == &builtin_int
+            || descriptor == &builtin_ord || descriptor == &builtin_chr)
             continue;
         for (size_t i = 0; i < sizeof(samples) / sizeof(*samples); i++) {
             for (size_t j = 0;

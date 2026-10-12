@@ -1,0 +1,9 @@
+println('a');
+println('\'');
+println('"');
+println(ord('\n') == 10);
+println(ord('\t') == 9);
+println(ord('\r') == 13);
+println(ord('\b') == 8);
+println(ord('\\') == 92);
+println(ord('\'') == 39);

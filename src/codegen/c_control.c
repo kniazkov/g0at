@@ -20,7 +20,7 @@ void c_emit_prelude(const source_builder_t *prelude, source_builder_t *builder, 
 }
 
 static bool numeric(c_value_type_t type) {
-    return type == C_VALUE_INT64 || type == C_VALUE_DOUBLE;
+    return type == C_VALUE_INT64 || type == C_VALUE_DOUBLE || type == C_VALUE_CHAR;
 }
 
 c_generated_expression_t c_comparison(const node_t *node, c_generation_context_t *context) {
@@ -44,7 +44,9 @@ c_generated_expression_t c_comparison(const node_t *node, c_generation_context_t
     string_value_t b = c_capture_operand(prelude, context, &right, right.type);
     comparison_kind_t kind = node_comparison_kind(node->vtbl->type);
     string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
-    if (left.type == right.type) {
+    bool integer_like = (left.type == C_VALUE_INT64 || left.type == C_VALUE_CHAR)
+                        && (right.type == C_VALUE_INT64 || right.type == C_VALUE_CHAR);
+    if (integer_like || left.type == right.type) {
         static const wchar_t *symbols[] = {L"<", L"<=", L">", L">=", L"==", L"!="};
         add_source(prelude, 0, L"bool %s = %s %s %s;", value.data, a.data, symbols[kind], b.data);
     } else {
@@ -52,7 +54,7 @@ c_generated_expression_t c_comparison(const node_t *node, c_generation_context_t
         /* Helper bits: less=1, equal=2, greater=4, unordered=8. */
         static const unsigned masks[] = {1, 3, 4, 6, 2, 13};
         static const unsigned reversed[] = {4, 6, 1, 3, 2, 13};
-        bool integer_left = left.type == C_VALUE_INT64;
+        bool integer_left = left.type == C_VALUE_INT64 || left.type == C_VALUE_CHAR;
         add_source(prelude,
                    0,
                    L"bool %s = (g_compare_i64_double(%s, %s) & %u) != 0;",

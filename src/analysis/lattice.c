@@ -32,6 +32,9 @@ static const lattice_element_t real_element = {.type = LATTICE_REAL};
 /** @brief String lattice element singleton. */
 static const lattice_element_t string_element = {.type = LATTICE_STRING};
 
+/** @brief Character lattice element singleton. */
+static const lattice_element_t char_element = {.type = LATTICE_CHAR};
+
 /** @brief Boolean lattice element singleton. */
 static const lattice_element_t boolean_element = {.type = LATTICE_BOOLEAN};
 
@@ -120,6 +123,17 @@ const lattice_element_t *make_string_constant_element(arena_t *arena, string_vie
     return &element->base;
 }
 
+const lattice_element_t *make_char_element() {
+    return &char_element;
+}
+
+const lattice_element_t *make_char_constant_element(arena_t *arena, uint32_t value) {
+    char_constant_element_t *element = alloc_from_arena(arena, sizeof(char_constant_element_t));
+    element->base.type = LATTICE_CHAR_CONSTANT;
+    element->value = value;
+    return &element->base;
+}
+
 const lattice_element_t *make_boolean_element() {
     return &boolean_element;
 }
@@ -167,7 +181,8 @@ const lattice_element_t *make_typed_array_element(arena_t *arena, lattice_type_t
     assert(element_type >= LATTICE_TOP && element_type <= LATTICE_BOTTOM);
     assert(element_type != LATTICE_INTEGER_RANGE && element_type != LATTICE_INTEGER_CONSTANT
            && element_type != LATTICE_REAL_CONSTANT && element_type != LATTICE_STRING_CONSTANT
-           && element_type != LATTICE_TYPED_ARRAY && element_type != LATTICE_KNOWN_FUNCTION);
+           && element_type != LATTICE_CHAR_CONSTANT && element_type != LATTICE_TYPED_ARRAY
+           && element_type != LATTICE_KNOWN_FUNCTION);
     if (element_type == LATTICE_TOP) {
         return make_array_element();
     }
@@ -220,6 +235,8 @@ static const lattice_element_t *lattice_join_numeric(const lattice_element_t *ri
         case LATTICE_NOT_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -255,6 +272,8 @@ static const lattice_element_t *lattice_join_integer(const lattice_element_t *ri
         case LATTICE_NOT_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -326,6 +345,8 @@ static const lattice_element_t *lattice_join_integer_range(arena_t *arena,
         case LATTICE_NOT_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -395,6 +416,8 @@ static const lattice_element_t *lattice_join_integer_constant(arena_t *arena,
         case LATTICE_NOT_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -430,6 +453,8 @@ static const lattice_element_t *lattice_join_real(const lattice_element_t *right
         case LATTICE_NOT_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -487,6 +512,8 @@ static const lattice_element_t *lattice_join_real_constant(const lattice_element
         case LATTICE_NOT_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -520,6 +547,8 @@ static const lattice_element_t *lattice_join_string(const lattice_element_t *rig
         case LATTICE_INTEGER_CONSTANT:
         case LATTICE_REAL:
         case LATTICE_REAL_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -572,6 +601,92 @@ static const lattice_element_t *lattice_join_string_constant(const lattice_eleme
         case LATTICE_INTEGER_CONSTANT:
         case LATTICE_REAL:
         case LATTICE_REAL_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
+        case LATTICE_BOOLEAN:
+        case LATTICE_TRUE:
+        case LATTICE_FALSE:
+        case LATTICE_KNOWN_FUNCTION:
+        case LATTICE_FUNCTION:
+        case LATTICE_ARRAY:
+        case LATTICE_TYPED_ARRAY:
+        case LATTICE_USER_DEFINED_OBJECT:
+            return make_not_null_element();
+    }
+
+    return make_top_element();
+}
+
+/** @brief Joins CHAR with another lattice element. */
+static const lattice_element_t *lattice_join_char(const lattice_element_t *right) {
+    switch (right->type) {
+        case LATTICE_BOTTOM:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
+            return make_char_element();
+
+        case LATTICE_TOP:
+        case LATTICE_NULL:
+            return make_top_element();
+
+        case LATTICE_NOT_NULL:
+        case LATTICE_NUMERIC:
+        case LATTICE_INTEGER:
+        case LATTICE_INTEGER_RANGE:
+        case LATTICE_INTEGER_CONSTANT:
+        case LATTICE_REAL:
+        case LATTICE_REAL_CONSTANT:
+        case LATTICE_STRING:
+        case LATTICE_STRING_CONSTANT:
+        case LATTICE_BOOLEAN:
+        case LATTICE_TRUE:
+        case LATTICE_FALSE:
+        case LATTICE_KNOWN_FUNCTION:
+        case LATTICE_FUNCTION:
+        case LATTICE_ARRAY:
+        case LATTICE_TYPED_ARRAY:
+        case LATTICE_USER_DEFINED_OBJECT:
+            return make_not_null_element();
+    }
+
+    return make_top_element();
+}
+
+/** @brief Joins CHAR_CONSTANT with another lattice element. */
+static const lattice_element_t *lattice_join_char_constant(const lattice_element_t *left,
+                                                           const lattice_element_t *right) {
+    const char_constant_element_t *left_constant = (const char_constant_element_t *)left;
+
+    switch (right->type) {
+        case LATTICE_BOTTOM:
+            return left;
+
+        case LATTICE_CHAR_CONSTANT: {
+            const char_constant_element_t *right_constant = (const char_constant_element_t *)right;
+
+            if (left_constant->value == right_constant->value) {
+                return left;
+            }
+
+            return make_char_element();
+        }
+
+        case LATTICE_CHAR:
+            return make_char_element();
+
+        case LATTICE_TOP:
+        case LATTICE_NULL:
+            return make_top_element();
+
+        case LATTICE_NOT_NULL:
+        case LATTICE_NUMERIC:
+        case LATTICE_INTEGER:
+        case LATTICE_INTEGER_RANGE:
+        case LATTICE_INTEGER_CONSTANT:
+        case LATTICE_REAL:
+        case LATTICE_REAL_CONSTANT:
+        case LATTICE_STRING:
+        case LATTICE_STRING_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -608,6 +723,8 @@ static const lattice_element_t *lattice_join_boolean(const lattice_element_t *ri
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
@@ -643,6 +760,8 @@ static const lattice_element_t *lattice_join_true(const lattice_element_t *right
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
@@ -678,6 +797,8 @@ static const lattice_element_t *lattice_join_false(const lattice_element_t *righ
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
@@ -710,6 +831,8 @@ static const lattice_element_t *lattice_join_function(const lattice_element_t *r
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -743,6 +866,8 @@ static const lattice_element_t *lattice_join_array(const lattice_element_t *righ
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -794,6 +919,8 @@ static const lattice_element_t *lattice_join_typed_array(arena_t *arena,
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -826,6 +953,8 @@ static const lattice_element_t *lattice_join_user_defined_object(const lattice_e
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -880,6 +1009,12 @@ lattice_join(arena_t *arena, const lattice_element_t *left, const lattice_elemen
 
         case LATTICE_STRING_CONSTANT:
             return lattice_join_string_constant(left, right);
+
+        case LATTICE_CHAR:
+            return lattice_join_char(right);
+
+        case LATTICE_CHAR_CONSTANT:
+            return lattice_join_char_constant(left, right);
 
         case LATTICE_BOOLEAN:
             return lattice_join_boolean(right);
@@ -947,6 +1082,8 @@ static const lattice_element_t *lattice_meet_numeric(const lattice_element_t *ri
         case LATTICE_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -980,6 +1117,8 @@ static const lattice_element_t *lattice_meet_integer(const lattice_element_t *ri
         case LATTICE_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -1051,6 +1190,8 @@ static const lattice_element_t *lattice_meet_integer_range(arena_t *arena,
         case LATTICE_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -1105,6 +1246,8 @@ static const lattice_element_t *lattice_meet_integer_constant(const lattice_elem
         case LATTICE_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -1138,6 +1281,8 @@ static const lattice_element_t *lattice_meet_real(const lattice_element_t *right
         case LATTICE_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -1181,6 +1326,8 @@ static const lattice_element_t *lattice_meet_real_constant(const lattice_element
         case LATTICE_NULL:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -1214,6 +1361,8 @@ static const lattice_element_t *lattice_meet_string(const lattice_element_t *rig
         case LATTICE_INTEGER_CONSTANT:
         case LATTICE_REAL:
         case LATTICE_REAL_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -1262,6 +1411,88 @@ static const lattice_element_t *lattice_meet_string_constant(const lattice_eleme
         case LATTICE_INTEGER_CONSTANT:
         case LATTICE_REAL:
         case LATTICE_REAL_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
+        case LATTICE_BOOLEAN:
+        case LATTICE_TRUE:
+        case LATTICE_FALSE:
+        case LATTICE_KNOWN_FUNCTION:
+        case LATTICE_FUNCTION:
+        case LATTICE_ARRAY:
+        case LATTICE_TYPED_ARRAY:
+        case LATTICE_USER_DEFINED_OBJECT:
+        case LATTICE_BOTTOM:
+            return make_bottom_element();
+    }
+
+    return make_bottom_element();
+}
+
+/** @brief Meets CHAR with another lattice element. */
+static const lattice_element_t *lattice_meet_char(const lattice_element_t *right) {
+    switch (right->type) {
+        case LATTICE_TOP:
+        case LATTICE_NOT_NULL:
+        case LATTICE_CHAR:
+            return make_char_element();
+
+        case LATTICE_CHAR_CONSTANT:
+            return right;
+
+        case LATTICE_NULL:
+        case LATTICE_NUMERIC:
+        case LATTICE_INTEGER:
+        case LATTICE_INTEGER_RANGE:
+        case LATTICE_INTEGER_CONSTANT:
+        case LATTICE_REAL:
+        case LATTICE_REAL_CONSTANT:
+        case LATTICE_STRING:
+        case LATTICE_STRING_CONSTANT:
+        case LATTICE_BOOLEAN:
+        case LATTICE_TRUE:
+        case LATTICE_FALSE:
+        case LATTICE_KNOWN_FUNCTION:
+        case LATTICE_FUNCTION:
+        case LATTICE_ARRAY:
+        case LATTICE_TYPED_ARRAY:
+        case LATTICE_USER_DEFINED_OBJECT:
+        case LATTICE_BOTTOM:
+            return make_bottom_element();
+    }
+
+    return make_bottom_element();
+}
+
+/** @brief Meets CHAR_CONSTANT with another lattice element. */
+static const lattice_element_t *lattice_meet_char_constant(const lattice_element_t *left,
+                                                           const lattice_element_t *right) {
+    const char_constant_element_t *left_constant = (const char_constant_element_t *)left;
+
+    switch (right->type) {
+        case LATTICE_TOP:
+        case LATTICE_NOT_NULL:
+        case LATTICE_CHAR:
+            return left;
+
+        case LATTICE_CHAR_CONSTANT: {
+            const char_constant_element_t *right_constant = (const char_constant_element_t *)right;
+
+            if (left_constant->value == right_constant->value) {
+                return left;
+            }
+
+            return make_bottom_element();
+        }
+
+        case LATTICE_NULL:
+        case LATTICE_NUMERIC:
+        case LATTICE_INTEGER:
+        case LATTICE_INTEGER_RANGE:
+        case LATTICE_INTEGER_CONSTANT:
+        case LATTICE_REAL:
+        case LATTICE_REAL_CONSTANT:
+        case LATTICE_STRING:
+        case LATTICE_STRING_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -1298,6 +1529,8 @@ static const lattice_element_t *lattice_meet_boolean(const lattice_element_t *ri
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
@@ -1329,6 +1562,8 @@ static const lattice_element_t *lattice_meet_true(const lattice_element_t *right
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
@@ -1360,6 +1595,8 @@ static const lattice_element_t *lattice_meet_false(const lattice_element_t *righ
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
         case LATTICE_ARRAY:
@@ -1390,6 +1627,8 @@ static const lattice_element_t *lattice_meet_function(const lattice_element_t *r
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -1423,6 +1662,8 @@ static const lattice_element_t *lattice_meet_array(const lattice_element_t *righ
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -1470,6 +1711,8 @@ static const lattice_element_t *lattice_meet_typed_array(arena_t *arena,
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -1500,6 +1743,8 @@ static const lattice_element_t *lattice_meet_user_defined_object(const lattice_e
         case LATTICE_REAL_CONSTANT:
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
+        case LATTICE_CHAR:
+        case LATTICE_CHAR_CONSTANT:
         case LATTICE_BOOLEAN:
         case LATTICE_TRUE:
         case LATTICE_FALSE:
@@ -1561,6 +1806,12 @@ lattice_meet(arena_t *arena, const lattice_element_t *left, const lattice_elemen
 
         case LATTICE_STRING_CONSTANT:
             return lattice_meet_string_constant(left, right);
+
+        case LATTICE_CHAR:
+            return lattice_meet_char(right);
+
+        case LATTICE_CHAR_CONSTANT:
+            return lattice_meet_char_constant(left, right);
 
         case LATTICE_BOOLEAN:
             return lattice_meet_boolean(right);
@@ -1629,6 +1880,12 @@ static const wchar_t *lattice_type_to_string(lattice_type_t type) {
 
         case LATTICE_STRING_CONSTANT:
             return L"const string";
+
+        case LATTICE_CHAR:
+            return L"char";
+
+        case LATTICE_CHAR_CONSTANT:
+            return L"const char";
 
         case LATTICE_BOOLEAN:
             return L"boolean";
@@ -1703,6 +1960,14 @@ string_value_t lattice_to_string(const lattice_element_t *element) {
             return VIEW_TO_VALUE(constant->value);
         }
 
+        case LATTICE_CHAR:
+            return STATIC_STRING(L"char");
+
+        case LATTICE_CHAR_CONSTANT: {
+            const char_constant_element_t *constant = (const char_constant_element_t *)element;
+            return format_string(L"%c", (int)constant->value);
+        }
+
         case LATTICE_BOOLEAN:
             return STATIC_STRING(L"boolean");
 
@@ -1751,6 +2016,8 @@ abstract_truth_t lattice_truth(const lattice_element_t *value) {
         case LATTICE_STRING_CONSTANT:
             return ((const string_constant_element_t *)value)->value.length ? ABSTRACT_TRUE
                                                                             : ABSTRACT_FALSE;
+        case LATTICE_CHAR_CONSTANT:
+            return ((const char_constant_element_t *)value)->value ? ABSTRACT_TRUE : ABSTRACT_FALSE;
         case LATTICE_INTEGER_RANGE: {
             const integer_range_element_t *range = (const integer_range_element_t *)value;
             if (range->min > 0 || range->max < 0)

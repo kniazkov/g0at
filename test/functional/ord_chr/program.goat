@@ -1,0 +1,12 @@
+println(ord('a'));
+println(ord('A'));
+println(ord('0'));
+println(ord('\n'));
+println(chr(97));
+println(chr(65));
+println(chr(48));
+println(chr(122));
+println(chr(ord('z')));
+println(ord(chr(200)));
+println(chr(200) == chr(200));
+println(ord('a') == 97);

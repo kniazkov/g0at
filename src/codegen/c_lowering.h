@@ -9,6 +9,8 @@ const wchar_t *c_type_name(c_value_type_t type);
 c_generated_expression_t
 c_integer_literal(const node_t *node, c_generation_context_t *context, int64_t value);
 c_generated_expression_t
+c_char_literal(const node_t *node, c_generation_context_t *context, uint32_t value);
+c_generated_expression_t
 c_real_literal(const node_t *node, c_generation_context_t *context, double value);
 /** @brief Implements node_vtbl_t::generate_indented_c_code for a complete function. */
 bool c_emit_function(const node_t *node,

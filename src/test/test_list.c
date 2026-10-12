@@ -23,6 +23,7 @@
 #include "test_c_module_output.h"
 #include "test_c_recursion.h"
 #include "test_c_replacement.h"
+#include "test_character.h"
 #include "test_codegen.h"
 #include "test_comparison.h"
 #include "test_direct_recursion.h"
@@ -204,6 +205,10 @@ static test_description_t test_list[] = {
     {"exceptions object", test_exceptions_object},
     {"boolean object", test_boolean_object},
     {"integer object", test_integer_object},
+    {"character scanner", test_character_scanner},
+    {"character object", test_character_object},
+    {"character VM", test_character_vm},
+    {"ord chr builtin", test_ord_chr_builtin},
     {"addition models and constants", test_addition_models_and_constants},
     {"addition domains", test_addition_domains},
     {"mixed numeric arithmetic", test_mixed_arithmetic},

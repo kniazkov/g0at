@@ -199,6 +199,14 @@ static bool exec_SLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
+/** @brief Executes @ref CLOAD. */
+static bool exec_CLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    push_object_onto_stack(thread->data_stack,
+                           create_character_object(thread->process, instr.arg1));
+    thread->instr_id++;
+    return true;
+}
+
 /** @brief Executes @ref VLOAD. */
 static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     uint32_t string_id = instr.arg1;
@@ -637,6 +645,7 @@ static instr_executor_t executors[] = {
     exec_ILOAD64, /**< Pushes a 64-bit integer onto the data stack. */
     exec_RLOAD,   /**< Pushes a 64-bit float onto the data stack. */
     exec_SLOAD,   /**< Pushes a static string onto the data stack. */
+    exec_CLOAD,   /**< Pushes a character code onto the data stack. */
     exec_VLOAD,   /**< Loads a variable value onto the data stack or `null` if undefined. */
     exec_VAR,     /**< Declares a new mutable variable in current context. */
     exec_CONST,   /**< Declares a new immutable constant in current context. */

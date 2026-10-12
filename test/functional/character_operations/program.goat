@@ -1,0 +1,11 @@
+println('x' == 'x');
+println('x' == 'y');
+println('x' != 'y');
+println('a' < 'b');
+println('a' > 'b');
+println('a' <= 'a');
+println('b' >= 'c');
+println('a' + "b");
+println("b" + 'a');
+println('a' + 'b');
+println('a' == "a");

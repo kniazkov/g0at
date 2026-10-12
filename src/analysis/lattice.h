@@ -51,6 +51,12 @@ typedef enum {
     /** @brief Exact string value. */
     LATTICE_STRING_CONSTANT,
 
+    /** @brief Any character value. */
+    LATTICE_CHAR,
+
+    /** @brief Exact character value. */
+    LATTICE_CHAR_CONSTANT,
+
     /** @brief Any boolean value. */
     LATTICE_BOOLEAN,
 
@@ -123,6 +129,15 @@ typedef struct {
     /** @brief Exact string value. */
     string_view_t value;
 } string_constant_element_t;
+
+/** @brief Character constant lattice element. */
+typedef struct {
+    /** @brief Base lattice element. */
+    lattice_element_t base;
+
+    /** @brief Exact character code. */
+    uint32_t value;
+} char_constant_element_t;
 
 /** @brief Typed array lattice element. */
 typedef struct {
@@ -199,6 +214,22 @@ static inline bool is_string_lattice_element(const lattice_element_t *element) {
 }
 
 /**
+ * @brief Checks whether a lattice type represents a character-like value.
+ * @return true if the type belongs to the character domain.
+ */
+static inline bool is_character_lattice_type(lattice_type_t type) {
+    return type == LATTICE_CHAR || type == LATTICE_CHAR_CONSTANT;
+}
+
+/**
+ * @brief Checks whether a lattice element represents a character-like value.
+ * @return true if the element belongs to the character domain.
+ */
+static inline bool is_character_lattice_element(const lattice_element_t *element) {
+    return element && is_character_lattice_type(element->type);
+}
+
+/**
  * @brief Checks whether a lattice type represents a boolean-like value.
  * @return true if the type belongs to the boolean domain.
  */
@@ -252,8 +283,8 @@ static inline bool is_user_defined_object_lattice_element(const lattice_element_
  */
 static inline bool is_addable_lattice_type(lattice_type_t type) {
     return type == LATTICE_TOP || type == LATTICE_NOT_NULL || is_numeric_lattice_type(type)
-           || is_string_lattice_type(type) || is_array_lattice_type(type)
-           || is_user_defined_object_lattice_type(type);
+           || is_string_lattice_type(type) || is_character_lattice_type(type)
+           || is_array_lattice_type(type) || is_user_defined_object_lattice_type(type);
 }
 
 /**
@@ -307,6 +338,12 @@ const lattice_element_t *make_string_element();
  * punish optimism.
  */
 const lattice_element_t *make_string_constant_element(arena_t *arena, string_view_t value);
+
+/** @brief Gets the character lattice element singleton. */
+const lattice_element_t *make_char_element();
+
+/** @brief Creates a character constant lattice element. */
+const lattice_element_t *make_char_constant_element(arena_t *arena, uint32_t value);
 
 /** @brief Gets the boolean lattice element singleton. */
 const lattice_element_t *make_boolean_element();

@@ -26,6 +26,8 @@ In Windows PowerShell:
 
 Native execution is disabled here: we are examining the language rules implemented by the VM (the program that executes bytecode instructions).
 
+Character values store an unsigned 32-bit code and use single quotes: `'a'`, `'😀'`. `ord(c)` returns the code; `chr(n)` converts an integer to a character, retaining its lower 32 bits. Literal escapes include `\0` for zero and `\U0001f600` for an eight-digit hexadecimal code. These forms also preserve character values when regenerating source. String conversion uses UTF-16 pairs only on platforms with 16-bit `wchar_t`; generated native C stores character codes in `uint32_t`.
+
 <a id="section-2-2"></a>
 
 ## 2.2. Values and Names

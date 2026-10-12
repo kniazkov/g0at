@@ -221,6 +221,61 @@ static const lattice_element_t *calculate_string_addition(arena_t *arena,
     return make_string_constant_element(arena, (string_view_t){data, length});
 }
 
+/** @brief Converts a character code to an arena-allocated string view. */
+static string_view_t char_to_string_view(arena_t *arena, uint32_t value) {
+    if (sizeof(wchar_t) > 2 || value < 0x10000) {
+        wchar_t *data = alloc_from_arena(arena, 2 * sizeof(wchar_t));
+        data[0] = (wchar_t)value;
+        data[1] = 0;
+        return (string_view_t){data, 1};
+    }
+    value -= 0x10000;
+    wchar_t *data = alloc_from_arena(arena, 3 * sizeof(wchar_t));
+    data[0] = (wchar_t)(0xD800 + (value >> 10));
+    data[1] = (wchar_t)(0xDC00 + (value & 0x3FF));
+    data[2] = 0;
+    return (string_view_t){data, 2};
+}
+
+/** @brief Concatenates a character constant with a string view. */
+static const lattice_element_t *
+append_char_and_text(arena_t *arena, string_view_t left_text, string_view_t right_text) {
+    size_t length = left_text.length + right_text.length;
+    wchar_t *data = alloc_from_arena(arena, sizeof(wchar_t) * length);
+    wmemcpy(data, left_text.data, left_text.length);
+    wmemcpy(data + left_text.length, right_text.data, right_text.length);
+    return make_string_constant_element(arena, (string_view_t){.data = data, .length = length});
+}
+
+/** @brief Calculates the abstract result of character concatenation. */
+static const lattice_element_t *calculate_char_addition(arena_t *arena,
+                                                        const lattice_element_t *left,
+                                                        const lattice_element_t *right) {
+    const char_constant_element_t *left_char = (const char_constant_element_t *)left;
+    if (right->type == LATTICE_STRING_CONSTANT) {
+        return append_char_and_text(arena,
+                                    char_to_string_view(arena, left_char->value),
+                                    ((const string_constant_element_t *)right)->value);
+    }
+    if (right->type == LATTICE_CHAR_CONSTANT) {
+        const char_constant_element_t *right_char = (const char_constant_element_t *)right;
+        return append_char_and_text(arena,
+                                    char_to_string_view(arena, left_char->value),
+                                    char_to_string_view(arena, right_char->value));
+    }
+    if (right->type == LATTICE_INTEGER_CONSTANT) {
+        string_value_t right_text =
+            format_string(L"%ld", ((const integer_constant_element_t *)right)->value);
+        const lattice_element_t *result =
+            append_char_and_text(arena,
+                                 char_to_string_view(arena, left_char->value),
+                                 (string_view_t){right_text.data, right_text.length});
+        FREE_STRING(right_text);
+        return result;
+    }
+    return make_string_element();
+}
+
 const lattice_element_t *
 lattice_add(arena_t *arena, const lattice_element_t *left, const lattice_element_t *right) {
     if (left->type == LATTICE_BOTTOM || right->type == LATTICE_BOTTOM)
@@ -258,6 +313,12 @@ lattice_add(arena_t *arena, const lattice_element_t *left, const lattice_element
         case LATTICE_STRING:
         case LATTICE_STRING_CONSTANT:
             return calculate_string_addition(arena, left, right);
+
+        case LATTICE_CHAR:
+            return make_string_element();
+
+        case LATTICE_CHAR_CONSTANT:
+            return calculate_char_addition(arena, left, right);
 
         case LATTICE_ARRAY:
         case LATTICE_TYPED_ARRAY:

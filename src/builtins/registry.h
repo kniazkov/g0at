@@ -23,6 +23,9 @@ object_t *get_function_cbrt(void);
 extern const builtin_function_t builtin_ceil;
 object_t *get_function_ceil(void);
 
+extern const builtin_function_t builtin_chr;
+object_t *get_function_chr(void);
+
 extern const builtin_function_t builtin_cos;
 object_t *get_function_cos(void);
 
@@ -70,6 +73,9 @@ object_t *get_function_max(void);
 
 extern const builtin_function_t builtin_min;
 object_t *get_function_min(void);
+
+extern const builtin_function_t builtin_ord;
+object_t *get_function_ord(void);
 
 extern const builtin_function_t builtin_pow;
 object_t *get_function_pow(void);

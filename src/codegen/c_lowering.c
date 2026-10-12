@@ -22,6 +22,7 @@ const wchar_t *c_type_name(c_value_type_t type) {
     return type == C_VALUE_INT64    ? L"int64_t"
            : type == C_VALUE_DOUBLE ? L"double"
            : type == C_VALUE_BOOL   ? L"bool"
+           : type == C_VALUE_CHAR   ? L"uint32_t"
                                     : NULL;
 }
 
@@ -47,6 +48,12 @@ c_integer_literal(const node_t *node, c_generation_context_t *context, int64_t v
                           : value < 0        ? format_string(L"(-INT64_C(%ld))", -value)
                                              : format_string(L"INT64_C(%ld)", value);
     return literal(node, context, C_VALUE_INT64, text, value != 0);
+}
+
+c_generated_expression_t
+c_char_literal(const node_t *node, c_generation_context_t *context, uint32_t value) {
+    string_value_t text = format_string(L"UINT32_C(%u)", (unsigned)value);
+    return literal(node, context, C_VALUE_CHAR, text, value != 0);
 }
 
 c_generated_expression_t
@@ -218,6 +225,7 @@ void c_emit_headers(source_builder_t *builder, unsigned helpers) {
         L"#include <stdbool.h>",
         L"#include <math.h>",
         L"#include <float.h>",
+        L"#include <wchar.h>",
         L"_Static_assert(sizeof(double)==8 && FLT_RADIX==2 && DBL_MANT_DIG==53 && "
         L"DBL_MAX_EXP==1024, \"binary64 required\");",
         L"#ifdef __FAST_MATH__",

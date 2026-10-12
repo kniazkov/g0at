@@ -137,7 +137,8 @@ int compare_numeric_keys(const object_t *left, const object_t *right) {
 static operation_result_t compare_values(object_t *left, object_t *right, comparison_kind_t kind) {
     bool equality = kind == COMPARE_EQUAL || kind == COMPARE_NOT_EQUAL;
     object_type_t lt = left->vtbl->type, rt = right->vtbl->type;
-    bool ordered = lt == TYPE_NUMBER || lt == TYPE_STRING || lt == TYPE_BOOLEAN;
+    bool ordered =
+        lt == TYPE_NUMBER || lt == TYPE_STRING || lt == TYPE_BOOLEAN || lt == TYPE_CHARACTER;
     comparison_order_t order;
     if (!ordered || lt != rt) {
         if (!equality)
@@ -148,6 +149,10 @@ static operation_result_t compare_values(object_t *left, object_t *right, compar
         order = numeric_order(left, right);
     } else if (lt == TYPE_BOOLEAN) {
         bool a = get_object_boolean_value(left), b = get_object_boolean_value(right);
+        order = a < b ? ORDER_LESS : a > b ? ORDER_GREATER : ORDER_EQUAL;
+    } else if (lt == TYPE_CHARACTER) {
+        uint32_t a = (uint32_t)get_object_integer_value(left).value,
+                 b = (uint32_t)get_object_integer_value(right).value;
         order = a < b ? ORDER_LESS : a > b ? ORDER_GREATER : ORDER_EQUAL;
     } else {
         string_value_t a = convert_object_to_string(left), b = convert_object_to_string(right);

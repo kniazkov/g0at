@@ -34,6 +34,9 @@ bool c_constants_equal(const lattice_element_t *left, const lattice_element_t *r
     if (left->type == LATTICE_INTEGER_CONSTANT)
         return ((const integer_constant_element_t *)left)->value
                == ((const integer_constant_element_t *)right)->value;
+    if (left->type == LATTICE_CHAR_CONSTANT)
+        return ((const char_constant_element_t *)left)->value
+               == ((const char_constant_element_t *)right)->value;
     if (left->type == LATTICE_REAL_CONSTANT) {
         double a = ((const real_constant_element_t *)left)->value;
         double b = ((const real_constant_element_t *)right)->value;
@@ -47,6 +50,7 @@ static bool discardable(const node_t *node, const c_expression_context_t *contex
     switch (node->vtbl->type) {
         case NODE_INTEGER:
         case NODE_REAL:
+        case NODE_CHARACTER:
         case NODE_TRUE:
         case NODE_FALSE:
         case NODE_VARIABLE:
@@ -130,5 +134,6 @@ const wchar_t *c_expression_type_name(c_value_type_t type) {
     return type == C_VALUE_INT64    ? L"int64"
            : type == C_VALUE_DOUBLE ? L"double"
            : type == C_VALUE_BOOL   ? L"bool"
+           : type == C_VALUE_CHAR   ? L"char"
                                     : L"unknown";
 }

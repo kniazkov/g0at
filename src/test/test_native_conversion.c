@@ -133,7 +133,8 @@ bool test_native_int_domains() {
     for (size_t i = 0; i < count; i++) {
         const builtin_function_t *math = functions[i];
         if (math == &builtin_int || math == &builtin_input || math == &builtin_print
-            || math == &builtin_println || math == &builtin_sign)
+            || math == &builtin_println || math == &builtin_sign || math == &builtin_ord
+            || math == &builtin_chr)
             continue;
         args[0] = make_numeric_element();
         args[1] = make_top_element();

@@ -22,6 +22,7 @@ typedef enum {
     ILOAD64,    /**< Loads split64_t parts from ARG and arg1. */
     RLOAD,      /**< Loads double bits from split64_t parts in ARG and arg1. */
     SLOAD,      /**< Loads a static string onto the data stack. */
+    CLOAD,      /**< Loads a character code onto the data stack. */
     VLOAD,      /**< Loads a variable value onto the data stack or `null` if undefined. */
     VAR,        /**< Declares a new mutable variable in current context. */
     CONST,      /**< Declares a new immutable constant in current context. */

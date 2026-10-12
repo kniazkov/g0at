@@ -38,6 +38,20 @@ static bool accept_numeric_argument(c_value_type_t type, size_t index, c_value_t
     return type == C_VALUE_INT64 || type == C_VALUE_DOUBLE;
 }
 
+/** @brief Accepts only integer operands, as required by chr. */
+static bool accept_integer_argument(c_value_type_t type, size_t index, c_value_type_t result_type) {
+    (void)index;
+    (void)result_type;
+    return type == C_VALUE_INT64;
+}
+
+/** @brief Accepts only character operands, as required by ord. */
+static bool accept_char_argument(c_value_type_t type, size_t index, c_value_type_t result_type) {
+    (void)index;
+    (void)result_type;
+    return type == C_VALUE_CHAR;
+}
+
 /** @brief Accepts a numeric source operand; later operands only need a named C type. */
 static bool accept_int_argument(c_value_type_t type, size_t index, c_value_type_t result_type) {
     (void)result_type;
@@ -324,6 +338,66 @@ static c_generated_expression_t native_sign(const node_t *node, c_generation_con
                                       .prelude = prelude};
 }
 
+/** @brief Lowers proven chr calls, preserving unused argument effects. */
+static c_generated_expression_t native_chr(const node_t *node, c_generation_context_t *context) {
+    size_t count = get_node_child_count(node) - 1;
+    if (!count || c_generation_expression_type(context, node) != C_VALUE_CHAR) {
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    source_builder_t *prelude = create_source_builder();
+    string_value_t arguments[NATIVE_MAX_ARGUMENTS] = {0};
+    if (!capture_native_arguments(node,
+                                  context,
+                                  1,
+                                  accept_integer_argument,
+                                  C_VALUE_CHAR,
+                                  arguments,
+                                  prelude)) {
+        free_native_arguments(arguments, 1);
+        destroy_source_builder(prelude);
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+    add_source(prelude, 0, L"uint32_t %s = (uint32_t)%s;", value.data, arguments[0].data);
+    free_native_arguments(arguments, 1);
+    return (c_generated_expression_t){.success = true,
+                                      .type = C_VALUE_CHAR,
+                                      .value = value,
+                                      .prelude = prelude};
+}
+
+/** @brief Lowers proven ord calls, preserving unused argument effects. */
+static c_generated_expression_t native_ord(const node_t *node, c_generation_context_t *context) {
+    size_t count = get_node_child_count(node) - 1;
+    if (!count || c_generation_expression_type(context, node) != C_VALUE_INT64) {
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    source_builder_t *prelude = create_source_builder();
+    string_value_t arguments[NATIVE_MAX_ARGUMENTS] = {0};
+    if (!capture_native_arguments(node,
+                                  context,
+                                  1,
+                                  accept_char_argument,
+                                  C_VALUE_INT64,
+                                  arguments,
+                                  prelude)) {
+        free_native_arguments(arguments, 1);
+        destroy_source_builder(prelude);
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+    add_source(prelude, 0, L"int64_t %s = (int64_t)(uint32_t)%s;", value.data, arguments[0].data);
+    free_native_arguments(arguments, 1);
+    return (c_generated_expression_t){.success = true,
+                                      .type = C_VALUE_INT64,
+                                      .value = value,
+                                      .prelude = prelude};
+}
+
 /** @brief One registered built-in; a NULL generator selects the shared libm lowering. */
 typedef struct c_native_entry_t {
     const builtin_function_t *builtin;
@@ -335,14 +409,15 @@ static const c_native_entry_t generators[] = {
     {&builtin_abs, native_abs, NULL}, {&builtin_atan, native_atan, NULL},
     {&builtin_acos, NULL, NULL},      {&builtin_asin, NULL, NULL},
     {&builtin_cbrt, NULL, NULL},      {&builtin_ceil, NULL, NULL},
-    {&builtin_cos, NULL, NULL},       {&builtin_cosh, NULL, NULL},
-    {&builtin_exp, NULL, NULL},       {&builtin_exp2, NULL, NULL},
-    {&builtin_expm1, NULL, NULL},     {&builtin_floor, NULL, NULL},
-    {&builtin_fmod, NULL, NULL},      {&builtin_hypot, NULL, NULL},
-    {&builtin_int, native_int, NULL}, {&builtin_log, NULL, NULL},
-    {&builtin_log10, NULL, NULL},     {&builtin_log1p, NULL, NULL},
-    {&builtin_log2, NULL, NULL},      {&builtin_max, NULL, L"fmax"},
-    {&builtin_min, NULL, L"fmin"},    {&builtin_pow, NULL, NULL},
+    {&builtin_chr, native_chr, NULL}, {&builtin_cos, NULL, NULL},
+    {&builtin_cosh, NULL, NULL},      {&builtin_exp, NULL, NULL},
+    {&builtin_exp2, NULL, NULL},      {&builtin_expm1, NULL, NULL},
+    {&builtin_floor, NULL, NULL},     {&builtin_fmod, NULL, NULL},
+    {&builtin_hypot, NULL, NULL},     {&builtin_int, native_int, NULL},
+    {&builtin_log, NULL, NULL},       {&builtin_log10, NULL, NULL},
+    {&builtin_log1p, NULL, NULL},     {&builtin_log2, NULL, NULL},
+    {&builtin_max, NULL, L"fmax"},    {&builtin_min, NULL, L"fmin"},
+    {&builtin_ord, native_ord, NULL}, {&builtin_pow, NULL, NULL},
     {&builtin_round, NULL, NULL},     {&builtin_sign, native_sign, NULL},
     {&builtin_sin, NULL, NULL},       {&builtin_sinh, NULL, NULL},
     {&builtin_sqrt, NULL, NULL},      {&builtin_tan, NULL, NULL},
