@@ -80,8 +80,7 @@ static node_t *literal_from_value(arena_t *arena, const lattice_element_t *value
             return create_static_string_node(arena, text.data, text.length);
         }
         case LATTICE_CHAR_CONSTANT:
-            return create_character_node(arena,
-                                         ((const char_constant_element_t *)value)->value);
+            return create_character_node(arena, ((const char_constant_element_t *)value)->value);
         default:
             return NULL;
     }

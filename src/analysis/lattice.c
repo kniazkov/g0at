@@ -181,8 +181,8 @@ const lattice_element_t *make_typed_array_element(arena_t *arena, lattice_type_t
     assert(element_type >= LATTICE_TOP && element_type <= LATTICE_BOTTOM);
     assert(element_type != LATTICE_INTEGER_RANGE && element_type != LATTICE_INTEGER_CONSTANT
            && element_type != LATTICE_REAL_CONSTANT && element_type != LATTICE_STRING_CONSTANT
-           && element_type != LATTICE_CHAR_CONSTANT
-           && element_type != LATTICE_TYPED_ARRAY && element_type != LATTICE_KNOWN_FUNCTION);
+           && element_type != LATTICE_CHAR_CONSTANT && element_type != LATTICE_TYPED_ARRAY
+           && element_type != LATTICE_KNOWN_FUNCTION);
     if (element_type == LATTICE_TOP) {
         return make_array_element();
     }
@@ -662,8 +662,7 @@ static const lattice_element_t *lattice_join_char_constant(const lattice_element
             return left;
 
         case LATTICE_CHAR_CONSTANT: {
-            const char_constant_element_t *right_constant =
-                (const char_constant_element_t *)right;
+            const char_constant_element_t *right_constant = (const char_constant_element_t *)right;
 
             if (left_constant->value == right_constant->value) {
                 return left;
@@ -1476,8 +1475,7 @@ static const lattice_element_t *lattice_meet_char_constant(const lattice_element
             return left;
 
         case LATTICE_CHAR_CONSTANT: {
-            const char_constant_element_t *right_constant =
-                (const char_constant_element_t *)right;
+            const char_constant_element_t *right_constant = (const char_constant_element_t *)right;
 
             if (left_constant->value == right_constant->value) {
                 return left;
@@ -2019,8 +2017,7 @@ abstract_truth_t lattice_truth(const lattice_element_t *value) {
             return ((const string_constant_element_t *)value)->value.length ? ABSTRACT_TRUE
                                                                             : ABSTRACT_FALSE;
         case LATTICE_CHAR_CONSTANT:
-            return ((const char_constant_element_t *)value)->value ? ABSTRACT_TRUE
-                                                                   : ABSTRACT_FALSE;
+            return ((const char_constant_element_t *)value)->value ? ABSTRACT_TRUE : ABSTRACT_FALSE;
         case LATTICE_INTEGER_RANGE: {
             const integer_range_element_t *range = (const integer_range_element_t *)value;
             if (range->min > 0 || range->max < 0)
