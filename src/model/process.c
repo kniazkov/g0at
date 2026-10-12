@@ -22,6 +22,7 @@ process_t *create_process() {
     init_object_list(&process->real_numbers);
     init_object_list(&process->dynamic_strings);
     init_object_list(&process->user_defined_objects);
+    init_object_list(&process->characters);
     create_thread(process, create_context(process, get_root_context(), NULL));
     return process;
 }
@@ -45,6 +46,7 @@ void destroy_process(process_t *process) {
     destroy_all_objects_in_the_list(&process->real_numbers);
     destroy_all_objects_in_the_list(&process->dynamic_strings);
     destroy_all_objects_in_the_list(&process->user_defined_objects);
+    destroy_all_objects_in_the_list(&process->characters);
     FREE(process->string_cache);
     FREE(process);
 }

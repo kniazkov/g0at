@@ -40,6 +40,8 @@ typedef struct {
     const wchar_t const *integer_literal_out_of_range; /**< Integer literal exceeds int64_t. */
     const wchar_t const *unclosed_quotation_mark;
     const wchar_t const *invalid_escape_sequence;
+    const wchar_t const *empty_character_literal;
+    const wchar_t const *invalid_character_literal;
     const wchar_t const *unclosed_opening_bracket;
     const wchar_t const *missing_opening_bracket;
     const wchar_t const *brackets_do_not_match;

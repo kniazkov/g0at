@@ -38,11 +38,11 @@ static bool usable(const function_summary_t *summary) {
         return false;
     c_generation_context_t context = {.summary = summary};
     c_value_type_t type = c_generation_return_type(&context);
-    if (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE)
+    if (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE && type != C_VALUE_CHAR)
         return false;
     for (size_t i = 0; i < summary->parameter_count; i++) {
         type = c_generation_parameter_type(&context, i);
-        if (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE)
+        if (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE && type != C_VALUE_CHAR)
             return false;
     }
     return true;

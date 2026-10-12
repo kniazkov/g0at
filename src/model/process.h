@@ -36,6 +36,9 @@ struct process_t {
     /** @brief Pool of user-defined objects managed by the process. */
     object_list_t user_defined_objects;
 
+    /** @brief Pool of character objects managed by the process. */
+    object_list_t characters;
+
     /** @brief Cache of strings used during the execution of the process. */
     object_t **string_cache;
 

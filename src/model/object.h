@@ -47,7 +47,10 @@ typedef enum {
     TYPE_USER_DEFINED_OBJECT = 3,
 
     /** @brief Other object type. */
-    TYPE_OTHER = 4
+    TYPE_OTHER = 4,
+
+    /** @brief Character type (a single Unicode code point). */
+    TYPE_CHARACTER = 5
 } object_type_t;
 
 /**
@@ -555,6 +558,12 @@ bool is_integer_object(const object_t *obj);
 /** @brief Checks the real representation without numeric conversion. */
 bool is_real_object(const object_t *obj);
 
+/** @brief Creates or retrieves a character object for the given Unicode code point. */
+object_t *create_character_object(process_t *process, uint32_t value);
+
+/** @brief Checks the character representation without numeric conversion. */
+bool is_character_object(const object_t *obj);
+
 /** @brief Gets the singleton instance of the Pi constant object. */
 object_t *get_pi_object();
 
@@ -563,6 +572,9 @@ object_t *create_real_number_object(process_t *process, double value);
 
 /** @brief Retrieves the string prototype object. */
 object_t *get_string_proto();
+
+/** @brief Retrieves the character prototype object. */
+object_t *get_character_proto();
 
 /** @brief Caller-owned permanent storage for an immutable string singleton. */
 typedef struct {

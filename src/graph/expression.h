@@ -134,6 +134,9 @@ node_t *create_integer_node(arena_t *arena, int64_t value);
 /** @brief Creates a real number literal expression node. */
 node_t *create_real_number_node(arena_t *arena, double value);
 
+/** @brief Creates a character literal node with the given Unicode code point. */
+node_t *create_character_node(arena_t *arena, uint32_t value);
+
 /** @brief Creates a new variable expression node. */
 expression_t *create_variable_node(arena_t *arena, string_view_t name);
 

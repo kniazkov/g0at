@@ -19,6 +19,7 @@ static bool is_literal(const node_t *node) {
         case NODE_FALSE:
         case NODE_INTEGER:
         case NODE_REAL:
+        case NODE_CHARACTER:
         case NODE_STATIC_STRING:
             return true;
         default:
@@ -55,7 +56,8 @@ bool can_discard_expression(const node_t *node) {
     return value
            && (value->type == LATTICE_NULL || value->type == LATTICE_TRUE
                || value->type == LATTICE_FALSE || value->type == LATTICE_INTEGER_CONSTANT
-               || value->type == LATTICE_REAL_CONSTANT || value->type == LATTICE_STRING_CONSTANT);
+               || value->type == LATTICE_REAL_CONSTANT || value->type == LATTICE_CHAR_CONSTANT
+               || value->type == LATTICE_STRING_CONSTANT);
 }
 
 /** @brief Builds scalar literals without formatting and reparsing their values. */
@@ -77,6 +79,9 @@ static node_t *literal_from_value(arena_t *arena, const lattice_element_t *value
             string_view_t text = ((const string_constant_element_t *)value)->value;
             return create_static_string_node(arena, text.data, text.length);
         }
+        case LATTICE_CHAR_CONSTANT:
+            return create_character_node(arena,
+                                         ((const char_constant_element_t *)value)->value);
         default:
             return NULL;
     }

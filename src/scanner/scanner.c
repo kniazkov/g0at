@@ -232,6 +232,89 @@ cleanup:
 }
 
 /**
+ * @brief Parses a character literal in the source code.
+ *
+ * Parses a single-quoted literal that must contain exactly one character (possibly an escape
+ * sequence). `scan`: The scanner instance used for lexical analysis.
+ */
+static void parse_character(scanner_t *scan, token_t *token) {
+    assert(get_char(scan) == L'\'');
+    token->type = TOKEN_EXPRESSION;
+    wchar_t ch = next_char(scan);
+    uint32_t value;
+    if (ch == L'\'') {
+        next_char(scan);
+        token->type = TOKEN_ERROR;
+        token->text.data = get_messages()->empty_character_literal;
+        return;
+    }
+    if (ch == L'\0') {
+        token->type = TOKEN_ERROR;
+        token->text.data = get_messages()->unclosed_quotation_mark;
+        return;
+    }
+    if (ch == L'\\') {
+        ch = next_char(scan);
+        switch (ch) {
+            case L'\0':
+                token->type = TOKEN_ERROR;
+                token->text.data = get_messages()->unclosed_quotation_mark;
+                return;
+            case L'r':
+                value = L'\r';
+                break;
+            case L'n':
+                value = L'\n';
+                break;
+            case L'b':
+                value = L'\b';
+                break;
+            case L't':
+                value = L'\t';
+                break;
+            case L'\\':
+                value = L'\\';
+                break;
+            case L'\'':
+                value = L'\'';
+                break;
+            case L'"':
+                value = L'"';
+                break;
+            default:
+                token->type = TOKEN_ERROR;
+                token->text = format_string_to_arena(scan->memory->tokens,
+                                                     get_messages()->invalid_escape_sequence,
+                                                     ch);
+                while (ch != L'\'' && ch != L'\0')
+                    ch = next_char(scan);
+                if (ch == L'\'')
+                    next_char(scan);
+                return;
+        }
+    } else {
+        value = ch;
+    }
+    ch = next_char(scan);
+    if (ch == L'\0') {
+        token->type = TOKEN_ERROR;
+        token->text.data = get_messages()->unclosed_quotation_mark;
+        return;
+    }
+    if (ch != L'\'') {
+        token->type = TOKEN_ERROR;
+        token->text.data = get_messages()->invalid_character_literal;
+        while (ch != L'\'' && ch != L'\0')
+            ch = next_char(scan);
+        if (ch == L'\'')
+            next_char(scan);
+        return;
+    }
+    next_char(scan);
+    token->node = create_character_node(scan->memory->graph, value);
+}
+
+/**
  * @brief Parses a numeric literal (integer or real) in the source code.
  *
  * Parses a numeric literal starting at the current character, which must be a digit.
@@ -366,6 +449,8 @@ token_t *get_token(scanner_t *scan) {
         next_char(scan);
     } else if (ch == L'"') {
         parse_string(scan, token);
+    } else if (ch == L'\'') {
+        parse_character(scan, token);
     } else if (iswdigit(ch)) {
         parse_number(scan, token);
     } else if (ch == L',') {

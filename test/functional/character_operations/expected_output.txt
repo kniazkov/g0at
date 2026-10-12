@@ -1,0 +1,11 @@
+true
+false
+true
+true
+false
+true
+false
+ab
+ba
+ab
+false

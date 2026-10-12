@@ -116,11 +116,12 @@ static c_generation_result_t generate_function(const function_summary_t *summary
                                       .callees = callees,
                                       .module_definition = definition};
     if (c_generation_return_type(&context) != C_VALUE_INT64
-        && c_generation_return_type(&context) != C_VALUE_DOUBLE)
+        && c_generation_return_type(&context) != C_VALUE_DOUBLE
+        && c_generation_return_type(&context) != C_VALUE_CHAR)
         return (c_generation_result_t){.status = C_GENERATION_NOT_PROVEN, .failed_node = function};
     for (size_t i = 0; i < summary->parameter_count; i++) {
         c_value_type_t type = c_generation_parameter_type(&context, i);
-        if (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE)
+        if (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE && type != C_VALUE_CHAR)
             return (c_generation_result_t){.status = C_GENERATION_NOT_PROVEN,
                                            .failed_node = function};
     }
@@ -208,7 +209,8 @@ const node_t *c_generation_replacement(const c_generation_context_t *context, co
     const node_t *result = replacement_result(node);
     if (node->vtbl->type == NODE_EXPRESSION_REPLACEMENT) {
         node_type_t type = result->vtbl->type;
-        if (type == NODE_INTEGER || type == NODE_REAL || type == NODE_TRUE || type == NODE_FALSE) {
+        if (type == NODE_INTEGER || type == NODE_REAL || type == NODE_CHARACTER || type == NODE_TRUE
+            || type == NODE_FALSE) {
             /* Literal calculation returns its immutable payload and needs no state. */
             const lattice_element_t *value = calculate_node((node_t *)result, NULL, NULL);
             if (c_constants_equal(constant(context, original), value))

@@ -22,6 +22,7 @@ const wchar_t *c_type_name(c_value_type_t type) {
     return type == C_VALUE_INT64    ? L"int64_t"
            : type == C_VALUE_DOUBLE ? L"double"
            : type == C_VALUE_BOOL   ? L"bool"
+           : type == C_VALUE_CHAR   ? L"wchar_t"
                                     : NULL;
 }
 
@@ -47,6 +48,50 @@ c_integer_literal(const node_t *node, c_generation_context_t *context, int64_t v
                           : value < 0        ? format_string(L"(-INT64_C(%ld))", -value)
                                              : format_string(L"INT64_C(%ld)", value);
     return literal(node, context, C_VALUE_INT64, text, value != 0);
+}
+
+/** @brief Appends the lowercase hexadecimal representation of a code point. */
+static void append_hex_literal(string_builder_t *text, uint32_t value) {
+    char buffer[16];
+    snprintf(buffer, sizeof(buffer), "%x", (unsigned)value);
+    append_ascii_string(text, buffer);
+}
+
+c_generated_expression_t
+c_char_literal(const node_t *node, c_generation_context_t *context, uint32_t value) {
+    string_builder_t text;
+    init_string_builder(&text, 8);
+    append_char(&text, L'L');
+    append_char(&text, L'\'');
+    switch (value) {
+        case L'\n':
+            append_static_string(&text, L"\\n");
+            break;
+        case L'\r':
+            append_static_string(&text, L"\\r");
+            break;
+        case L'\t':
+            append_static_string(&text, L"\\t");
+            break;
+        case L'\b':
+            append_static_string(&text, L"\\b");
+            break;
+        case L'\\':
+            append_static_string(&text, L"\\\\");
+            break;
+        case L'\'':
+            append_static_string(&text, L"\\'");
+            break;
+        default:
+            if (value >= 0x20 && value <= 0x7E) {
+                append_char(&text, (wchar_t)value);
+            } else {
+                append_static_string(&text, L"\\x");
+                append_hex_literal(&text, value);
+            }
+            break;
+    }
+    return literal(node, context, C_VALUE_CHAR, append_char(&text, L'\''), value != 0);
 }
 
 c_generated_expression_t
@@ -218,6 +263,7 @@ void c_emit_headers(source_builder_t *builder, unsigned helpers) {
         L"#include <stdbool.h>",
         L"#include <math.h>",
         L"#include <float.h>",
+        L"#include <wchar.h>",
         L"_Static_assert(sizeof(double)==8 && FLT_RADIX==2 && DBL_MANT_DIG==53 && "
         L"DBL_MAX_EXP==1024, \"binary64 required\");",
         L"#ifdef __FAST_MATH__",

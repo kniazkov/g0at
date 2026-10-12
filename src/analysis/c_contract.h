@@ -12,7 +12,8 @@ typedef enum {
     C_VALUE_UNSUPPORTED,
     C_VALUE_INT64,
     C_VALUE_DOUBLE,
-    C_VALUE_BOOL
+    C_VALUE_BOOL,
+    C_VALUE_CHAR
 } c_value_type_t;
 
 /** @brief Failed or pending checks; BODY remains until an entire body is proven. */
