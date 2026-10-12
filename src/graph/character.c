@@ -26,6 +26,9 @@ typedef struct {
 static string_value_t append_character_notation(string_builder_t *builder, uint32_t value) {
     append_char(builder, L'\'');
     switch (value) {
+        case 0:
+            append_substring(builder, L"\\0", 2);
+            break;
         case L'\r':
             append_substring(builder, L"\\r", 2);
             break;
@@ -48,7 +51,13 @@ static string_value_t append_character_notation(string_builder_t *builder, uint3
             append_substring(builder, L"\\\"", 2);
             break;
         default:
-            append_char(builder, (wchar_t)value);
+            if (value >= 0x10000 || (value >= 0xD800 && value <= 0xDFFF)) {
+                append_substring(builder, L"\\U", 2);
+                for (int shift = 28; shift >= 0; shift -= 4)
+                    append_char(builder, L"0123456789abcdef"[(value >> shift) & 15]);
+            } else {
+                append_char(builder, (wchar_t)value);
+            }
             break;
     }
     return append_char(builder, L'\'');

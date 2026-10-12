@@ -360,7 +360,7 @@ static c_generated_expression_t native_chr(const node_t *node, c_generation_cont
         return (c_generated_expression_t){0};
     }
     string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
-    add_source(prelude, 0, L"wchar_t %s = (wchar_t)(uint32_t)%s;", value.data, arguments[0].data);
+    add_source(prelude, 0, L"uint32_t %s = (uint32_t)%s;", value.data, arguments[0].data);
     free_native_arguments(arguments, 1);
     return (c_generated_expression_t){.success = true,
                                       .type = C_VALUE_CHAR,

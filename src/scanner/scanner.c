@@ -260,6 +260,29 @@ static void parse_character(scanner_t *scan, token_t *token) {
                 token->type = TOKEN_ERROR;
                 token->text.data = get_messages()->unclosed_quotation_mark;
                 return;
+            case L'0':
+                value = 0;
+                break;
+            case L'U':
+                value = 0;
+                for (unsigned i = 0; i < 8; i++) {
+                    ch = next_char(scan);
+                    unsigned digit = ch >= L'0' && ch <= L'9'   ? (unsigned)(ch - L'0')
+                                     : ch >= L'a' && ch <= L'f' ? (unsigned)(ch - L'a' + 10)
+                                     : ch >= L'A' && ch <= L'F' ? (unsigned)(ch - L'A' + 10)
+                                                                : 16;
+                    if (digit == 16) {
+                        token->type = TOKEN_ERROR;
+                        token->text.data = get_messages()->invalid_character_literal;
+                        while (ch != L'\'' && ch != 0)
+                            ch = next_char(scan);
+                        if (ch == L'\'')
+                            next_char(scan);
+                        return;
+                    }
+                    value = (value << 4) | digit;
+                }
+                break;
             case L'r':
                 value = L'\r';
                 break;
@@ -293,7 +316,16 @@ static void parse_character(scanner_t *scan, token_t *token) {
                 return;
         }
     } else {
-        value = ch;
+        value = (uint32_t)ch;
+        if (sizeof(wchar_t) == 2 && value >= 0xD800 && value <= 0xDBFF) {
+            uint32_t low = (uint32_t)next_char(scan);
+            if (low < 0xDC00 || low > 0xDFFF) {
+                token->type = TOKEN_ERROR;
+                token->text.data = get_messages()->invalid_character_literal;
+                return;
+            }
+            value = 0x10000 + ((value - 0xD800) << 10) + (low - 0xDC00);
+        }
     }
     ch = next_char(scan);
     if (ch == L'\0') {

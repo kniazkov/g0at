@@ -52,6 +52,28 @@ bool test_character_scanner() {
     string_view_t formatted =
         format_string_to_arena(arena, get_messages()->invalid_escape_sequence, L'q');
     ASSERT(!wcscmp(tok->text.data, formatted.data));
+    const wchar_t *valid[] = {L"'\\0'", L"'\\U0001F600'", L"'\\Uffffffff'"};
+    const uint32_t codes[] = {0, 0x1F600, UINT32_MAX};
+    for (size_t i = 0; i < 3; i++) {
+        scan = create_scanner("program.goat",
+                              (string_value_t){valid[i], wcslen(valid[i]), false},
+                              &memory,
+                              &groups);
+        tok = get_token(scan);
+        ASSERT(tok && tok->type == TOKEN_EXPRESSION && tok->node);
+        const lattice_element_t *value = calculate_node(tok->node, NULL, NULL);
+        ASSERT(value->type == LATTICE_CHAR_CONSTANT);
+        ASSERT(((const char_constant_element_t *)value)->value == codes[i]);
+    }
+    const wchar_t *invalid[] = {L"'\\U123'", L"'\\U0000000g'", L"'\\U000000001'", L"'\\U"};
+    for (size_t i = 0; i < 4; i++) {
+        scan = create_scanner("program.goat",
+                              (string_value_t){invalid[i], wcslen(invalid[i]), false},
+                              &memory,
+                              &groups);
+        tok = get_token(scan);
+        ASSERT(tok && tok->type == TOKEN_ERROR);
+    }
     destroy_arena(arena);
     return true;
 }

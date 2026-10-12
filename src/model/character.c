@@ -169,7 +169,7 @@ static object_t *clone(process_t *process, object_t *obj) {
 
 /** @brief Converts a Unicode code point to its string representation. */
 static string_value_t character_to_string(uint32_t value) {
-    if (value < 0x10000) {
+    if (sizeof(wchar_t) > 2 || value < 0x10000) {
         wchar_t *buffer = ALLOC(2 * sizeof(wchar_t));
         buffer[0] = (wchar_t)value;
         buffer[1] = 0;
@@ -211,7 +211,7 @@ static string_value_t character_to_string_notation(uint32_t value) {
             append_substring(&builder, L"\\\"", 2);
             break;
         default:
-            if (value < 0x10000) {
+            if (sizeof(wchar_t) > 2 || value < 0x10000) {
                 append_char(&builder, (wchar_t)value);
             } else {
                 value -= 0x10000;

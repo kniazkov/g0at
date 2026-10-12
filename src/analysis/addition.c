@@ -223,7 +223,7 @@ static const lattice_element_t *calculate_string_addition(arena_t *arena,
 
 /** @brief Converts a character code to an arena-allocated string view. */
 static string_view_t char_to_string_view(arena_t *arena, uint32_t value) {
-    if (value < 0x10000) {
+    if (sizeof(wchar_t) > 2 || value < 0x10000) {
         wchar_t *data = alloc_from_arena(arena, 2 * sizeof(wchar_t));
         data[0] = (wchar_t)value;
         data[1] = 0;
