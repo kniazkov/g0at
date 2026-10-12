@@ -22,8 +22,8 @@ The format is implemented in [binary.c](https://github.com/kniazkov/g0at/blob/64
 
 | Offset | Size | Outer-header field |
 |---:|---:|---|
-| 0 | 8 | Signature `GOATBIN3` |
-| 8 | 8 | Format version, currently 3 |
+| 0 | 8 | Signature `GOATBIN4` |
+| 8 | 8 | Format version, currently 4 |
 | 16 | 8 | Platform tag |
 | 24 | 8 | Bytecode-image size |
 | 32 | 8 | Binding count |
@@ -47,7 +47,7 @@ The platform tag combines `wchar_t` size and a byte-order indicator. Inner instr
 The loader additionally requires a suitable `double` representation and validates the inner-image signature and structure. A native library has the OS, architecture, and ABI requirements described in earlier chapters.
 
 > [!CAUTION]
-> `.gbin` is not a universal cross-platform format. The platform tag does not contain a complete CPU, OS, or build identifier. Matching tags do not promise compatibility between arbitrary implementations, and version 3 is not a commitment that every future Goat version will read the file.
+> `.gbin` is not a universal cross-platform format. The platform tag does not contain a complete CPU, OS, or build identifier. Matching tags do not promise compatibility between arbitrary implementations, and version 4 is not a commitment that every future Goat version will read the file.
 
 <a id="section-26-4"></a>
 
@@ -132,4 +132,4 @@ To save bytecode alone, use `--compile` without enabling native mode. An old lib
 
 The CLI sequence is in [binary_program.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/cli/binary_program.c); the saved-program interface is in [binary.h](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/vm/binary.h). [check_binary_program.sh](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/scripts/check_binary_program.sh) checks moving pairs to another directory, execution without source or compiler, missing and mismatched libraries, damaged files, and failure modes. This completes the path from a proven specialization to a reusable executable artifact. The next part addresses observing, testing, and measuring this implementation.
 
-Format version 3 is incompatible with version 1: old `.gbin` files must be recompiled. SHA-256 binds the pair when the bytecode is trusted; it is not a digital signature and does not prevent replacement of both files and the hash. The container checksum remains FNV-1a for corruption detection.
+Format version 4 introduces the character-load instruction and changes subsequent instruction numbers. It rejects earlier `.gbin` files, which must be recompiled. Version 3 introduced saturating arithmetic; still older files could use wrapping arithmetic. SHA-256 binds the pair when the bytecode is trusted; it is not a digital signature and does not prevent replacement of both files and the hash. The container checksum remains FNV-1a for corruption detection.
