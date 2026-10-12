@@ -1,0 +1,2 @@
+for (var c = 'a'; c <= 'z'; c = chr(ord(c) + 1))
+    println(c)

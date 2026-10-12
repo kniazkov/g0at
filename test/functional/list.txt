@@ -368,3 +368,4 @@ character_empty_literal
 character_multiple_chars
 character_bad_escape
 character_unclosed
+from_a_to_z 
