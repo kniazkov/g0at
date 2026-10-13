@@ -16,7 +16,9 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/io.h"
+#include "model/context.h"
 #include "model/object.h"
+#include "model/process.h"
 #include "model/thread.h"
 #include "native_execution.h"
 #include "parser/parser.h"
@@ -27,10 +29,212 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/** @brief Prints linked compilation diagnostics to stderr in chronological order. */
+static void print_compilation_errors(compilation_error_t *error, unsigned int line_offset) {
+    error = reverse_compilation_errors(error);
+    while (error != NULL) {
+        const wchar_t const *error_msg_format = NULL;
+        switch (error->severity) {
+            case WARNING:
+                error_msg_format = get_messages()->compilation_warning;
+                break;
+            case ERROR:
+                error_msg_format = get_messages()->compilation_error;
+                break;
+            case CRITICAL:
+                error_msg_format = get_messages()->critical_compilation_error;
+                break;
+        }
+        fprintf_utf8(stderr,
+                     error_msg_format,
+                     error->position->begin->file_name,
+                     error->position->begin->row + line_offset,
+                     error->position->begin->column,
+                     error->message.data);
+        fprintf(stderr, "\n");
+        error = error->next;
+    }
+}
+
+/**
+ * @brief Executes Goat commands entered interactively from the console, line by line.
+ *
+ * A single process lives for the whole session, so top-level variables and functions persist
+ * between lines. Compilation or execution errors in one line are reported without resetting the
+ * session context.
+ */
+static int run_interactive(options_t *opt) {
+    process_t *process = create_process();
+    thread_t *thread = process->main_thread;
+
+    /* Bytecode accumulates into a session-wide image because Goat function objects reference the
+       bytecode of their bodies by absolute instruction index. */
+    code_builder_t *session_code = create_code_builder();
+    data_builder_t *session_data = create_data_builder();
+    unsigned int line_counter = 0;
+
+    for (;;) {
+        print_utf8(get_messages()->interactive_prompt);
+        fflush(stdout);
+        string_value_t line = read_input_line(stdin);
+        if (line.data == NULL) {
+            break; // console read error
+        }
+        if (line.length == 0) {
+            FREE_STRING(line);
+            if (feof(stdin)) {
+                break; // end of input
+            }
+            continue;
+        }
+        unsigned int line_offset = line_counter;
+        line_counter++;
+
+        parser_memory_t memory = {
+            create_arena(64),  // positions
+            create_arena(64),  // tokens
+            create_arena(128), // nodes
+            create_arena(8)    // errors
+        };
+        token_groups_t *groups = (token_groups_t *)ALLOC(sizeof(token_groups_t));
+        compilation_error_t *error = NULL;
+
+        do {
+            scanner_t *scan = create_scanner("<interactive>", line, &memory, groups);
+            token_list_t tokens;
+            error = process_brackets(&memory, scan, &tokens, groups);
+            if (error != NULL) {
+                break;
+            }
+
+            parsing_result_t parsing_result = {0};
+            error = apply_reduction_rules(groups, &memory, &parsing_result);
+            if (error != NULL) {
+                break;
+            }
+
+            node_t *root_node;
+            error = process_root_token_list(&memory, &tokens, &root_node);
+            if (error != NULL) {
+                break;
+            }
+
+            FREE(groups);
+            groups = NULL;
+            destroy_arena(memory.tokens);
+            memory.tokens = NULL;
+
+            /* The optimizer treats each line as a complete program: it removes bindings unread
+               within the line and folds reads of unknown names to null. Interactive lines share a
+               session, so per-line optimization is disabled. */
+            options_t line_options = *opt;
+            line_options.optimization_level = OPTIMIZATION_NONE;
+            error = analyze(root_node, &memory, &line_options, NULL);
+            compilation_error_severity_t severity = get_most_severe_compilation_error(error);
+            if (severity > WARNING) {
+                break;
+            }
+            if (error != NULL) {
+                print_compilation_errors(error, line_offset);
+            }
+            destroy_arena(memory.errors);
+            memory.errors = NULL;
+            error = NULL;
+
+            instr_index_t entry = get_next_instruction_index(session_code);
+            generate_bytecode_from_node(root_node, session_code, session_data);
+            bool processed_all, progressed;
+            do {
+                processed_all = true;
+                progressed = false;
+                list_item_t *func_item = parsing_result.functions->head;
+                while (func_item) {
+                    list_item_t *next_item = func_item->next;
+                    node_t *func_obj = (node_t *)func_item->value.ptr;
+                    if (generate_deferred_bytecode_from_node(func_obj, session_code,
+                                                             session_data)) {
+                        remove_item_from_linked_list(parsing_result.functions, func_item);
+                        progressed = true;
+                    } else {
+                        processed_all = false;
+                    }
+                    func_item = next_item;
+                }
+            } while (!processed_all && progressed);
+            bytecode_t *bytecode = link_code_and_data(session_code, session_data);
+
+            if (opt->print_bytecode) {
+                string_value_t text = bytecode_to_text(bytecode);
+                print_utf8(text.data);
+                FREE_STRING(text);
+            }
+
+            /* Restore a clean top-level frame while keeping the session context alive. */
+            while (thread->context != get_root_context()
+                   && thread->context->previous != get_root_context()) {
+                thread->context = destroy_context(thread->context);
+            }
+            if (thread->context == get_root_context()) {
+                thread->context = create_context(process, thread->context, NULL);
+            }
+            while (thread->data_stack->size > 0) {
+                object_t *value = pop_object_from_stack(thread->data_stack);
+                DECREF(value);
+            }
+            thread->instr_id = entry;
+            thread->args_count = 0;
+            DECREFIF(thread->exception.value);
+            thread->exception.value = NULL;
+
+            run(process, bytecode);
+            if (thread->exception.value) {
+                string_value_t text = convert_object_to_string(thread->exception.value);
+                fprintf_utf8(stderr, get_messages()->uncaught_exception, text.data);
+                fprintf(stderr, "\n");
+                FREE_STRING(text);
+            }
+
+            free_bytecode(bytecode);
+        } while (false);
+
+        if (error != NULL) {
+            print_compilation_errors(error, line_offset);
+        }
+        if (memory.positions != NULL) {
+            destroy_arena(memory.positions);
+        }
+        if (memory.tokens != NULL) {
+            destroy_arena(memory.tokens);
+        }
+        FREE(groups);
+        if (memory.graph != NULL) {
+            destroy_arena(memory.graph);
+        }
+        if (memory.errors != NULL) {
+            destroy_arena(memory.errors);
+        }
+        FREE_STRING(line);
+    }
+
+    destroy_code_builder(session_code);
+    destroy_data_builder(session_data);
+    destroy_process(process);
+    return 0;
+}
+
 int go(options_t *opt) {
     long previously_allocated = get_allocated_memory_size();
     if (opt->language) {
         set_language(opt->language);
+    }
+
+    if (opt->interactive) {
+        int status = run_interactive(opt);
+        if (get_allocated_memory_size() != previously_allocated) {
+            fprintf(stderr, "Memory leak after interactive execution.\n");
+            return -1;
+        }
+        return status;
     }
 
     if (opt->run_binary) {

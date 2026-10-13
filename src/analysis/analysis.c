@@ -243,22 +243,30 @@ static void bind_variables_from_node_and_children(node_t *node,
                 if (assign_parent && assign_parent->vtbl->type == NODE_STATEMENT_EXPRESSION
                     && assign_parent->parent
                     && is_statement_list(assign_parent->parent->vtbl->type)) {
-                    /* A standalone assignment to an undeclared name declares a constant. */
-                    node_t *statement = find_parent_statement(var);
-                    assert(is_statement_list(statement->parent->vtbl->type));
-                    expression_t *initial = (expression_t *)get_node_child(parent, 1);
-                    constant_declaration_pair_t pair =
-                        create_synthetic_constant_declaration_node(memory->graph,
-                                                                   var->name,
-                                                                   initial);
-                    insertion_t *insertion = ALLOC(sizeof(insertion_t));
-                    insertion->target = statement->parent;
-                    insertion->item = pair.declaration;
-                    insertion->before = statement;
-                    insertion->replace = true;
-                    append_to_vector(insertions, insertion);
-                    var->declarator = pair.declarator;
-                    add_symbol_to_scope(statement->parent->scope, var->name.data, pair.declarator);
+                    if (options->interactive) {
+                        /* In interactive mode an assignment may target a variable declared on a
+                           previous line, so no synthetic constant is created here. */
+                        var->declarator = NULL;
+                    } else {
+                        /* A standalone assignment to an undeclared name declares a constant. */
+                        node_t *statement = find_parent_statement(var);
+                        assert(is_statement_list(statement->parent->vtbl->type));
+                        expression_t *initial = (expression_t *)get_node_child(parent, 1);
+                        constant_declaration_pair_t pair =
+                            create_synthetic_constant_declaration_node(memory->graph,
+                                                                       var->name,
+                                                                       initial);
+                        insertion_t *insertion = ALLOC(sizeof(insertion_t));
+                        insertion->target = statement->parent;
+                        insertion->item = pair.declaration;
+                        insertion->before = statement;
+                        insertion->replace = true;
+                        append_to_vector(insertions, insertion);
+                        var->declarator = pair.declarator;
+                        add_symbol_to_scope(statement->parent->scope,
+                                            var->name.data,
+                                            pair.declarator);
+                    }
                 } else {
                     /* The assignment is not a standalone statement: the case is ambiguous. */
                     compilation_error_t *error = create_error_from_node(
@@ -283,7 +291,7 @@ static void bind_variables_from_node_and_children(node_t *node,
                 *errors = error;
             } else {
                 /* A read of an undeclared name yields null and declares nothing. */
-                if (options->enable_warnings) {
+                if (options->enable_warnings && !options->interactive) {
                     compilation_error_t *error =
                         create_error_from_node(memory->errors,
                                                node,

@@ -188,6 +188,11 @@ options_t *parse_options(int argc, char **argv) {
                 continue;
             }
 
+            if (strcmp(arg, "-i") == 0 || strcmp(arg, "--interactive") == 0) {
+                opt->interactive = true;
+                continue;
+            }
+
             fprintf_utf8(stderr, get_messages()->unknown_option, arg);
             goto error;
         }
@@ -199,8 +204,15 @@ options_t *parse_options(int argc, char **argv) {
         }
     }
 
-    if (!opt->input_file) {
+    if (!opt->interactive && !opt->input_file) {
         fprintf_utf8(stderr, get_messages()->no_input_file);
+        goto error;
+    }
+
+    if (opt->interactive
+        && (opt->compile_only || opt->run_binary || opt->print_c || opt->save_c
+            || opt->save_library)) {
+        fprintf_utf8(stderr, get_messages()->interactive_conflict);
         goto error;
     }
 
@@ -228,7 +240,7 @@ options_t *parse_options(int argc, char **argv) {
         fprintf_utf8(stderr, get_messages()->bad_native_options);
         goto error;
     }
-    if (paths_refer_to_same_file(opt->input_file, opt->native_output_file)) {
+    if (opt->input_file && paths_refer_to_same_file(opt->input_file, opt->native_output_file)) {
         fprintf_utf8(stderr, get_messages()->native_report_conflict);
         goto error;
     }

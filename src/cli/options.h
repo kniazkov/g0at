@@ -27,6 +27,9 @@ struct options_t {
     bool compile_only; /**< Save a .gbin artifact without executing it. */
     bool run_binary;   /**< Load a .gbin artifact without parsing or compiling. */
 
+    /** @brief Execute Goat commands entered interactively from the console, line by line. */
+    bool interactive;
+
     /** @brief Defaults to OPTIMIZATION_ALL. */
     optimization_level_t optimization_level;
 
