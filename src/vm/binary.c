@@ -110,6 +110,8 @@ static bool decode(bytecode_t *code) {
             case VAR:
             case CONST:
             case STORE:
+            case GETPROP:
+            case SETPROP:
                 if (!string_valid(code, in.arg1))
                     return false;
                 break;

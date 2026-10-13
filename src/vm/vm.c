@@ -304,6 +304,92 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
+/** @brief Executes @ref GETPROP. */
+static bool exec_GETPROP(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    uint32_t string_id = instr.arg1;
+    if (string_id >= runtime->code->data_descriptor_count) {
+        return false; // bad bytecode
+    }
+    object_t *key = load_string(runtime, thread->process, string_id);
+    object_t *obj = pop_object_from_stack(thread->data_stack);
+    object_t *value = get_property_from_object_or_its_prototypes(obj, key);
+    DECREF(obj);
+    push_object_onto_stack(thread->data_stack, value);
+    INCREF(value);
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Executes @ref SETPROP. */
+static bool exec_SETPROP(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    uint32_t string_id = instr.arg1;
+    if (string_id >= runtime->code->data_descriptor_count) {
+        return false; // bad bytecode
+    }
+    object_t *key = load_string(runtime, thread->process, string_id);
+    object_t *obj = pop_object_from_stack(thread->data_stack);
+    object_t *value = peek_object_from_stack(thread->data_stack, 0);
+    bool changed = false;
+    model_status_t result = set_object_property(obj, key, value);
+    if (result == MSTAT_PROPERTY_IS_CONSTANT) {
+        DECREF(obj);
+        return dispatch_exception(runtime,
+                                  thread,
+                                  (exception_t){get_exception_property_is_constant()});
+    }
+    if (result == MSTAT_IMMUTABLE_OBJECT) {
+        DECREF(obj);
+        return dispatch_exception(runtime,
+                                  thread,
+                                  (exception_t){get_exception_immutable_object()});
+    }
+    if (result == MSTAT_OK) {
+        changed = true;
+    } else if (result == MSTAT_PROPERTY_NOT_FOUND) {
+        object_array_t proto = get_object_topology(obj);
+        size_t index = 0;
+        do {
+            result = set_object_property(proto.items[index], key, value);
+            if (result == MSTAT_PROPERTY_IS_CONSTANT) {
+                DECREF(obj);
+                return dispatch_exception(runtime,
+                                          thread,
+                                          (exception_t){get_exception_property_is_constant()});
+            }
+            if (result == MSTAT_IMMUTABLE_OBJECT) {
+                break;
+            }
+            if (result == MSTAT_OK) {
+                changed = true;
+                break;
+            }
+            index++;
+        } while (index < proto.size);
+    }
+    if (!changed) {
+        result = create_object_property(obj, key, value, false);
+        if (result == MSTAT_PROPERTY_IS_CONSTANT) {
+            DECREF(obj);
+            return dispatch_exception(runtime,
+                                      thread,
+                                      (exception_t){get_exception_property_is_constant()});
+        }
+        if (result == MSTAT_IMMUTABLE_OBJECT) {
+            DECREF(obj);
+            return dispatch_exception(runtime,
+                                      thread,
+                                      (exception_t){get_exception_immutable_object()});
+        }
+        if (result != MSTAT_OK) {
+            DECREF(obj);
+            return false;
+        }
+    }
+    DECREF(obj);
+    thread->instr_id++;
+    return true;
+}
+
 /** @brief Consumes one operand and transfers its result or exception. */
 static bool execute_unary_operation(runtime_t *runtime,
                                     thread_t *thread,
@@ -650,6 +736,8 @@ static instr_executor_t executors[] = {
     exec_VAR,     /**< Declares a new mutable variable in current context. */
     exec_CONST,   /**< Declares a new immutable constant in current context. */
     exec_STORE,   /**< Stores to existing variable or creates new if not found. */
+    exec_GETPROP, /**< Pushes the named property of the top object, or `null` if missing. */
+    exec_SETPROP, /**< Stores the value below the top into the named property of the top object. */
     exec_UPLUS,   /**< Applies unary plus to the top value. */
     exec_UMINUS,  /**< Negates the top value. */
     exec_INC,     /**< Applies numeric increment. */
