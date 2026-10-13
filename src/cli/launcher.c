@@ -298,18 +298,7 @@ int go(options_t *opt) {
         }
 
         if (error != NULL) {
-            error = reverse_compilation_errors(error);
-            const wchar_t const *error_msg_format = get_messages()->compilation_warning;
-            while (error != NULL) {
-                fprintf_utf8(stderr,
-                             error_msg_format,
-                             error->position->begin->file_name,
-                             error->position->begin->row,
-                             error->position->begin->column,
-                             error->message.data);
-                fprintf(stderr, "\n");
-                error = error->next;
-            }
+            print_compilation_errors(error, 0);
         }
         destroy_arena(memory.errors);
         memory.errors = NULL;
@@ -414,29 +403,7 @@ int go(options_t *opt) {
     } while (false);
 
     if (error != NULL) {
-        error = reverse_compilation_errors(error);
-        while (error != NULL) {
-            const wchar_t const *error_msg_format = NULL;
-            switch (error->severity) {
-                case WARNING:
-                    error_msg_format = get_messages()->compilation_warning;
-                    break;
-                case ERROR:
-                    error_msg_format = get_messages()->compilation_error;
-                    break;
-                case CRITICAL:
-                    error_msg_format = get_messages()->critical_compilation_error;
-                    break;
-            }
-            fprintf_utf8(stderr,
-                         error_msg_format,
-                         error->position->begin->file_name,
-                         error->position->begin->row,
-                         error->position->begin->column,
-                         error->message.data);
-            fprintf(stderr, "\n");
-            error = error->next;
-        }
+        print_compilation_errors(error, 0);
     }
 
     if (memory.positions != NULL) {
