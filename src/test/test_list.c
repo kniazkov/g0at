@@ -38,6 +38,7 @@
 #include "test_lattice.h"
 #include "test_lib.h"
 #include "test_logic.h"
+#include "test_member_access.h"
 #include "test_model.h"
 #include "test_modulo.h"
 #include "test_multiplication.h"
@@ -240,6 +241,10 @@ static test_description_t test_list[] = {
     {"properties", test_properties},
     {"string topology", test_string_topology},
     {"store and load", test_store_and_load},
+    {"member access scanner", test_member_access_scanner},
+    {"member access parser", test_member_access_parser},
+    {"member access AST", test_member_access_ast},
+    {"member access VM", test_member_access_vm},
     {"'sign' function", test_sign_function},
     {"context cloning", test_context_cloning},
     {"function definition", test_function_definition},
