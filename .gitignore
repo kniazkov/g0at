@@ -8,3 +8,4 @@ functional_testing.exe
 doxygen
 
 *.gbin
+build-mingw64

@@ -24,6 +24,7 @@
 #include "parser/parser.h"
 #include "resources/messages.h"
 #include "scanner/scanner.h"
+#include "vm/gc.h"
 #include "vm/vm.h"
 
 #include <stdio.h>
@@ -72,6 +73,10 @@ static int run_interactive(options_t *opt) {
     code_builder_t *session_code = create_code_builder();
     data_builder_t *session_data = create_data_builder();
     unsigned int line_counter = 0;
+    /* A strong reference to the session context data object. An uncaught exception unwinds all
+       contexts to the root one; holding this reference keeps the declared variables alive so the
+       session can be recreated on top of them. */
+    object_t *session_vars = NULL;
 
     for (;;) {
         if (!stdout_at_line_start()) {
@@ -182,8 +187,20 @@ static int run_interactive(options_t *opt) {
                 thread->context = destroy_context(thread->context);
             }
             if (thread->context == get_root_context()) {
-                thread->context = create_context(process, thread->context, NULL);
+                /* The session context was unwound by an uncaught exception; recreate it above the
+                   preserved session data so declared variables and constants survive. */
+                thread->context = create_context(process, thread->context, session_vars);
             }
+            /* Hold the session data object across potential exception unwinding. An uncaught
+               exception destroys the session context inside run(); keeping the object registered
+               as a GC root and strongly referenced prevents the collector from sweeping it. */
+            if (session_vars != NULL) {
+                remove_gc_root(process, session_vars);
+            }
+            DECREFIF(session_vars);
+            session_vars = thread->context->data;
+            INCREF(session_vars);
+            add_gc_root(process, session_vars);
             while (thread->data_stack->size > 0) {
                 object_t *value = pop_object_from_stack(thread->data_stack);
                 DECREF(value);
@@ -223,6 +240,10 @@ static int run_interactive(options_t *opt) {
         FREE_STRING(line);
     }
 
+    if (session_vars != NULL) {
+        remove_gc_root(process, session_vars);
+    }
+    DECREFIF(session_vars);
     destroy_code_builder(session_code);
     destroy_data_builder(session_data);
     destroy_process(process);
