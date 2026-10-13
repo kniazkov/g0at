@@ -29,6 +29,18 @@ bool write_utf8_file(const char *filename, const wchar_t *content);
 /** @brief Writes UTF-8 text to stdout. */
 void print_utf8(const wchar_t *content);
 
+/** @brief Returns true if the cursor on stdout is at the start of a line. */
+bool stdout_at_line_start(void);
+
+/** @brief Overrides the tracked stdout line-start state. */
+void set_stdout_line_start(bool value);
+
+/** @brief Returns true if standard input is an interactive console. */
+bool stdin_is_console(void);
+
+/** @brief Returns true if standard output is an interactive console. */
+bool stdout_is_console(void);
+
 /**
  * @brief Writes UTF-8 text using format_string_vargs() formatting rules.
  * Percent signs in substituted values are written literally.

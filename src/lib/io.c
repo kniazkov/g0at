@@ -19,7 +19,12 @@
 #ifdef _WIN32
 #    include <io.h>
 #    include <windows.h>
+#else
+#    include <unistd.h>
 #endif
+
+/** @brief Whether the cursor on stdout is currently at the start of a line. */
+static bool stdout_line_start = true;
 
 bool init_io(void) {
     // platform-specific GPIO initialization...
@@ -73,6 +78,44 @@ void print_utf8(const wchar_t *content) {
     char *buffer = encode_utf8(content);
     printf("%s", buffer);
     FREE(buffer);
+    size_t length = wcslen(content);
+    if (length > 0) {
+        stdout_line_start = content[length - 1] == L'\n';
+    }
+}
+
+bool stdout_at_line_start(void) {
+    return stdout_line_start;
+}
+
+void set_stdout_line_start(bool value) {
+    stdout_line_start = value;
+}
+
+bool stdin_is_console(void) {
+#ifdef _WIN32
+    HANDLE handle = (HANDLE)_get_osfhandle(_fileno(stdin));
+    if (handle != INVALID_HANDLE_VALUE) {
+        DWORD mode;
+        return GetConsoleMode(handle, &mode) != 0;
+    }
+    return false;
+#else
+    return isatty(fileno(stdin)) != 0;
+#endif
+}
+
+bool stdout_is_console(void) {
+#ifdef _WIN32
+    HANDLE handle = (HANDLE)_get_osfhandle(_fileno(stdout));
+    if (handle != INVALID_HANDLE_VALUE) {
+        DWORD mode;
+        return GetConsoleMode(handle, &mode) != 0;
+    }
+    return false;
+#else
+    return isatty(fileno(stdout)) != 0;
+#endif
 }
 
 void fprintf_utf8(FILE *file, const wchar_t *format, ...) {

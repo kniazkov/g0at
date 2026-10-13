@@ -74,11 +74,18 @@ static int run_interactive(options_t *opt) {
     unsigned int line_counter = 0;
 
     for (;;) {
+        if (!stdout_at_line_start()) {
+            print_utf8(L"\n");
+        }
         print_utf8(get_messages()->interactive_prompt);
         fflush(stdout);
         string_value_t line = read_input_line(stdin);
         if (line.data == NULL) {
             break; // console read error
+        }
+        if (stdin_is_console() && stdout_is_console()) {
+            /* The console echoes the user's newline, so the cursor now starts a fresh line. */
+            set_stdout_line_start(true);
         }
         if (line.length == 0) {
             FREE_STRING(line);
