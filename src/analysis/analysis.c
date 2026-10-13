@@ -49,6 +49,24 @@ static scope_t *create_scope_from_root_context(arena_t *arena) {
 }
 
 /**
+ * @brief Binds names declared on earlier interactive lines as synthetic mutable declarators.
+ *
+ * The session data object keeps every top-level variable and constant declared so far. Each of
+ * its keys becomes a synthetic variable declarator in the root scope, so a later line can read
+ * or update such a name without creating a new implicit constant.
+ */
+static void add_session_symbols_to_scope(arena_t *arena, scope_t *scope, object_t *session) {
+    object_array_t keys = get_object_keys(session);
+    for (size_t index = 0; index < keys.size; index++) {
+        string_value_t key_str = convert_object_to_string(keys.items[index]);
+        string_view_t name = copy_string_to_arena(arena, key_str.data, key_str.length);
+        variable_declaration_pair_t pair = create_synthetic_variable_declaration_node(arena, name);
+        add_symbol_to_scope(scope, name.data, pair.declarator);
+        FREE_STRING(key_str);
+    }
+}
+
+/**
  * @brief Assigns parents, scopes, and node IDs; queues functions for later binding.
  * Functions restart numbering; ordinary blocks inherit the sequence. Outer scopes
  * must be bound before inner functions so closures can resolve later declarations.
@@ -243,7 +261,8 @@ static void bind_variables_from_node_and_children(node_t *node,
                 if (assign_parent && assign_parent->vtbl->type == NODE_STATEMENT_EXPRESSION
                     && assign_parent->parent
                     && is_statement_list(assign_parent->parent->vtbl->type)) {
-                    /* A standalone assignment to an undeclared name declares a constant. */
+                    /* A standalone assignment to an undeclared name declares a constant. Names
+                       bound earlier in an interactive session are resolved before this branch. */
                     node_t *statement = find_parent_statement(var);
                     assert(is_statement_list(statement->parent->vtbl->type));
                     expression_t *initial = (expression_t *)get_node_child(parent, 1);
@@ -283,7 +302,7 @@ static void bind_variables_from_node_and_children(node_t *node,
                 *errors = error;
             } else {
                 /* A read of an undeclared name yields null and declares nothing. */
-                if (options->enable_warnings) {
+                if (options->enable_warnings && !options->interactive) {
                     compilation_error_t *error =
                         create_error_from_node(memory->errors,
                                                node,
@@ -346,6 +365,9 @@ compilation_error_t *analyze(node_t *root_node,
                              analysis_collector_t *collector) {
     restore_graph(root_node);
     scope_t *root_scope = create_scope_from_root_context(memory->graph);
+    if (options->session_object) {
+        add_session_symbols_to_scope(memory->graph, root_scope, options->session_object);
+    }
 
     /* Queue functions in enclosing-before-nested order. */
     unsigned int node_counter = 0;

@@ -31,11 +31,17 @@ static messages_t english = {
             L"  --save-graph <file.png|svg>  Generate AST graph image\n"
             L"  -l, --lang, --language <lang> Select message language\n"
             L"  -w, --enable-warnings         Enable compiler warnings\n"
+            L"  -i, --interactive             Execute commands line by line from the console\n"
             L"  -h, --help, /?                Show this help message\n",
     .memory_leak = L"Memory leak of %zu bytes detected",
     .no_input_file = L"Input file not specified",
     .unknown_option = L"Unknown option: '%a'",
     .missing_specification = L"Missing value for parameter '%a'",
+    .interactive_conflict = L"The --interactive mode cannot be combined with compilation, binary, "
+                            L"C/library export, source or analysis output, graph or native "
+                            L"reporting options, or with required native execution",
+    .interactive_prompt = L"> ",
+    .continuation_prompt = L"  ",
     .bad_optimization_level = L"Unknown optimization level: '%a' (expected none or all)",
     .bad_native_mode = L"Unknown native mode: '%a' (expected off, auto or required)",
     .bad_native_options = L"Native execution requires --optimize all; C/library export cannot be "
@@ -127,6 +133,7 @@ static messages_t russian = {
             L"  --save-graph <file.png|svg>  Сгенерировать изображение AST-графа\n"
             L"  -l, --lang, --language <lang> Выбрать язык сообщений\n"
             L"  -w, --enable-warnings         Включить предупреждения компилятора\n"
+            L"  -i, --interactive             Выполнять команды построчно из консоли\n"
             L"  -h, --help, /?                Показать эту справку\n",
     .native_compile_failed = L"Ошибка нативной компиляции (%s): компилятор '%a', файл '%a', "
                              L"код %ld, сигнал %d, системная ошибка %a, ошибка очистки %a, ошибка "
@@ -146,6 +153,12 @@ static messages_t russian = {
     .no_input_file = L"Не указан входной файл",
     .unknown_option = L"Неизвестный параметр командной строки: '%a'",
     .missing_specification = L"Отсутствует значение для параметра '%a'",
+    .interactive_conflict = L"Режим --interactive несовместим с параметрами компиляции, бинарных "
+                            L"файлов, экспорта C/библиотеки, вывода исходного кода или отчёта "
+                            L"анализа, графа, нативных отчётов и обязательного нативного "
+                            L"исполнения",
+    .interactive_prompt = L"> ",
+    .continuation_prompt = L"  ",
     .bad_optimization_level = L"Неизвестный уровень оптимизаций: '%a' (ожидается none или all)",
     .bad_graph_file =
         L"Файл, в который сохраняется изображение графа, должен быть типа PNG или SVG",

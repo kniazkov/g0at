@@ -91,6 +91,8 @@ jobs:
         run: python3 scripts/check_native_libm.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native libm"
         env:
           CC: ${{ matrix.compiler }}
+      - name: Check interactive sessions
+        run: python3 scripts/check_interactive.py build/${{ matrix.compiler }}/goat
       - name: Check character semantics
         run: python3 scripts/check_characters.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/characters"
       - name: Check native artifact integrity
@@ -252,6 +254,11 @@ jobs:
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_libm.py build/goat.exe "build/native libm"'
+      - name: Check interactive sessions
+        shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
+        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_interactive.py build/goat.exe'
       - name: Check character semantics
         shell: msys2 {0}
         env:

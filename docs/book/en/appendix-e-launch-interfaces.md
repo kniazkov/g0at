@@ -10,6 +10,7 @@ Revision 3. Implementation described: [commit cf51b8c, including `for`](https://
 
 ```text
 goat [options] <input_file> [script arguments...]
+goat [options] --interactive
 ```
 
 Options are also recognized after the input filename. Option values are separate arguments; `--native=auto` is not supported. The first non-option word becomes the input path; subsequent words are retained as script arguments. Parsing is implemented in [options.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/cli/options.c).
@@ -39,6 +40,7 @@ Options are also recognized after the input filename. Option values are separate
 | `--save-graph file.png\|file.svg` | AST image through Graphviz. |
 | `-l`, `--lang`, `--language` + language | Runtime message language: `ru` selects Russian, other values select English. |
 | `-w`, `--enable-warnings` | Enable compilation warnings. |
+| `-i`, `--interactive` | Execute commands line by line from the console; no input file is required. |
 | `-h`, `--help`, `/?` | Print help. |
 
 <a id="section-e-3"></a>
@@ -52,6 +54,8 @@ Any C/library export requires `all` and cannot be combined with `--print-analysi
 `--native auto|required` is incompatible with `--optimize none`. `--compile --optimize none` with `native off` is allowed. `--compile` may print listings and save reports, but does not call the program body. Ordinary `--print-analysis`, `--print-source-code`, `--print-bytecode`, and `--save-graph` instead continue with normal execution after diagnostic output.
 
 `off` neither prepares nor loads native code. `auto` permits continuing in the VM after preparation failure. `required` requires at least one bound function; it does not prohibit VM execution for an unmatched signature or a permitted resource retry. A faulty adapter after entry is not unconditionally replayed even in `auto`.
+
+`--interactive` requires no input file and is incompatible with `--compile`, `--run`, and C/library export. Each line is compiled as a separate program with optimization disabled; the session context (top-level variables and functions) persists between lines, and compilation or execution errors are reported without resetting the context. The input prompt is `"> "`; it always begins on a fresh line, even after output that does not end with a newline. A line ending with a backslash does not run; input continues on the next line, prompted indented by two spaces (aligned under the typed text of the previous line), and all lines are joined without the backslashes when the input is submitted with Enter. Diagnostics number the session lines starting from the first entered one.
 
 <a id="section-e-4"></a>
 

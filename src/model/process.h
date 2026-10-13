@@ -44,6 +44,12 @@ struct process_t {
 
     /** @brief The size of the string cache. */
     size_t string_cache_size;
+
+    /** @brief External objects kept alive by the process for the garbage collector. */
+    object_t **gc_roots;
+
+    /** @brief The number of registered external garbage-collection roots. */
+    size_t gc_roots_size;
 };
 
 /** @brief Creates a new process. */
