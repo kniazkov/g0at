@@ -16,6 +16,7 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/io.h"
+#include "lib/string_ext.h"
 #include "model/context.h"
 #include "model/object.h"
 #include "model/process.h"
@@ -29,6 +30,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <wctype.h>
 
 /** @brief Prints linked compilation diagnostics to stderr in chronological order. */
 static void print_compilation_errors(compilation_error_t *error, unsigned int line_offset) {
@@ -100,6 +102,54 @@ static int run_interactive(options_t *opt) {
             continue;
         }
         unsigned int line_offset = line_counter;
+
+        /* A line ending with a backslash continues on the next line, which is prompted indented
+           by two spaces; all physical lines are joined without the backslashes. */
+        string_builder_t builder;
+        init_string_builder(&builder, 0);
+        size_t content_length = line.length;
+        while (content_length > 0 && iswspace(line.data[content_length - 1])) {
+            content_length--;
+        }
+        bool input_failed = false;
+        while (content_length > 0 && line.data[content_length - 1] == L'\\') {
+            append_substring(&builder, line.data, content_length - 1);
+            FREE_STRING(line);
+            line_counter++;
+            if (!stdout_at_line_start()) {
+                print_utf8(L"\n");
+            }
+            print_utf8(get_messages()->continuation_prompt);
+            fflush(stdout);
+            line = read_input_line(stdin);
+            if (line.data == NULL) {
+                FREE_STRING(line);
+                input_failed = true;
+                break; // console read error
+            }
+            if (stdin_is_console() && stdout_is_console()) {
+                /* The console echoes the user's newline, so the cursor now starts a fresh line. */
+                set_stdout_line_start(true);
+            }
+            content_length = line.length;
+            while (content_length > 0 && iswspace(line.data[content_length - 1])) {
+                content_length--;
+            }
+        }
+        if (input_failed) {
+            FREE(builder.data);
+            break; // console read error
+        }
+        append_substring(&builder, line.data, line.length);
+        FREE_STRING(line);
+        line = (string_value_t){builder.data, builder.length, builder.data != NULL};
+        if (line.length == 0) {
+            FREE_STRING(line);
+            if (feof(stdin)) {
+                break; // end of input
+            }
+            continue;
+        }
         line_counter++;
 
         parser_memory_t memory = {

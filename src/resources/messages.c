@@ -40,6 +40,7 @@ static messages_t english = {
     .interactive_conflict = L"The --interactive mode cannot be combined with compilation, binary "
                             L"or C/library export options",
     .interactive_prompt = L"> ",
+    .continuation_prompt = L"  ",
     .bad_optimization_level = L"Unknown optimization level: '%a' (expected none or all)",
     .bad_native_mode = L"Unknown native mode: '%a' (expected off, auto or required)",
     .bad_native_options = L"Native execution requires --optimize all; C/library export cannot be "
@@ -154,6 +155,7 @@ static messages_t russian = {
     .interactive_conflict = L"Режим --interactive несовместим с параметрами компиляции, "
                             L"бинарных файлов или экспорта C/библиотеки",
     .interactive_prompt = L"> ",
+    .continuation_prompt = L"  ",
     .bad_optimization_level = L"Неизвестный уровень оптимизаций: '%a' (ожидается none или all)",
     .bad_graph_file =
         L"Файл, в который сохраняется изображение графа, должен быть типа PNG или SVG",

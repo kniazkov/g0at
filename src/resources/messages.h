@@ -17,6 +17,7 @@ typedef struct {
     const wchar_t const *missing_specification;
     const wchar_t const *interactive_conflict;
     const wchar_t const *interactive_prompt;
+    const wchar_t const *continuation_prompt;
     const wchar_t const *bad_graph_file;
     const wchar_t const *bad_optimization_level;
     const wchar_t const *bad_c_options;

@@ -55,7 +55,7 @@ Any C/library export requires `all` and cannot be combined with `--print-analysi
 
 `off` neither prepares nor loads native code. `auto` permits continuing in the VM after preparation failure. `required` requires at least one bound function; it does not prohibit VM execution for an unmatched signature or a permitted resource retry. A faulty adapter after entry is not unconditionally replayed even in `auto`.
 
-`--interactive` requires no input file and is incompatible with `--compile`, `--run`, and C/library export. Each line is compiled as a separate program with optimization disabled; the session context (top-level variables and functions) persists between lines, and compilation or execution errors are reported without resetting the context. The input prompt is `"> "`; it always begins on a fresh line, even after output that does not end with a newline. Diagnostics number the session lines starting from the first entered one.
+`--interactive` requires no input file and is incompatible with `--compile`, `--run`, and C/library export. Each line is compiled as a separate program with optimization disabled; the session context (top-level variables and functions) persists between lines, and compilation or execution errors are reported without resetting the context. The input prompt is `"> "`; it always begins on a fresh line, even after output that does not end with a newline. A line ending with a backslash does not run; input continues on the next line, prompted indented by two spaces (aligned under the typed text of the previous line), and all lines are joined without the backslashes when the input is submitted with Enter. Diagnostics number the session lines starting from the first entered one.
 
 <a id="section-e-4"></a>
 
