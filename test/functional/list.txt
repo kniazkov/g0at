@@ -304,6 +304,12 @@ quadratic_none
 quadratic_linear
 quadratic_degenerate
 mutual_even_odd
+member_access_basic
+member_access_chain
+member_access_missing
+member_access_alias
+member_access_update
+member_access_const
 
 # Post-analysis AST replacements
 replacement_values

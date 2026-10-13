@@ -1,0 +1,3 @@
+var obj = { x = 1 };
+try { obj.x = 2; } catch (e) { println(e); }
+println(obj.x);

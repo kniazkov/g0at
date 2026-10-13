@@ -1,0 +1,5 @@
+var obj = {};
+obj.a = {};
+obj.a.b = {};
+obj.a.b.c = 5;
+print(obj.a.b.c);
