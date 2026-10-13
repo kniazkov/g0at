@@ -217,7 +217,8 @@ static int run_interactive(options_t *opt) {
                 while (func_item) {
                     list_item_t *next_item = func_item->next;
                     node_t *func_obj = (node_t *)func_item->value.ptr;
-                    if (generate_deferred_bytecode_from_node(func_obj, session_code,
+                    if (generate_deferred_bytecode_from_node(func_obj,
+                                                             session_code,
                                                              session_data)) {
                         remove_item_from_linked_list(parsing_result.functions, func_item);
                         progressed = true;

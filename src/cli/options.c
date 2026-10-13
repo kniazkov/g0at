@@ -210,10 +210,10 @@ options_t *parse_options(int argc, char **argv) {
     }
 
     if (opt->interactive
-        && (opt->compile_only || opt->run_binary || opt->print_c || opt->save_c
-            || opt->save_library || opt->print_source_code || opt->print_analysis
-            || opt->analysis_output_file || opt->graph_output_file || opt->print_native
-            || opt->native_output_file || opt->native_execution == NATIVE_REQUIRED)) {
+        && (opt->compile_only || opt->run_binary || opt->print_c || opt->save_c || opt->save_library
+            || opt->print_source_code || opt->print_analysis || opt->analysis_output_file
+            || opt->graph_output_file || opt->print_native || opt->native_output_file
+            || opt->native_execution == NATIVE_REQUIRED)) {
         fprintf_utf8(stderr, get_messages()->interactive_conflict);
         goto error;
     }

@@ -277,9 +277,7 @@ static void bind_variables_from_node_and_children(node_t *node,
                     insertion->replace = true;
                     append_to_vector(insertions, insertion);
                     var->declarator = pair.declarator;
-                    add_symbol_to_scope(statement->parent->scope,
-                                        var->name.data,
-                                        pair.declarator);
+                    add_symbol_to_scope(statement->parent->scope, var->name.data, pair.declarator);
                 } else {
                     /* The assignment is not a standalone statement: the case is ambiguous. */
                     compilation_error_t *error = create_error_from_node(
