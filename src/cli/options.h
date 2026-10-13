@@ -30,6 +30,15 @@ struct options_t {
     /** @brief Execute Goat commands entered interactively from the console, line by line. */
     bool interactive;
 
+    /**
+     * @brief Interactive session data object holding names declared on previous lines.
+     *
+     * Owned by the interactive session, not by this structure. When set, the analyzer binds each
+     * of its keys as a synthetic mutable declarator in the root scope so that later lines can
+     * update such names or read them without creating implicit constants.
+     */
+    struct object_t *session_object;
+
     /** @brief Defaults to OPTIMIZATION_ALL. */
     optimization_level_t optimization_level;
 

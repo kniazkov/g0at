@@ -99,6 +99,7 @@ static int run_interactive(options_t *opt) {
             if (feof(stdin)) {
                 break; // end of input
             }
+            line_counter++;
             continue;
         }
         unsigned int line_offset = line_counter;
@@ -114,6 +115,7 @@ static int run_interactive(options_t *opt) {
         bool input_failed = false;
         while (content_length > 0 && line.data[content_length - 1] == L'\\') {
             append_substring(&builder, line.data, content_length - 1);
+            append_char(&builder, L'\n');
             FREE_STRING(line);
             line_counter++;
             if (!stdout_at_line_start()) {
@@ -148,6 +150,7 @@ static int run_interactive(options_t *opt) {
             if (feof(stdin)) {
                 break; // end of input
             }
+            line_counter++;
             continue;
         }
         line_counter++;
@@ -191,6 +194,7 @@ static int run_interactive(options_t *opt) {
                session, so per-line optimization is disabled. */
             options_t line_options = *opt;
             line_options.optimization_level = OPTIMIZATION_NONE;
+            line_options.session_object = session_vars;
             error = analyze(root_node, &memory, &line_options, NULL);
             compilation_error_severity_t severity = get_most_severe_compilation_error(error);
             if (severity > WARNING) {
@@ -237,9 +241,16 @@ static int run_interactive(options_t *opt) {
                 thread->context = destroy_context(thread->context);
             }
             if (thread->context == get_root_context()) {
-                /* The session context was unwound by an uncaught exception; recreate it above the
-                   preserved session data so declared variables and constants survive. */
-                thread->context = create_context(process, thread->context, session_vars);
+                /* The session context was unwound by an uncaught exception. Recreate it so that
+                   its data object keeps its identity: functions created earlier hold a reference
+                   to that object as their closure environment, and declaring new variables must
+                   extend the very same object rather than a child of it. */
+                thread->context = create_context(process, thread->context, NULL);
+                if (session_vars != NULL) {
+                    DECREF(thread->context->data);
+                    INCREF(session_vars);
+                    thread->context->data = session_vars;
+                }
             }
             /* Hold the session data object across potential exception unwinding. An uncaught
                exception destroys the session context inside run(); keeping the object registered

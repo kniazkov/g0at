@@ -37,8 +37,9 @@ static messages_t english = {
     .no_input_file = L"Input file not specified",
     .unknown_option = L"Unknown option: '%a'",
     .missing_specification = L"Missing value for parameter '%a'",
-    .interactive_conflict = L"The --interactive mode cannot be combined with compilation, binary "
-                            L"or C/library export options",
+    .interactive_conflict = L"The --interactive mode cannot be combined with compilation, binary, "
+                            L"C/library export, source or analysis output, graph or native "
+                            L"reporting options, or with required native execution",
     .interactive_prompt = L"> ",
     .continuation_prompt = L"  ",
     .bad_optimization_level = L"Unknown optimization level: '%a' (expected none or all)",
@@ -152,8 +153,10 @@ static messages_t russian = {
     .no_input_file = L"Не указан входной файл",
     .unknown_option = L"Неизвестный параметр командной строки: '%a'",
     .missing_specification = L"Отсутствует значение для параметра '%a'",
-    .interactive_conflict = L"Режим --interactive несовместим с параметрами компиляции, "
-                            L"бинарных файлов или экспорта C/библиотеки",
+    .interactive_conflict = L"Режим --interactive несовместим с параметрами компиляции, бинарных "
+                            L"файлов, экспорта C/библиотеки, вывода исходного кода или отчёта "
+                            L"анализа, графа, нативных отчётов и обязательного нативного "
+                            L"исполнения",
     .interactive_prompt = L"> ",
     .continuation_prompt = L"  ",
     .bad_optimization_level = L"Неизвестный уровень оптимизаций: '%a' (ожидается none или all)",
