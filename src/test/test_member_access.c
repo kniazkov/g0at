@@ -182,6 +182,20 @@ bool test_member_access_vm(void) {
     ASSERT(peek_object_from_stack(proc->main_thread->data_stack, 0) == get_null_object());
     free_bytecode(code);
 
+    object_t *temp = create_user_defined_object(proc, (object_array_t){&root, 1});
+    object_t *temp_value = create_integer_object(proc, 1000);
+    ASSERT(create_object_property(temp, key, temp_value, false) == MSTAT_OK);
+    code = make_member_access_code(getprop, 2);
+    INCREF(temp);
+    push_object_onto_stack(proc->main_thread->data_stack, temp);
+    proc->main_thread->instr_id = 0;
+    ASSERT(run(proc, code) == 0);
+    ASSERT(get_object_integer_value(
+               peek_object_from_stack(proc->main_thread->data_stack, 0))
+               .value
+           == 1000);
+    free_bytecode(code);
+
     object_t *fresh = create_user_defined_object(proc, (object_array_t){&root, 1});
     add_gc_root(proc, fresh);
     instruction_t setprop[] = {{.opcode = SETPROP, .arg1 = 0}, {.opcode = END}};

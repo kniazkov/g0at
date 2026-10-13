@@ -313,9 +313,9 @@ static bool exec_GETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *obj = pop_object_from_stack(thread->data_stack);
     object_t *value = get_property_from_object_or_its_prototypes(obj, key);
+    INCREF(value);
     DECREF(obj);
     push_object_onto_stack(thread->data_stack, value);
-    INCREF(value);
     thread->instr_id++;
     return true;
 }

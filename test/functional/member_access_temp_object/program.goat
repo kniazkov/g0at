@@ -1,0 +1,2 @@
+println(({ var x = 1000; }).x);
+println(({ var o = { var y = 7; }; }).o.y);
