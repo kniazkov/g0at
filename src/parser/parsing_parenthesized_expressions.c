@@ -25,15 +25,14 @@ compilation_error_t *preparsing_parenthesized_expressions(token_t *token,
                                                           token_groups_t *groups) {
     assert(token->type == TOKEN_BRACKET_PAIR && token->text.data[0] == '(');
     if (token->left
-        && (token->left->type == TOKEN_IF || token->left->type == TOKEN_FOR)) { // if (.
+        && (token->left->type == TOKEN_IF || token->left->type == TOKEN_FOR)) { // if (...
         remove_token_from_group(token);
         return NULL;
     }
     /* Parentheses of a method call `expr.name(...)` are consumed by the member access reduction
      * rule, so they must not be treated as a parenthesized expression. */
     if (token->left && token->left->type == TOKEN_IDENTIFIER && token->left->left
-        && token->left->left->type == TOKEN_OPERATOR
-        && token->left->left->text.data[0] == L'.') {
+        && token->left->left->type == TOKEN_OPERATOR && token->left->left->text.data[0] == L'.') {
         remove_token_from_group(token);
         return NULL;
     }

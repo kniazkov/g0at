@@ -60,17 +60,18 @@ bool test_member_access_scanner(void) {
 }
 
 bool test_member_access_parser(void) {
-    const wchar_t *valid[] = {L"var obj = {}; obj.x = 10; print(obj.x);",
-                              L"var obj = {}; obj.a.b = 20;",
-                              L"var obj = {}; (obj).x = 5;",
-                              L"var obj = {}; print(obj.x);",
-                              L"var obj = {}; obj.x;",
-                              L"obj.x = obj.y;",
-                              L"var obj = {const f = func() { return 1; }}; obj.f();",
-                              L"var obj = {const f = func(x) { return x; }}; obj.f(42);",
-                              L"var obj = {var inner = {}; inner.g = func() { return 2; }}; obj.inner.g();",
-                              L"var obj = {const f = func() { return 1; }}; (obj).f();",
-                              L"var obj = {}; obj.f = func() { return 3; }; print(obj.f());"};
+    const wchar_t *valid[] = {
+        L"var obj = {}; obj.x = 10; print(obj.x);",
+        L"var obj = {}; obj.a.b = 20;",
+        L"var obj = {}; (obj).x = 5;",
+        L"var obj = {}; print(obj.x);",
+        L"var obj = {}; obj.x;",
+        L"obj.x = obj.y;",
+        L"var obj = {const f = func() { return 1; }}; obj.f();",
+        L"var obj = {const f = func(x) { return x; }}; obj.f(42);",
+        L"var obj = {var inner = {}; inner.g = func() { return 2; }}; obj.inner.g();",
+        L"var obj = {const f = func() { return 1; }}; (obj).f();",
+        L"var obj = {}; obj.f = func() { return 3; }; print(obj.f());"};
     for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
