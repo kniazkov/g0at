@@ -102,8 +102,8 @@ bool test_builtin_numeric_results() {
                                      ? create_integer_object(proc, selected[k].i)
                                      : create_real_number_object(proc, selected[k].r);
                 }
-                for (size_t k = descriptor->min_args; k > 0; k--)
-                    push_object_onto_stack(proc->main_thread->data_stack, objects[k - 1]);
+                for (size_t k = 0; k < descriptor->min_args; k++)
+                    push_object_onto_stack(proc->main_thread->data_stack, objects[k]);
                 const lattice_element_t *value =
                     interpret_function_call(make_builtin_function_element(arena, descriptor),
                                             args,
@@ -182,9 +182,9 @@ bool test_builtin_errors() {
                     : kind == 2 ? create_string_object(proc, (string_value_t){L"4", 1, false})
                     : kind == 3 ? get_function_sign()
                                 : create_user_defined_object(proc, (object_array_t){&root, 1});
-                for (size_t k = f->min_args; k > 0; k--)
+                for (size_t k = 0; k < f->min_args; k++)
                     push_object_onto_stack(proc->main_thread->data_stack,
-                                           k - 1 == bad ? wrong : create_integer_object(proc, 1));
+                                           k == bad ? wrong : create_integer_object(proc, 1));
                 ASSERT(!call_object(f->get_object(), f->min_args, proc->main_thread));
                 ASSERT(proc->main_thread->exception.value == get_exception_invalid_argument());
                 ASSERT(proc->main_thread->data_stack->size == 0);

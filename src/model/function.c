@@ -113,6 +113,11 @@ static bool static_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     object_t **args = arg_count ? ALLOC(arg_count * sizeof(*args)) : NULL;
     for (size_t i = 0; i < arg_count; i++)
         args[i] = pop_object_from_stack(thread->data_stack);
+    for (size_t i = 0; i < arg_count / 2; i++) {
+        object_t *tmp = args[i];
+        args[i] = args[arg_count - 1 - i];
+        args[arg_count - 1 - i] = tmp;
+    }
     operation_result_t result = arg_count < descriptor->min_args
                                     ? operation_exception(get_exception_invalid_argument())
                                     : descriptor->execute(args, arg_count, thread);
@@ -289,7 +294,7 @@ static const goat_native_entry_v1_t *select_native_entry(const object_dynamic_fu
             continue;
         size_t j = 0;
         for (; j < function->arg_count; j++) {
-            object_t *arg = peek_object_from_stack(stack, j);
+            object_t *arg = peek_object_from_stack(stack, count - 1 - j);
             uint32_t type = is_integer_object(arg) ? GOAT_NATIVE_I64
                             : is_real_object(arg)  ? GOAT_NATIVE_F64
                                                    : GOAT_NATIVE_INVALID;
@@ -308,7 +313,7 @@ invoke_native_entry(const goat_native_entry_v1_t *entry, uint16_t count, thread_
     goat_native_value_v1_t *args =
         entry->parameter_count ? CALLOC(entry->parameter_count * sizeof(*args)) : NULL;
     for (uint32_t i = 0; i < entry->parameter_count; i++) {
-        object_t *arg = peek_object_from_stack(thread->data_stack, i);
+        object_t *arg = peek_object_from_stack(thread->data_stack, count - 1 - i);
         args[i].type = entry->parameter_types[i];
         if (args[i].type == GOAT_NATIVE_I64)
             args[i].value.integer = get_object_integer_value(arg).value;
@@ -367,8 +372,11 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     ctx->control_flow = FLOW_RETURN;
     ctx->jump_address[0] = thread->instr_id + 1;
     uint16_t index;
+    object_t **popped = arg_count ? ALLOC(arg_count * sizeof(*popped)) : NULL;
+    for (size_t i = 0; i < arg_count; i++)
+        popped[i] = pop_object_from_stack(thread->data_stack);
     for (index = 0; index < arg_count && index < dfobj->arg_count; index++) {
-        object_t *arg = pop_object_from_stack(thread->data_stack);
+        object_t *arg = popped[arg_count - 1 - index];
         create_object_property(ctx->data, dfobj->arg_names[index], arg, false);
         DECREF(arg);
     }
@@ -377,9 +385,10 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
     }
     /* Extra actual arguments have been evaluated but have no parameter binding. */
     for (size_t extra = dfobj->arg_count; extra < arg_count; extra++) {
-        object_t *arg = pop_object_from_stack(thread->data_stack);
+        object_t *arg = popped[arg_count - 1 - extra];
         DECREF(arg);
     }
+    FREE(popped);
     stack_index_t ret_value_index = push_object_onto_stack(thread->data_stack, get_null_object());
     ctx->ret_value_index = ret_value_index;
     ctx->unwinding_index = ret_value_index;

@@ -10,7 +10,7 @@ Revision 4. Implementation described: [commit 64c80b9](https://github.com/kniazk
 
 A transfer function describes how an operation changes abstract values and state. For addition, it receives operand descriptions and produces a sum description; assignment additionally changes a variable entry. In Goat, AST methods coordinate evaluation, while files in `src/analysis` implement domain operations.
 
-An ordinary binary node evaluates its left operand, then its right. If the first has already ended the normal path, the second must not be analyzed as executed. `BOTTOM` and control mode carry that fact onward. Calls use a different order: arguments right to left, then the callee value, matching the VM.
+An ordinary binary node evaluates its left operand, then its right. If the first has already ended the normal path, the second must not be analyzed as executed. `BOTTOM` and control mode carry that fact onward. Calls use a different order: arguments left to right, then the callee value, matching the VM.
 
 This is not cosmetic. In `f(x++, x++)`, changing traversal order changes argument values and the later state of `x`. The abstract model must follow language semantics, rather than a convenient child-traversal order.
 

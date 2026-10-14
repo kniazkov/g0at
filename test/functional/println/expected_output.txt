@@ -9,7 +9,7 @@ line
 
 result
 null
-1
+0
 2
 alias
 INVALID_ARGUMENT

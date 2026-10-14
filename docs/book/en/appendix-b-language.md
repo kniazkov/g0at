@@ -50,7 +50,7 @@ Power needs qualification: `-2 ** 2` means `-(2 ** 2)`, but `2 ** -2` is also va
 
 ## B.3. Evaluation order
 
-Ordinary binary operands are evaluated left to right. `&&` skips the right operand when the left is false; `||` skips it when the left is true. Both return booleans. A call evaluates arguments right to left, then loads the called function. Assignment evaluates its right side and returns the assigned value. Prefix update returns the new value; postfix update returns the old one.
+Ordinary binary operands are evaluated left to right. `&&` skips the right operand when the left is false; `||` skips it when the left is true. Both return booleans. A call evaluates arguments left to right, then loads the called function. Assignment evaluates its right side and returns the assigned value. Prefix update returns the new value; postfix update returns the old one.
 
 Missing user-function parameters receive `null`; extra arguments are evaluated and discarded. Built-ins instead require their minimum argument counts. An exception interrupts normal evaluation: operands not yet started are not executed.
 

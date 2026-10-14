@@ -99,7 +99,7 @@ These rules can be checked in the implementations of [integers](https://github.c
 
 `!` negates truthiness, while `!!` converts it to `true` or `false`. `&&` and `||` return booleans and use short-circuit evaluation (the right side is not evaluated when the result is already determined). Thus `false && f()` does not call `f`. These rules are checked in the [truthiness test](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/test/functional/logic_truth/program.goat) and [logical truth tables](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/test/functional/logic_truth_tables/program.goat).
 
-Precedence determines expression grouping: `2 + 3 * 4` means `2 + (3 * 4)`. Evaluation order answers a different question: which action happens first? Ordinary binary operations evaluate the left operand before the right. Function calls use a different order: arguments are evaluated from right to left, followed by the expression identifying the function to call.
+Precedence determines expression grouping: `2 + 3 * 4` means `2 + (3 * 4)`. Evaluation order answers a different question: which action happens first? Ordinary binary operations evaluate the left operand before the right. Function calls use a different order: arguments are evaluated from left to right, followed by the expression identifying the function to call.
 
 [Argument order example](../examples/02-order.goat):
 
@@ -115,11 +115,11 @@ println(x);
 It prints:
 
 ```text
-1|0
+0|1
 2
 ```
 
-Postfix `x++` returns the old value and increments the variable. The right argument receives `0` first, then the left receives `1`. Parameters are not rearranged: `a` receives the left argument and `b` the right. Prefix `++x` returns the incremented value instead. The same distinction applies to `x--` and `--x`.
+Postfix `x++` returns the old value and increments the variable. The left argument receives `0` first, then the right receives `1`. Parameters are not rearranged: `a` receives the left argument and `b` the right. Prefix `++x` returns the incremented value instead. The same distinction applies to `x--` and `--x`.
 
 Call order is explicit in [call bytecode generation and analysis](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/graph/function_call.c). Optimization must preserve it, or expressions that change variables will begin producing different results.
 

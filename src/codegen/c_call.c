@@ -134,8 +134,7 @@ c_generated_expression_t c_call(const node_t *node, c_generation_context_t *cont
     string_value_t *arguments = count ? CALLOC(count * sizeof(*arguments)) : NULL;
     source_builder_t *prelude = create_source_builder();
     bool success = true;
-    for (size_t i = count; i > 0 && success;) {
-        i--;
+    for (size_t i = 0; i < count && success; i++) {
         c_generated_expression_t argument =
             generate_c_code_from_node(get_node_child(node, i + 1), context);
         success = argument.success;

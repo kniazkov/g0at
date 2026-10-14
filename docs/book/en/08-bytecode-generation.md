@@ -77,7 +77,7 @@ In [function_object.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d1526
 
 The launcher visits the function list, generates available bodies, and patches addresses in the earlier `ARG` instructions. It repeats the pass: generating an outer body may create the first instruction site for an inner function. An empty body gets `NIL; RET`; the same implicit return is added if its final AST statement is not a `return`.
 
-A call is separate. [function_call.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/function_call.c) generates arguments right to left, then the callee expression and `CALL`. The actual argument count goes into `arg0`. This lets the executor pop arguments in parameter order. Deferred body generation does not mean deferred argument evaluation.
+A call is separate. [function_call.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/function_call.c) generates arguments left to right, then the callee expression and `CALL`. The actual argument count goes into `arg0`; the executor pops the evaluated arguments and binds them to parameters in order. Deferred body generation does not mean deferred argument evaluation.
 
 <a id="section-8-7"></a>
 

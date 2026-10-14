@@ -66,11 +66,11 @@ bool test_native_int() {
                 abstract = make_string_constant_element(arena, VALUE_TO_VIEW(text));
             }
             object_t *fallback = create_string_object(proc, STATIC_STRING(L"fallback"));
+            push_object_onto_stack(proc->main_thread->data_stack, arg);
             if (count == 2)
                 push_object_onto_stack(proc->main_thread->data_stack, fallback);
             else
                 DECREF(fallback);
-            push_object_onto_stack(proc->main_thread->data_stack, arg);
             ASSERT(call_object(get_function_int(), count, proc->main_thread));
             object_t *result = pop_object_from_stack(proc->main_thread->data_stack);
             const lattice_element_t *args[] = {

@@ -46,7 +46,7 @@ flowchart TD
 4. Bind missing arguments to `null`. Extra arguments have already been evaluated, but receive no parameter names and are released.
 5. Reserve a result slot on the stack, initially containing `null`, and transfer execution to the first body instruction.
 
-Argument evaluation remains right to left. Binding arguments to parameters proceeds left to right. The stack provides this distinction; names in the source are not reordered.
+Argument evaluation proceeds left to right. Binding arguments to parameters proceeds left to right as well; the stack holds the evaluated values and releases them for binding. Names in the source are not reordered.
 
 <a id="section-10-4"></a>
 

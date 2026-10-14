@@ -202,9 +202,9 @@ static bool native_without_context(void) {
         object_t *arg = i < 8 ? create_real_number_object(proc, reals[i])
                               : create_integer_object(proc, integers[i - 8]);
         push_object_onto_stack(thread->data_stack, create_integer_object(proc, 73));
+        push_object_onto_stack(thread->data_stack, arg);
         push_object_onto_stack(thread->data_stack,
                                create_string_object(proc, STATIC_STRING(L"ignored")));
-        push_object_onto_stack(thread->data_stack, arg);
         thread->instr_id = 123;
         ASSERT(call_object(function, 2, thread));
         ASSERT(thread->context == context && thread->instr_id == 124
