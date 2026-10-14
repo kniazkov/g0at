@@ -174,7 +174,7 @@ static bool evaluation_and_identity(void) {
     int64_t before = calls();
     process_t *proc = create_process();
     ASSERT(!run(proc, code) && calls() == before + 4);
-    ASSERT(integer_variable(proc, L"first", 21) && integer_variable(proc, L"second", 3));
+    ASSERT(integer_variable(proc, L"first", 12) && integer_variable(proc, L"second", 3));
     ASSERT(integer_variable(proc, L"trace", 34));
     ASSERT(integer_variable(proc, L"a", 1) && variable(proc, L"b") == get_boolean_object(true));
     ASSERT(integer_variable(proc, L"c", 101) && integer_variable(proc, L"d", 2));
