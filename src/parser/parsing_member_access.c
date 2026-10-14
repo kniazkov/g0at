@@ -20,9 +20,8 @@
  * time.
  * @return NULL on success; the rule silently does not apply if the shape does not match.
  */
-compilation_error_t *parsing_member_access(token_t *operator,
-                                           parser_memory_t *memory,
-                                           token_groups_t *groups) {
+compilation_error_t *
+parsing_member_access(token_t *operator, parser_memory_t * memory, token_groups_t *groups) {
     assert(operator->type == TOKEN_OPERATOR && operator->text.data[0] == L'.');
 
     token_t *left_token = operator->left;

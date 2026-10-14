@@ -339,9 +339,7 @@ static bool exec_SETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
     }
     if (result == MSTAT_IMMUTABLE_OBJECT) {
         DECREF(obj);
-        return dispatch_exception(runtime,
-                                  thread,
-                                  (exception_t){get_exception_immutable_object()});
+        return dispatch_exception(runtime, thread, (exception_t){get_exception_immutable_object()});
     }
     if (result == MSTAT_OK) {
         changed = true;

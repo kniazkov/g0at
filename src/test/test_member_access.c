@@ -29,10 +29,7 @@ bool test_member_access_scanner(void) {
     arena_t *arena = create_arena(8);
     parser_memory_t memory = {arena, arena, arena, arena};
     token_groups_t *groups = (token_groups_t *)CALLOC(sizeof(token_groups_t));
-    scanner_t *scan = create_scanner("program.goat",
-                                     STATIC_STRING(L"obj . x"),
-                                     &memory,
-                                     groups);
+    scanner_t *scan = create_scanner("program.goat", STATIC_STRING(L"obj . x"), &memory, groups);
     token_t *token = get_token(scan);
     ASSERT(token && token->type == TOKEN_IDENTIFIER);
     token = get_token(scan);
@@ -83,8 +80,9 @@ bool test_member_access_parser(void) {
     for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
-        ASSERT(!parse_analysis_test_program(
-            &m, (string_value_t){invalid[i], wcslen(invalid[i]), false}));
+        ASSERT(
+            !parse_analysis_test_program(&m,
+                                         (string_value_t){invalid[i], wcslen(invalid[i]), false}));
         destroy_arena(a);
     }
     return true;
@@ -93,7 +91,8 @@ bool test_member_access_parser(void) {
 bool test_member_access_ast(void) {
     arena_t *arena = create_arena(8);
     variable_t *var = (variable_t *)create_variable_node(arena, (string_view_t){L"obj", 3});
-    expression_t *node = create_member_access_node(arena, &var->base.base, (string_view_t){L"x", 1});
+    expression_t *node =
+        create_member_access_node(arena, &var->base.base, (string_view_t){L"x", 1});
     ASSERT(is_expression(node->base.vtbl->type));
     ASSERT(node->base.vtbl->is_assignable_expression);
     ASSERT(get_node_child_count(&node->base) == 1);
@@ -190,9 +189,7 @@ bool test_member_access_vm(void) {
     push_object_onto_stack(proc->main_thread->data_stack, temp);
     proc->main_thread->instr_id = 0;
     ASSERT(run(proc, code) == 0);
-    ASSERT(get_object_integer_value(
-               peek_object_from_stack(proc->main_thread->data_stack, 0))
-               .value
+    ASSERT(get_object_integer_value(peek_object_from_stack(proc->main_thread->data_stack, 0)).value
            == 1000);
     free_bytecode(code);
 
@@ -219,9 +216,7 @@ bool test_member_access_vm(void) {
     push_object_onto_stack(proc->main_thread->data_stack, derived);
     proc->main_thread->instr_id = 0;
     ASSERT(run(proc, code) == 0);
-    ASSERT(get_object_integer_value(
-               peek_object_from_stack(proc->main_thread->data_stack, 0))
-               .value
+    ASSERT(get_object_integer_value(peek_object_from_stack(proc->main_thread->data_stack, 0)).value
            == 7);
     free_bytecode(code);
 

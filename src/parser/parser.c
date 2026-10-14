@@ -63,7 +63,7 @@ parsing_single_identifiers(token_t *identifier, parser_memory_t *memory, token_g
 
 /** @brief Rule for handling member access (an expression followed by `.name`). */
 compilation_error_t *
-parsing_member_access(token_t *operator, parser_memory_t *memory, token_groups_t *groups);
+parsing_member_access(token_t *operator, parser_memory_t * memory, token_groups_t *groups);
 
 /** @brief Rule for handling variable declarations. */
 compilation_error_t *
