@@ -70,7 +70,7 @@ bool append_c_recursion_tests(source_builder_t *output, source_builder_t *checks
          L"if(goat_rec7_g_f1_i_(0)!=7 || goat_rec7_g_f1_i_(12)!=31)return 117;",
          1},
         {L"const f=func(n,x){if(n<1)return x;var y=x;return f(n-1,y,y=y+2);};f(2,1);",
-         L"if(goat_rec8_g_f1_i_i_(4,3)!=11)return 118;",
+         L"if(goat_rec8_g_f1_i_i_(4,3)!=3)return 118;",
          1},
         {L"const f=func(n,x){if(n<1)return x;return f(n-1,x+1.0);};f(2,1.5);",
          L"if(goat_rec9_g_f1_i_r_(4,0x1p53)!=0x1p53 || "

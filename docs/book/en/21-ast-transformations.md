@@ -91,14 +91,14 @@ selected
 effect
 5
 0
-10
+1
 DIVISION_BY_ZERO
 -0
 ```
 
 The first condition is computed from literals; the `dead` branch is unnecessary. Calling `signal` must preserve `effect`. This user call receives no global constant result in the reachability pass, so the fact that it returns zero does not permit its removal.
 
-Two calls to `step` check that shared code has not become specialized for the first argument, `4`. `pair` checks right-to-left argument evaluation: its first parameter receives `1`, its second `0`. The division-by-zero handler confirms that optimization preserves the exception. The final line shows the current output format for negative real zero: `-0`.
+Two calls to `step` check that shared code has not become specialized for the first argument, `4`. `pair` checks left-to-right argument evaluation: its first parameter receives `0`, its second `1`. The division-by-zero handler confirms that optimization preserves the exception. The final line shows the current output format for negative real zero: `-0`.
 
 <a id="section-21-7"></a>
 

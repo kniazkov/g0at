@@ -1,6 +1,6 @@
 /** @file test_c_calls.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Static specialization selection and right-to-left call arguments.
+ * @brief Static specialization selection and left-to-right call arguments.
  */
 #include "test_c_calls.h"
 
@@ -58,15 +58,15 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
         {L"const f=func(n){return leaf(n);};const leaf=func(n){return n+2;};f(1);", L"(5)==7", 1},
         {L"const leaf=func(a,b){return a*10+b;};const f=func(n){var x=n;return "
          L"leaf((x=x+1),(x=x+2));};f(1);",
-         L"(3)==65",
+         L"(3)==46",
          2},
         {L"const leaf=func(a,b){return a*10+b;};const f=func(n){var x=n;return "
          L"leaf(x,(x=x+1));};f(1);",
-         L"(3)==44",
+         L"(3)==34",
          2},
         {L"const leaf=func(a){return a;};const f=func(n){var x=n;var v=leaf(x,(x=x+2));return "
          L"v*10+x;};f(1);",
-         L"(3)==55",
+         L"(3)==35",
          2},
         {L"const leaf=func(){return 7;};const f=func(n){var x=n;var v=leaf((x=x+1),(x=x+2));return "
          L"v*10+x;};f(1);",
@@ -74,7 +74,7 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
          2},
         {L"const leaf=func(n){return n*2;};const pair=func(a,b){return a*10+b;};const "
          L"f=func(n){var x=n;return pair(leaf(x=x+1),leaf(x=x+2));};f(1);",
-         L"(3)==130",
+         L"(3)==92",
          3},
         {L"const leaf=func(n){return n+0.5;};const f=func(n){return leaf(n)*2.0;};f(1);",
          L"(2)==5.0",
@@ -128,13 +128,13 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
          2},
         {L"const f=func(n){return atan(n);};f(1);", L"(1)==atan(1.0)", 1},
         {L"const f=func(n){return atan(n,1);};f(1);", L"(2)==atan2(2.0,1.0)", 1},
-        {L"const f=func(n){var x=n;return atan(x=x+1,x=x+2);};f(1);", L"(1)==atan2(4.0,3.0)", 1},
+        {L"const f=func(n){var x=n;return atan(x=x+1,x=x+2);};f(1);", L"(1)==atan2(2.0,4.0)", 1},
         {L"const f=func(n){return cos(n);};f(1);", L"(1)==cos(1.0)", 1},
         {L"const f=func(n){return sin(n);};f(1.5);", L"(1.5)==sin(1.5)", 1, true},
         {L"const f=func(n){return sqrt(n);};f(1);", L"(1)==sqrt(1.0)", 1},
         {L"const f=func(n){return pow(n,2);};f(1);", L"(2)==pow(2.0,2.0)", 1},
         {L"const f=func(a,b){return fmod(a,b);};f(7,3);", L"(7,3)==fmod(7.0,3.0)", 1},
-        {L"const f=func(n){var x=n;return pow(x=x+1,x=x+2);};f(1);", L"(1)==64.0", 1},
+        {L"const f=func(n){var x=n;return pow(x=x+1,x=x+2);};f(1);", L"(1)==16.0", 1},
         {L"const f=func(n){return max(n,1);};f(1);", L"(1)==fmax(1.0,1.0)", 1},
         {L"const f=func(n){return min(n,1);};f(1);", L"(1)==fmin(1.0,1.0)", 1},
         {L"const f=func(n){return sign(n);};f(-3);", L"(-3)==-1", 1},

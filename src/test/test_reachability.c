@@ -109,7 +109,7 @@ bool test_reachability_bytecode_boundaries() {
                                 L"if (1 < 2) { return; } else { return; } var x = 99;",
                                 L"var a = { return; }, b = 99;",
                                 L"const a = { return; }, b = 99;",
-                                L"var f = func(a, b) {}; f(99, { return; });",
+                                L"var f = func(a, b) {}; f({ return; }, 99);",
                                 L"return; var f = func() { return 99; };"};
     for (size_t c = 0; c < sizeof(sources) / sizeof(*sources); c++) {
         arena_t *arena = create_arena(16);

@@ -63,7 +63,7 @@ Revision 3. Implementation described: [commit cf51b8c, including `for`](https://
 | `0x2A` | `EQUAL` | — | S, a, b → S, result | Compute `a == b` through object methods. |
 | `0x2B` | `DIFF` | — | S, a, b → S, result | Compute `a != b` through object methods. |
 | `0x2C` | `FUNC` | arg0: count; arg1: names id; ARG: body | S → S, function | Create a function with the current environment and optional native descriptor; clear ARG buffer. |
-| `0x2D` | `CALL` | arg0: count | S, argN, …, arg1, function → S, result | Pop the callable; pass arguments to its call method. A bytecode result arrives on return. |
+| `0x2D` | `CALL` | arg0: count | S, arg1, …, argN, function → S, result | Pop the callable; pass arguments to its call method. A bytecode result arrives on return. |
 | `0x2E` | `RET` | — | frame, x → caller, x | Put x in the reserved result slot; unwind contexts to the function and return to the saved address. |
 | `0x2F` | `ENTER` | — | S → S | Create a nested context. |
 | `0x30` | `LEAVE` | — | S → S, object | Destroy the current context, retaining and pushing its data object. |

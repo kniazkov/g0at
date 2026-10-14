@@ -70,7 +70,7 @@ The main `apply_reduction_rules` passes, with closely related steps combined, ar
 
 Direction is especially visible in `2 ** 3 ** 2`: exponentiation groups to the right as `2 ** (3 ** 2)`, producing `512.0`. Assignment `a = b = 5` is also constructed from the right: first `b = 5`, then assignment of its result to `a`. An ordinary subtraction chain uses left grouping.
 
-The unary rule cannot be explained solely by its pass position in the table. [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parsing_unary_operations.c) first reduces a power tail to the right of the operand. Thus `-2 ** 2` means `-(2 ** 2)`, while `2 ** -2` remains a valid negative exponent. Pass traversal and program evaluation order are different matters: the completed call's arguments are still evaluated from right to left, as described in Chapter 2.
+The unary rule cannot be explained solely by its pass position in the table. [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parsing_unary_operations.c) first reduces a power tail to the right of the operand. Thus `-2 ** 2` means `-(2 ** 2)`, while `2 ** -2` remains a valid negative exponent. Pass traversal and program evaluation order are different matters: the completed call's arguments are still evaluated from left to right, as described in Chapter 2.
 
 [Grouping example](../examples/06-expressions.goat):
 

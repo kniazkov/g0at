@@ -75,8 +75,8 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     const function_call_t *expr = (const function_call_t *)node;
     const lattice_element_t **args =
         alloc_from_arena(arena, (expr->args_count + 1) * sizeof(*args));
-    for (size_t i = expr->args_count; i > 0 && state->control_flow == FLOW_NORMAL; i--)
-        args[i - 1] = calculate_expression(expr->args[i - 1], state, arena);
+    for (size_t i = 0; i < expr->args_count && state->control_flow == FLOW_NORMAL; i++)
+        args[i] = calculate_expression(expr->args[i], state, arena);
     if (state->control_flow != FLOW_NORMAL)
         return make_bottom_element();
     const lattice_element_t *function = calculate_expression(expr->func_object, state, arena);
@@ -138,14 +138,8 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     const function_call_t *expr = (const function_call_t *)node;
     assert(expr->args_count < UINT16_MAX);
     instr_index_t first = code->size;
-    if (expr->args_count > 0) {
-        size_t index = expr->args_count;
-        do {
-            index--;
-            expression_t *arg = expr->args[index];
-            generate_bytecode_from_expression(arg, code, data);
-        } while (index > 0);
-    }
+    for (size_t index = 0; index < expr->args_count; index++)
+        generate_bytecode_from_expression(expr->args[index], code, data);
     generate_bytecode_from_expression(expr->func_object, code, data);
     add_instruction(code, (instruction_t){.opcode = CALL, .arg0 = (uint16_t)expr->args_count});
     return first;
@@ -156,8 +150,8 @@ static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
     size_t count = get_node_child_count(node) - 1;
     const lattice_element_t **args = alloc_from_arena((*state)->arena, (count + 1) * sizeof(*args));
-    for (size_t i = count; i > 0; i--)
-        args[i - 1] = visit_reachable_node(get_node_child(node, i), state, collector);
+    for (size_t i = 0; i < count; i++)
+        args[i] = visit_reachable_node(get_node_child(node, i + 1), state, collector);
     const lattice_element_t *callee =
         visit_reachable_node(get_node_child(node, 0), state, collector);
     if ((*state)->control_flow != FLOW_NORMAL)

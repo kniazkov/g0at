@@ -174,7 +174,7 @@ static bool evaluation_and_identity(void) {
     int64_t before = calls();
     process_t *proc = create_process();
     ASSERT(!run(proc, code) && calls() == before + 4);
-    ASSERT(integer_variable(proc, L"first", 21) && integer_variable(proc, L"second", 3));
+    ASSERT(integer_variable(proc, L"first", 12) && integer_variable(proc, L"second", 3));
     ASSERT(integer_variable(proc, L"trace", 34));
     ASSERT(integer_variable(proc, L"a", 1) && variable(proc, L"b") == get_boolean_object(true));
     ASSERT(integer_variable(proc, L"c", 101) && integer_variable(proc, L"d", 2));
@@ -202,9 +202,9 @@ static bool native_without_context(void) {
         object_t *arg = i < 8 ? create_real_number_object(proc, reals[i])
                               : create_integer_object(proc, integers[i - 8]);
         push_object_onto_stack(thread->data_stack, create_integer_object(proc, 73));
+        push_object_onto_stack(thread->data_stack, arg);
         push_object_onto_stack(thread->data_stack,
                                create_string_object(proc, STATIC_STRING(L"ignored")));
-        push_object_onto_stack(thread->data_stack, arg);
         thread->instr_id = 123;
         ASSERT(call_object(function, 2, thread));
         ASSERT(thread->context == context && thread->instr_id == 124

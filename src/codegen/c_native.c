@@ -74,7 +74,7 @@ static bool capture_native_arguments(const node_t *node,
                                      source_builder_t *prelude) {
     size_t count = get_node_child_count(node) - 1;
     bool success = true;
-    for (size_t i = count; i > 0 && success; i--) {
+    for (size_t i = 1; i <= count && success; i++) {
         c_generated_expression_t argument =
             generate_c_code_from_node(get_node_child(node, i), context);
         success = argument.success

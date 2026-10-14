@@ -1,0 +1,4 @@
+var trace=0;
+var tick=func(n){trace=trace*10+n;return n;};
+var f=func(a,b){print(a);print(",");print(b);print(":");print(trace);};
+f(tick(1),tick(2));
