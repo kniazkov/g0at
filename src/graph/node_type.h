@@ -85,6 +85,9 @@ typedef enum {
     /** @brief Function call node type. */
     NODE_FUNCTION_CALL,
 
+    /** @brief Member access node type (named property read or write target). */
+    NODE_MEMBER_ACCESS,
+
     /** @brief Simple assignment operation node type. */
     NODE_SIMPLE_ASSIGNMENT,
 

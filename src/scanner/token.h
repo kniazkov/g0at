@@ -157,6 +157,9 @@ typedef struct {
     /** @brief Group for assignment operators. */
     token_list_t assignment_operators;
 
+    /** @brief Group for member access operators (`.`). */
+    token_list_t member_access_operators;
+
     /** @brief Group for comparison operators. */
     token_list_t comparison_operators;
     token_list_t equality_operators;

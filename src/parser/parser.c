@@ -61,6 +61,10 @@ parsing_function_call_args(token_t *identifier, parser_memory_t *memory, token_g
 compilation_error_t *
 parsing_single_identifiers(token_t *identifier, parser_memory_t *memory, token_groups_t *groups);
 
+/** @brief Rule for handling member access (an expression followed by `.name`). */
+compilation_error_t *
+parsing_member_access(token_t *operator, parser_memory_t * memory, token_groups_t *groups);
+
 /** @brief Rule for handling variable declarations. */
 compilation_error_t *
 parsing_variable_declarations(token_t *keyword, parser_memory_t *memory, token_groups_t *groups);
@@ -380,6 +384,7 @@ apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory, parsing_r
     result->functions = collect_nodes_from_group(&groups->function_objects, memory->graph);
     APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);
     APPLY_FORWARD(unprocessed_parenthesized_expressions, preparsing_parenthesized_expressions);
+    APPLY_FORWARD(member_access_operators, parsing_member_access);
     APPLY_FORWARD(identifiers, parsing_single_identifiers);
     APPLY_FORWARD(update_operators, parsing_postfix_updates);
     APPLY_BACKWARD(update_operators, parsing_prefix_updates);

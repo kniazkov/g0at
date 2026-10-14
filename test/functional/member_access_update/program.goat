@@ -1,0 +1,5 @@
+var obj = {};
+obj.x = 1;
+obj.x = obj.x + 1;
+println(obj.x);
+println(obj);

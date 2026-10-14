@@ -27,6 +27,8 @@ typedef enum {
     VAR,        /**< Declares a new mutable variable in current context. */
     CONST,      /**< Declares a new immutable constant in current context. */
     STORE,      /**< Stores to existing variable or creates new if not found. */
+    GETPROP,    /**< Pushes the named property of the top object, or `null` if missing. */
+    SETPROP,    /**< Stores the value below the top into the named property of the top object. */
     UPLUS,      /**< Applies unary plus to the top value. */
     UMINUS,     /**< Negates the top value. */
     INC,        /**< Replaces the top value with its numeric successor. */
