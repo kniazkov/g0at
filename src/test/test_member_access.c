@@ -82,7 +82,10 @@ bool test_member_access_parser(void) {
     const wchar_t *invalid[] = {L"obj.;",
                                 L".x;",
                                 L"var obj = {}; obj..x;",
-                                L"var obj = {}; obj.1;"};
+                                L"var obj = {}; obj.1;",
+                                L"f(1,);",
+                                L"f(,1);",
+                                L"var obj = {}; obj.f(1,);"};
     for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
