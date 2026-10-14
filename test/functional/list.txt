@@ -312,6 +312,10 @@ member_access_alias
 member_access_update
 member_access_const
 member_access_temp_object
+method_call_state
+method_call_args
+method_call_chain
+method_call_factory
 
 # Post-analysis AST replacements
 replacement_values

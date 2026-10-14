@@ -29,6 +29,13 @@ compilation_error_t *preparsing_parenthesized_expressions(token_t *token,
         remove_token_from_group(token);
         return NULL;
     }
+    /* Parentheses of a method call `expr.name(...)` are consumed by the member access reduction
+     * rule, so they must not be treated as a parenthesized expression. */
+    if (token->left && token->left->type == TOKEN_IDENTIFIER && token->left->left
+        && token->left->left->type == TOKEN_OPERATOR && token->left->left->text.data[0] == L'.') {
+        remove_token_from_group(token);
+        return NULL;
+    }
     node_t *node = create_parenthesized_expression_node(memory->graph);
     token_t *expr = (token_t *)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     expr->type = TOKEN_EXPRESSION;
