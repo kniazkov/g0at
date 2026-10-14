@@ -65,7 +65,12 @@ bool test_member_access_parser(void) {
                               L"var obj = {}; (obj).x = 5;",
                               L"var obj = {}; print(obj.x);",
                               L"var obj = {}; obj.x;",
-                              L"obj.x = obj.y;"};
+                              L"obj.x = obj.y;",
+                              L"var obj = {const f = func() { return 1; }}; obj.f();",
+                              L"var obj = {const f = func(x) { return x; }}; obj.f(42);",
+                              L"var obj = {var inner = {}; inner.g = func() { return 2; }}; obj.inner.g();",
+                              L"var obj = {const f = func() { return 1; }}; (obj).f();",
+                              L"var obj = {}; obj.f = func() { return 3; }; print(obj.f());"};
     for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
@@ -134,6 +139,35 @@ bool test_member_access_ast(void) {
     FREE_STRING(pretty);
     FREE_STRING(indented_source);
     destroy_source_builder(sb);
+    destroy_arena(arena);
+    return true;
+}
+
+bool test_member_access_method_call_ast(void) {
+    arena_t *arena = create_arena(8);
+    variable_t *var = (variable_t *)create_variable_node(arena, (string_view_t){L"obj", 3});
+    expression_t *member =
+        create_member_access_node(arena, &var->base.base, (string_view_t){L"foo", 3});
+    node_t *call = create_function_call_node_without_args(arena, member);
+    ASSERT(call->vtbl->type == NODE_FUNCTION_CALL);
+    ASSERT(get_node_child_count(call) == 1);
+    ASSERT(get_node_child(call, 0) == &member->base);
+    ASSERT(get_node_child(call, 0)->vtbl->type == NODE_MEMBER_ACCESS);
+
+    string_value_t source = generate_goat_code_from_node(call);
+    ASSERT(!wcscmp(source.data, L"obj.foo()"));
+    FREE_STRING(source);
+
+    code_builder_t *builder = create_code_builder();
+    data_builder_t *data = create_data_builder();
+    generate_bytecode_from_node(call, builder, data);
+    ASSERT(builder->size == 3);
+    ASSERT(builder->instructions[0].opcode == VLOAD);
+    ASSERT(builder->instructions[1].opcode == GETPROP);
+    ASSERT(builder->instructions[2].opcode == CALL);
+    ASSERT(data->descriptors_count == 2);
+    destroy_code_builder(builder);
+    destroy_data_builder(data);
     destroy_arena(arena);
     return true;
 }

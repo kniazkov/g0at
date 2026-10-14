@@ -244,6 +244,7 @@ static test_description_t test_list[] = {
     {"member access scanner", test_member_access_scanner},
     {"member access parser", test_member_access_parser},
     {"member access AST", test_member_access_ast},
+    {"method call AST", test_member_access_method_call_ast},
     {"member access VM", test_member_access_vm},
     {"'sign' function", test_sign_function},
     {"context cloning", test_context_cloning},

@@ -15,5 +15,8 @@ bool test_member_access_parser(void);
 /** @brief Tests the member access AST node. */
 bool test_member_access_ast(void);
 
+/** @brief Tests that a method call is represented as a function call on a member access. */
+bool test_member_access_method_call_ast(void);
+
 /** @brief Tests GETPROP and SETPROP opcodes in the virtual machine. */
 bool test_member_access_vm(void);

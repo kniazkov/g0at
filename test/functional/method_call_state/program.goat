@@ -1,0 +1,12 @@
+const obj = {
+    var x = 0;
+
+    const getX = func() {
+        return ++x;
+    }
+}
+
+var a = obj.getX()
+println(a)
+var b = obj.getX()
+println(b)

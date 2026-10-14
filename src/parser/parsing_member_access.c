@@ -4,6 +4,7 @@
  * @brief Defines the reduction rule for member access (`.` operator).
  */
 
+#include "graph/expression.h"
 #include "graph/member_access.h"
 #include "graph/variable.h"
 #include "lib/arena.h"
@@ -43,6 +44,19 @@ parsing_member_access(token_t *operator, parser_memory_t * memory, token_groups_
     }
 
     expression_t *member = create_member_access_node(memory->graph, object, right_token->text);
-    collapse_tokens_to_token(memory, left_token, right_token, TOKEN_EXPRESSION, &member->base);
+
+    token_t *call_args = right_token->right;
+    if (call_args != NULL && call_args->type == TOKEN_BRACKET_PAIR
+        && call_args->text.data[0] == '(') {
+        /* Method call `object.member(...)`: the member access becomes the callee of a function
+         * call node, and the argument list is parsed by the function call arguments rule. */
+        node_t *func_call = create_function_call_node_without_args(memory->graph, member);
+        call_args->type = TOKEN_FCALL_ARGS;
+        call_args->node = func_call;
+        collapse_tokens_to_token(memory, left_token, call_args, TOKEN_EXPRESSION, func_call);
+        append_token_to_group(&groups->function_arguments, call_args);
+    } else {
+        collapse_tokens_to_token(memory, left_token, right_token, TOKEN_EXPRESSION, &member->base);
+    }
     return NULL;
 }

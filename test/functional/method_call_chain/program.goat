@@ -1,0 +1,10 @@
+const outer = {
+    var inner = {
+        var y = 5;
+        const get = func() {
+            return y;
+        }
+    }
+}
+
+println(outer.inner.get())

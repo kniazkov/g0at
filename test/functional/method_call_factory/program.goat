@@ -1,0 +1,10 @@
+var obj = {};
+obj.inc = func() {
+    var n = 0;
+    return func() {
+        return ++n;
+    };
+};
+var counter = obj.inc();
+println(counter());
+println(counter());
