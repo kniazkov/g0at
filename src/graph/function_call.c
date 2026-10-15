@@ -16,12 +16,14 @@
 #include "analysis/reachability.h"
 #include "codegen/c_call.h"
 #include "codegen/code_builder.h"
+#include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "expression.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "member_access.h"
 #include "model/builtin_function.h"
 
 #include <assert.h>
@@ -140,8 +142,19 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     instr_index_t first = code->size;
     for (size_t index = 0; index < expr->args_count; index++)
         generate_bytecode_from_expression(expr->args[index], code, data);
-    generate_bytecode_from_expression(expr->func_object, code, data);
-    add_instruction(code, (instruction_t){.opcode = CALL, .arg0 = (uint16_t)expr->args_count});
+    if (expr->func_object->base.vtbl->type == NODE_MEMBER_ACCESS) {
+        /* Method call `object.member(...)`: keep the receiver on the stack below the function so
+         * CALLM can pass it as the method context. */
+        const member_access_t *member = (const member_access_t *)expr->func_object;
+        generate_bytecode_from_expression(member->object, code, data);
+        add_instruction(code, (instruction_t){.opcode = DUP});
+        uint32_t index = add_string_to_data_segment_ex(data, member->name);
+        add_instruction(code, (instruction_t){.opcode = GETPROP, .arg1 = index});
+        add_instruction(code, (instruction_t){.opcode = CALLM, .arg0 = (uint16_t)expr->args_count});
+    } else {
+        generate_bytecode_from_expression(expr->func_object, code, data);
+        add_instruction(code, (instruction_t){.opcode = CALL, .arg0 = (uint16_t)expr->args_count});
+    }
     return first;
 }
 

@@ -165,10 +165,11 @@ bool test_member_access_method_call_ast(void) {
     code_builder_t *builder = create_code_builder();
     data_builder_t *data = create_data_builder();
     generate_bytecode_from_node(call, builder, data);
-    ASSERT(builder->size == 3);
+    ASSERT(builder->size == 4);
     ASSERT(builder->instructions[0].opcode == VLOAD);
-    ASSERT(builder->instructions[1].opcode == GETPROP);
-    ASSERT(builder->instructions[2].opcode == CALL);
+    ASSERT(builder->instructions[1].opcode == DUP);
+    ASSERT(builder->instructions[2].opcode == GETPROP);
+    ASSERT(builder->instructions[3].opcode == CALLM);
     ASSERT(data->descriptors_count == 2);
     destroy_code_builder(builder);
     destroy_data_builder(data);
