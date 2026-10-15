@@ -83,7 +83,7 @@ parsing_function_call_args(token_t *container, parser_memory_t *memory, token_gr
         }
         if (token->right == NULL) {
             error = create_error_from_token(memory->errors,
-                                            token->right,
+                                            token,
                                             CRITICAL,
                                             get_messages()->expected_expr_after_comma);
             goto cleanup;

@@ -1,0 +1,1 @@
+Fatal error in 'program.goat', 2.12: Expected expression after comma in argument list

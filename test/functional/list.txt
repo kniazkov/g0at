@@ -316,6 +316,8 @@ method_call_state
 method_call_args
 method_call_chain
 method_call_factory
+trailing_comma_in_call
+trailing_comma_in_method_call
 
 # Post-analysis AST replacements
 replacement_values

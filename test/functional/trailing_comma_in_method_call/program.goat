@@ -1,0 +1,4 @@
+const obj = {
+    const f = func(x) { return x; }
+}
+println(obj.f(1,))
