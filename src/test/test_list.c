@@ -252,6 +252,7 @@ static test_description_t test_list[] = {
     {"context cloning", test_context_cloning},
     {"context 'this' cycle release", test_context_this_cycle_release},
     {"context 'this' preserved", test_context_this_preserved},
+    {"set property self reference", test_set_property_self_reference},
     {"function definition", test_function_definition},
     {"closure", test_closure}
 

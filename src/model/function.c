@@ -388,8 +388,10 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
                                                          : (object_array_t){&dfobj->closure, 1});
     create_object_property(ctx->data, get_this_key(), ctx->data, true);
     /* The method body resolves names through the receiver, so every call made from it, and every
-       function created in it, must stay on the bytecode path. */
-    ctx->native_disabled = receiver ? true : (ctx->native_disabled | retry);
+       function created in it, must stay on the bytecode path. The same holds for a closure that
+       itself was created inside a method body, even after it escapes to an outer scope. */
+    ctx->native_disabled =
+        receiver || dfobj->native_disabled ? true : (ctx->native_disabled | retry);
     ctx->control_flow = FLOW_RETURN;
     ctx->jump_address[0] = thread->instr_id + 1;
     uint16_t index;

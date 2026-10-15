@@ -1,0 +1,8 @@
+var obj = {};
+obj.self = obj;
+obj.self = null;
+println(obj);
+obj.self = obj;
+obj.self = obj;
+obj.self = 42;
+println(obj);

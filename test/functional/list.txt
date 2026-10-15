@@ -328,7 +328,11 @@ method_receiver_binding
 method_call_many
 method_native_receiver
 method_native_closure
+method_native_closure_nested
 method_this_return
+
+# User-defined objects
+self_reference_replace
 
 # The 'this' name is reserved
 this_reserved_var

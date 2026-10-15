@@ -81,6 +81,12 @@ bool test_context_this_cycle_release();
 bool test_context_this_preserved();
 
 /**
+ * @brief Tests that replacing a property with or by a self-reference keeps the weak reference.
+ * @return Returns `true` if the test passes, or `false` if it fails.
+ */
+bool test_set_property_self_reference();
+
+/**
  * @brief Tests the definition of a custom function with arguments and its call.
  * @return Returns `true` if the test passes, or `false` if it fails.
  */

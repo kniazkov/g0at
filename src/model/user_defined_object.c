@@ -383,9 +383,15 @@ static model_status_t set_property(object_t *obj, object_t *key, object_t *value
     if (ref->is_constant) {
         return MSTAT_PROPERTY_IS_CONSTANT;
     }
-    DECREF(ref->object);
+    /* A self-reference holds no reference count (see create_property), so replacing it must not
+       release it, and a new self-reference must not be retained. */
+    if (ref->object != obj) {
+        DECREF(ref->object);
+    }
+    if (value != obj) {
+        INCREF(value);
+    }
     ref->object = value;
-    INCREF(value);
     return MSTAT_OK;
 }
 

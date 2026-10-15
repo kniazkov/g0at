@@ -334,6 +334,27 @@ bool test_root_object_call() {
     return true;
 }
 
+bool test_set_property_self_reference() {
+    process_t *process = create_process();
+    object_t *root_object = get_root_object();
+    object_t *obj = create_user_defined_object(process, (object_array_t){&root_object, 1});
+    object_t *key = create_string_object(process, STATIC_STRING(L"self"));
+    /* A self-reference holds no reference count (see create_property), so replacing it must not
+       release it and a new self-reference must not be retained. */
+    ASSERT(create_object_property(obj, key, obj, false) == MSTAT_OK);
+    ASSERT(get_object_property(obj, key) == obj);
+    ASSERT(set_object_property(obj, key, get_null_object()) == MSTAT_OK);
+    ASSERT(get_object_property(obj, key) == get_null_object());
+    ASSERT(set_object_property(obj, key, obj) == MSTAT_OK);
+    ASSERT(get_object_property(obj, key) == obj);
+    ASSERT(set_object_property(obj, key, obj) == MSTAT_OK);
+    ASSERT(get_object_property(obj, key) == obj);
+    ASSERT(set_object_property(obj, key, get_null_object()) == MSTAT_OK);
+    ASSERT(get_object_property(obj, key) == get_null_object());
+    destroy_process(process);
+    return true;
+}
+
 bool test_context_this_cycle_release() {
     process_t *proc = create_process();
     size_t objects_before = proc->objects.size;
