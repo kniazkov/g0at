@@ -52,6 +52,14 @@ parsing_variable_declarations(token_t *keyword, parser_memory_t *memory, token_g
             }
         }
         assert(item != NULL);
+        if (name_is_reserved_this(item->name)) {
+            error = create_error_from_token(memory->errors,
+                                            keyword,
+                                            CRITICAL,
+                                            get_messages()->reserved_this_name);
+            FREE(item);
+            goto cleanup;
+        }
         append_to_vector(vector, item);
         token = token->right;
         if (!token) {
@@ -121,6 +129,14 @@ parsing_constant_declarations(token_t *keyword, parser_memory_t *memory, token_g
         declarator_spec_t *item = create_declarator_from_simple_assignment(token->node);
         if (item == NULL) {
             goto invalid_declaration;
+        }
+        if (name_is_reserved_this(item->name)) {
+            error = create_error_from_token(memory->errors,
+                                            keyword,
+                                            CRITICAL,
+                                            get_messages()->reserved_this_name);
+            FREE(item);
+            goto cleanup;
         }
         append_to_vector(vector, item);
         token = token->right;

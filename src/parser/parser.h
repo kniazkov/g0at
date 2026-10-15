@@ -11,6 +11,11 @@
 #include "lib/linked_list.h"
 #include "scanner/scanner.h"
 
+/** @brief Checks whether a name view is the reserved `this` identifier. */
+static inline bool name_is_reserved_this(string_view_t name) {
+    return name.length == 4 && name.data && !wmemcmp(name.data, L"this", 4);
+}
+
 /** @brief Partial result of the parsing process. */
 typedef struct {
     /** @brief List of parsed function objects. */

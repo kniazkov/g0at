@@ -325,6 +325,15 @@ method_this_read
 method_this_write
 method_update_variants
 method_receiver_binding
+method_call_many
+method_native_receiver
+
+# The 'this' name is reserved
+this_reserved_var
+this_reserved_const
+this_reserved_param
+this_reserved_catch
+this_reserved_assignment
 
 # Post-analysis AST replacements
 replacement_values

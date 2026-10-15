@@ -33,6 +33,7 @@
 #include "unused_bindings.h"
 
 #include <assert.h>
+#include <wchar.h>
 
 /** @brief Adds built-ins to the root scope using a shared synthetic declarator. */
 static scope_t *create_scope_from_root_context(arena_t *arena) {
@@ -266,6 +267,17 @@ static void bind_variables_from_node_and_children(node_t *node,
             bool is_left_operand =
                 parent_type == NODE_SIMPLE_ASSIGNMENT && get_node_child(parent, 0) == (node_t *)var;
             if (is_left_operand) {
+                if (var->name.length == 4 && var->name.data
+                    && !wmemcmp(var->name.data, L"this", 4)) {
+                    compilation_error_t *error =
+                        create_error_from_node(memory->errors,
+                                               node,
+                                               ERROR,
+                                               get_messages()->reserved_this_name);
+                    error->next = *errors;
+                    *errors = error;
+                    return;
+                }
                 node_t *assign_parent = parent->parent;
                 if (assign_parent && assign_parent->vtbl->type == NODE_STATEMENT_EXPRESSION
                     && assign_parent->parent

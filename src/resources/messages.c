@@ -93,6 +93,8 @@ static messages_t english = {
     .invalid_const_declaration_syntax = L"Expected name with value assignment, but got '%s'",
     .invalid_function_argument = L"Function argument must be an identifier, but got '%s'",
     .invalid_parenthesized_expression = L"Inside parentheses there must be exactly one expression",
+    .reserved_this_name =
+        L"The name 'this' is reserved for the current method context and cannot be declared",
     .variable_used_before_declaration = L"Variable '%s' is used before its declaration",
     .implicit_constant_declaration_invalid =
         L"Implicit declaration of constant '%s' is only allowed for a standalone assignment",
@@ -197,6 +199,8 @@ static messages_t russian = {
     .invalid_function_argument = L"Аргумент функции должен быть идентификатором, но получено '%s'",
     .invalid_parenthesized_expression =
         L"Внутри круглых скобок должно быть выражение, причем ровно одно",
+    .reserved_this_name =
+        L"Имя 'this' зарезервировано для текущего контекста метода и не может быть объявлено",
     .variable_used_before_declaration = L"Переменная '%s' используется до ее объявления",
     .implicit_constant_declaration_invalid = L"Неявное объявление константы '%s' допустимо только "
                                              L"в виде отдельного оператора присваивания",
