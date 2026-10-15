@@ -292,6 +292,21 @@ create_property(object_t *obj, object_t *key, object_t *value, bool constant) {
     return MSTAT_OK;
 }
 
+bool replace_object_property_value(object_t *obj, object_t *key, object_t *value) {
+    if (obj->vtbl->type != TYPE_USER_DEFINED_OBJECT) {
+        return false;
+    }
+    object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
+    if (!ref) {
+        return false;
+    }
+    INCREF(value);
+    DECREF(ref->object);
+    ref->object = value;
+    return true;
+}
+
 /** @brief Implements @ref object_vtbl_t::set_property. */
 static model_status_t set_property(object_t *obj, object_t *key, object_t *value) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;

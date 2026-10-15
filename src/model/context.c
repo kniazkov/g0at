@@ -10,6 +10,11 @@
 #include "lib/allocate.h"
 #include "object.h"
 
+object_t *get_this_key() {
+    static object_static_string_t storage;
+    return get_static_string_object(&storage, L"this");
+}
+
 context_t *
 create_context_with_protos(process_t *process, context_t *caller, object_array_t protos) {
     context_t *ctx = (context_t *)ALLOC(sizeof(context_t));
@@ -31,6 +36,9 @@ context_t *create_context(process_t *process, context_t *caller, object_t *proto
 }
 
 context_t *destroy_context(context_t *context) {
+    /* The `this` property points back to the data object itself. Replace it with null so the
+       strong self-reference is released and the object can be freed by reference counting. */
+    replace_object_property_value(context->data, get_this_key(), get_null_object());
     DECREF(context->data);
     context_t *previous = context->previous;
     FREE(context);

@@ -69,6 +69,12 @@ bool test_sign_function();
 bool test_context_cloning();
 
 /**
+ * @brief Tests that destroying a context releases the `this` self-reference instead of leaking.
+ * @return Returns `true` if the test passes, or `false` if it fails.
+ */
+bool test_context_this_cycle_release();
+
+/**
  * @brief Tests the definition of a custom function with arguments and its call.
  * @return Returns `true` if the test passes, or `false` if it fails.
  */

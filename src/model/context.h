@@ -59,6 +59,9 @@ struct context_t {
     stack_index_t unwinding_index;
 };
 
+/** @brief Returns the static string object used as the `this` property key. */
+object_t *get_this_key();
+
 /** @brief Retrieves the singleton instance of the root context. */
 context_t *get_root_context();
 

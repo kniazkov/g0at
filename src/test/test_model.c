@@ -9,6 +9,7 @@
 #include "codegen/linker.h"
 #include "lib/allocate.h"
 #include "lib/split64.h"
+#include "model/context.h"
 #include "model/object.h"
 #include "model/process.h"
 #include "model/thread.h"
@@ -330,5 +331,21 @@ bool test_closure() {
 
 bool test_root_object_call() {
     ASSERT(!call_object(get_root_object(), 0, NULL, NULL));
+    return true;
+}
+
+bool test_context_this_cycle_release() {
+    process_t *proc = create_process();
+    size_t objects_before = proc->objects.size;
+    context_t *ctx = create_context(proc, get_root_context(), NULL);
+    object_t *data = ctx->data;
+    /* Set up the same self-reference that a method call creates: the `this` property points back
+       to the context's data object itself. */
+    ASSERT(create_object_property(data, get_this_key(), data, true) == MSTAT_OK);
+    destroy_context(ctx);
+    /* Replacing `this` with null before DECREF must release the self-reference, so the data
+       object is removed from the process's list of live objects. */
+    ASSERT(proc->objects.size == objects_before);
+    destroy_process(proc);
     return true;
 }

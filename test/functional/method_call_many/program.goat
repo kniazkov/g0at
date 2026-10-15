@@ -1,0 +1,7 @@
+const obj = {
+    const get = func() { return 1; };
+};
+for (var i = 0; i < 300000; i++) {
+    obj.get();
+}
+println("done");
