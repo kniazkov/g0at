@@ -327,6 +327,8 @@ method_update_variants
 method_receiver_binding
 method_call_many
 method_native_receiver
+method_native_closure
+method_this_return
 
 # The 'this' name is reserved
 this_reserved_var

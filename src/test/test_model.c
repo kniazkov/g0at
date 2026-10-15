@@ -343,8 +343,27 @@ bool test_context_this_cycle_release() {
        to the context's data object itself. */
     ASSERT(create_object_property(data, get_this_key(), data, true) == MSTAT_OK);
     destroy_context(ctx);
-    /* Replacing `this` with null before DECREF must release the self-reference, so the data
-       object is removed from the process's list of live objects. */
+    /* The `this` property is a weak self-reference, so releasing the context's reference must
+       release the data object without leaving a cycle behind. */
+    ASSERT(proc->objects.size == objects_before);
+    destroy_process(proc);
+    return true;
+}
+
+bool test_context_this_preserved() {
+    process_t *proc = create_process();
+    size_t objects_before = proc->objects.size;
+    context_t *ctx = create_context(proc, get_root_context(), NULL);
+    object_t *data = ctx->data;
+    ASSERT(create_object_property(data, get_this_key(), data, true) == MSTAT_OK);
+    /* Simulate the data object escaping the call: the program keeps a reference to it. */
+    INCREF(data);
+    destroy_context(ctx);
+    /* Destroying the context must not mutate the still-live object: `this` keeps pointing to it. */
+    ASSERT(get_object_property(data, get_this_key()) == data);
+    ASSERT(create_object_property(data, get_this_key(), data, true)
+           == MSTAT_PROPERTY_ALREADY_EXISTS);
+    DECREF(data);
     ASSERT(proc->objects.size == objects_before);
     destroy_process(proc);
     return true;

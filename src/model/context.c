@@ -36,9 +36,10 @@ context_t *create_context(process_t *process, context_t *caller, object_t *proto
 }
 
 context_t *destroy_context(context_t *context) {
-    /* The `this` property points back to the data object itself. Replace it with null so the
-       strong self-reference is released and the object can be freed by reference counting. */
-    replace_object_property_value(context->data, get_this_key(), get_null_object());
+    /* The `this` property is a weak self-reference (see create_property), so releasing the
+       context's reference does not leave a cycle behind and never mutates the data object,
+       which may still be reachable from the program (e.g. returned from the call or captured
+       by a closure). */
     DECREF(context->data);
     context_t *previous = context->previous;
     FREE(context);

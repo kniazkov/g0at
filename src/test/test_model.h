@@ -75,6 +75,12 @@ bool test_context_cloning();
 bool test_context_this_cycle_release();
 
 /**
+ * @brief Tests that destroying a context does not mutate a still-live object's `this` property.
+ * @return Returns `true` if the test passes, or `false` if it fails.
+ */
+bool test_context_this_preserved();
+
+/**
  * @brief Tests the definition of a custom function with arguments and its call.
  * @return Returns `true` if the test passes, or `false` if it fails.
  */

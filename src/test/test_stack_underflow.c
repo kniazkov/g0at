@@ -62,7 +62,8 @@ void run_stack_underflow_case(int index) {
                                                         0,
                                                         0,
                                                         proc->main_thread->context->data,
-                                                        NULL);
+                                                        NULL,
+                                                        false);
                 call_object(func, 1, NULL, proc->main_thread);
                 break;
             }

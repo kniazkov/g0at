@@ -251,6 +251,7 @@ static test_description_t test_list[] = {
     {"'sign' function", test_sign_function},
     {"context cloning", test_context_cloning},
     {"context 'this' cycle release", test_context_this_cycle_release},
+    {"context 'this' preserved", test_context_this_preserved},
     {"function definition", test_function_definition},
     {"closure", test_closure}
 

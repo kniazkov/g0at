@@ -380,14 +380,6 @@ static inline model_status_t set_object_property(object_t *obj, object_t *key, o
     return obj->vtbl->set_property(obj, key, value);
 }
 
-/**
- * @brief Replaces the value of an existing property, ignoring its constant flag.
- *
- * Used to detach a self-referencing property (e.g. `this`) before an object is released.
- * @return `true` if the property existed and was replaced, `false` otherwise.
- */
-bool replace_object_property_value(object_t *obj, object_t *key, object_t *value);
-
 /** @brief Returns the numeric successor or an exception. */
 static inline operation_result_t increment_object(process_t *process, object_t *obj) {
     return obj->vtbl->increment(process, obj);
@@ -618,7 +610,8 @@ object_t *create_function_object(process_t *process,
                                  size_t arg_count,
                                  instr_index_t first_instr_id,
                                  object_t *closure,
-                                 native_function_descriptor_t *native_function);
+                                 native_function_descriptor_t *native_function,
+                                 bool native_disabled);
 
 /** @brief Macro to declare a getter function for a static object. */
 #define DECLARE_STATIC_OBJECT(name) object_t *get_##name();

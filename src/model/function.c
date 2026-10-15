@@ -210,6 +210,15 @@ typedef struct {
     /** @brief The lexical closure environment of the function. */
     object_t *closure;
 
+    /**
+     * @brief The function was created in a context where native execution was disabled.
+     *
+     * Functions created inside a method body resolve names through the receiver via their
+     * closure, so a native specialization would bypass that resolution. The flag survives the
+     * closure escaping to an outer scope.
+     */
+    bool native_disabled;
+
     /** @brief Keeps specialization metadata and library code alive. */
     native_function_descriptor_t *native_function;
 } object_dynamic_function_t;
@@ -347,9 +356,12 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
     require_object_stack_size(thread->data_stack, arg_count);
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
     /* A method call resolves names through the receiver, which a native specialization does not
-       model. Keep such calls on the bytecode path until receiver-aware name resolution exists. */
+       model. Keep such calls on the bytecode path until receiver-aware name resolution exists.
+       The same holds for functions created inside a method body: their closure inherits the
+       method context, so native execution would bypass the receiver, even after the closure
+       escapes to an outer scope. */
     const goat_native_entry_v1_t *entry =
-        receiver || thread->context->native_disabled
+        receiver || thread->context->native_disabled || dfobj->native_disabled
             ? NULL
             : select_native_entry(dfobj, arg_count, thread->data_stack);
     bool retry = false;
@@ -375,7 +387,9 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
                                                 receiver ? (object_array_t){method_protos, 2}
                                                          : (object_array_t){&dfobj->closure, 1});
     create_object_property(ctx->data, get_this_key(), ctx->data, true);
-    ctx->native_disabled |= retry;
+    /* The method body resolves names through the receiver, so every call made from it, and every
+       function created in it, must stay on the bytecode path. */
+    ctx->native_disabled = receiver ? true : (ctx->native_disabled | retry);
     ctx->control_flow = FLOW_RETURN;
     ctx->jump_address[0] = thread->instr_id + 1;
     uint16_t index;
@@ -453,7 +467,8 @@ object_t *create_function_object(process_t *process,
                                  size_t arg_count,
                                  instr_index_t first_instr_id,
                                  object_t *closure,
-                                 native_function_descriptor_t *native_function) {
+                                 native_function_descriptor_t *native_function,
+                                 bool native_disabled) {
     object_dynamic_function_t *obj =
         (object_dynamic_function_t *)CALLOC(sizeof(object_dynamic_function_t));
     obj->base.vtbl = &dynamic_vtbl;
@@ -469,6 +484,7 @@ object_t *create_function_object(process_t *process,
     obj->native_function = retain_native_function_descriptor(native_function);
     obj->closure = closure;
     INCREF(closure);
+    obj->native_disabled = native_disabled;
     add_object_to_list(&process->objects, &obj->base);
     return &obj->base;
 }

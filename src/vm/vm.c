@@ -587,7 +587,8 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
                                arg_count,
                                first_instr_id,
                                closure,
-                               get_bytecode_native_function(runtime->code, thread->instr_id));
+                               get_bytecode_native_function(runtime->code, thread->instr_id),
+                               thread->context->native_disabled);
     push_object_onto_stack(thread->data_stack, function);
     thread->args_count = 0;
     thread->instr_id++;
