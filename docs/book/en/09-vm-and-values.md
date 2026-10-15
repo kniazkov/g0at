@@ -97,7 +97,7 @@ When loading a variable, the VM first requests an own property of the current co
 Separate table methods read, create, and modify properties. A name's existence, the ability to read it, and the ability to change it are therefore different questions. The same object mechanism underlies execution environments and the closures in the next chapter.
 
 > [!CAUTION]
-> The C object API is broader than Goat's available syntax. This version has no general property access through `obj.name` or `obj[key]`, nor user constructs for specifying an arbitrary prototype list. Having corresponding model methods does not mean those features are already available in source programs.
+> The C object API is broader than Goat's available syntax. This version has no bracket access through `obj[key]`, nor user constructs for specifying an arbitrary prototype list. Property access through `obj.name` and method calls are available and are examined in chapter 10. Having corresponding model methods does not mean every feature is already available in source programs.
 
 <a id="section-9-7"></a>
 

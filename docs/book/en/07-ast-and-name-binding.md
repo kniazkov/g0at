@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/07-ast-and-name-binding.md) · [Previous chapter](06-syntax-analysis.md) · [Next chapter](08-bytecode-generation.md)
 
-Edition 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Edition 4. Implementation described: [commit ae26b84, method calls and the `this` constant](https://github.com/kniazkov/g0at/tree/ae26b849471233f3329214f3c170a7a26a756118).
 
 <a id="section-7-1"></a>
 
@@ -10,15 +10,15 @@ Edition 3. Implementation described: [commit cf51b8c, including `for`](https://g
 
 The parser can construct a variable node for `x` without knowing where that variable was declared. Recognizing a name is sufficient for syntax. It is insufficient for analysis: identical names may refer to different variables, while separate uses sometimes need to lead to one declaration.
 
-After parsing, the AST (abstract syntax tree) is therefore augmented with scopes, parent pointers, and declaration links. This stage takes the root node and produces a structure suitable for determining which data the program reads and modifies. The main pass is in [analysis.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/analysis.c) and runs even with `--optimize none`.
+After parsing, the AST (abstract syntax tree) is therefore augmented with scopes, parent pointers, and declaration links. This stage takes the root node and produces a structure suitable for determining which data the program reads and modifies. The main pass is in [analysis.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/analysis/analysis.c) and runs even with `--optimize none`.
 
 <a id="section-7-2"></a>
 
 ## 7.2. Nodes and Connection Kinds
 
-The common [node_t](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/node.h) stores a method table, parent, source range, scope, traversal identifier, and analysis flags. A concrete node adds its own data: a literal adds a value, a binary operation adds operands, and a declaration adds a list of introduced names.
+The common [node_t](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/graph/node.h) stores a method table, parent, source range, scope, traversal identifier, and analysis flags. A concrete node adds its own data: a literal adds a value, a binary operation adds operands, and a declaration adds a list of introduced names.
 
-It helps to distinguish the categories in [node_type.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/node_type.h):
+It helps to distinguish the categories in [node_type.h](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/graph/node_type.h):
 
 | Category | Examples and purpose |
 |---|---|
@@ -31,13 +31,13 @@ It helps to distinguish the categories in [node_type.h](https://github.com/kniaz
 
 A declarator (a node introducing one name) is not the whole declaration statement. In `var a = 1, b = 2;`, one declaration contains two declarators. Analysis must be able to distinguish their values.
 
-The tree has structural edges, such as those from addition to its operands. It also has semantic links, such as a variable use referring to its declarator. The latter does not make the declaration a child expression of the variable. Separate `get_related` methods and the `RELATION_DECLARATION` connection kind serve this purpose in [variable.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/variable.c). The representation thus becomes a graph of connections, while the construct tree remains the basis of traversal.
+The tree has structural edges, such as those from addition to its operands. It also has semantic links, such as a variable use referring to its declarator. The latter does not make the declaration a child expression of the variable. Separate `get_related` methods and the `RELATION_DECLARATION` connection kind serve this purpose in [variable.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/graph/variable.c). The representation thus becomes a graph of connections, while the construct tree remains the basis of traversal.
 
 <a id="section-7-3"></a>
 
 ## 7.3. Assigning Scopes and Identifiers
 
-A scope is represented by [scope_t](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/scope.h), with a parent and a name table. [Lookup](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/scope.c) checks the current scope first, then visits its parent. The nearest declaration found shadows an outer declaration with the same name.
+A scope is represented by [scope_t](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/graph/scope.h), with a parent and a name table. [Lookup](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/graph/scope.c) checks the current scope first, then visits its parent. The nearest declaration found shadows an outer declaration with the same name.
 
 The built-in environment's scope is created first. A traversal then sets node `parent` and `scope` fields, creates nested scopes for functions and ordinary blocks, and queues functions for binding. `try/catch` additionally separates the protected-code scope from the handler scope; the exception name belongs to the handler.
 
@@ -105,7 +105,7 @@ By the time `read` is bound, `value` is already in the enclosing scope's table. 
 
 Binding a name and executing a declaration are different actions. A link to a later declarator does not mean its initializer has already run. In our example, `read` is called after `make` finishes, so `value` has already received `30`. This order is intentional; binding alone does not prove the correctness of every earlier call.
 
-The AST records the declaration link. The [function object](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/function.c) retains the concrete environment on function creation and extends the lifetime of captured values. The example's function can therefore continue reading `value` after leaving `make`.
+The AST records the declaration link. The [function object](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/model/function.c) retains the concrete environment on function creation and extends the lifetime of captured values. The example's function can therefore continue reading `value` after leaving `make`.
 
 <a id="section-7-6"></a>
 
@@ -139,6 +139,8 @@ A constant is declared only when an undeclared name stands to the left of an ass
 
 Writes to the same implicit constant inside its initializer, such as `x = x = 1` or `x = x++`, are also compile errors. The check distinguishes shadowed local names and does not reject recursive references in function bodies.
 
+An update of an undeclared name inside a function body follows a different rule. In `const getX = func() { return ++x };`, `x` does not declare a local and is not a compile error: the analyzer leaves the use unbound, and at run time the VM resolves the name dynamically, walking the call's data and its prototypes (Section 10.8). With warnings enabled, such a use is reported as a read of the name before its declaration. The same update at the top level of the program remains ambiguous and is still a compile error.
+
 <a id="section-7-7"></a>
 
 ## 7.7. The Original Tree and Analysis Results
@@ -147,7 +149,7 @@ An expression node can hold `immediate_value`: information about its value at a 
 
 Node flags mark established properties: unreachability, purity, and compatibility with the supported C subset. A missing flag does not prove the opposite property. In particular, absence of proven purity does not mean an effect necessarily occurs on every run.
 
-During simplification, a [replacement node](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/replacement.c) retains both the original and new variants. Bytecode execution uses the replacement result; history remains available for inspection and restoration. [restore_graph](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/analysis/simplification.c) restores original subtrees before a new analysis.
+During simplification, a [replacement node](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/graph/replacement.c) retains both the original and new variants. Bytecode execution uses the replacement result; history remains available for inspection and restoration. [restore_graph](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/analysis/simplification.c) restores original subtrees before a new analysis.
 
 Because history is retained, some descendants can be shared between old and new variants. `parent` therefore denotes the parent in the executable tree; it cannot simultaneously be interpreted as a unique owner along every historical edge. The arena retains the node memory itself. The storage model matters here; the conditions under which replacement preserves behavior will be examined in Chapter 21.
 
@@ -155,10 +157,10 @@ Because history is retained, some descendants can be shared between old and new 
 
 ## 7.8. An Analysis Scope Is Not a VM Context
 
-A static scope records name-to-declaration bindings during program preparation. A [VM context](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/model/context.h) holds concrete execution data and information for returning or handling an exception. Two calls to one function create different execution contexts even though the function tree and static scope are the same.
+A static scope records name-to-declaration bindings during program preparation. A [VM context](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/model/context.h) holds concrete execution data and information for returning or handling an exception. Two calls to one function create different execution contexts even though the function tree and static scope are the same.
 
-The `variable_t.declarator` link is not written into bytecode as a value-cell address. [Variable code generation](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/variable.c) uses a name in the data segment and the `VLOAD`/`STORE` instructions; the runtime searches its environment objects. The analyzer instead distinguishes declarations by their nodes. These mechanisms serve different system stages.
+The `variable_t.declarator` link is not written into bytecode as a value-cell address. [Variable code generation](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/graph/variable.c) uses a name in the data segment and the `VLOAD`/`STORE` instructions; the runtime searches its environment objects. The analyzer instead distinguishes declarations by their nodes. These mechanisms serve different system stages.
 
-Useful checks include the [analysis shadowing example](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/analysis/shadowing.goat), the [local function named println](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/analysis/purity_shadow_println.goat), [changes to an enclosing environment](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/functional/external_scope_changing/program.goat), and [tree-restoration tests](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_replacement.c). This chapter's example additionally shows a later declaration captured by a closure and the locality of a handler name.
+Useful checks include the [analysis shadowing example](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/test/analysis/shadowing.goat), the [local function named println](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/test/analysis/purity_shadow_println.goat), [changes to an enclosing environment](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/test/functional/external_scope_changing/program.goat), and [tree-restoration tests](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/test/test_replacement.c). This chapter's example additionally shows a later declaration captured by a closure and the locality of a handler name.
 
 After binding, the system has both the notation's structure and the links needed to reason about the program. Next, that structure will become bytecode, and static names will receive concrete values in the runtime.
