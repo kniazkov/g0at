@@ -303,3 +303,44 @@ bool test_member_access_vm(void) {
     destroy_process(proc);
     return true;
 }
+
+/** @brief Tests that CALLM passes the receiver as the method context and 'this' resolves to it. */
+bool test_method_call_receiver_vm(void) {
+    data_builder_t *data_builder = create_data_builder();
+    uint32_t name_x_idx = add_string_to_data_segment(data_builder, L"x");
+    uint32_t name_this_idx = add_string_to_data_segment(data_builder, L"this");
+    code_builder_t *code_builder = create_code_builder();
+    add_instruction(code_builder, (instruction_t){.opcode = ARG, .arg1 = 4});
+    add_instruction(code_builder, (instruction_t){.opcode = FUNC, .arg0 = 0, .arg1 = 0});
+    add_instruction(code_builder, (instruction_t){.opcode = CALLM, .arg0 = 0});
+    add_instruction(code_builder, (instruction_t){.opcode = END});
+    add_instruction(code_builder, (instruction_t){.opcode = VLOAD, .arg1 = name_this_idx});
+    add_instruction(code_builder, (instruction_t){.opcode = GETPROP, .arg1 = name_x_idx});
+    add_instruction(code_builder, (instruction_t){.opcode = RET});
+    bytecode_t *code = link_code_and_data(code_builder, data_builder);
+    destroy_code_builder(code_builder);
+    destroy_data_builder(data_builder);
+
+    process_t *proc = create_process();
+    object_t *root = get_root_object();
+    object_t *receiver = create_user_defined_object(proc, (object_array_t){&root, 1});
+    add_gc_root(proc, receiver);
+    object_t *key = create_string_object(proc, (string_value_t){L"x", 1, false});
+    add_gc_root(proc, key);
+    ASSERT(create_object_property(receiver, key, get_static_integer_object(5), false) == MSTAT_OK);
+    INCREF(receiver);
+    push_object_onto_stack(proc->main_thread->data_stack, receiver);
+    proc->main_thread->instr_id = 0;
+    ASSERT(run(proc, code) == 0);
+    ASSERT(proc->main_thread->data_stack->size == 1);
+    object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
+    ASSERT(is_integer_object(result));
+    ASSERT(get_object_integer_value(result).value == 5);
+    free_bytecode(code);
+    remove_gc_root(proc, receiver);
+    DECREF(receiver);
+    remove_gc_root(proc, key);
+    DECREF(key);
+    destroy_process(proc);
+    return true;
+}

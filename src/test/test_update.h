@@ -4,6 +4,7 @@
  */
 #pragma once
 #include <stdbool.h>
+bool test_update_implicit_in_function(void);
 bool test_update_models_vm(void);
 bool test_update_errors(void);
 bool test_update_ast_parser(void);

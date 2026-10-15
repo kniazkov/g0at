@@ -1,0 +1,13 @@
+const obj = {}
+obj.a = 0
+obj.b = 10
+obj.c = 100
+obj.incPost = func() { return a++ }
+obj.decPre = func() { return --b }
+obj.decPost = func() { return c-- }
+println(obj.incPost())
+println(obj.a)
+println(obj.decPre())
+println(obj.b)
+println(obj.decPost())
+println(obj.c)

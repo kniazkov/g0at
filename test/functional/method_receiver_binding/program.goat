@@ -1,0 +1,11 @@
+const makeCounter = func(start) {
+    const obj = {}
+    obj.value = start
+    obj.inc = func() { return ++value }
+    return obj
+}
+const a = makeCounter(10)
+const b = makeCounter(100)
+println(a.inc())
+println(a.inc())
+println(b.inc())

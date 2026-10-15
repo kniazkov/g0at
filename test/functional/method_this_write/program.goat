@@ -1,0 +1,6 @@
+const obj = {}
+obj.x = 5
+obj.setX = func(v) { this.x = v }
+obj.getX = func() { return this.x }
+obj.setX(42)
+println(obj.getX())

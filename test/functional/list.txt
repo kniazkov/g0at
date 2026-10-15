@@ -319,6 +319,13 @@ method_call_factory
 trailing_comma_in_call
 trailing_comma_in_method_call
 
+# Method context and the 'this' constant
+method_context
+method_this_read
+method_this_write
+method_update_variants
+method_receiver_binding
+
 # Post-analysis AST replacements
 replacement_values
 replacement_pointwise

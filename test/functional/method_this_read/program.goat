@@ -1,0 +1,4 @@
+const obj = {}
+obj.x = 5
+obj.getX = func() { return this.x }
+println(obj.getX())

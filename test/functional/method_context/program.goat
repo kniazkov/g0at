@@ -1,0 +1,6 @@
+const obj = {}
+obj.x = 0
+obj.getX = func() { return ++x }
+println(obj.getX())
+println(obj.getX())
+println(obj.getX())
