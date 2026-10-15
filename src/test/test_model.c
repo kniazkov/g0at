@@ -329,6 +329,6 @@ bool test_closure() {
 }
 
 bool test_root_object_call() {
-    ASSERT(!call_object(get_root_object(), 0, NULL));
+    ASSERT(!call_object(get_root_object(), 0, NULL, NULL));
     return true;
 }

@@ -10,10 +10,10 @@
 #include "lib/allocate.h"
 #include "object.h"
 
-context_t *create_context(process_t *process, context_t *caller, object_t *proto) {
+context_t *
+create_context_with_protos(process_t *process, context_t *caller, object_array_t protos) {
     context_t *ctx = (context_t *)ALLOC(sizeof(context_t));
-    ctx->data =
-        create_user_defined_object(process, (object_array_t){proto ? &proto : &caller->data, 1});
+    ctx->data = create_user_defined_object(process, protos);
     ctx->native_disabled = caller->native_disabled;
     ctx->previous = caller;
     ctx->control_flow = FLOW_NORMAL;
@@ -22,6 +22,12 @@ context_t *create_context(process_t *process, context_t *caller, object_t *proto
     ctx->ret_value_index = caller->ret_value_index;
     ctx->unwinding_index = BAD_STACK_INDEX;
     return ctx;
+}
+
+context_t *create_context(process_t *process, context_t *caller, object_t *proto) {
+    return create_context_with_protos(process,
+                                      caller,
+                                      (object_array_t){proto ? &proto : &caller->data, 1});
 }
 
 context_t *destroy_context(context_t *context) {

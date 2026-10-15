@@ -244,10 +244,12 @@ typedef struct {
 
     /**
      * @brief Invoking a function object.
+     * @param receiver The object the function was fetched from (a method receiver), or NULL for a
+     * plain call.
      * @return `true` if the object is a functional object and the call was performed, `false`
      * otherwise.
      */
-    bool (*call)(object_t *obj, uint16_t arg_count, thread_t *thread);
+    bool (*call)(object_t *obj, uint16_t arg_count, object_t *receiver, thread_t *thread);
 } object_vtbl_t;
 
 /**
@@ -485,10 +487,13 @@ static inline real_value_t get_object_real_value(const object_t *obj) {
 
 /**
  * @brief Invokes an object as a function.
+ * @param receiver The object the function was fetched from (a method receiver), or NULL for a
+ * plain call.
  * @return `true` if the call was performed, `false` otherwise.
  */
-static inline bool call_object(object_t *obj, uint16_t arg_count, thread_t *thread) {
-    return obj->vtbl->call(obj, arg_count, thread);
+static inline bool
+call_object(object_t *obj, uint16_t arg_count, object_t *receiver, thread_t *thread) {
+    return obj->vtbl->call(obj, arg_count, receiver, thread);
 }
 
 /**

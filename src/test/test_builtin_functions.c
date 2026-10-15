@@ -109,8 +109,10 @@ bool test_builtin_numeric_results() {
                                             args,
                                             descriptor->min_args,
                                             state);
-                ASSERT(
-                    call_object(descriptor->get_object(), descriptor->min_args, proc->main_thread));
+                ASSERT(call_object(descriptor->get_object(),
+                                   descriptor->min_args,
+                                   NULL,
+                                   proc->main_thread));
                 ASSERT(!proc->main_thread->exception.value
                        && proc->main_thread->data_stack->size == 1);
                 object_t *actual = pop_object_from_stack(proc->main_thread->data_stack);
@@ -152,7 +154,7 @@ bool test_builtin_errors() {
             if (supplied)
                 push_object_onto_stack(proc->main_thread->data_stack,
                                        create_integer_object(proc, 1));
-            ASSERT(!call_object(functions[i]->get_object(), supplied, proc->main_thread));
+            ASSERT(!call_object(functions[i]->get_object(), supplied, NULL, proc->main_thread));
             ASSERT(proc->main_thread->exception.value == get_exception_invalid_argument());
             ASSERT(proc->main_thread->data_stack->size == 0);
             ASSERT(interpret_function_call(make_builtin_function_element(arena, functions[i]),
@@ -185,7 +187,7 @@ bool test_builtin_errors() {
                 for (size_t k = 0; k < f->min_args; k++)
                     push_object_onto_stack(proc->main_thread->data_stack,
                                            k == bad ? wrong : create_integer_object(proc, 1));
-                ASSERT(!call_object(f->get_object(), f->min_args, proc->main_thread));
+                ASSERT(!call_object(f->get_object(), f->min_args, NULL, proc->main_thread));
                 ASSERT(proc->main_thread->exception.value == get_exception_invalid_argument());
                 ASSERT(proc->main_thread->data_stack->size == 0);
                 destroy_process(proc);

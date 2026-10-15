@@ -598,9 +598,28 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
 static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     require_object_stack_size(thread->data_stack, (size_t)instr.arg0 + 1);
     object_t *func = pop_object_from_stack(thread->data_stack);
-    bool result = call_object(func, instr.arg0, thread);
+    bool result = call_object(func, instr.arg0, NULL, thread);
     // The ID of the following instruction was set inside the call method
     DECREF(func);
+    if (!result && thread->exception.value) {
+        exception_t exception = thread->exception;
+        thread->exception.value = NULL;
+        return dispatch_exception(runtime, thread, exception);
+    }
+    if (!result)
+        runtime->status = 1;
+    return result;
+}
+
+/** @brief Executes @ref CALLM; the receiver sits below the function on the stack. */
+static bool exec_CALLM(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    require_object_stack_size(thread->data_stack, (size_t)instr.arg0 + 2);
+    object_t *func = pop_object_from_stack(thread->data_stack);
+    object_t *receiver = pop_object_from_stack(thread->data_stack);
+    bool result = call_object(func, instr.arg0, receiver, thread);
+    // The ID of the following instruction was set inside the call method
+    DECREF(func);
+    DECREF(receiver);
     if (!result && thread->exception.value) {
         exception_t exception = thread->exception;
         thread->exception.value = NULL;
@@ -764,6 +783,7 @@ static instr_executor_t executors[] = {
     exec_DIFF,    /**< Pushes `true` if top two objects are not equal. */
     exec_FUNC,    /**< Creates a new function object. */
     exec_CALL,    /**< Calls a function with arguments from the data stack. */
+    exec_CALLM,   /**< Calls a method, passing the receiver to the callee. */
     exec_RET,     /**< Returns from current function. */
     exec_ENTER,   /**< Creates a new context, inheriting from the current one. */
     exec_LEAVE,   /**< Restores the parent and pushes the departed context's data. */

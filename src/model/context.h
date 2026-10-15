@@ -9,6 +9,7 @@
 
 #include "common/control_flow.h"
 #include "common/types.h"
+#include "object.h"
 
 #include <stdbool.h>
 
@@ -63,6 +64,9 @@ context_t *get_root_context();
 
 /** @brief Creates a context linked to caller; NULL proto uses the caller data as prototype. */
 context_t *create_context(process_t *process, context_t *caller, object_t *proto);
+
+/** @brief Creates a context with an explicit prototype array (e.g. closure and receiver). */
+context_t *create_context_with_protos(process_t *process, context_t *caller, object_array_t protos);
 
 /** @brief Releases the context and its data reference; returns the previous context. */
 context_t *destroy_context(context_t *context);

@@ -107,7 +107,7 @@ static object_array_t get_topology(const object_t *obj) {
 }
 
 /** @brief Invokes a builtin; failed calls leave an owned pending exception. */
-static bool static_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
+static bool static_call(object_t *obj, uint16_t arg_count, object_t *receiver, thread_t *thread) {
     require_object_stack_size(thread->data_stack, arg_count);
     const builtin_function_t *descriptor = ((builtin_function_object_t *)obj)->descriptor;
     object_t **args = arg_count ? ALLOC(arg_count * sizeof(*args)) : NULL;
@@ -342,8 +342,14 @@ invoke_native_entry(const goat_native_entry_v1_t *entry, uint16_t count, thread_
     return true;
 }
 
+/** @brief Returns the static string object used as the `this` property key. */
+static object_t *get_this_key() {
+    static object_static_string_t storage;
+    return get_static_string_object(&storage, L"this");
+}
+
 /** @brief Chooses native execution before allocating a bytecode call context. */
-static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
+static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, thread_t *thread) {
     require_object_stack_size(thread->data_stack, arg_count);
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
     const goat_native_entry_v1_t *entry =
@@ -367,7 +373,12 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
         thread->native_retries++;
         thread->native_status = GOAT_NATIVE_OK;
     }
-    context_t *ctx = create_context(thread->process, thread->context, dfobj->closure);
+    object_t *method_protos[2] = {dfobj->closure, receiver};
+    context_t *ctx = create_context_with_protos(thread->process,
+                                                thread->context,
+                                                receiver ? (object_array_t){method_protos, 2}
+                                                         : (object_array_t){&dfobj->closure, 1});
+    create_object_property(ctx->data, get_this_key(), ctx->data, true);
     ctx->native_disabled |= retry;
     ctx->control_flow = FLOW_RETURN;
     ctx->jump_address[0] = thread->instr_id + 1;

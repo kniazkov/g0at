@@ -74,6 +74,7 @@ static instruction_descriptor_t descriptors[] = {
     {.code = L"DIFF"},
     {.code = L"FUNC", .has_arg_0 = true, .arg_1_is_unsigned_integer = true},
     {.code = L"CALL", .has_arg_0 = true},
+    {.code = L"CALLM", .has_arg_0 = true},
     {.code = L"RET"},
     {.code = L"ENTER"},
     {.code = L"LEAVE"},

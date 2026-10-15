@@ -203,7 +203,7 @@ real_value_t stub_get_real_value(const object_t *obj) {
     return (real_value_t){false, 0.0};
 }
 
-bool stub_call(object_t *obj, uint16_t arg_count, thread_t *thread) {
+bool stub_call(object_t *obj, uint16_t arg_count, object_t *receiver, thread_t *thread) {
     return false;
 }
 
