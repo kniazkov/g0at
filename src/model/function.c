@@ -342,18 +342,14 @@ invoke_native_entry(const goat_native_entry_v1_t *entry, uint16_t count, thread_
     return true;
 }
 
-/** @brief Returns the static string object used as the `this` property key. */
-static object_t *get_this_key() {
-    static object_static_string_t storage;
-    return get_static_string_object(&storage, L"this");
-}
-
 /** @brief Chooses native execution before allocating a bytecode call context. */
 static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, thread_t *thread) {
     require_object_stack_size(thread->data_stack, arg_count);
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
+    /* A method call resolves names through the receiver, which a native specialization does not
+       model. Keep such calls on the bytecode path until receiver-aware name resolution exists. */
     const goat_native_entry_v1_t *entry =
-        thread->context->native_disabled
+        receiver || thread->context->native_disabled
             ? NULL
             : select_native_entry(dfobj, arg_count, thread->data_stack);
     bool retry = false;
