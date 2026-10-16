@@ -69,6 +69,12 @@ bool test_sign_function();
 bool test_trim_function();
 
 /**
+ * @brief Tests the built-in `instanceOf` method and function and the named prototypes.
+ * @return Returns `true` if the test passes, or `false` if it fails.
+ */
+bool test_instance_of_function();
+
+/**
  * @brief Tests `ENTER` and `LEAVE` opcodes with execution of some code inside a new context.
  * @return Returns `true` if the test passes, or `false` if it fails.
  */

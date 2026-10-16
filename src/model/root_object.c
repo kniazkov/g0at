@@ -4,8 +4,11 @@
  * @brief Defines the root singleton object in the Goat programming language.
  */
 
+#include "builtins/registry.h"
 #include "common_methods.h"
 #include "object.h"
+
+#include <wchar.h>
 
 /** @brief Implements @ref object_vtbl_t::get_prototypes. */
 static object_array_t get_prototypes(const object_t *obj) {
@@ -24,7 +27,14 @@ static object_array_t get_keys(const object_t *obj) {
 
 /** @brief Implements @ref object_vtbl_t::get_property. */
 static object_t *get_property(const object_t *obj, const object_t *key) {
-    return NULL;
+    object_t *value = NULL;
+    if (key->vtbl->type == TYPE_STRING) {
+        string_value_t key_str = convert_object_to_string(key);
+        if (wcscmp(L"instanceOf", key_str.data) == 0) {
+            value = get_function_instance_of();
+        }
+    }
+    return value;
 }
 
 /** @brief Virtual table defining the behavior of the root object. */

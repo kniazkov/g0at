@@ -412,3 +412,9 @@ string_trim_whitespace
 string_trim_function
 string_trim_errors
 string_trim_unknown_type
+
+# Built-in 'instanceOf' method and named prototypes
+instance_of_types
+instance_of_function
+instance_of_object
+instance_of_errors

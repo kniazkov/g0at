@@ -244,6 +244,140 @@ bool test_trim_function() {
     return true;
 }
 
+/** @brief Tests the built-in `instanceOf` method and function and the named prototypes. */
+bool test_instance_of_function() {
+    process_t *proc = create_process();
+    thread_t *thread = proc->main_thread;
+    object_t *function = get_function_instance_of();
+
+    object_t *key = create_string_object(proc, STATIC_STRING(L"instanceOf"));
+    ASSERT(get_object_property(get_root_object(), key) == function);
+    DECREF(key);
+
+    static const struct {
+        const wchar_t *name;
+        object_t *(*getter)(void);
+    } types[] = {
+        {L"Boolean", get_boolean_proto},
+        {L"Character", get_character_proto},
+        {L"Function", get_function_proto},
+        {L"Integer", get_integer_proto},
+        {L"Null", get_null_object},
+        {L"Number", get_numeric_proto},
+        {L"Object", get_root_object},
+        {L"Real", get_real_proto},
+        {L"String", get_string_proto},
+    };
+
+    for (size_t i = 0; i < sizeof(types) / sizeof(*types); i++) {
+        key = create_string_object(proc,
+                                   (string_value_t){types[i].name, wcslen(types[i].name), false});
+        ASSERT(get_object_property(get_root_context()->data, key) == types[i].getter());
+        DECREF(key);
+    }
+
+    object_t *str = create_string_object(proc, STATIC_STRING(L"abs"));
+    push_object_onto_stack(thread->data_stack, get_string_proto());
+    ASSERT(call_object(function, 1, str, thread));
+    object_t *result = pop_object_from_stack(thread->data_stack);
+    ASSERT(get_object_boolean_value(result));
+    DECREF(result);
+
+    push_object_onto_stack(thread->data_stack, get_integer_proto());
+    ASSERT(call_object(function, 1, str, thread));
+    result = pop_object_from_stack(thread->data_stack);
+    ASSERT(!get_object_boolean_value(result));
+    DECREF(result);
+
+    push_object_onto_stack(thread->data_stack, get_root_object());
+    ASSERT(call_object(function, 1, str, thread));
+    result = pop_object_from_stack(thread->data_stack);
+    ASSERT(get_object_boolean_value(result));
+    DECREF(result);
+    DECREF(str);
+
+    object_t *num = create_integer_object(proc, 5);
+    push_object_onto_stack(thread->data_stack, get_integer_proto());
+    ASSERT(call_object(function, 1, num, thread));
+    result = pop_object_from_stack(thread->data_stack);
+    ASSERT(get_object_boolean_value(result));
+    DECREF(result);
+
+    push_object_onto_stack(thread->data_stack, get_numeric_proto());
+    ASSERT(call_object(function, 1, num, thread));
+    result = pop_object_from_stack(thread->data_stack);
+    ASSERT(get_object_boolean_value(result));
+    DECREF(result);
+
+    push_object_onto_stack(thread->data_stack, get_real_proto());
+    ASSERT(call_object(function, 1, num, thread));
+    result = pop_object_from_stack(thread->data_stack);
+    ASSERT(!get_object_boolean_value(result));
+    DECREF(result);
+    DECREF(num);
+
+    push_object_onto_stack(thread->data_stack, get_null_object());
+    ASSERT(call_object(function, 1, get_null_object(), thread));
+    result = pop_object_from_stack(thread->data_stack);
+    ASSERT(get_object_boolean_value(result));
+    DECREF(result);
+
+    push_object_onto_stack(thread->data_stack, get_root_object());
+    ASSERT(call_object(function, 1, get_null_object(), thread));
+    result = pop_object_from_stack(thread->data_stack);
+    ASSERT(get_object_boolean_value(result));
+    DECREF(result);
+
+    object_t *root = get_root_object();
+    object_t *obj = create_user_defined_object(proc, (object_array_t){&root, 1});
+    push_object_onto_stack(thread->data_stack, get_root_object());
+    ASSERT(call_object(function, 1, obj, thread));
+    result = pop_object_from_stack(thread->data_stack);
+    ASSERT(get_object_boolean_value(result));
+    DECREF(result);
+
+    push_object_onto_stack(thread->data_stack, get_string_proto());
+    ASSERT(call_object(function, 1, obj, thread));
+    result = pop_object_from_stack(thread->data_stack);
+    ASSERT(!get_object_boolean_value(result));
+    DECREF(result);
+
+    INCREF(obj);
+    push_object_onto_stack(thread->data_stack, obj);
+    push_object_onto_stack(thread->data_stack, get_root_object());
+    ASSERT(call_object(function, 2, NULL, thread));
+    result = pop_object_from_stack(thread->data_stack);
+    ASSERT(get_object_boolean_value(result));
+    DECREF(result);
+
+    INCREF(obj);
+    push_object_onto_stack(thread->data_stack, obj);
+    push_object_onto_stack(thread->data_stack, get_string_proto());
+    ASSERT(call_object(function, 2, NULL, thread));
+    result = pop_object_from_stack(thread->data_stack);
+    ASSERT(!get_object_boolean_value(result));
+    DECREF(result);
+
+    push_object_onto_stack(thread->data_stack, create_integer_object(proc, 1));
+    ASSERT(!call_object(function, 1, NULL, thread));
+    ASSERT(thread->exception.value == get_exception_invalid_argument());
+    DECREFIF(thread->exception.value);
+    thread->exception.value = NULL;
+
+    ASSERT(!call_object(function, 0, NULL, thread));
+    ASSERT(thread->exception.value == get_exception_invalid_argument());
+    DECREFIF(thread->exception.value);
+    thread->exception.value = NULL;
+
+    ASSERT(!call_object(function, 0, get_root_object(), thread));
+    ASSERT(thread->exception.value == get_exception_invalid_argument());
+    DECREFIF(thread->exception.value);
+    thread->exception.value = NULL;
+
+    destroy_process(proc);
+    return true;
+}
+
 bool test_sign_function() {
     data_builder_t *data_builder = create_data_builder();
     uint32_t name_idx = add_string_to_data_segment(data_builder, L"sign");

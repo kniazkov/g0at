@@ -1,0 +1,14 @@
+var o = {};
+println(o.instanceOf(Object));
+println(o.instanceOf(String));
+
+var p = {
+    x = 1
+    y = 2
+};
+println(p.instanceOf(Object));
+println(p.instanceOf(String));
+println(p.instanceOf(Number));
+
+println({}.instanceOf(Object));
+println({}.instanceOf(Number));

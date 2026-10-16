@@ -250,6 +250,7 @@ static test_description_t test_list[] = {
     {"method call receiver VM", test_method_call_receiver_vm},
     {"'sign' function", test_sign_function},
     {"'trim' method and function", test_trim_function},
+    {"'instanceOf' method and function", test_instance_of_function},
     {"context cloning", test_context_cloning},
     {"context 'this' cycle release", test_context_this_cycle_release},
     {"context 'this' preserved", test_context_this_preserved},
