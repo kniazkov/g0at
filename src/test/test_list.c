@@ -249,6 +249,7 @@ static test_description_t test_list[] = {
     {"member access VM", test_member_access_vm},
     {"method call receiver VM", test_method_call_receiver_vm},
     {"'sign' function", test_sign_function},
+    {"'trim' method and function", test_trim_function},
     {"context cloning", test_context_cloning},
     {"context 'this' cycle release", test_context_this_cycle_release},
     {"context 'this' preserved", test_context_this_preserved},

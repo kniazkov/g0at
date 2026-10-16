@@ -625,6 +625,7 @@ DECLARE_STATIC_OBJECT(string_pi)
 DECLARE_STATIC_OBJECT(string_print)
 DECLARE_STATIC_OBJECT(string_sign)
 DECLARE_STATIC_OBJECT(string_sqrt)
+DECLARE_STATIC_OBJECT(string_trim)
 
 /** @brief Retrieves the function prototype object. */
 object_t *get_function_proto();
@@ -633,6 +634,7 @@ object_t *get_function_atan(void);
 object_t *get_function_print(void);
 object_t *get_function_sign(void);
 object_t *get_function_sqrt(void);
+object_t *get_function_trim(void);
 
 /** @brief Stable string values for built-in exceptions; no exception wrappers. */
 DECLARE_STATIC_OBJECT(exception_division_by_zero)

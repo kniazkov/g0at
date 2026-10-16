@@ -107,6 +107,9 @@ object_t *get_function_tan(void);
 extern const builtin_function_t builtin_tanh;
 object_t *get_function_tanh(void);
 
+extern const builtin_function_t builtin_trim;
+object_t *get_function_trim(void);
+
 extern const builtin_function_t builtin_trunc;
 object_t *get_function_trunc(void);
 

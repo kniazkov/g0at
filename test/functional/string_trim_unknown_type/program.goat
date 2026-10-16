@@ -1,0 +1,3 @@
+const obj = { const text = "  abc  "; };
+println(trim(obj.text));
+println("done");

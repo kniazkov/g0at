@@ -177,7 +177,7 @@ bool test_string_topology() {
     object_t *obj = create_string_object(process, STATIC_STRING(L"test"));
     object_array_t topology = get_object_topology(obj);
     ASSERT(topology.size = 2);
-    const wchar_t *expected = L"{\"length\"=0}";
+    const wchar_t *expected = L"{\"length\"=0;\"trim\"=trim}";
     string_value_t str = convert_object_to_string(topology.items[0]);
     ASSERT(0 == wcscmp(str.data, expected));
     FREE_STRING(str);
@@ -206,6 +206,41 @@ bool test_store_and_load() {
     ASSERT(int_val.value == 1024);
     destroy_process(proc);
     free_bytecode(code);
+    return true;
+}
+
+/** @brief Tests the built-in `trim` method and function on strings. */
+bool test_trim_function() {
+    process_t *proc = create_process();
+    thread_t *thread = proc->main_thread;
+    object_t *function = get_function_trim();
+
+    object_t *key = create_string_object(proc, STATIC_STRING(L"trim"));
+    ASSERT(get_object_property(get_string_proto(), key) == function);
+    object_t *str = create_string_object(proc, STATIC_STRING(L"   abcde   "));
+    DECREF(key);
+
+    ASSERT(call_object(function, 0, str, thread));
+    ASSERT(thread->data_stack->size == 1);
+    object_t *result = pop_object_from_stack(thread->data_stack);
+    string_value_t value = convert_object_to_string(result);
+    ASSERT(wcscmp(value.data, L"abcde") == 0 && value.length == 5);
+    FREE_STRING(value);
+    DECREF(result);
+
+    push_object_onto_stack(thread->data_stack, get_static_integer_object(42));
+    ASSERT(!call_object(function, 1, NULL, thread));
+    ASSERT(thread->exception.value == get_exception_invalid_operation());
+    DECREFIF(thread->exception.value);
+    thread->exception.value = NULL;
+
+    ASSERT(!call_object(function, 0, NULL, thread));
+    ASSERT(thread->exception.value == get_exception_invalid_argument());
+    DECREFIF(thread->exception.value);
+    thread->exception.value = NULL;
+
+    DECREF(str);
+    destroy_process(proc);
     return true;
 }
 
