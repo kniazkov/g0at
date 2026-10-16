@@ -1,0 +1,5 @@
+try { println("abc".contains()); } catch (e) { println("1:" + e); }
+try { println(contains(5, "a")); } catch (e) { println("2:" + e); }
+try { println("abc".contains(5)); } catch (e) { println("3:" + e); }
+try { println(contains()); } catch (e) { println("4:" + e); }
+println("done");

@@ -1,0 +1,7 @@
+println("%0".format("world"));
+println("%0 %1".format("hello", "world"));
+println("a%0b%1c".format("X", "Y"));
+println("%0 %1 %2".format("a", "b"));
+println("no placeholders".format("x"));
+println(format("%0", "direct"));
+println("%0%0".format("ab"));

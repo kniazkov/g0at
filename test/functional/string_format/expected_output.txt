@@ -1,0 +1,7 @@
+world
+hello world
+aXbYc
+a b %2
+no placeholders
+direct
+abab

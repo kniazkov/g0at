@@ -1,0 +1,5 @@
+try { println("abc".endsWith()); } catch (e) { println("1:" + e); }
+try { println(endsWith(5, "a")); } catch (e) { println("2:" + e); }
+try { println("abc".endsWith(5)); } catch (e) { println("3:" + e); }
+try { println(endsWith()); } catch (e) { println("4:" + e); }
+println("done");

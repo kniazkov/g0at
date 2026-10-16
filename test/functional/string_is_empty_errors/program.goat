@@ -1,0 +1,3 @@
+try { println(isEmpty(5)); } catch (e) { println("1:" + e); }
+try { println(isEmpty()); } catch (e) { println("2:" + e); }
+println("done");

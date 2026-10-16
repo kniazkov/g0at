@@ -177,7 +177,13 @@ bool test_string_topology() {
     object_t *obj = create_string_object(process, STATIC_STRING(L"test"));
     object_array_t topology = get_object_topology(obj);
     ASSERT(topology.size = 2);
-    const wchar_t *expected = L"{\"length\"=0;\"trim\"=trim}";
+    const wchar_t *expected = L"{\"length\"=0;\"trim\"=trim;\"charAt\"=charAt;"
+                              L"\"substring\"=substring;\"contains\"=contains;"
+                              L"\"indexOf\"=indexOf;\"lastIndexOf\"=lastIndexOf;"
+                              L"\"startsWith\"=startsWith;\"endsWith\"=endsWith;"
+                              L"\"isEmpty\"=isEmpty;\"isBlank\"=isBlank;"
+                              L"\"toUpperCase\"=toUpperCase;\"toLowerCase\"=toLowerCase;"
+                              L"\"replace\"=replace;\"repeat\"=repeat;\"format\"=format}";
     string_value_t str = convert_object_to_string(topology.items[0]);
     ASSERT(0 == wcscmp(str.data, expected));
     FREE_STRING(str);

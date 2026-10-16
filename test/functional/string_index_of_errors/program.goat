@@ -1,0 +1,5 @@
+try { println("abc".indexOf()); } catch (e) { println("1:" + e); }
+try { println(indexOf(5, "a")); } catch (e) { println("2:" + e); }
+try { println("abc".indexOf(5)); } catch (e) { println("3:" + e); }
+try { println(indexOf()); } catch (e) { println("4:" + e); }
+println("done");

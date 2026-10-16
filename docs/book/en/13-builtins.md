@@ -10,7 +10,7 @@ Revision 4. Implementation described: [commit 64c80b9](https://github.com/kniazk
 
 A built-in looks like an ordinary call in source, but its executor is already written in C and included in the interpreter. It needs no bytecode body. This differs from a native specialization of a user function, which the system obtains by generating and compiling C code.
 
-Built-ins are collected in [registry.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/builtins/registry.c). The described revision has 37. The root environment also provides `pi` and `Exceptions`, but these are not registry functions. In addition, the root context exposes the type-prototype names `Object`, `String`, `Number`, `Integer`, `Real`, `Character`, `Boolean`, `Function`, and `Null`; these are prototypes, not functions. Looking up a name in the root object finds a descriptor and obtains its associated function object.
+Built-ins are collected in [registry.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/builtins/registry.c). The described revision has 52. The root environment also provides `pi` and `Exceptions`, but these are not registry functions. In addition, the root context exposes the type-prototype names `Object`, `String`, `Number`, `Integer`, `Real`, `Character`, `Boolean`, `Function`, and `Null`; these are prototypes, not functions. Looking up a name in the root object finds a descriptor and obtains its associated function object.
 
 The central registry lets the runtime and analyzer use one set of definitions. Adding a new name still requires a consistent implementation of its behavior, rather than just an entry in the list.
 
@@ -192,7 +192,35 @@ The built-in executor returns an ordinary boolean result without side effects. T
 
 <a id="section-13-9"></a>
 
-## 13.9. Moving on to static analysis
+## 13.9. String methods and the str function
+
+Besides the named prototypes, the string prototype exposes its own methods. They are available in the method form `"text".name(arguments)` and simultaneously as ordinary functions with the string as their first argument: `charAt("abc", 1)` equals `"abc".charAt(1)`. The receiver of a method is passed to the executor separately through `execute_method`; the same receiver type check applies in the function form.
+
+Available are `charAt(index)`, `substring(begin, end)`, `contains(str)`, `indexOf(str)`, `lastIndexOf(str)`, `startsWith(str)`, `endsWith(str)`, `isEmpty()`, `isBlank()`, `toUpperCase()`, `toLowerCase()`, `replace(old, new)`, `repeat(count)`, and `format(arg0, ...)`. For example:
+
+```goat
+println("Hello, World!".substring(7));
+println("Hello, World!".contains("World"));
+println("hello".toUpperCase());
+println("%0 %1".format("Hello", "World"));
+```
+
+Output:
+
+```text
+World!
+true
+HELLO
+Hello World
+```
+
+A receiver type mismatch or an unsuitable argument (an index out of the string, a negative repetition count, and so on) produces `INVALID_ARGUMENT`. The function `str(object)` converts any object to a string by the same route printing obtains text; it has no method form, and a call without an argument gives `INVALID_ARGUMENT`.
+
+The abstract implementations do not perform locale-aware conversion during analysis and neither read nor print text. For known constants they compute a constant of the corresponding domain; for an unknown string they return the result domain; and a definitely unsuitable type gives `BOTTOM`. All these functions have `effects=none`.
+
+<a id="section-13-10"></a>
+
+## 13.10. Moving on to static analysis
 
 The execution model now establishes concrete requirements for the analyzer. It must account for evaluation order, changes to captured variables, exceptions, and call effects. Knowing the mathematical result is insufficient if computing it also reads input or prints a line.
 

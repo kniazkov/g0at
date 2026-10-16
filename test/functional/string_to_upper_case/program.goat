@@ -1,0 +1,6 @@
+println("hello".toUpperCase());
+println("HeLLo WoRLd".toUpperCase());
+println("123".toUpperCase());
+println("".toUpperCase());
+println(toUpperCase("direct"));
+println("привет мир".toUpperCase());

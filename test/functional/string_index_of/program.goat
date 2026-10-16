@@ -1,0 +1,8 @@
+var s = "Hello, World!";
+println(s.indexOf("o"));
+println(s.indexOf("World"));
+println(s.indexOf("xyz"));
+println(s.indexOf(""));
+println("aaa".indexOf("a"));
+println(indexOf("direct", "ect"));
+println(indexOf("direct", "nope"));

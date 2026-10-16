@@ -1,0 +1,8 @@
+println(str(42));
+println(str(3.14));
+println(str(true));
+println(str(false));
+println(str("text"));
+println(str(null));
+println(str(str("nested")));
+println("number " + str(7) + " end");

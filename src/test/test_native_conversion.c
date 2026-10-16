@@ -134,7 +134,14 @@ bool test_native_int_domains() {
         const builtin_function_t *math = functions[i];
         if (math == &builtin_int || math == &builtin_input || math == &builtin_print
             || math == &builtin_println || math == &builtin_sign || math == &builtin_ord
-            || math == &builtin_chr || math == &builtin_trim || math == &builtin_instance_of)
+            || math == &builtin_chr || math == &builtin_trim || math == &builtin_instance_of
+            || math == &builtin_char_at || math == &builtin_substring || math == &builtin_contains
+            || math == &builtin_index_of || math == &builtin_last_index_of
+            || math == &builtin_starts_with || math == &builtin_ends_with
+            || math == &builtin_is_empty || math == &builtin_is_blank
+            || math == &builtin_to_upper_case || math == &builtin_to_lower_case
+            || math == &builtin_replace || math == &builtin_repeat || math == &builtin_format
+            || math == &builtin_str)
             continue;
         args[0] = make_numeric_element();
         args[1] = make_top_element();

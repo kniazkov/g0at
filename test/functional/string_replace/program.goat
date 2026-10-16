@@ -1,0 +1,7 @@
+println("hello world".replace("l", "L"));
+println("aaa".replace("a", "b"));
+println("aaa".replace("aa", "x"));
+println("abc".replace("z", "q"));
+println("abc".replace("", "x"));
+println(replace("direct", "ir", "IR"));
+println("Mississippi".replace("iss", "X"));
