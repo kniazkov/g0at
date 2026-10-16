@@ -1,0 +1,6 @@
+const s = " ";
+var before = s.isBlank();
+"a".toUpperCase();
+var after = s.isBlank();
+println(before == after);
+println("done");

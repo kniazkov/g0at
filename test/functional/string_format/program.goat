@@ -5,3 +5,5 @@ println("%0 %1 %2".format("a", "b"));
 println("no placeholders".format("x"));
 println(format("%0", "direct"));
 println("%0%0".format("ab"));
+println("%18446744073709551616".format("wrong"));
+println("%18446744073709551616 %1".format("wrong", "ok"));

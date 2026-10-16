@@ -129,6 +129,14 @@ typedef enum {
 string_value_t align_text(string_value_t text, size_t size, alignment_t alignment);
 
 /**
+ * @brief Initializes the process locale for Unicode-aware character classification.
+ *
+ * Must be called once before analysis and execution so that operations such as `iswspace`
+ * behave consistently. Safe to call multiple times.
+ */
+void init_unicode_locale(void);
+
+/**
  * @brief Unicode-aware uppercase conversion for a single character.
  *
  * Uses the process's locale to map a wide character to its uppercase form when available;

@@ -413,7 +413,9 @@ string_trim_function
 string_trim_errors
 string_trim_unknown_type
 string_char_at
+string_char_at_unknown_type
 string_substring
+string_substring_unknown_type
 string_contains
 string_index_of
 string_last_index_of
@@ -421,6 +423,7 @@ string_starts_with
 string_ends_with
 string_is_empty
 string_is_blank
+string_is_blank_unicode
 string_to_upper_case
 string_to_lower_case
 string_replace

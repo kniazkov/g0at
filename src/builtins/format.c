@@ -10,6 +10,7 @@
 #include "model/thread.h"
 #include "registry.h"
 
+#include <stdint.h>
 #include <wchar.h>
 
 /** @brief Runtime executor for the method form `string.format(arg0, ...)`. */
@@ -26,11 +27,16 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
             && format.data[pos + 1] <= L'9') {
             size_t index = 0;
             size_t end = pos + 1;
+            bool index_overflow = false;
             while (end < format.length && format.data[end] >= L'0' && format.data[end] <= L'9') {
-                index = index * 10 + (size_t)(format.data[end] - L'0');
+                size_t digit = (size_t)(format.data[end] - L'0');
+                if (index > (SIZE_MAX - digit) / 10)
+                    index_overflow = true;
+                else if (!index_overflow)
+                    index = index * 10 + digit;
                 end++;
             }
-            if (index < count) {
+            if (!index_overflow && index < count) {
                 string_value_t arg_value = convert_object_to_string(args[index]);
                 append_string_value(&builder, arg_value);
                 FREE_STRING(arg_value);

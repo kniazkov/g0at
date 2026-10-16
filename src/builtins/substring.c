@@ -76,8 +76,6 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
         }
         return make_bottom_element();
     }
-    if (!is_string_lattice_element(receiver))
-        return make_bottom_element();
     return make_string_element();
 }
 

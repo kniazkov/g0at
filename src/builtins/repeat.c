@@ -39,6 +39,10 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
         return operation_exception(get_exception_invalid_argument());
     }
     size_t total = count_value * value.length;
+    if (total > SIZE_MAX / sizeof(wchar_t) - 1) {
+        FREE_STRING(value);
+        return operation_exception(get_exception_invalid_argument());
+    }
     string_builder_t builder;
     init_string_builder(&builder, total);
     for (size_t i = 0; i < count_value; i++)

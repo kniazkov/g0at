@@ -453,12 +453,17 @@ string_value_t align_text(string_value_t text, size_t size, alignment_t alignmen
     return (string_value_t){buff, size, true};
 }
 
+/** @brief Initializes the process locale for Unicode-aware character classification. */
+void init_unicode_locale(void) {
+    setlocale(LC_CTYPE, "");
+}
+
 /** @brief Ensures the process locale is initialized once for Unicode-aware classification. */
 static void ensure_unicode_locale(void) {
     static bool locale_initialized = false;
     if (!locale_initialized) {
         locale_initialized = true;
-        setlocale(LC_CTYPE, "");
+        init_unicode_locale();
     }
 }
 
