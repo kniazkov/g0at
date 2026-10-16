@@ -411,3 +411,4 @@ string_trim
 string_trim_whitespace
 string_trim_function
 string_trim_errors
+string_trim_unknown_type

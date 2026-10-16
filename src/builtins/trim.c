@@ -75,7 +75,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
         return make_string_element();
     if (arg->type == LATTICE_BOTTOM)
         return arg;
-    return make_bottom_element();
+    return make_string_element();
 }
 
 const builtin_function_t builtin_trim = {.name = L"trim",
