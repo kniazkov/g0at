@@ -6,3 +6,8 @@ println(s.indexOf(""));
 println("aaa".indexOf("a"));
 println(indexOf("direct", "ect"));
 println(indexOf("direct", "nope"));
+println(s.indexOf('o'));
+println(s.indexOf('W'));
+println(s.indexOf('z'));
+println("aaa".indexOf('a'));
+println(indexOf("direct", 'e'));

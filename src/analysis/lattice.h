@@ -345,6 +345,17 @@ const lattice_element_t *make_char_element();
 /** @brief Creates a character constant lattice element. */
 const lattice_element_t *make_char_constant_element(arena_t *arena, uint32_t value);
 
+/**
+ * @brief Extracts a string view from a string or character constant element.
+ *
+ * A character constant is converted to a wide-character string (one or two units for
+ * supplementary code points) stored in the given arena.
+ * @return true if the element is a string or character constant, false otherwise.
+ */
+bool get_string_view_from_constant(arena_t *arena,
+                                   const lattice_element_t *element,
+                                   string_view_t *view);
+
 /** @brief Gets the boolean lattice element singleton. */
 const lattice_element_t *make_boolean_element();
 

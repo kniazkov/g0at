@@ -196,7 +196,7 @@ The built-in executor returns an ordinary boolean result without side effects. T
 
 Besides the named prototypes, the string prototype exposes its own methods. They are available in the method form `"text".name(arguments)` and simultaneously as ordinary functions with the string as their first argument: `charAt("abc", 1)` equals `"abc".charAt(1)`. The receiver of a method is passed to the executor separately through `execute_method`; the same receiver type check applies in the function form.
 
-Available are `charAt(index)`, `substring(begin, end)`, `contains(str)`, `indexOf(str)`, `lastIndexOf(str)`, `startsWith(str)`, `endsWith(str)`, `isEmpty()`, `isBlank()`, `toUpperCase()`, `toLowerCase()`, `replace(old, new)`, `repeat(count)`, and `format(arg0, ...)`. For example:
+Available are `charAt(index)`, `substring(begin, end)`, `contains(str)`, `indexOf(str)`, `lastIndexOf(str)`, `startsWith(str)`, `endsWith(str)`, `isEmpty()`, `isBlank()`, `toUpperCase()`, `toLowerCase()`, `replace(old, new)`, `repeat(count)`, and `format(arg0, ...)`. For `indexOf`, `lastIndexOf`, `startsWith`, `endsWith`, and `replace`, the searched text may be passed either as a string or as a single character; for example `"Hello, World!".indexOf('o')` equals `"Hello, World!".indexOf("o")`. For example:
 
 ```goat
 println("Hello, World!".substring(7));

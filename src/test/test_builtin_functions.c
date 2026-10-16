@@ -261,6 +261,57 @@ bool test_builtin_domains() {
     return true;
 }
 
+bool test_string_builtin_char_arguments() {
+    arena_t *arena = create_arena(8);
+    abstract_state_t *state = create_abstract_state(arena);
+    const lattice_element_t *str =
+        make_string_constant_element(arena, (string_view_t){L"hello", 5});
+    const lattice_element_t *ch = make_char_constant_element(arena, L'l');
+    const lattice_element_t *ch_b = make_char_constant_element(arena, L'b');
+    const lattice_element_t *args[3];
+    const lattice_element_t *value;
+
+    args[0] = str;
+    args[1] = ch;
+    value = builtin_index_of.interpret(state, args, 2);
+    ASSERT(value->type == LATTICE_INTEGER_CONSTANT);
+    ASSERT(((const integer_constant_element_t *)value)->value == 2);
+    value = builtin_last_index_of.interpret(state, args, 2);
+    ASSERT(value->type == LATTICE_INTEGER_CONSTANT);
+    ASSERT(((const integer_constant_element_t *)value)->value == 3);
+    value = builtin_starts_with.interpret(state, args, 2);
+    ASSERT(value->type == LATTICE_FALSE);
+    value = builtin_ends_with.interpret(state, args, 2);
+    ASSERT(value->type == LATTICE_FALSE);
+
+    args[1] = make_char_constant_element(arena, L'h');
+    value = builtin_starts_with.interpret(state, args, 2);
+    ASSERT(value->type == LATTICE_TRUE);
+
+    args[1] = make_char_constant_element(arena, L'o');
+    value = builtin_ends_with.interpret(state, args, 2);
+    ASSERT(value->type == LATTICE_TRUE);
+
+    args[1] = make_char_constant_element(arena, L'l');
+    args[2] = ch_b;
+    value = builtin_replace.interpret(state, args, 3);
+    ASSERT(value->type == LATTICE_STRING_CONSTANT);
+    string_view_t replaced = ((const string_constant_element_t *)value)->value;
+    ASSERT(replaced.length == 5);
+    ASSERT(!wmemcmp(replaced.data, L"hebbo", 5));
+
+    args[2] = make_char_constant_element(arena, L'x');
+    value = builtin_replace.interpret(state, args, 3);
+    ASSERT(value->type == LATTICE_STRING_CONSTANT);
+    replaced = ((const string_constant_element_t *)value)->value;
+    ASSERT(replaced.length == 5);
+    ASSERT(!wmemcmp(replaced.data, L"hexxo", 5));
+
+    destroy_abstract_state(state);
+    destroy_arena(arena);
+    return true;
+}
+
 bool test_abs_domains() {
     arena_t *arena = create_arena(8);
     abstract_state_t *state = create_abstract_state(arena);

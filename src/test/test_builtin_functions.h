@@ -10,3 +10,5 @@ bool test_builtin_errors();
 bool test_builtin_domains();
 
 bool test_abs_domains();
+
+bool test_string_builtin_char_arguments();

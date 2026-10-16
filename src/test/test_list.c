@@ -95,6 +95,7 @@ static test_description_t test_list[] = {
     {"C generation transaction", test_c_generation_transaction},
     {"C generation expression", test_c_generation_expression},
     {"abs numeric domains", test_abs_domains},
+    {"string builtins char arguments", test_string_builtin_char_arguments},
     {"replacement nodes", test_replacement_nodes},
     {"replacement folding", test_replacement_folding},
     {"replacement branches", test_replacement_branches},

@@ -5,3 +5,8 @@ println("abc".replace("z", "q"));
 println("abc".replace("", "x"));
 println(replace("direct", "ir", "IR"));
 println("Mississippi".replace("iss", "X"));
+println("hello world".replace('l', 'L'));
+println("aaa".replace('a', 'b'));
+println("abc".replace('b', "x"));
+println("abc".replace("b", 'x'));
+println(replace("direct", 'e', 'E'));

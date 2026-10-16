@@ -91,15 +91,15 @@ The string prototype [string.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d
 | `charAt(index)` | 1 | Character of the string at a zero-based index; out of range is INVALID_ARGUMENT. |
 | `substring(begin, end)` | 1 | Substring from begin to end (exclusive); end is optional and defaults to the length. begin<0, end<begin, or end>length is INVALID_ARGUMENT. |
 | `contains(str)` | 1 | true if the string contains the substring; an empty substring is always contained. |
-| `indexOf(str)` | 1 | Index of the first occurrence of the substring, or −1; an empty substring gives 0. |
-| `lastIndexOf(str)` | 1 | Index of the last occurrence of the substring, or −1; an empty substring gives the length. |
-| `startsWith(str)` | 1 | true if the string starts with the prefix; an empty prefix is true. |
-| `endsWith(str)` | 1 | true if the string ends with the suffix; an empty suffix is true. |
+| `indexOf(str)` | 1 | Index of the first occurrence of the substring, or −1; an empty substring gives 0. The argument may be a string or a character. |
+| `lastIndexOf(str)` | 1 | Index of the last occurrence of the substring, or −1; an empty substring gives the length. The argument may be a string or a character. |
+| `startsWith(str)` | 1 | true if the string starts with the prefix; an empty prefix is true. The argument may be a string or a character. |
+| `endsWith(str)` | 1 | true if the string ends with the suffix; an empty suffix is true. The argument may be a string or a character. |
 | `isEmpty()` | 0 | true for a string of zero length. |
 | `isBlank()` | 0 | true if the string is empty or consists only of whitespace. |
 | `toUpperCase()` | 0 | The string in upper case; uses locale-aware wide C functions. |
 | `toLowerCase()` | 0 | The string in lower case; uses locale-aware wide C functions. |
-| `replace(old, new)` | 2 | Replaces all occurrences of old with new; an empty old returns the original string. |
+| `replace(old, new)` | 2 | Replaces all occurrences of old with new; an empty old returns the original string. Both arguments may be strings or characters. |
 | `repeat(count)` | 1 | The string repeated count times; count<0 or overflow is INVALID_ARGUMENT. |
 | `format(arg0, ...)` | 0 | Replaces occurrences of %0, %1, ... with the string representations of the arguments; an index outside the list is left as is. |
 

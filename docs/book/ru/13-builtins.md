@@ -196,7 +196,7 @@ true
 
 Помимо именованных прототипов, строковый прототип открывает собственные методы. Они доступны в форме метода `"текст".имя(аргументы)` и одновременно как обычные функции с первым строковым аргументом: `charAt("abc", 1)` равнозначен `"abc".charAt(1)`. Приёмник метода передаётся исполнителю отдельно через `execute_method`; та же проверка типа приёмника действует и в форме функции.
 
-Доступны `charAt(index)`, `substring(begin, end)`, `contains(str)`, `indexOf(str)`, `lastIndexOf(str)`, `startsWith(str)`, `endsWith(str)`, `isEmpty()`, `isBlank()`, `toUpperCase()`, `toLowerCase()`, `replace(old, new)`, `repeat(count)` и `format(arg0, ...)`. Например:
+Доступны `charAt(index)`, `substring(begin, end)`, `contains(str)`, `indexOf(str)`, `lastIndexOf(str)`, `startsWith(str)`, `endsWith(str)`, `isEmpty()`, `isBlank()`, `toUpperCase()`, `toLowerCase()`, `replace(old, new)`, `repeat(count)` и `format(arg0, ...)`. Для `indexOf`, `lastIndexOf`, `startsWith`, `endsWith` и `replace` искомый текст можно передавать как строкой, так и одним символом; например, `"Hello, World!".indexOf('o')` равнозначен `"Hello, World!".indexOf("o")`. Например:
 
 ```goat
 println("Hello, World!".substring(7));

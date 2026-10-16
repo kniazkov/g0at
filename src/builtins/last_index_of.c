@@ -37,7 +37,9 @@ static operation_result_t
 execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
     if (count < 1)
         return operation_exception(get_exception_invalid_argument());
-    if (receiver->vtbl->type != TYPE_STRING || args[0]->vtbl->type != TYPE_STRING)
+    if (receiver->vtbl->type != TYPE_STRING)
+        return operation_exception(get_exception_invalid_argument());
+    if (args[0]->vtbl->type != TYPE_STRING && args[0]->vtbl->type != TYPE_CHARACTER)
         return operation_exception(get_exception_invalid_argument());
     string_value_t value = convert_object_to_string(receiver);
     string_value_t substring = convert_object_to_string(args[0]);
@@ -62,14 +64,14 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
         return make_bottom_element();
     if (args[0]->type == LATTICE_BOTTOM || args[1]->type == LATTICE_BOTTOM)
         return make_bottom_element();
-    if (args[0]->type == LATTICE_STRING_CONSTANT && args[1]->type == LATTICE_STRING_CONSTANT) {
+    if (args[0]->type == LATTICE_STRING_CONSTANT) {
         const string_constant_element_t *str = (const string_constant_element_t *)args[0];
-        const string_constant_element_t *sub = (const string_constant_element_t *)args[1];
-        int64_t result = find_substring_last_index(str->value.data,
-                                                   str->value.length,
-                                                   sub->value.data,
-                                                   sub->value.length);
-        return make_integer_constant_element(state->arena, result);
+        string_view_t sub;
+        if (get_string_view_from_constant(state->arena, args[1], &sub)) {
+            int64_t result =
+                find_substring_last_index(str->value.data, str->value.length, sub.data, sub.length);
+            return make_integer_constant_element(state->arena, result);
+        }
     }
     return make_integer_element();
 }

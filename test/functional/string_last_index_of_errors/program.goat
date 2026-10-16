@@ -2,4 +2,5 @@ try { println("abc".lastIndexOf()); } catch (e) { println("1:" + e); }
 try { println(lastIndexOf(5, "a")); } catch (e) { println("2:" + e); }
 try { println("abc".lastIndexOf(5)); } catch (e) { println("3:" + e); }
 try { println(lastIndexOf()); } catch (e) { println("4:" + e); }
+try { println(lastIndexOf('a', "a")); } catch (e) { println("5:" + e); }
 println("done");

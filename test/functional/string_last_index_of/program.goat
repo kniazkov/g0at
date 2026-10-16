@@ -6,3 +6,8 @@ println(s.lastIndexOf(""));
 println("aaa".lastIndexOf("a"));
 println(lastIndexOf("direct", "ir"));
 println(lastIndexOf("direct", "nope"));
+println(s.lastIndexOf('o'));
+println(s.lastIndexOf('l'));
+println(s.lastIndexOf('z'));
+println("aaa".lastIndexOf('a'));
+println(lastIndexOf("direct", 'e'));

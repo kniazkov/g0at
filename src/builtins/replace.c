@@ -17,8 +17,10 @@ static operation_result_t
 execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
     if (count < 2)
         return operation_exception(get_exception_invalid_argument());
-    if (receiver->vtbl->type != TYPE_STRING || args[0]->vtbl->type != TYPE_STRING
-        || args[1]->vtbl->type != TYPE_STRING)
+    if (receiver->vtbl->type != TYPE_STRING)
+        return operation_exception(get_exception_invalid_argument());
+    if ((args[0]->vtbl->type != TYPE_STRING && args[0]->vtbl->type != TYPE_CHARACTER)
+        || (args[1]->vtbl->type != TYPE_STRING && args[1]->vtbl->type != TYPE_CHARACTER))
         return operation_exception(get_exception_invalid_argument());
     string_value_t value = convert_object_to_string(receiver);
     string_value_t old_part = convert_object_to_string(args[0]);
@@ -65,30 +67,32 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     if (args[0]->type == LATTICE_BOTTOM || args[1]->type == LATTICE_BOTTOM
         || args[2]->type == LATTICE_BOTTOM)
         return make_bottom_element();
-    if (args[0]->type == LATTICE_STRING_CONSTANT && args[1]->type == LATTICE_STRING_CONSTANT
-        && args[2]->type == LATTICE_STRING_CONSTANT) {
+    if (args[0]->type == LATTICE_STRING_CONSTANT) {
         const string_constant_element_t *str = (const string_constant_element_t *)args[0];
-        const string_constant_element_t *old_part = (const string_constant_element_t *)args[1];
-        const string_constant_element_t *new_part = (const string_constant_element_t *)args[2];
-        if (old_part->value.length == 0)
-            return args[0];
-        string_builder_t builder;
-        init_string_builder(&builder, str->value.length);
-        size_t pos = 0;
-        while (pos < str->value.length) {
-            if (pos + old_part->value.length <= str->value.length
-                && !wmemcmp(str->value.data + pos, old_part->value.data, old_part->value.length)) {
-                append_string_view(&builder, new_part->value);
-                pos += old_part->value.length;
-            } else {
-                append_char(&builder, str->value.data[pos]);
-                pos++;
+        string_view_t old_part;
+        string_view_t new_part;
+        if (get_string_view_from_constant(state->arena, args[1], &old_part)
+            && get_string_view_from_constant(state->arena, args[2], &new_part)) {
+            if (old_part.length == 0)
+                return args[0];
+            string_builder_t builder;
+            init_string_builder(&builder, str->value.length);
+            size_t pos = 0;
+            while (pos < str->value.length) {
+                if (pos + old_part.length <= str->value.length
+                    && !wmemcmp(str->value.data + pos, old_part.data, old_part.length)) {
+                    append_string_view(&builder, new_part);
+                    pos += old_part.length;
+                } else {
+                    append_char(&builder, str->value.data[pos]);
+                    pos++;
+                }
             }
+            string_view_t result = copy_string_to_arena(state->arena, builder.data, builder.length);
+            if (builder.data)
+                FREE(builder.data);
+            return make_string_constant_element(state->arena, result);
         }
-        string_view_t result = copy_string_to_arena(state->arena, builder.data, builder.length);
-        if (builder.data)
-            FREE(builder.data);
-        return make_string_constant_element(state->arena, result);
     }
     return make_string_element();
 }

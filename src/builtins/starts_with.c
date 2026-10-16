@@ -18,7 +18,9 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
     (void)thread;
     if (count < 1)
         return operation_exception(get_exception_invalid_argument());
-    if (receiver->vtbl->type != TYPE_STRING || args[0]->vtbl->type != TYPE_STRING)
+    if (receiver->vtbl->type != TYPE_STRING)
+        return operation_exception(get_exception_invalid_argument());
+    if (args[0]->vtbl->type != TYPE_STRING && args[0]->vtbl->type != TYPE_CHARACTER)
         return operation_exception(get_exception_invalid_argument());
     string_value_t value = convert_object_to_string(receiver);
     string_value_t prefix = convert_object_to_string(args[0]);
@@ -43,12 +45,14 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
         return make_bottom_element();
     if (args[0]->type == LATTICE_BOTTOM || args[1]->type == LATTICE_BOTTOM)
         return make_bottom_element();
-    if (args[0]->type == LATTICE_STRING_CONSTANT && args[1]->type == LATTICE_STRING_CONSTANT) {
+    if (args[0]->type == LATTICE_STRING_CONSTANT) {
         const string_constant_element_t *str = (const string_constant_element_t *)args[0];
-        const string_constant_element_t *prefix = (const string_constant_element_t *)args[1];
-        bool result = prefix->value.length <= str->value.length
-                      && !wmemcmp(str->value.data, prefix->value.data, prefix->value.length);
-        return result ? make_true_element() : make_false_element();
+        string_view_t prefix;
+        if (get_string_view_from_constant(state->arena, args[1], &prefix)) {
+            bool result = prefix.length <= str->value.length
+                          && !wmemcmp(str->value.data, prefix.data, prefix.length);
+            return result ? make_true_element() : make_false_element();
+        }
     }
     return make_boolean_element();
 }
