@@ -1,0 +1,4 @@
+const obj = { const text = "abcdef"; };
+println(substring(obj.text, 1));
+println(obj.text.substring(1, 4));
+println("done");

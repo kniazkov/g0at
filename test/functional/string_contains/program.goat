@@ -1,0 +1,8 @@
+var s = "Hello, World!";
+println(s.contains("World"));
+println(s.contains("world"));
+println(s.contains(""));
+println("abc".contains("abc"));
+println(contains("direct", "ir"));
+println(contains("direct", "xyz"));
+println("a".contains("ab"));

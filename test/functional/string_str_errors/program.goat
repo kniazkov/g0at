@@ -1,0 +1,2 @@
+try { println(str()); } catch (e) { println("1:" + e); }
+println("done");

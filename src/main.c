@@ -7,6 +7,7 @@
 #include "cli/launcher.h"
 #include "lib/allocate.h"
 #include "lib/io.h"
+#include "lib/string_ext.h"
 #include "resources/messages.h"
 
 #include <stdlib.h>
@@ -17,6 +18,7 @@
  * initialization errors).
  */
 int main(int argc, char **argv) {
+    init_unicode_locale();
     init_messages();
 
     options_t *opt = parse_options(argc, argv);

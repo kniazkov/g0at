@@ -403,6 +403,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Usage: analysis_testing <fixture-directory>\n");
         return 1;
     }
+    init_unicode_locale();
     test_output_start("analysis");
     char path[1024], line[256];
     if (snprintf(path, sizeof(path), "%s/list.txt", argv[1]) >= sizeof(path)) {

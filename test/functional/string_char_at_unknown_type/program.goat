@@ -1,0 +1,4 @@
+const obj = { const text = "abc"; };
+println(charAt(obj.text, 1));
+println(obj.text.charAt(2));
+println("done");

@@ -1,0 +1,6 @@
+println("HELLO".toLowerCase());
+println("HeLLo WoRLd".toLowerCase());
+println("123".toLowerCase());
+println("".toLowerCase());
+println(toLowerCase("DIRECT"));
+println("ПРИВЕТ МИР".toLowerCase());

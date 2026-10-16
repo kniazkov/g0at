@@ -1,0 +1,9 @@
+world
+hello world
+aXbYc
+a b %2
+no placeholders
+direct
+abab
+%18446744073709551616
+%18446744073709551616 ok

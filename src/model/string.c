@@ -4,6 +4,7 @@
  * @brief Implementations of an object representing a string.
  */
 
+#include "builtins/registry.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "lib/comparison.h"
@@ -13,6 +14,21 @@
 #include "process.h"
 
 #include <assert.h>
+
+object_t *get_string_char_at(void);
+object_t *get_string_substring(void);
+object_t *get_string_contains(void);
+object_t *get_string_index_of(void);
+object_t *get_string_last_index_of(void);
+object_t *get_string_starts_with(void);
+object_t *get_string_ends_with(void);
+object_t *get_string_is_empty(void);
+object_t *get_string_is_blank(void);
+object_t *get_string_to_upper_case(void);
+object_t *get_string_to_lower_case(void);
+object_t *get_string_replace(void);
+object_t *get_string_repeat(void);
+object_t *get_string_format(void);
 
 /**
  * @brief Defines the maximum capacity of the object pool.
@@ -37,10 +53,39 @@ typedef struct {
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
-    static object_t *keys[2] = {NULL, NULL};
+    static object_t *keys[16] = {NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL};
     if (keys[0] == NULL) {
         keys[0] = get_string_length();
         keys[1] = get_string_trim();
+        keys[2] = get_string_char_at();
+        keys[3] = get_string_substring();
+        keys[4] = get_string_contains();
+        keys[5] = get_string_index_of();
+        keys[6] = get_string_last_index_of();
+        keys[7] = get_string_starts_with();
+        keys[8] = get_string_ends_with();
+        keys[9] = get_string_is_empty();
+        keys[10] = get_string_is_blank();
+        keys[11] = get_string_to_upper_case();
+        keys[12] = get_string_to_lower_case();
+        keys[13] = get_string_replace();
+        keys[14] = get_string_repeat();
+        keys[15] = get_string_format();
     }
     return (object_array_t){keys, sizeof(keys) / sizeof(object_t *)};
 }
@@ -54,6 +99,34 @@ static object_t *proto_get_property(const object_t *obj, const object_t *key) {
             value = get_integer_zero();
         } else if (wcscmp(L"trim", key_str.data) == 0) {
             value = get_function_trim();
+        } else if (wcscmp(L"charAt", key_str.data) == 0) {
+            value = get_function_char_at();
+        } else if (wcscmp(L"substring", key_str.data) == 0) {
+            value = get_function_substring();
+        } else if (wcscmp(L"contains", key_str.data) == 0) {
+            value = get_function_contains();
+        } else if (wcscmp(L"indexOf", key_str.data) == 0) {
+            value = get_function_index_of();
+        } else if (wcscmp(L"lastIndexOf", key_str.data) == 0) {
+            value = get_function_last_index_of();
+        } else if (wcscmp(L"startsWith", key_str.data) == 0) {
+            value = get_function_starts_with();
+        } else if (wcscmp(L"endsWith", key_str.data) == 0) {
+            value = get_function_ends_with();
+        } else if (wcscmp(L"isEmpty", key_str.data) == 0) {
+            value = get_function_is_empty();
+        } else if (wcscmp(L"isBlank", key_str.data) == 0) {
+            value = get_function_is_blank();
+        } else if (wcscmp(L"toUpperCase", key_str.data) == 0) {
+            value = get_function_to_upper_case();
+        } else if (wcscmp(L"toLowerCase", key_str.data) == 0) {
+            value = get_function_to_lower_case();
+        } else if (wcscmp(L"replace", key_str.data) == 0) {
+            value = get_function_replace();
+        } else if (wcscmp(L"repeat", key_str.data) == 0) {
+            value = get_function_repeat();
+        } else if (wcscmp(L"format", key_str.data) == 0) {
+            value = get_function_format();
         }
     }
     return value;
@@ -354,11 +427,25 @@ DECLARE_STATIC_STRING(exception_property_already_exists, L"PROPERTY_ALREADY_EXIS
 DECLARE_STATIC_STRING(exception_property_is_constant, L"PROPERTY_IS_CONSTANT")
 DECLARE_STATIC_STRING(exception_property_not_found, L"PROPERTY_NOT_FOUND")
 DECLARE_STATIC_STRING(string_atan, L"atan")
+DECLARE_STATIC_STRING(string_char_at, L"charAt")
+DECLARE_STATIC_STRING(string_contains, L"contains")
+DECLARE_STATIC_STRING(string_ends_with, L"endsWith")
+DECLARE_STATIC_STRING(string_format, L"format")
+DECLARE_STATIC_STRING(string_index_of, L"indexOf")
+DECLARE_STATIC_STRING(string_is_blank, L"isBlank")
+DECLARE_STATIC_STRING(string_is_empty, L"isEmpty")
+DECLARE_STATIC_STRING(string_last_index_of, L"lastIndexOf")
 DECLARE_STATIC_STRING(string_length, L"length")
 DECLARE_STATIC_STRING(string_pi, L"pi")
 DECLARE_STATIC_STRING(string_print, L"print")
+DECLARE_STATIC_STRING(string_repeat, L"repeat")
+DECLARE_STATIC_STRING(string_replace, L"replace")
 DECLARE_STATIC_STRING(string_sign, L"sign")
 DECLARE_STATIC_STRING(string_sqrt, L"sqrt")
+DECLARE_STATIC_STRING(string_starts_with, L"startsWith")
+DECLARE_STATIC_STRING(string_substring, L"substring")
+DECLARE_STATIC_STRING(string_to_lower_case, L"toLowerCase")
+DECLARE_STATIC_STRING(string_to_upper_case, L"toUpperCase")
 DECLARE_STATIC_STRING(string_trim, L"trim")
 
 /** @brief Virtual table defining the behavior of the dynamic string object. */

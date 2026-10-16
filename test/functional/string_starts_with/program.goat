@@ -1,0 +1,12 @@
+var s = "Hello, World!";
+println(s.startsWith("Hello"));
+println(s.startsWith("World"));
+println(s.startsWith(""));
+println("abc".startsWith("a"));
+println(startsWith("direct", "di"));
+println(startsWith("direct", "ect"));
+println(s.startsWith('H'));
+println(s.startsWith('W'));
+println("abc".startsWith('a'));
+println(startsWith("direct", 'd'));
+println(startsWith("direct", 'e'));

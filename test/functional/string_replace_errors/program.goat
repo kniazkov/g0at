@@ -1,0 +1,9 @@
+try { println("abc".replace()); } catch (e) { println("1:" + e); }
+try { println("abc".replace("a")); } catch (e) { println("2:" + e); }
+try { println(replace(5, "a", "b")); } catch (e) { println("3:" + e); }
+try { println("abc".replace(5, "b")); } catch (e) { println("4:" + e); }
+try { println(replace()); } catch (e) { println("5:" + e); }
+try { println(replace("abc")); } catch (e) { println("6:" + e); }
+try { println(replace('a', "a", "b")); } catch (e) { println("7:" + e); }
+try { println("abc".replace('a', 5)); } catch (e) { println("8:" + e); }
+println("done");

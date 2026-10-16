@@ -1,0 +1,6 @@
+println("abc".repeat(3));
+println("x".repeat(0));
+println("ab".repeat(2));
+println("".repeat(5));
+println(repeat("no", 3));
+println("a".repeat(1));

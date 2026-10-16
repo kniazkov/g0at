@@ -134,6 +134,31 @@ const lattice_element_t *make_char_constant_element(arena_t *arena, uint32_t val
     return &element->base;
 }
 
+bool get_string_view_from_constant(arena_t *arena,
+                                   const lattice_element_t *element,
+                                   string_view_t *view) {
+    if (element->type == LATTICE_STRING_CONSTANT) {
+        *view = ((const string_constant_element_t *)element)->value;
+        return true;
+    }
+    if (element->type == LATTICE_CHAR_CONSTANT) {
+        uint32_t value = ((const char_constant_element_t *)element)->value;
+        if (sizeof(wchar_t) > 2 || value < 0x10000) {
+            wchar_t *buffer = alloc_from_arena(arena, sizeof(wchar_t));
+            buffer[0] = (wchar_t)value;
+            *view = (string_view_t){buffer, 1};
+        } else {
+            value -= 0x10000;
+            wchar_t *buffer = alloc_from_arena(arena, 2 * sizeof(wchar_t));
+            buffer[0] = (wchar_t)(0xD800 + (value >> 10));
+            buffer[1] = (wchar_t)(0xDC00 + (value & 0x3FF));
+            *view = (string_view_t){buffer, 2};
+        }
+        return true;
+    }
+    return false;
+}
+
 const lattice_element_t *make_boolean_element() {
     return &boolean_element;
 }

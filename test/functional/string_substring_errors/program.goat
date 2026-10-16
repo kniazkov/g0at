@@ -1,0 +1,9 @@
+try { println("abc".substring()); } catch (e) { println("1:" + e); }
+try { println("abc".substring(1, "x")); } catch (e) { println("2:" + e); }
+try { println("abc".substring(3, 1)); } catch (e) { println("3:" + e); }
+try { println("abc".substring(-1)); } catch (e) { println("4:" + e); }
+try { println("abc".substring(0, 4)); } catch (e) { println("5:" + e); }
+try { println(substring(5, 0)); } catch (e) { println("6:" + e); }
+try { println(substring()); } catch (e) { println("7:" + e); }
+try { println(substring("abc")); } catch (e) { println("8:" + e); }
+println("done");

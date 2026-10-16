@@ -1,0 +1,7 @@
+println("".isBlank());
+println("   ".isBlank());
+println("  \t\n ".isBlank());
+println("  a ".isBlank());
+println(isBlank(""));
+println(isBlank(" \t"));
+println(isBlank("x"));

@@ -23,14 +23,23 @@ object_t *get_function_cbrt(void);
 extern const builtin_function_t builtin_ceil;
 object_t *get_function_ceil(void);
 
+extern const builtin_function_t builtin_char_at;
+object_t *get_function_char_at(void);
+
 extern const builtin_function_t builtin_chr;
 object_t *get_function_chr(void);
+
+extern const builtin_function_t builtin_contains;
+object_t *get_function_contains(void);
 
 extern const builtin_function_t builtin_cos;
 object_t *get_function_cos(void);
 
 extern const builtin_function_t builtin_cosh;
 object_t *get_function_cosh(void);
+
+extern const builtin_function_t builtin_ends_with;
+object_t *get_function_ends_with(void);
 
 extern const builtin_function_t builtin_exp;
 object_t *get_function_exp(void);
@@ -47,8 +56,14 @@ object_t *get_function_floor(void);
 extern const builtin_function_t builtin_fmod;
 object_t *get_function_fmod(void);
 
+extern const builtin_function_t builtin_format;
+object_t *get_function_format(void);
+
 extern const builtin_function_t builtin_hypot;
 object_t *get_function_hypot(void);
+
+extern const builtin_function_t builtin_index_of;
+object_t *get_function_index_of(void);
 
 extern const builtin_function_t builtin_input;
 object_t *get_function_input(void);
@@ -58,6 +73,15 @@ object_t *get_function_instance_of(void);
 
 extern const builtin_function_t builtin_int;
 object_t *get_function_int(void);
+
+extern const builtin_function_t builtin_is_blank;
+object_t *get_function_is_blank(void);
+
+extern const builtin_function_t builtin_is_empty;
+object_t *get_function_is_empty(void);
+
+extern const builtin_function_t builtin_last_index_of;
+object_t *get_function_last_index_of(void);
 
 extern const builtin_function_t builtin_log;
 object_t *get_function_log(void);
@@ -89,6 +113,12 @@ object_t *get_function_print(void);
 extern const builtin_function_t builtin_println;
 object_t *get_function_println(void);
 
+extern const builtin_function_t builtin_repeat;
+object_t *get_function_repeat(void);
+
+extern const builtin_function_t builtin_replace;
+object_t *get_function_replace(void);
+
 extern const builtin_function_t builtin_round;
 object_t *get_function_round(void);
 
@@ -104,11 +134,26 @@ object_t *get_function_sinh(void);
 extern const builtin_function_t builtin_sqrt;
 object_t *get_function_sqrt(void);
 
+extern const builtin_function_t builtin_starts_with;
+object_t *get_function_starts_with(void);
+
+extern const builtin_function_t builtin_str;
+object_t *get_function_str(void);
+
+extern const builtin_function_t builtin_substring;
+object_t *get_function_substring(void);
+
 extern const builtin_function_t builtin_tan;
 object_t *get_function_tan(void);
 
 extern const builtin_function_t builtin_tanh;
 object_t *get_function_tanh(void);
+
+extern const builtin_function_t builtin_to_lower_case;
+object_t *get_function_to_lower_case(void);
+
+extern const builtin_function_t builtin_to_upper_case;
+object_t *get_function_to_upper_case(void);
 
 extern const builtin_function_t builtin_trim;
 object_t *get_function_trim(void);

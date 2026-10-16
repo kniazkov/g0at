@@ -1,0 +1,6 @@
+try { println("abc".startsWith()); } catch (e) { println("1:" + e); }
+try { println(startsWith(5, "a")); } catch (e) { println("2:" + e); }
+try { println("abc".startsWith(5)); } catch (e) { println("3:" + e); }
+try { println(startsWith()); } catch (e) { println("4:" + e); }
+try { println(startsWith('a', "a")); } catch (e) { println("5:" + e); }
+println("done");

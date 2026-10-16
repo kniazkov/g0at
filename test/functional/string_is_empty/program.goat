@@ -1,0 +1,7 @@
+println("".isEmpty());
+println(" ".isEmpty());
+println("abc".isEmpty());
+println(isEmpty(""));
+println(isEmpty("x"));
+var s = "";
+println(s.isEmpty());

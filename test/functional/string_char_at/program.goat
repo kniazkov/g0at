@@ -1,0 +1,8 @@
+var s = "Hello, World!";
+println(s.charAt(0));
+println(s.charAt(7));
+println("abc".charAt(2));
+println("x".charAt(0));
+println(charAt("direct", 3));
+println(charAt("direct", 0));
+println("last".charAt(3));

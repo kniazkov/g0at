@@ -1,0 +1,12 @@
+var s = "Hello, World!";
+println(s.endsWith("World!"));
+println(s.endsWith("Hello"));
+println(s.endsWith(""));
+println("abc".endsWith("c"));
+println(endsWith("direct", "ct"));
+println(endsWith("direct", "di"));
+println(s.endsWith('!'));
+println(s.endsWith('H'));
+println("abc".endsWith('c'));
+println(endsWith("direct", 't'));
+println(endsWith("direct", 'e'));

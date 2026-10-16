@@ -9,9 +9,11 @@
 #include "allocate.h"
 
 #include <inttypes.h>
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wctype.h>
 
 #define INITIAL_STRING_BUILDER_CAPACITY 16
 
@@ -449,4 +451,28 @@ string_value_t align_text(string_value_t text, size_t size, alignment_t alignmen
     }
     buff[size] = L'\0';
     return (string_value_t){buff, size, true};
+}
+
+/** @brief Initializes the process locale for Unicode-aware character classification. */
+void init_unicode_locale(void) {
+    setlocale(LC_CTYPE, "");
+}
+
+/** @brief Ensures the process locale is initialized once for Unicode-aware classification. */
+static void ensure_unicode_locale(void) {
+    static bool locale_initialized = false;
+    if (!locale_initialized) {
+        locale_initialized = true;
+        init_unicode_locale();
+    }
+}
+
+wchar_t unicode_towupper(wchar_t ch) {
+    ensure_unicode_locale();
+    return towupper(ch);
+}
+
+wchar_t unicode_towlower(wchar_t ch) {
+    ensure_unicode_locale();
+    return towlower(ch);
 }

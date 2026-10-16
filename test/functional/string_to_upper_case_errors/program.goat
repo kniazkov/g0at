@@ -1,0 +1,3 @@
+try { println(toUpperCase(5)); } catch (e) { println("1:" + e); }
+try { println(toUpperCase()); } catch (e) { println("2:" + e); }
+println("done");
