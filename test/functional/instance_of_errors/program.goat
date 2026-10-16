@@ -1,0 +1,6 @@
+try { println(instanceOf()); } catch (e) { println("1:" + e); }
+try { println(instanceOf("s")); } catch (e) { println("2:" + e); }
+try { println("s".instanceOf()); } catch (e) { println("3:" + e); }
+var x = 5;
+try { println(x.instanceOf()); } catch (e) { println("4:" + e); }
+println("done");

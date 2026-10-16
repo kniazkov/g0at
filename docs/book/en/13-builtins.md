@@ -10,7 +10,7 @@ Revision 4. Implementation described: [commit 64c80b9](https://github.com/kniazk
 
 A built-in looks like an ordinary call in source, but its executor is already written in C and included in the interpreter. It needs no bytecode body. This differs from a native specialization of a user function, which the system obtains by generating and compiling C code.
 
-Built-ins are collected in [registry.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/builtins/registry.c). The described revision has 33. The root environment also provides `pi` and `Exceptions`, but these are not registry functions. Looking up a name in the root object finds a descriptor and obtains its associated function object.
+Built-ins are collected in [registry.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/builtins/registry.c). The described revision has 37. The root environment also provides `pi` and `Exceptions`, but these are not registry functions. In addition, the root context exposes the type-prototype names `Object`, `String`, `Number`, `Integer`, `Real`, `Character`, `Boolean`, `Function`, and `Null`; these are prototypes, not functions. Looking up a name in the root object finds a descriptor and obtains its associated function object.
 
 The central registry lets the runtime and analyzer use one set of definitions. Adding a new name still requires a consistent implementation of its behavior, rather than just an entry in the list.
 
@@ -26,10 +26,11 @@ The `builtin_function_t` structure in [builtin_function.h](https://github.com/kn
 | `min_args` | Minimum argument count |
 | `effects` | Observable side effects |
 | `execute` | Execution on concrete objects |
+| `execute_method` | Method executor that receives the receiver separately |
 | `interpret` | Computing result information during analysis |
 | `get_object` | Obtaining a stable function object |
 
-`execute` receives objects and a thread, returning a normal value or an exception. `interpret` receives abstract values (information about possible values, rather than necessarily the values themselves) and analysis state. It may return, for example, a known number, an arbitrary string, or the absence of a normal result.
+`execute` receives objects and a thread, returning a normal value or an exception. `execute_method` is an optional method executor: it additionally receives the receiver on which the method was invoked. If the field is absent (NULL), the receiver is ignored and the plain `execute` is used. `interpret` receives abstract values (information about possible values, rather than necessarily the values themselves) and analysis state. It may return, for example, a known number, an arbitrary string, or the absence of a normal result.
 
 Analyzing `input()` does not read the keyboard, and analyzing `println(...)` does not print text. Otherwise, compilation itself would change the program's interaction with the user. For a numeric function with known arguments, the abstract implementation may compute a constant. Abstract values are the subject of the next part.
 
@@ -154,7 +155,44 @@ INVALID_ARGUMENT
 
 <a id="section-13-8"></a>
 
-## 13.8. Moving on to static analysis
+## 13.8. Named prototypes and the instanceOf method
+
+The root context exposes the type names `Object`, `String`, `Number`, `Integer`, `Real`, `Character`, `Boolean`, `Function`, and `Null`. Each name is bound to a prototype, an object in which inherited properties are sought. For example, the integer `42` inherits through the chain `[integer_proto, numeric_proto, root_object]`, and a string through `[string_proto, root_object]`. The root object is the prototype of all objects.
+
+The root object defines the built-in method [instanceOf](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/builtins/instance_of.c), so it is available on every value. A method-form call `value.instanceOf(proto)` returns `true` if `proto` occurs in the value's prototype chain, and `false` otherwise:
+
+```goat
+var s = "abs";
+var b = s.instanceOf(String);
+print(b);
+```
+
+This example prints `true`. The same executor is also available in the function form `instanceOf(value, proto)`, which requires two arguments; a call with one argument makes the common wrapper report `INVALID_ARGUMENT`. The check compares objects by identity and then walks the receiver's ancestor topology; it does not convert values to a type. Hence `s.instanceOf(Number)` and `(13).instanceOf(String)` give `false`, while `(13).instanceOf(Integer)` and `(13).instanceOf(Number)` give `true`.
+
+The method can be invoked directly on a primitive literal. A numeric literal immediately followed by a dot is read as a real number, so an integer is wrapped in parentheses:
+
+```goat
+print(null.instanceOf(Object));
+println("");
+print((13).instanceOf(Number));
+println("");
+print((3.14).instanceOf(Real));
+println("");
+```
+
+Output:
+
+```text
+true
+true
+true
+```
+
+The built-in executor returns an ordinary boolean result without side effects. The abstract implementation gives the boolean domain for any argument count during analysis and `BOTTOM` when no arguments are present. Like other built-ins, `instanceOf` is not part of the native numeric subset: a method call stays on the bytecode path.
+
+<a id="section-13-9"></a>
+
+## 13.9. Moving on to static analysis
 
 The execution model now establishes concrete requirements for the analyzer. It must account for evaluation order, changes to captured variables, exceptions, and call effects. Knowing the mathematical result is insufficient if computing it also reads input or prints a line.
 

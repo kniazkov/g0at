@@ -11,9 +11,38 @@
 #include "lib/string_ext.h"
 #include "object.h"
 
+/** @brief Global names of the built-in type prototypes. */
+static pair_t type_properties[] = {
+    {L"Boolean", get_boolean_proto},
+    {L"Character", get_character_proto},
+    {L"Function", get_function_proto},
+    {L"Integer", get_integer_proto},
+    {L"Null", get_null_object},
+    {L"Number", get_numeric_proto},
+    {L"Object", get_root_object},
+    {L"Real", get_real_proto},
+    {L"String", get_string_proto},
+};
+
 /** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
-    return get_builtin_context_keys();
+    enum { type_count = sizeof(type_properties) / sizeof(pair_t) };
+
+    static object_static_string_t type_names[type_count];
+    static object_t *keys[64];
+    static size_t key_count = 0;
+    if (key_count == 0) {
+        object_array_t builtin = get_builtin_context_keys();
+        for (size_t index = 0; index < builtin.size; index++) {
+            keys[key_count++] = builtin.items[index];
+        }
+        for (size_t index = 0; index < type_count; index++) {
+            keys[key_count++] =
+                get_static_string_object(&type_names[index],
+                                         (const wchar_t *)type_properties[index].key);
+        }
+    }
+    return (object_array_t){keys, key_count};
 }
 
 /** @brief Implements @ref object_vtbl_t::get_property. */
@@ -37,6 +66,14 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
                                                   string_comparator);
         if (getter) {
             value = getter();
+        } else {
+            getter = (static_object_getter_t)binary_search(type_properties,
+                                                           sizeof(type_properties) / sizeof(pair_t),
+                                                           key_str.data,
+                                                           string_comparator);
+            if (getter) {
+                value = getter();
+            }
         }
     }
     return value;

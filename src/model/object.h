@@ -631,6 +631,7 @@ DECLARE_STATIC_OBJECT(string_trim)
 object_t *get_function_proto();
 
 object_t *get_function_atan(void);
+object_t *get_function_instance_of(void);
 object_t *get_function_print(void);
 object_t *get_function_sign(void);
 object_t *get_function_sqrt(void);

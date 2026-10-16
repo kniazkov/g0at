@@ -1,0 +1,13 @@
+var s = "abs";
+println(instanceOf(s, String));
+println(instanceOf(s, Object));
+println(instanceOf(s, Integer));
+
+var i = 42;
+println(instanceOf(i, Integer));
+println(instanceOf(i, Number));
+println(instanceOf(i, Real));
+
+println(instanceOf(null, Null));
+println(instanceOf(null, Object));
+println(instanceOf(null, String));

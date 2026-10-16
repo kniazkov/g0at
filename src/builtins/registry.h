@@ -53,6 +53,9 @@ object_t *get_function_hypot(void);
 extern const builtin_function_t builtin_input;
 object_t *get_function_input(void);
 
+extern const builtin_function_t builtin_instance_of;
+object_t *get_function_instance_of(void);
+
 extern const builtin_function_t builtin_int;
 object_t *get_function_int(void);
 

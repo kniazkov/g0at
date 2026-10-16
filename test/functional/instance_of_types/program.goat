@@ -1,0 +1,42 @@
+var s = "abs";
+var b = s.instanceOf(String);
+print(b);
+println("");
+println(s.instanceOf(Object));
+println(s.instanceOf(Integer));
+println(s.instanceOf(Number));
+println(s.instanceOf(Real));
+println(s.instanceOf(Character));
+println(s.instanceOf(Boolean));
+println(s.instanceOf(Function));
+println(s.instanceOf(Null));
+
+var i = 42;
+println(i.instanceOf(Integer));
+println(i.instanceOf(Number));
+println(i.instanceOf(Object));
+println(i.instanceOf(Real));
+println(i.instanceOf(String));
+
+var r = 3.14;
+println(r.instanceOf(Real));
+println(r.instanceOf(Number));
+println(r.instanceOf(Integer));
+
+var flag = true;
+println(flag.instanceOf(Boolean));
+println(flag.instanceOf(Object));
+println(flag.instanceOf(String));
+
+var ch = 'x';
+println(ch.instanceOf(Character));
+println(ch.instanceOf(Object));
+println(ch.instanceOf(Number));
+
+println(null.instanceOf(Null));
+println(null.instanceOf(Object));
+println(null.instanceOf(String));
+
+println(trim.instanceOf(Function));
+println(trim.instanceOf(Object));
+println(trim.instanceOf(String));
