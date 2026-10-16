@@ -1,0 +1,10 @@
+var u = "   ";
+var u1 = u.trim();
+println("[" + u1 + "]");
+var e = "";
+var e1 = e.trim();
+println("[" + e1 + "]");
+var m = "  \r\n\t  ";
+println("[" + m.trim() + "]");
+var n = " \t \n\r ";
+println("[" + n.trim() + "]");

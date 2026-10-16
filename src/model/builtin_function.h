@@ -27,6 +27,17 @@ typedef struct builtin_function_t {
     unsigned effects;
     /** @brief Executors receive at least min_args; runtime results own a non-NULL value. */
     operation_result_t (*execute)(object_t **args, uint16_t count, thread_t *thread);
+    /**
+     * @brief Optional receiver-aware executor for built-in methods.
+     *
+     * When a builtin object is invoked through a method call (`receiver.member(...)`), the
+     * receiver is passed separately from the explicit arguments. If this field is NULL, the
+     * receiver is ignored and the plain @ref execute is used instead.
+     */
+    operation_result_t (*execute_method)(object_t *receiver,
+                                         object_t **args,
+                                         uint16_t count,
+                                         thread_t *thread);
     const lattice_element_t *(*interpret)(abstract_state_t *state,
                                           const lattice_element_t *const *args,
                                           size_t count);

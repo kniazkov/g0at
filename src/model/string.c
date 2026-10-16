@@ -37,9 +37,10 @@ typedef struct {
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
-    static object_t *keys[1] = {NULL};
+    static object_t *keys[2] = {NULL, NULL};
     if (keys[0] == NULL) {
         keys[0] = get_string_length();
+        keys[1] = get_string_trim();
     }
     return (object_array_t){keys, sizeof(keys) / sizeof(object_t *)};
 }
@@ -51,6 +52,8 @@ static object_t *proto_get_property(const object_t *obj, const object_t *key) {
         string_value_t key_str = convert_object_to_string(key);
         if (wcscmp(L"length", key_str.data) == 0) {
             value = get_integer_zero();
+        } else if (wcscmp(L"trim", key_str.data) == 0) {
+            value = get_function_trim();
         }
     }
     return value;
@@ -356,6 +359,7 @@ DECLARE_STATIC_STRING(string_pi, L"pi")
 DECLARE_STATIC_STRING(string_print, L"print")
 DECLARE_STATIC_STRING(string_sign, L"sign")
 DECLARE_STATIC_STRING(string_sqrt, L"sqrt")
+DECLARE_STATIC_STRING(string_trim, L"trim")
 
 /** @brief Virtual table defining the behavior of the dynamic string object. */
 static object_vtbl_t dynamic_string_vtbl = {.type = TYPE_STRING,

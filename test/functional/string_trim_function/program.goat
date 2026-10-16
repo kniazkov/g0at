@@ -1,0 +1,10 @@
+var a = trim("  direct call  ");
+println(a);
+var b = trim("x");
+println(b);
+var c = trim("   ");
+println("[" + c + "]");
+var d = trim("  inner  " + "  spaces  ");
+println(d);
+var e = trim("\t  tabbed\n");
+println(e);

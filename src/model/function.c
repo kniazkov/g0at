@@ -118,9 +118,14 @@ static bool static_call(object_t *obj, uint16_t arg_count, object_t *receiver, t
         args[i] = args[arg_count - 1 - i];
         args[arg_count - 1 - i] = tmp;
     }
-    operation_result_t result = arg_count < descriptor->min_args
-                                    ? operation_exception(get_exception_invalid_argument())
-                                    : descriptor->execute(args, arg_count, thread);
+    operation_result_t result;
+    if (arg_count < descriptor->min_args) {
+        result = operation_exception(get_exception_invalid_argument());
+    } else if (receiver && descriptor->execute_method) {
+        result = descriptor->execute_method(receiver, args, arg_count, thread);
+    } else {
+        result = descriptor->execute(args, arg_count, thread);
+    }
     for (size_t i = 0; i < arg_count; i++)
         DECREF(args[i]);
     FREE(args);

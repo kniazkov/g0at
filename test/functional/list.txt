@@ -405,3 +405,9 @@ character_multiple_chars
 character_bad_escape
 character_unclosed
 from_a_to_z 
+
+# Built-in string methods
+string_trim
+string_trim_whitespace
+string_trim_function
+string_trim_errors

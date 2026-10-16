@@ -1,0 +1,11 @@
+var s = "   abcde   ";
+var s1 = s.trim();
+println(s1);
+var t = "\t  x\n ";
+println(t.trim());
+var w = "   a b c   ";
+println(w.trim());
+var v = "plain";
+println(v.trim());
+var m = "  middle  ".trim();
+println(m);

@@ -1,0 +1,7 @@
+try { var a = trim(5); } catch (e) { println("1:" + e); }
+try { var b = trim(); } catch (e) { println("2:" + e); }
+try { var c = trim(true); } catch (e) { println("3:" + e); }
+try { var d = trim(null); } catch (e) { println("4:" + e); }
+try { var x = trim(3.14); } catch (e) { println("5:" + e); }
+println(trim("  extra args are ignored  ", 1, 2, 3));
+println("done");

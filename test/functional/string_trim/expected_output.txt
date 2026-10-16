@@ -1,0 +1,5 @@
+abcde
+x
+a b c
+plain
+middle
