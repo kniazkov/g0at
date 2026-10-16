@@ -54,7 +54,7 @@ void run_stack_underflow_case(int index) {
                 reduce_object_stack(stack, 0);
                 break;
             case 5:
-                call_object(get_function_print(), 1, proc->main_thread);
+                call_object(get_function_print(), 1, NULL, proc->main_thread);
                 break;
             case 6: {
                 object_t *func = create_function_object(proc,
@@ -62,8 +62,9 @@ void run_stack_underflow_case(int index) {
                                                         0,
                                                         0,
                                                         proc->main_thread->context->data,
-                                                        NULL);
-                call_object(func, 1, proc->main_thread);
+                                                        NULL,
+                                                        false);
+                call_object(func, 1, NULL, proc->main_thread);
                 break;
             }
             case 7: {

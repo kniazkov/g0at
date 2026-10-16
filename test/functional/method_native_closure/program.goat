@@ -1,0 +1,12 @@
+const make = func(n) {
+    const inner = func(x) { return abs(x); };
+    println(inner(n));
+    return inner;
+};
+make(-2);
+const obj = {
+    const abs = func(n) { return 99; };
+};
+obj.g = make;
+const h = obj.g(-2);
+println(h(-2));

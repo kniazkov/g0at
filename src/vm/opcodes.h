@@ -57,6 +57,7 @@ typedef enum {
     DIFF,       /**< Pushes `true` if top two objects are not equal. */
     FUNC,       /**< Creates a new function object. */
     CALL,       /**< Calls a function with arguments from the data stack. */
+    CALLM,      /**< Calls a method; the receiver sits on the stack below the function. */
     RET,        /**< Returns from current function. */
     ENTER,      /**< Creates a new context, inheriting from the current one. */
     LEAVE,      /**< Restores the parent context, pushing the departed context's data. */

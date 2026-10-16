@@ -20,6 +20,12 @@ preparsing_catch(token_t *token, parser_memory_t *memory, token_groups_t *groups
     remove_token_from_group(binding->children.first);
     remove_token_from_group(binding);
     binding->text = binding->children.first->text;
+    if (name_is_reserved_this(binding->text)) {
+        return create_error_from_token(memory->errors,
+                                       token,
+                                       CRITICAL,
+                                       get_messages()->reserved_this_name);
+    }
     binding->type = TOKEN_CATCH_BINDING;
     return NULL;
 }

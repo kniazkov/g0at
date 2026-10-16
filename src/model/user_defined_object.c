@@ -67,12 +67,16 @@ static object_user_defined_t *create_empty_user_defined_object(process_t *proces
  * @brief Decrements the reference count of a key-value pair in the user-defined object's children.
  *
  * It decreases the reference count of both the key and the value, ensuring proper memory management
- * and cleanup of referenced objects.
+ * and cleanup of referenced objects. A self-reference does not hold a reference count (see
+ * @ref create_property), so it is released without decrementing.
  */
-static void clear_child_pair(void *unused, void *key, value_t value) {
+static void clear_child_pair(void *data, void *key, value_t value) {
+    object_user_defined_t *uobj = (object_user_defined_t *)data;
     DECREF(key);
     property_value_t *ref = (property_value_t *)value.ptr;
-    DECREF(ref->object);
+    if (ref->object != (object_t *)uobj) {
+        DECREF(ref->object);
+    }
     FREE(ref);
 }
 
@@ -88,7 +92,7 @@ static void release_or_clear(object_user_defined_t *uobj, bool deep_cleaning) {
     }
     if (deep_cleaning) {
         uobj->state = DYING;
-        avl_tree_for_each(uobj->properties, clear_child_pair, NULL);
+        avl_tree_for_each(uobj->properties, clear_child_pair, uobj);
         for (size_t index = 0; index < uobj->proto->size; index++) {
             DECREF((object_t *)uobj->proto->data[index]);
         }
@@ -183,20 +187,34 @@ static void release(object_t *obj) {
     FREE(obj);
 }
 
+/** @brief The original object and its clone used while copying properties. */
+typedef struct {
+    /** @brief The object being cloned. */
+    object_user_defined_t *original;
+
+    /** @brief The clone being filled in. */
+    object_user_defined_t *copy;
+} clone_pair_t;
+
 /**
  * @brief Copies a key-value pair from one AVL tree to another during object cloning.
  *
- * Increments the reference count of both the key and the value. 2.
+ * Increments the reference count of both the key and the value. A self-reference is re-targeted
+ * to the clone and stays weak, matching how @ref create_property stores it.
  */
 static void copy_child_pair(void *data, void *key, value_t value) {
-    object_user_defined_t *copy = (object_user_defined_t *)data;
+    clone_pair_t *pair = (clone_pair_t *)data;
     property_value_t *ref = (property_value_t *)value.ptr;
     INCREF(key);
-    INCREF(ref->object);
-    append_to_vector(copy->keys, key);
+    append_to_vector(pair->copy->keys, key);
     property_value_t *copy_ref = (property_value_t *)ALLOC(sizeof(property_value_t));
     memcpy(copy_ref, ref, sizeof(property_value_t));
-    set_in_avl_tree(copy->properties, key, (value_t){.ptr = copy_ref});
+    if (ref->object == (object_t *)pair->original) {
+        copy_ref->object = &pair->copy->base;
+    } else {
+        INCREF(ref->object);
+    }
+    set_in_avl_tree(pair->copy->properties, key, (value_t){.ptr = copy_ref});
 }
 
 /** @brief Implements @ref object_vtbl_t::clone. */
@@ -205,30 +223,83 @@ static object_t *clone(process_t *process, object_t *obj) {
     object_user_defined_t *copy = create_empty_user_defined_object(
         process,
         (object_array_t){(object_t *const *)uobj->proto->data, uobj->proto->size});
-    avl_tree_for_each(uobj->properties, copy_child_pair, copy);
+    clone_pair_t pair = {uobj, copy};
+    avl_tree_for_each(uobj->properties, copy_child_pair, &pair);
     return &copy->base;
+}
+
+/** @brief Context used while rendering an object in Goat notation. */
+typedef struct {
+    /** @brief The string builder receiving the output. */
+    string_builder_t *builder;
+
+    /**
+     * @brief The path of user-defined objects currently being rendered.
+     *
+     * A user-defined object found again on this path is a reference cycle (e.g. the `this`
+     * property), so it is rendered as `{...}` instead of recursing forever.
+     */
+    vector_t *active;
+
+    /** @brief Builder length at the start of the currently rendered object. */
+    size_t mark;
+} notation_renderer_t;
+
+/** @brief Renders a user-defined object in Goat notation, detecting reference cycles. */
+static string_value_t render_user_defined_object_notation(notation_renderer_t *renderer,
+                                                          object_user_defined_t *uobj);
+
+/** @brief Appends a value's Goat notation, recursing into user-defined objects. */
+static void render_object_value_notation(notation_renderer_t *renderer, object_t *value) {
+    if (value->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+        render_user_defined_object_notation(renderer, (object_user_defined_t *)value);
+    } else {
+        string_value_t str = convert_object_to_string_notation(value);
+        append_string_value(renderer->builder, str);
+        FREE_STRING(str);
+    }
 }
 
 /**
  * @brief Converts a key-value pair into a Goat notation string and appends it to the string
  * builder.
  *
- * If the builder already contains data, a semicolon is inserted before appending the new pair.
+ * If the builder already contains data, a comma is inserted before appending the new pair.
  */
 static void child_pair_to_string(void *data, void *key, value_t value) {
-    string_builder_t *builder = (string_builder_t *)data;
-    if (builder->length > 1) {
-        append_char(builder, ',');
+    notation_renderer_t *renderer = (notation_renderer_t *)data;
+    if (renderer->builder->length > renderer->mark + 1) {
+        append_char(renderer->builder, ',');
     }
     object_t *key_obj = (object_t *)key;
     property_value_t *ref = (property_value_t *)value.ptr;
     string_value_t key_str = convert_object_to_string_notation(key_obj);
-    append_string_value(builder, key_str);
+    append_string_value(renderer->builder, key_str);
     FREE_STRING(key_str);
-    append_char(builder, ':');
-    string_value_t value_str = convert_object_to_string_notation(ref->object);
-    append_string_value(builder, value_str);
-    FREE_STRING(value_str);
+    append_char(renderer->builder, ':');
+    render_object_value_notation(renderer, ref->object);
+}
+
+/** @brief Renders a user-defined object in Goat notation, detecting reference cycles. */
+static string_value_t render_user_defined_object_notation(notation_renderer_t *renderer,
+                                                          object_user_defined_t *uobj) {
+    for (size_t index = 0; index < renderer->active->size; index++) {
+        if (renderer->active->data[index] == &uobj->base) {
+            return append_string(renderer->builder, L"{...}");
+        }
+    }
+    if (uobj->properties->root == NULL) {
+        return append_string(renderer->builder, L"{ }");
+    }
+    size_t saved_mark = renderer->mark;
+    renderer->mark = renderer->builder->length;
+    append_to_vector(renderer->active, &uobj->base);
+    append_char(renderer->builder, '{');
+    avl_tree_for_each(uobj->properties, child_pair_to_string, renderer);
+    string_value_t result = append_char(renderer->builder, '}');
+    renderer->active->size--;
+    renderer->mark = saved_mark;
+    return result;
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string_notation. */
@@ -237,11 +308,15 @@ static string_value_t to_string_notation(const object_t *obj) {
     if (uobj->properties->root == NULL) {
         return STATIC_STRING(L"{ }");
     }
+    notation_renderer_t renderer;
     string_builder_t builder;
     init_string_builder(&builder, 2);
-    append_char(&builder, '{');
-    avl_tree_for_each(uobj->properties, child_pair_to_string, &builder);
-    return append_char(&builder, '}');
+    renderer.builder = &builder;
+    renderer.active = create_vector();
+    renderer.mark = 0;
+    string_value_t result = render_user_defined_object_notation(&renderer, uobj);
+    destroy_vector(renderer.active);
+    return result;
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string. */
@@ -283,7 +358,13 @@ create_property(object_t *obj, object_t *key, object_t *value, bool constant) {
         return MSTAT_PROPERTY_ALREADY_EXISTS;
     }
     INCREF(key);
-    INCREF(value);
+    /* A self-reference (e.g. the `this` property) would form a strong reference cycle that
+       reference counting cannot collect. Keep it weak: the property lives on the object itself,
+       so the object is kept alive by its external references, and the self-reference does not
+       need to hold a count. */
+    if (value != obj) {
+        INCREF(value);
+    }
     append_to_vector(uobj->keys, key);
     ref = (property_value_t *)ALLOC(sizeof(property_value_t));
     ref->object = value;
@@ -302,9 +383,15 @@ static model_status_t set_property(object_t *obj, object_t *key, object_t *value
     if (ref->is_constant) {
         return MSTAT_PROPERTY_IS_CONSTANT;
     }
-    DECREF(ref->object);
+    /* A self-reference holds no reference count (see create_property), so replacing it must not
+       release it, and a new self-reference must not be retained. */
+    if (ref->object != obj) {
+        DECREF(ref->object);
+    }
+    if (value != obj) {
+        INCREF(value);
+    }
     ref->object = value;
-    INCREF(value);
     return MSTAT_OK;
 }
 

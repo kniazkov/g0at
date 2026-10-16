@@ -112,7 +112,7 @@ static bool dispatch(void) {
     free_bytecode(code);
     object_t *function = variable(proc, L"f");
     push_object_onto_stack(proc->main_thread->data_stack, create_integer_object(proc, 9));
-    ASSERT(call_object(function, 1, proc->main_thread));
+    ASSERT(call_object(function, 1, NULL, proc->main_thread));
     object_t *result = pop_object_from_stack(proc->main_thread->data_stack);
     ASSERT(is_integer_object(result) && get_object_integer_value(result).value == 9);
     DECREF(result);

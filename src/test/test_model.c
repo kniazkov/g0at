@@ -9,6 +9,7 @@
 #include "codegen/linker.h"
 #include "lib/allocate.h"
 #include "lib/split64.h"
+#include "model/context.h"
 #include "model/object.h"
 #include "model/process.h"
 #include "model/thread.h"
@@ -329,6 +330,62 @@ bool test_closure() {
 }
 
 bool test_root_object_call() {
-    ASSERT(!call_object(get_root_object(), 0, NULL));
+    ASSERT(!call_object(get_root_object(), 0, NULL, NULL));
+    return true;
+}
+
+bool test_set_property_self_reference() {
+    process_t *process = create_process();
+    object_t *root_object = get_root_object();
+    object_t *obj = create_user_defined_object(process, (object_array_t){&root_object, 1});
+    object_t *key = create_string_object(process, STATIC_STRING(L"self"));
+    /* A self-reference holds no reference count (see create_property), so replacing it must not
+       release it and a new self-reference must not be retained. */
+    ASSERT(create_object_property(obj, key, obj, false) == MSTAT_OK);
+    ASSERT(get_object_property(obj, key) == obj);
+    ASSERT(set_object_property(obj, key, get_null_object()) == MSTAT_OK);
+    ASSERT(get_object_property(obj, key) == get_null_object());
+    ASSERT(set_object_property(obj, key, obj) == MSTAT_OK);
+    ASSERT(get_object_property(obj, key) == obj);
+    ASSERT(set_object_property(obj, key, obj) == MSTAT_OK);
+    ASSERT(get_object_property(obj, key) == obj);
+    ASSERT(set_object_property(obj, key, get_null_object()) == MSTAT_OK);
+    ASSERT(get_object_property(obj, key) == get_null_object());
+    destroy_process(process);
+    return true;
+}
+
+bool test_context_this_cycle_release() {
+    process_t *proc = create_process();
+    size_t objects_before = proc->objects.size;
+    context_t *ctx = create_context(proc, get_root_context(), NULL);
+    object_t *data = ctx->data;
+    /* Set up the same self-reference that a method call creates: the `this` property points back
+       to the context's data object itself. */
+    ASSERT(create_object_property(data, get_this_key(), data, true) == MSTAT_OK);
+    destroy_context(ctx);
+    /* The `this` property is a weak self-reference, so releasing the context's reference must
+       release the data object without leaving a cycle behind. */
+    ASSERT(proc->objects.size == objects_before);
+    destroy_process(proc);
+    return true;
+}
+
+bool test_context_this_preserved() {
+    process_t *proc = create_process();
+    size_t objects_before = proc->objects.size;
+    context_t *ctx = create_context(proc, get_root_context(), NULL);
+    object_t *data = ctx->data;
+    ASSERT(create_object_property(data, get_this_key(), data, true) == MSTAT_OK);
+    /* Simulate the data object escaping the call: the program keeps a reference to it. */
+    INCREF(data);
+    destroy_context(ctx);
+    /* Destroying the context must not mutate the still-live object: `this` keeps pointing to it. */
+    ASSERT(get_object_property(data, get_this_key()) == data);
+    ASSERT(create_object_property(data, get_this_key(), data, true)
+           == MSTAT_PROPERTY_ALREADY_EXISTS);
+    DECREF(data);
+    ASSERT(proc->objects.size == objects_before);
+    destroy_process(proc);
     return true;
 }

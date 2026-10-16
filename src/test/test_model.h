@@ -69,6 +69,24 @@ bool test_sign_function();
 bool test_context_cloning();
 
 /**
+ * @brief Tests that destroying a context releases the `this` self-reference instead of leaking.
+ * @return Returns `true` if the test passes, or `false` if it fails.
+ */
+bool test_context_this_cycle_release();
+
+/**
+ * @brief Tests that destroying a context does not mutate a still-live object's `this` property.
+ * @return Returns `true` if the test passes, or `false` if it fails.
+ */
+bool test_context_this_preserved();
+
+/**
+ * @brief Tests that replacing a property with or by a self-reference keeps the weak reference.
+ * @return Returns `true` if the test passes, or `false` if it fails.
+ */
+bool test_set_property_self_reference();
+
+/**
  * @brief Tests the definition of a custom function with arguments and its call.
  * @return Returns `true` if the test passes, or `false` if it fails.
  */

@@ -1,0 +1,1 @@
+Fatal error in 'program.goat', 1.12: The name 'this' is reserved for the current method context and cannot be declared

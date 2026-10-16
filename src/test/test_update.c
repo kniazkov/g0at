@@ -4,8 +4,10 @@
  */
 #include "test_update.h"
 
+#include "analysis/analysis.h"
 #include "analysis/update.h"
 #include "analysis_test_support.h"
+#include "cli/options.h"
 #include "codegen/linker.h"
 #include "codegen/source_builder.h"
 #include "graph/update_expression.h"
@@ -33,6 +35,39 @@ static bytecode_t *make_code(const instruction_t *list, size_t count) {
     destroy_code_builder(builder);
     destroy_data_builder(data);
     return code;
+}
+
+/** @brief An update of an undeclared name is allowed inside a function body and rejected at the top
+ * level. */
+bool test_update_implicit_in_function(void) {
+    const wchar_t *valid[] = {L"const obj = {}; obj.getX = func() { return ++x };",
+                              L"const obj = {}; obj.getX = func() { return x-- };",
+                              L"const obj = {}; obj.setY = func() { --y; };"};
+    for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
+        arena_t *a = create_arena(8);
+        parser_memory_t m = {a, a, a, a};
+        node_t *root =
+            parse_analysis_test_program(&m, (string_value_t){valid[i], wcslen(valid[i]), false});
+        ASSERT(root);
+        options_t *options = create_options();
+        ASSERT(!analyze(root, &m, options, NULL));
+        destroy_options(options);
+        destroy_arena(a);
+    }
+    const wchar_t *invalid[] = {L"++x;", L"y--;"};
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
+        arena_t *a = create_arena(8);
+        parser_memory_t m = {a, a, a, a};
+        node_t *root =
+            parse_analysis_test_program(&m,
+                                        (string_value_t){invalid[i], wcslen(invalid[i]), false});
+        ASSERT(root);
+        options_t *options = create_options();
+        ASSERT(analyze(root, &m, options, NULL));
+        destroy_options(options);
+        destroy_arena(a);
+    }
+    return true;
 }
 
 bool test_update_models_vm(void) {

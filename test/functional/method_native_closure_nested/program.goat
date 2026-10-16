@@ -1,0 +1,17 @@
+const make = func(n) {
+    const middle = func(x) {
+        const inner = func(y) { return abs(y); };
+        println(inner(x));
+        return inner;
+    };
+    middle(n);
+    return middle;
+};
+make(-2);
+const obj = {
+    const abs = func(n) { return 99; };
+};
+obj.g = make;
+const h = obj.g(-2);
+const k = h(-2);
+println(k(-2));

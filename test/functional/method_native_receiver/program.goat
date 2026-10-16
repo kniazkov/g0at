@@ -1,0 +1,7 @@
+const f = func(n) { return abs(n); };
+println(f(-2));
+const obj = {
+    const abs = func(n) { return 99; };
+};
+obj.g = f;
+println(obj.g(-2));

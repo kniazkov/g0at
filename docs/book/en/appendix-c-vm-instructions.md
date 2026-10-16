@@ -2,13 +2,13 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-c-vm-instructions.md) · [Previous](appendix-b-language.md) · [Next](appendix-d-builtins.md)
 
-Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Revision 4. Implementation described: [commit ae26b84, method calls and the `this` constant](https://github.com/kniazkov/g0at/tree/ae26b849471233f3329214f3c170a7a26a756118).
 
 <a id="section-c-1"></a>
 
 ## C.1. Format and notation
 
-[bytecode.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/bytecode.h) defines an 8-byte instruction: `opcode` (8 bits), `flags` (8), `arg0` (16), and `arg1` (32). The table lists all 52 codes in [opcodes.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/opcodes.h) order. Handlers are in [vm.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/vm/vm.c). Numeric codes belong to this format revision, not a promise that the enum will never change.
+[bytecode.h](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/vm/bytecode.h) defines an 8-byte instruction: `opcode` (8 bits), `flags` (8), `arg0` (16), and `arg1` (32). The table lists all 56 codes in [opcodes.h](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/vm/opcodes.h) order. Handlers are in [vm.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/vm/vm.c). Numeric codes belong to this format revision, not a promise that the enum will never change.
 
 `S` is the retained stack prefix; the top is on the right. `result` is a normal result without an exception. `target`, `body`, and `handler` are instruction indices; `data id` / `name id` are data-descriptor indices, not pointers. Unused operands are `—`. The auxiliary `ARG` buffer is not the object stack.
 
@@ -32,44 +32,48 @@ Revision 3. Implementation described: [commit cf51b8c, including `for`](https://
 | `0x0B` | `ILOAD64` | ARG + arg1 | S → S, integer | Assemble int64 from ARG parts[0] and arg1 parts[1]; clear the buffer. |
 | `0x0C` | `RLOAD` | ARG + arg1 | S → S, real | Assemble double bits as for ILOAD64; this is not numeric conversion. |
 | `0x0D` | `SLOAD` | arg1: data id | S → S, string | Load a string through the process cache. |
-| `0x0E` | `VLOAD` | arg1: name id | S → S, value | Find the name in context and prototypes; use null if absent. |
-| `0x0F` | `VAR` | arg1: name id | S, x → S | Create a mutable property in the current context. |
-| `0x10` | `CONST` | arg1: name id | S, x → S | Create a constant property in the current context. |
-| `0x11` | `STORE` | arg1: name id | S, x → S, x | Write an existing name or create a local; preserve the assignment result. |
-| `0x12` | `UPLUS` | — | S, x → S, result | Unary plus. |
-| `0x13` | `UMINUS` | — | S, x → S, result | Numeric negation. |
-| `0x14` | `INC` | — | S, x → S, result | Increment the numeric value by 1. |
-| `0x15` | `DEC` | — | S, x → S, result | Decrement the numeric value by 1. |
-| `0x16` | `LNOT` | — | S, x → S, result | Negate truthiness; return boolean. |
-| `0x17` | `BOOL` | — | S, x → S, result | Convert truthiness to boolean. |
-| `0x18` | `BNOT` | — | S, x → S, result | Integer bitwise complement. |
-| `0x19` | `LAND` | arg1: target | S, x → S / S, false | If false, leave false and jump; otherwise consume x and continue with the right side. |
-| `0x1A` | `LOR` | arg1: target | S, x → S / S, true | If true, leave true and jump; otherwise consume x and continue with the right side. |
-| `0x1B` | `BAND` | — | S, a, b → S, result | Compute `a & b` through object methods. |
-| `0x1C` | `BOR` | — | S, a, b → S, result | Compute `a \| b` through object methods. |
-| `0x1D` | `BXOR` | — | S, a, b → S, result | Compute `a ^ b` through object methods. |
-| `0x1E` | `SHL` | — | S, a, b → S, result | Compute `a << b` through object methods. |
-| `0x1F` | `SHR` | — | S, a, b → S, result | Compute `a >> b` through object methods. |
-| `0x20` | `ADD` | — | S, a, b → S, result | Compute `a + b` through object methods. |
-| `0x21` | `SUB` | — | S, a, b → S, result | Compute `a - b` through object methods. |
-| `0x22` | `MUL` | — | S, a, b → S, result | Compute `a * b` through object methods. |
-| `0x23` | `DIVIDE` | — | S, a, b → S, result | Compute `a / b` through object methods. |
-| `0x24` | `MODULO` | — | S, a, b → S, result | Compute `a % b` through object methods. |
-| `0x25` | `POWER` | — | S, a, b → S, result | Compute `a ** b` through object methods. |
-| `0x26` | `LESS` | — | S, a, b → S, result | Compute `a < b` through object methods. |
-| `0x27` | `LEQ` | — | S, a, b → S, result | Compute `a <= b` through object methods. |
-| `0x28` | `GREATER` | — | S, a, b → S, result | Compute `a > b` through object methods. |
-| `0x29` | `GREQ` | — | S, a, b → S, result | Compute `a >= b` through object methods. |
-| `0x2A` | `EQUAL` | — | S, a, b → S, result | Compute `a == b` through object methods. |
-| `0x2B` | `DIFF` | — | S, a, b → S, result | Compute `a != b` through object methods. |
-| `0x2C` | `FUNC` | arg0: count; arg1: names id; ARG: body | S → S, function | Create a function with the current environment and optional native descriptor; clear ARG buffer. |
-| `0x2D` | `CALL` | arg0: count | S, arg1, …, argN, function → S, result | Pop the callable; pass arguments to its call method. A bytecode result arrives on return. |
-| `0x2E` | `RET` | — | frame, x → caller, x | Put x in the reserved result slot; unwind contexts to the function and return to the saved address. |
-| `0x2F` | `ENTER` | — | S → S | Create a nested context. |
-| `0x30` | `LEAVE` | — | S → S, object | Destroy the current context, retaining and pushing its data object. |
-| `0x31` | `RESTORE` | — | S → S | Destroy one context without a result; the root cannot be restored. |
-| `0x32` | `TRY` | arg1: handler | S → S | Create an exception context with handler address and stack boundary. |
-| `0x33` | `THROW` | — | S, exception → saved S, exception | Pop the value and unwind contexts and stack to a handler; without one, stop the VM with failure. |
+| `0x0E` | `CLOAD` | arg1: code | S → S, character | Create a character from the given code. |
+| `0x0F` | `VLOAD` | arg1: name id | S → S, value | Find the name in context and prototypes; use null if absent. |
+| `0x10` | `VAR` | arg1: name id | S, x → S | Create a mutable property in the current context. |
+| `0x11` | `CONST` | arg1: name id | S, x → S | Create a constant property in the current context. |
+| `0x12` | `STORE` | arg1: name id | S, x → S, x | Write an existing name or create a local; preserve the assignment result. |
+| `0x13` | `GETPROP` | arg1: name id | S, obj → S, value | Pop the object and push its named property, or null if missing. |
+| `0x14` | `SETPROP` | arg1: name id | S, value, obj → S, value | Pop the object and set its named property to the value below it. |
+| `0x15` | `UPLUS` | — | S, x → S, result | Unary plus. |
+| `0x16` | `UMINUS` | — | S, x → S, result | Numeric negation. |
+| `0x17` | `INC` | — | S, x → S, result | Increment the numeric value by 1. |
+| `0x18` | `DEC` | — | S, x → S, result | Decrement the numeric value by 1. |
+| `0x19` | `LNOT` | — | S, x → S, result | Negate truthiness; return boolean. |
+| `0x1A` | `BOOL` | — | S, x → S, result | Convert truthiness to boolean. |
+| `0x1B` | `BNOT` | — | S, x → S, result | Integer bitwise complement. |
+| `0x1C` | `LAND` | arg1: target | S, x → S / S, false | If false, leave false and jump; otherwise consume x and continue with the right side. |
+| `0x1D` | `LOR` | arg1: target | S, x → S / S, true | If true, leave true and jump; otherwise consume x and continue with the right side. |
+| `0x1E` | `BAND` | — | S, a, b → S, result | Compute `a & b` through object methods. |
+| `0x1F` | `BOR` | — | S, a, b → S, result | Compute `a \| b` through object methods. |
+| `0x20` | `BXOR` | — | S, a, b → S, result | Compute `a ^ b` through object methods. |
+| `0x21` | `SHL` | — | S, a, b → S, result | Compute `a << b` through object methods. |
+| `0x22` | `SHR` | — | S, a, b → S, result | Compute `a >> b` through object methods. |
+| `0x23` | `ADD` | — | S, a, b → S, result | Compute `a + b` through object methods. |
+| `0x24` | `SUB` | — | S, a, b → S, result | Compute `a - b` through object methods. |
+| `0x25` | `MUL` | — | S, a, b → S, result | Compute `a * b` through object methods. |
+| `0x26` | `DIVIDE` | — | S, a, b → S, result | Compute `a / b` through object methods. |
+| `0x27` | `MODULO` | — | S, a, b → S, result | Compute `a % b` through object methods. |
+| `0x28` | `POWER` | — | S, a, b → S, result | Compute `a ** b` through object methods. |
+| `0x29` | `LESS` | — | S, a, b → S, result | Compute `a < b` through object methods. |
+| `0x2A` | `LEQ` | — | S, a, b → S, result | Compute `a <= b` through object methods. |
+| `0x2B` | `GREATER` | — | S, a, b → S, result | Compute `a > b` through object methods. |
+| `0x2C` | `GREQ` | — | S, a, b → S, result | Compute `a >= b` through object methods. |
+| `0x2D` | `EQUAL` | — | S, a, b → S, result | Compute `a == b` through object methods. |
+| `0x2E` | `DIFF` | — | S, a, b → S, result | Compute `a != b` through object methods. |
+| `0x2F` | `FUNC` | arg0: count; arg1: names id; ARG: body | S → S, function | Create a function with the current environment and optional native descriptor; clear ARG buffer. |
+| `0x30` | `CALL` | arg0: count | S, arg1, …, argN, function → S, result | Pop the callable; pass arguments to its call method. A bytecode result arrives on return. |
+| `0x31` | `CALLM` | arg0: count | S, arg1, …, argN, receiver, function → S, result | Pop the function and the receiver below it; pass arguments and the receiver to the function's call method. |
+| `0x32` | `RET` | — | frame, x → caller, x | Put x in the reserved result slot; unwind contexts to the function and return to the saved address. |
+| `0x33` | `ENTER` | — | S → S | Create a nested context. |
+| `0x34` | `LEAVE` | — | S → S, object | Destroy the current context, retaining and pushing its data object. |
+| `0x35` | `RESTORE` | — | S → S | Destroy one context without a result; the root cannot be restored. |
+| `0x36` | `TRY` | arg1: handler | S → S | Create an exception context with handler address and stack boundary. |
+| `0x37` | `THROW` | — | S, exception → saved S, exception | Pop the value and unwind contexts and stack to a handler; without one, stop the VM with failure. |
 
 <a id="section-c-3"></a>
 

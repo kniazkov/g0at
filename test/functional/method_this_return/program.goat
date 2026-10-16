@@ -1,0 +1,14 @@
+const f = func() {
+    println(this.this == this);
+    return this;
+};
+const ctx = f();
+println(ctx.this == ctx);
+println(ctx.this);
+
+const obj = {
+    const get = func() { return this; }
+};
+const h = obj.get();
+println(h.this == h);
+println(h.this);

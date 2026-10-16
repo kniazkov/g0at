@@ -206,7 +206,7 @@ static bool native_without_context(void) {
         push_object_onto_stack(thread->data_stack,
                                create_string_object(proc, STATIC_STRING(L"ignored")));
         thread->instr_id = 123;
-        ASSERT(call_object(function, 2, thread));
+        ASSERT(call_object(function, 2, NULL, thread));
         ASSERT(thread->context == context && thread->instr_id == 124
                && thread->data_stack->size == 2);
         object_t *result = pop_object_from_stack(thread->data_stack);
@@ -304,7 +304,7 @@ static bool lifetime(const char *path, const char *marker) {
         ASSERT(unload_count(marker) == before);
         object_t *function = variable(proc, L"alias");
         push_object_onto_stack(proc->main_thread->data_stack, create_integer_object(proc, 888));
-        ASSERT(call_object(function, 1, proc->main_thread));
+        ASSERT(call_object(function, 1, NULL, proc->main_thread));
         ASSERT(
             get_object_integer_value(peek_object_from_stack(proc->main_thread->data_stack, 0)).value
             == 888);

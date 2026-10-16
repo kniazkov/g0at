@@ -20,3 +20,6 @@ bool test_member_access_method_call_ast(void);
 
 /** @brief Tests GETPROP and SETPROP opcodes in the virtual machine. */
 bool test_member_access_vm(void);
+
+/** @brief Tests that CALLM passes the receiver as the method context. */
+bool test_method_call_receiver_vm(void);

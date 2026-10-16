@@ -33,6 +33,7 @@
 #include "unused_bindings.h"
 
 #include <assert.h>
+#include <wchar.h>
 
 /** @brief Adds built-ins to the root scope using a shared synthetic declarator. */
 static scope_t *create_scope_from_root_context(arena_t *arena) {
@@ -154,6 +155,15 @@ static void assign_scope_to_subtree(node_t *node, node_t *parent, scope_t *scope
     }
 }
 
+/** @brief Returns true when the node sits inside a function body (closure or method). */
+static bool is_inside_function(const node_t *node) {
+    for (const node_t *ancestor = node->parent; ancestor; ancestor = ancestor->parent) {
+        if (ancestor->vtbl->type == NODE_FUNCTION_OBJECT)
+            return true;
+    }
+    return false;
+}
+
 /** @brief Finds the nearest statement that contains a variable usage. */
 static node_t *find_parent_statement(variable_t *var) {
     node_t *node = var->base.base.base.parent;
@@ -257,6 +267,17 @@ static void bind_variables_from_node_and_children(node_t *node,
             bool is_left_operand =
                 parent_type == NODE_SIMPLE_ASSIGNMENT && get_node_child(parent, 0) == (node_t *)var;
             if (is_left_operand) {
+                if (var->name.length == 4 && var->name.data
+                    && !wmemcmp(var->name.data, L"this", 4)) {
+                    compilation_error_t *error =
+                        create_error_from_node(memory->errors,
+                                               node,
+                                               ERROR,
+                                               get_messages()->reserved_this_name);
+                    error->next = *errors;
+                    *errors = error;
+                    return;
+                }
                 node_t *assign_parent = parent->parent;
                 if (assign_parent && assign_parent->vtbl->type == NODE_STATEMENT_EXPRESSION
                     && assign_parent->parent
@@ -291,15 +312,31 @@ static void bind_variables_from_node_and_children(node_t *node,
                 }
             } else if (parent_type >= NODE_PREFIX_INCREMENT
                        && parent_type <= NODE_POSTFIX_DECREMENT) {
-                /* An update of an undeclared name is ambiguous. */
-                compilation_error_t *error =
-                    create_error_from_node(memory->errors,
-                                           node,
-                                           ERROR,
-                                           get_messages()->implicit_constant_declaration_invalid,
-                                           var->name.data);
-                error->next = *errors;
-                *errors = error;
+                /* An update of an undeclared name is ambiguous at the top level. Inside a
+                   function body such an update resolves dynamically through the closure and
+                   method-receiver chain, so it is allowed and treated like a read. */
+                if (!is_inside_function(node)) {
+                    compilation_error_t *error = create_error_from_node(
+                        memory->errors,
+                        node,
+                        ERROR,
+                        get_messages()->implicit_constant_declaration_invalid,
+                        var->name.data);
+                    error->next = *errors;
+                    *errors = error;
+                } else if (options->enable_warnings && !options->interactive) {
+                    compilation_error_t *error =
+                        create_error_from_node(memory->errors,
+                                               node,
+                                               WARNING,
+                                               get_messages()->variable_used_before_declaration,
+                                               var->name.data);
+                    error->next = *errors;
+                    *errors = error;
+                    var->declarator = NULL;
+                } else {
+                    var->declarator = NULL;
+                }
             } else {
                 /* A read of an undeclared name yields null and declares nothing. */
                 if (options->enable_warnings && !options->interactive) {

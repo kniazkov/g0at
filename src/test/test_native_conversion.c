@@ -71,7 +71,7 @@ bool test_native_int() {
                 push_object_onto_stack(proc->main_thread->data_stack, fallback);
             else
                 DECREF(fallback);
-            ASSERT(call_object(get_function_int(), count, proc->main_thread));
+            ASSERT(call_object(get_function_int(), count, NULL, proc->main_thread));
             object_t *result = pop_object_from_stack(proc->main_thread->data_stack);
             const lattice_element_t *args[] = {
                 abstract,

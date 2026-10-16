@@ -147,6 +147,7 @@ static test_description_t test_list[] = {
     {"comparison ranges", test_comparison_ranges},
     {"comparison nodes", test_comparison_nodes},
     {"comparison keys", test_comparison_keys},
+    {"update implicit in function", test_update_implicit_in_function},
     {"update models and VM", test_update_models_vm},
     {"update errors and DUP ownership", test_update_errors},
     {"update AST and parser", test_update_ast_parser},
@@ -246,8 +247,12 @@ static test_description_t test_list[] = {
     {"member access AST", test_member_access_ast},
     {"method call AST", test_member_access_method_call_ast},
     {"member access VM", test_member_access_vm},
+    {"method call receiver VM", test_method_call_receiver_vm},
     {"'sign' function", test_sign_function},
     {"context cloning", test_context_cloning},
+    {"context 'this' cycle release", test_context_this_cycle_release},
+    {"context 'this' preserved", test_context_this_preserved},
+    {"set property self reference", test_set_property_self_reference},
     {"function definition", test_function_definition},
     {"closure", test_closure}
 
