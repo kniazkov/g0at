@@ -1,0 +1,9 @@
+println(Object == false);
+println(Object == true);
+println(Object == Object);
+println(Object != false);
+println(int(Object, 99));
+println(int(Object, 42));
+println(Object.instanceOf(Boolean));
+println(Object.instanceOf(Object));
+println(Object.instanceOf(String));

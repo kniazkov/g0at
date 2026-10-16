@@ -419,3 +419,6 @@ instance_of_function
 instance_of_object
 instance_of_errors
 instance_of_primitive
+
+# Global 'Object' prototype must not be classified as boolean (regression)
+object_root

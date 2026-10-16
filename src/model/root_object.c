@@ -38,7 +38,7 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
 }
 
 /** @brief Virtual table defining the behavior of the root object. */
-static object_vtbl_t vtbl = {.type = TYPE_BOOLEAN,
+static object_vtbl_t vtbl = {.type = TYPE_OTHER,
                              .inc_ref = stub_memory_function,
                              .dec_ref = stub_memory_function,
                              .mark = stub_memory_function,
