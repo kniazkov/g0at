@@ -8,7 +8,7 @@ Revision 6. Implementation described: [commit fc4af9d](https://github.com/kniazk
 
 ## D.1. Common call rules
 
-[registry.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/registry.c) registers 33 functions. The tables list all of them. `pi` and `Exceptions` are root-environment values, not functions. A name may be shadowed by a user declaration; handling follows the built-in function object, not its spelling alone.
+[registry.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/builtins/registry.c) registers 37 functions. The tables list all of them. `pi` and `Exceptions` are root-environment values, not functions. The names `Object`, `String`, `Number`, `Integer`, `Real`, `Character`, `Boolean`, `Function`, and `Null` are likewise not functions: they are type prototypes exposed by the root context. A name may be shadowed by a user declaration; handling follows the built-in function object, not its spelling alone.
 
 The shared wrapper checks minimum arity: too few arguments produce the string exception `INVALID_ARGUMENT`. Extra arguments are evaluated first and then ignored, except for `int`'s second argument, which supplies a fallback value. Even `println()` without an argument fails; print an empty line with `println("")`.
 
@@ -24,6 +24,9 @@ The shared wrapper checks minimum arity: too few arguments produce the string ex
 | `int(x, fallback)` | 1 | Converts to integer; on failure returns the second argument unchanged, or 0. |
 | `abs(x)` | 1 | Absolute value; preserves integer or real type. |
 | `sign(x)` | 1 | Integer −1, 0, or 1; NaN gives 0. |
+| `instanceOf(proto)` | 1 | Method `value.instanceOf(proto)`; `true` if proto is in value's prototype chain. |
+
+The function form `instanceOf(value, proto)` requires two arguments; too few produce `INVALID_ARGUMENT`. The check uses identity and the receiver's ancestor topology, without type conversion. The method is defined on the root object and is available on every value, including primitive literals: `null.instanceOf(Object)`, `(13).instanceOf(Number)`, `(3.14).instanceOf(Real)`. Wrap an integer in parentheses before the dot: the spelling `13.instanceOf(...)` is read as a real literal.
 
 `int` leaves an integer unchanged and converts `false`/`true` to 0/1. A finite real must lie in [-2^63, 2^63); its fractional part is truncated toward zero. A string must contain an entire signed decimal integer with permitted surrounding ASCII whitespace and no overflow. `NaN`, infinities, unsuitable strings, and other objects produce the fallback, not a conversion exception.
 
@@ -71,7 +74,7 @@ A nonnumeric operand produces `INVALID_ARGUMENT`. Domain errors and overflow ins
 
 ## D.4. Abstract results and effects
 
-Analysis handlers perform no input or output. `print`/`println` produce the `null` domain and `output` effect; `input` produces `string` and `input`. All others have `effects=none`, which does not rule out argument errors.
+Analysis handlers perform no input or output. `print`/`println` produce the `null` domain and `output` effect; `input` produces `string` and `input`. All others have `effects=none`, which does not rule out argument errors. `instanceOf` produces the boolean domain when arguments are present and `BOTTOM` when none are.
 
 Common math handlers compute a constant for known numbers; otherwise they produce `real` for numeric or still-unknown types. A definitely unsuitable type produces `BOTTOM`. `abs` preserves a known numeric category but does not calculate the exact image of an arbitrary integer range. `sign` can compute a constant or a range within [-1..1]. `int` preserves integer information, gives [0..1] for a general boolean, and joins `integer` with the fallback when conversion success is unknown.
 
