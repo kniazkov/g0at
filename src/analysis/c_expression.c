@@ -135,5 +135,6 @@ const wchar_t *c_expression_type_name(c_value_type_t type) {
            : type == C_VALUE_DOUBLE ? L"double"
            : type == C_VALUE_BOOL   ? L"bool"
            : type == C_VALUE_CHAR   ? L"char"
+           : type == C_VALUE_STRING ? L"string"
                                     : L"unknown";
 }

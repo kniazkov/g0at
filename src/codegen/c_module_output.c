@@ -42,7 +42,7 @@ c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
     source_builder_t *builder = create_source_builder();
     add_static_source(builder,
                       0,
-                      L"/* Generated Goat numeric specializations; no program entry point. */");
+                      L"/* Generated Goat native specializations; no program entry point. */");
     c_emit_headers(builder, 0);
     add_static_source(builder, 0, L"");
     c_module_failure_t **tail = &output.failures;

@@ -9,7 +9,13 @@
 #include "lib/string_ext.h"
 
 static const wchar_t *type_tag(c_value_type_t type) {
-    return type == C_VALUE_INT64 ? L"GOAT_NATIVE_I64" : L"GOAT_NATIVE_F64";
+    return type == C_VALUE_INT64    ? L"GOAT_NATIVE_I64"
+           : type == C_VALUE_STRING ? L"GOAT_NATIVE_STRING"
+                                    : L"GOAT_NATIVE_F64";
+}
+
+static const wchar_t *value_field(c_value_type_t type) {
+    return type == C_VALUE_INT64 ? L"integer" : type == C_VALUE_STRING ? L"string" : L"real";
 }
 
 void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry) {
@@ -51,6 +57,18 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
                        L"if (args[%zu].type != %s) return GOAT_NATIVE_TYPE_MISMATCH;",
                        i,
                        type_tag(c_generation_parameter_type(&context, i)));
+            if (c_generation_parameter_type(&context, i) == C_VALUE_STRING) {
+                add_source(builder,
+                           1,
+                           L"if (!args[%zu].value.string || "
+                           L"(!args[%zu].value.string->data && args[%zu].value.string->length) || "
+                           L"args[%zu].value.string->length > GOAT_NATIVE_STRING_MAX) "
+                           L"return GOAT_NATIVE_BAD_REQUEST;",
+                           i,
+                           i,
+                           i,
+                           i);
+            }
         }
     }
     add_static_source(builder, 1, L"g_native_guard_t guard = {.depth = 0};");
@@ -69,19 +87,30 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
     append_string(&call, L"(g_context");
     for (size_t i = 0; i < count; i++) {
         append_string(&call, L", ");
-        string_value_t argument = format_string(
-            L"args[%zu].value.%s",
-            i,
-            c_generation_parameter_type(&context, i) == C_VALUE_INT64 ? L"integer" : L"real");
+        string_value_t argument =
+            format_string(L"%sargs[%zu].value.%s",
+                          c_generation_parameter_type(&context, i) == C_VALUE_STRING ? L"*" : L"",
+                          i,
+                          value_field(c_generation_parameter_type(&context, i)));
         append_string_value(&call, argument);
         FREE_STRING(argument);
     }
     string_value_t expression = append_char(&call, L')');
-    add_source(builder,
-               1,
-               L"value.value.%s = %s;",
-               c_generation_return_type(&context) == C_VALUE_INT64 ? L"integer" : L"real",
-               expression.data);
+    if (c_generation_return_type(&context) == C_VALUE_STRING) {
+        add_source(builder, 1, L"goat_native_string_view_v2_t string_value = %s;", expression.data);
+        add_static_source(builder,
+                          1,
+                          L"goat_native_string_view_v2_t *string_result = "
+                          L"goat_native_allocate(g_context, sizeof(*string_result));");
+        add_static_source(builder, 1, L"*string_result = string_value;");
+        add_static_source(builder, 1, L"value.value.string = string_result;");
+    } else {
+        add_source(builder,
+                   1,
+                   L"value.value.%s = %s;",
+                   value_field(c_generation_return_type(&context)),
+                   expression.data);
+    }
     FREE_STRING(expression);
     add_static_source(builder, 1, L"g_guard = previous;");
     add_static_source(builder, 1, L"*result = value;");

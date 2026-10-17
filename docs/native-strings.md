@@ -82,9 +82,34 @@ UTF-16 единицы; на обычном Linux — одну 32-битную е
 с памятью возвращает `ABI_MISMATCH` для этих операций. Числовые модули сохраняют
 совместимость. Хост обязан инициализировать локаль до конкурентных вызовов.
 
-Интеграция строк в генерируемые адаптеры и `goat_native_value_v2_t` остаётся
-отдельным этапом: этот слой уже выполняет операции в C/DLL/SO, но сам по себе
-не переводит строковые функции языка из VM в нативный режим.
+## Сквозной нативный вызов
+
+`GOAT_NATIVE_STRING` в `goat_native_value_v2_t` содержит указатель на
+`goat_native_string_view_v2_t`. Размер и выравнивание прежнего числового
+значения ABI v2 сохраняются. Старые загрузчики не принимают новый тег;
+числовые модули совместимы. Входной дескриптор принадлежит контексту вызова,
+его данные заимствуются у живого объекта Goat. Нативная функция получает и
+возвращает представление по значению. Адаптер размещает дескриптор результата
+в контексте; интерпретатор копирует данные в строковый объект **до** общей
+очистки и освобождения аргументов. Возврат исходного аргумента безопасен,
+включая пустые строки и встроенные нули.
+
+Простой пример `example/native_string_identity.goat` (в релизном пакете —
+`examples/native_string_identity.goat`):
+
+```sh
+./goat --native required --save-native identity.report example/native_string_identity.goat
+```
+
+Чистая `identity(value) { return value; }` выполняется нативно. Тест требует
+`preparation=ready`, `bound=1`, `attempts=1`, `succeeded=1`, `retries=0`,
+а также проверяет время жизни результата, вложенный нативный вызов и запуск
+сохранённой `.gbin`/DLL/SO пары без исходника и компилятора. Адаптер проверяет
+тег, дескриптор, размер и отсутствие NULL-данных при ненулевой длине.
+
+Это первый этап передачи строк. Вызовы строковых методов и создание строковых
+литералов внутри генерируемых функций пока не реализованы в генераторе C;
+готовая библиотека строковых операций остаётся доступна из C напрямую.
 
 ## English
 
@@ -130,8 +155,17 @@ initializes its locale before concurrent calls; native operations never change i
 A host with only memory services remains valid for numeric modules and returns
 ABI_MISMATCH for the new locale-dependent operations. Existing value layout is unchanged.
 
-Adapter generation and string transport in `goat_native_value_v2_t` are a separate
-step: these C/DLL/SO operations do not yet enable native dispatch of Goat string functions.
+`GOAT_NATIVE_STRING` now transports a pointer to a borrowed string view without
+changing the numeric ABI v2 value size/alignment. Older hosts reject the new tag;
+numeric modules remain compatible. The generated pure identity function takes and
+returns a view by value; its adapter allocates a result descriptor in the context.
+The host copies the result into a Goat string before context cleanup and argument
+release, making aliased results safe. Bounds/descriptor checks precede native entry.
+
+Run the example above with `--native required`. Tests require exact successful-call
+counts with no retries, cover Unicode/NUL/empty strings, argument/result lifetimes,
+nested native calls and saved programs without source or compiler. String-method
+calls and literals inside generated functions are still outside this first step.
 
 The differential test builds an independent shared module, invokes it through host
 callbacks, compares all methods with unoptimized VM execution, and checks empty/embedded

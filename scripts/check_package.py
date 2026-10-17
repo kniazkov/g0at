@@ -39,14 +39,20 @@ def check(archive):
 
         def run(*args, env=environment, expected=None):
             result = subprocess.run([str(exe), "--lang", "en", *map(str, args)],
-                                    cwd=work, env=env, text=True, capture_output=True,
+                                    cwd=work, env=env, text=True, encoding="utf-8", capture_output=True,
                                     timeout=90)
             assert result.returncode == 0, (args, result.returncode, result.stdout, result.stderr)
             if expected is not None:
-                assert result.stdout.strip() == expected, result.stdout
+                assert result.stdout.strip() == expected, repr(result.stdout)
             return result.stdout
 
         run("--native", "off", package / "examples/hello_world.goat", env=isolated)
+        identity_report = work / "identity.report"
+        run("--native", "required", "--save-native", identity_report,
+            package / "examples/native_string_identity.goat",
+            expected="Привет, native strings! 😀")
+        identity_fields = dict(line.split("=", 1) for line in identity_report.read_text().splitlines())
+        assert identity_fields["succeeded"] == "1" and identity_fields["retries"] == "0", identity_fields
         source = work / "numeric.goat"
         shutil.copyfile(package / "examples/numeric.goat", source)
         run("--native", "off", source, env=isolated, expected="55")

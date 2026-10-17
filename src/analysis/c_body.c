@@ -42,7 +42,8 @@ bool c_local_binding(const c_expression_context_t *context,
                      const declarator_t *declaration,
                      c_value_type_t type) {
     if (!context || !context->graph || !declaration || declaration == get_builtin_declarator()
-        || (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE && type != C_VALUE_BOOL))
+        || (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE && type != C_VALUE_BOOL
+            && type != C_VALUE_STRING))
         return false;
     const node_t *owner = declaration->base.parent;
     while (owner && owner->vtbl->type != NODE_FUNCTION_OBJECT)
@@ -76,7 +77,8 @@ static function_summary_t *call_target(const node_t *site,
             i++;
         if (i == s->parameter_count && s->status == FUNCTION_ANALYZED
             && (classify_c_value_type(s->return_type->type) == C_VALUE_INT64
-                || classify_c_value_type(s->return_type->type) == C_VALUE_DOUBLE))
+                || classify_c_value_type(s->return_type->type) == C_VALUE_DOUBLE
+                || classify_c_value_type(s->return_type->type) == C_VALUE_STRING))
             return s;
     }
     return NULL;
@@ -159,7 +161,8 @@ static bool refine_returns(function_call_graph_t *graph, size_t max_iterations) 
             const lattice_element_t *value =
                 evaluate_function_c_signature(s, &context, &incomplete);
             c_value_type_t type = classify_c_value_type(value->type);
-            if (!incomplete && (type == C_VALUE_INT64 || type == C_VALUE_DOUBLE)) {
+            if (!incomplete
+                && (type == C_VALUE_INT64 || type == C_VALUE_DOUBLE || type == C_VALUE_STRING)) {
                 s->return_type = value;
                 s->status = FUNCTION_ANALYZED;
                 changed = true;

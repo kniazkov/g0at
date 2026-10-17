@@ -310,9 +310,10 @@ static const goat_native_entry_v2_t *select_native_entry(const object_dynamic_fu
         size_t j = 0;
         for (; j < function->arg_count; j++) {
             object_t *arg = peek_object_from_stack(stack, count - 1 - j);
-            uint32_t type = is_integer_object(arg) ? GOAT_NATIVE_I64
-                            : is_real_object(arg)  ? GOAT_NATIVE_F64
-                                                   : GOAT_NATIVE_INVALID;
+            uint32_t type = is_integer_object(arg)           ? GOAT_NATIVE_I64
+                            : is_real_object(arg)            ? GOAT_NATIVE_F64
+                            : arg->vtbl->type == TYPE_STRING ? GOAT_NATIVE_STRING
+                                                             : GOAT_NATIVE_INVALID;
             if (entry->parameter_types[j] != type)
                 break;
         }
@@ -322,22 +323,30 @@ static const goat_native_entry_v2_t *select_native_entry(const object_dynamic_fu
     return NULL;
 }
 
-/** @brief Commits one numeric result; backend failures never execute the body a second time. */
+/** @brief Commits one native result; backend failures never execute the body a second time. */
 static bool
 invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_t *thread) {
     goat_native_value_v2_t *args =
         entry->parameter_count ? CALLOC(entry->parameter_count * sizeof(*args)) : NULL;
+    native_memory_t memory = {0};
+    goat_native_context_v2_t native_context = init_native_context(&memory);
     for (uint32_t i = 0; i < entry->parameter_count; i++) {
         object_t *arg = peek_object_from_stack(thread->data_stack, count - 1 - i);
         args[i].type = entry->parameter_types[i];
         if (args[i].type == GOAT_NATIVE_I64)
             args[i].value.integer = get_object_integer_value(arg).value;
-        else
+        else if (args[i].type == GOAT_NATIVE_F64)
             args[i].value.real = get_object_real_value(arg).value;
+        else {
+            string_value_t string = convert_object_to_string(arg);
+            goat_native_string_view_v2_t *view =
+                goat_native_allocate(&native_context, sizeof(*view));
+            /* String objects supply borrowed storage; keep the VM arguments alive. */
+            *view = (goat_native_string_view_v2_t){string.data, string.length};
+            args[i].value.string = view;
+        }
     }
     goat_native_value_v2_t result = {0};
-    native_memory_t memory = {0};
-    goat_native_context_v2_t native_context = init_native_context(&memory);
     thread->native_attempts++;
     uint32_t status = entry->invoke(GOAT_NATIVE_ABI_VERSION,
                                     &native_context,
@@ -347,15 +356,27 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
     FREE(args);
     if (status == GOAT_NATIVE_OK && (result.type != entry->return_type || result.reserved))
         status = GOAT_NATIVE_BAD_REQUEST;
+    if (status == GOAT_NATIVE_OK && result.type == GOAT_NATIVE_STRING
+        && (!result.value.string || (!result.value.string->data && result.value.string->length)
+            || result.value.string->length > SIZE_MAX / sizeof(wchar_t) - 1))
+        status = GOAT_NATIVE_BAD_REQUEST;
     thread->native_status = status;
     if (status != GOAT_NATIVE_OK) {
         goat_native_deallocate_all(&native_context);
         return false;
     }
     thread->native_successes++;
-    object_t *value = result.type == GOAT_NATIVE_I64
-                          ? create_integer_object(thread->process, result.value.integer)
-                          : create_real_number_object(thread->process, result.value.real);
+    object_t *value;
+    if (result.type == GOAT_NATIVE_I64)
+        value = create_integer_object(thread->process, result.value.integer);
+    else if (result.type == GOAT_NATIVE_F64)
+        value = create_real_number_object(thread->process, result.value.real);
+    else {
+        /* Copy borrowed payload before clearing context or releasing aliased VM arguments. */
+        value = create_string_object(
+            thread->process,
+            (string_value_t){result.value.string->data, result.value.string->length, false});
+    }
     goat_native_deallocate_all(&native_context);
     for (uint16_t i = 0; i < count; i++) {
         object_t *arg = pop_object_from_stack(thread->data_stack);
