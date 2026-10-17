@@ -23,7 +23,24 @@ file(GLOB core_sources
   vm/*.c
   cli/*.c
 )
-add_library(core STATIC ${core_sources})
+# Bundle the native headers into the interpreter without modifying the source tree.
+set(native_headers_dir "${CMAKE_CURRENT_SOURCE_DIR}/../include/goat")
+set(native_runtime_data "${CMAKE_CURRENT_BINARY_DIR}/generated/native_runtime_data.inc")
+add_custom_command(
+  OUTPUT "${native_runtime_data}"
+  COMMAND "${CMAKE_COMMAND}"
+    "-DINPUT_DIR=${native_headers_dir}"
+    "-DOUTPUT_FILE=${native_runtime_data}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/embed_native_runtime.cmake"
+  DEPENDS
+    "${native_headers_dir}/native_abi.h"
+    "${native_headers_dir}/native_runtime.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/embed_native_runtime.cmake"
+  COMMENT "Embedding native runtime headers"
+  VERBATIM
+)
+add_library(core STATIC ${core_sources} "${native_runtime_data}")
+target_include_directories(core PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 if(CMAKE_DL_LIBS)
   target_link_libraries(core PUBLIC ${CMAKE_DL_LIBS})
 endif()
