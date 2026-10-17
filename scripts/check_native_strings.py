@@ -119,8 +119,18 @@ GOAT_NATIVE_API void GOAT_NATIVE_CALL run_strings(const goat_native_context_v2_t
               "-I" + str(ROOT / "include"), *flags]
     shared = ["-shared", "-DGOAT_NATIVE_BUILD"]
     shared += ["-static", "-static-libgcc"] if os.name == "nt" else ["-fPIC"]
+    # Use the exact archive produced by the interpreter build. Sanitizer runs rebuild
+    # the library too, so the algorithms (not just the callers) are instrumented.
+    runtime = interpreter.parent / "libgoat_native.a"
+    assert runtime.is_file(), runtime
+    if flags:
+        runtime = work / "libgoat_native-instrumented.a"
+        obj = work / "strings-runtime.o"
+        subprocess.run([*common, "-fPIC", "-c", str(ROOT / "src/native/strings.c"),
+                        "-o", str(obj)], check=True)
+        subprocess.run([os.environ.get("AR", "ar"), "rcs", str(runtime), str(obj)], check=True)
     subprocess.run([*common, *shared, "-I" + str(ROOT / "test/functional/native_strings"),
-                    str(module), "-o", str(library)], check=True)
+                    str(module), str(runtime), "-o", str(library)], check=True)
     subprocess.run([*common, "-DMEMORY_DEBUG", "-I" + str(ROOT / "src"),
                     str(ROOT / "test/functional/native_strings/host.c"),
                     str(ROOT / "src/model/native_services.c"), str(ROOT / "src/lib/allocate.c"),
@@ -131,6 +141,27 @@ GOAT_NATIVE_API void GOAT_NATIVE_CALL run_strings(const goat_native_context_v2_t
     (work / "native.txt").write_bytes(native.stdout)
     (work / "vm.txt").write_bytes(reference.stdout)
     assert native.stdout.splitlines() == reference.stdout.splitlines(), "Native/VM mismatch; see native.txt and vm.txt"
+    if not flags:
+        # Exercise the interpreter's real compiler backend, which stages and links
+        # its embedded archive rather than the build-directory copy above.
+        automatic_source = work / "automatic.c"
+        checks = (ROOT / "test/functional/native_strings/checks.h").read_text(encoding="utf-8")
+        automatic_source.write_text(module.read_text(encoding="utf-8")
+                                    .replace('"goat/native_strings.h"', '"native_strings.h"')
+                                    .replace('#include "checks.h"', checks.replace('#pragma once', '')),
+                                    encoding="utf-8")
+        automatic_host = work / "compiler-host.exe"
+        subprocess.run([*common, "-DTEST_NATIVE_COMPILER", "-I" + str(ROOT / "src"),
+                        str(ROOT / "test/functional/native_strings/host.c"),
+                        str(interpreter.parent / "libcore.a"), "-o", str(automatic_host),
+                        "-lpthread", "-lm", *( ["-lbcrypt"] if os.name == "nt" else ["-ldl"])],
+                       check=True)
+        automatic_library = work / ("automatic.dll" if os.name == "nt" else "automatic.so")
+        automatic = subprocess.run([str(automatic_host), str(automatic_library), cc,
+                                    str(automatic_source)], capture_output=True, timeout=90)
+        assert automatic.returncode == 0, automatic.stderr
+        assert automatic.stdout.splitlines() == reference.stdout.splitlines(), automatic.stdout
+        assert not list(work.glob("automatic.*.goat-*")), "Temporary SDK files were not removed"
     invalid = ['"x".charAt(-1)', '"x".charAt(9223372036854775807)',
                '"abc".substring(-1,2)', '"abc".substring(2,1)',
                '"abc".substring(0,9223372036854775807)',

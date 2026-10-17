@@ -1,13 +1,17 @@
 # Copyright 2026 Ivan Kniazkov
-# Embed public headers as byte arrays; invoked by the build, not edited by hand.
-if(NOT DEFINED INPUT_DIR OR NOT DEFINED OUTPUT_FILE)
-  message(FATAL_ERROR "INPUT_DIR and OUTPUT_FILE are required")
+# Embed public headers and the built static library as byte arrays; invoked by the build, not edited by hand.
+if(NOT DEFINED INPUT_DIR OR NOT DEFINED OUTPUT_FILE OR NOT DEFINED ARCHIVE_FILE)
+  message(FATAL_ERROR "INPUT_DIR, OUTPUT_FILE and ARCHIVE_FILE are required")
 endif()
 
-set(output "/* Generated from public native headers; do not edit. */\n")
-foreach(name native_abi native_runtime native_strings)
+set(output "/* Generated from public native headers and the built archive; do not edit. */\n")
+foreach(name native_abi native_runtime native_strings native_archive)
   # HEX preserves source bytes and avoids locale/encoding dependencies.
-  file(READ "${INPUT_DIR}/${name}.h" data HEX)
+  if(name STREQUAL "native_archive")
+    file(READ "${ARCHIVE_FILE}" data HEX)
+  else()
+    file(READ "${INPUT_DIR}/${name}.h" data HEX)
+  endif()
   string(APPEND output "static const unsigned char ${name}_data[] = {\n")
   string(LENGTH "${data}" length)
   set(offset 0)

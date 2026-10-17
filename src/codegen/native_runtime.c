@@ -20,11 +20,12 @@ static const struct {
     const char *name;
     const unsigned char *data;
     size_t size;
-} headers[] = {{"native_abi.h", native_abi_data, sizeof(native_abi_data)},
-               {"native_runtime.h", native_runtime_data, sizeof(native_runtime_data)},
-               {"native_strings.h", native_strings_data, sizeof(native_strings_data)}};
+} files[] = {{"native_abi.h", native_abi_data, sizeof(native_abi_data)},
+             {"native_runtime.h", native_runtime_data, sizeof(native_runtime_data)},
+             {"native_strings.h", native_strings_data, sizeof(native_strings_data)},
+             {GOAT_NATIVE_ARCHIVE_NAME, native_archive_data, sizeof(native_archive_data)}};
 
-static char *header_path(const char *source, const char *name) {
+static char *runtime_path(const char *source, const char *name) {
     size_t prefix = 0;
     for (size_t i = 0; source[i]; i++)
         if (source[i] == '/' || source[i] == '\\')
@@ -35,7 +36,7 @@ static char *header_path(const char *source, const char *name) {
     return path;
 }
 
-static bool write_header(const char *path, const unsigned char *data, size_t size) {
+static bool write_runtime_file(const char *path, const unsigned char *data, size_t size) {
     FILE *file = fopen(path, "rb");
     if (file) {
         bool same = true;
@@ -79,10 +80,10 @@ static bool write_header(const char *path, const unsigned char *data, size_t siz
     return success;
 }
 
-bool write_native_runtime_headers(const char *source_path) {
-    for (size_t i = 0; i < sizeof(headers) / sizeof(*headers); i++) {
-        char *path = header_path(source_path, headers[i].name);
-        bool success = write_header(path, headers[i].data, headers[i].size);
+bool write_native_runtime_files(const char *source_path) {
+    for (size_t i = 0; i < sizeof(files) / sizeof(*files); i++) {
+        char *path = runtime_path(source_path, files[i].name);
+        bool success = write_runtime_file(path, files[i].data, files[i].size);
         FREE(path);
         if (!success)
             return false;
@@ -90,9 +91,9 @@ bool write_native_runtime_headers(const char *source_path) {
     return true;
 }
 
-void remove_native_runtime_headers(const char *source_path) {
-    for (size_t i = 0; i < sizeof(headers) / sizeof(*headers); i++) {
-        char *path = header_path(source_path, headers[i].name);
+void remove_native_runtime_files(const char *source_path) {
+    for (size_t i = 0; i < sizeof(files) / sizeof(*files); i++) {
+        char *path = runtime_path(source_path, files[i].name);
         remove(path);
         FREE(path);
     }

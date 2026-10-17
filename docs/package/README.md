@@ -4,7 +4,8 @@
 
 Распакуй архив в любой каталог. Исходники Goat, CMake и Python для использования
 пакета не нужны. `bin/goat` (Windows: `bin/goat.exe`) — релизный интерпретатор;
-`include/goat` — публичные заголовки ABI и библиотеки поддержки нативного кода.
+`include/goat` — публичные заголовки ABI и библиотеки поддержки нативного кода;
+`lib/libgoat_native.a` — статическая библиотека строковых операций.
 В `examples` лежат примеры, в `docs` — описание ABI, в `build-info.txt` — ревизия
 и сведения о сборке. Можно добавить `bin` в PATH.
 
@@ -24,8 +25,9 @@ bin/goat --save-c examples/numeric.goat
 или Clang (на Windows — MinGW GCC) той же архитектуры, что и интерпретатор.
 По умолчанию используется GCC; переменная `CC` задаёт имя или путь к одному
 исполняемому файлу компилятора, без дополнительных аргументов.
-Заголовки для автоматической сборки уже встроены в интерпретатор.
-Для ручной сборки вывода `--print-c` добавь `-I<пакет>/include/goat`;
+Заголовки и статическая библиотека для автоматической сборки уже встроены
+в интерпретатор.
+Для ручной сборки вывода `--print-c` добавь `-I<пакет>/include/goat` и `<пакет>/lib/libgoat_native.a` после C-файла;
 полные команды описаны в [native-runtime.md](docs/native-runtime.md).
 
 Для запуска готовой программы достаточно `.gbin` и лежащей рядом одноимённой
@@ -39,15 +41,16 @@ Linux-пакет использует системные glibc/libm: выбир�
 ## English
 
 Extract anywhere; no Goat checkout, CMake or Python is needed. `bin` contains
-the Release interpreter, `include/goat` the public native SDK, `examples`
+the Release interpreter, `include/goat` the public headers, `lib/libgoat_native.a`
+the static support library, `examples`
 sample programs, `docs` ABI documentation, and `build-info.txt` build identity.
 The commands above work from the package root; use `bin\goat.exe` on Windows.
 
 VM execution needs no C compiler. Creating native modules requires C11 GCC
 or Clang (MinGW GCC on Windows) matching the interpreter architecture. `CC`
 selects one compiler executable, without flags; the default is GCC. Automatic
-compilation uses embedded headers. For manual compilation of `--print-c`
-output use `-I<package>/include/goat`; see [native-runtime.md](docs/native-runtime.md).
+compilation uses embedded headers and the matching static archive. For manual compilation of `--print-c`
+output use `-I<package>/include/goat` and link `<package>/lib/libgoat_native.a` after the C file; see [native-runtime.md](docs/native-runtime.md).
 
 Deploy a compiled `.gbin` together with its same-named `.so`/`.dll` to run
 without program source or compiler. Native modules must match the interpreter

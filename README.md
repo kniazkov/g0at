@@ -107,7 +107,7 @@ It writes `build\release\goat.exe` and copies it to the repository root.
 
 The Release scripts also create a relocatable archive in `<build directory>/packages`
 (`.tar.gz` on Linux, `.zip` on Windows). It contains the interpreter, public native
-headers, examples, license and [usage instructions](docs/package/README.md).
+headers, static support library, examples, license and [usage instructions](docs/package/README.md).
 CI tests the extracted archive and publishes it as a `goat-*` artifact. To check
 an archive locally (Python 3 and a matching C compiler are needed for testing):
 
@@ -152,7 +152,7 @@ Copy-Item .\docs\book\examples\22-native-module.goat .\build\quickstart\program.
 
 Adding `--native required` to the compile command also builds a companion `.so` or `.dll`. Keep that library beside the `.gbin` with the same basename. Execution of the saved pair needs neither the source nor a C compiler. See [Separate Compilation](docs/book/en/26-separate-compilation.md) for compatibility and failure rules.
 
-Generated native C uses the [native support library](docs/native-runtime.md). `--save-c` exports its two headers beside the C file; automatic DLL/SO compilation supplies them from the interpreter bundle.
+Generated native C uses the [native support library](docs/native-runtime.md). `--save-c` exports its headers and `libgoat_native.a` beside the C file; automatic DLL/SO compilation stages and links the matching archive from the interpreter bundle.
 
 ## Inspect and test
 

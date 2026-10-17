@@ -3,70 +3,87 @@
 ## Русский
 
 Генерируемый C-модуль подключает `native_runtime.h`. В самом модуле остаются
-специализации пользовательских функций, их адаптеры и таблица метаданных.
-Определения ABI, насыщающая арифметика, точное сравнение integer/real,
-проверки платформы и защита глубины нативных вызовов вынесены в библиотеку.
+специализации пользовательских функций, адаптеры и таблица метаданных.
+В публичных заголовках `include/goat` находятся ABI, объявления строковых
+операций и короткие обёртки. Арифметические операции и защита стека остаются
+встраиваемыми; состояние защиты стека локально для потока и единицы трансляции.
+Не следует разносить функции одного генерируемого модуля по разным C-файлам.
 
-Библиотека находится в `include/goat/native_runtime.h` и использует
-`include/goat/native_abi.h`. Это библиотека в заголовках: короткие операции
-могут встраиваться компилятором, а готовая DLL/SO не требует отдельной
-библиотеки Goat во время загрузки. Состояние защиты стека локально для потока
-и единицы трансляции; один генерируемый модуль собирается одной единицей
-трансляции. Не следует разносить его функции и адаптеры по разным C-файлам.
+Строковые алгоритмы реализованы в `src/native/strings.c` и отдельно собираются
+в статическую библиотеку `libgoat_native.a` (цель CMake `goat_native`). Она не
+содержит VM или собственного аллокатора: память и локаль обслуживаются через
+таблицу сервисов интерпретатора. Библиотека собирается с PIC и без LTO, чтобы
+подлинковываться к DLL/SO совместимым C-компилятором. Архив должен соответствовать
+ОС, архитектуре, CRT и ABI интерпретатора. Нужный код включается в результирующую
+DLL/SO; отдельная динамическая библиотека Goat при запуске не требуется.
 
-`--save-c` сохраняет рядом с C-файлом все необходимые заголовки. Существующие
-одинаковые заголовки используются повторно; отличающиеся файлы не
-перезаписываются, и экспорт завершается ошибкой. Для экспорта другой версии
-библиотеки используй новую папку или явно убери старые заголовки.
-`--print-c` только печатает исходник: при ручной компиляции добавь путь
-`include/goat` через `-I` либо положи все заголовки рядом с сохранённым C-файлом.
+Релизный пакет содержит `bin/goat`, `include/goat/*.h` и `lib/libgoat_native.a`.
+При этом готовый архив вместе с заголовками встроен и в интерпретатор. Для
+автоматической компиляции (`--native`, `--save-library`) интерпретатор извлекает
+их в приватный временный каталог, передаёт архив линкеру **после C-файла** и
+удаляет временные файлы. Поиск библиотек в исходниках, PATH или текущей папке
+не нужен; перенос одного исполняемого файла сохраняет эту возможность.
 
-Пример ручной сборки Linux:
+`--save-c` сохраняет рядом с C-файлом три заголовка и `libgoat_native.a`.
+Идентичные файлы переиспользуются; отличающиеся не перезаписываются, и экспорт
+завершается ошибкой. Для новой версии используй новый каталог или явно убери
+старые файлы SDK. Ручная сборка экспортированного модуля на Linux:
 
 ```sh
 ./goat --save-c program.goat
-cc -std=c11 -O2 -fPIC -shared -fno-fast-math -ffp-contract=off program.c -lm -o program.so
+cc -std=c11 -O2 -fPIC -shared -fno-fast-math -ffp-contract=off program.c libgoat_native.a -lm -o program.so
 ```
 
-Для MinGW используй `-shared -static -static-libgcc -DGOAT_NATIVE_BUILD`
-и разрядность, совпадающую с интерпретатором. Автоматическая сборка
-(`--native`, `--save-library`) сама подготавливает заголовки в приватной
-временной папке и удаляет их после компиляции. Репозиторий и дополнительные
-пути установки не нужны: заголовки встроены в исполняемый файл интерпретатора.
+`--print-c` печатает только C. При ручной сборке с установленным SDK:
 
-CMake автоматически генерирует встроенную копию заголовков в
-`<каталог сборки>/generated/native_runtime_data.inc` перед компиляцией интерпретатора.
-При изменении любого публичного заголовка или скрипта генерации зависимые файлы пересобираются.
-Генератор `scripts/embed_native_runtime.cmake` использует только CMake: Python не нужен.
-Сгенерированный файл не хранится в Git и не записывается в дерево исходников;
-разные каталоги сборки имеют независимые копии.
+```sh
+cc -std=c11 -O2 -fPIC -shared -fno-fast-math -ffp-contract=off -I/path/to/package/include/goat program.c /path/to/package/lib/libgoat_native.a -lm -o program.so
+```
 
-ABI загрузчика — версии 2; [контекст памяти](native-memory.md) передаётся каждому адаптеру.
+Для MinGW используй `-shared -static -static-libgcc -DGOAT_NATIVE_BUILD`,
+`-fno-fast-math -ffp-contract=off` и разрядность, совпадающую с интерпретатором.
+Архив также ставится после исходника/объектных файлов, перед `-lm`.
+
+CMake сначала собирает архив, затем `scripts/embed_native_runtime.cmake`
+генерирует его встроенную копию и заголовки в
+`<каталог сборки>/generated/native_runtime_data.inc`. Изменение реализации,
+заголовков или генератора обновляет зависимые результаты. Ни архив, ни `.inc`
+не хранятся в Git; Python для сборки не требуется.
+
+ABI загрузчика — версии 2. Подробнее: [контекст памяти](native-memory.md),
+[строковые операции](native-strings.md).
 
 ## English
 
-Generated C includes `native_runtime.h` and contains only program
-specializations, their adapters and module metadata. The header-only support
-library owns the ABI declarations, saturating integer arithmetic, exact mixed
-numeric comparison, platform checks and native recursion/stack guards.
-Inlining remains available and the resulting DLL/SO has no additional Goat
-runtime dependency. Guard state is thread-local and translation-unit-local;
-keep each generated module in one translation unit.
+Generated C includes `native_runtime.h` and contains program specializations,
+adapters and metadata. Public headers contain the ABI, string declarations and
+small wrappers. Numeric helpers and stack guards remain inline; guard state is
+thread-local and translation-unit-local, so keep a generated module in one C file.
 
-`--save-c` exports `native_runtime.h`, `native_abi.h` and `native_strings.h` beside the C file.
-Identical existing headers are reused; conflicting files are preserved and
-cause export to fail. Use a fresh directory when exporting another runtime
-version. `--print-c` writes only source: supply `-I/path/to/include/goat` when
-compiling it manually, or place all public headers beside it.
+String algorithms live in `src/native/strings.c`, built separately as
+`libgoat_native.a` (CMake target `goat_native`). The library contains no VM or
+allocator: memory and locale services are dispatched to the interpreter. It is
+built with PIC and without LTO for linking into native DLL/SO modules. Match the
+archive's OS, architecture, CRT and ABI to the interpreter. Linked code becomes
+part of the resulting module; no additional Goat DLL/SO is needed at execution.
 
-Automatic native compilation stages the bundled headers in its private
-workspace, then removes them. It does not depend on the checkout or an
-installed SDK. CMake generates the embedded copy automatically into
-`<build directory>/generated/native_runtime_data.inc` before compiling the interpreter.
-Changes to any public header or the generator trigger regeneration and recompilation.
-The generator `scripts/embed_native_runtime.cmake` needs only CMake, not Python.
-The generated file is not tracked in Git and never written into the source tree;
-separate build directories have independent copies.
+Release packages contain `bin`, `include/goat` and `lib/libgoat_native.a`.
+The interpreter also embeds the matching archive and headers: automatic native
+compilation stages them privately, links the archive after the generated source,
+and removes the temporary SDK. No checkout or installation-path discovery is
+required, even when only the interpreter executable is relocated.
+
+`--save-c` exports three headers and the archive beside the C source. Identical
+files are reused; conflicting files are preserved and cause export failure.
+Use a new directory when upgrading the SDK. The commands above show Linux
+manual linking of exported C and `--print-c` output with an installed package.
+On MinGW use `-shared -static -static-libgcc -DGOAT_NATIVE_BUILD` and strict
+floating-point options, matching the interpreter bitness. Link the archive
+after source/object files and before `-lm`.
+
+CMake builds the archive before generating the embedded bytes in
+`<build directory>/generated/native_runtime_data.inc`. Implementation/header
+changes trigger dependent rebuilds. Binary archives and generated `.inc` files
+are not tracked in Git; the build-time generator requires CMake, not Python.
 The loader uses ABI v2 with a per-call [memory context](native-memory.md).
-
-Native string operations / Нативные строковые операции: [native-strings.md](native-strings.md).
+See also [native string operations](native-strings.md).

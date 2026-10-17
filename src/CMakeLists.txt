@@ -23,21 +23,30 @@ file(GLOB core_sources
   vm/*.c
   cli/*.c
 )
-# Bundle the native headers into the interpreter without modifying the source tree.
+# Build the native runtime separately; never depend on VM internals or its allocator.
+add_library(goat_native STATIC native/strings.c)
+set_target_properties(goat_native PROPERTIES
+  OUTPUT_NAME goat_native PREFIX "lib" SUFFIX ".a"
+  POSITION_INDEPENDENT_CODE ON INTERPROCEDURAL_OPTIMIZATION FALSE
+  C_VISIBILITY_PRESET hidden)
+target_include_directories(goat_native PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+# Bundle the matching headers and archive without modifying the source tree.
 set(native_headers_dir "${CMAKE_CURRENT_SOURCE_DIR}/../include/goat")
 set(native_runtime_data "${CMAKE_CURRENT_BINARY_DIR}/generated/native_runtime_data.inc")
 add_custom_command(
   OUTPUT "${native_runtime_data}"
   COMMAND "${CMAKE_COMMAND}"
     "-DINPUT_DIR=${native_headers_dir}"
+    "-DARCHIVE_FILE=$<TARGET_FILE:goat_native>"
     "-DOUTPUT_FILE=${native_runtime_data}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/embed_native_runtime.cmake"
   DEPENDS
+    goat_native
     "${native_headers_dir}/native_abi.h"
     "${native_headers_dir}/native_runtime.h"
     "${native_headers_dir}/native_strings.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/embed_native_runtime.cmake"
-  COMMENT "Embedding native runtime headers"
+  COMMENT "Embedding native runtime headers and static library"
   VERBATIM
 )
 add_library(core STATIC ${core_sources} "${native_runtime_data}")

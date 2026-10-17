@@ -62,6 +62,7 @@ static char *create_directory(const char *target) {
 static DWORD run_compiler(const char *compiler,
                           const char *source,
                           const char *library,
+                          const char *runtime,
                           const char *log,
                           int64_t *exit_code) {
     DWORD size = SearchPathA(NULL, compiler, ".exe", 0, NULL, NULL);
@@ -94,6 +95,7 @@ static DWORD run_compiler(const char *compiler,
                           "-o",
                           library,
                           source,
+                          runtime,
                           "-lm",
                           NULL};
     char *command = create_windows_command_line(args);
@@ -219,11 +221,12 @@ compile_native_library(const wchar_t *source, const char *compiler, const char *
     char *output = ALLOC(strlen(directory) + strlen(name) + 2);
     sprintf(output, "%s\\%s", directory, name);
     char *log = join(directory, "\\compiler.log");
-    if (!write_native_runtime_headers(input) || !write_utf8_file(input, source)) {
+    char *runtime = join(directory, "\\" GOAT_NATIVE_ARCHIVE_NAME);
+    if (!write_native_runtime_files(input) || !write_utf8_file(input, source)) {
         result.system_error = errno ? errno : EIO;
         goto cleanup;
     }
-    result.windows_error = run_compiler(compiler, input, output, log, &result.exit_code);
+    result.windows_error = run_compiler(compiler, input, output, runtime, log, &result.exit_code);
     if (result.windows_error) {
         result.status = NATIVE_COMPILE_START_ERROR;
         goto cleanup;
@@ -249,12 +252,13 @@ compile_native_library(const wchar_t *source, const char *compiler, const char *
     }
     result.status = NATIVE_COMPILE_OK;
 cleanup:
-    remove_native_runtime_headers(input);
+    remove_native_runtime_files(input);
     remove_file(&result, input);
     remove_file(&result, output);
     remove_file(&result, log);
     if (!RemoveDirectoryA(directory) && !result.windows_cleanup_error)
         result.windows_cleanup_error = GetLastError();
+    FREE(runtime);
     FREE(input);
     FREE(output);
     FREE(log);
