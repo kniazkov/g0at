@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Copyright 2026 Ivan Kniazkov
 set -Eeuo pipefail
+runtime_include="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../include/goat" && pwd)"
 interpreter="$(realpath "${1:?goat executable required}")"
 functional="$(realpath "${2:?functional test executable required}")"
 mkdir -p "${3:?output directory required}"
@@ -121,9 +122,9 @@ for mode in auto required; do
     ok
 done
 current='build compiler substitutes'
-"$compiler" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" \
+"$compiler" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" \
     "${shared[@]}" -DGOAT_NATIVE_BUILD "$repo_root/test/functional/native_pipeline/empty.c" -o "$output_dir/empty.$ext"
-"$compiler" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 \
+"$compiler" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 \
     "$repo_root/test/functional/native_pipeline/compiler.c" -o "$output_dir/invalid-compiler$exe"
 cp "$output_dir/invalid-compiler$exe" "$output_dir/wrong-compiler$exe"
 export GOAT_PIPELINE_WRONG_LIBRARY="$output_dir/empty.$ext"

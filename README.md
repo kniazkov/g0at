@@ -137,6 +137,8 @@ Copy-Item .\docs\book\examples\22-native-module.goat .\build\quickstart\program.
 
 Adding `--native required` to the compile command also builds a companion `.so` or `.dll`. Keep that library beside the `.gbin` with the same basename. Execution of the saved pair needs neither the source nor a C compiler. See [Separate Compilation](docs/book/en/26-separate-compilation.md) for compatibility and failure rules.
 
+Generated native C uses the [native support library](docs/native-runtime.md). `--save-c` exports its two headers beside the C file; automatic DLL/SO compilation supplies them from the interpreter bundle.
+
 ## Inspect and test
 
 `--print-source-code`, `--print-bytecode`, and `--print-analysis` expose intermediate representations; these options also execute the program. `--save-graph graph.svg` writes an AST image and requires Graphviz (`dot` on `PATH`). `--print-c` exports generated C without executing the program. See [Observability](docs/book/en/27-observability.md) for complete examples.

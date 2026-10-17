@@ -165,27 +165,6 @@ bool c_emit_statement(const node_t *node,
     return true;
 }
 
-void c_control_helpers(source_builder_t *builder) {
-    add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"#ifndef GOAT_C_COMPARISON_HELPERS");
-    add_static_source(builder, 0, L"#define GOAT_C_COMPARISON_HELPERS");
-    add_static_source(
-        builder,
-        0,
-        L"static inline unsigned g_compare_i64_double(int64_t integer, double real) {");
-    add_static_source(builder, 1, L"if (isnan(real)) return 8;");
-    add_static_source(builder, 1, L"if (real >= 0x1p63) return 1;");
-    add_static_source(builder, 1, L"if (real < -0x1p63) return 4;");
-    add_static_source(builder, 1, L"int64_t truncated = (int64_t)real;");
-    add_static_source(builder, 1, L"if (integer < truncated) return 1;");
-    add_static_source(builder, 1, L"if (integer > truncated) return 4;");
-    add_static_source(builder, 1, L"double whole;");
-    add_static_source(builder, 1, L"double fraction = modf(real, &whole);");
-    add_static_source(builder, 1, L"return fraction > 0 ? 1 : fraction < 0 ? 4 : 2;");
-    add_static_source(builder, 0, L"}");
-    add_static_source(builder, 0, L"#endif");
-}
-
 bool c_emit_for(const node_t *node,
                 c_generation_context_t *context,
                 source_builder_t *builder,

@@ -8,6 +8,7 @@
 #    include <windows.h>
 #endif
 #include "native_compiler.h"
+#include "native_runtime.h"
 
 #ifdef _WIN32
 #    include "lib/allocate.h"
@@ -218,7 +219,7 @@ compile_native_library(const wchar_t *source, const char *compiler, const char *
     char *output = ALLOC(strlen(directory) + strlen(name) + 2);
     sprintf(output, "%s\\%s", directory, name);
     char *log = join(directory, "\\compiler.log");
-    if (!write_utf8_file(input, source)) {
+    if (!write_native_runtime_headers(input) || !write_utf8_file(input, source)) {
         result.system_error = errno ? errno : EIO;
         goto cleanup;
     }
@@ -248,6 +249,7 @@ compile_native_library(const wchar_t *source, const char *compiler, const char *
     }
     result.status = NATIVE_COMPILE_OK;
 cleanup:
+    remove_native_runtime_headers(input);
     remove_file(&result, input);
     remove_file(&result, output);
     remove_file(&result, log);

@@ -1,27 +1,42 @@
 #!/usr/bin/env bash
 # Copyright 2026 Ivan Kniazkov
 set -Eeuo pipefail
+runtime_include="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../include/goat" && pwd)"
 interpreter="${1:?goat executable required}"
 output_dir="${2:?output directory required}"
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 compiler_flags=("${@:3}")
 mkdir -p "$output_dir"
 passed=0
-current='public and embedded ABI declarations agree'
+current='exported support headers match the public library'
 printf 'Starting native ABI testing...\n'
 trap 'printf "[fail] %s\nNative ABI testing done; total: %d, passed: %d, failed: 1\n" "$current" "$((passed+1))" "$passed"' ERR
 ok() { printf '[ ok ] %s\n' "$current"; passed=$((passed+1)); }
-compile() { "${CC:-gcc}" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" "${compiler_flags[@]}" "$@"; }
-"$interpreter" --print-c "$repo_root/test/functional/native_abi/program.goat" > "$output_dir/module.c"
-for file in "$repo_root/include/goat/native_abi.h" "$output_dir/module.c"; do
-    sed -n '/ABI declarations begin\./,/ABI declarations end\./p' "$file" | tr -d '[:space:]' > "$output_dir/abi-$(basename "$file").txt"
-done
-cmp "$output_dir/abi-native_abi.h.txt" "$output_dir/abi-module.c.txt"
+compile() { "${CC:-gcc}" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" "${compiler_flags[@]}" "$@"; }
+cp "$repo_root/test/functional/native_abi/program.goat" "$output_dir/module.goat"
+"$interpreter" --save-c "$output_dir/module.goat"
+diff -b --strip-trailing-cr "$repo_root/include/goat/native_abi.h" "$output_dir/native_abi.h"
+diff -b --strip-trailing-cr "$repo_root/include/goat/native_runtime.h" "$output_dir/native_runtime.h"
+if grep -Eq 'static inline|typedef struct|ABI declarations begin' "$output_dir/module.c"; then false; fi
+
 ok
 current='separately compiled host calls numeric adapters'
 compile -c "$output_dir/module.c" -o "$output_dir/module.o"
 compile "$repo_root/test/functional/native_abi/driver.c" "$output_dir/module.o" -lm -o "$output_dir/driver.exe"
 "$output_dir/driver.exe"
+ok
+current='exported C compiles using only its companion headers'
+"${CC:-gcc}" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 "${compiler_flags[@]}" \
+    -c "$output_dir/module.c" -o "$output_dir/standalone.o"
+ok
+current='save-c preserves conflicting support headers'
+mkdir -p "$output_dir/conflict"
+cp "$output_dir/module.goat" "$output_dir/conflict/program.goat"
+printf 'user-owned header\n' > "$output_dir/conflict/native_runtime.h"
+cp "$output_dir/conflict/native_runtime.h" "$output_dir/conflict/original.h"
+if "$interpreter" --save-c "$output_dir/conflict/program.goat" > "$output_dir/conflict/log" 2>&1; then false; fi
+cmp "$output_dir/conflict/native_runtime.h" "$output_dir/conflict/original.h"
+test ! -e "$output_dir/conflict/program.c"
 ok
 current='empty module exposes an empty descriptor'
 printf 'print(1);\n' > "$output_dir/empty.goat"

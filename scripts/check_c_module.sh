@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Copyright 2026 Ivan Kniazkov
 set -Eeuo pipefail
+runtime_include="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../include/goat" && pwd)"
 interpreter="${1:?goat executable required}"
 output_dir="${2:?output directory required}"
 mkdir -p "$output_dir"
@@ -13,7 +14,7 @@ ok() {
     passed=$((passed+1))
 }
 compile() {
-    "${CC:-gcc}" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 "$@"
+    "${CC:-gcc}" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 "$@"
 }
 cat > "$output_dir/recursive sample.goat" <<'GOAT'
 const fib=func(n){if(n<1)return 0;if(n==1)return 1;return fib(n-1)+fib(n-2);};
@@ -29,7 +30,7 @@ test ! -s "$output_dir/errors.txt"
 cmp "$output_dir/printed.c" "$output_dir/recursive sample.c"
 "$interpreter" --print-c "$output_dir/recursive sample.goat" > "$output_dir/repeated.c"
 cmp "$output_dir/printed.c" "$output_dir/repeated.c"
-test "$(grep -c '#include <stdint.h>' "$output_dir/printed.c")" = 1
+test "$(grep -c '#include "native_runtime.h"' "$output_dir/printed.c")" = 1
 ok
 current='compile and execute exported recursive specializations'
 cat > "$output_dir/driver.c" <<'C'
@@ -73,7 +74,7 @@ printf 'print("DO NOT RUN");\n' > "$output_dir/empty.goat"
 "$interpreter" --print-c "$output_dir/empty.goat" > "$output_dir/empty.c"
 compile -c "$output_dir/empty.c" -o "$output_dir/empty.o"
 ok
-current='emit only the required integer operation helpers'
+current='call runtime helpers without embedding their implementation'
 for operation in add sub mul neg plus real; do
     case "$operation" in
         add) expression='a+b'; seed='f(1,2);' ;;
@@ -88,7 +89,7 @@ for operation in add sub mul neg plus real; do
     compile -c "$output_dir/$operation.c" -o "$output_dir/$operation.o"
     for helper in add sub mul neg; do
         if test "$helper" = "$operation"; then
-            test "$(grep -c "static inline int64_t g_i64_$helper(" "$output_dir/$operation.c")" = 1
+            if grep -q "static inline" "$output_dir/$operation.c"; then false; fi
             test "$(grep -c "= g_i64_$helper(" "$output_dir/$operation.c")" = 1
         elif grep -q "g_i64_$helper(" "$output_dir/$operation.c"; then
             false

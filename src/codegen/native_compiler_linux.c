@@ -6,6 +6,7 @@
 #    define _POSIX_C_SOURCE 200809L
 #endif
 #include "native_compiler.h"
+#include "native_runtime.h"
 
 #ifdef __linux__
 #    include "lib/allocate.h"
@@ -93,7 +94,7 @@ compile_native_library(const wchar_t *source, const char *compiler, const char *
     char *input = join(directory, "/module.c");
     char *output = join(directory, "/module.so");
     char *log = join(directory, "/compiler.log");
-    if (!write_utf8_file(input, source)) {
+    if (!write_native_runtime_headers(input) || !write_utf8_file(input, source)) {
         result.system_error = errno ? errno : EIO;
         goto cleanup;
     }
@@ -136,6 +137,7 @@ compile_native_library(const wchar_t *source, const char *compiler, const char *
     }
     result.status = NATIVE_COMPILE_OK;
 cleanup:
+    remove_native_runtime_headers(input);
     remove_file(&result, input);
     remove_file(&result, output);
     remove_file(&result, log);
