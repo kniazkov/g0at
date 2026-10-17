@@ -36,6 +36,7 @@ static char *join(const char *first, const char *second) {
 static int start_compiler(const char *compiler,
                           const char *source,
                           const char *library,
+                          const char *runtime,
                           const char *log,
                           pid_t *pid) {
     posix_spawn_file_actions_t actions;
@@ -62,6 +63,7 @@ static int start_compiler(const char *compiler,
                           "-o",
                           (char *)library,
                           (char *)source,
+                          (char *)runtime,
                           "-lm",
                           NULL};
     if (!error)
@@ -94,12 +96,13 @@ compile_native_library(const wchar_t *source, const char *compiler, const char *
     char *input = join(directory, "/module.c");
     char *output = join(directory, "/module.so");
     char *log = join(directory, "/compiler.log");
-    if (!write_native_runtime_headers(input) || !write_utf8_file(input, source)) {
+    char *runtime = join(directory, "/" GOAT_NATIVE_ARCHIVE_NAME);
+    if (!write_native_runtime_files(input) || !write_utf8_file(input, source)) {
         result.system_error = errno ? errno : EIO;
         goto cleanup;
     }
     pid_t pid;
-    result.system_error = start_compiler(compiler, input, output, log, &pid);
+    result.system_error = start_compiler(compiler, input, output, runtime, log, &pid);
     if (result.system_error) {
         result.status = NATIVE_COMPILE_START_ERROR;
         goto cleanup;
@@ -137,12 +140,13 @@ compile_native_library(const wchar_t *source, const char *compiler, const char *
     }
     result.status = NATIVE_COMPILE_OK;
 cleanup:
-    remove_native_runtime_headers(input);
+    remove_native_runtime_files(input);
     remove_file(&result, input);
     remove_file(&result, output);
     remove_file(&result, log);
     if (rmdir(directory) && !result.cleanup_error)
         result.cleanup_error = errno;
+    FREE(runtime);
     FREE(input);
     FREE(output);
     FREE(log);

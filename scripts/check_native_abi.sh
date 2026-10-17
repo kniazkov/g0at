@@ -39,6 +39,15 @@ if "$interpreter" --save-c "$output_dir/conflict/program.goat" > "$output_dir/co
 cmp "$output_dir/conflict/native_runtime.h" "$output_dir/conflict/original.h"
 test ! -e "$output_dir/conflict/program.c"
 ok
+current='save-c preserves conflicting static libraries'
+mkdir -p "$output_dir/archive-conflict"
+cp "$output_dir/module.goat" "$output_dir/archive-conflict/program.goat"
+printf 'user-owned archive\n' > "$output_dir/archive-conflict/libgoat_native.a"
+cp "$output_dir/archive-conflict/libgoat_native.a" "$output_dir/archive-conflict/original.a"
+if "$interpreter" --save-c "$output_dir/archive-conflict/program.goat" > "$output_dir/archive-conflict/log" 2>&1; then false; fi
+cmp "$output_dir/archive-conflict/libgoat_native.a" "$output_dir/archive-conflict/original.a"
+test ! -e "$output_dir/archive-conflict/program.c"
+ok
 current='empty module exposes an empty descriptor'
 printf 'print(1);\n' > "$output_dir/empty.goat"
 "$interpreter" --print-c "$output_dir/empty.goat" > "$output_dir/empty.c"

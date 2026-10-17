@@ -6,6 +6,13 @@
 #include "lib/allocate.h"
 #include "model/native_services.h"
 
+#include <stdio.h>
+
+#ifdef TEST_NATIVE_COMPILER
+#    include "codegen/native_compiler.h"
+#    include "lib/io.h"
+
+#endif
 #include <assert.h>
 #include <locale.h>
 #include <string.h>
@@ -16,7 +23,20 @@
 #endif
 
 int main(int argc, char **argv) {
+#ifdef TEST_NATIVE_COMPILER
+    assert(argc == 4);
+    string_value_t source = read_utf8_file(argv[3]);
+    assert(source.data);
+    native_compile_result_t compiled = compile_native_library(source.data, argv[2], argv[1]);
+    FREE_STRING(source);
+    if (compiled.diagnostics)
+        fputs(compiled.diagnostics, stderr);
+    assert(compiled.status == NATIVE_COMPILE_OK);
+    assert(!compiled.cleanup_error && !compiled.windows_cleanup_error);
+    destroy_native_compile_result(&compiled);
+#else
     assert(argc == 2);
+#endif
     setlocale(LC_CTYPE, "");
     typedef void(GOAT_NATIVE_CALL * suite_t)(const goat_native_context_v2_t *);
     suite_t suite = NULL;

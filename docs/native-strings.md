@@ -35,8 +35,9 @@ UTF-16 единицы; на обычном Linux — одну 32-битную е
 представления не переживают внешний нативный вызов; интерпретатор обязан
 скопировать результат до общей очистки контекста.
 
-Операции объявлены как `static inline` в `goat/native_strings.h`, который также
-подключается из `native_runtime.h`. Все функции имеют префикс
+Операции объявлены в `goat/native_strings.h`, который также подключается из
+`native_runtime.h`. Реализации находятся в `src/native/strings.c` и собираются
+в `libgoat_native.a`; [правила линковки](native-runtime.md). Все функции имеют префикс
 `goat_native_string_`:
 
 | API | Метод языка |
@@ -106,8 +107,9 @@ struct does not duplicate ownership. Replacing/releasing storage invalidates
 borrowed views. Neither type extends storage lifetime beyond the outer call;
 the host must consume/copy results before bulk cleanup.
 
-`goat/native_strings.h` implements all string methods listed above plus concatenation,
-and is included by `native_runtime.h`. Producers take a context and an **empty** output
+`goat/native_strings.h` declares all string methods listed above plus concatenation,
+and is included by `native_runtime.h`. Implementations are compiled separately from
+`src/native/strings.c` into `libgoat_native.a`; see [linking instructions](native-runtime.md). Producers take a context and an **empty** output
 buffer, return an ABI status, and leave output unchanged on failure. Outputs own fresh
 context storage; release them explicitly or leave them to outer-call cleanup. Inputs
 must be valid views no longer than `GOAT_NATIVE_STRING_MAX`; input/output aliasing is

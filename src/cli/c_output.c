@@ -117,7 +117,7 @@ bool output_c_module(const options_t *options, arena_t *arena, const node_t *roo
     bool success = true;
     if (options->save_c) {
         path_t *path = c_output_path(options->input_file);
-        success = path && write_native_runtime_headers(path->full_path)
+        success = path && write_native_runtime_files(path->full_path)
                   && write_utf8_file(path->full_path, output.source.data);
         if (!success) {
             fprintf_utf8(stderr,

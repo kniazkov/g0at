@@ -24,7 +24,8 @@ def check(archive):
         unpacked.rmdir()
         exe = package / "bin" / ("goat.exe" if os.name == "nt" else "goat")
         for name in ("include/goat/native_abi.h", "include/goat/native_runtime.h",
-                     "README.md", "LICENSE.txt", "build-info.txt", "docs/native-memory.md"):
+                     "lib/libgoat_native.a", "include/goat/native_strings.h", "README.md", "LICENSE.txt",
+                     "build-info.txt", "docs/native-memory.md"):
             assert (package / name).is_file(), name
         work = workspace / "user programs"
         work.mkdir()
@@ -62,7 +63,27 @@ def check(archive):
                         "-I" + str(package / "include/goat"), "-c", str(generated),
                         "-o", str(work / "printed.o")], cwd=work, env=environment,
                        check=True, timeout=90)
+        # Real external symbols must link using only the packaged SDK and archive.
+        probe_source = work / "sdk.c"
+        probe_source.write_text('''#include "goat/native_strings.h"
+#include <assert.h>
+int main(void) {
+    goat_native_string_view_v2_t text = {L"ababa", 5}, part = {L"aba", 3};
+    assert(goat_native_string_index_of(text, part) == 0);
+    assert(goat_native_string_last_index_of(text, part) == 2);
+    return 0;
+}
+''', encoding="utf-8")
+        probe = work / "sdk.exe"
+        subprocess.run([compiler, "-std=c11", "-O2", "-I" + str(package / "include"),
+                        str(probe_source), str(package / "lib/libgoat_native.a"),
+                        "-o", str(probe), *(["-static", "-static-libgcc"] if os.name == "nt" else [])],
+                       cwd=work, env=environment, check=True, timeout=90)
+        probe_source.unlink()
+        subprocess.run([str(probe)], cwd=work, env=isolated, check=True, timeout=30)
         run("--save-c", source, expected="")
+        assert (work / "libgoat_native.a").read_bytes() == (package / "lib/libgoat_native.a").read_bytes()
+        (work / "libgoat_native.a").unlink()
         for name in ("native_abi.h", "native_runtime.h", "native_strings.h"):
             assert (work / name).read_bytes() == (package / "include/goat" / name).read_bytes()
             (work / name).unlink()
