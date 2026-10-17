@@ -157,7 +157,7 @@ c_generated_expression_t c_call(const node_t *node, c_generation_context_t *cont
         append_substring(&call, callee->name.data, callee->name.length);
         append_char(&call, L'(');
         if (context->module_definition)
-            append_string(&call, L"g_allocator");
+            append_string(&call, L"g_context");
         for (size_t i = 0; i < parameters; i++) {
             if (i || context->module_definition)
                 append_string(&call, L", ");
@@ -199,7 +199,7 @@ void c_emit_prototype(const function_summary_t *summary,
     append_substring(&declaration, name.data, name.length);
     append_char(&declaration, L'(');
     if (with_allocator)
-        append_string(&declaration, L"const goat_native_allocator_v2_t *");
+        append_string(&declaration, L"const goat_native_context_v2_t *");
     else if (!summary->parameter_count)
         append_string(&declaration, L"void");
     for (size_t i = 0; i < summary->parameter_count; i++) {

@@ -52,27 +52,63 @@ typedef struct goat_native_value_v2_t {
     } value;
 } goat_native_value_v2_t;
 
-/** @brief Host-owned allocation service, valid until the outer invocation completes.
- * allocate never returns NULL: allocation failure and size overflow terminate the process.
- * A zero-byte allocation returns a distinct live block. Storage supports fundamental
- * alignment (not explicitly over-aligned types). deallocate(NULL) is a no-op.
- * Only live blocks from this instance may be freed; double-free is a contract violation.
- * deallocate_all invalidates all remaining blocks and leaves the allocator reusable.
- * Independent instances may be used concurrently; one instance is thread-confined.
- * Callees borrow the service and pass it to nested calls. Only its owner may bulk-clear
- * it, after consuming results and after every successful or failed invocation.
+/** @brief Interpreter service table. Append future services after this memory prefix.
+ * struct_size is the size supplied by the host; consumers check the prefix they use.
+ * Callback code executes in the host, never in the generated module.
+ * allocate returns fundamentally aligned, uninitialized storage; zero size reserves
+ * a distinct live block. OOM and size overflow are fatal, never a NULL return.
+ * deallocate(NULL) is harmless. Other pointers must be live blocks from this context.
+ * Only the outer context owner bulk-clears memory, after consuming results, on success
+ * and on failure. Callees may individually release their own temporaries.
  */
-typedef struct goat_native_allocator_v2_t {
+typedef struct goat_native_services_v2_t {
     uint32_t struct_size;
-    void *context;
-    void *(GOAT_NATIVE_CALL *allocate)(void *context, size_t size);
-    void(GOAT_NATIVE_CALL *deallocate)(void *context, void *pointer);
-    void(GOAT_NATIVE_CALL *deallocate_all)(void *context);
-} goat_native_allocator_v2_t;
+    void *(GOAT_NATIVE_CALL *allocate)(void *state, size_t size);
+    void(GOAT_NATIVE_CALL *deallocate)(void *state, void *pointer);
+    void(GOAT_NATIVE_CALL *deallocate_all)(void *state);
+} goat_native_services_v2_t;
+
+/** @brief Borrowed host context. State is opaque to native code and thread-confined.
+ * Independent outer calls have independent states, including reentrant calls.
+ * Nested generated calls share the same context. Neither state nor allocated pointers
+ * may outlive the outer call. The immutable service table may be shared by all threads.
+ */
+typedef struct goat_native_context_v2_t {
+    const goat_native_services_v2_t *services;
+    void *state;
+} goat_native_context_v2_t;
+
+/** @brief Size of the required memory-service prefix, independent of future additions. */
+#    define GOAT_NATIVE_MEMORY_SERVICES_SIZE                                                       \
+        (offsetof(goat_native_services_v2_t, deallocate_all)                                       \
+         + sizeof(((goat_native_services_v2_t *)0)->deallocate_all))
+
+/** @brief Checks the memory-service prefix before entering a generated module. */
+static inline int goat_native_has_memory_services(const goat_native_context_v2_t *context) {
+    return context && context->services
+           && context->services->struct_size >= GOAT_NATIVE_MEMORY_SERVICES_SIZE
+           && context->services->allocate && context->services->deallocate
+           && context->services->deallocate_all;
+}
+
+/** @brief Dispatches allocation to the interpreter; contains no allocation implementation. */
+static inline void *goat_native_allocate(const goat_native_context_v2_t *context, size_t size) {
+    return context->services->allocate(context->state, size);
+}
+
+/** @brief Dispatches individual release to the interpreter. */
+static inline void goat_native_deallocate(const goat_native_context_v2_t *context, void *pointer) {
+    context->services->deallocate(context->state, pointer);
+}
+
+/** @brief Dispatches bulk cleanup; only the outer context owner may invoke it. */
+static inline void goat_native_deallocate_all(const goat_native_context_v2_t *context) {
+    context->services->deallocate_all(context->state);
+}
 
 typedef uint32_t(GOAT_NATIVE_CALL *goat_native_adapter_v2_t)(
     uint32_t version,
-    const goat_native_allocator_v2_t *allocator,
+    const goat_native_context_v2_t *context,
     uint32_t argument_count,
     const goat_native_value_v2_t *arguments,
     goat_native_value_v2_t *result);

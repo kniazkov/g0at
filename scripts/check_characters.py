@@ -51,10 +51,9 @@ def main():
     host = output / 'host.c'
     host.write_text('''#include "native.c"
 #include <assert.h>
-#include "native_allocator.h"
+#include "test_allocator.h"
 int main(void) {
-    goat_native_allocator_state_t state = {0};
-    goat_native_allocator_v2_t allocator = goat_native_allocator_init(&state);
+    goat_native_context_v2_t allocator = test_context();
     const goat_native_module_v2_t *m = goat_native_query_v2(GOAT_NATIVE_ABI_VERSION);
     assert(m && m->entry_count == 1);
     int64_t values[] = {0, 65, 65535, 65536, 128512, 1114111, 2147483648LL, 4294967295LL, -1};
@@ -69,7 +68,8 @@ int main(void) {
 ''', encoding='utf-8')
     for flags, name in [([], 'host'), (['-fshort-wchar'], 'short-wchar')]:
         executable = output / (name + ('.exe' if os.name == 'nt' else ''))
-        subprocess.run([*shlex.split(os.environ.get('CC', 'gcc')), '-std=c11', '-I' + str(Path(__file__).resolve().parent.parent / 'include/goat'),
+        subprocess.run([*shlex.split(os.environ.get('CC', 'gcc')), '-std=c11', '-I' + str(Path(__file__).resolve().parent.parent / 'include'),
+                         '-I' + str(Path(__file__).resolve().parent.parent / 'test/functional/native_abi'),
                         *flags, str(host), '-o', str(executable)], check=True, timeout=30)
         subprocess.run([str(executable)], check=True, timeout=30)
     print('[ ok ] characters: Unicode, source/binary round trips, VM/native, 16-bit wchar_t')

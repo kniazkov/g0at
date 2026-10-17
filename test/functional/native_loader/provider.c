@@ -36,7 +36,7 @@ __attribute__((destructor)) static void unloaded(void) {
 
 #ifndef NO_QUERY
 static uint32_t GOAT_NATIVE_CALL identity(uint32_t version,
-                                          const goat_native_allocator_v2_t *allocator,
+                                          const goat_native_context_v2_t *allocator,
                                           uint32_t count,
                                           const goat_native_value_v2_t *args,
                                           goat_native_value_v2_t *result) {

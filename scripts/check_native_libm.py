@@ -46,12 +46,11 @@ BINARY = {
 
 HOST_UNARY = '''#include "edges.c"
 #include <assert.h>
-#include "native_allocator.h"
+#include "test_allocator.h"
 #include <math.h>
 #include <stdint.h>
 int main(void) {
-    goat_native_allocator_state_t state = {0};
-    goat_native_allocator_v2_t allocator = goat_native_allocator_init(&state);
+    goat_native_context_v2_t allocator = test_context();
     const goat_native_module_v2_t *m = goat_native_query_v2(GOAT_NATIVE_ABI_VERSION);
     assert(m && m->entry_count == 2);
     for (unsigned i=0;i<m->entry_count;i++) {
@@ -88,12 +87,11 @@ int main(void) {
 
 HOST_BINARY = '''#include "edges.c"
 #include <assert.h>
-#include "native_allocator.h"
+#include "test_allocator.h"
 #include <math.h>
 #include <stdint.h>
 int main(void) {
-    goat_native_allocator_state_t state = {0};
-    goat_native_allocator_v2_t allocator = goat_native_allocator_init(&state);
+    goat_native_context_v2_t allocator = test_context();
     const goat_native_module_v2_t *m = goat_native_query_v2(GOAT_NATIVE_ABI_VERSION);
     assert(m && m->entry_count == 2);
     for (unsigned i=0;i<m->entry_count;i++) {
@@ -133,12 +131,11 @@ int main(void) {
 
 HOST_ABS = '''#include "edges.c"
 #include <assert.h>
-#include "native_allocator.h"
+#include "test_allocator.h"
 #include <math.h>
 #include <stdint.h>
 int main(void) {
-    goat_native_allocator_state_t state = {0};
-    goat_native_allocator_v2_t allocator = goat_native_allocator_init(&state);
+    goat_native_context_v2_t allocator = test_context();
     const goat_native_module_v2_t *m = goat_native_query_v2(GOAT_NATIVE_ABI_VERSION);
     assert(m && m->entry_count == 2);
     for (unsigned i=0;i<m->entry_count;i++) {
@@ -300,7 +297,8 @@ def main():
                 + ' : %s(x[j],y[j]);' % libm)
         host.write_text(host_source, encoding='utf-8')
         exe = output / ('host-' + name + '.exe')
-        compiled = subprocess.run([env.get('CC', 'gcc'), '-std=c11', '-I' + str(Path(__file__).resolve().parent.parent / 'include/goat'), '-Wall', '-Wextra', '-Werror',
+        compiled = subprocess.run([env.get('CC', 'gcc'), '-std=c11', '-I' + str(Path(__file__).resolve().parent.parent / 'include'),
+                         '-I' + str(Path(__file__).resolve().parent.parent / 'test/functional/native_abi'), '-Wall', '-Wextra', '-Werror',
                                    '-O2', str(host), '-lm', '-o', str(exe)], capture_output=True,
                                   text=True, timeout=60)
         assert compiled.returncode == 0, compiled

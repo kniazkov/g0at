@@ -12,15 +12,15 @@
 static int64_t calls;
 
 static uint32_t GOAT_NATIVE_CALL identity(uint32_t version,
-                                          const goat_native_allocator_v2_t *allocator,
+                                          const goat_native_context_v2_t *allocator,
                                           uint32_t count,
                                           const goat_native_value_v2_t *args,
                                           goat_native_value_v2_t *result) {
     (void)allocator;
-    unsigned char *scratch = allocator->allocate(allocator->context, 4096);
+    unsigned char *scratch = goat_native_allocate(allocator, 4096);
     scratch[4095] = 42;
-    void *early = allocator->allocate(allocator->context, 31);
-    allocator->deallocate(allocator->context, early);
+    void *early = goat_native_allocate(allocator, 31);
+    goat_native_deallocate(allocator, early);
     calls++;
     if (version != GOAT_NATIVE_ABI_VERSION || count != 1 || args[0].reserved)
         return GOAT_NATIVE_BAD_REQUEST;
@@ -29,15 +29,15 @@ static uint32_t GOAT_NATIVE_CALL identity(uint32_t version,
 }
 
 static uint32_t GOAT_NATIVE_CALL difference(uint32_t version,
-                                            const goat_native_allocator_v2_t *allocator,
+                                            const goat_native_context_v2_t *allocator,
                                             uint32_t count,
                                             const goat_native_value_v2_t *args,
                                             goat_native_value_v2_t *result) {
     (void)allocator;
-    unsigned char *scratch = allocator->allocate(allocator->context, 4096);
+    unsigned char *scratch = goat_native_allocate(allocator, 4096);
     scratch[4095] = 42;
-    void *early = allocator->allocate(allocator->context, 31);
-    allocator->deallocate(allocator->context, early);
+    void *early = goat_native_allocate(allocator, 31);
+    goat_native_deallocate(allocator, early);
     calls++;
     if (version != GOAT_NATIVE_ABI_VERSION || count != 2 || args[0].reserved || args[1].reserved)
         return GOAT_NATIVE_BAD_REQUEST;
@@ -48,15 +48,15 @@ static uint32_t GOAT_NATIVE_CALL difference(uint32_t version,
 }
 
 static uint32_t GOAT_NATIVE_CALL constant(uint32_t version,
-                                          const goat_native_allocator_v2_t *allocator,
+                                          const goat_native_context_v2_t *allocator,
                                           uint32_t count,
                                           const goat_native_value_v2_t *args,
                                           goat_native_value_v2_t *result) {
     (void)allocator;
-    unsigned char *scratch = allocator->allocate(allocator->context, 4096);
+    unsigned char *scratch = goat_native_allocate(allocator, 4096);
     scratch[4095] = 42;
-    void *early = allocator->allocate(allocator->context, 31);
-    allocator->deallocate(allocator->context, early);
+    void *early = goat_native_allocate(allocator, 31);
+    goat_native_deallocate(allocator, early);
     calls++;
     if (version != GOAT_NATIVE_ABI_VERSION || count || args)
         return GOAT_NATIVE_BAD_REQUEST;
@@ -65,15 +65,15 @@ static uint32_t GOAT_NATIVE_CALL constant(uint32_t version,
 }
 
 static uint32_t GOAT_NATIVE_CALL failure(uint32_t version,
-                                         const goat_native_allocator_v2_t *allocator,
+                                         const goat_native_context_v2_t *allocator,
                                          uint32_t count,
                                          const goat_native_value_v2_t *args,
                                          goat_native_value_v2_t *result) {
     (void)allocator;
-    unsigned char *scratch = allocator->allocate(allocator->context, 4096);
+    unsigned char *scratch = goat_native_allocate(allocator, 4096);
     scratch[4095] = 42;
-    void *early = allocator->allocate(allocator->context, 31);
-    allocator->deallocate(allocator->context, early);
+    void *early = goat_native_allocate(allocator, 31);
+    goat_native_deallocate(allocator, early);
     calls++;
     if (version != GOAT_NATIVE_ABI_VERSION || count != 1)
         return GOAT_NATIVE_BAD_REQUEST;
@@ -89,7 +89,7 @@ static uint32_t GOAT_NATIVE_CALL failure(uint32_t version,
 }
 
 static uint32_t GOAT_NATIVE_CALL counter(uint32_t version,
-                                         const goat_native_allocator_v2_t *allocator,
+                                         const goat_native_context_v2_t *allocator,
                                          uint32_t count,
                                          const goat_native_value_v2_t *args,
                                          goat_native_value_v2_t *result) {
@@ -102,11 +102,11 @@ static uint32_t GOAT_NATIVE_CALL counter(uint32_t version,
 }
 
 static uint32_t GOAT_NATIVE_CALL limited(uint32_t version,
-                                         const goat_native_allocator_v2_t *allocator,
+                                         const goat_native_context_v2_t *allocator,
                                          uint32_t count,
                                          const goat_native_value_v2_t *args,
                                          goat_native_value_v2_t *result) {
-    (void)allocator;
+    goat_native_allocate(allocator, 91);
     (void)version;
     (void)count;
     (void)args;

@@ -7,9 +7,9 @@
 #include "builtin_function.h"
 #include "common_methods.h"
 #include "context.h"
-#include "goat/native_allocator.h"
 #include "lib/allocate.h"
 #include "native_library.h"
+#include "native_services.h"
 #include "object.h"
 #include "object_state.h"
 #include "process.h"
@@ -336,24 +336,27 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
             args[i].value.real = get_object_real_value(arg).value;
     }
     goat_native_value_v2_t result = {0};
-    goat_native_allocator_state_t memory = {0};
-    goat_native_allocator_v2_t allocator = goat_native_allocator_init(&memory);
+    native_memory_t memory = {0};
+    goat_native_context_v2_t native_context = init_native_context(&memory);
     thread->native_attempts++;
-    uint32_t status =
-        entry->invoke(GOAT_NATIVE_ABI_VERSION, &allocator, entry->parameter_count, args, &result);
+    uint32_t status = entry->invoke(GOAT_NATIVE_ABI_VERSION,
+                                    &native_context,
+                                    entry->parameter_count,
+                                    args,
+                                    &result);
     FREE(args);
     if (status == GOAT_NATIVE_OK && (result.type != entry->return_type || result.reserved))
         status = GOAT_NATIVE_BAD_REQUEST;
     thread->native_status = status;
     if (status != GOAT_NATIVE_OK) {
-        allocator.deallocate_all(allocator.context);
+        goat_native_deallocate_all(&native_context);
         return false;
     }
     thread->native_successes++;
     object_t *value = result.type == GOAT_NATIVE_I64
                           ? create_integer_object(thread->process, result.value.integer)
                           : create_real_number_object(thread->process, result.value.real);
-    allocator.deallocate_all(allocator.context);
+    goat_native_deallocate_all(&native_context);
     for (uint16_t i = 0; i < count; i++) {
         object_t *arg = pop_object_from_stack(thread->data_stack);
         DECREF(arg);

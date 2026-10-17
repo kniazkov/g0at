@@ -42,10 +42,9 @@ bool test_c_module_output(void) {
     ASSERT(module->count == 2 && module->available_count == 2);
     c_module_output_t first = generate_c_module(arena, module);
     ASSERT(first.generated_count == 2 && !first.omitted_count && !first.failures);
-    ASSERT(wcsstr(first.source.data,
-                  L"int64_t g_f1_i_(const goat_native_allocator_v2_t *, int64_t);"));
     ASSERT(
-        wcsstr(first.source.data, L"double g_f1_r_(const goat_native_allocator_v2_t *, double);"));
+        wcsstr(first.source.data, L"int64_t g_f1_i_(const goat_native_context_v2_t *, int64_t);"));
+    ASSERT(wcsstr(first.source.data, L"double g_f1_r_(const goat_native_context_v2_t *, double);"));
     ASSERT(wcsstr(first.source.data, L"/* Goat function: f(n)"));
     ASSERT(wcsstr(first.source.data, L"\n\n/* Goat function:"));
     ASSERT(wcsstr(first.source.data, L"\n\n/* Native ABI adapter for g_f1_i_. */"));

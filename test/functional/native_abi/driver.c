@@ -55,16 +55,42 @@ int test_native_abi(goat_native_query_v2_t query) {
     assert(constant->invoke(1, NULL, 0, NULL, &untouched) == GOAT_NATIVE_ABI_MISMATCH);
     assert(constant->invoke(GOAT_NATIVE_ABI_VERSION, NULL, 0, NULL, &untouched)
            == GOAT_NATIVE_BAD_REQUEST);
-    goat_native_allocator_state_t memory = {0};
-    goat_native_allocator_v2_t allocator = goat_native_allocator_init(&memory);
-    allocator.struct_size = 0;
+    goat_native_context_v2_t allocator = test_context();
+    goat_native_services_v2_t services = *allocator.services;
+    allocator.services = &services;
+    services.struct_size = 0;
     assert(constant->invoke(GOAT_NATIVE_ABI_VERSION, &allocator, 0, NULL, &untouched)
            == GOAT_NATIVE_BAD_REQUEST);
-    allocator.struct_size = sizeof(allocator);
-    allocator.allocate = NULL;
+    services.struct_size = sizeof(services);
+    services.allocate = NULL;
     assert(constant->invoke(GOAT_NATIVE_ABI_VERSION, &allocator, 0, NULL, &untouched)
            == GOAT_NATIVE_BAD_REQUEST);
-    assert(untouched.type == 99 && !memory.first);
+    allocator.services = NULL;
+    assert(constant->invoke(GOAT_NATIVE_ABI_VERSION, &allocator, 0, NULL, &untouched)
+           == GOAT_NATIVE_BAD_REQUEST);
+    allocator = test_context();
+    services = *allocator.services;
+    allocator.services = &services;
+    services.deallocate = NULL;
+    assert(constant->invoke(GOAT_NATIVE_ABI_VERSION, &allocator, 0, NULL, &untouched)
+           == GOAT_NATIVE_BAD_REQUEST);
+    services = *test_context().services;
+    services.deallocate_all = NULL;
+    assert(constant->invoke(GOAT_NATIVE_ABI_VERSION, &allocator, 0, NULL, &untouched)
+           == GOAT_NATIVE_BAD_REQUEST);
+    assert(untouched.type == 99);
+
+    struct {
+        goat_native_services_v2_t memory;
+        void *future_service;
+    } extended = {*test_context().services, NULL};
+
+    extended.memory.struct_size = sizeof(extended);
+    allocator.services = &extended.memory;
+    assert(constant->invoke(GOAT_NATIVE_ABI_VERSION, &allocator, 0, NULL, &untouched)
+               == GOAT_NATIVE_OK
+           && untouched.value.integer == 42);
+
     goat_native_value_v2_t args[3] = {{.type = GOAT_NATIVE_I64}, {.type = GOAT_NATIVE_F64}, {0}};
     goat_native_value_v2_t result = {0};
     const int64_t integers[] = {INT64_MIN, INT64_MAX, 0, -1, INT64_C(9007199254740993)};

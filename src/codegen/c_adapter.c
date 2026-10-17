@@ -27,7 +27,7 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
     add_source(builder,
                0,
                L"static uint32_t GOAT_NATIVE_CALL g_adapter_%zu(uint32_t version, const "
-               L"goat_native_allocator_v2_t *g_allocator, uint32_t count,",
+               L"goat_native_context_v2_t *g_context, uint32_t count,",
                entry->id);
     add_static_source(builder,
                       1,
@@ -41,9 +41,7 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
     add_static_source(
         builder,
         1,
-        L"if (!g_allocator || g_allocator->struct_size < sizeof(*g_allocator) || "
-        L"!g_allocator->allocate || !g_allocator->deallocate || !g_allocator->deallocate_all) "
-        L"return GOAT_NATIVE_BAD_REQUEST;");
+        L"if (!goat_native_has_memory_services(g_context)) return GOAT_NATIVE_BAD_REQUEST;");
     if (count) {
         add_source(builder, 1, L"if (count < %zu) return GOAT_NATIVE_TYPE_MISMATCH;", count);
         for (size_t i = 0; i < count; i++) {
@@ -68,7 +66,7 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
     string_builder_t call;
     init_string_builder(&call, 64);
     append_substring(&call, entry->name.data, entry->name.length);
-    append_string(&call, L"(g_allocator");
+    append_string(&call, L"(g_context");
     for (size_t i = 0; i < count; i++) {
         append_string(&call, L", ");
         string_value_t argument = format_string(
