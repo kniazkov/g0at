@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Copyright 2026 Ivan Kniazkov
 set -Eeuo pipefail
+runtime_include="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../include/goat" && pwd)"
 interpreter="$(realpath "${1:?goat executable required}")"
 output_dir="${2:?output directory required}"
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -14,7 +15,7 @@ printf 'Starting Windows native library testing...\n'
 trap 'printf "[fail] %s\nWindows native library testing done; total: %d, passed: %d, failed: 1\n" "$current" "$((passed+1))" "$passed"' ERR
 clean() { test -z "$(find "$output_dir" -type d -name '*.goat-*' -print -quit)"; }
 ok() { clean; printf '[ ok ] %s\n' "$current"; passed=$((passed+1)); }
-compile() { "$compiler" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" "$@"; }
+compile() { "$compiler" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" "$@"; }
 cp "$repo_root/test/functional/native_abi/program.goat" "$output_dir/program.goat"
 CC="$REAL_CC" "$interpreter" --lang en --save-library "$output_dir/program.goat" > "$output_dir/stdout.txt" 2> "$output_dir/stderr.txt"
 test ! -s "$output_dir/stdout.txt"

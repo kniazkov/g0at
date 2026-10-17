@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Copyright 2026 Ivan Kniazkov
 set -euo pipefail
+runtime_include="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../include/goat" && pwd)"
 unit_binary="${1:?unit_testing executable required}"
 output_dir="${2:?output directory required}"
 mkdir -p "$output_dir"
 printf 'Starting C generation testing...\n'
 if "$unit_binary" --emit-c-tests "$output_dir/generated.c" &&
-   "${CC:-gcc}" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 \
+   "${CC:-gcc}" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 \
        "${@:3}" "$output_dir/generated.c" -lm -o "$output_dir/generated.exe"; then
     printf '[ ok ] compile generated functions\n'
 else

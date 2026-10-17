@@ -26,8 +26,6 @@ bool c_emit_statement(const node_t *node,
                       size_t indent);
 /** @brief Copies expression setup at its evaluation point. */
 void c_emit_prelude(const source_builder_t *prelude, source_builder_t *builder, size_t indent);
-/** @brief Emits the standalone exact integer/real comparison helper. */
-void c_control_helpers(source_builder_t *builder);
 
 /** @brief Emits a scoped loop with sequenced condition, body, and step. */
 bool c_emit_for(const node_t *node,

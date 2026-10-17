@@ -23,3 +23,5 @@ printf 'Checking %d tracked C sources and headers.\n' "${#files[@]}"
 "$formatter" --style="file:$repo_root/.clang-format" \
     --dry-run --Werror --ferror-limit=0 "${files[@]}"
 printf 'Code style check passed.\n'
+
+python3 scripts/embed_native_runtime.py --check
