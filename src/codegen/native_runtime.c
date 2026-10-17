@@ -10,6 +10,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
+#    include <fcntl.h>
+#    include <io.h>
+#    include <sys/stat.h>
+#endif
 
 static const struct {
     const char *name;
@@ -47,7 +52,22 @@ static bool write_header(const char *path, const unsigned char *data, size_t siz
     }
     if (errno != ENOENT)
         return false;
+#ifdef _WIN32
+    /* The legacy MSVCRT used by MinGW does not support fopen's C11 'x' mode. */
+    int fd = _open(path, _O_WRONLY | _O_CREAT | _O_EXCL | _O_BINARY, _S_IREAD | _S_IWRITE);
+    if (fd < 0)
+        return false;
+    file = _fdopen(fd, "wb");
+    if (!file) {
+        int error = errno;
+        _close(fd);
+        remove(path);
+        errno = error;
+        return false;
+    }
+#else
     file = fopen(path, "wbx");
+#endif
     if (!file)
         return false;
     bool success = fwrite(data, 1, size, file) == size;

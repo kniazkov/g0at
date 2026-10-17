@@ -12,7 +12,7 @@ export REAL_CC="$(cygpath -am "$compiler")"
 passed=0
 current='DLL build and exact ABI export'
 printf 'Starting Windows native library testing...\n'
-trap 'printf "[fail] %s\nWindows native library testing done; total: %d, passed: %d, failed: 1\n" "$current" "$((passed+1))" "$passed"' ERR
+trap 'if test -f "$output_dir/stderr.txt"; then cat "$output_dir/stderr.txt" >&2; fi; printf "[fail] %s\nWindows native library testing done; total: %d, passed: %d, failed: 1\n" "$current" "$((passed+1))" "$passed"' ERR
 clean() { test -z "$(find "$output_dir" -type d -name '*.goat-*' -print -quit)"; }
 ok() { clean; printf '[ ok ] %s\n' "$current"; passed=$((passed+1)); }
 compile() { "$compiler" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" "$@"; }
