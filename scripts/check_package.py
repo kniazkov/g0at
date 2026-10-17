@@ -39,11 +39,11 @@ def check(archive):
 
         def run(*args, env=environment, expected=None):
             result = subprocess.run([str(exe), "--lang", "en", *map(str, args)],
-                                    cwd=work, env=env, text=True, capture_output=True,
+                                    cwd=work, env=env, text=True, encoding="utf-8", capture_output=True,
                                     timeout=90)
             assert result.returncode == 0, (args, result.returncode, result.stdout, result.stderr)
             if expected is not None:
-                assert result.stdout.strip() == expected, result.stdout
+                assert result.stdout.strip() == expected, repr(result.stdout)
             return result.stdout
 
         run("--native", "off", package / "examples/hello_world.goat", env=isolated)
