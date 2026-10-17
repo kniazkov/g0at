@@ -63,7 +63,7 @@ def check(archive):
                         "-o", str(work / "printed.o")], cwd=work, env=environment,
                        check=True, timeout=90)
         run("--save-c", source, expected="")
-        for name in ("native_abi.h", "native_runtime.h"):
+        for name in ("native_abi.h", "native_runtime.h", "native_strings.h"):
             assert (work / name).read_bytes() == (package / "include/goat" / name).read_bytes()
             (work / name).unlink()
         source.with_suffix(".c").unlink()

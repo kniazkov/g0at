@@ -21,7 +21,8 @@ static const struct {
     const unsigned char *data;
     size_t size;
 } headers[] = {{"native_abi.h", native_abi_data, sizeof(native_abi_data)},
-               {"native_runtime.h", native_runtime_data, sizeof(native_runtime_data)}};
+               {"native_runtime.h", native_runtime_data, sizeof(native_runtime_data)},
+               {"native_strings.h", native_strings_data, sizeof(native_strings_data)}};
 
 static char *header_path(const char *source, const char *name) {
     size_t prefix = 0;

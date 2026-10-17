@@ -5,7 +5,7 @@ if(NOT DEFINED INPUT_DIR OR NOT DEFINED OUTPUT_FILE)
 endif()
 
 set(output "/* Generated from public native headers; do not edit. */\n")
-foreach(name native_abi native_runtime)
+foreach(name native_abi native_runtime native_strings)
   # HEX preserves source bytes and avoids locale/encoding dependencies.
   file(READ "${INPUT_DIR}/${name}.h" data HEX)
   string(APPEND output "static const unsigned char ${name}_data[] = {\n")

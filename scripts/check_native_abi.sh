@@ -19,6 +19,7 @@ diff -b --strip-trailing-cr "$repo_root/include/goat/native_abi.h" "$output_dir/
 diff -b --strip-trailing-cr "$repo_root/include/goat/native_runtime.h" "$output_dir/native_runtime.h"
 if grep -Eq 'static inline|typedef struct|ABI declarations begin' "$output_dir/module.c"; then false; fi
 
+diff -b --strip-trailing-cr "$repo_root/include/goat/native_strings.h" "$output_dir/native_strings.h"
 ok
 current='separately compiled host calls numeric adapters'
 compile -c "$output_dir/module.c" -o "$output_dir/module.o"

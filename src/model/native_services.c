@@ -1,6 +1,6 @@
 /** @file native_services.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Native memory services implemented using the interpreter's ALLOC/FREE.
+ * @brief Native host services: tracked ALLOC/FREE and interpreter-local character mappings.
  */
 #include "native_services.h"
 
@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <wctype.h>
 
 /** @brief Aligned list header included in the interpreter's tracked allocation. */
 struct native_memory_block_t {
@@ -53,11 +54,29 @@ static void GOAT_NATIVE_CALL deallocate_all_memory(void *state) {
         deallocate_memory(state, memory->first + 1);
 }
 
+/** @brief Uses the same CRT classification as the interpreter's string methods. */
+static int GOAT_NATIVE_CALL string_is_space(wchar_t value) {
+    return iswspace(value);
+}
+
+/** @brief Uses the interpreter's initialized LC_CTYPE, including across Windows CRTs. */
+static wchar_t GOAT_NATIVE_CALL string_to_upper(wchar_t value) {
+    return (wchar_t)towupper(value);
+}
+
+/** @brief Uses the interpreter's initialized LC_CTYPE, including across Windows CRTs. */
+static wchar_t GOAT_NATIVE_CALL string_to_lower(wchar_t value) {
+    return (wchar_t)towlower(value);
+}
+
 /** @brief Shared immutable table; mutable state belongs exclusively to each invocation. */
 static const goat_native_services_v2_t services = {sizeof(goat_native_services_v2_t),
                                                    allocate_memory,
                                                    deallocate_memory,
-                                                   deallocate_all_memory};
+                                                   deallocate_all_memory,
+                                                   string_is_space,
+                                                   string_to_upper,
+                                                   string_to_lower};
 
 goat_native_context_v2_t init_native_context(native_memory_t *memory) {
     return (goat_native_context_v2_t){&services, memory};
