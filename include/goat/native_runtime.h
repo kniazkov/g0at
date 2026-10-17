@@ -6,6 +6,7 @@
 #ifndef GOAT_NATIVE_RUNTIME_V1_H
 #define GOAT_NATIVE_RUNTIME_V1_H
 #include "native_abi.h"
+#include "native_strings.h"
 
 #include <float.h>
 #include <math.h>

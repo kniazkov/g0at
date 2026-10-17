@@ -35,6 +35,7 @@ add_custom_command(
   DEPENDS
     "${native_headers_dir}/native_abi.h"
     "${native_headers_dir}/native_runtime.h"
+    "${native_headers_dir}/native_strings.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/embed_native_runtime.cmake"
   COMMENT "Embedding native runtime headers"
   VERBATIM

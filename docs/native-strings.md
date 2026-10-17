@@ -35,9 +35,55 @@ UTF-16 единицы; на обычном Linux — одну 32-битную е
 представления не переживают внешний нативный вызов; интерпретатор обязан
 скопировать результат до общей очистки контекста.
 
-Этот шаг вводит только типы и контракт. Операций над строками, строкового
-тега в `goat_native_value_v2_t`, передачи строк через адаптеры и преобразований
-VM пока нет. Размер существующего значения и версия ABI не меняются.
+Операции объявлены как `static inline` в `goat/native_strings.h`, который также
+подключается из `native_runtime.h`. Все функции имеют префикс
+`goat_native_string_`:
+
+| API | Метод языка |
+| --- | --- |
+| `length`, `is_empty`, `is_blank` | `length`, `isEmpty()`, `isBlank()` |
+| `char_at`, `substring`, `trim` | `charAt(i)`, `substring(begin, end)`, `trim()` |
+| `contains`, `index_of`, `last_index_of` | `contains(s)`, `indexOf(s)`, `lastIndexOf(s)` |
+| `starts_with`, `ends_with` | `startsWith(s)`, `endsWith(s)` |
+| `to_upper_case`, `to_lower_case` | `toUpperCase()`, `toLowerCase()` |
+| `replace`, `repeat`, `format` | `replace(old, new)`, `repeat(n)`, `format(...)` |
+| `concat` | конкатенация `+` |
+| `copy`, `view`, `release` | вспомогательные операции владения |
+
+Методы, создающие строку, принимают контекст и указатель на **пустой выходной
+буфер**, возвращают статус `GOAT_NATIVE_OK`, `GOAT_NATIVE_BAD_REQUEST` или
+`GOAT_NATIVE_ABI_MISMATCH`. При ошибке выходной параметр не меняется. Результат
+всегда независим от входной памяти; после использования его можно освободить
+через `release` или оставить общей очистке. Нельзя передавать непустой выходной
+буфер или совмещать его с входом. `char_at` возвращает статус и пишет код в
+`uint32_t *`; отрицательный индекс или индекс за границей — ошибка. Для
+`substring(begin)` передай длину как `end`. `is_blank` также возвращает статус
+и пишет результат в `bool *`. Остальные предикаты и поиск возвращают значение
+напрямую; поиск несуществующей подстроки возвращает `-1`.
+
+Входные представления должны удовлетворять контракту и иметь длину не больше
+`GOAT_NATIVE_STRING_MAX`. Библиотека проверяет арифметику размера результата;
+отрицательные повторы и непредставимый размер возвращают `BAD_REQUEST`.
+Реальное исчерпание памяти остаётся фатальным в аллокаторе интерпретатора.
+Ни `malloc`, ни `free`, ни скрытых глобальных буферов в нативной библиотеке нет.
+
+`format` принимает массив **уже преобразованных в строки** аргументов.
+`%0`, `%1` и т. д. подставляются без повторного разбора подставленного текста;
+отсутствующие и переполненные номера остаются как есть. Символьные аргументы
+поиска, замены и конкатенации также передаются как строковые представления.
+Преобразование произвольных объектов языка — обязанность вызывающего адаптера.
+
+Для `trim`, `is_blank` и регистра используются три дополнительных сервиса хоста
+в конце таблицы: `string_is_space`, `string_to_upper`, `string_to_lower`.
+Они работают в CRT интерпретатора с его инициализированной `LC_CTYPE`, поэтому
+статически слинкованная Windows DLL не получает другую локаль. Операции не
+меняют локаль. Размер префикса проверяется перед доступом; старый хост только
+с памятью возвращает `ABI_MISMATCH` для этих операций. Числовые модули сохраняют
+совместимость. Хост обязан инициализировать локаль до конкурентных вызовов.
+
+Интеграция строк в генерируемые адаптеры и `goat_native_value_v2_t` остаётся
+отдельным этапом: этот слой уже выполняет операции в C/DLL/SO, но сам по себе
+не переводит строковые функции языка из VM в нативный режим.
 
 ## English
 
@@ -60,6 +106,31 @@ struct does not duplicate ownership. Replacing/releasing storage invalidates
 borrowed views. Neither type extends storage lifetime beyond the outer call;
 the host must consume/copy results before bulk cleanup.
 
-Only declarations are introduced. String operations, a native value tag,
-adapter transport and VM conversion are future work. Existing value layout
-and ABI version are unchanged.
+`goat/native_strings.h` implements all string methods listed above plus concatenation,
+and is included by `native_runtime.h`. Producers take a context and an **empty** output
+buffer, return an ABI status, and leave output unchanged on failure. Outputs own fresh
+context storage; release them explicitly or leave them to outer-call cleanup. Inputs
+must be valid views no longer than `GOAT_NATIVE_STRING_MAX`; input/output aliasing is
+not supported. Result-size arithmetic is checked before allocation. Negative repeats
+and unrepresentable sizes return BAD_REQUEST; actual allocation failure is host-fatal.
+There are no module-owned heap allocations or mutable global buffers.
+
+`char_at` writes a uint32_t code unit with bounds checking; `substring` requires both
+indices (use length for an omitted end). `is_blank` writes a bool and returns status.
+Other predicates/searches return values directly, with -1 for a missing substring.
+`format` takes already stringified argument views, substitutes decimal %indices once,
+and preserves missing/overflowing placeholders. Character arguments to searches and
+replacement likewise use converted views; VM object conversion belongs to the caller.
+
+Locale-dependent operations call optional host services appended after the memory
+prefix. This preserves the host CRT/LC_CTYPE even with separate Windows CRTs. The host
+initializes its locale before concurrent calls; native operations never change it.
+A host with only memory services remains valid for numeric modules and returns
+ABI_MISMATCH for the new locale-dependent operations. Existing value layout is unchanged.
+
+Adapter generation and string transport in `goat_native_value_v2_t` are a separate
+step: these C/DLL/SO operations do not yet enable native dispatch of Goat string functions.
+
+The differential test builds an independent shared module, invokes it through host
+callbacks, compares all methods with unoptimized VM execution, and checks empty/embedded
+zero strings, Unicode, bounds, overflow, missing services and memory cleanup.

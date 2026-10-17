@@ -98,6 +98,10 @@ typedef struct goat_native_services_v2_t {
     void *(GOAT_NATIVE_CALL *allocate)(void *state, size_t size);
     void(GOAT_NATIVE_CALL *deallocate)(void *state, void *pointer);
     void(GOAT_NATIVE_CALL *deallocate_all)(void *state);
+    /** @brief Optional string services execute in the host CRT and its initialized locale. */
+    int(GOAT_NATIVE_CALL *string_is_space)(wchar_t value);
+    wchar_t(GOAT_NATIVE_CALL *string_to_upper)(wchar_t value);
+    wchar_t(GOAT_NATIVE_CALL *string_to_lower)(wchar_t value);
 } goat_native_services_v2_t;
 
 /** @brief Borrowed host context. State is opaque to native code and thread-confined.
@@ -114,6 +118,11 @@ typedef struct goat_native_context_v2_t {
 #    define GOAT_NATIVE_MEMORY_SERVICES_SIZE                                                       \
         (offsetof(goat_native_services_v2_t, deallocate_all)                                       \
          + sizeof(((goat_native_services_v2_t *)0)->deallocate_all))
+
+/** @brief Required table prefix for locale-dependent string operations. */
+#    define GOAT_NATIVE_STRING_SERVICES_SIZE                                                       \
+        (offsetof(goat_native_services_v2_t, string_to_lower)                                      \
+         + sizeof(((goat_native_services_v2_t *)0)->string_to_lower))
 
 /** @brief Checks the memory-service prefix before entering a generated module. */
 static inline int goat_native_has_memory_services(const goat_native_context_v2_t *context) {
