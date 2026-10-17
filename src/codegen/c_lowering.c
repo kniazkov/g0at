@@ -179,7 +179,9 @@ bool c_emit_function(const node_t *node,
     append_char(&signature, L' ');
     append_substring(&signature, context->function_name.data, context->function_name.length);
     append_char(&signature, L'(');
-    if (!count)
+    if (context->module_definition)
+        append_string(&signature, L"const goat_native_allocator_v2_t *g_allocator");
+    else if (!count)
         append_string(&signature, L"void");
     for (size_t i = 0; i < count; i++) {
         string_value_t name = format_string(L"g_p%zu", i);
@@ -187,7 +189,7 @@ bool c_emit_function(const node_t *node,
                                                .declaration = get_node_child(parameters, i),
                                                .name = {name.data, name.length},
                                                .type = c_generation_parameter_type(context, i)};
-        if (i)
+        if (i || context->module_definition)
             append_string(&signature, L", ");
         append_string(&signature, c_type_name(bindings[i].type));
         append_char(&signature, L' ');
@@ -201,7 +203,7 @@ bool c_emit_function(const node_t *node,
     function_comment(node, builder, indent);
     add_formatted_source(builder, indent, append_string(&signature, L") {"));
     if (context->module_definition)
-        add_static_source(builder, indent + 1, L"g_guard_enter();");
+        add_static_source(builder, indent + 1, L"(void)g_allocator; g_guard_enter();");
     for (size_t i = 0; i < count; i++)
         add_source(builder, indent + 1, L"(void)%s;", bindings[i].name.data);
     bool success = prototypes

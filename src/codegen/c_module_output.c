@@ -50,7 +50,7 @@ c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
          entry = entry->next) {
         c_generation_result_t *result = &results[entry->id];
         if (result->status == C_GENERATION_OK) {
-            c_emit_prototype(entry->summary, entry->name, builder);
+            c_emit_prototype(entry->summary, entry->name, builder, true);
             output.generated_count++;
         } else {
             c_module_failure_t *failure = alloc_zeroed_from_arena(arena, sizeof(*failure));

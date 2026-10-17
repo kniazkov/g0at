@@ -247,7 +247,7 @@ bool bind_binary_library(binary_program_t *program, const char *path) {
             create_native_function_descriptor(loaded.library, program->bindings[2 * i + 1]);
         ok = function != NULL;
         for (uint32_t j = 0; ok && j < get_native_function_entry_count(function); j++) {
-            const goat_native_entry_v1_t *entry = get_native_function_entry(function, j);
+            const goat_native_entry_v2_t *entry = get_native_function_entry(function, j);
             ok = entry->flags == GOAT_NATIVE_PURE && !entry->binding_name
                  && entry->parameter_count == program->code->instructions[index].arg0;
         }

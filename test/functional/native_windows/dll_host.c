@@ -7,16 +7,16 @@
 #include <string.h>
 #include <windows.h>
 
-int test_native_abi(goat_native_query_v1_t query);
+int test_native_abi(goat_native_query_v2_t query);
 
 int main(int argc, char **argv) {
     assert(argc == 2);
     HMODULE module = LoadLibraryA(argv[1]);
     assert(module);
-    FARPROC address = GetProcAddress(module, "goat_native_query_v1");
+    FARPROC address = GetProcAddress(module, "goat_native_query_v2");
     assert(address);
     assert(!GetProcAddress(module, "g_f1_i_"));
-    goat_native_query_v1_t query;
+    goat_native_query_v2_t query;
     _Static_assert(sizeof(query) == sizeof(address), "Windows function pointers");
     memcpy(&query, &address, sizeof(query));
     int result = test_native_abi(query);

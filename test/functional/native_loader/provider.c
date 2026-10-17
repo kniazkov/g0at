@@ -36,10 +36,12 @@ __attribute__((destructor)) static void unloaded(void) {
 
 #ifndef NO_QUERY
 static uint32_t GOAT_NATIVE_CALL identity(uint32_t version,
+                                          const goat_native_allocator_v2_t *allocator,
                                           uint32_t count,
-                                          const goat_native_value_v1_t *args,
-                                          goat_native_value_v1_t *result) {
-    if (version != 1)
+                                          const goat_native_value_v2_t *args,
+                                          goat_native_value_v2_t *result) {
+    (void)allocator;
+    if (version != GOAT_NATIVE_ABI_VERSION)
         return GOAT_NATIVE_ABI_MISMATCH;
     if (!count || !args || !result)
         return GOAT_NATIVE_BAD_REQUEST;
@@ -49,21 +51,21 @@ static uint32_t GOAT_NATIVE_CALL identity(uint32_t version,
 
 static uint32_t integer_type[] = {GOAT_NATIVE_I64};
 static uint32_t real_type[] = {GOAT_NATIVE_F64};
-static goat_native_entry_v1_t entries[2];
-static goat_native_module_v1_t module;
+static goat_native_entry_v2_t entries[2];
+static goat_native_module_v2_t module;
 
-GOAT_NATIVE_API const goat_native_module_v1_t *GOAT_NATIVE_CALL
-goat_native_query_v1(uint32_t version) {
+GOAT_NATIVE_API const goat_native_module_v2_t *GOAT_NATIVE_CALL
+goat_native_query_v2(uint32_t version) {
 #    ifdef NEED_DEPENDENCY
     extern int provider_dependency(void);
     if (provider_dependency() != 42)
         return NULL;
 #    endif
-    if (version != 1)
+    if (version != GOAT_NATIVE_ABI_VERSION)
         return NULL;
     integer_type[0] = GOAT_NATIVE_I64;
     real_type[0] = GOAT_NATIVE_F64;
-    entries[0] = (goat_native_entry_v1_t){3,
+    entries[0] = (goat_native_entry_v2_t){3,
                                           7,
                                           1,
                                           GOAT_NATIVE_I64,
@@ -71,7 +73,7 @@ goat_native_query_v1(uint32_t version) {
                                           identity,
                                           "fixture.identity",
                                           GOAT_NATIVE_PURE};
-    entries[1] = (goat_native_entry_v1_t){9,
+    entries[1] = (goat_native_entry_v2_t){9,
                                           7,
                                           1,
                                           GOAT_NATIVE_F64,
@@ -79,11 +81,11 @@ goat_native_query_v1(uint32_t version) {
                                           identity,
                                           "fixture.identity",
                                           GOAT_NATIVE_PURE};
-    module = (goat_native_module_v1_t){1,
+    module = (goat_native_module_v2_t){GOAT_NATIVE_ABI_VERSION,
                                        sizeof(module),
-                                       sizeof(goat_native_value_v1_t),
-                                       _Alignof(goat_native_value_v1_t),
-                                       sizeof(goat_native_entry_v1_t),
+                                       sizeof(goat_native_value_v2_t),
+                                       _Alignof(goat_native_value_v2_t),
+                                       sizeof(goat_native_entry_v2_t),
                                        sizeof(void *),
                                        2,
                                        entries};
@@ -162,10 +164,10 @@ goat_native_query_v1(uint32_t version) {
             entries[1].parameter_types = (const uint32_t *)(uintptr_t)1;
             break;
         case 25:
-            module.entries = (const goat_native_entry_v1_t *)(uintptr_t)1;
+            module.entries = (const goat_native_entry_v2_t *)(uintptr_t)1;
             break;
         case 26:
-            return (const goat_native_module_v1_t *)(uintptr_t)1;
+            return (const goat_native_module_v2_t *)(uintptr_t)1;
         case 27: {
             static char name[4098];
             memset(name, 'x', sizeof(name) - 1);
@@ -189,7 +191,7 @@ goat_native_query_v1(uint32_t version) {
             break;
         case 33: {
             static uint32_t types[UINT16_MAX];
-            static goat_native_entry_v1_t large[257];
+            static goat_native_entry_v2_t large[257];
             for (unsigned i = 0; i < UINT16_MAX; i++)
                 types[i] = GOAT_NATIVE_I64;
             for (unsigned i = 0; i < 257; i++) {

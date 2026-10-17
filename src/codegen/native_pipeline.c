@@ -38,7 +38,7 @@ static bool validate(const c_module_t *module,
     if (get_native_library_entry_count(library) != output->generated_count)
         return false;
     for (uint32_t i = 0; i < get_native_library_entry_count(library); i++) {
-        const goat_native_entry_v1_t *actual = get_native_library_entry(library, i);
+        const goat_native_entry_v2_t *actual = get_native_library_entry(library, i);
         const c_module_function_t *expected = module->head;
         while (expected && expected->id != actual->specialization_id)
             expected = expected->next;

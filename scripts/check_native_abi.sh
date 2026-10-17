@@ -45,7 +45,7 @@ cat > "$output_dir/empty_driver.c" <<'C'
 #include "goat/native_abi.h"
 #include <assert.h>
 int main(void) {
-    const goat_native_module_v1_t *module=goat_native_query_v1(GOAT_NATIVE_ABI_VERSION);
+    const goat_native_module_v2_t *module=goat_native_query_v2(GOAT_NATIVE_ABI_VERSION);
     assert(module && !module->entry_count && !module->entries);
     return 0;
 }
@@ -60,5 +60,24 @@ compile -c "$manual/vendor.c" -o "$output_dir/vendor.o"
 compile -c "$manual/adapter.c" -o "$output_dir/adapter.o"
 compile "$manual/host.c" "$output_dir/adapter.o" "$output_dir/libvendor.a" -o "$output_dir/manual.exe"
 "$output_dir/manual.exe"
+ok
+current='lazy allocator lifetime, alignment and concurrent instances'
+thread_flags=()
+if [[ ${OS:-} != Windows_NT ]]; then thread_flags=(-pthread); fi
+compile "$repo_root/test/functional/native_allocator/driver.c" "${thread_flags[@]}" -o "$output_dir/allocator.exe"
+"$output_dir/allocator.exe"
+for mode in oom overflow; do
+    if "$output_dir/allocator.exe" "$mode" > "$output_dir/$mode.log" 2>&1; then false; fi
+    if [[ "$mode" == oom ]]; then
+        grep -q 'Out of memory' "$output_dir/$mode.log"
+    else
+        grep -q 'Allocation size overflow' "$output_dir/$mode.log"
+    fi
+done
+ok
+current='nested calls share memory through success and stack-limit recovery'
+sed 's/(void)g_allocator;/g_allocator->allocate(g_allocator->context, 17);/' "$output_dir/module.c" > "$output_dir/instrumented.c"
+compile -I"$output_dir" "$repo_root/test/functional/native_allocator/context.c" -lm -o "$output_dir/context.exe"
+"$output_dir/context.exe"
 ok
 printf 'Native ABI testing done; total: %d, passed: %d, failed: 0\n' "$passed" "$passed"

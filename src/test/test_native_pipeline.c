@@ -4,6 +4,7 @@
  */
 #include "test_native_pipeline.h"
 
+#include "../../test/functional/native_abi/test_allocator.h"
 #include "analysis/analysis.h"
 #include "analysis_test_support.h"
 #include "cli/launcher.h"
@@ -168,7 +169,7 @@ static bool shallow_calls(void) {
     return true;
 }
 
-static const goat_native_entry_v1_t *recursive_entry(bytecode_t *code) {
+static const goat_native_entry_v2_t *recursive_entry(bytecode_t *code) {
     for (size_t i = 0; i < code->instructions_count; i++) {
         const native_function_descriptor_t *descriptor = get_bytecode_native_function(code, i);
         if (descriptor)
@@ -178,7 +179,7 @@ static const goat_native_entry_v1_t *recursive_entry(bytecode_t *code) {
 }
 
 typedef struct {
-    const goat_native_entry_v1_t *entry;
+    const goat_native_entry_v2_t *entry;
     bool success;
 } adapter_task_t;
 
@@ -186,14 +187,17 @@ static void *adapter_worker(void *data) {
     adapter_task_t *task = data;
     task->success = true;
     for (size_t i = 0; i < 100; i++) {
-        goat_native_value_v1_t argument = {.type = GOAT_NATIVE_I64, .value.integer = 200};
-        goat_native_value_v1_t result = {.type = 99, .reserved = 77, .value.integer = -123};
-        goat_native_value_v1_t original = result;
+        goat_native_value_v2_t argument = {.type = GOAT_NATIVE_I64, .value.integer = 200};
+        goat_native_value_v2_t result = {.type = 99, .reserved = 77, .value.integer = -123};
+        goat_native_value_v2_t original = result;
         task->success &=
-            task->entry->invoke(1, 1, &argument, &result) == GOAT_NATIVE_RESOURCE_LIMIT;
+            test_invoke(task->entry->invoke, GOAT_NATIVE_ABI_VERSION, 1, &argument, &result)
+            == GOAT_NATIVE_RESOURCE_LIMIT;
         task->success &= !memcmp(&original, &result, sizeof(result));
         argument.value.integer = 3;
-        task->success &= task->entry->invoke(1, 1, &argument, &result) == GOAT_NATIVE_OK;
+        task->success &=
+            test_invoke(task->entry->invoke, GOAT_NATIVE_ABI_VERSION, 1, &argument, &result)
+            == GOAT_NATIVE_OK;
         task->success &=
             result.type == GOAT_NATIVE_I64 && !result.reserved && result.value.integer == 3;
     }
@@ -204,7 +208,7 @@ static bool adapter_guards(void) {
     bytecode_t *code =
         compile(L"const f=func(n){if(n<=0)return 0;return f(n-1)+1;};var x=f(3);", compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
-    const goat_native_entry_v1_t *entry = recursive_entry(code);
+    const goat_native_entry_v2_t *entry = recursive_entry(code);
     ASSERT(entry);
     adapter_task_t tasks[4];
     pthread_t threads[4];

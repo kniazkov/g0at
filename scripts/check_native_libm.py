@@ -46,20 +46,23 @@ BINARY = {
 
 HOST_UNARY = '''#include "edges.c"
 #include <assert.h>
+#include "native_allocator.h"
 #include <math.h>
 #include <stdint.h>
 int main(void) {
-    const goat_native_module_v1_t *m = goat_native_query_v1(1);
+    goat_native_allocator_state_t state = {0};
+    goat_native_allocator_v2_t allocator = goat_native_allocator_init(&state);
+    const goat_native_module_v2_t *m = goat_native_query_v2(GOAT_NATIVE_ABI_VERSION);
     assert(m && m->entry_count == 2);
     for (unsigned i=0;i<m->entry_count;i++) {
-        const goat_native_entry_v1_t *e=&m->entries[i];
+        const goat_native_entry_v2_t *e=&m->entries[i];
         assert(e->parameter_count == 1 && e->return_type == GOAT_NATIVE_F64);
-        goat_native_value_v1_t a={0},r={0}; a.type=e->parameter_types[0];
+        goat_native_value_v2_t a={0},r={0}; a.type=e->parameter_types[0];
         if (a.type==GOAT_NATIVE_I64) {
             int64_t values[]={INT64_MIN,INT64_MAX,-2,-1,0,1,2};
             for (unsigned j=0;j<7;j++) {
                 a.value.integer=values[j];
-                assert(e->invoke(1,1,&a,&r)==GOAT_NATIVE_OK);
+                assert(e->invoke(GOAT_NATIVE_ABI_VERSION,&allocator,1,&a,&r)==GOAT_NATIVE_OK);
                 assert(r.type==GOAT_NATIVE_F64);
                 volatile double expected=@@LIBM@@((double)values[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
@@ -71,7 +74,7 @@ int main(void) {
             double values[]={-0.0,0.0,-INFINITY,INFINITY,NAN,-3.5};
             for (unsigned j=0;j<6;j++) {
                 a.value.real=values[j];
-                assert(e->invoke(1,1,&a,&r)==GOAT_NATIVE_OK && r.type==GOAT_NATIVE_F64);
+                assert(e->invoke(GOAT_NATIVE_ABI_VERSION,&allocator,1,&a,&r)==GOAT_NATIVE_OK && r.type==GOAT_NATIVE_F64);
                 volatile double expected=@@LIBM@@(values[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
                 else { assert(r.value.real==expected);
@@ -85,22 +88,25 @@ int main(void) {
 
 HOST_BINARY = '''#include "edges.c"
 #include <assert.h>
+#include "native_allocator.h"
 #include <math.h>
 #include <stdint.h>
 int main(void) {
-    const goat_native_module_v1_t *m = goat_native_query_v1(1);
+    goat_native_allocator_state_t state = {0};
+    goat_native_allocator_v2_t allocator = goat_native_allocator_init(&state);
+    const goat_native_module_v2_t *m = goat_native_query_v2(GOAT_NATIVE_ABI_VERSION);
     assert(m && m->entry_count == 2);
     for (unsigned i=0;i<m->entry_count;i++) {
-        const goat_native_entry_v1_t *e=&m->entries[i];
+        const goat_native_entry_v2_t *e=&m->entries[i];
         assert(e->parameter_count == 2 && e->return_type == GOAT_NATIVE_F64);
-        goat_native_value_v1_t a[2]={{0},{0}},r={0};
+        goat_native_value_v2_t a[2]={{0},{0}},r={0};
         a[0].type=e->parameter_types[0]; a[1].type=e->parameter_types[1];
         if (a[0].type==GOAT_NATIVE_I64) {
             assert(a[1].type==GOAT_NATIVE_I64);
             int64_t x[]={INT64_MIN,-2,-1,0,1,2,INT64_MAX}, y[]={2,3,2,2,3,2,2};
             for (unsigned j=0;j<7;j++) {
                 a[0].value.integer=x[j]; a[1].value.integer=y[j];
-                assert(e->invoke(1,2,a,&r)==GOAT_NATIVE_OK);
+                assert(e->invoke(GOAT_NATIVE_ABI_VERSION,&allocator,2,a,&r)==GOAT_NATIVE_OK);
                 assert(r.type==GOAT_NATIVE_F64);
                 volatile double expected=@@LIBM@@((double)x[j],(double)y[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
@@ -112,7 +118,7 @@ int main(void) {
             double x[]={-0.0,0.0,-INFINITY,INFINITY,NAN,-3.5}, y[]={0.0,-0.0,2.0,2.0,1.0,2.0};
             for (unsigned j=0;j<6;j++) {
                 a[0].value.real=x[j]; a[1].value.real=y[j];
-                assert(e->invoke(1,2,a,&r)==GOAT_NATIVE_OK && r.type==GOAT_NATIVE_F64);
+                assert(e->invoke(GOAT_NATIVE_ABI_VERSION,&allocator,2,a,&r)==GOAT_NATIVE_OK && r.type==GOAT_NATIVE_F64);
                 volatile double expected=@@LIBM@@(x[j],y[j]);
                 if (isnan(expected)) assert(isnan(r.value.real));
                 else { assert(r.value.real==expected);
@@ -127,21 +133,24 @@ int main(void) {
 
 HOST_ABS = '''#include "edges.c"
 #include <assert.h>
+#include "native_allocator.h"
 #include <math.h>
 #include <stdint.h>
 int main(void) {
-    const goat_native_module_v1_t *m = goat_native_query_v1(1);
+    goat_native_allocator_state_t state = {0};
+    goat_native_allocator_v2_t allocator = goat_native_allocator_init(&state);
+    const goat_native_module_v2_t *m = goat_native_query_v2(GOAT_NATIVE_ABI_VERSION);
     assert(m && m->entry_count == 2);
     for (unsigned i=0;i<m->entry_count;i++) {
-        const goat_native_entry_v1_t *e=&m->entries[i];
+        const goat_native_entry_v2_t *e=&m->entries[i];
         assert(e->parameter_count == 1);
-        goat_native_value_v1_t a={0},r={0}; a.type=e->parameter_types[0];
+        goat_native_value_v2_t a={0},r={0}; a.type=e->parameter_types[0];
         if (a.type==GOAT_NATIVE_I64) {
             assert(e->return_type==GOAT_NATIVE_I64);
             int64_t values[]={INT64_MIN,INT64_MAX,-2,-1,0,1,2};
             for (unsigned j=0;j<7;j++) {
                 a.value.integer=values[j];
-                assert(e->invoke(1,1,&a,&r)==GOAT_NATIVE_OK);
+                assert(e->invoke(GOAT_NATIVE_ABI_VERSION,&allocator,1,&a,&r)==GOAT_NATIVE_OK);
                 int64_t expected=values[j]==INT64_MIN?INT64_MAX:(values[j]<0?-values[j]:values[j]);
                 assert(r.type==GOAT_NATIVE_I64 && r.value.integer==expected);
             }
@@ -150,7 +159,7 @@ int main(void) {
             double values[]={-0.0,0.0,-INFINITY,INFINITY,NAN,-3.5};
             for (unsigned j=0;j<6;j++) {
                 a.value.real=values[j];
-                assert(e->invoke(1,1,&a,&r)==GOAT_NATIVE_OK && r.type==GOAT_NATIVE_F64);
+                assert(e->invoke(GOAT_NATIVE_ABI_VERSION,&allocator,1,&a,&r)==GOAT_NATIVE_OK && r.type==GOAT_NATIVE_F64);
                 if (isnan(values[j])) assert(isnan(r.value.real));
                 else assert(r.value.real==fabs(values[j]) && !signbit(r.value.real));
             }
@@ -291,7 +300,7 @@ def main():
                 + ' : %s(x[j],y[j]);' % libm)
         host.write_text(host_source, encoding='utf-8')
         exe = output / ('host-' + name + '.exe')
-        compiled = subprocess.run([env.get('CC', 'gcc'), '-std=c11', '-Wall', '-Wextra', '-Werror',
+        compiled = subprocess.run([env.get('CC', 'gcc'), '-std=c11', '-I' + str(Path(__file__).resolve().parent.parent / 'include/goat'), '-Wall', '-Wextra', '-Werror',
                                    '-O2', str(host), '-lm', '-o', str(exe)], capture_output=True,
                                   text=True, timeout=60)
         assert compiled.returncode == 0, compiled

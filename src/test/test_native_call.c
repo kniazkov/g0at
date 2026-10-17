@@ -4,6 +4,7 @@
  */
 #include "test_native_call.h"
 
+#include "../../test/functional/native_abi/test_allocator.h"
 #include "analysis/analysis.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
@@ -73,9 +74,9 @@ static bool bind_function(bytecode_t *code, size_t ordinal, uint64_t id) {
 }
 
 static int64_t calls(void) {
-    const goat_native_entry_v1_t *entry = get_native_library_entry(library, 7);
-    goat_native_value_v1_t value = {0};
-    if (!entry || entry->invoke(1, 0, NULL, &value))
+    const goat_native_entry_v2_t *entry = get_native_library_entry(library, 7);
+    goat_native_value_v2_t value = {0};
+    if (!entry || test_invoke(entry->invoke, GOAT_NATIVE_ABI_VERSION, 0, NULL, &value))
         return -1;
     return value.value.integer;
 }

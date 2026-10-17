@@ -43,7 +43,7 @@ python3 scripts/embed_native_runtime.py --check
 
 Встроенная копия генерируется из публичных заголовков, не редактируется
 вручную и проверяется CI. Обычная сборка интерпретатора не требует Python.
-ABI загрузчика остаётся версии 1.
+ABI загрузчика — версии 2; [контекст памяти](native-memory.md) передаётся каждому адаптеру.
 
 ## English
 
@@ -65,4 +65,4 @@ Automatic native compilation stages the bundled headers in its private
 workspace, then removes them. It does not depend on the checkout or an
 installed SDK. After editing public headers, regenerate their embedded copy
 with `python3 scripts/embed_native_runtime.py`; CI runs its `--check` mode.
-Normal builds do not require Python. The loader ABI remains version 1.
+Normal builds do not require Python. The loader uses ABI v2 with a per-call [memory context](native-memory.md).

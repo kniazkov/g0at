@@ -18,14 +18,14 @@ struct native_library_t {
     void *resource;
     void (*cleanup)(void *);
     uint32_t entry_count;
-    goat_native_entry_v1_t *entries;
+    goat_native_entry_v2_t *entries;
 };
 
 struct native_function_descriptor_t {
     atomic_size_t references;
     native_library_t *library;
     uint32_t entry_count;
-    const goat_native_entry_v1_t **entries;
+    const goat_native_entry_v2_t **entries;
 };
 
 char *copy_native_library_diagnostic(const char *text) {
@@ -82,7 +82,7 @@ static bool binding_length(const char *name, size_t *length) {
 }
 
 static const char *
-snapshot_entry(goat_native_entry_v1_t *copy, const goat_native_entry_v1_t *entry, size_t *budget) {
+snapshot_entry(goat_native_entry_v2_t *copy, const goat_native_entry_v2_t *entry, size_t *budget) {
     if (!entry->invoke)
         return "missing adapter";
     if (!numeric(entry->return_type))
@@ -125,14 +125,14 @@ snapshot_entry(goat_native_entry_v1_t *copy, const goat_native_entry_v1_t *entry
 }
 
 static int compare_id(const void *a, const void *b) {
-    uint64_t x = (*(const goat_native_entry_v1_t *const *)a)->specialization_id;
-    uint64_t y = (*(const goat_native_entry_v1_t *const *)b)->specialization_id;
+    uint64_t x = (*(const goat_native_entry_v2_t *const *)a)->specialization_id;
+    uint64_t y = (*(const goat_native_entry_v2_t *const *)b)->specialization_id;
     return (x > y) - (x < y);
 }
 
 static int compare_signature(const void *a, const void *b) {
-    const goat_native_entry_v1_t *x = *(const goat_native_entry_v1_t *const *)a;
-    const goat_native_entry_v1_t *y = *(const goat_native_entry_v1_t *const *)b;
+    const goat_native_entry_v2_t *x = *(const goat_native_entry_v2_t *const *)a;
+    const goat_native_entry_v2_t *y = *(const goat_native_entry_v2_t *const *)b;
     if (x->function_id != y->function_id)
         return (x->function_id > y->function_id) ? 1 : -1;
     if (x->parameter_count != y->parameter_count)
@@ -144,8 +144,8 @@ static int compare_signature(const void *a, const void *b) {
 }
 
 static int compare_name(const void *a, const void *b) {
-    const char *x = (*(const goat_native_entry_v1_t *const *)a)->binding_name;
-    const char *y = (*(const goat_native_entry_v1_t *const *)b)->binding_name;
+    const char *x = (*(const goat_native_entry_v2_t *const *)a)->binding_name;
+    const char *y = (*(const goat_native_entry_v2_t *const *)b)->binding_name;
     if (!x || !y)
         return (x != NULL) - (y != NULL);
     return strcmp(x, y);
@@ -155,7 +155,7 @@ static const char *validate_duplicates(native_library_t *library) {
     uint32_t count = library->entry_count;
     if (!count)
         return NULL;
-    const goat_native_entry_v1_t **sorted = ALLOC(count * sizeof(*sorted));
+    const goat_native_entry_v2_t **sorted = ALLOC(count * sizeof(*sorted));
     for (uint32_t i = 0; i < count; i++)
         sorted[i] = &library->entries[i];
     const char *error = NULL;
@@ -198,25 +198,25 @@ native_library_result_t load_native_library(const char *path) {
     native_library_t *library = CALLOC(sizeof(*library));
     atomic_init(&library->references, 1);
     library->handle = handle;
-    goat_native_query_v1_t query;
+    goat_native_query_v2_t query;
     result.status = NATIVE_LIBRARY_QUERY_MISSING;
     if (!get_native_library_query(handle, &query, &result.diagnostic))
         goto failed;
     result.status = NATIVE_LIBRARY_ABI_MISMATCH;
-    const goat_native_module_v1_t *module = query(GOAT_NATIVE_ABI_VERSION);
+    const goat_native_module_v2_t *module = query(GOAT_NATIVE_ABI_VERSION);
     const char *error = "Incompatible native ABI";
-    if (!module || (uintptr_t)module % _Alignof(goat_native_module_v1_t)
+    if (!module || (uintptr_t)module % _Alignof(goat_native_module_v2_t)
         || module->abi_version != GOAT_NATIVE_ABI_VERSION || module->struct_size != sizeof(*module))
         goto invalid;
-    if (module->value_size != sizeof(goat_native_value_v1_t)
-        || module->value_alignment != _Alignof(goat_native_value_v1_t)
-        || module->entry_size != sizeof(goat_native_entry_v1_t)
+    if (module->value_size != sizeof(goat_native_value_v2_t)
+        || module->value_alignment != _Alignof(goat_native_value_v2_t)
+        || module->entry_size != sizeof(goat_native_entry_v2_t)
         || module->pointer_size != sizeof(void *))
         goto invalid;
     result.status = NATIVE_LIBRARY_INVALID_METADATA;
     error = "Invalid native entry table";
     if (module->entry_count > 65536 || (!module->entry_count) != (!module->entries)
-        || (module->entries && (uintptr_t)module->entries % _Alignof(goat_native_entry_v1_t)))
+        || (module->entries && (uintptr_t)module->entries % _Alignof(goat_native_entry_v2_t)))
         goto invalid;
     library->entry_count = module->entry_count;
     if (library->entry_count)
@@ -276,7 +276,7 @@ uint32_t get_native_library_entry_count(const native_library_t *library) {
     return library ? library->entry_count : 0;
 }
 
-const goat_native_entry_v1_t *get_native_library_entry(const native_library_t *library,
+const goat_native_entry_v2_t *get_native_library_entry(const native_library_t *library,
                                                        uint32_t index) {
     return library && index < library->entry_count ? &library->entries[index] : NULL;
 }
@@ -321,7 +321,7 @@ uint32_t get_native_function_entry_count(const native_function_descriptor_t *fun
     return function ? function->entry_count : 0;
 }
 
-const goat_native_entry_v1_t *
+const goat_native_entry_v2_t *
 get_native_function_entry(const native_function_descriptor_t *function, uint32_t index) {
     return function && index < function->entry_count ? function->entries[index] : NULL;
 }
