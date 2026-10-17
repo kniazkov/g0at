@@ -115,6 +115,10 @@ jobs:
         run: python3 scripts/check_native_strings.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native strings"
         env:
           CC: ${{ matrix.compiler }}
+      - name: Check native string identity and VM conversion
+        run: python3 scripts/check_native_string_identity.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/string identity"
+        env:
+          CC: ${{ matrix.compiler }}
       - name: Check native strings with sanitizers
         run: python3 scripts/check_native_strings.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native strings ubsan" -fsanitize=undefined -fno-sanitize-recover=all
         env:
@@ -303,6 +307,11 @@ jobs:
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_strings.py build/goat.exe "build/native strings"'
+      - name: Check native string identity and VM conversion
+        shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
+        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_string_identity.py build/goat.exe "build/string identity"'
       - name: Export, compile and execute C modules
         shell: msys2 {0}
         run: bash scripts/check_c_module.sh build/goat.exe build/c-module
