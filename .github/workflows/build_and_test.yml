@@ -150,6 +150,16 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
           BUILD_DIR: build/release-${{ matrix.compiler }}
+      - name: Check relocated release package
+        run: python3 scripts/check_package.py build/release-${{ matrix.compiler }}/packages
+        env:
+          CC: ${{ matrix.compiler }}
+      - name: Preserve release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: goat-Linux-${{ matrix.name }}
+          path: build/release-${{ matrix.compiler }}/packages/*.tar.gz
+          if-no-files-found: error
       - name: Smoke test release
         run: ./goat example/hello_world.goat
       - name: Compare release native modes
@@ -301,6 +311,17 @@ jobs:
       - name: Build release
         shell: msys2 {0}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_release_mingw.cmd'
+      - name: Check relocated release package
+        shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
+        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_package.py build/release/packages'
+      - name: Preserve release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: goat-Windows-${{ matrix.msystem }}
+          path: build/release/packages/*.zip
+          if-no-files-found: error
       - name: Compare release native modes
         shell: msys2 {0}
         run: bash scripts/check_native_modes.sh build/release/goat.exe build/functional_testing.exe "build/native modes release"

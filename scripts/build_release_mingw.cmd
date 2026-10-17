@@ -5,6 +5,7 @@ setlocal
 pushd "%~dp0.." || exit /b 1
 cmake -S src -B build\release -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release || goto failed
 cmake --build build\release --target goat || goto failed
+cmake --build build\release --target package --config Release || goto failed
 copy /Y build\release\goat.exe goat.exe > NUL || goto failed
 echo.
 echo Done.
