@@ -75,7 +75,7 @@ bool c_emit_callee_prototypes(c_generation_context_t *context, source_builder_t 
         if (duplicate)
             continue;
         if (builder)
-            c_emit_prototype(callee->summary, callee->name, builder);
+            c_emit_prototype(callee->summary, callee->name, builder, context->module_definition);
     }
     return true;
 }
@@ -156,8 +156,10 @@ c_generated_expression_t c_call(const node_t *node, c_generation_context_t *cont
         init_string_builder(&call, 64);
         append_substring(&call, callee->name.data, callee->name.length);
         append_char(&call, L'(');
+        if (context->module_definition)
+            append_string(&call, L"g_context");
         for (size_t i = 0; i < parameters; i++) {
-            if (i)
+            if (i || context->module_definition)
                 append_string(&call, L", ");
             append_string_value(&call, arguments[i]);
         }
@@ -187,7 +189,8 @@ c_generated_expression_t c_call(const node_t *node, c_generation_context_t *cont
 
 void c_emit_prototype(const function_summary_t *summary,
                       string_view_t name,
-                      source_builder_t *builder) {
+                      source_builder_t *builder,
+                      bool with_allocator) {
     c_generation_context_t target = {.summary = summary};
     string_builder_t declaration;
     init_string_builder(&declaration, 64);
@@ -195,10 +198,12 @@ void c_emit_prototype(const function_summary_t *summary,
     append_char(&declaration, L' ');
     append_substring(&declaration, name.data, name.length);
     append_char(&declaration, L'(');
-    if (!summary->parameter_count)
+    if (with_allocator)
+        append_string(&declaration, L"const goat_native_context_v2_t *");
+    else if (!summary->parameter_count)
         append_string(&declaration, L"void");
     for (size_t i = 0; i < summary->parameter_count; i++) {
-        if (i)
+        if (i || with_allocator)
             append_string(&declaration, L", ");
         append_string(&declaration, c_type_name(c_generation_parameter_type(&target, i)));
     }

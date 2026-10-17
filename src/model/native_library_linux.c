@@ -30,9 +30,9 @@ void *open_native_library_handle(const char *path, char **diagnostic) {
     return handle;
 }
 
-bool get_native_library_query(void *handle, goat_native_query_v1_t *query, char **diagnostic) {
+bool get_native_library_query(void *handle, goat_native_query_v2_t *query, char **diagnostic) {
     dlerror();
-    void *address = dlsym(handle, "goat_native_query_v1");
+    void *address = dlsym(handle, "goat_native_query_v2");
     const char *error = dlerror();
     if (error || !address) {
         *diagnostic = copy_native_library_diagnostic(error ? error : "Missing native query");

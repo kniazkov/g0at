@@ -13,4 +13,5 @@ bool c_emit_callee_prototypes(c_generation_context_t *context, source_builder_t 
 /** @brief Emits a prototype for an already validated numeric specialization. */
 void c_emit_prototype(const function_summary_t *summary,
                       string_view_t name,
-                      source_builder_t *builder);
+                      source_builder_t *builder,
+                      bool with_allocator);

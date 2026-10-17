@@ -8,6 +8,7 @@
 
 #include "alignment.h"
 
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +24,18 @@
 
 /** @brief Tracks the total allocated memory size. */
 static size_t allocated_memory_size = 0;
+
+/** @brief Protects accounting and the debug list across independent native contexts. */
+static atomic_flag accounting_lock = ATOMIC_FLAG_INIT;
+
+static void lock_accounting(void) {
+    while (atomic_flag_test_and_set_explicit(&accounting_lock, memory_order_acquire)) {
+    }
+}
+
+static void unlock_accounting(void) {
+    atomic_flag_clear_explicit(&accounting_lock, memory_order_release);
+}
 
 /** @brief Structure used for storing the size of allocated memory block. */
 typedef struct memory_header_t memory_header_t;
@@ -55,8 +68,7 @@ void *_ALLOC(size_t size) {
         size = 1;
     }
     const size_t padding = _Alignof(memory_alignment_t) - 1;
-    if (size > SIZE_MAX - sizeof(memory_header_t) - EXTRA_DEBUG_BYTES - padding
-        || size > SIZE_MAX - allocated_memory_size) {
+    if (size > SIZE_MAX - sizeof(memory_header_t) - EXTRA_DEBUG_BYTES - padding) {
         fprintf(stderr, "\nAllocation size overflow.\n");
         exit(EXIT_FAILURE);
     }
@@ -75,6 +87,12 @@ void *_ALLOC(size_t size) {
     memory_header_t *header = (memory_header_t *)((char *)allocation + offset);
     header->allocation = allocation;
     header->size = size;
+    lock_accounting();
+    if (size > SIZE_MAX - allocated_memory_size) {
+        unlock_accounting();
+        fprintf(stderr, "\nAllocation size overflow.\n");
+        exit(EXIT_FAILURE);
+    }
     allocated_memory_size += size;
 
 #ifdef MEMORY_DEBUG
@@ -92,6 +110,7 @@ void *_ALLOC(size_t size) {
     memset((char *)header + sizeof(memory_header_t) + size, 0xFF, EXTRA_DEBUG_BYTES);
 #endif
 
+    unlock_accounting();
     return (char *)header + sizeof(memory_header_t);
 }
 
@@ -129,6 +148,7 @@ void _FREE(void *ptr) {
         }
     }
 
+    lock_accounting();
     if (header->previous) {
         header->previous->next = header->next;
     } else {
@@ -141,16 +161,24 @@ void _FREE(void *ptr) {
     }
 #endif
 
+#ifndef MEMORY_DEBUG
+    lock_accounting();
+#endif
     allocated_memory_size -= size;
+    unlock_accounting();
     free(header->allocation);
 }
 
 size_t get_allocated_memory_size(void) {
-    return allocated_memory_size;
+    lock_accounting();
+    size_t size = allocated_memory_size;
+    unlock_accounting();
+    return size;
 }
 
 void print_list_of_memory_blocks(void) {
 #ifdef MEMORY_DEBUG
+    lock_accounting();
     memory_header_t *header = first_block;
     while (header) {
         fprintf(stderr,
@@ -161,5 +189,6 @@ void print_list_of_memory_blocks(void) {
                 header->size == 1 ? "" : "s");
         header = header->next;
     }
+    unlock_accounting();
 #endif
 }

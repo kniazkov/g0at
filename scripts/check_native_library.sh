@@ -217,7 +217,7 @@ cat > "$output_dir/empty-host.c" <<'C'
 #include <goat/native_abi.h>
 #include <assert.h>
 int main(void) {
-    const goat_native_module_v1_t *module=goat_native_query_v1(GOAT_NATIVE_ABI_VERSION);
+    const goat_native_module_v2_t *module=goat_native_query_v2(GOAT_NATIVE_ABI_VERSION);
     assert(module && !module->entry_count && !module->entries);
     return 0;
 }

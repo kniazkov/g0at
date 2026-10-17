@@ -26,17 +26,22 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
     add_source(builder, 0, L"/* Native ABI adapter for %s. */", entry->name.data);
     add_source(builder,
                0,
-               L"static uint32_t GOAT_NATIVE_CALL g_adapter_%zu(uint32_t version, uint32_t count,",
+               L"static uint32_t GOAT_NATIVE_CALL g_adapter_%zu(uint32_t version, const "
+               L"goat_native_context_v2_t *g_context, uint32_t count,",
                entry->id);
     add_static_source(builder,
                       1,
-                      L"const goat_native_value_v1_t *args, goat_native_value_v1_t *result) {");
+                      L"const goat_native_value_v2_t *args, goat_native_value_v2_t *result) {");
     add_static_source(builder,
                       1,
                       L"if (version != GOAT_NATIVE_ABI_VERSION) return GOAT_NATIVE_ABI_MISMATCH;");
     add_static_source(builder,
                       1,
                       L"if (!result || (count && !args)) return GOAT_NATIVE_BAD_REQUEST;");
+    add_static_source(
+        builder,
+        1,
+        L"if (!goat_native_has_memory_services(g_context)) return GOAT_NATIVE_BAD_REQUEST;");
     if (count) {
         add_source(builder, 1, L"if (count < %zu) return GOAT_NATIVE_TYPE_MISMATCH;", count);
         for (size_t i = 0; i < count; i++) {
@@ -56,15 +61,14 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
     add_static_source(builder, 2, L"return GOAT_NATIVE_RESOURCE_LIMIT;");
     add_static_source(builder, 1, L"}");
     add_static_source(builder, 1, L"g_guard = &guard;");
-    add_static_source(builder, 1, L"goat_native_value_v1_t value = {0};");
+    add_static_source(builder, 1, L"goat_native_value_v2_t value = {0};");
     add_source(builder, 1, L"value.type = %s;", type_tag(c_generation_return_type(&context)));
     string_builder_t call;
     init_string_builder(&call, 64);
     append_substring(&call, entry->name.data, entry->name.length);
-    append_char(&call, L'(');
+    append_string(&call, L"(g_context");
     for (size_t i = 0; i < count; i++) {
-        if (i)
-            append_string(&call, L", ");
+        append_string(&call, L", ");
         string_value_t argument = format_string(
             L"args[%zu].value.%s",
             i,
@@ -93,7 +97,7 @@ void c_emit_native_module(source_builder_t *builder,
     if (count) {
         add_static_source(builder,
                           0,
-                          L"static const goat_native_entry_v1_t g_native_entries[] = {");
+                          L"static const goat_native_entry_v2_t g_native_entries[] = {");
         for (const c_module_function_t *entry = module->head; entry; entry = entry->next) {
             if (results[entry->id].status != C_GENERATION_OK)
                 continue;
@@ -115,19 +119,19 @@ void c_emit_native_module(source_builder_t *builder,
         add_static_source(builder, 0, L"};");
     }
     add_static_source(builder, 0, L"");
-    add_static_source(builder, 0, L"static const goat_native_module_v1_t g_native_module = {");
-    add_static_source(builder, 1, L"GOAT_NATIVE_ABI_VERSION, sizeof(goat_native_module_v1_t),");
+    add_static_source(builder, 0, L"static const goat_native_module_v2_t g_native_module = {");
+    add_static_source(builder, 1, L"GOAT_NATIVE_ABI_VERSION, sizeof(goat_native_module_v2_t),");
     add_static_source(builder,
                       1,
-                      L"sizeof(goat_native_value_v1_t), _Alignof(goat_native_value_v1_t),");
-    add_static_source(builder, 1, L"sizeof(goat_native_entry_v1_t), sizeof(void *),");
+                      L"sizeof(goat_native_value_v2_t), _Alignof(goat_native_value_v2_t),");
+    add_static_source(builder, 1, L"sizeof(goat_native_entry_v2_t), sizeof(void *),");
     add_source(builder, 1, L"%zu, %s", count, count ? L"g_native_entries" : L"0");
     add_static_source(builder, 0, L"};");
     add_static_source(builder, 0, L"");
     add_static_source(builder,
                       0,
-                      L"GOAT_NATIVE_API const goat_native_module_v1_t *GOAT_NATIVE_CALL "
-                      L"goat_native_query_v1(uint32_t version) {");
+                      L"GOAT_NATIVE_API const goat_native_module_v2_t *GOAT_NATIVE_CALL "
+                      L"goat_native_query_v2(uint32_t version) {");
     add_static_source(builder,
                       1,
                       L"return version == GOAT_NATIVE_ABI_VERSION ? &g_native_module : 0;");

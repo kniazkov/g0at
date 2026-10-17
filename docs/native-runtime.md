@@ -34,16 +34,14 @@ cc -std=c11 -O2 -fPIC -shared -fno-fast-math -ffp-contract=off program.c -lm -o 
 временной папке и удаляет их после компиляции. Репозиторий и дополнительные
 пути установки не нужны: заголовки встроены в исполняемый файл интерпретатора.
 
-После изменения публичных заголовков выполни:
+CMake автоматически генерирует встроенную копию заголовков в
+`<каталог сборки>/generated/native_runtime_data.inc` перед компиляцией интерпретатора.
+При изменении любого заголовка или скрипта генерации зависимые файлы пересобираются.
+Генератор `scripts/embed_native_runtime.cmake` использует только CMake: Python не нужен.
+Сгенерированный файл не хранится в Git и не записывается в дерево исходников;
+разные каталоги сборки имеют независимые копии.
 
-```sh
-python3 scripts/embed_native_runtime.py
-python3 scripts/embed_native_runtime.py --check
-```
-
-Встроенная копия генерируется из публичных заголовков, не редактируется
-вручную и проверяется CI. Обычная сборка интерпретатора не требует Python.
-ABI загрузчика остаётся версии 1.
+ABI загрузчика — версии 2; [контекст памяти](native-memory.md) передаётся каждому адаптеру.
 
 ## English
 
@@ -63,6 +61,10 @@ compiling it manually, or place both public headers beside it.
 
 Automatic native compilation stages the bundled headers in its private
 workspace, then removes them. It does not depend on the checkout or an
-installed SDK. After editing public headers, regenerate their embedded copy
-with `python3 scripts/embed_native_runtime.py`; CI runs its `--check` mode.
-Normal builds do not require Python. The loader ABI remains version 1.
+installed SDK. CMake generates the embedded copy automatically into
+`<build directory>/generated/native_runtime_data.inc` before compiling the interpreter.
+Changes to either header or the generator trigger regeneration and recompilation.
+The generator `scripts/embed_native_runtime.cmake` needs only CMake, not Python.
+The generated file is not tracked in Git and never written into the source tree;
+separate build directories have independent copies.
+The loader uses ABI v2 with a per-call [memory context](native-memory.md).

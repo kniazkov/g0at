@@ -14,7 +14,7 @@ ok() {
     passed=$((passed+1))
 }
 compile() {
-    "${CC:-gcc}" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 "$@"
+    "${CC:-gcc}" -I"$runtime_include" -I"$runtime_include/../../test/functional/native_abi" -I"$runtime_include/.." -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 "$@"
 }
 cat > "$output_dir/recursive sample.goat" <<'GOAT'
 const fib=func(n){if(n<1)return 0;if(n==1)return 1;return fib(n-1)+fib(n-2);};
@@ -34,11 +34,13 @@ test "$(grep -c '#include "native_runtime.h"' "$output_dir/printed.c")" = 1
 ok
 current='compile and execute exported recursive specializations'
 cat > "$output_dir/driver.c" <<'C'
+#include "test_allocator.h"
 #include "recursive sample.c"
 int main(void) {
-    return g_f1_i_(10)!=55 || g_f1_i_(11)!=89 ||
-           g_f2_i_(4)!=8 || g_f2_r_(0.25)!=0.5 ||
-           g_f3_i_(0)!=1 || g_f3_i_(2)!=2;
+    goat_native_context_v2_t allocator = test_context();
+    return g_f1_i_(&allocator, 10)!=55 || g_f1_i_(&allocator, 11)!=89 ||
+           g_f2_i_(&allocator, 4)!=8 || g_f2_r_(&allocator, 0.25)!=0.5 ||
+           g_f3_i_(&allocator, 0)!=1 || g_f3_i_(&allocator, 2)!=2;
 }
 C
 compile -c "$output_dir/recursive sample.c" -o "$output_dir/module.o"
@@ -62,8 +64,10 @@ GOAT
 test ! -s "$output_dir/partial.log"
 if grep -Eq 'g_f[123]_' "$output_dir/partial.c"; then false; fi
 cat > "$output_dir/partial_driver.c" <<'C'
+#include "test_allocator.h"
 #include "partial.c"
-int main(void) { return g_f4_i_(41)!=42; }
+int main(void) {
+    goat_native_context_v2_t allocator = test_context(); return g_f4_i_(&allocator, 41)!=42; }
 C
 compile -c "$output_dir/partial.c" -o "$output_dir/partial.o"
 compile "$output_dir/partial_driver.c" -lm -o "$output_dir/partial.exe"
@@ -128,15 +132,17 @@ current='replacement proofs survive compilation and unobserved arguments'
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 "$interpreter" --print-c "$repo_root/test/functional/native_modes/replacement.goat" > "$output_dir/replacement.c"
 cat > "$output_dir/replacement_driver.c" <<'C'
+#include "test_allocator.h"
 #include "replacement.c"
 int main(void) {
-    return g_f1_i_(100)!=105 || g_f1_r_(0.25)!=5.25 ||
-           g_f2_i_(-10)!=-9 || g_f3_i_(-7)!=-7 ||
-           g_f4_i_(INT64_MAX)!=INT64_MAX ||
-           g_f4_r_(-0.25)!=4.75 || g_f4_r_(0x1p63)!=0x1p63 ||
-           !isnan(g_f4_r_(NAN)) || g_f4_r_(INFINITY)!=INFINITY ||
-           g_f5_i_(100)!=2 || g_f6_i_(-10)!=-4 ||
-           !signbit(g_f7_i_(0)) || g_f8_i_(-1)!=INT64_MAX-1;
+    goat_native_context_v2_t allocator = test_context();
+    return g_f1_i_(&allocator, 100)!=105 || g_f1_r_(&allocator, 0.25)!=5.25 ||
+           g_f2_i_(&allocator, -10)!=-9 || g_f3_i_(&allocator, -7)!=-7 ||
+           g_f4_i_(&allocator, INT64_MAX)!=INT64_MAX ||
+           g_f4_r_(&allocator, -0.25)!=4.75 || g_f4_r_(&allocator, 0x1p63)!=0x1p63 ||
+           !isnan(g_f4_r_(&allocator, NAN)) || g_f4_r_(&allocator, INFINITY)!=INFINITY ||
+           g_f5_i_(&allocator, 100)!=2 || g_f6_i_(&allocator, -10)!=-4 ||
+           !signbit(g_f7_i_(&allocator, 0)) || g_f8_i_(&allocator, -1)!=INT64_MAX-1;
 }
 C
 compile -c "$output_dir/replacement.c" -o "$output_dir/replacement.o"
@@ -168,13 +174,15 @@ if grep -q 'INT64_C(20)' "$output_dir/body.c"; then false; fi
 sed -n '/^__attribute__((noinline)).* g_f5_i_(/,/^}/p' "$output_dir/deleted.c" > "$output_dir/body.c"
 grep -q 'g_f4_i_(' "$output_dir/body.c"
 cat > "$output_dir/deleted_driver.c" <<'C'
+#include "test_allocator.h"
 #include "deleted.c"
 int main(void) {
-    return g_f1_i_(-7)!=-7.0 || g_f1_r_(0.25)!=0.25 ||
-           !isnan(g_f1_r_(NAN)) || !signbit(g_f1_r_(-0.0)) ||
-           g_f2_i_(INT64_MIN)!=INT64_MIN || g_f3_i_(INT64_MAX)!=INT64_MAX ||
-           g_f5_i_(9)!=9 || g_f6_i_(9)!=10 ||
-           g_f7_i_(41)!=42 || g_f7_r_(0.25)!=1.25 || g_f8_i_(9)!=3;
+    goat_native_context_v2_t allocator = test_context();
+    return g_f1_i_(&allocator, -7)!=-7.0 || g_f1_r_(&allocator, 0.25)!=0.25 ||
+           !isnan(g_f1_r_(&allocator, NAN)) || !signbit(g_f1_r_(&allocator, -0.0)) ||
+           g_f2_i_(&allocator, INT64_MIN)!=INT64_MIN || g_f3_i_(&allocator, INT64_MAX)!=INT64_MAX ||
+           g_f5_i_(&allocator, 9)!=9 || g_f6_i_(&allocator, 9)!=10 ||
+           g_f7_i_(&allocator, 41)!=42 || g_f7_r_(&allocator, 0.25)!=1.25 || g_f8_i_(&allocator, 9)!=3;
 }
 C
 compile "$output_dir/deleted_driver.c" -lm -o "$output_dir/deleted.exe"

@@ -51,8 +51,8 @@ void *open_native_library_handle(const char *path, char **diagnostic) {
     return handle;
 }
 
-bool get_native_library_query(void *handle, goat_native_query_v1_t *query, char **diagnostic) {
-    FARPROC address = GetProcAddress((HMODULE)handle, "goat_native_query_v1");
+bool get_native_library_query(void *handle, goat_native_query_v2_t *query, char **diagnostic) {
+    FARPROC address = GetProcAddress((HMODULE)handle, "goat_native_query_v2");
     if (!address) {
         *diagnostic = last_error();
         return false;

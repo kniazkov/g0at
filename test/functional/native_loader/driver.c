@@ -5,6 +5,7 @@
 #if !defined(_WIN32) && !defined(_POSIX_C_SOURCE)
 #    define _POSIX_C_SOURCE 200809L
 #endif
+#include "../native_abi/test_allocator.h"
 #include "lib/allocate.h"
 #include "model/native_library.h"
 
@@ -91,17 +92,19 @@ int main(int argc, char **argv) {
     destroy_native_library_result(&result);
     release_native_library(library);
     assert(unloads(marker) == before);
-    const goat_native_entry_v1_t *entry = get_native_function_entry(function, 0);
+    const goat_native_entry_v2_t *entry = get_native_function_entry(function, 0);
     assert(entry->function_id == 7 && entry->specialization_id == 3);
     assert(entry->parameter_types[0] == GOAT_NATIVE_I64 && entry->flags == GOAT_NATIVE_PURE);
     assert(!strcmp(entry->binding_name, "fixture.identity"));
-    goat_native_value_v1_t arg = {.type = GOAT_NATIVE_I64, .value.integer = INT64_MAX}, value = {0};
-    assert(entry->invoke(1, 1, &arg, &value) == GOAT_NATIVE_OK && value.value.integer == INT64_MAX);
+    goat_native_value_v2_t arg = {.type = GOAT_NATIVE_I64, .value.integer = INT64_MAX}, value = {0};
+    assert(test_invoke(entry->invoke, GOAT_NATIVE_ABI_VERSION, 1, &arg, &value) == GOAT_NATIVE_OK
+           && value.value.integer == INT64_MAX);
     release_native_function_descriptor(function);
     assert(unloads(marker) == before);
     entry = get_native_function_entry(alias, 1);
-    arg = (goat_native_value_v1_t){.type = GOAT_NATIVE_F64, .value.real = 0.25};
-    assert(entry->invoke(1, 1, &arg, &value) == GOAT_NATIVE_OK && value.value.real == 0.25);
+    arg = (goat_native_value_v2_t){.type = GOAT_NATIVE_F64, .value.real = 0.25};
+    assert(test_invoke(entry->invoke, GOAT_NATIVE_ABI_VERSION, 1, &arg, &value) == GOAT_NATIVE_OK
+           && value.value.real == 0.25);
     release_native_function_descriptor(alias);
     assert(unloads(marker) == before + 1);
     assert(get_allocated_memory_size() == baseline);
@@ -117,9 +120,10 @@ int main(int argc, char **argv) {
     function = create_native_function_descriptor(result.library, 4);
     assert(function && get_native_function_entry_count(function) == 1);
     destroy_native_library_result(&result);
-    arg = (goat_native_value_v1_t){.type = GOAT_NATIVE_I64, .value.integer = 10};
+    arg = (goat_native_value_v2_t){.type = GOAT_NATIVE_I64, .value.integer = 10};
     entry = get_native_function_entry(function, 0);
-    assert(entry->invoke(1, 1, &arg, &value) == GOAT_NATIVE_OK && value.value.integer == 55);
+    assert(test_invoke(entry->invoke, GOAT_NATIVE_ABI_VERSION, 1, &arg, &value) == GOAT_NATIVE_OK
+           && value.value.integer == 55);
     release_native_function_descriptor(function);
     release_native_library(NULL);
     release_native_function_descriptor(NULL);
