@@ -56,11 +56,11 @@ def main():
                      "show(out); goat_native_string_release(context, &out); }")
             vm.append("show(" + expression + ");")
         elif op == "char_at":
-            c.append("{ uint32_t out; " + f"assert(goat_native_string_char_at({joined}, &out) == GOAT_NATIVE_OK); "
+            c.append("{ uint32_t out = 0; " + f"assert(goat_native_string_char_at({joined}, &out) == GOAT_NATIVE_OK); "
                      'printf("%" PRIu32 "\\n", out); }')
             vm.append("println(ord(" + expression + "));")
         elif op == "is_blank":
-            c.append("{ bool out; " + f"assert(goat_native_string_is_blank(context, {joined}, &out) == GOAT_NATIVE_OK); "
+            c.append("{ bool out = false; " + f"assert(goat_native_string_is_blank(context, {joined}, &out) == GOAT_NATIVE_OK); "
                      'puts(out ? "true" : "false"); }')
             vm.append("println(" + expression + ");")
         elif op in ("length", "index_of", "last_index_of"):
