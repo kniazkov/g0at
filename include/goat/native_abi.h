@@ -42,6 +42,38 @@ enum { GOAT_NATIVE_PURE = 1 };
 extern "C" {
 #    endif
 
+/** @brief Borrowed, immutable sequence of the host's wchar_t code units.
+ * length counts code units, not bytes or Unicode characters, and excludes any terminator.
+ * The first length units are readable; no trailing NUL is required. Embedded zero units
+ * are allowed. data may be NULL only when length is zero. A view never owns storage and
+ * must not be passed to deallocate. Its lifetime is bounded by the backing storage and
+ * the outer native call. Substring views may point into the middle of another string.
+ * Host and module must use the same wchar_t representation (including its width).
+ */
+typedef struct goat_native_string_view_v2_t {
+    const wchar_t *data; ///< Borrowed code units; NULL is valid for an empty view.
+    size_t length;       ///< Number of readable code units.
+} goat_native_string_view_v2_t;
+
+/** @brief Mutable string storage allocated through the current native context.
+ * The zero-initialized value is an empty buffer with no allocation. Otherwise data is
+ * the original pointer returned by goat_native_allocate for at least capacity + 1
+ * wchar_t units, length <= capacity, and data[length] is zero. capacity excludes the
+ * terminator; embedded zeros are allowed and length remains authoritative. Check
+ * capacity + 1 and its byte-size multiplication for overflow before allocation.
+ * Only the owning buffer may mutate or individually deallocate the block, using the
+ * same context. Struct copies do not create new owners. Views borrow its storage and
+ * become invalid when it is released or replaced. After individual release reset all
+ * fields to zero. Outstanding storage is reclaimed by the outer call's bulk cleanup;
+ * the interpreter must consume/copy any result before that cleanup. No VM object or
+ * reference-counted ownership crosses this boundary.
+ */
+typedef struct goat_native_string_buffer_v2_t {
+    wchar_t *data;   ///< Context allocation, or NULL when length and capacity are zero.
+    size_t length;   ///< Number of used code units, excluding the trailing zero.
+    size_t capacity; ///< Number of available code units, excluding the trailing zero.
+} goat_native_string_buffer_v2_t;
+
 typedef struct goat_native_value_v2_t {
     uint32_t type;
     uint32_t reserved;

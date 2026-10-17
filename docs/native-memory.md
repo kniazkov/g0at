@@ -103,3 +103,5 @@ numeric and the services are independent of strings. Standalone hosts supply the
 vtable; implementation stays in the host. Tests cover interpreter accounting, debug
 reports and trailer checks, laziness, alignment, lifetime, concurrent use, recursion,
 and stack-limit recovery. Numeric fixtures reject unexpected allocation requests.
+
+String storage contracts / Контракты строковой памяти: [native-strings.md](native-strings.md).

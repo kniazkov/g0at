@@ -13,6 +13,7 @@ install(FILES "${native_headers_dir}/native_abi.h" "${native_headers_dir}/native
 install(FILES "${package_root}/LICENSE.txt" "${package_root}/docs/package/README.md"
   DESTINATION . CONFIGURATIONS Release)
 install(FILES "${package_root}/docs/native-runtime.md" "${package_root}/docs/native-memory.md"
+  "${package_root}/docs/native-strings.md"
   DESTINATION docs CONFIGURATIONS Release)
 install(FILES "${package_root}/example/hello_world.goat" "${package_root}/docs/package/numeric.goat"
   DESTINATION examples CONFIGURATIONS Release)
