@@ -105,6 +105,21 @@ The Debug script builds the interpreter and runs the same three suites. For a Re
 
 It writes `build\release\goat.exe` and copies it to the repository root.
 
+The Release scripts also create a relocatable archive in `<build directory>/packages`
+(`.tar.gz` on Linux, `.zip` on Windows). It contains the interpreter, public native
+headers, examples, license and [usage instructions](docs/package/README.md).
+CI tests the extracted archive and publishes it as a `goat-*` artifact. To check
+an archive locally (Python 3 and a matching C compiler are needed for testing):
+
+```sh
+python3 scripts/check_package.py build/release/packages
+```
+
+The test relocates the package outside the checkout, compiles using only its
+public headers, exports C, builds native modules, and runs saved VM/native
+programs after removing their source, with the compiler unavailable.
+
+
 ### Native execution and saved programs
 
 Ordinary source execution uses bytecode and needs no C compiler at runtime. To try native execution and inspect its report:

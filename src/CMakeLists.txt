@@ -65,3 +65,5 @@ add_executable(analysis_testing analysis_testing.c)
 target_link_libraries(analysis_testing core pthread m)
 
 add_executable(functional_testing functional_testing.c)
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/../scripts/package.cmake")
