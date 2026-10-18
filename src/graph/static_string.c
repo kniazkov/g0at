@@ -5,6 +5,7 @@
  */
 
 #include "analysis/lattice.h"
+#include "codegen/c_strings.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -62,6 +63,19 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return add_instruction(code, (instruction_t){.opcode = SLOAD, .arg1 = index});
 }
 
+/** @brief Proves string literals for native storage. */
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    return !value || value->type == LATTICE_STRING_CONSTANT;
+}
+
+/** @brief Emits the literal without encoding or terminator assumptions. */
+static c_generated_expression_t generate_c_code(const node_t *node,
+                                                c_generation_context_t *context) {
+    return c_string_literal(node, context, ((const static_string_t *)node)->element.value);
+}
+
 /** @brief Virtual table for static string expressions. */
 static node_vtbl_t static_string_vtbl = {
     .type = NODE_STATIC_STRING,
@@ -86,8 +100,8 @@ static node_vtbl_t static_string_vtbl = {
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
-    .can_generate_c_code = cannot_generate_c_code,
-    .generate_c_code = no_c_code,
+    .can_generate_c_code = can_generate_c_code,
+    .generate_c_code = generate_c_code,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_assign = no_bytecode_assignment,
     .generate_bytecode_deferred = no_deferred_bytecode,

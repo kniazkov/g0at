@@ -316,3 +316,5 @@ for_return
 for_infinite_return
 
 c_string_concat
+
+c_string_conversion

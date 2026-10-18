@@ -24,7 +24,7 @@ file(GLOB core_sources
   cli/*.c
 )
 # Build the native runtime separately; never depend on VM internals or its allocator.
-add_library(goat_native STATIC native/strings.c)
+add_library(goat_native STATIC native/strings.c native/str.c lib/number_format.c)
 set_target_properties(goat_native PROPERTIES
   OUTPUT_NAME goat_native PREFIX "lib" SUFFIX ".a"
   POSITION_INDEPENDENT_CODE ON INTERPROCEDURAL_OPTIMIZATION FALSE

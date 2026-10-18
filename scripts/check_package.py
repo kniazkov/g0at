@@ -58,6 +58,11 @@ def check(archive):
             expected="Привет, native strings! 😀")
         concat_fields = dict(line.split("=", 1) for line in identity_report.read_text().splitlines())
         assert concat_fields["succeeded"] == "1" and concat_fields["retries"] == "0", concat_fields
+        run("--native", "required", "--save-native", identity_report,
+            package / "examples/native_quadratic.goat",
+            expected="Нет корней\nОдин корень: 1.0\nДва корня: 1.0, 2.0")
+        fields = dict(line.split("=", 1) for line in identity_report.read_text().splitlines())
+        assert fields["succeeded"] == "3" and fields["retries"] == "0", fields
         source = work / "numeric.goat"
         shutil.copyfile(package / "examples/numeric.goat", source)
         run("--native", "off", source, env=isolated, expected="55")

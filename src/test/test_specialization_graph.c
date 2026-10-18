@@ -106,7 +106,7 @@ bool test_specialization_graph_boundaries() {
     analysis_event_query_t query = {.kind = ANALYSIS_FUNCTION_SUMMARY, .row = 1};
     const node_t *function = find_analysis_event(collector, NULL, &query)->node;
     ASSERT(node_has_flag(function, NODE_FLAG_PURE));
-    ASSERT(!node_has_flag(function, NODE_FLAG_C_COMPATIBLE));
+    ASSERT(node_has_flag(function, NODE_FLAG_C_COMPATIBLE));
     query.row = 3;
     const node_t *writer = find_analysis_event(collector, NULL, &query)->node;
     ASSERT(!node_has_flag(writer, NODE_FLAG_PURE));

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "number_format.h"
 #include "value.h"
 
 #include <stdarg.h>
@@ -95,13 +96,6 @@ string_value_t decode_utf8(const char *str);
 
 /** @brief Converts a string to its notation representation with escape sequences. */
 string_value_t string_to_string_notation(const wchar_t *prefix, const string_value_t str);
-
-/**
- * @brief Formats a double for display.
- * Uses 11 fractional digits for magnitudes in [1e-10, 1e10], trimming trailing zeros
- * but keeping one fractional digit; otherwise uses %g. Output is bounded by buffer_size.
- */
-void double_to_string(double value, char *buffer, size_t buffer_size);
 
 /**
  * @brief Formats text; release the result with FREE_STRING().

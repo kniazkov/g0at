@@ -7,6 +7,7 @@
 #include "builtins/registry.h"
 #include "c_arithmetic.h"
 #include "c_lowering.h"
+#include "c_strings.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
@@ -406,22 +407,23 @@ typedef struct c_native_entry_t {
 } c_native_entry_t;
 
 static const c_native_entry_t generators[] = {
-    {&builtin_abs, native_abs, NULL}, {&builtin_atan, native_atan, NULL},
-    {&builtin_acos, NULL, NULL},      {&builtin_asin, NULL, NULL},
-    {&builtin_cbrt, NULL, NULL},      {&builtin_ceil, NULL, NULL},
-    {&builtin_chr, native_chr, NULL}, {&builtin_cos, NULL, NULL},
-    {&builtin_cosh, NULL, NULL},      {&builtin_exp, NULL, NULL},
-    {&builtin_exp2, NULL, NULL},      {&builtin_expm1, NULL, NULL},
-    {&builtin_floor, NULL, NULL},     {&builtin_fmod, NULL, NULL},
-    {&builtin_hypot, NULL, NULL},     {&builtin_int, native_int, NULL},
-    {&builtin_log, NULL, NULL},       {&builtin_log10, NULL, NULL},
-    {&builtin_log1p, NULL, NULL},     {&builtin_log2, NULL, NULL},
-    {&builtin_max, NULL, L"fmax"},    {&builtin_min, NULL, L"fmin"},
-    {&builtin_ord, native_ord, NULL}, {&builtin_pow, NULL, NULL},
-    {&builtin_round, NULL, NULL},     {&builtin_sign, native_sign, NULL},
-    {&builtin_sin, NULL, NULL},       {&builtin_sinh, NULL, NULL},
-    {&builtin_sqrt, NULL, NULL},      {&builtin_tan, NULL, NULL},
-    {&builtin_tanh, NULL, NULL},      {&builtin_trunc, NULL, NULL}};
+    {&builtin_str, c_string_call, NULL}, {&builtin_abs, native_abs, NULL},
+    {&builtin_atan, native_atan, NULL},  {&builtin_acos, NULL, NULL},
+    {&builtin_asin, NULL, NULL},         {&builtin_cbrt, NULL, NULL},
+    {&builtin_ceil, NULL, NULL},         {&builtin_chr, native_chr, NULL},
+    {&builtin_cos, NULL, NULL},          {&builtin_cosh, NULL, NULL},
+    {&builtin_exp, NULL, NULL},          {&builtin_exp2, NULL, NULL},
+    {&builtin_expm1, NULL, NULL},        {&builtin_floor, NULL, NULL},
+    {&builtin_fmod, NULL, NULL},         {&builtin_hypot, NULL, NULL},
+    {&builtin_int, native_int, NULL},    {&builtin_log, NULL, NULL},
+    {&builtin_log10, NULL, NULL},        {&builtin_log1p, NULL, NULL},
+    {&builtin_log2, NULL, NULL},         {&builtin_max, NULL, L"fmax"},
+    {&builtin_min, NULL, L"fmin"},       {&builtin_ord, native_ord, NULL},
+    {&builtin_pow, NULL, NULL},          {&builtin_round, NULL, NULL},
+    {&builtin_sign, native_sign, NULL},  {&builtin_sin, NULL, NULL},
+    {&builtin_sinh, NULL, NULL},         {&builtin_sqrt, NULL, NULL},
+    {&builtin_tan, NULL, NULL},          {&builtin_tanh, NULL, NULL},
+    {&builtin_trunc, NULL, NULL}};
 
 static const c_native_entry_t *find_generator(const builtin_function_t *builtin) {
     for (size_t i = 0; i < sizeof(generators) / sizeof(*generators); i++) {
