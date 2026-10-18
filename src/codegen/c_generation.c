@@ -117,11 +117,13 @@ static c_generation_result_t generate_function(const function_summary_t *summary
                                       .module_definition = definition};
     if (c_generation_return_type(&context) != C_VALUE_INT64
         && c_generation_return_type(&context) != C_VALUE_DOUBLE
-        && c_generation_return_type(&context) != C_VALUE_CHAR)
+        && c_generation_return_type(&context) != C_VALUE_CHAR
+        && c_generation_return_type(&context) != C_VALUE_STRING)
         return (c_generation_result_t){.status = C_GENERATION_NOT_PROVEN, .failed_node = function};
     for (size_t i = 0; i < summary->parameter_count; i++) {
         c_value_type_t type = c_generation_parameter_type(&context, i);
-        if (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE && type != C_VALUE_CHAR)
+        if (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE && type != C_VALUE_CHAR
+            && type != C_VALUE_STRING)
             return (c_generation_result_t){.status = C_GENERATION_NOT_PROVEN,
                                            .failed_node = function};
     }

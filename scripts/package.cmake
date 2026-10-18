@@ -17,7 +17,8 @@ install(FILES "${package_root}/LICENSE.txt" "${package_root}/docs/package/README
 install(FILES "${package_root}/docs/native-runtime.md" "${package_root}/docs/native-memory.md"
   "${package_root}/docs/native-strings.md"
   DESTINATION docs CONFIGURATIONS Release)
-install(FILES "${package_root}/example/hello_world.goat" "${package_root}/docs/package/numeric.goat"
+install(FILES "${package_root}/example/hello_world.goat"
+  "${package_root}/example/native_string_identity.goat" "${package_root}/docs/package/numeric.goat"
   DESTINATION examples CONFIGURATIONS Release)
 
 execute_process(COMMAND git rev-parse --short=12 HEAD WORKING_DIRECTORY "${package_root}"

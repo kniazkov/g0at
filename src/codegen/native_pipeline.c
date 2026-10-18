@@ -27,7 +27,9 @@ static bool emitted(const c_module_output_t *output, const c_module_function_t *
 }
 
 static uint32_t tag(lattice_type_t type) {
-    return is_integer_lattice_type(type) ? GOAT_NATIVE_I64 : GOAT_NATIVE_F64;
+    return is_integer_lattice_type(type) ? GOAT_NATIVE_I64
+           : is_real_lattice_type(type)  ? GOAT_NATIVE_F64
+                                         : GOAT_NATIVE_STRING;
 }
 
 /** @brief Rejects an unrelated or incomplete compiler artifact before attaching any descriptor. */

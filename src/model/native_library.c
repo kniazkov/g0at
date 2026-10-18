@@ -35,8 +35,8 @@ char *copy_native_library_diagnostic(const char *text) {
     return copy;
 }
 
-static bool numeric(uint32_t type) {
-    return type == GOAT_NATIVE_I64 || type == GOAT_NATIVE_F64;
+static bool supported_type(uint32_t type) {
+    return type == GOAT_NATIVE_I64 || type == GOAT_NATIVE_F64 || type == GOAT_NATIVE_STRING;
 }
 
 /** @brief Validates a bounded UTF-8 binding name without replacement decoding. */
@@ -85,7 +85,7 @@ static const char *
 snapshot_entry(goat_native_entry_v2_t *copy, const goat_native_entry_v2_t *entry, size_t *budget) {
     if (!entry->invoke)
         return "missing adapter";
-    if (!numeric(entry->return_type))
+    if (!supported_type(entry->return_type))
         return "invalid return type";
     if (entry->flags & ~(uint32_t)GOAT_NATIVE_PURE)
         return "unknown flags";
@@ -106,7 +106,7 @@ snapshot_entry(goat_native_entry_v2_t *copy, const goat_native_entry_v2_t *entry
         return "metadata budget exceeded";
     *budget -= bytes + name_size;
     for (uint32_t i = 0; i < entry->parameter_count; i++)
-        if (!numeric(entry->parameter_types[i]))
+        if (!supported_type(entry->parameter_types[i]))
             return "invalid parameter type";
     copy->specialization_id = entry->specialization_id;
     copy->function_id = entry->function_id;

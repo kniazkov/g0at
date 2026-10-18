@@ -23,6 +23,7 @@ const wchar_t *c_type_name(c_value_type_t type) {
            : type == C_VALUE_DOUBLE ? L"double"
            : type == C_VALUE_BOOL   ? L"bool"
            : type == C_VALUE_CHAR   ? L"uint32_t"
+           : type == C_VALUE_STRING ? L"goat_native_string_view_v2_t"
                                     : NULL;
 }
 

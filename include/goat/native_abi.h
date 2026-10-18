@@ -24,7 +24,8 @@ enum {
     GOAT_NATIVE_ABI_VERSION = 2,
     GOAT_NATIVE_INVALID = 0,
     GOAT_NATIVE_I64 = 1,
-    GOAT_NATIVE_F64 = 2
+    GOAT_NATIVE_F64 = 2,
+    GOAT_NATIVE_STRING = 3
 };
 
 enum {
@@ -81,6 +82,13 @@ typedef struct goat_native_value_v2_t {
     union {
         int64_t integer;
         double real;
+        /** @brief Borrowed descriptor and code units, valid until the outer call ends.
+         * NULL descriptors are invalid; an empty view may have NULL data. Both descriptor
+         * and payload can belong to an argument or the invocation context. The host copies
+         * results before releasing arguments or bulk-clearing context memory. Using a
+         * pointer preserves the existing numeric value layout on supported platforms.
+         */
+        const goat_native_string_view_v2_t *string;
     } value;
 } goat_native_value_v2_t;
 
