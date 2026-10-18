@@ -23,6 +23,10 @@ string_value_t c_capture_operand(source_builder_t *prelude,
         add_source(prelude, line->indent, L"%s", line->text.data);
     }
     string_value_t name = format_string(L"g_t%zu", context->temporary_count++);
+    if (type == C_VALUE_STRING) {
+        add_source(prelude, 0, L"%s %s = %s;", c_type_name(type), name.data, operand->value.data);
+        return name;
+    }
     add_source(prelude,
                0,
                L"%s%s %s = (%s)(%s);",
@@ -47,6 +51,32 @@ c_binary_arithmetic(const node_t *node, c_generation_context_t *context, wchar_t
     if (!right.success) {
         destroy_c_expression(&left);
         return right;
+    }
+    if (operation == L'+' && left.type == C_VALUE_STRING && right.type == C_VALUE_STRING
+        && context->module_definition
+        && c_generation_expression_type(context, node) == C_VALUE_STRING) {
+        source_builder_t *prelude = create_source_builder();
+        string_value_t a = c_capture_operand(prelude, context, &left, C_VALUE_STRING);
+        string_value_t b = c_capture_operand(prelude, context, &right, C_VALUE_STRING);
+        string_value_t buffer = format_string(L"g_t%zu", context->temporary_count++);
+        add_source(prelude, 0, L"goat_native_string_buffer_v2_t %s = {0};", buffer.data);
+        add_source(prelude,
+                   0,
+                   L"if (goat_native_string_concat(g_context, %s, %s, &%s) != GOAT_NATIVE_OK) "
+                   L"longjmp(g_guard->recovery, 1);",
+                   a.data,
+                   b.data,
+                   buffer.data);
+        string_value_t value = format_string(L"goat_native_string_view(%s)", buffer.data);
+        FREE_STRING(a);
+        FREE_STRING(b);
+        FREE_STRING(buffer);
+        destroy_c_expression(&left);
+        destroy_c_expression(&right);
+        return (c_generated_expression_t){.success = true,
+                                          .type = C_VALUE_STRING,
+                                          .value = value,
+                                          .prelude = prelude};
     }
     c_value_type_t type =
         left.type == C_VALUE_INT64 && right.type == C_VALUE_INT64 ? C_VALUE_INT64 : C_VALUE_DOUBLE;

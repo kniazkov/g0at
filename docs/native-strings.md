@@ -107,7 +107,18 @@ UTF-16 единицы; на обычном Linux — одну 32-битную е
 сохранённой `.gbin`/DLL/SO пары без исходника и компилятора. Адаптер проверяет
 тег, дескриптор, размер и отсутствие NULL-данных при ненулевой длине.
 
-Это первый этап передачи строк. Вызовы строковых методов и создание строковых
+В `example/native_string_concat.goat` чистая функция принимает две строки и
+возвращает `left + right`; `println` вызывается уже после возврата в VM.
+Генератор вызывает `goat_native_string_concat` из статической библиотеки,
+вычисляя операнды слева направо. Буфер выделяется через контекст интерпретатора,
+результат копируется в Goat до очистки контекста. Поддерживаются цепочки
+конкатенаций и вложенные нативные вызовы; смешение строки и числа пока не поддерживается.
+
+```sh
+./goat --native required --save-native concat.report example/native_string_concat.goat
+```
+
+ Вызовы строковых методов и создание строковых
 литералов внутри генерируемых функций пока не реализованы в генераторе C;
 готовая библиотека строковых операций остаётся доступна из C напрямую.
 
@@ -164,8 +175,14 @@ release, making aliased results safe. Bounds/descriptor checks precede native en
 
 Run the example above with `--native required`. Tests require exact successful-call
 counts with no retries, cover Unicode/NUL/empty strings, argument/result lifetimes,
-nested native calls and saved programs without source or compiler. String-method
-calls and literals inside generated functions are still outside this first step.
+nested native calls and saved programs without source or compiler.
+`example/native_string_concat.goat` adds two string parameters inside a pure native
+function, then prints the returned result in the VM. Generated code calls the linked
+`goat_native_string_concat` implementation, evaluates operands left to right, and
+allocates through the host context. Tests also cover chained concatenation and
+context-owned result lifetime. Mixed string/numeric addition is not supported.
+String-method
+calls and literals inside generated functions are still unsupported.
 
 The differential test builds an independent shared module, invokes it through host
 callbacks, compares all methods with unoptimized VM execution, and checks empty/embedded

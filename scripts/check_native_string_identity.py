@@ -87,7 +87,33 @@ println(result == "left" + chr(0) + "right😀");
                       'const forward=func(s){return identity(s);}; '
                       'println(forward("nested"));', encoding="utf-8")
     assert required(nested, 1, bound=2) == b"nested\n"
-    print("Native string identity: required dispatch, lifetime, Unicode/NUL/empty and saved execution OK")
+    # Concatenation allocates through the host context; the VM must copy its result.
+    concat = work / "concat.goat"
+    shutil.copyfile(ROOT / "example/native_string_concat.goat", concat)
+    assert required(concat, 1) == expected
+    generated = run("--print-c", concat).decode()
+    assert "goat_native_string_concat(g_context," in generated
+    assert "GOAT_NATIVE_PURE" in generated
+    concat.write_text('''const concatenate=func(a,b){return a+b;};
+const chain=func(a,b){var c=a+b; return concatenate(c,a)+b;};
+var a="left"+chr(0); var b="😀right";
+var result=concatenate(a,b); a="changed"; b="changed";
+println(result=="left"+chr(0)+"😀right");
+println(concatenate("", "")=="");
+println(concatenate("", "right")=="right");
+println(concatenate("left", "")=="left");
+println(chain("a", "b")=="abab");
+for(var i=0;i<100;i=i+1) {
+    if(concatenate("x"+chr(0), "y")!="x"+chr(0)+"y") throw "mismatch";
+}
+''', encoding="utf-8")
+    reference = b"true\n" * 5
+    assert run("--native", "off", concat) == reference
+    assert required(concat, 105, bound=2) == reference
+    assert run("--compile", "--native", "required", concat) == b""
+    concat.unlink()
+    assert required(concat.with_suffix(".gbin"), 105, True, environment, bound=2) == reference
+    print("Native string identity/concatenation: required dispatch, lifetime, Unicode/NUL/empty and saved execution OK")
 
 
 if __name__ == "__main__":
