@@ -4,6 +4,21 @@
     "check": "checks/runner.py"
   },
   {
+    "name": "add_specializations",
+    "calls": 14,
+    "bound": 1,
+    "generated": {
+      "__attribute__((noinline)) int64_t g_f1_i_i_(const goat_native_context_v2_t *g_context, int64_t g_p0, int64_t g_p1) {": 1,
+      "__attribute__((noinline)) double g_f1_i_r_(const goat_native_context_v2_t *g_context, int64_t g_p0, double g_p1) {": 1,
+      "__attribute__((noinline)) double g_f1_r_i_(const goat_native_context_v2_t *g_context, double g_p0, int64_t g_p1) {": 1,
+      "__attribute__((noinline)) double g_f1_r_r_(const goat_native_context_v2_t *g_context, double g_p0, double g_p1) {": 1,
+      "__attribute__((noinline)) goat_native_string_view_v2_t g_f1_s_s_(const goat_native_context_v2_t *g_context, goat_native_string_view_v2_t g_p0, goat_native_string_view_v2_t g_p1) {": 1,
+      "__attribute__((noinline)) goat_native_string_view_v2_t g_f1_s_i_(const goat_native_context_v2_t *g_context, goat_native_string_view_v2_t g_p0, int64_t g_p1) {": 1,
+      "__attribute__((noinline)) goat_native_string_view_v2_t g_f1_s_r_(const goat_native_context_v2_t *g_context, goat_native_string_view_v2_t g_p0, double g_p1) {": 1,
+      "GOAT_NATIVE_PURE": 7
+    }
+  },
+  {
     "name": "string_identity",
     "calls": 1,
     "example": "example/native_string_identity.goat",

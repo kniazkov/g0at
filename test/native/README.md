@@ -16,7 +16,9 @@ python3 scripts/check_native.py build/goat "build/native functional" --only quad
 
 `calls` — число входов из VM в нативный адаптер; вложенные вызовы внутри нативного
 кода не увеличивают этот счётчик. Оно обязательно положительное. Опциональное
-`bound` задаёт точное число привязанных адаптеров.
+`bound` задаёт точное число привязанных Goat-функций, а не специализаций.
+Несколько сигнатур одной функции дают `bound=1`; отдельные реализации
+проверяются через `generated` (см. `add_specializations` в списке).
 
 Для каждого обычного сценария общий запуск:
 
@@ -57,7 +59,9 @@ Each program runs first on the unoptimized VM and then with `--native required`.
 The runner compares output bytes (normalizing only CRLF), rejects stderr/failures,
 and verifies actual adapter entries with zero retries. It also compares saved
 native execution without the source or compiler against the same VM result.
-Optional `bound`, `generated`, `output_contains`, `example` and `driver` fields
+`bound` counts bound Goat functions, not their specializations: multiple signatures
+of one function still give `bound=1`. The `add_specializations` case verifies each
+implementation through `generated`. Optional `bound`, `generated`, `output_contains`, `example` and `driver` fields
 preserve signature, generated-code, example consistency and adapter boundary checks.
 
 Specialized `check` entries run the differential arithmetic/libm/runtime suites
