@@ -7,6 +7,7 @@
 #include "builtins/registry.h"
 #include "c_arithmetic.h"
 #include "c_lowering.h"
+#include "c_string_methods.h"
 #include "c_strings.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
@@ -434,12 +435,14 @@ static const c_native_entry_t *find_generator(const builtin_function_t *builtin)
 }
 
 bool c_native_builtin_supported(const builtin_function_t *builtin) {
-    return builtin && find_generator(builtin);
+    return builtin && (find_generator(builtin) || is_native_string_method(builtin));
 }
 
 c_generated_expression_t c_native_call(const node_t *node,
                                        c_generation_context_t *context,
                                        const builtin_function_t *builtin) {
+    if (is_native_string_method(builtin))
+        return c_string_method_call(node, context, builtin);
     const c_native_entry_t *entry = find_generator(builtin);
     if (!entry) {
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);

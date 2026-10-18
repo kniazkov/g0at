@@ -15,6 +15,7 @@
 #include "analysis/native_builtin.h"
 #include "analysis/reachability.h"
 #include "codegen/c_call.h"
+#include "codegen/c_string_methods.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -81,7 +82,24 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
         args[i] = calculate_expression(expr->args[i], state, arena);
     if (state->control_flow != FLOW_NORMAL)
         return make_bottom_element();
-    const lattice_element_t *function = calculate_expression(expr->func_object, state, arena);
+    const lattice_element_t *function;
+    if (expr->func_object->base.vtbl->type == NODE_MEMBER_ACCESS) {
+        const member_access_t *member = (const member_access_t *)expr->func_object;
+        const lattice_element_t *receiver = calculate_expression(member->object, state, arena);
+        if (state->control_flow != FLOW_NORMAL)
+            return make_bottom_element();
+        const builtin_function_t *method = find_native_string_method(member->name);
+        if (method
+            && (receiver->type == LATTICE_STRING || receiver->type == LATTICE_STRING_CONSTANT)) {
+            for (size_t i = expr->args_count; i > 0; i--)
+                args[i] = args[i - 1];
+            args[0] = receiver;
+            return method->interpret(state, args, expr->args_count + 1);
+        }
+        function = make_top_element();
+    } else {
+        function = calculate_expression(expr->func_object, state, arena);
+    }
     if (state->control_flow != FLOW_NORMAL)
         return make_bottom_element();
     if (state->c_expressions && state->c_expressions->graph)

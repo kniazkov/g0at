@@ -2,6 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Monotone effect propagation over known call dependencies.
  */
+#include "codegen/c_string_methods.h"
 #include "function_call_graph.h"
 #include "function_effects.h"
 #include "graph/declarations.h"
@@ -32,7 +33,9 @@ static uint32_t called_effects(const function_call_graph_node_t *node) {
     if (summary->has_calls && !summary->effect_calls)
         effects |= FUNCTION_EFFECT_UNKNOWN;
     for (const function_effect_call_t *call = summary->effect_calls; call; call = call->next) {
-        if (resolve_native_builtin(get_node_child(call->site, 0)) != NULL)
+        c_expression_context_t proof = {.head = summary->c_expressions};
+        if (resolve_native_builtin(get_node_child(call->site, 0)) != NULL
+            || resolve_native_string_method(call->site, &proof) != NULL)
             continue;
         bool found = false;
         for (const function_call_edge_t *edge = node->edges; edge; edge = edge->next) {

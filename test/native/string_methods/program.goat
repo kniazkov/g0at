@@ -1,0 +1,64 @@
+// Keep every operation dependent on parameters: constant folding must not replace it.
+const methods = func(s, needle, n) {
+    return "%0|%1|%2|%3|%4|%5|%6|%7|%8|%9|%10|%11|%12|%13".format(
+        s.length, s.isEmpty(), s.isBlank(), s.contains(needle), s.indexOf(needle),
+        s.lastIndexOf(needle), s.startsWith(needle), s.endsWith(needle), s.trim(),
+        s.toUpperCase(), s.toLowerCase(), s.repeat(n), s.replace(needle, "!"),
+        s.format(42, 2.5, true, 'Q', "текст"));
+};
+const plain = func(s, needle, n) {
+    return format("%0|%1|%2|%3|%4|%5|%6|%7|%8|%9|%10|%11|%12|%13",
+        s.length, isEmpty(s), isBlank(s), contains(s, needle), indexOf(s, needle),
+        lastIndexOf(s, needle), startsWith(s, needle), endsWith(s, needle), trim(s),
+        toUpperCase(s), toLowerCase(s), repeat(s, n), replace(s, needle, "!"),
+        format(s, 42, 2.5, true, 'Q', "текст"));
+};
+const slices = func(s, begin, end) {
+    const ch = s.charAt(begin);
+    return "%0/%1/%2/%3/%4/%5/%6/%7/%8/%9/%10/%11".format(
+        s.substring(begin, end), substring(s, begin, end), s.substring(begin), substring(s, begin),
+        ch, charAt(s, begin), s.indexOf(ch), lastIndexOf(s, ch), s.startsWith(ch), endsWith(s, ch),
+        s.replace(ch, '!'), replace(s, ch, '!'));
+};
+const chain = func(s) {
+    var i = 0;
+    // The outer argument executes before its receiver, just like CALLM.
+    const result = s.substring(i++, i++ + 2).substring(i++);
+    return result.trim().toUpperCase().replace('C', 'X').repeat(2) + ":" + i;
+};
+const extras = func(s) {
+    var i = 0;
+    const t = s.trim(i++);
+    const n = indexOf(s, "a", i++);
+    return t + ":" + n + ":" + i + ":" + s.format() + ":" + format(s);
+};
+const formatted = func(s, n) {
+    return s.format(n, n + 0.5, n > 0, chr(65), "ok")
+        + "/" + format(s, n, n + 0.5, n > 0, chr(65), "ok");
+};
+const receiverOrder = func(s) {
+    var t = s;
+    return t.trim(t = "changed");
+};
+const length = func(s) { return s.trim().length; };
+const alias = trim;
+const aliased = func(s) { return alias(s); };
+println(methods(" ababa ", "ab", 2));
+println(plain(" ababa ", "ab", 2));
+println(methods("", "", 0));
+println(plain("", "", 0));
+println(methods(" \t\n", "missing", 1));
+println(plain(" \t\n", "missing", 1));
+println(methods("Aa" + chr(0) + "Bb", str(chr(0)), 1));
+println(plain("Aa" + chr(0) + "Bb", str(chr(0)), 1));
+println(methods("ааа", "аа", 1));
+println(plain("ааа", "аа", 1));
+println(slices("ababa", 0, 3));
+println(slices("a" + chr(0) + "bc", 1, 1));
+println(chain("abcdef"));
+println(extras(" ab "));
+println(formatted("%0|%1|%2|%3|%4|%5|%999999999999999999999999999|%%0", 7));
+println(formatted("literal", -3));
+println(receiverOrder("original"));
+println(length(" abc "));
+println(aliased(" alias "));

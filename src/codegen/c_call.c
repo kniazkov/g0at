@@ -9,6 +9,7 @@
 #include "c_arithmetic.h"
 #include "c_lowering.h"
 #include "c_native.h"
+#include "c_string_methods.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
@@ -120,6 +121,9 @@ static const c_generation_callee_t *resolve(const node_t *node, c_generation_con
 c_generated_expression_t c_call(const node_t *node, c_generation_context_t *context) {
     const builtin_function_t *builtin =
         resolve_native_builtin(replacement_original(get_node_child(node, 0)));
+    c_expression_context_t proof = {.head = context->summary->c_expressions};
+    if (!builtin)
+        builtin = resolve_native_string_method(node, &proof);
     if (builtin)
         return c_native_call(node, context, builtin);
     const c_generation_callee_t *callee = resolve(node, context);

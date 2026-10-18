@@ -11,7 +11,8 @@ typedef struct c_expression_proof_t {
     struct c_expression_proof_t *next;
     const node_t *node;
     c_value_type_t type;
-    bool discardable;                  /**< Total scalar evaluation with no writes or calls. */
+    c_value_type_t value_type; /**< Generic value domain, even when C lowering is unavailable. */
+    bool discardable;          /**< Total scalar evaluation with no writes or calls. */
     const lattice_element_t *constant; /**< Exact across every generic visit, or NULL. */
 } c_expression_proof_t;
 
