@@ -1,0 +1,13 @@
+const identity = func(value) { return value; };
+var input = "left" + chr(0) + "right😀";
+var result = identity(input);
+input = "replaced";
+println(result == "left" + chr(0) + "right😀");
+println(ord(result.charAt(4)));
+println(identity("") == "");
+println(identity("temporary" + chr(0) + "tail") == "temporary" + chr(0) + "tail");
+for (var i = 0; i < 100; i = i + 1) {
+    var temporary = identity("prefix" + chr(0) + "suffix");
+    if (temporary != "prefix" + chr(0) + "suffix") throw "mismatch";
+}
+println(result == "left" + chr(0) + "right😀");

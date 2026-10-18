@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def literal(text):
@@ -144,10 +144,10 @@ GOAT_NATIVE_API void GOAT_NATIVE_CALL run_strings(const goat_native_context_v2_t
                             "-o", str(obj)], check=True)
             objects.append(str(obj))
         subprocess.run([os.environ.get("AR", "ar"), "rcs", str(runtime), *objects], check=True)
-    subprocess.run([*common, *shared, "-I" + str(ROOT / "test/functional/native_strings"),
+    subprocess.run([*common, *shared, "-I" + str(ROOT / "test/native/runtime_strings"),
                     str(module), str(runtime), "-o", str(library)], check=True)
     subprocess.run([*common, "-DMEMORY_DEBUG", "-I" + str(ROOT / "src"),
-                    str(ROOT / "test/functional/native_strings/host.c"),
+                    str(ROOT / "test/native/runtime_strings/host.c"),
                     str(ROOT / "src/model/native_services.c"), str(ROOT / "src/lib/allocate.c"),
                     "-o", str(host), *([] if os.name == "nt" else ["-ldl"])], check=True)
     native = subprocess.run([str(host), str(library)], check=True, capture_output=True, timeout=90)
@@ -160,14 +160,14 @@ GOAT_NATIVE_API void GOAT_NATIVE_CALL run_strings(const goat_native_context_v2_t
         # Exercise the interpreter's real compiler backend, which stages and links
         # its embedded archive rather than the build-directory copy above.
         automatic_source = work / "automatic.c"
-        checks = (ROOT / "test/functional/native_strings/checks.h").read_text(encoding="utf-8")
+        checks = (ROOT / "test/native/runtime_strings/checks.h").read_text(encoding="utf-8")
         automatic_source.write_text(module.read_text(encoding="utf-8")
                                     .replace('"goat/native_strings.h"', '"native_strings.h"')
                                     .replace('#include "checks.h"', checks.replace('#pragma once', '')),
                                     encoding="utf-8")
         automatic_host = work / "compiler-host.exe"
         subprocess.run([*common, "-DTEST_NATIVE_COMPILER", "-I" + str(ROOT / "src"),
-                        str(ROOT / "test/functional/native_strings/host.c"),
+                        str(ROOT / "test/native/runtime_strings/host.c"),
                         str(interpreter.parent / "libcore.a"), "-o", str(automatic_host),
                         "-lpthread", "-lm", *( ["-lbcrypt"] if os.name == "nt" else ["-ldl"])],
                        check=True)

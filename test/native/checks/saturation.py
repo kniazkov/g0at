@@ -23,7 +23,7 @@ def literal(value):
 
 def main():
     goat, output = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()
-    root = Path(__file__).resolve().parent.parent
+    root = Path(__file__).resolve().parents[3]
     output.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, GOAT_LANGUAGE='en')
 

@@ -1,0 +1,20 @@
+const concatenate = func(a, b) {
+    return a + b;
+};
+const chain = func(a, b) {
+    var c = a + b;
+    return concatenate(c, a) + b;
+};
+var a = "left" + chr(0);
+var b = "😀right";
+var result = concatenate(a, b);
+a = "changed";
+b = "changed";
+println(result == "left" + chr(0) + "😀right");
+println(concatenate("", "") == "");
+println(concatenate("", "right") == "right");
+println(concatenate("left", "") == "left");
+println(chain("a", "b") == "abab");
+for (var i = 0; i < 100; i = i + 1) {
+    if (concatenate("x" + chr(0), "y") != "x" + chr(0) + "y") throw "mismatch";
+}

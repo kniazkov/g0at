@@ -1,0 +1,7 @@
+const identity = func(value) {
+    return value;
+};
+
+const original = "Привет, native strings! 😀";
+const returned = identity(original);
+println(returned);
