@@ -22,7 +22,9 @@
 static bool can_generate_c_code(const node_t *node,
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context) {
-    return c_numeric_operands(node, context);
+    return c_numeric_operands(node, context)
+           || (c_expression_type(context, get_node_child(node, 0)) == C_VALUE_STRING
+               && c_expression_type(context, get_node_child(node, 1)) == C_VALUE_STRING);
 }
 
 /** @brief An addition operation expression node. */

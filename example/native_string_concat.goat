@@ -1,0 +1,6 @@
+const concatenate = func(left, right) {
+    return left + right;
+};
+
+const result = concatenate("Привет, ", "native strings! 😀");
+println(result);

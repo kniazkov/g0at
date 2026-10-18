@@ -1,0 +1,2 @@
+const concatenate=func(a,b){return a+b;}
+concatenate("a", "b");

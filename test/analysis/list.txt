@@ -314,3 +314,5 @@ for_widening
 for_type_change
 for_return
 for_infinite_return
+
+c_string_concat
