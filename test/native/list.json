@@ -1,0 +1,79 @@
+[
+  {
+    "name": "runner",
+    "check": "checks/runner.py"
+  },
+  {
+    "name": "string_identity",
+    "calls": 1,
+    "example": "example/native_string_identity.goat",
+    "driver": "driver.c",
+    "generated": {
+      "GOAT_NATIVE_STRING": 1,
+      "GOAT_NATIVE_PURE": 1,
+      "goat_native_string_view_v2_t g_f1_s_": 1,
+      "return g_p0;": 1
+    },
+    "bound": 1
+  },
+  {
+    "name": "string_lifetime",
+    "calls": 103,
+    "bound": 1
+  },
+  {
+    "name": "string_nested",
+    "calls": 1,
+    "bound": 2
+  },
+  {
+    "name": "string_concat",
+    "calls": 1,
+    "example": "example/native_string_concat.goat",
+    "generated": {
+      "goat_native_string_concat(g_context,": 1,
+      "GOAT_NATIVE_PURE": 1
+    },
+    "bound": 1
+  },
+  {
+    "name": "string_chain",
+    "calls": 105,
+    "bound": 2
+  },
+  {
+    "name": "quadratic",
+    "calls": 3,
+    "example": "example/native_quadratic.goat",
+    "generated": {
+      "goat_native_str_f64(g_context,": 1,
+      "goat_native_string_concat(g_context,": 4,
+      "GOAT_NATIVE_PURE": 1
+    },
+    "bound": 1
+  },
+  {
+    "name": "string_conversions",
+    "calls": 16,
+    "output_contains": [
+      "2,3,3,4\n"
+    ]
+  },
+  {
+    "name": "quadratic_repeated",
+    "calls": 103,
+    "bound": 1
+  },
+  {
+    "name": "saturation",
+    "check": "checks/saturation.py"
+  },
+  {
+    "name": "libm",
+    "check": "checks/libm.py"
+  },
+  {
+    "name": "runtime_strings",
+    "check": "checks/runtime_strings.py"
+  }
+]

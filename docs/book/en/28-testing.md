@@ -109,4 +109,13 @@ Style checking requires clang-format 18 and processes tracked `.c`/`.h` files. L
 
 For a regression (a previously fixed error returning), a small case with an observable difference is useful: a boundary number, a missing effect, an incorrect retry, or a corrupt field. A check merely repeating the implementation's algorithm can repeat its bug. Build composition is in [CMakeLists.txt](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/CMakeLists.txt); formatting rules are in [check_style.sh](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/scripts/check_style.sh) and [Doxyfile.check](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/scripts/Doxyfile.check).
 
-The saturation contract is checked by `scripts/check_saturating_integers.py`. Exact Python integers provide independent expected values for 1,196 operand pairs. Both compiler intrinsics and portable C helpers are tested, together with VM execution, optimization, native dispatch, saved bytecode, literal bounds and operation order.
+The saturation contract is checked by `test/native/checks/saturation.py`. Exact Python integers provide independent expected values for 1,196 operand pairs. Both compiler intrinsics and portable C helpers are tested, together with VM execution, optimization, native dispatch, saved bytecode, literal bounds and operation order.
+
+### Native functional scenarios
+
+Scenarios live in `test/native`, registered in `test/native/list.json`.
+Run `python3 scripts/check_native.py build/goat "build/native functional"`.
+Each scenario compares unoptimized VM output with required-native execution and a
+saved native module, verifying actual adapter entries and zero retries. Add a
+`program.goat` and a registry entry to extend coverage without editing CI.
+See `test/native/README.md` for the registry format and diagnostic files.

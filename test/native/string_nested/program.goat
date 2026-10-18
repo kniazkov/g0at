@@ -1,0 +1,7 @@
+const identity = func(s) {
+    return s;
+};
+const forward = func(s) {
+    return identity(s);
+};
+println(forward("nested"));
