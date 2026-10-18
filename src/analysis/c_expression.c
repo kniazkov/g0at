@@ -98,12 +98,15 @@ void record_c_expression(c_expression_context_t *context,
         if (type == C_VALUE_UNSUPPORTED)
             type = C_VALUE_UNKNOWN;
     }
+    c_value_type_t value_type = classify_c_value_type(value->type);
     bool total = type != C_VALUE_UNKNOWN && discardable(node, context);
     const lattice_element_t *constant = total && c_constants_equal(value, value) ? value : NULL;
     for (c_expression_proof_t *proof = context->head; proof; proof = proof->next) {
         if (proof->node == node) {
             if (proof->type != type)
                 proof->type = C_VALUE_UNKNOWN;
+            if (proof->value_type != value_type)
+                proof->value_type = C_VALUE_UNKNOWN;
             proof->discardable &= total;
             if (!c_constants_equal(proof->constant, constant))
                 proof->constant = NULL;
@@ -113,6 +116,7 @@ void record_c_expression(c_expression_context_t *context,
     c_expression_proof_t *proof = alloc_zeroed_from_arena(context->arena, sizeof(*proof));
     proof->node = node;
     proof->type = type;
+    proof->value_type = value_type;
     proof->discardable = total;
     proof->constant = constant;
     if (context->tail)

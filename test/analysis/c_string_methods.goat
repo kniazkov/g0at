@@ -1,0 +1,14 @@
+const length = func(s) { return s.trim().length; };
+length(" ab ");
+const character = func(s, n) { const ch = s.charAt(n); return str(ch); };
+character("abc", 1);
+const predicate = func(s) { return str(s.isEmpty()); };
+predicate("");
+const wrong = func(s, n) { if (n > 0) s = 1; return s.trim(); };
+wrong("abc", 0);
+const other = func(n) { return n.trim(); };
+other(42);
+const missing = func(s) { return s.substring(); };
+const wrongNeedle = func(s, n) { return str(s.contains(n)); };
+wrongNeedle("abc", 1);
+missing("abc");

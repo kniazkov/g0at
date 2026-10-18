@@ -318,3 +318,5 @@ for_infinite_return
 c_string_concat
 
 c_string_conversion
+
+c_string_methods

@@ -131,8 +131,22 @@ UTF-16 единицы; на обычном Linux — одну 32-битную е
 ./goat --native required --save-native concat.report example/native_string_concat.goat
 ```
 
- Вызовы строковых методов пока не реализованы в генераторе C;
-готовая библиотека строковых операций остаётся доступна из C напрямую.
+Генератор C связывает все перечисленные строковые методы с библиотекой: `isEmpty`,
+`isBlank`, `charAt`, `substring`, `contains`, `indexOf`, `lastIndexOf`, `startsWith`,
+`endsWith`, `trim`, `toUpperCase`, `toLowerCase`, `repeat`, `replace`, `format`.
+Поддерживаются `s.method(...)`, обычные вызовы `method(s, ...)`, неизменяемые
+псевдонимы встроенных функций и свойство `s.length`. Тип получателя должен быть
+доказан как строковый; одноимённые методы других объектов не подменяются.
+Аргументы метода вычисляются перед получателем, как в VM, включая лишние аргументы.
+`format` использует нативный `str` для целых, вещественных, булевых значений и символов.
+Ошибки индекса или размера возвращают управление VM для штатного исключения;
+временная память освобождается контекстом вызова.
+
+Внешний ABI по-прежнему принимает и возвращает целые, вещественные и строки.
+Булевы результаты методов и результат `charAt` доступны внутри нативного тела;
+для возврата такого значения через существующий ABI можно использовать `str`.
+Тесты `string_methods` и `string_method_errors` входят в общий нативный список и
+сравнивают исходный и сохранённый нативный запуск с VM.
 
 ## English
 
@@ -196,7 +210,18 @@ context-owned result lifetime. A non-string right operand (integer, real, boolea
 character) is converted by the native str implementation, also used for explicit
 str calls and immutable aliases. Real formatting shares its source with the VM.
 String literals use static wchar_t arrays. Objects and other values without a native
-representation remain in the VM; string-method calls are still unsupported.
+representation remain in the VM.
+
+All string methods listed above now lower to the linked runtime, both as direct
+`s.method(...)` calls and as builtin `method(s, ...)` calls (including immutable
+aliases). The `s.length` property is also supported. Method resolution requires a
+proven immutable string receiver. Explicit arguments execute before the receiver,
+including ignored extra arguments, matching CALLM. Invalid indices/sizes trigger
+VM retry with ordinary language exceptions and invocation-context cleanup.
+The external ABI still carries integer, real and string values; boolean/character
+method results are usable within native bodies and may be returned through `str`.
+The shared native suite covers every method, chaining, argument order, embedded
+zeros, character operands, formatting, shadowing, invalid arguments and saved modules.
 
 `example/native_quadratic.goat` takes three real coefficients with a nonzero leading
 coefficient, computes roots natively and returns a string printed by the VM. It uses

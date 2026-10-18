@@ -1,0 +1,7 @@
+one c-support 1 0 string supported
+one c-blockers 1 0 string none
+one c-support 3 0 string,integer supported
+one c-support 5 0 string supported
+one purity 7 0 string,integer unknown
+one purity 9 0 integer unknown
+one c-support 12 0 string,integer unknown

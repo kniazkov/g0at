@@ -445,9 +445,10 @@ compilation_error_t *analyze(node_t *root_node,
     analyze_function_return_types(root_node);
     solve_function_recursion(calls, 64);
     analyze_function_direct_effects(root_node);
+    /* Generic receiver domains must be known before proving string-method purity. */
+    analyze_function_c_expressions(root_node);
     propagate_function_effects(calls, 64);
     analyze_function_c_contracts(root_node);
-    analyze_function_c_expressions(root_node);
     analyze_function_c_bodies(calls, 64);
     mark_unreachable_code(root_node, memory->graph, collector);
     classify_node_properties(root_node, collector);

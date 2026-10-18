@@ -6,6 +6,7 @@
 
 #include "abstract_state.h"
 #include "builtins/registry.h"
+#include "codegen/c_string_methods.h"
 #include "function_return.h"
 #include "graph/expression.h"
 #include "graph/variable.h"
@@ -43,7 +44,7 @@ bool c_local_binding(const c_expression_context_t *context,
                      c_value_type_t type) {
     if (!context || !context->graph || !declaration || declaration == get_builtin_declarator()
         || (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE && type != C_VALUE_BOOL
-            && type != C_VALUE_STRING))
+            && type != C_VALUE_STRING && type != C_VALUE_CHAR))
         return false;
     const node_t *owner = declaration->base.parent;
     while (owner && owner->vtbl->type != NODE_FUNCTION_OBJECT)
@@ -110,6 +111,11 @@ const lattice_element_t *interpret_c_call(const node_t *site,
 bool c_call_supported(const node_t *site, const c_expression_context_t *context) {
     if (!context || !context->graph)
         return false;
+    const builtin_function_t *method = resolve_native_string_method(site, context);
+    if (!method)
+        method = resolve_native_builtin(get_node_child(site, 0));
+    if (is_native_string_method(method))
+        return c_string_method_supported(site, method, context);
     bool found = false;
     if (get_node_child_count(site) >= 2) {
         const builtin_function_t *builtin = resolve_native_builtin(get_node_child(site, 0));

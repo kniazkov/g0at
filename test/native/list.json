@@ -19,6 +19,37 @@
     }
   },
   {
+    "name": "string_methods",
+    "calls": 19,
+    "bound": 9,
+    "generated": {
+      "goat_native_string_length(": 1,
+      "goat_native_string_is_empty(": 1,
+      "goat_native_string_is_blank(": 1,
+      "goat_native_string_char_at(": 1,
+      "goat_native_string_substring(": 1,
+      "goat_native_string_contains(": 1,
+      "goat_native_string_index_of(": 1,
+      "goat_native_string_last_index_of(": 1,
+      "goat_native_string_starts_with(": 1,
+      "goat_native_string_ends_with(": 1,
+      "goat_native_string_trim(": 1,
+      "goat_native_string_to_upper_case(": 1,
+      "goat_native_string_to_lower_case(": 1,
+      "goat_native_string_repeat(": 1,
+      "goat_native_string_replace(": 1,
+      "goat_native_string_format(": 1
+    },
+    "output_contains": [
+      "BXDBXD:3\n",
+      "changed\n3\nalias\n"
+    ]
+  },
+  {
+    "name": "string_method_errors",
+    "check": "checks/string_method_errors.py"
+  },
+  {
     "name": "string_identity",
     "calls": 1,
     "example": "example/native_string_identity.goat",

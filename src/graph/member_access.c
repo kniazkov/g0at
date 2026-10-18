@@ -6,6 +6,8 @@
 
 #include "member_access.h"
 
+#include "analysis/abstract_state.h"
+#include "codegen/c_string_methods.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -13,6 +15,8 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+
+#include <wchar.h>
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t get_data(const node_t *node) {
@@ -82,6 +86,29 @@ generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_
     return first;
 }
 
+/** @brief The immutable string length property, in host wchar_t units. */
+static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
+    const member_access_t *member = (const member_access_t *)node;
+    const lattice_element_t *value = calculate_expression(member->object, state, arena);
+    if (!wcscmp(member->name.data, L"length")) {
+        if (value->type == LATTICE_STRING_CONSTANT)
+            return make_integer_constant_element(
+                arena,
+                ((const string_constant_element_t *)value)->value.length);
+        if (value->type == LATTICE_STRING)
+            return make_integer_element();
+    }
+    return make_top_element();
+}
+
+static bool can_generate_c_code(const node_t *node,
+                                const lattice_element_t *value,
+                                const c_expression_context_t *context) {
+    const member_access_t *member = (const member_access_t *)node;
+    return !wcscmp(member->name.data, L"length")
+           && c_expression_type(context, (const node_t *)member->object) == C_VALUE_STRING;
+}
+
 /** @brief Virtual table for member access expressions. */
 static node_vtbl_t member_access_vtbl = {
     .type = NODE_MEMBER_ACCESS,
@@ -102,14 +129,14 @@ static node_vtbl_t member_access_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = unknown_abstract_value,
+    .calculate = calculate,
     .execute = execute_nothing,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
     .generate_bytecode = generate_bytecode,
     .generate_bytecode_assign = generate_bytecode_assign,
-    .can_generate_c_code = cannot_generate_c_code,
-    .generate_c_code = no_c_code,
+    .can_generate_c_code = can_generate_c_code,
+    .generate_c_code = c_string_length,
     .generate_indented_c_code = no_indented_c_code,
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
