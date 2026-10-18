@@ -48,7 +48,8 @@ bool c_constants_equal(const lattice_element_t *left, const lattice_element_t *r
 /** @brief Only total operations in the numeric C subset may lose their evaluation. */
 static bool discardable(const node_t *node, const c_expression_context_t *context) {
     if (node->vtbl->type == NODE_ADDITION
-        && c_expression_type(context, get_node_child(node, 0)) == C_VALUE_STRING)
+        && (c_expression_type(context, get_node_child(node, 0)) == C_VALUE_STRING
+            || c_expression_type(context, get_node_child(node, 0)) == C_VALUE_CHAR))
         return false;
     switch (node->vtbl->type) {
         case NODE_INTEGER:

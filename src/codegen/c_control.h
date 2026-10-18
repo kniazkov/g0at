@@ -32,3 +32,6 @@ bool c_emit_for(const node_t *node,
                 c_generation_context_t *context,
                 source_builder_t *builder,
                 size_t indent);
+
+/** @brief Emits boolean conversion and short-circuit logical operations. */
+c_generated_expression_t c_logic(const node_t *node, c_generation_context_t *context);

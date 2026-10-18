@@ -29,6 +29,8 @@ static bool emitted(const c_module_output_t *output, const c_module_function_t *
 static uint32_t tag(lattice_type_t type) {
     return is_integer_lattice_type(type) ? GOAT_NATIVE_I64
            : is_real_lattice_type(type)  ? GOAT_NATIVE_F64
+           : type == LATTICE_BOOLEAN     ? GOAT_NATIVE_BOOL
+           : type == LATTICE_CHAR        ? GOAT_NATIVE_CHAR
                                          : GOAT_NATIVE_STRING;
 }
 

@@ -79,7 +79,9 @@ static function_summary_t *call_target(const node_t *site,
         if (i == s->parameter_count && s->status == FUNCTION_ANALYZED
             && (classify_c_value_type(s->return_type->type) == C_VALUE_INT64
                 || classify_c_value_type(s->return_type->type) == C_VALUE_DOUBLE
-                || classify_c_value_type(s->return_type->type) == C_VALUE_STRING))
+                || classify_c_value_type(s->return_type->type) == C_VALUE_STRING
+                || classify_c_value_type(s->return_type->type) == C_VALUE_BOOL
+                || classify_c_value_type(s->return_type->type) == C_VALUE_CHAR))
             return s;
     }
     return NULL;
@@ -121,9 +123,9 @@ bool c_call_supported(const node_t *site, const c_expression_context_t *context)
         const builtin_function_t *builtin = resolve_native_builtin(get_node_child(site, 0));
         if (builtin) {
             c_value_type_t type = c_expression_type(context, get_node_child(site, 1));
-            found =
-                type == C_VALUE_INT64 || type == C_VALUE_DOUBLE || type == C_VALUE_CHAR
-                || (builtin == &builtin_str && (type == C_VALUE_STRING || type == C_VALUE_BOOL));
+            found = type == C_VALUE_INT64 || type == C_VALUE_DOUBLE || type == C_VALUE_CHAR
+                    || (builtin == &builtin_str && (type == C_VALUE_STRING || type == C_VALUE_BOOL))
+                    || (builtin == &builtin_int && type == C_VALUE_BOOL);
         }
     }
     for (const c_call_t *call = context->calls; call; call = call->next) {
@@ -170,7 +172,8 @@ static bool refine_returns(function_call_graph_t *graph, size_t max_iterations) 
                 evaluate_function_c_signature(s, &context, &incomplete);
             c_value_type_t type = classify_c_value_type(value->type);
             if (!incomplete
-                && (type == C_VALUE_INT64 || type == C_VALUE_DOUBLE || type == C_VALUE_STRING)) {
+                && (type == C_VALUE_INT64 || type == C_VALUE_DOUBLE || type == C_VALUE_STRING
+                    || type == C_VALUE_BOOL || type == C_VALUE_CHAR)) {
                 s->return_type = value;
                 s->status = FUNCTION_ANALYZED;
                 changed = true;

@@ -28,5 +28,5 @@ one c-expression 4 0 string,string/greater unknown
 one c-expression 5 0 string,string/greater_or_equal unknown
 one c-expression 6 0 string,string/equal unknown
 one c-expression 7 0 string,string/not_equal unknown
-one c-support 1 0 integer,real unsupported
-one c-blockers 1 0 integer,real return|body
+one c-support 1 0 integer,real supported
+one c-blockers 1 0 integer,real none

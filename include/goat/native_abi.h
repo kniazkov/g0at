@@ -25,7 +25,9 @@ enum {
     GOAT_NATIVE_INVALID = 0,
     GOAT_NATIVE_I64 = 1,
     GOAT_NATIVE_F64 = 2,
-    GOAT_NATIVE_STRING = 3
+    GOAT_NATIVE_STRING = 3,
+    GOAT_NATIVE_BOOL = 4,
+    GOAT_NATIVE_CHAR = 5
 };
 
 enum {
@@ -82,6 +84,8 @@ typedef struct goat_native_value_v2_t {
     union {
         int64_t integer;
         double real;
+        uint32_t boolean;   ///< Canonical 0 or 1; other encodings are invalid.
+        uint32_t character; ///< Full uint32_t Goat character value, without Unicode normalization.
         /** @brief Borrowed descriptor and code units, valid until the outer call ends.
          * NULL descriptors are invalid; an empty view may have NULL data. Both descriptor
          * and payload can belong to an argument or the invocation context. The host copies

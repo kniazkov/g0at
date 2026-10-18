@@ -58,7 +58,7 @@ static bool accept_char_argument(c_value_type_t type, size_t index, c_value_type
 static bool accept_int_argument(c_value_type_t type, size_t index, c_value_type_t result_type) {
     (void)result_type;
     if (index == 1)
-        return type == C_VALUE_INT64 || type == C_VALUE_DOUBLE;
+        return type == C_VALUE_INT64 || type == C_VALUE_DOUBLE || type == C_VALUE_BOOL;
     return c_type_name(type) != NULL;
 }
 
@@ -254,7 +254,7 @@ static c_generated_expression_t native_int(const node_t *node, c_generation_cont
         return (c_generated_expression_t){0};
     }
     c_value_type_t arg_type = c_generation_expression_type(context, get_node_child(node, 1));
-    if (arg_type != C_VALUE_INT64 && arg_type != C_VALUE_DOUBLE) {
+    if (arg_type != C_VALUE_INT64 && arg_type != C_VALUE_DOUBLE && arg_type != C_VALUE_BOOL) {
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
         return (c_generated_expression_t){0};
     }

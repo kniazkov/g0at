@@ -1,0 +1,14 @@
+const identity = func(value) { return value; };
+identity(true);
+identity(false);
+identity('A');
+identity('B');
+const logical = func(a, b) { return !a || b; };
+logical(true, false);
+const nested = func(flag, ch) { if (logical(flag, false)) return identity(ch); return 'Z'; };
+nested(true, 'A');
+const ordered = func(a, b) { return a >= b; };
+ordered('A', 'B');
+ordered(false, true);
+const invalidOrder = func(a, b) { return a < b; };
+invalidOrder('A', 65);

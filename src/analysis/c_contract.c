@@ -15,6 +15,8 @@ c_value_type_t classify_c_value_type(lattice_type_t type) {
         return C_VALUE_INT64;
     if (is_real_lattice_type(type))
         return C_VALUE_DOUBLE;
+    if (type == LATTICE_BOOLEAN || type == LATTICE_TRUE || type == LATTICE_FALSE)
+        return C_VALUE_BOOL;
     if (type == LATTICE_CHAR || type == LATTICE_CHAR_CONSTANT)
         return C_VALUE_CHAR;
     if (type == LATTICE_STRING || type == LATTICE_STRING_CONSTANT)

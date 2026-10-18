@@ -142,9 +142,9 @@ UTF-16 единицы; на обычном Linux — одну 32-битную е
 Ошибки индекса или размера возвращают управление VM для штатного исключения;
 временная память освобождается контекстом вызова.
 
-Внешний ABI по-прежнему принимает и возвращает целые, вещественные и строки.
-Булевы результаты методов и результат `charAt` доступны внутри нативного тела;
-для возврата такого значения через существующий ABI можно использовать `str`.
+Внешний ABI принимает и возвращает целые, вещественные, строки, булевы значения
+и символы. Предикаты и `charAt` могут возвращать результат прямо в VM без `str`;
+подробнее о представлении значений — [нативные скалярные типы](native-scalars.md).
 Тесты `string_methods` и `string_method_errors` входят в общий нативный список и
 сравнивают исходный и сохранённый нативный запуск с VM.
 
@@ -218,8 +218,9 @@ aliases). The `s.length` property is also supported. Method resolution requires 
 proven immutable string receiver. Explicit arguments execute before the receiver,
 including ignored extra arguments, matching CALLM. Invalid indices/sizes trigger
 VM retry with ordinary language exceptions and invocation-context cleanup.
-The external ABI still carries integer, real and string values; boolean/character
-method results are usable within native bodies and may be returned through `str`.
+The external ABI carries integer, real, string, boolean and character values.
+Predicates and `charAt` return their native types directly to the VM; see
+[native scalar types](native-scalars.md).
 The shared native suite covers every method, chaining, argument order, embedded
 zeros, character operands, formatting, shadowing, invalid arguments and saved modules.
 

@@ -32,7 +32,13 @@ c_generated_expression_t c_comparison(const node_t *node, c_generation_context_t
         destroy_c_expression(&left);
         return right;
     }
-    if (!numeric(left.type) || !numeric(right.type)
+    bool left_number = left.type == C_VALUE_INT64 || left.type == C_VALUE_DOUBLE;
+    bool right_number = right.type == C_VALUE_INT64 || right.type == C_VALUE_DOUBLE;
+    bool same_domain = (left_number && right_number) || left.type == right.type;
+    bool equality = node->vtbl->type == NODE_EQUAL || node->vtbl->type == NODE_NOT_EQUAL;
+    if (!c_type_name(left.type) || !c_type_name(right.type)
+        || (same_domain && !numeric(left.type) && left.type != C_VALUE_BOOL)
+        || (!same_domain && !equality)
         || c_generation_expression_type(context, node) != C_VALUE_BOOL) {
         destroy_c_expression(&left);
         destroy_c_expression(&right);
@@ -46,7 +52,14 @@ c_generated_expression_t c_comparison(const node_t *node, c_generation_context_t
     string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
     bool integer_like = (left.type == C_VALUE_INT64 || left.type == C_VALUE_CHAR)
                         && (right.type == C_VALUE_INT64 || right.type == C_VALUE_CHAR);
-    if (integer_like || left.type == right.type) {
+    if (!same_domain) {
+        add_source(prelude, 0, L"(void)%s; (void)%s;", a.data, b.data);
+        add_source(prelude,
+                   0,
+                   L"bool %s = %s;",
+                   value.data,
+                   equality && node->vtbl->type == NODE_NOT_EQUAL ? L"true" : L"false");
+    } else if (integer_like || left.type == right.type) {
         static const wchar_t *symbols[] = {L"<", L"<=", L">", L">=", L"==", L"!="};
         add_source(prelude, 0, L"bool %s = %s %s %s;", value.data, a.data, symbols[kind], b.data);
     } else {
@@ -203,4 +216,61 @@ bool c_emit_for(const node_t *node,
         c_generation_condition_truth(context, get_node_child(node, 1)) == ABSTRACT_TRUE;
     add_static_source(builder, indent, L"}");
     return success;
+}
+
+/** @brief Tests native scalar truth without changing the represented value. */
+static string_value_t truth_value(const c_generated_expression_t *expression) {
+    return format_string(expression->type == C_VALUE_STRING ? L"(%s).length != 0" : L"(%s) != 0",
+                         expression->value.data);
+}
+
+c_generated_expression_t c_logic(const node_t *node, c_generation_context_t *context) {
+    if (c_generation_expression_type(context, node) != C_VALUE_BOOL) {
+        fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+        return (c_generated_expression_t){0};
+    }
+    c_generated_expression_t left = generate_c_code_from_node(get_node_child(node, 0), context);
+    if (!left.success)
+        return left;
+    source_builder_t *prelude = create_source_builder();
+    c_emit_prelude(left.prelude, prelude, 0);
+    string_value_t truth = truth_value(&left);
+    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+    node_type_t type = node->vtbl->type;
+    add_source(prelude,
+               0,
+               L"bool %s = %s(%s);",
+               value.data,
+               type == NODE_LOGICAL_NOT ? L"!" : L"",
+               truth.data);
+    FREE_STRING(truth);
+    destroy_c_expression(&left);
+    if (type == NODE_LOGICAL_AND || type == NODE_LOGICAL_OR) {
+        abstract_truth_t proven = c_generation_condition_truth(context, get_node_child(node, 0));
+        bool skip = proven == (type == NODE_LOGICAL_OR ? ABSTRACT_TRUE : ABSTRACT_FALSE);
+        if (!skip) {
+            c_generated_expression_t right =
+                generate_c_code_from_node(get_node_child(node, 1), context);
+            if (!right.success) {
+                FREE_STRING(value);
+                destroy_source_builder(prelude);
+                return right;
+            }
+            add_source(prelude,
+                       0,
+                       L"if (%s%s) {",
+                       type == NODE_LOGICAL_OR ? L"!" : L"",
+                       value.data);
+            c_emit_prelude(right.prelude, prelude, 1);
+            truth = truth_value(&right);
+            add_source(prelude, 1, L"%s = %s;", value.data, truth.data);
+            add_static_source(prelude, 0, L"}");
+            FREE_STRING(truth);
+            destroy_c_expression(&right);
+        }
+    }
+    return (c_generated_expression_t){.success = true,
+                                      .type = C_VALUE_BOOL,
+                                      .value = value,
+                                      .prelude = prelude};
 }

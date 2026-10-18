@@ -17,11 +17,13 @@ static bool eligible(const function_summary_t *summary) {
         return false;
     c_generation_context_t context = {.summary = summary};
     c_value_type_t type = c_generation_return_type(&context);
-    if (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE && type != C_VALUE_STRING)
+    if (type != C_VALUE_BOOL && type != C_VALUE_CHAR && type != C_VALUE_INT64
+        && type != C_VALUE_DOUBLE && type != C_VALUE_STRING)
         return false;
     for (size_t i = 0; i < summary->parameter_count; i++) {
         type = c_generation_parameter_type(&context, i);
-        if (type != C_VALUE_INT64 && type != C_VALUE_DOUBLE && type != C_VALUE_STRING)
+        if (type != C_VALUE_BOOL && type != C_VALUE_CHAR && type != C_VALUE_INT64
+            && type != C_VALUE_DOUBLE && type != C_VALUE_STRING)
             return false;
     }
     return true;
@@ -60,9 +62,11 @@ make_name(arena_t *arena, size_t function_id, const function_summary_t *summary)
     FREE_STRING(prefix);
     for (size_t i = 0; i < summary->parameter_count; i++)
         append_string(&builder,
-                      summary->parameter_types[i]->type == LATTICE_INTEGER  ? L"_i"
-                      : summary->parameter_types[i]->type == LATTICE_STRING ? L"_s"
-                                                                            : L"_r");
+                      summary->parameter_types[i]->type == LATTICE_INTEGER   ? L"_i"
+                      : summary->parameter_types[i]->type == LATTICE_BOOLEAN ? L"_b"
+                      : summary->parameter_types[i]->type == LATTICE_CHAR    ? L"_c"
+                      : summary->parameter_types[i]->type == LATTICE_STRING  ? L"_s"
+                                                                             : L"_r");
     string_value_t text = append_char(&builder, L'_');
     wchar_t *name = alloc_from_arena(arena, (text.length + 1) * sizeof(*name));
     memcpy(name, text.data, (text.length + 1) * sizeof(*name));

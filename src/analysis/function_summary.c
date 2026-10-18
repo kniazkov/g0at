@@ -199,6 +199,9 @@ const lattice_element_t *function_summary_type(const lattice_element_t *value) {
         case LATTICE_STRING_CONSTANT:
         case LATTICE_STRING:
             return make_string_element();
+        case LATTICE_CHAR_CONSTANT:
+        case LATTICE_CHAR:
+            return make_char_element();
         case LATTICE_TRUE:
         case LATTICE_FALSE:
         case LATTICE_BOOLEAN:

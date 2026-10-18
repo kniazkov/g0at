@@ -53,13 +53,15 @@ c_binary_arithmetic(const node_t *node, c_generation_context_t *context, wchar_t
         destroy_c_expression(&left);
         return right;
     }
-    if (operation == L'+' && left.type == C_VALUE_STRING
+    if (operation == L'+' && (left.type == C_VALUE_STRING || left.type == C_VALUE_CHAR)
         && (right.type == C_VALUE_STRING || numeric(right.type) || right.type == C_VALUE_BOOL
             || right.type == C_VALUE_CHAR)
         && context->module_definition
         && c_generation_expression_type(context, node) == C_VALUE_STRING) {
         source_builder_t *prelude = create_source_builder();
-        string_value_t a = c_capture_operand(prelude, context, &left, C_VALUE_STRING);
+        string_value_t first = c_capture_operand(prelude, context, &left, left.type);
+        string_value_t a = c_string_from_value(prelude, context, left.type, first.data);
+        FREE_STRING(first);
         string_value_t captured = c_capture_operand(prelude, context, &right, right.type);
         string_value_t b = c_string_from_value(prelude, context, right.type, captured.data);
         FREE_STRING(captured);

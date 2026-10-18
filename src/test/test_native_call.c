@@ -262,6 +262,22 @@ static bool backend_failures(void) {
     return true;
 }
 
+static bool invalid_boolean_result(void) {
+    bytecode_t *code = compile(L"var f=func(flag){throw 123;};var caught=false;"
+                               L"try {f(true);} catch(e){caught=true;}");
+    ASSERT(code && bind_function(code, 0, 7));
+    process_t *proc = create_process();
+    ASSERT(run(proc, code) != 0);
+    ASSERT(proc->main_thread->native_status == GOAT_NATIVE_BAD_REQUEST);
+    ASSERT(proc->main_thread->native_attempts == 1 && !proc->main_thread->native_successes);
+    ASSERT(!proc->main_thread->exception.value);
+    ASSERT(proc->main_thread->data_stack->size == 1);
+    ASSERT(peek_object_from_stack(proc->main_thread->data_stack, 0) == get_boolean_object(true));
+    free_bytecode(code);
+    destroy_process(proc);
+    return true;
+}
+
 static bool fallback_exception(void) {
     bytecode_t *code = compile(L"var f=func(n){throw n;};var caught=false;"
                                L"try {f(true);} catch(e){caught=e;}");
@@ -374,6 +390,7 @@ bool test_native_calls(const char *provider, const char *generated, const char *
         {"evaluation order, extras, aliases, rebinding and builtins", evaluation_and_identity},
         {"native call preserves context, stack and numeric edges", native_without_context},
         {"backend failures stop without retry or Goat catch", backend_failures},
+        {"noncanonical boolean results are rejected before commit", invalid_boolean_result},
         {"unmatched signature preserves bytecode throw/catch", fallback_exception},
         {"resource retry scope restores native entry after exception unwind", retry_exception}};
 
