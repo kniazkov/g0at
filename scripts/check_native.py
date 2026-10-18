@@ -39,9 +39,9 @@ def check_report(path, case, native=True):
     if native:
         require(calls > 0, f'{path}: test must enter native code')
         require(fields.get('preparation') == 'ready', f'{path}: module not ready: {fields}')
-        require(int(fields.get('bound', '0')) > 0, f'{path}: no bound adapters: {fields}')
+        require(int(fields.get('bound', '0')) > 0, f'{path}: no bound functions: {fields}')
         if 'bound' in case:
-            require(fields['bound'] == str(case['bound']), f'{path}: wrong adapter count: {fields}')
+            require(fields['bound'] == str(case['bound']), f'{path}: wrong bound function count: {fields}')
 
 
 def execute(command, work, label, env=None):
