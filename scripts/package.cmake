@@ -18,6 +18,7 @@ install(FILES "${package_root}/docs/native-runtime.md" "${package_root}/docs/nat
   "${package_root}/docs/native-strings.md"
   DESTINATION docs CONFIGURATIONS Release)
 install(FILES "${package_root}/example/hello_world.goat"
+  "${package_root}/example/native_quadratic.goat"
   "${package_root}/example/native_string_concat.goat"
   "${package_root}/example/native_string_identity.goat" "${package_root}/docs/package/numeric.goat"
   DESTINATION examples CONFIGURATIONS Release)

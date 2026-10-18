@@ -61,6 +61,11 @@ static void boundaries(const goat_native_context_v2_t *context) {
     services.string_to_lower = NULL;
     assert(goat_native_string_to_lower_case(&old, V(L"X"), &out) == GOAT_NATIVE_ABI_MISMATCH);
     assert(goat_native_string_copy(NULL, V(L"x"), &out) == GOAT_NATIVE_ABI_MISMATCH);
+    assert(goat_native_str_i64(context, INT64_MIN, &out) == GOAT_NATIVE_OK);
+    assert(out.length == 20 && !wcscmp(out.data, L"-9223372036854775808"));
+    goat_native_string_release(context, &out);
+    assert(goat_native_str_f64(NULL, 1.0, &out) == GOAT_NATIVE_ABI_MISMATCH);
+    assert(!out.data);
     /* Leave one result live for the host's counter and bulk cleanup assertions. */
     assert(goat_native_string_copy(context, V(L"host-owned result"), &out) == GOAT_NATIVE_OK);
 }

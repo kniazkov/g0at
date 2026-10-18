@@ -1,0 +1,5 @@
+one c-support 1 0 integer supported
+one c-blockers 1 0 integer none
+one c-support 1 0 real supported
+one c-blockers 1 0 real none
+one flags 1 0 function_object pure|c-compatible

@@ -115,7 +115,9 @@ bool c_call_supported(const node_t *site, const c_expression_context_t *context)
         const builtin_function_t *builtin = resolve_native_builtin(get_node_child(site, 0));
         if (builtin) {
             c_value_type_t type = c_expression_type(context, get_node_child(site, 1));
-            found = type == C_VALUE_INT64 || type == C_VALUE_DOUBLE || type == C_VALUE_CHAR;
+            found =
+                type == C_VALUE_INT64 || type == C_VALUE_DOUBLE || type == C_VALUE_CHAR
+                || (builtin == &builtin_str && (type == C_VALUE_STRING || type == C_VALUE_BOOL));
         }
     }
     for (const c_call_t *call = context->calls; call; call = call->next) {

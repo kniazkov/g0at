@@ -74,6 +74,23 @@ bool goat_native_string_starts_with(goat_native_string_view_v2_t value,
 bool goat_native_string_ends_with(goat_native_string_view_v2_t value,
                                   goat_native_string_view_v2_t suffix);
 
+/** @brief Native str for an integer; output is owned by the invocation context. */
+uint32_t goat_native_str_i64(const goat_native_context_v2_t *context,
+                             int64_t value,
+                             goat_native_string_buffer_v2_t *out);
+/** @brief Native str for a real, using the same formatting as the interpreter. */
+uint32_t goat_native_str_f64(const goat_native_context_v2_t *context,
+                             double value,
+                             goat_native_string_buffer_v2_t *out);
+/** @brief Native str for a boolean. */
+uint32_t goat_native_str_bool(const goat_native_context_v2_t *context,
+                              bool value,
+                              goat_native_string_buffer_v2_t *out);
+/** @brief Native str for a character, preserving host wchar_t encoding and embedded NUL. */
+uint32_t goat_native_str_char(const goat_native_context_v2_t *context,
+                              uint32_t value,
+                              goat_native_string_buffer_v2_t *out);
+
 /** @brief Concatenates two views without modifying either operand. */
 uint32_t goat_native_string_concat(const goat_native_context_v2_t *context,
                                    goat_native_string_view_v2_t left,

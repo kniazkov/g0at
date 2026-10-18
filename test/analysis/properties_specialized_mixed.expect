@@ -1,5 +1,5 @@
-one flags 1 0 function_object pure
-one flags 2 0 addition pure
+one flags 1 0 function_object pure|c-compatible
+one flags 2 0 addition pure|c-compatible
 one c-support 1 0 integer supported
-one c-support 1 0 string unknown
-one c-blockers 1 0 string body
+one c-support 1 0 string supported
+one c-blockers 1 0 string none

@@ -112,14 +112,26 @@ UTF-16 единицы; на обычном Linux — одну 32-битную е
 Генератор вызывает `goat_native_string_concat` из статической библиотеки,
 вычисляя операнды слева направо. Буфер выделяется через контекст интерпретатора,
 результат копируется в Goat до очистки контекста. Поддерживаются цепочки
-конкатенаций и вложенные нативные вызовы; смешение строки и числа пока не поддерживается.
+конкатенаций и вложенные нативные вызовы. Если справа число, логическое значение
+или символ, генератор вызывает нативный `str` из статической библиотеки.
+Явные вызовы `str` (в том числе через неизменяемый псевдоним) используют те же
+реализации. Преобразование строки возвращает её представление без копирования.
+Форматирование вещественных чисел использует общий с VM исходный код.
+Строковые литералы сохраняются как статические массивы кодовых единиц `wchar_t`.
+Типы, ещё не представимые в нативном коде (например объекты), остаются в VM.
+
+Пример `example/native_quadratic.goat` принимает три вещественных коэффициента
+(`a != 0`), нативно вычисляет корни и возвращает русскоязычную строку.
+Печать выполняется после возврата в VM. Обратный коэффициент вычисляется через
+`pow(a, -1.0)`: оператор деления пока не входит в поддерживаемый генератором набор.
+Тесты проверяют три случая дискриминанта, цепочки преобразований, порядок вычисления,
+пустые строки, Unicode и встроенные нули, а также повторные и сохранённые вызовы.
 
 ```sh
 ./goat --native required --save-native concat.report example/native_string_concat.goat
 ```
 
- Вызовы строковых методов и создание строковых
-литералов внутри генерируемых функций пока не реализованы в генераторе C;
+ Вызовы строковых методов пока не реализованы в генераторе C;
 готовая библиотека строковых операций остаётся доступна из C напрямую.
 
 ## English
@@ -180,9 +192,16 @@ nested native calls and saved programs without source or compiler.
 function, then prints the returned result in the VM. Generated code calls the linked
 `goat_native_string_concat` implementation, evaluates operands left to right, and
 allocates through the host context. Tests also cover chained concatenation and
-context-owned result lifetime. Mixed string/numeric addition is not supported.
-String-method
-calls and literals inside generated functions are still unsupported.
+context-owned result lifetime. A non-string right operand (integer, real, boolean or
+character) is converted by the native str implementation, also used for explicit
+str calls and immutable aliases. Real formatting shares its source with the VM.
+String literals use static wchar_t arrays. Objects and other values without a native
+representation remain in the VM; string-method calls are still unsupported.
+
+`example/native_quadratic.goat` takes three real coefficients with a nonzero leading
+coefficient, computes roots natively and returns a string printed by the VM. It uses
+`pow(a, -1.0)` for the reciprocal because division is not yet lowered. Tests compare
+all discriminant cases, chained conversions, evaluation order and saved execution.
 
 The differential test builds an independent shared module, invokes it through host
 callbacks, compares all methods with unoptimized VM execution, and checks empty/embedded

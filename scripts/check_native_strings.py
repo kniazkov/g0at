@@ -95,6 +95,18 @@ def main():
         case("format", text, "Я\0", "😀")
     case("format", "%0 %1")
     case("format", "%10/%0011/%0", *[str(i) for i in range(12)])
+    for suffix, native_arg, vm_arg in [
+        ("i64", "INT64_MAX", "9223372036854775807"),
+        ("i64", "-INT64_MAX", "-9223372036854775807"),
+        ("f64", "1.25", "1.25"), ("f64", "-0.0", "-0.0"),
+        ("f64", "1e-11", "0.00000000001"),
+        ("bool", "true", "true"), ("bool", "false", "false"),
+        ("char", "0", "chr(0)"), ("char", "128512", "chr(128512)")]:
+        cases += 1
+        c.append("{ goat_native_string_buffer_v2_t out = {0}; "
+                 f"assert(goat_native_str_{suffix}(context, {native_arg}, &out) == GOAT_NATIVE_OK); "
+                 "show(out); goat_native_string_release(context, &out); }")
+        vm.append(f"show(str({vm_arg}));")
     module = work / "strings.c"
     module.write_text('''#include "goat/native_strings.h"
 #include <assert.h>
@@ -125,10 +137,13 @@ GOAT_NATIVE_API void GOAT_NATIVE_CALL run_strings(const goat_native_context_v2_t
     assert runtime.is_file(), runtime
     if flags:
         runtime = work / "libgoat_native-instrumented.a"
-        obj = work / "strings-runtime.o"
-        subprocess.run([*common, "-fPIC", "-c", str(ROOT / "src/native/strings.c"),
-                        "-o", str(obj)], check=True)
-        subprocess.run([os.environ.get("AR", "ar"), "rcs", str(runtime), str(obj)], check=True)
+        objects = []
+        for name in ("native/strings.c", "native/str.c", "lib/number_format.c"):
+            obj = work / (Path(name).stem + "-runtime.o")
+            subprocess.run([*common, "-I" + str(ROOT / "src"), "-fPIC", "-c", str(ROOT / "src" / name),
+                            "-o", str(obj)], check=True)
+            objects.append(str(obj))
+        subprocess.run([os.environ.get("AR", "ar"), "rcs", str(runtime), *objects], check=True)
     subprocess.run([*common, *shared, "-I" + str(ROOT / "test/functional/native_strings"),
                     str(module), str(runtime), "-o", str(library)], check=True)
     subprocess.run([*common, "-DMEMORY_DEBUG", "-I" + str(ROOT / "src"),
