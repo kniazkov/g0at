@@ -1,0 +1,10 @@
+const arithmetic=func(n){var x=n;x+=4;x-=2;x*=3;return x;};
+const chain=func(n){var x=n;var y=3;return x+=y*=2;};
+const effect=func(n){var x=n;return x+=(x=5);};
+const text=func(s,n){var x=s;x+=n;x+='!';return x;};
+const loop=func(n){var s=0;for(var i=0;i<n;i+=1){s+=i;}return s;};
+println(arithmetic(10));println(arithmetic(4));println(arithmetic(2.0));
+println(chain(10));println(chain(2.5));
+println(effect(10));println(effect(4));
+println(text("a",3));println(text("b",true));println(text("c",2.5));
+println(loop(5));println(loop(10));

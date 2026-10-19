@@ -1,0 +1,7 @@
+var a=20;
+println(a+=4); println(a-=6); println(a*=2); println(a/=3); println(a%=5);
+println(a|=8); println(a&=10); println(a^=3); println(a<<=2); println(a>>=1);
+var b=3; println(a+=b*=2); println(a); println(b);
+var s="x"; println(s+=1); println(s+='!');
+var r=1.5; println(r+=2); println(r*=2);
+var power=3; println(power**=3); println(power);

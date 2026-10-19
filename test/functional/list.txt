@@ -513,3 +513,8 @@ switch_loops
 switch_exceptions
 switch_objects
 switch_expression_stack
+compound_basic
+compound_order
+compound_inheritance
+compound_exceptions
+compound_loops

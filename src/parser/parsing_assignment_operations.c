@@ -5,6 +5,7 @@
  */
 
 #include "graph/assignment.h"
+#include "graph/compound_assignment.h"
 #include "lib/arena.h"
 #include "parser.h"
 #include "resources/messages.h"
@@ -17,7 +18,7 @@
  */
 compilation_error_t *
 parsing_assignment_operators(token_t *operator, parser_memory_t * memory, token_groups_t *groups) {
-    assert(operator->type == TOKEN_OPERATOR && operator->text.data[0] == L'=');
+    assert(operator->type == TOKEN_OPERATOR);
 
     token_t *left_token = operator->left;
     if (left_token == NULL) {
@@ -61,6 +62,11 @@ parsing_assignment_operators(token_t *operator, parser_memory_t * memory, token_
     if (operator->text.data[0] == L'=') {
         operation = create_simple_assignment_node(memory->graph, left_operand, right_operand);
     }
+    if (!operation)
+        operation = create_compound_assignment_node(memory->graph,
+                                                    left_operand,
+                                                    right_operand,
+                                                    operator->text.data);
     collapse_tokens_to_token(memory, left_token, right_token, TOKEN_EXPRESSION, &operation->base);
     return NULL;
 }

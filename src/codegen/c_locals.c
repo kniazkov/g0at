@@ -128,16 +128,26 @@ bool c_emit_declarator(const node_t *node,
 }
 
 c_generated_expression_t c_assignment(const node_t *node, c_generation_context_t *context) {
-    const node_t *left = replacement_original(get_node_child(node, 0));
+    return c_store_local(node,
+                         get_node_child(node, 0),
+                         generate_c_code_from_node(get_node_child(node, 1), context),
+                         context);
+}
+
+c_generated_expression_t c_store_local(const node_t *node,
+                                       const node_t *target,
+                                       c_generated_expression_t right,
+                                       c_generation_context_t *context) {
+    const node_t *left = replacement_original(target);
     const declarator_t *declaration =
         left && left->vtbl->type == NODE_VARIABLE ? ((const variable_t *)left)->declarator : NULL;
     const c_generation_binding_t *binding =
         declaration ? find_binding(context, &declaration->base) : NULL;
     if (!binding || declaration->base.vtbl->type == NODE_CONSTANT_DECLARATOR) {
+        destroy_c_expression(&right);
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
         return (c_generated_expression_t){0};
     }
-    c_generated_expression_t right = generate_c_code_from_node(get_node_child(node, 1), context);
     if (!right.success)
         return right;
     if (right.type != binding->type

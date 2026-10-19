@@ -1,0 +1,8 @@
+const add = func(x, y) { var value=x; value+=y; return value; };
+add(1,2); add(1.5,2); add("a",1); add("a",true);
+const sequence = func(x) { var value=x; value+=(value=5); return value; };
+sequence(10);
+const captured = func() { var n=1; return func(x) { return n+=x; }; };
+var closure=captured(); closure(2);
+const divide = func(x,y) { var value=x; value/=y; return value; };
+divide(10,2);

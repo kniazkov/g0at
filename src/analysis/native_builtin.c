@@ -6,6 +6,7 @@
 
 #include "builtins/registry.h"
 #include "codegen/c_native.h"
+#include "graph/compound_assignment.h"
 #include "graph/replacement.h"
 #include "graph/variable.h"
 
@@ -14,10 +15,11 @@
 static bool writes_builtin(const node_t *node, const builtin_function_t *builtin) {
     node = replacement_original(node);
     node_type_t type = node->vtbl->type;
-    if (type == NODE_SIMPLE_ASSIGNMENT || type == NODE_PREFIX_INCREMENT
-        || type == NODE_PREFIX_DECREMENT || type == NODE_POSTFIX_INCREMENT
-        || type == NODE_POSTFIX_DECREMENT) {
-        const node_t *target = get_node_child(node, 0);
+    if (type == NODE_COMPOUND_ASSIGNMENT || type == NODE_SIMPLE_ASSIGNMENT
+        || type == NODE_PREFIX_INCREMENT || type == NODE_PREFIX_DECREMENT
+        || type == NODE_POSTFIX_INCREMENT || type == NODE_POSTFIX_DECREMENT) {
+        const node_t *target = type == NODE_COMPOUND_ASSIGNMENT ? compound_assignment_target(node)
+                                                                : get_node_child(node, 0);
         while (target->vtbl->type == NODE_EXPRESSION_PARENTHESIZED)
             target = get_node_child(target, 0);
         if (target->vtbl->type == NODE_VARIABLE) {

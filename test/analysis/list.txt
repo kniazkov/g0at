@@ -323,3 +323,4 @@ c_string_methods
 
 c_bool_char
 switch_types
+compound_types

@@ -171,6 +171,17 @@ static const operator_mapping_t operator_mappings[] = {
     {L"/", offsetof(token_groups_t, multiplicative_operators)},
     {L"%", offsetof(token_groups_t, multiplicative_operators)},
     {L"**", offsetof(token_groups_t, power_operators)},
+    {L"+=", offsetof(token_groups_t, assignment_operators)},
+    {L"-=", offsetof(token_groups_t, assignment_operators)},
+    {L"*=", offsetof(token_groups_t, assignment_operators)},
+    {L"**=", offsetof(token_groups_t, assignment_operators)},
+    {L"/=", offsetof(token_groups_t, assignment_operators)},
+    {L"%=", offsetof(token_groups_t, assignment_operators)},
+    {L"&=", offsetof(token_groups_t, assignment_operators)},
+    {L"|=", offsetof(token_groups_t, assignment_operators)},
+    {L"^=", offsetof(token_groups_t, assignment_operators)},
+    {L"<<=", offsetof(token_groups_t, assignment_operators)},
+    {L">>=", offsetof(token_groups_t, assignment_operators)},
     {L"=", offsetof(token_groups_t, assignment_operators)},
     {L"==", offsetof(token_groups_t, equality_operators)},
     {L"!=", offsetof(token_groups_t, equality_operators)},
@@ -477,14 +488,15 @@ token_t *get_token(scanner_t *scan) {
         }
     } else if (is_operator(ch)) {
         token->type = TOKEN_OPERATOR;
-        wchar_t first = ch, second = next_char(scan);
+        size_t length = 1;
         for (size_t i = 0; i < sizeof(operator_mappings) / sizeof(*operator_mappings); i++) {
             const wchar_t *op = operator_mappings[i].oper;
-            if (op[0] == first && op[1] && op[1] == second && op[2] == 0) {
-                next_char(scan);
-                break;
-            }
+            size_t n = wcslen(op);
+            if (n > length && !wcsncmp(scan->position.code, op, n))
+                length = n;
         }
+        for (size_t i = 0; i < length; i++)
+            next_char(scan);
     } else if (ch == L'{' || ch == L'}' || ch == L'(' || ch == L')' || ch == L'[' || ch == L']') {
         token->type = TOKEN_BRACKET;
         next_char(scan);

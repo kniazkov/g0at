@@ -69,5 +69,7 @@ typedef enum {
     ARRAY,      /**< Consumes arg1 elements in source order and pushes a new array. */
     INHERIT, /**< Enters a derived object: arg0=1 for arg1 explicit prototypes, else one value. */
     LOOP_ENTER, /**< Opens a loop scope with an operand stack boundary. */
-    LOOP_JUMP   /**< Unwinds to the nearest loop and jumps to arg1. */
+    LOOP_JUMP,  /**< Unwinds to the nearest loop and jumps to arg1. */
+    DUPN,       /**< Duplicates the top arg1 values in their original order. */
+    ROTATE      /**< Moves the top value below arg1 retained operands. */
 } opcode_t;

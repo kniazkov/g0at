@@ -146,5 +146,10 @@
     "name": "switch",
     "calls": 29,
     "bound": 11
+  },
+  {
+    "name": "compound",
+    "calls": 12,
+    "bound": 5
   }
 ]

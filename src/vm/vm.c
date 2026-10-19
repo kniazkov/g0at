@@ -129,6 +129,34 @@ static bool exec_DUP(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     return true;
 }
 
+/** @brief Retains a source-ordered copy of a group of stack operands. */
+static bool exec_DUPN(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_stack_t *stack = thread->data_stack;
+    require_object_stack_size(stack, instr.arg1);
+    size_t base = stack->size - instr.arg1;
+    for (size_t i = 0; i < instr.arg1; i++) {
+        object_t *value = stack->objects[base + i];
+        INCREF(value);
+        push_object_onto_stack(stack, value);
+    }
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Places a result before retained address operands without changing ownership. */
+static bool exec_ROTATE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_stack_t *stack = thread->data_stack;
+    require_object_stack_size(stack, 1);
+    if (instr.arg1 > stack->size - 1)
+        fail_stack_underflow();
+    size_t base = stack->size - instr.arg1 - 1;
+    object_t *value = stack->objects[stack->size - 1];
+    memmove(stack->objects + base + 1, stack->objects + base, instr.arg1 * sizeof(*stack->objects));
+    stack->objects[base] = value;
+    thread->instr_id++;
+    return true;
+}
+
 /** @brief Executes @ref NIL. */
 static bool exec_NIL(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     push_object_onto_stack(thread->data_stack, get_null_object());
@@ -879,8 +907,8 @@ static instr_executor_t executors[] = {
     exec_SETINDEX, /**< Writes through the indexing virtual method. */
     exec_ARRAY,    /**< Creates a new array. */
     exec_INHERIT,  /**< Enters an explicitly derived object. */
-    exec_LOOP_ENTER,
-    exec_LOOP_JUMP
+    exec_LOOP_ENTER, exec_LOOP_JUMP, exec_DUPN,
+    exec_ROTATE
     // Additional opcodes can be added here in the future...
 };
 

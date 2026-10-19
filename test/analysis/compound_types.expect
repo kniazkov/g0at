@@ -1,0 +1,6 @@
+one c-support 1 0 integer,integer supported
+one c-support 1 0 real,integer supported
+one c-support 1 0 string,integer supported
+one c-support 1 0 string,boolean supported
+one c-support 3 0 integer supported
+one c-support 7 0 integer,integer unknown
