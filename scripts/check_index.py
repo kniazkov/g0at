@@ -27,7 +27,7 @@ def main():
         return result.stdout
 
     count = 0
-    for fixture in sorted([*fixtures.glob("index_*"), *fixtures.glob("array_*"), *fixtures.glob("inheritance_*")]):
+    for fixture in sorted([*fixtures.glob("index_*"), *fixtures.glob("array_*"), *fixtures.glob("inheritance_*"), *fixtures.glob("loops_*")]):
         source = fixture / "program.goat"
         if not source.is_file():
             continue

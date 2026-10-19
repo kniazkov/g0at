@@ -1,0 +1,7 @@
+var callbacks=[]; var i=0;
+while(i<4) { var captured=i; callbacks.push(func(){return captured;}); i++; if(i==2) continue; if(i==3) break; }
+println(callbacks[0]()); println(callbacks[1]()); println(callbacks[2]());
+println(captured);
+var seen=[];
+do { var local=7; seen.push(this); break; } while(true);
+println(seen[0].local); println(local);

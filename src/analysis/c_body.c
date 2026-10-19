@@ -9,6 +9,8 @@
 #include "codegen/c_string_methods.h"
 #include "function_return.h"
 #include "graph/expression.h"
+#include "graph/loop.h"
+#include "graph/replacement.h"
 #include "graph/variable.h"
 #include "native_builtin.h"
 
@@ -27,14 +29,52 @@ bool c_body_node_supported(const node_t *node, const c_expression_context_t *con
     return node->vtbl->can_generate_c_code && node->vtbl->can_generate_c_code(node, NULL, context);
 }
 
+bool c_body_falls_through(const node_t *node, const c_expression_context_t *context) {
+    if (!node)
+        return true;
+    node = replacement_result(node);
+    node_type_t type = node->vtbl->type;
+    if (type == NODE_BREAK || type == NODE_CONTINUE || type == NODE_RETURN || type == NODE_THROW)
+        return false;
+    if (type == NODE_STATEMENT_EXPRESSION)
+        return c_body_falls_through(get_node_child(node, 0), context);
+    if (is_statement_list(type)) {
+        for (size_t i = 0; i < get_node_child_count(node); i++)
+            if (!c_body_falls_through(get_node_child(node, i), context))
+                return false;
+    }
+    if (type == NODE_IF_ELSE) {
+        const lattice_element_t *value = c_expression_constant(context, get_node_child(node, 0));
+        abstract_truth_t truth = value ? lattice_truth(value) : ABSTRACT_EITHER;
+        if (truth == ABSTRACT_TRUE || truth == ABSTRACT_FALSE)
+            return c_body_falls_through(get_node_child(node, truth == ABSTRACT_TRUE ? 1 : 2),
+                                        context);
+        return c_body_falls_through(get_node_child(node, 1), context)
+               || c_body_falls_through(get_node_child(node, 2), context);
+    }
+    return true;
+}
+
 bool c_body_children(const node_t *node,
                      const lattice_element_t *value,
                      const c_expression_context_t *context) {
     if (!context || !context->graph)
         return false;
+    if (is_loop_node(node)) {
+        const node_t *body = get_node_child(node, 3);
+        bool tail = c_body_falls_through(body, context) || loop_has_jump(node, true);
+        return c_body_node_supported(get_node_child(node, 0), context)
+               && c_body_node_supported(body, context)
+               && (!tail || c_body_node_supported(get_node_child(node, 2), context))
+               && ((node->vtbl->type == NODE_DO_WHILE && !tail)
+                   || c_body_node_supported(get_node_child(node, 1), context));
+    }
     for (size_t i = 0; i < get_node_child_count(node); i++) {
-        if (!c_body_node_supported(get_node_child(node, i), context))
+        const node_t *child = get_node_child(node, i);
+        if (!c_body_node_supported(child, context))
             return false;
+        if (is_statement_list(node->vtbl->type) && !c_body_falls_through(child, context))
+            break;
     }
     return true;
 }
@@ -185,7 +225,7 @@ static bool refine_returns(function_call_graph_t *graph, size_t max_iterations) 
     return false;
 }
 
-/** @brief Checks the entire syntax, including unvisited branches and statements. */
+/** @brief Checks reachable syntax against generic signature proofs. */
 static bool check_body(function_call_graph_t *graph, function_summary_t *summary) {
     c_binding_t *bindings = NULL;
     c_expression_context_t context = make_context(graph, summary, &bindings);

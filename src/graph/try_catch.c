@@ -47,10 +47,33 @@ static const wchar_t *get_child_tag(const node_t *node, size_t index) {
     return index == 0 ? L"try" : index == 1 ? L"catch" : NULL;
 }
 
+/** @brief Preserve potential non-local transfers even while exception paths are opaque. */
+static void collect_loop_transfers(const node_t *node, abstract_state_t *state) {
+    if (!state->loop || node->vtbl->type == NODE_FUNCTION_OBJECT)
+        return;
+    node_type_t type = node->vtbl->type;
+    if (type == NODE_BREAK || type == NODE_CONTINUE) {
+        abstract_state_t **target =
+            type == NODE_BREAK ? &state->loop->breaks : &state->loop->continues;
+        abstract_state_t *joined =
+            *target ? join_abstract_states(*target, state) : clone_abstract_state(state);
+        destroy_abstract_state(*target);
+        *target = joined;
+        return;
+    }
+    size_t count = get_node_child_count(node);
+    if (type == NODE_FOR || type == NODE_WHILE || type == NODE_DO_WHILE)
+        count = 3;
+    for (size_t i = 0; i < count; i++)
+        collect_loop_transfers(get_node_child(node, i), state);
+}
+
 /** @brief Conservative placeholder until exceptional abstract states are implemented. */
 static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t *arena) {
-    if (state->control_flow == FLOW_NORMAL)
+    if (state->control_flow == FLOW_NORMAL) {
         forget_abstract_values(state);
+        collect_loop_transfers(node, state);
+    }
     return state;
 }
 

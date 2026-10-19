@@ -70,6 +70,7 @@ abstract_state_t *create_abstract_state(arena_t *arena) {
     state->values->copy_value = copy_value;
     state->values->destroy_value = destroy_value;
     state->control_flow = FLOW_NORMAL;
+    state->loop = NULL;
     state->return_value = NULL;
     state->call_frame = NULL;
     state->builtin_bindings_unknown = false;
@@ -91,6 +92,7 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     copy->collector = state->collector;
     copy->values = clone_avl_tree(state->values);
     copy->control_flow = state->control_flow;
+    copy->loop = state->loop;
     copy->return_value = state->return_value;
     copy->call_frame = state->call_frame;
     copy->builtin_bindings_unknown = state->builtin_bindings_unknown;
@@ -186,6 +188,7 @@ abstract_state_t *join_abstract_states(const abstract_state_t *left,
     assert(left->collector == right->collector);
     abstract_state_t *result = create_abstract_state(left->arena);
     result->collector = left->collector;
+    result->loop = left->loop;
     result->control_flow = left->control_flow == FLOW_NORMAL || right->control_flow == FLOW_NORMAL
                                ? FLOW_NORMAL
                            : left->control_flow == FLOW_RETURN || right->control_flow == FLOW_RETURN

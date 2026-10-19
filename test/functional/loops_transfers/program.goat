@@ -1,0 +1,9 @@
+var i=0; var sum=0;
+while(true) { i++; if(i==2) continue; if(i==6) break; sum=sum+i; }
+println(sum); println(i);
+sum=0; var steps=0;
+for(var j=0;j<5;steps=steps+1) { j++; if(j==2) continue; if(j==4) break; sum=sum+j; }
+println(sum); println(steps);
+i=0; var checks=0;
+do { i++; if(i<3) continue; if(i==4) break; } while((checks=checks+1)<10);
+println(i); println(checks);

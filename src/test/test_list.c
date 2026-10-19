@@ -41,6 +41,7 @@
 #include "test_lattice.h"
 #include "test_lib.h"
 #include "test_logic.h"
+#include "test_loops.h"
 #include "test_member_access.h"
 #include "test_model.h"
 #include "test_modulo.h"
@@ -303,6 +304,8 @@ static test_description_t test_list[] = {
     {"data builder", test_data_builder},
     {"linker", test_linker},
     {"node codegen stubs", test_node_codegen_stubs},
+    {"loops parser", test_loops_parser},
+    {"loops bytecode", test_loops_bytecode},
     {"root object call", test_root_object_call}};
 
 int get_number_of_tests() {

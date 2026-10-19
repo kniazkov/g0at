@@ -51,6 +51,8 @@ typedef struct c_generation_context_t {
     bool module_definition; /**< Headers and prototypes are supplied by the module. */
     bool terminates;        /**< Whether the last emitted statement returns on every path. */
     size_t local_count;     /**< Unique local names across nested scopes. */
+    size_t loop_id;         /**< Current native loop label pair. */
+    bool in_loop;           /**< A lexical loop target is active. */
     size_t temporary_count; /**< Unique within one emitted function. */
     c_generation_status_t status;
     const node_t *failed_node; /**< First failure, retained while unwinding. */

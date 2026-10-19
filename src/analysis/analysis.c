@@ -116,6 +116,8 @@ static void assign_node_indexes_and_scopes(node_t *node,
                                                &inner_counter);
                 break;
             }
+            case NODE_WHILE:
+            case NODE_DO_WHILE:
             case NODE_FOR:
             case NODE_STATEMENT_LIST: {
                 /* Ordinary blocks keep the enclosing ID sequence. */

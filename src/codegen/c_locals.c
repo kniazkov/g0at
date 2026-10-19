@@ -41,7 +41,8 @@ static bool prepare(const node_t *node,
         }
     }
     if (node->vtbl->type == NODE_FUNCTION_OBJECT || node->vtbl->type == NODE_STATEMENT_LIST
-        || node->vtbl->type == NODE_FOR)
+        || node->vtbl->type == NODE_FOR || node->vtbl->type == NODE_WHILE
+        || node->vtbl->type == NODE_DO_WHILE)
         return true;
     if (node->vtbl->type == NODE_VARIABLE_DECLARATOR
         || node->vtbl->type == NODE_CONSTANT_DECLARATOR) {
