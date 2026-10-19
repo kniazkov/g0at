@@ -43,8 +43,8 @@ jobs:
           path: doxygen.log
           if-no-files-found: ignore
   linux:
-    name: Build and test (Linux, ${{ matrix.name }})
-    runs-on: ubuntu-latest
+    name: Build and test (Linux, ${{ matrix.arch }}, ${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
     env:
       # Configuration must succeed without a C++ compiler.
       CXX: /nonexistent/cxx
@@ -54,10 +54,27 @@ jobs:
         include:
           - name: GCC
             compiler: gcc
+            arch: x86_64
+            runner: ubuntu-24.04
           - name: Clang
             compiler: clang
+            arch: x86_64
+            runner: ubuntu-24.04
+          - name: GCC
+            compiler: gcc
+            arch: aarch64
+            runner: ubuntu-24.04-arm
+          - name: Clang
+            compiler: clang
+            arch: aarch64
+            runner: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
+      - name: Verify architecture and install build tools
+        run: |
+          test "$(uname -m)" = "${{ matrix.arch }}"
+          sudo apt-get update
+          sudo apt-get install -y gcc clang cmake make python3
       - name: Build and test
         run: bash scripts/build.sh
         env:
@@ -97,6 +114,8 @@ jobs:
           CC: ${{ matrix.compiler }}
       - name: Check for loops and source round trips
         run: python3 scripts/check_for.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/for loops"
+        env:
+          CC: ${{ matrix.compiler }}
 
       - name: Check indexed access and source/binary round trips
         run: python3 scripts/check_index.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/index access"
@@ -119,7 +138,7 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
       - name: Check numeric adapter ABI with x87 evaluation
-        if: matrix.compiler == 'gcc'
+        if: matrix.compiler == 'gcc' && matrix.arch == 'x86_64'
         run: bash scripts/check_native_abi.sh build/gcc/goat build/gcc/native-abi-x87 -mfpmath=387
       - name: Export, compile and execute C modules
         run: bash scripts/check_c_module.sh build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/c-module
@@ -134,13 +153,13 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
       - name: Check generated C with x87 evaluation
-        if: matrix.compiler == 'gcc'
+        if: matrix.compiler == 'gcc' && matrix.arch == 'x86_64'
         run: bash scripts/check_c_generation.sh build/gcc/unit_testing build/gcc/c-generation-x87 -mfpmath=387
       - name: Preserve generated C
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: generated-C-Linux-${{ matrix.name }}
+          name: generated-C-Linux-${{ matrix.arch }}-${{ matrix.name }}
           path: |
             build/${{ matrix.compiler }}/c-generation/generated.c
             build/${{ matrix.compiler }}/c-module/*.c
@@ -160,7 +179,7 @@ jobs:
       - name: Preserve release package
         uses: actions/upload-artifact@v4
         with:
-          name: goat-Linux-${{ matrix.name }}
+          name: goat-Linux-${{ matrix.arch }}-${{ matrix.name }}
           path: build/release-${{ matrix.compiler }}/packages/*.tar.gz
           if-no-files-found: error
       - name: Smoke test release
@@ -181,7 +200,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: native-execution-Linux-${{ matrix.name }}
+          name: native-execution-Linux-${{ matrix.arch }}-${{ matrix.name }}
           path: |
             build/${{ matrix.compiler }}/native functional
             build/${{ matrix.compiler }}/native modes
@@ -191,13 +210,13 @@ jobs:
             build/${{ matrix.compiler }}/native performance
           if-no-files-found: ignore
       - name: Render analysis graphs
-        if: matrix.compiler == 'gcc'
+        if: matrix.compiler == 'gcc' && matrix.arch == 'x86_64'
         run: |
           sudo apt-get update
           sudo apt-get install -y graphviz
           bash scripts/check_graph.sh
       - name: Preserve analysis graphs
-        if: matrix.compiler == 'gcc'
+        if: matrix.compiler == 'gcc' && matrix.arch == 'x86_64'
         uses: actions/upload-artifact@v4
         with:
           name: analysis-graphs
@@ -207,7 +226,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: failures-Linux-${{ matrix.name }}
+          name: failures-Linux-${{ matrix.arch }}-${{ matrix.name }}
           path: test/functional/**/actual_*.txt
           if-no-files-found: ignore
   windows:
