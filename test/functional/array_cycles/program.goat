@@ -1,0 +1,15 @@
+var a = [null]
+a[0] = a
+println(a)
+var b = [a, a]
+println(b)
+var o = { var value = b }
+a[0] = o
+println(a)
+var key = [null]
+var dict = {}
+key[0] = dict
+dict[key] = key
+println(key)
+a[0] = null
+println(a)

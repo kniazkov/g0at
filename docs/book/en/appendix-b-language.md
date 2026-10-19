@@ -13,7 +13,7 @@ Values are `null`, booleans `true`/`false`, 64-bit integers, real `double` value
 A function is written `func(a, b) { ... }`, a call `f(a, b)`, and a return `return e;` or `return;`. Without an explicit return, the result is `null`. A condition is `if (e) statement` with optional `else`. Exceptions use `throw e;` and `try statement catch (name) { ... }`. A block `{ ... }` is an expression returning its context object. Semicolons make boundaries explicit; a newline is not itself a statement-termination rule.
 
 > [!CAUTION]
-> Arrays, `while` / `do/while` loops and imports are not implemented. `obj.name`, `obj[key]`, `Exceptions.INVALID_ARGUMENT` and call chains such as `f()()` are supported.
+> `while` / `do/while` loops and imports are not implemented. `obj.name`, `obj[key]`, `Exceptions.INVALID_ARGUMENT` and call chains such as `f()()` are supported.
 
 `for (initial; condition; step) statement` executes initialization once and checks the condition before every iteration. A successful check is followed by the body and step. Initialization accepts one expression or a `var`/`const` declaration, including multiple declarators; condition and step each accept one expression. Every slot is optional, but both semicolons are required. An absent condition is true; `;` is an empty body. Header declarations have loop scope, and the body has a fresh nested scope per iteration. `return` and exceptions skip the remaining body and step. See [chapter 2](02-implemented-language.md) for examples.
 
@@ -104,8 +104,42 @@ The property dictionary maps **objects to objects**. Keys are not converted to s
 
 Reads evaluate the receiver, then indices left to right. Assignments evaluate **the right-hand side first**, then the receiver and indices, each exactly once, and return the assigned value. `a[k] = b[j] = value` associates right to left. `obj[key](args)` passes a receiver like `obj.method(args)`; call arguments are evaluated before the receiver. `++` and `--` still accept only variables.
 
-Syntax allows `obj[]` and `obj[i, j]`, but ordinary objects accept **exactly one index**. Other counts raise `INVALID_ARGUMENT` after operand evaluation. This prepares for future multi-index types; it does not implement arrays. Strings currently use property indexing too: `s["length"]` reads the length, while `s[0]` does not replace `s.charAt(0)`.
+Syntax allows `obj[]` and `obj[i, j]`, but ordinary objects accept **exactly one index**. Other counts raise `INVALID_ARGUMENT` after operand evaluation. This prepares for future multi-index types; arrays also accept one index, but dispatch to their own access methods. Strings currently use property indexing too: `s["length"]` reads the length, while `s[0]` does not replace `s.charAt(0)`.
 
 `this` denotes the object of the current scope, including `{ ... }`. **It is not the method receiver as Java/JS experience might suggest.** See [Section 10.8](10-contexts-and-closures.md#section-10-8) for the comparison and example.
 
 Indexing executes in the VM through dedicated `GETINDEX`/`SETINDEX` instructions and `get_index`/`set_index` virtual methods accepting an index list. Native lowering of `[]` is not implemented yet. All `index_*` fixtures are automatically checked at both optimization levels, after source regeneration and after saved-bytecode loading.
+
+
+## Arrays
+
+An array is a separate mutable object type. Literals use square brackets;
+a trailing comma is allowed and does not add an element:
+
+```goat
+var values = [1, "two", [true, false,],]
+println(values.length) // 3
+values[0] = 42
+println(values[2][1]) // false
+```
+
+Elements are evaluated once, from left to right. Every literal creates a fresh
+array, including `[]`. Elements may hold any values, nested arrays, functions
+and object references. Holes such as `[1,,2]` are not allowed.
+
+Length is fixed in this version. `array.length` is a read-only integer property.
+Indexed reads and writes require exactly one **integer** index in the range
+zero through `length - 1`. Negative/out-of-bounds indices, real numbers (even
+`0.0`), other types or other index counts raise `INVALID_ARGUMENT`. Assignment
+does not grow an array. Named properties cannot be added; `a["length"]` does
+not replace `a.length`. Trailing commas are allowed in literals, not indices.
+
+Assignment shares the array reference, so aliases observe mutations. Equality
+compares identity rather than contents. Empty arrays are false; nonempty arrays
+are true. Printing uses `[1,"text",true]`; cyclic array references become `[...]`
+and cyclic dictionary references become `{...}`. Garbage collection traverses
+elements and reclaims unreachable cycles, including mixed array/object cycles.
+
+Arrays execute only in the VM for now, with no native representation or ABI.
+Automatic mode keeps this work in the VM. Newlines do not terminate expressions:
+use a semicolon between separate expressions `a; [1]`, since `a[1]` is indexing.

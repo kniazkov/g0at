@@ -250,10 +250,15 @@ typedef struct {
 static string_value_t render_user_defined_object_notation(notation_renderer_t *renderer,
                                                           object_user_defined_t *uobj);
 
-/** @brief Appends a value's Goat notation, recursing into user-defined objects. */
+/** @brief Renders an array using the same path as dictionary rendering. */
+static string_value_t render_array_notation(notation_renderer_t *renderer, const object_t *obj);
+
+/** @brief Appends a value's Goat notation, recursing into containers. */
 static void render_object_value_notation(notation_renderer_t *renderer, object_t *value) {
     if (value->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
         render_user_defined_object_notation(renderer, (object_user_defined_t *)value);
+    } else if (value->vtbl->type == TYPE_ARRAY) {
+        render_array_notation(renderer, value);
     } else {
         string_value_t str = convert_object_to_string_notation(value);
         append_string_value(renderer->builder, str);
@@ -301,21 +306,35 @@ static string_value_t render_user_defined_object_notation(notation_renderer_t *r
     return result;
 }
 
-/** @brief Implements @ref object_vtbl_t::to_string_notation. */
-static string_value_t to_string_notation(const object_t *obj) {
-    object_user_defined_t *uobj = (object_user_defined_t *)obj;
-    if (uobj->properties->root == NULL) {
-        return STATIC_STRING(L"{ }");
+/** @brief Renders a sequence, abbreviating cycles with [...]. */
+static string_value_t render_array_notation(notation_renderer_t *renderer, const object_t *obj) {
+    for (size_t i = 0; i < renderer->active->size; i++)
+        if (renderer->active->data[i] == obj)
+            return append_string(renderer->builder, L"[...]");
+    append_to_vector(renderer->active, (void *)obj);
+    append_char(renderer->builder, L'[');
+    object_array_t elements = get_array_elements(obj);
+    for (size_t i = 0; i < elements.size; i++) {
+        if (i)
+            append_char(renderer->builder, L',');
+        render_object_value_notation(renderer, elements.items[i]);
     }
-    notation_renderer_t renderer;
+    renderer->active->size--;
+    return append_char(renderer->builder, L']');
+}
+
+string_value_t container_to_string_notation(const object_t *obj) {
     string_builder_t builder;
     init_string_builder(&builder, 2);
-    renderer.builder = &builder;
-    renderer.active = create_vector();
-    renderer.mark = 0;
-    string_value_t result = render_user_defined_object_notation(&renderer, uobj);
+    notation_renderer_t renderer = {&builder, create_vector(), 0};
+    render_object_value_notation(&renderer, (object_t *)obj);
     destroy_vector(renderer.active);
-    return result;
+    return (string_value_t){builder.data, builder.length, true};
+}
+
+/** @brief Implements @ref object_vtbl_t::to_string_notation. */
+static string_value_t to_string_notation(const object_t *obj) {
+    return container_to_string_notation(obj);
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string. */

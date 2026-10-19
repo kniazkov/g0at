@@ -369,6 +369,23 @@ static bool execute_index(runtime_t *runtime, instruction_t instr, thread_t *thr
     return true;
 }
 
+/** @brief Creates an array from the last arg1 stack values, preserving source order. */
+static bool exec_ARRAY(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_stack_t *stack = thread->data_stack;
+    require_object_stack_size(stack, instr.arg1);
+    size_t base = stack->size - instr.arg1;
+    object_t *array = create_array_object(
+        thread->process,
+        (object_array_t){instr.arg1 ? stack->objects + base : NULL, instr.arg1});
+    while (stack->size > base) {
+        object_t *value = pop_object_from_stack(stack);
+        DECREF(value);
+    }
+    push_object_onto_stack(stack, array);
+    thread->instr_id++;
+    return true;
+}
+
 /** @brief Executes GETINDEX. */
 static bool exec_GETINDEX(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     return execute_index(runtime, instr, thread, false);
@@ -783,7 +800,8 @@ static instr_executor_t executors[] = {
     exec_TRY,      /**< Creates an exception-handler context. */
     exec_THROW,    /**< Unwinds to the nearest exception handler. */
     exec_GETINDEX, /**< Reads through the indexing virtual method. */
-    exec_SETINDEX  /**< Writes through the indexing virtual method. */
+    exec_SETINDEX, /**< Writes through the indexing virtual method. */
+    exec_ARRAY     /**< Creates a new array. */
     // Additional opcodes can be added here in the future...
 };
 

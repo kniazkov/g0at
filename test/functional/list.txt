@@ -469,3 +469,10 @@ index_prototypes
 index_cycles
 index_stress
 index_scope_binding
+array_literals
+array_assignment
+array_errors
+array_order
+array_functions
+array_cycles
+array_loops

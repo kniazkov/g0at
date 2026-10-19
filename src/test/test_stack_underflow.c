@@ -21,16 +21,17 @@
 static const struct {
     opcode_t opcode;
     int operands;
-} cases[] = {{GETINDEX, 0}, {GETINDEX, 1}, {SETINDEX, 0}, {SETINDEX, 1}, {SETINDEX, 2}, {LNOT, 0},
-             {BOOL, 0},     {BNOT, 0},     {LAND, 0},     {LOR, 0},      {BAND, 0},     {BAND, 1},
-             {BOR, 0},      {BOR, 1},      {BXOR, 0},     {BXOR, 1},     {SHL, 0},      {SHL, 1},
-             {SHR, 0},      {SHR, 1},      {FUNC, 0},     {JIF, 0},      {POP, 0},      {DUP, 0},
-             {VAR, 0},      {CONST, 0},    {STORE, 0},    {UPLUS, 0},    {UMINUS, 0},   {INC, 0},
-             {DEC, 0},      {THROW, 0},    {RET, 0},      {CALL, 0},     {ADD, 0},      {ADD, 1},
-             {SUB, 0},      {SUB, 1},      {MUL, 0},      {MUL, 1},      {DIVIDE, 0},   {DIVIDE, 1},
-             {MODULO, 0},   {MODULO, 1},   {POWER, 0},    {POWER, 1},    {LESS, 0},     {LESS, 1},
-             {LEQ, 0},      {LEQ, 1},      {GREATER, 0},  {GREATER, 1},  {GREQ, 0},     {GREQ, 1},
-             {EQUAL, 0},    {EQUAL, 1},    {DIFF, 0},     {DIFF, 1},     {CALL, 1},     {RET, 1}};
+} cases[] = {{ARRAY, 0},    {ARRAY, 1},  {GETINDEX, 0}, {GETINDEX, 1}, {SETINDEX, 0}, {SETINDEX, 1},
+             {SETINDEX, 2}, {LNOT, 0},   {BOOL, 0},     {BNOT, 0},     {LAND, 0},     {LOR, 0},
+             {BAND, 0},     {BAND, 1},   {BOR, 0},      {BOR, 1},      {BXOR, 0},     {BXOR, 1},
+             {SHL, 0},      {SHL, 1},    {SHR, 0},      {SHR, 1},      {FUNC, 0},     {JIF, 0},
+             {POP, 0},      {DUP, 0},    {VAR, 0},      {CONST, 0},    {STORE, 0},    {UPLUS, 0},
+             {UMINUS, 0},   {INC, 0},    {DEC, 0},      {THROW, 0},    {RET, 0},      {CALL, 0},
+             {ADD, 0},      {ADD, 1},    {SUB, 0},      {SUB, 1},      {MUL, 0},      {MUL, 1},
+             {DIVIDE, 0},   {DIVIDE, 1}, {MODULO, 0},   {MODULO, 1},   {POWER, 0},    {POWER, 1},
+             {LESS, 0},     {LESS, 1},   {LEQ, 0},      {LEQ, 1},      {GREATER, 0},  {GREATER, 1},
+             {GREQ, 0},     {GREQ, 1},   {EQUAL, 0},    {EQUAL, 1},    {DIFF, 0},     {DIFF, 1},
+             {CALL, 1},     {RET, 1}};
 
 void run_stack_underflow_case(int index) {
     process_t *proc = create_process();
@@ -96,7 +97,8 @@ void run_stack_underflow_case(int index) {
         builder,
         (instruction_t){.opcode = cases[index].opcode,
                         .arg0 = cases[index].opcode == CALL ? 2 : 0,
-                        .arg1 = (cases[index].opcode == GETINDEX || cases[index].opcode == SETINDEX)
+                        .arg1 = (cases[index].opcode == GETINDEX || cases[index].opcode == SETINDEX
+                                 || cases[index].opcode == ARRAY)
                                     ? UINT32_MAX
                                     : key});
     add_instruction(builder, (instruction_t){.opcode = END});

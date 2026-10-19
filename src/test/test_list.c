@@ -9,6 +9,7 @@
 #include "test_abstract_state.h"
 #include "test_addition.h"
 #include "test_analysis.h"
+#include "test_array.h"
 #include "test_binary.h"
 #include "test_builtin_functions.h"
 #include "test_c_body.h"
@@ -244,6 +245,8 @@ static test_description_t test_list[] = {
     {"properties", test_properties},
     {"string topology", test_string_topology},
     {"store and load", test_store_and_load},
+    {"array parser", test_array_parser},
+    {"array model and lifetime", test_array_model},
     {"index parser", test_index_parser},
     {"index virtual dispatch", test_index_dispatch},
     {"index model and lifetime", test_index_model},

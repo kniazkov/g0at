@@ -88,6 +88,8 @@ typedef enum {
     /** @brief Member access node type (named property read or write target). */
     NODE_MEMBER_ACCESS,
 
+    NODE_ARRAY, /**< Array literal. */
+
     NODE_INDEX_ACCESS, /**< Indexed read or assignment target. */
 
     /** @brief Simple assignment operation node type. */
