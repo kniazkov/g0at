@@ -1,0 +1,15 @@
+var arr=[10]; var effects=0;
+const bad=func(){effects++;throw "rhs";};
+try {arr[0]+=bad();} catch(e) {println(e);}
+println(arr); println(effects);
+try {arr[0]/=0;} catch(e) {println("division");}
+println(arr);
+const value=func(){effects++;return 2;};
+try {arr[5]+=value();} catch(e) {println("index");}
+try {arr[0,1]+=value();} catch(e) {println("arity");}
+try {arr[]+=value();} catch(e) {println("empty");}
+println(effects);
+const fixed=3; try {fixed+=value();} catch(e) {println("constant");}
+println(fixed); println(effects);
+for(var i=0;i<100;i++){try {arr[0]+=bad();} catch(e) {}}
+println(arr); println(effects);

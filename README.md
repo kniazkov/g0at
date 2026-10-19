@@ -186,4 +186,6 @@ Prototype-based object construction and multiple inheritance are described in [t
 
 See [loops and loop transfers](docs/loops.md) for syntax, scopes, and native support (English and Russian).
 
+See [compound assignments](docs/compound-assignment.md) for evaluation order, exception behavior, and native support (English and Russian).
+
 See [switch selection](docs/switch.md) for ordered variants, branch scopes, diagnostics, and native support (English and Russian).

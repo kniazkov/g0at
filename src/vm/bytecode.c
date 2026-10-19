@@ -86,7 +86,9 @@ static instruction_descriptor_t descriptors[] = {
     {.code = L"ARRAY", .arg_1_is_unsigned_integer = true},
     {.code = L"INHERIT", .has_arg_0 = true, .arg_1_is_unsigned_integer = true},
     {.code = L"LOOP_ENTER"},
-    {.code = L"LOOP_JUMP", .arg_1_is_unsigned_integer = true}};
+    {.code = L"LOOP_JUMP", .arg_1_is_unsigned_integer = true},
+    {.code = L"DUPN", .arg_1_is_unsigned_integer = true},
+    {.code = L"ROTATE", .arg_1_is_unsigned_integer = true}};
 
 /** @brief Defines the column width for instruction numbers in the bytecode text representation. */
 #define NUMBER_COLUMN_SIZE 8

@@ -1,0 +1,4 @@
+const sum=func(n){var result=0;for(var i=0;i<n;i+=1){result+=i;}return result;};
+println(sum(5)); println(sum(10));
+var a=1; var b=2; var c=3; println(a+=b+=c*=2); println(a); println(b); println(c);
+var values=[1,2,3]; for(var i=0;i<3;i+=1){values[i]<<=1;} println(values);

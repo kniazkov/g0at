@@ -1,0 +1,7 @@
+const proto={var x=10;}; var obj=proto->{};
+println(obj.x+=2); println(obj.x); println(proto.x);
+println(obj["x"]*=3); println(obj.x); println(proto.x);
+var dict={this[true]=5;this[3]=7;};
+println(dict[true]+=2); println(dict[3]*=2);
+const counter=func(){var n=1;return func(v){return n+=v;};};
+var next=counter(); println(next(2)); println(next(4));

@@ -1,0 +1,14 @@
+rhs
+[10]
+1
+division
+[10]
+index
+arity
+empty
+1
+constant
+3
+2
+[10]
+102

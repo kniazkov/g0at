@@ -22,8 +22,8 @@ The format is implemented in [binary.c](https://github.com/kniazkov/g0at/blob/64
 
 | Offset | Size | Outer-header field |
 |---:|---:|---|
-| 0 | 8 | Signature `GOATBIN7` |
-| 8 | 8 | Format version, currently 7 |
+| 0 | 8 | Signature `GOATBIN8` |
+| 8 | 8 | Format version, currently 8 |
 | 16 | 8 | Platform tag |
 | 24 | 8 | Bytecode-image size |
 | 32 | 8 | Binding count |
@@ -132,4 +132,4 @@ To save bytecode alone, use `--compile` without enabling native mode. An old lib
 
 The CLI sequence is in [binary_program.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/cli/binary_program.c); the saved-program interface is in [binary.h](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/vm/binary.h). [check_binary_program.sh](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/scripts/check_binary_program.sh) checks moving pairs to another directory, execution without source or compiler, missing and mismatched libraries, damaged files, and failure modes. This completes the path from a proven specialization to a reusable executable artifact. The next part addresses observing, testing, and measuring this implementation.
 
-Format version 7 adds the method-call instruction CALLM and rejects earlier `.gbin` files, which must be recompiled. Version 6 changed CALL argument evaluation from right-to-left to left-to-right; version 5 introduced the property-access instructions GETPROP and SETPROP; version 4 introduced the character-load instruction; version 3 introduced saturating arithmetic; still older files could use wrapping arithmetic. SHA-256 binds the pair when the bytecode is trusted; it is not a digital signature and does not prevent replacement of both files and the hash. The container checksum remains FNV-1a for corruption detection.
+Format version 8 adds the retained-address stack instructions DUPN and ROTATE; older `.gbin` files must be recompiled. Version 7 adds the method-call instruction CALLM and rejects earlier `.gbin` files, which must be recompiled. Version 6 changed CALL argument evaluation from right-to-left to left-to-right; version 5 introduced the property-access instructions GETPROP and SETPROP; version 4 introduced the character-load instruction; version 3 introduced saturating arithmetic; still older files could use wrapping arithmetic. SHA-256 binds the pair when the bytecode is trusted; it is not a digital signature and does not prevent replacement of both files and the hash. The container checksum remains FNV-1a for corruption detection.

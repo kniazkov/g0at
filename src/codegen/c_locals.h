@@ -22,6 +22,12 @@ bool c_emit_declarator(const node_t *node,
                        c_generation_context_t *context,
                        source_builder_t *builder,
                        size_t indent);
+/** @brief Stores an already generated value to a proven local binding. */
+c_generated_expression_t c_store_local(const node_t *node,
+                                       const node_t *target,
+                                       c_generated_expression_t right,
+                                       c_generation_context_t *context);
+
 /** @brief Implements node_vtbl_t::generate_c_code for assignment to local storage. */
 c_generated_expression_t c_assignment(const node_t *node, c_generation_context_t *context);
 

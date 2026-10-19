@@ -14,6 +14,7 @@
 #include "function_effects.h"
 #include "function_return.h"
 #include "function_summary.h"
+#include "graph/compound_assignment.h"
 #include "graph/declarations.h"
 #include "graph/expression.h"
 #include "graph/node.h"
@@ -227,7 +228,8 @@ static bool writes_pending_constant(const node_t *node,
     if (!parent)
         return false;
     node_type_t type = parent->vtbl->type;
-    bool write = (type == NODE_SIMPLE_ASSIGNMENT && get_node_child(parent, 0) == node)
+    bool write = is_compound_assignment_target(node)
+                 || (type == NODE_SIMPLE_ASSIGNMENT && get_node_child(parent, 0) == node)
                  || (type >= NODE_PREFIX_INCREMENT && type <= NODE_POSTFIX_DECREMENT);
     if (!write)
         return false;
@@ -334,8 +336,9 @@ static void bind_variables_from_node_and_children(node_t *node,
                     error->next = *errors;
                     *errors = error;
                 }
-            } else if (parent_type >= NODE_PREFIX_INCREMENT
-                       && parent_type <= NODE_POSTFIX_DECREMENT) {
+            } else if (is_compound_assignment_target(node)
+                       || (parent_type >= NODE_PREFIX_INCREMENT
+                           && parent_type <= NODE_POSTFIX_DECREMENT)) {
                 /* An update of an undeclared name is ambiguous at the top level. Inside a
                    function body such an update resolves dynamically through the closure and
                    method-receiver chain, so it is allowed and treated like a read. */

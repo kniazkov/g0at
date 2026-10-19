@@ -110,7 +110,7 @@ bool test_binary_rejection(void) {
     copy[size] = 0;
     ASSERT(rejected(copy, size + 1));
     /* Reject earlier instruction sets even when the checksum is valid. */
-    for (unsigned version = 1; version < 7; version++) {
+    for (unsigned version = 1; version < 8; version++) {
         memcpy(copy, bytes, size);
         copy[7] = (unsigned char)('0' + version);
         put64(copy, 8, version);

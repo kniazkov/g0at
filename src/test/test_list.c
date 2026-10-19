@@ -27,6 +27,7 @@
 #include "test_character.h"
 #include "test_codegen.h"
 #include "test_comparison.h"
+#include "test_compound.h"
 #include "test_direct_recursion.h"
 #include "test_division.h"
 #include "test_function_analysis.h"
@@ -305,6 +306,7 @@ static test_description_t test_list[] = {
     {"data builder", test_data_builder},
     {"linker", test_linker},
     {"node codegen stubs", test_node_codegen_stubs},
+    {"compound parser", test_compound_parser},
     {"switch parser", test_switch_parser},
     {"switch warnings", test_switch_warnings},
     {"loops parser", test_loops_parser},

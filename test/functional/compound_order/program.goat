@@ -1,0 +1,11 @@
+var a=10; println(a+=(a=5)); println(a);
+var arr=[10,20]; var other=arr; var i=0;
+const receiver=func(){println("object");return arr;};
+const index=func(){println("index");return i++;};
+const rhs=func(){println("rhs");arr=[99];other[0]=100;return 5;};
+println(receiver()[index()]+=rhs()); println(other); println(arr); println(i);
+var obj={var x=7;}; var original=obj;
+const object=func(){println("member");return obj;};
+const change=func(){obj={var x=90;};original.x=20;return 3;};
+println(object().x+=change()); println(original.x); println(obj.x);
+var nested=[[3]]; println(nested[0][0]*=4); println(nested);
