@@ -7,6 +7,7 @@
 #include "abstract_state.h"
 #include "builtins/registry.h"
 #include "codegen/c_string_methods.h"
+#include "codegen/c_switch.h"
 #include "function_return.h"
 #include "graph/expression.h"
 #include "graph/loop.h"
@@ -36,6 +37,8 @@ bool c_body_falls_through(const node_t *node, const c_expression_context_t *cont
     node_type_t type = node->vtbl->type;
     if (type == NODE_BREAK || type == NODE_CONTINUE || type == NODE_RETURN || type == NODE_THROW)
         return false;
+    if (type == NODE_SWITCH)
+        return c_switch_falls_through(node, context);
     if (type == NODE_STATEMENT_EXPRESSION)
         return c_body_falls_through(get_node_child(node, 0), context);
     if (is_statement_list(type)) {

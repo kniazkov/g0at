@@ -50,6 +50,8 @@ typedef struct {
     const wchar_t const *brackets_do_not_match;
     const wchar_t const *not_a_statement;
     const wchar_t const *expected_expression;
+    const wchar_t const *invalid_switch;
+    const wchar_t const *duplicate_case;
     const wchar_t const *invalid_loop;
     const wchar_t const *loop_jump_outside;
 

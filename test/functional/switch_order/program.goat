@@ -1,0 +1,12 @@
+var log="";
+const mark=func(n) { log=log+str(n); return n; };
+switch(mark(2)) { case mark(1),mark(2),mark(3): println("match"); case mark(4): println("wrong"); default: println("wrong"); }
+println(log);
+log="";
+switch(mark(7)) { case mark(1),mark(2): println("wrong"); case mark(3): println("wrong"); default: println("miss"); }
+println(log);
+var n=1;
+switch(n++) { case n++: println("wrong"); case 1: println("saved"); }
+println(n);
+switch(mark(8)) {}
+println(log);

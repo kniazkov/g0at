@@ -35,6 +35,10 @@ typedef enum {
     TOKEN_CONST,  /**< The 'const' keyword for constant declarations */
     TOKEN_FUNC,   /**< The 'func' keyword for function declarations */
     TOKEN_RETURN, /**< The 'return' keyword used in return statements */
+    TOKEN_SWITCH,
+    TOKEN_CASE,
+    TOKEN_DEFAULT,
+    TOKEN_COLON,
     TOKEN_WHILE,
     TOKEN_DO,
     TOKEN_BREAK,

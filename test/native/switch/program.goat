@@ -1,0 +1,25 @@
+const integer=func(n) { switch(n) { case 1,2,3,: return n+10; case 4: return n*2; default: return -1; } };
+const real=func(n) { switch(n) { case 1: return 10; case 2.5: return 25; default: return -1; } };
+const text=func(s) { var result="?"; switch(s) { case "a","bc": result=s+"!"; case "": result="empty"; default: result=s+"?"; } return result; };
+const boolean=func(b) { switch(b) { case 1: return 100; case true: return 1; default: return 0; } };
+const character=func(c) { switch(c) { case 97,"a": return 100; case 'a','b': return 1; default: return 0; } };
+const ordered=func(n) { var x=n; switch(x++) { case ++x,++x: return 100; case n: return x; default: return -1; } };
+const loops=func(n) { var sum=0; for(var i=0;i<n;i++) { switch(i) { case 1: continue; case 4: break; default: switch(i) { case 0: sum=sum+10; default: sum=sum+i; } } sum=sum+1; } return sum; };
+const empty=func(n) { switch(n++) {} return n; };
+println(integer(2)); println(integer(4)); println(integer(9));
+println(real(1.0)); println(real(2.5)); println(real(3.0));
+println(text("bc")); println(text("")); println(text("x"));
+println(boolean(true)); println(boolean(false));
+println(character('a')); println(character('z'));
+println(ordered(2)); println(ordered(7));
+println(loops(10)); println(loops(0)); println(empty(5));
+
+const precise=func(n) {
+ switch(n) { case 9007199254740992.0: return 1; case 9007199254740993: return 2; case -0.0: return 3; default: return 4; }
+};
+println(precise(9007199254740993)); println(precise(9007199254740992));
+println(precise(9007199254740992.0)); println(precise(-0.0)); println(precise((-1)**0.5));
+const fixed=func(n) { switch(1) { case 1: return n; case 2: return n+100; } };
+println(fixed(4)); println(fixed(7));
+const unicode=func(s) { switch(s) { case "😀": return 1; case "a"+'\0'+"b": return 2; case "a"+'\0'+"c": return 3; default: return 4; } };
+println(unicode("😀")); println(unicode("a"+'\0'+"b")); println(unicode("a"+'\0'+"c")); println(unicode("a"));

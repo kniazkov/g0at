@@ -30,6 +30,7 @@
 #include "reachability.h"
 #include "resources/messages.h"
 #include "simplification.h"
+#include "switch_warnings.h"
 #include "unused_bindings.h"
 
 #include <assert.h>
@@ -457,6 +458,9 @@ compilation_error_t *analyze(node_t *root_node,
         assign_scope_to_subtree(insertion->item, insertion->target, insertion->target->scope);
     }
     destroy_vector_ex(insertions, FREE);
+
+    if (options->enable_warnings)
+        warn_duplicate_cases(root_node, memory->graph, memory->errors, &errors);
 
     if (options->optimization_level == OPTIMIZATION_NONE)
         return errors;

@@ -133,6 +133,9 @@ static const keyword_lookup_t keywords[] = {
     {L"try", 3, TOKEN_TRY, NULL, offsetof(token_groups_t, control_flow_keywords)},
     {L"catch", 5, TOKEN_CATCH, NULL, offsetof(token_groups_t, catch_keywords)},
     {L"throw", 5, TOKEN_THROW, NULL, offsetof(token_groups_t, throw_keywords)},
+    {L"switch", 6, TOKEN_SWITCH, NULL, offsetof(token_groups_t, control_flow_keywords)},
+    {L"case", 4, TOKEN_CASE, NULL, SIZE_MAX},
+    {L"default", 7, TOKEN_DEFAULT, NULL, SIZE_MAX},
     {L"while", 5, TOKEN_WHILE, NULL, offsetof(token_groups_t, control_flow_keywords)},
     {L"do", 2, TOKEN_DO, NULL, offsetof(token_groups_t, do_keywords)},
     {L"break", 5, TOKEN_BREAK, NULL, offsetof(token_groups_t, loop_jumps)},
@@ -494,6 +497,9 @@ token_t *get_token(scanner_t *scan) {
     } else if (ch == L',') {
         token->type = TOKEN_COMMA;
         token->text = (string_view_t){L",", 1};
+        next_char(scan);
+    } else if (ch == L':') {
+        token->type = TOKEN_COLON;
         next_char(scan);
     } else if (ch == L';') {
         token->type = TOKEN_SEMICOLON;

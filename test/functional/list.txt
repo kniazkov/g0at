@@ -506,3 +506,10 @@ loops_scope
 loops_exceptions
 loops_expression_stack
 loops_optimization
+switch_basic
+switch_order
+switch_scope
+switch_loops
+switch_exceptions
+switch_objects
+switch_expression_stack
