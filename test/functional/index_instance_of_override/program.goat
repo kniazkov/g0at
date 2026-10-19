@@ -1,0 +1,34 @@
+var obj = { var label = "custom" }
+var other = {}
+var calls = 0
+println(obj.instanceOf(Object))
+println(obj.instanceOf(String))
+
+// Shadow the inherited method; the replacement deliberately changes its meaning.
+obj.instanceOf = func(type) {
+    calls = calls + 1
+    return type == String
+}
+println(obj.instanceOf(Object))
+println(obj.instanceOf(String))
+println(obj["instanceOf"](String))
+println(calls)
+
+// Neither the global function nor another object's inherited method is replaced.
+println(instanceOf(obj, Object))
+println(instanceOf(obj, String))
+println(other.instanceOf(Object))
+println(other.instanceOf(String))
+
+// The indexed setter replaces the same property; ordinary receiver lookup still works.
+obj["instanceOf"] = func(type) { return this.label }
+println(obj.instanceOf(Object))
+println(obj["instanceOf"](String))
+println(calls)
+
+// A method can also be declared directly in an object literal.
+var declared = {
+    var instanceOf = func(type) { return "declared" }
+}
+println(declared.instanceOf(Object))
+println(instanceOf(declared, Object))
