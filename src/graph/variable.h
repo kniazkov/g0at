@@ -23,4 +23,7 @@ typedef struct variable_t {
      * May be NULL if the variable is unresolved.
      */
     declarator_t *declarator;
+
+    /** @brief Name may be supplied or shadowed by runtime prototypes. */
+    bool dynamic_lookup;
 } variable_t;

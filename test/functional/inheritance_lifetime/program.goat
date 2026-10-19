@@ -1,0 +1,11 @@
+const P = { var x = 0; };
+var total = 0;
+for (var i = 0; i < 300; i++) {
+    var v = P -> { x = i; const get = func() { return x; }; };
+    total = total + v.get();
+}
+println(total); println(P.x);
+var escape = null;
+const save = func(o) { escape = o; };
+try { P -> { save(this); x = 17; throw "saved"; }; } catch(e) { println(e); }
+println(escape.x); println(escape.instanceOf(P));

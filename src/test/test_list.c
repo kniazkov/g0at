@@ -37,6 +37,7 @@
 #include "test_function_specialization.h"
 #include "test_function_summary.h"
 #include "test_index.h"
+#include "test_inheritance.h"
 #include "test_lattice.h"
 #include "test_lib.h"
 #include "test_logic.h"
@@ -249,6 +250,9 @@ static test_description_t test_list[] = {
     {"clone method", test_clone_method},
     {"array methods", test_array_methods},
     {"array parser", test_array_parser},
+    {"inheritance parser", test_inheritance_parser},
+    {"inheritance bytecode", test_inheritance_bytecode},
+    {"inheritance lifetime", test_inheritance_lifetime},
     {"array model and lifetime", test_array_model},
     {"index parser", test_index_parser},
     {"index virtual dispatch", test_index_dispatch},

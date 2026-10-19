@@ -1,0 +1,8 @@
+const Vector = { var x = 0; var y = 0; const length = func() { return sqrt(x*x+y*y); }; };
+var v = Vector -> { x = 3; y = 4; };
+println(v.length()); println(v.instanceOf(Vector)); println(v.instanceOf(Object));
+println(Vector.x); println(Vector.y);
+var other = Vector -> {};
+println(other.length());
+v.x = 6; v["y"] = 8;
+println(v.length()); println(other.x); println(Vector.x);

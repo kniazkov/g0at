@@ -1,0 +1,9 @@
+const P = { var x = 2; };
+var items = [P -> { x = 3; }, P -> {}];
+println(items[0].x); println(items[1].x);
+const id = func(x) { return x; };
+println(id(P -> { x = 7; }).x);
+println((P -> { x = 4; } -> { x = x + 1; }).x);
+println((items[0] -> {}).x);
+println(([P -> { x = 6; }, P] -> {}).x);
+println((id(P) -> {}).x);

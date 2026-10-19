@@ -16,6 +16,8 @@
 #include <memory.h>
 #include <stdbool.h>
 
+compilation_error_t *parsing_inheritance(token_t *, parser_memory_t *, token_groups_t *);
+
 /** @brief Reduces postfix updates before prefix updates. */
 compilation_error_t *parsing_postfix_updates(token_t *, parser_memory_t *, token_groups_t *);
 compilation_error_t *parsing_prefix_updates(token_t *, parser_memory_t *, token_groups_t *);
@@ -407,6 +409,7 @@ apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory, parsing_r
     APPLY_FORWARD(bitwise_or_operators, parsing_logic_operators);
     APPLY_FORWARD(logical_and_operators, parsing_logic_operators);
     APPLY_FORWARD(logical_or_operators, parsing_logic_operators);
+    APPLY_FORWARD(inheritance_operators, parsing_inheritance);
     APPLY_BACKWARD(assignment_operators, parsing_assignment_operators);
     APPLY_FORWARD(function_arguments, parsing_function_call_args);
     APPLY_FORWARD(var_keywords, parsing_variable_declarations);

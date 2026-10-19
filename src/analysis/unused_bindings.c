@@ -5,6 +5,7 @@
 #include "unused_bindings.h"
 
 #include "graph/replacement.h"
+#include "graph/scope.h"
 #include "graph/variable.h"
 #include "simplification.h"
 
@@ -24,8 +25,18 @@ static bool reads(const node_t *node, const declarator_t *binding) {
     node = replacement_result(node);
     if (is_deletion(node) || node_has_flag(node, NODE_FLAG_UNREACHABLE))
         return false;
-    if (node->vtbl->type == NODE_VARIABLE)
-        return ((const variable_t *)node)->declarator == binding;
+    if (node->vtbl->type == NODE_INHERITANCE) {
+        /* The resulting object exposes its captured environment through property lookup. */
+        for (const scope_t *scope = node->scope; scope; scope = scope->parent)
+            if (scope == binding->base.scope)
+                return true;
+    }
+    if (node->vtbl->type == NODE_VARIABLE) {
+        const variable_t *variable = (const variable_t *)node;
+        return variable->declarator == binding
+               || (variable->dynamic_lookup && variable->name.length == binding->name.length
+                   && !wmemcmp(variable->name.data, binding->name.data, variable->name.length));
+    }
     size_t first = 0;
     if (node->vtbl->type == NODE_SIMPLE_ASSIGNMENT) {
         const node_t *left = get_node_child(node, 0);

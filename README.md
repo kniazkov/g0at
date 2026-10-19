@@ -181,3 +181,5 @@ The build scripts run the three core suites. Additional scripts check generated 
 Created by [Ivan Kniazkov](https://github.com/kniazkov).
 
 Goat is distributed under the [MIT license](LICENSE.txt).
+
+Prototype-based object construction and multiple inheritance are described in [the `->` operator guide](docs/prototype-inheritance.md) (English and Russian).

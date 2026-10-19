@@ -32,7 +32,7 @@ void record_function_access(function_summary_t *summary,
     }
     const variable_t *variable = (const variable_t *)node;
     const declarator_t *decl = variable->declarator;
-    if (!decl) {
+    if (!decl || variable->dynamic_lookup) {
         summary->direct_effects |= FUNCTION_EFFECT_UNKNOWN;
         return;
     }

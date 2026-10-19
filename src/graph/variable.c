@@ -63,6 +63,8 @@ static relation_type_t get_relation_type(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const variable_t *expr = (const variable_t *)node;
+    if (expr->dynamic_lookup)
+        return make_top_element();
     if (expr->name.length == 4 && !wmemcmp(expr->name.data, L"this", 4))
         return make_user_defined_object_element();
     if (expr->declarator == get_builtin_declarator()) {
@@ -116,6 +118,8 @@ generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_
 static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
     const variable_t *var = (const variable_t *)node;
+    if (var->dynamic_lookup)
+        return make_top_element();
     if (var->name.length == 4 && !wmemcmp(var->name.data, L"this", 4))
         return make_user_defined_object_element();
     const declarator_t *decl = var->declarator;
@@ -131,6 +135,8 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 static bool can_generate_c_code(const node_t *node,
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context) {
+    if (((const variable_t *)node)->dynamic_lookup)
+        return false;
     if (context && context->graph && value) {
         c_value_type_t type = classify_c_value_type(value->type);
         if (value->type == LATTICE_BOOLEAN || value->type == LATTICE_TRUE

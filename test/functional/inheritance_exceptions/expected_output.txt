@@ -1,0 +1,7 @@
+constructor
+1
+prototype
+PROPERTY_IS_CONSTANT
+PROPERTY_IS_CONSTANT
+17
+1

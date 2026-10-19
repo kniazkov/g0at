@@ -1,0 +1,6 @@
+const P = { var x = 1; const inc = func() { x = x + 1; return x; }; };
+var a = P -> {}; var b = P -> {};
+println(a.inc()); println(a.inc()); println(b.inc()); println(P.x);
+var c = P -> { inc = func() { return 99; }; };
+println(c.inc()); println(P.inc()); println(a.x);
+var d = a.clone(); println(d.inc()); println(a.x); println(d.instanceOf(P));

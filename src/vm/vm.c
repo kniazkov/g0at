@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /** @brief The runtime environment for the Goat virtual machine. */
 typedef struct {
@@ -667,6 +668,39 @@ static bool exec_ENTER(runtime_t *runtime, instruction_t instr, thread_t *thread
     return true;
 }
 
+/** @brief Evaluates an explicit prototype list without allocating a Goat array. */
+static bool exec_INHERIT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    if (instr.arg0 > 1 || (!instr.arg0 && instr.arg1 != 1))
+        return false;
+    object_stack_t *stack = thread->data_stack;
+    require_object_stack_size(stack, instr.arg1);
+    size_t base = stack->size - instr.arg1;
+    object_array_t prototypes = {instr.arg1 ? stack->objects + base : NULL, instr.arg1};
+    if (!instr.arg0 && prototypes.items[0]->vtbl->type == TYPE_ARRAY)
+        prototypes = get_array_elements(prototypes.items[0]);
+    /* Like ordinary object blocks, the constructor retains its lexical environment.
+       Explicit prototypes precede that fallback in the existing topological lookup. */
+    if (prototypes.size > SIZE_MAX / sizeof(object_t *) - 1)
+        abort();
+    object_t **parents = ALLOC((prototypes.size + 1) * sizeof(*parents));
+    for (size_t i = 0; i < prototypes.size; i++)
+        parents[i] = prototypes.items[i];
+    parents[prototypes.size] = thread->context->data;
+    context_t *context = create_context_with_protos(thread->process,
+                                                    thread->context,
+                                                    (object_array_t){parents, prototypes.size + 1});
+    FREE(parents);
+    enable_prototype_shadowing(context->data);
+    context->native_disabled = true;
+    while (stack->size > base) {
+        object_t *value = pop_object_from_stack(stack);
+        DECREF(value);
+    }
+    thread->context = context;
+    thread->instr_id++;
+    return true;
+}
+
 /** @brief Executes @ref LEAVE. */
 static bool exec_LEAVE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     context_t *context = thread->context;
@@ -801,7 +835,8 @@ static instr_executor_t executors[] = {
     exec_THROW,    /**< Unwinds to the nearest exception handler. */
     exec_GETINDEX, /**< Reads through the indexing virtual method. */
     exec_SETINDEX, /**< Writes through the indexing virtual method. */
-    exec_ARRAY     /**< Creates a new array. */
+    exec_ARRAY,    /**< Creates a new array. */
+    exec_INHERIT   /**< Enters an explicitly derived object. */
     // Additional opcodes can be added here in the future...
 };
 

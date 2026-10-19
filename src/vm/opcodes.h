@@ -66,5 +66,6 @@ typedef enum {
     THROW,      /**< Transfers the top value to the nearest handler after unwinding. */
     GETINDEX,   /**< Consumes receiver and arg1 indices, pushes the indexed value. */
     SETINDEX,   /**< Consumes receiver and arg1 indices above RHS; keeps assignment value. */
-    ARRAY       /**< Consumes arg1 elements in source order and pushes a new array. */
+    ARRAY,      /**< Consumes arg1 elements in source order and pushes a new array. */
+    INHERIT /**< Enters a derived object: arg0=1 for arg1 explicit prototypes, else one value. */
 } opcode_t;
