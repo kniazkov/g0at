@@ -13,7 +13,7 @@ Values are `null`, booleans `true`/`false`, 64-bit integers, real `double` value
 A function is written `func(a, b) { ... }`, a call `f(a, b)`, and a return `return e;` or `return;`. Without an explicit return, the result is `null`. A condition is `if (e) statement` with optional `else`. Exceptions use `throw e;` and `try statement catch (name) { ... }`. A block `{ ... }` is an expression returning its context object. Semicolons make boundaries explicit; a newline is not itself a statement-termination rule.
 
 > [!CAUTION]
-> There is no general syntax for arrays, `obj.name` / `obj[key]` access, `while` / `do/while` loops, `f()()` calls, or an import system. `Exceptions` is available as a value, but `Exceptions.INVALID_ARGUMENT` is not supported property access. Error names below denote ordinary strings actually produced by the VM.
+> Arrays, `while` / `do/while` loops and imports are not implemented. `obj.name`, `obj[key]`, `Exceptions.INVALID_ARGUMENT` and call chains such as `f()()` are supported.
 
 `for (initial; condition; step) statement` executes initialization once and checks the condition before every iteration. A successful check is followed by the body and step. Initialization accepts one expression or a `var`/`const` declaration, including multiple declarators; condition and step each accept one expression. Every slot is optional, but both semicolons are required. An absent condition is true; `;` is an empty body. Header declarations have loop scope, and the body has a fresh nested scope per iteration. `return` and exceptions skip the remaining body and step. See [chapter 2](02-implemented-language.md) for examples.
 
@@ -28,7 +28,7 @@ The table goes from strongest binding to weakest. It describes grouping, not sid
 
 | Level | Operators | Grouping |
 | --- | --- | --- |
-| 1 | `name(...)`, `(expression)` | Named call; explicit grouping |
+| 1 | `expr(...)`, `expr.name`, `expr[indices]`, `(expression)` | Left-to-right postfix chains; explicit grouping |
 | 2 | `x++`, `x--`; `++x`, `--x` | Postfix, then prefix updates |
 | 3 | `**` | Right associative; prefix qualification below |
 | 4 | `+x`, `-x`, `!x`, `!!x`, `~x` | Prefix chain from right to left |
@@ -85,3 +85,27 @@ The model's ordinary exception strings are `DIVISION_BY_ZERO`, `IMMUTABLE_OBJECT
 Parse errors, native ABI failures, and the fatal empty-stack check are not these language exceptions. Chapter 5 describes lexical limitations; appendix G summarizes implementation boundaries.
 
 Main sources: [integer.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/real.c), [string.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/string.c), [common_methods.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/common_methods.c), [bitwise.h](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/bitwise.h), [exceptions.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/exceptions.c). Examples in chapters 2, 6, 9, and 12 demonstrate executable cases of these rules.
+
+<a id="section-b-index"></a>
+
+## B.5. Indexed access and the current object
+
+```goat
+var obj = { this["x"] = 1; this[3] = 2; this[true] = 3; };
+println(obj.x);       // 1
+println(obj[3]);      // 2
+println(obj[true]);   // 3
+obj["+"] = 4;
+```
+
+The property dictionary maps **objects to objects**. Keys are not converted to strings: `3`, `"3"`, `true` and `'3'` are different. Numerically equal integer and real keys (`3` and `3.0`) name the same entry. Strings and characters compare by value; user objects and functions by identity. A key may be `null` or the receiver itself.
+
+`obj["x"]` shares properties and prototype rules with `obj.x`. Missing properties read as `null`. Assignment updates the first matching mutable property on the object or its prototypes, otherwise creating an own property. Constant writes raise `PROPERTY_IS_CONSTANT`; immutable receivers raise `IMMUTABLE_OBJECT`.
+
+Reads evaluate the receiver, then indices left to right. Assignments evaluate **the right-hand side first**, then the receiver and indices, each exactly once, and return the assigned value. `a[k] = b[j] = value` associates right to left. `obj[key](args)` passes a receiver like `obj.method(args)`; call arguments are evaluated before the receiver. `++` and `--` still accept only variables.
+
+Syntax allows `obj[]` and `obj[i, j]`, but ordinary objects accept **exactly one index**. Other counts raise `INVALID_ARGUMENT` after operand evaluation. This prepares for future multi-index types; it does not implement arrays. Strings currently use property indexing too: `s["length"]` reads the length, while `s[0]` does not replace `s.charAt(0)`.
+
+`this` denotes the object of the current scope, including `{ ... }`. **It is not the method receiver as Java/JS experience might suggest.** See [Section 10.8](10-contexts-and-closures.md#section-10-8) for the comparison and example.
+
+Indexing executes in the VM through dedicated `GETINDEX`/`SETINDEX` instructions and `get_index`/`set_index` virtual methods accepting an index list. Native lowering of `[]` is not implemented yet. All `index_*` fixtures are automatically checked at both optimization levels, after source regeneration and after saved-bytecode loading.

@@ -5,6 +5,7 @@
  */
 
 #include "common_methods.h"
+#include "context.h"
 #include "lib/allocate.h"
 #include "lib/avl_tree.h"
 #include "lib/string_ext.h"
@@ -273,9 +274,7 @@ static void child_pair_to_string(void *data, void *key, value_t value) {
     }
     object_t *key_obj = (object_t *)key;
     property_value_t *ref = (property_value_t *)value.ptr;
-    string_value_t key_str = convert_object_to_string_notation(key_obj);
-    append_string_value(renderer->builder, key_str);
-    FREE_STRING(key_str);
+    render_object_value_notation(renderer, key_obj);
     append_char(renderer->builder, ':');
     render_object_value_notation(renderer, ref->object);
 }
@@ -346,7 +345,12 @@ static object_array_t get_keys(const object_t *obj) {
 static object_t *get_property(const object_t *obj, const object_t *key) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
-    return ref ? ref->object : NULL;
+    if (ref)
+        return ref->object;
+    /* The implicit constant is not stored, so empty objects stay empty and no cycle is added. */
+    return key->vtbl->type == TYPE_STRING && compare_objects_using_vtbl(key, get_this_key()) == 0
+               ? (object_t *)obj
+               : NULL;
 }
 
 /** @brief Implements @ref object_vtbl_t::create_property. */
@@ -354,6 +358,9 @@ static model_status_t
 create_property(object_t *obj, object_t *key, object_t *value, bool constant) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
+    if (key->vtbl->type == TYPE_STRING && compare_objects_using_vtbl(key, get_this_key()) == 0
+        && (value != obj || !constant))
+        return MSTAT_PROPERTY_IS_CONSTANT;
     if (ref) {
         return MSTAT_PROPERTY_ALREADY_EXISTS;
     }
@@ -377,6 +384,8 @@ create_property(object_t *obj, object_t *key, object_t *value, bool constant) {
 static model_status_t set_property(object_t *obj, object_t *key, object_t *value) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     property_value_t *ref = (property_value_t *)(get_from_avl_tree(uobj->properties, key).ptr);
+    if (key->vtbl->type == TYPE_STRING && compare_objects_using_vtbl(key, get_this_key()) == 0)
+        return MSTAT_PROPERTY_IS_CONSTANT;
     if (!ref) {
         return MSTAT_PROPERTY_NOT_FOUND;
     }
@@ -449,6 +458,8 @@ static object_vtbl_t vtbl = {.type = TYPE_USER_DEFINED_OBJECT,
                              .get_property = get_property,
                              .create_property = create_property,
                              .set_property = set_property,
+                             .get_index = common_get_index,
+                             .set_index = common_set_index,
                              .bitwise_not = stub_unary_operation,
                              .bitwise_and = stub_bitwise,
                              .bitwise_or = stub_bitwise,

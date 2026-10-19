@@ -97,6 +97,9 @@ jobs:
           CC: ${{ matrix.compiler }}
       - name: Check for loops and source round trips
         run: python3 scripts/check_for.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/for loops"
+
+      - name: Check indexed access and source/binary round trips
+        run: python3 scripts/check_index.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/index access"
         env:
           CC: ${{ matrix.compiler }}
       - name: Compile and execute persisted programs
@@ -280,6 +283,12 @@ jobs:
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_for.py build/goat.exe "build/for loops"'
+
+      - name: Check indexed access and source/binary round trips
+        shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ env.pythonLocation }}/python.exe
+        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_index.py build/goat.exe "build/index access"'
       - name: Compile and execute persisted programs
         shell: msys2 {0}
         run: bash scripts/check_binary_program.sh build/goat.exe build/functional_testing.exe "build/binary programs"

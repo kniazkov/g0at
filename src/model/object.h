@@ -164,7 +164,16 @@ typedef struct {
     /** @brief Sets a property on an object. */
     model_status_t (*set_property)(object_t *obj, object_t *key, object_t *value);
 
-    /** @brief Unary numeric identity; returns an owned result or exception. */
+    /** @brief Reads indices; borrowed receiver/list, owned result or exception. */
+    operation_result_t (*get_index)(process_t *process, object_t *obj, object_array_t indices);
+
+    /** @brief Writes indices; borrowed operands, owned assigned value or exception result. */
+    operation_result_t (*set_index)(process_t *process,
+                                    object_t *obj,
+                                    object_array_t indices,
+                                    object_t *value);
+
+    /** @brief Unary plus. */
     operation_result_t (*unary_plus)(process_t *process, object_t *obj);
 
     /** @brief Unary numeric negation; returns an owned result or exception. */

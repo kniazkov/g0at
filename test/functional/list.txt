@@ -455,3 +455,17 @@ instance_of_primitive
 
 # Global 'Object' prototype must not be classified as boolean (regression)
 object_root
+
+# Indexed properties and current object scope
+index_keys
+index_identity
+index_this
+index_chains
+index_methods
+index_order
+index_errors
+index_assignments
+index_prototypes
+index_cycles
+index_stress
+index_scope_binding

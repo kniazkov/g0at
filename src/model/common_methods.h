@@ -102,3 +102,9 @@ int compare_numeric_keys(const object_t *left, const object_t *right);
 
 /** @brief Unsupported integer-only binary operation. */
 operation_result_t stub_bitwise(process_t *process, object_t *left, object_t *right);
+
+/** @brief Dictionary indexing; exactly one arbitrary object key, owned result. */
+operation_result_t common_get_index(process_t *process, object_t *obj, object_array_t indices);
+/** @brief Dictionary assignment with the same prototype/constant rules as SETPROP. */
+operation_result_t
+common_set_index(process_t *process, object_t *obj, object_array_t indices, object_t *value);

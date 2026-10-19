@@ -63,6 +63,8 @@ static relation_type_t get_relation_type(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const variable_t *expr = (const variable_t *)node;
+    if (expr->name.length == 4 && !wmemcmp(expr->name.data, L"this", 4))
+        return make_user_defined_object_element();
     if (expr->declarator == get_builtin_declarator()) {
         const builtin_function_t *builtin = find_builtin_function(expr->name);
         return builtin && !state->builtin_bindings_unknown
@@ -70,7 +72,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
                    : make_top_element();
     }
     if (!expr->declarator)
-        return make_null_element();
+        return state->builtin_bindings_unknown ? make_top_element() : make_null_element();
     const lattice_element_t *value = get_from_abstract_state(state, expr->declarator);
     if (!value) {
         value = make_null_element();
@@ -113,11 +115,14 @@ generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_
 /** @brief Implements node_vtbl_t::analyze_reachability. */
 static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
-    const declarator_t *decl = ((variable_t *)node)->declarator;
+    const variable_t *var = (const variable_t *)node;
+    if (var->name.length == 4 && !wmemcmp(var->name.data, L"this", 4))
+        return make_user_defined_object_element();
+    const declarator_t *decl = var->declarator;
     if (decl == get_builtin_declarator())
         return calculate_node(node, *state, (*state)->arena);
     if (!decl)
-        return make_null_element();
+        return (*state)->builtin_bindings_unknown ? make_top_element() : make_null_element();
     const lattice_element_t *value = get_from_abstract_state(*state, decl);
     return value ? value : make_top_element();
 }

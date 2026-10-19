@@ -1,0 +1,21 @@
+var obj = {}
+obj[3] = 1
+obj["+"] = 2
+obj[true] = 3
+obj[false] = 4
+obj[null] = 5
+obj['x'] = 6
+obj["x"] = 7
+obj[3.5] = 8
+obj[-3] = 9
+obj[""] = 10
+println(obj[3]); println(obj["+"]); println(obj[true]); println(obj[false])
+println(obj[null]); println(obj['x']); println(obj.x); println(obj[3.5])
+println(obj[-3]); println(obj[""]); println(obj["missing"])
+obj[3.0] = 11
+println(obj[3]); println(obj["3"]); println(obj[1]); println(obj['+'])
+obj[0] = 12
+println(obj[-0.0])
+obj[9223372036854775807] = 13
+obj[9223372036854775808.0] = 14
+println(obj[9223372036854775807]); println(obj[9223372036854775808.0])

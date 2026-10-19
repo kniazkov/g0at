@@ -10,6 +10,7 @@
 #include "lib/allocate.h"
 #include "lib/avl_tree.h"
 #include "lib/split64.h"
+#include "model/common_methods.h"
 #include "model/context.h"
 #include "model/thread.h"
 
@@ -329,63 +330,53 @@ static bool exec_SETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *obj = pop_object_from_stack(thread->data_stack);
     object_t *value = peek_object_from_stack(thread->data_stack, 0);
-    bool changed = false;
-    model_status_t result = set_object_property(obj, key, value);
-    if (result == MSTAT_PROPERTY_IS_CONSTANT) {
-        DECREF(obj);
-        return dispatch_exception(runtime,
-                                  thread,
-                                  (exception_t){get_exception_property_is_constant()});
-    }
-    if (result == MSTAT_IMMUTABLE_OBJECT) {
-        DECREF(obj);
-        return dispatch_exception(runtime, thread, (exception_t){get_exception_immutable_object()});
-    }
-    if (result == MSTAT_OK) {
-        changed = true;
-    } else if (result == MSTAT_PROPERTY_NOT_FOUND) {
-        object_array_t proto = get_object_topology(obj);
-        size_t index = 0;
-        do {
-            result = set_object_property(proto.items[index], key, value);
-            if (result == MSTAT_PROPERTY_IS_CONSTANT) {
-                DECREF(obj);
-                return dispatch_exception(runtime,
-                                          thread,
-                                          (exception_t){get_exception_property_is_constant()});
-            }
-            if (result == MSTAT_IMMUTABLE_OBJECT) {
-                break;
-            }
-            if (result == MSTAT_OK) {
-                changed = true;
-                break;
-            }
-            index++;
-        } while (index < proto.size);
-    }
-    if (!changed) {
-        result = create_object_property(obj, key, value, false);
-        if (result == MSTAT_PROPERTY_IS_CONSTANT) {
-            DECREF(obj);
-            return dispatch_exception(runtime,
-                                      thread,
-                                      (exception_t){get_exception_property_is_constant()});
-        }
-        if (result == MSTAT_IMMUTABLE_OBJECT) {
-            DECREF(obj);
-            return dispatch_exception(runtime,
-                                      thread,
-                                      (exception_t){get_exception_immutable_object()});
-        }
-        if (result != MSTAT_OK) {
-            DECREF(obj);
-            return false;
-        }
-    }
+    operation_result_t result =
+        common_set_index(thread->process, obj, (object_array_t){&key, 1}, value);
     DECREF(obj);
+    if (result.is_exception)
+        return dispatch_exception(runtime, thread, (exception_t){result.value});
+    DECREF(result.value);
     thread->instr_id++;
     return true;
+}
+
+/** @brief Executes indexing with borrowed stack operands and an owned result. */
+static bool execute_index(runtime_t *runtime, instruction_t instr, thread_t *thread, bool store) {
+    object_stack_t *stack = thread->data_stack;
+    size_t count = instr.arg1;
+    /* Avoid overflowing count + receiver + value on 32-bit hosts. */
+    require_object_stack_size(stack, store ? 2 : 1);
+    if (count > stack->size - (store ? 2 : 1))
+        fail_stack_underflow();
+    size_t receiver_index = stack->size - count - 1;
+    object_t *receiver = stack->objects[receiver_index];
+    object_array_t indices = {stack->objects + receiver_index + 1, count};
+    operation_result_t result = store
+                                    ? receiver->vtbl->set_index(thread->process,
+                                                                receiver,
+                                                                indices,
+                                                                stack->objects[receiver_index - 1])
+                                    : receiver->vtbl->get_index(thread->process, receiver, indices);
+    size_t base = receiver_index - (store ? 1 : 0);
+    while (stack->size > base) {
+        object_t *operand = pop_object_from_stack(stack);
+        DECREF(operand);
+    }
+    if (result.is_exception)
+        return dispatch_exception(runtime, thread, (exception_t){result.value});
+    push_object_onto_stack(stack, result.value);
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Executes GETINDEX. */
+static bool exec_GETINDEX(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_index(runtime, instr, thread, false);
+}
+
+/** @brief Executes SETINDEX. */
+static bool exec_SETINDEX(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return execute_index(runtime, instr, thread, true);
 }
 
 /** @brief Consumes one operand and transfers its result or exception. */
@@ -735,62 +726,64 @@ static bool exec_THROW(runtime_t *runtime, instruction_t instr, thread_t *thread
 
 /** @brief Array of instruction execution functions for the Goat virtual machine. */
 static instr_executor_t executors[] = {
-    exec_NOP,     /**< No operation - does nothing. */
-    exec_ARG,     /**< Argument push onto the argument stack. */
-    exec_END,     /**< Ends the program immediately. */
-    exec_JUMP,    /**< Unconditionally jumps to another instruction. */
-    exec_JIF,     /**< Jumps to another instruction if the stack contains `false`. */
-    exec_POP,     /**< Pops an object off the data stack. */
-    exec_DUP,     /**< Duplicates the top stack value. */
-    exec_NIL,     /**< Pushes a null object onto the data stack. */
-    exec_TRUE,    /**< Pushes the boolean value true onto the data stack. */
-    exec_FALSE,   /**< Pushes the boolean value false onto the data stack. */
-    exec_ILOAD32, /**< Pushes a 32-bit integer onto the data stack. */
-    exec_ILOAD64, /**< Pushes a 64-bit integer onto the data stack. */
-    exec_RLOAD,   /**< Pushes a 64-bit float onto the data stack. */
-    exec_SLOAD,   /**< Pushes a static string onto the data stack. */
-    exec_CLOAD,   /**< Pushes a character code onto the data stack. */
-    exec_VLOAD,   /**< Loads a variable value onto the data stack or `null` if undefined. */
-    exec_VAR,     /**< Declares a new mutable variable in current context. */
-    exec_CONST,   /**< Declares a new immutable constant in current context. */
-    exec_STORE,   /**< Stores to existing variable or creates new if not found. */
-    exec_GETPROP, /**< Pushes the named property of the top object, or `null` if missing. */
-    exec_SETPROP, /**< Stores the value below the top into the named property of the top object. */
-    exec_UPLUS,   /**< Applies unary plus to the top value. */
-    exec_UMINUS,  /**< Negates the top value. */
-    exec_INC,     /**< Applies numeric increment. */
-    exec_DEC,     /**< Applies numeric decrement. */
-    exec_LNOT,    /**< Negates truthiness. */
-    exec_BOOL,    /**< Converts the top value to boolean. */
-    exec_BNOT,    /**< Inverts integer bits. */
-    exec_LAND,    /**< Short-circuits when the left value is false. */
-    exec_LOR,     /**< Short-circuits when the left value is true. */
-    exec_BAND,    /**< Computes integer bitwise AND. */
-    exec_BOR,     /**< Computes integer bitwise OR. */
-    exec_BXOR,    /**< Computes integer bitwise XOR. */
-    exec_SHL,     /**< Shifts integer bits left. */
-    exec_SHR,     /**< Shifts integer bits right with sign extension. */
-    exec_ADD,     /**< Adds the top two objects of the stack. */
-    exec_SUB,     /**< Subtracts the top two objects of the stack. */
-    exec_MUL,     /**< Multiplies the top two objects on the data stack. */
-    exec_DIVIDE,  /**< Divides the first object by the second on the data stack. */
-    exec_MODULO,  /**< Computes the modulo of the top two objects on the data stack. */
-    exec_POWER,   /**< Raises the first object to the power of the second. */
-    exec_LESS,    /**< Checks if first < second and pushes boolean result. */
-    exec_LEQ,     /**< Checks if first <= second and pushes boolean result. */
-    exec_GREATER, /**< Checks if first > second and pushes boolean result. */
-    exec_GREQ,    /**< Checks if first >= second and pushes boolean result. */
-    exec_EQUAL,   /**< Pushes `true` if top two objects are equal. */
-    exec_DIFF,    /**< Pushes `true` if top two objects are not equal. */
-    exec_FUNC,    /**< Creates a new function object. */
-    exec_CALL,    /**< Calls a function with arguments from the data stack. */
-    exec_CALLM,   /**< Calls a method, passing the receiver to the callee. */
-    exec_RET,     /**< Returns from current function. */
-    exec_ENTER,   /**< Creates a new context, inheriting from the current one. */
-    exec_LEAVE,   /**< Restores the parent and pushes the departed context's data. */
-    exec_RESTORE, /**< Restores the parent without a stack result. */
-    exec_TRY,     /**< Creates an exception-handler context. */
-    exec_THROW    /**< Unwinds to the nearest exception handler. */
+    exec_NOP,      /**< No operation - does nothing. */
+    exec_ARG,      /**< Argument push onto the argument stack. */
+    exec_END,      /**< Ends the program immediately. */
+    exec_JUMP,     /**< Unconditionally jumps to another instruction. */
+    exec_JIF,      /**< Jumps to another instruction if the stack contains `false`. */
+    exec_POP,      /**< Pops an object off the data stack. */
+    exec_DUP,      /**< Duplicates the top stack value. */
+    exec_NIL,      /**< Pushes a null object onto the data stack. */
+    exec_TRUE,     /**< Pushes the boolean value true onto the data stack. */
+    exec_FALSE,    /**< Pushes the boolean value false onto the data stack. */
+    exec_ILOAD32,  /**< Pushes a 32-bit integer onto the data stack. */
+    exec_ILOAD64,  /**< Pushes a 64-bit integer onto the data stack. */
+    exec_RLOAD,    /**< Pushes a 64-bit float onto the data stack. */
+    exec_SLOAD,    /**< Pushes a static string onto the data stack. */
+    exec_CLOAD,    /**< Pushes a character code onto the data stack. */
+    exec_VLOAD,    /**< Loads a variable value onto the data stack or `null` if undefined. */
+    exec_VAR,      /**< Declares a new mutable variable in current context. */
+    exec_CONST,    /**< Declares a new immutable constant in current context. */
+    exec_STORE,    /**< Stores to existing variable or creates new if not found. */
+    exec_GETPROP,  /**< Pushes the named property of the top object, or `null` if missing. */
+    exec_SETPROP,  /**< Stores the value below the top into the named property of the top object. */
+    exec_UPLUS,    /**< Applies unary plus to the top value. */
+    exec_UMINUS,   /**< Negates the top value. */
+    exec_INC,      /**< Applies numeric increment. */
+    exec_DEC,      /**< Applies numeric decrement. */
+    exec_LNOT,     /**< Negates truthiness. */
+    exec_BOOL,     /**< Converts the top value to boolean. */
+    exec_BNOT,     /**< Inverts integer bits. */
+    exec_LAND,     /**< Short-circuits when the left value is false. */
+    exec_LOR,      /**< Short-circuits when the left value is true. */
+    exec_BAND,     /**< Computes integer bitwise AND. */
+    exec_BOR,      /**< Computes integer bitwise OR. */
+    exec_BXOR,     /**< Computes integer bitwise XOR. */
+    exec_SHL,      /**< Shifts integer bits left. */
+    exec_SHR,      /**< Shifts integer bits right with sign extension. */
+    exec_ADD,      /**< Adds the top two objects of the stack. */
+    exec_SUB,      /**< Subtracts the top two objects of the stack. */
+    exec_MUL,      /**< Multiplies the top two objects on the data stack. */
+    exec_DIVIDE,   /**< Divides the first object by the second on the data stack. */
+    exec_MODULO,   /**< Computes the modulo of the top two objects on the data stack. */
+    exec_POWER,    /**< Raises the first object to the power of the second. */
+    exec_LESS,     /**< Checks if first < second and pushes boolean result. */
+    exec_LEQ,      /**< Checks if first <= second and pushes boolean result. */
+    exec_GREATER,  /**< Checks if first > second and pushes boolean result. */
+    exec_GREQ,     /**< Checks if first >= second and pushes boolean result. */
+    exec_EQUAL,    /**< Pushes `true` if top two objects are equal. */
+    exec_DIFF,     /**< Pushes `true` if top two objects are not equal. */
+    exec_FUNC,     /**< Creates a new function object. */
+    exec_CALL,     /**< Calls a function with arguments from the data stack. */
+    exec_CALLM,    /**< Calls a method, passing the receiver to the callee. */
+    exec_RET,      /**< Returns from current function. */
+    exec_ENTER,    /**< Creates a new context, inheriting from the current one. */
+    exec_LEAVE,    /**< Restores the parent and pushes the departed context's data. */
+    exec_RESTORE,  /**< Restores the parent without a stack result. */
+    exec_TRY,      /**< Creates an exception-handler context. */
+    exec_THROW,    /**< Unwinds to the nearest exception handler. */
+    exec_GETINDEX, /**< Reads through the indexing virtual method. */
+    exec_SETINDEX  /**< Writes through the indexing virtual method. */
     // Additional opcodes can be added here in the future...
 };
 

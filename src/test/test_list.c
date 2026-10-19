@@ -35,6 +35,7 @@
 #include "test_function_return.h"
 #include "test_function_specialization.h"
 #include "test_function_summary.h"
+#include "test_index.h"
 #include "test_lattice.h"
 #include "test_lib.h"
 #include "test_logic.h"
@@ -243,6 +244,9 @@ static test_description_t test_list[] = {
     {"properties", test_properties},
     {"string topology", test_string_topology},
     {"store and load", test_store_and_load},
+    {"index parser", test_index_parser},
+    {"index virtual dispatch", test_index_dispatch},
+    {"index model and lifetime", test_index_model},
     {"member access scanner", test_member_access_scanner},
     {"member access parser", test_member_access_parser},
     {"member access AST", test_member_access_ast},

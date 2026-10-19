@@ -1,62 +1,61 @@
-/**
- * @file parsing_member_access.c
+/** @file parsing_member_access.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Defines the reduction rule for member access (`.` operator).
+ * @brief Reduces mixed member, index and call postfix chains.
  */
-
 #include "graph/expression.h"
+#include "graph/index_access.h"
 #include "graph/member_access.h"
-#include "graph/variable.h"
-#include "lib/arena.h"
 #include "parser.h"
 
-#include <assert.h>
-
-/**
- * @brief Rule for handling member access: an expression followed by a `.` and an identifier.
- *
- * The right operand must be a plain identifier (the property name). The left operand may already be
- * an expression (e.g. a parenthesized expression or a previously reduced chain), or an identifier
- * that is promoted to a variable reference. Chained accesses (`a.b.c`) are reduced one dot at a
- * time.
- * @return NULL on success; the rule silently does not apply if the shape does not match.
- */
 compilation_error_t *
-parsing_member_access(token_t *operator, parser_memory_t * memory, token_groups_t *groups) {
-    assert(operator->type == TOKEN_OPERATOR && operator->text.data[0] == L'.');
-
-    token_t *left_token = operator->left;
-    token_t *right_token = operator->right;
-    if (left_token == NULL || right_token == NULL) {
+parsing_member_access(token_t *op, parser_memory_t *memory, token_groups_t *groups) {
+    token_t *left = op->left;
+    if (!left)
+        return NULL;
+    /* Groups contain nested brackets in closing order. Resolve the preceding suffix first. */
+    if (left->type == TOKEN_BRACKET_PAIR
+        || (left->type == TOKEN_IDENTIFIER && left->left && left->left->type == TOKEN_OPERATOR
+            && left->left->text.data[0] == L'.')) {
+        token_t *previous = left->type == TOKEN_IDENTIFIER ? left->left : left;
+        compilation_error_t *error = parsing_member_access(previous, memory, groups);
+        if (error)
+            return error;
+        left = op->left;
+    }
+    expression_t *object;
+    if (left->type == TOKEN_EXPRESSION)
+        object = (expression_t *)left->node;
+    else if (left->type == TOKEN_IDENTIFIER)
+        object = create_variable_node(memory->graph, left->text);
+    else
+        return NULL;
+    if (op->type == TOKEN_BRACKET_PAIR) {
+        bool index = op->text.data[0] == '[';
+        if (!index && op->text.data[0] != '(')
+            return NULL;
+        node_t *node = index ? create_index_access_node(memory->graph, object)
+                             : create_function_call_node_without_args(memory->graph, object);
+        op->type = index ? TOKEN_INDEX_ARGS : TOKEN_FCALL_ARGS;
+        op->node = node;
+        collapse_tokens_to_token(memory, left, op, TOKEN_EXPRESSION, node);
+        append_token_to_group(&groups->function_arguments, op);
         return NULL;
     }
-    if (right_token->type != TOKEN_IDENTIFIER) {
+    if (op->type != TOKEN_OPERATOR || op->text.data[0] != L'.')
         return NULL;
-    }
-
-    expression_t *object = NULL;
-    if (left_token->type == TOKEN_EXPRESSION) {
-        object = (expression_t *)left_token->node;
-    } else if (left_token->type == TOKEN_IDENTIFIER) {
-        object = create_variable_node(memory->graph, left_token->text);
+    token_t *right = op->right;
+    if (!right || right->type != TOKEN_IDENTIFIER)
+        return NULL;
+    expression_t *member = create_member_access_node(memory->graph, object, right->text);
+    token_t *args = right->right;
+    if (args && args->type == TOKEN_BRACKET_PAIR && args->text.data[0] == '(') {
+        node_t *call = create_function_call_node_without_args(memory->graph, member);
+        args->type = TOKEN_FCALL_ARGS;
+        args->node = call;
+        collapse_tokens_to_token(memory, left, args, TOKEN_EXPRESSION, call);
+        append_token_to_group(&groups->function_arguments, args);
     } else {
-        return NULL;
-    }
-
-    expression_t *member = create_member_access_node(memory->graph, object, right_token->text);
-
-    token_t *call_args = right_token->right;
-    if (call_args != NULL && call_args->type == TOKEN_BRACKET_PAIR
-        && call_args->text.data[0] == '(') {
-        /* Method call `object.member(...)`: the member access becomes the callee of a function
-         * call node, and the argument list is parsed by the function call arguments rule. */
-        node_t *func_call = create_function_call_node_without_args(memory->graph, member);
-        call_args->type = TOKEN_FCALL_ARGS;
-        call_args->node = func_call;
-        collapse_tokens_to_token(memory, left_token, call_args, TOKEN_EXPRESSION, func_call);
-        append_token_to_group(&groups->function_arguments, call_args);
-    } else {
-        collapse_tokens_to_token(memory, left_token, right_token, TOKEN_EXPRESSION, &member->base);
+        collapse_tokens_to_token(memory, left, right, TOKEN_EXPRESSION, &member->base);
     }
     return NULL;
 }

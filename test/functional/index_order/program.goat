@@ -1,0 +1,25 @@
+var trace = ""
+var obj = {}
+var rhs = func() { trace = trace + "v"; return 7 }
+var receiver = func() { trace = trace + "o"; return obj }
+var index = func() { trace = trace + "i"; return "x" }
+println(receiver()[index()] = rhs())
+println(trace)
+trace = ""
+println(receiver()[index()]); println(trace)
+trace = ""
+try { receiver()[index(), index()] = rhs() } catch(e) { println(e) }
+println(trace)
+trace = ""
+try { receiver()[index(), index()] } catch(e) { println(e) }
+println(trace)
+trace = ""
+var bad = func() { trace = trace + "e"; throw "bad" }
+try { receiver()[index()] = bad() } catch(e) { println(e) }
+println(trace)
+trace = ""
+try { receiver()[bad()] = rhs() } catch(e) { println(e) }
+println(trace)
+var n = 0
+obj[n = n + 1] = 20
+println(n); println(obj[1])

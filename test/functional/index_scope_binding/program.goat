@@ -1,0 +1,22 @@
+var obj = {
+    this["x"] = 1;
+    println(x);
+    var f = func() { return x };
+    println(f());
+    var nested = {
+        println(this == obj);
+        var y = 2;
+        println(this.y);
+    };
+};
+obj.inspect = func() {
+    println(this == obj);
+    println(this.x);
+    this["local"] = 9;
+    return this;
+};
+var context = obj.inspect();
+println(context.local);
+println(obj.local);
+println(context.this == context);
+println(obj.this == obj);

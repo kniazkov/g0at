@@ -1,0 +1,16 @@
+var obj = {}
+var a = { var x = 1 }
+var b = { var x = 1 }
+var alias = a
+var f = func() { return 1 }
+var g = func() { return 1 }
+obj[a] = "a"; obj[b] = "b"; obj[f] = "f"; obj[g] = "g"
+obj[Object] = "Object"; obj[println] = "println"
+println(obj[alias]); println(obj[b]); println(obj[f]); println(obj[g])
+println(obj[Object]); println(obj[println]); println(obj[{}])
+a.x = 9
+println(obj[a])
+obj[a] = "changed"
+println(obj[alias]); println(obj[b])
+obj[obj] = obj
+println(obj[obj] == obj)

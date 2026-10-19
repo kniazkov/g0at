@@ -1,0 +1,13 @@
+var obj = { const x = 1 }
+try { obj[] } catch(e) { println(e) }
+try { obj[] = 2 } catch(e) { println(e) }
+try { obj[1, 2] } catch(e) { println(e) }
+try { obj[1, 2, 3] = 2 } catch(e) { println(e) }
+try { obj["x"] = 2 } catch(e) { println(e) }
+println(obj.x)
+try { 1["x"] = 2 } catch(e) { println(e) }
+try { null["x"] = 2 } catch(e) { println(e) }
+try { true[false] = 2 } catch(e) { println(e) }
+try { "abc"[0] = 'x' } catch(e) { println(e) }
+println(obj["missing"])
+println(Exceptions["INVALID_ARGUMENT"] == Exceptions.INVALID_ARGUMENT)
