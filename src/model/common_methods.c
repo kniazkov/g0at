@@ -31,6 +31,7 @@ int compare_object_addresses(const object_t *obj1, const object_t *obj2) {
 }
 
 object_t *clone_singleton(process_t *process, object_t *obj) {
+    INCREF(obj);
     return obj;
 }
 

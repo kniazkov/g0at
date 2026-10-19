@@ -565,3 +565,38 @@ bool test_context_this_preserved() {
     destroy_process(proc);
     return true;
 }
+
+/** @brief Test virtual method with a distinctive result. */
+static object_t *custom_clone(process_t *process, object_t *obj) {
+    return create_integer_object(process, 12345);
+}
+
+bool test_clone_method(void) {
+    process_t *proc = create_process();
+    object_t *key = create_string_object(proc, STATIC_STRING(L"clone"));
+    object_t *method = get_object_property(get_root_object(), key);
+    ASSERT(method == get_function_clone());
+    object_vtbl_t vtbl = *get_root_object()->vtbl;
+    vtbl.clone = custom_clone;
+    object_t receiver = {.vtbl = &vtbl};
+    ASSERT(call_object(method, 0, &receiver, proc->main_thread));
+    object_t *result = pop_object_from_stack(proc->main_thread->data_stack);
+    ASSERT(get_object_integer_value(result).value == 12345);
+    DECREF(result);
+    DECREF(key);
+    object_t *values[] = {create_integer_object(proc, 1000),
+                          create_real_number_object(proc, 2.5),
+                          create_character_object(proc, 0x416),
+                          create_string_object(proc, STATIC_STRING(L"dynamic string"))};
+    for (size_t i = 0; i < sizeof(values) / sizeof(*values); i++) {
+        object_t *copy = clone_object(proc, values[i]);
+        ASSERT(copy == values[i]);
+        DECREF(values[i]);
+        string_value_t text = convert_object_to_string(copy);
+        ASSERT(text.length > 0);
+        FREE_STRING(text);
+        DECREF(copy);
+    }
+    destroy_process(proc);
+    return true;
+}

@@ -147,3 +147,16 @@ use a semicolon between separate expressions `a; [1]`, since `a[1]` is indexing.
 Arrays inherit from the built-in `Array` prototype, which inherits from `Object`.
 Both `[].instanceOf(Array)` and `[].instanceOf(Object)` return `true`.
 An empty array prints as `[ ]`, including inside other objects and arrays.
+
+## Object.clone()
+
+`obj.clone()` dispatches to the receiver's virtual `clone` method. It is inherited
+from `Object` and can be overridden by an ordinary property, just like `instanceOf`.
+`obj["clone"]()` works too. A detached method (`var copy = Object.clone; copy(obj)`)
+accepts the object as its first argument; a call without an object raises
+`INVALID_ARGUMENT`.
+
+Arrays and ordinary objects are shallow-copied: the outer container is new, while
+nested values remain shared. Prototypes and property constness are preserved.
+Direct self-references in values are retargeted to the copy. Immutable values and
+functions may be returned without allocating another object, retaining a reference.

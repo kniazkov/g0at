@@ -115,6 +115,7 @@ typedef struct {
      * @brief Creates a clone of the given object.
      *
      * It is used to create an independent copy of an object, owned by the given process.
+     * @return An owned reference, including when an immutable value is reused.
      * @note The cloned object should be independent of the original. Depending on the type of
      * object, additional cloning operations may be implemented.
      */
@@ -339,7 +340,7 @@ static inline int compare_objects_using_vtbl(const object_t *obj1, const object_
 }
 
 /**
- * @brief Clones an object for a process.
+ * @brief Clones an object for a process, returning an owned reference.
  *
  * This helper dispatches to the object's virtual table and creates a clone owned by the given
  * process.
@@ -654,6 +655,8 @@ object_t *get_function_proto();
 
 object_t *get_function_atan(void);
 object_t *get_function_instance_of(void);
+/** @brief Gets the built-in Object.clone method. */
+object_t *get_function_clone(void);
 object_t *get_function_print(void);
 object_t *get_function_sign(void);
 object_t *get_function_sqrt(void);

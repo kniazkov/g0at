@@ -1,0 +1,24 @@
+var original = { var x = 1; var nested = { var value = 2 }; const fixed = 7 }
+var copy = original.clone()
+println(copy == original)
+println(copy.instanceOf(Object))
+copy.x = 9
+println(original.x)
+println(copy.x)
+println(copy.nested == original.nested)
+copy.nested.value = 8
+println(original.nested.value)
+try { copy.fixed = 0 } catch(e) { println(e) }
+original.self = original
+var cycle = original.clone()
+println(cycle.self == cycle)
+println(cycle.self == original)
+var indexed = original["clone"]()
+println(indexed.x)
+var detached = Object.clone
+println(detached(original).x)
+try { detached() } catch(e) { println(e) }
+original.clone = func() { return "overridden" }
+println(original.clone())
+println(original["clone"]())
+println(copy.clone().x)

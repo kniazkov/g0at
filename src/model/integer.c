@@ -221,6 +221,7 @@ static operation_result_t shift_right(process_t *process, object_t *left, object
 /** @brief Implements @ref object_vtbl_t::clone. */
 static object_t *clone(process_t *process, object_t *obj) {
     if (process == obj->process) {
+        INCREF(obj);
         return obj;
     }
     return create_integer_object(process, get_object_integer_value(obj).value);
