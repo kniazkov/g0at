@@ -701,6 +701,48 @@ static bool exec_INHERIT(runtime_t *runtime, instruction_t instr, thread_t *thre
     return true;
 }
 
+/** @brief Opens a scope that can be targeted by break and continue. */
+static bool exec_LOOP_ENTER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    thread->context = create_context(thread->process, thread->context, NULL);
+    thread->context->control_flow = FLOW_LOOP;
+    thread->context->unwinding_index =
+        thread->data_stack->size ? thread->data_stack->size - 1 : BAD_STACK_INDEX;
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Discards block/try scopes and partial expression values, retaining the loop scope. */
+static bool exec_LOOP_JUMP(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    if (instr.arg1 >= runtime->code->instructions_count)
+        goto invalid;
+    context_t *target = thread->context;
+    while (target && target->control_flow != FLOW_LOOP) {
+        if (target->control_flow == FLOW_RETURN)
+            goto invalid;
+        target = target->previous;
+    }
+    if (!target)
+        goto invalid;
+    if (target->unwinding_index == BAD_STACK_INDEX) {
+        while (thread->data_stack->size) {
+            object_t *value = pop_object_from_stack(thread->data_stack);
+            DECREF(value);
+        }
+    } else {
+        if (target->unwinding_index >= thread->data_stack->size)
+            goto invalid;
+        reduce_object_stack(thread->data_stack, target->unwinding_index);
+    }
+    while (thread->context != target)
+        thread->context = destroy_context(thread->context);
+    thread->instr_id = instr.arg1;
+    return true;
+invalid:
+    fprintf(stderr, "Invalid loop transfer bytecode.\n");
+    runtime->status = 1;
+    return false;
+}
+
 /** @brief Executes @ref LEAVE. */
 static bool exec_LEAVE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     context_t *context = thread->context;
@@ -836,7 +878,9 @@ static instr_executor_t executors[] = {
     exec_GETINDEX, /**< Reads through the indexing virtual method. */
     exec_SETINDEX, /**< Writes through the indexing virtual method. */
     exec_ARRAY,    /**< Creates a new array. */
-    exec_INHERIT   /**< Enters an explicitly derived object. */
+    exec_INHERIT,  /**< Enters an explicitly derived object. */
+    exec_LOOP_ENTER,
+    exec_LOOP_JUMP
     // Additional opcodes can be added here in the future...
 };
 

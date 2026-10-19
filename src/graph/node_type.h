@@ -169,6 +169,8 @@ typedef enum {
     /** @brief Return statement node type. */
     NODE_RETURN,
 
+    NODE_BREAK,    /**< Exit the nearest enclosing loop. */
+    NODE_CONTINUE, /**< Continue the nearest enclosing loop. */
     /** @brief Explicit throw statement. */
     NODE_THROW,
 

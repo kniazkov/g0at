@@ -136,5 +136,10 @@
   {
     "name": "runtime_strings",
     "check": "checks/runtime_strings.py"
+  },
+  {
+    "name": "loops",
+    "calls": 16,
+    "bound": 8
   }
 ]

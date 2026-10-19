@@ -16,6 +16,8 @@
 #include <memory.h>
 #include <stdbool.h>
 
+compilation_error_t *parsing_loop_jump(token_t *, parser_memory_t *, token_groups_t *);
+
 compilation_error_t *parsing_inheritance(token_t *, parser_memory_t *, token_groups_t *);
 
 /** @brief Reduces postfix updates before prefix updates. */
@@ -416,6 +418,8 @@ apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory, parsing_r
     APPLY_FORWARD(const_keywords, parsing_constant_declarations);
     APPLY_FORWARD(return_keywords, parsing_returns);
     APPLY_FORWARD(throw_keywords, parsing_throw);
+    APPLY_FORWARD(loop_jumps, parsing_loop_jump);
+    APPLY_BACKWARD(do_keywords, parsing_flow_keywords);
     APPLY_BACKWARD(control_flow_keywords, parsing_flow_keywords);
     APPLY_BACKWARD(else_keywords, parsing_else_keywords);
     APPLY_FORWARD(catch_keywords, parsing_unmatched_catch);
@@ -426,6 +430,28 @@ apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory, parsing_r
     return error;
 }
 
+/** @brief Only a loop body grants jump targets; nested functions start a new domain. */
+static compilation_error_t *
+validate_loop_jumps(node_t *node, size_t depth, parser_memory_t *memory) {
+    node_type_t type = node->vtbl->type;
+    if (type == NODE_FUNCTION_OBJECT)
+        depth = 0;
+    if ((type == NODE_BREAK || type == NODE_CONTINUE) && !depth)
+        return create_error_from_node(memory->errors,
+                                      node,
+                                      CRITICAL,
+                                      get_messages()->loop_jump_outside);
+    bool loop = type == NODE_FOR || type == NODE_WHILE || type == NODE_DO_WHILE;
+    for (size_t i = 0; i < get_node_child_count(node); i++) {
+        compilation_error_t *error = validate_loop_jumps(get_node_child(node, i),
+                                                         loop ? (i == 3 ? depth + 1 : 0) : depth,
+                                                         memory);
+        if (error)
+            return error;
+    }
+    return NULL;
+}
+
 compilation_error_t *
 process_root_token_list(parser_memory_t *memory, token_list_t *tokens, node_t **root_node) {
     statement_list_processing_result_t stmt = process_statement_list(memory, tokens);
@@ -434,6 +460,6 @@ process_root_token_list(parser_memory_t *memory, token_list_t *tokens, node_t **
         return stmt.error;
     } else {
         *root_node = create_root_node(memory->graph, stmt.list);
-        return NULL;
+        return validate_loop_jumps(*root_node, 0, memory);
     }
 }

@@ -1,0 +1,13 @@
+var i=0;
+while(i<4) {
+ i++;
+ try { if(i==1) continue; if(i==2) throw "caught"; if(i==3) break; }
+ catch(e) { println(e); continue; }
+ println("wrong");
+}
+println(i);
+try { while(true) { throw "outer"; } } catch(e) { println(e); }
+while(true) { try { break; } catch(e) { println("wrong"); } }
+println("after break");
+do { try { throw 7; } catch(e) { println(e); break; } } while(true);
+println("after catch");

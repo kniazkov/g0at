@@ -499,3 +499,10 @@ inheritance_expressions
 inheritance_live
 inheritance_values
 inheritance_lifetime
+loops_basic
+loops_transfers
+loops_nested
+loops_scope
+loops_exceptions
+loops_expression_stack
+loops_optimization

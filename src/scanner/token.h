@@ -31,10 +31,14 @@ typedef enum {
     TOKEN_INTEGER_MAGNITUDE, /**< 2^63, valid only as the operand of a unary minus. */
     TOKEN_ERROR,             /**< An invalid token (error case) */
 
-    TOKEN_VAR,           /**< The 'var' keyword for variable declarations */
-    TOKEN_CONST,         /**< The 'const' keyword for constant declarations */
-    TOKEN_FUNC,          /**< The 'func' keyword for function declarations */
-    TOKEN_RETURN,        /**< The 'return' keyword used in return statements */
+    TOKEN_VAR,    /**< The 'var' keyword for variable declarations */
+    TOKEN_CONST,  /**< The 'const' keyword for constant declarations */
+    TOKEN_FUNC,   /**< The 'func' keyword for function declarations */
+    TOKEN_RETURN, /**< The 'return' keyword used in return statements */
+    TOKEN_WHILE,
+    TOKEN_DO,
+    TOKEN_BREAK,
+    TOKEN_CONTINUE,
     TOKEN_FOR,           /**< The C-style for keyword. */
     TOKEN_IF,            /**< The 'if' keyword used in if-else statements */
     TOKEN_TRY,           /**< The try keyword. */
@@ -210,6 +214,8 @@ typedef struct {
 
     /** @brief Group for control-flow keyword tokens. */
     token_list_t control_flow_keywords;
+    token_list_t do_keywords; /**< Post-test loops reduced before their trailing while. */
+    token_list_t loop_jumps;  /**< break and continue. */
 
     /** @brief Group for 'else' keyword tokens. */
     token_list_t else_keywords;

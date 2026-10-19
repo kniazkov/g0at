@@ -1,0 +1,12 @@
+var i=0; var sum=0;
+while(i<5) { sum=sum+i; i++; }
+println(sum); println(i);
+while(false) { println("wrong"); }
+do { i++; } while(false);
+println(i);
+do i--; while(i>3);
+println(i);
+while(i>0) i--;
+println(i);
+var x=0; do { x++; } while(x<3)
+println(x);

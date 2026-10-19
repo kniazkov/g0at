@@ -1,0 +1,8 @@
+var i=0; var a=[];
+while(i<4) { i++; a.push(100 + { if(i<3) continue; break; }); }
+println(i); println(a);
+i=0;
+while(i<2) { i++; var v=[1,2,{continue;}]; println("wrong"); }
+println(i);
+const f=func(n) { while(n>0) { n--; if(n==2) return n; } return -1; };
+println(f(5)); println(f(0));

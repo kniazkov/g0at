@@ -15,6 +15,12 @@ typedef struct abstract_state_t abstract_state_t;
 typedef struct declarator_t declarator_t;
 typedef struct lattice_element_t lattice_element_t;
 
+/** @brief Borrowed accumulators for the current loop; shared by branch clones. */
+typedef struct {
+    abstract_state_t *breaks;
+    abstract_state_t *continues;
+} abstract_loop_t;
+
 /**
  * @brief Mutable abstract state used during abstract interpretation.
  *
@@ -37,6 +43,7 @@ struct abstract_state_t {
 
     /** @brief Current abstract control-flow mode. */
     control_flow_t control_flow;
+    abstract_loop_t *loop; /**< Nearest loop transfer accumulators. */
 
     /** @brief Borrowed return-summary accumulator (NULL/BOTTOM initially); shared across branches.
      */

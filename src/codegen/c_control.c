@@ -8,6 +8,7 @@
 #include "c_locals.h"
 #include "c_lowering.h"
 #include "graph/comparison.h"
+#include "graph/loop.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
@@ -178,42 +179,90 @@ bool c_emit_statement(const node_t *node,
     return true;
 }
 
+static string_value_t truth_value(const c_generated_expression_t *expression);
+
+bool c_emit_loop_jump(const node_t *node,
+                      c_generation_context_t *context,
+                      source_builder_t *builder,
+                      size_t indent) {
+    if (!context->in_loop)
+        return fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
+    add_source(builder,
+               indent,
+               L"goto g_loop_%zu_%s;",
+               context->loop_id,
+               node->vtbl->type == NODE_BREAK ? L"end" : L"next");
+    context->terminates = true;
+    return true;
+}
+
 bool c_emit_for(const node_t *node,
                 c_generation_context_t *context,
                 source_builder_t *builder,
                 size_t indent) {
     const c_generation_binding_t *saved = context->bindings;
+    size_t outer_id = context->loop_id;
+    bool outer_loop = context->in_loop;
+    size_t id = context->temporary_count++;
+    context->loop_id = id;
+    context->in_loop = true;
+    bool post = node->vtbl->type == NODE_DO_WHILE;
     add_static_source(builder, indent, L"{");
     bool success = c_prepare_locals(node, context, builder, indent + 1)
                    && generate_indented_c_code_from_node(get_node_child(node, 0),
                                                          context,
                                                          builder,
                                                          indent + 1);
+    bool body_stops = false;
     c_generated_expression_t condition = {0};
-    if (success) {
+    if (success && !post) {
         condition = generate_c_code_from_node(get_node_child(node, 1), context);
         success = condition.success;
     }
     if (success) {
+        string_value_t truth = post ? (string_value_t){0} : truth_value(&condition);
         add_static_source(builder, indent + 1, L"for (;;) {");
-        c_emit_prelude(condition.prelude, builder, indent + 2);
-        add_source(builder, indent + 2, L"if (!(%s)) break;", condition.value.data);
+        if (!post) {
+            c_emit_prelude(condition.prelude, builder, indent + 2);
+            add_source(builder, indent + 2, L"if (!(%s)) goto g_loop_%zu_end;", truth.data, id);
+        }
         context->terminates = false;
         success = generate_indented_c_code_from_node(get_node_child(node, 3),
                                                      context,
                                                      builder,
                                                      indent + 2);
-        if (success && !context->terminates)
+        bool reaches_step = !context->terminates || loop_has_jump(node, true);
+        body_stops = !reaches_step;
+        add_source(builder, indent + 2, L"goto g_loop_%zu_next;", id);
+        add_source(builder, indent + 2, L"g_loop_%zu_next:;", id);
+        context->terminates = false;
+        if (success && reaches_step)
             success = generate_indented_c_code_from_node(get_node_child(node, 2),
                                                          context,
                                                          builder,
                                                          indent + 2);
+        if (success && post && reaches_step) {
+            condition = generate_c_code_from_node(get_node_child(node, 1), context);
+            success = condition.success;
+            if (success) {
+                truth = truth_value(&condition);
+                c_emit_prelude(condition.prelude, builder, indent + 2);
+                add_source(builder, indent + 2, L"if (!(%s)) goto g_loop_%zu_end;", truth.data, id);
+            }
+        }
         add_static_source(builder, indent + 1, L"}");
+        add_source(builder, indent + 1, L"goto g_loop_%zu_end;", id);
+        add_source(builder, indent + 1, L"g_loop_%zu_end:;", id);
+        FREE_STRING(truth);
     }
     destroy_c_expression(&condition);
     c_release_locals(context, saved);
+    context->in_loop = outer_loop;
+    context->loop_id = outer_id;
     context->terminates =
-        c_generation_condition_truth(context, get_node_child(node, 1)) == ABSTRACT_TRUE;
+        ((post && body_stops)
+         || c_generation_condition_truth(context, get_node_child(node, 1)) == ABSTRACT_TRUE)
+        && !loop_has_jump(node, false);
     add_static_source(builder, indent, L"}");
     return success;
 }

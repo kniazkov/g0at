@@ -1,0 +1,26 @@
+const sum = func(n) {
+ var i=0; var value=0;
+ while(i<n) { i++; if(i==2) continue; if(i==6) break; value=value+i; }
+ do { value++; } while(value<20);
+ for(var j=0;j<4;j++) { if(j==1) continue; value=value+j; }
+ return value;
+};
+const post = func(n) { var i=0; var checks=0; do { i++; if(i<3) continue; if(i==5) break; } while((checks=checks+1)<n); return checks*10+i; };
+const nested = func(n) { var total=0; var i=0; while(i<n) { i++; for(var j=0;j<4;j++) { if(j==1) continue; if(j==3) break; total=total+i*10+j; } } return total; };
+const real = func(n) { var x=0.0; do { x=x+0.5; if(x<1.0) continue; if(x>2.0) break; } while(x<n); return x; };
+const chars = func(c) { var n=0; while(c<'d') { n++; if(c=='a') { c='b'; continue; } c='c'; break; } return n; };
+const strings = func(n) { var s=""; var i=0; while(i<n) { i++; if(i==2) continue; s=s+str(i); if(i==4) break; } return s; };
+println(sum(10)); println(sum(0)); println(post(0)); println(post(10));
+println(nested(3)); println(nested(0)); println(real(1.5)); println(real(10.0));
+println(chars('a')); println(chars('z')); println(strings(5)); println(strings(0));
+
+const early = func(n) {
+    do { if (n > 0) break; else return n; } while (n > 10);
+    for (var i=0; i<n; i++) { break; n = n + 100; }
+    return n + 1;
+};
+println(early(2));
+println(early(-2));
+const once = func(n) { do { return n + 2; n = n + 100; } while (n > 0); };
+println(once(3));
+println(once(-3));

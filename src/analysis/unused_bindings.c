@@ -9,13 +9,26 @@
 #include "graph/variable.h"
 #include "simplification.h"
 
+/** @brief Escaping this makes otherwise unread properties observable. */
+static bool uses_this(const node_t *node) {
+    if (node->vtbl->type == NODE_VARIABLE) {
+        const variable_t *variable = (const variable_t *)node;
+        if (variable->name.length == 4 && !wmemcmp(variable->name.data, L"this", 4))
+            return true;
+    }
+    for (size_t i = 0; i < get_node_child_count(node); i++)
+        if (uses_this(get_node_child(node, i)))
+            return true;
+    return false;
+}
+
 /** @brief Object-valued blocks may expose their own context; keep that storage. */
 static bool exposed(const node_t *node) {
     for (const node_t *p = node->parent; p; p = p->parent) {
         if (p->vtbl->type == NODE_FUNCTION_BODY || p->vtbl->type == NODE_ROOT)
             return false;
         if (p->vtbl->type == NODE_STATEMENT_LIST)
-            return !p->parent || p->parent->vtbl->type != NODE_STATEMENT_EXPRESSION;
+            return !p->parent || p->parent->vtbl->type != NODE_STATEMENT_EXPRESSION || uses_this(p);
     }
     return true;
 }

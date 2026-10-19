@@ -1,0 +1,10 @@
+var i=0; var total=0;
+while(i<3) { i++; for(var j=0;j<4;j++) { if(j==1) continue; if(j==3) break; total=total+10*i+j; } }
+println(total);
+var n=0;
+do do n++; while(n<2); while(n<3);
+println(n);
+var x=0; do if(x==0) x=1; else x=2; while(x<2);
+println(x);
+x=0; do while(x<3) x++; while(false);
+println(x);

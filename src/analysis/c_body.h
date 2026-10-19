@@ -32,3 +32,6 @@ bool c_call_supported(const node_t *site, const c_expression_context_t *context)
 
 /** @brief Refines pure call returns, then eliminates invalid recursive body candidates. */
 void analyze_function_c_bodies(function_call_graph_t *graph, size_t max_iterations);
+
+/** @brief Conservative normal completion of a statement, excluding loop transfers. */
+bool c_body_falls_through(const node_t *node, const c_expression_context_t *context);

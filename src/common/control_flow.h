@@ -23,5 +23,7 @@ typedef enum {
     FLOW_THROW,
 
     /** @brief Abstract path has no normal execution (not used by the VM). */
+    FLOW_LOOP, /**< Runtime scope marking the nearest loop; not abstract control flow. */
+
     FLOW_UNREACHABLE
 } control_flow_t;
