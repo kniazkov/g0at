@@ -1,0 +1,19 @@
+var sum=0; var steps=0;
+for(var i=0;i<8;steps=steps+1) {
+ i++;
+ switch(i) {
+  case 2: continue;
+  case 5: break;
+  default: sum=sum+i;
+ }
+ sum=sum+10;
+}
+println(sum); println(steps);
+var n=0;
+do switch(++n) { case 1: continue; case 3: break; default: println(n); } while(n<9);
+println(n);
+var j=0;
+while(j<2) switch(j++) {
+ case 0: for(var k=0;k<5;k++) { switch(k) { case 2: break; default: println(k); } }
+ default: switch(j) { case 2: println("nested"); }
+}

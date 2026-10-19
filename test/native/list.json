@@ -141,5 +141,10 @@
     "name": "loops",
     "calls": 16,
     "bound": 8
+  },
+  {
+    "name": "switch",
+    "calls": 29,
+    "bound": 11
   }
 ]

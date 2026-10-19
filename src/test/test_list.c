@@ -60,6 +60,7 @@
 #include "test_scanner.h"
 #include "test_specialization_graph.h"
 #include "test_subtraction.h"
+#include "test_switch.h"
 #include "test_unary.h"
 #include "test_update.h"
 
@@ -304,6 +305,8 @@ static test_description_t test_list[] = {
     {"data builder", test_data_builder},
     {"linker", test_linker},
     {"node codegen stubs", test_node_codegen_stubs},
+    {"switch parser", test_switch_parser},
+    {"switch warnings", test_switch_warnings},
     {"loops parser", test_loops_parser},
     {"loops bytecode", test_loops_bytecode},
     {"root object call", test_root_object_call}};

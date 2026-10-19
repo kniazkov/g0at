@@ -49,7 +49,7 @@ println(sum);
 
 This prints `10`. Header slots can be empty; the body may be a single statement or a block. [Chapter 2](docs/book/en/02-implemented-language.md) describes scope and control flow; [chapter 22](docs/book/en/22-c-code-generation.md) shows a native numeric loop.
 
-Goat supports dynamically typed values, lexical scopes, functions and recursion, conditional branches, `for`, `while`, and `do…while` loops with `break`/`continue`, block-based objects, exceptions, and mathematical and input/output built-ins. Static analysis tracks approximate values, function calls, effects, and numeric specializations. Eligible functions can be translated to C and executed as machine code through a shared library (native execution).
+Goat supports dynamically typed values, lexical scopes, functions and recursion, conditional branches and `switch`, `for`, `while`, and `do…while` loops with `break`/`continue`, block-based objects, exceptions, and mathematical and input/output built-ins. Static analysis tracks approximate values, function calls, effects, and numeric specializations. Eligible functions can be translated to C and executed as machine code through a shared library (native execution).
 
 > [!CAUTION]
 > Goat is an experimental implementation. There is no `while`, `break`, `continue`, array indexing, property-access syntax, or module import syntax. Native generation covers a restricted numeric subset; the VM executes other supported language constructs. The book marks implementation limitations with red callouts.
@@ -185,3 +185,5 @@ Goat is distributed under the [MIT license](LICENSE.txt).
 Prototype-based object construction and multiple inheritance are described in [the `->` operator guide](docs/prototype-inheritance.md) (English and Russian).
 
 See [loops and loop transfers](docs/loops.md) for syntax, scopes, and native support (English and Russian).
+
+See [switch selection](docs/switch.md) for ordered variants, branch scopes, diagnostics, and native support (English and Russian).

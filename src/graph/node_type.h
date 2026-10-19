@@ -175,6 +175,7 @@ typedef enum {
     NODE_THROW,
 
     /** @brief Exception-handling statement. */
+    NODE_SWITCH, /**< Ordered multi-way branch without fallthrough. */
     NODE_TRY_CATCH,
 
     /** @brief Conditional branch statement node type. */

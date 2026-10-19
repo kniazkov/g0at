@@ -1,0 +1,10 @@
+var n=0;
+while(true) { switch({ n++; if(n==2) break; }) { default: println(n); } }
+println(n);
+var i=0;
+while(i<3) { i++; switch(1) { case {continue;}: println("wrong"); default: println("wrong"); } }
+println(i);
+const f=func(n) { switch(n) { case {return 7;}: return 8; } return 9; };
+println(f(1));
+var x=0;
+try { switch({ throw "selector"; }) {} } catch(e) { println(e); }

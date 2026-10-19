@@ -1,0 +1,6 @@
+small
+text
+bool
+char
+null
+default

@@ -1,0 +1,9 @@
+const fail=func() { throw "label"; };
+try { switch(1) { case 1: println("skip throw"); case fail(): println("wrong"); } } catch(e) {println("wrong");}
+try { switch(2) { case fail(): println("wrong"); default: println("wrong"); } } catch(e) {println(e);}
+try { switch(1) { case 1: throw "body"; default: println("wrong"); } } catch(e) {println(e);}
+var n=0;
+while(n<5) { n++; try { switch(n) { case 1: continue; case 3: break; default: throw n; } } catch(e) { println(e); } }
+println(n);
+const choose=func(n) { switch(n) { case 1,2: return "yes"; default: return "no"; } };
+println(choose(1)); println(choose(9));

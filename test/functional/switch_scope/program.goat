@@ -1,0 +1,12 @@
+var key=2; var captured=[]; var saved=[];
+for(var i=0;i<3;i++) {
+ switch(i) {
+  case 0: var local=10; captured.push(func(){return local;}); saved.push(this);
+  case 1: var local=20; captured.push(func(){return local;}); saved.push(this);
+  default: var local=30; captured.push(func(){return local;}); saved.push(this);
+ }
+}
+println(captured[0]()); println(captured[1]()); println(captured[2]());
+println(saved[0].local); println(saved[1].local); println(saved[2].local);
+switch(2) { case key: var key=99; println(key); default: println("wrong"); }
+println(key); println(local);

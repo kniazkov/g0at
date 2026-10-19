@@ -14,13 +14,16 @@ compilation_error_t *parsing_for(token_t *, parser_memory_t *, token_groups_t *)
 
 compilation_error_t *parsing_try_catch(token_t *, parser_memory_t *, token_groups_t *);
 
+compilation_error_t *parsing_switch(token_t *, parser_memory_t *, token_groups_t *);
+
 compilation_error_t *parsing_while(token_t *, parser_memory_t *, token_groups_t *);
 
 /** @brief Identifies a statement that may need recursive reduction inside a do body. */
 static bool flow_keyword(token_t *token) {
     return token
-           && (token->type == TOKEN_IF || token->type == TOKEN_FOR || token->type == TOKEN_WHILE
-               || token->type == TOKEN_DO || token->type == TOKEN_TRY);
+           && (token->type == TOKEN_SWITCH || token->type == TOKEN_IF || token->type == TOKEN_FOR
+               || token->type == TOKEN_WHILE || token->type == TOKEN_DO
+               || token->type == TOKEN_TRY);
 }
 
 /**
@@ -30,7 +33,8 @@ static bool flow_keyword(token_t *token) {
 compilation_error_t *
 parsing_flow_keywords(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
     token_t *body = token->right;
-    if (token->type == TOKEN_IF || token->type == TOKEN_FOR || token->type == TOKEN_WHILE)
+    if (token->type == TOKEN_SWITCH || token->type == TOKEN_IF || token->type == TOKEN_FOR
+        || token->type == TOKEN_WHILE)
         body = body ? body->right : NULL;
     if (flow_keyword(body)) {
         compilation_error_t *error = parsing_flow_keywords(body, memory, groups);
@@ -49,6 +53,8 @@ parsing_flow_keywords(token_t *token, parser_memory_t *memory, token_groups_t *g
         }
     }
     switch (token->type) {
+        case TOKEN_SWITCH:
+            return parsing_switch(token, memory, groups);
         case TOKEN_WHILE:
         case TOKEN_DO:
             return parsing_while(token, memory, groups);

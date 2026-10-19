@@ -1,0 +1,10 @@
+const choose = func(n) { switch(n) { case 1,2: return 10; default: return 20; } };
+choose(1);
+const mixed = func(n) { switch(n) { case 1: return 10; default: return "other"; } };
+mixed(1); mixed(3);
+const mismatch = func(n) { switch(n) { case "text": return "wrong"; default: return n; } };
+mismatch(2);
+const fixed = func(n) { switch(1) { case 1: return n; case 2: return n+100; } };
+fixed(4);
+const text = func(s) { switch(s) { case "a","b": return 1; default: return 2; } };
+text("a");

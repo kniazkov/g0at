@@ -1,0 +1,6 @@
+var a={x=1}; var b={x=1}; var items=[1,2];
+switch(a) { case b: println("wrong"); case a: println("object"); }
+switch(items) { case [1,2]: println("wrong"); case items: println("array"); }
+const f=func(){return 1;};
+switch(f) { case func(){return 1;}: println("wrong"); case f: println("function"); }
+switch(2) { case 1+1,2: println("first"); case 2.0: println("wrong"); default: println("wrong"); }

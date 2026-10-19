@@ -1,0 +1,10 @@
+var x=2;
+switch(x) { case 1,2,3,: println("small"); case 4,5: println("big"); default: println("other"); }
+switch("hi") { case "bye": println("wrong"); case "h"+"i": println("text"); }
+switch(true) { case 1: println("wrong"); case false: println("wrong"); case true: println("bool"); }
+switch('a') { case 97,"a": println("wrong"); case 'a': println("char"); }
+switch(null) { case false,0,"": println("wrong"); case null: println("null"); }
+switch(9) { case 1: println("wrong"); }
+switch(2) { case 2: case 3: println("wrong"); default: println("wrong"); }
+switch(8) { default: println("default"); }
+switch(8) {}

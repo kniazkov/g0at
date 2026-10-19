@@ -101,6 +101,11 @@ cleanup:
 compilation_error_t *
 parsing_scopes_and_functions(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
     assert(token->type == TOKEN_BRACKET_PAIR && token->text.data[0] == L'{');
+    if (token->left && token->left->type == TOKEN_BRACKET_PAIR && token->left->left
+        && token->left->left->type == TOKEN_SWITCH) {
+        remove_token_from_group(token);
+        return NULL;
+    }
     if (token->left) {
         if (token->left->type == TOKEN_FUNC) {
             // func { ... } - function without arguments
