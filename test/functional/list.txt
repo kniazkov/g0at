@@ -477,3 +477,4 @@ array_functions
 array_cycles
 array_loops
 array_prototype
+index_instance_of_override
