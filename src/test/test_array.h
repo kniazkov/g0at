@@ -11,3 +11,6 @@ bool test_array_model(void);
 
 /** @brief Rendered container/access node names use spaces. */
 bool test_array_graph_labels(void);
+
+/** @brief Growth, cycle lifetimes, removal ownership and virtual comparison failures. */
+bool test_array_methods(void);

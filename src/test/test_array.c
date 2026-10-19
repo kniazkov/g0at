@@ -11,6 +11,7 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "model/process.h"
+#include "model/thread.h"
 #include "test_macro.h"
 #include "vm/gc.h"
 
@@ -178,5 +179,108 @@ bool test_array_graph_labels(void) {
     FREE_STRING(dot);
     destroy_options(options);
     destroy_arena(arena);
+    return true;
+}
+
+/** @brief Calls an Array method while preserving the caller's references. */
+static operation_result_t
+array_call(process_t *proc, object_t *array, const wchar_t *name, object_t **args, size_t count) {
+    object_t *key = create_string_object(proc, (string_value_t){name, wcslen(name), false});
+    object_t *method = get_object_property(get_array_proto(), key);
+    DECREF(key);
+    for (size_t i = 0; i < count; i++) {
+        INCREF(args[i]);
+        push_object_onto_stack(proc->main_thread->data_stack, args[i]);
+    }
+    if (!call_object(method, (uint16_t)count, array, proc->main_thread)) {
+        object_t *error = proc->main_thread->exception.value;
+        proc->main_thread->exception.value = NULL;
+        return operation_exception(error);
+    }
+    return operation_success(pop_object_from_stack(proc->main_thread->data_stack));
+}
+
+/** @brief Custom comparison proves dispatch and ownership of dynamically allocated exceptions. */
+static operation_result_t comparison_error(process_t *proc, object_t *a, object_t *b) {
+    return operation_exception(create_string_object(proc, STATIC_STRING(L"comparison failed")));
+}
+
+bool test_array_methods(void) {
+    process_t *proc = create_process();
+    object_t *array = create_array_object(proc, (object_array_t){0});
+    add_gc_root(proc, array);
+    collect_garbage(proc);
+    size_t baseline = proc->objects.size;
+    for (size_t pass = 0; pass < 50; pass++) {
+        for (size_t i = 0; i < 256; i++) {
+            object_t *child = create_array_object(proc, (object_array_t){&array, 1});
+            operation_result_t result = array_call(proc, array, L"push", &child, 1);
+            ASSERT(!result.is_exception
+                   && get_object_integer_value(result.value).value == (int64_t)i + 1);
+            DECREF(result.value);
+            DECREF(child);
+        }
+        collect_garbage(proc);
+        ASSERT(get_array_elements(array).size == 256);
+        ASSERT(get_array_elements(get_array_elements(array).items[0]).items[0] == array);
+        object_t *old_length = get_object_property(array, get_string_length());
+        INCREF(old_length);
+        operation_result_t result = array_call(proc, array, L"clear", NULL, 0);
+        ASSERT(!result.is_exception && result.value == array);
+        DECREF(result.value);
+        ASSERT(get_object_integer_value(old_length).value == 256);
+        DECREF(old_length);
+        collect_garbage(proc);
+        ASSERT(proc->objects.size == baseline);
+    }
+    object_t *child = create_array_object(proc, (object_array_t){0});
+    operation_result_t result = array_call(proc, array, L"push", &child, 1);
+    DECREF(result.value);
+    DECREF(child);
+    result = array_call(proc, array, L"slice", NULL, 0);
+    ASSERT(!result.is_exception);
+    object_t *slice = result.value;
+    add_gc_root(proc, slice);
+    result = array_call(proc, array, L"clear", NULL, 0);
+    DECREF(result.value);
+    collect_garbage(proc);
+    ASSERT(get_array_elements(slice).items[0] == child);
+    result = array_call(proc, slice, L"pop", NULL, 0);
+    ASSERT(!result.is_exception && result.value == child);
+    ASSERT(get_array_elements(result.value).size == 0);
+    DECREF(result.value);
+    remove_gc_root(proc, slice);
+    DECREF(slice);
+    /* Every comparison failure must propagate without changing order or losing elements. */
+    object_t *root = get_root_object();
+    object_t *first = create_user_defined_object(proc, (object_array_t){&root, 1});
+    object_t *second = create_user_defined_object(proc, (object_array_t){&root, 1});
+    object_vtbl_t vtbl = *first->vtbl;
+    vtbl.less = comparison_error;
+    vtbl.equal = comparison_error;
+    first->vtbl = &vtbl;
+    second->vtbl = &vtbl;
+    object_t *items[] = {first, second};
+    result = array_call(proc, array, L"push", items, 2);
+    DECREF(result.value);
+    result = array_call(proc, array, L"sort", NULL, 0);
+    ASSERT(result.is_exception);
+    string_value_t error = convert_object_to_string(result.value);
+    ASSERT(!wcscmp(error.data, L"comparison failed"));
+    FREE_STRING(error);
+    DECREF(result.value);
+    ASSERT(get_array_elements(array).items[0] == first
+           && get_array_elements(array).items[1] == second);
+    result = array_call(proc, array, L"indexOf", &first, 1);
+    ASSERT(result.is_exception);
+    DECREF(result.value);
+    result = array_call(proc, array, L"lastIndexOf", &first, 1);
+    ASSERT(result.is_exception);
+    DECREF(result.value);
+    DECREF(first);
+    DECREF(second);
+    remove_gc_root(proc, array);
+    DECREF(array);
+    destroy_process(proc);
     return true;
 }

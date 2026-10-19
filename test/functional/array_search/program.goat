@@ -1,0 +1,16 @@
+var obj = {}
+var a = [3, "3", 3.0, true, null, obj, [], 3]
+println(a.indexOf(3))
+println(a.lastIndexOf(3.0))
+println(a.indexOf("3"))
+println(a.indexOf(true))
+println(a.indexOf(null))
+println(a.indexOf(obj))
+println(a.indexOf({}))
+println(a.indexOf([]))
+println(a.indexOf(a[6]))
+println(a.lastIndexOf(100))
+println([].indexOf(null))
+println([].lastIndexOf(null))
+println("banana".indexOf("an"))
+println("banana".lastIndexOf("an"))

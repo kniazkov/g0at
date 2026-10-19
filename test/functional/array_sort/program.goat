@@ -1,0 +1,16 @@
+var a = [10,2,1,-4,2.5,9223372036854775807,-9223372036854775808]
+println(a.sort() == a)
+println(a)
+println(["z", "aa", "b"].sort())
+println([true,false,true].sort())
+println(['z','a','b'].sort())
+println([].sort())
+println([1].sort())
+var stable = [3.0,3,2]
+stable.sort()
+println(stable[1].instanceOf(Real))
+println(stable[2].instanceOf(Integer))
+var mixed = [3,2,"x",1]
+try { mixed.sort() } catch(e) { println(e) }
+println(mixed)
+try { [{},{}].sort() } catch(e) { println(e) }

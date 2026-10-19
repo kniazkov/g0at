@@ -1,0 +1,25 @@
+var a = []
+for (var i = 0; i < 300; i++) { a.push(i) }
+var oldLength = a.length
+for (var i = 0; i < 150; i++) { a.remove(0) }
+println(oldLength)
+println(a.length)
+println(a[0])
+println(a.pop())
+println(a.length)
+a.clear()
+a.push(a)
+println(a)
+println(a.pop() == a)
+println(a)
+a.prepend(a,a)
+a.clear()
+println(a)
+var push = Array.push
+println(push(a,4,5))
+println(a)
+var removed = [func() { return 42 }].pop()
+println(removed())
+var snapshot = [1,2].slice()
+println(snapshot.reverse())
+println(a.insert(0))
