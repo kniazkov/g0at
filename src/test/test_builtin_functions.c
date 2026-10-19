@@ -24,7 +24,7 @@ bool test_builtin_registry() {
     size_t count;
     const builtin_function_t *const *functions = get_builtin_functions(&count);
     ASSERT(count == 52);
-    ASSERT(get_object_keys(get_root_context()->data).size == count + 2 + 9);
+    ASSERT(get_object_keys(get_root_context()->data).size == count + 2 + 10);
     for (size_t i = 0; i < count; i++) {
         const builtin_function_t *f = functions[i];
         ASSERT(f && f->execute && f->interpret && f->get_object && f->name);

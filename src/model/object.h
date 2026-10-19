@@ -605,6 +605,9 @@ object_t *get_static_string_object(object_static_string_t *storage, const wchar_
 /** @brief Creates a dynamic string object from a string value. */
 object_t *create_string_object(process_t *process, string_value_t value);
 
+/** @brief Retrieves the immutable Array prototype. */
+object_t *get_array_proto(void);
+
 /** @brief Creates an array, retaining every borrowed element. */
 object_t *create_array_object(process_t *process, object_array_t elements);
 /** @brief Borrows the elements of an array. */

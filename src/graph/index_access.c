@@ -123,7 +123,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 
 /** @brief Virtual table for index expressions. */
 static node_vtbl_t vtbl = {.type = NODE_INDEX_ACCESS,
-                           .type_name = L"index_access",
+                           .type_name = L"index access",
                            .is_assignable_expression = true,
                            .analyze_reachability = analyze_reachability,
                            .is_pure = not_pure,

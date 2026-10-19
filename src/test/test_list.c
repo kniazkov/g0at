@@ -245,6 +245,7 @@ static test_description_t test_list[] = {
     {"properties", test_properties},
     {"string topology", test_string_topology},
     {"store and load", test_store_and_load},
+    {"array graph labels", test_array_graph_labels},
     {"array parser", test_array_parser},
     {"array model and lifetime", test_array_model},
     {"index parser", test_index_parser},

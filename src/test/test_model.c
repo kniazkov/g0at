@@ -264,6 +264,7 @@ bool test_instance_of_function() {
         const wchar_t *name;
         object_t *(*getter)(void);
     } types[] = {
+        {L"Array", get_array_proto},
         {L"Boolean", get_boolean_proto},
         {L"Character", get_character_proto},
         {L"Function", get_function_proto},

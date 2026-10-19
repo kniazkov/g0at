@@ -314,6 +314,8 @@ static string_value_t render_array_notation(notation_renderer_t *renderer, const
     append_to_vector(renderer->active, (void *)obj);
     append_char(renderer->builder, L'[');
     object_array_t elements = get_array_elements(obj);
+    if (!elements.size)
+        append_char(renderer->builder, L' ');
     for (size_t i = 0; i < elements.size; i++) {
         if (i)
             append_char(renderer->builder, L',');

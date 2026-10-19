@@ -149,6 +149,24 @@ static bool get_boolean_value(const object_t *obj) {
     return ((const array_object_t *)obj)->count != 0;
 }
 
+/** @brief Every array directly inherits from the singleton Array prototype. */
+static object_array_t get_prototypes(const object_t *obj) {
+    static object_t *prototype;
+    if (!prototype)
+        prototype = get_array_proto();
+    return (object_array_t){&prototype, 1};
+}
+
+/** @brief Full lookup order is Array, then Object. */
+static object_array_t get_topology(const object_t *obj) {
+    static object_t *topology[2];
+    if (!topology[0]) {
+        topology[0] = get_array_proto();
+        topology[1] = get_root_object();
+    }
+    return (object_array_t){topology, 2};
+}
+
 /** @brief Array behavior; indexed access is independent of named properties. */
 static object_vtbl_t vtbl = {.type = TYPE_ARRAY,
                              .inc_ref = inc_ref,
@@ -160,8 +178,8 @@ static object_vtbl_t vtbl = {.type = TYPE_ARRAY,
                              .clone = clone,
                              .to_string = container_to_string_notation,
                              .to_string_notation = container_to_string_notation,
-                             .get_prototypes = common_get_prototypes,
-                             .get_topology = common_get_topology,
+                             .get_prototypes = get_prototypes,
+                             .get_topology = get_topology,
                              .get_keys = get_keys,
                              .get_property = get_property,
                              .create_property = create_property_on_immutable,
