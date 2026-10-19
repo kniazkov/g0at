@@ -1,0 +1,10 @@
+const Root = { var x = 1; var root = 9; };
+const A = Root -> { x = 2; a = 10; };
+const B = Root -> { x = 3; b = 20; };
+var c = [A, B,] -> {};
+println(c.x); println(c.a); println(c.b); println(c.root);
+println(c.instanceOf(A)); println(c.instanceOf(B)); println(c.instanceOf(Root));
+println(([B,A] -> {}).x);
+println(([A,A,B] -> {}).x);
+println(([Root,A] -> {}).x);
+c.x = 7; println(A.x); println(B.x); println(Root.x);

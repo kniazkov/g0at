@@ -38,6 +38,9 @@ typedef struct {
     /** @brief A vector storing the prototypes of the object. */
     vector_t *proto;
 
+    /** @brief Explicit derivation shadows inherited properties on assignment. */
+    bool shadow_inherited;
+
     /** @brief A vector storing the topology of the object. */
     vector_t *topology;
 
@@ -224,6 +227,7 @@ static object_t *clone(process_t *process, object_t *obj) {
     object_user_defined_t *copy = create_empty_user_defined_object(
         process,
         (object_array_t){(object_t *const *)uobj->proto->data, uobj->proto->size});
+    copy->shadow_inherited = uobj->shadow_inherited;
     clone_pair_t pair = {uobj, copy};
     avl_tree_for_each(uobj->properties, copy_child_pair, &pair);
     return &copy->base;
@@ -408,6 +412,8 @@ static model_status_t set_property(object_t *obj, object_t *key, object_t *value
     if (key->vtbl->type == TYPE_STRING && compare_objects_using_vtbl(key, get_this_key()) == 0)
         return MSTAT_PROPERTY_IS_CONSTANT;
     if (!ref) {
+        if (uobj->shadow_inherited)
+            return create_property(obj, key, value, false);
         return MSTAT_PROPERTY_NOT_FOUND;
     }
     if (ref->is_constant) {
@@ -580,6 +586,7 @@ static object_user_defined_t *create_empty_user_defined_object(process_t *proces
         uobj->keys = create_vector();
         uobj->properties = create_avl_tree(key_comparator);
     }
+    uobj->shadow_inherited = false;
     uobj->refs = 1;
     uobj->state = UNMARKED;
     for (size_t index = 0; index < proto.size; index++) {
@@ -593,4 +600,8 @@ static object_user_defined_t *create_empty_user_defined_object(process_t *proces
 
 object_t *create_user_defined_object(process_t *process, object_array_t prototypes) {
     return &create_empty_user_defined_object(process, prototypes)->base;
+}
+
+void enable_prototype_shadowing(object_t *obj) {
+    ((object_user_defined_t *)obj)->shadow_inherited = true;
 }

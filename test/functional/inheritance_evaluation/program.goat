@@ -1,0 +1,6 @@
+var order = [];
+const make = func(n) { order.push(n); return { var x = n; }; };
+var v = [make(1),make(2)] -> { order.push(3); x = x + 10; };
+println(order); println(v.x);
+var one = make(4) -> { order.push(5); };
+println(order); println(one.x);

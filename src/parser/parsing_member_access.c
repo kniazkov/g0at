@@ -25,8 +25,11 @@ parsing_member_access(token_t *op, parser_memory_t *memory, token_groups_t *grou
     }
     if (op->type == TOKEN_BRACKET_PAIR && op->text.data[0] == '['
         && (!left || (left->type != TOKEN_EXPRESSION && left->type != TOKEN_IDENTIFIER))) {
-        node_t *node = create_array_node(memory->graph);
-        op->type = TOKEN_ARRAY_ITEMS;
+        bool prototypes =
+            op->right && op->right->type == TOKEN_OPERATOR && !wcscmp(op->right->text.data, L"->");
+        node_t *node = prototypes ? create_prototype_list_node(memory->graph)
+                                  : create_array_node(memory->graph);
+        op->type = prototypes ? TOKEN_PROTOTYPE_ITEMS : TOKEN_ARRAY_ITEMS;
         op->node = node;
         collapse_tokens_to_token(memory, op, op, TOKEN_EXPRESSION, node);
         append_token_to_group(&groups->function_arguments, op);

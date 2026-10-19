@@ -125,6 +125,27 @@ node_t *create_array_node(arena_t *arena) {
     return &expr->base.base;
 }
 
+/** @brief A prototype list leaves its operands on the stack, without constructing an array. */
+static instr_index_t
+generate_prototype_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    const array_literal_t *list = (const array_literal_t *)node;
+    instr_index_t first = get_next_instruction_index(code);
+    for (size_t i = 0; i < list->count; i++)
+        generate_bytecode_from_expression(list->elements[i], code, data);
+    return first;
+}
+
+node_t *create_prototype_list_node(arena_t *arena) {
+    static node_vtbl_t prototype_vtbl;
+    prototype_vtbl = vtbl;
+    prototype_vtbl.type = NODE_PROTOTYPE_LIST;
+    prototype_vtbl.type_name = L"prototype list";
+    prototype_vtbl.generate_bytecode = generate_prototype_bytecode;
+    node_t *node = create_array_node(arena);
+    node->vtbl = &prototype_vtbl;
+    return node;
+}
+
 void set_array_elements(node_t *node, arena_t *arena, expression_t **elements, size_t count) {
     array_literal_t *expr = (array_literal_t *)node;
     expr->count = count;

@@ -488,3 +488,14 @@ array_sort
 array_to_string
 array_method_errors
 array_method_lifetime
+inheritance_vector
+inheritance_multiple
+inheritance_dynamic_list
+inheritance_evaluation
+inheritance_scope
+inheritance_methods
+inheritance_exceptions
+inheritance_expressions
+inheritance_live
+inheritance_values
+inheritance_lifetime

@@ -73,7 +73,9 @@ static bool decode(bytecode_t *code) {
     }
     for (size_t i = 0; i < code->instructions_count; i++) {
         instruction_t in = code->instructions[i];
-        if (in.opcode > ARRAY || in.flags)
+        if (in.opcode > INHERIT || in.flags)
+            return false;
+        if (in.opcode == INHERIT && (in.arg0 > 1 || (!in.arg0 && in.arg1 != 1)))
             return false;
         switch (in.opcode) {
             case JUMP:

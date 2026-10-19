@@ -164,6 +164,21 @@ static bool is_inside_function(const node_t *node) {
     return false;
 }
 
+/** @brief Inherited bindings are only known at runtime, including in captured closures. */
+static bool inheritance_binding_is_dynamic(const node_t *node, const declarator_t *binding) {
+    for (const node_t *p = node; p->parent; p = p->parent) {
+        if (p->vtbl->type != NODE_STATEMENT_LIST || p->parent->vtbl->type != NODE_INHERITANCE)
+            continue;
+        for (const scope_t *scope = node->scope; scope; scope = scope->parent) {
+            if (binding && binding->base.scope == scope)
+                return false;
+            if (scope == p->scope)
+                return true;
+        }
+    }
+    return false;
+}
+
 /** @brief Finds the nearest statement that contains a variable usage. */
 static node_t *find_parent_statement(variable_t *var) {
     node_t *node = var->base.base.base.parent;
@@ -261,6 +276,12 @@ static void bind_variables_from_node_and_children(node_t *node,
     } else if (node->vtbl->type == NODE_VARIABLE) {
         variable_t *var = (variable_t *)node;
         declarator_t *declarator = find_symbol_in_scope_and_parents(node->scope, var->name.data);
+        if (inheritance_binding_is_dynamic(node, declarator)) {
+            var->dynamic_lookup = true;
+            /* Keep the lexical candidate alive even though a prototype may shadow it. */
+            var->declarator = declarator;
+            return;
+        }
         if (declarator == NULL) {
             node_t *parent = var->base.base.base.parent;
             node_type_t parent_type = parent ? parent->vtbl->type : NODE_ROOT;

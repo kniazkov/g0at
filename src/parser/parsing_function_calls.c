@@ -53,7 +53,7 @@ compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
 compilation_error_t *
 parsing_function_call_args(token_t *container, parser_memory_t *memory, token_groups_t *groups) {
     assert(container->type == TOKEN_FCALL_ARGS || container->type == TOKEN_INDEX_ARGS
-           || container->type == TOKEN_ARRAY_ITEMS);
+           || container->type == TOKEN_ARRAY_ITEMS || container->type == TOKEN_PROTOTYPE_ITEMS);
     token_t *token = container->children.first;
     if (token == NULL) {
         return NULL;
@@ -85,7 +85,7 @@ parsing_function_call_args(token_t *container, parser_memory_t *memory, token_gr
             goto cleanup;
         }
         if (token->right == NULL) {
-            if (container->type == TOKEN_ARRAY_ITEMS)
+            if (container->type == TOKEN_ARRAY_ITEMS || container->type == TOKEN_PROTOTYPE_ITEMS)
                 break;
             error = create_error_from_token(memory->errors,
                                             token,
@@ -95,7 +95,7 @@ parsing_function_call_args(token_t *container, parser_memory_t *memory, token_gr
         }
         token = token->right;
     }
-    if (container->type == TOKEN_ARRAY_ITEMS)
+    if (container->type == TOKEN_ARRAY_ITEMS || container->type == TOKEN_PROTOTYPE_ITEMS)
         set_array_elements(container->node, memory->graph, args, args_count);
     else if (container->type == TOKEN_INDEX_ARGS)
         set_index_arguments(container->node, memory->graph, args, args_count);

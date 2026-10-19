@@ -1,0 +1,5 @@
+var P = { var x = 1; var data = [1]; };
+var a = P -> {}; var b = P -> {};
+P.x = 2; println(a.x); a.x = 3; P.x = 4; println(a.x); println(b.x);
+a.data.push(2); println(b.data);
+P = null; println(a.x); println(b.x); println(b.data);

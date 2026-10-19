@@ -47,6 +47,7 @@ typedef enum {
     TOKEN_EXPRESSION,             /**< An expression token, which contains an attached
                                        syntax tree node */
     TOKEN_STATEMENT,              /**< A statement (e.g., assignment, control structures, etc.) */
+    TOKEN_PROTOTYPE_ITEMS,        /**< Explicit prototype list, not a runtime array. */
     TOKEN_ARRAY_ITEMS,            /**< Unprocessed array literal elements. */
     TOKEN_INDEX_ARGS,             /**< Unprocessed index expressions. */
     TOKEN_FCALL_ARGS,             /**< Unprocessed function call arguments */
@@ -158,6 +159,9 @@ typedef struct {
 
     /** @brief Group for assignment operators. */
     token_list_t assignment_operators;
+
+    /** @brief Prototype construction operators. */
+    token_list_t inheritance_operators;
 
     /** @brief Group for member access operators (`.`). */
     token_list_t member_access_operators;

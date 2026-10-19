@@ -619,6 +619,9 @@ string_value_t container_to_string_notation(const object_t *obj);
 /** @brief Creates a new user-defined object. */
 object_t *create_user_defined_object(process_t *process, object_array_t proto);
 
+/** @brief Marks an explicitly derived object: assignments create own properties. */
+void enable_prototype_shadowing(object_t *obj);
+
 /**
  * @brief Creates a new dynamic function object.
  *

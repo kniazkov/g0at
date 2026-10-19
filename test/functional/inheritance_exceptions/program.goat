@@ -1,0 +1,11 @@
+const P = { var x = 1; };
+var saved = null;
+try { P -> { x = 5; throw "constructor"; }; } catch(e) { println(e); }
+println(P.x);
+const bad = func() { throw "prototype"; };
+try { [P,bad()] -> { println("wrong"); }; } catch(e) { println(e); }
+var v = P -> { const locked = 8; };
+try { v.locked = 9; } catch(e) { println(e); }
+try { P -> { this = 4; }; } catch(e) { println(e); }
+const early = func() { P -> { return 17; }; return 0; };
+println(early()); println(P.x);

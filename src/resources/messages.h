@@ -50,6 +50,9 @@ typedef struct {
     const wchar_t const *brackets_do_not_match;
     const wchar_t const *not_a_statement;
     const wchar_t const *expected_expression;
+
+    /** @brief Invalid prototype construction syntax. */
+    const wchar_t const *expected_inheritance_constructor;
     const wchar_t const *expected_lvalue;
     const wchar_t const *expected_comma_between_args;
     const wchar_t const *expected_expr_after_comma;

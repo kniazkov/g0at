@@ -1,0 +1,12 @@
+const x = 100;
+const P = { var x = 2; };
+var v = P -> { x = x + 1; var local = 4; local = local + x; this[true] = local; };
+println(v.x); println(v.local); println(v[true]); println(x); println(P.x);
+const make = func(n) { return P -> { x = n; const get = func() { return x; }; }; };
+var a = make(8); var b = make(9);
+println(a.get()); println(b.get()); a.x = 11; println(a.get()); println(P.x);
+const call = func() { return 100; };
+const Functions = { const call = func() { return 200; }; };
+println((Functions -> { result = call(); }).result);
+var lexicalOnly = 23;
+println((Object -> {}).lexicalOnly);

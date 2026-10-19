@@ -12,6 +12,9 @@ typedef struct {
     size_t count;            /**< Number of elements. */
 } array_literal_t;
 
+/** @brief Creates an explicit prototype-list shell; emits no array allocation. */
+node_t *create_prototype_list_node(arena_t *arena);
+
 /** @brief Creates an empty literal shell. */
 node_t *create_array_node(arena_t *arena);
 /** @brief Copies element pointers into the graph arena. */

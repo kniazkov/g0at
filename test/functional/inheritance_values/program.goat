@@ -1,0 +1,6 @@
+println((Integer -> {}).instanceOf(Number));
+println((42 -> {}).instanceOf(Integer));
+println(("abc" -> {}).length);
+println((true -> {}).instanceOf(Boolean));
+println((null -> {}).instanceOf(Object));
+var v = Object -> { this[3] = 7; this["+"] = 8; }; println(v[3]); println(v["+"]);
