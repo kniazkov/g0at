@@ -4,7 +4,7 @@
  * @brief The built-in Array prototype.
  */
 
-#include "array.h"
+#include "builtins/array_methods.h"
 #include "common_methods.h"
 #include "object.h"
 #include "process.h"

@@ -108,3 +108,8 @@ operation_result_t common_get_index(process_t *process, object_t *obj, object_ar
 /** @brief Dictionary assignment with the same prototype/constant rules as SETPROP. */
 operation_result_t
 common_set_index(process_t *process, object_t *obj, object_array_t indices, object_t *value);
+
+/** @brief An object with no own keys. */
+object_array_t no_object_keys(const object_t *obj);
+/** @brief An object with no own property for the requested key. */
+object_t *no_object_property(const object_t *obj, const object_t *key);

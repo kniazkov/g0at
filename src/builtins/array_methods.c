@@ -1,18 +1,14 @@
 /** @file array_methods.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Built-in Array operations with owned results and exception-safe sorting.
+ * @brief Goat-call adapters and descriptors for Array methods.
  */
+#include "array_methods.h"
+
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
-#include "array.h"
-#include "builtin_function.h"
-#include "lib/allocate.h"
-#include "lib/string_ext.h"
-#include "thread.h"
-
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include "model/array.h"
+#include "model/builtin_function.h"
+#include "model/thread.h"
 
 /** @brief Operations provided by the Array prototype. */
 typedef enum {
@@ -30,12 +26,6 @@ typedef enum {
     TO_STRING
 } array_method_t;
 
-/** @brief Returns the retained receiver for in-place operations. */
-static operation_result_t self(object_t *obj) {
-    INCREF(obj);
-    return operation_success(obj);
-}
-
 /** @brief Validates a nonnegative integer boundary without narrowing first. */
 static bool boundary(object_t *obj, size_t limit, size_t *value) {
     if (!is_integer_object(obj))
@@ -47,189 +37,62 @@ static bool boundary(object_t *obj, size_t limit, size_t *value) {
     return true;
 }
 
-/** @brief Inserts borrowed argument values, preserving order and self references. */
-static operation_result_t
-insert(array_object_t *array, size_t index, object_t **args, size_t count) {
-    if (count > SIZE_MAX - array->count)
-        abort();
-    size_t length = array->count + count;
-    if (count) {
-        reserve_array(array, length);
-        memmove(array->items + index + count,
-                array->items + index,
-                (array->count - index) * sizeof(*array->items));
-        for (size_t i = 0; i < count; i++) {
-            INCREF(args[i]);
-            array->items[index + i] = args[i];
-        }
-        set_array_count(array, length);
-    }
-    INCREF(array->length);
-    return operation_success(array->length);
-}
-
-/** @brief Transfers the array's reference to the removed element to the caller. */
-static operation_result_t remove_at(array_object_t *array, size_t index) {
-    object_t *value = array->items[index];
-    memmove(array->items + index,
-            array->items + index + 1,
-            (array->count - index - 1) * sizeof(*array->items));
-    array->items[array->count - 1] = NULL;
-    set_array_count(array, array->count - 1);
-    return operation_success(value);
-}
-
-/** @brief Clears storage before releasing values, including references to the receiver. */
-static operation_result_t clear(array_object_t *array) {
-    object_t **items = array->items;
-    size_t count = array->count;
-    array->items = NULL;
-    array->capacity = 0;
-    set_array_count(array, 0);
-    for (size_t i = 0; i < count; i++)
-        DECREF(items[i]);
-    FREE(items);
-    return self(&array->base);
-}
-
-/** @brief Equality uses the same virtual operation as Goat's == operator. */
-static operation_result_t find(array_object_t *array, object_t *value, bool last) {
-    for (size_t i = 0; i < array->count; i++) {
-        size_t index = last ? array->count - 1 - i : i;
-        operation_result_t result =
-            are_objects_equal(array->base.process, array->items[index], value);
-        if (result.is_exception)
-            return result;
-        bool equal = get_object_boolean_value(result.value);
-        DECREF(result.value);
-        if (equal)
-            return operation_success(create_integer_object(array->base.process, (int64_t)index));
-    }
-    return operation_success(get_static_integer_object(-1));
-}
-
-/** @brief Stable merge sort of borrowed pointers; original storage changes only on success. */
-static operation_result_t sort(array_object_t *array) {
-    size_t count = array->count;
-    if (count < 2)
-        return self(&array->base);
-    object_t **source = ALLOC(count * sizeof(*source));
-    object_t **target = ALLOC(count * sizeof(*target));
-    memcpy(source, array->items, count * sizeof(*source));
-    for (size_t width = 1; width<count; width = width> count / 2 ? count : width * 2) {
-        for (size_t begin = 0; begin < count;) {
-            size_t middle = begin + (count - begin < width ? count - begin : width);
-            size_t end = middle + (count - middle < width ? count - middle : width);
-            size_t left = begin, right = middle, output = begin;
-            while (left < middle && right < end) {
-                operation_result_t result =
-                    is_object_less_than(array->base.process, source[right], source[left]);
-                if (result.is_exception) {
-                    FREE(source);
-                    FREE(target);
-                    return result;
-                }
-                bool less = get_object_boolean_value(result.value);
-                DECREF(result.value);
-                target[output++] = less ? source[right++] : source[left++];
-            }
-            while (left < middle)
-                target[output++] = source[left++];
-            while (right < end)
-                target[output++] = source[right++];
-            begin = end;
-        }
-        object_t **swap = source;
-        source = target;
-        target = swap;
-    }
-    memcpy(array->items, source, count * sizeof(*source));
-    FREE(source);
-    FREE(target);
-    return self(&array->base);
-}
-
-/** @brief Without a separator, preserve array notation; with one, join plain element strings. */
-static operation_result_t to_string(array_object_t *array, object_t **args, size_t count) {
-    if (!count)
-        return operation_success(
-            create_string_object(array->base.process, container_to_string_notation(&array->base)));
-    if (args[0]->vtbl->type != TYPE_STRING && args[0]->vtbl->type != TYPE_CHARACTER)
-        return operation_exception(get_exception_invalid_argument());
-    string_value_t separator = convert_object_to_string(args[0]);
-    string_builder_t builder = {0};
-    string_value_t text = STATIC_STRING(L"");
-    for (size_t i = 0; i < array->count; i++) {
-        if (i)
-            append_string_value(&builder, separator);
-        string_value_t value = convert_object_to_string(array->items[i]);
-        text = append_string_value(&builder, value);
-        FREE_STRING(value);
-    }
-    FREE_STRING(separator);
-    return operation_success(create_string_object(array->base.process, text));
-}
-
 /** @brief Validates arity/receiver before performing an operation. */
 static operation_result_t
 dispatch(array_method_t method, object_t *receiver, object_t **args, size_t count) {
     if (receiver->vtbl->type != TYPE_ARRAY)
         return operation_exception(get_exception_invalid_argument());
-    array_object_t *array = (array_object_t *)receiver;
+    size_t length = get_array_elements(receiver).size;
     size_t index, end;
     switch (method) {
         case PUSH:
-            return insert(array, array->count, args, count);
+            return insert_array_elements(receiver, length, args, count);
         case PREPEND:
-            return insert(array, 0, args, count);
+            return insert_array_elements(receiver, 0, args, count);
         case INSERT:
-            if (!count || !boundary(args[0], array->count, &index))
+            if (!count || !boundary(args[0], length, &index))
                 break;
-            return insert(array, index, args + 1, count - 1);
+            return insert_array_elements(receiver, index, args + 1, count - 1);
         case POP:
             if (count)
                 break;
-            return array->count ? remove_at(array, array->count - 1)
-                                : operation_success(get_null_object());
+            return length ? remove_array_element(receiver, length - 1)
+                          : operation_success(get_null_object());
         case REMOVE:
-            if (count != 1 || !array->count || !boundary(args[0], array->count - 1, &index))
+            if (count != 1 || !length || !boundary(args[0], length - 1, &index))
                 break;
-            return remove_at(array, index);
+            return remove_array_element(receiver, index);
         case CLEAR:
             if (count)
                 break;
-            return clear(array);
+            return clear_array_elements(receiver);
         case INDEX_OF:
         case LAST_INDEX_OF:
             if (count != 1)
                 break;
-            return find(array, args[0], method == LAST_INDEX_OF);
+            return find_array_element(receiver, args[0], method == LAST_INDEX_OF);
         case SLICE:
             index = 0;
-            end = array->count;
-            if (count > 2 || (count && !boundary(args[0], array->count, &index))
-                || (count > 1 && !boundary(args[1], array->count, &end)) || end < index)
+            end = length;
+            if (count > 2 || (count && !boundary(args[0], length, &index))
+                || (count > 1 && !boundary(args[1], length, &end)) || end < index)
                 break;
-            return operation_success(create_array_object(
-                array->base.process,
-                (object_array_t){end > index ? array->items + index : NULL, end - index}));
+            return slice_array(receiver, index, end);
         case REVERSE:
             if (count)
                 break;
-            for (size_t i = 0; i < array->count / 2; i++) {
-                object_t *value = array->items[i];
-                array->items[i] = array->items[array->count - 1 - i];
-                array->items[array->count - 1 - i] = value;
-            }
-            return self(receiver);
+            return reverse_array_elements(receiver);
         case SORT:
             if (count)
                 break;
-            return sort(array);
+            return sort_array_elements(receiver);
         case TO_STRING:
             if (count > 1)
                 break;
-            return to_string(array, args, count);
+            if (count && args[0]->vtbl->type != TYPE_STRING
+                && args[0]->vtbl->type != TYPE_CHARACTER)
+                break;
+            return array_to_string(receiver, count ? args[0] : NULL);
     }
     return operation_exception(get_exception_invalid_argument());
 }
