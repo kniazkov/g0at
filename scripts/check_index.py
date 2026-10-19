@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright 2026 Ivan Kniazkov
 # Distributed under the MIT license; see LICENSE.txt.
-"""Verify all indexed-access fixtures, regenerated source and saved bytecode."""
+"""Verify indexed-access and array fixtures, regenerated source and saved bytecode."""
 import argparse
 import os
 from pathlib import Path
@@ -27,7 +27,7 @@ def main():
         return result.stdout
 
     count = 0
-    for fixture in sorted(fixtures.glob("index_*")):
+    for fixture in sorted([*fixtures.glob("index_*"), *fixtures.glob("array_*")]):
         source = fixture / "program.goat"
         if not source.is_file():
             continue

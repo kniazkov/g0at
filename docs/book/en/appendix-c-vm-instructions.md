@@ -98,3 +98,10 @@ Chapter 8 describes instruction construction, chapter 10 contexts, chapter 12 ex
 | `SETINDEX` | index count (uint32) | S, value, receiver, indices → S, result | `set_index(process, receiver, indices, value)` |
 
 Methods borrow their operands and return an owned result or exception. The VM releases operands and dispatches exceptions normally. The concrete type validates index count, not the VM. New opcodes are appended without renumbering existing instructions.
+
+## ARRAY
+
+`arg1` is the element count (uint32). Stack: `S, element0, …, elementN → S, array`.
+The instruction preserves source order, retains elements and creates a fresh array;
+`ARRAY 0` creates an empty array. Insufficient stack elements are a fatal bytecode
+error. `GETINDEX` / `SETINDEX` dispatch to the array methods.

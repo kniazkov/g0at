@@ -2,6 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Reduces mixed member, index and call postfix chains.
  */
+#include "graph/array.h"
 #include "graph/expression.h"
 #include "graph/index_access.h"
 #include "graph/member_access.h"
@@ -10,18 +11,29 @@
 compilation_error_t *
 parsing_member_access(token_t *op, parser_memory_t *memory, token_groups_t *groups) {
     token_t *left = op->left;
-    if (!left)
-        return NULL;
+
     /* Groups contain nested brackets in closing order. Resolve the preceding suffix first. */
-    if (left->type == TOKEN_BRACKET_PAIR
-        || (left->type == TOKEN_IDENTIFIER && left->left && left->left->type == TOKEN_OPERATOR
-            && left->left->text.data[0] == L'.')) {
+    if (left
+        && (left->type == TOKEN_BRACKET_PAIR
+            || (left->type == TOKEN_IDENTIFIER && left->left && left->left->type == TOKEN_OPERATOR
+                && left->left->text.data[0] == L'.'))) {
         token_t *previous = left->type == TOKEN_IDENTIFIER ? left->left : left;
         compilation_error_t *error = parsing_member_access(previous, memory, groups);
         if (error)
             return error;
         left = op->left;
     }
+    if (op->type == TOKEN_BRACKET_PAIR && op->text.data[0] == '['
+        && (!left || (left->type != TOKEN_EXPRESSION && left->type != TOKEN_IDENTIFIER))) {
+        node_t *node = create_array_node(memory->graph);
+        op->type = TOKEN_ARRAY_ITEMS;
+        op->node = node;
+        collapse_tokens_to_token(memory, op, op, TOKEN_EXPRESSION, node);
+        append_token_to_group(&groups->function_arguments, op);
+        return NULL;
+    }
+    if (!left)
+        return NULL;
     expression_t *object;
     if (left->type == TOKEN_EXPRESSION)
         object = (expression_t *)left->node;

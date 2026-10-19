@@ -11,6 +11,7 @@
 #include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "expression.h"
+#include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/split64.h"
 #include "lib/string_ext.h"
@@ -33,20 +34,28 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const real_t *expr = (const real_t *)node;
-    return format_string(L"%f", expr->element.value);
+    string_value_t text = format_string(L"%f", expr->element.value);
+    /* A real literal must remain real when regenerated source is parsed again. */
+    if (!wcschr(text.data, L'.') && !wcschr(text.data, L'e') && !wcschr(text.data, L'E')) {
+        string_builder_t builder = {0};
+        append_string_value(&builder, text);
+        FREE_STRING(text);
+        return append_string(&builder, L".0");
+    }
+    return text;
 }
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t get_data(const node_t *node) {
-    return (node_display_value_t){.text = generate_goat_code(node),
+    return (node_display_value_t){.text =
+                                      format_string(L"%f", ((const real_t *)node)->element.value),
                                   .kind = NODE_DISPLAY_VALUE_PLAIN};
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
-    const real_t *expr = (const real_t *)node;
-    append_formatted_source(builder, format_string(L"%f", expr->element.value));
+    append_formatted_source(builder, generate_goat_code(node));
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */

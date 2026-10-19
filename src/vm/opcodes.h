@@ -65,5 +65,6 @@ typedef enum {
     TRY,        /**< Creates an exception context; arg1 is the handler address. */
     THROW,      /**< Transfers the top value to the nearest handler after unwinding. */
     GETINDEX,   /**< Consumes receiver and arg1 indices, pushes the indexed value. */
-    SETINDEX    /**< Consumes receiver and arg1 indices above RHS; keeps assignment value. */
+    SETINDEX,   /**< Consumes receiver and arg1 indices above RHS; keeps assignment value. */
+    ARRAY       /**< Consumes arg1 elements in source order and pushes a new array. */
 } opcode_t;

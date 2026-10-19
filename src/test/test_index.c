@@ -38,8 +38,7 @@ bool test_index_parser(void) {
                               L"var a = { this[true] = 1 }",
                               L"(a[1])[2]",
                               L"a[1] + b[2] * c[3]"};
-    const wchar_t *invalid[] = {L"[1]",
-                                L"a[",
+    const wchar_t *invalid[] = {L"a[",
                                 L"a[1)",
                                 L"a[,1]",
                                 L"a[1,]",

@@ -1,0 +1,12 @@
+var n = 0
+var next = func() { n = n + 1; return n }
+var a = [next(), next(), [next(), next()]]
+println(a)
+println(n)
+var fail = func() { throw "stop" }
+try { [next(), fail(), next()] } catch(e) { println(e) }
+println(n)
+var i = 0
+var b = [i = 1, i = i + 1, i]
+println(b)
+println(i)

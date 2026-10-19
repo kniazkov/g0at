@@ -1,0 +1,20 @@
+var a = [1]
+try { a[-1] } catch(e) { println(e) }
+try { a[1] } catch(e) { println(e) }
+try { a[9223372036854775807] } catch(e) { println(e) }
+try { a[0.0] } catch(e) { println(e) }
+try { a[true] } catch(e) { println(e) }
+try { a['0'] } catch(e) { println(e) }
+try { a["0"] } catch(e) { println(e) }
+try { a[null] } catch(e) { println(e) }
+try { a[[]] } catch(e) { println(e) }
+try { a[] } catch(e) { println(e) }
+try { a[0,0] } catch(e) { println(e) }
+try { a[1] = 2 } catch(e) { println(e) }
+try { a[-1] = 2 } catch(e) { println(e) }
+try { a[0.0] = 2 } catch(e) { println(e) }
+try { a[] = 2 } catch(e) { println(e) }
+try { a[0,0] = 2 } catch(e) { println(e) }
+try { [][0] } catch(e) { println(e) }
+try { a.length = 2 } catch(e) { println(e) }
+println(a)

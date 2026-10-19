@@ -50,7 +50,10 @@ typedef enum {
     TYPE_OTHER = 4,
 
     /** @brief Character type (a single Unicode code point). */
-    TYPE_CHARACTER = 5
+    TYPE_CHARACTER = 5,
+
+    /** @brief Mutable fixed-length sequence of objects. */
+    TYPE_ARRAY = 6
 } object_type_t;
 
 /**
@@ -601,6 +604,13 @@ object_t *get_static_string_object(object_static_string_t *storage, const wchar_
 
 /** @brief Creates a dynamic string object from a string value. */
 object_t *create_string_object(process_t *process, string_value_t value);
+
+/** @brief Creates an array, retaining every borrowed element. */
+object_t *create_array_object(process_t *process, object_array_t elements);
+/** @brief Borrows the elements of an array. */
+object_array_t get_array_elements(const object_t *obj);
+/** @brief Renders arrays and dictionaries with a shared cycle-detection path. */
+string_value_t container_to_string_notation(const object_t *obj);
 
 /** @brief Creates a new user-defined object. */
 object_t *create_user_defined_object(process_t *process, object_array_t proto);

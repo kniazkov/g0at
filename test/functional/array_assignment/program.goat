@@ -1,0 +1,15 @@
+var a = [1,2,3]
+var alias = a
+println(a[0] = 7)
+println(alias)
+a[1] = a[0]
+println(a)
+var b = [[1], [2]]
+b[1][0] = 9
+println(b)
+println(a == alias)
+println(a == [7,7,3])
+var d = {}
+d[a] = "array key"
+println(d[alias])
+println(d[[7,7,3]])
