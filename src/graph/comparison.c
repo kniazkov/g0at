@@ -44,6 +44,19 @@ static const opcode_t opcodes[] = {LESS, LEQ, GREATER, GREQ, EQUAL, DIFF};
 static bool can_generate_c_code(const node_t *node,
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context) {
+    c_value_type_t left = c_expression_type(context, get_node_child(node, 0));
+    c_value_type_t right = c_expression_type(context, get_node_child(node, 1));
+    if (left == right && (left == C_VALUE_BOOL || left == C_VALUE_CHAR))
+        return true;
+    if ((node->vtbl->type == NODE_EQUAL || node->vtbl->type == NODE_NOT_EQUAL)
+        && (left == C_VALUE_BOOL || left == C_VALUE_CHAR)
+        && (right == C_VALUE_BOOL || right == C_VALUE_CHAR || right == C_VALUE_INT64
+            || right == C_VALUE_DOUBLE || right == C_VALUE_STRING))
+        return true;
+    if ((node->vtbl->type == NODE_EQUAL || node->vtbl->type == NODE_NOT_EQUAL)
+        && (right == C_VALUE_BOOL || right == C_VALUE_CHAR)
+        && (left == C_VALUE_INT64 || left == C_VALUE_DOUBLE || left == C_VALUE_STRING))
+        return true;
     return c_numeric_operands(node, context);
 }
 

@@ -310,10 +310,12 @@ static const goat_native_entry_v2_t *select_native_entry(const object_dynamic_fu
         size_t j = 0;
         for (; j < function->arg_count; j++) {
             object_t *arg = peek_object_from_stack(stack, count - 1 - j);
-            uint32_t type = is_integer_object(arg)           ? GOAT_NATIVE_I64
-                            : is_real_object(arg)            ? GOAT_NATIVE_F64
-                            : arg->vtbl->type == TYPE_STRING ? GOAT_NATIVE_STRING
-                                                             : GOAT_NATIVE_INVALID;
+            uint32_t type = is_integer_object(arg)            ? GOAT_NATIVE_I64
+                            : is_real_object(arg)             ? GOAT_NATIVE_F64
+                            : arg->vtbl->type == TYPE_BOOLEAN ? GOAT_NATIVE_BOOL
+                            : is_character_object(arg)        ? GOAT_NATIVE_CHAR
+                            : arg->vtbl->type == TYPE_STRING  ? GOAT_NATIVE_STRING
+                                                              : GOAT_NATIVE_INVALID;
             if (entry->parameter_types[j] != type)
                 break;
         }
@@ -337,6 +339,10 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
             args[i].value.integer = get_object_integer_value(arg).value;
         else if (args[i].type == GOAT_NATIVE_F64)
             args[i].value.real = get_object_real_value(arg).value;
+        else if (args[i].type == GOAT_NATIVE_BOOL)
+            args[i].value.boolean = get_object_boolean_value(arg) ? 1 : 0;
+        else if (args[i].type == GOAT_NATIVE_CHAR)
+            args[i].value.character = (uint32_t)get_object_integer_value(arg).value;
         else {
             string_value_t string = convert_object_to_string(arg);
             goat_native_string_view_v2_t *view =
@@ -360,6 +366,8 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
         && (!result.value.string || (!result.value.string->data && result.value.string->length)
             || result.value.string->length > SIZE_MAX / sizeof(wchar_t) - 1))
         status = GOAT_NATIVE_BAD_REQUEST;
+    if (status == GOAT_NATIVE_OK && result.type == GOAT_NATIVE_BOOL && result.value.boolean > 1)
+        status = GOAT_NATIVE_BAD_REQUEST;
     thread->native_status = status;
     if (status != GOAT_NATIVE_OK) {
         goat_native_deallocate_all(&native_context);
@@ -371,6 +379,10 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
         value = create_integer_object(thread->process, result.value.integer);
     else if (result.type == GOAT_NATIVE_F64)
         value = create_real_number_object(thread->process, result.value.real);
+    else if (result.type == GOAT_NATIVE_BOOL)
+        value = get_boolean_object(result.value.boolean != 0);
+    else if (result.type == GOAT_NATIVE_CHAR)
+        value = create_character_object(thread->process, result.value.character);
     else {
         /* Copy borrowed payload before clearing context or releasing aliased VM arguments. */
         value = create_string_object(

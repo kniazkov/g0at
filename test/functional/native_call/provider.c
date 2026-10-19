@@ -114,6 +114,21 @@ static uint32_t GOAT_NATIVE_CALL limited(uint32_t version,
     return GOAT_NATIVE_RESOURCE_LIMIT;
 }
 
+/** @brief A corrupt provider must not smuggle a noncanonical boolean into the VM. */
+static uint32_t GOAT_NATIVE_CALL malformed_boolean(uint32_t version,
+                                                   const goat_native_context_v2_t *context,
+                                                   uint32_t count,
+                                                   const goat_native_value_v2_t *args,
+                                                   goat_native_value_v2_t *result) {
+    (void)version;
+    (void)count;
+    (void)args;
+    goat_native_allocate(context, 37);
+    *result = (goat_native_value_v2_t){.type = GOAT_NATIVE_BOOL, .value.boolean = 2};
+    return GOAT_NATIVE_OK;
+}
+
+static const uint32_t boolean_args[] = {GOAT_NATIVE_BOOL};
 static const uint32_t integer[] = {GOAT_NATIVE_I64};
 static const uint32_t real[] = {GOAT_NATIVE_F64};
 static const uint32_t ir[] = {GOAT_NATIVE_I64, GOAT_NATIVE_F64};
@@ -127,7 +142,8 @@ static const goat_native_entry_v2_t entries[] = {
     {5, 4, 1, GOAT_NATIVE_I64, integer, failure, NULL, 0},
     {6, 5, 1, GOAT_NATIVE_I64, integer, identity, NULL, GOAT_NATIVE_PURE},
     {7, 90, 0, GOAT_NATIVE_I64, NULL, counter, NULL, 0},
-    {8, 6, 1, GOAT_NATIVE_I64, integer, limited, NULL, GOAT_NATIVE_PURE}};
+    {8, 6, 1, GOAT_NATIVE_I64, integer, limited, NULL, GOAT_NATIVE_PURE},
+    {9, 7, 1, GOAT_NATIVE_BOOL, boolean_args, malformed_boolean, NULL, GOAT_NATIVE_PURE}};
 static const goat_native_module_v2_t module = {GOAT_NATIVE_ABI_VERSION,
                                                sizeof(goat_native_module_v2_t),
                                                sizeof(goat_native_value_v2_t),

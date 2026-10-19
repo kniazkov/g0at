@@ -320,3 +320,5 @@ c_string_concat
 c_string_conversion
 
 c_string_methods
+
+c_bool_char

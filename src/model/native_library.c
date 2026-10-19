@@ -36,7 +36,8 @@ char *copy_native_library_diagnostic(const char *text) {
 }
 
 static bool supported_type(uint32_t type) {
-    return type == GOAT_NATIVE_I64 || type == GOAT_NATIVE_F64 || type == GOAT_NATIVE_STRING;
+    return type == GOAT_NATIVE_I64 || type == GOAT_NATIVE_F64 || type == GOAT_NATIVE_STRING
+           || type == GOAT_NATIVE_BOOL || type == GOAT_NATIVE_CHAR;
 }
 
 /** @brief Validates a bounded UTF-8 binding name without replacement decoding. */

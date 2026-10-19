@@ -1,0 +1,9 @@
+one function 1 0 boolean analyzed:boolean
+one function 1 0 char analyzed:char
+one c-support 1 0 boolean supported
+one c-support 1 0 char supported
+one c-support 6 0 boolean,boolean supported
+one c-support 8 0 boolean,char supported
+one c-support 10 0 char,char supported
+one c-support 10 0 boolean,boolean supported
+one c-support 13 0 char,integer unknown

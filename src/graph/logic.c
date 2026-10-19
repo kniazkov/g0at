@@ -7,6 +7,8 @@
 #include "analysis/bitwise.h"
 #include "analysis/reachability.h"
 #include "analysis/simplification.h"
+#include "codegen/c_control.h"
+#include "codegen/c_lowering.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
@@ -245,6 +247,29 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return first;
 }
 
+/** @brief Logical results are booleans; preserve short-circuit operand effects. */
+static bool can_generate_logic(const node_t *node,
+                               const lattice_element_t *value,
+                               const c_expression_context_t *context) {
+    node_type_t type = node->vtbl->type;
+    if (type != NODE_LOGICAL_NOT && type != NODE_BOOLEAN_CONVERSION && type != NODE_LOGICAL_AND
+        && type != NODE_LOGICAL_OR)
+        return false;
+    for (size_t i = 0; i < get_node_child_count(node); i++) {
+        if (!c_type_name(c_expression_type(context, get_node_child(node, i))))
+            return false;
+        if (!i && (type == NODE_LOGICAL_AND || type == NODE_LOGICAL_OR)) {
+            const lattice_element_t *constant =
+                c_expression_constant(context, get_node_child(node, 0));
+            if (constant
+                && lattice_truth(constant)
+                       == (type == NODE_LOGICAL_OR ? ABSTRACT_TRUE : ABSTRACT_FALSE))
+                return true;
+        }
+    }
+    return true;
+}
+
 static node_vtbl_t vtables[] = {
     {
         .type = NODE_LOGICAL_NOT,
@@ -269,8 +294,8 @@ static node_vtbl_t vtables[] = {
         .generate_goat_code = generate_goat_code,
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
-        .can_generate_c_code = cannot_generate_c_code,
-        .generate_c_code = no_c_code,
+        .can_generate_c_code = can_generate_logic,
+        .generate_c_code = c_logic,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
         .generate_bytecode_deferred = no_deferred_bytecode,
@@ -298,8 +323,8 @@ static node_vtbl_t vtables[] = {
         .generate_goat_code = generate_goat_code,
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
-        .can_generate_c_code = cannot_generate_c_code,
-        .generate_c_code = no_c_code,
+        .can_generate_c_code = can_generate_logic,
+        .generate_c_code = c_logic,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
         .generate_bytecode_deferred = no_deferred_bytecode,
@@ -356,8 +381,8 @@ static node_vtbl_t vtables[] = {
         .generate_goat_code = generate_goat_code,
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
-        .can_generate_c_code = cannot_generate_c_code,
-        .generate_c_code = no_c_code,
+        .can_generate_c_code = can_generate_logic,
+        .generate_c_code = c_logic,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
         .generate_bytecode_deferred = no_deferred_bytecode,
@@ -385,8 +410,8 @@ static node_vtbl_t vtables[] = {
         .generate_goat_code = generate_goat_code,
         .generate_indented_goat_code = generate_indented_goat_code,
         .generate_bytecode = generate_bytecode,
-        .can_generate_c_code = cannot_generate_c_code,
-        .generate_c_code = no_c_code,
+        .can_generate_c_code = can_generate_logic,
+        .generate_c_code = c_logic,
         .generate_indented_c_code = no_indented_c_code,
         .generate_bytecode_assign = no_bytecode_assignment,
         .generate_bytecode_deferred = no_deferred_bytecode,

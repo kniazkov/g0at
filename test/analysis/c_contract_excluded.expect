@@ -1,6 +1,6 @@
 one c-support 1 0 string supported
 one c-blockers 1 0 string none
-one c-support 1 0 boolean unsupported
-one c-blockers 1 0 boolean parameters|return|body
+one c-support 1 0 boolean supported
+one c-blockers 1 0 boolean none
 one c-support 1 0 null unsupported
 one c-blockers 1 0 null parameters|return|body

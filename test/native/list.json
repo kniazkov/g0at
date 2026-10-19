@@ -4,6 +4,21 @@
     "check": "checks/runner.py"
   },
   {
+    "name": "bool_char",
+    "calls": 66,
+    "bound": 21,
+    "driver": "driver.c",
+    "generated": {
+      "GOAT_NATIVE_BOOL": 1,
+      "GOAT_NATIVE_CHAR": 1,
+      "g_f1_b_": 1,
+      "g_f1_c_": 1,
+      "g_f1_i_": 1,
+      "g_f1_r_": 1,
+      "g_f1_s_": 1
+    }
+  },
+  {
     "name": "add_specializations",
     "calls": 14,
     "bound": 1,

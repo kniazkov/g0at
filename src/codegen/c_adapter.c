@@ -10,12 +10,18 @@
 
 static const wchar_t *type_tag(c_value_type_t type) {
     return type == C_VALUE_INT64    ? L"GOAT_NATIVE_I64"
+           : type == C_VALUE_BOOL   ? L"GOAT_NATIVE_BOOL"
+           : type == C_VALUE_CHAR   ? L"GOAT_NATIVE_CHAR"
            : type == C_VALUE_STRING ? L"GOAT_NATIVE_STRING"
                                     : L"GOAT_NATIVE_F64";
 }
 
 static const wchar_t *value_field(c_value_type_t type) {
-    return type == C_VALUE_INT64 ? L"integer" : type == C_VALUE_STRING ? L"string" : L"real";
+    return type == C_VALUE_BOOL     ? L"boolean"
+           : type == C_VALUE_CHAR   ? L"character"
+           : type == C_VALUE_INT64  ? L"integer"
+           : type == C_VALUE_STRING ? L"string"
+                                    : L"real";
 }
 
 void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry) {
@@ -57,6 +63,11 @@ void c_emit_adapter(source_builder_t *builder, const c_module_function_t *entry)
                        L"if (args[%zu].type != %s) return GOAT_NATIVE_TYPE_MISMATCH;",
                        i,
                        type_tag(c_generation_parameter_type(&context, i)));
+            if (c_generation_parameter_type(&context, i) == C_VALUE_BOOL)
+                add_source(builder,
+                           1,
+                           L"if (args[%zu].value.boolean > 1) return GOAT_NATIVE_BAD_REQUEST;",
+                           i);
             if (c_generation_parameter_type(&context, i) == C_VALUE_STRING) {
                 add_source(builder,
                            1,
