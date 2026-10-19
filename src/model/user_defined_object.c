@@ -605,3 +605,17 @@ object_t *create_user_defined_object(process_t *process, object_array_t prototyp
 void enable_prototype_shadowing(object_t *obj) {
     ((object_user_defined_t *)obj)->shadow_inherited = true;
 }
+
+/** @brief Collects keys in dictionary comparison order. */
+static void collect_sorted_key(void *data, void *key, value_t value) {
+    append_to_vector((vector_t *)data, key);
+}
+
+object_t *snapshot_object_keys(process_t *process, object_t *obj) {
+    vector_t *keys = create_vector();
+    avl_tree_for_each(((object_user_defined_t *)obj)->properties, collect_sorted_key, keys);
+    object_t *result =
+        create_array_object(process, (object_array_t){(object_t **)keys->data, keys->size});
+    destroy_vector(keys);
+    return result;
+}

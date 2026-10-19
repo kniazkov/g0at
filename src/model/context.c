@@ -20,6 +20,7 @@ create_context_with_protos(process_t *process, context_t *caller, object_array_t
     context_t *ctx = (context_t *)ALLOC(sizeof(context_t));
     ctx->data = create_user_defined_object(process, protos);
     ctx->native_disabled = caller->native_disabled;
+    ctx->iteration_index = 0;
     ctx->previous = caller;
     ctx->control_flow = FLOW_NORMAL;
     ctx->jump_address[0] = BAD_INSTR_INDEX;

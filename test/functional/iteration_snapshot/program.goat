@@ -1,0 +1,12 @@
+var a=[1,2,3];
+for (x in a) { println(x); a.clear(); a.push(9); }
+println(a);
+var object={ var b=2; var a=1; };
+for (key in object) { println(key); object["c"]=3; object["a"]=8; }
+for (key in object) println(key);
+var nested={var value=1;};
+var values=[nested,nested];
+for (x in values) { println(x.value); x.value+=1; }
+println(nested.value);
+var recursive=[]; recursive.push(recursive);
+for (x in recursive) println(x==recursive);

@@ -34,6 +34,8 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
             value = get_function_instance_of();
         } else if (wcscmp(L"clone", key_str.data) == 0) {
             value = get_function_clone();
+        } else if (wcscmp(L"flat", key_str.data) == 0) {
+            value = get_function_flat();
         }
     }
     return value;

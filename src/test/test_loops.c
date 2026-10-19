@@ -14,7 +14,15 @@
 #include <stdio.h>
 
 bool test_loops_parser(void) {
-    const wchar_t *valid[] = {L"while (false) {}",
+    const wchar_t *valid[] = {L"for(x in []) {}",
+                              L"for(const x in [1,2,]) println(x);",
+                              L"for(x in a) for(y in b) continue;",
+                              L"for(x in a);",
+                              L"if(x) for(y in a) break; else println(x);",
+                              L"for(x in a) if(x) continue; else break;",
+                              L"do for(x in a) break; while(false);",
+                              L"for(x in {a=1;}) {}",
+                              L"while (false) {}",
                               L"while (false);",
                               L"while (x) x--;",
                               L"do {} while (false)",
@@ -36,7 +44,18 @@ bool test_loops_parser(void) {
                               L"while(x) { f({break;}); }",
                               L"do {return 1;} while(x);",
                               L"for (var i=0; i<4; i++) { while(x) continue; break; }"};
-    const wchar_t *invalid[] = {L"break;",
+    const wchar_t *invalid[] = {L"for(var x in []) {}",
+                                L"for(x,y in []) {}",
+                                L"for(x in) {}",
+                                L"for(in []) {}",
+                                L"for(x in [],[]) {}",
+                                L"for(x in []; ) {}",
+                                L"for(x.a in []) {}",
+                                L"for(x[0] in []) {}",
+                                L"for(this in []) {}",
+                                L"for(x in []) { const f=func(){break;}; }",
+                                L"for(x in {continue;}) {}",
+                                L"break;",
                                 L"continue;",
                                 L"if(x) break;",
                                 L"{continue;}",
@@ -101,6 +120,12 @@ bool test_loops_bytecode(void) {
     saved = load_binary_program(path);
     ASSERT(!saved.code);
     destroy_binary_program(&saved);
+    code->instructions[2].opcode = ITER_NEXT;
+    ASSERT(save_binary_program(path, code, NULL));
+    saved = load_binary_program(path);
+    ASSERT(!saved.code);
+    destroy_binary_program(&saved);
+    code->instructions[2].opcode = LOOP_JUMP;
     code->instructions[2].arg1 = 3;
     code->instructions[0].opcode = NOP;
     proc = create_process();

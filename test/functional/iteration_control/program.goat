@@ -1,0 +1,19 @@
+for(x in [1,2,3,4]) {
+ try { if(x==2) continue; if(x==4) break; println(x); }
+ catch(e) { println("wrong"); }
+}
+for(x in [5,6]) {
+ try { throw x; } catch(e) { println(e); continue; }
+ println("wrong");
+}
+try { for(x in [7,8]) { throw x; } } catch(e) { println(e); }
+const first=func(a){ for(x in a) return x; return "empty"; };
+println(first([9,10])); println(first([]));
+for(x in [1,2]) {
+ for(y in [3,4]) { println(x*10+y); break; }
+ var i=0; while(i<2){i++;continue;} println(i);
+}
+var i=0;
+while(i<2){i++;for(x in [1,2]){continue;} println(i);}
+for(x in [1,2,3]) switch(x){case 1: continue; case 2: println(x); default: break;}
+println("done");

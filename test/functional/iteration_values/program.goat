@@ -1,0 +1,12 @@
+var calls=0;
+const source=func(){ calls++; return [1,2,3]; };
+for (x in source()) println(x);
+println(calls);
+for (const x in []) println("wrong");
+for (x in {}) println("wrong");
+for (x in [null,true,'x',"word",[4]]) println(x);
+var keys={ this[3]="n"; this[true]="b"; z=1; a=2; };
+for (key in keys) println(key);
+const parent={ inherited=9; };
+const child=parent -> { own=8; };
+for (key in child) println(key);

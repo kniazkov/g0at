@@ -730,6 +730,46 @@ static bool exec_INHERIT(runtime_t *runtime, instruction_t instr, thread_t *thre
     return true;
 }
 
+/** @brief Takes an owned snapshot before opening the loop scope. */
+static bool exec_SNAPSHOT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *source = pop_object_from_stack(thread->data_stack);
+    object_t *snapshot = source->vtbl->type == TYPE_ARRAY
+                             ? create_array_object(thread->process, get_array_elements(source))
+                         : source->vtbl->type == TYPE_USER_DEFINED_OBJECT
+                             ? snapshot_object_keys(thread->process, source)
+                             : NULL;
+    DECREF(source);
+    if (!snapshot)
+        return dispatch_exception(runtime,
+                                  thread,
+                                  (exception_t){get_exception_invalid_operation()});
+    push_object_onto_stack(thread->data_stack, snapshot);
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief The snapshot stays below the loop stack boundary across continue. */
+static bool exec_ITER_NEXT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_t *snapshot = peek_object_from_stack(thread->data_stack, 0);
+    if (snapshot->vtbl->type != TYPE_ARRAY || thread->context->control_flow != FLOW_LOOP
+        || instr.arg1 >= runtime->code->instructions_count) {
+        fprintf(stderr, "Invalid iteration bytecode.\n");
+        runtime->status = 1;
+        return false;
+    }
+    object_array_t elements = get_array_elements(snapshot);
+    size_t index = thread->context->iteration_index;
+    if (index >= elements.size) {
+        thread->instr_id = instr.arg1;
+    } else {
+        thread->context->iteration_index++;
+        INCREF(elements.items[index]);
+        push_object_onto_stack(thread->data_stack, elements.items[index]);
+        thread->instr_id++;
+    }
+    return true;
+}
+
 /** @brief Opens a scope that can be targeted by break and continue. */
 static bool exec_LOOP_ENTER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     thread->context = create_context(thread->process, thread->context, NULL);
@@ -908,8 +948,8 @@ static instr_executor_t executors[] = {
     exec_SETINDEX, /**< Writes through the indexing virtual method. */
     exec_ARRAY,    /**< Creates a new array. */
     exec_INHERIT,  /**< Enters an explicitly derived object. */
-    exec_LOOP_ENTER, exec_LOOP_JUMP, exec_DUPN,
-    exec_ROTATE
+    exec_LOOP_ENTER, exec_LOOP_JUMP, exec_DUPN, exec_ROTATE,
+    exec_SNAPSHOT,   exec_ITER_NEXT
     // Additional opcodes can be added here in the future...
 };
 

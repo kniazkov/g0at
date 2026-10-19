@@ -660,6 +660,10 @@ object_t *get_function_atan(void);
 object_t *get_function_instance_of(void);
 /** @brief Gets the built-in Object.clone method. */
 object_t *get_function_clone(void);
+/** @brief Gets Object.flat, which materializes inherited properties. */
+object_t *get_function_flat(void);
+/** @brief Copies sorted own keys into an independently owned array. */
+object_t *snapshot_object_keys(process_t *process, object_t *obj);
 object_t *get_function_print(void);
 object_t *get_function_sign(void);
 object_t *get_function_sqrt(void);

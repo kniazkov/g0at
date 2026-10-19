@@ -1,0 +1,18 @@
+const common={ const shared=7; var a=1; };
+const left=common -> { a=2; l=3; };
+const right=common -> { a=4; r=5; };
+const child=[left,right] -> { own=6; };
+var copy=child.flat();
+println(copy==child); println(copy.instanceOf(Object)); println(copy.instanceOf(left));
+println(copy.a==child.a);println(copy.l);println(copy.r);println(copy.own);println(copy.shared);
+copy.shared=8;println(copy.shared);println(child.shared);
+var nested={var x=1;};
+var original={n=nested;};var shallow=original.flat();shallow.n.x=2;println(original.n.x);
+var array=[1];println(array.flat()==array);
+println("abc".flat());println((1).flat());println(true.flat());println(null.flat());
+const overridden={instanceOf=func(x){return "custom";};};
+println(overridden.flat().instanceOf(Object));
+const custom={flat=func(){return "override";};};println(custom.flat());
+const flatten=Object.flat;
+println(flatten(array)==array);
+try { flatten(); } catch(e){println(e);}

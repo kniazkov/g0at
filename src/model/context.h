@@ -25,6 +25,9 @@ struct context_t {
     /** @brief Inherited by retry descendants, discarded on return or exception unwinding. */
     bool native_disabled;
 
+    /** @brief Next offset in a for-in snapshot retained on the operand stack. */
+    size_t iteration_index;
+
     /** @brief A pointer to the previous context in the stack. */
     context_t *previous;
 

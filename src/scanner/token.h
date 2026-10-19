@@ -43,6 +43,7 @@ typedef enum {
     TOKEN_DO,
     TOKEN_BREAK,
     TOKEN_CONTINUE,
+    TOKEN_IN,            /**< Collection iteration separator. */
     TOKEN_FOR,           /**< The C-style for keyword. */
     TOKEN_IF,            /**< The 'if' keyword used in if-else statements */
     TOKEN_TRY,           /**< The try keyword. */

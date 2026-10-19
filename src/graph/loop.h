@@ -3,9 +3,15 @@
  * @brief Structured loops and their nearest-loop transfers.
  */
 #pragma once
+#include "declarations.h"
 #include "statement.h"
 node_t *
 create_while_node(arena_t *arena, expression_t *condition, statement_t *body, bool post_test);
+/** @brief Creates a snapshot collection loop with a fresh per-iteration constant. */
+node_t *
+create_for_in_node(arena_t *arena, string_view_t name, expression_t *source, statement_t *body);
+declarator_t *get_for_in_declarator(const node_t *node);
+
 /** @brief Creates break (next=false) or continue (next=true). */
 node_t *create_loop_jump_node(arena_t *arena, bool next);
 /** @brief Recognizes supported structured loop nodes. */

@@ -1,0 +1,18 @@
+var x=99;
+var functions=[];
+for (x in [10,20,30]) functions.push(func(){return x;});
+println(x);
+for (f in functions) println(f());
+for (const x in [1]) {
+ try { x=2; } catch(e) { println(e); }
+ try { x++; } catch(e) { println(e); }
+ try { x+=3; } catch(e) { println(e); }
+ println(x);
+}
+println(x);
+var total=0;
+for (x in [1,2]) for(x in [3,4]) total+=x;
+println(total);
+var items=[5,6];
+for(items in items) println(items);
+println(items);

@@ -128,3 +128,6 @@ bool test_vm_throw_cleanup(void);
 
 /** @brief Virtual clone dispatch and ownership of reused immutable values. */
 bool test_clone_method(void);
+
+/** @brief Tests shallow flattening and receiver identity. */
+bool test_flat_method(void);

@@ -62,7 +62,7 @@ static void collect_loop_transfers(const node_t *node, abstract_state_t *state) 
         return;
     }
     size_t count = get_node_child_count(node);
-    if (type == NODE_FOR || type == NODE_WHILE || type == NODE_DO_WHILE)
+    if (type == NODE_FOR_IN || type == NODE_FOR || type == NODE_WHILE || type == NODE_DO_WHILE)
         count = 3;
     for (size_t i = 0; i < count; i++)
         collect_loop_transfers(get_node_child(node, i), state);

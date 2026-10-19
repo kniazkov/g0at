@@ -441,7 +441,8 @@ validate_loop_jumps(node_t *node, size_t depth, parser_memory_t *memory) {
                                       node,
                                       CRITICAL,
                                       get_messages()->loop_jump_outside);
-    bool loop = type == NODE_FOR || type == NODE_WHILE || type == NODE_DO_WHILE;
+    bool loop =
+        type == NODE_FOR_IN || type == NODE_FOR || type == NODE_WHILE || type == NODE_DO_WHILE;
     for (size_t i = 0; i < get_node_child_count(node); i++) {
         compilation_error_t *error = validate_loop_jumps(get_node_child(node, i),
                                                          loop ? (i == 3 ? depth + 1 : 0) : depth,

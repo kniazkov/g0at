@@ -1,0 +1,2 @@
+const sum=func(values) { var result=0; for(value in values) result+=value; return result; };
+sum([1,2,3]);

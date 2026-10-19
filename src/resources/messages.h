@@ -84,6 +84,7 @@ typedef struct {
     const wchar_t *expected_throw_value;
     const wchar_t *uncaught_exception;
     const wchar_t *invalid_for_header;
+    const wchar_t *invalid_iteration_source;
     const wchar_t *expected_statement_after_for;
     // add other
 } messages_t;

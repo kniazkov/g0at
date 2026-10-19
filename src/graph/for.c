@@ -8,6 +8,7 @@
 #include "analysis/lattice.h"
 #include "codegen/c_control.h"
 #include "codegen/code_builder.h"
+#include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "expression.h"
@@ -23,6 +24,7 @@
 typedef struct {
     statement_t base;                /**< Statement base. */
     instr_index_t breaks, continues; /**< Bytecode patch chains. */
+    declarator_t *iteration;         /**< Hidden per-iteration binding, scoped like catch. */
     node_t *children[4];             /**< Initializer, condition, step, body. */
 } for_t;
 
@@ -212,8 +214,8 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
 
 bool is_loop_node(const node_t *node) {
     return node
-           && (node->vtbl->type == NODE_FOR || node->vtbl->type == NODE_WHILE
-               || node->vtbl->type == NODE_DO_WHILE);
+           && (node->vtbl->type == NODE_FOR_IN || node->vtbl->type == NODE_FOR
+               || node->vtbl->type == NODE_WHILE || node->vtbl->type == NODE_DO_WHILE);
 }
 
 /** @brief Ignore nested loops and function bodies when inspecting transfers. */
@@ -347,4 +349,112 @@ create_while_node(arena_t *arena, expression_t *condition, statement_t *body, bo
                                    body);
     node->vtbl = post_test ? &post_vtbl : &pre_vtbl;
     return node;
+}
+
+/** @brief Conservative loop analysis: body may run any number of times, including zero. */
+static abstract_state_t *execute_for_in(node_t *node, abstract_state_t *state, arena_t *arena) {
+    if (state->control_flow != FLOW_NORMAL)
+        return state;
+    calculate_expression((expression_t *)get_child(node, 0), state, arena);
+    if (state->control_flow != FLOW_NORMAL)
+        return state;
+    forget_abstract_values(state);
+    abstract_state_t *body = clone_abstract_state(state);
+    abstract_loop_t transfers = {0};
+    body->loop = &transfers;
+    set_in_abstract_state(body, ((for_t *)node)->iteration, make_top_element());
+    execute_node(get_child(node, 3), body, arena);
+    destroy_abstract_state(body);
+    destroy_abstract_state(transfers.breaks);
+    destroy_abstract_state(transfers.continues);
+    forget_abstract_values(state);
+    return state;
+}
+
+static const lattice_element_t *
+reach_for_in(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    execute_for_in(node, *state, (*state)->arena);
+    return make_top_element();
+}
+
+static string_value_t source_for_in(const node_t *node) {
+    string_value_t source = generate_goat_code_from_node(get_child(node, 0));
+    string_value_t body = generate_goat_code_from_node(get_child(node, 3));
+    string_value_t result = format_string(L"for (const %s in %s) %s",
+                                          ((const for_t *)node)->iteration->name.data,
+                                          source.data,
+                                          body.data);
+    FREE_STRING(source);
+    FREE_STRING(body);
+    return result;
+}
+
+static void indented_for_in(const node_t *node, source_builder_t *builder, size_t indent) {
+    add_formatted_source(builder, indent, source_for_in(node));
+}
+
+static instr_index_t bytecode_for_in(node_t *node, code_builder_t *code, data_builder_t *data) {
+    for_t *loop = (for_t *)node;
+    loop->breaks = loop->continues = UINT32_MAX;
+    instr_index_t first = generate_bytecode_from_node(get_child(node, 0), code, data);
+    add_instruction(code, (instruction_t){.opcode = SNAPSHOT});
+    add_instruction(code, (instruction_t){.opcode = LOOP_ENTER});
+    instr_index_t next = add_instruction(code, (instruction_t){.opcode = ITER_NEXT});
+    add_instruction(code, (instruction_t){.opcode = ENTER});
+    add_instruction(
+        code,
+        (instruction_t){.opcode = CONST,
+                        .arg1 = add_string_to_data_segment_ex(data, loop->iteration->name)});
+    generate_bytecode_from_node(get_child(node, 3), code, data);
+    add_instruction(code, (instruction_t){.opcode = RESTORE});
+    add_instruction(code, (instruction_t){.opcode = JUMP, .arg1 = next});
+    instr_index_t end = get_next_instruction_index(code);
+    get_instruction(code, next)->arg1 = end;
+    patch(code, loop->breaks, end);
+    patch(code, loop->continues, next);
+    add_instruction(code, (instruction_t){.opcode = RESTORE});
+    add_instruction(code, (instruction_t){.opcode = POP});
+    return first;
+}
+
+static bool replace_for_in(node_t *node, node_t *old, node_t *replacement) {
+    for_t *loop = (for_t *)node;
+    if (loop->children[0] == old && is_expression(replacement->vtbl->type)) {
+        loop->children[0] = replacement;
+        return true;
+    }
+    return false;
+}
+
+node_t *
+create_for_in_node(arena_t *arena, string_view_t name, expression_t *source, statement_t *body) {
+    static node_vtbl_t vtbl;
+    vtbl = for_vtbl;
+    vtbl.type = NODE_FOR_IN;
+    vtbl.type_name = L"for in";
+    vtbl.execute = execute_for_in;
+    vtbl.analyze_reachability = reach_for_in;
+    vtbl.generate_goat_code = source_for_in;
+    vtbl.generate_indented_goat_code = indented_for_in;
+    vtbl.generate_bytecode = bytecode_for_in;
+    vtbl.replace_child = replace_for_in;
+    vtbl.is_pure = not_pure;
+    vtbl.can_generate_c_code = cannot_generate_c_code;
+    vtbl.generate_indented_c_code = no_indented_c_code;
+    for_t *loop = alloc_zeroed_from_arena(arena, sizeof(*loop));
+    loop->base.base.vtbl = &vtbl;
+    loop->children[0] = (node_t *)source;
+    loop->children[1] = create_true_node(arena);
+    loop->children[2] = (node_t *)create_statement_expression_node(arena, NULL);
+    loop->children[3] = (node_t *)body;
+    loop->iteration =
+        create_synthetic_constant_declaration_node(arena,
+                                                   name,
+                                                   (expression_t *)create_null_node(arena))
+            .declarator;
+    return &loop->base.base;
+}
+
+declarator_t *get_for_in_declarator(const node_t *node) {
+    return ((const for_t *)node)->iteration;
 }

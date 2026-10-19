@@ -3,8 +3,10 @@
  * @brief Reduction of C-style loop headers and bodies.
  */
 #include "graph/expression.h"
+#include "graph/loop.h"
 #include "graph/statement.h"
 #include "graph/statement_list.h"
+#include "graph/variable.h"
 #include "parser.h"
 #include "resources/messages.h"
 
@@ -22,9 +24,24 @@ compilation_error_t *parsing_for(token_t *token, parser_memory_t *memory, token_
     token_t *header = token->right;
     if (!header || header->type != TOKEN_BRACKET_PAIR || header->text.data[0] != L'(')
         goto invalid;
+    token_t *binding = header->children.first;
+    if (binding && binding->type == TOKEN_CONST)
+        binding = binding->right;
+    bool collection = binding && binding->right && binding->right->type == TOKEN_IN;
+    token_t *source = collection ? binding->right->right : NULL;
+    if (collection
+        && (binding->type != TOKEN_EXPRESSION || !binding->node
+            || binding->node->vtbl->type != NODE_VARIABLE || !source
+            || source->type != TOKEN_EXPRESSION || source->right))
+        goto invalid;
+    if (collection && !wcscmp(((variable_t *)binding->node)->name.data, L"this"))
+        return create_error_from_token(memory->errors,
+                                       binding,
+                                       CRITICAL,
+                                       get_messages()->reserved_this_name);
     token_t *slots[3] = {0};
     size_t slot = 0;
-    for (token_t *part = header->children.first; part; part = part->right) {
+    for (token_t *part = collection ? NULL : header->children.first; part; part = part->right) {
         if (part->type == TOKEN_SEMICOLON) {
             if (++slot > 2)
                 goto invalid;
@@ -39,7 +56,7 @@ compilation_error_t *parsing_for(token_t *token, parser_memory_t *memory, token_
             slots[slot] = part;
         }
     }
-    if (slot != 2)
+    if (!collection && slot != 2)
         goto invalid;
     token_t *body = header->right;
     if (!body
@@ -62,11 +79,15 @@ compilation_error_t *parsing_for(token_t *token, parser_memory_t *memory, token_
         scope->base.base.position = body->position;
         body_statement = create_statement_expression_node(memory->graph, &scope->base);
     }
-    node_t *node = create_for_node(memory->graph,
-                                   as_statement(slots[0], memory),
-                                   condition,
-                                   as_statement(slots[2], memory),
-                                   body_statement);
+    node_t *node = collection ? create_for_in_node(memory->graph,
+                                                   ((variable_t *)binding->node)->name,
+                                                   (expression_t *)source->node,
+                                                   body_statement)
+                              : create_for_node(memory->graph,
+                                                as_statement(slots[0], memory),
+                                                condition,
+                                                as_statement(slots[2], memory),
+                                                body_statement);
     collapse_tokens_to_token(memory, token, body, TOKEN_STATEMENT, node);
     return NULL;
 invalid:

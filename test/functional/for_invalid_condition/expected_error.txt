@@ -1,1 +1,1 @@
-Fatal error in 'program.goat', 1.1: Expected for (initial; condition; step)
+Fatal error in 'program.goat', 1.1: Expected for (initial; condition; step) or for (const name in collection)
