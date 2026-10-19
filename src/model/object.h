@@ -52,7 +52,7 @@ typedef enum {
     /** @brief Character type (a single Unicode code point). */
     TYPE_CHARACTER = 5,
 
-    /** @brief Mutable fixed-length sequence of objects. */
+    /** @brief Mutable sequence of objects. */
     TYPE_ARRAY = 6
 } object_type_t;
 
@@ -611,7 +611,7 @@ object_t *get_array_proto(void);
 
 /** @brief Creates an array, retaining every borrowed element. */
 object_t *create_array_object(process_t *process, object_array_t elements);
-/** @brief Borrows the elements of an array. */
+/** @brief Borrows array elements; mutation may invalidate the pointer and element order. */
 object_array_t get_array_elements(const object_t *obj);
 /** @brief Renders arrays and dictionaries with a shared cycle-detection path. */
 string_value_t container_to_string_notation(const object_t *obj);

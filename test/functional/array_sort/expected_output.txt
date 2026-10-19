@@ -1,0 +1,12 @@
+true
+[-9223372036854775808,-4,1,2,2.5,10,9223372036854775807]
+["aa","b","z"]
+[false,true,true]
+['a','b','z']
+[ ]
+[1]
+true
+true
+INVALID_ARGUMENT
+[3,2,"x",1]
+INVALID_OPERATION

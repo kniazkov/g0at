@@ -1,0 +1,11 @@
+var a = [1,"text",true,null,'x',[2]]
+println(a.toString())
+println(a.toString(" | "))
+println([1,2,3].toString('-'))
+println([1,2].toString(""))
+println([].toString())
+println("<" + [].toString(",") + ">")
+var c = [null]
+c[0] = c
+println(c.toString())
+println(c.toString(","))

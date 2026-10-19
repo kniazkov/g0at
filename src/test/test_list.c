@@ -247,6 +247,7 @@ static test_description_t test_list[] = {
     {"store and load", test_store_and_load},
     {"array graph labels", test_array_graph_labels},
     {"clone method", test_clone_method},
+    {"array methods", test_array_methods},
     {"array parser", test_array_parser},
     {"array model and lifetime", test_array_model},
     {"index parser", test_index_parser},

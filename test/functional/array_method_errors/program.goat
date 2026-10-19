@@ -1,0 +1,28 @@
+var a = [1,2]
+try { a.insert() } catch(e) { println(e) }
+try { a.insert(-1,3) } catch(e) { println(e) }
+try { a.insert(3,3) } catch(e) { println(e) }
+try { a.insert(0.0,3) } catch(e) { println(e) }
+try { a.remove() } catch(e) { println(e) }
+try { a.remove(2) } catch(e) { println(e) }
+try { a.remove(-1) } catch(e) { println(e) }
+try { a.remove(true) } catch(e) { println(e) }
+try { a.pop(1) } catch(e) { println(e) }
+try { a.clear(1) } catch(e) { println(e) }
+try { a.reverse(1) } catch(e) { println(e) }
+try { a.sort(1) } catch(e) { println(e) }
+try { a.indexOf() } catch(e) { println(e) }
+try { a.lastIndexOf(1,2) } catch(e) { println(e) }
+try { a.slice(-1) } catch(e) { println(e) }
+try { a.slice(0,3) } catch(e) { println(e) }
+try { a.slice(2,1) } catch(e) { println(e) }
+try { a.slice(0.0) } catch(e) { println(e) }
+try { a.slice(0,1,2) } catch(e) { println(e) }
+try { a.toString(1) } catch(e) { println(e) }
+try { a.toString(",", ";") } catch(e) { println(e) }
+try { Array.push(1) } catch(e) { println(e) }
+var f = Array.push
+try { f() } catch(e) { println(e) }
+try { f({},1) } catch(e) { println(e) }
+try { [].remove(0) } catch(e) { println(e) }
+println(a)

@@ -127,7 +127,7 @@ Elements are evaluated once, from left to right. Every literal creates a fresh
 array, including `[]`. Elements may hold any values, nested arrays, functions
 and object references. Holes such as `[1,,2]` are not allowed.
 
-Length is fixed in this version. `array.length` is a read-only integer property.
+Array methods can change length. `array.length` is a read-only integer property.
 Indexed reads and writes require exactly one **integer** index in the range
 zero through `length - 1`. Negative/out-of-bounds indices, real numbers (even
 `0.0`), other types or other index counts raise `INVALID_ARGUMENT`. Assignment
@@ -160,3 +160,37 @@ Arrays and ordinary objects are shallow-copied: the outer container is new, whil
 nested values remain shared. Prototypes and property constness are preserved.
 Direct self-references in values are retargeted to the copy. Immutable values and
 functions may be returned without allocating another object, retaining a reference.
+
+## Array methods
+
+| Method | Behavior and return value |
+|---|---|
+| `push(...values)` | Append values; return the new length. |
+| `prepend(...values)` | Prepend in argument order; return the new length. |
+| `insert(index, ...values)` | Insert before an index in `0..length`; return the new length. Index `length` appends. |
+| `pop()` | Remove and return the last value, or `null` if empty. |
+| `remove(index)` | Remove and return the value at an index in `0..length-1`. |
+| `clear()` | Remove all elements and release the buffer; return the array. |
+| `indexOf(value)` / `lastIndexOf(value)` | First / last index equal under `==`, or `-1`. |
+| `slice(start = 0, end = length)` | New array from `[start, end)`, with `0 <= start <= end <= length`. |
+| `reverse()` | Reverse in place; return the array. |
+| `sort()` | Stable in-place sort using `<`; return the array. |
+| `toString()` | Array notation: `[1,"text"]`, or `[ ]` if empty. |
+| `toString(separator)` | Join plain element strings without brackets; separator is a string or character. An empty array produces an empty string. |
+
+Indices and boundaries are nonnegative integers. Invalid types, ranges or argument
+counts raise `INVALID_ARGUMENT`. Empty `push()`, `prepend()` and `insert(index)`
+are no-ops. Other methods require exactly the documented count, except for the
+optional slice boundaries and separator.
+
+Slices copy the element buffer rather than creating a view. Mutating or growing a
+slice does not change the original buffer. Copies are shallow: nested objects stay
+shared. Unlike `clone`, a slice does not retarget references to the original array.
+
+Sorting compares values, not strings: mixed integers and reals compare numerically.
+If `<` throws, the original order stays entirely unchanged. Equal elements retain
+their order. Search propagates `==` exceptions too; arrays and ordinary objects
+compare by identity.
+
+Methods are inherited from `Array` and execute in the VM. A detached method accepts
+the array first: `var append = Array.push; append(array, 1, 2)`.

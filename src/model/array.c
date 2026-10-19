@@ -1,7 +1,9 @@
 /** @file array.c
  * @copyright 2026 Ivan Kniazkov
- * @brief Mutable fixed-length arrays, owned elements and tracing garbage collection.
+ * @brief Mutable arrays, owned elements and tracing garbage collection.
  */
+#include "array.h"
+
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "object_state.h"
@@ -10,16 +12,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
-
-/** @brief An array owns its elements and a cached immutable length property. */
-typedef struct {
-    object_t base;        /**< Object header. */
-    size_t refs;          /**< Strong reference count. */
-    object_state_t state; /**< Tracing/destruction state. */
-    object_t **items;     /**< Owned element references. */
-    size_t count;         /**< Fixed element count. */
-    object_t *length;     /**< Owned property value. */
-} array_object_t;
+#include <string.h>
 
 /** @brief Releases storage without touching other objects during sweeping/shutdown. */
 static void release(object_t *obj) {
@@ -222,6 +215,7 @@ object_t *create_array_object(process_t *process, object_array_t elements) {
     array->base.process = process;
     array->refs = 1;
     array->count = elements.size;
+    array->capacity = elements.size;
     array->length = create_integer_object(process, (int64_t)elements.size);
     if (elements.size) {
         array->items = ALLOC(elements.size * sizeof(*array->items));
@@ -232,4 +226,36 @@ object_t *create_array_object(process_t *process, object_array_t elements) {
     }
     add_object_to_list(&process->objects, &array->base);
     return &array->base;
+}
+
+void set_array_count(array_object_t *array, size_t count) {
+    object_t *length = create_integer_object(array->base.process, (int64_t)count);
+    object_t *old = array->length;
+    array->count = count;
+    array->length = length;
+    DECREF(old);
+}
+
+void reserve_array(array_object_t *array, size_t count) {
+    size_t limit = SIZE_MAX / sizeof(object_t *);
+    if ((uint64_t)limit > INT64_MAX)
+        limit = (size_t)INT64_MAX;
+    if (count > limit)
+        abort();
+    if (count <= array->capacity)
+        return;
+    size_t capacity = array->capacity ? array->capacity : 4;
+    while (capacity < count) {
+        if (capacity > limit / 2) {
+            capacity = count;
+            break;
+        }
+        capacity *= 2;
+    }
+    object_t **items = ALLOC(capacity * sizeof(*items));
+    if (array->count)
+        memcpy(items, array->items, array->count * sizeof(*items));
+    FREE(array->items);
+    array->items = items;
+    array->capacity = capacity;
 }

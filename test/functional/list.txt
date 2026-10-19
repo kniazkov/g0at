@@ -481,3 +481,10 @@ index_instance_of_override
 index_clone_objects
 index_clone_arrays
 index_clone_values
+array_mutation
+array_search
+array_slice
+array_sort
+array_to_string
+array_method_errors
+array_method_lifetime

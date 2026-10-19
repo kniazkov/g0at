@@ -4,18 +4,19 @@
  * @brief The built-in Array prototype.
  */
 
+#include "array.h"
 #include "common_methods.h"
 #include "object.h"
 #include "process.h"
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
-    return (object_array_t){NULL, 0};
+    return get_array_method_keys();
 }
 
 /** @brief Implements @ref object_vtbl_t::get_property. */
 static object_t *get_property(const object_t *obj, const object_t *key) {
-    return NULL;
+    return get_array_method(key);
 }
 
 /** @brief Virtual table defining the behavior of the array prototype object. */
