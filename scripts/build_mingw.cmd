@@ -5,9 +5,17 @@
 
 @echo off
 setlocal
+if "%~1"=="--help" goto help
+if "%~1"=="-h" goto help
+if not "%~2"=="" goto usage
+set "build_jobs=%~1"
+if not defined build_jobs set "build_jobs=%CMAKE_BUILD_PARALLEL_LEVEL%"
+if not defined build_jobs set "build_jobs=%NUMBER_OF_PROCESSORS%"
+if not defined build_jobs set "build_jobs=1"
+set build_jobs | findstr /i /r /x "build_jobs=[1-9][0-9]*" > NUL || goto usage
 pushd "%~dp0.." || exit /b 1
 cmake -S src -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug || goto failed
-cmake --build build --target goat unit_testing analysis_testing functional_testing || goto failed
+cmake --build build --parallel "%build_jobs%" --target goat unit_testing analysis_testing functional_testing || goto failed
 copy /Y build\goat.exe goat.exe > NUL || goto failed
 
 build\unit_testing.exe || goto failed
@@ -27,3 +35,12 @@ exit /b 0
 :failed
 popd
 exit /b 1
+
+:usage
+call :help
+exit /b 1
+
+:help
+echo Usage: %~nx0 [jobs]
+echo jobs: positive integer; default: CMAKE_BUILD_PARALLEL_LEVEL or logical CPU count.
+exit /b 0

@@ -74,6 +74,14 @@ bash scripts/build.sh
 
 The Debug build script copies `goat` to the repository root and runs the unit, analysis, and runtime functional suites. The example prints `it works!`.
 
+Compilation runs in parallel, using the logical CPU count by default. Pass a positive job count to limit it (`1` builds sequentially):
+
+```bash
+bash scripts/build.sh 8
+```
+
+Both Debug scripts also accept `CMAKE_BUILD_PARALLEL_LEVEL` as the default job count; an explicit argument takes precedence. Tests still run sequentially. Use `--help` for usage.
+
 To use Clang in a separate build directory:
 
 ```bash
@@ -97,7 +105,13 @@ Install CMake 3.13 or newer and a MinGW toolchain with GCC, `mingw32-make`, and 
 .\goat.exe .\example\hello_world.goat
 ```
 
-The Debug script builds the interpreter and runs the same three suites. For a Release build without tests:
+The Debug script builds the interpreter and runs the same three suites. To choose the parallel job count:
+
+```powershell
+.\scripts\build_mingw.cmd 8
+```
+
+Without an argument it uses `CMAKE_BUILD_PARALLEL_LEVEL`, then `%NUMBER_OF_PROCESSORS%`. For a Release build without tests:
 
 ```powershell
 .\scripts\build_release_mingw.cmd
