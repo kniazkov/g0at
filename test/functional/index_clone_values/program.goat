@@ -1,0 +1,18 @@
+var n = 1000
+println(n.clone())
+println((1000 + 1).clone() + 2)
+println((1.25 + 1.25).clone() + 1)
+println(true.clone())
+println(false.clone())
+println(null.clone())
+println('Ж'.clone())
+println(("dynamic" + " string").clone())
+var f = func(x) { return x + 1 }
+println(f.clone() == f)
+println(f.clone()(7))
+var factory = func() { var captured = 11; return func() { return captured } }
+var g = factory().clone()
+println(g())
+println(Object.clone() == Object)
+println(Array.clone() == Array)
+println(instanceOf.clone() == instanceOf)

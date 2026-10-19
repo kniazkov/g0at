@@ -186,6 +186,7 @@ static void release(object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::clone. */
 static object_t *clone(process_t *process, object_t *obj) {
     if (process == obj->process) {
+        INCREF(obj);
         return obj;
     }
     return create_real_number_object(process, get_object_real_value(obj).value);

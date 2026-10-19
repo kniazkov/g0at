@@ -15,6 +15,7 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "replacement.h"
 
 #include <wchar.h>
 
@@ -45,11 +46,18 @@ static bool replace_child(node_t *node, node_t *old_child, node_t *new_child) {
     return true;
 }
 
+/** @brief Keep a numeric receiver separate from the member-access dot when reparsing. */
+static bool numeric_receiver(const member_access_t *expr) {
+    node_type_t type = replacement_result(&expr->object->base)->vtbl->type;
+    return type == NODE_INTEGER || type == NODE_REAL;
+}
+
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const member_access_t *expr = (const member_access_t *)node;
     string_value_t object = generate_goat_code_from_expression(expr->object);
-    string_value_t result = format_string(L"%s.%s", object.data, expr->name.data);
+    string_value_t result =
+        format_string(numeric_receiver(expr) ? L"(%s).%s" : L"%s.%s", object.data, expr->name.data);
     FREE_STRING(object);
     return result;
 }
@@ -58,7 +66,11 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const member_access_t *expr = (const member_access_t *)node;
+    if (numeric_receiver(expr))
+        append_static_source(builder, L"(");
     generate_indented_goat_code_from_expression(expr->object, builder, indent);
+    if (numeric_receiver(expr))
+        append_static_source(builder, L")");
     append_static_source(builder, L".");
     append_formatted_source(builder, VIEW_TO_VALUE(expr->name));
 }

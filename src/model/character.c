@@ -164,6 +164,7 @@ static int compare(const object_t *obj1, const object_t *obj2) {
 /** @brief Implements @ref object_vtbl_t::clone. */
 static object_t *clone(process_t *process, object_t *obj) {
     if (process == obj->process) {
+        INCREF(obj);
         return obj;
     }
     return create_character_object(process, get_value(obj));

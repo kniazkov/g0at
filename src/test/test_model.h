@@ -125,3 +125,6 @@ bool test_vm_throw_calls(void);
 bool test_vm_throw_uncaught(void);
 bool test_vm_exception_invalid_bytecode(void);
 bool test_vm_throw_cleanup(void);
+
+/** @brief Virtual clone dispatch and ownership of reused immutable values. */
+bool test_clone_method(void);

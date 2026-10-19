@@ -1,0 +1,14 @@
+1000
+1003
+3.5
+true
+false
+null
+Ж
+dynamic string
+true
+8
+11
+true
+true
+true

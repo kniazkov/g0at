@@ -259,6 +259,7 @@ static int compare(const object_t *obj1, const object_t *obj2) {
 /** @brief Implements @ref object_vtbl_t::clone. */
 static object_t *clone(process_t *process, object_t *obj) {
     if (process == obj->process) {
+        INCREF(obj);
         return obj;
     }
     string_value_t value = convert_object_to_string(obj);
