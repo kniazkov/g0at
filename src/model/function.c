@@ -15,69 +15,6 @@
 #include "process.h"
 #include "thread.h"
 
-/** @brief Implements @ref object_vtbl_t::get_keys. */
-static object_array_t get_keys(const object_t *obj) {
-    return (object_array_t){NULL, 0};
-}
-
-/** @brief Implements @ref object_vtbl_t::get_property. */
-static object_t *get_property(const object_t *obj, const object_t *key) {
-    return NULL;
-}
-
-/** @brief Virtual table defining the behavior of the prototype function object. */
-static object_vtbl_t function_proto_vtbl = {.type = TYPE_OTHER,
-                                            .inc_ref = stub_memory_function,
-                                            .dec_ref = stub_memory_function,
-                                            .mark = stub_memory_function,
-                                            .sweep = no_sweep,
-                                            .release = stub_memory_function,
-                                            .compare = compare_object_addresses,
-                                            .clone = clone_singleton,
-                                            .to_string = common_to_string,
-                                            .to_string_notation = common_to_string_notation,
-                                            .get_prototypes = common_get_prototypes,
-                                            .get_topology = common_get_topology,
-                                            .get_keys = get_keys,
-                                            .get_property = get_property,
-                                            .create_property = create_property_on_immutable,
-                                            .set_property = set_property_on_immutable,
-                                            .get_index = common_get_index,
-                                            .set_index = common_set_index,
-                                            .bitwise_not = stub_unary_operation,
-                                            .bitwise_and = stub_bitwise,
-                                            .bitwise_or = stub_bitwise,
-                                            .bitwise_xor = stub_bitwise,
-                                            .shift_left = stub_bitwise,
-                                            .shift_right = stub_bitwise,
-                                            .unary_plus = stub_unary_operation,
-                                            .unary_minus = stub_unary_operation,
-                                            .increment = stub_unary_operation,
-                                            .decrement = stub_unary_operation,
-                                            .add = stub_add,
-                                            .subtract = stub_subtract,
-                                            .multiply = stub_multiply,
-                                            .divide = stub_divide,
-                                            .modulo = stub_modulo,
-                                            .power = stub_power,
-                                            .less = common_less,
-                                            .less_or_equal = common_less_or_equal,
-                                            .greater = common_greater,
-                                            .greater_or_equal = common_greater_or_equal,
-                                            .equal = common_equal,
-                                            .not_equal = common_not_equal,
-                                            .get_boolean_value = stub_get_boolean_value,
-                                            .get_integer_value = stub_get_integer_value,
-                                            .get_real_value = stub_get_real_value,
-                                            .call = stub_call};
-
-/** @brief The prototype function object. */
-static object_t function_proto = {.vtbl = &function_proto_vtbl};
-
-object_t *get_function_proto() {
-    return &function_proto;
-}
-
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t static_to_string(const object_t *obj) {
     builtin_function_object_t *sfobj = (builtin_function_object_t *)obj;
@@ -90,10 +27,12 @@ static string_value_t static_to_string_notation(const object_t *obj) {
 }
 
 /** @brief Array of prototypes for the function object. */
-static object_t *prototypes[] = {&function_proto};
+static object_t *prototypes[1];
 
 /** @brief Implements @ref object_vtbl_t::get_prototypes. */
 static object_array_t get_prototypes(const object_t *obj) {
+    if (!prototypes[0])
+        prototypes[0] = get_function_proto();
     object_array_t result = {.items = prototypes, .size = 1};
     return result;
 }
@@ -102,7 +41,7 @@ static object_array_t get_prototypes(const object_t *obj) {
 static object_array_t get_topology(const object_t *obj) {
     static object_t *topology[2] = {0};
     if (topology[0] == NULL) {
-        topology[0] = &function_proto;
+        topology[0] = get_function_proto();
         topology[1] = get_root_object();
     }
     object_array_t result = {.items = topology, .size = 2};
@@ -155,8 +94,8 @@ static object_vtbl_t static_vtbl = {.type = TYPE_OTHER,
                                     .to_string_notation = static_to_string_notation,
                                     .get_prototypes = get_prototypes,
                                     .get_topology = get_topology,
-                                    .get_keys = get_keys,
-                                    .get_property = get_property,
+                                    .get_keys = no_object_keys,
+                                    .get_property = no_object_property,
                                     .create_property = create_property_on_immutable,
                                     .set_property = set_property_on_immutable,
                                     .get_index = common_get_index,
@@ -485,8 +424,8 @@ static object_vtbl_t dynamic_vtbl = {.type = TYPE_OTHER,
                                      .to_string_notation = dynamic_to_string_notation,
                                      .get_prototypes = get_prototypes,
                                      .get_topology = get_topology,
-                                     .get_keys = get_keys,
-                                     .get_property = get_property,
+                                     .get_keys = no_object_keys,
+                                     .get_property = no_object_property,
                                      .create_property = create_property_on_immutable,
                                      .set_property = set_property_on_immutable,
                                      .get_index = common_get_index,

@@ -1,27 +1,26 @@
 /** @file array.h
  * @copyright 2026 Ivan Kniazkov
- * @brief Internal array storage and operations; not part of the native ABI.
+ * @brief Internal array operation API; not part of the native ABI.
+ * Callers validate receiver type, bounds and separator type. Operands are borrowed;
+ * operation results own their reference. Storage details stay inside the model.
  */
 #pragma once
 #include "object.h"
-#include "object_state.h"
 
-/** @brief An array owns its elements and a cached immutable length property. */
-typedef struct {
-    object_t base;        /**< Object header. */
-    size_t refs;          /**< Strong reference count. */
-    object_state_t state; /**< Tracing/destruction state. */
-    object_t **items;     /**< Owned element references. */
-    size_t count;         /**< Current element count. */
-    size_t capacity;      /**< Allocated element slots. */
-    object_t *length;     /**< Owned property value. */
-} array_object_t;
-
-/** @brief Sets count and replaces the owned length property. */
-void set_array_count(array_object_t *array, size_t count);
-/** @brief Grows storage geometrically; fatal allocation failure follows ALLOC policy. */
-void reserve_array(array_object_t *array, size_t count);
-/** @brief Array prototype method names. */
-object_array_t get_array_method_keys(void);
-/** @brief Finds an Array method by string key, or returns NULL. */
-object_t *get_array_method(const object_t *key);
+/** @brief Inserts at a validated boundary; returns the new length. */
+operation_result_t
+insert_array_elements(object_t *obj, size_t index, object_t **args, size_t count);
+/** @brief Removes a validated element, transferring its reference to the result. */
+operation_result_t remove_array_element(object_t *obj, size_t index);
+/** @brief Releases all elements and storage; returns the retained receiver. */
+operation_result_t clear_array_elements(object_t *obj);
+/** @brief Searches using virtual equality, returning an index or exception. */
+operation_result_t find_array_element(object_t *obj, object_t *value, bool last);
+/** @brief Stable sort by virtual comparison; leaves order unchanged on failure. */
+operation_result_t sort_array_elements(object_t *obj);
+/** @brief Reverses elements in place and retains the receiver. */
+operation_result_t reverse_array_elements(object_t *obj);
+/** @brief Copies a validated half-open range into independent array storage. */
+operation_result_t slice_array(object_t *obj, size_t begin, size_t end);
+/** @brief Formats notation, or joins values with a borrowed string/character separator. */
+operation_result_t array_to_string(object_t *obj, object_t *separator_object);

@@ -154,6 +154,8 @@ Adding `--native required` to the compile command also builds a companion `.so` 
 
 Generated native C uses the [native support library](docs/native-runtime.md). `--save-c` exports its headers and `libgoat_native.a` beside the C file; automatic DLL/SO compilation stages and links the matching archive from the interpreter bundle.
 
+The [model layout](docs/model-layout.md) describes the separation of value storage, prototypes, and built-in method adapters (English and Russian).
+
 ## Inspect and test
 
 `--print-source-code`, `--print-bytecode`, and `--print-analysis` expose intermediate representations; these options also execute the program. `--save-graph graph.svg` writes an AST image and requires Graphviz (`dot` on `PATH`). `--print-c` exports generated C without executing the program. See [Observability](docs/book/en/27-observability.md) for complete examples.

@@ -2,8 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Mutable arrays, owned elements and tracing garbage collection.
  */
-#include "array.h"
-
+#include "array_internal.h"
 #include "common_methods.h"
 #include "lib/allocate.h"
 #include "object_state.h"

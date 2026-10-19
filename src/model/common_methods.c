@@ -263,3 +263,11 @@ common_set_index(process_t *process, object_t *obj, object_array_t indices, obje
     INCREF(value);
     return operation_success(value);
 }
+
+object_array_t no_object_keys(const object_t *obj) {
+    return (object_array_t){NULL, 0};
+}
+
+object_t *no_object_property(const object_t *obj, const object_t *key) {
+    return NULL;
+}
