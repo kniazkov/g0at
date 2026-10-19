@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /** @brief The runtime environment for the Goat virtual machine. */
 typedef struct {
