@@ -1,0 +1,14 @@
+var a = {}
+a["inner"] = { var x = 12 }
+println(a["inner"].x)
+a.inner["x"] = 13
+println(a["inner"]["x"]);
+(a)["inner"]["x"] = 14
+println((a["inner"])["x"])
+var maker = func() { return a }
+println(maker()["inner"].x)
+var key = { var value = "inner" }
+println(a[key["value"]]["x"])
+println(a["in" + "ner"]["x"] + 1)
+var f = func() { return maker }
+println(f()()["inner"]["x"])

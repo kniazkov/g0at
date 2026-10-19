@@ -1,0 +1,13 @@
+var a = {}; var b = {}
+println(a[1] = b[2] = 3)
+println(a[1]); println(b[2])
+a["x"] = null
+println(a.x)
+a["x"] = a
+println(a.x == a)
+a["x"] = 9
+println(a.x)
+var n = 0
+var key = func() { n = n + 1; return n }
+println(a[key()] = 8)
+println(n); println(a[1])

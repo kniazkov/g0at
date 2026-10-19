@@ -1,0 +1,7 @@
+var obj = {}
+obj[obj] = 1
+println(obj)
+var a = {}; var b = {}
+a[b] = 2; b[a] = 3
+println(a[a] == null)
+println(a[b]); println(b[a])

@@ -1,0 +1,11 @@
+var outer = {
+    var p = 5
+    this[7] = 8
+    var inner = {}
+}
+println(outer.inner["p"]); println(outer.inner[7])
+outer.inner["p"] = 6
+outer.inner[7] = 9
+println(outer.p); println(outer[7])
+outer.inner[false] = 11
+println(outer.inner[false]); println(outer[false])

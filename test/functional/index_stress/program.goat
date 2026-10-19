@@ -1,0 +1,13 @@
+var obj = {}
+var sum = 0
+for (var i = 0; i < 2000; i++) { obj[i] = i * 3 }
+for (var i = 0; i < 2000; i++) { sum = sum + obj[i] }
+println(sum)
+for (var i = 0; i < 2000; i++) { obj[i] = "v" + i }
+println(obj[0]); println(obj[1999]); println(obj[2000])
+var failures = 0
+for (var i = 0; i < 1000; i++) {
+    try { obj[i, i + 1] = { var payload = "x" + i } }
+    catch(e) { failures = failures + 1 }
+}
+println(failures)

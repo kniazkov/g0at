@@ -1,0 +1,15 @@
+true
+false
+true
+false
+1
+2
+3
+true
+4
+5
+true
+1
+PROPERTY_IS_CONSTANT
+PROPERTY_IS_CONSTANT
+true

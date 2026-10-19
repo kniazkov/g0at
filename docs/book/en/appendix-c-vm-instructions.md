@@ -89,3 +89,12 @@ An operation returning an exception does not follow the table's normal stack tra
 > This is a reference for executable instructions, not permission to feed arbitrary sequences to the VM. Persisted `flags` must be zero; the loader does not fully verify stack depth and control flow. Insufficient stack objects cause fatal termination rather than a catchable Goat exception.
 
 Chapter 8 describes instruction construction, chapter 10 contexts, chapter 12 exceptions, and chapter 26 persistence and file validation.
+
+## GETINDEX / SETINDEX
+
+| Opcode | arg1 | Stack | Virtual method |
+| --- | --- | --- | --- |
+| `GETINDEX` | index count (uint32) | S, receiver, indices → S, result | `get_index(process, receiver, indices)` |
+| `SETINDEX` | index count (uint32) | S, value, receiver, indices → S, result | `set_index(process, receiver, indices, value)` |
+
+Methods borrow their operands and return an owned result or exception. The VM releases operands and dispatches exceptions normally. The concrete type validates index count, not the VM. New opcodes are appended without renumbering existing instructions.

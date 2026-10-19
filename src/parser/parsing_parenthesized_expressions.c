@@ -36,6 +36,14 @@ compilation_error_t *preparsing_parenthesized_expressions(token_t *token,
         remove_token_from_group(token);
         return NULL;
     }
+    if (token->left
+        && (token->left->type == TOKEN_EXPRESSION
+            || (token->left->type == TOKEN_BRACKET_PAIR
+                && (token->left->text.data[0] == '[' || token->left->text.data[0] == '(')))) {
+        remove_token_from_group(token);
+        append_token_to_group(&groups->member_access_operators, token);
+        return NULL;
+    }
     node_t *node = create_parenthesized_expression_node(memory->graph);
     token_t *expr = (token_t *)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
     expr->type = TOKEN_EXPRESSION;

@@ -1,0 +1,18 @@
+println(this != null)
+var empty = {}
+println(!!empty)
+println(empty.this == empty)
+println(!!empty)
+var obj = {
+    this["x"] = 1
+    this[3] = 2
+    this[true] = 3
+    var nested = { var x = 4; this[false] = 5 }
+    this["self"] = this
+}
+println(obj.x); println(obj[3]); println(obj[true]); println(obj.self == obj)
+println(obj.nested.x); println(obj.nested[false]); println(obj.nested.this == obj.nested)
+println(obj.x)
+try { obj["this"] = 1 } catch(e) { println(e) }
+try { empty.this = 1 } catch(e) { println(e) }
+println(empty.this == empty)

@@ -177,6 +177,8 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
                 append_token_to_neighbors(list, pair);
                 if (bracket == '(') {
                     append_token_to_group(&groups->unprocessed_parenthesized_expressions, pair);
+                } else if (bracket == '[') {
+                    append_token_to_group(&groups->member_access_operators, pair);
                 } else if (bracket == '{') {
                     append_token_to_group(&groups->scope_blocks, pair);
                 }

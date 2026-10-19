@@ -21,6 +21,7 @@
 #include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "expression.h"
+#include "index_access.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
@@ -168,6 +169,9 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
         add_instruction(code, (instruction_t){.opcode = DUP});
         uint32_t index = add_string_to_data_segment_ex(data, member->name);
         add_instruction(code, (instruction_t){.opcode = GETPROP, .arg1 = index});
+        add_instruction(code, (instruction_t){.opcode = CALLM, .arg0 = (uint16_t)expr->args_count});
+    } else if (expr->func_object->base.vtbl->type == NODE_INDEX_ACCESS) {
+        generate_index_read(&expr->func_object->base, code, data, true);
         add_instruction(code, (instruction_t){.opcode = CALLM, .arg0 = (uint16_t)expr->args_count});
     } else {
         generate_bytecode_from_expression(expr->func_object, code, data);

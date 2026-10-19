@@ -219,3 +219,46 @@ operation_result_t numeric_unary_plus(process_t *process, object_t *obj) {
 operation_result_t stub_bitwise(process_t *process, object_t *left, object_t *right) {
     return operation_exception(get_exception_invalid_operation());
 }
+
+operation_result_t common_get_index(process_t *process, object_t *obj, object_array_t indices) {
+    if (indices.size != 1)
+        return operation_exception(get_exception_invalid_argument());
+    object_t *value = get_object_property(obj, indices.items[0]);
+    object_array_t proto = get_object_topology(obj);
+    for (size_t i = 0; !value && i < proto.size; i++)
+        value = get_object_property(proto.items[i], indices.items[0]);
+    if (!value)
+        value = get_null_object();
+    INCREF(value);
+    return operation_success(value);
+}
+
+operation_result_t
+common_set_index(process_t *process, object_t *obj, object_array_t indices, object_t *value) {
+    if (indices.size != 1)
+        return operation_exception(get_exception_invalid_argument());
+    object_t *key = indices.items[0];
+    model_status_t status = set_object_property(obj, key, value);
+    if (status == MSTAT_PROPERTY_NOT_FOUND) {
+        object_array_t proto = get_object_topology(obj);
+        for (size_t i = 0; i < proto.size; i++) {
+            status = set_object_property(proto.items[i], key, value);
+            if (status == MSTAT_IMMUTABLE_OBJECT) {
+                status = MSTAT_PROPERTY_NOT_FOUND;
+                break;
+            }
+            if (status != MSTAT_PROPERTY_NOT_FOUND)
+                break;
+        }
+        if (status == MSTAT_PROPERTY_NOT_FOUND)
+            status = create_object_property(obj, key, value, false);
+    }
+    if (status == MSTAT_PROPERTY_IS_CONSTANT)
+        return operation_exception(get_exception_property_is_constant());
+    if (status == MSTAT_IMMUTABLE_OBJECT)
+        return operation_exception(get_exception_immutable_object());
+    if (status != MSTAT_OK)
+        return operation_exception(get_exception_invalid_operation());
+    INCREF(value);
+    return operation_success(value);
+}

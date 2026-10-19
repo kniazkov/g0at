@@ -1,0 +1,11 @@
+a
+b
+f
+g
+Object
+println
+null
+a
+changed
+b
+true

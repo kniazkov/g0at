@@ -1,0 +1,12 @@
+var obj = { var x = 5 }
+obj["get"] = func() { return this.x }
+obj[3] = func(v) { this.x = v; return this.x }
+println(obj["get"]()); println(obj[3](42)); println(obj.get())
+println("abc"["contains"]("b"))
+println("abc"["length"])
+println("abc"[0])
+var f = obj["get"]
+println(f())
+var box = {}
+box["factory"] = func() { return func(v) { return v + 1 } }
+println(box["factory"]()(9))

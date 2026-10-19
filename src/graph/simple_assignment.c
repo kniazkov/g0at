@@ -59,6 +59,11 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
         if (var->declarator)
             set_in_abstract_state_at(state, var->declarator, value, node);
     }
+    if (state->control_flow == FLOW_NORMAL
+        && expr->left_operand->base.base.vtbl->type != NODE_VARIABLE) {
+        calculate_expression(&expr->left_operand->base, state, arena);
+        forget_abstract_values(state);
+    }
     return value;
 }
 
@@ -102,6 +107,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
             if (decl)
                 set_in_abstract_state(*state, decl, value);
         } else {
+            visit_reachable_node(target, state, collector);
             forget_abstract_values(*state);
         }
     }
@@ -112,7 +118,10 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 static void
 collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
     collect_node_direct_effects(get_node_child(node, 1), summary, arena);
-    record_function_access(summary, get_node_child(node, 0), FUNCTION_CAPTURE_WRITE, arena);
+    node_t *target = get_node_child(node, 0);
+    if (target->vtbl->type != NODE_VARIABLE)
+        collect_node_direct_effects(target, summary, arena);
+    record_function_access(summary, target, FUNCTION_CAPTURE_WRITE, arena);
 }
 
 /** @brief Implements node_vtbl_t::replace_child for the expression slot. */

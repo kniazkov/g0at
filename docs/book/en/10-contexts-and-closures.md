@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/10-contexts-and-closures.md) · [Previous chapter](09-vm-and-values.md) · [Next chapter](11-memory-management.md)
 
-Revision 4. Implementation described: [commit ae26b84, method calls and the `this` constant](https://github.com/kniazkov/g0at/tree/ae26b849471233f3329214f3c170a7a26a756118).
+Section 10.8 is updated for indexed access and `this` in every scope. Other sections describe: [commit ae26b84, method calls and the `this` constant](https://github.com/kniazkov/g0at/tree/ae26b849471233f3329214f3c170a7a26a756118).
 
 <a id="section-10-1"></a>
 
@@ -133,7 +133,38 @@ It helps to ask two separate questions: where `RET` returns control, and who ret
 
 A method call passes the receiver, the object on which the method is invoked, into the call. `CALLM` hands it to `dynamic_call`, which builds the call's data object from a list of prototypes: for a method call the list contains the function's closure followed by the receiver; an ordinary call keeps only the closure. Name lookup through `VLOAD` therefore checks own properties, then the closure's environment, then the receiver's properties. An update of an undeclared name inside a method body (Section 7.6) is resolved by the same walk: `STORE` finds an existing property through the chain or creates one in the call's own data.
 
-`dynamic_call` also creates a constant property named `this` on the call's own data, pointing to that data object itself. Because the call's data inherits the receiver as a prototype, `this` is a stable reference to the object whose method is running. It is found through ordinary property lookup and cannot be reassigned: writing to it attempts to modify a constant and raises an exception.
+**In Goat, `this` is the object of the current scope. This differs fundamentally from the familiar Java and JavaScript semantics.** In a Java instance method, `this` denotes the current class instance. In JavaScript, an ordinary property call `obj.method()` supplies `obj` as `this` to an unbound ordinary function; arrow functions have lexical `this`. In Goat, even inside `obj.method()`, `this` denotes a separate call-context object, **not `obj`**. The receiver is accessible through that context's prototypes: `this.x` can find its property, but `this == obj` is false.
+
+No function call is required: `this` works at the top level, in an object block `{ ... }`, in nested blocks and in ordinary functions. Every new context has its own `this`; leaving a block restores the previous current context. Variables, parameters and constants cannot be named `this`; assigning the `"this"` property raises `PROPERTY_IS_CONSTANT`.
+
+```goat
+var obj = {
+    this["x"] = 1;
+    this[true] = 2;
+    var inner = {
+        var x = 3;
+        this[false] = 4;
+    };
+};
+println(obj.x);             // 1
+println(obj[true]);         // 2
+println(obj.inner[false]);  // 4
+println(obj.inner.this == obj.inner); // true
+
+obj.inspect = func() {
+    println(this == obj);   // false: a separate call context
+    println(this.x);        // 1: found through a prototype
+    this["local"] = 9;      // a new property of the call context
+    return this;
+};
+var context = obj.inspect();
+println(context.local);     // 9
+println(obj.local);         // null
+```
+
+**Important:** writes through `this` follow ordinary Goat property rules. An existing property may be updated on a prototype; a new property is created on the current object. Use `var x` or `const x` when a nested block needs its own `x` shadowing an outer property. The implicit declaration `x = 1` creates a constant; `this["x"] = 1` creates an ordinary mutable property when it does not exist yet.
+
+User-defined objects expose `this` as an implicit constant property without inserting a dictionary entry: an empty object stays empty and false. Call contexts retain their previously explicit `this` property for compatibility. Both forms refer to the object itself without requiring a strong reference cycle. See the [language reference](appendix-b-language.md#section-b-index) for indexed access.
 
 ```goat
 const obj = {};

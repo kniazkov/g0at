@@ -47,6 +47,7 @@ typedef enum {
     TOKEN_EXPRESSION,             /**< An expression token, which contains an attached
                                        syntax tree node */
     TOKEN_STATEMENT,              /**< A statement (e.g., assignment, control structures, etc.) */
+    TOKEN_INDEX_ARGS,             /**< Unprocessed index expressions. */
     TOKEN_FCALL_ARGS,             /**< Unprocessed function call arguments */
     TOKEN_STATEMENT_LIST,         /**< Unprocessed statement list */
     TOKEN_EXPRESSION_IN_BRACKETS, /**< Unprocessed expression in brackets */
