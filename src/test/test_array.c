@@ -4,7 +4,10 @@
  */
 #include "test_array.h"
 
+#include "analysis/analysis.h"
 #include "analysis_test_support.h"
+#include "cli/options.h"
+#include "graph/visualization.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "model/process.h"
@@ -77,6 +80,12 @@ bool test_array_model(void) {
     object_t *child = create_array_object(proc, (object_array_t){0});
     object_t *items[] = {child, child};
     object_t *array = create_array_object(proc, (object_array_t){items, 2});
+    ASSERT(get_object_prototypes(array).size == 1);
+    ASSERT(get_object_prototypes(array).items[0] == get_array_proto());
+    ASSERT(get_object_topology(array).size == 2);
+    ASSERT(get_object_topology(array).items[0] == get_array_proto());
+    ASSERT(get_object_topology(array).items[1] == get_root_object());
+    ASSERT(get_object_prototypes(get_array_proto()).items[0] == get_root_object());
     DECREF(child);
     add_gc_root(proc, array);
     collect_garbage(proc);
@@ -110,7 +119,7 @@ bool test_array_model(void) {
     collect_garbage(proc);
     ASSERT(get_array_elements(copy).items[0] == copy);
     string_value_t notation = convert_object_to_string_notation(copy);
-    ASSERT(wcscmp(notation.data, L"[[...],[]]") == 0);
+    ASSERT(wcscmp(notation.data, L"[[...],[ ]]") == 0);
     FREE_STRING(notation);
     remove_gc_root(proc, copy);
     DECREF(copy);
@@ -146,5 +155,28 @@ bool test_array_model(void) {
     remove_gc_root(proc, array);
     DECREF(array);
     destroy_process(proc);
+    return true;
+}
+
+bool test_array_graph_labels(void) {
+    arena_t *arena = create_arena(16);
+    parser_memory_t memory = {arena, arena, arena, arena};
+    node_t *root = parse_analysis_test_program(
+        &memory,
+        STATIC_STRING(L"var obj = { var x = [1] }; println(obj.x[0]);"));
+    ASSERT(root);
+    options_t *options = create_options();
+    options->optimization_level = OPTIMIZATION_NONE;
+    ASSERT(!analyze(root, &memory, options, NULL));
+    string_value_t dot = generate_graph_dot(root);
+    ASSERT(wcsstr(dot.data, L"member access"));
+    ASSERT(wcsstr(dot.data, L"index access"));
+    ASSERT(wcsstr(dot.data, L"statement list"));
+    ASSERT(!wcsstr(dot.data, L"member_access"));
+    ASSERT(!wcsstr(dot.data, L"index_access"));
+    ASSERT(!wcsstr(dot.data, L"statement_list"));
+    FREE_STRING(dot);
+    destroy_options(options);
+    destroy_arena(arena);
     return true;
 }

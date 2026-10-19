@@ -13,6 +13,7 @@
 
 /** @brief Global names of the built-in type prototypes. */
 static pair_t type_properties[] = {
+    {L"Array", get_array_proto},
     {L"Boolean", get_boolean_proto},
     {L"Character", get_character_proto},
     {L"Function", get_function_proto},

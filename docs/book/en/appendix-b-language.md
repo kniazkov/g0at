@@ -143,3 +143,7 @@ elements and reclaims unreachable cycles, including mixed array/object cycles.
 Arrays execute only in the VM for now, with no native representation or ABI.
 Automatic mode keeps this work in the VM. Newlines do not terminate expressions:
 use a semicolon between separate expressions `a; [1]`, since `a[1]` is indexing.
+
+Arrays inherit from the built-in `Array` prototype, which inherits from `Object`.
+Both `[].instanceOf(Array)` and `[].instanceOf(Object)` return `true`.
+An empty array prints as `[ ]`, including inside other objects and arrays.

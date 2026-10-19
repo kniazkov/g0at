@@ -8,3 +8,6 @@
 bool test_array_parser(void);
 /** @brief Ownership, aliasing, cloning, bounds and mixed cycle collection. */
 bool test_array_model(void);
+
+/** @brief Rendered container/access node names use spaces. */
+bool test_array_graph_labels(void);
