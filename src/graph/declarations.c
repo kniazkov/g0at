@@ -19,6 +19,7 @@
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "loop.h"
 #include "replacement.h"
 #include "statement.h"
 
@@ -26,7 +27,37 @@
 
 size_t get_property_count_of_declarator(const node_t *node) {
     const declarator_t *decl = (const declarator_t *)node;
-    return decl->abstract_value ? 1 : 0;
+    return (decl->abstract_value ? 1 : 0) + (decl->modifier != ACCESS_MODULE);
+}
+
+void set_declaration_modifier(node_t *declaration, access_modifier_t modifier) {
+    for (size_t i = 0; i < get_node_child_count(declaration); i++)
+        ((declarator_t *)get_node_child(declaration, i))->modifier = modifier;
+}
+
+bool has_access_modifiers(const node_t *node) {
+    if (node->vtbl->type == NODE_FOR_IN && get_for_in_declarator(node)->modifier != ACCESS_MODULE)
+        return true;
+    if (is_declarator(node->vtbl->type) && ((const declarator_t *)node)->modifier != ACCESS_MODULE)
+        return true;
+    for (size_t i = 0; i < get_node_child_count(node); i++)
+        if (has_access_modifiers(get_node_child(node, i)))
+            return true;
+    return false;
+}
+
+static const wchar_t *declaration_keyword(const node_t *node, bool constant) {
+    const declarator_t *decl = (const declarator_t *)replacement_original(get_node_child(node, 0));
+    switch (decl->modifier) {
+        case ACCESS_PUBLIC:
+            return constant ? L"public const " : L"public var ";
+        case ACCESS_PROTECTED:
+            return constant ? L"protected const " : L"protected var ";
+        case ACCESS_PRIVATE:
+            return constant ? L"private const " : L"private var ";
+        default:
+            return constant ? L"const " : L"var ";
+    }
 }
 
 /** @brief Implements node_vtbl_t::can_generate_c_code for a complete numeric body. */
@@ -47,6 +78,17 @@ static bool can_generate_c_code(const node_t *node,
 const wchar_t *
 get_property_of_declarator(const node_t *node, size_t index, node_display_value_t *out_value) {
     const declarator_t *decl = (const declarator_t *)node;
+    if (decl->modifier != ACCESS_MODULE) {
+        if (index == 0) {
+            const wchar_t *text = decl->modifier == ACCESS_PUBLIC      ? L"public"
+                                  : decl->modifier == ACCESS_PROTECTED ? L"protected"
+                                                                       : L"private";
+            *out_value = (node_display_value_t){.text = {text, wcslen(text), false},
+                                                .kind = NODE_DISPLAY_VALUE_PLAIN};
+            return L"access";
+        }
+        index--;
+    }
     if (index == 0 && decl->abstract_value) {
         *out_value =
             (node_display_value_t){.text = lattice_to_string(decl->abstract_value),
@@ -155,7 +197,13 @@ vdeclr_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *dat
         first = add_instruction(code, (instruction_t){.opcode = NIL});
     }
     uint32_t index = add_string_to_data_segment_ex(data, decl->base.name);
-    add_instruction(code, (instruction_t){.opcode = VAR, .arg1 = index});
+    if (decl->base.modifier != ACCESS_MODULE)
+        add_instruction(
+            code,
+            (instruction_t){.opcode = DVAR,
+                            .arg1 = add_declaration_to_data_segment(data, &decl->base)});
+    else
+        add_instruction(code, (instruction_t){.opcode = VAR, .arg1 = index});
     return first;
 }
 
@@ -369,13 +417,17 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
     string_builder_t builder;
     init_string_builder(&builder, 0);
     if (for_header_has_replaced_declarators(node, children, decl->decl_count))
-        return generate_original_declaration(children, decl->decl_count, L"var ");
+        return generate_original_declaration(children,
+                                             decl->decl_count,
+                                             declaration_keyword(node, false));
     declaration_output_t output = declaration_output(children, decl->decl_count);
     bool wrap = in_single_statement_slot(node) && output != DECLARATION_SINGLE_STATEMENT;
     if (wrap && output == DECLARATION_EMPTY)
         return STATIC_STRING(L"{ }");
     if (wrap && has_kept_declarators(children, decl->decl_count))
-        return generate_original_declaration(children, decl->decl_count, L"var ");
+        return generate_original_declaration(children,
+                                             decl->decl_count,
+                                             declaration_keyword(node, false));
     if (wrap)
         append_static_string(&builder, L"{ ");
     bool pending = false, has_previous = false;
@@ -399,7 +451,7 @@ static string_value_t vdecln_generate_goat_code(const node_t *node) {
             if (!pending) {
                 if (has_previous)
                     result = append_char(&builder, L' ');
-                result = append_static_string(&builder, L"var ");
+                result = append_string(&builder, declaration_keyword(node, false));
                 pending = true;
                 has_previous = true;
             } else {
@@ -425,7 +477,7 @@ vdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder
     if (for_header_has_replaced_declarators(node, children, decl->decl_count)) {
         generate_indented_original_declaration(children,
                                                decl->decl_count,
-                                               L"var ",
+                                               declaration_keyword(node, false),
                                                builder,
                                                indent);
         return;
@@ -439,7 +491,7 @@ vdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder
     if (wrap && has_kept_declarators(children, decl->decl_count)) {
         generate_indented_original_declaration(children,
                                                decl->decl_count,
-                                               L"var ",
+                                               declaration_keyword(node, false),
                                                builder,
                                                indent);
         return;
@@ -459,7 +511,10 @@ vdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder
             generate_indented_goat_code_from_node(replacement_result(child), builder, indent);
         } else {
             if (!pending) {
-                add_static_source(builder, indent, L"var ");
+                const wchar_t *keyword = declaration_keyword(node, false);
+                add_formatted_source(builder,
+                                     indent,
+                                     (string_value_t){keyword, wcslen(keyword), false});
                 pending = true;
             } else {
                 append_static_source(builder, L", ");
@@ -627,7 +682,13 @@ cdeclr_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *dat
     const constant_declarator_t *decl = (const constant_declarator_t *)node;
     instr_index_t first = generate_bytecode_from_expression(decl->initial, code, data);
     uint32_t index = add_string_to_data_segment_ex(data, decl->base.name);
-    add_instruction(code, (instruction_t){.opcode = CONST, .arg1 = index});
+    if (decl->base.modifier != ACCESS_MODULE)
+        add_instruction(
+            code,
+            (instruction_t){.opcode = DCONST,
+                            .arg1 = add_declaration_to_data_segment(data, &decl->base)});
+    else
+        add_instruction(code, (instruction_t){.opcode = CONST, .arg1 = index});
     return first;
 }
 
@@ -727,13 +788,17 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
     string_builder_t builder;
     init_string_builder(&builder, 0);
     if (for_header_has_replaced_declarators(node, children, decl->decl_count))
-        return generate_original_declaration(children, decl->decl_count, L"const ");
+        return generate_original_declaration(children,
+                                             decl->decl_count,
+                                             declaration_keyword(node, true));
     declaration_output_t output = declaration_output(children, decl->decl_count);
     bool wrap = in_single_statement_slot(node) && output != DECLARATION_SINGLE_STATEMENT;
     if (wrap && output == DECLARATION_EMPTY)
         return STATIC_STRING(L"{ }");
     if (wrap && has_kept_declarators(children, decl->decl_count))
-        return generate_original_declaration(children, decl->decl_count, L"const ");
+        return generate_original_declaration(children,
+                                             decl->decl_count,
+                                             declaration_keyword(node, true));
     if (wrap)
         append_static_string(&builder, L"{ ");
     bool pending = false, has_previous = false;
@@ -757,7 +822,7 @@ static string_value_t cdecln_generate_goat_code(const node_t *node) {
             if (!pending) {
                 if (has_previous)
                     result = append_char(&builder, L' ');
-                result = append_static_string(&builder, L"const ");
+                result = append_string(&builder, declaration_keyword(node, true));
                 pending = true;
                 has_previous = true;
             } else {
@@ -783,7 +848,7 @@ cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder
     if (for_header_has_replaced_declarators(node, children, decl->decl_count)) {
         generate_indented_original_declaration(children,
                                                decl->decl_count,
-                                               L"const ",
+                                               declaration_keyword(node, true),
                                                builder,
                                                indent);
         return;
@@ -797,7 +862,7 @@ cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder
     if (wrap && has_kept_declarators(children, decl->decl_count)) {
         generate_indented_original_declaration(children,
                                                decl->decl_count,
-                                               L"const ",
+                                               declaration_keyword(node, true),
                                                builder,
                                                indent);
         return;
@@ -817,7 +882,10 @@ cdecln_generate_indented_goat_code(const node_t *node, source_builder_t *builder
             generate_indented_goat_code_from_node(replacement_result(child), builder, indent);
         } else {
             if (!pending) {
-                add_static_source(builder, indent, L"const ");
+                const wchar_t *keyword = declaration_keyword(node, true);
+                add_formatted_source(builder,
+                                     indent,
+                                     (string_value_t){keyword, wcslen(keyword), false});
                 pending = true;
             } else {
                 append_static_source(builder, L", ");

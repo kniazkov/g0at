@@ -31,10 +31,13 @@ typedef enum {
     TOKEN_INTEGER_MAGNITUDE, /**< 2^63, valid only as the operand of a unary minus. */
     TOKEN_ERROR,             /**< An invalid token (error case) */
 
-    TOKEN_VAR,    /**< The 'var' keyword for variable declarations */
-    TOKEN_CONST,  /**< The 'const' keyword for constant declarations */
-    TOKEN_FUNC,   /**< The 'func' keyword for function declarations */
-    TOKEN_RETURN, /**< The 'return' keyword used in return statements */
+    TOKEN_VAR,   /**< The 'var' keyword for variable declarations */
+    TOKEN_CONST, /**< The 'const' keyword for constant declarations */
+    TOKEN_PUBLIC,
+    TOKEN_PROTECTED,
+    TOKEN_PRIVATE, /**< Declaration visibility modifiers. */
+    TOKEN_FUNC,    /**< The 'func' keyword for function declarations */
+    TOKEN_RETURN,  /**< The 'return' keyword used in return statements */
     TOKEN_SWITCH,
     TOKEN_CASE,
     TOKEN_DEFAULT,
@@ -116,6 +119,7 @@ struct token_t {
      * Links to the token that appears immediately after this token in the source code.
      */
     token_t *right;
+    uint8_t access_modifier; /**< Modifier carried by a normalized declaration keyword. */
 
     /** @brief Pointer to the `token_list_t` representing the group list. */
     token_list_t *group;
@@ -194,6 +198,7 @@ typedef struct {
 
     /** @brief Group for 'const' keyword tokens. */
     token_list_t const_keywords;
+    token_list_t access_keywords;
 
     /** @brief Group for tokens within curly braces (scope blocks). */
     token_list_t scope_blocks;

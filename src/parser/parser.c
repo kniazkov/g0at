@@ -17,6 +17,7 @@
 #include <stdbool.h>
 
 compilation_error_t *parsing_loop_jump(token_t *, parser_memory_t *, token_groups_t *);
+compilation_error_t *parsing_access_modifier(token_t *, parser_memory_t *, token_groups_t *);
 
 compilation_error_t *parsing_inheritance(token_t *, parser_memory_t *, token_groups_t *);
 
@@ -386,6 +387,7 @@ compilation_error_t *
 apply_reduction_rules(token_groups_t *groups, parser_memory_t *memory, parsing_result_t *result) {
     compilation_error_t *error = NULL;
     APPLY_FORWARD(catch_keywords, preparsing_catch);
+    APPLY_FORWARD(access_keywords, parsing_access_modifier);
     APPLY_FORWARD(scope_blocks, parsing_scopes_and_functions);
     result->functions = collect_nodes_from_group(&groups->function_objects, memory->graph);
     APPLY_FORWARD(identifiers, parsing_identifier_and_parentheses);

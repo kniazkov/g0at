@@ -1,0 +1,34 @@
+const A = {
+    private var secret = 10, other = 2;
+    protected var x = 10;
+    public var visible = 1;
+    public read = func() { return secret + other; };
+    public captured = func() { return x; };
+    public current = func() { return this.x; };
+    public increment = func() { secret += 1; return secret; };
+    public escaped = func() { return func() { return secret; }; };
+};
+println(A.read());
+println(A.increment());
+var fn = A.escaped();
+println(fn());
+try A.secret; catch(e) println(e);
+try A["other"] = 9; catch(e) println(e);
+try A.x; catch(e) println(e);
+A.visible += 2;
+println(A.visible);
+var child = A -> {
+    protected var x = 20;
+    public readProtected = func() { return A.x; };
+    public denied = func() { return secret; };
+};
+println(child.captured());
+println(child.current());
+println(child.readProtected());
+try child.denied(); catch(e) println(e);
+const outside = func() { return A.secret; };
+child.outside = outside;
+try child.outside(); catch(e) println(e);
+const detached = child.read;
+println(detached());
+try A.read = outside; catch(e) println(e);

@@ -16,6 +16,29 @@
 
 #define AVERAGE_NUMBER_OF_VARIABLES_PER_STATEMENT 3
 
+/** @brief Normalizes a single visibility prefix to a var/const declaration keyword. */
+compilation_error_t *
+parsing_access_modifier(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
+    token_t *next = token->right;
+    if (!next || (next->type >= TOKEN_PUBLIC && next->type <= TOKEN_PRIVATE)
+        || (token->left && (token->left->type == TOKEN_VAR || token->left->type == TOKEN_CONST)))
+        return create_error_from_token(memory->errors,
+                                       token,
+                                       CRITICAL,
+                                       get_messages()->invalid_access_modifier);
+    token->access_modifier = token->type == TOKEN_PUBLIC      ? ACCESS_PUBLIC
+                             : token->type == TOKEN_PROTECTED ? ACCESS_PROTECTED
+                                                              : ACCESS_PRIVATE;
+    remove_token_from_group(token);
+    token->type = next->type == TOKEN_VAR ? TOKEN_VAR : TOKEN_CONST;
+    if (next->type == TOKEN_VAR || next->type == TOKEN_CONST)
+        remove_token(next);
+    append_token_to_group(token->type == TOKEN_VAR ? &groups->var_keywords
+                                                   : &groups->const_keywords,
+                          token);
+    return NULL;
+}
+
 /**
  * @brief Processes variable declaration statements.
  * @return NULL on successful parsing, or a compilation error if parsing fails.
@@ -81,6 +104,7 @@ parsing_variable_declarations(token_t *keyword, parser_memory_t *memory, token_g
     node_t *declaration = create_variable_declaration_node(memory->graph,
                                                            (declarator_spec_t **)vector->data,
                                                            vector->size);
+    set_declaration_modifier(declaration, keyword->access_modifier);
     collapse_tokens_to_token(memory, keyword, last_token, TOKEN_STATEMENT, declaration);
     goto cleanup;
 
@@ -162,6 +186,7 @@ parsing_constant_declarations(token_t *keyword, parser_memory_t *memory, token_g
     node_t *declaration = create_constant_declaration_node(memory->graph,
                                                            (declarator_spec_t **)vector->data,
                                                            vector->size);
+    set_declaration_modifier(declaration, keyword->access_modifier);
     collapse_tokens_to_token(memory, keyword, last_token, TOKEN_STATEMENT, declaration);
     goto cleanup;
 

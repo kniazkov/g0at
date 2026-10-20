@@ -2,6 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Reduction of C-style loop headers and bodies.
  */
+#include "graph/declarations.h"
 #include "graph/expression.h"
 #include "graph/loop.h"
 #include "graph/statement.h"
@@ -88,6 +89,8 @@ compilation_error_t *parsing_for(token_t *token, parser_memory_t *memory, token_
                                                 condition,
                                                 as_statement(slots[2], memory),
                                                 body_statement);
+    if (collection)
+        get_for_in_declarator(node)->modifier = header->children.first->access_modifier;
     collapse_tokens_to_token(memory, token, body, TOKEN_STATEMENT, node);
     return NULL;
 invalid:

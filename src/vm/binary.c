@@ -13,7 +13,7 @@
 #include <string.h>
 
 #define HEADER_SIZE 96
-#define FORMAT_VERSION 10
+#define FORMAT_VERSION 11
 
 static uint64_t read64(const uint8_t *p) {
     uint64_t value = 0;
@@ -73,11 +73,21 @@ static bool decode(bytecode_t *code) {
     }
     for (size_t i = 0; i < code->instructions_count; i++) {
         instruction_t in = code->instructions[i];
-        if (in.opcode > FINALLY_END || in.flags)
+        if (in.opcode > BSTORE || in.flags)
             return false;
         if (in.opcode == INHERIT && (in.arg0 > 1 || (!in.arg0 && in.arg1 != 1)))
             return false;
         switch (in.opcode) {
+            case DVAR:
+            case DCONST:
+            case BLOAD:
+            case BSTORE: {
+                declaration_descriptor_t declaration;
+                if (in.arg0 || !get_bytecode_declaration(code, in.arg1, &declaration)
+                    || !string_valid(code, declaration.name))
+                    return false;
+                break;
+            }
             case FINALLY_ENTER:
             case FINALLY_LEAVE:
             case ITER_NEXT:
@@ -125,7 +135,23 @@ static bool decode(bytecode_t *code) {
                 break;
         }
     }
-    return true;
+    uint8_t *declared = CALLOC(code->data_descriptor_count ? code->data_descriptor_count : 1);
+    bool valid = true;
+    for (size_t i = 0; i < code->instructions_count; i++) {
+        instruction_t in = code->instructions[i];
+        if (in.opcode == DVAR || in.opcode == DCONST) {
+            if (declared[in.arg1])
+                valid = false;
+            declared[in.arg1] = 1;
+        }
+    }
+    for (size_t i = 0; i < code->instructions_count; i++) {
+        instruction_t in = code->instructions[i];
+        if ((in.opcode == BLOAD || in.opcode == BSTORE) && !declared[in.arg1])
+            valid = false;
+    }
+    FREE(declared);
+    return valid;
 }
 
 bool save_binary_program(const char *path,
@@ -142,7 +168,7 @@ bool save_binary_program(const char *path,
         return false;
     size_t size = HEADER_SIZE + code->buffer_size + count * 16;
     uint8_t *bytes = CALLOC(size);
-    memcpy(bytes, "GOATBI10", 8);
+    memcpy(bytes, "GOATBI11", 8);
     write64(bytes + 8, FORMAT_VERSION);
     write64(bytes + 16, platform());
     write64(bytes + 24, code->buffer_size);
@@ -184,7 +210,7 @@ binary_program_t decode_binary_program(const void *data, size_t size) {
     checksum = extend_binary_checksum(checksum, zero_checksum, sizeof(zero_checksum));
     checksum = extend_binary_checksum(checksum, bytes + 64, size - 64);
     uint64_t code_size = read64(bytes + 24), count = read64(bytes + 32);
-    if (memcmp(bytes, "GOATBI10", 8) || read64(bytes + 8) != FORMAT_VERSION
+    if (memcmp(bytes, "GOATBI11", 8) || read64(bytes + 8) != FORMAT_VERSION
         || read64(bytes + 16) != platform() || read64(bytes + 40) || read64(bytes + 48)
         || expected != checksum || code_size > size - HEADER_SIZE
         || count > (size - HEADER_SIZE - code_size) / 16

@@ -546,3 +546,6 @@ finally_stack
 cleanup_uncaught
 cleanup_missing_body
 cleanup_duplicate
+access_modifiers
+access_factories
+access_scopes

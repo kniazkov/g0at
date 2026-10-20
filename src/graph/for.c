@@ -377,10 +377,27 @@ reach_for_in(node_t *node, abstract_state_t **state, analysis_collector_t *colle
     return make_top_element();
 }
 
+static size_t property_count_for_in(const node_t *node) {
+    return get_property_count_of_declarator((const node_t *)((const for_t *)node)->iteration);
+}
+
+static const wchar_t *
+property_for_in(const node_t *node, size_t index, node_display_value_t *value) {
+    return get_property_of_declarator((const node_t *)((const for_t *)node)->iteration,
+                                      index,
+                                      value);
+}
+
 static string_value_t source_for_in(const node_t *node) {
     string_value_t source = generate_goat_code_from_node(get_child(node, 0));
     string_value_t body = generate_goat_code_from_node(get_child(node, 3));
-    string_value_t result = format_string(L"for (const %s in %s) %s",
+    access_modifier_t modifier = ((const for_t *)node)->iteration->modifier;
+    const wchar_t *prefix = modifier == ACCESS_PUBLIC      ? L"public "
+                            : modifier == ACCESS_PROTECTED ? L"protected "
+                            : modifier == ACCESS_PRIVATE   ? L"private "
+                                                           : L"";
+    string_value_t result = format_string(L"for (%sconst %s in %s) %s",
+                                          prefix,
                                           ((const for_t *)node)->iteration->name.data,
                                           source.data,
                                           body.data);
@@ -403,8 +420,10 @@ static instr_index_t bytecode_for_in(node_t *node, code_builder_t *code, data_bu
     add_instruction(code, (instruction_t){.opcode = ENTER});
     add_instruction(
         code,
-        (instruction_t){.opcode = CONST,
-                        .arg1 = add_string_to_data_segment_ex(data, loop->iteration->name)});
+        (instruction_t){.opcode = loop->iteration->modifier ? DCONST : CONST,
+                        .arg1 = loop->iteration->modifier
+                                    ? add_declaration_to_data_segment(data, loop->iteration)
+                                    : add_string_to_data_segment_ex(data, loop->iteration->name)});
     generate_bytecode_from_node(get_child(node, 3), code, data);
     add_instruction(code, (instruction_t){.opcode = RESTORE});
     add_instruction(code, (instruction_t){.opcode = JUMP, .arg1 = next});
@@ -432,6 +451,8 @@ create_for_in_node(arena_t *arena, string_view_t name, expression_t *source, sta
     vtbl = for_vtbl;
     vtbl.type = NODE_FOR_IN;
     vtbl.type_name = L"for in";
+    vtbl.get_property_count = property_count_for_in;
+    vtbl.get_property = property_for_in;
     vtbl.execute = execute_for_in;
     vtbl.analyze_reachability = reach_for_in;
     vtbl.generate_goat_code = source_for_in;

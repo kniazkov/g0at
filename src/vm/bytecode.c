@@ -8,6 +8,7 @@
 
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
+#include "model/access.h"
 #include "model/native_library.h"
 
 #include <stdbool.h>
@@ -93,7 +94,11 @@ static instruction_descriptor_t descriptors[] = {
     {.code = L"ITER_NEXT", .arg_1_is_unsigned_integer = true},
     {.code = L"FINALLY_ENTER", .arg_1_is_unsigned_integer = true},
     {.code = L"FINALLY_LEAVE", .arg_1_is_unsigned_integer = true},
-    {.code = L"FINALLY_END"}};
+    {.code = L"FINALLY_END"},
+    {.code = L"DVAR", .arg_1_is_unsigned_integer = true},
+    {.code = L"DCONST", .arg_1_is_unsigned_integer = true},
+    {.code = L"BLOAD", .arg_1_is_unsigned_integer = true},
+    {.code = L"BSTORE", .arg_1_is_unsigned_integer = true}};
 
 /** @brief Defines the column width for instruction numbers in the bytecode text representation. */
 #define NUMBER_COLUMN_SIZE 8
@@ -192,6 +197,7 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
 }
 
 void free_bytecode(bytecode_t *code) {
+    release_module_identity(code->declaration_unit);
     if (code->native_functions) {
         for (size_t i = 0; i < code->instructions_count; i++)
             release_native_function_descriptor(code->native_functions[i]);
@@ -199,6 +205,21 @@ void free_bytecode(bytecode_t *code) {
     }
     FREE(code->buffer);
     FREE(code);
+}
+
+bool get_bytecode_declaration(const bytecode_t *code,
+                              uint32_t index,
+                              declaration_descriptor_t *out) {
+    if (index >= code->data_descriptor_count)
+        return false;
+    data_descriptor_t d = code->data_descriptors[index];
+    size_t prefix = (size_t)(code->data - (uint8_t *)code->buffer);
+    if (prefix > code->buffer_size || d.offset > code->buffer_size - prefix
+        || d.size != sizeof(*out) || d.size > code->buffer_size - prefix - d.offset)
+        return false;
+    memcpy(out, code->data + d.offset, sizeof(*out));
+    return out->tag == DECLARATION_TAG && out->module == 0 && out->modifier >= ACCESS_PUBLIC
+           && out->modifier <= ACCESS_PRIVATE && out->name < code->data_descriptor_count;
 }
 
 bool bind_bytecode_native_function(bytecode_t *code,

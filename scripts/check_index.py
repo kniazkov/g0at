@@ -27,7 +27,7 @@ def main():
         return result.stdout
 
     count = 0
-    for fixture in sorted([*fixtures.glob("index_*"), *fixtures.glob("array_*"), *fixtures.glob("inheritance_*"), *fixtures.glob("loops_*"), *fixtures.glob("switch_*"), *fixtures.glob("compound_*"), *fixtures.glob("iteration_*"), *fixtures.glob("flat_*"), *fixtures.glob("conditional_*"), *fixtures.glob("finally_*")]):
+    for fixture in sorted([*fixtures.glob("index_*"), *fixtures.glob("array_*"), *fixtures.glob("inheritance_*"), *fixtures.glob("loops_*"), *fixtures.glob("switch_*"), *fixtures.glob("compound_*"), *fixtures.glob("iteration_*"), *fixtures.glob("flat_*"), *fixtures.glob("conditional_*"), *fixtures.glob("finally_*"), *fixtures.glob("access_*")]):
         source = fixture / "program.goat"
         if not source.is_file():
             continue
@@ -48,6 +48,19 @@ def main():
         count += 1
         print("[ ok ]", fixture.name)
     assert count, "No index fixtures found"
+    # Modifiers belong to declarations, never expressions or existing properties.
+    invalid = ("public private x = 1;", "public public x = 1;",
+               "var public x = 1;", "const private x = 1;", "public;",
+               "public x;", "var obj = {}; public obj.x = 1;",
+               "var x = public 1;", "public println(1);")
+    for language in ("en", "ru"):
+        for index, source in enumerate(invalid):
+            path = output / f"invalid-access-{language}-{index}.goat"
+            path.write_text(source, encoding="utf-8")
+            result = subprocess.run([str(goat), "--compile", str(path)],
+                                    env=dict(env, GOAT_LANGUAGE=language), text=True,
+                                    encoding="utf-8", capture_output=True, timeout=30)
+            assert result.returncode != 0 and result.stderr, (source, result)
     print(f"Index checks passed: {count} fixtures, both optimization levels, source and binary round trips")
 
 
