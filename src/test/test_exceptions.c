@@ -19,14 +19,18 @@ bool test_exceptions_object(void) {
                               L"INVALID_OPERATION",
                               L"PROPERTY_ALREADY_EXISTS",
                               L"PROPERTY_IS_CONSTANT",
-                              L"PROPERTY_NOT_FOUND"};
+                              L"PROPERTY_NOT_FOUND",
+                              L"ACCESS_DENIED",
+                              L"FOREIGN_OBJECT"};
     object_t *values[] = {get_exception_division_by_zero(),
                           get_exception_immutable_object(),
                           get_exception_invalid_argument(),
                           get_exception_invalid_operation(),
                           get_exception_property_already_exists(),
                           get_exception_property_is_constant(),
-                          get_exception_property_not_found()};
+                          get_exception_property_not_found(),
+                          get_exception_access_denied(),
+                          get_exception_foreign_object()};
     object_array_t keys = get_object_keys(exceptions);
     ASSERT(keys.size == sizeof(names) / sizeof(*names));
     process_t *process = create_process();

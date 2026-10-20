@@ -1,6 +1,6 @@
 /** @file access.h
  * @copyright 2026 Ivan Kniazkov
- * @brief Internal declaration identities and stable field captures; no access enforcement yet.
+ * @brief Declaration identities, stable field captures and language-level access policy.
  */
 #pragma once
 
@@ -34,11 +34,14 @@ typedef struct {
     field_cell_t *cell;
 } field_capture_t;
 
-/** @brief Function metadata. Captures and domains are populated before publication. */
+/** @brief Function/context snapshot. Captures and domains are populated before publication. */
 typedef struct {
     module_t *module;
-    /** @brief Retained access_domain_t pointers, deduplicated by identity. */
+    /** @brief Retained access_domain_t pointers, nearest lexical domain first, without duplicates.
+     */
     vector_t *domains;
+    /** @brief Retained domains whose protected fields are accessible through inheritance. */
+    vector_t *protected_domains;
     /** @brief Owned field_capture_t records retaining their storage objects. */
     vector_t *captures;
 } function_access_t;
@@ -81,7 +84,7 @@ field_cell_t *create_object_field(object_t *obj,
                                   module_t *module,
                                   access_domain_t *domain,
                                   bool selected);
-/** @brief Writes an owned cell, respecting constness but not visibility (stage B). */
+/** @brief Trusted storage write: respects constness; language callers must check access first. */
 model_status_t set_field_cell_value(object_t *storage, field_cell_t *cell, object_t *value);
 /** @brief Metadata of an existing own property, not an inherited lookup or an access check.
  * Built-in properties are public; user fields carry their explicit modifier.
@@ -91,6 +94,10 @@ access_modifier_t get_object_property_modifier(const object_t *obj, const object
 /** @brief Initializes owned metadata; no captures or domain grants initially. */
 void init_function_access(function_access_t *access, module_t *module);
 void add_function_access_domain(function_access_t *access, access_domain_t *domain);
+/** @brief Copies grants and captures into an unpublished context in the same module. */
+void inherit_function_access(function_access_t *target, const function_access_t *source);
+/** @brief Grants protected access to an object's declaration domain and its prototypes. */
+void add_protected_object_access(function_access_t *access, object_t *object);
 /** @brief Adds one stable capture, validating that storage owns the cell. */
 bool add_function_field_capture(function_access_t *access, object_t *storage, field_cell_t *cell);
 void mark_function_access(const function_access_t *access);
@@ -98,3 +105,44 @@ void mark_function_access(const function_access_t *access);
 void clear_function_access(function_access_t *access, bool deep);
 /** @brief Dynamic function metadata, or NULL for built-in/static functions. */
 function_access_t *get_function_access(object_t *function);
+
+/** @brief Borrowed lookup result. Absence and denial are distinct statuses. */
+typedef struct {
+    model_status_t status;
+    object_t *storage;
+    field_cell_t *cell;
+    object_t *value;
+} property_lookup_t;
+
+/** @brief Resolves a property without skipping a denied winner.
+ * private_slots selects declaration-bound private slots before ordinary lookup.
+ */
+property_lookup_t lookup_accessible_property(const function_access_t *access,
+                                             object_t *object,
+                                             object_t *key,
+                                             bool private_slots);
+bool can_access_field(const function_access_t *access, const field_cell_t *cell);
+model_status_t create_accessible_property(const function_access_t *access,
+                                          object_t *object,
+                                          object_t *key,
+                                          object_t *value,
+                                          bool constant);
+model_status_t write_accessible_property(const function_access_t *access,
+                                         object_t *object,
+                                         object_t *key,
+                                         object_t *value);
+/** @brief Language reads return null for absence; failures carry standard exceptions. */
+operation_result_t
+read_accessible_property(const function_access_t *access, object_t *object, object_t *key);
+operation_result_t access_status_result(model_status_t status, object_t *value);
+/** @brief Specialized indices retain virtual semantics; dictionary indices use access checks. */
+operation_result_t access_index(process_t *process,
+                                const function_access_t *access,
+                                object_t *object,
+                                object_array_t indices,
+                                object_t *value);
+/** @brief Constructor assignment may introduce own fields after checking the inherited winner. */
+bool object_shadows_inherited(const object_t *object);
+/** @brief Copies using the caller's module; internal transfer does not filter hidden fields. */
+object_t *
+clone_object_with_access(process_t *process, object_t *object, const function_access_t *access);

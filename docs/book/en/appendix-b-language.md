@@ -87,7 +87,7 @@ Numbers compare by numeric value, including precise distinctions between large i
 
 ## B.6. Error categories and sources
 
-The model's ordinary exception strings are `DIVISION_BY_ZERO`, `IMMUTABLE_OBJECT`, `INVALID_ARGUMENT`, `INVALID_OPERATION`, `PROPERTY_ALREADY_EXISTS`, `PROPERTY_IS_CONSTANT`, and `PROPERTY_NOT_FOUND`. Having a string in the exception object does not mean each low-level status corresponds to an available source construct. Writing a constant produces `PROPERTY_IS_CONSTANT`; a user may throw any other value too.
+The model's ordinary exception strings are `DIVISION_BY_ZERO`, `IMMUTABLE_OBJECT`, `INVALID_ARGUMENT`, `INVALID_OPERATION`, `PROPERTY_ALREADY_EXISTS`, `PROPERTY_IS_CONSTANT`, `PROPERTY_NOT_FOUND`, `ACCESS_DENIED`, and `FOREIGN_OBJECT`. Having a string in the exception object does not mean each low-level status corresponds to an available source construct. Writing a constant produces `PROPERTY_IS_CONSTANT`; access denial and forbidden extension of a foreign object are separate errors. A user may throw any other value too.
 
 Parse errors, native ABI failures, and the fatal empty-stack check are not these language exceptions. Chapter 5 describes lexical limitations; appendix G summarizes implementation boundaries.
 

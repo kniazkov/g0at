@@ -4,19 +4,22 @@
  */
 #include "analysis/lattice.h"
 #include "model/builtin_function.h"
+#include "model/context.h"
 #include "model/thread.h"
 
 /** @brief Clones the receiver; the virtual method returns an owned reference. */
 static operation_result_t
 execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return operation_success(clone_object(thread->process, receiver));
+    return operation_success(
+        clone_object_with_access(thread->process, receiver, &thread->context->access));
 }
 
 /** @brief A detached method accepts the object as its first explicit argument. */
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return operation_success(clone_object(thread->process, args[0]));
+    return operation_success(
+        clone_object_with_access(thread->process, args[0], &thread->context->access));
 }
 
 /** @brief Copying is type-specific and must not be constant-folded into an alias. */

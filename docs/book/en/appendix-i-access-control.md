@@ -6,7 +6,7 @@ Status: language design agreed on October 20, 2026, ahead of issue #154, includi
 
 [Detailed examples and edge cases](access-control-examples.md) · [Implementation plan](access-control-implementation-plan.md)
 
-The internal stage A foundation (#162) is implemented: module and declaration-domain identities, stable field cells, and capture representation. This does not enforce access: the keywords are not enabled, and existing programs retain their previous behavior. Automatic capture binding and rebinding during copying belong to later stages.
+The internal stage A foundation (#162) and stage B shared access checks (#163) are implemented: module/domain identities, cells, call-rights snapshots, and read/write/creation checks. Keywords are not enabled yet; existing single-module programs retain their behavior. Automatic capture binding, copied-method adaptation, and observation filtering belong to later stages. Current checks use metadata injected directly by model tests.
 
 ## I.1. Declarations
 
@@ -154,4 +154,4 @@ This is shallow copying with adaptation of directly transferred functions, not r
 
 Native execution must enforce the same restrictions. If access rights cannot be reliably checked at compilation, the function remains in the VM for now; `--native required` reports an error in that case. Copying must not reuse a native specialization if its environment and access assumptions are no longer proven.
 
-The identified filtering and copying contradictions are resolved by the rules above. C representations of cells, capture mappings, and rights remain to be implemented; the proposed sequence is in the [implementation plan](access-control-implementation-plan.md). Examples specify future checks rather than report already passing tests.
+The identified filtering and copying contradictions are resolved by the rules above. The actual status of each stage is in the [implementation plan](access-control-implementation-plan.md). Examples with modifiers still specify future source syntax rather than executable programs in the current version.

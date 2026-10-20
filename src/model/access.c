@@ -71,6 +71,7 @@ module_t *get_access_domain_module(const access_domain_t *domain) {
 void init_function_access(function_access_t *access, module_t *module) {
     access->module = retain_module_identity(module);
     access->domains = create_vector();
+    access->protected_domains = create_vector();
     access->captures = create_vector();
 }
 
@@ -120,5 +121,36 @@ void clear_function_access(function_access_t *access, bool deep) {
         release_access_domain(access->domains->data[i]);
     destroy_vector(access->captures);
     destroy_vector(access->domains);
+    for (size_t i = 0; i < access->protected_domains->size; i++)
+        release_access_domain(access->protected_domains->data[i]);
+    destroy_vector(access->protected_domains);
     release_module_identity(access->module);
+}
+
+static void add_protected_domain(function_access_t *access, access_domain_t *domain) {
+    if (!domain)
+        return;
+    for (size_t i = 0; i < access->protected_domains->size; i++)
+        if (access->protected_domains->data[i] == domain)
+            return;
+    append_to_vector(access->protected_domains, retain_access_domain(domain));
+}
+
+void add_protected_object_access(function_access_t *access, object_t *object) {
+    add_protected_domain(access, get_object_access_domain(object));
+    object_array_t topology = get_object_topology(object);
+    for (size_t i = 0; i < topology.size; i++)
+        add_protected_domain(access, get_object_access_domain(topology.items[i]));
+}
+
+void inherit_function_access(function_access_t *target, const function_access_t *source) {
+    assert(target->module == source->module);
+    for (size_t i = 0; i < source->domains->size; i++)
+        add_function_access_domain(target, source->domains->data[i]);
+    for (size_t i = 0; i < source->protected_domains->size; i++)
+        add_protected_domain(target, source->protected_domains->data[i]);
+    for (size_t i = 0; i < source->captures->size; i++) {
+        field_capture_t *capture = source->captures->data[i];
+        add_function_field_capture(target, capture->storage, capture->cell);
+    }
 }

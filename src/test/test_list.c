@@ -8,6 +8,7 @@
 
 #include "test_abstract_state.h"
 #include "test_access_cells.h"
+#include "test_access_checks.h"
 #include "test_addition.h"
 #include "test_analysis.h"
 #include "test_array.h"
@@ -320,6 +321,8 @@ static test_description_t test_list[] = {
     {"loops parser", test_loops_parser},
     {"loops bytecode", test_loops_bytecode},
     {"access identities", test_access_identities},
+    {"access policy", test_access_policy},
+    {"access VM isolation", test_access_vm},
     {"access cells", test_access_cells},
     {"access captures", test_access_captures},
     {"access cycles", test_access_cycles},
