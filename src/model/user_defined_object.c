@@ -4,6 +4,7 @@
  * @brief Definitions and methods for user-defined objects in the Goat programming language.
  */
 
+#include "access.h"
 #include "common_methods.h"
 #include "context.h"
 #include "lib/allocate.h"
@@ -52,41 +53,49 @@ typedef struct {
      * objects.
      */
     avl_tree_t *properties;
+
+    /** @brief Owns every stable cell; properties is only a borrowed lookup index. */
+    vector_t *fields;
+    module_t *module;
+    access_domain_t *domain;
 } object_user_defined_t;
 
-/** @brief The value of the object property, namely some other object and flags. */
-typedef struct {
-    /** @brief Object which is the value of the property. */
-    object_t *object;
+typedef field_cell_t property_value_t;
 
-    /** @brief Flag indicating that the property value is constant (immutable). */
-    bool is_constant;
-} property_value_t;
+/** @brief Internal paths for callers that have already validated the lookup. */
+static field_cell_t *append_field(object_t *obj,
+                                  object_t *key,
+                                  object_t *value,
+                                  bool constant,
+                                  access_modifier_t modifier,
+                                  module_t *module,
+                                  access_domain_t *domain,
+                                  bool selected);
+static model_status_t write_field(object_t *storage, field_cell_t *cell, object_t *value);
+static void collect_sorted_key(void *data, void *key, value_t value);
 
 /** @brief Creates an empty user-defined object. */
-static object_user_defined_t *create_empty_user_defined_object(process_t *process,
-                                                               object_array_t prototypes);
+static object_user_defined_t *
+create_empty_user_defined_object(process_t *process, object_array_t prototypes, module_t *module);
 
-/**
- * @brief Decrements the reference count of a key-value pair in the user-defined object's children.
- *
- * It decreases the reference count of both the key and the value, ensuring proper memory management
- * and cleanup of referenced objects. A self-reference does not hold a reference count (see
- * @ref create_property), so it is released without decrementing.
- */
-static void clear_child_pair(void *data, void *key, value_t value) {
-    object_user_defined_t *uobj = (object_user_defined_t *)data;
-    DECREF(key);
-    property_value_t *ref = (property_value_t *)value.ptr;
-    if (ref->object != (object_t *)uobj) {
-        DECREF(ref->object);
+/** @brief Frees all owned cells; sweep must not dereference already swept objects. */
+static void clear_fields(object_user_defined_t *uobj, bool deep) {
+    for (size_t i = 0; i < uobj->fields->size; i++) {
+        field_cell_t *cell = uobj->fields->data[i];
+        if (deep) {
+            DECREF(cell->key);
+            if (cell->object != &uobj->base)
+                DECREF(cell->object);
+        }
+        release_module_identity(cell->module);
+        release_access_domain(cell->domain);
+        FREE(cell);
     }
-    FREE(ref);
-}
-
-/** @brief Removes a reference to a property value without reference counting. */
-static void remove_reference(void *unused, void *key, value_t value) {
-    FREE(value.ptr);
+    clear_vector(uobj->fields);
+    release_module_identity(uobj->module);
+    release_access_domain(uobj->domain);
+    uobj->module = NULL;
+    uobj->domain = NULL;
 }
 
 /** @brief Releases or clears a user-defined object with optional deep cleaning. */
@@ -96,18 +105,19 @@ static void release_or_clear(object_user_defined_t *uobj, bool deep_cleaning) {
     }
     if (deep_cleaning) {
         uobj->state = DYING;
-        avl_tree_for_each(uobj->properties, clear_child_pair, uobj);
+        clear_fields(uobj, true);
         for (size_t index = 0; index < uobj->proto->size; index++) {
             DECREF((object_t *)uobj->proto->data[index]);
         }
     } else {
-        avl_tree_for_each(uobj->properties, remove_reference, NULL);
+        clear_fields(uobj, false);
     }
     remove_object_from_list(&uobj->base.process->objects, &uobj->base);
     if (uobj->base.process->user_defined_objects.size == POOL_CAPACITY) {
         destroy_vector(uobj->proto);
         destroy_vector(uobj->topology);
         destroy_vector(uobj->keys);
+        destroy_vector(uobj->fields);
         destroy_avl_tree(uobj->properties);
         FREE(uobj);
     } else {
@@ -137,21 +147,17 @@ static void dec_ref(object_t *obj) {
     }
 }
 
-/** @brief Marks the key-value pair in the user-defined object's children for garbage collection. */
-static void mark_child_pair(void *unused, void *key, value_t value) {
-    object_t *key_obj = (object_t *)key;
-    property_value_t *ref = (property_value_t *)value.ptr;
-    mark_object(key_obj);
-    mark_object(ref->object);
-}
-
 /** @brief Implements @ref object_vtbl_t::mark. */
 static void mark(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     assert(uobj->state != ZOMBIE);
     if (uobj->state == UNMARKED) {
         uobj->state = MARKED;
-        avl_tree_for_each(uobj->properties, mark_child_pair, NULL);
+        for (size_t i = 0; i < uobj->fields->size; i++) {
+            field_cell_t *cell = uobj->fields->data[i];
+            mark_object(cell->key);
+            mark_object(cell->object);
+        }
         for (size_t index = 0; index < uobj->proto->size; index++) {
             mark_object((object_t *)uobj->proto->data[index]);
         }
@@ -171,12 +177,6 @@ static bool sweep(object_t *obj) {
     }
 }
 
-/** @brief Clearing the memory occupied by properties. */
-static void clear_properties(void *unused, void *key, value_t value) {
-    property_value_t *ref = (property_value_t *)value.ptr;
-    FREE(ref);
-}
-
 /** @brief Implements @ref object_vtbl_t::release. */
 static void release(object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
@@ -186,50 +186,34 @@ static void release(object_t *obj) {
     destroy_vector(uobj->proto);
     destroy_vector(uobj->topology);
     destroy_vector(uobj->keys);
-    avl_tree_for_each(uobj->properties, clear_properties, NULL);
+    clear_fields(uobj, false);
+    destroy_vector(uobj->fields);
     destroy_avl_tree(uobj->properties);
     FREE(obj);
 }
 
-/** @brief The original object and its clone used while copying properties. */
-typedef struct {
-    /** @brief The object being cloned. */
-    object_user_defined_t *original;
-
-    /** @brief The clone being filled in. */
-    object_user_defined_t *copy;
-} clone_pair_t;
-
-/**
- * @brief Copies a key-value pair from one AVL tree to another during object cloning.
- *
- * Increments the reference count of both the key and the value. A self-reference is re-targeted
- * to the clone and stays weak, matching how @ref create_property stores it.
- */
-static void copy_child_pair(void *data, void *key, value_t value) {
-    clone_pair_t *pair = (clone_pair_t *)data;
-    property_value_t *ref = (property_value_t *)value.ptr;
-    INCREF(key);
-    append_to_vector(pair->copy->keys, key);
-    property_value_t *copy_ref = (property_value_t *)ALLOC(sizeof(property_value_t));
-    memcpy(copy_ref, ref, sizeof(property_value_t));
-    if (ref->object == (object_t *)pair->original) {
-        copy_ref->object = &pair->copy->base;
-    } else {
-        INCREF(ref->object);
-    }
-    set_in_avl_tree(pair->copy->properties, key, (value_t){.ptr = copy_ref});
-}
-
-/** @brief Implements @ref object_vtbl_t::clone. */
+/** @brief Copies all cells, preserving the selected-key index and existing shallow semantics. */
 static object_t *clone(process_t *process, object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     object_user_defined_t *copy = create_empty_user_defined_object(
         process,
-        (object_array_t){(object_t *const *)uobj->proto->data, uobj->proto->size});
+        (object_array_t){(object_t *const *)uobj->proto->data, uobj->proto->size},
+        process->module);
     copy->shadow_inherited = uobj->shadow_inherited;
-    clone_pair_t pair = {uobj, copy};
-    avl_tree_for_each(uobj->properties, copy_child_pair, &pair);
+    for (size_t i = 0; i < uobj->fields->size; i++) {
+        field_cell_t *cell = uobj->fields->data[i];
+        append_field(&copy->base,
+                     cell->key,
+                     cell->object == obj ? &copy->base : cell->object,
+                     cell->is_constant,
+                     cell->modifier,
+                     cell->module,
+                     cell->domain,
+                     get_own_field_cell(obj, cell->key) == cell);
+    }
+    /* Preserve clone's historical key order independently of the full cell inventory. */
+    clear_vector(copy->keys);
+    avl_tree_for_each(copy->properties, collect_sorted_key, copy->keys);
     return &copy->base;
 }
 
@@ -386,22 +370,12 @@ create_property(object_t *obj, object_t *key, object_t *value, bool constant) {
     if (key->vtbl->type == TYPE_STRING && compare_objects_using_vtbl(key, get_this_key()) == 0
         && (value != obj || !constant))
         return MSTAT_PROPERTY_IS_CONSTANT;
-    if (ref) {
+    if (ref
+        || (uobj->fields->size != uobj->keys->size
+            && get_domain_field_cell(obj, key, uobj->domain))) {
         return MSTAT_PROPERTY_ALREADY_EXISTS;
     }
-    INCREF(key);
-    /* A self-reference (e.g. the `this` property) would form a strong reference cycle that
-       reference counting cannot collect. Keep it weak: the property lives on the object itself,
-       so the object is kept alive by its external references, and the self-reference does not
-       need to hold a count. */
-    if (value != obj) {
-        INCREF(value);
-    }
-    append_to_vector(uobj->keys, key);
-    ref = (property_value_t *)ALLOC(sizeof(property_value_t));
-    ref->object = value;
-    ref->is_constant = constant;
-    set_in_avl_tree(uobj->properties, key, (value_t){.ptr = ref});
+    append_field(obj, key, value, constant, ACCESS_MODULE, uobj->module, uobj->domain, true);
     return MSTAT_OK;
 }
 
@@ -416,19 +390,7 @@ static model_status_t set_property(object_t *obj, object_t *key, object_t *value
             return create_property(obj, key, value, false);
         return MSTAT_PROPERTY_NOT_FOUND;
     }
-    if (ref->is_constant) {
-        return MSTAT_PROPERTY_IS_CONSTANT;
-    }
-    /* A self-reference holds no reference count (see create_property), so replacing it must not
-       release it, and a new self-reference must not be retained. */
-    if (ref->object != obj) {
-        DECREF(ref->object);
-    }
-    if (value != obj) {
-        INCREF(value);
-    }
-    ref->object = value;
-    return MSTAT_OK;
+    return write_field(obj, ref, value);
 }
 
 /** @brief Implements @ref object_vtbl_t::add. */
@@ -570,8 +532,8 @@ static void build_topology(object_array_t proto, vector_t *topology) {
     }
 }
 
-static object_user_defined_t *create_empty_user_defined_object(process_t *process,
-                                                               object_array_t proto) {
+static object_user_defined_t *
+create_empty_user_defined_object(process_t *process, object_array_t proto, module_t *module) {
     assert(proto.size > 0);
     object_user_defined_t *uobj;
     if (process->user_defined_objects.size > 0) {
@@ -584,8 +546,11 @@ static object_user_defined_t *create_empty_user_defined_object(process_t *proces
         uobj->proto = create_vector_ex(proto.size);
         uobj->topology = create_vector();
         uobj->keys = create_vector();
+        uobj->fields = create_vector();
         uobj->properties = create_avl_tree(key_comparator);
     }
+    uobj->module = retain_module_identity(module);
+    uobj->domain = create_access_domain(module);
     uobj->shadow_inherited = false;
     uobj->refs = 1;
     uobj->state = UNMARKED;
@@ -599,11 +564,133 @@ static object_user_defined_t *create_empty_user_defined_object(process_t *proces
 }
 
 object_t *create_user_defined_object(process_t *process, object_array_t prototypes) {
-    return &create_empty_user_defined_object(process, prototypes)->base;
+    return create_user_defined_object_in_module(process, prototypes, process->module);
 }
 
 void enable_prototype_shadowing(object_t *obj) {
     ((object_user_defined_t *)obj)->shadow_inherited = true;
+}
+
+object_t *create_user_defined_object_in_module(process_t *process,
+                                               object_array_t prototypes,
+                                               module_t *module) {
+    return &create_empty_user_defined_object(process, prototypes, module)->base;
+}
+
+module_t *get_object_module(const object_t *obj) {
+    if (obj->vtbl->type == TYPE_USER_DEFINED_OBJECT)
+        return ((object_user_defined_t *)obj)->module;
+    function_access_t *access = get_function_access((object_t *)obj);
+    return access ? access->module : get_builtin_module_identity();
+}
+
+access_domain_t *get_object_access_domain(const object_t *obj) {
+    return obj->vtbl->type == TYPE_USER_DEFINED_OBJECT ? ((object_user_defined_t *)obj)->domain
+                                                       : NULL;
+}
+
+size_t get_object_field_count(const object_t *obj) {
+    return obj->vtbl->type == TYPE_USER_DEFINED_OBJECT
+               ? ((object_user_defined_t *)obj)->fields->size
+               : 0;
+}
+
+field_cell_t *get_object_field_at(const object_t *obj, size_t index) {
+    return index < get_object_field_count(obj) ? ((object_user_defined_t *)obj)->fields->data[index]
+                                               : NULL;
+}
+
+field_cell_t *get_own_field_cell(const object_t *obj, const object_t *key) {
+    if (obj->vtbl->type != TYPE_USER_DEFINED_OBJECT)
+        return NULL;
+    return get_from_avl_tree(((object_user_defined_t *)obj)->properties, key).ptr;
+}
+
+field_cell_t *
+get_domain_field_cell(const object_t *obj, const object_t *key, const access_domain_t *domain) {
+    for (size_t i = 0; i < get_object_field_count(obj); i++) {
+        field_cell_t *cell = get_object_field_at(obj, i);
+        if (cell->domain == domain && !key_comparator(cell->key, key))
+            return cell;
+    }
+    return NULL;
+}
+
+field_cell_t *create_object_field(object_t *obj,
+                                  object_t *key,
+                                  object_t *value,
+                                  bool constant,
+                                  access_modifier_t modifier,
+                                  module_t *module,
+                                  access_domain_t *domain,
+                                  bool selected) {
+    assert(obj->vtbl->type == TYPE_USER_DEFINED_OBJECT);
+    assert(module && domain);
+    assert(modifier >= ACCESS_MODULE && modifier <= ACCESS_PRIVATE);
+    if (get_domain_field_cell(obj, key, domain) || (selected && get_own_field_cell(obj, key)))
+        return NULL;
+    if (key->vtbl->type == TYPE_STRING && !compare_objects_using_vtbl(key, get_this_key())
+        && (value != obj || !constant))
+        return NULL;
+    return append_field(obj, key, value, constant, modifier, module, domain, selected);
+}
+
+static field_cell_t *append_field(object_t *obj,
+                                  object_t *key,
+                                  object_t *value,
+                                  bool constant,
+                                  access_modifier_t modifier,
+                                  module_t *module,
+                                  access_domain_t *domain,
+                                  bool selected) {
+    object_user_defined_t *uobj = (object_user_defined_t *)obj;
+    field_cell_t *cell = ALLOC(sizeof(*cell));
+    *cell = (field_cell_t){key,
+                           value,
+                           constant,
+                           modifier,
+                           retain_module_identity(module),
+                           retain_access_domain(domain)};
+    INCREF(key);
+    if (value != obj)
+        INCREF(value);
+    append_to_vector(uobj->fields, cell);
+    if (selected) {
+        append_to_vector(uobj->keys, key);
+        set_in_avl_tree(uobj->properties, key, (value_t){.ptr = cell});
+    }
+    return cell;
+}
+
+model_status_t set_field_cell_value(object_t *storage, field_cell_t *cell, object_t *value) {
+    bool found = false;
+    for (size_t i = 0; i < get_object_field_count(storage); i++)
+        if (get_object_field_at(storage, i) == cell) {
+            found = true;
+            break;
+        }
+    if (!found)
+        return MSTAT_PROPERTY_NOT_FOUND;
+    return write_field(storage, cell, value);
+}
+
+static model_status_t write_field(object_t *storage, field_cell_t *cell, object_t *value) {
+    if (cell->is_constant)
+        return MSTAT_PROPERTY_IS_CONSTANT;
+    /* Retain first: assigning a borrowed value to its own cell must be safe. */
+    if (value != storage)
+        INCREF(value);
+    if (cell->object != storage)
+        DECREF(cell->object);
+    cell->object = value;
+    return MSTAT_OK;
+}
+
+access_modifier_t get_object_property_modifier(const object_t *obj, const object_t *key) {
+    field_cell_t *cell = get_own_field_cell(obj, key);
+    return cell                                          ? cell->modifier
+           : obj->vtbl->type == TYPE_USER_DEFINED_OBJECT ? ACCESS_MODULE
+                                                         : ACCESS_PUBLIC;
 }
 
 /** @brief Collects keys in dictionary comparison order. */

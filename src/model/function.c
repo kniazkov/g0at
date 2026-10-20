@@ -4,6 +4,7 @@
  * @brief Implementations of an object representing a function.
  */
 
+#include "access.h"
 #include "builtin_function.h"
 #include "common_methods.h"
 #include "context.h"
@@ -158,6 +159,8 @@ typedef struct {
 
     /** @brief The lexical closure environment of the function. */
     object_t *closure;
+    /** @brief Declaring module, domain identities and stable explicit field captures. */
+    function_access_t access;
 
     /**
      * @brief The function was created in a context where native execution was disabled.
@@ -182,6 +185,7 @@ static void clear(object_dynamic_function_t *dfobj, bool deep_cleaning) {
         DECREF(dfobj->closure);
     }
     release_native_function_descriptor(dfobj->native_function);
+    clear_function_access(&dfobj->access, deep_cleaning);
     FREE(dfobj->arg_names);
     FREE(dfobj);
 }
@@ -207,6 +211,7 @@ static void mark(object_t *obj) {
         return;
     dfobj->state = MARKED;
     mark_object(dfobj->closure);
+    mark_function_access(&dfobj->access);
     for (size_t i = 0; i < dfobj->arg_count; i++)
         mark_object(dfobj->arg_names[i]);
 }
@@ -373,10 +378,11 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
         thread->native_status = GOAT_NATIVE_OK;
     }
     object_t *method_protos[2] = {dfobj->closure, receiver};
-    context_t *ctx = create_context_with_protos(thread->process,
-                                                thread->context,
-                                                receiver ? (object_array_t){method_protos, 2}
-                                                         : (object_array_t){&dfobj->closure, 1});
+    context_t *ctx = create_context_with_protos_in_module(
+        thread->process,
+        thread->context,
+        receiver ? (object_array_t){method_protos, 2} : (object_array_t){&dfobj->closure, 1},
+        dfobj->access.module);
     create_object_property(ctx->data, get_this_key(), ctx->data, true);
     /* The method body resolves names through the receiver, so every call made from it, and every
        function created in it, must stay on the bytecode path. The same holds for a closure that
@@ -478,8 +484,17 @@ object_t *create_function_object(process_t *process,
     obj->first_instr_id = first_instr_id;
     obj->native_function = retain_native_function_descriptor(native_function);
     obj->closure = closure;
+    init_function_access(&obj->access, get_object_module(closure));
+    access_domain_t *domain = get_object_access_domain(closure);
+    if (domain)
+        add_function_access_domain(&obj->access, domain);
     INCREF(closure);
     obj->native_disabled = native_disabled;
     add_object_to_list(&process->objects, &obj->base);
     return &obj->base;
+}
+
+function_access_t *get_function_access(object_t *function) {
+    return function->vtbl == &dynamic_vtbl ? &((object_dynamic_function_t *)function)->access
+                                           : NULL;
 }

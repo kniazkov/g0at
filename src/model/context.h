@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "access.h"
 #include "common/control_flow.h"
 #include "common/types.h"
 #include "object.h"
@@ -19,6 +20,8 @@ typedef struct process_t process_t;
 
 /** @brief The execution context in the Goat programming language. */
 struct context_t {
+    /** @brief Owned execution-module identity, separate from the caller's module. */
+    module_t *module;
     /** @brief A data associated with the current execution context. */
     object_t *data;
 
@@ -77,6 +80,11 @@ context_t *create_context(process_t *process, context_t *caller, object_t *proto
 
 /** @brief Creates a context with an explicit prototype array (e.g. closure and receiver). */
 context_t *create_context_with_protos(process_t *process, context_t *caller, object_array_t protos);
+/** @brief Creates a call context in the callee's declaring module. */
+context_t *create_context_with_protos_in_module(process_t *process,
+                                                context_t *caller,
+                                                object_array_t protos,
+                                                module_t *module);
 
 /** @brief Releases the context and its data reference; returns the previous context. */
 context_t *destroy_context(context_t *context);

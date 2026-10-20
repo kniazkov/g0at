@@ -6,6 +6,8 @@ Status: language design agreed on October 20, 2026, ahead of issue #154, includi
 
 [Detailed examples and edge cases](access-control-examples.md) · [Implementation plan](access-control-implementation-plan.md)
 
+The internal stage A foundation (#162) is implemented: module and declaration-domain identities, stable field cells, and capture representation. This does not enforce access: the keywords are not enabled, and existing programs retain their previous behavior. Automatic capture binding and rebinding during copying belong to later stages.
+
 ## I.1. Declarations
 
 The keywords `public`, `protected`, and `private` appear only before a variable or constant declaration. A declaration may have only one modifier; combinations such as `public private` are forbidden. Modifiers are allowed in any scope, including function bodies and module top level, even where they have no practical effect.

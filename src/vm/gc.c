@@ -15,10 +15,11 @@
 
 /** @brief Marks the objects on a thread's data stack and context data. */
 static void mark_objects_in_context_and_stack(thread_t *thread) {
-    mark_object(thread->context->data);
-    for (context_t *ctx = thread->context; ctx; ctx = ctx->previous)
+    for (context_t *ctx = thread->context; ctx; ctx = ctx->previous) {
+        mark_object(ctx->data);
         if (ctx->pending_value)
             mark_object(ctx->pending_value);
+    }
     if (thread->exception.value)
         mark_object(thread->exception.value);
     for (size_t index = 0; index < thread->data_stack->size; index++) {

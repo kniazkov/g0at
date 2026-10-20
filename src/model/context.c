@@ -9,6 +9,7 @@
 
 #include "lib/allocate.h"
 #include "object.h"
+#include "process.h"
 
 object_t *get_this_key() {
     static object_static_string_t storage;
@@ -17,8 +18,19 @@ object_t *get_this_key() {
 
 context_t *
 create_context_with_protos(process_t *process, context_t *caller, object_array_t protos) {
+    return create_context_with_protos_in_module(process,
+                                                caller,
+                                                protos,
+                                                caller->module ? caller->module : process->module);
+}
+
+context_t *create_context_with_protos_in_module(process_t *process,
+                                                context_t *caller,
+                                                object_array_t protos,
+                                                module_t *module) {
     context_t *ctx = (context_t *)ALLOC(sizeof(context_t));
-    ctx->data = create_user_defined_object(process, protos);
+    ctx->module = retain_module_identity(module);
+    ctx->data = create_user_defined_object_in_module(process, protos, ctx->module);
     ctx->native_disabled = caller->native_disabled;
     ctx->iteration_index = 0;
     ctx->pending_flow = FLOW_NORMAL;
@@ -46,6 +58,7 @@ context_t *destroy_context(context_t *context) {
        by a closure). */
     DECREF(context->data);
     DECREFIF(context->pending_value);
+    release_module_identity(context->module);
     context_t *previous = context->previous;
     FREE(context);
     return previous;
