@@ -8,40 +8,43 @@
 
 #include <assert.h>
 
-struct module_identity_t {
+/** @brief Module identity shared by objects, declarations and functions via retained pointers. */
+struct module_t {
     size_t refs;
 };
 
+/** @brief Declaration identity that can outlive its original object through fields or grants. */
 struct access_domain_t {
     size_t refs;
-    module_identity_t *module;
+    module_t *module;
 };
 
-static module_identity_t builtin_module;
+/** @brief Immortal built-in module; retain/release never modify its reference count. */
+static module_t builtin_module;
 
-module_identity_t *create_module_identity(void) {
-    module_identity_t *module = ALLOC(sizeof(*module));
+module_t *create_module_identity(void) {
+    module_t *module = ALLOC(sizeof(*module));
     module->refs = 1;
     return module;
 }
 
-module_identity_t *get_builtin_module_identity(void) {
+module_t *get_builtin_module_identity(void) {
     return &builtin_module;
 }
 
-module_identity_t *retain_module_identity(module_identity_t *module) {
+module_t *retain_module_identity(module_t *module) {
     assert(module);
     if (module != &builtin_module)
         module->refs++;
     return module;
 }
 
-void release_module_identity(module_identity_t *module) {
+void release_module_identity(module_t *module) {
     if (module && module != &builtin_module && !--module->refs)
         FREE(module);
 }
 
-access_domain_t *create_access_domain(module_identity_t *module) {
+access_domain_t *create_access_domain(module_t *module) {
     access_domain_t *domain = ALLOC(sizeof(*domain));
     domain->refs = 1;
     domain->module = retain_module_identity(module);
@@ -61,11 +64,11 @@ void release_access_domain(access_domain_t *domain) {
     }
 }
 
-module_identity_t *get_access_domain_module(const access_domain_t *domain) {
+module_t *get_access_domain_module(const access_domain_t *domain) {
     return domain->module;
 }
 
-void init_function_access(function_access_t *access, module_identity_t *module) {
+void init_function_access(function_access_t *access, module_t *module) {
     access->module = retain_module_identity(module);
     access->domains = create_vector();
     access->captures = create_vector();

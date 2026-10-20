@@ -27,7 +27,7 @@ create_context_with_protos(process_t *process, context_t *caller, object_array_t
 context_t *create_context_with_protos_in_module(process_t *process,
                                                 context_t *caller,
                                                 object_array_t protos,
-                                                module_identity_t *module) {
+                                                module_t *module) {
     context_t *ctx = (context_t *)ALLOC(sizeof(context_t));
     ctx->module = retain_module_identity(module);
     ctx->data = create_user_defined_object_in_module(process, protos, ctx->module);

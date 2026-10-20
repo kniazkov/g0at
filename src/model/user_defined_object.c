@@ -56,7 +56,7 @@ typedef struct {
 
     /** @brief Owns every stable cell; properties is only a borrowed lookup index. */
     vector_t *fields;
-    module_identity_t *module;
+    module_t *module;
     access_domain_t *domain;
 } object_user_defined_t;
 
@@ -68,16 +68,15 @@ static field_cell_t *append_field(object_t *obj,
                                   object_t *value,
                                   bool constant,
                                   access_modifier_t modifier,
-                                  module_identity_t *module,
+                                  module_t *module,
                                   access_domain_t *domain,
                                   bool selected);
 static model_status_t write_field(object_t *storage, field_cell_t *cell, object_t *value);
 static void collect_sorted_key(void *data, void *key, value_t value);
 
 /** @brief Creates an empty user-defined object. */
-static object_user_defined_t *create_empty_user_defined_object(process_t *process,
-                                                               object_array_t prototypes,
-                                                               module_identity_t *module);
+static object_user_defined_t *
+create_empty_user_defined_object(process_t *process, object_array_t prototypes, module_t *module);
 
 /** @brief Frees all owned cells; sweep must not dereference already swept objects. */
 static void clear_fields(object_user_defined_t *uobj, bool deep) {
@@ -533,9 +532,8 @@ static void build_topology(object_array_t proto, vector_t *topology) {
     }
 }
 
-static object_user_defined_t *create_empty_user_defined_object(process_t *process,
-                                                               object_array_t proto,
-                                                               module_identity_t *module) {
+static object_user_defined_t *
+create_empty_user_defined_object(process_t *process, object_array_t proto, module_t *module) {
     assert(proto.size > 0);
     object_user_defined_t *uobj;
     if (process->user_defined_objects.size > 0) {
@@ -575,11 +573,11 @@ void enable_prototype_shadowing(object_t *obj) {
 
 object_t *create_user_defined_object_in_module(process_t *process,
                                                object_array_t prototypes,
-                                               module_identity_t *module) {
+                                               module_t *module) {
     return &create_empty_user_defined_object(process, prototypes, module)->base;
 }
 
-module_identity_t *get_object_module(const object_t *obj) {
+module_t *get_object_module(const object_t *obj) {
     if (obj->vtbl->type == TYPE_USER_DEFINED_OBJECT)
         return ((object_user_defined_t *)obj)->module;
     function_access_t *access = get_function_access((object_t *)obj);
@@ -623,7 +621,7 @@ field_cell_t *create_object_field(object_t *obj,
                                   object_t *value,
                                   bool constant,
                                   access_modifier_t modifier,
-                                  module_identity_t *module,
+                                  module_t *module,
                                   access_domain_t *domain,
                                   bool selected) {
     assert(obj->vtbl->type == TYPE_USER_DEFINED_OBJECT);
@@ -642,7 +640,7 @@ static field_cell_t *append_field(object_t *obj,
                                   object_t *value,
                                   bool constant,
                                   access_modifier_t modifier,
-                                  module_identity_t *module,
+                                  module_t *module,
                                   access_domain_t *domain,
                                   bool selected) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;

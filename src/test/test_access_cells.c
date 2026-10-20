@@ -52,7 +52,7 @@ bool test_access_cells(void) {
     object_t *key = create_string_object(proc, STATIC_STRING(L"x"));
     object_t *first = create_integer_object(proc, 10);
     object_t *second = create_integer_object(proc, 20);
-    module_identity_t *foreign = create_module_identity();
+    module_t *foreign = create_module_identity();
     access_domain_t *domain = create_access_domain(foreign);
     field_cell_t *a = create_object_field(obj,
                                           key,
@@ -181,7 +181,7 @@ bool test_access_cycles(void) {
 bool test_access_contexts(void) {
     process_t *proc = create_process();
     context_t *caller = proc->main_thread->context;
-    module_identity_t *module = create_module_identity();
+    module_t *module = create_module_identity();
     object_t *root = get_root_object();
     context_t *callee =
         create_context_with_protos_in_module(proc, caller, (object_array_t){&root, 1}, module);
@@ -222,7 +222,7 @@ bool test_access_contexts(void) {
 bool test_access_clone_metadata(void) {
     process_t *proc = create_process();
     object_t *root = get_root_object();
-    module_identity_t *module = create_module_identity();
+    module_t *module = create_module_identity();
     object_t *obj = create_user_defined_object_in_module(proc, (object_array_t){&root, 1}, module);
     access_domain_t *extra = create_access_domain(module);
     object_t *key = create_string_object(proc, STATIC_STRING(L"same"));

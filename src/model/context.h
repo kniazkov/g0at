@@ -21,7 +21,7 @@ typedef struct process_t process_t;
 /** @brief The execution context in the Goat programming language. */
 struct context_t {
     /** @brief Owned execution-module identity, separate from the caller's module. */
-    module_identity_t *module;
+    module_t *module;
     /** @brief A data associated with the current execution context. */
     object_t *data;
 
@@ -84,7 +84,7 @@ context_t *create_context_with_protos(process_t *process, context_t *caller, obj
 context_t *create_context_with_protos_in_module(process_t *process,
                                                 context_t *caller,
                                                 object_array_t protos,
-                                                module_identity_t *module);
+                                                module_t *module);
 
 /** @brief Releases the context and its data reference; returns the previous context. */
 context_t *destroy_context(context_t *context);
