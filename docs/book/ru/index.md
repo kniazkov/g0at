@@ -61,3 +61,6 @@
 - [Е. Карта реализации](appendix-f-implementation-map.md)
 - [Ж. Границы реализации](appendix-g-implementation-boundaries.md)
 - [З. История решений](appendix-h-decision-history.md)
+- [И. Модификаторы доступа: согласованные правила (проект)](appendix-i-access-control.md)
+- [Примеры модификаторов доступа и копирования (проект)](access-control-examples.md)
+- [План внедрения модификаторов доступа и копирования](access-control-implementation-plan.md)
