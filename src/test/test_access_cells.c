@@ -219,6 +219,104 @@ bool test_access_contexts(void) {
     return true;
 }
 
+/** @brief Cross-module provenance, cell/function identity maps and GC of repeated copies. */
+bool test_access_clone_methods(void) {
+    process_t *proc = create_process();
+    size_t baseline = proc->objects.size;
+    module_t *foreign = create_module_identity();
+    object_static_string_t x_name = {0}, y_name = {0}, f_name = {0}, g_name = {0}, extra_name = {0};
+    object_t *x = get_static_string_object(&x_name, L"x");
+    object_t *y = get_static_string_object(&y_name, L"y");
+    object_t *f = get_static_string_object(&f_name, L"f");
+    object_t *g = get_static_string_object(&g_name, L"g");
+    object_t *extra = get_static_string_object(&extra_name, L"extra");
+    function_access_t caller;
+    init_function_access(&caller, proc->module);
+    for (int iteration = 0; iteration < 30; iteration++) {
+        object_t *root = get_root_object();
+        object_t *original =
+            create_user_defined_object_in_module(proc, (object_array_t){&root, 1}, foreign);
+        field_cell_t *old_cell = create_object_field(original,
+                                                     x,
+                                                     get_boolean_object(false),
+                                                     false,
+                                                     ACCESS_PRIVATE,
+                                                     foreign,
+                                                     get_object_access_domain(original),
+                                                     true);
+        old_cell->binding_unit = retain_module_identity(foreign);
+        old_cell->declaration_id = 1;
+        ASSERT(create_object_field(original,
+                                   y,
+                                   get_null_object(),
+                                   false,
+                                   ACCESS_MODULE,
+                                   foreign,
+                                   get_object_access_domain(original),
+                                   true));
+        object_t *method = create_function_object(proc, NULL, 0, 0, original, NULL, true);
+        ASSERT(create_object_field(original,
+                                   f,
+                                   method,
+                                   true,
+                                   ACCESS_PUBLIC,
+                                   foreign,
+                                   get_object_access_domain(original),
+                                   true));
+        ASSERT(create_object_field(original,
+                                   g,
+                                   method,
+                                   true,
+                                   ACCESS_PUBLIC,
+                                   foreign,
+                                   get_object_access_domain(original),
+                                   true));
+        object_t *copy = clone_object_with_access(proc, original, &caller);
+        object_t *second = clone_object_with_access(proc, original, &caller);
+        field_cell_t *cell = get_own_field_cell(copy, x);
+        object_t *adapted = get_own_field_cell(copy, f)->object;
+        function_access_t *rights = get_function_access(adapted);
+        ASSERT(cell != old_cell && cell->domain != old_cell->domain);
+        ASSERT(cell->module == foreign && rights->module == foreign);
+        ASSERT(get_object_module(copy) == proc->module);
+        ASSERT(adapted != method && adapted == get_own_field_cell(copy, g)->object);
+        ASSERT(adapted != get_own_field_cell(second, f)->object);
+        ASSERT(!can_access_field(get_function_access(method), cell));
+        ASSERT(can_access_field(rights, cell) && can_access_field(rights, old_cell));
+        ASSERT(!can_access_field(rights, get_own_field_cell(second, x)));
+        ASSERT(!can_access_field(&caller, cell));
+        ASSERT(!can_access_field(&caller, get_own_field_cell(copy, y)));
+        ASSERT(can_access_field(rights, get_own_field_cell(copy, y)));
+        ASSERT(create_accessible_property(&caller, original, extra, root, false)
+               == MSTAT_FOREIGN_OBJECT);
+        ASSERT(create_accessible_property(&caller, copy, extra, root, false) == MSTAT_OK);
+        ASSERT(lookup_bound_property(rights, copy, foreign, 1).cell == cell);
+        ASSERT(rights->captures->size == 1);
+        field_capture_t *capture = rights->captures->data[0];
+        ASSERT(capture->storage == copy && capture->cell == cell);
+        ASSERT(set_field_cell_value(copy, cell, get_boolean_object(true)) == MSTAT_OK);
+        ASSERT(old_cell->object == get_boolean_object(false));
+        ASSERT(set_field_cell_value(copy, get_own_field_cell(copy, f), method)
+               == MSTAT_PROPERTY_IS_CONSTANT);
+        add_gc_root(proc, adapted);
+        DECREF(copy);
+        DECREF(second);
+        DECREF(method);
+        DECREF(original);
+        collect_garbage(proc);
+        ASSERT(capture->cell->object == get_boolean_object(true));
+        ASSERT(get_own_field_cell(capture->storage, f)->object == adapted);
+        /* A detached method alone keeps its copied cell and alias alive. */
+        remove_gc_root(proc, adapted);
+        collect_garbage(proc);
+        ASSERT(proc->objects.size == baseline);
+    }
+    clear_function_access(&caller, true);
+    release_module_identity(foreign);
+    destroy_process(proc);
+    return true;
+}
+
 bool test_access_clone_metadata(void) {
     process_t *proc = create_process();
     object_t *root = get_root_object();

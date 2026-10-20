@@ -67,6 +67,10 @@ Acceptance: AC-01–AC-10 execute or are rejected as specified; source and bytec
 
 ## 5. Stage D: Shared Transfer Machinery and clone
 
+**Implemented in #165.** `model/transfer.[ch]` keeps operation-local storage, domain, cell, and function maps. Clone allocates own cells first, allocates each directly held dynamic function once, then links environments and values. Function code remains shared; native descriptors are discarded. Built-in function values and nested objects stay shared. New rights derive only from existing grants; original grants remain for explicit original references. Field and function modules survive a change of object owner.
+
+Regression tests cover AC-14–AC-20 clone behavior, repeated copies, detached calls, private writes through names and this, shared external activation variables, recursive/mutually recursive methods, and unprivileged attached functions. Model tests exercise foreign-module ownership/default visibility, capture identity, constness, and repeated GC with only a copied detached method rooted. Full flat transfer remains #166; the protection model still needs stages E–G.
+
 Create a per-operation copying context mapping old domains, cells, and functions to new ones. Allocate new domains/cells first, then link values, functions, and environments. Two-phase transfer is needed for mutual references, recursive functions, and state shared by multiple methods.
 
 For `clone`, transfer own cells and retain the same prototype objects. The calling module owns the new object; field/function modules are preserved. Adapt directly transferred functions once per function identity. Redirect captures of transferred cells and retain external captures. Transfer only existing rights; retain authorized explicit references to originals; do not mutate original functions.

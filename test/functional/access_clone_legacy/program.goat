@@ -1,0 +1,19 @@
+const obj = {
+    var x = 10;
+    f = func() { x += 1; return x; };
+    g = f;
+    builtin = println;
+};
+var copy = obj.clone();
+println(copy.f == copy.g);
+println(copy.f == obj.f);
+println(copy.builtin == obj.builtin);
+const detached = copy.f;
+println(detached());
+println(copy.x);
+println(obj.x);
+var second = copy.clone();
+const again = second.g;
+println(again());
+println(copy.x);
+println(second.x);

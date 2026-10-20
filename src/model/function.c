@@ -15,6 +15,7 @@
 #include "object_state.h"
 #include "process.h"
 #include "thread.h"
+#include "transfer.h"
 
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t static_to_string(const object_t *obj) {
@@ -500,4 +501,34 @@ object_t *create_function_object(process_t *process,
 function_access_t *get_function_access(object_t *function) {
     return function->vtbl == &dynamic_vtbl ? &((object_dynamic_function_t *)function)->access
                                            : NULL;
+}
+
+object_t *create_transferred_function(process_t *process, object_t *source) {
+    object_dynamic_function_t *original = (object_dynamic_function_t *)source;
+    object_t **names = original->arg_count ? ALLOC(original->arg_count * sizeof(*names)) : NULL;
+    for (size_t i = 0; i < original->arg_count; i++)
+        names[i] = original->arg_names[i];
+    object_t *result = create_function_object(process,
+                                              names,
+                                              original->arg_count,
+                                              original->first_instr_id,
+                                              original->closure,
+                                              NULL,
+                                              true);
+    function_access_t *access = get_function_access(result);
+    clear_function_access(access, true);
+    init_function_access(access, original->access.module);
+    return result;
+}
+
+void link_transferred_function(object_t *destination,
+                               object_t *source,
+                               const transfer_t *transfer) {
+    object_dynamic_function_t *copy = (object_dynamic_function_t *)destination;
+    object_dynamic_function_t *original = (object_dynamic_function_t *)source;
+    object_t *closure = transfer_storage(transfer, original->closure);
+    INCREF(closure);
+    DECREF(copy->closure);
+    copy->closure = closure;
+    transfer_function_access(transfer, &copy->access, &original->access);
 }

@@ -328,6 +328,7 @@ static test_description_t test_list[] = {
     {"access cycles", test_access_cycles},
     {"access contexts", test_access_contexts},
     {"access clone metadata", test_access_clone_metadata},
+    {"access clone methods", test_access_clone_methods},
     {"root object call", test_root_object_call}};
 
 int get_number_of_tests() {

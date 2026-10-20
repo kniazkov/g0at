@@ -10,3 +10,4 @@ bool test_access_captures(void);
 bool test_access_cycles(void);
 bool test_access_contexts(void);
 bool test_access_clone_metadata(void);
+bool test_access_clone_methods(void);
