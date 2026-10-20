@@ -15,6 +15,12 @@
 typedef struct declarator_spec_t declarator_spec_t;
 typedef struct function_summary_set_t function_summary_set_t;
 
+/** @brief Creates a lazy conditional expression with three mandatory operands. */
+expression_t *create_conditional_node(arena_t *arena,
+                                      expression_t *condition,
+                                      expression_t *when_true,
+                                      expression_t *when_false);
+
 /** @brief The structure representing an expression node. */
 struct expression_t {
     /** @brief Base node structure, providing common attributes for all nodes. */

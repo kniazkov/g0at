@@ -36,6 +36,9 @@ bool c_emit_for(const node_t *node,
 /** @brief Emits boolean conversion and short-circuit logical operations. */
 c_generated_expression_t c_logic(const node_t *node, c_generation_context_t *context);
 
+/** @brief Emits a conditional value with branch-local preludes. */
+c_generated_expression_t c_conditional(const node_t *node, c_generation_context_t *context);
+
 /** @brief Emits a transfer to the nearest native loop label. */
 bool c_emit_loop_jump(const node_t *node,
                       c_generation_context_t *context,

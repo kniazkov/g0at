@@ -195,6 +195,34 @@ compare by identity.
 Methods are inherited from `Array` and execute in the VM. A detached method accepts
 the array first: `var append = Array.push; append(array, 1, 2)`.
 
+## Conditional expressions
+
+`condition ? when_true : when_false` evaluates the condition once using ordinary
+Goat truthiness, then evaluates exactly one branch and returns its value. The other
+branch has no effects and cannot throw. Both branches are mandatory and may return
+different types; the chosen value is not converted to the other branch's type.
+
+The operator binds less tightly than `||`, `&&` and `->`, and more tightly than an
+outer assignment: `x = ready ? a : b` assigns the selected value to `x`.
+Assignments are allowed in either branch: `ready ? x = a : y = b`.
+Nesting associates to the right: `a ? b : c ? d : e` means `a ? b : (c ? d : e)`.
+Use parentheses for a conditional condition, receiver or prototype:
+`(a ? b : c) ? d : e`, `(ready ? left : right).value`, `(ready ? P : Q) -> {}`.
+The conditional expression itself is not an assignment target.
+
+The analyzer joins normal-result values and branch states, excluding paths that
+throw or return. Native execution supports conditions with a supported scalar
+representation and branches with the same supported result type (integer, real,
+boolean, character or string). Heterogeneous results, including integer versus
+real, currently use the VM. A statically proven, discardable condition permits
+lowering just the selected branch. Native branch setup and calls remain lazy.
+
+```goat
+const absValue = func(x) { return x < 0 ? -x : x; };
+println(absValue(-7));
+println(true ? "ready" : "waiting");
+```
+
 ## Collection iteration
 
 `for (const item in collection) statement` and `for (item in collection) statement`

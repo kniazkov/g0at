@@ -1,0 +1,8 @@
+const choose=func(c,a,b){return c ? a : b;};
+choose(true,1,2);choose(false,1.5,2.5);choose(true,"a","b");choose(false,'a','b');choose(true,true,false);
+const mixed=func(c){return c ? 1 : "text";};
+mixed(true);mixed(false);
+const update=func(c,x){var y=x;return (c ? y+=2 : y*=3)+y;};
+update(true,3);update(false,3);
+const heterogeneous=func(c){return c ? 1 : 2.5;};
+heterogeneous(true);heterogeneous(false);

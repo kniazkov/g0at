@@ -1,0 +1,25 @@
+var calls=0;
+const choose=func(){calls++;return true;};
+const fail=func(){throw "bad";};
+println(choose() ? "yes" : fail());
+println(calls);
+println(false ? fail() : "no");
+println(true ? 7 : 1/0);
+var x=0; var y=0;
+println(true ? x=1 : y=2);
+println(x);println(y);
+println(false ? x+=10 : y+=3);
+println(x);println(y);
+x=false ? 11 : 12;
+println(x);
+println(true ? false ? 1 : 2 : 3);
+println(false ? 1 : true ? 2 : 3);
+println((false ? 1 : true) ? 4 : 5);
+println(false || true ? 6 : 7);
+println(true ? 8 : 9 + 10 * 2);
+try { println(true ? fail() : 0); } catch(e){println(e);}
+try { println(fail() ? (x=100) : (y=100)); } catch(e){println(e);}
+println(x);println(y);
+switch(2){case true ? 2 : 3: println("case"); default: println("bad");}
+const proto={var value=42;};
+println((true ? proto -> {} : proto -> {value=43;}).value);

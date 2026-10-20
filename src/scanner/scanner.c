@@ -108,7 +108,7 @@ static bool is_letter(wchar_t c) {
  * @return `true` if the character is an operator, `false` otherwise.
  */
 static bool is_operator(wchar_t c) {
-    const wchar_t *operators = L"+-*/%=!<>^&|~.";
+    const wchar_t *operators = L"+-*/%=!<>^&|~.?";
     return wcschr(operators, c) != NULL;
 }
 
@@ -184,6 +184,7 @@ static const operator_mapping_t operator_mappings[] = {
     {L"<<=", offsetof(token_groups_t, assignment_operators)},
     {L">>=", offsetof(token_groups_t, assignment_operators)},
     {L"=", offsetof(token_groups_t, assignment_operators)},
+    {L"?", offsetof(token_groups_t, assignment_operators)},
     {L"==", offsetof(token_groups_t, equality_operators)},
     {L"!=", offsetof(token_groups_t, equality_operators)},
     {L"<=", offsetof(token_groups_t, comparison_operators)},

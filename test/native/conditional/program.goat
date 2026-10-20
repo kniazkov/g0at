@@ -1,0 +1,16 @@
+const choose=func(c,a,b){return c ? a : b;};
+const nested=func(x){return x<0 ? -x : x==0 ? 100 : x+1;};
+const update=func(c,x){var y=x;return (c ? y+=2 : y*=3)+y;};
+const text=func(c,a,b){return c ? a+"!" : b+"?";};
+println(choose(true,10,20));println(choose(false,10,20));
+println(choose(0.0,1.5,2.5));println(choose(-1.0,1.5,2.5));
+println(choose("",true,false));println(choose("x",true,false));
+println(choose('a','x','y'));println(choose('\0','x','y'));
+println(nested(-5));println(nested(0));println(nested(7));
+println(update(true,3));println(update(false,3));
+println(text(true,"a","b"));println(text(false,"a","b"));
+const once=func(x){var y=x;return (y++ ? y+=10 : y+=20)+y;};
+println(once(0));println(once(1));
+const fixedTrue=func(x){return true ? x : 0;};
+const fixedFalse=func(x){return false ? 1/0 : x;};
+println(fixedTrue(9));println(fixedFalse(10));

@@ -533,3 +533,8 @@ for_in_null
 for_in_boolean
 for_in_character
 iteration_lifetime
+conditional_values
+conditional_order
+conditional_join
+ternary_missing_true
+ternary_missing_colon

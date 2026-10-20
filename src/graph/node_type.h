@@ -97,6 +97,7 @@ typedef enum {
     /** @brief Simple assignment operation node type. */
     NODE_SIMPLE_ASSIGNMENT,
     NODE_COMPOUND_ASSIGNMENT, /**< Read, operate, and write a retained target. */
+    NODE_CONDITIONAL,         /**< Lazy conditional expression. */
 
     /** @brief Addition operation node type. */
     NODE_ADDITION,

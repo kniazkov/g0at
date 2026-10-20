@@ -1,0 +1,20 @@
+1
+no
+null
+zero
+negative
+real zero
+empty
+text
+char
+true
+true
+3
+2
+5
+empty array
+array
+empty object
+object
+function
+nan
