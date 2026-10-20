@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/access-control-examples.md) · [Rules](appendix-i-access-control.md) · [Plan](access-control-implementation-plan.md)
 
-These examples describe the agreed design. Stages A–D implement declarations, VM access checks, and clone method/capture adaptation; flat adaptation, observation filtering, module loading, and static access diagnostics still belong to later stages. Each example is independent; results are described in prose, and `print` calls do not imply automatic newlines. Negative cases are checked separately, both statically and with dynamically unknown receivers. All examples use the standard built-in `clone` and `flat`, not user overrides.
+These examples describe the agreed design. Stages A–E implement declarations, VM access checks, and clone/flat method and capture adaptation; observation filtering, module loading, and static access diagnostics still belong to later stages. Each example is independent; results are described in prose, and `print` calls do not imply automatic newlines. Negative cases are checked separately, both statically and with dynamically unknown receivers. All examples use the standard built-in `clone` and `flat`, not user overrides.
 
 <a id="ac-01"></a>
 

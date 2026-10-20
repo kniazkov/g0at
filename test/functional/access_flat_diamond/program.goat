@@ -1,0 +1,24 @@
+const A = {
+    private var x = 0;
+    public inc = func() { x += 1; return x; };
+    public read = func() { return x; };
+    public alias = inc;
+};
+const Other = { public var value = 7; };
+const Left = [A, Other] -> { public viaLeft = func() { return this.inc(); }; };
+const Right = [A, Other] -> { public viaRight = func() { return this.read(); }; };
+var obj = [Left, Right] -> {};
+var copy = obj.flat();
+println(copy.viaLeft());
+println(copy.viaRight());
+println(A.read());
+println(copy.inc == copy.alias);
+println(copy.inc == A.inc);
+println(copy.value);
+println(copy.instanceOf(A));
+println(copy.instanceOf(Left));
+println(copy.instanceOf(Other));
+var clone = obj.clone();
+println(clone.inc());
+println(obj.read());
+println(copy.read());

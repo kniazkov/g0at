@@ -158,6 +158,12 @@ operation_result_t access_index(process_t *process,
                                 object_t *value);
 /** @brief Constructor assignment may introduce own fields after checking the inherited winner. */
 bool object_shadows_inherited(const object_t *object);
+/** @brief Actual prototype edges, excluding the separate lexical lookup fallback. */
+object_array_t get_inheritance_prototypes(const object_t *object);
+void set_inheritance_prototype_count(object_t *object, size_t count);
 /** @brief Copies using the caller's module; internal transfer does not filter hidden fields. */
 object_t *
 clone_object_with_access(process_t *process, object_t *object, const function_access_t *access);
+/** @brief Transfers actual ancestors once, retaining hidden cells and ordinary lookup winners. */
+object_t *
+flat_object_with_access(process_t *process, object_t *object, const function_access_t *access);

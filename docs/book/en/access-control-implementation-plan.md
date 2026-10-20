@@ -69,7 +69,7 @@ Acceptance: AC-01–AC-10 execute or are rejected as specified; source and bytec
 
 **Implemented in #165.** `model/transfer.[ch]` keeps operation-local storage, domain, cell, and function maps. Clone allocates own cells first, allocates each directly held dynamic function once, then links environments and values. Function code remains shared; native descriptors are discarded. Built-in function values and nested objects stay shared. New rights derive only from existing grants; original grants remain for explicit original references. Field and function modules survive a change of object owner.
 
-Regression tests cover AC-14–AC-20 clone behavior, repeated copies, detached calls, private writes through names and this, shared external activation variables, recursive/mutually recursive methods, and unprivileged attached functions. Model tests exercise foreign-module ownership/default visibility, capture identity, constness, and repeated GC with only a copied detached method rooted. Full flat transfer remains #166; the protection model still needs stages E–G.
+Regression tests cover AC-14–AC-20 clone behavior, repeated copies, detached calls, private writes through names and this, shared external activation variables, recursive/mutually recursive methods, and unprivileged attached functions. Model tests exercise foreign-module ownership/default visibility, capture identity, constness, and repeated GC with only a copied detached method rooted. Full flat transfer is implemented in stage E (#166); observation and static analysis still need stages F–G.
 
 Create a per-operation copying context mapping old domains, cells, and functions to new ones. Allocate new domains/cells first, then link values, functions, and environments. Two-phase transfer is needed for mutual references, recursive functions, and state shared by multiple methods.
 
@@ -80,6 +80,12 @@ Do not recursively traverse nested objects and arrays. Inherited fields and meth
 Acceptance: AC-04–AC-08, AC-14–AC-20, AC-25, AC-28. Add repeated copying, two copies of one object, detached methods, recursive/mutually recursive captures, and GC after external original references disappear. Check values and function identity, not just successful calls.
 
 ## 6. Stage E: Complete flat with Preserved Order
+
+**Implemented in #166.** Flat reuses the stage D transfer maps. It selects real ancestors, filters the existing ordered topology, and copies every own cell once. Only the first ordinary winner is indexed by key; hidden/shadowed cells remain available to methods. Object is excluded and remains the sole parent. As before, transferred flat fields are mutable, while modifiers and declaring modules are preserved. Non-user objects still return themselves.
+
+Contexts distinguish lexical lookup fallbacks from inheritance edges. Adapted method environments preserve external lexical captures without exposing those environments as result parents. Concrete capture records distinguish factory instances with identical bytecode IDs; internal environment views are adapted again when a flattened object is cloned or flattened. Protected receiver grants are transferred from the original inheritance graph, without granting private rights to unrelated functions.
+
+Tests cover AC-11–AC-17 and AC-19–AC-22 behavior, independent hidden cells, two shared ancestors in a diamond, a 32-level chain, 16 factory prototypes, recursive methods, repeated flat/clone, detached calls, arbitrary keys, and external captures. Model tests check a foreign function module (AC-26), lookup winners, hidden-cell counts, flat mutability, and GC with only a detached method rooted. AC-23 observation filtering remains stage F (#167); preserving its hidden data and method behavior is implemented here.
 
 Reuse stage D's verified machinery. Obtain topology preserving the old lookup priority; transfer the source and each ancestor except `Object` exactly once by identity. Retain all fields, including same-named private and shadowed protected fields. Build ordinary lookup winners separately from method-to-cell relationships.
 

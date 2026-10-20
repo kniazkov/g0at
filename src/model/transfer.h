@@ -25,10 +25,16 @@ void transfer_add_cell(transfer_t *transfer,
 void finish_transfer(transfer_t *transfer);
 void destroy_transfer(transfer_t *transfer);
 object_t *transfer_storage(const transfer_t *transfer, object_t *source);
+/** @brief Flat preserves lexical fallbacks separately from the result's sole Object parent. */
+void configure_flat_transfer(transfer_t *transfer, object_t *receiver);
+object_t *transfer_closure(transfer_t *transfer, object_t *source);
+/** @brief Internal lexical views retain their storage as the first lookup parent. */
+object_t *get_transfer_view_storage(const object_t *object);
+void mark_transfer_view(object_t *object);
 void transfer_function_access(const transfer_t *transfer,
                               function_access_t *destination,
                               const function_access_t *source);
 
 /** @brief Internal dynamic-function allocation and environment linking; builtins are unchanged. */
 object_t *create_transferred_function(process_t *process, object_t *source);
-void link_transferred_function(object_t *destination, object_t *source, const transfer_t *transfer);
+void link_transferred_function(object_t *destination, object_t *source, transfer_t *transfer);

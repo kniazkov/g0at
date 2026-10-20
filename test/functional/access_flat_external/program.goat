@@ -1,0 +1,28 @@
+var counter = 0;
+const original = {
+    private var x = 10;
+    public next = func() { counter += 1; x += 1; return x; };
+    public old = func() { return original.x; };
+    public get = func() { return x; };
+    public inner = { public get = func() { return x; }; };
+    public array = [1];
+};
+var copy = original.flat();
+println(copy.next());
+println(original.next());
+println(counter);
+println(copy.old());
+println(copy.inner == original.inner);
+println(copy.inner.get());
+println(copy.array == original.array);
+const detached = copy.next;
+println(detached());
+println(counter);
+const outside = func() { return this.x; };
+copy.outside = outside;
+var second = copy.flat();
+try second.outside(); catch(e) println(e);
+println(second.get());
+println(second.next());
+println(copy.get());
+println(counter);
