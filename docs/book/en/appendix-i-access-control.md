@@ -2,7 +2,9 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-i-access-control.md) · [Previous](appendix-h-decision-history.md)
 
-Status: language design, the agreed portion of the discussion on October 20, 2026, ahead of issue #154. This section does not claim that access modifiers are implemented. Examples specify expected behavior of the future implementation. Copying methods and their access rights still needs discussion; open questions appear at the end.
+Status: language design agreed on October 20, 2026, ahead of issue #154, including the subsequent copying and closure clarifications. This section does not claim that access modifiers are implemented. Examples specify expected behavior of the future implementation.
+
+[Detailed examples and edge cases](access-control-examples.md) · [Implementation plan](access-control-implementation-plan.md)
 
 ## I.1. Declarations
 
@@ -89,23 +91,65 @@ A new property created by a permitted assignment `obj.x = ...` or `obj[key] = ..
 
 The restriction on adding properties does not prohibit modifying a received array's elements through indexing or methods such as `push` and `remove`. Protecting a field does not make the returned array immutable. An API author can, for example, return an array copy from a getter.
 
-## I.6. Observation and Copying Requirements
+## I.6. Observation and Copying Are Different Operations
 
 For `for … in`, the key list includes only properties accessible to the calling code. The standard object representation used by `print(obj)` and `str(obj)` also shows only accessible properties. Code with private access may see more properties than outside code.
 
-The following copying requirements have been agreed independently of the still-undecided mechanism for transferring methods:
+Copying does not filter fields by the calling code's access. Both `clone()` and `flat()` transfer hidden data within their copying scope while preserving protection. The earlier proposal to filter fields in `flat()` is superseded: it deprived public methods of necessary private data. Filtering remains a rule for observation: enumeration and standard printing.
 
-- `clone()` copies all properties, including those inaccessible to the calling code, and preserves modifiers. The new object belongs to the calling module, which may add properties to it.
-- Copied properties retain their declaring module. Thus copying an object from A into B does not expose A's default-visibility fields to B. Object ownership and a property's declaring module are distinct concepts.
-- Copying must not expose private or protected data to outside code. A clone is a separate object: a method of the original gains no direct private access to the clone.
-- For `flat()`, agreed requirements are filtering by accessibility to the calling code, preserving the modifiers and declaring modules of copied properties, and assigning ownership of the new object to the calling module.
+The following rules concern user-defined objects; they do not introduce deep copying of arrays or other types.
 
-These requirements do not yet form a complete contract for copying functions. In particular, whether transferred methods remain functional depends on resolving the questions in the next section.
+| Operation property | `clone()` | `flat()` |
+| --- | --- | --- |
+| Transferred fields | All own fields, including hidden ones | All own and prototype fields, including hidden and shadowed ones, except fields of `Object` |
+| Result prototypes | The same prototype objects | Only `Object` |
+| Owner of the new object | Calling module | Calling module |
+| Field modifiers and declaring modules | Preserved | Preserved |
+| Nested objects and arrays | Shared references; no recursive copying | Shared references; no recursive copying |
+| Directly copied functions | Adapted to transferred fields | Adapted to transferred fields |
 
-## I.7. Native Execution and Open Questions
+Copying an object from A into B does not expose A's default-visibility fields to B. Object ownership and a property's declaring module are distinct concepts. B may extend the copy with new properties and modify accessible variables. Access modifiers and constness are separate characteristics; this discussion does not revise the existing constness rules of copying operations.
 
-Native execution must enforce the same restrictions. If access rights cannot be reliably checked at compilation, the function remains in the VM for now; `--native required` reports an error in that case.
+With `clone()`, shared prototype state does not become independent: prototype fields and inherited methods are not copied. Use `flat()` to transfer fields from the prototype chain.
 
-There is no final rule for transferring methods, their closures, and their rights through `clone()` and `flat()`. Keeping copied methods functional must be reconciled with private access being tied to a concrete object. Ordinary function assignment does not transfer rights.
+## I.7. Field Identity and the flat Algorithm
 
-A specific contradiction was identified for `flat()`: an external call filters out a private field but may copy a public method that needs it. Reassigning the method's rights to the new object does not restore the missing field. Whether to change the copied data, method binding, or allow an incomplete result is unresolved. None of these alternatives is adopted here.
+A name alone does not identify a field. Two `private x` fields with different declaring owners remain separate after `flat()`. Each owner's method reads its own field. A shadowed nonprivate field is also retained. Captures are one reason this is necessary: a prototype's captured `x` and `this.x` selecting a descendant's field can yield different values.
+
+The agreed algorithm:
+
+1. Build a topological prototype order respecting the existing lookup priority. Each concrete object occurs only once. Process the source object itself once as well.
+2. Transfer each object's fields once. Do not transfer `Object`; it remains the result's parent.
+3. Preserve each transferred field's provenance, protection, and capture relationships. Public key lookup must select the same source as before `flat()`; selecting the winner must not discard shadowed fields.
+4. Transfer functions and their relationships according to the next section.
+
+An arbitrary topological order is insufficient: independent prototypes must keep their previous priority. Deduplicate by object identity, not name, field values, or shared creation code. In a diamond, the shared ancestor and its field are transferred once; methods of both branches use one new cell. Distinct ancestors with identical field names are not merged.
+
+Internally retaining field provenance does not restore old prototypes to the result's chain. They do not become result parents or appear in `instanceOf` solely due to internal metadata. `Object` methods remain available through the sole parent; copying them into own properties is unnecessary.
+
+## I.8. Methods, Captures, and Rights During Copying
+
+These rules apply to functions directly transferred as property values. Function code may remain shared, but its environment and rights must be adapted without changing the original function.
+
+| Function relationship | Copying result |
+| --- | --- |
+| Named capture of a transferred field | Refers to the corresponding new cell |
+| Access through `this` | Uses the call receiver and transferred private/protected access domains |
+| Capture of an external variable | Remains shared with the original |
+| Explicit external reference to the original, such as `A.x` | Still addresses A; previously held access is retained |
+| Function inside a nested object | Is not adapted: the nested object stays shared |
+| Function lacking a private right | Does not gain it through copying |
+
+Thus copied methods can modify a private field of the copy both through `this.x` and through captured name `x`. Updating the copy's cell does not update the original's cell; if a cell holds a nested mutable object, that object itself remains shared.
+
+New rights correspond only to transferring existing rights to copied domains. An outside function stored in a property does not become a privileged method. The original method gains no access to the copy's private fields. However, a copied method retains previously permitted access to the original through an explicit external reference. This qualifies the earlier overly broad statement that a copy can never read the original's private fields.
+
+Two properties that referenced one function reference one adapted function in the result. Adapt once per original function within one copying operation; do not merge distinct functions with identical code. Shared captures of multiple methods must remain shared within the copy. Ordinary method assignment to another object does not perform this adaptation.
+
+This is shallow copying with adaptation of directly transferred functions, not recursive cloning of the object graph. Nested objects, their methods, and external variables can still connect the result to the original. Calling `flat()` does not promise complete independence.
+
+## I.9. Native Execution and Status
+
+Native execution must enforce the same restrictions. If access rights cannot be reliably checked at compilation, the function remains in the VM for now; `--native required` reports an error in that case. Copying must not reuse a native specialization if its environment and access assumptions are no longer proven.
+
+The identified filtering and copying contradictions are resolved by the rules above. C representations of cells, capture mappings, and rights remain to be implemented; the proposed sequence is in the [implementation plan](access-control-implementation-plan.md). Examples specify future checks rather than report already passing tests.

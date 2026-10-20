@@ -62,3 +62,5 @@ Red callouts mark limitations and known defects of the implementation described.
 - [G. Implementation Boundaries](appendix-g-implementation-boundaries.md)
 - [H. Decision History](appendix-h-decision-history.md)
 - [I. Access Modifiers: Agreed Rules (Design)](appendix-i-access-control.md)
+- [Access Modifier and Copying Examples (Design)](access-control-examples.md)
+- [Access Modifier and Copying Implementation Plan](access-control-implementation-plan.md)

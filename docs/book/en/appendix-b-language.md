@@ -157,6 +157,9 @@ An empty array prints as `[ ]`, including inside other objects and arrays.
 
 ## Object.clone()
 
+This section describes the current implementation. The agreed extension for access
+modifiers, method adaptation, and capture transfer is in [appendix I](appendix-i-access-control.md).
+
 `obj.clone()` dispatches to the receiver's virtual `clone` method. It is inherited
 from `Object` and can be overridden by an ordinary property, just like `instanceOf`.
 `obj["clone"]()` works too. A detached method (`var copy = Object.clone; copy(obj)`)
@@ -264,3 +267,7 @@ The original object and its prototypes are unchanged. Use `for (key in object.fl
 to enumerate the materialized properties. For arrays and other builtin types, `flat()`
 returns the same receiver. Like `clone` and `instanceOf`, it is an ordinary overridable
 method; a detached call (`const flatten = Object.flat; flatten(value)`) accepts the value explicitly.
+
+This describes current behavior. The design for retaining hidden/shadowed cells and
+adapting methods during `flat()` is in [appendix I](appendix-i-access-control.md);
+the [examples](access-control-examples.md) specify the expected future semantics.
