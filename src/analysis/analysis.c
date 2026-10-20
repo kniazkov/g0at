@@ -6,6 +6,7 @@
 
 #include "analysis.h"
 
+#include "access.h"
 #include "c_body.h"
 #include "c_contract.h"
 #include "cli/options.h"
@@ -488,12 +489,12 @@ compilation_error_t *analyze(node_t *root_node,
     destroy_vector_ex(insertions, FREE);
 
     validate_iteration_sources(root_node, memory->graph, memory->errors, &errors);
+    analyze_access(root_node, memory->errors, &errors);
 
     if (options->enable_warnings)
         warn_duplicate_cases(root_node, memory->graph, memory->errors, &errors);
 
-    /* Access-aware optimization/native proofs are a later stage. Keep checked operations intact. */
-    if (options->optimization_level == OPTIMIZATION_NONE || has_access_modifiers(root_node))
+    if (options->optimization_level == OPTIMIZATION_NONE)
         return errors;
     if (get_most_severe_compilation_error(errors) > WARNING)
         return errors;
@@ -509,6 +510,14 @@ compilation_error_t *analyze(node_t *root_node,
     propagate_function_effects(calls, 64);
     analyze_function_c_contracts(root_node);
     analyze_function_c_bodies(calls, 64);
+    if (has_access_modifiers(root_node)) {
+        /* Scope identities and mutable flat captures are observable. Do not prune or fold
+           bindings from abstract samples; only closed scalar expressions can be replaced. */
+        classify_node_properties(root_node, collector);
+        add_call_graph_events(collector, calls);
+        simplify_access_safe_expressions(root_node, memory->graph);
+        return errors;
+    }
     mark_unreachable_code(root_node, memory->graph, collector);
     classify_node_properties(root_node, collector);
     add_call_graph_events(collector, calls);

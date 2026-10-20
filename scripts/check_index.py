@@ -62,6 +62,23 @@ def main():
                                     encoding="utf-8", capture_output=True, timeout=30)
             assert result.returncode != 0 and result.stderr, (source, result)
     print(f"Index checks passed: {count} fixtures, both optimization levels, source and binary round trips")
+    # Definite access violations are compile errors, even with optimization disabled or try/catch.
+    denied = ('const obj={private x=42;}; obj.x;',
+              'const obj={private var x=42;}; obj["x"]+=1;',
+              'const obj={protected x=42;}; try obj.x; catch(e) println(e);')
+    for language in ('en', 'ru'):
+        for optimization in ('none', 'all'):
+            for index, source in enumerate(denied):
+                path = output / f'denied-access-{language}-{optimization}-{index}.goat'
+                path.write_text(source, encoding='utf-8')
+                result = subprocess.run([str(goat), '--compile', '--optimize', optimization, str(path)],
+                                        env=dict(env, GOAT_LANGUAGE=language), text=True,
+                                        encoding='utf-8', capture_output=True, timeout=30)
+                assert result.returncode != 0 and not result.stdout, result
+                assert ('Access denied' if language == 'en' else 'Доступ запрещён') in result.stderr
+                assert ('declaration at' if language == 'en' else 'объявление') in result.stderr
+                assert '0:0' not in result.stderr, result.stderr
+                assert not path.with_suffix('.gbin').exists()
 
 
 if __name__ == "__main__":

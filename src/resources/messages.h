@@ -40,6 +40,7 @@ typedef struct {
     const wchar_t const *compilation_error;
     const wchar_t const *critical_compilation_error;
     const wchar_t const *unknown_symbol;
+    const wchar_t const *access_denied_statically;
     const wchar_t const *integer_literal_out_of_range; /**< Integer literal exceeds int64_t. */
     const wchar_t const *unclosed_quotation_mark;
     const wchar_t const *invalid_escape_sequence;

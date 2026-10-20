@@ -4,6 +4,7 @@
  */
 #include "c_contract.h"
 
+#include "access.h"
 #include "function_call_graph.h"
 #include "graph/expression.h"
 #include "graph/variable.h"
@@ -39,6 +40,10 @@ static bool static_function_capture(const function_capture_t *capture) {
 void check_function_c_contract(function_summary_t *summary) {
     uint32_t blockers = C_BLOCKER_BODY;
     bool unsupported = false;
+    if (function_signature_needs_access_checks(summary)) {
+        blockers |= C_BLOCKER_ACCESS;
+        unsupported = true;
+    }
     for (size_t i = 0; i < summary->parameter_count; i++) {
         c_value_type_t type = classify_c_value_type(summary->parameter_types[i]->type);
         if (type == C_VALUE_UNKNOWN || type == C_VALUE_UNSUPPORTED)
@@ -82,9 +87,10 @@ string_value_t c_blockers_to_string(uint32_t blockers) {
                              C_BLOCKER_RETURN,
                              C_BLOCKER_EFFECTS,
                              C_BLOCKER_CAPTURES,
-                             C_BLOCKER_BODY};
+                             C_BLOCKER_BODY,
+                             C_BLOCKER_ACCESS};
     const wchar_t *names[] =
-        {L"analysis", L"parameters", L"return", L"effects", L"captures", L"body"};
+        {L"analysis", L"parameters", L"return", L"effects", L"captures", L"body", L"access"};
     string_builder_t builder;
     init_string_builder(&builder, 0);
     bool separator = false;

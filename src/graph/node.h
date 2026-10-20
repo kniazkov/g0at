@@ -24,6 +24,14 @@ typedef enum {
 } node_flag_t;
 
 typedef struct node_t node_t;
+
+/** @brief Access evidence; UNKNOWN always retains a runtime check. */
+typedef enum {
+    ACCESS_PROOF_NONE,
+    ACCESS_PROOF_ALLOWED,
+    ACCESS_PROOF_DENIED,
+    ACCESS_PROOF_UNKNOWN
+} access_proof_t;
 typedef struct statement_t statement_t;
 typedef struct expression_t expression_t;
 typedef struct source_builder_t source_builder_t;
@@ -245,6 +253,7 @@ struct node_t {
 
     /** @brief Analysis proofs; function-object purity describes its body, not allocation. */
     uint32_t flags;
+    access_proof_t access_proof;
 };
 
 /** @brief Checks a single analysis flag. */

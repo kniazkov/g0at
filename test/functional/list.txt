@@ -562,3 +562,4 @@ access_flat_legacy
 access_observation
 access_observation_snapshot
 throw_uncaught_visibility
+access_analysis_dynamic
