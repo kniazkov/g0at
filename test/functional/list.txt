@@ -549,3 +549,7 @@ cleanup_duplicate
 access_modifiers
 access_factories
 access_scopes
+access_clone_state
+access_clone_functions
+access_clone_rights
+access_clone_legacy

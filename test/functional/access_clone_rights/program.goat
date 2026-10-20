@@ -1,0 +1,47 @@
+const Base = {
+    private var x = 0;
+    public next = func() { x += 1; return x; };
+};
+var derived = Base -> {};
+var copy = derived.clone();
+println(derived.next());
+println(copy.next());
+println(copy.next == derived.next);
+println(copy.instanceOf(Base));
+var target = { private x = 7; };
+const outside = func() { return target.x; };
+const viaThis = func() { return this.x; };
+target.f = outside;
+target.g = viaThis;
+var foreign = target.clone();
+try foreign.f(); catch(e) println(e);
+try foreign.g(); catch(e) println(e);
+var a = {
+    protected var x = 10;
+    public get = func() { return x; };
+    public current = func() { return this.x; };
+    public old = func() { return a.x; };
+};
+var b = a.clone();
+var child = b -> { protected var x = 20; };
+println(child.get());
+println(child.current());
+println(child.old());
+const make = func(value) {
+    return {
+        private var x = value;
+        public var fn = null;
+        public install = func() {
+            var count = 0;
+            fn = func() { count += 1; x += 1; return x + count; };
+        };
+        public get = func() { return x; };
+    };
+};
+var one = make(10);
+one.install();
+var two = one.clone();
+println(two.fn());
+println(one.fn());
+println(two.get());
+println(one.get());

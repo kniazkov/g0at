@@ -14,6 +14,7 @@
 #include "object.h"
 #include "object_state.h"
 #include "process.h"
+#include "transfer.h"
 
 #include <assert.h>
 
@@ -202,23 +203,16 @@ clone_in_module(process_t *process, object_t *obj, module_t *module, bool reloca
         (object_array_t){(object_t *const *)uobj->proto->data, uobj->proto->size},
         module);
     copy->shadow_inherited = uobj->shadow_inherited;
-    vector_t *old_domains = create_vector(), *new_domains = create_vector();
+    transfer_t *transfer = relocate ? create_transfer(process) : NULL;
+    if (transfer) {
+        transfer_add_storage(transfer, obj, &copy->base);
+        transfer_add_domain(transfer, uobj->domain, copy->domain);
+    }
     for (size_t i = 0; i < uobj->fields->size; i++) {
         field_cell_t *cell = uobj->fields->data[i];
         access_domain_t *domain = cell->domain;
-        if (relocate) {
-            size_t d = 0;
-            while (d < old_domains->size && old_domains->data[d] != domain)
-                d++;
-            if (d == old_domains->size) {
-                append_to_vector(old_domains, domain);
-                append_to_vector(new_domains,
-                                 domain == uobj->domain
-                                     ? retain_access_domain(copy->domain)
-                                     : create_access_domain(get_access_domain_module(domain)));
-            }
-            domain = new_domains->data[d];
-        }
+        if (transfer)
+            domain = transfer_domain(transfer, domain);
         field_cell_t *copied = append_field(&copy->base,
                                             cell->key,
                                             cell->object == obj ? &copy->base : cell->object,
@@ -230,11 +224,13 @@ clone_in_module(process_t *process, object_t *obj, module_t *module, bool reloca
         copied->declaration_id = cell->declaration_id;
         copied->binding_unit =
             cell->binding_unit ? retain_module_identity(cell->binding_unit) : NULL;
+        if (transfer)
+            transfer_add_cell(transfer, obj, cell, &copy->base, copied);
     }
-    for (size_t i = 0; i < new_domains->size; i++)
-        release_access_domain(new_domains->data[i]);
-    destroy_vector(old_domains);
-    destroy_vector(new_domains);
+    if (transfer) {
+        finish_transfer(transfer);
+        destroy_transfer(transfer);
+    }
     /* Preserve clone's historical key order independently of the full cell inventory. */
     clear_vector(copy->keys);
     avl_tree_for_each(copy->properties, collect_sorted_key, copy->keys);
