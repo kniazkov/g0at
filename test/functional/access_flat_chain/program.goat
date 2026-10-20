@@ -1,0 +1,38 @@
+const A = {
+    private var x = 10;
+    protected var y = 1;
+    public getA = func() { return this.x; };
+    public setA = func(value) { x = value; };
+    public captured = func() { return y; };
+    public current = func() { return this.y; };
+};
+const B = A -> {
+    private var x = 20;
+    protected var y = 2;
+    public getB = func() { return this.x; };
+};
+var obj = B -> { public sum = func() { return this.getA() + this.getB(); }; };
+var copy = obj.flat();
+println(copy.getA());
+println(copy.getB());
+println(copy.sum());
+println(copy.captured());
+println(copy.current());
+copy.setA(30);
+println(copy.sum());
+println(obj.sum());
+try copy.x; catch(e) println(e);
+try copy["y"]; catch(e) println(e);
+println(copy.instanceOf(Object));
+println(copy.instanceOf(A));
+println(copy.instanceOf(B));
+var again = copy.flat();
+again.setA(40);
+println(again.sum());
+println(copy.sum());
+var cloned = again.clone();
+cloned.setA(50);
+println(cloned.sum());
+println(again.sum());
+const detached = cloned.sum;
+println(detached());

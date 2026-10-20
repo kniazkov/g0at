@@ -719,6 +719,7 @@ static bool exec_INHERIT(runtime_t *runtime, instruction_t instr, thread_t *thre
                                                     (object_array_t){parents, prototypes.size + 1});
     FREE(parents);
     enable_prototype_shadowing(context->data);
+    set_inheritance_prototype_count(context->data, prototypes.size);
     /* Only explicit inheritance grants protected rights. The dynamic receiver and lexical
        lookup topology of an ordinary call must never manufacture privileges. */
     for (size_t i = 0; i < prototypes.size; i++)

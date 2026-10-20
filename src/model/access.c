@@ -145,21 +145,24 @@ static void add_protected_domain(function_access_t *access, access_domain_t *dom
     append_to_vector(access->protected_domains, retain_access_domain(domain));
 }
 
+static bool inherits_domain(object_t *object, access_domain_t *domain);
+
 void add_protected_object_access(function_access_t *access, object_t *object) {
     add_protected_domain(access, get_object_access_domain(object));
     object_array_t topology = get_object_topology(object);
-    for (size_t i = 0; i < topology.size; i++)
-        add_protected_domain(access, get_object_access_domain(topology.items[i]));
+    for (size_t i = 0; i < topology.size; i++) {
+        access_domain_t *domain = get_object_access_domain(topology.items[i]);
+        if (domain && inherits_domain(object, domain))
+            add_protected_domain(access, domain);
+    }
 }
 
 /** @brief Follows explicit prototype edges, excluding the constructor's lexical fallback. */
 static bool inherits_domain(object_t *object, access_domain_t *domain) {
     if (get_object_access_domain(object) == domain)
         return true;
-    if (!object_shadows_inherited(object))
-        return false;
-    object_array_t parents = get_object_prototypes(object);
-    for (size_t i = 0; i + 1 < parents.size; i++)
+    object_array_t parents = get_inheritance_prototypes(object);
+    for (size_t i = 0; i < parents.size; i++)
         if (inherits_domain(parents.items[i], domain))
             return true;
     return false;
@@ -190,12 +193,12 @@ void inherit_function_access(function_access_t *target, const function_access_t 
         add_function_access_domain(target, source->domains->data[i]);
     for (size_t i = 0; i < source->protected_domains->size; i++)
         add_protected_domain(target, source->protected_domains->data[i]);
-    for (size_t i = 0; i < source->lexical_scopes->size; i++)
-        add_lexical_scope(target, source->lexical_scopes->data[i]);
     for (size_t i = 0; i < source->captures->size; i++) {
         field_capture_t *capture = source->captures->data[i];
         add_function_field_capture(target, capture->storage, capture->cell);
     }
+    for (size_t i = 0; i < source->lexical_scopes->size; i++)
+        add_lexical_scope(target, source->lexical_scopes->data[i]);
 }
 
 void add_lexical_scope(function_access_t *access, object_t *storage) {

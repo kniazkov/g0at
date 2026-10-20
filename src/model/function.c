@@ -521,12 +521,10 @@ object_t *create_transferred_function(process_t *process, object_t *source) {
     return result;
 }
 
-void link_transferred_function(object_t *destination,
-                               object_t *source,
-                               const transfer_t *transfer) {
+void link_transferred_function(object_t *destination, object_t *source, transfer_t *transfer) {
     object_dynamic_function_t *copy = (object_dynamic_function_t *)destination;
     object_dynamic_function_t *original = (object_dynamic_function_t *)source;
-    object_t *closure = transfer_storage(transfer, original->closure);
+    object_t *closure = transfer_closure(transfer, original->closure);
     INCREF(closure);
     DECREF(copy->closure);
     copy->closure = closure;

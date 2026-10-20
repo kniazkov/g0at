@@ -1,0 +1,38 @@
+const make = func(value) {
+    return {
+        private var x = value;
+        public get = func() { return x; };
+        public set = func(value) { x = value; };
+        public next = func(n) { if (n == 0) return x; x += 1; return next(n - 1); };
+    };
+};
+const left = make(10);
+const right = make(20);
+var obj = [left, right] -> {
+    public leftGet = left.get;
+    public rightGet = right.get;
+    public leftSet = left.set;
+    public rightSet = right.set;
+    public leftNext = left.next;
+    public rightNext = right.next;
+};
+var copy = obj.flat();
+println(copy.get() == obj.get());
+println(copy.leftGet());
+println(copy.rightGet());
+copy.leftSet(30);
+copy.rightSet(40);
+println(copy.leftGet());
+println(copy.rightGet());
+println(left.get());
+println(right.get());
+println(copy.leftNext(2));
+println(copy.rightNext(3));
+var again = copy.flat();
+println(again.leftGet());
+println(again.rightGet());
+again.leftSet(50);
+println(again.leftGet());
+println(again.rightGet());
+println(copy.leftGet());
+println(copy.leftGet == copy.rightGet);

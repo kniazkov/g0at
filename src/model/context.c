@@ -37,6 +37,7 @@ context_t *create_context_with_protos_in_module(process_t *process,
     context_t *ctx = (context_t *)ALLOC(sizeof(context_t));
     ctx->module = retain_module_identity(module);
     ctx->data = create_user_defined_object_in_module(process, protos, ctx->module);
+    set_inheritance_prototype_count(ctx->data, 0);
     init_function_access(&ctx->access, module);
     add_function_access_domain(&ctx->access, get_object_access_domain(ctx->data));
     ctx->native_disabled = caller->native_disabled;

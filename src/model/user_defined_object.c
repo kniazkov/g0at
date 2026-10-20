@@ -39,6 +39,8 @@ typedef struct {
 
     /** @brief A vector storing the prototypes of the object. */
     vector_t *proto;
+    size_t inheritance_count; /**< Leading real prototypes; remaining entries are lexical lookup. */
+    bool transfer_view;       /**< Internal closure view; never a language-visible prototype. */
 
     /** @brief Explicit derivation shadows inherited properties on assignment. */
     bool shadow_inherited;
@@ -203,6 +205,7 @@ clone_in_module(process_t *process, object_t *obj, module_t *module, bool reloca
         (object_array_t){(object_t *const *)uobj->proto->data, uobj->proto->size},
         module);
     copy->shadow_inherited = uobj->shadow_inherited;
+    copy->inheritance_count = uobj->inheritance_count;
     transfer_t *transfer = relocate ? create_transfer(process) : NULL;
     if (transfer) {
         transfer_add_storage(transfer, obj, &copy->base);
@@ -246,6 +249,87 @@ clone_object_with_access(process_t *process, object_t *obj, const function_acces
     return obj->vtbl->type == TYPE_USER_DEFINED_OBJECT
                ? clone_in_module(process, obj, access->module, true)
                : clone_object(process, obj);
+}
+
+static bool contains_storage(const vector_t *storages, const object_t *object) {
+    for (size_t i = 0; i < storages->size; i++)
+        if (storages->data[i] == object)
+            return true;
+    return false;
+}
+
+/** @brief Moves every cell, while indexing only the first ordinary winner of each key. */
+static void flatten_storage(transfer_t *transfer, object_t *target, object_t *source) {
+    for (size_t i = 0; i < get_object_field_count(source); i++) {
+        field_cell_t *old = get_object_field_at(source, i);
+        /* Implicit this belongs to the executing context, not the materialized dictionary. */
+        if (old->key->vtbl->type == TYPE_STRING
+            && !compare_objects_using_vtbl(old->key, get_this_key()))
+            continue;
+        bool selected =
+            get_own_field_cell(source, old->key) == old && !get_own_field_cell(target, old->key);
+        field_cell_t *cell = append_field(target,
+                                          old->key,
+                                          old->object,
+                                          false,
+                                          old->modifier,
+                                          old->module,
+                                          transfer_domain(transfer, old->domain),
+                                          selected);
+        cell->declaration_id = old->declaration_id;
+        cell->binding_unit = old->binding_unit ? retain_module_identity(old->binding_unit) : NULL;
+        transfer_add_cell(transfer, source, old, target, cell);
+    }
+    if (source->vtbl->type != TYPE_USER_DEFINED_OBJECT) {
+        object_array_t keys = get_object_keys(source);
+        for (size_t i = 0; i < keys.size; i++)
+            if (!get_own_field_cell(target, keys.items[i]))
+                append_field(target,
+                             keys.items[i],
+                             get_object_property(source, keys.items[i]),
+                             false,
+                             ACCESS_PUBLIC,
+                             get_builtin_module_identity(),
+                             get_object_access_domain(target),
+                             true);
+    }
+}
+
+object_t *
+flat_object_with_access(process_t *process, object_t *source, const function_access_t *access) {
+    if (source->vtbl->type != TYPE_USER_DEFINED_OBJECT) {
+        INCREF(source);
+        return source;
+    }
+    object_t *root = get_root_object();
+    object_t *target =
+        create_user_defined_object_in_module(process, (object_array_t){&root, 1}, access->module);
+    vector_t *ancestors = create_vector();
+    append_to_vector(ancestors, source);
+    for (size_t i = 0; i < ancestors->size; i++) {
+        object_array_t parents = get_inheritance_prototypes(ancestors->data[i]);
+        for (size_t j = 0; j < parents.size; j++)
+            if (parents.items[j] != root && !contains_storage(ancestors, parents.items[j]))
+                append_to_vector(ancestors, parents.items[j]);
+    }
+    transfer_t *transfer = create_transfer(process);
+    configure_flat_transfer(transfer, source);
+    transfer_add_domain(transfer,
+                        get_object_access_domain(source),
+                        get_object_access_domain(target));
+    for (size_t i = 0; i < ancestors->size; i++)
+        if (((object_t *)ancestors->data[i])->vtbl->type == TYPE_USER_DEFINED_OBJECT)
+            transfer_add_storage(transfer, ancestors->data[i], target);
+    /* Existing topology is already deduplicated and ordered by the language's lookup priority. */
+    flatten_storage(transfer, target, source);
+    object_array_t topology = get_object_topology(source);
+    for (size_t i = 0; i < topology.size; i++)
+        if (contains_storage(ancestors, topology.items[i]))
+            flatten_storage(transfer, target, topology.items[i]);
+    finish_transfer(transfer);
+    destroy_transfer(transfer);
+    destroy_vector(ancestors);
+    return target;
 }
 
 /** @brief Context used while rendering an object in Goat notation. */
@@ -373,6 +457,30 @@ static object_array_t get_prototypes(const object_t *obj) {
 static object_array_t get_topology(const object_t *obj) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     return (object_array_t){(object_t **)uobj->topology->data, uobj->topology->size};
+}
+
+object_array_t get_inheritance_prototypes(const object_t *obj) {
+    object_array_t parents = get_object_prototypes(obj);
+    if (obj->vtbl->type == TYPE_USER_DEFINED_OBJECT)
+        parents.size = ((const object_user_defined_t *)obj)->inheritance_count;
+    return parents;
+}
+
+void set_inheritance_prototype_count(object_t *obj, size_t count) {
+    object_user_defined_t *user = (object_user_defined_t *)obj;
+    assert(count <= user->proto->size);
+    user->inheritance_count = count;
+}
+
+object_t *get_transfer_view_storage(const object_t *obj) {
+    if (obj->vtbl->type != TYPE_USER_DEFINED_OBJECT)
+        return NULL;
+    const object_user_defined_t *user = (const object_user_defined_t *)obj;
+    return user->transfer_view ? user->proto->data[0] : NULL;
+}
+
+void mark_transfer_view(object_t *obj) {
+    ((object_user_defined_t *)obj)->transfer_view = true;
 }
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
@@ -589,6 +697,8 @@ create_empty_user_defined_object(process_t *process, object_array_t proto, modul
         INCREF(proto.items[index]);
         append_to_vector(uobj->proto, proto.items[index]);
     }
+    uobj->inheritance_count = proto.size;
+    uobj->transfer_view = false;
     build_topology(proto, uobj->topology);
     add_object_to_list(&process->objects, &uobj->base);
     return uobj;

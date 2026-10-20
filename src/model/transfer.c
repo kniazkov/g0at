@@ -23,7 +23,9 @@ struct transfer_t {
     vector_t *storage;
     vector_t *domains; /**< Owns destination domain references. */
     vector_t *cells;
-    vector_t *functions; /**< Owns new function references until cells retain them. */
+    vector_t *functions;    /**< Owns new function references until cells retain them. */
+    vector_t *environments; /**< Owns lexical views used only by transferred functions. */
+    object_t *receiver;     /**< Borrowed original flat receiver; NULL for clone. */
 };
 
 static void *mapped(const vector_t *map, const void *source) {
@@ -43,8 +45,13 @@ static void add_pair(vector_t *map, void *source, void *destination) {
 
 transfer_t *create_transfer(process_t *process) {
     transfer_t *transfer = ALLOC(sizeof(*transfer));
-    *transfer =
-        (transfer_t){process, create_vector(), create_vector(), create_vector(), create_vector()};
+    *transfer = (transfer_t){process,
+                             create_vector(),
+                             create_vector(),
+                             create_vector(),
+                             create_vector(),
+                             create_vector(),
+                             NULL};
     return transfer;
 }
 
@@ -61,6 +68,40 @@ void transfer_add_domain(transfer_t *transfer,
 object_t *transfer_storage(const transfer_t *transfer, object_t *source) {
     object_t *destination = mapped(transfer->storage, source);
     return destination ? destination : source;
+}
+
+void configure_flat_transfer(transfer_t *transfer, object_t *receiver) {
+    transfer->receiver = receiver;
+}
+
+object_t *transfer_closure(transfer_t *transfer, object_t *source) {
+    object_t *previous_storage = get_transfer_view_storage(source);
+    object_t *storage = previous_storage ? previous_storage : source;
+    object_t *target = transfer_storage(transfer, storage);
+    if (target == storage)
+        return source;
+    if (!previous_storage && !transfer->receiver)
+        return target;
+    object_t *view = mapped(transfer->environments, source);
+    if (view)
+        return view;
+    object_array_t parents = get_object_prototypes(source);
+    size_t inherited = previous_storage ? 1 : get_inheritance_prototypes(source).size;
+    if (inherited == parents.size)
+        return target;
+    size_t count = 1 + parents.size - inherited;
+    object_t **items = ALLOC(count * sizeof(*items));
+    items[0] = target;
+    for (size_t i = 1; i < count; i++)
+        items[i] = parents.items[inherited + i - 1];
+    view = create_user_defined_object_in_module(transfer->process,
+                                                (object_array_t){items, count},
+                                                get_object_module(source));
+    set_inheritance_prototype_count(view, 0);
+    mark_transfer_view(view);
+    FREE(items);
+    add_pair(transfer->environments, source, view);
+    return view;
 }
 
 access_domain_t *transfer_domain(transfer_t *transfer, access_domain_t *source) {
@@ -96,12 +137,16 @@ static void copy_grants(const transfer_t *transfer, vector_t *destination, const
 void transfer_function_access(const transfer_t *transfer,
                               function_access_t *destination,
                               const function_access_t *source) {
-    copy_grants(transfer, destination->domains, source->domains);
-    copy_grants(transfer, destination->protected_domains, source->protected_domains);
-    for (size_t i = 0; i < source->lexical_scopes->size; i++)
-        add_lexical_scope(destination, transfer_storage(transfer, source->lexical_scopes->data[i]));
-    for (size_t i = 0; i < source->captures->size; i++) {
-        field_capture_t *capture = source->captures->data[i];
+    function_access_t effective;
+    init_function_access(&effective, source->module);
+    inherit_function_access(&effective, source);
+    if (transfer->receiver)
+        add_inherited_receiver_access(&effective, transfer->receiver, source);
+    copy_grants(transfer, destination->domains, effective.domains);
+    copy_grants(transfer, destination->protected_domains, effective.protected_domains);
+    /* Capture before adding merged scopes: one descriptor can identify several factory cells. */
+    for (size_t i = 0; i < effective.captures->size; i++) {
+        field_capture_t *capture = effective.captures->data[i];
         object_t *storage = capture->storage;
         field_cell_t *cell = capture->cell;
         for (size_t j = 0; j < transfer->cells->size; j++) {
@@ -114,6 +159,9 @@ void transfer_function_access(const transfer_t *transfer,
         }
         add_function_field_capture(destination, storage, cell);
     }
+    for (size_t i = 0; i < source->lexical_scopes->size; i++)
+        add_lexical_scope(destination, transfer_storage(transfer, source->lexical_scopes->data[i]));
+    clear_function_access(&effective, true);
 }
 
 void finish_transfer(transfer_t *transfer) {
@@ -149,7 +197,15 @@ void destroy_transfer(transfer_t *transfer) {
         object_t *function = ((identity_pair_t *)transfer->functions->data[i])->destination;
         DECREF(function);
     }
-    vector_t *maps[] = {transfer->storage, transfer->domains, transfer->cells, transfer->functions};
+    for (size_t i = 0; i < transfer->environments->size; i++) {
+        object_t *view = ((identity_pair_t *)transfer->environments->data[i])->destination;
+        DECREF(view);
+    }
+    vector_t *maps[] = {transfer->storage,
+                        transfer->domains,
+                        transfer->cells,
+                        transfer->functions,
+                        transfer->environments};
     for (size_t m = 0; m < sizeof(maps) / sizeof(*maps); m++) {
         for (size_t i = 0; i < maps[m]->size; i++)
             FREE(maps[m]->data[i]);

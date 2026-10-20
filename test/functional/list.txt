@@ -553,3 +553,9 @@ access_clone_state
 access_clone_functions
 access_clone_rights
 access_clone_legacy
+access_flat_chain
+access_flat_factory
+access_flat_diamond
+access_flat_external
+access_flat_graphs
+access_flat_legacy

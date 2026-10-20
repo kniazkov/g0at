@@ -47,6 +47,15 @@ property_lookup_t lookup_bound_property(const function_access_t *access,
             if (cell->binding_unit == unit && cell->declaration_id == id)
                 return cell_result(access, storage, cell);
         }
+        if (s == 0) {
+            /* Several factory instances can share a bytecode ID after flat. Captures identify
+               their concrete cells and must precede the merged storage's generic scan. */
+            for (size_t c = 0; c < access->captures->size; c++) {
+                field_capture_t *capture = access->captures->data[c];
+                if (capture->cell->binding_unit == unit && capture->cell->declaration_id == id)
+                    return cell_result(access, capture->storage, capture->cell);
+            }
+        }
     }
     return (property_lookup_t){.status = MSTAT_PROPERTY_NOT_FOUND};
 }

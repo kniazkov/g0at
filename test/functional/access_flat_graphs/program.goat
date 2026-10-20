@@ -1,0 +1,26 @@
+var chain = { private x = 7; public read = func() { return x; }; };
+for (var i = 0; i < 32; i += 1) {
+    chain = chain -> { public var depth = i; };
+}
+var flattened = chain.flat();
+println(flattened.read());
+println(flattened.depth);
+println(flattened.instanceOf(chain));
+const make = func(value) {
+    return { private x = value; public get = func() { return x; }; };
+};
+var parents = [];
+for (var i = 0; i < 16; i += 1) parents.push(make(i));
+var wide = parents -> {};
+for (var i = 0; i < 16; i += 1) wide[i] = parents[i].get;
+var copy = wide.flat();
+var total = 0;
+for (var i = 0; i < 16; i += 1) total += copy[i]();
+println(total);
+println(copy.get() == wide.get());
+println(copy[0] == parents[0].get);
+println(copy.instanceOf(parents[0]));
+var key = {};
+wide[key] = 42;
+var keyed = wide.flat();
+println(keyed[key]);

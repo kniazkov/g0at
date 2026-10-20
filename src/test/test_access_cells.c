@@ -317,6 +317,90 @@ bool test_access_clone_methods(void) {
     return true;
 }
 
+/** @brief Same-key, same-bytecode-ID cells stay distinct after merging prototype storage. */
+bool test_access_flat_cells(void) {
+    process_t *proc = create_process();
+    module_t *foreign = create_module_identity();
+    function_access_t caller;
+    init_function_access(&caller, proc->module);
+    object_static_string_t x_name = {0}, f_name = {0}, l_name = {0}, r_name = {0};
+    object_t *x = get_static_string_object(&x_name, L"x");
+    object_t *f = get_static_string_object(&f_name, L"f");
+    object_t *l = get_static_string_object(&l_name, L"left");
+    object_t *r = get_static_string_object(&r_name, L"right");
+    size_t baseline = proc->objects.size;
+    for (int iteration = 0; iteration < 20; iteration++) {
+        object_t *root = get_root_object();
+        object_t *parents[2], *methods[2];
+        for (size_t i = 0; i < 2; i++) {
+            parents[i] =
+                create_user_defined_object_in_module(proc, (object_array_t){&root, 1}, foreign);
+            /* Exercise GC of the internal lexical view as well as its merged storage. */
+            set_inheritance_prototype_count(parents[i], 0);
+            field_cell_t *cell = create_object_field(parents[i],
+                                                     x,
+                                                     get_boolean_object(i != 0),
+                                                     true,
+                                                     ACCESS_PRIVATE,
+                                                     foreign,
+                                                     get_object_access_domain(parents[i]),
+                                                     true);
+            cell->declaration_id = 1;
+            cell->binding_unit = retain_module_identity(foreign);
+            methods[i] = create_function_object(proc, NULL, 0, 0, parents[i], NULL, true);
+            ASSERT(create_object_field(parents[i],
+                                       f,
+                                       methods[i],
+                                       true,
+                                       ACCESS_PUBLIC,
+                                       foreign,
+                                       get_object_access_domain(parents[i]),
+                                       true));
+        }
+        object_t *source = create_user_defined_object(proc, (object_array_t){parents, 2});
+        ASSERT(create_object_property(source, l, methods[0], true) == MSTAT_OK);
+        ASSERT(create_object_property(source, r, methods[1], true) == MSTAT_OK);
+        object_t *copy = flat_object_with_access(proc, source, &caller);
+        ASSERT(get_object_module(copy) == caller.module);
+        ASSERT(get_object_prototypes(copy).size == 1
+               && get_object_prototypes(copy).items[0] == root);
+        ASSERT(get_object_field_count(copy) == 6 && get_object_keys(copy).size == 4);
+        object_t *left = get_object_property(copy, l), *right = get_object_property(copy, r);
+        ASSERT(left != right && left != methods[0] && right != methods[1]);
+        function_access_t *la = get_function_access(left), *ra = get_function_access(right);
+        ASSERT(la->module == foreign && ra->module == foreign);
+        property_lookup_t lc = lookup_bound_property(la, root, foreign, 1);
+        property_lookup_t rc = lookup_bound_property(ra, root, foreign, 1);
+        ASSERT(lc.status == MSTAT_OK && rc.status == MSTAT_OK && lc.cell != rc.cell);
+        ASSERT(lc.storage == copy && rc.storage == copy);
+        ASSERT(lc.value == get_boolean_object(false) && rc.value == get_boolean_object(true));
+        ASSERT(lc.cell->domain != rc.cell->domain && lc.cell->module == foreign);
+        ASSERT(!lc.cell->is_constant && !rc.cell->is_constant);
+        ASSERT(!can_access_field(&caller, lc.cell) && !can_access_field(la, rc.cell));
+        ASSERT(get_object_property(copy, x)
+               == lookup_accessible_property(&caller, source, x, false).cell->object);
+        ASSERT(set_field_cell_value(copy, lc.cell, get_boolean_object(true)) == MSTAT_OK);
+        ASSERT(get_object_property(parents[0], x) == get_boolean_object(false));
+        add_gc_root(proc, left);
+        DECREF(copy);
+        DECREF(source);
+        for (size_t i = 0; i < 2; i++) {
+            DECREF(methods[i]);
+            DECREF(parents[i]);
+        }
+        collect_garbage(proc);
+        ASSERT(lc.cell->object == get_boolean_object(true));
+        ASSERT(get_object_field_count(lc.storage) == 6);
+        remove_gc_root(proc, left);
+        collect_garbage(proc);
+        ASSERT(proc->objects.size == baseline);
+    }
+    clear_function_access(&caller, true);
+    release_module_identity(foreign);
+    destroy_process(proc);
+    return true;
+}
+
 bool test_access_clone_metadata(void) {
     process_t *proc = create_process();
     object_t *root = get_root_object();

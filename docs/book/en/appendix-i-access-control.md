@@ -2,11 +2,11 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-i-access-control.md) · [Previous](appendix-h-decision-history.md)
 
-Status: agreed language design with stages A–D implemented. The examples below describe the complete target behavior; flat transfer, observation filtering, and static access proofs still require later stages.
+Status: agreed language design with stages A–E implemented. The examples below describe the complete target behavior; observation filtering and static access proofs still require later stages.
 
 [Detailed examples and edge cases](access-control-examples.md) · [Implementation plan](access-control-implementation-plan.md)
 
-Stage C (#164) enables declaration modifiers in every scope, source regeneration, AST metadata, checked VM execution, and format-11 bytecode. Explicitly modified declarations use lexical cell identities: a captured prototype `x` stays bound to its original cell while `this.x` uses the receiver. Programs without modifiers retain their existing lookup behavior. Until stage G (#168), programs containing modifiers conservatively skip optimization and native inference even with `--optimize all`; access violations are checked at runtime. Stage D (#165) adapts directly copied `clone` methods and their captures, preserving external references and rights. Adaptation for `flat` and visibility filtering during printing/enumeration are not implemented yet: this is an integration stage, not the complete protection model. Module loading remains in #154.
+Stage C (#164) enables declaration modifiers in every scope, source regeneration, AST metadata, checked VM execution, and format-11 bytecode. Explicitly modified declarations use lexical cell identities: a captured prototype `x` stays bound to its original cell while `this.x` uses the receiver. Programs without modifiers retain their existing lookup behavior. Until stage G (#168), programs containing modifiers conservatively skip optimization and native inference even with `--optimize all`; access violations are checked at runtime. Stage D (#165) adapts directly copied `clone` methods and their captures, preserving external references and rights. Stage E (#166) transfers the complete flat cell inventory and adapts methods without merging same-named fields. Visibility filtering during printing/enumeration is not implemented yet: this is an integration stage, not the complete protection model. Module loading remains in #154.
 
 ## I.1. Declarations
 
@@ -129,6 +129,10 @@ An arbitrary topological order is insufficient: independent prototypes must keep
 
 Internally retaining field provenance does not restore old prototypes to the result's chain. They do not become result parents or appear in `instanceOf` solely due to internal metadata. `Object` methods remain available through the sole parent; copying them into own properties is unnecessary.
 
+The prototype traversal follows actual inheritance edges. A constructor's lexical fallback is not an inherited object: its variables remain external captures rather than becoming own fields of the flat result. Internal method environments retain these fallbacks separately; they do not add parents to the result or change `instanceOf`. The previous ordinary lookup priority is retained among transferred fields.
+
+A file-local declaration identifier alone is also insufficient: two calls to one factory use the same bytecode identifiers but create different cells. After flattening, each method's concrete capture takes priority over scanning the merged storage by identifier. Repeated `flat()` and `clone()` rebind these captures and internal environments again.
+
 ## I.8. Methods, Captures, and Rights During Copying
 
 These rules apply to functions directly transferred as property values. Function code may remain shared, but its environment and rights must be adapted without changing the original function.
@@ -154,4 +158,4 @@ This is shallow copying with adaptation of directly transferred functions, not r
 
 Native execution must enforce the same restrictions. If access rights cannot be reliably checked at compilation, the function remains in the VM for now; `--native required` reports an error in that case. Copying must not reuse a native specialization if its environment and access assumptions are no longer proven.
 
-The identified filtering and copying contradictions are resolved by the rules above. The actual status of each stage is in the [implementation plan](access-control-implementation-plan.md). Declaration and clone examples now execute in the VM; examples involving flat adaptation, filtering, modules, or compile-time access diagnostics remain acceptance criteria for later stages. Adapted functions do not retain native specializations whose environment assumptions may have changed.
+The identified filtering and copying contradictions are resolved by the rules above. The actual status of each stage is in the [implementation plan](access-control-implementation-plan.md). Declaration, clone, and flat examples now execute in the VM; filtering, modules, and compile-time access diagnostics remain acceptance criteria for later stages. Adapted functions do not retain native specializations whose environment assumptions may have changed.
