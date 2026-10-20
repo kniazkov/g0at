@@ -106,6 +106,16 @@ The instruction preserves source order, retains elements and creates a fresh arr
 `ARRAY 0` creates an empty array. Insufficient stack elements are a fatal bytecode
 error. `GETINDEX` / `SETINDEX` dispatch to the array methods.
 
+## Cleanup contexts
+
+`FINALLY_ENTER arg1` opens a protected context with a cleanup address and the current
+stack boundary. `FINALLY_LEAVE arg1` starts cleanup after normal completion, saving
+the continuation address. `FINALLY_END` destroys the running cleanup context and
+resumes its saved normal, return, exception or loop transfer. Non-local transfers
+visit protected contexts automatically; a running cleanup is never entered again.
+Pending values belong to their contexts and are marked by GC. Format 10 validates
+both address operands when loading saved bytecode.
+
 ## Collection snapshots
 
 `SNAPSHOT` replaces its operand with a fresh array containing array elements or sorted

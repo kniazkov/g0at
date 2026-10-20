@@ -48,6 +48,7 @@ typedef enum {
     TOKEN_IF,            /**< The 'if' keyword used in if-else statements */
     TOKEN_TRY,           /**< The try keyword. */
     TOKEN_CATCH,         /**< The catch keyword. */
+    TOKEN_FINALLY,       /**< The finally keyword. */
     TOKEN_THROW,         /**< The throw keyword. */
     TOKEN_CATCH_BINDING, /**< Validated catch identifier in parentheses. */
     TOKEN_ELSE,          /**< The 'else' keyword used in if-else statements */

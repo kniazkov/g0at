@@ -1,0 +1,13 @@
+1
+clean 1
+clean 2
+clean 3
+3
+break replaced continue
+4
+break replaced throw
+1
+5
+inner
+outer
+loop error

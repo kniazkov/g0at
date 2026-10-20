@@ -127,9 +127,15 @@ Declarations are processed after expressions. A variable's initializer (the expr
 
 ## 6.6. Conditions, Handlers, and Statement Lists
 
+The current exception grammar additionally accepts `finally`. All try, catch and
+finally bodies may be single statements (including `;`) or blocks. Each is wrapped
+in a separate scope; catch still requires exactly one identifier in parentheses.
+Unmatched or duplicate catch/finally clauses are rejected. See chapter 12 for the
+cleanup contract; the original try/catch reduction below is extended accordingly.
+
 The [`if` rule](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parsing_flow_keywords.c) requires parentheses containing one condition expression and a following statement or expression. An expression used as a statement receives a wrapper node. An optional `else` is attached while parsing the construct; the pass traverses its group backward so nested constructs can be assembled before their enclosing ones. Any unmatched `else` becomes an error.
 
-[`try/catch`](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/parser/parsing_exceptions.c) has a preliminary step: `catch` must contain exactly one identifier in parentheses. That identifier leaves the ordinary name group. The main step requires a `try` body and a handler block; a single `try` statement additionally receives a container that allows implicit local declarations to be inserted later. `throw` requires an expression for the value being passed. A `catch` left without a `try` is also rejected.
+Exception parsing has a preliminary step: `catch` must contain exactly one identifier in parentheses. That identifier leaves the ordinary name group. The main step requires a `try` body followed by `catch`, `finally`, or both in that order. Single statements receive scope containers that allow implicit local declarations to be inserted later. `throw` requires an expression for the value being passed. A `catch` or `finally` left without a `try` is rejected.
 
 Finally, `process_statement_list` collects a list: completed statements are added directly, expressions receive statement-expression wrappers, and commas and semicolons are skipped. Any remaining element of an unsuitable kind means parsing failed. The outer list becomes the root node.
 

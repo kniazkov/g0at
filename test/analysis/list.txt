@@ -327,3 +327,4 @@ compound_types
 
 iteration_types
 conditional_types
+finally_types

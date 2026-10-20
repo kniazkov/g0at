@@ -21,6 +21,9 @@ create_context_with_protos(process_t *process, context_t *caller, object_array_t
     ctx->data = create_user_defined_object(process, protos);
     ctx->native_disabled = caller->native_disabled;
     ctx->iteration_index = 0;
+    ctx->pending_flow = FLOW_NORMAL;
+    ctx->pending_value = NULL;
+    ctx->pending_address = BAD_INSTR_INDEX;
     ctx->previous = caller;
     ctx->control_flow = FLOW_NORMAL;
     ctx->jump_address[0] = BAD_INSTR_INDEX;
@@ -42,6 +45,7 @@ context_t *destroy_context(context_t *context) {
        which may still be reachable from the program (e.g. returned from the call or captured
        by a closure). */
     DECREF(context->data);
+    DECREFIF(context->pending_value);
     context_t *previous = context->previous;
     FREE(context);
     return previous;

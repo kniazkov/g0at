@@ -22,8 +22,8 @@ The format is implemented in [binary.c](https://github.com/kniazkov/g0at/blob/64
 
 | Offset | Size | Outer-header field |
 |---:|---:|---|
-| 0 | 8 | Signature `GOATBIN9` |
-| 8 | 8 | Format version, currently 9 |
+| 0 | 8 | Signature `GOATBI10` |
+| 8 | 8 | Format version, currently 10 |
 | 16 | 8 | Platform tag |
 | 24 | 8 | Bytecode-image size |
 | 32 | 8 | Binding count |
@@ -41,6 +41,9 @@ Each binding occupies 16 bytes: two little-endian `uint64` values, the `FUNC` in
 <a id="section-26-3"></a>
 
 ## 26.3. What compatibility means
+
+Format version 10 adds `FINALLY_ENTER`, `FINALLY_LEAVE` and `FINALLY_END`.
+Its eight-byte signature is `GOATBI10`; older `.gbin` files must be recompiled.
 
 The platform tag combines `wchar_t` size and a byte-order indicator. Inner instructions and data retain the current implementation's representation, including wide strings; outer little-endian encoding does not make the whole image portable.
 

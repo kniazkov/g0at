@@ -1,0 +1,18 @@
+const scalar=func(){var x=1;try return x; finally x=2;};
+println(scalar());
+const replace=func(){try return 1; finally return 2;};
+println(replace());
+const suppress=func(){try throw "error"; finally return 3;};
+println(suppress());
+const reject=func(){try return 4; finally throw "replaced";};
+try println(reject()); catch(e) println(e);
+const mutable=func(){var result={var x=5;};try return result; finally result.x=6;};
+println(mutable().x);
+const closure=func(){var x=7;try return func(){return x;}; finally x=8;};
+println(closure()());
+const nested=func(){try {try return 9; finally println("inner");} finally println("outer");};
+println(nested());
+const caught=func(){try throw 10; catch(e) return e; finally println("caught cleanup");};
+println(caught());
+const local=func(){try return 11; finally {try throw "local"; catch(e) println(e);}};
+println(local());

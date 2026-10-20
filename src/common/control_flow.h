@@ -25,5 +25,7 @@ typedef enum {
     /** @brief Abstract path has no normal execution (not used by the VM). */
     FLOW_LOOP, /**< Runtime scope marking the nearest loop; not abstract control flow. */
 
+    FLOW_FINALLY, /**< Protected scope awaiting cleanup. */
+    FLOW_CLEANUP, /**< Cleanup running with a suspended transfer. */
     FLOW_UNREACHABLE
 } control_flow_t;

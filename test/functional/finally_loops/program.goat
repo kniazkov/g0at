@@ -1,0 +1,14 @@
+for(x in [1,2,3]) {try {if(x==2)continue; if(x==3)break; println(x);} finally println("clean "+x);}
+var i=0;
+while(i<3){i++;try break; finally {if(i<3)continue;}}
+println(i);
+for(x in [1,2]) {try continue; finally break;}
+println("break replaced continue");
+const pending=func(){for(x in [1,2]){try return 99; finally continue;}return 4;};
+println(pending());
+for(x in [1,2]) {try throw "suppressed"; finally break;}
+println("break replaced throw");
+const innerLoop=func(){try return 5; finally {for(x in [1,2]){println(x);break;}}};
+println(innerLoop());
+for(x in [1]) {try {try break; finally println("inner");} finally println("outer");}
+try {for(x in [1]) {try break; finally throw "loop error";}} catch(e) println(e);

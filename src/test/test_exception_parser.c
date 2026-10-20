@@ -15,6 +15,8 @@
 
 bool test_exception_parser(void) {
     const wchar_t *valid[] = {L"try { } catch (e) { }",
+                              L"try {} catch (e) print(e);",
+                              L"try ; catch (e) {}",
                               L"try throw 1; catch (e) { throw e; }",
                               L"try try throw null catch (e) { throw e; } catch (outer) { }",
                               L"try if (true) { throw 1; } else { } catch (e) { }",
@@ -30,11 +32,9 @@ bool test_exception_parser(void) {
                                 L"try {} catch (e+1) {}",
                                 L"try {} catch ((e)) {}",
                                 L"try {} catch (null) {}",
-                                L"try {} catch (e) print(e);",
                                 L"try {} catch (e) {} catch (f) {}",
                                 L"throw;",
-                                L"try throw catch (e) {}",
-                                L"try ; catch (e) {}"};
+                                L"try throw catch (e) {}"};
     for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
         arena_t *arena = create_arena(8);
         parser_memory_t memory = {arena, arena, arena, arena};

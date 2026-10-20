@@ -147,3 +147,6 @@ node_t *create_throw_node(arena_t *arena, expression_t *value);
 
 /** @brief Gets the catch-local declaration used by name binding. */
 declarator_t *get_catch_declarator(node_t *node);
+
+/** @brief Creates a protected statement and a separately scoped cleanup block. */
+node_t *create_try_finally_node(arena_t *arena, statement_t *body, statement_list_t *cleanup);
