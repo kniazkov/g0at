@@ -14,13 +14,56 @@ One compiled module is one file without source code. It represents a library or 
 
 Execution uses metadata to select a suitable library and implementations. Bytecode is used when no suitable native implementation exists. The loader may extract a library to a temporary directory or cache and load it through standard OS facilities. Prefer simple portable solutions using OS capabilities.
 
-The binary format, filename extension, metadata schema, and exact platform compatibility rules remain undecided.
+JSON is proposed for metadata, matching the build description. Bytecode and native libraries remain binary container parts; encoding them in JSON is not required. The binary format, filename extension, metadata schema, and exact platform compatibility rules remain undecided.
 
 ## Source files and module composition
 
-A build specifies one entry source file. The module includes that file and all sources reachable through `include`, each once. Unused neighboring files are excluded. Imports of compiled modules become external dependencies.
+A module build requires a description file, supplied to the compiler. It specifies the name, mandatory version, entry source file, and dependencies. The module includes the entry file and all sources reachable through `include`, each once. Unused neighboring files are excluded. Imports of compiled modules become external dependencies.
 
-Each source file has its own namespace. Declarations from different files do not merge; identical names are allowed. Each included file's bytecode is stored once, regardless of repeated inclusion. Exact placement restrictions for include/import still require clarification.
+Each source file has its own namespace. Declarations from different files do not merge; identical names are allowed. Each included file's bytecode is stored once, regardless of repeated inclusion.
+
+A standalone `.goat` file can still be run without a module description to execute code, test it, or print to the console. This does not build a distributable module. Every import in such sources must explicitly specify the dependency's full version.
+
+## Build description
+
+The description uses JSON:
+
+```json
+{
+  "name": "geometry",
+  "version": "1.2.0",
+  "main": "src/main.goat",
+  "dependencies": {
+    "math": "2.0.0"
+  }
+}
+```
+
+Resolve `main` relative to the description file. Its filename and complete schema remain undecided.
+
+A dependency version may be specified in the description or directly in an import:
+
+```goat
+const math = import "math";          // Version 2.0.0 from the description.
+const oldMath = import "math@1.2.0"; // Explicitly selects another version.
+```
+
+An explicit version applies to that import without changing the default for unversioned imports. Both versions may coexist in one program with separate state. An unversioned import with no corresponding dependency in the description (or no description at all) is a compilation error. Never automatically select the latest or an arbitrary available version.
+
+## Dependency verification and hashes
+
+All imported compiled modules must be available at build time. The compiler reads their metadata for interface checking and analysis without running initialization code. A missing dependency is a compilation error. Dependencies must also be available at runtime.
+
+Module metadata contains its name, version, and automatically computed content hash. Exclude the hash field itself from the calculation; the exact algorithm and hashed representation remain to be defined. A consumer records each dependency's name, exact version, and expected hash.
+
+Each name/version pair has one build. Hashes are not directory names. Example layout (extension provisional):
+
+```text
+geometry/1.2.0/module.goatmod
+geometry/2.0.0/module.goatmod
+```
+
+Old and new programs can use different library versions on the same computer. If a library is rebuilt under the same version without rebuilding its consumer, a hash mismatch at load time is an immediate error. Do not search for another build. Users need not select hashes in dependency descriptions; storing several hashes of one version in separate directories was rejected.
 
 ## Two distinct operations
 
@@ -32,6 +75,8 @@ const geometry = import "geometry";
 `include` connects a source file within the current module and returns its scope object. It is not textual insertion. `import` connects a separate compiled module and returns its entry file's scope object. Another module's internal files cannot be imported directly.
 
 Both operands must be string literals. Computed paths are forbidden so that module contents and external dependencies can be determined at build time.
+
+Both operations are allowed in expressions, including function bodies and conditional branches. A dependency is established at build time even for an expression not yet executed; initialization occurs on first actual execution. The included file executes in its own scope, cannot see caller-local variables, and retains shared state across repeated accesses.
 
 Two files in one module:
 
@@ -79,9 +124,9 @@ For `import "geometry"`, search in this order:
 1. The directory containing the importing compiled module. When running sources directly, the directory of the source file containing `import`.
 2. Directories in `GOAT_MODULE_PATH`, from left to right.
 
-The separator is `;` on Windows and `:` on Linux/macOS. Use the first matching file. A corrupt or incompatible file is an error; do not continue searching for another version. This allows a module and its dependencies to be distributed together in one directory.
+The separator is `;` on Windows and `:` on Linux/macOS. Use the first file matching the requested name and version. Corruption, incompatibility, or a mismatch with the consumer's recorded hash is an error; do not search for another build. This allows a module and its dependencies to be distributed together in one directory.
 
-Name-to-filename mapping, versions, path canonicalization, and the identity of dependencies found through different paths remain undecided.
+Exact name-to-path mapping, version syntax, path canonicalization, and the identity of dependencies found through different paths remain undecided.
 
 ## Initialization and cycles
 
@@ -105,4 +150,4 @@ If initialization throws, remember the failure and exception. Subsequent inclusi
 
 ## Further discussion
 
-The binary container and its versions, external dependency identity and versions, exact loading and initialization timing, details of cycles between compiled modules, previously returned references after failed initialization, platform and ABI descriptions, and build/packaging commands remain open. The examples above do not settle these questions.
+The binary container and its versions, complete JSON schema and hash algorithm, version syntax, identity canonicalization, physical library loading timing, details of cycles between compiled modules, previously returned references after failed initialization, platform and ABI descriptions, and build/packaging commands remain open. Initialization on first include/import execution is already agreed. The examples above do not settle the remaining questions.
