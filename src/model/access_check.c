@@ -5,6 +5,20 @@
 #include "access.h"
 #include "common_methods.h"
 
+operation_result_t add_objects_with_access(process_t *process,
+                                           object_t *left,
+                                           object_t *right,
+                                           const function_access_t *access) {
+    if ((left->vtbl->type != TYPE_STRING && left->vtbl->type != TYPE_CHARACTER)
+        || (right->vtbl->type != TYPE_USER_DEFINED_OBJECT && right->vtbl->type != TYPE_ARRAY))
+        return add_objects(process, left, right);
+    string_value_t text = object_to_string_with_access(right, access);
+    object_t *string = create_string_object(process, text);
+    operation_result_t result = add_objects(process, left, string);
+    DECREF(string);
+    return result;
+}
+
 static bool contains_domain(const vector_t *domains, const access_domain_t *domain) {
     for (size_t i = 0; i < domains->size; i++)
         if (domains->data[i] == domain)

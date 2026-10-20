@@ -559,3 +559,6 @@ access_flat_diamond
 access_flat_external
 access_flat_graphs
 access_flat_legacy
+access_observation
+access_observation_snapshot
+throw_uncaught_visibility

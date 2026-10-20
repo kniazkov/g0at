@@ -1,0 +1,39 @@
+var obj = {
+    private secret = 42;
+    public var a = 1;
+    public var b = 2;
+    public fail = func(target) { println(target); throw target; };
+    public observe = func(target) {
+        for (key in target) {
+            if (key == "secret") println(target[key]);
+        }
+        return target;
+    };
+};
+var count = 0;
+for (key in obj) {
+    if (key == "a") { obj.c = 3; obj.b = 20; }
+    println(key);
+    count += 1;
+}
+println(count);
+println(obj);
+println(obj.observe(obj));
+try obj.fail(obj); catch (e) { println(e); println([e]); }
+println(obj);
+var array = [obj];
+for (value in array) { array.push(17); println(value); }
+println(array);
+const makeEnvironment = func() {
+    private secret = 12345;
+    public visible = 7;
+    println(this);
+    return this;
+};
+const environment = makeEnvironment();
+println(environment);
+for (key in environment) println(key);
+const hiddenKey = { private password = 12345; };
+var dictionary = { };
+dictionary[hiddenKey] = [hiddenKey];
+println(dictionary);

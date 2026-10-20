@@ -5,7 +5,7 @@
  * operation results own their reference. Storage details stay inside the model.
  */
 #pragma once
-#include "object.h"
+#include "access.h"
 
 /** @brief Inserts at a validated boundary; returns the new length. */
 operation_result_t
@@ -23,4 +23,5 @@ operation_result_t reverse_array_elements(object_t *obj);
 /** @brief Copies a validated half-open range into independent array storage. */
 operation_result_t slice_array(object_t *obj, size_t begin, size_t end);
 /** @brief Formats notation, or joins values with a borrowed string/character separator. */
-operation_result_t array_to_string(object_t *obj, object_t *separator_object);
+operation_result_t
+array_to_string(object_t *obj, object_t *separator_object, const function_access_t *access);

@@ -8,6 +8,7 @@
 #include "analysis/lattice.h"
 #include "model/array.h"
 #include "model/builtin_function.h"
+#include "model/context.h"
 #include "model/thread.h"
 
 /** @brief Operations provided by the Array prototype. */
@@ -38,8 +39,11 @@ static bool boundary(object_t *obj, size_t limit, size_t *value) {
 }
 
 /** @brief Validates arity/receiver before performing an operation. */
-static operation_result_t
-dispatch(array_method_t method, object_t *receiver, object_t **args, size_t count) {
+static operation_result_t dispatch(array_method_t method,
+                                   object_t *receiver,
+                                   object_t **args,
+                                   size_t count,
+                                   thread_t *thread) {
     if (receiver->vtbl->type != TYPE_ARRAY)
         return operation_exception(get_exception_invalid_argument());
     size_t length = get_array_elements(receiver).size;
@@ -92,7 +96,7 @@ dispatch(array_method_t method, object_t *receiver, object_t **args, size_t coun
             if (count && args[0]->vtbl->type != TYPE_STRING
                 && args[0]->vtbl->type != TYPE_CHARACTER)
                 break;
-            return array_to_string(receiver, count ? args[0] : NULL);
+            return array_to_string(receiver, count ? args[0] : NULL, &thread->context->access);
     }
     return operation_exception(get_exception_invalid_argument());
 }
@@ -107,157 +111,157 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
 /** @brief Receiver-aware push entry point. */
 static operation_result_t
 method_push(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(PUSH, receiver, args, count);
+    return dispatch(PUSH, receiver, args, count, thread);
 }
 
 /** @brief Detached push entry point with the receiver as its first argument. */
 static operation_result_t plain_push(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(PUSH, args[0], args + 1, count - 1);
+    return dispatch(PUSH, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Receiver-aware prepend entry point. */
 static operation_result_t
 method_prepend(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(PREPEND, receiver, args, count);
+    return dispatch(PREPEND, receiver, args, count, thread);
 }
 
 /** @brief Detached prepend entry point with the receiver as its first argument. */
 static operation_result_t plain_prepend(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(PREPEND, args[0], args + 1, count - 1);
+    return dispatch(PREPEND, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Receiver-aware insert entry point. */
 static operation_result_t
 method_insert(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(INSERT, receiver, args, count);
+    return dispatch(INSERT, receiver, args, count, thread);
 }
 
 /** @brief Detached insert entry point with the receiver as its first argument. */
 static operation_result_t plain_insert(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(INSERT, args[0], args + 1, count - 1);
+    return dispatch(INSERT, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Receiver-aware pop entry point. */
 static operation_result_t
 method_pop(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(POP, receiver, args, count);
+    return dispatch(POP, receiver, args, count, thread);
 }
 
 /** @brief Detached pop entry point with the receiver as its first argument. */
 static operation_result_t plain_pop(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(POP, args[0], args + 1, count - 1);
+    return dispatch(POP, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Receiver-aware remove entry point. */
 static operation_result_t
 method_remove(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(REMOVE, receiver, args, count);
+    return dispatch(REMOVE, receiver, args, count, thread);
 }
 
 /** @brief Detached remove entry point with the receiver as its first argument. */
 static operation_result_t plain_remove(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(REMOVE, args[0], args + 1, count - 1);
+    return dispatch(REMOVE, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Receiver-aware clear entry point. */
 static operation_result_t
 method_clear(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(CLEAR, receiver, args, count);
+    return dispatch(CLEAR, receiver, args, count, thread);
 }
 
 /** @brief Detached clear entry point with the receiver as its first argument. */
 static operation_result_t plain_clear(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(CLEAR, args[0], args + 1, count - 1);
+    return dispatch(CLEAR, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Receiver-aware indexOf entry point. */
 static operation_result_t
 method_indexOf(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(INDEX_OF, receiver, args, count);
+    return dispatch(INDEX_OF, receiver, args, count, thread);
 }
 
 /** @brief Detached indexOf entry point with the receiver as its first argument. */
 static operation_result_t plain_indexOf(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(INDEX_OF, args[0], args + 1, count - 1);
+    return dispatch(INDEX_OF, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Receiver-aware lastIndexOf entry point. */
 static operation_result_t
 method_lastIndexOf(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(LAST_INDEX_OF, receiver, args, count);
+    return dispatch(LAST_INDEX_OF, receiver, args, count, thread);
 }
 
 /** @brief Detached lastIndexOf entry point with the receiver as its first argument. */
 static operation_result_t plain_lastIndexOf(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(LAST_INDEX_OF, args[0], args + 1, count - 1);
+    return dispatch(LAST_INDEX_OF, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Receiver-aware slice entry point. */
 static operation_result_t
 method_slice(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(SLICE, receiver, args, count);
+    return dispatch(SLICE, receiver, args, count, thread);
 }
 
 /** @brief Detached slice entry point with the receiver as its first argument. */
 static operation_result_t plain_slice(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(SLICE, args[0], args + 1, count - 1);
+    return dispatch(SLICE, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Receiver-aware reverse entry point. */
 static operation_result_t
 method_reverse(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(REVERSE, receiver, args, count);
+    return dispatch(REVERSE, receiver, args, count, thread);
 }
 
 /** @brief Detached reverse entry point with the receiver as its first argument. */
 static operation_result_t plain_reverse(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(REVERSE, args[0], args + 1, count - 1);
+    return dispatch(REVERSE, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Receiver-aware sort entry point. */
 static operation_result_t
 method_sort(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(SORT, receiver, args, count);
+    return dispatch(SORT, receiver, args, count, thread);
 }
 
 /** @brief Detached sort entry point with the receiver as its first argument. */
 static operation_result_t plain_sort(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(SORT, args[0], args + 1, count - 1);
+    return dispatch(SORT, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Receiver-aware toString entry point. */
 static operation_result_t
 method_toString(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return dispatch(TO_STRING, receiver, args, count);
+    return dispatch(TO_STRING, receiver, args, count, thread);
 }
 
 /** @brief Detached toString entry point with the receiver as its first argument. */
 static operation_result_t plain_toString(object_t **args, uint16_t count, thread_t *thread) {
     if (!count)
         return operation_exception(get_exception_invalid_argument());
-    return dispatch(TO_STRING, args[0], args + 1, count - 1);
+    return dispatch(TO_STRING, args[0], args + 1, count - 1, thread);
 }
 
 /** @brief Descriptors are scoped to Array, independent of same-named String methods. */

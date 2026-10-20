@@ -1,0 +1,19 @@
+a
+b
+fail
+observe
+4
+{"a":1,"b":20,"c":3,"fail":func,"observe":func}
+42
+{"a":1,"b":20,"c":3,"fail":func,"observe":func}
+{"a":1,"b":20,"c":3,"fail":func,"observe":func,"secret":42}
+{"a":1,"b":20,"c":3,"fail":func,"observe":func}
+[{"a":1,"b":20,"c":3,"fail":func,"observe":func}]
+{"a":1,"b":20,"c":3,"fail":func,"observe":func}
+{"a":1,"b":20,"c":3,"fail":func,"observe":func}
+[{"a":1,"b":20,"c":3,"fail":func,"observe":func},17]
+{"secret":12345,"this":{...},"visible":7}
+{"this":{...},"visible":7}
+this
+visible
+{{ }:[{ }]}

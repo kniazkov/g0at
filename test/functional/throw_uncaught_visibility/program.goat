@@ -1,0 +1,6 @@
+const fail = func() {
+    private secret = 987654;
+    public visible = 7;
+    throw this;
+};
+fail();

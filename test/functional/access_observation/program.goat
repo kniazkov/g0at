@@ -1,0 +1,47 @@
+const keys = func(obj) {
+    var result = [];
+    for (key in obj) result.push(key);
+    return result;
+};
+const outside = func(obj) { return str(obj); };
+const obj = {
+    private secret = 42;
+    protected shield = 43;
+    public shown = 1;
+    local = 2;
+    public observe = func(target) {
+        println(str(target));
+        var result = [];
+        for (key in target) result.push(key);
+        println(result);
+        println(outside(target));
+        println([target].toString("|"));
+        println("%0".format([target]));
+    };
+    public read = func() { return secret; };
+};
+println(obj);
+println(keys(obj));
+obj.observe(obj);
+println(obj);
+println([obj, { item = obj; }]);
+println("" + obj);
+println('!' + obj);
+println([obj].toString());
+println([obj, obj].toString("|"));
+println("%0".format(obj));
+println(obj.observe);
+for (copy in [obj.clone(), obj.flat(), obj.flat().clone(), obj.clone().flat()]) {
+    println(keys(copy));
+    println(copy.read());
+    println(str(copy));
+    copy.observe(copy);
+    obj.observe(copy);
+}
+println({ private hidden = 99; });
+var cyclic = { private hidden = 99; };
+cyclic.self = [cyclic];
+println(cyclic);
+const child = obj -> { own = 3; public inspect = func(target) { println(keys(target)); println(target); }; };
+child.inspect(obj);
+println(keys(child));

@@ -85,7 +85,7 @@ Acceptance: AC-04–AC-08, AC-14–AC-20, AC-25, AC-28. Add repeated copying, tw
 
 Contexts distinguish lexical lookup fallbacks from inheritance edges. Adapted method environments preserve external lexical captures without exposing those environments as result parents. Concrete capture records distinguish factory instances with identical bytecode IDs; internal environment views are adapted again when a flattened object is cloned or flattened. Protected receiver grants are transferred from the original inheritance graph, without granting private rights to unrelated functions.
 
-Tests cover AC-11–AC-17 and AC-19–AC-22 behavior, independent hidden cells, two shared ancestors in a diamond, a 32-level chain, 16 factory prototypes, recursive methods, repeated flat/clone, detached calls, arbitrary keys, and external captures. Model tests check a foreign function module (AC-26), lookup winners, hidden-cell counts, flat mutability, and GC with only a detached method rooted. AC-23 observation filtering remains stage F (#167); preserving its hidden data and method behavior is implemented here.
+Tests cover AC-11–AC-17 and AC-19–AC-22 behavior, independent hidden cells, two shared ancestors in a diamond, a 32-level chain, 16 factory prototypes, recursive methods, repeated flat/clone, detached calls, arbitrary keys, and external captures. Model tests check a foreign function module (AC-26), lookup winners, hidden-cell counts, flat mutability, and GC with only a detached method rooted. AC-23 observation filtering is implemented in stage F (#167); preserving its hidden data and method behavior is implemented here.
 
 Reuse stage D's verified machinery. Obtain topology preserving the old lookup priority; transfer the source and each ancestor except `Object` exactly once by identity. Retain all fields, including same-named private and shadowed protected fields. Build ordinary lookup winners separately from method-to-cell relationships.
 
@@ -94,6 +94,8 @@ Shared-ancestor deduplication in a diamond and function deduplication solve diff
 Acceptance: AC-11–AC-17, AC-19–AC-23, AC-26. Additional graphs: long chains, wide prototype sets, diamonds with multiple shared ancestors, and distinct objects from one template. Compare lookup before/after, transferred cell independence, shared internal captures, and absence of old parents from `instanceOf`. Preserve existing arbitrary-object-key, flat constness, and non-user-defined receiver tests.
 
 ## 7. Stage F: Observation and Built-ins
+
+Implemented in #167. Snapshots contain only accessible own ordinary-lookup keys; hidden inventory cells and prototypes are not enumerated. One explicit observer context is retained through nested objects, arrays, and object keys. An object emptied by filtering prints as `{ }`. The context flows through print/println, str, format, string/character concatenation, Array.toString, and unhandled-exception reporting after stack unwinding. Functions still print as `func`, without their environment. clone/flat do not use this filter. Tests cover own/outside methods, descendants, copies, restored rights after return/throw, cycles, snapshots, and distinct modules. Static analysis and native execution remain stage G.
 
 Apply access context to the `for … in` key snapshot and standard object representation (`str`, `print`, and related formatting paths). Internal owner identifiers and hidden cells must not appear in user output. Preserve existing snapshot semantics; accessible own keys must not become an implicit prototype traversal.
 

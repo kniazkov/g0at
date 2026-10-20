@@ -274,7 +274,11 @@ static int run_interactive(options_t *opt) {
 
             run(process, bytecode);
             if (thread->exception.value) {
-                string_value_t text = convert_object_to_string(thread->exception.value);
+                function_access_t observer;
+                init_function_access(&observer, process->module);
+                string_value_t text =
+                    object_to_string_with_access(thread->exception.value, &observer);
+                clear_function_access(&observer, true);
                 fprintf_utf8(stderr, get_messages()->uncaught_exception, text.data);
                 fprintf(stderr, "\n");
                 FREE_STRING(text);

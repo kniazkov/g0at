@@ -4,6 +4,7 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "model/context.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
@@ -14,7 +15,7 @@
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
     if (count < 1)
         return operation_exception(get_exception_invalid_argument());
-    string_value_t value = convert_object_to_string(args[0]);
+    string_value_t value = object_to_string_with_access(args[0], &thread->context->access);
     return operation_success(create_string_object(thread->process, value));
 }
 

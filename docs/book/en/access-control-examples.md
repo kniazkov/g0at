@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/access-control-examples.md) · [Rules](appendix-i-access-control.md) · [Plan](access-control-implementation-plan.md)
 
-These examples describe the agreed design. Stages A–E implement declarations, VM access checks, and clone/flat method and capture adaptation; observation filtering, module loading, and static access diagnostics still belong to later stages. Each example is independent; results are described in prose, and `print` calls do not imply automatic newlines. Negative cases are checked separately, both statically and with dynamically unknown receivers. All examples use the standard built-in `clone` and `flat`, not user overrides.
+These examples describe the agreed design. Stages A–F implement declarations, VM access checks, and clone/flat method and capture adaptation; observation filtering is implemented in F; module loading and static access diagnostics still belong to later stages. Each example is independent; results are described in prose, and `print` calls do not imply automatic newlines. Negative cases are checked separately, both statically and with dynamically unknown receivers. All examples use the standard built-in `clone` and `flat`, not user overrides.
 
 <a id="ac-01"></a>
 
@@ -398,6 +398,27 @@ true, true, false, false. The test deliberately compares against existing lookup
 <a id="ac-23"></a>
 
 ## AC-23. Filtered observation after complete copying
+
+The observer is determined by the executing code, not by whoever called its function:
+
+```goat
+const outside = func(value) { return str(value); };
+const box = {
+    private secret = 42;
+    public inspect = func(value) {
+        println(str(value));          // the own method can see secret
+        println(outside(value));      // the outside function cannot
+        println([value].toString());  // nested object: secret is visible again
+    };
+};
+box.inspect(box);
+println(box);                         // secret is hidden again
+const copy = box.flat();
+copy.inspect(copy);                   // transferred method has rights to the copy
+box.inspect(copy);                    // original method gained no rights to the copy
+```
+
+The object is passed explicitly: `this` denotes the current object scope, including a function-call scope; it is not the Java/JS receiver. `for (key in value)` uses the same rights, but snapshots only accessible own keys. A separate outside enumeration function uses its own rights. Rights do not remain with the caller after return or throw. Filtering also recurses into object keys; cycles abbreviate to `{...}`/`[...]`. If every field is hidden, the result is `{ }`. Hidden same-key cells in flat's internal inventory are neither enumerated nor printed even by an authorized observer; methods still access their own cells.
 
 ```goat
 var obj = {
