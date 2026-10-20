@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/access-control-examples.md) · [Rules](appendix-i-access-control.md) · [Plan](access-control-implementation-plan.md)
 
-These examples describe the agreed design. Stages A–F implement declarations, VM access checks, and clone/flat method and capture adaptation; observation filtering is implemented in F; module loading and static access diagnostics still belong to later stages. Each example is independent; results are described in prose, and `print` calls do not imply automatic newlines. Negative cases are checked separately, both statically and with dynamically unknown receivers. All examples use the standard built-in `clone` and `flat`, not user overrides.
+These examples describe the agreed design. Stages A–G implement declarations, VM access checks, and clone/flat method and capture adaptation; observation filtering is implemented in F; G diagnoses proven denial while the VM checks unknown cases; module loading remains #154. Each example is independent; results are described in prose, and `print` calls do not imply automatic newlines. Negative cases are checked separately, both statically and with dynamically unknown receivers. All examples use the standard built-in `clone` and `flat`, not user overrides.
 
 <a id="ac-01"></a>
 
@@ -550,3 +550,36 @@ print(A.obj.fixed);
 The write is allowed and the read yields 2. A separate A.obj.fixed = 4 attempt is forbidden by constness. Adding A.obj.newField = 5 is forbidden by A's object ownership. These are distinct rejection reasons and diagnostics must distinguish them.
 
 
+
+
+## Access analysis: static denial and runtime checks
+
+Static negative example (does not execute even with `--optimize none`):
+
+```goat
+const box = { private var secret = 42; };
+try box["secret"] += 1; catch(e) println(e); // compile-time read/write error
+```
+
+The equivalent with an unknown receiver retains the VM check:
+
+```goat
+const box = { private var secret = 42; };
+const read = func(value) { return value.secret; };
+try read(box); catch(e) println(e); // ACCESS_DENIED at both optimization levels
+```
+
+A local modifier does not prohibit safe native execution:
+
+```goat
+public add = func(a, b) { private var result = a + b; return result; };
+println(add(2, 3)); // 5, works with --native required
+```
+
+Stage G (#168) distinguishes allowed, denied, and unknown access. Direct closed fields of objects bound through immutable lexical names (including constant alias chains) produce compile errors identifying the operation, name, and declaration location. This applies with `--optimize none` and inside `try`. Dynamic receivers or keys, factory/clone/flat results, cross-function constant captures, private-slot precedence, inherited lookup, and call-dependent protected grants retain VM checks. A captured const is not necessarily immutable after flat: its transferred cell may be changed. Unknown access never means a missing property.
+
+For programs containing modifiers, optimization currently folds only closed scalar expressions: no name reads, calls, properties, or scope elimination. Modifiers, declaration identities, and captures remain intact; in particular, a constant source field does not turn a read of a mutable flat cell into a literal. This restricts optimization rather than disabling permission checks.
+
+The native contract includes an `access` blocker. Proven scalar local operations, including modified local declarations, and proven string receivers can execute natively. Accesses needing VM rights remain in the VM; unknown user objects never gain an unchecked native path. With no safe functions, `--native required` reports `Access checks require VM execution`. This mode requires a native implementation in the program, not native execution of every call. Copied functions do not reuse original native descriptors; method calls retain the existing VM path.
+
+Checks include static rejection, dynamic equivalents, English/Russian diagnostics, both optimization levels, regenerated source and bytecode, safe native calls, and required-mode rejection. Compiler-unavailable fallback and VM retry after the native depth limit are tested: side-effecting argument expressions run once, and closed fields remain closed after calls. The module loader and multi-file scenarios remain #154.

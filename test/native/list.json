@@ -1,5 +1,14 @@
 [
   {
+    "name": "access",
+    "calls": 4,
+    "bound": 3
+  },
+  {
+    "name": "access_guards",
+    "check": "checks/access.py"
+  },
+  {
     "name": "runner",
     "check": "checks/runner.py"
   },

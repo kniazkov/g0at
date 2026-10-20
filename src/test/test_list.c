@@ -7,6 +7,7 @@
 #include "test_list.h"
 
 #include "test_abstract_state.h"
+#include "test_access_analysis.h"
 #include "test_access_cells.h"
 #include "test_access_checks.h"
 #include "test_addition.h"
@@ -331,6 +332,7 @@ static test_description_t test_list[] = {
     {"access clone methods", test_access_clone_methods},
     {"access flat cells", test_access_flat_cells},
     {"access observation", test_access_observation},
+    {"access analysis", test_access_analysis},
     {"root object call", test_root_object_call}};
 
 int get_number_of_tests() {

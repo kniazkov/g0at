@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/access-control-implementation-plan.md) · [Rules](appendix-i-access-control.md) · [Examples](access-control-examples.md)
 
-This is a proposed technical plan for implementing the agreed semantics, not a claim that the changes exist. AC-01–AC-28 refer to the example catalog. The stages are intended as sequential, reviewable PRs; stages may be combined, but partially enforced protection must not be released.
+This is the technical plan and implementation history for the agreed semantics. Stages A–G are implemented; H awaits module loader #154. Intermediate limitations describe their respective stages; current analysis limits are listed in G. AC-01–AC-28 refer to the example catalog. The stages are intended as sequential, reviewable PRs; stages may be combined, but partially enforced protection must not be released.
 
 ## 1. Changes Required in the Existing Model
 
@@ -55,7 +55,7 @@ Acceptance: model/VM tests for AC-03–AC-10, AC-18, AC-24–AC-28, including tw
 
 ## 4. Stage C: Declarations, Binding, and Bytecode
 
-Implemented in #164: syntax and VM bindings, binary format 11, source/binary round trips, and invalid metadata rejection. Optimizations for programs with modifiers remain disabled pending stage G; stages D–F are still required for copying and observation.
+Implemented in #164: syntax and VM bindings, binary format 11, source/binary round trips, and invalid metadata rejection. Later stages D–G complete copying and observation; optimization and native execution now follow the proofs and limits described in G.
 
 Add three scanner tokens, parse a single modifier and implicit `const`, and apply the modifier to the full declaration list. Preserve metadata in declaration nodes, name bindings, and property-creation instructions. Support every scope, source regeneration, and AST visualization.
 
@@ -69,7 +69,7 @@ Acceptance: AC-01–AC-10 execute or are rejected as specified; source and bytec
 
 **Implemented in #165.** `model/transfer.[ch]` keeps operation-local storage, domain, cell, and function maps. Clone allocates own cells first, allocates each directly held dynamic function once, then links environments and values. Function code remains shared; native descriptors are discarded. Built-in function values and nested objects stay shared. New rights derive only from existing grants; original grants remain for explicit original references. Field and function modules survive a change of object owner.
 
-Regression tests cover AC-14–AC-20 clone behavior, repeated copies, detached calls, private writes through names and this, shared external activation variables, recursive/mutually recursive methods, and unprivileged attached functions. Model tests exercise foreign-module ownership/default visibility, capture identity, constness, and repeated GC with only a copied detached method rooted. Full flat transfer is implemented in stage E (#166); observation and static analysis still need stages F–G.
+Regression tests cover AC-14–AC-20 clone behavior, repeated copies, detached calls, private writes through names and this, shared external activation variables, recursive/mutually recursive methods, and unprivileged attached functions. Model tests exercise foreign-module ownership/default visibility, capture identity, constness, and repeated GC with only a copied detached method rooted. Full flat transfer is implemented in stage E (#166); observation and static analysis are implemented in stages F–G.
 
 Create a per-operation copying context mapping old domains, cells, and functions to new ones. Allocate new domains/cells first, then link values, functions, and environments. Two-phase transfer is needed for mutual references, recursive functions, and state shared by multiple methods.
 
@@ -104,6 +104,16 @@ Check object formatting inside arrays and other objects: recursive rendering mus
 Acceptance: AC-11, AC-23 and paired external/internal observer, nested-container, and copy tests. Complete copying must retain data even when the same caller cannot enumerate it. Do not implement `flat` using publicly filtered keys.
 
 ## 8. Stage G: Analysis, Optimization, and Native Execution
+
+**Implemented in #168.**
+
+Stage G (#168) distinguishes allowed, denied, and unknown access. Direct closed fields of objects bound through immutable lexical names (including constant alias chains) produce compile errors identifying the operation, name, and declaration location. This applies with `--optimize none` and inside `try`. Dynamic receivers or keys, factory/clone/flat results, cross-function constant captures, private-slot precedence, inherited lookup, and call-dependent protected grants retain VM checks. A captured const is not necessarily immutable after flat: its transferred cell may be changed. Unknown access never means a missing property.
+
+For programs containing modifiers, optimization currently folds only closed scalar expressions: no name reads, calls, properties, or scope elimination. Modifiers, declaration identities, and captures remain intact; in particular, a constant source field does not turn a read of a mutable flat cell into a literal. This restricts optimization rather than disabling permission checks.
+
+The native contract includes an `access` blocker. Proven scalar local operations, including modified local declarations, and proven string receivers can execute natively. Accesses needing VM rights remain in the VM; unknown user objects never gain an unchecked native path. With no safe functions, `--native required` reports `Access checks require VM execution`. This mode requires a native implementation in the program, not native execution of every call. Copied functions do not reuse original native descriptors; method calls retain the existing VM path.
+
+Checks include static rejection, dynamic equivalents, English/Russian diagnostics, both optimization levels, regenerated source and bytecode, safe native calls, and required-mode rejection. Compiler-unavailable fallback and VM retry after the native depth limit are tested: side-effecting argument expressions run once, and closed fields remain closed after calls. The module loader and multi-file scenarios remain #154.
 
 Track proven permitted/forbidden/unknown access in analysis and preserve metadata through AST transformations. Definite denial is a compile error identifying the operation and declaration; uncertainty keeps a runtime check. Optimization must not replace an inaccessible property with its constant value or mistake denied access for a missing field.
 

@@ -24,7 +24,8 @@ typedef enum {
     C_BLOCKER_RETURN = 4,
     C_BLOCKER_EFFECTS = 8,
     C_BLOCKER_CAPTURES = 16,
-    C_BLOCKER_BODY = 32
+    C_BLOCKER_BODY = 32,
+    C_BLOCKER_ACCESS = 64 /**< Requires VM access/receiver/capture semantics. */
 } c_blocker_t;
 
 /** @brief Classifies the representation of an interface value, not an expression's semantics. */

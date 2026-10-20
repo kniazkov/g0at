@@ -15,4 +15,5 @@ const obj = { private var x = 9; public run = func() {
     return nested();
 }; };
 println(obj.run());
-try obj.x; catch(e) println(e);
+var dynamicObj = obj;
+try dynamicObj.x; catch(e) println(e);

@@ -1,0 +1,15 @@
+ACCESS_DENIED
+1
+1
+0
+7
+17
+16
+ACCESS_DENIED
+{"change":func,"read":func}
+8
+9
+27
+ACCESS_DENIED
+33
+33

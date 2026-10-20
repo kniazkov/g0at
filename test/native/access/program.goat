@@ -1,0 +1,15 @@
+public add = func(a, b) { private var c = a + b; return c; };
+println(add(2, 3));
+println(add(2.5, 4));
+public length = func(value) { return value.length; };
+println(length("Goat"));
+public upper = func(value) { return value.toUpperCase(); };
+println(upper("Goat"));
+const holder = { private secret = 42; public f = add; public read = func() { return secret; }; };
+for (copy in [holder.clone(), holder.flat()]) {
+    const detached = copy.f;
+    println(detached(3, 4));
+    println(copy.read());
+    try copy.secret; catch(e) println(e);
+}
+println(holder);

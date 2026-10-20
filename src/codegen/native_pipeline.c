@@ -4,6 +4,7 @@
  */
 #include "native_pipeline.h"
 
+#include "analysis/access.h"
 #include "c_module_output.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
@@ -14,6 +15,15 @@
 
 #include <stdio.h>
 #include <string.h>
+
+static bool has_access_blocker(const node_t *node) {
+    if (node->vtbl->type == NODE_FUNCTION_OBJECT && function_needs_access_checks(node))
+        return true;
+    for (size_t i = 0; i < get_node_child_count(node); i++)
+        if (has_access_blocker(get_node_child(node, i)))
+            return true;
+    return false;
+}
 
 static void cleanup_workspace(void *workspace) {
     destroy_native_workspace(workspace);
@@ -86,6 +96,9 @@ prepare(const node_t *root, bytecode_t *code, const char *compiler, const char *
     native_library_result_t loaded = {0};
     if (!output.generated_count) {
         result.status = NATIVE_PREPARE_EMPTY;
+        if (has_access_blocker(root))
+            result.diagnostic = copy_native_library_diagnostic(
+                "Access checks require VM execution; no safe native function could be bound");
         goto done;
     }
     workspace = create_native_workspace();

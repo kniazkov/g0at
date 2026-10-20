@@ -1,0 +1,40 @@
+var obj = { private var secret = 1 + 2 * 3; public read = func() { return secret; }; };
+var objectCalls = 0, keyCalls = 0, rhsCalls = 0;
+const object = func() { objectCalls += 1; return obj; };
+const key = func() { keyCalls += 1; return "secret"; };
+const rhs = func() { rhsCalls += 1; return 5; };
+try object()[key()] += rhs(); catch(e) println(e);
+println(objectCalls);
+println(keyCalls);
+println(rhsCalls);
+println(obj.read());
+const template = {
+    private x = 10 + 2 * 3;
+    public read = func() { return x; };
+    public change = func() { x += 1; };
+};
+var copy = template.flat();
+copy.change();
+println(copy.read());
+println(template.read());
+try copy.x; catch(e) println(e);
+println(str(copy));
+const scoped = func() {
+    private var x = 1 + (2 * 3);
+    const next = func() { x++; return x; };
+    println(next());
+    println(next());
+};
+scoped();
+const original = {
+    const target = { private x = 1; };
+    public read = func() { return target.x; };
+};
+var adapted = original.flat();
+adapted.target = { public x = 27; };
+println(adapted.read());
+try original.read(); catch(e) println(e);
+private slot = 33;
+const slots = { private slot = 44; };
+println(slots.slot);
+println(slots["slot"]);
