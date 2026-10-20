@@ -14,7 +14,7 @@ One compiled module is one file without source code. It represents a library or 
 
 Execution uses metadata to select a suitable library and implementations. Bytecode is used when no suitable native implementation exists. The loader may extract a library to a temporary directory or cache and load it through standard OS facilities. Prefer simple portable solutions using OS capabilities.
 
-JSON is proposed for metadata, matching the build description. Bytecode and native libraries remain binary container parts; encoding them in JSON is not required. The binary format, filename extension, metadata schema, and exact platform compatibility rules remain undecided.
+Metadata uses JSON, matching the build description. The container is ZIP; bytecode and native libraries remain binary parts rather than JSON-encoded data. The filename extension, metadata schema, and exact platform compatibility rules remain undecided.
 
 ## Source files and module composition
 
@@ -54,7 +54,7 @@ An explicit version applies to that import without changing the default for unve
 
 All imported compiled modules must be available at build time. The compiler reads their metadata for interface checking and analysis without running initialization code. A missing dependency is a compilation error. Dependencies must also be available at runtime.
 
-Module metadata contains its name, version, and automatically computed content hash. Exclude the hash field itself from the calculation; the exact algorithm and hashed representation remain to be defined. A consumer records each dependency's name, exact version, and expected hash.
+Module metadata contains its name, version, and automatically computed main hash. It covers bytecode and common metadata; native parts are hashed separately as specified below. A consumer records each dependency's name, exact version, and expected main hash.
 
 Each name/version pair has one build. Hashes are not directory names. Example layout (extension provisional):
 
@@ -63,7 +63,7 @@ geometry/1.2.0/module.goatmod
 geometry/2.0.0/module.goatmod
 ```
 
-Old and new programs can use different library versions on the same computer. If a library is rebuilt under the same version without rebuilding its consumer, a hash mismatch at load time is an immediate error. Do not search for another build. Users need not select hashes in dependency descriptions; storing several hashes of one version in separate directories was rejected.
+Old and new programs can use different library versions on the same computer. If a library's main content changes under the same version without rebuilding its consumer, a main hash mismatch at load time is an immediate error. Do not search for another build. Users need not select hashes in dependency descriptions; storing several hashes of one version in separate directories was rejected.
 
 ## Two distinct operations
 
@@ -132,7 +132,7 @@ Exact name-to-path mapping, version syntax, path canonicalization, and the ident
 
 Each source file is initialized once per program run. Repeated inclusion returns the same scope object with its current variable values.
 
-Create the scope object before executing the file. Cycles are permitted: if the file is already initializing, return its existing object without restarting it. Reading a declaration that has not yet been initialized raises an error with the inclusion chain.
+Create the scope object before executing the file. Include cycles within one module are permitted: if the file is already initializing, return its existing object without restarting it. Reading a declaration that has not yet been initialized raises an error with the inclusion chain. Import cycles between modules are forbidden.
 
 ```goat
 // a.goat
@@ -148,6 +148,48 @@ If b instead declares a function that reads `a.x` after initialization completes
 
 If initialization throws, remember the failure and exception. Subsequent inclusion throws the saved exception without executing the file again; earlier side effects are not repeated.
 
+## ZIP and native implementations
+
+A module file is a ZIP container holding JSON metadata, bytecode, and native libraries. Goat embeds ZIP reading and writing through a small portable C library; external zip/unzip commands are not required. Select the library after checking size, license, and builds on supported platforms.
+
+The main dependency hash covers bytecode and common metadata, including dependency names, versions, and expected main hashes. Exclude its own hash field, native libraries, and their descriptions. Each native library has a separate hash in its description. Adding a platform or rebuilding a native part does not require rebuilding consumers while the main content remains unchanged.
+
+Hash part contents in a fixed order. ZIP entry ordering, timestamps, and compression do not affect identity. The algorithm and canonical metadata representation remain to be defined.
+
+Native variant requirements cover OS and minimum version, architecture, bitness, required CPU extensions, system ABI/runtime (for example libc family and minimum version), and Goat native ABI version. An unknown or unverifiable mandatory requirement makes a variant unsuitable. Multiple simultaneously suitable variants are an ambiguity error. Exact platform schemas remain open; metadata alone cannot guarantee successful OS loading. Restricting dependencies to a predefined set of system libraries was not adopted.
+
+Extract and load a native library on the first call that needs it. Use the VM if there is no compatible variant or native execution is disabled. If the OS cannot load the selected library, ordinary mode reports the reason and falls back to the VM. Remember failure for the remainder of the run: subsequent calls repeat neither the attempt nor the message. Under `--native required`, inability to load a required native implementation remains an error.
+
+A hash mismatch means corruption and is an error, not a reason for VM fallback. Once a native function has begun execution, do not restart it on the VM and duplicate side effects. This rule concerns handling failed loading, rather than designing other native execution protocols.
+
+## Merging and inspecting modules
+
+A separate command combines builds of one module for different platforms into one file. Main hashes must match; otherwise fail. For identical platform requirements, identical native hashes produce one copy; different hashes are an error, with no automatic selection or replacement. The rule against ambiguous compatible variants still applies.
+
+An inspection command displays name, version, main hash, dependencies, and native variants with requirements. It also attempts to load a suitable DLL/SO. It does not execute module bytecode or call its native functions, but the standard OS loader may run library initialization code (DllMain or SO constructors).
+
+Perform trial loading in a child process so a crash does not terminate the inspection command. Terminate a hung child after a timeout and report the result. A command option controls the timeout; 5 seconds was proposed as the default. This is a diagnostic timeout, not a normal execution limit.
+
+When creating the new task list, schedule a separate portable `lib` layer for starting the current executable with arguments, waiting/results, timeouts, and child termination. Also provide a distinct threading API: creation, joining, mutexes, and condition variables. A thread pool is not required yet. Threads do not replace processes for crash isolation.
+
+## Dependency graph and preflight checks
+
+Allow cyclic `include` only within one module. Reject cycles between compiled modules through `import`, reporting the dependency chain. Build dependencies first. The earlier proposals to exclude dependency hashes from the main hash and build mutually dependent groups together are withdrawn.
+
+If A and B import the same version of C, load it once per run with a shared scope and state. Different expected main hashes for the same name/version pair are a dependency conflict.
+
+Before running user code, check the entire dependency graph and everything verifiable without execution: availability, structure, versions, hashes, absence of cycles, and consistent requirements. This includes dependencies in branches not yet executed. Preflight does not run initialization code or cancel lazy native library loading.
+
+Version, hash, and structure errors are loader errors that Goat `try/catch` cannot intercept. Exceptions from initialization code are ordinary catchable language exceptions.
+
+## References to a file whose initialization failed
+
+An include cycle may expose a scope object before initialization completes. After initialization fails, all subsequent property accesses on that scope throw the saved exception, even for already assigned properties.
+
+Calling an escaped function defined in the failed file also throws the saved exception. This applies to copies made through `clone` and `flat`. Ordinary values already passed out are not revoked; earlier side effects are not rolled back.
+
+While initialization is still in progress, calling an already declared function is allowed. It may use initialized values; reading a declaration not yet initialized raises an exception. The blanket call prohibition based on file state applies after initialization fails.
+
 ## Further discussion
 
-The binary container and its versions, complete JSON schema and hash algorithm, version syntax, identity canonicalization, physical library loading timing, details of cycles between compiled modules, previously returned references after failed initialization, platform and ABI descriptions, and build/packaging commands remain open. Initialization on first include/import execution is already agreed. The examples above do not settle the remaining questions.
+Container format version, entry names and extension, complete JSON schema, hash algorithm and canonicalization, version syntax, exact platform/ABI requirements, path canonicalization, command names, and final packaging details remain open. The rules above replace earlier proposals for a single hash covering native code, fatal ordinary OS loading failures, and permitted import cycles.
