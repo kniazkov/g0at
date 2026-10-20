@@ -6,6 +6,7 @@
 #include "analysis/lattice.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
+#include "model/context.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
@@ -37,7 +38,8 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
                 end++;
             }
             if (!index_overflow && index < count) {
-                string_value_t arg_value = convert_object_to_string(args[index]);
+                string_value_t arg_value =
+                    object_to_string_with_access(args[index], &thread->context->access);
                 append_string_value(&builder, arg_value);
                 FREE_STRING(arg_value);
             } else {

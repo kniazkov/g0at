@@ -347,6 +347,7 @@ typedef struct {
 
     /** @brief Builder length at the start of the currently rendered object. */
     size_t mark;
+    const function_access_t *access; /**< Borrowed observer, shared by nested containers. */
 } notation_renderer_t;
 
 /** @brief Renders a user-defined object in Goat notation, detecting reference cycles. */
@@ -377,6 +378,8 @@ static void render_object_value_notation(notation_renderer_t *renderer, object_t
  */
 static void child_pair_to_string(void *data, void *key, value_t value) {
     notation_renderer_t *renderer = (notation_renderer_t *)data;
+    if (renderer->access && !can_access_field(renderer->access, value.ptr))
+        return;
     if (renderer->builder->length > renderer->mark + 1) {
         append_char(renderer->builder, ',');
     }
@@ -403,6 +406,8 @@ static string_value_t render_user_defined_object_notation(notation_renderer_t *r
     append_to_vector(renderer->active, &uobj->base);
     append_char(renderer->builder, '{');
     avl_tree_for_each(uobj->properties, child_pair_to_string, renderer);
+    if (renderer->builder->length == renderer->mark + 1)
+        append_char(renderer->builder, ' ');
     string_value_t result = append_char(renderer->builder, '}');
     renderer->active->size--;
     renderer->mark = saved_mark;
@@ -428,13 +433,19 @@ static string_value_t render_array_notation(notation_renderer_t *renderer, const
     return append_char(renderer->builder, L']');
 }
 
-string_value_t container_to_string_notation(const object_t *obj) {
+string_value_t object_to_string_with_access(const object_t *obj, const function_access_t *access) {
+    if (obj->vtbl->type != TYPE_USER_DEFINED_OBJECT && obj->vtbl->type != TYPE_ARRAY)
+        return convert_object_to_string(obj);
     string_builder_t builder;
     init_string_builder(&builder, 2);
-    notation_renderer_t renderer = {&builder, create_vector(), 0};
+    notation_renderer_t renderer = {&builder, create_vector(), 0, access};
     render_object_value_notation(&renderer, (object_t *)obj);
     destroy_vector(renderer.active);
     return (string_value_t){builder.data, builder.length, true};
+}
+
+string_value_t container_to_string_notation(const object_t *obj) {
+    return object_to_string_with_access(obj, NULL);
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string_notation. */
@@ -845,8 +856,29 @@ static void collect_sorted_key(void *data, void *key, value_t value) {
 }
 
 object_t *snapshot_object_keys(process_t *process, object_t *obj) {
+    return snapshot_object_keys_with_access(process, obj, NULL);
+}
+
+/** @brief Borrowed observation state for one dictionary walk. */
+typedef struct {
+    vector_t *keys;
+    const function_access_t *access;
+} key_observer_t;
+
+static void collect_accessible_key(void *data, void *key, value_t value) {
+    key_observer_t *observer = data;
+    if (!observer->access || can_access_field(observer->access, value.ptr))
+        append_to_vector(observer->keys, key);
+}
+
+object_t *snapshot_object_keys_with_access(process_t *process,
+                                           object_t *obj,
+                                           const function_access_t *access) {
     vector_t *keys = create_vector();
-    avl_tree_for_each(((object_user_defined_t *)obj)->properties, collect_sorted_key, keys);
+    key_observer_t observer = {keys, access};
+    avl_tree_for_each(((object_user_defined_t *)obj)->properties,
+                      collect_accessible_key,
+                      &observer);
     object_t *result =
         create_array_object(process, (object_array_t){(object_t **)keys->data, keys->size});
     destroy_vector(keys);

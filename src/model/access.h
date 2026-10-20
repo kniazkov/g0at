@@ -49,6 +49,20 @@ typedef struct {
     vector_t *lexical_scopes; /**< Retained lexical storage, excluding dynamic receivers. */
 } function_access_t;
 
+/** @brief Formats containers recursively using the same observer at every depth.
+ * A NULL observer is reserved for trusted internal formatting (no filtering).
+ */
+string_value_t object_to_string_with_access(const object_t *obj, const function_access_t *access);
+/** @brief Snapshots accessible own lookup keys; never traverses prototypes or hidden cells. */
+object_t *snapshot_object_keys_with_access(process_t *process,
+                                           object_t *obj,
+                                           const function_access_t *access);
+/** @brief Applies caller visibility to implicit string/character concatenation. */
+operation_result_t add_objects_with_access(process_t *process,
+                                           object_t *left,
+                                           object_t *right,
+                                           const function_access_t *access);
+
 /** @brief Creates a distinct module identity with one owned reference. */
 module_t *create_module_identity(void);
 /** @brief Immutable immortal identity for built-in declarations. */

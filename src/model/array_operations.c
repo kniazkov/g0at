@@ -125,18 +125,20 @@ operation_result_t sort_array_elements(object_t *obj) {
 }
 
 /** @brief Without a separator, preserve array notation; with one, join plain element strings. */
-operation_result_t array_to_string(object_t *obj, object_t *separator_object) {
+operation_result_t
+array_to_string(object_t *obj, object_t *separator_object, const function_access_t *access) {
     array_object_t *array = (array_object_t *)obj;
     if (!separator_object)
         return operation_success(
-            create_string_object(array->base.process, container_to_string_notation(&array->base)));
+            create_string_object(array->base.process,
+                                 object_to_string_with_access(&array->base, access)));
     string_value_t separator = convert_object_to_string(separator_object);
     string_builder_t builder = {0};
     string_value_t text = STATIC_STRING(L"");
     for (size_t i = 0; i < array->count; i++) {
         if (i)
             append_string_value(&builder, separator);
-        string_value_t value = convert_object_to_string(array->items[i]);
+        string_value_t value = object_to_string_with_access(array->items[i], access);
         text = append_string_value(&builder, value);
         FREE_STRING(value);
     }

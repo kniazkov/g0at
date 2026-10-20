@@ -12,3 +12,4 @@ bool test_access_contexts(void);
 bool test_access_clone_metadata(void);
 bool test_access_clone_methods(void);
 bool test_access_flat_cells(void);
+bool test_access_observation(void);

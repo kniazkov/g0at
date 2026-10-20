@@ -6,12 +6,13 @@
 #include "analysis/lattice.h"
 #include "lib/allocate.h"
 #include "lib/io.h"
+#include "model/context.h"
 #include "model/thread.h"
 #include "registry.h"
 
 /** @brief Runtime executor; the shared caller has checked minimum arity. */
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
-    string_value_t str = convert_object_to_string(args[0]);
+    string_value_t str = object_to_string_with_access(args[0], &thread->context->access);
     if (str.data) {
         print_utf8(str.data);
         FREE_STRING(str);

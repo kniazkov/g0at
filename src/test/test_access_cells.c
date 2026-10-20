@@ -15,6 +15,81 @@
 
 #include <stdio.h>
 
+bool test_access_observation(void) {
+    process_t *proc = create_process();
+    module_t *foreign = create_module_identity();
+    object_t *root = get_root_object();
+    object_t *obj = create_user_defined_object_in_module(proc, (object_array_t){&root, 1}, foreign);
+    access_domain_t *domain = get_object_access_domain(obj);
+    const wchar_t *names[] = {L"module", L"public", L"protected", L"private"};
+    const access_modifier_t modifiers[] = {ACCESS_MODULE,
+                                           ACCESS_PUBLIC,
+                                           ACCESS_PROTECTED,
+                                           ACCESS_PRIVATE};
+    for (size_t i = 0; i < 4; i++) {
+        object_t *key =
+            create_string_object(proc, (string_value_t){names[i], wcslen(names[i]), false});
+        ASSERT(create_object_field(obj,
+                                   key,
+                                   get_boolean_object(true),
+                                   false,
+                                   modifiers[i],
+                                   foreign,
+                                   domain,
+                                   true));
+        DECREF(key);
+    }
+    function_access_t observers[3];
+    init_function_access(&observers[0], proc->module);
+    init_function_access(&observers[1], foreign);
+    init_function_access(&observers[2], foreign);
+    add_function_access_domain(&observers[2], domain);
+    /* Even a privileged observer must not enumerate internal same-key cells. */
+    access_domain_t *hidden_domain = create_access_domain(foreign);
+    object_t *hidden_key = create_string_object(proc, STATIC_STRING(L"public"));
+    ASSERT(create_object_field(obj,
+                               hidden_key,
+                               get_boolean_object(false),
+                               false,
+                               ACCESS_PRIVATE,
+                               foreign,
+                               hidden_domain,
+                               false));
+    add_function_access_domain(&observers[2], hidden_domain);
+    DECREF(hidden_key);
+    release_access_domain(hidden_domain);
+    const wchar_t *expected[] = {
+        L"[{\"public\":true}]",
+        L"[{\"module\":true,\"public\":true}]",
+        L"[{\"module\":true,\"private\":true,\"protected\":true,\"public\":true}]"};
+    size_t counts[] = {1, 2, 4};
+    object_t *array = create_array_object(proc, (object_array_t){&obj, 1});
+    for (size_t pass = 0; pass < 3; pass++) {
+        for (size_t i = 0; i < 3; i++) {
+            object_t *keys = snapshot_object_keys_with_access(proc, obj, &observers[i]);
+            ASSERT(get_array_elements(keys).size == counts[i]);
+            DECREF(keys);
+            string_value_t text = object_to_string_with_access(array, &observers[i]);
+            ASSERT(!wcscmp(text.data, expected[i]));
+            FREE_STRING(text);
+        }
+    }
+    /* A foreign caller copies all fields, but still sees only public declarations. */
+    object_t *copy = flat_object_with_access(proc, obj, &observers[0]);
+    ASSERT(get_object_field_count(copy) == 5);
+    object_t *keys = snapshot_object_keys_with_access(proc, copy, &observers[0]);
+    ASSERT(get_array_elements(keys).size == 1);
+    DECREF(keys);
+    DECREF(copy);
+    for (size_t i = 0; i < 3; i++)
+        clear_function_access(&observers[i], true);
+    DECREF(array);
+    DECREF(obj);
+    release_module_identity(foreign);
+    destroy_process(proc);
+    return true;
+}
+
 static object_t *new_object(process_t *proc) {
     object_t *root = get_root_object();
     return create_user_defined_object(proc, (object_array_t){&root, 1});

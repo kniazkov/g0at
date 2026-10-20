@@ -428,7 +428,10 @@ execute_binary_operation(runtime_t *runtime,
                          operation_result_t (*operation)(process_t *, object_t *, object_t *)) {
     object_t *second = pop_object_from_stack(thread->data_stack);
     object_t *first = pop_object_from_stack(thread->data_stack);
-    operation_result_t result = operation(thread->process, first, second);
+    operation_result_t result =
+        operation == add_objects
+            ? add_objects_with_access(thread->process, first, second, &thread->context->access)
+            : operation(thread->process, first, second);
     DECREF(first);
     DECREF(second);
     if (result.is_exception)
@@ -737,11 +740,12 @@ static bool exec_INHERIT(runtime_t *runtime, instruction_t instr, thread_t *thre
 /** @brief Takes an owned snapshot before opening the loop scope. */
 static bool exec_SNAPSHOT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *source = pop_object_from_stack(thread->data_stack);
-    object_t *snapshot = source->vtbl->type == TYPE_ARRAY
-                             ? create_array_object(thread->process, get_array_elements(source))
-                         : source->vtbl->type == TYPE_USER_DEFINED_OBJECT
-                             ? snapshot_object_keys(thread->process, source)
-                             : NULL;
+    object_t *snapshot =
+        source->vtbl->type == TYPE_ARRAY
+            ? create_array_object(thread->process, get_array_elements(source))
+        : source->vtbl->type == TYPE_USER_DEFINED_OBJECT
+            ? snapshot_object_keys_with_access(thread->process, source, &thread->context->access)
+            : NULL;
     DECREF(source);
     if (!snapshot)
         return dispatch_exception(runtime,

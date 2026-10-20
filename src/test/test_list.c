@@ -330,6 +330,7 @@ static test_description_t test_list[] = {
     {"access clone metadata", test_access_clone_metadata},
     {"access clone methods", test_access_clone_methods},
     {"access flat cells", test_access_flat_cells},
+    {"access observation", test_access_observation},
     {"root object call", test_root_object_call}};
 
 int get_number_of_tests() {
