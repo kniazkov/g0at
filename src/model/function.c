@@ -383,6 +383,7 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
         thread->context,
         receiver ? (object_array_t){method_protos, 2} : (object_array_t){&dfobj->closure, 1},
         dfobj->access.module);
+    inherit_function_access(&ctx->access, &dfobj->access);
     create_object_property(ctx->data, get_this_key(), ctx->data, true);
     /* The method body resolves names through the receiver, so every call made from it, and every
        function created in it, must stay on the bytecode path. The same holds for a closure that

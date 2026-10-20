@@ -22,6 +22,8 @@ typedef struct process_t process_t;
 struct context_t {
     /** @brief Owned execution-module identity, separate from the caller's module. */
     module_t *module;
+    /** @brief Owned snapshot of lexical rights; fixed before this context starts executing. */
+    function_access_t access;
     /** @brief A data associated with the current execution context. */
     object_t *data;
 

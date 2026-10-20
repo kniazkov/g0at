@@ -18,10 +18,14 @@ object_t *get_this_key() {
 
 context_t *
 create_context_with_protos(process_t *process, context_t *caller, object_array_t protos) {
-    return create_context_with_protos_in_module(process,
-                                                caller,
-                                                protos,
-                                                caller->module ? caller->module : process->module);
+    context_t *ctx =
+        create_context_with_protos_in_module(process,
+                                             caller,
+                                             protos,
+                                             caller->module ? caller->module : process->module);
+    if (caller->module)
+        inherit_function_access(&ctx->access, &caller->access);
+    return ctx;
 }
 
 context_t *create_context_with_protos_in_module(process_t *process,
@@ -31,6 +35,8 @@ context_t *create_context_with_protos_in_module(process_t *process,
     context_t *ctx = (context_t *)ALLOC(sizeof(context_t));
     ctx->module = retain_module_identity(module);
     ctx->data = create_user_defined_object_in_module(process, protos, ctx->module);
+    init_function_access(&ctx->access, module);
+    add_function_access_domain(&ctx->access, get_object_access_domain(ctx->data));
     ctx->native_disabled = caller->native_disabled;
     ctx->iteration_index = 0;
     ctx->pending_flow = FLOW_NORMAL;
@@ -52,6 +58,7 @@ context_t *create_context(process_t *process, context_t *caller, object_t *proto
 }
 
 context_t *destroy_context(context_t *context) {
+    clear_function_access(&context->access, true);
     /* The `this` property is a weak self-reference (see create_property), so releasing the
        context's reference does not leave a cycle behind and never mutates the data object,
        which may still be reachable from the program (e.g. returned from the call or captured

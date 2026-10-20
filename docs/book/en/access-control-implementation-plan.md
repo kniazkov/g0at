@@ -37,6 +37,14 @@ Acceptance: unit tests for distinct owners sharing a key, shared captures, indep
 
 ## 3. Stage B: Unified Access and Ownership Checks
 
+**Status: the internal layer is implemented in #163.** `access_check.c` centralizes property resolution, visibility checks, writes, and creation. The VM uses it for names, dot access, ordinary object indices, and method selection; compound assignments and variable updates use the same instructions. Arrays and other specialized index implementations retain virtual dispatch. `++`/`--` still accept variables only: this stage does not extend their syntax.
+
+Each context owns a rights snapshot: its module, private domains, and separate protected prototype domains. Lexical scopes inherit it; a call uses the function's snapshot; return/exception unwinding destroys it with the context. Only explicit inheritance grants protected prototype rights. An external function's receiver and lookup topology never grant those rights, including inside nested blocks or closures. Built-ins receive the caller's existing `thread`, carrying this snapshot, without switching to the built-in module.
+
+Access denial produces `Exceptions.ACCESS_DENIED`; extending a foreign object produces `Exceptions.FOREIGN_OBJECT`; constness remains a separate `PROPERTY_IS_CONSTANT`. Absence is distinct within the model and retains the language's previous null read. Lookup never skips an inaccessible winner. Private slots use a separate resolution path.
+
+Language-level `clone`/`flat` create an object in the caller's module, preserve the declaring module and modifier of transferred fields, and allocate fresh domains without granting original methods access to the copy. Transfer does not use user-level reads. Function/capture adaptation and full transfer of shadowed `flat` cells remain stages D/E; observation filtering remains stage F. Keywords and multi-module source programs therefore remain disabled. Model and VM tests inject metadata directly: two modules, dynamic indices, detached methods, factories, protected descendant access, copies, nested closures, returns, and exceptions.
+
 Define an immutable view of the executing code's access: function module, access domains, and receiver/prototype relationships. Calls switch to the callee's context; returns and exceptions restore the caller's context. Built-in observation and copying operations receive their caller's context, not arbitrary privileges of the built-in object.
 
 Check reads, writes, property creation, and method selection under shared rules. Distinguish missing properties, access denial, constant writes, and forbidden extension of foreign objects. Do not continue lookup after denial. A method's private slot and ordinary protected/public key lookup must remain distinct resolution paths.

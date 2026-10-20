@@ -193,28 +193,59 @@ static void release(object_t *obj) {
 }
 
 /** @brief Copies all cells, preserving the selected-key index and existing shallow semantics. */
-static object_t *clone(process_t *process, object_t *obj) {
+static object_t *
+clone_in_module(process_t *process, object_t *obj, module_t *module, bool relocate) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     object_user_defined_t *copy = create_empty_user_defined_object(
         process,
         (object_array_t){(object_t *const *)uobj->proto->data, uobj->proto->size},
-        process->module);
+        module);
     copy->shadow_inherited = uobj->shadow_inherited;
+    vector_t *old_domains = create_vector(), *new_domains = create_vector();
     for (size_t i = 0; i < uobj->fields->size; i++) {
         field_cell_t *cell = uobj->fields->data[i];
+        access_domain_t *domain = cell->domain;
+        if (relocate) {
+            size_t d = 0;
+            while (d < old_domains->size && old_domains->data[d] != domain)
+                d++;
+            if (d == old_domains->size) {
+                append_to_vector(old_domains, domain);
+                append_to_vector(new_domains,
+                                 domain == uobj->domain
+                                     ? retain_access_domain(copy->domain)
+                                     : create_access_domain(get_access_domain_module(domain)));
+            }
+            domain = new_domains->data[d];
+        }
         append_field(&copy->base,
                      cell->key,
                      cell->object == obj ? &copy->base : cell->object,
                      cell->is_constant,
                      cell->modifier,
                      cell->module,
-                     cell->domain,
+                     domain,
                      get_own_field_cell(obj, cell->key) == cell);
     }
+    for (size_t i = 0; i < new_domains->size; i++)
+        release_access_domain(new_domains->data[i]);
+    destroy_vector(old_domains);
+    destroy_vector(new_domains);
     /* Preserve clone's historical key order independently of the full cell inventory. */
     clear_vector(copy->keys);
     avl_tree_for_each(copy->properties, collect_sorted_key, copy->keys);
     return &copy->base;
+}
+
+static object_t *clone(process_t *process, object_t *obj) {
+    return clone_in_module(process, obj, process->module, false);
+}
+
+object_t *
+clone_object_with_access(process_t *process, object_t *obj, const function_access_t *access) {
+    return obj->vtbl->type == TYPE_USER_DEFINED_OBJECT
+               ? clone_in_module(process, obj, access->module, true)
+               : clone_object(process, obj);
 }
 
 /** @brief Context used while rendering an object in Goat notation. */
@@ -569,6 +600,11 @@ object_t *create_user_defined_object(process_t *process, object_array_t prototyp
 
 void enable_prototype_shadowing(object_t *obj) {
     ((object_user_defined_t *)obj)->shadow_inherited = true;
+}
+
+bool object_shadows_inherited(const object_t *obj) {
+    return obj->vtbl->type == TYPE_USER_DEFINED_OBJECT
+           && ((object_user_defined_t *)obj)->shadow_inherited;
 }
 
 object_t *create_user_defined_object_in_module(process_t *process,

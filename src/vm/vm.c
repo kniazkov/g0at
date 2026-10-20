@@ -35,28 +35,7 @@ typedef struct {
  */
 typedef bool (*instr_executor_t)(runtime_t *runtime, instruction_t instr, thread_t *thread);
 
-/**
- * @brief Retrieves the value of a property from an object or its prototypes.
- *
- * If the property is not found in the object or any of its prototypes, the function will return the
- * `null` object.
- * @return The value of the property, or the `null` object if the property was not found.
- */
-static object_t *get_property_from_object_or_its_prototypes(object_t *obj, object_t *key) {
-    object_t *value = get_object_property(obj, key);
-    if (value == NULL) {
-        object_array_t proto = get_object_topology(obj);
-        size_t index = 0;
-        do {
-            value = get_object_property(proto.items[index], key);
-            index++;
-        } while (value == NULL && index < proto.size);
-    }
-    if (value == NULL) {
-        value = get_null_object();
-    }
-    return value;
-}
+static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
 
 /** @brief Loads a string from the bytecode or retrieves it from the cache. */
 static object_t *load_string(runtime_t *runtime, process_t *process, uint32_t string_id) {
@@ -245,9 +224,11 @@ static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
         return false; // bad bytecode
     }
     object_t *key = load_string(runtime, thread->process, string_id);
-    object_t *value = get_property_from_object_or_its_prototypes(thread->context->data, key);
-    push_object_onto_stack(thread->data_stack, value);
-    INCREF(value);
+    operation_result_t result =
+        read_accessible_property(&thread->context->access, thread->context->data, key);
+    if (result.is_exception)
+        return dispatch_exception(runtime, thread, (exception_t){result.value});
+    push_object_onto_stack(thread->data_stack, result.value);
     thread->instr_id++;
     return true;
 }
@@ -260,11 +241,16 @@ static bool exec_VAR(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = pop_object_from_stack(thread->data_stack);
-    model_status_t result = create_object_property(thread->context->data, key, value, false);
-    if (result != MSTAT_OK) {
-        return false; // already exists
-    }
+    model_status_t result = create_accessible_property(&thread->context->access,
+                                                       thread->context->data,
+                                                       key,
+                                                       value,
+                                                       false);
     DECREF(value);
+    if (result != MSTAT_OK)
+        return dispatch_exception(runtime,
+                                  thread,
+                                  (exception_t){access_status_result(result, NULL).value});
     thread->instr_id++;
     return true;
 }
@@ -277,16 +263,19 @@ static bool exec_CONST(runtime_t *runtime, instruction_t instr, thread_t *thread
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = pop_object_from_stack(thread->data_stack);
-    model_status_t result = create_object_property(thread->context->data, key, value, true);
-    if (result != MSTAT_OK) {
-        return false; // already exists
-    }
+    model_status_t result = create_accessible_property(&thread->context->access,
+                                                       thread->context->data,
+                                                       key,
+                                                       value,
+                                                       true);
     DECREF(value);
+    if (result != MSTAT_OK)
+        return dispatch_exception(runtime,
+                                  thread,
+                                  (exception_t){access_status_result(result, NULL).value});
     thread->instr_id++;
     return true;
 }
-
-static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
 
 /** @brief Executes @ref STORE. */
 static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
@@ -296,41 +285,12 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = peek_object_from_stack(thread->data_stack, 0);
-    object_t *context = thread->context->data;
-    bool changed = false;
-    model_status_t result = set_object_property(context, key, value);
-    assert(result != MSTAT_IMMUTABLE_OBJECT);
-    if (result == MSTAT_PROPERTY_IS_CONSTANT)
+    model_status_t status =
+        write_accessible_property(&thread->context->access, thread->context->data, key, value);
+    if (status != MSTAT_OK)
         return dispatch_exception(runtime,
                                   thread,
-                                  (exception_t){get_exception_property_is_constant()});
-    if (result == MSTAT_OK) {
-        changed = true;
-    } else if (result == MSTAT_PROPERTY_NOT_FOUND) {
-        object_array_t proto = get_object_topology(context);
-        size_t index = 0;
-        do {
-            result = set_object_property(proto.items[index], key, value);
-            if (result == MSTAT_PROPERTY_IS_CONSTANT)
-                return dispatch_exception(runtime,
-                                          thread,
-                                          (exception_t){get_exception_property_is_constant()});
-            if (result == MSTAT_IMMUTABLE_OBJECT) {
-                break;
-            }
-            if (result == MSTAT_OK) {
-                changed = true;
-                break;
-            }
-            index++;
-        } while (index < proto.size);
-    }
-    if (!changed) {
-        result = create_object_property(context, key, value, false);
-        if (result != MSTAT_OK) {
-            return false;
-        }
-    }
+                                  (exception_t){access_status_result(status, NULL).value});
     thread->instr_id++;
     return true;
 }
@@ -343,10 +303,11 @@ static bool exec_GETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *obj = pop_object_from_stack(thread->data_stack);
-    object_t *value = get_property_from_object_or_its_prototypes(obj, key);
-    INCREF(value);
+    operation_result_t result = read_accessible_property(&thread->context->access, obj, key);
     DECREF(obj);
-    push_object_onto_stack(thread->data_stack, value);
+    if (result.is_exception)
+        return dispatch_exception(runtime, thread, (exception_t){result.value});
+    push_object_onto_stack(thread->data_stack, result.value);
     thread->instr_id++;
     return true;
 }
@@ -361,7 +322,8 @@ static bool exec_SETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
     object_t *obj = pop_object_from_stack(thread->data_stack);
     object_t *value = peek_object_from_stack(thread->data_stack, 0);
     operation_result_t result =
-        common_set_index(thread->process, obj, (object_array_t){&key, 1}, value);
+        access_status_result(write_accessible_property(&thread->context->access, obj, key, value),
+                             value);
     DECREF(obj);
     if (result.is_exception)
         return dispatch_exception(runtime, thread, (exception_t){result.value});
@@ -381,12 +343,11 @@ static bool execute_index(runtime_t *runtime, instruction_t instr, thread_t *thr
     size_t receiver_index = stack->size - count - 1;
     object_t *receiver = stack->objects[receiver_index];
     object_array_t indices = {stack->objects + receiver_index + 1, count};
-    operation_result_t result = store
-                                    ? receiver->vtbl->set_index(thread->process,
-                                                                receiver,
-                                                                indices,
-                                                                stack->objects[receiver_index - 1])
-                                    : receiver->vtbl->get_index(thread->process, receiver, indices);
+    operation_result_t result = access_index(thread->process,
+                                             &thread->context->access,
+                                             receiver,
+                                             indices,
+                                             store ? stack->objects[receiver_index - 1] : NULL);
     size_t base = receiver_index - (store ? 1 : 0);
     while (stack->size > base) {
         object_t *operand = pop_object_from_stack(stack);
@@ -627,6 +588,7 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
                                closure,
                                get_bytecode_native_function(runtime->code, thread->instr_id),
                                thread->context->native_disabled);
+    inherit_function_access(get_function_access(function), &thread->context->access);
     push_object_onto_stack(thread->data_stack, function);
     thread->args_count = 0;
     thread->instr_id++;
@@ -757,6 +719,10 @@ static bool exec_INHERIT(runtime_t *runtime, instruction_t instr, thread_t *thre
                                                     (object_array_t){parents, prototypes.size + 1});
     FREE(parents);
     enable_prototype_shadowing(context->data);
+    /* Only explicit inheritance grants protected rights. The dynamic receiver and lexical
+       lookup topology of an ordinary call must never manufacture privileges. */
+    for (size_t i = 0; i < prototypes.size; i++)
+        add_protected_object_access(&context->access, prototypes.items[i]);
     context->native_disabled = true;
     while (stack->size > base) {
         object_t *value = pop_object_from_stack(stack);
