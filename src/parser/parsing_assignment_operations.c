@@ -12,6 +12,26 @@
 
 #include <assert.h>
 
+/** @brief Shared right-to-left reduction permits assignments inside either conditional arm. */
+static compilation_error_t *conditional(token_t *op, parser_memory_t *memory) {
+    token_t *condition = op->left;
+    token_t *yes = op->right;
+    token_t *colon = yes ? yes->right : NULL;
+    token_t *no = colon ? colon->right : NULL;
+    if (!condition || condition->type != TOKEN_EXPRESSION || !yes || yes->type != TOKEN_EXPRESSION
+        || !colon || colon->type != TOKEN_COLON || !no || no->type != TOKEN_EXPRESSION)
+        return create_error_from_token(memory->errors,
+                                       op,
+                                       CRITICAL,
+                                       get_messages()->invalid_conditional);
+    expression_t *node = create_conditional_node(memory->graph,
+                                                 (expression_t *)condition->node,
+                                                 (expression_t *)yes->node,
+                                                 (expression_t *)no->node);
+    collapse_tokens_to_token(memory, condition, no, TOKEN_EXPRESSION, &node->base);
+    return NULL;
+}
+
 /**
  * @brief Rule for handling assignment operators.
  * @return A pointer to a `compilation_error_t` if an error occurs, or `NULL` if no error.
@@ -19,6 +39,8 @@
 compilation_error_t *
 parsing_assignment_operators(token_t *operator, parser_memory_t * memory, token_groups_t *groups) {
     assert(operator->type == TOKEN_OPERATOR);
+    if (operator->text.data[0] == L'?')
+        return conditional(operator, memory);
 
     token_t *left_token = operator->left;
     if (left_token == NULL) {

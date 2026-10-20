@@ -1,0 +1,8 @@
+one c-support 1 0 boolean,integer,integer supported
+one c-support 1 0 boolean,real,real supported
+one c-support 1 0 boolean,string,string supported
+one c-support 1 0 boolean,char,char supported
+one c-support 1 0 boolean,boolean,boolean supported
+one c-support 3 0 boolean unknown
+one c-support 5 0 boolean,integer supported
+one c-support 7 0 boolean unknown

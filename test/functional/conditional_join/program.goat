@@ -1,0 +1,16 @@
+const update=func(c){var x=0;var y=c ? (x=10) : (x=20);return x+y;};
+println(update(true));println(update(false));
+const mixed=func(c){return c ? 1 : "text";};
+println(mixed(true));println(mixed(false));
+const fail=func(){throw "branch";};
+const partial=func(c){var x=1;var value=c ? fail() : (x=4);return x+value;};
+println(partial(false));
+try { partial(true); } catch(e){println(e);}
+const both=func(c){return c ? fail() : fail();};
+try { both(false); } catch(e){println(e);}
+var sum=0;
+for(var i=0;i<10;i++) sum += i%2==0 ? i : -i;
+println(sum);
+var functions=[];
+for(x in [1,2,3]) functions.push(x%2==0 ? func(){return x;} : func(){return -x;});
+for(f in functions) println(f());

@@ -148,6 +148,11 @@
     "bound": 11
   },
   {
+    "name": "conditional",
+    "calls": 19,
+    "bound": 7
+  },
+  {
     "name": "compound",
     "calls": 12,
     "bound": 5
