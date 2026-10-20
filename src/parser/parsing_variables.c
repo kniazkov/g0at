@@ -30,6 +30,8 @@ parsing_single_identifiers(token_t *identifier, parser_memory_t *memory, token_g
             || identifier->left->type == TOKEN_RETURN || identifier->left->type == TOKEN_ELSE
             || identifier->left->type == TOKEN_DO || identifier->left->type == TOKEN_CASE
             || identifier->left->type == TOKEN_IN || identifier->left->type == TOKEN_COLON
+            || identifier->left->type == TOKEN_CATCH_BINDING
+            || identifier->left->type == TOKEN_FINALLY
             || (identifier->left->type == TOKEN_BRACKET_PAIR
                 && identifier->left->text.data[0] == L'{')
             || (identifier->left->type == TOKEN_BRACKET_PAIR && identifier->left->left
@@ -48,7 +50,8 @@ parsing_single_identifiers(token_t *identifier, parser_memory_t *memory, token_g
             || identifier->right->type == TOKEN_SEMICOLON || identifier->right->type == TOKEN_VAR
             || identifier->right->type == TOKEN_COLON || identifier->right->type == TOKEN_CASE
             || identifier->right->type == TOKEN_DEFAULT || identifier->right->type == TOKEN_CATCH
-            || identifier->right->type == TOKEN_IN || identifier->right->type == TOKEN_CONST;
+            || identifier->right->type == TOKEN_FINALLY || identifier->right->type == TOKEN_IN
+            || identifier->right->type == TOKEN_CONST;
         if (!valid_right) {
             return NULL;
         }

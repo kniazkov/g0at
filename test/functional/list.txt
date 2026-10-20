@@ -538,3 +538,11 @@ conditional_order
 conditional_join
 ternary_missing_true
 ternary_missing_colon
+finally_basic
+finally_return
+finally_loops
+finally_scope
+finally_stack
+cleanup_uncaught
+cleanup_missing_body
+cleanup_duplicate

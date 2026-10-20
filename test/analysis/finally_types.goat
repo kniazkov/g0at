@@ -1,0 +1,4 @@
+const cleanup=func(x){try return x+1;finally x+=2;};
+cleanup(1);
+const overridden=func(x){try return 1;finally return x;};
+overridden(2);

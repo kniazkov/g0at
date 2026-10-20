@@ -68,10 +68,13 @@ typedef enum {
     SETINDEX,   /**< Consumes receiver and arg1 indices above RHS; keeps assignment value. */
     ARRAY,      /**< Consumes arg1 elements in source order and pushes a new array. */
     INHERIT, /**< Enters a derived object: arg0=1 for arg1 explicit prototypes, else one value. */
-    LOOP_ENTER, /**< Opens a loop scope with an operand stack boundary. */
-    LOOP_JUMP,  /**< Unwinds to the nearest loop and jumps to arg1. */
-    DUPN,       /**< Duplicates the top arg1 values in their original order. */
-    ROTATE,     /**< Moves the top value below arg1 retained operands. */
-    SNAPSHOT,   /**< Copies array values or sorted own object keys. */
-    ITER_NEXT   /**< Pushes next snapshot value, or jumps to arg1 on exhaustion. */
+    LOOP_ENTER,    /**< Opens a loop scope with an operand stack boundary. */
+    LOOP_JUMP,     /**< Unwinds to the nearest loop and jumps to arg1. */
+    DUPN,          /**< Duplicates the top arg1 values in their original order. */
+    ROTATE,        /**< Moves the top value below arg1 retained operands. */
+    SNAPSHOT,      /**< Copies array values or sorted own object keys. */
+    ITER_NEXT,     /**< Pushes next snapshot value, or jumps to arg1 on exhaustion. */
+    FINALLY_ENTER, /**< Creates a protected scope; arg1 is its cleanup address. */
+    FINALLY_LEAVE, /**< Starts cleanup on normal exit; arg1 is the continuation. */
+    FINALLY_END    /**< Resumes the transfer suspended by this cleanup. */
 } opcode_t;

@@ -1,0 +1,16 @@
+const recurse=func(n){try {if(n>0)return recurse(n-1)+1;return 0;} finally {var tmp=[n,n];}};
+println(recurse(20));
+const replaced=func(){try {try return [1,2,3];finally return [4,5];}finally println("outer array");};
+println(replaced());
+const consume=func(x){return x;};
+const partial=func(){try {return 100+consume({try return 7; finally println("partial");});}finally println("function");};
+println(partial());
+var count=0;
+const many=func(){for(var i=0;i<500;i++){try {try return {var x=i;};finally {count++;continue;}}finally count++;}return count;};
+println(many());
+const returnCall=func(){return 12;};
+const pending=func(){try return [9];finally {println(returnCall());var temporary=[1,2,3];}};
+println(pending());
+var loops=0;
+while(loops<2){loops++;try println({try continue;finally println("nested continue");});finally println("loop cleanup");}
+println(loops);

@@ -81,6 +81,8 @@ typedef struct {
     const wchar_t *expected_catch;
     const wchar_t *invalid_catch_binding;
     const wchar_t *expected_catch_block;
+    const wchar_t *expected_finally_statement;
+    const wchar_t *finally_without_try;
     const wchar_t *catch_without_try;
     const wchar_t *expected_throw_value;
     const wchar_t *uncaught_exception;

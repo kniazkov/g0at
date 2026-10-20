@@ -27,6 +27,10 @@ struct context_t {
 
     /** @brief Next offset in a for-in snapshot retained on the operand stack. */
     size_t iteration_index;
+    /** @brief Suspended transfer owned by a running finally context. */
+    control_flow_t pending_flow;
+    object_t *pending_value;
+    instr_index_t pending_address;
 
     /** @brief A pointer to the previous context in the stack. */
     context_t *previous;

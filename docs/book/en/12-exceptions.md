@@ -34,8 +34,37 @@ After the protected body completes normally, `RESTORE` removes the handler conte
 
 This is a control-flow scheme, rather than a promise to execute both blocks. If the protected body finishes normally, the `catch` body does not run. If the body returns from the function, `RET` unwinds the required contexts along its own route.
 
-> [!CAUTION]
-> This version implements `try/catch`, but has no `finally` and no automatic invocation of user resource-cleanup handlers on scope exit. Such guarantees from other languages must not be assumed for this syntax.
+`try … finally` and `try … catch (e) … finally` run cleanup exactly once on normal
+completion, an exception, `return`, or an escaping `break`/`continue`. Each part
+accepts a braced block, a single statement, or `;`, and always has its own lexical
+scope. A catch binding and locals of the protected body are not visible in cleanup;
+declare shared data outside the whole construct.
+
+```goat
+const example = func() {
+    var result = { var value = 1; };
+    try return result;
+    finally result.value = 2;
+};
+println(example().value); // 2
+```
+
+A return expression is evaluated before cleanup and retained without copying.
+Changing the original scalar variable does not change the pending value; mutating
+the returned object does. A `return`, exception, or escaping loop transfer from
+cleanup replaces the pending transfer. An exception caught inside cleanup, or a
+break from a loop wholly inside cleanup, does not replace it. Exceptions from
+cleanup can only reach an outer handler, never the catch of the same try.
+Nested cleanups run from inner to outer. These guarantees cover ordinary language
+control flow, not process termination or a fatal interpreter error.
+
+The VM emits `FINALLY_ENTER`, `FINALLY_LEAVE` and `FINALLY_END`. A protected context
+stores the cleanup address and stack boundary. When an exit crosses it, the VM
+retains the transfer kind, target and owned return/exception value, trims temporary
+operands, then runs cleanup in a separate scope. A running cleanup cannot intercept
+itself. Its pending value is a GC root, including while nested calls execute.
+Completion resumes the saved transfer; replacement releases the old value.
+Functions containing finally currently use the VM; native lowering is deferred.
 
 <a id="section-12-4"></a>
 

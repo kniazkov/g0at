@@ -179,6 +179,7 @@ typedef enum {
     /** @brief Exception-handling statement. */
     NODE_SWITCH, /**< Ordered multi-way branch without fallthrough. */
     NODE_TRY_CATCH,
+    NODE_TRY_FINALLY,
 
     /** @brief Conditional branch statement node type. */
     NODE_IF_ELSE,
@@ -225,7 +226,7 @@ static inline bool is_expression(node_type_t type) {
  * @return `true` if the type is in the statement range, otherwise `false`.
  */
 static inline bool is_statement(node_type_t type) {
-    return type >= NODE_STATEMENT_EXPRESSION && type <= NODE_TRY_CATCH;
+    return type >= NODE_STATEMENT_EXPRESSION && type <= NODE_TRY_FINALLY;
 }
 
 /**

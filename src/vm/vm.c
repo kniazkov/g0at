@@ -669,12 +669,44 @@ static bool exec_CALLM(runtime_t *runtime, instruction_t instr, thread_t *thread
     return result;
 }
 
-/** @brief Executes @ref RET. */
-static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+/** @brief Drops temporaries above a saved context boundary. */
+static void trim_to_context(thread_t *thread, context_t *ctx) {
+    size_t size = ctx->unwinding_index == BAD_STACK_INDEX ? 0 : ctx->unwinding_index + 1;
+    require_object_stack_size(thread->data_stack, size);
+    while (thread->data_stack->size > size) {
+        object_t *value = pop_object_from_stack(thread->data_stack);
+        DECREF(value);
+    }
+}
+
+/** @brief Takes ownership of a transfer value until cleanup finishes or replaces it. */
+static bool start_cleanup(thread_t *thread,
+                          context_t *ctx,
+                          control_flow_t flow,
+                          object_t *value,
+                          instr_index_t address) {
+    while (thread->context != ctx)
+        thread->context = destroy_context(thread->context);
+    trim_to_context(thread, ctx);
+    ctx->control_flow = FLOW_CLEANUP;
+    ctx->pending_flow = flow;
+    ctx->pending_value = value;
+    ctx->pending_address = address;
+    thread->args_count = 0;
+    thread->instr_id = ctx->jump_address[0];
+    return true;
+}
+
+/** @brief Runs intervening cleanups before committing an owned return value. */
+static bool return_value(runtime_t *runtime, thread_t *thread, object_t *ret_value) {
     context_t *ctx = thread->context;
-    require_object_stack_size(thread->data_stack, 1);
+    context_t *next = ctx;
+    while (next && next->control_flow != FLOW_RETURN) {
+        if (next->control_flow == FLOW_FINALLY)
+            return start_cleanup(thread, next, FLOW_RETURN, ret_value, BAD_INSTR_INDEX);
+        next = next->previous;
+    }
     assert(ctx->ret_value_index != BAD_STACK_INDEX);
-    object_t *ret_value = pop_object_from_stack(thread->data_stack);
     replace_object_on_stack(thread->data_stack, ret_value, ctx->ret_value_index);
     DECREF(ret_value);
     while (ctx && ctx->control_flow != FLOW_RETURN) {
@@ -688,6 +720,11 @@ static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) 
     thread->instr_id = ctx->jump_address[0];
     thread->context = destroy_context(ctx);
     return true;
+}
+
+/** @brief Executes @ref RET. */
+static bool exec_RET(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    return return_value(runtime, thread, pop_object_from_stack(thread->data_stack));
 }
 
 /** @brief Executes @ref ENTER. */
@@ -792,6 +829,9 @@ static bool exec_LOOP_JUMP(runtime_t *runtime, instruction_t instr, thread_t *th
     }
     if (!target)
         goto invalid;
+    for (context_t *ctx = thread->context; ctx != target; ctx = ctx->previous)
+        if (ctx->control_flow == FLOW_FINALLY)
+            return start_cleanup(thread, ctx, FLOW_LOOP, NULL, instr.arg1);
     if (target->unwinding_index == BAD_STACK_INDEX) {
         while (thread->data_stack->size) {
             object_t *value = pop_object_from_stack(thread->data_stack);
@@ -854,8 +894,11 @@ static bool exec_TRY(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception) {
     context_t *root = get_root_context();
     context_t *handler = thread->context;
-    while (handler != root && handler->control_flow != FLOW_THROW)
+    while (handler != root && handler->control_flow != FLOW_THROW
+           && handler->control_flow != FLOW_FINALLY)
         handler = handler->previous;
+    if (handler->control_flow == FLOW_FINALLY)
+        return start_cleanup(thread, handler, FLOW_THROW, exception.value, BAD_INSTR_INDEX);
     size_t size = handler == root || handler->unwinding_index == BAD_STACK_INDEX
                       ? 0
                       : handler->unwinding_index + 1;
@@ -884,6 +927,54 @@ static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t
 static bool exec_THROW(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     exception_t exception = {pop_object_from_stack(thread->data_stack)};
     return dispatch_exception(runtime, thread, exception);
+}
+
+/** @brief Opens a protected scope with a cleanup address and stack boundary. */
+static bool exec_FINALLY_ENTER(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    if (!exec_TRY(runtime, instr, thread))
+        return false;
+    thread->context->control_flow = FLOW_FINALLY;
+    return true;
+}
+
+/** @brief Normal completion also visits cleanup exactly once. */
+static bool exec_FINALLY_LEAVE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    if (thread->context->control_flow != FLOW_FINALLY
+        || instr.arg1 >= runtime->code->instructions_count) {
+        runtime->status = 1;
+        return false;
+    }
+    return start_cleanup(thread, thread->context, FLOW_NORMAL, NULL, instr.arg1);
+}
+
+/** @brief Removes cleanup before resuming the suspended transfer. */
+static bool exec_FINALLY_END(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    context_t *ctx = thread->context;
+    if (ctx->control_flow != FLOW_CLEANUP) {
+        runtime->status = 1;
+        return false;
+    }
+    control_flow_t flow = ctx->pending_flow;
+    object_t *value = ctx->pending_value;
+    instr_index_t address = ctx->pending_address;
+    ctx->pending_value = NULL;
+    trim_to_context(thread, ctx);
+    thread->context = destroy_context(ctx);
+    switch (flow) {
+        case FLOW_RETURN:
+            return return_value(runtime, thread, value);
+        case FLOW_THROW:
+            return dispatch_exception(runtime, thread, (exception_t){value});
+        case FLOW_LOOP:
+            return exec_LOOP_JUMP(runtime, (instruction_t){.arg1 = address}, thread);
+        case FLOW_NORMAL:
+            thread->instr_id = address;
+            return true;
+        default:
+            DECREFIF(value);
+            runtime->status = 1;
+            return false;
+    }
 }
 
 /** @brief Array of instruction execution functions for the Goat virtual machine. */
@@ -948,8 +1039,8 @@ static instr_executor_t executors[] = {
     exec_SETINDEX, /**< Writes through the indexing virtual method. */
     exec_ARRAY,    /**< Creates a new array. */
     exec_INHERIT,  /**< Enters an explicitly derived object. */
-    exec_LOOP_ENTER, exec_LOOP_JUMP, exec_DUPN, exec_ROTATE,
-    exec_SNAPSHOT,   exec_ITER_NEXT
+    exec_LOOP_ENTER, exec_LOOP_JUMP,     exec_DUPN,          exec_ROTATE,     exec_SNAPSHOT,
+    exec_ITER_NEXT,  exec_FINALLY_ENTER, exec_FINALLY_LEAVE, exec_FINALLY_END
     // Additional opcodes can be added here in the future...
 };
 

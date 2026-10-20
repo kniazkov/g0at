@@ -1,0 +1,17 @@
+var x=1; var e="outer";
+try {var x=2;throw "inner";} catch(e) println(e); finally {println(x);println(e);}
+println(x);println(e);
+var saved=null;
+try {var local=7;saved=func(){return local;};} finally println(saved());
+try throw 8; catch(e) saved=func(){return e;}; finally println(saved());
+println(saved());
+try var x=9; finally println(x);
+try throw 10; catch(e) var x=e; finally println(x);
+var count=0;
+do try count++; finally if(count==1) println("once"); else println("twice"); while(count<2);
+try {try throw "pending"; finally {try throw "temporary"; catch(e) println(e);}}
+catch(e) println(e);
+var object={var value=1;};
+try {try throw object;finally object.value=2;} catch(e){println(e==object);println(e.value);}
+try {try throw "first"; catch(e) throw "second"; finally println("after handler throw");}
+catch(e) println(e);

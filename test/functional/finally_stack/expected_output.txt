@@ -1,0 +1,14 @@
+20
+outer array
+[4,5]
+partial
+function
+7
+1000
+12
+[9]
+nested continue
+loop cleanup
+nested continue
+loop cleanup
+2

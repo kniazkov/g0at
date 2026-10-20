@@ -90,7 +90,10 @@ static instruction_descriptor_t descriptors[] = {
     {.code = L"DUPN", .arg_1_is_unsigned_integer = true},
     {.code = L"ROTATE", .arg_1_is_unsigned_integer = true},
     {.code = L"SNAPSHOT"},
-    {.code = L"ITER_NEXT", .arg_1_is_unsigned_integer = true}};
+    {.code = L"ITER_NEXT", .arg_1_is_unsigned_integer = true},
+    {.code = L"FINALLY_ENTER", .arg_1_is_unsigned_integer = true},
+    {.code = L"FINALLY_LEAVE", .arg_1_is_unsigned_integer = true},
+    {.code = L"FINALLY_END"}};
 
 /** @brief Defines the column width for instruction numbers in the bytecode text representation. */
 #define NUMBER_COLUMN_SIZE 8

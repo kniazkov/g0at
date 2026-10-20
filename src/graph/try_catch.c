@@ -189,3 +189,56 @@ declarator_t *get_catch_declarator(node_t *node) {
     assert(node->vtbl->type == NODE_TRY_CATCH);
     return ((try_catch_t *)node)->exception_declarator;
 }
+
+/** @brief Cleanup uses the same two scoped children but has no catch binding. */
+static const wchar_t *finally_tag(const node_t *node, size_t index) {
+    return index == 0 ? L"try" : index == 1 ? L"finally" : NULL;
+}
+
+static string_value_t finally_source(const node_t *node) {
+    const try_catch_t *stmt = (const try_catch_t *)node;
+    string_value_t body = generate_goat_code_from_statement(stmt->body);
+    string_value_t cleanup = generate_goat_code_from_expression(&stmt->handler->base);
+    string_value_t result = format_string(
+        stmt->body->base.vtbl->type == NODE_TRY_CATCH ? L"%s finally %s" : L"try %s finally %s",
+        body.data,
+        cleanup.data);
+    FREE_STRING(body);
+    FREE_STRING(cleanup);
+    return result;
+}
+
+static void finally_indented(const node_t *node, source_builder_t *builder, size_t indent) {
+    add_formatted_source(builder, indent, finally_source(node));
+}
+
+static instr_index_t finally_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    const try_catch_t *stmt = (const try_catch_t *)node;
+    instr_index_t first = add_instruction(code, (instruction_t){.opcode = FINALLY_ENTER});
+    generate_bytecode_from_statement(stmt->body, code, data);
+    instr_index_t normal = add_instruction(code, (instruction_t){.opcode = FINALLY_LEAVE});
+    get_instruction(code, first)->arg1 = get_next_instruction_index(code);
+    generate_bytecode_from_node(&stmt->handler->base.base, code, data);
+    /* Block expressions leave their data object on the operand stack. */
+    add_instruction(code, (instruction_t){.opcode = POP});
+    add_instruction(code, (instruction_t){.opcode = FINALLY_END});
+    get_instruction(code, normal)->arg1 = get_next_instruction_index(code);
+    return first;
+}
+
+node_t *create_try_finally_node(arena_t *arena, statement_t *body, statement_list_t *cleanup) {
+    static node_vtbl_t finally_vtbl;
+    finally_vtbl = vtbl;
+    finally_vtbl.type = NODE_TRY_FINALLY;
+    finally_vtbl.type_name = L"try finally";
+    finally_vtbl.get_data = no_data;
+    finally_vtbl.get_child_tag = finally_tag;
+    finally_vtbl.generate_goat_code = finally_source;
+    finally_vtbl.generate_indented_goat_code = finally_indented;
+    finally_vtbl.generate_bytecode = finally_bytecode;
+    try_catch_t *stmt = alloc_zeroed_from_arena(arena, sizeof(*stmt));
+    stmt->base.base.vtbl = &finally_vtbl;
+    stmt->body = body;
+    stmt->handler = cleanup;
+    return &stmt->base.base;
+}

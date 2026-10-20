@@ -1,0 +1,13 @@
+try println("try"); finally println("finally");
+try throw "value"; catch(e) println(e); finally println("after catch");
+try { try throw "original"; finally println("unwind"); }
+catch(e) println(e);
+try { try println("body"); catch(e) println("wrong"); finally throw "cleanup"; }
+catch(e) println(e);
+try ; finally ;
+try throw 5; catch(e) println(e);
+var x=0;
+try x=1; finally x=2;
+println(x);
+try println(1/0); catch(e) println(e); finally println("arithmetic cleanup");
+try sqrt("bad"); catch(e) println(e); finally println("builtin cleanup");

@@ -1,0 +1,18 @@
+inner
+1
+outer
+1
+outer
+7
+8
+8
+1
+1
+once
+twice
+temporary
+pending
+true
+2
+after handler throw
+second

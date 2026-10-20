@@ -13,12 +13,19 @@ Values are `null`, booleans `true`/`false`, 64-bit integers, real `double` value
 A function is written `func(a, b) { ... }`, a call `f(a, b)`, and a return `return e;` or `return;`. Without an explicit return, the result is `null`. A condition is `if (e) statement` with optional `else`. Exceptions use `throw e;` and `try statement catch (name) { ... }`. A block `{ ... }` is an expression returning its context object. Semicolons make boundaries explicit; a newline is not itself a statement-termination rule.
 
 > [!CAUTION]
-> `while` / `do/while` loops and imports are not implemented. `obj.name`, `obj[key]`, `Exceptions.INVALID_ARGUMENT` and call chains such as `f()()` are supported.
+> Imports are not implemented. `while` / `do/while`, `obj.name`, `obj[key]`, `Exceptions.INVALID_ARGUMENT` and call chains such as `f()()` are supported.
 
 `for (initial; condition; step) statement` executes initialization once and checks the condition before every iteration. A successful check is followed by the body and step. Initialization accepts one expression or a `var`/`const` declaration, including multiple declarators; condition and step each accept one expression. Every slot is optional, but both semicolons are required. An absent condition is true; `;` is an empty body. Header declarations have loop scope, and the body has a fresh nested scope per iteration. `return` and exceptions skip the remaining body and step. See [chapter 2](02-implemented-language.md) for examples.
 
 > [!CAUTION]
-> `break`, `continue`, and comma-expression sequences are not implemented. These words do not provide loop-control operations.
+> Comma-expression sequences are not implemented. `break` and `continue` target the nearest loop and run intervening finally blocks.
+
+Exception syntax also includes `try statement finally statement` and
+`try statement catch (name) statement finally statement`. Every body accepts a
+single statement or a block and has its own lexical scope. Cleanup runs once on
+every ordinary exit; a transfer escaping cleanup replaces the pending transfer.
+Return values are evaluated before cleanup and retained without copying. See
+[chapter 12](12-exceptions.md) for nested cleanup and exception precedence.
 
 <a id="section-b-2"></a>
 
