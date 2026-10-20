@@ -73,6 +73,18 @@ typedef struct {
 
 typedef struct native_function_descriptor_t native_function_descriptor_t;
 
+/** @brief File-local declaration identity is its data descriptor index, never a C address.
+ * module is currently zero (the program module); future loaders may introduce a module table.
+ */
+typedef struct {
+    uint32_t tag;
+    uint32_t name;
+    uint32_t module;
+    uint32_t modifier;
+} declaration_descriptor_t;
+
+#define DECLARATION_TAG 0x4445434cu
+
 /** @brief A loaded bytecode file in memory. */
 typedef struct {
     /** @brief Pointer to the entire loaded bytecode file in memory. */
@@ -98,7 +110,12 @@ typedef struct {
 
     /** @brief Optional owned descriptors indexed by FUNC instruction; never serialized. */
     native_function_descriptor_t **native_functions;
+    struct module_t *declaration_unit; /**< Runtime identity shared with declared cells. */
 } bytecode_t;
+
+bool get_bytecode_declaration(const bytecode_t *code,
+                              uint32_t index,
+                              declaration_descriptor_t *out);
 
 /**
  * @brief Converts a sequence of bytecode instructions into a formatted text representation.

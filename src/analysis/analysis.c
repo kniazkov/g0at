@@ -492,7 +492,8 @@ compilation_error_t *analyze(node_t *root_node,
     if (options->enable_warnings)
         warn_duplicate_cases(root_node, memory->graph, memory->errors, &errors);
 
-    if (options->optimization_level == OPTIMIZATION_NONE)
+    /* Access-aware optimization/native proofs are a later stage. Keep checked operations intact. */
+    if (options->optimization_level == OPTIMIZATION_NONE || has_access_modifiers(root_node))
         return errors;
     if (get_most_severe_compilation_error(errors) > WARNING)
         return errors;

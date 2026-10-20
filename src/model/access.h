@@ -26,6 +26,8 @@ struct field_cell_t {
     module_t *module;
     /** @brief Distinguishes same-key declarations belonging to different objects. */
     access_domain_t *domain;
+    module_t *binding_unit;  /**< Owned load identity; never persisted as a pointer. */
+    uint32_t declaration_id; /**< File-local descriptor index plus one; zero means dynamic. */
 };
 
 /** @brief Retains storage, keeping its cell alive. Does not own the cell independently. */
@@ -44,6 +46,7 @@ typedef struct {
     vector_t *protected_domains;
     /** @brief Owned field_capture_t records retaining their storage objects. */
     vector_t *captures;
+    vector_t *lexical_scopes; /**< Retained lexical storage, excluding dynamic receivers. */
 } function_access_t;
 
 /** @brief Creates a distinct module identity with one owned reference. */
@@ -96,8 +99,14 @@ void init_function_access(function_access_t *access, module_t *module);
 void add_function_access_domain(function_access_t *access, access_domain_t *domain);
 /** @brief Copies grants and captures into an unpublished context in the same module. */
 void inherit_function_access(function_access_t *target, const function_access_t *source);
+/** @brief Retains lexical storage, including fields declared after closure creation. */
+void add_lexical_scope(function_access_t *access, object_t *storage);
 /** @brief Grants protected access to an object's declaration domain and its prototypes. */
 void add_protected_object_access(function_access_t *access, object_t *object);
+/** @brief Grants descendant protected rights only along explicit inheritance edges. */
+void add_inherited_receiver_access(function_access_t *access,
+                                   object_t *receiver,
+                                   const function_access_t *declaration);
 /** @brief Adds one stable capture, validating that storage owns the cell. */
 bool add_function_field_capture(function_access_t *access, object_t *storage, field_cell_t *cell);
 void mark_function_access(const function_access_t *access);
@@ -113,6 +122,12 @@ typedef struct {
     field_cell_t *cell;
     object_t *value;
 } property_lookup_t;
+
+/** @brief Resolves a declaration identity in lexical storage, never through the receiver. */
+property_lookup_t lookup_bound_property(const function_access_t *access,
+                                        object_t *current,
+                                        module_t *unit,
+                                        uint32_t declaration_id);
 
 /** @brief Resolves a property without skipping a denied winner.
  * private_slots selects declaration-bound private slots before ordinary lookup.

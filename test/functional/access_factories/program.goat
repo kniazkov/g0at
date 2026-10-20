@@ -1,0 +1,32 @@
+const make = func(value) {
+    return {
+        private var x = value;
+        public get = func() { return x; };
+        public set = func(v) { x = v; };
+        public other = func(obj) { return obj.x; };
+        public nest = { public read = func() { return x; }; };
+        public forward = func() { return later; };
+        private var later = value + 1;
+    };
+};
+var a = make(10), b = make(20);
+a.set(12);
+println(a.get()); println(b.get());
+println(a.nest.read()); println(b.nest.read());
+println(a.forward()); println(b.forward());
+try a.other(b); catch(e) println(e);
+var copied = a.get;
+b.stolen = copied;
+println(b.stolen());
+const Base = {
+    private var x = 1;
+    public base = func() { return x; };
+};
+const Middle = Base -> {
+    private var x = 2;
+    public middle = func() { return x; };
+};
+const Last = Middle -> {
+    public sum = func() { return this.base() + this.middle(); };
+};
+println(Last.sum());

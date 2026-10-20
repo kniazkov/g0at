@@ -8,6 +8,7 @@
 #include "codegen/linker.h"
 #include "lib/allocate.h"
 #include "lib/binary_file.h"
+#include "model/access.h"
 #include "test_macro.h"
 #include "vm/binary.h"
 
@@ -81,7 +82,74 @@ static bool rejected(const void *bytes, size_t size) {
     return result;
 }
 
+/** @brief Check declaration metadata independently of the outer checksum. */
+static bool declaration_rejection(void) {
+    code_builder_t *builder = create_code_builder();
+    data_builder_t *data = create_data_builder();
+    uint32_t name = add_string_to_data_segment(data, L"field");
+    declaration_descriptor_t declaration = {DECLARATION_TAG, name, 0, ACCESS_PRIVATE};
+    uint32_t id = add_data_to_data_segment(data, &declaration, sizeof(declaration));
+    add_instruction(builder, (instruction_t){.opcode = DVAR, .arg1 = id});
+    add_instruction(builder, (instruction_t){.opcode = BLOAD, .arg1 = id});
+    add_instruction(builder, (instruction_t){.opcode = END});
+    bytecode_t *code = link_code_and_data(builder, data);
+    destroy_code_builder(builder);
+    destroy_data_builder(data);
+    instruction_t original = code->instructions[0];
+    data_descriptor_t descriptor = code->data_descriptors[id];
+    for (unsigned test = 0; test < 12; test++) {
+        declaration_descriptor_t altered = declaration;
+        code->instructions[0] = original;
+        code->instructions[1].opcode = BLOAD;
+        code->data_descriptors[id] = descriptor;
+        switch (test) {
+            case 1:
+                altered.tag = 0;
+                break;
+            case 2:
+                altered.name = UINT32_MAX;
+                break;
+            case 3:
+                altered.module = 1;
+                break;
+            case 4:
+                altered.modifier = 99;
+                break;
+            case 5:
+                altered.modifier = ACCESS_MODULE;
+                break;
+            case 6:
+                code->data_descriptors[id].size--;
+                break;
+            case 7:
+                code->instructions[0].arg1 = UINT32_MAX;
+                break;
+            case 8:
+                code->instructions[0].opcode = BLOAD;
+                break; /* No declaration. */
+            case 9:
+                code->instructions[0].arg0 = 1;
+                break;
+            case 10:
+                code->instructions[1].opcode = DCONST; /* Duplicate declaration identity. */
+                break;
+            case 11:
+                altered.name = id; /* Metadata is not a name string. */
+                break;
+        }
+        memcpy(code->data + descriptor.offset, &altered, sizeof(altered));
+        ASSERT(save_binary_program(filename, code, NULL));
+        binary_program_t loaded = load_binary_program(filename);
+        ASSERT((loaded.code != NULL) == (test == 0));
+        destroy_binary_program(&loaded);
+    }
+    free_bytecode(code);
+    ASSERT(!remove(filename));
+    return true;
+}
+
 bool test_binary_rejection(void) {
+    ASSERT(declaration_rejection());
     bytecode_t *code = sample();
     ASSERT(save_binary_program(filename, code, 0));
     size_t size;
@@ -110,10 +178,12 @@ bool test_binary_rejection(void) {
     copy[size] = 0;
     ASSERT(rejected(copy, size + 1));
     /* Reject earlier instruction sets even when the checksum is valid. */
-    for (unsigned version = 1; version < 10; version++) {
+    for (unsigned version = 1; version < 11; version++) {
         memcpy(copy, bytes, size);
         memcpy(copy, "GOATBIN", 7);
         copy[7] = (unsigned char)('0' + version);
+        if (version == 10)
+            memcpy(copy, "GOATBI10", 8);
         put64(copy, 8, version);
         put64(copy, 56, 0);
         put64(copy, 56, binary_checksum(copy, size));

@@ -55,6 +55,8 @@ Acceptance: model/VM tests for AC-03–AC-10, AC-18, AC-24–AC-28, including tw
 
 ## 4. Stage C: Declarations, Binding, and Bytecode
 
+Implemented in #164: syntax and VM bindings, binary format 11, source/binary round trips, and invalid metadata rejection. Optimizations for programs with modifiers remain disabled pending stage G; stages D–F are still required for copying and observation.
+
 Add three scanner tokens, parse a single modifier and implicit `const`, and apply the modifier to the full declaration list. Preserve metadata in declaration nodes, name bindings, and property-creation instructions. Support every scope, source regeneration, and AST visualization.
 
 Change points: `src/scanner`, `src/parser/parsing_declarations.c` and related variable rules, `src/graph/declarations.[ch]`, name binding, `src/vm/opcodes.h`, `bytecode.c`, `vm.c`, and EN/RU messages. Bind a lexical capture to its original cell: a captured prototype field must not turn into dynamic lookup of a descendant field (AC-13).

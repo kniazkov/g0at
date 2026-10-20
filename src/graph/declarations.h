@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "model/access.h"
 #include "node.h"
 
 typedef struct expression_t expression_t;
@@ -39,6 +40,7 @@ typedef struct declarator_t {
 
     /** @brief Joined abstract value assigned by analysis; NULL until computed. */
     const lattice_element_t *abstract_value;
+    access_modifier_t modifier; /**< Declaration visibility, independent of constness. */
 } declarator_t;
 
 /** @brief Pair of a variable declaration node and its single declarator. */
@@ -95,6 +97,8 @@ constant_declaration_pair_t create_synthetic_constant_declaration_node(arena_t *
  * and graph construction.
  */
 const declarator_t *get_builtin_declarator();
+void set_declaration_modifier(node_t *declaration, access_modifier_t modifier);
+bool has_access_modifiers(const node_t *node);
 
 /**
  * @brief Gets the number of visualization/debug properties exposed by a declarator.

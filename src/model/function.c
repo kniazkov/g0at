@@ -384,6 +384,7 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
         receiver ? (object_array_t){method_protos, 2} : (object_array_t){&dfobj->closure, 1},
         dfobj->access.module);
     inherit_function_access(&ctx->access, &dfobj->access);
+    add_inherited_receiver_access(&ctx->access, receiver, &dfobj->access);
     create_object_property(ctx->data, get_this_key(), ctx->data, true);
     /* The method body resolves names through the receiver, so every call made from it, and every
        function created in it, must stay on the bytecode path. The same holds for a closure that
@@ -489,6 +490,7 @@ object_t *create_function_object(process_t *process,
     access_domain_t *domain = get_object_access_domain(closure);
     if (domain)
         add_function_access_domain(&obj->access, domain);
+    add_lexical_scope(&obj->access, closure);
     INCREF(closure);
     obj->native_disabled = native_disabled;
     add_object_to_list(&process->objects, &obj->base);

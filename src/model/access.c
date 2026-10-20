@@ -73,6 +73,7 @@ void init_function_access(function_access_t *access, module_t *module) {
     access->domains = create_vector();
     access->protected_domains = create_vector();
     access->captures = create_vector();
+    access->lexical_scopes = create_vector();
 }
 
 void add_function_access_domain(function_access_t *access, access_domain_t *domain) {
@@ -104,6 +105,8 @@ bool add_function_field_capture(function_access_t *access, object_t *storage, fi
 }
 
 void mark_function_access(const function_access_t *access) {
+    for (size_t i = 0; i < access->lexical_scopes->size; i++)
+        mark_object(access->lexical_scopes->data[i]);
     for (size_t i = 0; i < access->captures->size; i++) {
         field_capture_t *capture = access->captures->data[i];
         mark_object(capture->storage);
@@ -111,6 +114,12 @@ void mark_function_access(const function_access_t *access) {
 }
 
 void clear_function_access(function_access_t *access, bool deep) {
+    if (deep)
+        for (size_t i = 0; i < access->lexical_scopes->size; i++) {
+            object_t *scope = access->lexical_scopes->data[i];
+            DECREF(scope);
+        }
+    destroy_vector(access->lexical_scopes);
     for (size_t i = 0; i < access->captures->size; i++) {
         field_capture_t *capture = access->captures->data[i];
         if (deep)
@@ -143,14 +152,61 @@ void add_protected_object_access(function_access_t *access, object_t *object) {
         add_protected_domain(access, get_object_access_domain(topology.items[i]));
 }
 
+/** @brief Follows explicit prototype edges, excluding the constructor's lexical fallback. */
+static bool inherits_domain(object_t *object, access_domain_t *domain) {
+    if (get_object_access_domain(object) == domain)
+        return true;
+    if (!object_shadows_inherited(object))
+        return false;
+    object_array_t parents = get_object_prototypes(object);
+    for (size_t i = 0; i + 1 < parents.size; i++)
+        if (inherits_domain(parents.items[i], domain))
+            return true;
+    return false;
+}
+
+void add_inherited_receiver_access(function_access_t *access,
+                                   object_t *receiver,
+                                   const function_access_t *declaration) {
+    if (!receiver)
+        return;
+    object_array_t topology = get_object_topology(receiver);
+    for (size_t i = 0; i <= topology.size; i++) {
+        object_t *candidate = i ? topology.items[i - 1] : receiver;
+        access_domain_t *domain = get_object_access_domain(candidate);
+        if (!domain || !inherits_domain(receiver, domain))
+            continue;
+        for (size_t j = 0; j < declaration->domains->size; j++)
+            if (inherits_domain(candidate, declaration->domains->data[j])) {
+                add_protected_domain(access, domain);
+                break;
+            }
+    }
+}
+
 void inherit_function_access(function_access_t *target, const function_access_t *source) {
     assert(target->module == source->module);
     for (size_t i = 0; i < source->domains->size; i++)
         add_function_access_domain(target, source->domains->data[i]);
     for (size_t i = 0; i < source->protected_domains->size; i++)
         add_protected_domain(target, source->protected_domains->data[i]);
+    for (size_t i = 0; i < source->lexical_scopes->size; i++)
+        add_lexical_scope(target, source->lexical_scopes->data[i]);
     for (size_t i = 0; i < source->captures->size; i++) {
         field_capture_t *capture = source->captures->data[i];
         add_function_field_capture(target, capture->storage, capture->cell);
+    }
+}
+
+void add_lexical_scope(function_access_t *access, object_t *storage) {
+    for (size_t i = 0; i < access->lexical_scopes->size; i++)
+        if (access->lexical_scopes->data[i] == storage)
+            return;
+    INCREF(storage);
+    append_to_vector(access->lexical_scopes, storage);
+    for (size_t i = 0; i < get_object_field_count(storage); i++) {
+        field_cell_t *cell = get_object_field_at(storage, i);
+        if (cell->declaration_id && can_access_field(access, cell))
+            add_function_field_capture(access, storage, cell);
     }
 }

@@ -2,11 +2,11 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-i-access-control.md) · [Previous](appendix-h-decision-history.md)
 
-Status: language design agreed on October 20, 2026, ahead of issue #154, including the subsequent copying and closure clarifications. This section does not claim that access modifiers are implemented. Examples specify expected behavior of the future implementation.
+Status: agreed language design with stages A–C implemented. The examples below describe the complete target behavior; copying, observation filtering, and static access proofs still require later stages.
 
 [Detailed examples and edge cases](access-control-examples.md) · [Implementation plan](access-control-implementation-plan.md)
 
-The internal stage A foundation (#162) and stage B shared access checks (#163) are implemented: module/domain identities, cells, call-rights snapshots, and read/write/creation checks. Keywords are not enabled yet; existing single-module programs retain their behavior. Automatic capture binding, copied-method adaptation, and observation filtering belong to later stages. Current checks use metadata injected directly by model tests.
+Stage C (#164) enables declaration modifiers in every scope, source regeneration, AST metadata, checked VM execution, and format-11 bytecode. Explicitly modified declarations use lexical cell identities: a captured prototype `x` stays bound to its original cell while `this.x` uses the receiver. Programs without modifiers retain their existing lookup behavior. Until stage G (#168), programs containing modifiers conservatively skip optimization and native inference even with `--optimize all`; access violations are checked at runtime. Method adaptation for `clone`/`flat` and visibility filtering during printing/enumeration are not implemented yet: this is an integration stage, not the complete protection model. Module loading remains in #154.
 
 ## I.1. Declarations
 

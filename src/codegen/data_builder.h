@@ -38,6 +38,7 @@ struct data_builder_t {
 
     /** @brief AVL tree for tracking added strings to prevent duplicates. */
     avl_tree_t *strings;
+    struct declaration_entry_t *declarations; /**< Compile-only identity map; never serialized. */
 };
 
 /** @brief Creates a new data builder with a default initial capacity. */
@@ -62,3 +63,6 @@ uint32_t add_string_to_data_segment_ex(data_builder_t *builder, string_view_t st
  * After calling this function, the builder should no longer be used.
  */
 void destroy_data_builder(data_builder_t *builder);
+struct declarator_t;
+/** @brief Returns a stable data-table identity for this declaration in this compilation. */
+uint32_t add_declaration_to_data_segment(data_builder_t *builder, const struct declarator_t *decl);

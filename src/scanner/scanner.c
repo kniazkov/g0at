@@ -125,6 +125,9 @@ typedef struct {
 static const keyword_lookup_t keywords[] = {
     {L"var", 3, TOKEN_VAR, NULL, offsetof(token_groups_t, var_keywords)},
     {L"const", 5, TOKEN_CONST, NULL, offsetof(token_groups_t, const_keywords)},
+    {L"public", 6, TOKEN_PUBLIC, NULL, offsetof(token_groups_t, access_keywords)},
+    {L"protected", 9, TOKEN_PROTECTED, NULL, offsetof(token_groups_t, access_keywords)},
+    {L"private", 7, TOKEN_PRIVATE, NULL, offsetof(token_groups_t, access_keywords)},
     {L"null", 4, TOKEN_EXPRESSION, create_null_node, SIZE_MAX},
     {L"true", 4, TOKEN_EXPRESSION, create_true_node, SIZE_MAX},
     {L"false", 5, TOKEN_EXPRESSION, create_false_node, SIZE_MAX},

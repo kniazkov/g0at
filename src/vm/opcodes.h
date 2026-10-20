@@ -76,5 +76,9 @@ typedef enum {
     ITER_NEXT,     /**< Pushes next snapshot value, or jumps to arg1 on exhaustion. */
     FINALLY_ENTER, /**< Creates a protected scope; arg1 is its cleanup address. */
     FINALLY_LEAVE, /**< Starts cleanup on normal exit; arg1 is the continuation. */
-    FINALLY_END    /**< Resumes the transfer suspended by this cleanup. */
+    FINALLY_END,   /**< Resumes the transfer suspended by this cleanup. */
+    DVAR,
+    DCONST, /**< Declare a field using the declaration descriptor at arg1. */
+    BLOAD,
+    BSTORE /**< Read/write the lexical declaration identified by arg1. */
 } opcode_t;

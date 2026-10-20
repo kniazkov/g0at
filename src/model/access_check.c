@@ -36,6 +36,21 @@ cell_result(const function_access_t *access, object_t *storage, field_cell_t *ce
                                allowed ? cell->object : NULL};
 }
 
+property_lookup_t lookup_bound_property(const function_access_t *access,
+                                        object_t *current,
+                                        module_t *unit,
+                                        uint32_t id) {
+    for (size_t s = 0; s <= access->lexical_scopes->size; s++) {
+        object_t *storage = s ? access->lexical_scopes->data[s - 1] : current;
+        for (size_t i = 0; i < get_object_field_count(storage); i++) {
+            field_cell_t *cell = get_object_field_at(storage, i);
+            if (cell->binding_unit == unit && cell->declaration_id == id)
+                return cell_result(access, storage, cell);
+        }
+    }
+    return (property_lookup_t){.status = MSTAT_PROPERTY_NOT_FOUND};
+}
+
 property_lookup_t lookup_accessible_property(const function_access_t *access,
                                              object_t *object,
                                              object_t *key,

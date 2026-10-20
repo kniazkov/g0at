@@ -6,11 +6,35 @@
 
 #include "data_builder.h"
 
+#include "graph/declarations.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 
 #include <memory.h>
 #include <stdlib.h>
+
+struct declaration_entry_t {
+    const declarator_t *declaration;
+    uint32_t index;
+    struct declaration_entry_t *next;
+};
+
+uint32_t add_declaration_to_data_segment(data_builder_t *builder, const declarator_t *decl) {
+    for (struct declaration_entry_t *e = builder->declarations; e; e = e->next)
+        if (e->declaration == decl)
+            return e->index;
+    declaration_descriptor_t descriptor = {DECLARATION_TAG,
+                                           add_string_to_data_segment_ex(builder, decl->name),
+                                           0,
+                                           decl->modifier};
+    struct declaration_entry_t *entry = ALLOC(sizeof(*entry));
+    *entry = (struct declaration_entry_t){
+        decl,
+        add_data_to_data_segment(builder, &descriptor, sizeof(descriptor)),
+        builder->declarations};
+    builder->declarations = entry;
+    return entry->index;
+}
 
 /** @brief Initial capacity for the descriptors list */
 #define INITIAL_DESCRIPTORS_LIST_CAPACITY 16
@@ -33,6 +57,7 @@ data_builder_t *create_data_builder(void) {
     builder->descriptors_count = 0;
     builder->descriptors_capacity = INITIAL_DESCRIPTORS_LIST_CAPACITY;
     builder->strings = create_avl_tree(string_comparator);
+    builder->declarations = NULL;
     builder->strings->copy_key = copy_string_key;
     builder->strings->destroy_key = FREE;
     return builder;
@@ -103,6 +128,11 @@ uint32_t add_string_to_data_segment_ex(data_builder_t *builder, string_view_t st
 }
 
 void destroy_data_builder(data_builder_t *builder) {
+    while (builder->declarations) {
+        struct declaration_entry_t *entry = builder->declarations;
+        builder->declarations = entry->next;
+        FREE(entry);
+    }
     FREE(builder->descriptors);
     FREE(builder->data);
     destroy_avl_tree(builder->strings);

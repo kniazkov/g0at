@@ -23,8 +23,10 @@ create_context_with_protos(process_t *process, context_t *caller, object_array_t
                                              caller,
                                              protos,
                                              caller->module ? caller->module : process->module);
-    if (caller->module)
+    if (caller->module) {
+        add_lexical_scope(&ctx->access, caller->data);
         inherit_function_access(&ctx->access, &caller->access);
+    }
     return ctx;
 }
 

@@ -1,0 +1,18 @@
+public var top = 1, second = 2;
+private constant = 3;
+println(top + second + constant);
+if (true) public var branch = 4;
+println(branch);
+for (private var i = 0; i < 2; i++) println(i);
+var closures = [];
+for (public const item in [5, 6]) closures.push(func() { return item; });
+println(closures[0]()); println(closures[1]());
+try { private var x = 7; println(x); throw 1; }
+catch(e) { protected var y = e; println(y); }
+finally { public z = 8; println(z); }
+const obj = { private var x = 9; public run = func() {
+    const nested = func() { return x; };
+    return nested();
+}; };
+println(obj.run());
+try obj.x; catch(e) println(e);

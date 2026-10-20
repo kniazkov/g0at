@@ -943,6 +943,64 @@ static bool exec_FINALLY_END(runtime_t *runtime, instruction_t instr, thread_t *
     }
 }
 
+/** @brief Declares a checked field with a file-local binding identity. */
+static bool exec_declaration(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    declaration_descriptor_t d;
+    if (!get_bytecode_declaration(runtime->code, instr.arg1, &d))
+        return false;
+    if (!runtime->code->declaration_unit)
+        runtime->code->declaration_unit = create_module_identity();
+    object_t *key = load_string(runtime, thread->process, d.name);
+    object_t *value = pop_object_from_stack(thread->data_stack);
+    object_t *storage = thread->context->data;
+    bool constant = instr.opcode == DCONST;
+    model_status_t status =
+        create_accessible_property(&thread->context->access, storage, key, value, constant);
+    if (status == MSTAT_OK) {
+        field_cell_t *cell = get_own_field_cell(storage, key);
+        cell->modifier = (access_modifier_t)d.modifier;
+        cell->declaration_id = instr.arg1 + 1;
+        cell->binding_unit = retain_module_identity(runtime->code->declaration_unit);
+    }
+    DECREF(value);
+    if (status != MSTAT_OK)
+        return dispatch_exception(runtime,
+                                  thread,
+                                  (exception_t){access_status_result(status, NULL).value});
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Bound reads/writes never resolve an identically named field on the receiver. */
+static bool exec_binding(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    declaration_descriptor_t d;
+    if (!get_bytecode_declaration(runtime->code, instr.arg1, &d))
+        return false;
+    property_lookup_t found = lookup_bound_property(&thread->context->access,
+                                                    thread->context->data,
+                                                    runtime->code->declaration_unit,
+                                                    instr.arg1 + 1);
+    bool write = instr.opcode == BSTORE;
+    if (!write && found.status == MSTAT_PROPERTY_NOT_FOUND) {
+        found.status = MSTAT_OK;
+        found.value = get_null_object();
+    }
+    if (write && found.status == MSTAT_OK)
+        found.status = set_field_cell_value(found.storage,
+                                            found.cell,
+                                            peek_object_from_stack(thread->data_stack, 0));
+    if (found.status != MSTAT_OK)
+        return dispatch_exception(runtime,
+                                  thread,
+                                  (exception_t){access_status_result(found.status, NULL).value});
+    if (!write) {
+        INCREF(found.value);
+        push_object_onto_stack(thread->data_stack, found.value);
+    }
+    thread->instr_id++;
+    return true;
+}
+
 /** @brief Array of instruction execution functions for the Goat virtual machine. */
 static instr_executor_t executors[] = {
     exec_NOP,      /**< No operation - does nothing. */
@@ -1005,8 +1063,9 @@ static instr_executor_t executors[] = {
     exec_SETINDEX, /**< Writes through the indexing virtual method. */
     exec_ARRAY,    /**< Creates a new array. */
     exec_INHERIT,  /**< Enters an explicitly derived object. */
-    exec_LOOP_ENTER, exec_LOOP_JUMP,     exec_DUPN,          exec_ROTATE,     exec_SNAPSHOT,
-    exec_ITER_NEXT,  exec_FINALLY_ENTER, exec_FINALLY_LEAVE, exec_FINALLY_END
+    exec_LOOP_ENTER,  exec_LOOP_JUMP,     exec_DUPN,          exec_ROTATE,      exec_SNAPSHOT,
+    exec_ITER_NEXT,   exec_FINALLY_ENTER, exec_FINALLY_LEAVE, exec_FINALLY_END, exec_declaration,
+    exec_declaration, exec_binding,       exec_binding
     // Additional opcodes can be added here in the future...
 };
 

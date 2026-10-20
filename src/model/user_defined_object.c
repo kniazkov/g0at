@@ -88,6 +88,7 @@ static void clear_fields(object_user_defined_t *uobj, bool deep) {
                 DECREF(cell->object);
         }
         release_module_identity(cell->module);
+        release_module_identity(cell->binding_unit);
         release_access_domain(cell->domain);
         FREE(cell);
     }
@@ -218,14 +219,17 @@ clone_in_module(process_t *process, object_t *obj, module_t *module, bool reloca
             }
             domain = new_domains->data[d];
         }
-        append_field(&copy->base,
-                     cell->key,
-                     cell->object == obj ? &copy->base : cell->object,
-                     cell->is_constant,
-                     cell->modifier,
-                     cell->module,
-                     domain,
-                     get_own_field_cell(obj, cell->key) == cell);
+        field_cell_t *copied = append_field(&copy->base,
+                                            cell->key,
+                                            cell->object == obj ? &copy->base : cell->object,
+                                            cell->is_constant,
+                                            cell->modifier,
+                                            cell->module,
+                                            domain,
+                                            get_own_field_cell(obj, cell->key) == cell);
+        copied->declaration_id = cell->declaration_id;
+        copied->binding_unit =
+            cell->binding_unit ? retain_module_identity(cell->binding_unit) : NULL;
     }
     for (size_t i = 0; i < new_domains->size; i++)
         release_access_domain(new_domains->data[i]);
