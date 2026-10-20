@@ -7,6 +7,7 @@
 #include "test_list.h"
 
 #include "test_abstract_state.h"
+#include "test_access_cells.h"
 #include "test_addition.h"
 #include "test_analysis.h"
 #include "test_array.h"
@@ -318,6 +319,12 @@ static test_description_t test_list[] = {
     {"switch warnings", test_switch_warnings},
     {"loops parser", test_loops_parser},
     {"loops bytecode", test_loops_bytecode},
+    {"access identities", test_access_identities},
+    {"access cells", test_access_cells},
+    {"access captures", test_access_captures},
+    {"access cycles", test_access_cycles},
+    {"access contexts", test_access_contexts},
+    {"access clone metadata", test_access_clone_metadata},
     {"root object call", test_root_object_call}};
 
 int get_number_of_tests() {

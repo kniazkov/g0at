@@ -12,9 +12,12 @@
 
 typedef struct process_t process_t;
 typedef struct thread_t thread_t;
+typedef struct module_identity_t module_identity_t;
 
 /** @brief A process in Goat. */
 struct process_t {
+    /** @brief Owned identity of the single program module until module loading is added. */
+    module_identity_t *module;
     /** @brief A unique identifier for the process. */
     uint64_t id;
 

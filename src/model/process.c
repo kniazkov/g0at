@@ -6,6 +6,7 @@
 
 #include "process.h"
 
+#include "access.h"
 #include "context.h"
 #include "lib/allocate.h"
 #include "object_list.h"
@@ -17,6 +18,7 @@ static uint64_t last_process_id = 0;
 process_t *create_process() {
     process_t *process = (process_t *)CALLOC(sizeof(process_t));
     process->id = ++last_process_id;
+    process->module = create_module_identity();
     init_object_list(&process->objects);
     init_object_list(&process->integers);
     init_object_list(&process->real_numbers);
@@ -49,5 +51,6 @@ void destroy_process(process_t *process) {
     destroy_all_objects_in_the_list(&process->characters);
     FREE(process->string_cache);
     FREE(process->gc_roots);
+    release_module_identity(process->module);
     FREE(process);
 }

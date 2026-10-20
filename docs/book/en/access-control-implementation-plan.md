@@ -16,6 +16,12 @@ Property operations, key enumeration, and string conversion in `src/model/object
 
 ## 2. Stage A: Cells, Provenance, and Lifetime
 
+**Status: the internal foundation is implemented in #162.** The API is in `src/model/access.h`. Modules and domains are retained identities, not global current-execution variables. Each new user object (including reuse of pooled memory) gets a fresh domain. Contexts store modules separately; a call context uses the function's module. Built-in entities have a separate immortal module identity and public property visibility.
+
+An object owns the full inventory of stable cells; the AVL tree only references ordinary-lookup winners. A capture stores a storage-object/cell pair and retains storage, allowing multiple functions to share one cell. GC traverses the full inventory, captures, and all active contexts; identities are reference-counted without a back-reference to the object. Tests cover hidden fields, arbitrary keys, shared captures, cycles, and pool reuse.
+
+At this stage, `clone` preserves all cells and their original metadata, but does not rebind domains or function captures yet: that is stage D. Access checks, automatic capture binding, new syntax, and metadata serialization are not implemented; the bytecode format and native ABI are unchanged. The stage requirements below are retained for reference.
+
 Introduce internal entities without changing syntax yet:
 
 - Module identity: store the new object's owner, field declaring module, and function module separately. Before #154, the program receives one ordinary module; built-ins receive explicit public visibility.
