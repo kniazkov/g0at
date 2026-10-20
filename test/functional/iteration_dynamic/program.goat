@@ -1,0 +1,10 @@
+const visit=func(value){
+ try { for(x in value) println(x); }
+ catch(e){println(e);}
+};
+visit(1);visit(1.5);visit(null);visit(true);visit('a');visit("abc");visit(func(){});
+visit([8]);visit({key=9;});
+var calls=0;
+const fail=func(){calls++;throw "source";};
+try{for(x in fail()) println("wrong");}catch(e){println(e);}
+println(calls);

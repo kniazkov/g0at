@@ -71,5 +71,7 @@ typedef enum {
     LOOP_ENTER, /**< Opens a loop scope with an operand stack boundary. */
     LOOP_JUMP,  /**< Unwinds to the nearest loop and jumps to arg1. */
     DUPN,       /**< Duplicates the top arg1 values in their original order. */
-    ROTATE      /**< Moves the top value below arg1 retained operands. */
+    ROTATE,     /**< Moves the top value below arg1 retained operands. */
+    SNAPSHOT,   /**< Copies array values or sorted own object keys. */
+    ITER_NEXT   /**< Pushes next snapshot value, or jumps to arg1 on exhaustion. */
 } opcode_t;

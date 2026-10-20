@@ -17,10 +17,12 @@
 #include "graph/compound_assignment.h"
 #include "graph/declarations.h"
 #include "graph/expression.h"
+#include "graph/loop.h"
 #include "graph/node.h"
 #include "graph/statement.h"
 #include "graph/variable.h"
 #include "interpreter.h"
+#include "iteration.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/queue.h"
@@ -132,6 +134,14 @@ static void assign_node_indexes_and_scopes(node_t *node,
                 break;
             }
         }
+    }
+    if (node->vtbl->type == NODE_FOR_IN) {
+        declarator_t *decl = get_for_in_declarator(node);
+        decl->base.parent = node;
+        decl->base.scope = get_node_child(get_node_child(node, 3), 0)->scope;
+        decl->base.id = (*next_id)++;
+        decl->base.position = node->position;
+        decl->abstract_value = NULL;
     }
     if (node->vtbl->type == NODE_TRY_CATCH) {
         declarator_t *decl = get_catch_declarator(node);
@@ -266,6 +276,21 @@ static void bind_variables_from_node_and_children(node_t *node,
         declarator_t *decl = get_catch_declarator(node);
         add_symbol_to_scope(decl->base.scope, decl->name.data, decl);
         bind_variables_from_node_and_children(get_node_child(node, 1),
+                                              memory,
+                                              insertions,
+                                              errors,
+                                              options);
+        return;
+    }
+    if (node->vtbl->type == NODE_FOR_IN) {
+        bind_variables_from_node_and_children(get_node_child(node, 0),
+                                              memory,
+                                              insertions,
+                                              errors,
+                                              options);
+        declarator_t *decl = get_for_in_declarator(node);
+        add_symbol_to_scope(decl->base.scope, decl->name.data, decl);
+        bind_variables_from_node_and_children(get_node_child(node, 3),
                                               memory,
                                               insertions,
                                               errors,
@@ -461,6 +486,8 @@ compilation_error_t *analyze(node_t *root_node,
         assign_scope_to_subtree(insertion->item, insertion->target, insertion->target->scope);
     }
     destroy_vector_ex(insertions, FREE);
+
+    validate_iteration_sources(root_node, memory->graph, memory->errors, &errors);
 
     if (options->enable_warnings)
         warn_duplicate_cases(root_node, memory->graph, memory->errors, &errors);

@@ -1,0 +1,2 @@
+const source=func(){};
+for(x in source) {}

@@ -194,3 +194,38 @@ compare by identity.
 
 Methods are inherited from `Array` and execute in the VM. A detached method accepts
 the array first: `var append = Array.push; append(array, 1, 2)`.
+
+## Collection iteration
+
+`for (const item in collection) statement` and `for (item in collection) statement`
+are equivalent. The binding is a fresh constant on each iteration, shadows any outer
+name, and is captured separately by closures. `var`, multiple bindings, and assignment
+targets such as `obj.x` are not allowed in the header. The collection expression is
+evaluated exactly once, before introducing the binding.
+
+Arrays are traversed by value in element order using a shallow copy made before the
+loop. User-defined objects are traversed by their own keys in dictionary comparison
+order, also copied before the loop. Changes to the original collection do not change
+the iteration sequence; referenced objects remain shared. Inherited properties are
+not included. Only these two types are iterable: strings and other values raise
+`INVALID_OPERATION`. Provably unsupported sources, including scalar literals and
+closed scalar expressions through constant bindings, are compilation errors even
+with optimization disabled. Sources whose type is not proven are checked at runtime.
+
+`break` and `continue` target the nearest loop. `return` and exceptions unwind its
+contexts normally. Collection iteration currently executes only in the VM.
+
+```goat
+for (value in [10, 20, 30]) println(value);
+const point = { x = 3; y = 4; };
+for (key in point) println(key + "=" + point[key]);
+```
+
+`object.flat()` produces a new user-defined object whose sole prototype is `Object`.
+It copies own and inherited properties shallowly, except properties of `Object`
+itself. Duplicate keys follow normal prototype lookup precedence, including lexical
+prototype contexts. All copied properties are mutable, even when originally constant.
+The original object and its prototypes are unchanged. Use `for (key in object.flat())`
+to enumerate the materialized properties. For arrays and other builtin types, `flat()`
+returns the same receiver. Like `clone` and `instanceOf`, it is an ordinary overridable
+method; a detached call (`const flatten = Object.flat; flatten(value)`) accepts the value explicitly.

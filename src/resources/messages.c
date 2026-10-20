@@ -103,7 +103,9 @@ static messages_t english = {
     .variable_used_before_declaration = L"Variable '%s' is used before its declaration",
     .implicit_constant_declaration_invalid =
         L"Implicit declaration of constant '%s' is only allowed for a standalone assignment",
-    .invalid_for_header = L"Expected for (initial; condition; step)",
+    .invalid_iteration_source = L"For-in requires an array or a user-defined object",
+    .invalid_for_header =
+        L"Expected for (initial; condition; step) or for (const name in collection)",
     .expected_statement_after_for = L"Expected statement after for header",
     .expected_condition_after_if = L"Expected parenthesized condition after 'if' keyword",
     .expected_statement_after_if = L"Statement expected after 'if' keyword",
@@ -214,7 +216,9 @@ static messages_t russian = {
     .variable_used_before_declaration = L"Переменная '%s' используется до ее объявления",
     .implicit_constant_declaration_invalid = L"Неявное объявление константы '%s' допустимо только "
                                              L"в виде отдельного оператора присваивания",
-    .invalid_for_header = L"Ожидается for (инициализация; условие; шаг)",
+    .invalid_iteration_source = L"Для for-in требуется массив или пользовательский объект",
+    .invalid_for_header =
+        L"Ожидается for (инициализация; условие; шаг) или for (const имя in коллекция)",
     .expected_statement_after_for = L"Ожидается оператор после заголовка for",
     .expected_condition_after_if =
         L"После ключевого слова 'if' ожидается условие в круглых скобках",

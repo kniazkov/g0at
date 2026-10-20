@@ -600,3 +600,34 @@ bool test_clone_method(void) {
     destroy_process(proc);
     return true;
 }
+
+/** @brief Flat copies inherited keys once, drops parents and constness, and preserves values. */
+bool test_flat_method(void) {
+    process_t *proc = create_process();
+    object_t *root = get_root_object();
+    object_t *parent = create_user_defined_object(proc, (object_array_t){&root, 1});
+    object_t *child = create_user_defined_object(proc, (object_array_t){&parent, 1});
+    object_t *key = create_string_object(proc, STATIC_STRING(L"value"));
+    object_t *nested = create_array_object(proc, (object_array_t){0});
+    ASSERT(create_object_property(parent, key, nested, true) == MSTAT_OK);
+    ASSERT(call_object(get_function_flat(), 0, child, proc->main_thread));
+    object_t *copy = pop_object_from_stack(proc->main_thread->data_stack);
+    ASSERT(copy != child && copy->vtbl->type == TYPE_USER_DEFINED_OBJECT);
+    object_array_t parents = get_object_prototypes(copy);
+    ASSERT(parents.size == 1 && parents.items[0] == root);
+    ASSERT(get_object_keys(copy).size == 1);
+    ASSERT(get_object_property(copy, key) == nested);
+    ASSERT(set_object_property(copy, key, get_null_object()) == MSTAT_OK);
+    ASSERT(get_object_property(parent, key) == nested);
+    ASSERT(call_object(get_function_flat(), 0, nested, proc->main_thread));
+    object_t *same = pop_object_from_stack(proc->main_thread->data_stack);
+    ASSERT(same == nested);
+    DECREF(same);
+    DECREF(copy);
+    DECREF(child);
+    DECREF(parent);
+    DECREF(key);
+    DECREF(nested);
+    destroy_process(proc);
+    return true;
+}

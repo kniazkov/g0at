@@ -105,3 +105,14 @@ Methods borrow their operands and return an owned result or exception. The VM re
 The instruction preserves source order, retains elements and creates a fresh array;
 `ARRAY 0` creates an empty array. Insufficient stack elements are a fatal bytecode
 error. `GETINDEX` / `SETINDEX` dispatch to the array methods.
+
+## Collection snapshots
+
+`SNAPSHOT` replaces its operand with a fresh array containing array elements or sorted
+own keys of a user-defined object; other types raise `INVALID_OPERATION`.
+`ITER_NEXT arg1` reads the snapshot at the top of the stack and the cursor of the
+current `LOOP_ENTER` context. It pushes the next value and advances the cursor, or
+jumps to `arg1` when exhausted. The snapshot remains on the operand stack as a GC root.
+Each item is bound by `ENTER` / `CONST` in a fresh context. `LOOP_JUMP` unwinds that
+context while retaining the snapshot, and loop exit restores the loop context and
+pops the snapshot. Saved format version 9 validates the `ITER_NEXT` target.

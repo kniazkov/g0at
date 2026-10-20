@@ -140,6 +140,7 @@ static const keyword_lookup_t keywords[] = {
     {L"do", 2, TOKEN_DO, NULL, offsetof(token_groups_t, do_keywords)},
     {L"break", 5, TOKEN_BREAK, NULL, offsetof(token_groups_t, loop_jumps)},
     {L"continue", 8, TOKEN_CONTINUE, NULL, offsetof(token_groups_t, loop_jumps)},
+    {L"in", 2, TOKEN_IN, NULL, SIZE_MAX},
     {L"for", 3, TOKEN_FOR, NULL, offsetof(token_groups_t, control_flow_keywords)},
     {L"if", 2, TOKEN_IF, NULL, offsetof(token_groups_t, control_flow_keywords)},
     {L"else", 4, TOKEN_ELSE, NULL, offsetof(token_groups_t, else_keywords)},

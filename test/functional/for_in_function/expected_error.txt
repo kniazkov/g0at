@@ -1,0 +1,1 @@
+Error in 'program.goat', 2.10: For-in requires an array or a user-defined object

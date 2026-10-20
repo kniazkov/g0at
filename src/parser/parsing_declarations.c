@@ -108,6 +108,9 @@ cleanup:
 compilation_error_t *
 parsing_constant_declarations(token_t *keyword, parser_memory_t *memory, token_groups_t *groups) {
     assert(keyword->type == TOKEN_CONST);
+    /* Leave the declaration-free binding for the for-in header reducer. */
+    if (keyword->right && keyword->right->right && keyword->right->right->type == TOKEN_IN)
+        return NULL;
     compilation_error_t *error = NULL;
     vector_t *vector = NULL;
     if (!keyword->right) {
