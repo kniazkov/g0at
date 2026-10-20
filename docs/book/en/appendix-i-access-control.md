@@ -1,5 +1,7 @@
 # Appendix I. Access Modifiers: Agreed Rules
 
+> October 20, 2026 update: the [module contract](modules.md) changes access boundaries: unmodified declarations belong to their source file, `public` to their module, and `external` allows other modules. The text below preserves the A–G model before this change; its cross-module examples and plan require adaptation. The new rules take precedence; the loader and `external` are not implemented here yet.
+
 [Contents](index.md) · [Русский](../ru/appendix-i-access-control.md) · [Previous](appendix-h-decision-history.md)
 
 Status: agreed language design with stages A–G implemented. The examples below describe the complete target behavior; static analysis is conservative and the VM checks unknown cases; module loading remains #154.
