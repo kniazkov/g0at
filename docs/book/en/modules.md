@@ -822,6 +822,108 @@ try {
 
 The initial read succeeds. After clear, the saved index is out of bounds and final validation rejects the write. Do not automatically expand the array or roll back the completed clear.
 
+## Exceptions and initialization states: examples 26–30
+
+Examples are independent. Initialization failure means an exception escapes the file's top-level code, not merely that an exception occurred.
+
+### 26. An internal catch permits successful initialization
+
+```goat
+// settings.goat
+public var value = 10;
+try {
+    throw "No configuration";
+} catch (e) {
+    value = 20;
+}
+
+// main.goat
+const settings = include "./settings.goat";
+println(settings.value); // 20.
+```
+
+The exception is caught inside settings.goat and its top-level code completes normally. The file is successfully initialized; the caught exception does not block it.
+
+### 27. Catching an included file's failure does not fail the caller
+
+```goat
+// broken.goat
+println("Attempt");
+throw "Error";
+
+// main.goat
+public var ready = false;
+try {
+    const broken = include "./broken.goat";
+} catch (e) {
+    ready = true;
+}
+```
+
+Main initializes successfully; broken fails. Including broken again throws the saved exception without executing its code again; Attempt is printed once.
+
+### 28. An uncaught exception interrupts the active initialization chain
+
+```goat
+// c.goat
+println("C");
+throw "Error C";
+
+// b.goat
+const c = include "./c.goat";
+
+// main.goat
+try {
+    const b = include "./b.goat";
+} catch (e) {
+    println(e);
+}
+```
+
+C and B remember failure because the exception escapes each file's initialization. Main catches it and continues. Including B or C again throws the saved exception without repeating execution; C is not printed again.
+
+### 29. A function error after initialization does not fail the file
+
+```goat
+// library.goat
+public fail = func() { throw "Call error"; };
+public value = 42;
+
+// main.goat
+const lib = include "./library.goat";
+try {
+    lib.fail();
+} catch (e) {
+    println(e);
+}
+println(lib.value); // 42.
+```
+
+Library has already initialized successfully. The exception belongs to the fail call; it does not mark the file as failed or block other accesses. Another include returns the existing scope.
+
+### 30. A consumer failure does not undo a ready dependency
+
+```goat
+// b.goat
+println("Initializing B");
+public value = 42;
+
+// a.goat
+const b = include "./b.goat";
+throw "Error A";
+
+// main.goat
+try {
+    const a = include "./a.goat";
+} catch (e) {
+    println(e);
+}
+const b = include "./b.goat";
+println(b.value); // 42.
+```
+
+B completed initialization before A failed and remains usable. Initializing B is printed once. A's failure neither invalidates a successfully initialized dependency nor restarts it.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
