@@ -2213,3 +2213,11 @@ Libraries are not manually unloaded beneath executing code. After actual process
 Arity, type, range and dynamic initialization-context checks precede participation in this transition. An invalid call or prohibited exit from an initializer raises an ordinary exception and does not reserve an exit code. This does not guarantee delivery of that exception if another thread is already terminating the whole process.
 
 Publish the termination state and selected code consistently. Losing calls do not return to user code; termination remains process-wide. A repeated call does not duplicate shutdown actions or dispatch another cleanup job.
+
+## Bounded output flushing on exit: decision 151
+
+151. A valid explicit exit allows a shared one-second budget for flushing stdout and stderr. This is one deadline for both output streams, not one second per stream. Waiting for internal output locks and completion of writes is included. Measure the deadline with a monotonic clock from the start of the flushing procedure; repeated exit calls do not extend it.
+
+If flushing completes sooner, do not wait for the remainder of the second. When the budget expires, terminate the process with the already selected code even if flushing is incomplete; some buffered output may be lost. Emit a warning only if that is possible without additional waiting. An output error or timeout does not replace the exit code.
+
+The bound must remain effective when the flushing thread itself blocks: checking elapsed time only after a blocking write returns is insufficient. This policy refines decisions 82, 84 and 149 and applies to explicit exit; it does not introduce an initialization timeout.
