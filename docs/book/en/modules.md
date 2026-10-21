@@ -557,6 +557,100 @@ a.obj.read(); // Access error for hidden.
 
 Read remains a public field of a.goat. The replacement function belongs to b.goat and does not inherit the replaced function's rights. Even a later call from a.goat does not give the replacement a.goat file rights.
 
+## Re-export and assignment ordering: examples 11–15
+
+Each example is independent; expected-error lines are checked separately.
+
+### 11. Re-exporting a variable creates a separate cell
+
+```goat
+// internal.goat
+public var counter = 0;
+
+// main.goat
+const internal = include "./internal.goat";
+external var counter = internal.counter;
+counter = 5;
+println(internal.counter); // 0.
+```
+
+This is an ordinary declaration initialized with a value, not a live link between variables. For an array or object, both cells initially reference the same object; replacing one cell's reference does not change the other.
+
+### 12. An internal file scope may be explicitly re-exported
+
+```goat
+// internal.goat
+public helper = func() { return 10; };
+external api = func() { return 20; };
+
+// Library main.goat
+external tools = include "./internal.goat";
+
+// Another module's program
+const lib = import "library@1.0.0";
+println(lib.tools.api()); // 20.
+// println(lib.tools.helper()); // Access error.
+```
+
+Direct import of an internal file remains forbidden. The author explicitly exposes a scope reference, but every field access is checked; public does not become external.
+
+### 13. Indexing and dot access check the same rights
+
+```goat
+// a.goat
+public obj = {
+    var hidden = 10;
+    public var shared = 20;
+};
+
+// b.goat
+const a = include "./a.goat";
+println(a.obj["shared"]); // 20.
+// println(a.obj["hidden"]); // Access error.
+```
+
+Reads and writes through [] obey the same access rules as dot access. A definitely proven denial is a compilation error. If access cannot be determined statically, the VM checks it; computed keys do not bypass protection.
+
+### 14. A compound assignment read error precedes the right-hand side
+
+```goat
+// a.goat
+public obj = { var hidden = 10; };
+
+// b.goat
+const a = include "./a.goat";
+const rhs = func() {
+    println("Executed");
+    return 1;
+};
+const update = func(target, key) {
+    target[key] += rhs();
+};
+update(a.obj, "hidden"); // Access error; rhs is not called.
+```
+
+For runtime checking, the order is: evaluate receiver and key once, read the left-hand value, evaluate the right-hand side, apply the operation, and write the result. A denied read prevents right-hand evaluation: no message is printed and the field is unchanged. This makes side-effect ordering predictable. Effects already performed while evaluating the receiver and key are not rolled back.
+
+### 15. Ordinary assignment checks writability before its right-hand side
+
+```goat
+// a.goat
+public obj = { var hidden = 10; };
+
+// b.goat
+const a = include "./a.goat";
+const rhs = func() {
+    println("Executed");
+    return 1;
+};
+const write = func(target, key) {
+    target[key] = rhs();
+};
+write(a.obj, "hidden"); // Access error; rhs is not called.
+```
+
+Evaluate receiver and key once, then check access and whether writing is allowed. Evaluate the right-hand side only after a successful check. This also applies to assigning a constant or forbidden extension of another module's object. An error detected before the right-hand side prevents its side effects. This order is an implementation requirement, including optimizations; it does not claim that the new module model is already implemented.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
