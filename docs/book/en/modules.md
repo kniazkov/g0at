@@ -1883,6 +1883,63 @@ Variant requirement: the supplied callback has no side effects.
 
 If the requirement is not proven at build time and cannot be checked by supported declarative guards before the call, exclude that specialization. Do not store arbitrary prose expecting the loader to interpret it. The function remains available through bytecode; required follows the previously agreed rules.
 
+## Native-call safety and required: decisions 96–100
+
+### 96. Specialization inapplicability is local to a call
+
+```goat
+// Add has a native variant only for two integers.
+println(lib.add("a", "b")); // VM: ab.
+println(lib.add(2, 3));     // Native: 5.
+```
+
+The first call does not disable the function or library for the run. Check specialization conditions on each call. Remembering library loading failure is separate and does not apply to ordinary argument mismatch.
+
+### 97. General call checks precede native selection
+
+```goat
+// The function escaped before its source file failed initialization.
+savedFunction(2, 3);
+```
+
+If the function's source file failed with Error A, the call throws that saved exception even when a two-integer native specialization matches. Validate call eligibility, including source-file state, first; the native path cannot bypass the guard.
+
+### 98. Copying a method does not automatically copy its native binding
+
+```goat
+const original = {
+    var counter = 0;
+    public next = func() {
+        counter += 1;
+        return counter;
+    };
+};
+const copy = original.clone();
+println(copy.next());     // 1.
+println(original.next()); // Also 1.
+```
+
+Even if the original method has native code, captures redirected by clone/flat must not access the old cells. Execute the transferred method on the VM until native applicability to its new captures and rights is proven. An existing original specialization alone is not such proof.
+
+### 99. A detected ABI violation does not permit replay
+
+```text
+Metadata promises integer.
+The native function returns an invalid result tag.
+```
+
+A detected post-call ABI violation terminates execution with a diagnostic identifying the module, function, and violated requirement. Do not replay the function on the VM: it may already have performed side effects. This covers checkable contract violations and does not promise to intercept arbitrary machine-code faults.
+
+### 100. Required permits VM calls without a specialization
+
+```goat
+// Add packages only a two-integer variant.
+println(lib.add(2, 3));     // Native.
+println(lib.add("a", "b")); // VM, also allowed in required.
+```
+
+Required retains the requirement for native execution but does not require every call to be native. Ordinary absence of a specialization for the arguments permits VM execution. If a matching variant exists but its library cannot load, required fails under the previously agreed rules. The module-build requirement of at least one native implementation belonging to the module remains in force.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
