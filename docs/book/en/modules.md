@@ -2195,3 +2195,13 @@ An otherwise valid explicit exit(code) from any thread still terminates the enti
 A library must not be manually unloaded while another thread may still execute its code. For this termination path, native-library reclamation is left to the OS and files are removed after process termination. Ordinary completion of all threads retains full internal cleanup.
 
 This refines decision 83: explicit exit does not have to delete loaded DLL/SO files before the Goat process terminates. A removal failure does not change the already selected exit code. The cleanup-process startup protocol, readiness acknowledgement and behavior when it cannot be started need separate clarification; this decision does not promise successful cleanup under every external failure.
+
+## Exit during native execution: decision 149
+
+149. Exit has the same semantics in the VM and native implementations. Generated native code invokes the shared Goat mechanism through the native ABI instead of independently calling C exit or OS termination and bypassing language checks.
+
+The shared mechanism checks arity, integer type and the 0–255 range, as well as the dynamic initialization context. An invalid argument or prohibited call during initialization raises an ordinary catchable exception, including when called from native code. Ordinary catch/finally rules apply to that exception.
+
+A valid exit terminates the entire process without waiting for active native functions to return, including an infinite loop or a blocking call in another thread. Native functions need not all cooperate by checking a termination flag. User finally blocks are not executed; an in-progress native operation may be interrupted, and its side effects are neither rolled back nor repeated on the VM.
+
+Libraries are not manually unloaded beneath executing code. After actual process termination, the separate cleanup process removes temporary files under decision 148. This rule does not remove the agreed handling of standard output; the interaction of flushing with the requirement that exit not hang needs separate clarification.
