@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/modules.md)
 
-Status: design agreed on October 20, 2026; discussion continues. These are requirements for future implementation, not a description of an existing loader. Issues #154 and #169 follow clarification of the contract. Where earlier access-control documents disagree, this page takes precedence.
+Status: design agreed on October 20, 2026; discussion continues. These are requirements for future implementation, not a description of an existing loader. Issues #154 and #169 have been superseded by the [implementation plan](../../module-implementation-checklist.md). Issue #244 fixes exact v1 schemas and reference data before their implementation is completed; #245 owns the shared cleanup service. Where earlier access-control documents disagree, this page takes precedence.
 
 ## Build and distribution unit
 
@@ -12,7 +12,7 @@ One compiled module is one file without source code. It represents a library or 
 - metadata for imports and binding bytecode to native implementations;
 - zero or more native libraries, potentially for multiple platforms.
 
-Execution uses metadata to select a suitable library and implementations. Bytecode is used when no suitable native implementation exists. The loader may extract a library to a temporary directory or cache and load it through standard OS facilities. Prefer simple portable solutions using OS capabilities.
+Execution uses metadata to select a suitable library and implementations. Bytecode is used when no suitable native implementation exists. The loader extracts a library to a separate temporary directory for the run and loads it through standard OS facilities; there is no persistent cache. Prefer simple portable solutions using OS capabilities.
 
 Metadata uses JSON, matching the build description. The container is ZIP; bytecode and native libraries remain binary parts rather than JSON-encoded data. The extension is .gbin. The complete metadata schema and exact platform compatibility rules are refined below.
 
@@ -286,7 +286,7 @@ Native libraries cannot directly call or inline one another; cross-module calls 
 
 Before execution, verify all native-part hashes, including foreign-platform libraries, without OS-loading them. Reject duplicate ZIP entry names, absolute paths, and .. components. Metadata references must unambiguously identify existing archive parts.
 
-Use a separate temporary directory per run. Extract libraries on demand and reuse them within the run; no persistent cache yet. Clean up after unloading during normal shutdown. Cleanup failure produces a warning without changing the program's original exit code.
+Use a separate temporary directory per run. Extract libraries on demand and reuse them within the run; no persistent cache yet. A cleanup process started beforehand removes the temporary directory after the Goat process terminates, on both ordinary completion and explicit exit (decision 152). Cleanup failure produces a warning without changing the program's original exit code.
 
 ## Utilities and native ABI description
 
@@ -1709,7 +1709,7 @@ print("Done");
 exit(0);
 ```
 
-Normal exit flushes standard output buffers before terminating so earlier printing reaches the output even without a newline. This is internal cleanup; user finally blocks still do not run.
+Explicit exit attempts to flush stdout and stderr within a shared one-second budget, including lock waits and writes (decision 151). Buffered output may be lost when the deadline expires. This is internal cleanup; user finally blocks still do not run.
 
 ### 83. Clean up temporary native libraries
 
@@ -1718,7 +1718,7 @@ Normal exit flushes standard output buffers before terminating so earlier printi
 exit(7);
 ```
 
-The interpreter releases loaded libraries and removes its temporary directory. Cleanup failure produces a warning without changing exit code 7. This refines internal shutdown from decision 79 without permitting user finally execution.
+A cleanup process started in advance removes the temporary directory containing extracted libraries after process termination (decisions 148 and 152). A library must not be unloaded beneath an executing thread. Cleanup failure does not change exit code 7. This refines internal shutdown from decision 79 without permitting user finally execution.
 
 ### 84. Output-flush errors do not replace the chosen status
 
@@ -2126,7 +2126,7 @@ These checks discover dependencies from all syntactic imports, including imports
 
 132. Module unloading and reclamation of module-owned memory are deferred beyond this iteration. Loaded modules remain resident until program termination.
 133. Initialization is blocking, executes on one thread, and is never repeated. Other threads wait for its completion and observe the same scope object or saved failure.
-134. Serialize initialization of all source files and modules using a global reentrant lock. Reentry by the initializing thread supports the already agreed cyclic include behavior. Independent initializations do not run concurrently.
+134. Serialize initialization of included source files and imported modules using a global reentrant lock. Direct execution of the main file is excluded from this lock as specified in decision 143. Reentry by the initializing thread supports the already agreed cyclic include behavior. Independent initializations do not run concurrently.
 135. Normal function calls into fully initialized modules do not acquire or wait for the global initialization lock. Access that requires initialization or encounters an initializing file follows the established initialization and waiting rules.
 
 ## Initialization restrictions: decisions 136–140
@@ -2141,3 +2141,238 @@ These checks discover dependencies from all syntactic imports, including imports
 
 141. Initialization has no special timeout. It may run indefinitely, including while performing blocking I/O; termination by external means is outside the language's initialization contract.
 142. After failed initialization, repeated include/import throws the exact same exception object with its original stack trace. Neither cloning nor rerunning initialization is permitted.
+
+## Direct execution and the initialization context boundary: decision 143
+
+143. Top-level code of the main file when directly running a .goat or .gbin executes as ordinary program code: without the global initialization lock and without the thread creation and join prohibitions of decisions 136–138. The same applies to functions called by this code when no included/imported file initializer is active.
+
+Actual initialization of a file through include or a module through import acquires the global reentrant lock and enters the initialization context on the current thread. This context covers the entire dynamic initializer invocation, including functions it calls regardless of their declaration file. During this interval, exit, thread creation and blocking thread waits are prohibited; decision 140 applies to future user mutexes. Blocking file and network I/O remains allowed.
+
+On normal completion or exception propagation, restore the previous context. A nested initializer does not remove the outer initializer's restrictions; after leaving the outermost initializer, main code resumes ordinary execution. Repeated include/import of an already initialized file does not create a new initialization context.
+
+This boundary refines decisions 78 and 133–140. It does not remove once-only file execution, scope states, cyclic include rules, or declaration-readiness checks.
+
+## Access to the executing main file: decision 144
+
+144. For a directly executing main file, readiness is checked per declaration rather than by waiting for all top-level code to finish. Already declared functions and initialized variables are available to other threads subject to ordinary access checks. Calling such a function does not wait for the main file to finish. Reading or writing a declaration that is not ready throws a catchable exception rather than blocking.
+
+For example, the main file declares a function, passes it to a new thread, and performs join. The new thread can call that function before the main file's top-level code finishes; waiting for main-file readiness must not deadlock this program. If the function accesses a main-file declaration that has not yet been initialized, the exception occurs at that access.
+
+This exception to waiting in decisions 133 and 135 applies only to the directly executing main file. Other threads still wait for ordinary initialization of included/imported files to finish. Publish declaration readiness and its value with the required inter-thread synchronization; this rule does not make subsequent user updates to variables automatically atomic.
+
+## Required at execution time: decision 145
+
+145. When running a compiled .gbin with --native required, the main module must contain at least one native specialization in a variant compatible with the current platform. Native code in dependencies does not satisfy this requirement. Absence of such a variant or specialization is a preflight error before any user code executes.
+
+Dependencies may contain only bytecode or lack a compatible native variant; this alone does not prevent execution in required mode. Calls without an applicable specialization use the VM. If an applicable specialization in a compatible variant is selected for a call, but its library cannot be loaded or fails exported-symbol/ABI-descriptor validation, required fails. This rule applies to both the main module and dependencies.
+
+The preflight presence check uses validated metadata and does not extract the library or load it through the OS. Extraction and loading remain lazy, at the first applicable call. The program need not actually execute a native call: presence is checked before execution, applicability per call.
+
+The build-time required rule is unchanged: the module being built must obtain at least one native implementation of its own for the selected build target. Compatibility with the execution platform is checked separately.
+
+## Relative include paths and symbolic links: decision 146
+
+146. Resolve a relative include path against the directory of the containing source file's canonical path, after resolving symbolic links. The directory of the link used to find that source file is not the base for nested includes. Apply this rule to every source file, including the entry file.
+
+For example, project/math.goat links to /shared/math.goat. An include "./helpers.goat" expression inside that file selects /shared/helpers.goat, not project/helpers.goat. Canonicalize the included file's path as well to determine its identity within the module. Including the same file directly and through a symbolic link yields the same dependencies, one scope and one initialization.
+
+This rule applies to .gmod builds and direct .goat execution. In a compiled .gbin, relationships between source files are already fixed at build time; source paths and links are not resolved again on the user's machine. Canonical absolute paths are used by the compiler but are not stored in the module in place of logical names.
+
+## Equal threads and VM lifetime: decision 147
+
+147. The VM has no privileged "main thread": all program execution threads are equal. The entry file defines the starting point, but grants no special privileges to the thread executing it and does not make that thread's completion the termination condition for the whole VM.
+
+During ordinary execution, the VM keeps running while at least one program thread has not finished. Completion of the entry file's top-level code finishes that execution but does not stop other threads. Remaining threads can continue using ready entry-file declarations, modules and native libraries. Their shared state is not reclaimed merely because the thread that started the program has finished.
+
+Ordinary VM shutdown begins after all program threads have finished; a separate cleanup process then removes temporary files after process termination under decision 152. This is a VM-wide termination condition, not an implicit join performed by a special main thread.
+
+An otherwise valid explicit exit(code) from any thread still terminates the entire process without waiting for other threads to finish naturally and without executing user finally blocks. The restrictions on exit in a dynamic initialization context remain in force. Decision 147 does not change the rules for fatal VM errors.
+
+## Removing native temporary files after exit: decision 148
+
+148. A separate cleanup process removes the temporary directory after explicit exit. It waits for the Goat process to actually terminate, then removes its temporary directory, including extracted DLL/SO files. Cleanup does not require waiting for program threads inside Goat to finish naturally.
+
+A library must not be manually unloaded while another thread may still execute its code. For this termination path, native-library reclamation is left to the OS and files are removed after process termination. On ordinary completion of all threads, temporary files are also removed by the separate cleanup process after process termination (decision 152).
+
+This refines decision 83: explicit exit does not have to delete loaded DLL/SO files before the Goat process terminates. A removal failure does not change the already selected exit code. Startup timing and readiness acknowledgement are defined in decision 152; startup failure and the shared one-second readiness deadline are defined in decisions 153–154; this decision does not promise successful cleanup under every external failure.
+
+## Exit during native execution: decision 149
+
+149. Exit has the same semantics in the VM and native implementations. Generated native code invokes the shared Goat mechanism through the native ABI instead of independently calling C exit or OS termination and bypassing language checks.
+
+The shared mechanism checks arity, integer type and the 0–255 range, as well as the dynamic initialization context. An invalid argument or prohibited call during initialization raises an ordinary catchable exception, including when called from native code. Ordinary catch/finally rules apply to that exception.
+
+A valid exit terminates the entire process without waiting for active native functions to return, including an infinite loop or a blocking call in another thread. Native functions need not all cooperate by checking a termination flag. User finally blocks are not executed; an in-progress native operation may be interrupted, and its side effects are neither rolled back nor repeated on the VM.
+
+Libraries are not manually unloaded beneath executing code. After actual process termination, the separate cleanup process removes temporary files under decision 148. This rule does not remove the agreed handling of standard output; the flushing budget is defined in decision 151.
+
+## Concurrent exit calls: decision 150
+
+150. Among valid exit calls, the first call that atomically transitions the process into termination fixes the exit code. Other calls neither change that code nor start the termination procedure again. Threads have no priority; a race between exit(0) and exit(7) may produce either code, depending on which call wins the atomic transition.
+
+Arity, type, range and dynamic initialization-context checks precede participation in this transition. An invalid call or prohibited exit from an initializer raises an ordinary exception and does not reserve an exit code. This does not guarantee delivery of that exception if another thread is already terminating the whole process.
+
+Publish the termination state and selected code consistently. Losing calls do not return to user code; termination remains process-wide. A repeated call does not duplicate shutdown actions or dispatch another cleanup job.
+
+## Bounded output flushing on exit: decision 151
+
+151. A valid explicit exit allows a shared one-second budget for flushing stdout and stderr. This is one deadline for both output streams, not one second per stream. Waiting for internal output locks and completion of writes is included. Measure the deadline with a monotonic clock from the start of the flushing procedure; repeated exit calls do not extend it.
+
+If flushing completes sooner, do not wait for the remainder of the second. When the budget expires, terminate the process with the already selected code even if flushing is incomplete; some buffered output may be lost. Emit a warning only if that is possible without additional waiting. An output error or timeout does not replace the exit code.
+
+The bound must remain effective when the flushing thread itself blocks: checking elapsed time only after a blocking write returns is insufficient. This policy refines decisions 82, 84 and 149 and applies to explicit exit; it does not introduce an initialization timeout.
+
+## Cleanup process startup and unified cleanup: decision 152
+
+152. Start one cleanup process for the Goat run's temporary directory before extracting the first native library. Goat must receive acknowledgement that the cleanup process is ready before creating extracted files. Extraction and loading must not proceed before acknowledgement. If neither extraction nor temporary native source compilation (decision 160) is needed, do not start the cleanup process.
+
+The cleanup process waits for actual Goat process termination and removes its temporary directory regardless of the termination path: explicit exit and ordinary completion of all threads use the same mechanism. It does not need an additional request from exit to begin cleanup. After removal or completion of error handling, the cleanup process itself terminates.
+
+Concurrent first native calls must not create multiple cleanup processes for one run or bypass readiness acknowledgement. The cleanup process must not prevent Goat from terminating. Removal failure does not change Goat's exit code.
+
+This refines decisions 83, 147 and 148: the earlier distinction between internal file removal on ordinary completion and external removal on exit is withdrawn. Startup failure and the shared one-second readiness deadline are defined in decisions 153–154. Failure after readiness acknowledgement does not terminate Goat; cleanup is then no longer guaranteed (decision 162).
+
+## Cleanup-process startup failure: decision 153
+
+153. If the cleanup process cannot be started or does not acknowledge readiness, do not extract or load native libraries.
+
+In auto mode, emit one warning explaining the cause, disable native execution for the rest of the entire run, and execute calls on the VM. Subsequent calls neither retry cleanup-process startup nor repeat the warning. This applies to all modules in the run, not only the first module requiring extraction.
+
+In required mode, this failure terminates the program with an error. It is a native-execution preparation failure, not a user-code exception. Side effects already performed before the first applicable call are not rolled back.
+
+Readiness is checked before the first extraction, so no extracted DLL/SO files exist when this failure occurs. This rule does not define the separate policy for failure of a cleanup process that was already running. The readiness deadline is defined in decision 154.
+
+## Cleanup readiness deadline: decision 154
+
+154. Allow one shared deadline of one second for starting the cleanup process and receiving its readiness acknowledgement. Measure it with a monotonic clock from the start of the startup attempt; process creation time is included. This is not a mandatory delay: Goat continues immediately after acknowledgement.
+
+If startup or readiness acknowledgement does not complete within that deadline, preparation has failed and decision 153 applies: auto warns once and uses the VM for the rest of the run; required terminates with an error. No extracted DLL/SO files are created before acknowledgement.
+
+A late acknowledgement does not undo the recorded failure or re-enable native execution. Concurrent calls share one attempt and one deadline without restarting the clock. The cleanup readiness deadline is independent of the separate one-second output-flushing budget on exit.
+
+## Native-library extraction failure: decision 155
+
+155. If a valid native library cannot be extracted from the verified in-memory snapshot to the temporary directory because of a file-operation error, such as insufficient space or denied write access, do not load a partially written file.
+
+In auto mode, report the error once and mark this library unavailable for the remainder of the run. Execute the current call and subsequent calls to its specializations on the VM; do not retry extraction or repeat the diagnostic. Do not automatically disable other libraries. In required mode, extraction failure terminates the program with an error.
+
+Corrupt content or a hash mismatch is not eligible for this VM fallback: it is an unconditional integrity error in both modes. Extraction failure does not change the selected physical module copy or trigger a search in subsequent directories.
+
+Partial files remain covered by temporary-directory cleanup and are not considered successfully published libraries. Concurrent first calls must observe a shared result of the extraction attempt for this library.
+
+## Source identity and hard links: decision 156
+
+156. Within a module, source-file identity is determined by the canonical path after resolving symbolic links, not by the physical file identifier. Paths resolving to the same canonical path refer to one scope, one bytecode copy and one initialization.
+
+Different canonical paths that are hard links are treated as different source files even when their physical identifier and contents match. Do not merge them by inode, file ID or content hash. Each path has its own scope, state and relative-include base.
+
+For example, a/math.goat and b/math.goat are hard links to one file containing include "./helper.goat". The first source includes a/helper.goat; the second includes b/helper.goat. Both sources may belong to the same module as distinct units. Membership in different modules still creates separate entities regardless of an identical canonical path.
+
+## A symbolic link to the build description: decision 157
+
+157. Before resolving build paths, canonicalize the .gmod path itself, resolving symbolic links. Relative main, the local modules search directory and the default modules output directory are relative to the directory of the actual .gmod, not the link's directory. Different ways of reaching the same description do not change the project or its output location.
+
+Example actual project:
+
+```text
+/work/project/app.gmod
+/work/project/src/main.goat
+/work/project/modules/
+```
+
+Contents of app.gmod:
+
+```json
+{
+  "formatVersion": 1,
+  "name": "app",
+  "version": "1.0.0",
+  "main": "src/main.goat"
+}
+```
+
+The path /home/ivan/app.gmod is a symbolic link to /work/project/app.gmod. The command:
+
+```sh
+goat build /home/ivan/app.gmod
+```
+
+uses these paths:
+
+| Purpose | Path |
+| --- | --- |
+| Entry source | /work/project/src/main.goat |
+| Local dependency directory | /work/project/modules/ |
+| Default build output | /work/project/modules/app/1.0.0.gbin |
+
+The link's location does not make /home/ivan/src/ or /home/ivan/modules/ the build base. Even if those directories contain different files, they do not replace the actual project's files.
+
+An explicit relative --module-dir retains its separate rule: resolve it against the working directory at startup. For example, with /tmp as the working directory:
+
+```sh
+goat build /home/ivan/app.gmod --module-dir ./output
+```
+
+writes /tmp/output/app/1.0.0.gbin. The entry source remains /work/project/src/main.goat. Dependency search order is /work/project/modules/, then /tmp/output/, then GOAT_MODULE_PATH directories. An explicit --module-dir does not override the priority of the actual project's local modules directory.
+
+This refines main and build-directory resolution without changing how relative --module-dir and GOAT_MODULE_PATH entries are resolved against the startup working directory.
+
+## Running a program through a symbolic link: decision 158
+
+158. When directly running a .gbin or .goat, canonicalize the launched file's path, resolving symbolic links. Derive __dir__ and the local modules search directory from the directory of the actual launched file, not the link.
+
+For example:
+
+```text
+/home/ivan/app.gbin -> /opt/myapp/app.gbin
+/opt/myapp/modules/
+/opt/myapp/config.json
+```
+
+The command:
+
+```sh
+goat /home/ivan/app.gbin
+```
+
+sets __dir__ to /opt/myapp and uses /opt/myapp/modules/ as the first dependency search directory. Locate config.json relative to __dir__. The link's location does not give /home/ivan/modules/ priority.
+
+The same rule applies to direct source execution: if /home/ivan/main.goat links to /opt/myapp/main.goat, __dir__ is /opt/myapp and the local module directory is /opt/myapp/modules/. Resolve relative includes using the actual path of each containing source file under decision 146.
+
+Fix the canonical launch path during startup preparation. A subsequent working-directory change or retargeting of the original symbolic link does not change __dir__ or the local search base. __dir__ remains shared by the entire run, including imported libraries. Explicit relative --module-dir and relative GOAT_MODULE_PATH entries remain relative to the startup working directory.
+
+## Required for direct source execution: decision 159
+
+159. Direct .goat execution with --native required requires at least one native specialization belonging to the launched program itself. If preparing such a specialization fails, user code is not executed. Native implementations in imported libraries do not satisfy this requirement. The program's own code includes sources brought in through include.
+
+For a standalone source, the bound-native-function check already exists: src/cli/native_execution.c requires NATIVE_PREPARE_READY in required mode, and src/codegen/native_pipeline.c produces that status only when bound_functions is nonzero. Module implementation must preserve this behavior and extend ownership accounting, rather than implement the check from scratch.
+
+Current temporary native-build cleanup for direct execution uses reference counting: native_pipeline transfers its workspace to the library, release_native_library closes the loader handle after the last reference and invokes destroy_native_workspace. The latter removes the DLL/SO and directory but does not check removal results. This describes the existing implementation, not completion of the new cleanup-process protocol.
+
+## Cleaning up temporary native source compilation: decision 160
+
+160. The same separate cleanup-process mechanism applies to temporary native compilation during direct .goat execution, not only to libraries extracted from .gbin. Start the cleanup process and acknowledge readiness before creating temporary compilation files and starting the C compiler. The shared one-second startup/readiness deadline from decision 154 applies.
+
+Cleanup covers temporary generated C files, native-build support files, logs, intermediate outputs and the final temporary DLL/SO. After Goat terminates, the cleanup process removes remaining files in its own temporary directory, including after interruption. Ordinary completion of all threads and explicit exit use the same mechanism.
+
+If the cleanup process is not ready, temporary native compilation does not begin: auto warns once and uses the VM for the rest of the run, while required terminates with an error under decision 153. If neither native compilation nor library extraction is needed, no cleanup process is needed.
+
+Explicitly saved output artifacts (--save-library, separate-compilation outputs or distributed-module build outputs) are not temporary runtime files and must not be deleted by the cleanup process. Their publication and preservation on failure remain separate compiler responsibilities.
+
+This extends decision 152: start the cleanup process before whichever first requires temporary native-compilation files or library extraction. Existing reference-counted cleanup does not replace the external cleanup process. Decision 161 defines the ordering when a child C compiler is still running after Goat terminates.
+
+## Goat interruption during native compilation: decision 161
+
+161. During ordinary preparation for direct execution, Goat waits for the C compiler to finish before executing user code. Therefore user exit cannot interrupt this initial compilation. The following rule concerns external interruption or abnormal termination of Goat.
+
+If the C compiler launched for that run's temporary native build, or its child processes, are still running after Goat terminates, the cleanup process first stops that process group and waits for it to terminate, then removes the temporary directory. Removal must not race with continuing compiler writes.
+
+Stop only processes belonging to the particular temporary build of that Goat instance. Do not identify processes by compiler executable name or affect other builds. Ownership tracking and handoff to the cleanup process must cover compiler startup and descendants, including Goat interruption during startup itself. Explicitly saved user build artifacts remain excluded from cleanup.
+
+## Failure of a ready cleanup process: decision 162
+
+162. If the cleanup process acknowledges readiness and subsequently terminates abnormally, Goat continues execution. This failure alone neither terminates the user program nor changes its exit code; this also applies to native required mode.
+
+Temporary-file removal is no longer guaranteed after this failure. Stopping a remaining compiler and its descendants before removal likewise requires a functioning cleanup process. Do not remove the directory or unload DLL/SO libraries beneath running code to compensate for the failure.
+
+This differs from failure before readiness acknowledgement, which remains governed by decisions 153–154. Previously acknowledged readiness must not be retroactively treated as a startup failure, and the cleanup startup failure policy must not be applied to the program.
