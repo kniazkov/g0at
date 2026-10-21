@@ -2124,3 +2124,11 @@ These checks discover dependencies from all syntactic imports, including imports
 133. Initialization is blocking, executes on one thread, and is never repeated. Other threads wait for its completion and observe the same scope object or saved failure.
 134. Serialize initialization of all source files and modules using a global reentrant lock. Reentry by the initializing thread supports the already agreed cyclic include behavior. Independent initializations do not run concurrently.
 135. Normal function calls into fully initialized modules do not acquire or wait for the global initialization lock. Access that requires initialization or encounters an initializing file follows the established initialization and waiting rules.
+
+## Initialization restrictions: decisions 136–140
+
+136. Attempting to create a thread while initializing a source file or module throws a catchable runtime exception.
+137. The thread-creation prohibition applies only to the thread currently executing initialization, not to other threads running ordinary code.
+138. Thread join and other blocking thread-wait operations during initialization throw a runtime exception, including waits on previously created threads.
+139. Blocking file and network I/O remains permitted during initialization. The global initialization lock stays held; other module initializations must wait.
+140. When user mutexes are implemented, blocking acquisition during initialization must throw a runtime exception. Nonblocking tryLock remains permitted. Mutexes are not implemented yet; this is a future requirement.
