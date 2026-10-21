@@ -2267,3 +2267,52 @@ Partial files remain covered by temporary-directory cleanup and are not consider
 Different canonical paths that are hard links are treated as different source files even when their physical identifier and contents match. Do not merge them by inode, file ID or content hash. Each path has its own scope, state and relative-include base.
 
 For example, a/math.goat and b/math.goat are hard links to one file containing include "./helper.goat". The first source includes a/helper.goat; the second includes b/helper.goat. Both sources may belong to the same module as distinct units. Membership in different modules still creates separate entities regardless of an identical canonical path.
+
+## A symbolic link to the build description: decision 157
+
+157. Before resolving build paths, canonicalize the .gmod path itself, resolving symbolic links. Relative main, the local modules search directory and the default modules output directory are relative to the directory of the actual .gmod, not the link's directory. Different ways of reaching the same description do not change the project or its output location.
+
+Example actual project:
+
+```text
+/work/project/app.gmod
+/work/project/src/main.goat
+/work/project/modules/
+```
+
+Contents of app.gmod:
+
+```json
+{
+  "formatVersion": 1,
+  "name": "app",
+  "version": "1.0.0",
+  "main": "src/main.goat"
+}
+```
+
+The path /home/ivan/app.gmod is a symbolic link to /work/project/app.gmod. The command:
+
+```sh
+goat build /home/ivan/app.gmod
+```
+
+uses these paths:
+
+| Purpose | Path |
+| --- | --- |
+| Entry source | /work/project/src/main.goat |
+| Local dependency directory | /work/project/modules/ |
+| Default build output | /work/project/modules/app/1.0.0.gbin |
+
+The link's location does not make /home/ivan/src/ or /home/ivan/modules/ the build base. Even if those directories contain different files, they do not replace the actual project's files.
+
+An explicit relative --module-dir retains its separate rule: resolve it against the working directory at startup. For example, with /tmp as the working directory:
+
+```sh
+goat build /home/ivan/app.gmod --module-dir ./output
+```
+
+writes /tmp/output/app/1.0.0.gbin. The entry source remains /work/project/src/main.goat. Dependency search order is /work/project/modules/, then /tmp/output/, then GOAT_MODULE_PATH directories. An explicit --module-dir does not override the priority of the actual project's local modules directory.
+
+This refines main and build-directory resolution without changing how relative --module-dir and GOAT_MODULE_PATH entries are resolved against the startup working directory.
