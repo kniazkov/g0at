@@ -1827,6 +1827,62 @@ println(items);   // [[1, 3]].
 
 A fresh-result summary is insufficient to prove deep independence. Describe proven nested sharing; if exact relationships cannot be established, conservatively retain possible shared state. Crossing a module boundary does not turn clone into deep copying.
 
+## Native specializations and selection guards: decisions 91–95
+
+### 91. List concrete prebuilt specializations
+
+```goat
+// Library
+external add = func(a, b) { return a + b; };
+
+// Consumer; only a two-integer variant is packaged.
+lib.add(2, 3);     // A native specialization applies.
+lib.add("a", "b"); // Uses bytecode in ordinary mode.
+```
+
+Metadata lists specializations and their applicability conditions. No suitable variant does not make the function unavailable: ordinary mode uses the VM. Do not automatically compile new specializations at runtime; use packaged variants or bytecode.
+
+### 92. Preconditions may be stricter than argument types
+
+```goat
+external divide = func(a, b) { return a / b; };
+```
+
+If a particular native variant requires a nonzero divisor, divide(10, 2) may use it while divide(10, 0) goes to the VM for ordinary language behavior. Check the condition before entering native code. Arguments have already been evaluated; do not evaluate them again on fallback. Pass the same values to the VM. This does not require every division implementation to have this particular contract.
+
+### 93. Ambiguous selection is a metadata error
+
+```text
+Variant A: two integers, nonzero divisor.
+Variant B: two integers, positive divisor.
+Call divide(10, 2) matches both.
+```
+
+Entry order does not resolve the conflict. The compiler must form unambiguous conditions. The loader rejects overlap when it can establish it during validation; remaining ambiguity is checked before the call and is an error. Do not arbitrarily select a variant or hide invalid metadata as an ordinary missing specialization.
+
+### 94. Guards are declarative and side-effect-free
+
+Proposed representation example, not the final schema:
+
+```json
+{
+  "argumentTypes": ["integer", "integer"],
+  "conditions": [
+    { "argument": 1, "operation": "notEqual", "value": 0 }
+  ]
+}
+```
+
+Conditions are not executable Goat code. The loader understands a limited, explicitly defined set of checks, such as types and comparisons with constants. They neither invoke user functions nor have side effects. Applicability checks do not change program state.
+
+### 95. Unrepresentable conditions exclude unsafe specializations
+
+```text
+Variant requirement: the supplied callback has no side effects.
+```
+
+If the requirement is not proven at build time and cannot be checked by supported declarative guards before the call, exclude that specialization. Do not store arbitrary prose expecting the loader to interpret it. The function remains available through bytecode; required follows the previously agreed rules.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
