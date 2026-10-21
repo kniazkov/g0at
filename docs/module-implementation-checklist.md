@@ -208,6 +208,8 @@
 
 - [ ] 147: равноправные потоки удерживают VM и модули до завершения всех потоков; exit завершает весь процесс: [#217](https://github.com/kniazkov/g0at/issues/217), [#230](https://github.com/kniazkov/g0at/issues/230)
 
+- [ ] 148: отдельный процесс удаляет распакованные DLL/SO после завершения Goat; протокол запуска подлежит уточнению: [#230](https://github.com/kniazkov/g0at/issues/230), инфраструктура [#213](https://github.com/kniazkov/g0at/issues/213)
+
 ## Общая приёмка
 
 - [ ] Многофайловые AC-01–AC-28: [#218](https://github.com/kniazkov/g0at/issues/218)
