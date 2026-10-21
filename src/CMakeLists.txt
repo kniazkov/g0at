@@ -83,7 +83,7 @@ target_link_libraries(analysis_testing core yyjson pthread m)
 add_executable(functional_testing functional_testing.c)
 target_link_libraries(functional_testing PRIVATE yyjson)
 
-add_executable(module_json_testing module/module_json_testing.c module/module_json.c)
+add_executable(module_json_testing test/module_json_testing.c module/module_json.c)
 target_link_libraries(module_json_testing PRIVATE yyjson)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/../scripts/package.cmake")
