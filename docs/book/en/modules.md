@@ -2230,7 +2230,7 @@ The cleanup process waits for actual Goat process termination and removes its te
 
 Concurrent first native calls must not create multiple cleanup processes for one run or bypass readiness acknowledgement. The cleanup process must not prevent Goat from terminating. Removal failure does not change Goat's exit code.
 
-This refines decisions 83, 147 and 148: the earlier distinction between internal file removal on ordinary completion and external removal on exit is withdrawn. Startup failure and the shared one-second readiness deadline are defined in decisions 153–154. Behavior when the cleanup process dies after acknowledging readiness remains an open question.
+This refines decisions 83, 147 and 148: the earlier distinction between internal file removal on ordinary completion and external removal on exit is withdrawn. Startup failure and the shared one-second readiness deadline are defined in decisions 153–154. Failure after readiness acknowledgement does not terminate Goat; cleanup is then no longer guaranteed (decision 162).
 
 ## Cleanup-process startup failure: decision 153
 
@@ -2368,3 +2368,11 @@ This extends decision 152: start the cleanup process before whichever first requ
 If the C compiler launched for that run's temporary native build, or its child processes, are still running after Goat terminates, the cleanup process first stops that process group and waits for it to terminate, then removes the temporary directory. Removal must not race with continuing compiler writes.
 
 Stop only processes belonging to the particular temporary build of that Goat instance. Do not identify processes by compiler executable name or affect other builds. Ownership tracking and handoff to the cleanup process must cover compiler startup and descendants, including Goat interruption during startup itself. Explicitly saved user build artifacts remain excluded from cleanup.
+
+## Failure of a ready cleanup process: decision 162
+
+162. If the cleanup process acknowledges readiness and subsequently terminates abnormally, Goat continues execution. This failure alone neither terminates the user program nor changes its exit code; this also applies to native required mode.
+
+Temporary-file removal is no longer guaranteed after this failure. Stopping a remaining compiler and its descendants before removal likewise requires a functioning cleanup process. Do not remove the directory or unload DLL/SO libraries beneath running code to compensate for the failure.
+
+This differs from failure before readiness acknowledgement, which remains governed by decisions 153–154. Previously acknowledged readiness must not be retroactively treated as a startup failure, and the cleanup startup failure policy must not be applied to the program.
