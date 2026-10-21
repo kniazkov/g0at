@@ -24,7 +24,7 @@ In `2 * (3 + 4)`, the outer multiplication now has a single container on its rig
 
 A bracket pair is not yet an expression. `(...)` may contain function arguments, an `if` condition, a `catch` binding, or an expression with altered precedence. `{...}` may be a function body or a block expression. Subsequent passes identify its specific role from neighboring tokens.
 
-Nested contents retain their operator-group membership. Later passes can therefore locate operations inside brackets too. [Parser tests](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_parser.c) check this representation.
+Nested contents retain their operator-group membership. Later passes can therefore locate operations inside brackets too. [Parser tests](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/unit_test/test_parser.c) check this representation.
 
 <a id="section-6-3"></a>
 
@@ -153,4 +153,4 @@ The [`for` rule](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822
 > [!CAUTION]
 > Errors accumulate in compilation structures; a critical error stops the current pass sequence. This is not a recovery system guaranteed to continue parsing after arbitrary source damage. Diagnostic completeness is further limited by the cases described in Chapter 5.
 
-Besides [bracket tests](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_parser.c), useful checks include [exception-parser tests](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_exception_parser.c), the [unary-precedence example](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/functional/unary_precedence/program.goat), and [a missing parameter comma](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/functional/no_comma_bw_func_args/program.goat). They check specific algorithm paths. Successful parsing yields program structure; name meanings and computation properties still require later stages.
+Besides [bracket tests](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/unit_test/test_parser.c), useful checks include [exception-parser tests](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/unit_test/test_exception_parser.c), the [unary-precedence example](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/functional/unary_precedence/program.goat), and [a missing parameter comma](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/test/functional/no_comma_bw_func_args/program.goat). They check specific algorithm paths. Successful parsing yields program structure; name meanings and computation properties still require later stages.
