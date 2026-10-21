@@ -206,6 +206,8 @@
 
 - [ ] 146: относительный include разрешается от настоящего исходного файла после разрешения символических ссылок: [#186](https://github.com/kniazkov/g0at/issues/186), [#194](https://github.com/kniazkov/g0at/issues/194)
 
+- [ ] 147: равноправные потоки удерживают VM и модули до завершения всех потоков; exit завершает весь процесс: [#217](https://github.com/kniazkov/g0at/issues/217), [#230](https://github.com/kniazkov/g0at/issues/230)
+
 ## Общая приёмка
 
 - [ ] Многофайловые AC-01–AC-28: [#218](https://github.com/kniazkov/g0at/issues/218)
