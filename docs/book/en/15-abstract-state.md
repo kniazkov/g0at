@@ -102,6 +102,6 @@ The pass order in [analysis.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a
 
 ## 15.7. Contracts that can be tested
 
-[test_abstract_state.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_abstract_state.c) checks clone independence, joining current values and summaries, and releasing shared records. These checks matter even with correct `join` formulas: an ownership error can silently change a neighboring branch.
+[test_abstract_state.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/unit_test/test_abstract_state.c) checks clone independence, joining current values and summaries, and releasing shared records. These checks matter even with correct `join` formulas: an ownership error can silently change a neighboring branch.
 
 The analysis log is a sequence of observations from several stages. An early `write x = 10` does not promise that every later read equals `10`. Nor does the final summary replace pointwise knowledge. Entries must be read with their kind and coordinates, rather than as one table of final values.
