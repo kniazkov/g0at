@@ -924,6 +924,136 @@ println(b.value); // 42.
 
 B completed initialization before A failed and remains usable. Initializing B is printed once. A's failure neither invalidates a successfully initialized dependency nor restarts it.
 
+## Saved exceptions and finally: examples 31–35
+
+Examples are independent; files within each example belong to one module.
+
+### 31. Rethrow the same value without cloning
+
+```goat
+// broken.goat
+throw { public var message = "Error"; };
+
+// main.goat
+try {
+    const first = include "./broken.goat";
+} catch (e) {
+    e.message = "Clarified error";
+}
+try {
+    const second = include "./broken.goat";
+} catch (e) {
+    println(e.message); // Clarified error.
+}
+```
+
+The loader retains the same exception object, without an implicit copy or freezing. A handler may alter accessible mutable fields or nested values; subsequent handlers see these changes. This is an intentional consequence of ordinary value semantics. A shallow copy would not isolate nested objects. A separate immutable loader diagnostic representation is not approved by this decision.
+
+### 32. Propagating one exception preserves a shared reference
+
+```goat
+// c.goat
+throw { public var message = "Error C"; };
+
+// b.goat
+const c = include "./c.goat";
+
+// main.goat
+try {
+    const b = include "./b.goat";
+} catch (e) {
+    e.message = "Clarified error";
+}
+try {
+    const c = include "./c.goat";
+} catch (e) {
+    println(e.message); // Clarified error.
+}
+```
+
+The exception passes through B without replacement or copying. B and C retain the same reference, so a change made while handling B's inclusion is visible when C is included again.
+
+### 33. Throwing a replacement exception separates saved values
+
+```goat
+// c.goat
+throw "Error C";
+
+// b.goat
+try {
+    const c = include "./c.goat";
+} catch (e) {
+    throw "Error B";
+}
+
+// main.goat
+try {
+    const b = include "./b.goat";
+} catch (e) {
+    println(e); // Error B.
+}
+try {
+    const c = include "./c.goat";
+} catch (e) {
+    println(e); // Error C.
+}
+```
+
+Each file remembers the exception that ultimately escapes its own initialization code. B's replacement error does not replace C's saved error.
+
+### 34. An exception from finally becomes the final failure
+
+```goat
+// broken.goat
+try {
+    throw "First error";
+} finally {
+    throw "Cleanup error";
+}
+
+// main.goat
+try {
+    const broken = include "./broken.goat";
+} catch (e) {
+    println(e); // Cleanup error.
+}
+```
+
+Subsequent inclusion also throws Cleanup error. The loader remembers the exception that ultimately escaped, does not separately retain the first error, and does not alter ordinary try/finally semantics.
+
+### 35. Finally is not repeated on subsequent inclusion
+
+```goat
+// broken.goat
+try {
+    throw "Error";
+} finally {
+    println("Cleanup");
+}
+
+// main.goat
+try {
+    const first = include "./broken.goat";
+} catch (e) {
+    println(e);
+}
+try {
+    const second = include "./broken.goat";
+} catch (e) {
+    println(e);
+}
+```
+
+Output:
+
+```text
+Cleanup
+Error
+Error
+```
+
+Finally runs during the first initialization attempt. Subsequent include only throws the saved exception; neither the main code nor cleanup runs again.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
