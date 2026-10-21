@@ -2249,3 +2249,13 @@ Readiness is checked before the first extraction, so no extracted DLL/SO files e
 If startup or readiness acknowledgement does not complete within that deadline, preparation has failed and decision 153 applies: auto warns once and uses the VM for the rest of the run; required terminates with an error. No extracted DLL/SO files are created before acknowledgement.
 
 A late acknowledgement does not undo the recorded failure or re-enable native execution. Concurrent calls share one attempt and one deadline without restarting the clock. The cleanup readiness deadline is independent of the separate one-second output-flushing budget on exit.
+
+## Native-library extraction failure: decision 155
+
+155. If a valid native library cannot be extracted from the verified in-memory snapshot to the temporary directory because of a file-operation error, such as insufficient space or denied write access, do not load a partially written file.
+
+In auto mode, report the error once and mark this library unavailable for the remainder of the run. Execute the current call and subsequent calls to its specializations on the VM; do not retry extraction or repeat the diagnostic. Do not automatically disable other libraries. In required mode, extraction failure terminates the program with an error.
+
+Corrupt content or a hash mismatch is not eligible for this VM fallback: it is an unconditional integrity error in both modes. Extraction failure does not change the selected physical module copy or trigger a search in subsequent directories.
+
+Partial files remain covered by temporary-directory cleanup and are not considered successfully published libraries. Concurrent first calls must observe a shared result of the extraction attempt for this library.
