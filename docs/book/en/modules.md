@@ -2117,3 +2117,10 @@ The rules above are agreed; discussion continues one question at a time with exa
 131. Verify each distinct module only once per compiler/loader validation pass and cache its verification result. When a module fails, report every dependency path reaching it. Reuse cached results without hiding distinct paths.
 
 These checks discover dependencies from all syntactic imports, including imports in branches that never execute. Module initialization remains lazy, on actual import execution. Unused dependency declarations remain warnings as specified in decision 56.
+
+## Module lifetime and initialization concurrency: decisions 132–135
+
+132. Module unloading and reclamation of module-owned memory are deferred beyond this iteration. Loaded modules remain resident until program termination.
+133. Initialization is blocking, executes on one thread, and is never repeated. Other threads wait for its completion and observe the same scope object or saved failure.
+134. Serialize initialization of all source files and modules using a global reentrant lock. Reentry by the initializing thread supports the already agreed cyclic include behavior. Independent initializations do not run concurrently.
+135. Normal function calls into fully initialized modules do not acquire or wait for the global initialization lock. Access that requires initialization or encounters an initializing file follows the established initialization and waiting rules.
