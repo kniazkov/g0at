@@ -2177,3 +2177,13 @@ The build-time required rule is unchanged: the module being built must obtain at
 For example, project/math.goat links to /shared/math.goat. An include "./helpers.goat" expression inside that file selects /shared/helpers.goat, not project/helpers.goat. Canonicalize the included file's path as well to determine its identity within the module. Including the same file directly and through a symbolic link yields the same dependencies, one scope and one initialization.
 
 This rule applies to .gmod builds and direct .goat execution. In a compiled .gbin, relationships between source files are already fixed at build time; source paths and links are not resolved again on the user's machine. Canonical absolute paths are used by the compiler but are not stored in the module in place of logical names.
+
+## Equal threads and VM lifetime: decision 147
+
+147. The VM has no privileged "main thread": all program execution threads are equal. The entry file defines the starting point, but grants no special privileges to the thread executing it and does not make that thread's completion the termination condition for the whole VM.
+
+During ordinary execution, the VM keeps running while at least one program thread has not finished. Completion of the entry file's top-level code finishes that execution but does not stop other threads. Remaining threads can continue using ready entry-file declarations, modules and native libraries. Their shared state is not reclaimed merely because the thread that started the program has finished.
+
+Ordinary final cleanup of modules, native libraries and temporary files occurs after all program threads have finished. This is a VM-wide termination condition, not an implicit join performed by a special main thread.
+
+An otherwise valid explicit exit(code) from any thread still terminates the entire process without waiting for other threads to finish naturally and without executing user finally blocks. The restrictions on exit in a dynamic initialization context remain in force. Decision 147 does not change the rules for fatal VM errors.
