@@ -2412,3 +2412,9 @@ The `main` field accepts a relative or absolute path to the entry source file, i
 For example, `"main": "../shared/main.goat"` is valid. Relative paths are recommended for portable projects; accepting absolute paths does not make them portable across machines or operating systems. The build machine's absolute path is not stored in .gbin.
 
 Checks: relative main inside and outside the project; absolute main outside the project; identical resolution of relative main when opening .gmod directly or through a symbolic link; changing the working directory does not change the selected source.
+
+### Literal main value
+
+After JSON decoding, the `main` string is interpreted as a literal path. Environment-variable substitution and `~` expansion are not performed. For example, `"$HOME/main.goat"` is a relative path containing a literal `$HOME` directory, and `"~/main.goat"` contains a literal `~` directory. Neither `${HOME}` nor `%USERPROFILE%` triggers substitution. Normal JSON escape decoding and the agreed path resolution and canonicalization rules still apply.
+
+Checks: changing an environment variable does not change main resolution; a path containing `$HOME` or `~` selects the corresponding literal directory beside the real .gmod when that file exists. If the literal path does not exist, report the ordinary missing-source error without retrying with substitution.
