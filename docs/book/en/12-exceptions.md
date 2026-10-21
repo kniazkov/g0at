@@ -130,9 +130,9 @@ Retrying in the VM after a native call's protective limit has specific condition
 
 ## 12.7. What the tests check
 
-[test_vm_exceptions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_vm_exceptions.c) checks handler transfer, call unwinding, returns through protected regions, temporary-value cleanup, and retention of an uncaught object. It separately checks that `null` can be an exception value. These test execution structure, rather than just matching output strings.
+[test_vm_exceptions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/unit_test/test_vm_exceptions.c) checks handler transfer, call unwinding, returns through protected regions, temporary-value cleanup, and retention of an uncaught object. It separately checks that `null` can be an exception value. These test execution structure, rather than just matching output strings.
 
-[test_operation_result.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_operation_result.c) checks the contracts for normal and exceptional operation results. Both levels matter because a correct error value does not guarantee a correct stack afterward. If the next statement after `catch` receives leftovers from another expression, handling remains broken even when the first diagnostic line is correct.
+[test_operation_result.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/unit_test/test_operation_result.c) checks the contracts for normal and exceptional operation results. Both levels matter because a correct error value does not guarantee a correct stack afterward. If the next statement after `catch` receives leftovers from another expression, handling remains broken even when the first diagnostic line is correct.
 
 > [!CAUTION]
 > Exception handling does not isolate arbitrary machine code and is not a sandbox. Internal crashes and memory errors in the C implementation have no general guarantee of safe interception at Goat level.
