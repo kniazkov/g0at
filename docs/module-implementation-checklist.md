@@ -212,6 +212,8 @@
 
 - [ ] 149: единый exit через ABI, завершение без ожидания активного нативного кода, без finally и повтора на VM: [#209](https://github.com/kniazkov/g0at/issues/209), [#230](https://github.com/kniazkov/g0at/issues/230)
 
+- [ ] 150: первый допустимый exit атомарно фиксирует код; повторные вызовы не дублируют завершение: [#230](https://github.com/kniazkov/g0at/issues/230)
+
 ## Общая приёмка
 
 - [ ] Многофайловые AC-01–AC-28: [#218](https://github.com/kniazkov/g0at/issues/218)
