@@ -2169,3 +2169,11 @@ Dependencies may contain only bytecode or lack a compatible native variant; this
 The preflight presence check uses validated metadata and does not extract the library or load it through the OS. Extraction and loading remain lazy, at the first applicable call. The program need not actually execute a native call: presence is checked before execution, applicability per call.
 
 The build-time required rule is unchanged: the module being built must obtain at least one native implementation of its own for the selected build target. Compatibility with the execution platform is checked separately.
+
+## Relative include paths and symbolic links: decision 146
+
+146. Resolve a relative include path against the directory of the containing source file's canonical path, after resolving symbolic links. The directory of the link used to find that source file is not the base for nested includes. Apply this rule to every source file, including the entry file.
+
+For example, project/math.goat links to /shared/math.goat. An include "./helpers.goat" expression inside that file selects /shared/helpers.goat, not project/helpers.goat. Canonicalize the included file's path as well to determine its identity within the module. Including the same file directly and through a symbolic link yields the same dependencies, one scope and one initialization.
+
+This rule applies to .gmod builds and direct .goat execution. In a compiled .gbin, relationships between source files are already fixed at build time; source paths and links are not resolved again on the user's machine. Canonical absolute paths are used by the compiler but are not stored in the module in place of logical names.
