@@ -9,6 +9,10 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 include_directories(. ../include)
 
+add_library(yyjson STATIC ../third_party/yyjson/yyjson.c)
+target_include_directories(yyjson PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/yyjson")
+set_target_properties(yyjson PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 file(GLOB core_sources
   lib/*.c
   resources/*.c
@@ -22,6 +26,7 @@ file(GLOB core_sources
   model/*.c
   vm/*.c
   cli/*.c
+  module/module_json.c
 )
 # Build the native runtime separately; never depend on VM internals or its allocator.
 add_library(goat_native STATIC native/strings.c native/str.c lib/number_format.c)
@@ -50,6 +55,7 @@ add_custom_command(
   VERBATIM
 )
 add_library(core STATIC ${core_sources} "${native_runtime_data}")
+target_link_libraries(core PUBLIC yyjson)
 target_include_directories(core PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 if(CMAKE_DL_LIBS)
   target_link_libraries(core PUBLIC ${CMAKE_DL_LIBS})
@@ -64,16 +70,21 @@ message(STATUS "Found core sources: ${core_sources}")
 file(GLOB goat_exe main.c)
 message(STATUS "Found interpreter sources: ${goat_exe}")
 add_executable(goat ${goat_exe})
-target_link_libraries (goat core pthread m)
+target_link_libraries (goat core yyjson pthread m)
 
 file(GLOB unit_testing_exe unit_testing.c test/*.c)
+list(REMOVE_ITEM unit_testing_exe "${CMAKE_CURRENT_SOURCE_DIR}/test/module_json_testing.c")
 message(STATUS "Found unit testing sources: ${unit_testing_exe}")
 add_executable(unit_testing ${unit_testing_exe})
-target_link_libraries (unit_testing core pthread m)
+target_link_libraries (unit_testing core yyjson pthread m)
 
 add_executable(analysis_testing analysis_testing.c)
-target_link_libraries(analysis_testing core pthread m)
+target_link_libraries(analysis_testing core yyjson pthread m)
 
 add_executable(functional_testing functional_testing.c)
+target_link_libraries(functional_testing PRIVATE yyjson)
+
+add_executable(module_json_testing test/module_json_testing.c module/module_json.c)
+target_link_libraries(module_json_testing PRIVATE yyjson)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/../scripts/package.cmake")

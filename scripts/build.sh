@@ -30,8 +30,9 @@ build_dir="$(cd "$build_dir" && pwd)"
 cmake -S "$repo_root/src" -B "$build_dir" \
     -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER="${CC:-gcc}"
 cmake --build "$build_dir" --parallel "$build_jobs" \
-    --target goat unit_testing analysis_testing functional_testing
+    --target goat unit_testing analysis_testing functional_testing module_json_testing
 cp "$build_dir/goat" "$repo_root/goat"
+"$build_dir/module_json_testing"
 "$build_dir/unit_testing"
 "$build_dir/analysis_testing" "$repo_root/test/analysis"
 (
