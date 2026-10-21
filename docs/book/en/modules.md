@@ -2205,3 +2205,11 @@ The shared mechanism checks arity, integer type and the 0–255 range, as well a
 A valid exit terminates the entire process without waiting for active native functions to return, including an infinite loop or a blocking call in another thread. Native functions need not all cooperate by checking a termination flag. User finally blocks are not executed; an in-progress native operation may be interrupted, and its side effects are neither rolled back nor repeated on the VM.
 
 Libraries are not manually unloaded beneath executing code. After actual process termination, the separate cleanup process removes temporary files under decision 148. This rule does not remove the agreed handling of standard output; the interaction of flushing with the requirement that exit not hang needs separate clarification.
+
+## Concurrent exit calls: decision 150
+
+150. Among valid exit calls, the first call that atomically transitions the process into termination fixes the exit code. Other calls neither change that code nor start the termination procedure again. Threads have no priority; a race between exit(0) and exit(7) may produce either code, depending on which call wins the atomic transition.
+
+Arity, type, range and dynamic initialization-context checks precede participation in this transition. An invalid call or prohibited exit from an initializer raises an ordinary exception and does not reserve an exit code. This does not guarantee delivery of that exception if another thread is already terminating the whole process.
+
+Publish the termination state and selected code consistently. Losing calls do not return to user code; termination remains process-wide. A repeated call does not duplicate shutdown actions or dispatch another cleanup job.
