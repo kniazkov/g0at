@@ -1980,6 +1980,28 @@ native/../variant-1.dll    — error
 
 The only separator is /. Paths are case-sensitive: metadata must exactly match the archive entry name. Nevertheless, names differing only in case are forbidden: native/variant-1.dll and native/Variant-1.dll cannot coexist. This prevents extraction collisions on Windows. Absolute paths and .. components are also forbidden; the rules apply identically on every platform.
 
+## ZIP packaging and validation: decisions 106–110
+
+### 106. Only stored entries and Deflate
+
+Support two storage methods: uncompressed entries and Deflate. Encryption and passwords are forbidden. For example, bytecode.bin may use Deflate while DLL/SO files remain uncompressed. Hashes cover uncompressed data: changing the compression level does not change module identity. An unknown compression method or encrypted entry invalidates the entire module, even when the entry targets another platform.
+
+### 107. No ZIP64 support yet
+
+The first version uses ordinary ZIP. Exceeding its limits fails the build with a clear diagnostic rather than automatically switching to ZIP64. For example, a 5 GiB bytecode.bin requires splitting the program into modules. The loader explicitly rejects ZIP64. This follows the decision not to create huge modules.
+
+### 108. Deterministic packaging
+
+Entry order is fixed, timestamps are constant, and permissions are standard. Build time and original filesystem attributes are not copied into ZIP. Identical module.json, bytecode, and native libraries must produce a byte-for-byte identical .gbin with the same packager version and settings, regardless of the build date or packaging on Windows versus Linux. This is a requirement for packaging identical contents, not a promise that different C compilers produce identical machine code. Content hashes remain independent of packaging.
+
+### 109. Validate sizes before and during decompression
+
+Validate declared entry sizes before decompression and actual sizes while decompressing. If ZIP declares a 1 MiB bytecode.bin but the decompressor produces more, immediately stop processing and reject the module without unbounded memory allocation. An actual size differing from the declared size is an error. Check for overflow when summing sizes. If a correctly declared volume cannot fit in memory, apply the ordinary out-of-memory rule: terminate without trying another module.
+
+### 110. Check CRC32 in addition to SHA-256
+
+Validate CRC32 for every ZIP file entry; a mismatch invalidates the entire module. For example, if native/variant-2.so matches the metadata SHA-256 but has an incorrect CRC32, reject the archive even on Windows where this variant is not needed. CRC32 checks ZIP integrity; SHA-256 checks correspondence between contents and metadata. Neither check by itself establishes trust in the author.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
