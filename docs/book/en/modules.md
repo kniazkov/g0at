@@ -1940,6 +1940,46 @@ println(lib.add("a", "b")); // VM, also allowed in required.
 
 Required retains the requirement for native execution but does not require every call to be native. Ordinary absence of a specialization for the arguments permits VM execution. If a matching variant exists but its library cannot load, required fails under the previously agreed rules. The module-build requirement of at least one native implementation belonging to the module remains in force.
 
+## Build requirements and archive contents: decisions 101–105
+
+### 101. Requirements reflect the actual native build
+
+If compiler flags enable AVX2, the variant requirements must account for it even when the nominal target is ordinary x86-64. Generate metadata from actual build settings, not just the target name. If the tools cannot reliably determine compatibility requirements, fail the build rather than publish incomplete requirements.
+
+### 102. Flat native-file layout
+
+```text
+module.json
+bytecode.bin
+native/
+    variant-1.dll
+    variant-2.so
+```
+
+module.json contains common metadata and native variant descriptors with library paths. bytecode.bin contains bytecode for all included source files while preserving separate scopes. Native libraries may be absent. Each variant is one library directly under native/, without a per-variant directory, sources, headers, object files, or additional companion DLL/SO files. Names are service identifiers: metadata, not filenames or extensions, determines compatibility.
+
+### 103. Undeclared files are forbidden
+
+If metadata describes native/variant-1.dll but the archive also contains undeclared native/old-library.dll, reject the entire module. Every file must be accounted for by the format or metadata. Directory entries are allowed. Future resources and debug data require explicit format support rather than silently ignoring unknown contents.
+
+### 104. Symbolic links are forbidden
+
+```text
+native/variant-1.so -> /usr/local/lib/something.so
+```
+
+This entry is invalid: the ZIP contains only regular files and directory entries. A symbolic link invalidates the entire module during validation, even if its variant is irrelevant to the current platform. The library must be present inside the archive. Ordinary system dependencies of the DLL/SO remain resolved by the OS loader under the agreed rules.
+
+### 105. Uniform ZIP path rules
+
+```text
+native/variant-1.dll       — valid
+native\variant-1.dll       — error
+native/../variant-1.dll    — error
+```
+
+The only separator is /. Paths are case-sensitive: metadata must exactly match the archive entry name. Nevertheless, names differing only in case are forbidden: native/variant-1.dll and native/Variant-1.dll cannot coexist. This prevents extraction collisions on Windows. Absolute paths and .. components are also forbidden; the rules apply identically on every platform.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
