@@ -2126,7 +2126,7 @@ These checks discover dependencies from all syntactic imports, including imports
 
 132. Module unloading and reclamation of module-owned memory are deferred beyond this iteration. Loaded modules remain resident until program termination.
 133. Initialization is blocking, executes on one thread, and is never repeated. Other threads wait for its completion and observe the same scope object or saved failure.
-134. Serialize initialization of all source files and modules using a global reentrant lock. Reentry by the initializing thread supports the already agreed cyclic include behavior. Independent initializations do not run concurrently.
+134. Serialize initialization of included source files and imported modules using a global reentrant lock. Direct execution of the main file is excluded from this lock as specified in decision 143. Reentry by the initializing thread supports the already agreed cyclic include behavior. Independent initializations do not run concurrently.
 135. Normal function calls into fully initialized modules do not acquire or wait for the global initialization lock. Access that requires initialization or encounters an initializing file follows the established initialization and waiting rules.
 
 ## Initialization restrictions: decisions 136–140
@@ -2141,3 +2141,13 @@ These checks discover dependencies from all syntactic imports, including imports
 
 141. Initialization has no special timeout. It may run indefinitely, including while performing blocking I/O; termination by external means is outside the language's initialization contract.
 142. After failed initialization, repeated include/import throws the exact same exception object with its original stack trace. Neither cloning nor rerunning initialization is permitted.
+
+## Direct execution and the initialization context boundary: decision 143
+
+143. Top-level code of the main file when directly running a .goat or .gbin executes as ordinary program code: without the global initialization lock and without the thread creation and join prohibitions of decisions 136–138. The same applies to functions called by this code when no included/imported file initializer is active.
+
+Actual initialization of a file through include or a module through import acquires the global reentrant lock and enters the initialization context on the current thread. This context covers the entire dynamic initializer invocation, including functions it calls regardless of their declaration file. During this interval, exit, thread creation and blocking thread waits are prohibited; decision 140 applies to future user mutexes. Blocking file and network I/O remains allowed.
+
+On normal completion or exception propagation, restore the previous context. A nested initializer does not remove the outer initializer's restrictions; after leaving the outermost initializer, main code resumes ordinary execution. Repeated include/import of an already initialized file does not create a new initialization context.
+
+This boundary refines decisions 78 and 133–140. It does not remove once-only file execution, scope states, cyclic include rules, or declaration-readiness checks.
