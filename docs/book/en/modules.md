@@ -2224,7 +2224,7 @@ The bound must remain effective when the flushing thread itself blocks: checking
 
 ## Cleanup process startup and unified cleanup: decision 152
 
-152. Start one cleanup process for the Goat run's temporary directory before extracting the first native library. Goat must receive acknowledgement that the cleanup process is ready before creating extracted files. Extraction and loading must not proceed before acknowledgement. If extraction is never needed, do not start the cleanup process.
+152. Start one cleanup process for the Goat run's temporary directory before extracting the first native library. Goat must receive acknowledgement that the cleanup process is ready before creating extracted files. Extraction and loading must not proceed before acknowledgement. If neither extraction nor temporary native source compilation (decision 160) is needed, do not start the cleanup process.
 
 The cleanup process waits for actual Goat process termination and removes its temporary directory regardless of the termination path: explicit exit and ordinary completion of all threads use the same mechanism. It does not need an additional request from exit to begin cleanup. After removal or completion of error handling, the cleanup process itself terminates.
 
@@ -2348,3 +2348,15 @@ Fix the canonical launch path during startup preparation. A subsequent working-d
 For a standalone source, the bound-native-function check already exists: src/cli/native_execution.c requires NATIVE_PREPARE_READY in required mode, and src/codegen/native_pipeline.c produces that status only when bound_functions is nonzero. Module implementation must preserve this behavior and extend ownership accounting, rather than implement the check from scratch.
 
 Current temporary native-build cleanup for direct execution uses reference counting: native_pipeline transfers its workspace to the library, release_native_library closes the loader handle after the last reference and invokes destroy_native_workspace. The latter removes the DLL/SO and directory but does not check removal results. This describes the existing implementation, not completion of the new cleanup-process protocol.
+
+## Cleaning up temporary native source compilation: decision 160
+
+160. The same separate cleanup-process mechanism applies to temporary native compilation during direct .goat execution, not only to libraries extracted from .gbin. Start the cleanup process and acknowledge readiness before creating temporary compilation files and starting the C compiler. The shared one-second startup/readiness deadline from decision 154 applies.
+
+Cleanup covers temporary generated C files, native-build support files, logs, intermediate outputs and the final temporary DLL/SO. After Goat terminates, the cleanup process removes remaining files in its own temporary directory, including after interruption. Ordinary completion of all threads and explicit exit use the same mechanism.
+
+If the cleanup process is not ready, temporary native compilation does not begin: auto warns once and uses the VM for the rest of the run, while required terminates with an error under decision 153. If neither native compilation nor library extraction is needed, no cleanup process is needed.
+
+Explicitly saved output artifacts (--save-library, separate-compilation outputs or distributed-module build outputs) are not temporary runtime files and must not be deleted by the cleanup process. Their publication and preservation on failure remain separate compiler responsibilities.
+
+This extends decision 152: start the cleanup process before whichever first requires temporary native-compilation files or library extraction. Existing reference-counted cleanup does not replace the external cleanup process. The ordering when a child C compiler is still running after Goat terminates requires separate definition.
