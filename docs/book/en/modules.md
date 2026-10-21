@@ -320,6 +320,157 @@ Main and native-library hashes use SHA-256, represented as 64 lowercase hexadeci
 
 Provide third_party/ for ZIP, JSON, and SHA-256 if needed, retaining each dependency's license, source, and exact version. Builds must not download them. Goat wrappers reside in lib. JSON support must detect duplicate keys and permit canonical output; specific libraries remain unselected.
 
-## Further discussion
+## File visibility, copying, and object ownership
 
-Outstanding semantic questions concern file-level access boundaries for clone/flat and moved methods, and property creation across files of one module. Complete schemas, canonical encoding details, service symbols, and supported system ABIs will be refined during implementation design. This does not permit changing agreed rules without discussion.
+Clone and flat preserve each transferred field's original file, module, and access restrictions. Transferred methods retain their rights, with captures redirected to copied cells under the agreed rules. Removing prototypes through flat does not expose hidden fields.
+
+```goat
+// a.goat
+public obj = {
+    var secret = 42;
+    public read = func() { return secret; };
+};
+
+// b.goat in the same module
+const a = include "./a.goat";
+var copy = a.obj.clone();
+println(copy.read()); // 42.
+// println(copy.secret); // Access error.
+```
+
+Code within one module may add properties to objects created by other files of that module. Object ownership governs extension; field provenance governs access:
+
+```goat
+// a.goat
+public obj = { public var x = 1; };
+
+// b.goat
+const a = include "./a.goat";
+a.obj.x = 2; // Accessible variable.
+a.obj.y = 3; // Extension is allowed within the module.
+println(a.obj.y); // 3.
+```
+
+Field y belongs to b.goat and, without a modifier, is accessible only to that file's code. Later obj.y = 4 from a.goat is an access error: an existing hidden field is not absent, and ordinary assignment does not create another same-key field. Another module cannot extend the original object even when obtained through external.
+
+The clone/flat result belongs to the module whose code directly called the built-in operation. B can therefore extend its copy of an A object, while transferred fields retain A's protection. New fields belong to the file adding them. A wrapper declared in A and calling obj.clone() creates an A object even when B calls the wrapper.
+
+Factories follow the same rule: an object created by an A function belongs to A regardless of its caller. B may modify accessible external variables on it but must make its own copy to extend it. A descendant created by B using an A prototype and the inheritance operator belongs to B; prototype fields retain A's protection, including the agreed protected rights.
+
+## Observation from another file
+
+Key iteration, print, str, and other string representations use the observing code's rights. Another file in the same module sees public and external fields; unmodified fields are visible only to their source file's code. Private/protected require the respective object rights; sharing a file is insufficient.
+
+```goat
+// a.goat
+public obj = {
+    var hidden = 10;
+    public var shared = 20;
+    external var exported = 30;
+    private var secret = 40;
+};
+
+// b.goat
+const a = include "./a.goat";
+println(a.obj); // Only shared and exported.
+var copy = a.obj.clone();
+println(copy);  // Also only shared and exported.
+```
+
+The copy contains all four fields. Ordinary a.goat code outside the object's privileged context also sees hidden when printing, but not secret. Iteration in those contexts exposes the same accessible own keys. Full-state copying is not restricted to visible fields.
+
+## Function rights: five agreed examples
+
+Examples are independent. In the first four, a.goat and b.goat belong to one module. Rights follow the executing code's provenance, not the call site or where its reference is stored.
+
+### 1. A function prints with its file's rights
+
+```goat
+// a.goat
+public obj = {
+    var hidden = 10;
+    public var shared = 20;
+};
+public show = func(value) { println(value); };
+
+// b.goat
+const a = include "./a.goat";
+println(a.obj); // Only shared.
+a.show(a.obj);  // hidden and shared.
+```
+
+The author of a.goat may intentionally expose a function revealing that file's data. Calling it from b.goat does not remove show's rights.
+
+### 2. A callback does not acquire its caller's rights
+
+```goat
+// a.goat
+public obj = {
+    var hidden = 10;
+    public var shared = 20;
+};
+public inspect = func(callback) { callback(obj); };
+
+// b.goat
+const a = include "./a.goat";
+const show = func(value) { println(value); };
+a.inspect(show); // Only shared.
+```
+
+Show runs with b.goat rights. Reading value.hidden inside it would fail, despite being called from a.goat.
+
+### 3. Returned closures retain rights and captures
+
+```goat
+// a.goat
+public makeReader = func() {
+    const obj = { var hidden = 10; };
+    return func() { return obj.hidden; };
+};
+
+// b.goat
+const a = include "./a.goat";
+const read = a.makeReader();
+println(read()); // 10.
+```
+
+This is a getter over a captured object. The function retains a.goat rights after returning without directly exposing the hidden object to its caller.
+
+### 4. Storing a function as a method does not change its file
+
+```goat
+// b.goat
+public readHidden = func(obj) { return obj.hidden; };
+
+// a.goat
+const b = include "./b.goat";
+public obj = {
+    var hidden = 10;
+    public read = b.readHidden;
+};
+obj.read(obj); // Access error.
+```
+
+ReadHidden remains b.goat code. Storing its reference as a method of an a.goat object does not grant a.goat file rights.
+
+### 5. Re-export preserves the original function's rights
+
+```goat
+// internal.goat
+const obj = { var hidden = 10; };
+public read = func() { return obj.hidden; };
+
+// main.goat — library entry file
+const internal = include "./internal.goat";
+external read = internal.read;
+
+// Another module's program
+const lib = import "library@1.0.0";
+println(lib.read()); // 10.
+```
+
+External exposes the function reference. The function retains internal.goat rights and captures; the hidden object is not directly exposed.
+
+## Further refinement
+
+The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
