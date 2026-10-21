@@ -224,6 +224,8 @@
 
 - [ ] 155: ошибка извлечения исправной DLL/SO — однократное предупреждение и VM для этой библиотеки в auto, завершение с ошибкой в required; повреждение всегда фатально: [#210](https://github.com/kniazkov/g0at/issues/210)
 
+- [ ] 156: идентичность исходника по каноническому пути; разные пути жёстких ссылок дают разные области и базы include: [#186](https://github.com/kniazkov/g0at/issues/186), [#194](https://github.com/kniazkov/g0at/issues/194)
+
 ## Общая приёмка
 
 - [ ] Многофайловые AC-01–AC-28: [#218](https://github.com/kniazkov/g0at/issues/218)
