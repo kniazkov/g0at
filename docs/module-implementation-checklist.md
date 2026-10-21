@@ -131,6 +131,7 @@
 | 63 | Inspect не требует внешних зависимостей модуля | [#224](https://github.com/kniazkov/g0at/issues/224) |
 | 64 | Merge не требует файлов внешних зависимостей | [#224](https://github.com/kniazkov/g0at/issues/224) |
 | 65 | Merge не загружает нативные библиотеки средствами ОС | [#224](https://github.com/kniazkov/g0at/issues/224) |
+| 66 | Машиночитаемая инспекция и сведения об авторе | [#223](https://github.com/kniazkov/g0at/issues/223), [#221](https://github.com/kniazkov/g0at/issues/221) |
 | 67 | Согласованный набор полей | [#221](https://github.com/kniazkov/g0at/issues/221) |
 | 68 | Информационные поля исключаются из основного хеша | [#221](https://github.com/kniazkov/g0at/issues/221) |
 | 69 | Конфликт информации запрещает объединение | [#222](https://github.com/kniazkov/g0at/issues/222) |
@@ -196,6 +197,7 @@
 - [ ] 126–131: граф зависимостей и диагностика: [#189](https://github.com/kniazkov/g0at/issues/189), [#190](https://github.com/kniazkov/g0at/issues/190)
 - [ ] 132: хранение модулей до завершения программы: [#192](https://github.com/kniazkov/g0at/issues/192)
 - [ ] 133–140: потоки и сериализация инициализации: [#216](https://github.com/kniazkov/g0at/issues/216), [#217](https://github.com/kniazkov/g0at/issues/217)
+- [ ] 143: главный файл выполняется без блокировки и ограничений инициализатора; динамический контекст include/import: [#217](https://github.com/kniazkov/g0at/issues/217)
 - [ ] 141–142: таймаут и идентичность исключения: [#239](https://github.com/kniazkov/g0at/issues/239), [#197](https://github.com/kniazkov/g0at/issues/197)
 
 ## Общая приёмка
