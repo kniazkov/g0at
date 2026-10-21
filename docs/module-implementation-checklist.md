@@ -204,6 +204,8 @@
 
 - [ ] 145: required при запуске требует совместимую специализацию главного модуля; зависимости могут исполняться на VM; загрузка остаётся ленивой: [#210](https://github.com/kniazkov/g0at/issues/210), [#232](https://github.com/kniazkov/g0at/issues/232)
 
+- [ ] 146: относительный include разрешается от настоящего исходного файла после разрешения символических ссылок: [#186](https://github.com/kniazkov/g0at/issues/186), [#194](https://github.com/kniazkov/g0at/issues/194)
+
 ## Общая приёмка
 
 - [ ] Многофайловые AC-01–AC-28: [#218](https://github.com/kniazkov/g0at/issues/218)
