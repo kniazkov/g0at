@@ -1159,6 +1159,91 @@ println(a.child.value); // 10.
 
 Inheritance retains a prototype reference without copying unfinished cells. Reading value through the descendant before its declaration executes raises an exception, just like a direct read from A. After successful initialization, the value is accessible through the prototype under ordinary access checks.
 
+## Scope prototypes and copying: examples 41–45
+
+### 41. A failed prototype does not block a descendant's own fields
+
+```goat
+// a.goat
+public value = 10;
+const b = include "./b.goat";
+throw "Error A";
+
+// b.goat
+const a = include "./a.goat";
+public child = a -> { public own = 20; };
+
+// main.goat
+try {
+    const a = include "./a.goat";
+} catch (e) {
+    println(e);
+}
+const b = include "./b.goat";
+println(b.child.own);   // 20.
+// println(b.child.value); // Saved exception: Error A.
+```
+
+B completed initialization successfully, so child's accessible own fields remain accessible. Lookup reaching the failed A scope throws its saved exception: inheritance does not bypass the failed-scope guard.
+
+### 42. Flat returns no partial result with a failed prototype
+
+In the state from example 41:
+
+```goat
+try {
+    const flat = b.child.flat();
+} catch (e) {
+    println(e); // Error A.
+}
+println(b.child.own); // 20.
+```
+
+Built-in flat must transfer prototype state and therefore throws A's saved exception. It neither skips the failed prototype nor returns a partial object containing only own. The original object is unchanged.
+
+### 43. Cloning a descendant retains the failed prototype reference
+
+In the same state:
+
+```goat
+const copy = b.child.clone();
+println(copy.own); // 20.
+// println(copy.value); // Saved exception: Error A.
+```
+
+Built-in clone copies own fields and retains prototype references without reading their fields. Cloning the descendant is therefore allowed, while access through the failed prototype remains an error. This does not permit cloning the failed file scope itself.
+
+### 44. Flat also rejects a prototype still being initialized
+
+```goat
+// a.goat
+public first = 1;
+const b = include "./b.goat";
+public second = 2;
+
+// b.goat
+const a = include "./a.goat";
+public child = a -> { public own = 3; };
+try {
+    const copy = child.flat();
+} catch (e) {
+    println("Not yet");
+}
+```
+
+Child already exists, but A has not completed initialization. Flat raises a catchable exception for the unfinished prototype. The same call is allowed after A completes successfully.
+
+### 45. Validate the entire prototype graph
+
+```goat
+// a is a previously obtained file scope reference.
+const middle = a -> { public middleValue = 2; };
+const leaf = middle -> { public own = 3; };
+const copy = leaf.flat();
+```
+
+If A is still initializing, flat throws an unfinished-initialization exception. If A failed, it throws the saved exception. Check the entire chain and all multiple-inheritance branches, not only immediate prototypes. Do not return a partial result. This supplements the agreed prototype traversal preserving lookup priority and transferring each object only once.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
