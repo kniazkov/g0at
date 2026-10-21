@@ -51,6 +51,10 @@ Red callouts mark limitations and known defects of the implementation described.
 28. [Testing](28-testing.md)
 29. [Performance Measurement](29-performance-measurement.md)
 
+### Part VII. Module System
+
+30. [Module System: Build Descriptors and Identifiers](30-modules.md)
+
 ### Appendices
 
 - [A. Terminology](appendix-a-terminology.md)
