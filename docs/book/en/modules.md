@@ -1503,7 +1503,55 @@ In --json mode, standard output contains only JSON, including validation results
 
 Add optional author/contact information, including author name and email, to both the .gmod build description and compiled .gbin metadata. The compiler transfers supplied information into the module; missing fields do not prevent building or loading. Inspection should present it as module information, including in JSON mode.
 
-The full set of related fields (such as description, license, and website), exact schema, and inclusion of informational metadata in the main hash still require clarification. An email field does not imply sending messages or checking the address over the network.
+Decisions 67–70 below specify the fields and hash/merge rules. An email field does not imply sending messages or checking the address over the network.
+
+## Informational fields: decisions 67–70
+
+### 67. Agreed set of fields
+
+A .gmod fragment supplementing required fields:
+
+```json
+{
+  "description": "Geometry computation library",
+  "authors": [
+    { "name": "Ivan", "email": "ivan@example.com" }
+  ],
+  "license": "MIT",
+  "homepage": "https://example.com/geometry"
+}
+```
+
+All four fields are optional. Authors permits multiple authors; email may be omitted. Transfer this information to .gbin and display it during inspection.
+
+### 68. Exclude information from the main hash
+
+Description, authors, license, and homepage do not contribute to the main hash. Correcting email or homepage with unchanged code and dependencies does not require rebuilding consumers. Execution and access metadata still contributes to the main hash. This exception covers only explicitly listed informational fields.
+
+### 69. Conflicting information prevents merging
+
+```text
+windows.gbin: authors → Ivan, ivan@old.example
+linux.gbin:   authors → Ivan, ivan@new.example
+```
+
+Even with matching main hashes, goat-merge reports an error identifying the differing field. The author must reconcile metadata before merging; argument order does not select values. A field present in only one input is also a conflict. JSON formatting and object-key ordering differences are not value differences.
+
+### 70. Optional does not permit incorrect types
+
+Omitting email is valid:
+
+```json
+{ "authors": [{ "name": "Ivan" }] }
+```
+
+The following fragment contains schema errors:
+
+```json
+{ "description": 123, "authors": "Ivan", "homepage": null }
+```
+
+Present fields must match the schema: description, license, and homepage are strings; authors is an array of objects; name/email values are strings. Do not coerce numbers into strings or interpret null as absence. This applies to .gmod and .gbin metadata.
 
 ## Further refinement
 
