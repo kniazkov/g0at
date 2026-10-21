@@ -651,6 +651,93 @@ write(a.obj, "hidden"); // Access error; rhs is not called.
 
 Evaluate receiver and key once, then check access and whether writing is allowed. Evaluate the right-hand side only after a successful check. This also applies to assigning a constant or forbidden extension of another module's object. An error detected before the right-hand side prevents its side effects. This order is an implementation requirement, including optimizations; it does not claim that the new module model is already implemented.
 
+## Assignment and side effects: examples 16–20
+
+Examples are independent. These execution-order requirements apply to optimized and native code whenever the operation is supported. A definite static error may still reject a program before execution; the examples below describe runtime checking order.
+
+### 16. Compound assignment checks writability before its right-hand side
+
+```goat
+const obj = { public limit = 10; };
+const rhs = func() {
+    println("Executed");
+    return 1;
+};
+const update = func(target, key) {
+    target[key] += rhs();
+};
+update(obj, "limit"); // Constant-assignment error, no output.
+```
+
+Permission to read is insufficient. Compound assignment also checks access and writability before evaluating its right-hand side. Rhs is not called if the result cannot be written. This adds an early writability check to example 14's order.
+
+### 17. Use the value read before right-hand evaluation
+
+```goat
+var obj = { public var x = 10; };
+const rhs = func() {
+    obj.x = 100;
+    return 2;
+};
+obj.x += rhs();
+println(obj.x); // 12, not 102.
+```
+
+Compound assignment remembers the initial value 10. Rhs writes 100, then the operation computes 10 + 2 and stores 12. There is no second read of the left-hand value.
+
+### 18. Exceptions prevent the final store but preserve side effects
+
+```goat
+var obj = { public var x = 10; };
+const rhs = func() {
+    obj.x = 100;
+    throw "Error";
+};
+try {
+    obj.x += rhs();
+} catch (e) {
+    println(obj.x); // 100.
+}
+```
+
+The addition result is neither computed nor stored after the exception. Earlier changes made by the right-hand side remain. Assignment is not a transaction and does not roll back side effects.
+
+### 19. Remember the destination object before the right-hand side
+
+```goat
+var obj = { public var x = 10; };
+const original = obj;
+const rhs = func() {
+    obj = { public var x = 100; };
+    return 2;
+};
+obj.x += rhs();
+println(original.x); // 12.
+println(obj.x);      // 100.
+```
+
+Replacing variable obj does not redirect the pending write. Its destination remains the original object. Ordinary obj.x = rhs() follows the same rule: do not evaluate the left-hand receiver again.
+
+### 20. Remember the evaluated key as well
+
+```goat
+var obj = {
+    public var x = 10;
+    public var y = 20;
+};
+var key = "x";
+const rhs = func() {
+    key = "y";
+    return 2;
+};
+obj[key] += rhs();
+println(obj.x); // 12.
+println(obj.y); // 20.
+println(key);   // y.
+```
+
+Remember both the receiver and evaluated key x. Changing variable key does not redirect the write to y. Ordinary obj[key] = rhs() obeys the same rule. These examples establish single evaluation of receiver/key and, for compound assignment, a single read of the original value; side effects are not rolled back.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
