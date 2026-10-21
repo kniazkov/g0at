@@ -2231,3 +2231,13 @@ The cleanup process waits for actual Goat process termination and removes its te
 Concurrent first native calls must not create multiple cleanup processes for one run or bypass readiness acknowledgement. The cleanup process must not prevent Goat from terminating. Removal failure does not change Goat's exit code.
 
 This refines decisions 83, 147 and 148: the earlier distinction between internal file removal on ordinary completion and external removal on exit is withdrawn. Startup failure, readiness timeout and cleanup-process failure during execution require further clarification.
+
+## Cleanup-process startup failure: decision 153
+
+153. If the cleanup process cannot be started or does not acknowledge readiness, do not extract or load native libraries.
+
+In auto mode, emit one warning explaining the cause, disable native execution for the rest of the entire run, and execute calls on the VM. Subsequent calls neither retry cleanup-process startup nor repeat the warning. This applies to all modules in the run, not only the first module requiring extraction.
+
+In required mode, this failure terminates the program with an error. It is a native-execution preparation failure, not a user-code exception. Side effects already performed before the first applicable call are not rolled back.
+
+Readiness is checked before the first extraction, so no extracted DLL/SO files exist when this failure occurs. This rule does not define the separate policy for failure of a cleanup process that was already running. The readiness-wait duration is to be specified separately.
