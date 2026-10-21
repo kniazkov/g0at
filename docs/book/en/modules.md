@@ -2240,4 +2240,12 @@ In auto mode, emit one warning explaining the cause, disable native execution fo
 
 In required mode, this failure terminates the program with an error. It is a native-execution preparation failure, not a user-code exception. Side effects already performed before the first applicable call are not rolled back.
 
-Readiness is checked before the first extraction, so no extracted DLL/SO files exist when this failure occurs. This rule does not define the separate policy for failure of a cleanup process that was already running. The readiness-wait duration is to be specified separately.
+Readiness is checked before the first extraction, so no extracted DLL/SO files exist when this failure occurs. This rule does not define the separate policy for failure of a cleanup process that was already running. The readiness deadline is defined in decision 154.
+
+## Cleanup readiness deadline: decision 154
+
+154. Allow one shared deadline of one second for starting the cleanup process and receiving its readiness acknowledgement. Measure it with a monotonic clock from the start of the startup attempt; process creation time is included. This is not a mandatory delay: Goat continues immediately after acknowledgement.
+
+If startup or readiness acknowledgement does not complete within that deadline, preparation has failed and decision 153 applies: auto warns once and uses the VM for the rest of the run; required terminates with an error. No extracted DLL/SO files are created before acknowledgement.
+
+A late acknowledgement does not undo the recorded failure or re-enable native execution. Concurrent calls share one attempt and one deadline without restarting the clock. The cleanup readiness deadline is independent of the separate one-second output-flushing budget on exit.
