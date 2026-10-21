@@ -73,6 +73,7 @@ add_executable(goat ${goat_exe})
 target_link_libraries (goat core yyjson pthread m)
 
 file(GLOB unit_testing_exe unit_testing.c test/*.c)
+list(REMOVE_ITEM unit_testing_exe "${CMAKE_CURRENT_SOURCE_DIR}/test/module_json_testing.c")
 message(STATUS "Found unit testing sources: ${unit_testing_exe}")
 add_executable(unit_testing ${unit_testing_exe})
 target_link_libraries (unit_testing core yyjson pthread m)
