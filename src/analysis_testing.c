@@ -15,7 +15,7 @@
 #include "lib/string_ext.h"
 #include "parser/parser.h"
 #include "scanner/scanner.h"
-#include "test/test_output.h"
+#include "unit_test/test_output.h"
 
 #include <inttypes.h>
 #include <math.h>
