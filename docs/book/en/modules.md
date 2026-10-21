@@ -2106,3 +2106,14 @@ CMake builds the shared validation library and links it into the interpreter and
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
+
+## Dependency graph validation: decisions 126–131
+
+126. At build time, validate the entire transitive dependency graph, including availability, integrity, versions, expected hashes, conflicts and import cycles. A failure prevents publishing the build.
+127. When the same module name/version is required with conflicting main hashes, report both full dependency paths and their expected SHA-256 hashes.
+128. Do not impose an arbitrary dependency-depth limit. Traverse the graph iteratively with an explicit work stack, avoiding call-stack exhaustion.
+129. Collect all independently discoverable preflight errors in one run. Do not traverse a malformed node whose metadata cannot be parsed.
+130. Emit diagnostics in deterministic order: by full dependency chain, then error type and location within a module.
+131. Verify each distinct module only once per compiler/loader validation pass and cache its verification result. When a module fails, report every dependency path reaching it. Reuse cached results without hiding distinct paths.
+
+These checks discover dependencies from all syntactic imports, including imports in branches that never execute. Module initialization remains lazy, on actual import execution. Unused dependency declarations remain warnings as specified in decision 56.
