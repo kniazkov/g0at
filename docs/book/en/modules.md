@@ -2359,4 +2359,12 @@ If the cleanup process is not ready, temporary native compilation does not begin
 
 Explicitly saved output artifacts (--save-library, separate-compilation outputs or distributed-module build outputs) are not temporary runtime files and must not be deleted by the cleanup process. Their publication and preservation on failure remain separate compiler responsibilities.
 
-This extends decision 152: start the cleanup process before whichever first requires temporary native-compilation files or library extraction. Existing reference-counted cleanup does not replace the external cleanup process. The ordering when a child C compiler is still running after Goat terminates requires separate definition.
+This extends decision 152: start the cleanup process before whichever first requires temporary native-compilation files or library extraction. Existing reference-counted cleanup does not replace the external cleanup process. Decision 161 defines the ordering when a child C compiler is still running after Goat terminates.
+
+## Goat interruption during native compilation: decision 161
+
+161. During ordinary preparation for direct execution, Goat waits for the C compiler to finish before executing user code. Therefore user exit cannot interrupt this initial compilation. The following rule concerns external interruption or abnormal termination of Goat.
+
+If the C compiler launched for that run's temporary native build, or its child processes, are still running after Goat terminates, the cleanup process first stops that process group and waits for it to terminate, then removes the temporary directory. Removal must not race with continuing compiler writes.
+
+Stop only processes belonging to the particular temporary build of that Goat instance. Do not identify processes by compiler executable name or affect other builds. Ownership tracking and handoff to the cleanup process must cover compiler startup and descendants, including Goat interruption during startup itself. Explicitly saved user build artifacts remain excluded from cleanup.
