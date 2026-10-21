@@ -2418,3 +2418,11 @@ Checks: relative main inside and outside the project; absolute main outside the 
 After JSON decoding, the `main` string is interpreted as a literal path. Environment-variable substitution and `~` expansion are not performed. For example, `"$HOME/main.goat"` is a relative path containing a literal `$HOME` directory, and `"~/main.goat"` contains a literal `~` directory. Neither `${HOME}` nor `%USERPROFILE%` triggers substitution. Normal JSON escape decoding and the agreed path resolution and canonicalization rules still apply.
 
 Checks: changing an environment variable does not change main resolution; a path containing `$HOME` or `~` selects the corresponding literal directory beside the real .gmod when that file exists. If the literal path does not exist, report the ordinary missing-source error without retrying with substitution.
+
+### Separators in main
+
+After JSON decoding, `/` is supported as a directory separator on every supported OS. Backslash follows OS rules: it is a separator on Windows and an ordinary filename character on Linux. Do not unconditionally replace backslashes with forward slashes on every platform. Portable descriptions should use `/`.
+
+The JSON example `"main": "src/main.goat"` uses a portable separator. In `"main": "src\\main.goat"`, JSON escaping produces one backslash: on Windows this selects main.goat inside src; on Linux it denotes a filename containing a backslash.
+
+Checks: the `/` form resolves on Windows and Linux; the escaped backslash form selects the nested file on Windows and the literal backslash filename on Linux, without substitution of a path containing `/`.
