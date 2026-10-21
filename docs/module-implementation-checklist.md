@@ -218,6 +218,8 @@
 
 - [ ] 152: один уборщик с подтверждением готовности до первого извлечения; удаление после любого завершения Goat и собственное завершение уборщика: [#210](https://github.com/kniazkov/g0at/issues/210), [#230](https://github.com/kniazkov/g0at/issues/230), инфраструктура [#213](https://github.com/kniazkov/g0at/issues/213)
 
+- [ ] 153: отказ запуска/готовности уборщика запрещает извлечение; auto предупреждает один раз и использует VM до конца запуска, required завершается с ошибкой: [#210](https://github.com/kniazkov/g0at/issues/210), [#230](https://github.com/kniazkov/g0at/issues/230)
+
 ## Общая приёмка
 
 - [ ] Многофайловые AC-01–AC-28: [#218](https://github.com/kniazkov/g0at/issues/218)
