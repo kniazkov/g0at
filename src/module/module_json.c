@@ -1,6 +1,6 @@
 #include "module_json.h"
-#include <goat/module_identity.h>
 
+#include <goat/module_identity.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -132,8 +132,9 @@ goat_module_json_error goat_module_json_read(const char *data,
         yyjson_val *name = yyjson_obj_get(root, "name");
         yyjson_val *module_version = yyjson_obj_get(root, "version");
         yyjson_val *deps = yyjson_obj_get(root, "dependencies");
-        if ((name && (!yyjson_is_str(name)
-                      || !goat_module_name_valid(yyjson_get_str(name), yyjson_get_len(name))))
+        if ((name
+             && (!yyjson_is_str(name)
+                 || !goat_module_name_valid(yyjson_get_str(name), yyjson_get_len(name))))
             || (module_version
                 && (!yyjson_is_str(module_version)
                     || !goat_module_version_valid(yyjson_get_str(module_version),
