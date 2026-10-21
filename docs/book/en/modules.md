@@ -1484,6 +1484,27 @@ goat-merge windows.gbin linux.gbin --output geometry.gbin
 
 Merge validates archive structure, metadata, hashes, and merge rules. It does not load DLL/SO files, even for the current platform, or run their initialization code. Trial loading belongs to goat-inspect. Merging can run on a computer supporting none of the input libraries' target platforms.
 
+## 66. Machine-readable inspection and author information
+
+```sh
+goat-inspect geometry.gbin --json
+```
+
+In --json mode, standard output contains only JSON, including validation results and detected errors. Exit status keeps its agreed meaning: nonzero on error. Without the flag, output is human-readable. Partial output example (the complete schema remains undecided):
+
+```json
+{
+  "name": "geometry",
+  "version": "1.2.0",
+  "validation": "ok",
+  "nativeLoad": "ok"
+}
+```
+
+Add optional author/contact information, including author name and email, to both the .gmod build description and compiled .gbin metadata. The compiler transfers supplied information into the module; missing fields do not prevent building or loading. Inspection should present it as module information, including in JSON mode.
+
+The full set of related fields (such as description, license, and website), exact schema, and inclusion of informational metadata in the main hash still require clarification. An email field does not imply sending messages or checking the address over the network.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
