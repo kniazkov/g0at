@@ -230,6 +230,8 @@
 
 - [ ] 158: __dir__ и локальный modules при запуске .gbin/.goat через ссылку определяются по настоящему файлу: [#188](https://github.com/kniazkov/g0at/issues/188), [#206](https://github.com/kniazkov/g0at/issues/206)
 
+- [ ] 159: сохранить существующую проверку required при прямом запуске .goat, расширить на собственные include; нативные зависимости не засчитывать: [#211](https://github.com/kniazkov/g0at/issues/211)
+
 ## Общая приёмка
 
 - [ ] Многофайловые AC-01–AC-28: [#218](https://github.com/kniazkov/g0at/issues/218)
