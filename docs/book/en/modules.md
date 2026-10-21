@@ -1357,6 +1357,74 @@ Checked:
 
 Show the name, exact version, consumer, and all checked paths in search order. If search stops on denied access, corruption, or another candidate error, report that specific cause and stopping path rather than incorrectly reporting a missing module. Do not describe later directories as checked.
 
+## Dependency inclusion and independence: examples 56–60
+
+### 56. An unused manifest entry produces a warning
+
+.gmod fragment:
+
+```json
+{
+  "dependencies": {
+    "geometry": "1.2.0",
+    "unused": "2.0.0"
+  }
+}
+```
+
+If sources use only import "geometry", unused produces a warning, not an error. It is required neither at build time nor at runtime and is not recorded in .gbin dependencies. A description entry supplies a version for a possible import; it does not import a module by itself. This is a description fragment, not a complete .gmod.
+
+### 57. An import in unreachable code counts as use
+
+```goat
+if (false) {
+    const geometry = import "geometry@1.2.0";
+}
+```
+
+Geometry remains a compiled-module dependency and is checked at build time and before execution. It is not initialized in this example. Dependencies are determined from sources; optimization and unreachable-code removal do not change the set.
+
+### 58. An explicit different version does not use the manifest version
+
+.gmod fragment:
+
+```json
+{
+  "dependencies": {
+    "geometry": "1.2.0"
+  }
+}
+```
+
+The only source import:
+
+```goat
+const geometry = import "geometry@2.0.0";
+```
+
+The output depends only on geometry@2.0.0. The unused 1.2.0 setting produces a warning; that version's file is not required. An explicit version does not change the default for unversioned imports.
+
+### 59. Do not embed external dependencies in consumers
+
+```text
+app@1.0.0 → geometry@1.2.0 → math@2.0.0
+```
+
+App contains its own code and a geometry dependency record; geometry contains its own code and a math dependency record. Execution requires three separate .gbin files; the loader validates the entire chain. Dependency contents are not copied into consumers.
+
+This is a program-organization principle: large programs should be modular. The format does not provide fat modules embedding external libraries. Multiple source files and multiple native variants of a module's own code remain allowed.
+
+### 60. Applications do not override library dependencies
+
+```text
+app@1.0.0 → geometry@1.2.0 → math@2.0.0
+app@1.0.0 → math@3.0.0
+```
+
+App uses math@3.0.0; geometry continues using math@2.0.0 recorded by its own build. Load both versions with separate state and rights. The application description does not globally override versions.
+
+Each module fixes names, exact versions, and expected main hashes of its own dependencies. This independence provides deterministic dependency resolution at startup: library code receives the dependency it was built against. It does not promise deterministic user-code behavior with arbitrary external inputs.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
