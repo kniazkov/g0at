@@ -2079,6 +2079,30 @@ Compute a native library's SHA-256 directly over every byte of its DLL/SO, witho
 
 Validate bytecode structure and references before executing any user code. For example, a matching SHA-256 does not make an out-of-function jump or nonexistent constant index valid: reject such a module even if the damaged function is unreachable. Validation covers the format, permitted instructions, and their operands; it does not promise to detect all program errors in advance.
 
+## Portability and shared validation: decisions 121–125
+
+### 121. Architecture-independent bytecode
+
+Bytecode inside .gbin uses fixed-width numeric fields and little-endian encoding, without serialized C structures, pointers, or platform-dependent size_t. For example, the same geometry.gbin without native libraries must execute on Windows x64 and Linux ARM64 without rebuilding when the interpreter supports its bytecode version. The loader converts the file representation into its internal representation. This is a format requirement, not a claim that rewriting is necessary: inspect the existing format during implementation and reuse its existing portability properties.
+
+### 122. Cross-check metadata against bytecode
+
+Independent validity of metadata and bytecode is insufficient. If a native specialization references nonexistent function 42, or the entry-file identifier is absent from bytecode, reject the module before execution even when all hashes match. Validate cross-component references.
+
+### 123. Native loading requires an applicable call
+
+If a library contains only add(integer, integer) but the program calls add(string, string), execute on the VM without extracting the DLL/SO or invoking the OS loader. Platform compatibility alone does not trigger loading. File integrity is still checked during initial module validation. goat-inspect separately tests loading the compatible variant as previously agreed. This refines lazy loading without removing preflight validation.
+
+### 124. Native descriptors must agree even with native off
+
+Check specialization lists and library descriptors for consistency before loading a DLL/SO. For example, a specialization referencing variant-3 when only variant-1 and variant-2 exist invalidates the entire module, including with --native off. Disabling native execution does not hide corrupt metadata.
+
+### 125. Shared validation code built through CMake
+
+The loader, goat-inspect, and goat-merge share C code for archive validation. The compiler validates the completed temporary .gbin with it before publication: an invalid function reference fails the build and leaves the old output file untouched. Additional actions differ: the loader validates the dependency graph, goat-inspect attempts compatible native library loading in a child process, and goat-merge does not.
+
+CMake builds the shared validation library and links it into the interpreter and utilities. Installed programs perform validation themselves without requiring CMake. Preserve the existing test invocation mechanism; do not introduce CTest.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
