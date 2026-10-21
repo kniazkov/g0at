@@ -1054,6 +1054,111 @@ Error
 
 Finally runs during the first initialization attempt. Subsequent include only throws the saved exception; neither the main code nor cleanup runs again.
 
+## Partially initialized scopes: examples 36–40
+
+Examples are independent; include cycles occur within one module. They do not permit import cycles between modules.
+
+### 36. Premature reads are catchable
+
+```goat
+// a.goat
+const b = include "./b.goat";
+public x = 10;
+
+// b.goat
+const a = include "./a.goat";
+try {
+    println(a.x);
+} catch (e) {
+    println("Too early");
+}
+
+// main.goat
+const a = include "./a.goat";
+println(a.x); // 10.
+```
+
+Reading a known but uninitialized cell raises an ordinary catchable exception. B catches it and completes; A resumes and declares x. Both files initialize successfully. The premature read itself does not mark A as failed.
+
+### 37. Writing an uninitialized declaration is forbidden
+
+```goat
+// a.goat
+const b = include "./b.goat";
+public var x = 10;
+
+// b.goat
+const a = include "./a.goat";
+try {
+    a.x = 20;
+} catch (e) {
+    println("Too early");
+}
+
+// main.goat
+const a = include "./a.goat";
+println(a.x); // 10.
+```
+
+Declaration x is already known but has not executed. Its cell is not an absent field that ordinary assignment may create. Even an accessible variable cannot be written before its declaration. The exception is caught; after B returns, A's initializer stores 10.
+
+### 38. Observation skips declarations that are not ready
+
+```goat
+// a.goat
+public first = 1;
+const b = include "./b.goat";
+public second = 2;
+
+// b.goat
+const a = include "./a.goat";
+println(a); // Only first.
+
+// main.goat
+const a = include "./a.goat";
+println(a); // first and second.
+```
+
+Printing and iterating a partially initialized scope skip declarations not yet executed: do not substitute null values or enumerate their keys. Ordinary visibility checks also apply. Directly reading a.second from B still raises an exception; omission during observation does not mean the cell is absent.
+
+### 39. Copying an unfinished scope is forbidden
+
+```goat
+// a.goat
+public first = 1;
+const b = include "./b.goat";
+public second = 2;
+
+// b.goat
+const a = include "./a.goat";
+try {
+    const copy = a.clone();
+} catch (e) {
+    println("Cannot copy yet");
+}
+```
+
+Clone and flat on a file scope before initialization completes raise a catchable exception. Neither discard unfinished cells nor transfer them into a copy where their declarations will never run. Copying is permitted after successful initialization. This restriction concerns the file scope itself, not every ordinary object created during initialization.
+
+### 40. Inheritance from an unfinished scope is allowed
+
+```goat
+// a.goat
+const b = include "./b.goat";
+public value = 10;
+public child = b.child;
+
+// b.goat
+const a = include "./a.goat";
+public child = a -> {};
+
+// main.goat
+const a = include "./a.goat";
+println(a.child.value); // 10.
+```
+
+Inheritance retains a prototype reference without copying unfinished cells. Reading value through the descendant before its declaration executes raises an exception, just like a direct read from A. After successful initialization, the value is accessible through the prototype under ordinary access checks.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
