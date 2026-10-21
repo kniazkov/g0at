@@ -1244,6 +1244,66 @@ const copy = leaf.flat();
 
 If A is still initializing, flat throws an unfinished-initialization exception. If A failed, it throws the saved exception. Check the entire chain and all multiple-inheritance branches, not only immediate prototypes. Do not return a partial result. This supplements the agreed prototype traversal preserving lookup priority and transferring each object only once.
 
+## Module identity and strict search: examples 46–50
+
+### 46. Different versions are separate entities and access boundaries
+
+```goat
+// Code in geometry@2.0.0
+const old = import "geometry@1.0.0";
+println(old.api); // Allowed if api is external.
+// println(old.internal); // Error if internal is public.
+// old.extra = 1; // Error: extending another module's object.
+```
+
+Geometry@1.0.0 and geometry@2.0.0 are separate modules with distinct state and rights. A shared name does not grant internal access to another version. Interaction uses external, just as between any other distinct modules.
+
+### 47. Physical copies of one build do not create distinct instances
+
+```goat
+// Entry file of geometry@1.0.0
+external var counter = 0;
+
+// consumer-a.goat
+const geometry = import "geometry@1.0.0";
+geometry.counter = 7;
+
+// consumer-b.goat, executed after consumer-a.goat
+const geometry = import "geometry@1.0.0";
+println(geometry.counter); // 7.
+```
+
+Even if the same version with the same main hash exists in both local modules and GOAT_MODULE_PATH, there is one entity per run. Select a file using the agreed search order, initialize once, and share its state. A different physical-copy path does not create a new module.
+
+### 48. Do not automatically combine native parts from different copies
+
+```text
+app/modules/geometry/1.0.0.gbin   — bytecode only
+shared/geometry/1.0.0.gbin        — same main hash + Linux x64
+```
+
+On Linux, select the entire local file and use the VM in ordinary mode. A more suitable native part in a later directory does not change selection. Required follows the agreed strict-mode rules. The author combines variants using goat-merge; the runtime loader does not assemble a module from multiple copies. The first found module wins even if a later copy could be better.
+
+### 49. A found but unreadable file stops search
+
+```text
+app/modules/geometry/1.0.0.gbin — exists, read permission denied
+shared/geometry/1.0.0.gbin      — readable
+```
+
+Report a loading error with path and cause; do not fall through to shared. Search continues for an absent path, not a faulty candidate.
+
+This is particularly important during development: a broken nearby build must not be hidden by loading a working but older copy. The same rationale applies to the already agreed format, incompatibility, and main-hash mismatch errors.
+
+### 50. Failure to inspect a directory is not proof of absence
+
+```text
+app/modules/geometry/ — access permissions prevent checking its contents
+shared/geometry/1.0.0.gbin — valid module
+```
+
+If the loader cannot reliably establish that the local file is absent, stop with an access error. Continue only when the requested path is reliably absent. Directory-check failures do not become missing dependencies or switch execution to another copy.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
