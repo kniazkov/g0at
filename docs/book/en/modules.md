@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/modules.md)
 
-Status: design agreed on October 20, 2026; discussion continues. These are requirements for future implementation, not a description of an existing loader. Issues #154 and #169 follow clarification of the contract. Where earlier access-control documents disagree, this page takes precedence.
+Status: design agreed on October 20, 2026; discussion continues. These are requirements for future implementation, not a description of an existing loader. Issues #154 and #169 have been superseded by the [implementation plan](../../module-implementation-checklist.md). Issue #244 fixes exact v1 schemas and reference data before their implementation is completed; #245 owns the shared cleanup service. Where earlier access-control documents disagree, this page takes precedence.
 
 ## Build and distribution unit
 
@@ -12,7 +12,7 @@ One compiled module is one file without source code. It represents a library or 
 - metadata for imports and binding bytecode to native implementations;
 - zero or more native libraries, potentially for multiple platforms.
 
-Execution uses metadata to select a suitable library and implementations. Bytecode is used when no suitable native implementation exists. The loader may extract a library to a temporary directory or cache and load it through standard OS facilities. Prefer simple portable solutions using OS capabilities.
+Execution uses metadata to select a suitable library and implementations. Bytecode is used when no suitable native implementation exists. The loader extracts a library to a separate temporary directory for the run and loads it through standard OS facilities; there is no persistent cache. Prefer simple portable solutions using OS capabilities.
 
 Metadata uses JSON, matching the build description. The container is ZIP; bytecode and native libraries remain binary parts rather than JSON-encoded data. The extension is .gbin. The complete metadata schema and exact platform compatibility rules are refined below.
 
@@ -286,7 +286,7 @@ Native libraries cannot directly call or inline one another; cross-module calls 
 
 Before execution, verify all native-part hashes, including foreign-platform libraries, without OS-loading them. Reject duplicate ZIP entry names, absolute paths, and .. components. Metadata references must unambiguously identify existing archive parts.
 
-Use a separate temporary directory per run. Extract libraries on demand and reuse them within the run; no persistent cache yet. Clean up after unloading during normal shutdown. Cleanup failure produces a warning without changing the program's original exit code.
+Use a separate temporary directory per run. Extract libraries on demand and reuse them within the run; no persistent cache yet. A cleanup process started beforehand removes the temporary directory after the Goat process terminates, on both ordinary completion and explicit exit (decision 152). Cleanup failure produces a warning without changing the program's original exit code.
 
 ## Utilities and native ABI description
 
@@ -1709,7 +1709,7 @@ print("Done");
 exit(0);
 ```
 
-Normal exit flushes standard output buffers before terminating so earlier printing reaches the output even without a newline. This is internal cleanup; user finally blocks still do not run.
+Explicit exit attempts to flush stdout and stderr within a shared one-second budget, including lock waits and writes (decision 151). Buffered output may be lost when the deadline expires. This is internal cleanup; user finally blocks still do not run.
 
 ### 83. Clean up temporary native libraries
 
@@ -2194,7 +2194,7 @@ An otherwise valid explicit exit(code) from any thread still terminates the enti
 
 A library must not be manually unloaded while another thread may still execute its code. For this termination path, native-library reclamation is left to the OS and files are removed after process termination. On ordinary completion of all threads, temporary files are also removed by the separate cleanup process after process termination (decision 152).
 
-This refines decision 83: explicit exit does not have to delete loaded DLL/SO files before the Goat process terminates. A removal failure does not change the already selected exit code. Startup timing and readiness acknowledgement are defined in decision 152; failure to start still needs clarification; this decision does not promise successful cleanup under every external failure.
+This refines decision 83: explicit exit does not have to delete loaded DLL/SO files before the Goat process terminates. A removal failure does not change the already selected exit code. Startup timing and readiness acknowledgement are defined in decision 152; startup failure and the shared one-second readiness deadline are defined in decisions 153–154; this decision does not promise successful cleanup under every external failure.
 
 ## Exit during native execution: decision 149
 
@@ -2230,7 +2230,7 @@ The cleanup process waits for actual Goat process termination and removes its te
 
 Concurrent first native calls must not create multiple cleanup processes for one run or bypass readiness acknowledgement. The cleanup process must not prevent Goat from terminating. Removal failure does not change Goat's exit code.
 
-This refines decisions 83, 147 and 148: the earlier distinction between internal file removal on ordinary completion and external removal on exit is withdrawn. Startup failure, readiness timeout and cleanup-process failure during execution require further clarification.
+This refines decisions 83, 147 and 148: the earlier distinction between internal file removal on ordinary completion and external removal on exit is withdrawn. Startup failure and the shared one-second readiness deadline are defined in decisions 153–154. Behavior when the cleanup process dies after acknowledging readiness remains an open question.
 
 ## Cleanup-process startup failure: decision 153
 
