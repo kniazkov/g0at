@@ -2404,3 +2404,11 @@ Minimal description:
 ```
 
 Checks: accept the minimal description; reject omission of each required field; apply the stated defaults to omitted and empty dependencies/native; allow either mode or target to be omitted independently; reject null in each listed field.
+
+## .gmod v1: the main path
+
+The `main` field accepts a relative or absolute path to the entry source file, including a file outside the project directory. Resolve a relative path against the directory of the real .gmod after resolving symbolic links; do not prepend that directory to an absolute path. Canonicalize the resulting source path using the common file identity rules.
+
+For example, `"main": "../shared/main.goat"` is valid. Relative paths are recommended for portable projects; accepting absolute paths does not make them portable across machines or operating systems. The build machine's absolute path is not stored in .gbin.
+
+Checks: relative main inside and outside the project; absolute main outside the project; identical resolution of relative main when opening .gmod directly or through a symbolic link; changing the working directory does not change the selected source.
