@@ -2316,3 +2316,27 @@ goat build /home/ivan/app.gmod --module-dir ./output
 writes /tmp/output/app/1.0.0.gbin. The entry source remains /work/project/src/main.goat. Dependency search order is /work/project/modules/, then /tmp/output/, then GOAT_MODULE_PATH directories. An explicit --module-dir does not override the priority of the actual project's local modules directory.
 
 This refines main and build-directory resolution without changing how relative --module-dir and GOAT_MODULE_PATH entries are resolved against the startup working directory.
+
+## Running a program through a symbolic link: decision 158
+
+158. When directly running a .gbin or .goat, canonicalize the launched file's path, resolving symbolic links. Derive __dir__ and the local modules search directory from the directory of the actual launched file, not the link.
+
+For example:
+
+```text
+/home/ivan/app.gbin -> /opt/myapp/app.gbin
+/opt/myapp/modules/
+/opt/myapp/config.json
+```
+
+The command:
+
+```sh
+goat /home/ivan/app.gbin
+```
+
+sets __dir__ to /opt/myapp and uses /opt/myapp/modules/ as the first dependency search directory. Locate config.json relative to __dir__. The link's location does not give /home/ivan/modules/ priority.
+
+The same rule applies to direct source execution: if /home/ivan/main.goat links to /opt/myapp/main.goat, __dir__ is /opt/myapp and the local module directory is /opt/myapp/modules/. Resolve relative includes using the actual path of each containing source file under decision 146.
+
+Fix the canonical launch path during startup preparation. A subsequent working-directory change or retargeting of the original symbolic link does not change __dir__ or the local search base. __dir__ remains shared by the entire run, including imported libraries. Explicit relative --module-dir and relative GOAT_MODULE_PATH entries remain relative to the startup working directory.
