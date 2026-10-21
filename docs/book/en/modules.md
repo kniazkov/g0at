@@ -2159,3 +2159,13 @@ This boundary refines decisions 78 and 133–140. It does not remove once-only f
 For example, the main file declares a function, passes it to a new thread, and performs join. The new thread can call that function before the main file's top-level code finishes; waiting for main-file readiness must not deadlock this program. If the function accesses a main-file declaration that has not yet been initialized, the exception occurs at that access.
 
 This exception to waiting in decisions 133 and 135 applies only to the directly executing main file. Other threads still wait for ordinary initialization of included/imported files to finish. Publish declaration readiness and its value with the required inter-thread synchronization; this rule does not make subsequent user updates to variables automatically atomic.
+
+## Required at execution time: decision 145
+
+145. When running a compiled .gbin with --native required, the main module must contain at least one native specialization in a variant compatible with the current platform. Native code in dependencies does not satisfy this requirement. Absence of such a variant or specialization is a preflight error before any user code executes.
+
+Dependencies may contain only bytecode or lack a compatible native variant; this alone does not prevent execution in required mode. Calls without an applicable specialization use the VM. If an applicable specialization in a compatible variant is selected for a call, but its library cannot be loaded or fails exported-symbol/ABI-descriptor validation, required fails. This rule applies to both the main module and dependencies.
+
+The preflight presence check uses validated metadata and does not extract the library or load it through the OS. Extraction and loading remain lazy, at the first applicable call. The program need not actually execute a native call: presence is checked before execution, applicability per call.
+
+The build-time required rule is unchanged: the module being built must obtain at least one native implementation of its own for the selected build target. Compatibility with the execution platform is checked separately.
