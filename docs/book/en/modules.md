@@ -2132,3 +2132,8 @@ These checks discover dependencies from all syntactic imports, including imports
 138. Thread join and other blocking thread-wait operations during initialization throw a runtime exception, including waits on previously created threads.
 139. Blocking file and network I/O remains permitted during initialization. The global initialization lock stays held; other module initializations must wait.
 140. When user mutexes are implemented, blocking acquisition during initialization must throw a runtime exception. Nonblocking tryLock remains permitted. Mutexes are not implemented yet; this is a future requirement.
+
+## Initialization completion: decisions 141–142
+
+141. Initialization has no special timeout. It may run indefinitely, including while performing blocking I/O; termination by external means is outside the language's initialization contract.
+142. After failed initialization, repeated include/import throws the exact same exception object with its original stack trace. Neither cloning nor rerunning initialization is permitted.
