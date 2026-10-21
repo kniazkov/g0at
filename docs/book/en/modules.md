@@ -1304,6 +1304,59 @@ shared/geometry/1.0.0.gbin — valid module
 
 If the loader cannot reliably establish that the local file is absent, stop with an access error. Continue only when the requested path is reliably absent. Directory-check failures do not become missing dependencies or switch execution to another copy.
 
+## Search paths and diagnostics: examples 51–55
+
+### 51. An explicit relative module-dir is working-directory-relative
+
+```sh
+# Working directory: /work
+goat build ./project/app.gmod --module-dir ./shared
+```
+
+Output is /work/shared/<name>/<version>.gbin. Without --module-dir, use /work/project/modules/<name>/<version>.gbin: the default is relative to the project description. An explicit argument is an ordinary command-line path. An absolute --module-dir is allowed and is not prefixed with the working directory.
+
+### 52. Relative environment paths are fixed at startup
+
+```text
+Working directory: /work
+GOAT_MODULE_PATH=./shared:./vendor
+```
+
+These resolve to /work/shared and /work/vendor. Resolve relative entries once against the startup working directory and retain absolute paths. Later working-directory changes do not alter search. Each GOAT_MODULE_PATH entry may also be absolute; absolute entries are not working-directory-relative. Apply the same one-time resolution to an explicit --module-dir.
+
+### 53. Ignore empty list entries
+
+```text
+Linux:   /opt/goat/modules::/home/user/modules:
+Windows: C:\goat\modules;;D:\modules;
+```
+
+Each example specifies two directories. An empty entry does not mean the current directory. Use an explicit dot (.) to include it, resolved according to example 52.
+
+### 54. An unset environment variable is not an error
+
+```sh
+goat app.gbin
+```
+
+If GOAT_MODULE_PATH is unset or contains only empty entries, search uses modules beside the main file and explicit --module-dir, if supplied. A program without external dependencies does not require search directories to exist. Report a missing dependency only when a required module cannot be found; errors checking existing paths follow strict rules 49–50.
+
+### 55. Distinguish missing dependencies from faulty candidates
+
+Example diagnostic when a dependency is absent everywhere:
+
+```text
+Module geometry@1.2.0 not found.
+Required by app@1.0.0.
+
+Checked:
+  /work/app/modules/geometry/1.2.0.gbin
+  /work/shared/geometry/1.2.0.gbin
+  /opt/goat/modules/geometry/1.2.0.gbin
+```
+
+Show the name, exact version, consumer, and all checked paths in search order. If search stops on denied access, corruption, or another candidate error, report that specific cause and stopping path rather than incorrectly reporting a missing module. Do not describe later directories as checked.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
