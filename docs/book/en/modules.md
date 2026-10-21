@@ -2151,3 +2151,11 @@ Actual initialization of a file through include or a module through import acqui
 On normal completion or exception propagation, restore the previous context. A nested initializer does not remove the outer initializer's restrictions; after leaving the outermost initializer, main code resumes ordinary execution. Repeated include/import of an already initialized file does not create a new initialization context.
 
 This boundary refines decisions 78 and 133–140. It does not remove once-only file execution, scope states, cyclic include rules, or declaration-readiness checks.
+
+## Access to the executing main file: decision 144
+
+144. For a directly executing main file, readiness is checked per declaration rather than by waiting for all top-level code to finish. Already declared functions and initialized variables are available to other threads subject to ordinary access checks. Calling such a function does not wait for the main file to finish. Reading or writing a declaration that is not ready throws a catchable exception rather than blocking.
+
+For example, the main file declares a function, passes it to a new thread, and performs join. The new thread can call that function before the main file's top-level code finishes; waiting for main-file readiness must not deadlock this program. If the function accesses a main-file declaration that has not yet been initialized, the exception occurs at that access.
+
+This exception to waiting in decisions 133 and 135 applies only to the directly executing main file. Other threads still wait for ordinary initialization of included/imported files to finish. Publish declaration readiness and its value with the required inter-thread synchronization; this rule does not make subsequent user updates to variables automatically atomic.
