@@ -3,7 +3,6 @@
  * @brief Module identifier validation and zero-copy import parsing.
  */
 #include <goat/module_identity.h>
-
 #include <string.h>
 
 static bool ascii_alnum(unsigned int ch) {
@@ -15,8 +14,8 @@ static bool reserved_device(const char *text, size_t length) {
     while (stem < length && text[stem] != '.')
         stem++;
     if (stem == 3) {
-        return !memcmp(text, "con", 3) || !memcmp(text, "prn", 3)
-               || !memcmp(text, "aux", 3) || !memcmp(text, "nul", 3);
+        return !memcmp(text, "con", 3) || !memcmp(text, "prn", 3) || !memcmp(text, "aux", 3)
+               || !memcmp(text, "nul", 3);
     }
     if (stem == 4) {
         bool port = !memcmp(text, "com", 3) || !memcmp(text, "lpt", 3);
@@ -69,13 +68,12 @@ bool goat_module_parse_import(const char *text, size_t length, goat_module_impor
 static bool wide_identifier_valid(const wchar_t *text, size_t length, size_t maximum) {
     if (!text || length == 0 || length > maximum || text[length - 1] == L'.')
         return false;
-    if (!((text[0] >= L'a' && text[0] <= L'z')
-          || (text[0] >= L'0' && text[0] <= L'9')))
+    if (!((text[0] >= L'a' && text[0] <= L'z') || (text[0] >= L'0' && text[0] <= L'9')))
         return false;
     for (size_t i = 0; i < length; i++) {
         wchar_t ch = text[i];
-        if (!((ch >= L'a' && ch <= L'z') || (ch >= L'0' && ch <= L'9')
-              || ch == L'.' || ch == L'-' || ch == L'_'))
+        if (!((ch >= L'a' && ch <= L'z') || (ch >= L'0' && ch <= L'9') || ch == L'.' || ch == L'-'
+              || ch == L'_'))
             return false;
     }
     /* The reserved device names are ASCII and never exceed four characters. */
@@ -89,8 +87,9 @@ static bool wide_identifier_valid(const wchar_t *text, size_t length, size_t max
             || (text[0] == L'n' && text[1] == L'u' && text[2] == L'l'))
             return false;
     }
-    if (stem == 4 && ((text[0] == L'c' && text[1] == L'o' && text[2] == L'm')
-                      || (text[0] == L'l' && text[1] == L'p' && text[2] == L't'))
+    if (stem == 4
+        && ((text[0] == L'c' && text[1] == L'o' && text[2] == L'm')
+            || (text[0] == L'l' && text[1] == L'p' && text[2] == L't'))
         && text[3] >= L'0' && text[3] <= L'9')
         return false;
     return true;
@@ -114,8 +113,7 @@ bool goat_module_parse_import_wide(const wchar_t *text,
     result->name = (goat_module_wide_slice_t){text, split};
     if (split < length) {
         result->has_version = true;
-        result->version =
-            (goat_module_wide_slice_t){text + split + 1, length - split - 1};
+        result->version = (goat_module_wide_slice_t){text + split + 1, length - split - 1};
     }
     return true;
 }
