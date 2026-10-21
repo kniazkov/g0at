@@ -1667,7 +1667,7 @@ try {
 
 Terminate at the call with code 7; Cleanup is not printed. Catch cannot intercept normal termination, and user finally blocks do not execute. This is not ordinary exception unwinding.
 
-In initialization context, the same exit raises an ordinary exception and standard catch/finally rules apply. Interpreter-internal resource cleanup during immediate termination remains to be specified; it must not execute user finally blocks.
+In initialization context, the same exit raises an ordinary exception and standard catch/finally rules apply. Internal normal-exit cleanup is specified in decisions 82–84 below and does not run user finally blocks.
 
 ### 80. Validate the argument before terminating
 
@@ -1680,7 +1680,64 @@ exit(7.5); // Wrong type.
 exit();    // Missing argument.
 ```
 
-Exit accepts exactly one integer argument within a defined range, without implicit conversion. Check arity, type, and range at the call. An invalid argument raises an ordinary catchable exception, not immediate process termination. This does not mean an uncaught exception is silently ignored. Exact code bounds remain undecided.
+Exit accepts exactly one integer argument within a defined range, without implicit conversion. Check arity, type, and range at the call. An invalid argument raises an ordinary catchable exception, not immediate process termination. This does not mean an uncaught exception is silently ignored. Decision 81 below fixes the inclusive range 0–255.
+
+## Exit codes and shutdown: decisions 81–85
+
+### 81. One range, 0–255, without built-in constants
+
+Exit takes exactly one integer from 0 through 255 inclusive on every platform. Negative values and values above 255 raise an ordinary catchable exception; do not truncate or reduce modulo 256.
+
+```goat
+try {
+    exit(256);
+} catch (e) {
+    println("The program continues");
+}
+```
+
+Do not introduce built-in exit-code constants. Programmers may declare their own. This range does not remove the restriction on exit during included-file initialization.
+
+### 82. Flush standard output buffers
+
+```goat
+print("Done");
+exit(0);
+```
+
+Normal exit flushes standard output buffers before terminating so earlier printing reaches the output even without a newline. This is internal cleanup; user finally blocks still do not run.
+
+### 83. Clean up temporary native libraries
+
+```goat
+// The program has already used native functions.
+exit(7);
+```
+
+The interpreter releases loaded libraries and removes its temporary directory. Cleanup failure produces a warning without changing exit code 7. This refines internal shutdown from decision 79 without permitting user finally execution.
+
+### 84. Output-flush errors do not replace the chosen status
+
+```goat
+print("Result");
+exit(7);
+```
+
+If flushing fails, report it through stderr when possible and retain code 7. An internal shutdown failure does not replace the programmer's explicitly chosen status, just as temporary-file cleanup failure does not.
+
+### 85. Normal exit from a library terminates the whole process
+
+```goat
+// Library entry file
+external stop = func() { exit(7); };
+
+// main.goat, direct execution
+const lib = import "library@1.0.0";
+lib.stop();
+println("Continuation"); // Not executed.
+```
+
+Library has already initialized successfully. Stop terminates the entire interpreter with code 7, not just the library. Active execution context determines behavior: if an active included-file initializer calls the same function, exit raises an exception instead.
 
 ## Further refinement
 
