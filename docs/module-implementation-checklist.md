@@ -220,6 +220,8 @@
 
 - [ ] 153: отказ запуска/готовности уборщика запрещает извлечение; auto предупреждает один раз и использует VM до конца запуска, required завершается с ошибкой: [#210](https://github.com/kniazkov/g0at/issues/210), [#230](https://github.com/kniazkov/g0at/issues/230)
 
+- [ ] 154: общий предельный срок 1 с на запуск и готовность уборщика; позднее подтверждение не отменяет отказ: [#210](https://github.com/kniazkov/g0at/issues/210), [#230](https://github.com/kniazkov/g0at/issues/230)
+
 ## Общая приёмка
 
 - [ ] Многофайловые AC-01–AC-28: [#218](https://github.com/kniazkov/g0at/issues/218)
