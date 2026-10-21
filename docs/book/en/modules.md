@@ -1553,6 +1553,70 @@ The following fragment contains schema errors:
 
 Present fields must match the schema: description, license, and homepage are strings; authors is an array of objects; name/email values are strings. Do not coerce numbers into strings or interpret null as absence. This applies to .gmod and .gbin metadata.
 
+## Module information strings: decisions 71–75
+
+### 71. Informational strings support Unicode
+
+```json
+{
+  "description": "Геометрические вычисления",
+  "authors": [{ "name": "Иван Князьков" }]
+}
+```
+
+Read and write JSON as UTF-8. Lowercase ASCII restrictions apply to technical module names and versions, not author names or descriptions.
+
+### 72. Do not perform network validation
+
+```json
+{
+  "authors": [{ "name": "Иван", "email": "ivan@example.com" }],
+  "homepage": "https://example.com/project"
+}
+```
+
+Building and inspection work offline. Tools neither send email nor open the website or certify the author's claims.
+
+### 73. Preserve string contents exactly
+
+```json
+{
+  "authors": [{ "name": "Иван Князьков" }],
+  "description": "First line\nSecond line"
+}
+```
+
+Do not trim whitespace or change case. Preserve newlines as part of the value. "Ivan" and " Ivan " differ, including for module merging. JSON canonicalization changes representation, not string contents.
+
+### 74. Each author record requires a nonempty name
+
+```json
+{
+  "authors": [
+    { "name": "Ivan" },
+    { "name": "Project team", "email": "team@example.com" }
+  ]
+}
+```
+
+An author may be a person or organization. Email is optional; name is required and cannot be an empty string. Records {}, {"email":"ivan@example.com"}, and {"name":""} are invalid. This does not introduce automatic whitespace trimming contrary to decision 73.
+
+### 75. License is an informational string
+
+```json
+{ "license": "MIT" }
+```
+
+```json
+{ "license": "Proprietary" }
+```
+
+```json
+{ "license": "Use under a separate agreement" }
+```
+
+All examples are valid. No license-catalog match is required. Inspection displays the author's text; the compiler does not interpret license terms or alter program behavior based on them.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
