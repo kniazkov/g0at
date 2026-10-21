@@ -226,6 +226,8 @@
 
 - [ ] 156: идентичность исходника по каноническому пути; разные пути жёстких ссылок дают разные области и базы include: [#186](https://github.com/kniazkov/g0at/issues/186), [#194](https://github.com/kniazkov/g0at/issues/194)
 
+- [ ] 157: main и локальный/выходной modules привязаны к настоящему .gmod; явный относительный --module-dir — к рабочему каталогу: [#186](https://github.com/kniazkov/g0at/issues/186), [#188](https://github.com/kniazkov/g0at/issues/188), [#191](https://github.com/kniazkov/g0at/issues/191)
+
 ## Общая приёмка
 
 - [ ] Многофайловые AC-01–AC-28: [#218](https://github.com/kniazkov/g0at/issues/218)
