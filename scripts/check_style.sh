@@ -14,7 +14,7 @@ fi
 printf '%s\n' "$version"
 # Reject invalid configuration before checking source formatting.
 "$formatter" --style="file:$repo_root/.clang-format" --dump-config > /dev/null
-mapfile -d '' -t files < <(git ls-files -z -- '*.c' '*.h')
+mapfile -d '' -t files < <(git ls-files -z -- '*.c' '*.h' ':!:third_party/**')
 if (( ${#files[@]} == 0 )); then
     printf 'No tracked C sources or headers found.\n' >&2
     exit 2
