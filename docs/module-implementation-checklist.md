@@ -216,6 +216,8 @@
 
 - [ ] 151: общий бюджет 1 с на сброс stdout/stderr при exit, включая блокировки; код завершения сохраняется: [#230](https://github.com/kniazkov/g0at/issues/230)
 
+- [ ] 152: один уборщик с подтверждением готовности до первого извлечения; удаление после любого завершения Goat и собственное завершение уборщика: [#210](https://github.com/kniazkov/g0at/issues/210), [#230](https://github.com/kniazkov/g0at/issues/230), инфраструктура [#213](https://github.com/kniazkov/g0at/issues/213)
+
 ## Общая приёмка
 
 - [ ] Многофайловые AC-01–AC-28: [#218](https://github.com/kniazkov/g0at/issues/218)
