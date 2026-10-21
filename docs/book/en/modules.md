@@ -2187,3 +2187,11 @@ During ordinary execution, the VM keeps running while at least one program threa
 Ordinary final cleanup of modules, native libraries and temporary files occurs after all program threads have finished. This is a VM-wide termination condition, not an implicit join performed by a special main thread.
 
 An otherwise valid explicit exit(code) from any thread still terminates the entire process without waiting for other threads to finish naturally and without executing user finally blocks. The restrictions on exit in a dynamic initialization context remain in force. Decision 147 does not change the rules for fatal VM errors.
+
+## Removing native temporary files after exit: decision 148
+
+148. A separate cleanup process removes the temporary directory after explicit exit. It waits for the Goat process to actually terminate, then removes its temporary directory, including extracted DLL/SO files. Cleanup does not require waiting for program threads inside Goat to finish naturally.
+
+A library must not be manually unloaded while another thread may still execute its code. For this termination path, native-library reclamation is left to the OS and files are removed after process termination. Ordinary completion of all threads retains full internal cleanup.
+
+This refines decision 83: explicit exit does not have to delete loaded DLL/SO files before the Goat process terminates. A removal failure does not change the already selected exit code. The cleanup-process startup protocol, readiness acknowledgement and behavior when it cannot be started need separate clarification; this decision does not promise successful cleanup under every external failure.
