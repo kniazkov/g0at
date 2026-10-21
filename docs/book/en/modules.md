@@ -1718,7 +1718,7 @@ Normal exit flushes standard output buffers before terminating so earlier printi
 exit(7);
 ```
 
-The interpreter releases loaded libraries and removes its temporary directory. Cleanup failure produces a warning without changing exit code 7. This refines internal shutdown from decision 79 without permitting user finally execution.
+A cleanup process started in advance removes the temporary directory containing extracted libraries after process termination (decisions 148 and 152). A library must not be unloaded beneath an executing thread. Cleanup failure does not change exit code 7. This refines internal shutdown from decision 79 without permitting user finally execution.
 
 ### 84. Output-flush errors do not replace the chosen status
 
@@ -2184,7 +2184,7 @@ This rule applies to .gmod builds and direct .goat execution. In a compiled .gbi
 
 During ordinary execution, the VM keeps running while at least one program thread has not finished. Completion of the entry file's top-level code finishes that execution but does not stop other threads. Remaining threads can continue using ready entry-file declarations, modules and native libraries. Their shared state is not reclaimed merely because the thread that started the program has finished.
 
-Ordinary final cleanup of modules, native libraries and temporary files occurs after all program threads have finished. This is a VM-wide termination condition, not an implicit join performed by a special main thread.
+Ordinary VM shutdown begins after all program threads have finished; a separate cleanup process then removes temporary files after process termination under decision 152. This is a VM-wide termination condition, not an implicit join performed by a special main thread.
 
 An otherwise valid explicit exit(code) from any thread still terminates the entire process without waiting for other threads to finish naturally and without executing user finally blocks. The restrictions on exit in a dynamic initialization context remain in force. Decision 147 does not change the rules for fatal VM errors.
 
@@ -2192,9 +2192,9 @@ An otherwise valid explicit exit(code) from any thread still terminates the enti
 
 148. A separate cleanup process removes the temporary directory after explicit exit. It waits for the Goat process to actually terminate, then removes its temporary directory, including extracted DLL/SO files. Cleanup does not require waiting for program threads inside Goat to finish naturally.
 
-A library must not be manually unloaded while another thread may still execute its code. For this termination path, native-library reclamation is left to the OS and files are removed after process termination. Ordinary completion of all threads retains full internal cleanup.
+A library must not be manually unloaded while another thread may still execute its code. For this termination path, native-library reclamation is left to the OS and files are removed after process termination. On ordinary completion of all threads, temporary files are also removed by the separate cleanup process after process termination (decision 152).
 
-This refines decision 83: explicit exit does not have to delete loaded DLL/SO files before the Goat process terminates. A removal failure does not change the already selected exit code. The cleanup-process startup protocol, readiness acknowledgement and behavior when it cannot be started need separate clarification; this decision does not promise successful cleanup under every external failure.
+This refines decision 83: explicit exit does not have to delete loaded DLL/SO files before the Goat process terminates. A removal failure does not change the already selected exit code. Startup timing and readiness acknowledgement are defined in decision 152; failure to start still needs clarification; this decision does not promise successful cleanup under every external failure.
 
 ## Exit during native execution: decision 149
 
@@ -2204,7 +2204,7 @@ The shared mechanism checks arity, integer type and the 0–255 range, as well a
 
 A valid exit terminates the entire process without waiting for active native functions to return, including an infinite loop or a blocking call in another thread. Native functions need not all cooperate by checking a termination flag. User finally blocks are not executed; an in-progress native operation may be interrupted, and its side effects are neither rolled back nor repeated on the VM.
 
-Libraries are not manually unloaded beneath executing code. After actual process termination, the separate cleanup process removes temporary files under decision 148. This rule does not remove the agreed handling of standard output; the interaction of flushing with the requirement that exit not hang needs separate clarification.
+Libraries are not manually unloaded beneath executing code. After actual process termination, the separate cleanup process removes temporary files under decision 148. This rule does not remove the agreed handling of standard output; the flushing budget is defined in decision 151.
 
 ## Concurrent exit calls: decision 150
 
@@ -2221,3 +2221,13 @@ Publish the termination state and selected code consistently. Losing calls do no
 If flushing completes sooner, do not wait for the remainder of the second. When the budget expires, terminate the process with the already selected code even if flushing is incomplete; some buffered output may be lost. Emit a warning only if that is possible without additional waiting. An output error or timeout does not replace the exit code.
 
 The bound must remain effective when the flushing thread itself blocks: checking elapsed time only after a blocking write returns is insufficient. This policy refines decisions 82, 84 and 149 and applies to explicit exit; it does not introduce an initialization timeout.
+
+## Cleanup process startup and unified cleanup: decision 152
+
+152. Start one cleanup process for the Goat run's temporary directory before extracting the first native library. Goat must receive acknowledgement that the cleanup process is ready before creating extracted files. Extraction and loading must not proceed before acknowledgement. If extraction is never needed, do not start the cleanup process.
+
+The cleanup process waits for actual Goat process termination and removes its temporary directory regardless of the termination path: explicit exit and ordinary completion of all threads use the same mechanism. It does not need an additional request from exit to begin cleanup. After removal or completion of error handling, the cleanup process itself terminates.
+
+Concurrent first native calls must not create multiple cleanup processes for one run or bypass readiness acknowledgement. The cleanup process must not prevent Goat from terminating. Removal failure does not change Goat's exit code.
+
+This refines decisions 83, 147 and 148: the earlier distinction between internal file removal on ordinary completion and external removal on exit is withdrawn. Startup failure, readiness timeout and cleanup-process failure during execution require further clarification.
