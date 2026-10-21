@@ -2259,3 +2259,11 @@ In auto mode, report the error once and mark this library unavailable for the re
 Corrupt content or a hash mismatch is not eligible for this VM fallback: it is an unconditional integrity error in both modes. Extraction failure does not change the selected physical module copy or trigger a search in subsequent directories.
 
 Partial files remain covered by temporary-directory cleanup and are not considered successfully published libraries. Concurrent first calls must observe a shared result of the extraction attempt for this library.
+
+## Source identity and hard links: decision 156
+
+156. Within a module, source-file identity is determined by the canonical path after resolving symbolic links, not by the physical file identifier. Paths resolving to the same canonical path refer to one scope, one bytecode copy and one initialization.
+
+Different canonical paths that are hard links are treated as different source files even when their physical identifier and contents match. Do not merge them by inode, file ID or content hash. Each path has its own scope, state and relative-include base.
+
+For example, a/math.goat and b/math.goat are hard links to one file containing include "./helper.goat". The first source includes a/helper.goat; the second includes b/helper.goat. Both sources may belong to the same module as distinct units. Membership in different modules still creates separate entities regardless of an identical canonical path.
