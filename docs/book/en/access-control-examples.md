@@ -1,5 +1,7 @@
 # Access Modifiers: Examples and Edge Cases
 
+> October 20, 2026 update: the [module contract](modules.md) changes access boundaries: unmodified declarations belong to their source file, `public` to their module, and `external` allows other modules. The text below preserves the A–G model before this change; its cross-module examples and plan require adaptation. The new rules take precedence; the loader and `external` are not implemented here yet.
+
 [Contents](index.md) · [Русский](../ru/access-control-examples.md) · [Rules](appendix-i-access-control.md) · [Plan](access-control-implementation-plan.md)
 
 These examples describe the agreed design. Stages A–G implement declarations, VM access checks, and clone/flat method and capture adaptation; observation filtering is implemented in F; G diagnoses proven denial while the VM checks unknown cases; module loading remains #154. Each example is independent; results are described in prose, and `print` calls do not imply automatic newlines. Negative cases are checked separately, both statically and with dynamically unknown receivers. All examples use the standard built-in `clone` and `flat`, not user overrides.

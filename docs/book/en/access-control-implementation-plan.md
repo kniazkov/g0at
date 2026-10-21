@@ -1,5 +1,7 @@
 # Implementation Plan for Access Modifiers and Copying
 
+> October 20, 2026 update: the [module contract](modules.md) changes access boundaries: unmodified declarations belong to their source file, `public` to their module, and `external` allows other modules. The text below preserves the A–G model before this change; its cross-module examples and plan require adaptation. The new rules take precedence; the loader and `external` are not implemented here yet.
+
 [Contents](index.md) · [Русский](../ru/access-control-implementation-plan.md) · [Rules](appendix-i-access-control.md) · [Examples](access-control-examples.md)
 
 This is the technical plan and implementation history for the agreed semantics. Stages A–G are implemented; H awaits module loader #154. Intermediate limitations describe their respective stages; current analysis limits are listed in G. AC-01–AC-28 refer to the example catalog. The stages are intended as sequential, reviewable PRs; stages may be combined, but partially enforced protection must not be released.
