@@ -1,4 +1,5 @@
 #include "module_json.h"
+#include <goat/module_identity.h>
 
 #include <stdint.h>
 #include <string.h>
@@ -126,6 +127,31 @@ goat_module_json_error goat_module_json_read(const char *data,
             err = GOAT_MODULE_JSON_INVALID_FIELD;
         else if (!integer_one(version))
             err = GOAT_MODULE_JSON_UNSUPPORTED_VERSION;
+    }
+    if (err == GOAT_MODULE_JSON_OK) {
+        yyjson_val *name = yyjson_obj_get(root, "name");
+        yyjson_val *module_version = yyjson_obj_get(root, "version");
+        yyjson_val *deps = yyjson_obj_get(root, "dependencies");
+        if ((name && (!yyjson_is_str(name)
+                      || !goat_module_name_valid(yyjson_get_str(name), yyjson_get_len(name))))
+            || (module_version
+                && (!yyjson_is_str(module_version)
+                    || !goat_module_version_valid(yyjson_get_str(module_version),
+                                                  yyjson_get_len(module_version)))))
+            err = GOAT_MODULE_JSON_INVALID_FIELD;
+        if (err == GOAT_MODULE_JSON_OK && yyjson_is_obj(deps)) {
+            yyjson_obj_iter it = yyjson_obj_iter_with(deps);
+            yyjson_val *key;
+            while ((key = yyjson_obj_iter_next(&it))) {
+                yyjson_val *value = yyjson_obj_iter_get_val(key);
+                if (!goat_module_name_valid(yyjson_get_str(key), yyjson_get_len(key))
+                    || !yyjson_is_str(value)
+                    || !goat_module_version_valid(yyjson_get_str(value), yyjson_get_len(value))) {
+                    err = GOAT_MODULE_JSON_INVALID_FIELD;
+                    break;
+                }
+            }
+        }
     }
     if (err == GOAT_MODULE_JSON_OK && kind == GOAT_MODULE_GMOD) {
         yyjson_val *name = yyjson_obj_get(root, "name");
