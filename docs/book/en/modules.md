@@ -1617,6 +1617,71 @@ An author may be a person or organization. Email is optional; name is required a
 
 All examples are valid. No license-catalog match is required. Inspection displays the author's text; the compiler does not interpret license terms or alter program behavior based on them.
 
+## Top-level return and exit: decisions 76–80
+
+### 76. Return outside a function raises an exception
+
+```goat
+// settings.goat
+public value = 10;
+return;
+public extra = 20;
+```
+
+Top-level return has no function to return from: it raises an exception rather than successfully finishing the file. The proposal for a separate syntactic prohibition was not adopted. An exception escaping initialization makes it unsuccessful under the agreed rules.
+
+Introduce built-in exit(code). During normal execution it immediately terminates the entire interpreter and passes the exit code to the OS. During included-file/module initialization, exit raises an exception instead of terminating the process.
+
+### 77. Initialization context extends through function calls
+
+```goat
+// library.goat
+public stop = func() { exit(7); };
+stop(); // Exception while initializing an included file.
+```
+
+The rule follows active execution, not whether exit is syntactically inside a function. A function called by an initializer cannot bypass the termination restriction. Calling the same function during normal execution after successful initialization terminates the process with code 7.
+
+### 78. Direct execution of the main file is normal program execution
+
+```goat
+// main.goat, direct source or .gbin entry-file execution
+if (__main__) {
+    println("Exiting");
+    exit(7);
+}
+```
+
+For exit, top-level execution of a directly launched main file is normal execution, not imported-module initialization. The example therefore exits with code 7. When main connects another file through include/import, its initializer and functions called by it execute in initialization context: exit there raises an exception. This refines earlier references to top-level initialization without changing __main__.
+
+### 79. Normal exit does not run user cleanup
+
+```goat
+// Main file, direct execution
+try {
+    exit(7);
+} finally {
+    println("Cleanup");
+}
+```
+
+Terminate at the call with code 7; Cleanup is not printed. Catch cannot intercept normal termination, and user finally blocks do not execute. This is not ordinary exception unwinding.
+
+In initialization context, the same exit raises an ordinary exception and standard catch/finally rules apply. Interpreter-internal resource cleanup during immediate termination remains to be specified; it must not execute user finally blocks.
+
+### 80. Validate the argument before terminating
+
+```goat
+exit(0);   // Valid code.
+exit(7);   // Valid code.
+// The following calls are independent error examples:
+exit("7"); // Wrong type.
+exit(7.5); // Wrong type.
+exit();    // Missing argument.
+```
+
+Exit accepts exactly one integer argument within a defined range, without implicit conversion. Check arity, type, and range at the call. An invalid argument raises an ordinary catchable exception, not immediate process termination. This does not mean an uncaught exception is silently ignored. Exact code bounds remain undecided.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
