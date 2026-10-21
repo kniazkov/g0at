@@ -2047,6 +2047,38 @@ This example is syntactically readable as JSON but violates the contract: both k
 
 These objects have the same canonical representation and hash. Sort object keys lexicographically by their decoded UTF-8 bytes, independently of language and OS locale settings. Preserve array element order: ["a", "b"] and ["b", "a"] remain distinct.
 
+## Canonical bytes and bytecode validation: decisions 116–120
+
+### 116. A single canonical string encoding
+
+Canonical JSON writes ordinary characters directly as UTF-8. Escape quotation marks and backslashes as \" and \\, and control characters U+0000–U+001F as \u00xx with lowercase hexadecimal digits. Do not escape /. For example, "a" and "\u0061" become the same canonical "a", while a newline becomes \u000a regardless of its original escape spelling.
+
+The third-party library provides ordinary JSON parsing and escape decoding. Use its serializer for canonicalization only if it matches the contract exactly; otherwise add a small canonical serializer over its data model, not a custom JSON parser. Choosing \u000a rather than \n has no intrinsic advantage: uniqueness and stability, including across library upgrades, are what matter. Source .gmod files may use ordinary JSON escapes and readable formatting.
+
+### 117. JSON formatting is separate from canonicalization
+
+The module.json inside .gbin may be indented. The loader parses JSON, selects the fields participating in the main hash, and canonicalizes them. Whitespace, line breaks, and original key order do not affect that hash. The compiler itself uses stable formatting for byte-for-byte reproducible packaging, but the loader does not demand the same formatting from other tools.
+
+### 118. Main-hash components have unambiguous boundaries
+
+```text
+fixed hash-format marker
+canonical metadata length
+canonical metadata
+bytecode length
+bytecode
+```
+
+Compute SHA-256 over this sequence. Lengths are byte counts encoded as unsigned 64-bit little-endian integers on every platform. The marker separates this hashing format from other SHA-256 uses; its exact bytes must be fixed in the format specification. The significant metadata fields remain unchanged: exclude the hash itself, native variants, and informational fields.
+
+### 119. A native hash covers the entire library file
+
+Compute a native library's SHA-256 directly over every byte of its DLL/SO, without omitting service sections or transforming contents. Changing only an internal DLL timestamp already changes this hash. The module's main hash remains unchanged if bytecode and common significant metadata remain unchanged. This check treats the library as an opaque file; native build settings ensure reproducibility, not hashing exceptions.
+
+### 120. Matching hashes do not replace bytecode validation
+
+Validate bytecode structure and references before executing any user code. For example, a matching SHA-256 does not make an out-of-function jump or nonexistent constant index valid: reject such a module even if the damaged function is unreachable. Validation covers the format, permitted instructions, and their operands; it does not promise to detect all program errors in advance.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
