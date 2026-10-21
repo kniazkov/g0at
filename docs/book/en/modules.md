@@ -2426,3 +2426,11 @@ After JSON decoding, `/` is supported as a directory separator on every supporte
 The JSON example `"main": "src/main.goat"` uses a portable separator. In `"main": "src\\main.goat"`, JSON escaping produces one backslash: on Windows this selects main.goat inside src; on Linux it denotes a filename containing a backslash.
 
 Checks: the `/` form resolves on Windows and Linux; the escaped backslash form selects the nested file on Windows and the literal backslash filename on Linux, without substitution of a path containing `/`.
+
+### Incomplete Windows paths in main
+
+On Windows, reject paths relative to a drive's current directory (for example, `C:main.goat`) and paths rooted on the current drive without specifying that drive (for example, `\src\main.goat` or `/src/main.goat`). Do not resolve these paths using process state or prepend the .gmod directory.
+
+An ordinary relative path such as `src/main.goat` and a fully qualified absolute path such as `C:/src/main.goat` remain valid. These examples show values after JSON decoding; backslashes must be escaped inside JSON. This restriction concerns Windows path interpretation: on Linux, `/src/main.goat` remains a fully qualified absolute path.
+
+Windows checks: reject `C:main.goat`, `C:`, `\src\main.goat` and `/src/main.goat` regardless of the current drive and its working directory; retain support for ordinary relative paths and fully qualified drive paths. On Linux, verify that an absolute path starting with `/` is not rejected by the Windows-specific rule.
