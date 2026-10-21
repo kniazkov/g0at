@@ -2376,3 +2376,31 @@ Stop only processes belonging to the particular temporary build of that Goat ins
 Temporary-file removal is no longer guaranteed after this failure. Stopping a remaining compiler and its descendants before removal likewise requires a functioning cleanup process. Do not remove the directory or unload DLL/SO libraries beneath running code to compensate for the failure.
 
 This differs from failure before readiness acknowledgement, which remains governed by decisions 153–154. Previously acknowledged readiness must not be retroactively treated as a startup failure, and the cleanup startup failure policy must not be applied to the program.
+
+## .gmod v1: required fields and defaults
+
+Only `formatVersion`, `name`, `version` and `main` are required. In v1, `formatVersion` is the integer 1; the other three fields are strings subject to their respective validation rules.
+
+| Field | Type | When omitted |
+| --- | --- | --- |
+| dependencies | object mapping module names to version strings | Empty object: no default versions |
+| native | object | mode = "auto", target = "host" |
+| native.mode | string: off, auto or required | "auto" |
+| native.target | string | "host" |
+
+`native.mode` and `native.target` may be omitted independently. An empty `native: {}` is valid and applies both defaults. An empty `dependencies: {}` is valid. This table covers optional settings, not the complete field list: the agreed informational fields are also optional.
+
+Explicit `null` in place of any listed object or value is invalid and does not request a default. Omitting any required field is an error.
+
+Minimal description:
+
+```json
+{
+  "formatVersion": 1,
+  "name": "geometry",
+  "version": "1.2.0",
+  "main": "src/main.goat"
+}
+```
+
+Checks: accept the minimal description; reject omission of each required field; apply the stated defaults to omitted and empty dependencies/native; allow either mode or target to be omitted independently; reject null in each listed field.
