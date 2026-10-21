@@ -471,6 +471,92 @@ println(lib.read()); // 10.
 
 External exposes the function reference. The function retains internal.goat rights and captures; the hidden object is not directly exposed.
 
+## Value access and function replacement: examples 6–10
+
+Examples are independent. External exposes a specific declaration, not recursively the entire value.
+
+### 6. Exporting an object does not automatically export its fields
+
+```goat
+// Library entry file
+external obj = {
+    public var internal = 10;
+    external var shared = 20;
+};
+
+// Another program
+const lib = import "library@1.0.0";
+println(lib.obj.shared);   // 20.
+// println(lib.obj.internal); // Access error.
+```
+
+The obj reference is externally accessible; internal remains accessible only to library module code. Check every field access.
+
+### 7. Returning an object does not transfer function rights
+
+```goat
+// Library entry file
+const obj = {
+    var hidden = 10;
+    external var shared = 20;
+};
+external getObject = func() { return obj; };
+
+// Another program
+const lib = import "library@1.0.0";
+const obj = lib.getObject();
+println(obj.shared); // 20.
+// println(obj.hidden); // Access error.
+```
+
+GetObject can read hidden, but the recipient does not acquire that right. The library may deliberately expose the value through a getter.
+
+### 8. A constant reference does not make an array immutable
+
+```goat
+// Library entry file
+external items = [1, 2];
+
+// Another program
+const lib = import "library@1.0.0";
+lib.items.push(3);  // Allowed: [1, 2, 3].
+// lib.items = [4, 5]; // Error: items is a constant.
+```
+
+Field restrictions do not prohibit operations on an obtained mutable value. A library returns a copy through a function when independent data is needed; this does not imply automatic deep copying.
+
+Include a separate task in the forthcoming GitHub task list for a function creating immutable wrapper objects, such as an array wrapper. Exact semantics, protection depth, and behavior when another reference modifies the underlying object remain undecided. Wrappers are not an already implemented part of modules.
+
+### 9. Assignment preserves field provenance
+
+```goat
+// a.goat
+public obj = { public var value = 1; };
+
+// b.goat in the same module
+const a = include "./a.goat";
+a.obj.value = 2;
+```
+
+Only the value changes. Field value retains its a.goat provenance and public modifier; it does not become b.goat-local.
+
+### 10. Field rights and replacement function rights are independent
+
+```goat
+// a.goat
+public obj = {
+    var hidden = 10;
+    public var read = func() { return hidden; };
+};
+
+// b.goat in the same module
+const a = include "./a.goat";
+a.obj.read = func() { return a.obj.hidden; };
+a.obj.read(); // Access error for hidden.
+```
+
+Read remains a public field of a.goat. The replacement function belongs to b.goat and does not inherit the replaced function's rights. Even a later call from a.goat does not give the replacement a.goat file rights.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
