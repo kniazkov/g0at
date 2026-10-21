@@ -1425,6 +1425,65 @@ App uses math@3.0.0; geometry continues using math@2.0.0 recorded by its own bui
 
 Each module fixes names, exact versions, and expected main hashes of its own dependencies. This independence provides deterministic dependency resolution at startup: library code receives the dependency it was built against. It does not promise deterministic user-code behavior with arbitrary external inputs.
 
+## Runtime snapshots and standalone utilities: examples 61–65
+
+### 61. Keep module contents in RAM
+
+During startup preparation, load all contents of selected .gbin files into RAM, validate them, and retain them until process termination. Do not reread the original archives afterwards.
+
+```text
+1. The program validates geometry@1.2.0.
+2. A developer rebuilds and replaces its .gbin on disk.
+3. The program first calls a native geometry function.
+```
+
+At step 3, extract the library from validated in-memory data. On-disk replacement does not mix old bytecode with new native code and becomes visible only on the next run. Lazy OS loading of DLL/SO remains; it does not mean lazy reading of the original archive.
+
+### 62. Memory exhaustion terminates the process
+
+```text
+App has been loaded.
+There is insufficient memory for geometry@1.2.0.
+Terminate before executing user code.
+```
+
+Apply Goat's general memory-exhaustion rule. Do not partially load the module, select another copy, or attempt to continue execution.
+
+### 63. Inspect does not require the module's external dependencies
+
+```text
+Geometry@1.2.0 depends on math@2.0.0.
+Only geometry.gbin is present on the computer.
+```
+
+```sh
+goat-inspect geometry.gbin
+```
+
+Inspect validates the archive itself, its hashes, and the suitable native library under the agreed rules. Show the math dependency as metadata; its missing file is not an inspection error. Successful inspection of one file does not establish availability of the full graph. Full graph validation remains mandatory when executing a program.
+
+### 64. Merge does not require external dependency files
+
+```text
+windows.gbin → math@2.0.0, dependency main hash H
+linux.gbin   → math@2.0.0, dependency main hash H
+```
+
+```sh
+goat-merge windows.gbin linux.gbin --output geometry.gbin
+```
+
+If the input modules' own main hashes match and their archives are valid, missing math does not prevent merging. Preserve dependency name, version, and expected main hash. Check dependency availability when building a consumer or executing, not when packaging native variants.
+
+### 65. Merge never OS-loads native libraries
+
+```sh
+# Running on Linux.
+goat-merge windows.gbin linux.gbin --output geometry.gbin
+```
+
+Merge validates archive structure, metadata, hashes, and merge rules. It does not load DLL/SO files, even for the current platform, or run their initialization code. Trial loading belongs to goat-inspect. Merging can run on a computer supporting none of the input libraries' target platforms.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
