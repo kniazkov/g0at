@@ -2002,6 +2002,51 @@ Validate declared entry sizes before decompression and actual sizes while decomp
 
 Validate CRC32 for every ZIP file entry; a mismatch invalidates the entire module. For example, if native/variant-2.so matches the metadata SHA-256 but has an incorrect CRC32, reject the archive even on Windows where this variant is not needed. CRC32 checks ZIP integrity; SHA-256 checks correspondence between contents and metadata. Neither check by itself establishes trust in the author.
 
+## JSON precision and canonicalization: decisions 111–115
+
+### 111. Read integer fields exactly
+
+```json
+{ "formatVersion": 1 }
+```
+
+Integer metadata fields use integer JSON numbers without a fractional part or exponent. Values 1.0, 1e0, and the string "1" are invalid for formatVersion. Check ranges without an intermediate conversion to double. Read large integers exactly or reject them when outside the field's allowed range; never round them.
+
+### 112. Strict UTF-8 without a BOM
+
+```json
+{ "description": "Геометрия 📐" }
+```
+
+Read JSON only as UTF-8 without a BOM. Reject invalid Unicode sequences rather than substituting a replacement character. The same 📐 character may be written as the valid pair \uD83D\uDCD0, yielding the same decoded and canonicalized result. A lone \uD83D is invalid. Apply this rule to .gmod, module.json, and the JSON descriptor inside a native library.
+
+### 113. No automatic Unicode normalization
+
+The character é and an e followed by a separate combining accent may look identical but remain distinct strings. Both are valid in a module description; their difference causes a metadata conflict when merging. Preserve the author's text without hidden normalization. In contrast, "a" and "\u0061" are the same string: decode JSON escapes before comparison and canonicalization.
+
+### 114. Detect duplicate keys after decoding
+
+```json
+{
+  "name": "geometry",
+  "\u006eame": "another"
+}
+```
+
+This example is syntactically readable as JSON but violates the contract: both keys mean name. Duplicate keys are forbidden at every nesting level, even with identical values. Never silently choose the first or last value. Check after decoding escapes in .gmod, module.json, and the descriptor inside a native library.
+
+### 115. Canonical key order
+
+```json
+{ "version": "1.0.0", "name": "geometry" }
+```
+
+```json
+{ "name": "geometry", "version": "1.0.0" }
+```
+
+These objects have the same canonical representation and hash. Sort object keys lexicographically by their decoded UTF-8 bytes, independently of language and OS locale settings. Preserve array element order: ["a", "b"] and ["b", "a"] remain distinct.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
