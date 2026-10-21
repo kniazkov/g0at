@@ -15,9 +15,10 @@ if not defined build_jobs set "build_jobs=1"
 set build_jobs | findstr /i /r /x "build_jobs=[1-9][0-9]*" > NUL || goto usage
 pushd "%~dp0.." || exit /b 1
 cmake -S src -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug || goto failed
-cmake --build build --parallel "%build_jobs%" --target goat unit_testing analysis_testing functional_testing || goto failed
+cmake --build build --parallel "%build_jobs%" --target goat unit_testing analysis_testing functional_testing module_json_testing || goto failed
 copy /Y build\goat.exe goat.exe > NUL || goto failed
 
+build\module_json_testing.exe || goto failed
 build\unit_testing.exe || goto failed
 build\analysis_testing.exe test\analysis || goto failed
 
