@@ -1739,6 +1739,94 @@ println("Continuation"); // Not executed.
 
 Library has already initialized successfully. Stop terminates the entire interpreter with code 7, not just the library. Active execution context determines behavior: if an active included-file initializer calls the same function, exit raises an exception instead.
 
+## Function analysis metadata: decisions 86–90
+
+These summaries describe proven code properties for the consumer's analyzer. An unknown property does not mean an absent effect. The exact metadata schema remains under design.
+
+### 86. Mutable exports do not fix the initial function
+
+```goat
+// Library entry file
+external var calculate = func(x) { return x + 1; };
+
+// Program
+const lib = import "library@1.0.0";
+println(lib.calculate(3)); // 4.
+lib.calculate = func(x) { return x * 2; };
+println(lib.calculate(3)); // 6.
+```
+
+Describing the initial function does not permit permanent binding to it. Execution uses the current field value; analysis and native optimization preserve replacement behavior.
+
+### 87. A constant reference does not imply a pure function
+
+```goat
+// Library entry file
+var counter = 0;
+external next = func() {
+    counter += 1;
+    return counter;
+};
+
+// Program
+const lib = import "library@1.0.0";
+println(lib.next()); // 1.
+println(lib.next()); // 2.
+```
+
+Distinguish reference immutability from function properties. Provide detailed summaries of captured-state reads and writes, argument mutation, I/O, possible exceptions, and program termination. Distinguish proven results from unknown properties. External const alone does not establish purity or permit precomputing calls.
+
+### 88. Effects can depend on a callback argument
+
+```goat
+// Library entry file
+external apply = func(callback, value) {
+    return callback(value);
+};
+
+// Program
+const lib = import "library@1.0.0";
+lib.apply(func(x) {
+    println(x);
+    return x;
+}, 5);
+```
+
+Metadata records invocation of callback and the dependence of apply's effects on it. A consumer may refine the summary when it can analyze a concrete callback. Otherwise effects remain unknown and the call is not considered pure.
+
+### 89. The result can alias an argument
+
+```goat
+// Library entry file
+external identity = func(value) { return value; };
+
+// Program
+const lib = import "library@1.0.0";
+var items = [1, 2];
+var result = lib.identity(items);
+result.push(3);
+println(items); // [1, 2, 3].
+```
+
+Support a summary stating that the result is the same object as argument 0. The analyzer must account for shared changes to result and items without library sources. An unproven relationship is unknown, not independence.
+
+### 90. A fresh outer object may share nested values
+
+```goat
+// Library entry file
+external copy = func(value) { return value.clone(); };
+
+// Program
+const lib = import "library@1.0.0";
+var items = [[1]];
+var result = lib.copy(items);
+result.push([2]);  // Does not change the outer items array.
+result[0].push(3); // The nested array is shared.
+println(items);   // [[1, 3]].
+```
+
+A fresh-result summary is insufficient to prove deep independence. Describe proven nested sharing; if exact relationships cannot be established, conservatively retain possible shared state. Crossing a module boundary does not turn clone into deep copying.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
