@@ -82,7 +82,7 @@ An object's `mark` method marks it and continues through retained objects. A use
 
 The collector then walks the process's active-object list. Unmarked objects are cleared; survivors have their marks reset for the next pass. This cleanup uses special paths without ordinary recursive reference decrements: the collector is already traversing the entire unreachable graph. Some shells go into pools.
 
-A pending exception is deliberately a root. Its value may be a dynamic object no longer retained by destroyed contexts. [test_vm_exceptions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_vm_exceptions.c) checks that such a value survives, including a repeated collector call.
+A pending exception is deliberately a root. Its value may be a dynamic object no longer retained by destroyed contexts. [test_vm_exceptions.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/unit_test/test_vm_exceptions.c) checks that such a value survives, including a repeated collector call.
 
 > [!CAUTION]
 > The ordinary VM loop invokes the collector after execution ends, rather than periodically by allocation count. Unreachable cycles can accumulate until then. Also, current marking starts at the current context's data and does not separately walk `context->previous`. This code cannot simply be moved to an arbitrary point inside a function call without further root checks.
@@ -95,7 +95,7 @@ A function object may contain a machine-code address from a loaded `.so` or `.dl
 
 These descriptor counters are atomic. This is a resource-management property; it does not by itself make the whole VM thread-safe. The final release unloads the library and cleans up associated resources. Destroying a dynamic function releases its descriptor both on ordinary `DECREF` and when collecting an unreachable cycle.
 
-The lifetime test in [test_native_call.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_native_call.c) checks several routes: a retained function alias, a closure with a cycle, and process destruction. In particular, freeing bytecode must not unload a library whose native function is still retained by a live object.
+The lifetime test in [test_native_call.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/unit_test/test_native_call.c) checks several routes: a retained function alias, a closure with a cycle, and process destruction. In particular, freeing bytecode must not unload a library whose native function is still retained by a live object.
 
 This is not general permission to call a bytecode function after freeing its instructions: its body address still only makes sense with the corresponding bytecode. The native descriptor protects its own resource—the library.
 

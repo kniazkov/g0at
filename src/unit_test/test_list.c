@@ -50,6 +50,7 @@
 #include "test_loops.h"
 #include "test_member_access.h"
 #include "test_model.h"
+#include "test_module_identity.h"
 #include "test_modulo.h"
 #include "test_multiplication.h"
 #include "test_mutual_recursion.h"
@@ -75,6 +76,7 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"module identifiers and imports", test_module_identity},
     {"native execution options", test_native_options},
     {"SHA-256 vectors", test_sha256},
     {"binary roundtrip", test_binary_roundtrip},

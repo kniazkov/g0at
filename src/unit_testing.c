@@ -6,12 +6,12 @@
 
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
-#include "test/test_c_emission.h"
-#include "test/test_list.h"
-#include "test/test_native_call.h"
-#include "test/test_native_pipeline.h"
-#include "test/test_output.h"
-#include "test/test_stack_underflow.h"
+#include "unit_test/test_c_emission.h"
+#include "unit_test/test_list.h"
+#include "unit_test/test_native_call.h"
+#include "unit_test/test_native_pipeline.h"
+#include "unit_test/test_output.h"
+#include "unit_test/test_stack_underflow.h"
 
 #include <stdio.h>
 #include <stdlib.h>

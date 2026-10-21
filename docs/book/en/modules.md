@@ -186,6 +186,10 @@ While initialization is still in progress, calling an already declared function 
 
 ## Names, versions, and extensions
 
+Implementation clarification for #179: names are limited to 255 ASCII bytes, versions to 250 ASCII bytes; `com0` and `lpt0`, including extensions, are forbidden. Repeated internal periods and trailing `-`/`_` are allowed. Identifiers are compared exactly, without normalization. Shared `char` and `wchar_t` import parsers return borrowed slices; `string_view_t` remains unchanged. The standalone [book chapter](30-modules.md) documents the implementation incrementally.
+
+
+
 Versions are exact string identifiers, such as `1.2.0` or `1.2.0-beta.1`. There are no ranges, version ordering, or automatic selection. Module names and versions contain only lowercase ASCII letters, digits, dots, underscores, and hyphens, starting with a letter or digit. Trailing dots and Windows reserved names, including extensions such as `con.txt`, are forbidden on every OS.
 
 Extensions are `.goat` for sources, `.gmod` for JSON build descriptions, and `.gbin` for ZIP modules. Validate content and format versions, not just extensions.

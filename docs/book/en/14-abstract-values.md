@@ -77,7 +77,7 @@ A real constant contains a `double`. When comparing descriptions, the lattice tr
 
 In contrast, `+0.0` and `-0.0` remain distinct. Their join is `real`, rather than either constant. Numeric comparison considers them equal, but their representation can affect other operations. The analyzer must not silently lose that sign when choosing a constant.
 
-Integer `3` and real `3.0` also differ: their join is `numeric`. Equal numeric magnitudes do not remove the representation distinction that matters to a native interface. [test_lattice.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/test/test_lattice.c) checks these boundaries.
+Integer `3` and real `3.0` also differ: their join is `numeric`. Equal numeric magnitudes do not remove the representation distinction that matters to a native interface. [test_lattice.c](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/unit_test/test_lattice.c) checks these boundaries.
 
 <a id="section-14-6"></a>
 

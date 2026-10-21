@@ -106,6 +106,6 @@ The opposite mistake is treating missing observation as proof of absence. If the
 
 Purity is used in native-subset eligibility and in restricted VM retries after a native-path protective failure. Retrying a function with an external write could perform an action twice. A numeric result is therefore insufficient for that decision.
 
-[test_function_effects.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/test/test_function_effects.c) checks own accesses and captures; [test_function_purity.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/test/test_function_purity.c) checks propagation through dependencies. These checks are separate from return types: changing numeric-domain precision must not by itself turn an external write into a local one.
+[test_function_effects.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/unit_test/test_function_effects.c) checks own accesses and captures; [test_function_purity.c](https://github.com/kniazkov/g0at/blob/fc4af9d85d2a45925e9e370a1e988ccb077b056e/src/unit_test/test_function_purity.c) checks propagation through dependencies. These checks are separate from return types: changing numeric-domain precision must not by itself turn an external write into a local one.
 
 The next chapter combines these facts with parameter, local, and return representations. Only then can a particular specialization be admitted to C generation.

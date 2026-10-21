@@ -46,7 +46,7 @@ This is not a deep copy of the whole tree: subtrees may be shared. Parent links 
 
 Before another analysis, `restore_graph` puts originals back in place of replacements and repairs parent links. Previous facts are then reset, and scopes and summaries are rebuilt. Otherwise, reanalysis could mistake an earlier optimization result for the original program and lose alternative paths.
 
-[test_replacement.c](https://github.com/kniazkov/g0at/blob/b91b405e949cc93d4aa9d243be622c5b143cb858/src/test/test_replacement.c) checks these contracts, including restoration. A correct first-run result does not prove repeated processing of the same graph is correct.
+[test_replacement.c](https://github.com/kniazkov/g0at/blob/b91b405e949cc93d4aa9d243be622c5b143cb858/src/unit_test/test_replacement.c) checks these contracts, including restoration. A correct first-run result does not prove repeated processing of the same graph is correct.
 
 <a id="section-21-5"></a>
 
@@ -118,7 +118,7 @@ From the repository root, reconstructed source can be inspected in both modes:
 
 These commands also execute the program, so its output follows the reconstructed source. Use `--print-bytecode` to compare instructions. The representations may differ; the comparison should concern preserved behavior rather than identical listings.
 
-[test_c_replacement.c](https://github.com/kniazkov/g0at/blob/b91b405e949cc93d4aa9d243be622c5b143cb858/src/test/test_c_replacement.c) checks constant use in C representation, while functional examples compare results with and without optimization. Error cases also require attention to `stderr` and exit status, rather than only successful output.
+[test_c_replacement.c](https://github.com/kniazkov/g0at/blob/b91b405e949cc93d4aa9d243be622c5b143cb858/src/unit_test/test_c_replacement.c) checks constant use in C representation, while functional examples compare results with and without optimization. Error cases also require attention to `stderr` and exit status, rather than only successful output.
 
 <a id="section-21-8"></a>
 

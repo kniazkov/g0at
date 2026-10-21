@@ -1,8 +1,10 @@
-#include "../module/module_json.h"
+#include "module_json.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+
+static int total = 0;
 
 static void check(const char *json, goat_module_json_kind kind, goat_module_json_error expected) {
     yyjson_doc *doc = NULL;
@@ -16,10 +18,13 @@ static void check(const char *json, goat_module_json_kind kind, goat_module_json
     }
     assert(actual == expected);
     assert((doc != NULL) == (expected == GOAT_MODULE_JSON_OK));
+    total++;
+    printf("[ ok ] module JSON case %d\n", total);
     yyjson_doc_free(doc);
 }
 
 int main(void) {
+    puts("Starting module JSON testing...");
     const char *good = "{\"formatVersion\":1,\"name\":\"geometry\","
                        "\"version\":\"1.2.0\",\"main\":\"src/main.goat\"}";
     check(good, GOAT_MODULE_GMOD, GOAT_MODULE_JSON_OK);
@@ -65,7 +70,7 @@ int main(void) {
     check("{\"formatVersion\":1,\"name\":\"\\uD83D\\uDCD0\","
           "\"version\":\"1\",\"main\":\"a\"}",
           GOAT_MODULE_GMOD,
-          GOAT_MODULE_JSON_OK);
+          GOAT_MODULE_JSON_INVALID_FIELD);
     check("{\"formatVersion\":1,\"name\":\"\\uD83D\","
           "\"version\":\"1\",\"main\":\"a\"}",
           GOAT_MODULE_GMOD,
@@ -77,6 +82,6 @@ int main(void) {
     const char invalid[] = "{\"formatVersion\":1,\"name\":\"\xc3\x28\"}";
     assert(goat_module_json_read(invalid, sizeof(invalid) - 1, GOAT_MODULE_METADATA, &doc)
            == GOAT_MODULE_JSON_SYNTAX);
-    puts("module JSON tests passed");
+    printf("Module JSON testing done; total: %d, passed: %d, failed: 0\n", total, total);
     return 0;
 }
