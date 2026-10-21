@@ -4,8 +4,8 @@
 #include "test_module_identity.h"
 
 #include "test_macro.h"
-#include <goat/module_identity.h>
 
+#include <goat/module_identity.h>
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
@@ -30,10 +30,20 @@ bool test_module_identity(void) {
     ASSERT(!goat_module_name_valid("a\0b", 3));
     ASSERT(!goat_module_version_valid("1\0x", 3));
     ASSERT(!goat_module_name_valid("a\xc3\xa9", 3));
-    const char *reserved[] = {
-        "con", "prn", "aux", "nul", "com0", "com1", "com9", "lpt0", "lpt1", "lpt9",
-        "con.txt", "nul.backup", "com0.x", "lpt9.1"
-    };
+    const char *reserved[] = {"con",
+                              "prn",
+                              "aux",
+                              "nul",
+                              "com0",
+                              "com1",
+                              "com9",
+                              "lpt0",
+                              "lpt1",
+                              "lpt9",
+                              "con.txt",
+                              "nul.backup",
+                              "com0.x",
+                              "lpt9.1"};
     for (size_t i = 0; i < sizeof(reserved) / sizeof(reserved[0]); i++) {
         ASSERT(!goat_module_name_valid(reserved[i], strlen(reserved[i])));
         ASSERT(!goat_module_version_valid(reserved[i], strlen(reserved[i])));
@@ -56,8 +66,8 @@ bool test_module_identity(void) {
     ASSERT(parsed.version.data == text + 9 && parsed.version.length == 6);
     ASSERT(goat_module_parse_import("geometry", 8, &parsed));
     ASSERT(!parsed.has_version && !parsed.version.data && !parsed.version.length);
-    const char *bad[] = {"", "geometry@", "@1.0", "geometry@1@2", "Geometry@1",
-                         "con@1", "geometry@con", "a\0b"};
+    const char *bad[] =
+        {"", "geometry@", "@1.0", "geometry@1@2", "Geometry@1", "con@1", "geometry@con", "a\0b"};
     const size_t bad_length[] = {0, 9, 4, 12, 10, 5, 12, 3};
     for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); i++) {
         ASSERT(!goat_module_parse_import(bad[i], bad_length[i], &parsed));
