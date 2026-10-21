@@ -2340,3 +2340,11 @@ sets __dir__ to /opt/myapp and uses /opt/myapp/modules/ as the first dependency 
 The same rule applies to direct source execution: if /home/ivan/main.goat links to /opt/myapp/main.goat, __dir__ is /opt/myapp and the local module directory is /opt/myapp/modules/. Resolve relative includes using the actual path of each containing source file under decision 146.
 
 Fix the canonical launch path during startup preparation. A subsequent working-directory change or retargeting of the original symbolic link does not change __dir__ or the local search base. __dir__ remains shared by the entire run, including imported libraries. Explicit relative --module-dir and relative GOAT_MODULE_PATH entries remain relative to the startup working directory.
+
+## Required for direct source execution: decision 159
+
+159. Direct .goat execution with --native required requires at least one native specialization belonging to the launched program itself. If preparing such a specialization fails, user code is not executed. Native implementations in imported libraries do not satisfy this requirement. The program's own code includes sources brought in through include.
+
+For a standalone source, the bound-native-function check already exists: src/cli/native_execution.c requires NATIVE_PREPARE_READY in required mode, and src/codegen/native_pipeline.c produces that status only when bound_functions is nonzero. Module implementation must preserve this behavior and extend ownership accounting, rather than implement the check from scratch.
+
+Current temporary native-build cleanup for direct execution uses reference counting: native_pipeline transfers its workspace to the library, release_native_library closes the loader handle after the last reference and invokes destroy_native_workspace. The latter removes the DLL/SO and directory but does not check removal results. This describes the existing implementation, not completion of the new cleanup-process protocol.
