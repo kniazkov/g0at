@@ -20,6 +20,11 @@ if (( ${#files[@]} == 0 )); then
     exit 2
 fi
 printf 'Checking %d tracked C sources and headers.\n' "${#files[@]}"
+for file in src/module/module_json.c src/module/module_json.h src/module/module_json_testing.c; do
+  echo "BEGIN_FORMATTED:$file"
+  "$formatter" --style="file:$repo_root/.clang-format" "$file"
+  echo "END_FORMATTED:$file"
+done
 "$formatter" --style="file:$repo_root/.clang-format" \
     --dry-run --Werror --ferror-limit=0 "${files[@]}"
 printf 'Code style check passed.\n'
