@@ -738,6 +738,90 @@ println(key);   // y.
 
 Remember both the receiver and evaluated key x. Changing variable key does not redirect the write to y. Ordinary obj[key] = rhs() obeys the same rule. These examples establish single evaluation of receiver/key and, for compound assignment, a single read of the original value; side effects are not rolled back.
 
+## Final write validation: examples 21–25
+
+Examples are independent. A check before the right-hand side does not replace final validation: right-hand evaluation can change destination state. Revalidation does not re-evaluate receiver/key expressions or reread the initial compound-assignment value.
+
+### 21. The right-hand side creates an inaccessible field
+
+```goat
+// a.goat
+public obj = {};
+public prepare = func() {
+    obj.x = 100; // Field belongs to a.goat.
+    return 2;
+};
+
+// b.goat in the same module
+const a = include "./a.goat";
+a.obj.x = a.prepare(); // Access error at the final write.
+```
+
+Initially x is absent and b.goat may extend an object within its module. Prepare creates x with a.goat file visibility. Final validation detects denied access. Field x remains 100 as a completed side effect; 2 is not stored.
+
+### 22. An absent field is not created in advance
+
+```goat
+var obj = {};
+const rhs = func() {
+    println(obj); // { }.
+    throw "Error";
+};
+try {
+    obj.x = rhs();
+} catch (e) {
+    println(obj); // { }.
+}
+```
+
+The preliminary check only permits a future write. The field appears after successful right-hand evaluation and final validation. No temporary placeholder cell is created; an exception leaves the empty object empty.
+
+### 23. An accessible field created by the right-hand side is updated
+
+```goat
+// a.goat
+public obj = {};
+public prepare = func() {
+    obj.x = 100; // Field belongs to a.goat.
+    return 2;
+};
+obj.x = prepare();
+println(obj.x); // 2.
+```
+
+Both writes execute a.goat code, so final validation succeeds. Update the cell already created by prepare, retaining its original provenance and metadata; do not replace it with a new cell.
+
+### 24. An array index identifies a position, not the former element
+
+```goat
+var items = [10, 20, 30];
+const rhs = func() {
+    items.remove(0); // [20, 30].
+    return 2;
+};
+items[1] += rhs();
+println(items); // [20, 22].
+```
+
+Remember the array, index 1, and value 20. After removal, compute 20 + 2 and store 22 at current position 1 of the same array. The write does not follow the element shifted to another position.
+
+### 25. A removed position fails final write validation
+
+```goat
+var items = [10, 20];
+const rhs = func() {
+    items.clear();
+    return 2;
+};
+try {
+    items[1] += rhs();
+} catch (e) {
+    println(items); // [ ].
+}
+```
+
+The initial read succeeds. After clear, the saved index is out of bounds and final validation rejects the write. Do not automatically expand the array or roll back the completed clear.
+
 ## Further refinement
 
 The rules above are agreed; discussion continues one question at a time with examples. Complete schemas, canonical encoding details, service symbols, and supported system ABIs are refined during implementation design without changing agreed semantics.
