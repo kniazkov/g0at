@@ -234,6 +234,8 @@
 
 - [ ] 160: уборщик готов до временной нативной компиляции .goat; удаляет её временные файлы, но не сохранённые артефакты: [#211](https://github.com/kniazkov/g0at/issues/211), [#210](https://github.com/kniazkov/g0at/issues/210), [#230](https://github.com/kniazkov/g0at/issues/230)
 
+- [ ] 161: после внешнего прерывания/аварии Goat остановить принадлежащие его временной сборке процессы компилятора до удаления каталога: [#213](https://github.com/kniazkov/g0at/issues/213), [#211](https://github.com/kniazkov/g0at/issues/211), [#230](https://github.com/kniazkov/g0at/issues/230)
+
 ## Общая приёмка
 
 - [ ] Многофайловые AC-01–AC-28: [#218](https://github.com/kniazkov/g0at/issues/218)
