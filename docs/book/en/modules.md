@@ -3174,3 +3174,26 @@ Exact null needs only type = null: this type has a single value. Canonical write
 These rules apply to ValueFacts and the agreed externals fields. Empty informational-field normalization (description, license, etc.) does not apply to program constants. Optimizers and canonicalizers must not discard a known empty string or false. Known values still do not bypass import initialization.
 
 Acceptance: distinguish unknown strings from known empty strings, unknown booleans from known false, and unknown {} from exact null. Preserve leading/trailing spaces, whitespace-only strings, \u0000 and Unicode sequences without normalization. Reject incorrect JSON value types for string/boolean. Canonical null descriptions contain no value field.
+
+## Normalizing an unknown result and positional arguments
+
+An empty result = {} is equivalent to an omitted result: neither provides result facts. Readers accept both in contexts where result is allowed. Canonical writers omit an empty result; normalize before canonicalization and main-hash computation. A difference consisting only of this empty object does not change analytical guarantees or the main hash.
+
+This rule does not remove empty elements from the positional when.arguments array. For example:
+
+```json
+{
+  "when": {
+    "arguments": [
+      {},
+      { "type": "integer" }
+    ]
+  }
+}
+```
+
+The first element places no refinement on the first formal argument, while the second constrains the second argument to integer. Every element, including empty leading, middle and trailing elements, retains its index. Removing, compacting or sorting elements is forbidden. The array length must still match the formal parameter count.
+
+This rule concerns empty result, not arbitrary format objects or arrays. It does not discard known value = "" or value = false and does not turn type = null into an unknown value. The prohibition on result together with normalReturn = false still applies to the input structure before normalization; an empty result cannot bypass it.
+
+Acceptance: missing result and result = {} normalize identically; known properties remain. Empty leading, middle and trailing argument descriptions survive reading, writing and canonicalization without changing count or indices. Distinguish arguments = [{}, {"type":"integer"}] from arguments = [{"type":"integer"}, {}].
