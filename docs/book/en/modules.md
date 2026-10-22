@@ -1539,7 +1539,7 @@ windows.gbin: authors → Ivan, ivan@old.example
 linux.gbin:   authors → Ivan, ivan@new.example
 ```
 
-Even with matching main hashes, goat-merge reports an error identifying the differing field. The author must reconcile metadata before merging; argument order does not select values. A field present in only one input is also a conflict. JSON formatting and object-key ordering differences are not value differences.
+Even with matching main hashes, goat-merge reports an error identifying the differing field. The author must reconcile metadata before merging; argument order does not select values. A nonempty field present in only one input is a conflict. Empty informational values normalize to absence as specified in “Empty informational fields: normalization”. JSON formatting and object-key ordering differences are not value differences.
 
 ### 70. Optional does not permit incorrect types
 
@@ -2458,3 +2458,14 @@ After resolving symbolic links, main must refer to a regular file. A symbolic li
 The check applies to the object actually opened; replacing the object between path checking and opening must not allow a special object to be read. The implementation must not block while opening a named pipe merely to inspect its type. Access and read errors on a regular file remain build errors.
 
 Acceptance: accept a regular file and a link to it; reject a directory, a link to a directory and special objects available on the test OS. The named-pipe test needs no external writer and completes without waiting for data; an external test timeout only detects hangs.
+
+
+## Empty informational fields: normalization
+
+In .gmod and module.json, empty strings in `description`, `license`, `homepage` and `authors[].email` are equivalent to the respective field being absent. An empty `authors: []` is equivalent to absent authors. After type validation, remove these empty values from the internal representation; the compiler and goat-merge omit them from the output .gbin. Readers accept explicitly stored empty values and normalize them to the same representation.
+
+Every author entry still requires a nonempty name: `authors: [{"name": ""}]` is an error, not an entry to discard. `null` remains a type error in all listed fields. Do not trim spaces: `" "` is nonempty and is preserved. Preserve all nonempty strings exactly, without case changes or Unicode normalization. This rule does not apply to technical name/version/main fields, dependencies or native settings.
+
+Goat-merge compares informational data after this normalization. An absent field and its empty value do not conflict; a nonempty field present in only one input still causes a conflict. For example, `{"description":"","authors":[]}` and `{}` are equivalent, as are `{"authors":[{"name":"Ivan","email":""}]}` and `{"authors":[{"name":"Ivan"}]}`. Normalizing informational data does not change the main hash.
+
+Acceptance: compare each empty field with its absence when reading .gmod/module.json and during merge; output .gbin omits these empty fields. Test equivalence of empty and absent email, rejection of empty name and null, preservation of a spaces-only string, and conflict between a nonempty value and absence. Merge output must not depend on input order for equivalent empty/absent data.
