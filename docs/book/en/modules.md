@@ -2556,3 +2556,13 @@ Before producing canonical metadata for the main SHA-256, normalize empty depend
 Goat-merge does not treat an absent field and an empty array as different main builds. Normalization does not bypass metadata/bytecode import consistency checks: absent or empty dependencies is valid only when there are no direct external imports.
 
 Acceptance: accept both empty forms for a module without external imports; produce identical canonical metadata and main hashes and allow merge; omit the field in written output. Reject null/invalid types. Reject an empty list in the presence of an external import as metadata/bytecode inconsistency, even if the hash has been recomputed.
+
+## Complete .gmod validation before overrides
+
+The .gmod format is strict. First validate JSON and the entire descriptor schema, then normalize permitted empty values and apply defaults and command-line overrides. Unknown fields at any level, duplicate decoded keys, invalid types, missing required fields and values outside the agreed constraints are errors. An override does not repair an invalid descriptor.
+
+For example, `"native": {"mode": "atuo"}` is rejected even with `--native off`. An invalid target value or type is not hidden by --native-target. Validate unused dependencies entries too: an invalid name or version is an error even without a corresponding import. A valid unused entry still only produces the previously agreed warning; its archive need not be located or loaded.
+
+Format validation does not execute disabled operations: native off need not locate a C compiler or build native code. A syntactically valid explicit target is checked for actual build availability only if used after overrides. Informational email/homepage remain arbitrary strings under the agreed contract: strict schemas do not introduce email-address or URL validation.
+
+Acceptance: reject a misspelled mode despite an override, an invalid type in an overridden target, unknown nested fields and invalid unused dependency entries. Accept a valid descriptor with a valid override. Verify no native build attempt in off and no search for a valid unused dependency. Detect all descriptor errors before publishing build output.
