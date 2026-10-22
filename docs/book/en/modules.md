@@ -3313,3 +3313,13 @@ Readers validate range and then existence of the functionId in the relevant modu
 This specifies the identifier range of the new module contract. It does not automatically change the existing uint64 native-binding field in the older binary format: validate the range before narrowing a wider representation; the concrete binary layout belongs to its versioned format.
 
 Acceptance: 1 and 4294967295 are type-valid but must resolve to existing records; reject zero, negatives, 4294967296, strings, fractional and exponent notation. Cover gaps, identifiers differing from array indices, equal numbers in different modules, and counter overflow without allocating billions of records.
+
+## Ordering functions records
+
+functions array order has no semantic significance: explicit functionId identifies each function. Readers accept records in any order. Writers and main-hash computation sort by ascending numeric functionId after validating range and uniqueness and normalizing record contents. Compare numerically: 2 precedes 10 regardless of textual spelling.
+
+A repeated functionId within a module is an error even when records are identical. Do not silently deduplicate or select the first or last record. Preserve valid identifier gaps; sorting does not renumber functions or change file, instruction or references from other tables.
+
+Permuting functions records changes neither meaning nor the module's main hash. This does not apply to positional files, parameters or when.arguments arrays, whose order must be preserved.
+
+Acceptance: permutations of functions with identifiers 1, 2 and 10 yield identical canonical order and hashes; do not sort numeric identifiers lexicographically. Reject both identical and different records sharing a functionId. Cover gaps and reference resolution independently of record position.
