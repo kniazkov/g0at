@@ -2602,3 +2602,13 @@ Do not conflate a failed candidate probe with a user-program compilation error. 
 In --list-native-targets, show verified compilers suitable for a target and identify the automatic choice. Multiple compilers for one target do not create distinct platform identifiers solely because their compiler names differ.
 
 Acceptance: two suitable compilers cause neither a prompt nor an ambiguity error; selection is reproducible with an unchanged environment. An unsuitable preferred candidate allows selection of another; explicit --cc disallows substitution. A user-C build failure with the selected compiler does not trigger a hidden search through other compilers.
+
+## Stop compiler discovery after the first suitable candidate
+
+During ordinary execution or compilation, Goat checks candidates in the agreed stable order and stops immediately after the first compiler successfully passes the requested-target probe. Do not probe remaining candidates or unrelated targets merely to build a complete inventory. If the first candidate is unsuitable, check the next one; do not prompt.
+
+The --list-native-targets command deliberately examines all discovered supported candidates and their candidate targets, presenting every successfully verified option rather than only the first. A failed candidate probe does not stop examination of the remaining candidates. The --cc restriction remains: both operations consider only the explicitly selected compiler when specified.
+
+Stopping at the first successful candidate does not mean selecting the fastest process to respond. Ordinary execution and full listing use the same selection priority with an unchanged environment. The listing marks the same automatic choice for the requested target that ordinary execution would make.
+
+Acceptance: a controlled first suitable compiler passes its probe while a second compiler counts invocations; ordinary compilation does not invoke the second. If the first fails its probe, check the second. With --list-native-targets, check both and display all successful results. Explicit --cc never invokes other compilers in either mode.
