@@ -3625,3 +3625,15 @@ Reports distinguish detected errors from checks not performed because a prerequi
 Continuing diagnostics does not permit execution of a damaged module. On archive structure, integrity or consistency errors, do not attempt OS loading of DLL/SO files, even if an individual library appears valid. Bytecode and user functions are not executed. Any error retains a nonzero exit status.
 
 Acceptance in #185/#212/#223/#214: two independent invalid fields yield two diagnostics; broken JSON does not cause cascading field and main-hash errors; unavailable ZIP structure stops dependent checks. Unperformed checks are not marked successful; reasons appear in text and JSON reports. A test DLL/SO constructor does not run for an invalid archive. Repeated checks produce stable diagnostic ordering.
+
+## Native load probe child output
+
+goat-inspect captures the load probe child's stdout and stderr separately from process startup. These streams do not inherit the utility's stdout/stderr and do not mix with its JSON report. The probe's control result uses a separate channel; library text is not interpreted as a check result.
+
+For each probe, retain the first 65536 bytes of each stream independently. Additional bytes set that stream's truncated flag. Exactly 65536 bytes without further output are not truncation. After the limit, continue reading and discarding excess output without accumulating it in memory or a temporary file. Service both streams concurrently: a full stderr pipe must not block stdout draining or vice versa. Reading is subject to the probe deadline; continuous output or an unclosed channel must not extend waiting indefinitely.
+
+In the JSON report, each stream's retained bytes use a dataBase64 string (standard Base64 alphabet with padding and no line breaks) and a boolean truncated. An empty captured stream has dataBase64 = "" and truncated = false. Output may contain arbitrary bytes, NUL, invalid UTF-8 or a multibyte sequence cut by the limit; this is not a JSON error and must not discard retained bytes. Placement of stream objects belongs to the complete report schema in #223. Do not invent capture results for a probe that did not run.
+
+The human-readable report labels stdout/stderr, explicitly reports truncation and escapes control and nonprintable bytes without executing terminal control sequences. Preserve byte order within each stream; do not promise a total order across stdout and stderr. Preserve available output on crashes and timeouts as well. Truncation alone does not turn a successful probe into a load failure; capture failures are diagnosed separately.
+
+Acceptance in #213/#214/#223: output on both streams, JSON-like text, NUL/invalid UTF-8/control characters, empty streams, 65536/65537-byte boundaries, heavy simultaneous output and continuous printing until timeout. The utility's JSON remains valid; Base64 decoding restores the retained prefix; capture memory is bounded and printing cannot bypass the timeout. Check availability of received output after a crash.
