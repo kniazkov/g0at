@@ -3680,6 +3680,14 @@ Terminate the tree and release channels before final cleanup of probe-owned temp
 
 Acceptance in #213/#214: a constructor launches a long-lived child and grandchild, then the probe either completes successfully or its main process crashes. In both cases descendants terminate and no longer retain output channels or temporary libraries. Also test a load failure after creating a descendant, no descendants and a concurrent independent probe. Normal cleanup after successful loading preserves the successful result.
 
+## A single load-probe attempt
+
+One goat-inspect invocation performs at most one load-probe attempt for the selected library. There are no automatic retries after a process-start error, load or validation failure, unloading error, crash or timeout. A retry must not replace an already detected failure with success, and cleanup failure does not trigger a retry either.
+
+To check again, the user invokes inspect again. A previous invocation's result does not replace the new probe. This prevents hiding intermittent failures and automatically repeating constructor side effects. Agreed pre-load checks still apply: a damaged archive or absence of a compatible variant causes no load attempt.
+
+Acceptance in #214/#223: a library that can succeed only on its second attempt fails the first inspect invocation; an invocation counter confirms there are no retries after failure, crash or timeout. A separate user invocation runs a new probe. The report preserves the sole attempt's outcome and its cleanup errors.
+
 ## Explicit library unloading in a probe
 
 After loading the DLL/SO and checking its embedded description and every declared symbol, the child explicitly releases the acquired library handle using the OS unloading API, then exits normally. Unloading is a mandatory probe stage; process termination does not replace that call. Exported user functions and bytecode are not called.
