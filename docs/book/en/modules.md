@@ -2579,4 +2579,14 @@ Use the shared temporary native build and cleanup infrastructure #245. Responsib
 
 Acceptance: a discovered compiler with a successful probe yields a target and compiler details; one that reports its version but cannot link DLL/SO does not yield an available target; successful cross-compilation does not require executing the result. Check that no OS loading occurs, temporary files are cleaned, and absence of available targets is clearly reported. Use controlled compiler stubs for automated tests and available real toolchains for integration checks.
 
-Compiler search boundaries, probe deadlines and selection among multiple suitable compilers require separate clarification; the command itself does not define these policies.
+Discovery follows “Compiler discovery and --cc”. Probe deadlines and automatic selection among multiple suitable compilers still require clarification.
+
+## Compiler discovery and --cc
+
+The Goat process environment is the primary configuration mechanism for native compilation. Without an explicit selection, Goat discovers compilers through PATH and launches them with the inherited environment, including tool, header and library paths configured by the user or installer. Do not scan the entire disk, installation directories or separate machine-specific stores. Users must prepare a working toolchain environment for native compilation.
+
+The optional `--cc <compiler-path>` selects one compiler explicitly. In this mode Goat uses only that compiler; if it is missing, cannot start or cannot build the selected target, do not substitute another compiler from PATH. Apply the agreed diagnostics and native-mode policies; prohibiting compiler substitution does not itself remove VM/bytecode fallback allowed by those policies. The selected compiler also inherits the environment.
+
+These rules also apply to `goat --list-native-targets`: without --cc inspect compilers from PATH; with --cc inspect only the selected compiler. Do not store machine-specific compiler paths in .gmod. Do not introduce additional user-maintained compiler-search directory lists.
+
+Acceptance: discover a compiler on configured PATH; do not find tools outside PATH through hidden scans; environment variables reach both probe and actual builds. With --cc, invoke only the selected compiler; a controlled failure must not launch a fallback compiler from PATH. Target listing with --cc reflects only successful probes of that compiler.
