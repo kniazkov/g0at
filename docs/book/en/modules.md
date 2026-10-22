@@ -2532,3 +2532,17 @@ Dependencies have no semantic order. Reordering .gmod keys or module.json depend
 Goat-merge combines native variants of one main build with dependencies already fixed. It does not reselect versions or combine incompatible dependency sets into a new main build; rearrangement of identical records is not a conflict.
 
 Acceptance: test joint use of math@2.0 through versionless import and math@1.0 through explicit import; reject versionless import without a default even if another location contains exactly one explicit import of that name. Reject a version array in .gmod. Reordering dependencies must not alter resolution, main hash or merge eligibility; reordering authors retains its separately agreed rules.
+
+## Direct dependencies and the complete graph
+
+Each compiled .gbin dependencies list records only that module's direct dependencies: imports from its entry file and all its own source files included through include. Syntactic imports in unexecuted branches or uncalled functions are included under the common rule. Dependencies of imported modules are not copied into this list.
+
+For example, if A imports B and B imports C, A metadata records B with its version and main hash, while B metadata records C with its version and main hash. C appears in A dependencies only when A's own sources import C. A transitive dependency does not replace that import or provide A with a default version.
+
+During compilation and execution preparation, validation traverses the entire reachable graph: locate direct dependencies, validate their archives and read their own dependencies until every reachable module is resolved. The root archive needs no flattened complete list. Validation precedes user code and invokes neither initializers nor the OS loader. The same search directories apply throughout the pass.
+
+Traversal is iterative rather than recursive by dependency depth; validate each shared node once per pass while retaining all paths leading to it for diagnostics. Distinguish a fully validated shared node from a back edge on the active chain: a dependency diamond is valid, an import cycle is an error. Cycle detection remains mandatory for input archives even though a correct compiler must not produce cyclic graphs.
+
+Traversal succeeds for a finite, available, valid graph. Absence of cycles alone does not guarantee success: a missing module, access error, corruption, unsupported format, version/expected-hash conflict or another validation error prevents execution/build publication under the common rules.
+
+Acceptance: A → B → C resolves and validates C without listing C in A; A's own import of C adds a direct record, including imports from A's included sources. A diamond validates the shared node once while retaining diagnostic paths. A deep chain does not overflow the stack. Detect a cycle or a missing/corrupt transitive C before any user side effect. An unexecuted import branch does not hide a dependency from preflight.
