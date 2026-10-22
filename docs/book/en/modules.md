@@ -3555,3 +3555,13 @@ The standard v1 packager writes every .gbin file part using Deflate: module.json
 Compression does not affect main identity: the main SHA-256 is still computed from normalized canonical metadata and bytecode, while DLL/SO SHA-256 covers the complete original library bytes. Compressed streams and ZIP headers do not replace those inputs. The reader checks CRC and sizes under container rules; valid stored and Deflate representations of the same parts have identical corresponding hashes.
 
 Acceptance in #182/#183/#219/#247: standard builds and merges use Deflate for every file entry, including short, empty and poorly compressible data. Repeated writes and writes across supported OSes with the same pinned implementation/settings are byte-identical. The reader accepts valid stored/Deflate and mixed archives; compression failures, corrupt streams, CRC and size errors are not concealed. Changing a permitted storage method does not change the main hash or decompressed library hash.
+
+## Responsibility for analytical summaries
+
+An imported module's analytical summaries are a producer contract. The producing compiler is responsible for the truth of exported guarantees and publishes only completed, proven results under the agreed rules. The consumer uses correctly read summaries without reanalyzing all dependency bytecode or reproving every assertion.
+
+The importer retains required checks of schema and version, types and ranges, references and parameter counts, duplicates, detectable contradictions, metadata/bytecode consistency, the main hash and native-part hashes. Omitting reproving does not permit structurally invalid data or ignoring an already detected contradiction. Integrity validation confirms bytes against an expected hash, not the mathematical truth of analytical assertions.
+
+A producer bug can cause incorrect consumer optimization; this contract does not promise detection of every semantically false but structurally valid summary. Fix discovered producer errors at the producer and cover them with regressions. Do not add hidden recompilation, dependency execution to check facts, or mandatory dependency-bytecode analysis to ordinary imports. Missing information remains unknown; user-visible import initialization is preserved.
+
+Acceptance in #205/#185/#219: valid summaries are available to the consumer analyzer without dependency sources or bytecode reproving; invalid structure, references, duplicates, detectable contradictions and hashes still fail. Instrument metadata reading to verify that it neither invokes a dependency-bytecode analyzer nor executes dependency code. Producer tests establish that only actually proven guarantees are published; ordinary container validation does not claim a full semantic proof.
