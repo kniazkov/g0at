@@ -3780,6 +3780,12 @@ Obtaining the list executes neither bytecode nor exported functions and does not
 
 Acceptance in #212/#223: multiple exports, an empty interface, aliases, and declarations with no proved type; names match externals, ordering is stable, and obtaining the list executes no code.
 
+## Brief export descriptions in inspect
+
+Beside each exported name, goat-inspect displays mutable and type from the validated externals entry in module.json. When type is absent, the text report explicitly says that the type is unknown. This presents a subset of existing metadata without additional analysis, code execution, or inferring a type from an initial value. Mutable describes whether the declaration's value can be replaced, not whether an object's contents are immutable.
+
+Structured JSON export descriptions carry the existing mutable and optional type with the same meaning. Do not replace an absent type with an invented type or localized text. Acceptance in #212/#223: a constant with a known type, a mutable declaration, and an export without type; output matches module.json without additional inference.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
