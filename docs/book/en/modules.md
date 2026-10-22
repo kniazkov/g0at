@@ -2480,6 +2480,8 @@ Acceptance: accept strings such as `email: "contact through the website"` and `h
 
 ## Author uniqueness and ordering
 
+Before applying the merge rules below, remove repeated source arguments as specified in “Duplicate goat-merge source arguments”. Count input lists after this step.
+
 Authors is an ordered list without duplicates. An entry is identified by the `name + email` pair after JSON decoding and normalization of empty email to absence. Compare exactly, without trimming, case changes or Unicode normalization. Missing and empty email represent the same value. Identical names with different emails are distinct entries; identical emails with different names are likewise not automatically combined.
 
 A repeated pair within authors makes .gmod or module.json invalid; silent deduplication is prohibited. This includes pairs that become equal after empty-email normalization. Preserve author order during compilation and reading.
@@ -3631,6 +3633,16 @@ With one source, `goat-merge result.gbin source.gbin` fully validates the input 
 Copy the single nonempty author list with its existing order without interactive selection. Repackaging does not load native libraries, execute bytecode or require transitive dependency files. Apply every check to `goat-merge source.gbin source.gbin` as well; publish through a validated temporary file and atomic replacement.
 
 Acceptance in #215/#222/#224: one valid source, a source without native variants, multiple native variants inside one source, author preservation without prompting and unchanged main identity when ZIP representation changes. Reject corrupt input while preserving destination; cover matching source/destination and no sources.
+
+## Duplicate goat-merge source arguments
+
+Duplicate source argument values are removed automatically before reading archives, checking conflicts or counting input author lists. This is neither a command error nor a reason to ask for confirmation. Keep the first occurrence of each value and preserve the relative order of remaining sources.
+
+Argument deduplication compares path strings received from the shell exactly, without trimming whitespace, changing case or comparing archive contents. It does not merge different arguments merely because their main hashes match: those archives may contain different native variants and informational metadata.
+
+Handle destination separately; it is not part of the source deduplication set. In `goat-merge result.gbin result.gbin source.gbin source.gbin`, the remaining sources are result.gbin and source.gbin; the source matching destination is retained. In `goat-merge result.gbin source.gbin source.gbin`, one source remains, so repackaging rules apply and its sole author list is preserved without a prompt.
+
+Acceptance in #215/#222/#224: two or more repetitions, interleaved duplicates of different sources, a repeated sole source with nonempty authors, destination among the sources, and paths containing spaces. Verify no redundant prompts, one processing pass per remaining argument and preservation of distinct sources sharing a main hash.
 
 ## goat-inspect exit statuses
 
