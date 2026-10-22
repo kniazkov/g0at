@@ -2798,3 +2798,7 @@ Native specializations reference the function_id of their module. Implementation
 Before execution, validate reference consistency: the function and file must exist, the FUNC instruction must be valid, and the binding must agree with the metadata. Missing references, contradictory bindings and duplicate definitions of a function_id are format errors. Metadata validation does not load native libraries through the OS; actual library ABI validation remains at its designated stage.
 
 Acceptance: anonymous and identically named functions remain distinct; closure instances retain their own captures; equal function_id values in different modules or versions never select another module's native implementation. Reject invalid file, function and FUNC references. This decision does not specify the width of function_id or its numbering algorithm.
+
+## Coverage of function identifiers
+
+Assign a separate function_id to every function in the module, including nested and anonymous functions, regardless of exports or availability of native specializations. Do not number only native-compilation candidates. Adding or removing a native specialization for unchanged source code must not change function_id values. Verify identical identifiers when compiling the same source with and without native specializations, including nested and anonymous functions. Exact JSON fields of the function table, the numbering algorithm and treatment of functions removed by optimization are specified separately.
