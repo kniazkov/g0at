@@ -2520,3 +2520,15 @@ Different versions of the same name are valid separate records. Repeating a name
 In .gmod, dependencies retains its different form: an object mapping names to default versions, without hashes. These are import-resolution settings, not the serialized actual dependency list of a compiled module. The compiler writes actual dependencies and their verified main hashes into .gbin.
 
 Acceptance: accept two versions of math; reject a repeated pair with either matching or conflicting hashes; reject missing record fields, invalid types, unknown fields and invalid hash spelling; repeated imports of one pair do not duplicate its record. Verify that the existing .gmod dependencies form remains valid and that substituting either representation into the other format is rejected.
+
+## Default versions and unordered dependencies
+
+In .gmod, dependencies provides at most one default version per name: an object mapping names to exact version strings. An array of versions in place of a string is invalid; a repeated name key is a JSON error. Using multiple versions of one module does not require multiple descriptor entries.
+
+With `"dependencies": {"math": "2.0"}`, `import "math"` resolves to math@2.0, while `import "math@1.0"` explicitly selects math@1.0 independently of the default. If both imports are used, the compiled .gbin records both versions with their main hashes. An explicit import does not change versionless import resolution. Without a default for the name, a versionless import is a compile error: do not infer its version from other imports, available files or dependencies of compiled libraries.
+
+Dependencies have no semantic order. Reordering .gmod keys or module.json dependency records does not change dependency membership, import resolution or main-build identity. This is neither a priority list nor initialization order. The technical canonical hash representation must respect these set semantics; general JSON array-order preservation does not make dependency order meaningful. Author order remains meaningful.
+
+Goat-merge combines native variants of one main build with dependencies already fixed. It does not reselect versions or combine incompatible dependency sets into a new main build; rearrangement of identical records is not a conflict.
+
+Acceptance: test joint use of math@2.0 through versionless import and math@1.0 through explicit import; reject versionless import without a default even if another location contains exactly one explicit import of that name. Reject a version array in .gmod. Reordering dependencies must not alter resolution, main hash or merge eligibility; reordering authors retains its separately agreed rules.
