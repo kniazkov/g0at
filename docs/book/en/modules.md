@@ -3353,3 +3353,13 @@ Do not remove an existing exported declaration from externals merely because the
 Missing type/value/functionId/functionRef means missing corresponding knowledge, not a missing declaration. A minimal record is not an empty export and must survive normalization. An empty record {} is invalid because required mutable is absent. Preserve consistency checks between the external interface and entry-file declarations; omitting externals cannot conceal actual exported declarations.
 
 Acceptance: omitted externals and {} produce identical normalized data and hashes when there are no exports. Unknown properties do not remove named exports with mutable = false or true. Preserve the distinction between an absent name and a declaration with an unknown value; reject an empty record without mutable and incorrect container JSON types.
+
+## Normalizing wholly unknown effects
+
+A valid effects = {"may": [], "unknown": true} is equivalent to omitted effects: it provides no effect information. Readers accept both; canonical writers omit that object. Normalize before canonicalizing the summary, detecting its duplicates, sorting summaries and computing the main hash.
+
+Preserve empty may with unknown = false: it expresses proven purity under the current effect system. Also preserve nonempty may, including with unknown = true; do not discard the listed possible categories together with the incompleteness flag.
+
+Validate the original structure before normalization: both may and unknown are required when effects is present. Extra fields, unknown or repeated categories, null and incorrect types are errors. effects = {} is not a valid wholly unknown description and cannot bypass validation by being removed.
+
+Acceptance: omitted effects and valid empty may with unknown = true yield identical normalized summaries and main hashes and cannot conceal a duplicate. Empty may with unknown = false remains distinct. Preserve nonempty may for either unknown value; reject malformed input before removal.
