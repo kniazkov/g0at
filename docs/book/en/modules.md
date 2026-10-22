@@ -2973,3 +2973,26 @@ In this example, square and sqr reference the single functions record with funct
 Shared information describes function code and does not replace an individual closure's state. Analysis must preserve differences in captures and dependence on arguments; sharing a functionId does not prove equal captured values. Absence of a proven functionId binding neither prohibits dynamic calls nor permits attributing an arbitrary function's properties to the export.
 
 Acceptance: two exported names of one function resolve to one record with shared analysis metadata; descriptions cannot diverge between aliases. Reading this metadata does not execute the dependency. Mutable exports still must not be permanently bound to their initial function.
+
+## Function parameters in metadata
+
+A functions record contains a parameters array in declaration order. Each element is an object with a required string name field containing the parameter name for diagnostics. A function without parameters has parameters = []. A parameter's zero-based array index is used in analytical relationships with arguments, for example “the result is the same as argument 0.” The name does not replace the index in such relationships.
+
+```json
+{
+  "functionId": 1,
+  "file": 0,
+  "instruction": 12,
+  "parameters": [
+    {
+      "name": "x"
+    }
+  ]
+}
+```
+
+In this agreed basis, each parameter record contains name; additional analytical fields require explicit schema definitions. Unknown fields, incorrect types, null instead of an array or record, and a missing required name are errors. Preserve parameters order; do not sort by name.
+
+A parameter's type is not inferred solely from an operation: x * x by itself does not prove that x must be an integer. Type constraints of a particular native specialization are described separately and do not become constraints on every call to the function. The parameter table does not change existing language rules concerning argument count at a call.
+
+Acceptance: a function with multiple parameters retains their order and names; a function without parameters has an empty array. Analytical references use corresponding indices with bounds checks. An integer native specialization does not prohibit other valid calls through the VM.
