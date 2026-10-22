@@ -2442,3 +2442,11 @@ After JSON decoding, reject an empty string and any string containing U+0000 (in
 Preserve leading, trailing and internal spaces without automatic trimming. For example, `"main": " main.goat "` supplies a path with leading and trailing spaces; a string consisting only of spaces is not empty. Such filenames are possible on Linux. Support for a particular name depends on the OS, file system and file API; ordinary Windows interfaces have restrictions and normalization behavior concerning trailing spaces. The format rule prohibits trimming by Goat's loader itself, but does not promise name portability or changes to OS rules.
 
 Checks: reject an empty string and NUL at the beginning, middle and end; verify preservation of spaces after JSON decoding. On Linux, create distinct files named `main.goat` and ` main.goat ` and verify that the specified file is selected. Report ordinary resolution, missing-source or read errors without an additional attempt using a trimmed name.
+
+### Entry source extension in main
+
+The `.goat` extension is recommended but not required for the file specified by `main`. Read that file as Goat source text regardless of its extension, including no extension. Do not append anything to the path or search for another file with a `.goat` suffix.
+
+For example, `"main": "src/start"` selects exactly `src/start`, even if `src/start.goat` also exists. Read or syntax errors in the selected source do not trigger a search for an alternative name. This rule concerns main in .gmod and does not redefine mode selection for an arbitrary command-line argument.
+
+Checks: successfully build valid source with the `.goat` extension, another extension and no extension; when both `start` and `start.goat` exist, select the explicitly named file; report an error if `start` is missing even when `start.goat` exists; diagnose unsuitable content as a source error.
