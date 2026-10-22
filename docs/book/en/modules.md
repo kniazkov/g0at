@@ -3664,6 +3664,16 @@ If the parent subsequently disappears or becomes inaccessible, fail with a norma
 
 Acceptance in #215/#222/#224: existing parent, missing immediate parent, multiple missing components, a file in place of a directory, a simple destination name and a permitted link to an existing parent. On rejection create no directories or temporary result and do not prompt for author order.
 
+## File-only archive I/O in goat-merge v1
+
+Goat-merge v1 reads source archives and publishes results only through regular files. Transferring .gbin contents through stdin or stdout is unsupported. Standard input is used only for the agreed interactive selection; output streams carry messages, help and diagnostics, never binary archive data.
+
+Each source must resolve to a regular file after following an allowed symbolic link. Reject directories, named pipes, sockets and devices without waiting for data. An existing destination must also be a regular file; the existing prohibition on a symbolic link at destination still applies. Create an absent destination only by atomic publication in an existing parent directory. Do not delete or replace a special object to create the result.
+
+The argument `-` does not designate a standard stream: it is a literal filename. Use `./-` to refer to that name explicitly. The utility neither reads an archive from redirected stdin nor writes one to redirected stdout. Unavailable interactive input follows the existing author-selection rules.
+
+Acceptance in #215/#222/#224: ordinary sources and destination, an allowed source link, directories and special objects used as inputs/outputs, a literal file named `-`, and redirected stdin/stdout. Verify no wait for pipe data, preservation of special destination objects and no binary archive on stdout. Publish only after complete validation of the temporary result.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
