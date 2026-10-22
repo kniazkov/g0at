@@ -1532,14 +1532,11 @@ All four fields are optional. Authors permits multiple authors; email may be omi
 
 Description, authors, license, and homepage do not contribute to the main hash. Correcting email or homepage with unchanged code and dependencies does not require rebuilding consumers. Execution and access metadata still contributes to the main hash. This exception covers only explicitly listed informational fields.
 
-### 69. Conflicting information prevents merging
+### 69. Informational conflicts and author order
 
-```text
-windows.gbin: authors → Ivan, ivan@old.example
-linux.gbin:   authors → Ivan, ivan@new.example
-```
+After empty-value normalization, differences in description, license and homepage prevent merging even when main hashes match. A nonempty field present in only one input also conflicts. JSON formatting and object-key ordering differences are not value differences.
 
-Even with matching main hashes, goat-merge reports an error identifying the differing field. The author must reconcile metadata before merging; argument order does not select values. A nonempty field present in only one input is a conflict. Empty informational values normalize to absence as specified in “Empty informational fields: normalization”. JSON formatting and object-key ordering differences are not value differences.
+Authors is checked separately: duplicates are invalid, and differing orders of the same author set require an explicit human choice in goat-merge. See “Author uniqueness and ordering”. This replaces unconditional rejection of every authors difference; differing membership still requires clarification.
 
 ### 70. Optional does not permit incorrect types
 
@@ -2466,7 +2463,7 @@ In .gmod and module.json, empty strings in `description`, `license`, `homepage` 
 
 Every author entry still requires a nonempty name: `authors: [{"name": ""}]` is an error, not an entry to discard. `null` remains a type error in all listed fields. Do not trim spaces: `" "` is nonempty and is preserved. Preserve all nonempty strings exactly, without case changes or Unicode normalization. This rule does not apply to technical name/version/main fields, dependencies or native settings.
 
-Goat-merge compares informational data after this normalization. An absent field and its empty value do not conflict; a nonempty field present in only one input still causes a conflict. For example, `{"description":"","authors":[]}` and `{}` are equivalent, as are `{"authors":[{"name":"Ivan","email":""}]}` and `{"authors":[{"name":"Ivan"}]}`. Normalizing informational data does not change the main hash.
+Goat-merge compares informational data after this normalization. An absent field and its empty value do not conflict; a nonempty description/license/homepage field present in only one input still causes a conflict; authors differences follow “Author uniqueness and ordering”. For example, `{"description":"","authors":[]}` and `{}` are equivalent, as are `{"authors":[{"name":"Ivan","email":""}]}` and `{"authors":[{"name":"Ivan"}]}`. Normalizing informational data does not change the main hash.
 
 Acceptance: compare each empty field with its absence when reading .gmod/module.json and during merge; output .gbin omits these empty fields. Test equivalence of empty and absent email, rejection of empty name and null, preservation of a spaces-only string, and conflict between a nonempty value and absence. Merge output must not depend on input order for equivalent empty/absent data.
 
@@ -2477,3 +2474,16 @@ Goat does not validate the syntax of `authors[].email` or `homepage`: email-addr
 The compiler, loader, goat-inspect and goat-merge perform no network checks and do not reject a module because of the contents of these informational strings. A possible future Goat artifact website may impose its own publication checks; these are not requirements of the format or current tools.
 
 Acceptance: accept strings such as `email: "contact through the website"` and `homepage: "page not created yet"`, transfer them and display them as text; continue rejecting invalid types. Verify exact preservation of nonempty values, normalization of empty values and absence of network requests.
+
+
+## Author uniqueness and ordering
+
+Authors is an ordered list without duplicates. An entry is identified by the `name + email` pair after JSON decoding and normalization of empty email to absence. Compare exactly, without trimming, case changes or Unicode normalization. Missing and empty email represent the same value. Identical names with different emails are distinct entries; identical emails with different names are likewise not automatically combined.
+
+A repeated pair within authors makes .gmod or module.json invalid; silent deduplication is prohibited. This includes pairs that become equal after empty-email normalization. Preserve author order during compilation and reading.
+
+Goat-merge checks both membership and order. Identical lists need no additional choice. If the same set of authors appears in different orders, show all entries with names and emails and ask the person to explicitly choose the final order: first author, second, and so on. Each author must occur exactly once in the result. Input archive order and automatic sorting do not determine author order. Do not publish the output archive or replace an existing output file until selection is complete.
+
+This is an exception to the previous unconditional rejection of conflicting informational fields: a person resolves conflicting author order. The conflict rules for description/license/homepage remain unchanged. Behavior for differing author membership and unavailable interactive input still requires clarification.
+
+Acceptance: reject duplicate exact pairs, including empty/missing email equivalence; accept identical names with different emails; reordered versions of one set prompt for order; identical lists do not prompt; output preserves the selected order without duplicates or omissions. Keep any existing output file unchanged until selection is complete.
