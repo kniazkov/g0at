@@ -2665,7 +2665,7 @@ Acceptance: a single source still starts at instruction 0; a multifile module co
 
 ## The files table and entry addresses
 
-In module.json, the required files field is a nonempty array describing logical source files. Each record contains required fields name (a string used as the logical diagnostic name) and entry (a nonnegative integer instruction index for the start of the file's top-level code in the shared bytecode.bin). This is a closed object: there is no separate id field and unknown fields are prohibited. Null, invalid types, and fractional or exponential spellings of integer fields are rejected under the common rules.
+In module.json, the required files field is a nonempty array describing logical source files. Each record contains required fields name (a string used as the logical diagnostic name) and entry (a nonnegative integer instruction index for the start of the file's top-level code in the shared bytecode.bin). The boolean external field described below is also required. This is a closed object: there is no separate id field and unknown fields are prohibited. Null, invalid types, and fractional or exponential spellings of integer fields are rejected under the common rules.
 
 A file identifier is its array index: 0, 1, 2, and so on. It is local to the module; identical indices in different modules do not merge their files, scopes or rights. The required main field in module.json is a nonnegative integer selecting a files record and must be less than the record count. In .gmod, main remains a source-path string; do not confuse these formats.
 
@@ -2678,9 +2678,9 @@ Example module.json fragment; other metadata is omitted and instruction addresse
   "version": "1.0.0",
   "main": 0,
   "files": [
-    {"name": "src/main.goat", "entry": 0},
-    {"name": "src/vector.goat", "entry": 40},
-    {"name": "src/matrix.goat", "entry": 120}
+    {"name": "src/main.goat", "entry": 0, "external": false},
+    {"name": "src/vector.goat", "entry": 40, "external": false},
+    {"name": "src/matrix.goat", "entry": 120, "external": false}
   ]
 }
 ```
@@ -2693,13 +2693,15 @@ The files order matters for addressing: reordering records changes identifiers a
 
 Acceptance: the example correctly associates main and include with separate files in one bytecode.bin; identical indices in two modules remain independent. Reject empty/missing files, out-of-range main, include referencing a missing file, invalid entry, a separate id field and invalid types before execution. Consistently changing the table and all references still selects the same logical files.
 
-### Unique logical file names
+### Internal and external file-name uniqueness
 
-Values of files[].name must be unique within a module. Different records sharing a logical name make module.json invalid regardless of differing entry values. Compare decoded strings exactly, without case conversion, trimming or Unicode normalization; alternative JSON escaping of one string does not create distinct names. Compare names as logical labels, not through the executing machine's file-system rules.
+For records with external = false, files[].name values must be unique within a module. Two internal records sharing a name make module.json invalid regardless of entry. Compare decoded strings exactly, without case conversion, trimming or Unicode normalization; alternative JSON escaping of one string does not create distinct names. Compare names as logical labels, not using the executing machine's file-system rules.
 
-Names such as `src/math.goat` and `tests/math.goat` are distinct and valid. Identical logical names in different modules are allowed: diagnostics distinguish modules by name and version. The compiler must assign distinguishable logical names to distinct sources; matching labels do not justify combining files with different canonical paths.
+For records with external = true, identical name values are allowed: external sources are distinguished by their files indices. An internal and an external file may also share a name. Runtime identity is the module and file index, not the name. Sources with different canonical paths are not combined because their names match.
 
-Acceptance: reject duplicate name values, including equivalent JSON escaping, before execution; distinguish different directory components in logical names. Verify independence of identically named files across modules and preservation of the common source-identity rules.
+External-file diagnostics show the name, external status and index, for example: math.goat (external file #1). Preserve module context. Identical logical names in different modules are allowed.
+
+Acceptance: reject duplicate names among internal records, including equivalent JSON escaping; accept identically named external files and matching internal/external names. Diagnostics distinguish external files by index; their scopes and states remain independent.
 
 ## Deterministic source-file numbering
 
@@ -2718,10 +2720,10 @@ Module.json fragment (other metadata omitted; entry values are illustrative and 
   "version": "1.0.0",
   "main": 0,
   "files": [
-    {"name": "src/main.goat", "entry": 0},
-    {"name": "src/vector.goat", "entry": 40},
-    {"name": "src/common.goat", "entry": 80},
-    {"name": "src/matrix.goat", "entry": 120}
+    {"name": "src/main.goat", "entry": 0, "external": false},
+    {"name": "src/vector.goat", "entry": 40, "external": false},
+    {"name": "src/common.goat", "entry": 80, "external": false},
+    {"name": "src/matrix.goat", "entry": 120, "external": false}
   ]
 }
 ```
@@ -2741,3 +2743,26 @@ Logical path-component separators are always `/`, including Windows builds. This
 A link inside the project pointing to a source outside the real .gmod directory denotes an external source; do not use the link's relative path as its logical name. External-source naming is specified separately.
 
 Acceptance: accessing one source directly or through a link yields the same logical name; relocating the project preserves names; internal Windows paths use `/`. A directory sharing only a string prefix is not considered nested. Classify an outward link as external; preserve literal backslashes in Linux filename components.
+
+## Separate external-source flag
+
+Each files record contains a required boolean external field. False denotes an internal source with a logical path relative to the real .gmod; true denotes a source outside that directory after canonicalization and symbolic-link resolution. This describes source provenance at build time, not an imported external library: both kinds of files belong to the current module.
+
+For an external source, name contains only the actual filename without directories. Do not insert service prefixes such as @external, numbers or synthetic directories into name. The flag is stored in external; the number is already the files record index, with no separate id field. The real absolute path remains only in compiler state and is not written into .gbin.
+
+Example fragment with two distinct external sources named math.goat (instruction addresses are illustrative):
+
+```json
+{
+  "main": 0,
+  "files": [
+    {"name": "src/main.goat", "entry": 0, "external": false},
+    {"name": "math.goat", "entry": 80, "external": true},
+    {"name": "math.goat", "entry": 120, "external": true}
+  ]
+}
+```
+
+These are files 1 and 2 with independent scopes and states despite identical names. Show external status and indices separately in diagnostics. An external source can also be the entry file: main selects its record normally.
+
+Acceptance: required external accepts only true/false; reject omission, null or a string instead of boolean. Internal names retain relative directories; external names contain only the filename. Do not combine distinct external paths sharing a filename. An outward link receives external = true. Verify that written names contain neither service prefixes nor absolute paths.
