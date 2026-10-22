@@ -2640,3 +2640,13 @@ When enumeration completes normally, return 0 if at least one target passed the 
 Return a nonzero status if no target was successfully verified. This covers both no discovered compilers and failure of every performed probe. With --cc, consider only results from the explicitly selected compiler. Invalid options and command-level errors are not converted into success by this rule.
 
 Acceptance: one successful probe yields 0; success together with another candidate's failure or timeout also yields 0 while retaining diagnostics; no compilers or all failed probes yield a nonzero status. Scripts can use the status to check for at least one available native target without parsing human-readable output.
+
+## Compiler probe result cache
+
+Native-target availability results are retained only in memory for the current Goat invocation. Repeating the same probe under unchanged conditions reuses its result instead of compiling and linking again. Success, failure and timeout belong to a specific compiler, target and probe configuration; do not reuse a result for another target or configuration.
+
+Do not persist results across invocations or restore them from a persistent cache. A new invocation probes the required candidates again because the compiler, environment, headers, libraries or linker may have changed. Caching does not require probing unnecessary targets: ordinary discovery still stops at the first suitable compiler, while --list-native-targets performs full enumeration within discovery scope.
+
+Caching a result does not require retaining its probe DLL/SO for a future invocation. Temporary files remain managed by the shared cleanup service. These rules concern compiler availability checks and do not introduce a cache of user-program native code.
+
+Acceptance: an identical repeated probe within one invocation does not invoke the compiler again; a different target or configuration needs its own check. Two separate invocations probe again. Changed compiler availability between invocations affects the new result; success retained by the previous process is not reused.
