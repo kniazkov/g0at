@@ -3601,3 +3601,15 @@ cCompiler does not participate in the main hash, compatible variant selection or
 Acceptance in #208/#211/#212/#215: compilation records the compiler actually invoked; inspect and merge preserve information with its variant; different compilers for different variants are allowed. Changing only cCompiler changes neither the main hash nor compatibility. Test an absent object and invalid structure.
 
 When deduplicating a native variant with identical requirements and an identical DLL/SO hash, goat-merge compares cCompiler by the exact name/version pair after JSON decoding. Identical information is preserved once; if only some inputs provide the object, preserve the available information. Different provided information causes an error without automatic selection, publishing a result or modifying an existing output file. Validate all inputs first; missing information does not eliminate a conflict between two other inputs. This rule does not permit merging different libraries with identical requirements. Acceptance: identical information, absence in all inputs, information in only one input, differing names or versions, and three inputs with one absent object and two conflicting objects; outcomes are independent of input order.
+
+## goat-inspect JSON report version and error codes
+
+The goat-inspect --json report has its own required integer reportVersion field, initially 1. It is independent of .gmod, module.json, bytecode, analysis summary and native ABI versions, and of the utility release version. The report is not a copy of module.json and does not enter the module hash.
+
+Each error diagnostic contains required nonempty code and message strings. Code is a stable, nonlocalized identifier of the cause for automation; message is a human-readable explanation that may be translated and refined. Scripts and CI match code rather than message text. Do not use platform-specific OS error text as code; it may be included in the explanation.
+
+Within one report version, do not change the meaning of an assigned code or incompatibly change field structure. Incompatible changes require a new reportVersion. Specify the complete report schema and code catalog with meanings in #244/#223 before implementation; partial field examples do not replace a complete contract.
+
+The agreed output rule remains: handled errors in --json mode produce a JSON report without unrelated stdout text; errors yield a nonzero exit status. The report version is present even when opening or validating a module fails and its own metadata is unavailable.
+
+Acceptance in #212/#223/#219: parse successful and failed reports as JSON; check reportVersion and diagnostic structure. The same cause retains its code across message languages. Opening, JSON and integrity errors must have documented codes. Module versions do not replace the report version. Implementation and tests remain separate work.
