@@ -3427,3 +3427,25 @@ For example, {"type":"array","empty":true,"elements":{"type":"integer"}} normali
 Before removal, validate the entire original object, including nested elements: incorrect types, unknown fields and internal contradictions remain errors. For example, elements = null and elements = {"type":"integer","range":{"min":2,"max":1}} are invalid even with empty = true. The empty field itself permits only true with type = array; normalization does not relax that requirement.
 
 Apply this rule before canonicalization, summary duplicate detection and main-hash computation. Acceptance: empty arrays with different valid element constraints have one canonical form; such constraints cannot conceal duplicate summaries. Reject invalid elements before removal. Without empty = true, preserve meaningful element constraints.
+
+## General rule for information-preserving normalization
+
+As instructed by the author, reductions proven to preserve the meaning and all significant information of a valid description are accepted and documented autonomously, without requesting approval for each case. This applies to current and subsequent descriptions, not just previously listed empty fields. Questions are needed only where meaning changes or equivalence has not been established.
+
+Remove redundant optional facts and empty containers when their absence means exactly the same thing; replace equivalent representations with the agreed canonical form. Process nested descriptions and reductions enabled by normalizing their contents. Preserve required fields, declaration identity, references, significant positions and order. Fewer bytes alone do not establish equivalence.
+
+First validate the original structure, types, versions, required fields, references and constraints. Normalization cannot legitimize invalid values, unknown fields or contradictions, or remove erroneous data to pass validation. Do not expand accepted inputs merely because an invalid field could be removed. In particular, the schema determines whether an input value with type = null is accepted; redundancy alone does not determine this.
+
+Normalize contents before comparing summaries, detecting duplicates and hashing. Do not silently remove duplicates; the agreed summary duplicate check precedes removal of summaries without assertions. Do not turn lack of a guarantee into a guarantee: unknown effects differ from proven purity, and an unknown value differs from null, an empty string or false. Preserve exact int64 values, real bit patterns, reference identity and the distinction between an absent export and an export with unknown properties.
+
+For each reduction, document one deterministic form, application order and positive/negative examples in RU/EN and implementation issues. All consumers use the same rules; implementations do not choose their own reductions. Normalization terminates and is idempotent: applying it again does not change the result. The exact algorithm and reference bytes remain part of completing #244; this general rule neither replaces them nor claims implementation is complete.
+
+Acceptance: equivalent valid forms yield identical canonical data and main hashes; repeated normalization leaves data unchanged; significant distinctions survive, invalid forms fail before field removal, and equivalent summaries cannot bypass duplicate detection.
+
+### Completely unconstrained arguments
+
+After checking when.arguments length against the formal parameter count and validating all descriptions, then normalizing them, remove the entire arguments field if every element equals {}. For a function without parameters, also remove arguments = []. Retain the required when as {}.
+
+For a function with two parameters, {"when":{"arguments":[{},{}]}} normalizes to {"when":{}}. If any argument contains a constraint, retain the entire positional array, including empty entries. Never remove individual positions, compact or sort it. Reject an incorrectly sized array even when every entry is empty.
+
+Acceptance: a completely unconstrained array and absent arguments yield identical data and hashes; matching summaries are duplicates after normalization. Test zero and multiple parameters, incorrect length, invalid element descriptions and preserved positions when one meaningful constraint remains.
