@@ -2946,3 +2946,30 @@ Reject numbers outside the Goat integer type's range. Rounding, truncation and o
 ```
 
 Acceptance: exact read/write round trips for the example and its neighbor 9007199254740992; their canonical representations must differ. Test both Goat integer boundaries and values one step beyond each without intermediate overflow. Exact numeric bounds must be recorded in the final v1 schema and fixtures.
+
+## Placement of function analysis metadata
+
+Information about a function's parameters, result and side effects belongs in its functions table record. In externals, an exported declaration with a proven own function references that record through functionId. Multiple exported names may reference one function; its analysis description is not duplicated under each name.
+
+```json
+{
+  "externals": {
+    "square": {
+      "mutable": false,
+      "type": "function",
+      "functionId": 1
+    },
+    "sqr": {
+      "mutable": false,
+      "type": "function",
+      "functionId": 1
+    }
+  }
+}
+```
+
+In this example, square and sqr reference the single functions record with functionId = 1. That record retains its required functionId, file and instruction fields. Its schema will be extended with explicitly defined analysis fields; the general closed-schema rule and rejection of unknown fields remain in force. Exact names and structures of the added fields are agreed separately.
+
+Shared information describes function code and does not replace an individual closure's state. Analysis must preserve differences in captures and dependence on arguments; sharing a functionId does not prove equal captured values. Absence of a proven functionId binding neither prohibits dynamic calls nor permits attributing an arbitrary function's properties to the export.
+
+Acceptance: two exported names of one function resolve to one record with shared analysis metadata; descriptions cannot diverge between aliases. Reading this metadata does not execute the dependency. Mutable exports still must not be permanently bound to their initial function.
