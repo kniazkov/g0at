@@ -322,6 +322,8 @@ The complete function-list schema and service symbol name remain open. Validatio
 
 Main and native-library hashes use SHA-256, represented as 64 lowercase hexadecimal characters. Hash JSON in canonical form: UTF-8, sorted object keys, fixed value encoding, no extraneous whitespace. Preserve array order. Formatting or field-order changes do not change the hash. Exclude only explicitly specified fields; exact canonical encoding rules still need specification.
 
+Selecting and vendoring a compact open-source ZIP library, CMake integration and a shared C wrapper in lib are tracked in [#247](https://github.com/kniazkov/g0at/issues/247). Container validation (#182) and deterministic packaging (#183) use this layer and remain separate tasks.
+
 Provide third_party/ for ZIP, JSON, and SHA-256 if needed, retaining each dependency's license, source, and exact version. Builds must not download them. Goat wrappers reside in lib. JSON support must detect duplicate keys and permit canonical output; specific libraries remain unselected.
 
 ## File visibility, copying, and object ownership
@@ -3415,3 +3417,13 @@ For example, {"type":"array","elements":{}} normalizes to {"type":"array"}. This
 First validate the original structure and all ValueFacts constraints: elements is permitted only with type = array and must be a valid facts object. Reject null, incorrect types, unknown fields and contradictions before normalization. Empty elements does not make a description without type = array valid.
 
 Normalize before canonicalization, summary duplicate detection and main-hash computation. Acceptance: both valid representations yield identical canonical data and hashes; summaries equivalent after normalization are detected as duplicates. Preserve nonempty element facts and all other array facts; reject elements = null, [], an incorrect or absent type, and unknown fields inside elements.
+
+## Normalizing elements of a proven empty array
+
+With type = array and empty = true, elements is redundant regardless of the valid facts it contains: an empty array has no elements to constrain. After input validation, normalization removes elements while retaining type = array, empty = true and all other facts.
+
+For example, {"type":"array","empty":true,"elements":{"type":"integer"}} normalizes to {"type":"array","empty":true}. Readers accept both forms; canonical data and the main hash are identical. This rule does not remove nonempty elements from an array that has not been proven empty.
+
+Before removal, validate the entire original object, including nested elements: incorrect types, unknown fields and internal contradictions remain errors. For example, elements = null and elements = {"type":"integer","range":{"min":2,"max":1}} are invalid even with empty = true. The empty field itself permits only true with type = array; normalization does not relax that requirement.
+
+Apply this rule before canonicalization, summary duplicate detection and main-hash computation. Acceptance: empty arrays with different valid element constraints have one canonical form; such constraints cannot conceal duplicate summaries. Reject invalid elements before removal. Without empty = true, preserve meaningful element constraints.
