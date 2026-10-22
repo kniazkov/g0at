@@ -2766,3 +2766,13 @@ Example fragment with two distinct external sources named math.goat (instruction
 These are files 1 and 2 with independent scopes and states despite identical names. Show external status and indices separately in diagnostics. An external source can also be the entry file: main selects its record normally.
 
 Acceptance: required external accepts only true/false; reject omission, null or a string instead of boolean. Internal names retain relative directories; external names contain only the filename. Do not combine distinct external paths sharing a filename. An outward link receives external = true. Verify that written names contain neither service prefixes nor absolute paths.
+
+## Logical-name base for direct .goat execution
+
+When no .gmod is present and a standalone .goat source is executed, use the directory of the real entry source after canonicalization and symbolic-link resolution as the base for logical names and external classification. Neither the process working directory nor the directory containing a link to the entry file defines this base.
+
+The entry file receives index 0 and external = false; its logical name is its filename relative to its own directory. Other sources whose canonical paths lie within this base receive external = false and relative names using `/`. Sources outside it receive external = true and only the filename without directories; distinguish them by files indices. Test containment by path components, not string prefixes.
+
+For example, /home/ivan/run.goat links to /work/app/main.goat. The base is /work/app. The entry receives name = main.goat; /work/app/lib/math.goat receives name = lib/math.goat, external = false; /work/shared/math.goat receives name = math.goat, external = true. Relative includes still resolve against the real containing source file, not the shared logical-name base.
+
+Acceptance: direct and linked entry paths produce identical names and external flags; changing cwd does not change classification. Test an internal include, external include and an internal link to an external file. Building through .gmod retains the real .gmod directory as its base.
