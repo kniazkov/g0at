@@ -3111,7 +3111,7 @@ Current function_summary_type removes constants, ranges, callable identity and a
 
 Improved analysis using existing fields does not change the version. New fields or relation kinds require a new analysis.formatVersion with explicitly implemented reader support. Reject unknown versions, fields and enum values rather than silently ignoring them. Do not reserve fictional identity, sharing, callback or exception fields now. Future versions extend the same result/when/effects structure without conflating value descriptions and function behavior.
 
-Before closing #244, finalize remaining normalization and may canonicalization rules; add the agreed scalar encodings, empty-result normalization and summaries ordering to fixtures. Applicable facts do not depend on array order; serialization order and hashing must nevertheless be deterministic.
+Before closing #244, add the agreed scalar encodings, empty-result normalization, may/summaries ordering and duplicate checks to fixtures; finalize other explicitly open normalization rules. Applicable facts do not depend on array order; serialization order and hashing must nevertheless be deterministic.
 
 Acceptance: closed-object and version validation; formal-parameter count; unknown versus null; non-null; int64 and interval boundaries; empty arrays; fact consistency; missing and incomplete effects; no false purity; overlapping consistent summaries and detectable contradictions; no invented facts for unanalyzed signatures; no transfer of facts between distinct closure environments. Metadata neither executes dependencies nor bypasses import initialization nor changes native-implementation selection rules.
 
@@ -3207,3 +3207,22 @@ Identical summaries after normalization and canonicalization are duplicate error
 Distinct summaries with overlapping conditions are allowed when their claims agree. Equal when objects alone do not make summaries duplicates: compare the entire normalized summary. Existing detectable-contradiction checks remain. Summary order neither resolves contradictions nor selects a native implementation.
 
 Acceptance: permutations of summaries yield identical canonical data and main hashes; key ordering and equivalent JSON escapes cannot conceal duplicates; neither can omitted versus empty result. Preserve distinct consistent summaries with equal or overlapping conditions. Never reorder positional when.arguments or parameters.
+
+## Canonical ordering of effects.may categories
+
+effects.may is an unordered set of effect categories. Readers accept valid names in any order. Writers and main-hash computation sort decoded names lexicographically by unsigned UTF-8 bytes, independently of locale. The full order for current categories is externalRead, externalWrite, input, output.
+
+```json
+{
+  "effects": {
+    "may": ["externalRead", "externalWrite", "input", "output"],
+    "unknown": false
+  }
+}
+```
+
+A repeated category after JSON decoding is an input metadata error, not permission to silently deduplicate. Unknown names remain forbidden by the schema version. Normalize may order inside each summary before canonicalizing it, comparing summaries or sorting analysis.summaries. Consequently category permutations neither change the main hash nor conceal duplicate analysis summaries.
+
+Sorting does not change unknown or remove effects. Empty may with unknown = false retains its meaning of proven purity under the current effect system.
+
+Acceptance: permutations of the same categories yield identical canonical data and hashes; reject duplicates including equivalent JSON escape spellings. Detect summaries differing only in may order as duplicates after normalization. Cover empty may and the distinction between unknown = true and false.
