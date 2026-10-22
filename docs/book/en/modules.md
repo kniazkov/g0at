@@ -3742,6 +3742,14 @@ Goat-inspect (#212) and goat-merge (#215) open exactly the explicitly supplied i
 
 Acceptance in #212/#215: valid archives with .gbin, another extension, and no extension; when both `input` and `input.gbin` exist, use the explicitly supplied file. Missing `input` is an error even if `input.gbin` exists. Reject invalid contents regardless of filename.
 
+## Replacing existing goat-merge output without confirmation
+
+An explicitly supplied destination authorizes replacement of an existing regular file without a separate confirmation prompt. No --force flag is required or introduced in the v1 CLI. After input validation, metadata conflict resolution, and any required author-order selection, the prepared and validated result is published by atomic replacement. Unavailable interactive input alone does not prevent replacement; required interactive author selection still applies when needed.
+
+All other destination restrictions remain: this does not authorize replacing a symbolic link or special file or bypass permission checks. Failure before publication preserves the previous destination.
+
+Acceptance in #215: replace an eligible existing destination without an overwrite prompt, including with unavailable interactive input when author selection is unnecessary. Verify preservation of the previous file on validation or publication failure and that --force is not required.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
