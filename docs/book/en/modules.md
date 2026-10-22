@@ -2632,3 +2632,11 @@ Reporting reasons does not change native auto/required or explicit-target policy
 In --list-native-targets, always show successfully verified available targets and a separate failed-checks section if any checks failed. Do not include a failed target among available targets. Associate each failure with its compiler and target; retain successful results from other candidates.
 
 Acceptance: the first candidate fails its probe and the second passes; ordinary execution does not print the first error. If all candidates fail, show reasons for every performed check; report absence of candidates separately. Listing shows a successful target and a separate failure from another candidate. Clearly distinguish timeout from compilation failure; user-build errors remain visible.
+
+## Exit status of --list-native-targets
+
+When enumeration completes normally, return 0 if at least one target passed the build probe. Failures of other candidates, including timeouts, appear in the separate diagnostics section and do not make the final status nonzero when a successful target exists.
+
+Return a nonzero status if no target was successfully verified. This covers both no discovered compilers and failure of every performed probe. With --cc, consider only results from the explicitly selected compiler. Invalid options and command-level errors are not converted into success by this rule.
+
+Acceptance: one successful probe yields 0; success together with another candidate's failure or timeout also yields 0 while retaining diagnostics; no compilers or all failed probes yield a nonzero status. Scripts can use the status to check for at least one available native target without parsing human-readable output.
