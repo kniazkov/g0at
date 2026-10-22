@@ -2884,4 +2884,27 @@ Example for `external square = func(x) { return x * x; };` and `external var cou
 }
 ```
 
-This is the agreed basis of the description; fields for types, values and analytical properties are specified separately. Acceptance: preserve both declaration names and mutable flags; check functionId existence and reject mutable = true combined with functionId. Replacing an exported variable must affect subsequent calls rather than be bypassed by a static binding to its initial function. Generate and read metadata without executing dependency code.
+This is the agreed basis of the description; the type vocabulary and representation of values and analytical properties are specified separately. Acceptance: preserve both declaration names and mutable flags; check functionId existence and reject mutable = true combined with functionId. Replacing an exported variable must affect subsequent calls rather than be bypassed by a static binding to its initial function. Generate and read metadata without executing dependency code.
+
+## Proven type of an exported value
+
+The optional type field in an externals description denotes a proven value type on which consumers may rely. It is not the initial value's type or an observation from one execution. Omitting type means the type is unknown, not that the value is absent. Even a constant may have an unknown type when its value is determined during initialization and the analyzer cannot prove its type without executing the dependency.
+
+For a mutable export, its initial type is not a guarantee for subsequent reads: for example, external var counter = 0 allows later replacement with a string, so the initializer alone does not justify type = integer. Analysis and optimizations must not freeze the initial type of such a variable. mutable describes declaration mutability, whereas type describes a separate proven property of the value. For functions, type = function alone does not imply a known functionId, purity or absence of captures.
+
+```json
+{
+  "externals": {
+    "square": {
+      "mutable": false,
+      "type": "function",
+      "functionId": 1
+    },
+    "counter": {
+      "mutable": true
+    }
+  }
+}
+```
+
+Acceptance: a proven own function receives type = function; an exported variable initialized with an integer receives no permanent integer guarantee; an unknown constant type does not prevent correct dynamic execution. Omitting type is not interpreted as an absent value or a prohibition on calls. The full type vocabulary and representation are specified separately.
