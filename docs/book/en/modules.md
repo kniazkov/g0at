@@ -3019,7 +3019,7 @@ when.arguments[] and result use the same closed ValueFacts format. Previously ag
 
 - type: optional string from null, boolean, integer, real, numeric, character, string, function, array, object. numeric means integer or real; object means a user-defined object, not any value.
 - nonNull: optional true, proving exclusion of null. Exact null uses type = null. JSON null is not a facts object.
-- value: optional exact scalar constant consistent with type. Omission does not mean null. An explicit scalar type is required. Integers are exact JSON numbers in int64 range, never passing through double. Character encoding must be finalized before #244 closes. Real encoding, including special values, is defined in “Bit encoding of real constants.”
+- value: optional exact scalar constant consistent with type. Omission does not mean null. An explicit scalar type is required. Integers are exact JSON numbers in int64 range, never passing through double. Character encoding is defined in “Character constant representation.” Real encoding, including special values, is defined in “Bit encoding of real constants.”
 - range: optional closed object with required integer min/max, for type = integer. Inclusive int64 bounds, min <= max; any value must lie inside the range.
 - elements: optional allowed-element description for type = array. It uses ValueFacts structurally to allow future growth; the initial producer is limited by LATTICE_TYPED_ARRAY to an unrefined element type, nonNull, boolean constants or an empty description. Do not invent nested shapes, ranges or element values.
 - empty: optional true for type = array, proving an empty array. Represents today's typed array with BOTTOM elements without confusing it with an impossible function result.
@@ -3133,3 +3133,20 @@ Writing, reading and canonicalization preserve exact bits: no decimal conversion
 The producer emits an exact NaN only with proof of its bit pattern. The current lattice's grouping of distinct NaNs is not such proof. If only a real value or an unspecified NaN is known, omit value and retain type = real. Readers must not perform arithmetic on NaNs to validate metadata or change their payload/sign during canonicalization.
 
 Acceptance: bit-exact read/write round trips for finite and subnormal values, both zeros and infinities; preserve distinct NaN patterns without asserting that today's analyzer can prove each one. Validate length, alphabet, lowercase, and rejection of 0x, whitespace and JSON numbers in place of strings. Canonical representations of +0/-0 and distinct NaN patterns differ.
+
+## Character constant representation
+
+For type = character, value is a JSON string containing exactly one decoded Unicode scalar value: a code point U+0000–U+10FFFF excluding U+D800–U+DFFF. This applies to externals and ValueFacts. It represents a Goat character; string values use type = string.
+
+```json
+{
+  "type": "character",
+  "value": "Я"
+}
+```
+
+A non-BMP character is permitted even when it occupies two UTF-16 code units. A valid pair of JSON surrogate escapes decodes to one scalar value; lone or incorrectly paired surrogates are errors. Count decoded scalar values, not UTF-8 bytes, UTF-16 code units or visual graphemes. Reject empty strings and multiple scalar values.
+
+The null character is allowed and is written using the JSON escape \u0000. A space is a valid character. Do not trim, case-fold or normalize Unicode: "é" contains one scalar value, whereas "e\u0301" contains two and is invalid for character. Equivalent JSON escape spellings of the same character denote the same value and follow general JSON canonicalization without changing Unicode content.
+
+Acceptance: BMP and non-BMP characters, the latter in UTF-8 and escaped surrogate-pair form; U+0000; space; empty strings; two characters; lone/reversed surrogates; e + U+0301. Verify value-preserving round trips on platforms with different wchar_t widths. Code points outside the Unicode scalar range must not be serialized as character constants in this format.
