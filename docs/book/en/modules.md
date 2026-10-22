@@ -3323,3 +3323,13 @@ A repeated functionId within a module is an error even when records are identica
 Permuting functions records changes neither meaning nor the module's main hash. This does not apply to positional files, parameters or when.arguments arrays, whose order must be preserved.
 
 Acceptance: permutations of functions with identifiers 1, 2 and 10 yield identical canonical order and hashes; do not sort numeric identifiers lexicographically. Reject both identical and different records sharing a functionId. Cover gaps and reference resolution independently of record position.
+
+## Absence of own functions
+
+For a module without own functions, omitted functions and functions = [] are equivalent. Readers accept both; canonical writers omit the empty table. Apply normalization before main-hash computation.
+
+Validate the original type and structure first: functions = null, an object or a string is invalid. An empty table does not bypass consistency checks: every own function retained in the final bytecode must have a corresponding record. Own-function references from exports and native specializations must resolve in the current module's table. A missing record is an error whether functions is omitted or explicitly empty.
+
+A module may have no own functions while re-exporting a dependency function through functionRef. Resolve that reference in the actual owner's table within the validated dependency graph; do not create an artificial own functions entry.
+
+Acceptance: omitted functions and [] produce identical normalized data and main hashes for a module without own functions. Reject an own function remaining in bytecode without a record or an unresolved own-function reference; reject incorrect JSON types. Valid re-export of only a foreign function allows the own table to be absent.
