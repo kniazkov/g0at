@@ -2469,3 +2469,11 @@ Every author entry still requires a nonempty name: `authors: [{"name": ""}]` is 
 Goat-merge compares informational data after this normalization. An absent field and its empty value do not conflict; a nonempty field present in only one input still causes a conflict. For example, `{"description":"","authors":[]}` and `{}` are equivalent, as are `{"authors":[{"name":"Ivan","email":""}]}` and `{"authors":[{"name":"Ivan"}]}`. Normalizing informational data does not change the main hash.
 
 Acceptance: compare each empty field with its absence when reading .gmod/module.json and during merge; output .gbin omits these empty fields. Test equivalence of empty and absent email, rejection of empty name and null, preservation of a spaces-only string, and conflict between a nonempty value and absence. Merge output must not depend on input order for equivalent empty/absent data.
+
+### Email and homepage are informational text
+
+Goat does not validate the syntax of `authors[].email` or `homepage`: email-address validity, URL format, protocol scheme or domain name. Any nonempty JSON string is accepted in these fields and preserved exactly; an empty string normalizes to absence under the general rule. Type and JSON/UTF-8 validity checks still apply; null is not allowed.
+
+The compiler, loader, goat-inspect and goat-merge perform no network checks and do not reject a module because of the contents of these informational strings. A possible future Goat artifact website may impose its own publication checks; these are not requirements of the format or current tools.
+
+Acceptance: accept strings such as `email: "contact through the website"` and `homepage: "page not created yet"`, transfer them and display them as text; continue rejecting invalid types. Verify exact preservation of nonempty values, normalization of empty values and absence of network requests.
