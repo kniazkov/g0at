@@ -3505,3 +3505,13 @@ For Linux/glibc, the minimum version in native-variant requirements is derived f
 To deliberately support older systems, use an appropriate build environment/toolchain and compatible dependencies. Merely changing a metadata number does not make a binary compatible. #208 retains the established minimum and checks it before OS loading when selecting a variant; a lower version excludes the variant, while an equal or higher version satisfies only this requirement. All other OS, CPU, runtime and Goat ABI checks remain. Compare runtime versions numerically by component (for example, 2.9 is less than 2.28), without changing the agreed opaque semantics of Goat module versions.
 
 Acceptance in #208/#211/#219: building on newer glibc does not inflate a reliably established minimum; a dependency's higher requirement is not lost; unknown requirements fail the build. Test selection below, at and above the minimum, 2.9/2.28 comparison, and native execution of a reference variant in an environment at its declared minimum. Success only on modern glibc does not demonstrate the claimed older compatibility. Loading failures despite satisfied metadata follow the existing rules.
+
+## Separate Windows MINGW64 and UCRT64 native targets
+
+In v1, MINGW64 and UCRT64 are distinct native targets. This is a conservative Goat compatibility policy: matching Windows and x86-64 alone is insufficient to select a DLL. A native variant must match the system runtime environment used to build the executing Goat, alongside separate architecture, CPU, OS-version and Goat ABI requirements.
+
+#211 derives requirements from the actual toolchain and build result; #208 distinguishes these environments before OS loading during variant selection. Do not identify the runtime of an already built Goat solely from the current MSYSTEM, PATH or nearby installed compilers. Discovering another compiler does not change the executing process ABI. The common #244 schema fixes exact wire-format fields and values; CI configuration names do not replace it.
+
+A valid DLL for another environment remains a valid container component but is unsuitable for the current process. All structural and hash checks still apply. If no suitable variant exists, retain the agreed VM/native required rules; never try a foreign DLL as a way to bypass compatibility checks.
+
+Preserve both existing MINGW64 and UCRT64 CI configurations. Acceptance in #219: build a module in each, load the matching DLL, demonstrate an actual native call and compare with VM results. Test mutual exclusion of variants for the other environment with identical architecture before OS loader access, an archive containing both variants, absence of a suitable variant and selection unaffected by changes to environment variables.
