@@ -3657,3 +3657,15 @@ Control messages and stdout/stderr activity neither restart nor extend the deadl
 Waiting for output or results must not block deadline enforcement. This is a diagnostic limit for inspect probes, not a limit on ordinary program execution or module initialization. Process termination and resource cleanup after expiry do not provide extra time for a successful load.
 
 Acceptance in #213/#214/#223: the 5-second default and explicit override; fast success without artificial waiting; hangs with no output and continuous printing both time out. Check the shared budget including startup, no extension by messages and rejection of late success. Tests use a short explicit deadline, synchronization and an external fallback harness timeout instead of waiting five seconds in every scenario.
+
+## Terminating the probe process tree on timeout
+
+On timeout, goat-inspect terminates the entire process tree belonging to the probe, including children launched by DLL/SO constructors. Terminating only the immediate child is insufficient: descendants can keep running and hold stdout/stderr channels open.
+
+The shared process wrapper in #213 establishes ownership tracking at probe startup, before library code executes. Tracking survives the immediate parent's exit and covers descendants created during termination. Do not find processes by executable name or treat an arbitrarily reused PID as probe-owned. Other inspect instances, compilers and user processes remain unaffected.
+
+After expiry, a successful result is no longer accepted. Tree termination and channel closure must not become an unbounded wait for EOF from a descendant. Preserve available bounded output; explicitly diagnose termination mechanism failures instead of reporting successful cleanup. Release probe resources with regard to libraries potentially still open in descendants.
+
+#213/#214 must specify a portable ownership and tree termination mechanism for supported Linux/Windows targets, including startup and exit races. This manages probe-owned processes; it does not promise a complete sandbox for arbitrary native code.
+
+Acceptance: a test constructor creates a child and grandchild that retain channels and continue running; timeout terminates every probe process. Test the immediate parent exiting before descendants, descendant creation during termination, retained captured output and report completion without endless channel waits. A concurrent independent probe and an unrelated process with the same executable name keep running.
