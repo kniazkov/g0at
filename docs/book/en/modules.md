@@ -2805,7 +2805,7 @@ Assign a separate function_id to every function in the module, including nested 
 
 ## JSON fields of the function table
 
-In module.json, functions contains records with three required numeric integer fields: functionId is the function's own module-local identifier; file is its source file index in files; instruction is the corresponding FUNC instruction index in the shared bytecode. Identity is determined by functionId, not the record's position in functions. A function name is not needed for this binding. The record schema is closed: unknown fields, missing required fields, null and incorrect types are errors.
+In module.json, functions contains records with three required numeric integer fields: functionId is the function's own module-local identifier; file is its source file index in files; instruction is the corresponding FUNC instruction index in the shared bytecode. Identity is determined by functionId, not the record's position in functions. A function name is not needed for this binding. The record schema is closed: in addition to these required identity fields, parameters and analysis are defined below. Unknown fields, missing required fields, null and incorrect types are errors.
 
 file and instruction follow the agreed uint32 index rules, including file and instruction existence checks; instruction is an instruction index, not a byte offset. The width of functionId is specified separately. Unique functionId values and consistency with bytecode must be validated.
 
@@ -2996,3 +2996,121 @@ In this agreed basis, each parameter record contains name; additional analytical
 A parameter's type is not inferred solely from an operation: x * x by itself does not prove that x must be an integer. Type constraints of a particular native specialization are described separately and do not become constraints on every call to the function. The parameter table does not change existing language rules concerning argument count at a call.
 
 Acceptance: a function with multiple parameters retains their order and names; a function without parameters has an empty array. Analytical references use corresponding indices with bounds checks. An integer native specialization does not prohibit other valid calls through the VM.
+
+## Structure of the function analysis contract
+
+Schema design for issue #244: store the analysis contract in functions[].analysis independently of native specializations. Grounded in src/analysis/lattice.h, function_summary.h, function_summary.c, function_return.c and function_purity.c at commit 31f1f89d4e86a71f5375d4602bf0223d99d55965. This specifies metadata and implementation requirements; serialization is not yet implemented.
+
+### Container and scope
+
+analysis is an optional closed object with required formatVersion (integer 1) and summaries (array). Missing analysis or empty summaries provides no analysis guarantees. Existing functionId, file, instruction and parameters remain unchanged. externals references an own function through functionId; exported aliases do not duplicate descriptions.
+
+Each summary is a closed object with required when and optional result, effects and normalReturn. All present claims hold together whenever when holds. Result facts concern normal returns only; they do not promise termination, absence of exceptions or absence of effects.
+
+when is a closed object with optional arguments: one value description per formal parameter, in order. Missing arguments imposes no argument restrictions; when = {} is unconditional and requires proof for all calls and admissible environments. arguments = [] is for a function without parameters. Use {} for an unconstrained parameter. Missing actual arguments are null under language rules. Extra actual arguments create no formal parameters, but their evaluation and effects must be preserved.
+
+Conditions describe input values. Summaries do not fix capture values: current specialization keys do not do so. Never promote a single concrete call observation to a universal contract. If no summary applies, results and effects are unknown; language-valid calls remain permitted.
+
+Analysis summaries do not select an executable implementation. Overlapping conditions are allowed: simultaneously applicable proven facts must agree. Array order gives no priority. Consumers may use one applicable summary or safely intersect several, never choose a convenient claim from contradictory facts. Detectable contradictions are metadata errors. This differs from the ban on ambiguous native-specialization selection.
+
+### Shared value description
+
+when.arguments[] and result use the same closed ValueFacts format. Previously agreed type/value in externals keep their location and share these semantics. ValueFacts fields:
+
+- type: optional string from null, boolean, integer, real, numeric, character, string, function, array, object. numeric means integer or real; object means a user-defined object, not any value.
+- nonNull: optional true, proving exclusion of null. Exact null uses type = null. JSON null is not a facts object.
+- value: optional exact scalar constant consistent with type. Omission does not mean null. An explicit scalar type is required. Integers are exact JSON numbers in int64 range, never passing through double. Encoding of real, character and special floating-point values must be finalized before #244 closes; these examples do not specify it.
+- range: optional closed object with required integer min/max, for type = integer. Inclusive int64 bounds, min <= max; any value must lie inside the range.
+- elements: optional allowed-element description for type = array. It uses ValueFacts structurally to allow future growth; the initial producer is limited by LATTICE_TYPED_ARRAY to an unrefined element type, nonNull, boolean constants or an empty description. Do not invent nested shapes, ranges or element values.
+- empty: optional true for type = array, proving an empty array. Represents today's typed array with BOTTOM elements without confusing it with an impossible function result.
+
+{} provides no refinements. Facts must agree; null combined with nonNull = true is invalid. Separate fields are not logically independent: value refines type and range. A type does not imply deep immutability, object identity or absence of shared nested references.
+
+normalReturn, when present, is false: no normal return is possible under the conditions. It does not distinguish exceptions, exit or divergence and does not guarantee termination. result must be absent when normalReturn = false. Missing normalReturn does not promise return. Emit only a completed BOTTOM proof, never an intermediate approximation or exhausted analysis budget.
+
+### Effects
+
+effects is a closed object with required may (array of unique strings) and unknown (boolean). Initial may categories: input, output, externalRead, externalWrite. They conservatively bound possible effects under the existing analyzer's definitions; they do not assert each action occurs on every call.
+
+unknown = false means the description is complete relative to this effect system; categories absent from may are excluded. unknown = true means incomplete knowledge; missing categories are not proved impossible. Missing effects means no knowledge, not an empty may with unknown = false.
+
+Empty may with unknown = false expresses current purity. It does NOT prove no exceptions, termination, no allocations, deep object independence or permission to delete a call. externalRead concerns state external to the function, not only other modules. Immutable-binding reads excluded by existing aggregate-effect analysis must not be misreported as mutable reads.
+
+Export transitive effects including called functions. direct_effects, traversal status, iteration counts, C-backend blockers and AST addresses are not program guarantees. Direct captures are already collected, but detailed references need portable declaration identity; neither a name alone nor a memory address suffices. Until that schema is defined separately, use aggregate externalRead/externalWrite rather than pretending a detailed capture wire format is finished.
+
+### Example
+
+Fragment for identity = func(value) { return value; }; instruction positions are illustrative. Both analysis signatures must actually have been registered and proved. This does not restrict calls to two types; other calls simply lack information.
+
+```json
+{
+  "externals": {
+    "identity": {
+      "mutable": false,
+      "type": "function",
+      "functionId": 1
+    }
+  },
+  "functions": [
+    {
+      "functionId": 1,
+      "file": 0,
+      "instruction": 12,
+      "parameters": [
+        {
+          "name": "value"
+        }
+      ],
+      "analysis": {
+        "formatVersion": 1,
+        "summaries": [
+          {
+            "when": {
+              "arguments": [
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "result": {
+              "type": "integer"
+            },
+            "effects": {
+              "may": [],
+              "unknown": false
+            }
+          },
+          {
+            "when": {
+              "arguments": [
+                {
+                  "type": "real"
+                }
+              ]
+            },
+            "result": {
+              "type": "real"
+            },
+            "effects": {
+              "may": [],
+              "unknown": false
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+The existing summary proves a return type for a parameter type, but does not store the general relation “returns the same argument.” Consequently identity/typeOfArgument/sharing are not added to the example.
+
+### Producer, evolution and acceptance
+
+Current function_summary_type removes constants, ranges, callable identity and array refinements from return_type. The initial producer exports retained general types, NOT_NULL, completed BOTTOM proofs and aggregate effects. A richer ValueFacts schema can represent facts; it does not authorize inventing proofs. Preserving refinements across all normal exits is separate analyzer work. Facts for a concrete call, captures or individual expressions cannot replace a universal summary.
+
+Improved analysis using existing fields does not change the version. New fields or relation kinds require a new analysis.formatVersion with explicitly implemented reader support. Reject unknown versions, fields and enum values rather than silently ignoring them. Do not reserve fictional identity, sharing, callback or exception fields now. Future versions extend the same result/when/effects structure without conflating value descriptions and function behavior.
+
+Before closing #244, finalize scalar encodings, empty-description normalization, and deterministic summaries/may ordering and canonicalization in fixtures. Applicable facts do not depend on array order; serialization order and hashing must nevertheless be deterministic.
+
+Acceptance: closed-object and version validation; formal-parameter count; unknown versus null; non-null; int64 and interval boundaries; empty arrays; fact consistency; missing and incomplete effects; no false purity; overlapping consistent summaries and detectable contradictions; no invented facts for unanalyzed signatures; no transfer of facts between distinct closure environments. Metadata neither executes dependencies nor bypasses import initialization nor changes native-implementation selection rules.
