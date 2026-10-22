@@ -3720,6 +3720,16 @@ Publication exposes either the previous file or the fully prepared new result, n
 
 Normal exit statuses are: 0 for a successfully published result; 1 for a read, validation, merge, or output-write failure; and 2 for invalid command arguments. A valid help or version request returns 0 without merging. Diagnostics describe the specific cause instead of assigning a separate exit status to each cause. Required interactive selection with unavailable input is a merge failure (1). Argument errors are detected before processing archives or publishing output. External forced termination statuses are outside this contract.
 
+## Path encoding in the shared filesystem API
+
+The public lib filesystem API (#249) accepts NUL-terminated UTF-8 paths. Embedded NUL and malformed UTF-8 are rejected without replacement characters. On Windows, the layer performs strict UTF-8 ↔ UTF-16 conversion and uses Unicode system APIs; the system ANSI code page does not determine filenames. On Linux, valid UTF-8 bytes are passed to the filesystem without case folding or Unicode normalization.
+
+Linux names containing malformed UTF-8 are outside the public v1 contract: encountering one returns an explicit error, without silently skipping the object or substituting its name. Traversal or cleanup failure must not be reported as success.
+
+Paths must reach the layer without prior information loss: Windows command-line input and environment paths in use are converted from their Unicode representation to UTF-8, rather than reconstructed from already lossy ANSI strings. This is a shared adapter for consumers, including goat-inspect and goat-merge. This contract does not assert that the current implementation already provides this support.
+
+Acceptance in #249/#212/#215: reading, creating, enumerating, renaming, and deleting files with Cyrillic and non-BMP characters; Windows CLI paths under different system code pages; malformed UTF-8 and unrepresentable names produce diagnosed errors without lossy substitutions.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
