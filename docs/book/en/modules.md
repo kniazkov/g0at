@@ -3688,6 +3688,16 @@ Terminate the tree and release channels before final cleanup of probe-owned temp
 
 Acceptance in #213/#214: a constructor launches a long-lived child and grandchild, then the probe either completes successfully or its main process crashes. In both cases descendants terminate and no longer retain output channels or temporary libraries. Also test a load failure after creating a descendant, no descendants and a concurrent independent probe. Normal cleanup after successful loading preserves the successful result.
 
+## Probe working directory and cleanup mechanism choice
+
+The goat-inspect probe process starts in a separate temporary working directory owned by that probe. Relative paths used by constructors resolve from it; files created inside it are included in cleanup. This is not a sandbox: absolute paths and independently opened external resources remain accessible. Cleanup is restricted to the probe-owned directory and does not authorize deletion of external files. Terminate probe-owned processes and release channels before removing the directory.
+
+Reusing the cleanup process from #245 was suggested by the author for consideration, not accepted as a mandatory decision. No dependency of #214 on #245 is established yet. Evaluate shared deletion and resource-tracking code separately from choosing which process performs cleanup.
+
+The current #245 contract waits for Goat to terminate without delaying its exit. Inspect must obtain the cleanup result before its final report. Options include extending the janitor protocol with an early request and acknowledgement, or performing normal cleanup in inspect through shared code. The choice and behavior on an inspect crash remain undecided; the existing #245 contract is unchanged.
+
+Acceptance of the agreed part in #214: the probe working directory differs from inspect's launch directory; a relative test file is created inside it and removed with it. Unrelated directories and concurrent probes are unaffected; terminate the process tree before deleting files.
+
 ## A single load-probe attempt
 
 One goat-inspect invocation performs at most one load-probe attempt for the selected library. There are no automatic retries after a process-start error, load or validation failure, unloading error, crash or timeout. A retry must not replace an already detected failure with success, and cleanup failure does not trigger a retry either.
