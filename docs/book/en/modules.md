@@ -3515,3 +3515,13 @@ In v1, MINGW64 and UCRT64 are distinct native targets. This is a conservative Go
 A valid DLL for another environment remains a valid container component but is unsuitable for the current process. All structural and hash checks still apply. If no suitable variant exists, retain the agreed VM/native required rules; never try a foreign DLL as a way to bypass compatibility checks.
 
 Preserve both existing MINGW64 and UCRT64 CI configurations. Acceptance in #219: build a module in each, load the matching DLL, demonstrate an actual native call and compare with VM results. Test mutual exclusion of variants for the other environment with identical architecture before OS loader access, an archive containing both variants, absence of a suitable variant and selection unaffected by changes to environment variables.
+
+## MINGW32 is a required v1 module target
+
+32-bit Windows/MINGW32 is required for v1 module support, including VM and native DLL execution. It is a separate x86/32 target, not merged with x86-64/MINGW64 or UCRT64. Check the executing Goat process architecture, not just the installed OS architecture: a 32-bit process on 64-bit Windows must not select a 64-bit DLL.
+
+Portable bytecode.bin and its fixed field widths remain shared. Build-machine pointer, long or size_t width must not alter serialized representation, int64 values or main-part identity. Identical metadata and bytecode yield the same main SHA-256 in 32- and 64-bit processes; native variants have separate ABI descriptions and hashes.
+
+#208/#209/#211 provide distinct requirements and actual MINGW32 variant compilation, including calling ABI and runtime. #236 checks size_t representability, sum/product overflow, allocation and available address space before buffer access. A module too large for the process produces a clear loading error under the existing policy, not size truncation, a crash or execution of a partially validated module. This is a resource limitation of the process, not a separate portable-bytecode version.
+
+Acceptance in #219: use the existing MINGW32 CI configuration; verify that the built Goat is 32-bit, execute a module in the VM and through its matching DLL, compare results, and test native off/auto/required and standalone packaging. Reject selection of a DLL with different bitness before OS loading; check identical 32/64-bit hash vectors and size/memory failures. Exercise boundaries with synthetic inputs and controlled allocation failures without requiring gigabyte allocations in CI.
