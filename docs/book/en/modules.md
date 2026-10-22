@@ -2662,3 +2662,33 @@ The current VM indexes code->instructions using thread->instr_id; newly allocate
 Before execution, verify that main exists, the file table agrees with bytecode, and the entry point is valid. Direct execution runs the main file's top-level code as an ordinary program, while import uses that same entry file for one-time initialization of the imported module. Other files initialize through include rather than their physical code order. Preserve the agreed dynamic-context distinction between direct execution and include/import.
 
 Acceptance: a single source still starts at instruction 0; a multifile module contains one bytecode.bin with separate scopes and entry points; invalid main identifiers and entry points are rejected before user code. Relocating code while correctly updating references does not change the selected logical entry file. Execution does not access source files on disk.
+
+## The files table and entry addresses
+
+In module.json, the required files field is a nonempty array describing logical source files. Each record contains required fields name (a string used as the logical diagnostic name) and entry (a nonnegative integer instruction index for the start of the file's top-level code in the shared bytecode.bin). This is a closed object: there is no separate id field and unknown fields are prohibited. Null, invalid types, and fractional or exponential spellings of integer fields are rejected under the common rules.
+
+A file identifier is its array index: 0, 1, 2, and so on. It is local to the module; identical indices in different modules do not merge their files, scopes or rights. The required main field in module.json is a nonnegative integer selecting a files record and must be less than the record count. In .gmod, main remains a source-path string; do not confuse these formats.
+
+Example module.json fragment; other metadata is omitted and instruction addresses are illustrative:
+
+```json
+{
+  "formatVersion": 1,
+  "name": "geometry",
+  "version": "1.0.0",
+  "main": 0,
+  "files": [
+    {"name": "src/main.goat", "entry": 0},
+    {"name": "src/vector.goat", "entry": 40},
+    {"name": "src/matrix.goat", "entry": 120}
+  ]
+}
+```
+
+Main = 0 selects src/main.goat with entry point 0. Bytecode include of vector.goat references local file 1. The VM uses that file's separate scope and initialization state; if first execution is required, it starts at instruction 40. The name path is not opened on disk during compiled-module execution.
+
+The validator checks every file reference and entry against the shared instruction section and bytecode descriptions, including correspondence of the entry point to that file's top-level code. Entry values are instruction indices, not byte offsets. Never silently replace an invalid main or entry with zero.
+
+The files order matters for addressing: reordering records changes identifiers and requires consistent updates to main, include and every other file reference. Do not automatically sort this table during reading or canonicalization as though it were unordered dependencies. The compiler assigns deterministic indices before writing all related structures.
+
+Acceptance: the example correctly associates main and include with separate files in one bytecode.bin; identical indices in two modules remain independent. Reject empty/missing files, out-of-range main, include referencing a missing file, invalid entry, a separate id field and invalid types before execution. Consistently changing the table and all references still selects the same logical files.
