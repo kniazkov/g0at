@@ -2700,3 +2700,32 @@ Values of files[].name must be unique within a module. Different records sharing
 Names such as `src/math.goat` and `tests/math.goat` are distinct and valid. Identical logical names in different modules are allowed: diagnostics distinguish modules by name and version. The compiler must assign distinguishable logical names to distinct sources; matching labels do not justify combining files with different canonical paths.
 
 Acceptance: reject duplicate name values, including equivalent JSON escaping, before execution; distinguish different directory components in logical names. Verify independence of identically named files across modules and preservation of the common source-identity rules.
+
+## Deterministic source-file numbering
+
+During compilation, assign identifier 0 to the entry source. Then traverse include edges depth-first: examine includes in source-text order, assign the next files index to each newly reached source, and traverse its includes before continuing the current file. Source position determines order, including includes in nested functions and unexecuted branches; do not execute user code to discover this order.
+
+Register a file before traversing its includes. Revisiting an already registered canonical path reuses its identifier without retraversal; this makes traversal of permitted include cycles finite. Hard links with different canonical paths remain distinct sources under the common rule. Implement traversal with an explicit stack so deeply nested includes cannot overflow the C stack.
+
+Example: src/main.goat contains include "vector.goat" followed by include "matrix.goat". Both src/vector.goat and src/matrix.goat include "common.goat". Identifiers are main = 0, vector = 1, common = 2, matrix = 3. The include in matrix reuses common identifier 2.
+
+Module.json fragment (other metadata omitted; entry values are illustrative and are not arithmetically derived from file identifiers):
+
+```json
+{
+  "formatVersion": 1,
+  "name": "geometry",
+  "version": "1.0.0",
+  "main": 0,
+  "files": [
+    {"name": "src/main.goat", "entry": 0},
+    {"name": "src/vector.goat", "entry": 40},
+    {"name": "src/common.goat", "entry": 80},
+    {"name": "src/matrix.goat", "entry": 120}
+  ]
+}
+```
+
+This governs compiler-assigned indices, not execution order. Initialization remains lazy and follows executed include operations. The shared bytecode generator determines entry values; file identifiers are not instruction addresses. Numbering does not depend on filesystem enumeration or parallel processing completion order. Readers use validated stored main and files without renumbering or reconstructing the graph from unavailable sources.
+
+Acceptance: the example produces exactly four records in the shown order; repeated include of common creates no duplicate. An include cycle reuses an assigned identifier without looping; a deep chain does not overflow the C stack. Includes in unexecuted branches participate in numbering. Rebuilding identical sources preserves the table regardless of filesystem enumeration order.
