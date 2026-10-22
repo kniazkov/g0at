@@ -3395,3 +3395,13 @@ Distinguish analysis semantics from input validation: the constructor returns BO
 Apply these transformations to integer ValueFacts before canonicalization, summary duplicate detection and main-hash computation. They do not authorize losing facts that the lattice does not preserve: for example, distinct accepted real NaN bit patterns must not be collapsed merely because the lattice considers them equal.
 
 Acceptance: singleton ranges and matching constants produce identical canonical data and hashes; value with a containing range canonicalizes to value. Full int64 range canonicalizes to type = integer. Reject min > max, out-of-int64 values and value outside range. Normalization must not conceal duplicate summaries. Reuse the existing constructor for valid intervals while retaining separate strict JSON validation.
+
+## Removing redundant nonNull
+
+When an explicit type excludes null, nonNull = true is redundant and is removed during ValueFacts normalization. This applies to boolean, integer, real, numeric, character, string, function, array and object. If type is absent, preserve nonNull = true as an independent proven fact.
+
+type = null combined with nonNull = true is contradictory and must fail before normalization. The schema permits only true for nonNull; false, null and other types cannot become valid by removing redundant fields.
+
+Normalize before canonicalization, summary duplicate detection and main-hash computation. For example, {"type":"integer","nonNull":true} canonicalizes to {"type":"integer"}. Do not extend this rule to removing standalone {"nonNull":true}.
+
+Acceptance: each applicable explicit type with nonNull = true yields the same canonical data and hash as that type without the field; preserve standalone nonNull. Reject contradictions with null and invalid values. Normalized-equivalent summaries cannot bypass duplicate checks.
