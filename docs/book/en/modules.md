@@ -2807,7 +2807,7 @@ Assign a separate function_id to every function in the module, including nested 
 
 In module.json, functions contains records with three required numeric integer fields: functionId is the function's own module-local identifier; file is its source file index in files; instruction is the corresponding FUNC instruction index in the shared bytecode. Identity is determined by functionId, not the record's position in functions. A function name is not needed for this binding. The record schema is closed: in addition to these required identity fields, parameters and analysis are defined below. Unknown fields, missing required fields, null and incorrect types are errors.
 
-file and instruction follow the agreed uint32 index rules, including file and instruction existence checks; instruction is an instruction index, not a byte offset. The width of functionId is specified separately. Unique functionId values and consistency with bytecode must be validated.
+file and instruction follow the agreed uint32 index rules, including file and instruction existence checks; instruction is an instruction index, not a byte offset. The functionId range is defined below: 1 through 4294967295. Unique functionId values and consistency with bytecode must be validated.
 
 The following module.json fragment illustrates these tables, not a complete archive or the final list of all metadata fields. Instruction positions are illustrative. Function 1 is a named function in main.goat, 2 is nested within it, 3 is anonymous in the same file, and 4 belongs to lib/math.goat. These descriptions explain the example and are not additional record fields.
 
@@ -3301,3 +3301,15 @@ Function 2 has been completely removed in this example; identifiers 1 and 3 rema
 Remove a record only when no references to that removed function remain in exports, bytecode or native specializations. Inlining individual calls alone does not imply complete removal: retain the function while its value or code is still required. Producers must reconcile tables and references after optimization. Readers reject references to absent functionId values rather than redirecting them to neighboring array entries.
 
 Acceptance: removing a middle function preserves other identifiers and leaves a valid gap; resolve references by functionId, not array position. Reject missing targets in exports, bytecode and native bindings. Remaining FUNC references must match final instruction positions.
+
+## FunctionId range in module format v1
+
+functionId uses the unsigned 32-bit range excluding zero: 1 through 4294967295 inclusive. The rule is platform-independent and applies to functions definitions, own externals.functionId references, functionRef.functionId and function references in native-specialization metadata of the new module format. Zero is invalid and does not mean an unknown function; an unknown binding is represented by omitting the relevant optional field.
+
+In JSON, use exact integer notation without a fractional part or exponent, never a string. Parse, validate and canonicalize without an intermediate double. Check numbering overflow in the producer: exhausting the range is an error, never wraparound, truncation or identifier reuse. This applies to numbering before optimization; subsequent removal does not permit counter overflow.
+
+Readers validate range and then existence of the functionId in the relevant module's table. Since gaps are allowed, neither comparison with functions length nor indexing the array by identifier proves existence. For functionRef, use the target module's table within the validated dependency graph.
+
+This specifies the identifier range of the new module contract. It does not automatically change the existing uint64 native-binding field in the older binary format: validate the range before narrowing a wider representation; the concrete binary layout belongs to its versioned format.
+
+Acceptance: 1 and 4294967295 are type-valid but must resolve to existing records; reject zero, negatives, 4294967296, strings, fractional and exponent notation. Cover gaps, identifiers differing from array indices, equal numbers in different modules, and counter overflow without allocating billions of records.
