@@ -3150,3 +3150,27 @@ A non-BMP character is permitted even when it occupies two UTF-16 code units. A 
 The null character is allowed and is written using the JSON escape \u0000. A space is a valid character. Do not trim, case-fold or normalize Unicode: "é" contains one scalar value, whereas "e\u0301" contains two and is invalid for character. Equivalent JSON escape spellings of the same character denote the same value and follow general JSON canonicalization without changing Unicode content.
 
 Acceptance: BMP and non-BMP characters, the latter in UTF-8 and escaped surrogate-pair form; U+0000; space; empty strings; two characters; lone/reversed surrogates; e + U+0301. Verify value-preserving round trips on platforms with different wchar_t widths. Code points outside the Unicode scalar range must not be serialized as character constants in this format.
+
+## String, boolean and null constants
+
+For type = string, value is an ordinary JSON string. Empty strings, leading/trailing spaces, whitespace-only strings and embedded null characters are real values and must be preserved exactly after JSON decoding. Do not trim, case-fold or normalize Unicode. JSON escapes follow the general rules; encode a null character as \u0000.
+
+For type = boolean, value is JSON true or false, never a string or number. false is a proven value, not missing information. Omitting value for string or boolean means an unknown value of the respective type.
+
+Exact null needs only type = null: this type has a single value. Canonical writers omit a redundant value field. This differs from {}, which gives no type or value information, and from JSON null in place of a description object, which is invalid.
+
+```json
+{ "type": "string", "value": "" }
+```
+
+```json
+{ "type": "boolean", "value": false }
+```
+
+```json
+{ "type": "null" }
+```
+
+These rules apply to ValueFacts and the agreed externals fields. Empty informational-field normalization (description, license, etc.) does not apply to program constants. Optimizers and canonicalizers must not discard a known empty string or false. Known values still do not bypass import initialization.
+
+Acceptance: distinguish unknown strings from known empty strings, unknown booleans from known false, and unknown {} from exact null. Preserve leading/trailing spaces, whitespace-only strings, \u0000 and Unicode sequences without normalization. Reject incorrect JSON value types for string/boolean. Canonical null descriptions contain no value field.
