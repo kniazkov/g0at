@@ -2908,3 +2908,25 @@ For a mutable export, its initial type is not a guarantee for subsequent reads: 
 ```
 
 Acceptance: a proven own function receives type = function; an exported variable initialized with an integer receives no permanent integer guarantee; an unknown constant type does not prevent correct dynamic execution. Omitting type is not interpreted as an absent value or a prohibition on calls. The full type vocabulary and representation are specified separately.
+
+## Proven scalar constant value
+
+The optional value field in externals stores a scalar constant value proven at compile time. Consumers may use it for analysis without running the dependency. Omitting value means its value is unknown. A mutable variable's initial value is insufficient: value is forbidden when mutable = true.
+
+Do not use value to serialize objects, arrays, functions, closure instances or captured state. Exact representations of supported scalar values and numeric bounds are specified separately. A recorded value must agree with the proven type; contradictory metadata is an error.
+
+```json
+{
+  "externals": {
+    "answer": {
+      "mutable": false,
+      "type": "integer",
+      "value": 42
+    }
+  }
+}
+```
+
+Knowing a constant value does not bypass module initialization on import. Constant substitution must not remove initialization required by an import, change its order or hide its exceptions and side effects.
+
+Acceptance: the analyzer can access a proven scalar value without executing the dependency; unknown values are not invented; reject mutable = true together with value; composite objects and functions are not serialized through value. Using a known constant preserves initialization of the imported module and its observable behavior.
