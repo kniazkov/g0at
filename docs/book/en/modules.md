@@ -3644,6 +3644,16 @@ Handle destination separately; it is not part of the source deduplication set. I
 
 Acceptance in #215/#222/#224: two or more repetitions, interleaved duplicates of different sources, a repeated sole source with nonempty authors, destination among the sources, and paths containing spaces. Verify no redundant prompts, one processing pass per remaining argument and preservation of distinct sources sharing a main hash.
 
+## Symbolic-link destination in goat-merge
+
+If the final component of destination is a symbolic link, goat-merge fails while preserving both the link and its target. This includes dangling links: do not treat one as a nonexistent output file. Do not resolve the destination link before checking its type or replace it with a regular file.
+
+This rule applies to the output object itself; it does not forbid symbolic links in parent directories. Links among source arguments are allowed: read the referenced archive and apply normal input validation. Using the same path as destination and source does not waive the prohibition when the output object is a link.
+
+Check destination before prompting for author order or creating the temporary result. Before publication, check again that destination has not been replaced with a link; a detected substitution aborts publication with an error. This check does not authorize following the link and writing to its target.
+
+Acceptance in #215/#222/#224: a link to a regular archive, a dangling link, a destination link also listed as a source, and a source link with an ordinary destination. On rejection preserve the link and target without author prompts; successfully read a permitted source link. Cover detectable destination substitution before publication.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
