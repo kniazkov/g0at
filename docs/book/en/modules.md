@@ -3669,3 +3669,13 @@ After expiry, a successful result is no longer accepted. Tree termination and ch
 #213/#214 must specify a portable ownership and tree termination mechanism for supported Linux/Windows targets, including startup and exit races. This manages probe-owned processes; it does not promise a complete sandbox for arbitrary native code.
 
 Acceptance: a test constructor creates a child and grandchild that retain channels and continue running; timeout terminates every probe process. Test the immediate parent exiting before descendants, descendant creation during termination, retained captured output and report completion without endless channel waits. A concurrent independent probe and an unrelated process with the same executable name keep running.
+
+## Descendant cleanup after every probe outcome
+
+After a load probe finishes, goat-inspect terminates all remaining descendants belonging to that probe, regardless of the outcome: success, a reported load failure, a main-process crash or timeout. Successful loading does not permit library-created background processes to remain running.
+
+Use the same process-tree ownership mechanism from #213, established before constructors execute. Exit of the immediate child does not end descendant tracking. Do not wait indefinitely for a background process to exit voluntarily or close its channels; begin cleanup when the probe finishes. Preserve already received bounded output and the load-check result. Normal termination of remaining descendants alone does not turn successful loading into a failure.
+
+Terminate the tree and release channels before final cleanup of probe-owned temporary files. Report cleanup failures separately from the original load result; they neither hide a crash or timeout nor count as confirmation that no processes remain. Other probes and unrelated processes are unaffected.
+
+Acceptance in #213/#214: a constructor launches a long-lived child and grandchild, then the probe either completes successfully or its main process crashes. In both cases descendants terminate and no longer retain output channels or temporary libraries. Also test a load failure after creating a descendant, no descendants and a concurrent independent probe. Normal cleanup after successful loading preserves the successful result.
