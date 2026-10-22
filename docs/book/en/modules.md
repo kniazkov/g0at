@@ -3680,6 +3680,14 @@ Terminate the tree and release channels before final cleanup of probe-owned temp
 
 Acceptance in #213/#214: a constructor launches a long-lived child and grandchild, then the probe either completes successfully or its main process crashes. In both cases descendants terminate and no longer retain output channels or temporary libraries. Also test a load failure after creating a descendant, no descendants and a concurrent independent probe. Normal cleanup after successful loading preserves the successful result.
 
+## Probe success requires normal process termination
+
+A probe succeeds only when a valid service result reports successful loading and the immediate child process terminates normally with exit code 0 before the shared deadline. A success message alone is insufficient. A zero exit code without a valid result does not establish success either.
+
+A crash or nonzero exit code after a successful-load message makes the probe fail; a hang after that message ends in timeout. Preserve the received load result, actual process outcome and available bounded output in the report. Success of an individual stage does not replace the overall probe outcome. Subsequent cleanup failures remain separate; normal termination of remaining descendants is not a crash of the immediate child process.
+
+Acceptance in #214/#223: valid success and code 0 before the deadline; success followed by a nonzero exit code or crash, including a destructor failure; success followed by a hang; code 0 without a service result. Only the first case yields a successful probe. Verify that the load result and failure cause are both preserved and structurally distinguishable in JSON.
+
 ## Cleanup errors and inspect exit status
 
 If library load validation succeeds but cleanup of probe-owned processes or temporary resources fails, goat-inspect returns a nonzero exit status. Normal termination of remaining descendants is not itself a cleanup failure.
