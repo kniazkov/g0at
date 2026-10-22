@@ -3764,6 +3764,14 @@ No --no-probe flag is introduced. Probing the compatible native library remains 
 
 Acceptance in #212/#214: accept one path; a missing path or two paths produce status 2 without opening archives or launching a probe; --no-probe produces an argument error. A valid archive with a compatible variant undergoes the specified probe in both text and JSON modes.
 
+## Incompatibility reasons in the inspect text report
+
+For each native variant, the human-readable goat-inspect report shows the comparison with the current machine: compatible, or specific incompatibility reasons such as a different OS or architecture, an unsupported ABI version, or a missing required CPU extension. An unverifiable mandatory requirement is also explained rather than reported as satisfied. Use the shared compatibility mechanism, without separate selection logic in the report formatter.
+
+This explanation is added only to the text report (#212). Do not extend the JSON report (#223) with a separate list of incompatibility reasons for this requirement; retain previously agreed fields and error diagnostics. An incompatible variant is not itself an archive error. Compatible means that platform requirements match, not that probe loading succeeded; show the probe result separately.
+
+Acceptance in #212/#223: text output explains incompatible variants and distinguishes platform compatibility from the loading outcome; this requirement adds no incompatibility-reason fields to JSON.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
