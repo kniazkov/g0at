@@ -3708,6 +3708,10 @@ Issue #249 provides a cross-platform file and directory API: object types and li
 
 Publication exposes either the previous file or the fully prepared new result, never a partially written destination. V1 does not provide a separate durability guarantee after sudden power loss or an OS crash; additional file and directory synchronization solely for that guarantee is not required. Write and close errors must still be checked, the temporary result validated before publication, and the previous destination preserved on failure before replacement.
 
+## goat-merge exit statuses
+
+Normal exit statuses are: 0 for a successfully published result; 1 for a read, validation, merge, or output-write failure; and 2 for invalid command arguments. A valid help or version request returns 0 without merging. Diagnostics describe the specific cause instead of assigning a separate exit status to each cause. Required interactive selection with unavailable input is a merge failure (1). Argument errors are detected before processing archives or publishing output. External forced termination statuses are outside this contract.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
