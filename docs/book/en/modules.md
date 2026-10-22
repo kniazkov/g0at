@@ -2801,4 +2801,55 @@ Acceptance: anonymous and identically named functions remain distinct; closure i
 
 ## Coverage of function identifiers
 
-Assign a separate function_id to every function in the module, including nested and anonymous functions, regardless of exports or availability of native specializations. Do not number only native-compilation candidates. Adding or removing a native specialization for unchanged source code must not change function_id values. Verify identical identifiers when compiling the same source with and without native specializations, including nested and anonymous functions. Exact JSON fields of the function table, the numbering algorithm and treatment of functions removed by optimization are specified separately.
+Assign a separate function_id to every function in the module, including nested and anonymous functions, regardless of exports or availability of native specializations. Do not number only native-compilation candidates. Adding or removing a native specialization for unchanged source code must not change function_id values. Verify identical identifiers when compiling the same source with and without native specializations, including nested and anonymous functions. The numbering algorithm and treatment of functions removed by optimization are specified separately.
+
+## JSON fields of the function table
+
+In module.json, functions contains records with three required numeric integer fields: functionId is the function's own module-local identifier; file is its source file index in files; instruction is the corresponding FUNC instruction index in the shared bytecode. Identity is determined by functionId, not the record's position in functions. A function name is not needed for this binding. The record schema is closed: unknown fields, missing required fields, null and incorrect types are errors.
+
+file and instruction follow the agreed uint32 index rules, including file and instruction existence checks; instruction is an instruction index, not a byte offset. The width of functionId and numbering algorithm are specified separately. Unique functionId values and consistency with bytecode must be validated.
+
+The following module.json fragment illustrates these tables, not a complete archive or the final list of all metadata fields. Instruction positions are illustrative. Function 1 is a named function in main.goat, 2 is nested within it, 3 is anonymous in the same file, and 4 belongs to lib/math.goat. These descriptions explain the example and are not additional record fields.
+
+```json
+{
+  "formatVersion": 1,
+  "name": "example",
+  "version": "1.0",
+  "main": 0,
+  "files": [
+    {
+      "name": "main.goat",
+      "entry": 0,
+      "external": false
+    },
+    {
+      "name": "lib/math.goat",
+      "entry": 100,
+      "external": false
+    }
+  ],
+  "functions": [
+    {
+      "functionId": 1,
+      "file": 0,
+      "instruction": 12
+    },
+    {
+      "functionId": 2,
+      "file": 0,
+      "instruction": 28
+    },
+    {
+      "functionId": 3,
+      "file": 0,
+      "instruction": 54
+    },
+    {
+      "functionId": 4,
+      "file": 1,
+      "instruction": 115
+    }
+  ]
+}
+```
