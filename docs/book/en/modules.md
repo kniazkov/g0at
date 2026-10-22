@@ -2499,3 +2499,24 @@ If the merge rules require author-order selection but interactive input is unava
 When all input lists are empty or exactly one list is nonempty, no selection is required: unavailable interactive input alone does not prevent merging. All other archive and compatibility checks still apply.
 
 Acceptance: with interactive input unavailable, two nonempty lists (including identical lists) produce a diagnosed failure without changing existing output; all-empty lists or a sole nonempty list pass author processing without prompting.
+
+## Dependencies in module.json: an array of exact records
+
+In compiled .gbin metadata, `dependencies` is an array of objects, each containing the required string fields `name`, `version` and `hash`. Name identifies the dependency, version is its exact version, and hash is its expected main SHA-256 as 64 lowercase hexadecimal characters. Unknown fields are prohibited; null and other value types are invalid.
+
+Record-shape example (the zero hash below illustrates syntax only; real dependencies store their computed hashes):
+
+```json
+{
+  "dependencies": [
+    {"name": "math", "version": "1.0", "hash": "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"name": "math", "version": "2.0", "hash": "0000000000000000000000000000000000000000000000000000000000000000"}
+  ]
+}
+```
+
+Different versions of the same name are valid separate records. Repeating a name + version pair is invalid even with the same hash; different hashes are also an error, not a choice between records. Repeated source imports of one dependency produce one record during compilation. Common name and version restrictions apply; ranges and latest-version selection are not supported.
+
+In .gmod, dependencies retains its different form: an object mapping names to default versions, without hashes. These are import-resolution settings, not the serialized actual dependency list of a compiled module. The compiler writes actual dependencies and their verified main hashes into .gbin.
+
+Acceptance: accept two versions of math; reject a repeated pair with either matching or conflicting hashes; reject missing record fields, invalid types, unknown fields and invalid hash spelling; repeated imports of one pair do not duplicate its record. Verify that the existing .gmod dependencies form remains valid and that substituting either representation into the other format is rejected.
