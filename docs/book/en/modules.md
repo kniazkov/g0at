@@ -3756,6 +3756,14 @@ After successful publication, goat-merge prints one short human-readable line to
 
 Acceptance in #215: successful merging and single-source repacking produce one line describing the published result; the variant count matches the resulting archive, including zero. No success message is printed on failure before publication.
 
+## goat-inspect v1 CLI scope
+
+Goat-inspect accepts exactly one archive path per invocation. V1 does not support batch mode or multiple input archives in one command; an extra positional argument is an argument error with exit status 2 before archives are opened. Invoke the utility separately for each file, including from a script.
+
+No --no-probe flag is introduced. Probing the compatible native library remains part of normal inspection, including --json; existing rules for no compatible variant, preliminary validation failures, and probe isolation still apply. Unsupported --no-probe is treated as an unknown option, not as a way to disable checking.
+
+Acceptance in #212/#214: accept one path; a missing path or two paths produce status 2 without opening archives or launching a probe; --no-probe produces an argument error. A valid archive with a compatible variant undergoes the specified probe in both text and JSON modes.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
