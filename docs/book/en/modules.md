@@ -3525,3 +3525,13 @@ Portable bytecode.bin and its fixed field widths remain shared. Build-machine po
 #208/#209/#211 provide distinct requirements and actual MINGW32 variant compilation, including calling ABI and runtime. #236 checks size_t representability, sum/product overflow, allocation and available address space before buffer access. A module too large for the process produces a clear loading error under the existing policy, not size truncation, a crash or execution of a partially validated module. This is a resource limitation of the process, not a separate portable-bytecode version.
 
 Acceptance in #219: use the existing MINGW32 CI configuration; verify that the built Goat is 32-bit, execute a module in the VM and through its matching DLL, compare results, and test native off/auto/required and standalone packaging. Reject selection of a DLL with different bitness before OS loading; check identical 32/64-bit hash vectors and size/memory failures. Exercise boundaries with synthetic inputs and controlled allocation failures without requiring gigabyte allocations in CI.
+
+## Windows 10 is the lower support boundary for v1
+
+The v1 module system supports Windows 10 and newer. Dedicated Windows 7/8 compatibility is neither provided nor promised. Retain the 32-bit MINGW32 target and 64-bit MINGW64/UCRT64 targets; the OS-version boundary does not replace separate process-architecture and runtime checks.
+
+Goat's lower support boundary and a particular native variant's minimum OS are different constraints. If a DLL or its dependencies require a newer Windows version or build, record that in the variant requirements. Do not claim every built DLL supports all Windows 10 systems merely because the project selected Windows 10 as its baseline. Exclude a variant before OS loading when the system is older than it requires; subsequent behavior follows the agreed VM/native required rules.
+
+#211 provides appropriate build settings and reliable requirements, #208 checks them, and #219 retains tests for all three Windows configurations. The windows-latest version does not automatically become the minimum supported OS; execution solely on the current runner does not prove compatibility at the lower boundary. The #244 schema defines the precise technical representation of OS version/build, separately from opaque module versions.
+
+Acceptance: test variant selection below, at and above its declared minimum, a DLL requiring more than the overall baseline, and independent OS, bitness and runtime checks. Include a reference execution in an appropriate Windows 10 environment in the lower-bound validation plan; lack of that environment must not be reported as a passing test. Windows 7/8 are outside the required v1 matrix.
