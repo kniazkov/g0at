@@ -3405,3 +3405,13 @@ type = null combined with nonNull = true is contradictory and must fail before n
 Normalize before canonicalization, summary duplicate detection and main-hash computation. For example, {"type":"integer","nonNull":true} canonicalizes to {"type":"integer"}. Do not extend this rule to removing standalone {"nonNull":true}.
 
 Acceptance: each applicable explicit type with nonNull = true yields the same canonical data and hash as that type without the field; preserve standalone nonNull. Reject contradictions with null and invalid values. Normalized-equivalent summaries cannot bypass duplicate checks.
+
+## Normalizing empty elements
+
+In ValueFacts with type = array, a valid elements = {} field imposes no element constraints and is equivalent to absent elements. Readers accept both representations; canonical writers remove empty elements while retaining type = array and all other facts.
+
+For example, {"type":"array","elements":{}} normalizes to {"type":"array"}. This does not assert that the array is empty and does not add empty = true. This rule does not remove nonempty element descriptions.
+
+First validate the original structure and all ValueFacts constraints: elements is permitted only with type = array and must be a valid facts object. Reject null, incorrect types, unknown fields and contradictions before normalization. Empty elements does not make a description without type = array valid.
+
+Normalize before canonicalization, summary duplicate detection and main-hash computation. Acceptance: both valid representations yield identical canonical data and hashes; summaries equivalent after normalization are detected as duplicates. Preserve nonempty element facts and all other array facts; reject elements = null, [], an incorrect or absent type, and unknown fields inside elements.
