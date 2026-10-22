@@ -3679,3 +3679,13 @@ Use the same process-tree ownership mechanism from #213, established before cons
 Terminate the tree and release channels before final cleanup of probe-owned temporary files. Report cleanup failures separately from the original load result; they neither hide a crash or timeout nor count as confirmation that no processes remain. Other probes and unrelated processes are unaffected.
 
 Acceptance in #213/#214: a constructor launches a long-lived child and grandchild, then the probe either completes successfully or its main process crashes. In both cases descendants terminate and no longer retain output channels or temporary libraries. Also test a load failure after creating a descendant, no descendants and a concurrent independent probe. Normal cleanup after successful loading preserves the successful result.
+
+## Cleanup errors and inspect exit status
+
+If library load validation succeeds but cleanup of probe-owned processes or temporary resources fails, goat-inspect returns a nonzero exit status. Normal termination of remaining descendants is not itself a cleanup failure.
+
+Preserve load and cleanup results separately in human-readable and JSON reports. Do not replace successful loading with a false claim that the library is defective; a cleanup error has its own diagnostic with a stable code and explanatory message. If a load failure, crash or timeout accompanies a cleanup error, retain both causes; the last error does not overwrite the first.
+
+The command cannot report overall success when cleanup is known to have failed, even if metadata and library checks passed. This rule concerns the inspect diagnostic utility; it does not change the agreed preservation of an ordinary program's explicit exit code on cleanup failure.
+
+Acceptance in #214/#223: successful loading and cleanup retain the normal successful outcome; successful loading with an injected descendant-termination or temporary-file-removal failure produces a nonzero exit status while retaining load success. On timeout/crash/load failure plus cleanup failure, report both causes. Verify structurally separate JSON results without parsing message and consistent human-readable reporting.
