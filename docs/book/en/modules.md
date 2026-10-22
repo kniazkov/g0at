@@ -3684,6 +3684,16 @@ On this failure, do not start interactive author selection or create a temporary
 
 Acceptance in #215/#222/#224: a valid first source and corrupt second source produce the second source's errors without opening the third. A corrupt first source stops processing immediately; preserve multiple validator diagnostics for that archive. Verify no prompts, temporary result or destination changes.
 
+## Access permissions of goat-merge output
+
+When replacing an existing regular destination file, preserve its access permissions. Read permissions from destination, not the sources; successfully transfer them to the prepared temporary result before atomic publication. If reading, applying or verifying preservation of permissions fails, stop before replacement and preserve the previous destination.
+
+For a new destination, use normal file-creation rules of the current OS and environment. Do not copy source archive permissions. Do not publish a file with knowingly different permissions from the existing destination and plan to repair them after replacement: access could already change during that interval.
+
+The contract covers filesystem access permissions, including platform-applicable access control lists; copying only visible basic bits is insufficient when additional rules apply. Choose the concrete transfer API for supported operating systems and verify the outcome. These are permissions of the external .gbin file, not Goat language access rights in metadata and not part of its main hash or archive bytes.
+
+Acceptance in #215/#222/#224: existing destination with permissions differing from source; new destination under OS file-creation settings; injected permission-read/apply failures preserve the old file. Verify applicable access rules before publication, no copying of source permissions and an unchanged main hash.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
