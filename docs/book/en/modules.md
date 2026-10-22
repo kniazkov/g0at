@@ -3111,7 +3111,7 @@ Current function_summary_type removes constants, ranges, callable identity and a
 
 Improved analysis using existing fields does not change the version. New fields or relation kinds require a new analysis.formatVersion with explicitly implemented reader support. Reject unknown versions, fields and enum values rather than silently ignoring them. Do not reserve fictional identity, sharing, callback or exception fields now. Future versions extend the same result/when/effects structure without conflating value descriptions and function behavior.
 
-Before closing #244, finalize scalar encodings, empty-description normalization, and deterministic summaries/may ordering and canonicalization in fixtures. Applicable facts do not depend on array order; serialization order and hashing must nevertheless be deterministic.
+Before closing #244, finalize remaining normalization and may canonicalization rules; add the agreed scalar encodings, empty-result normalization and summaries ordering to fixtures. Applicable facts do not depend on array order; serialization order and hashing must nevertheless be deterministic.
 
 Acceptance: closed-object and version validation; formal-parameter count; unknown versus null; non-null; int64 and interval boundaries; empty arrays; fact consistency; missing and incomplete effects; no false purity; overlapping consistent summaries and detectable contradictions; no invented facts for unanalyzed signatures; no transfer of facts between distinct closure environments. Metadata neither executes dependencies nor bypasses import initialization nor changes native-implementation selection rules.
 
@@ -3197,3 +3197,13 @@ The first element places no refinement on the first formal argument, while the s
 This rule concerns empty result, not arbitrary format objects or arrays. It does not discard known value = "" or value = false and does not turn type = null into an unknown value. The prohibition on result together with normalReturn = false still applies to the input structure before normalization; an empty result cannot bypass it.
 
 Acceptance: missing result and result = {} normalize identically; known properties remain. Empty leading, middle and trailing argument descriptions survive reading, writing and canonicalization without changing count or indices. Distinguish arguments = [{}, {"type":"integer"}] from arguments = [{"type":"integer"}, {}].
+
+## Analysis summary ordering and duplicates
+
+analysis.summaries order has no semantic significance. Readers accept any order. Writers and main-hash computation use the same representation: validate the input schema, apply format-defined normalization to each summary, obtain its canonical JSON in UTF-8, then sort summaries lexicographically by those bytes. Compare unsigned bytes; a shorter sequence sorts first when it is a prefix of another. Do not use locale, type names or analyzer discovery order.
+
+Identical summaries after normalization and canonicalization are duplicate errors; do not silently remove them. In particular, summaries differing only by omitted result versus result = {} are duplicates. Readers, not only writers, must check duplicates.
+
+Distinct summaries with overlapping conditions are allowed when their claims agree. Equal when objects alone do not make summaries duplicates: compare the entire normalized summary. Existing detectable-contradiction checks remain. Summary order neither resolves contradictions nor selects a native implementation.
+
+Acceptance: permutations of summaries yield identical canonical data and main hashes; key ordering and equivalent JSON escapes cannot conceal duplicates; neither can omitted versus empty result. Preserve distinct consistent summaries with equal or overlapping conditions. Never reorder positional when.arguments or parameters.
