@@ -3606,13 +3606,21 @@ When deduplicating a native variant with identical requirements and an identical
 
 The accepted positional syntax is `goat-merge <destination> <source_1> <source_2> <source_3> ...`. The first path names the output archive; subsequent paths explicitly list sources. Earlier --output examples are replaced; that option is no longer used to specify the destination. A path containing spaces is passed as one argument according to shell quoting rules.
 
-Example: `goat-merge geometry.gbin windows.gbin linux.gbin`. The destination may also be explicitly listed as a source: `goat-merge geometry.gbin geometry.gbin linux.gbin`. Whether an existing destination is implicitly included among inputs has not yet been separately agreed.
+Example: `goat-merge geometry.gbin windows.gbin linux.gbin`. The destination may also be explicitly listed as a source: `goat-merge geometry.gbin geometry.gbin linux.gbin`. Destination is output only and is never implicitly included among inputs. Its previous contents participate in merging only when it is explicitly listed as a source.
 
 When the destination matches an input, first read and validate all input data, resolve informational conflicts and build the complete result in a temporary file. Validate it with the shared validator, then atomically replace the destination. Create the publication temporary file beside the destination on the same filesystem; do not truncate an existing destination. Failure before successful replacement preserves the old file even when it is also a source.
 
 If atomic replacement is unavailable or fails, report failure and preserve the previous destination; do not fall back to deleting it and then copying the result. Consume all data from an input matching the destination before replacement. The utility does not load DLL/SO libraries or execute bytecode.
 
 Acceptance in #215/#222/#224: the new syntax and multiple sources; paths containing spaces; destination matching an explicitly listed source; corrupt input, conflict, cancelled selection and write/validation/replacement failures preserve the old output. A successful merge produces a valid archive.
+
+## Destination is not an implicit source
+
+In `goat-merge geometry.gbin windows.gbin linux.gbin`, only windows.gbin and linux.gbin are merged. An existing geometry.gbin contributes no variants, authors, producers or other metadata and is not validated as an input archive. Even corrupt previous contents or contents belonging to another module do not themselves prevent publication of a valid result; path and write-access checks still apply.
+
+To add variants to the previous contents, list that file explicitly among the sources: `goat-merge geometry.gbin geometry.gbin linux.gbin`. Then geometry.gbin undergoes every input check and participates in conflict resolution under the normal rules. Every failure before successful atomic replacement preserves the previous destination.
+
+Acceptance in #215/#222/#224: identical explicit sources and identical prompt answers produce the same result whether destination is absent, valid, corrupt or unrelated. A destination not listed as a source does not cause author-order prompts. When explicitly included, its contents participate in validation, merging and prompts; corruption of that source preserves the previous output.
 
 ## goat-inspect exit statuses
 
