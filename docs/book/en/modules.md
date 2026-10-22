@@ -2566,3 +2566,17 @@ For example, `"native": {"mode": "atuo"}` is rejected even with `--native off`. 
 Format validation does not execute disabled operations: native off need not locate a C compiler or build native code. A syntactically valid explicit target is checked for actual build availability only if used after overrides. Informational email/homepage remain arbitrary strings under the agreed contract: strict schemas do not introduce email-address or URL validation.
 
 Acceptance: reject a misspelled mode despite an override, an invalid type in an overridden target, unknown nested fields and invalid unused dependency entries. Accept a valid descriptor with a valid override. Verify no native build attempt in off and no search for a valid unused dependency. Detect all descriptor errors before publishing build output.
+
+## Discovering available native targets
+
+`goat --list-native-targets` derives its list from compilers actually discovered on the system and their verified capabilities. It does not advertise a large static architecture catalog as available. For every available target, show its identifier, a readable description and the specific compiler that passed the check. A target identifier describes OS, architecture and system ABI, for example `linux-x86_64-gnu` or `linux-x86_64-musl`; `host` denotes the current machine's target. These examples alone do not declare those targets available.
+
+Before listing a target, compile and link a small dynamic library DLL/SO in a temporary directory. Merely finding a compiler executable or successfully querying its version is insufficient: the build components, including headers, libraries and the linker needed for the probe, must work. The output artifact must match the tested target. Do not execute or OS-load the resulting library: its platform may differ from the current one.
+
+List only targets that pass this check. A failed probe must not imply availability; explicitly report when no target succeeds. A successful minimal probe confirms basic DLL/SO build availability, not successful compilation of every future generated program.
+
+Use the shared temporary native build and cleanup infrastructure #245. Responsibilities: #211 discovers compilers, determines candidate targets and performs probes; #191 exposes the CLI option and presents results. Syntactic target-identifier validity and availability in the current environment are separate checks: a missing compiler does not make a valid .gmod schema-invalid. Check actual build availability according to native mode and explicit-target rules.
+
+Acceptance: a discovered compiler with a successful probe yields a target and compiler details; one that reports its version but cannot link DLL/SO does not yield an available target; successful cross-compilation does not require executing the result. Check that no OS loading occurs, temporary files are cleaned, and absence of available targets is clearly reported. Use controlled compiler stubs for automated tests and available real toolchains for integration checks.
+
+Compiler search boundaries, probe deadlines and selection among multiple suitable compilers require separate clarification; the command itself does not define these policies.
