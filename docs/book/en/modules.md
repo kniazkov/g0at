@@ -2546,3 +2546,13 @@ Traversal is iterative rather than recursive by dependency depth; validate each 
 Traversal succeeds for a finite, available, valid graph. Absence of cycles alone does not guarantee success: a missing module, access error, corruption, unsupported format, version/expected-hash conflict or another validation error prevents execution/build publication under the common rules.
 
 Acceptance: A → B → C resolves and validates C without listing C in A; A's own import of C adds a direct record, including imports from A's included sources. A diamond validates the shared node once while retaining diagnostic paths. A deep chain does not overflow the stack. Detect a cycle or a missing/corrupt transitive C before any user side effect. An unexecuted import branch does not hide a dependency from preflight.
+
+## Empty dependencies of a compiled module
+
+The dependencies field in module.json is optional. An absent field and `"dependencies": []` represent the same empty set of direct dependencies. Readers accept both; the compiler and goat-merge omit the empty field when writing .gbin. Null, an object or any other non-array type is invalid.
+
+Before producing canonical metadata for the main SHA-256, normalize empty dependencies to an absent field. Adding or removing an explicitly empty array therefore does not change the main hash when all other significant data is unchanged. Apply ordinary JSON canonicalization to this normalized representation. Nonempty dependencies remain part of the main hash, including each direct module's name, exact version and expected hash.
+
+Goat-merge does not treat an absent field and an empty array as different main builds. Normalization does not bypass metadata/bytecode import consistency checks: absent or empty dependencies is valid only when there are no direct external imports.
+
+Acceptance: accept both empty forms for a module without external imports; produce identical canonical metadata and main hashes and allow merge; omit the field in written output. Reject null/invalid types. Reject an empty list in the presence of an external import as metadata/bytecode inconsistency, even if the hash has been recomputed.
