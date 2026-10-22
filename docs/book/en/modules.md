@@ -2650,3 +2650,15 @@ Do not persist results across invocations or restore them from a persistent cach
 Caching a result does not require retaining its probe DLL/SO for a future invocation. Temporary files remain managed by the shared cleanup service. These rules concern compiler availability checks and do not introduce a cache of user-program native code.
 
 Acceptance: an identical repeated probe within one invocation does not invoke the compiler again; a different target or configuration needs its own check. Two separate invocations probe again. Changed compiler availability between invocations affects the new result; success retained by the previous process is not reused.
+
+## Entry file in shared bytecode
+
+A .gbin still contains one bytecode.bin for the entire module. The main field in module.json is a numeric identifier of a logical source file within that module, not a path to a separate binary or an instruction address itself. In .gmod, main remains a source-path string.
+
+The file table associates the identifier with a logical diagnostic name and the entry point of its top-level code in the shared instruction section. Each source file retains its own scope, access rights and initialization state; shared bytecode does not merge them. Executing a compiled module does not require source files on disk.
+
+The current VM indexes code->instructions using thread->instr_id; newly allocated threads are zero-initialized and start at instruction 0. This is more precise than “byte zero”: current execution addresses are instruction indices. Preserve the ordinary entry point 0 for a single source. In the multifile format, entry-file identity and its code address are distinct concepts; execution uses their validated association in the file table.
+
+Before execution, verify that main exists, the file table agrees with bytecode, and the entry point is valid. Direct execution runs the main file's top-level code as an ordinary program, while import uses that same entry file for one-time initialization of the imported module. Other files initialize through include rather than their physical code order. Preserve the agreed dynamic-context distinction between direct execution and include/import.
+
+Acceptance: a single source still starts at instruction 0; a multifile module contains one bytecode.bin with separate scopes and entry points; invalid main identifiers and entry points are rejected before user code. Relocating code while correctly updating references does not change the selected logical entry file. Execution does not access source files on disk.
