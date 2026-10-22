@@ -2729,3 +2729,15 @@ Module.json fragment (other metadata omitted; entry values are illustrative and 
 This governs compiler-assigned indices, not execution order. Initialization remains lazy and follows executed include operations. The shared bytecode generator determines entry values; file identifiers are not instruction addresses. Numbering does not depend on filesystem enumeration or parallel processing completion order. Readers use validated stored main and files without renumbering or reconstructing the graph from unavailable sources.
 
 Acceptance: the example produces exactly four records in the shown order; repeated include of common creates no duplicate. An include cycle reuses an assigned identifier without looping; a deep chain does not overflow the C stack. Includes in unexecuted branches participate in numbering. Rebuilding identical sources preserves the table regardless of filesystem enumeration order.
+
+## Logical names of sources inside the project
+
+For a source whose canonical path after symbolic-link resolution lies inside the real .gmod directory, files[].name is its path relative to that directory. Test containment by path components: /work/project-other is not inside /work/project. Canonicalize both the descriptor and source; accessing them through a link does not change the name.
+
+Example: descriptor /work/geometry/geometry.gmod and source /work/geometry/src/vector.goat produce logical name src/vector.goat. Relocating the project tree without changing its relative structure preserves these names. Do not store the build machine's absolute prefix in .gbin.
+
+Logical path-component separators are always `/`, including Windows builds. This converts separators specifically; a literal backslash in a Linux filename must not become `/`. Do not add a leading `./`; do not change component case, Unicode or spaces beyond the previously agreed source-identity canonicalization.
+
+A link inside the project pointing to a source outside the real .gmod directory denotes an external source; do not use the link's relative path as its logical name. External-source naming is specified separately.
+
+Acceptance: accessing one source directly or through a link yields the same logical name; relocating the project preserves names; internal Windows paths use `/`. A directory sharing only a string prefix is not considered nested. Classify an outward link as external; preserve literal backslashes in Linux filename components.
