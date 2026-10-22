@@ -3602,6 +3602,18 @@ Acceptance in #208/#211/#212/#215: compilation records the compiler actually inv
 
 When deduplicating a native variant with identical requirements and an identical DLL/SO hash, goat-merge compares cCompiler by the exact name/version pair after JSON decoding. Identical information is preserved once; if only some inputs provide the object, preserve the available information. Different provided information causes an error without automatic selection, publishing a result or modifying an existing output file. Validate all inputs first; missing information does not eliminate a conflict between two other inputs. This rule does not permit merging different libraries with identical requirements. Acceptance: identical information, absence in all inputs, information in only one input, differing names or versions, and three inputs with one absent object and two conflicting objects; outcomes are independent of input order.
 
+## goat-inspect exit statuses
+
+Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
+
+Validate arguments before opening the inspected module or starting a probe. A missing required argument, unknown option or invalid --probe-timeout gives 2; a valid path to an inaccessible file gives 1. Multiple inspection errors still give 1 and remain in the report. Normal help or version output gives 0.
+
+Absence of a compatible native variant is not itself an error: if other checks pass, return 0 and mark the probe as not performed for this reason. A nonzero exit status or crash of the probe child is recorded in its result; inspect returns 1 instead of copying the child's status as its own.
+
+The same rules apply to text and JSON output. External forced termination of inspect itself is not handled completion and promises neither a status from 0/1/2 nor a completed report.
+
+Acceptance in #212/#223/#214: valid archive, no compatible variant, missing file, corruption, probe failure/crash/timeout, cleanup failure, invalid arguments, help and version. Verify 0/1/2 and preservation of detailed diagnostics; argument errors must not open the archive or start a probe.
+
 ## goat-inspect JSON report version and error codes
 
 The goat-inspect --json report has its own required integer reportVersion field, initially 1. It is independent of .gmod, module.json, bytecode, analysis summary and native ABI versions, and of the utility release version. The report is not a copy of module.json and does not enter the module hash.
