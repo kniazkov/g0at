@@ -3279,7 +3279,7 @@ An omitted analysis field and a valid analysis = {"formatVersion": 1, "summaries
 
 Validate the original structure and version before removing empty analysis. An unknown version remains an error even with empty summaries. Also reject unknown fields, missing required formatVersion/summaries, incorrect types, analysis = null and analysis = {}. Emptiness cannot bypass strict validation.
 
-This rule applies to a valid container with an actually empty array. A nonempty summaries array is not empty merely because its records omit result: summaries may contain effects or other proven facts.
+This rule applies to a valid container with an empty array, including after the agreed removal of summaries without assertions. Missing result alone is insufficient to remove a summary: it may contain effects or other proven facts.
 
 Acceptance: omitted analysis and a valid empty container produce identical normalized data and main hashes. Check unknown versions, extra fields, incorrect types and missing required fields with empty summaries. Preserve nonempty summaries containing effects without result.
 
@@ -3363,3 +3363,23 @@ Preserve empty may with unknown = false: it expresses proven purity under the cu
 Validate the original structure before normalization: both may and unknown are required when effects is present. Extra fields, unknown or repeated categories, null and incorrect types are errors. effects = {} is not a valid wholly unknown description and cannot bypass validation by being removed.
 
 Acceptance: omitted effects and valid empty may with unknown = true yield identical normalized summaries and main hashes and cannot conceal a duplicate. Empty may with unknown = false remains distinct. Preserve nonempty may for either unknown value; reject malformed input before removal.
+
+## Summaries without assertions
+
+If only required when remains after normalizing result and effects, the summary provides no analysis guarantees and is removed from canonical output. Conditions alone do not assert call validity, invalidity or termination. Removing such a summary means only that no information is available under those conditions.
+
+Processing order: validate the original structure, version, references, formal parameter count and all field constraints; normalize each summary's contents, including empty result, wholly unknown effects and may ordering; detect duplicates using canonical representations of normalized summaries; only then remove summaries without assertions. Thus two identical information-free descriptions remain duplicate errors, and invalid conditions cannot be concealed by removal. Sort retained summaries using the previously agreed rule.
+
+```json
+{
+  "when": {
+    "arguments": [
+      { "type": "integer" }
+    ]
+  }
+}
+```
+
+This valid summary is removed. If summaries becomes empty, apply the agreed empty-analysis omission rule. Normalize before main-hash computation. Do not remove summaries retaining normalReturn = false, nonempty result facts or retained effects; proven purity is also an assertion.
+
+Acceptance: a single when-only summary disappears from canonical output, as does its equivalent with result = {} and effects = {"may": [], "unknown": true}. Reject normalized duplicates before removal. Reject invalid types and conditions. Removing the last summary omits analysis; preserve meaningful assertions and argument positions in retained summaries.
