@@ -2488,6 +2488,14 @@ If two or more lists are nonempty, human intervention is required even when thei
 
 Example: [Ivan, Anna] and [Anna, Peter] produce candidates Ivan, Anna, Peter whose order is chosen by the person. [] and [Anna, Ivan] automatically produce [Anna, Ivan]. With three or more inputs, pairwise intermediate merging must not bypass the selection requirement: two nonempty input lists require human intervention.
 
-Input archive order and automatic sorting do not determine final order. Do not publish the output archive or replace an existing output file until selection is complete. Conflict rules for description/license/homepage remain unchanged. Behavior when interactive input is unavailable still requires clarification.
+Input archive order and automatic sorting do not determine final order. Do not publish the output archive or replace an existing output file until selection is complete. Conflict rules for description/license/homepage remain unchanged. When interactive input is unavailable, required selection fails as specified below.
 
 Acceptance: reject duplicate pairs within an input list; allow identical names with different emails; do not prompt when all lists are empty; copy a sole nonempty list without prompting; require selection for two nonempty lists with identical, reordered or different membership. Test three inputs including two nonempty lists. The result contains the entire union in the chosen order without duplicates or omissions. Keep any existing output file unchanged until selection is complete.
+
+### Author selection without interactive input
+
+If the merge rules require author-order selection but interactive input is unavailable (for example, in CI), goat-merge exits with a nonzero status and a diagnostic explaining that interactive selection is required. It must not choose an order automatically or hang waiting for input. Do not publish a new output archive; preserve any existing output file unchanged.
+
+When all input lists are empty or exactly one list is nonempty, no selection is required: unavailable interactive input alone does not prevent merging. All other archive and compatibility checks still apply.
+
+Acceptance: with interactive input unavailable, two nonempty lists (including identical lists) produce a diagnosed failure without changing existing output; all-empty lists or a sole nonempty list pass author processing without prompting.
