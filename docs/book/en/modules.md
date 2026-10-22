@@ -3694,9 +3694,19 @@ The goat-inspect probe process starts in a separate temporary working directory 
 
 Reusing the cleanup process from #245 was suggested by the author for consideration, not accepted as a mandatory decision. No dependency of #214 on #245 is established yet. Evaluate shared deletion and resource-tracking code separately from choosing which process performs cleanup.
 
-The current #245 contract waits for Goat to terminate without delaying its exit. Inspect must obtain the cleanup result before its final report. Options include extending the janitor protocol with an early request and acknowledgement, or performing normal cleanup in inspect through shared code. The choice and behavior on an inspect crash remain undecided; the existing #245 contract is unchanged.
+The current #245 contract waits for Goat to terminate without delaying its exit. Inspect must obtain the cleanup result before its final report. Options include extending the janitor protocol with an early request and acknowledgement, or performing normal cleanup in inspect through shared code. The mechanism remains undecided; the requirement to attempt cleanup after inspect crashes is defined below. The existing #245 contract for ordinary Goat is unchanged.
 
 Acceptance of the agreed part in #214: the probe working directory differs from inspect's launch directory; a relative test file is created inside it and removed with it. Unrelated directories and concurrent probes are unaffected; terminate the process tree before deleting files.
+
+## Cleanup after inspect itself crashes
+
+After goat-inspect itself crashes or is externally terminated, an attempt must be made to stop the probe-owned process tree and remove its temporary directory. Do not rely solely on exit handlers, threads or cleanup code inside inspect: they may never run. Responsibility for this attempt must be established before library extraction and execution, including the race with probe-process startup.
+
+Stop remaining probe processes before removing their files; unrelated processes and directories must remain unaffected. This requires a cleanup attempt while the OS and external cleanup mechanism remain operational, not unconditional deletion success after power loss, OS failure or failure of the cleanup mechanism itself. No final inspect JSON report is promised after inspect has died.
+
+Normal termination still requires the cleanup result before inspect's final report. The concrete architecture, including reuse of #245 and the normal-cleanup protocol, remains undecided. This decision specifies required behavior and does not change ordinary Goat termination.
+
+Acceptance in #214: deliberately terminate inspect after resource preparation and while a probe with a descendant is running; verify that the external mechanism attempts cleanup and, under normal conditions, stops processes before deleting the directory. Cover the startup race, isolation from a concurrent probe and external test completion control without arbitrary delays.
 
 ## A single load-probe attempt
 
