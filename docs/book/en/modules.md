@@ -162,7 +162,7 @@ The separate goat-merge utility combines builds of one module for different plat
 
 The goat-inspect utility displays name, version, main hash, dependencies, and native variants with requirements. It also attempts to load a suitable DLL/SO. It does not execute module bytecode or call its native functions, but the standard OS loader may run library initialization code (DllMain or SO constructors).
 
-Perform trial loading in a child process so a crash does not terminate the inspection command. Terminate a hung child after a timeout and report the result. A command option controls the timeout; 5 seconds was proposed as the default. This is a diagnostic timeout, not a normal execution limit.
+Perform trial loading in a child process so a crash does not terminate the inspection command. Terminate a hung child after a timeout and report the result. A command option controls the timeout; the default is 5 seconds. This is a diagnostic timeout, not a normal execution limit.
 
 When creating the new task list, schedule a separate portable `lib` layer for starting the current executable with arguments, waiting/results, timeouts, and child termination. Also provide a distinct threading API: creation, joining, mutexes, and condition variables. A thread pool is not required yet. Threads do not replace processes for crash isolation.
 
@@ -3647,3 +3647,13 @@ Configure this before loading the DLL/SO or running its constructors. The separa
 A constructor that needs input for successful loading encounters EOF during the probe; the utility neither prompts for a response nor retries using user stdin. A library looping on EOF remains subject to the timeout. This is a standard-stream rule, not a prohibition on the library independently opening devices or other data sources.
 
 Acceptance in #213/#214: a constructor reads stdin and immediately receives EOF; inspect leaves its own input untouched. Test terminal, redirected-file and pipe input, including a pipe with its writer still open. Sentinel bytes from the parent's stdin do not reach the child; empty input does not cause an invalid-descriptor error. Verify that ordinary program execution remains unchanged.
+
+## Load probe timeout
+
+The default goat-inspect load probe timeout is 5 seconds; a command option allows the user to change it. Measure the deadline using a monotonic clock from the start of the child launch attempt, not from library loading or the first received message. Process startup, loading and obtaining the probe result share one budget.
+
+Control messages and stdout/stderr activity neither restart nor extend the deadline. A probe that completes early does not wait for the remaining time. At the deadline, stop an unfinished probe, terminate the child and report a timeout with a nonzero inspect exit status. A late result does not cancel a recorded timeout; retain available captured output under the bounded-capture rules.
+
+Waiting for output or results must not block deadline enforcement. This is a diagnostic limit for inspect probes, not a limit on ordinary program execution or module initialization. Process termination and resource cleanup after expiry do not provide extra time for a successful load.
+
+Acceptance in #213/#214/#223: the 5-second default and explicit override; fast success without artificial waiting; hangs with no output and continuous printing both time out. Check the shared budget including startup, no extension by messages and rejection of late success. Tests use a short explicit deadline, synchronization and an external fallback harness timeout instead of waiting five seconds in every scenario.
