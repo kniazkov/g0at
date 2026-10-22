@@ -2930,3 +2930,19 @@ Do not use value to serialize objects, arrays, functions, closure instances or c
 Knowing a constant value does not bypass module initialization on import. Constant substitution must not remove initialization required by an import, change its order or hide its exceptions and side effects.
 
 Acceptance: the analyzer can access a proven scalar value without executing the dependency; unknown values are not invented; reject mutable = true together with value; composite objects and functions are not serialized through value. Using a known constant preserves initialization of the imported module and its observable behavior.
+
+## Exact representation of integer value
+
+For a scalar constant with type = integer, write value as an ordinary JSON number, not a string. Parsing, range validation, writing and canonicalization must preserve the integer exactly, without an intermediate double conversion. For example, 9007199254740993 must remain exactly 9007199254740993 rather than round to 9007199254740992.
+
+Reject numbers outside the Goat integer type's range. Rounding, truncation and overflow with wraparound are forbidden. Canonicalization and main-hash computation must not collapse distinct integers through precision loss.
+
+```json
+{
+  "mutable": false,
+  "type": "integer",
+  "value": 9007199254740993
+}
+```
+
+Acceptance: exact read/write round trips for the example and its neighbor 9007199254740992; their canonical representations must differ. Test both Goat integer boundaries and values one step beyond each without intermediate overflow. Exact numeric bounds must be recorded in the final v1 schema and fixtures.
