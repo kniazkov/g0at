@@ -1536,7 +1536,7 @@ Description, authors, license, and homepage do not contribute to the main hash. 
 
 After empty-value normalization, differences in description, license and homepage prevent merging even when main hashes match. A nonempty field present in only one input also conflicts. JSON formatting and object-key ordering differences are not value differences.
 
-Authors is checked separately: duplicates are invalid, and differing orders of the same author set require an explicit human choice in goat-merge. See “Author uniqueness and ordering”. This replaces unconditional rejection of every authors difference; differing membership still requires clarification.
+Authors is checked separately: duplicates are invalid, and two or more nonempty input lists require an explicit human choice of order in goat-merge. See “Author uniqueness and ordering”. This replaces unconditional rejection of every authors difference; differing membership is combined into a duplicate-free union before ordering.
 
 ### 70. Optional does not permit incorrect types
 
@@ -2482,8 +2482,12 @@ Authors is an ordered list without duplicates. An entry is identified by the `na
 
 A repeated pair within authors makes .gmod or module.json invalid; silent deduplication is prohibited. This includes pairs that become equal after empty-email normalization. Preserve author order during compilation and reading.
 
-Goat-merge checks both membership and order. Identical lists need no additional choice. If the same set of authors appears in different orders, show all entries with names and emails and ask the person to explicitly choose the final order: first author, second, and so on. Each author must occur exactly once in the result. Input archive order and automatic sorting do not determine author order. Do not publish the output archive or replace an existing output file until selection is complete.
+When merging, goat-merge first normalizes empty and absent authors to empty lists and considers all input archives together. If every list is empty, omit authors from the result without prompting. If exactly one list is nonempty, copy it with its order preserved without prompting. This is the only case for automatically selecting a nonempty order.
 
-This is an exception to the previous unconditional rejection of conflicting informational fields: a person resolves conflicting author order. The conflict rules for description/license/homepage remain unchanged. Behavior for differing author membership and unavailable interactive input still requires clarification.
+If two or more lists are nonempty, human intervention is required even when their membership and order are identical. Form the union of all authors by the name + email pair, show every entry with name and email, and ask the person to select the first author, second author, and so on. Every author in the union must occur exactly once in the result; do not automatically exclude authors. An entry shared by separate archives occurs once in the union; duplicates within any individual input list remain invalid.
 
-Acceptance: reject duplicate exact pairs, including empty/missing email equivalence; accept identical names with different emails; reordered versions of one set prompt for order; identical lists do not prompt; output preserves the selected order without duplicates or omissions. Keep any existing output file unchanged until selection is complete.
+Example: [Ivan, Anna] and [Anna, Peter] produce candidates Ivan, Anna, Peter whose order is chosen by the person. [] and [Anna, Ivan] automatically produce [Anna, Ivan]. With three or more inputs, pairwise intermediate merging must not bypass the selection requirement: two nonempty input lists require human intervention.
+
+Input archive order and automatic sorting do not determine final order. Do not publish the output archive or replace an existing output file until selection is complete. Conflict rules for description/license/homepage remain unchanged. Behavior when interactive input is unavailable still requires clarification.
+
+Acceptance: reject duplicate pairs within an input list; allow identical names with different emails; do not prompt when all lists are empty; copy a sole nonempty list without prompting; require selection for two nonempty lists with identical, reordered or different membership. Test three inputs including two nonempty lists. The result contains the entire union in the chosen order without duplicates or omissions. Keep any existing output file unchanged until selection is complete.
