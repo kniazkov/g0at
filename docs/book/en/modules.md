@@ -3019,7 +3019,7 @@ when.arguments[] and result use the same closed ValueFacts format. Previously ag
 
 - type: optional string from null, boolean, integer, real, numeric, character, string, function, array, object. numeric means integer or real; object means a user-defined object, not any value.
 - nonNull: optional true, proving exclusion of null. Exact null uses type = null. JSON null is not a facts object.
-- value: optional exact scalar constant consistent with type. Omission does not mean null. An explicit scalar type is required. Integers are exact JSON numbers in int64 range, never passing through double. Encoding of real, character and special floating-point values must be finalized before #244 closes; these examples do not specify it.
+- value: optional exact scalar constant consistent with type. Omission does not mean null. An explicit scalar type is required. Integers are exact JSON numbers in int64 range, never passing through double. Character encoding must be finalized before #244 closes. Real encoding, including special values, is defined in “Bit encoding of real constants.”
 - range: optional closed object with required integer min/max, for type = integer. Inclusive int64 bounds, min <= max; any value must lie inside the range.
 - elements: optional allowed-element description for type = array. It uses ValueFacts structurally to allow future growth; the initial producer is limited by LATTICE_TYPED_ARRAY to an unrefined element type, nonNull, boolean constants or an empty description. Do not invent nested shapes, ranges or element values.
 - empty: optional true for type = array, proving an empty array. Represents today's typed array with BOTTOM elements without confusing it with an impossible function result.
@@ -3114,3 +3114,22 @@ Improved analysis using existing fields does not change the version. New fields 
 Before closing #244, finalize scalar encodings, empty-description normalization, and deterministic summaries/may ordering and canonicalization in fixtures. Applicable facts do not depend on array order; serialization order and hashing must nevertheless be deterministic.
 
 Acceptance: closed-object and version validation; formal-parameter count; unknown versus null; non-null; int64 and interval boundaries; empty arrays; fact consistency; missing and incomplete effects; no false purity; overlapping consistent summaries and detectable contradictions; no invented facts for unanalyzed signatures; no transfer of facts between distinct closure environments. Metadata neither executes dependencies nor bypasses import initialization nor changes native-implementation selection rules.
+
+## Bit encoding of real constants
+
+For type = real, value is a string of exactly 16 lowercase hexadecimal digits [0-9a-f], encoding IEEE 754 binary64 bits from most to least significant. Reject 0x prefixes, whitespace, uppercase and other lengths. This encodes a real value, not a Goat string value. Host byte order does not affect the representation. The rule applies equally to externals and ValueFacts descriptions.
+
+Examples: 1.5 is "3ff8000000000000"; +0.0 is "0000000000000000"; -0.0 is "8000000000000000"; positive infinity is "7ff0000000000000"; negative infinity is "fff0000000000000".
+
+```json
+{
+  "type": "real",
+  "value": "3ff8000000000000"
+}
+```
+
+Writing, reading and canonicalization preserve exact bits: no decimal conversion, rounding, zero-sign changes or NaN normalization. First parse a 64-bit bit pattern, not a number to convert arithmetically to double. The representation permits every binary64 pattern, including subnormals, infinities and NaNs.
+
+The producer emits an exact NaN only with proof of its bit pattern. The current lattice's grouping of distinct NaNs is not such proof. If only a real value or an unspecified NaN is known, omit value and retain type = real. Readers must not perform arithmetic on NaNs to validate metadata or change their payload/sign during canonicalization.
+
+Acceptance: bit-exact read/write round trips for finite and subnormal values, both zeros and infinities; preserve distinct NaN patterns without asserting that today's analyzer can prove each one. Validate length, alphabet, lowercase, and rejection of 0x, whitespace and JSON numbers in place of strings. Canonical representations of +0/-0 and distinct NaN patterns differ.
