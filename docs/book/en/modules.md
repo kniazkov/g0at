@@ -2579,7 +2579,7 @@ Use the shared temporary native build and cleanup infrastructure #245. Responsib
 
 Acceptance: a discovered compiler with a successful probe yields a target and compiler details; one that reports its version but cannot link DLL/SO does not yield an available target; successful cross-compilation does not require executing the result. Check that no OS loading occurs, temporary files are cleaned, and absence of available targets is clearly reported. Use controlled compiler stubs for automated tests and available real toolchains for integration checks.
 
-Discovery follows “Compiler discovery and --cc”. Automatic selection is defined below; probe deadlines still require clarification.
+Discovery follows “Compiler discovery and --cc”. Automatic selection and probe deadlines are defined in the corresponding sections below.
 
 ## Compiler discovery and --cc
 
@@ -2612,3 +2612,13 @@ The --list-native-targets command deliberately examines all discovered supported
 Stopping at the first successful candidate does not mean selecting the fastest process to respond. Ordinary execution and full listing use the same selection priority with an unchanged environment. The listing marks the same automatic choice for the requested target that ordinary execution would make.
 
 Acceptance: a controlled first suitable compiler passes its probe while a second compiler counts invocations; ordinary compilation does not invoke the second. If the first fails its probe, check the second. With --list-native-targets, check both and display all successful results. Explicit --cc never invokes other compilers in either mode.
+
+## Native compiler probe timeout
+
+A compiler probe for a candidate target has a default timeout of 10 seconds. `--native-probe-timeout <seconds>` accepts a positive integer number of seconds overriding this default, for both ordinary discovery and --list-native-targets. Zero, negative, fractional or unrepresentable values are option errors; this option does not enable unlimited waiting.
+
+Measure the deadline using monotonic time. One probe has a shared budget for launching and executing its commands, including compilation and linking, rather than a fresh full timeout for each phase. External compiler-information queries must also be bounded by this configurable timeout and cannot hang indefinitely before the build probe. This timeout checks compiler availability; it does not limit compilation of user-generated C.
+
+When the deadline expires, mark the probe unsuccessful. Stop its processes and their owned descendants, and wait for writes to cease before cleaning temporary files. Do not affect unrelated builds. Ordinary automatic discovery continues with the next candidate; full listing continues examining the remaining candidates. With --cc, do not select another compiler. Success arriving after expiry does not undo the recorded timeout.
+
+Acceptance: stop a controlled hung probe, do not advertise its target as available, and allow the next candidate to proceed; explicit --cc prevents substitution. Test hangs in information queries and linking, the configured timeout, invalid option values, stopping owned descendants before cleanup, and absence of this timeout on user builds. Tests use a short explicit timeout, startup acknowledgement and an external fallback timeout in the test harness.
