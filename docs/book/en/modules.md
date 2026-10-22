@@ -2496,6 +2496,14 @@ Input archive order and automatic sorting do not determine final order. Do not p
 
 Acceptance: reject duplicate pairs within an input list; allow identical names with different emails; do not prompt when all lists are empty; copy a sole nonempty list without prompting; require selection for two nonempty lists with identical, reordered or different membership. Test three inputs including two nonempty lists. The result contains the entire union in the chosen order without duplicates or omissions. Keep any existing output file unchanged until selection is complete.
 
+## Interactive author-order selection in goat-merge
+
+When author-order selection is required, display the deduplicated union as a numbered list starting at 1. The user enters space-separated numbers on one line in the desired order, for example `3 1 2`. Every list number must appear exactly once. Missing, duplicate, nonnumeric, and out-of-range values are invalid; an empty line does not automatically confirm an order.
+
+For an invalid answer, explain the error and repeat the prompt, retaining the list and its numbering. End of input before a complete valid answer exits with status 1 without publishing output or modifying an existing destination. The accepted order applies to the entire author union; publication waits until selection is complete.
+
+Acceptance in #222/#215: a valid permutation; missing, duplicate, invalid, nonnumeric, and empty input followed by correction; end of input immediately or after an invalid answer. Verify the selected order, preservation of all authors, and unchanged destination when selection is incomplete.
+
 ### Author selection without interactive input
 
 If the merge rules require author-order selection but interactive input is unavailable (for example, in CI), goat-merge exits with a nonzero status and a diagnostic explaining that interactive selection is required. It must not choose an order automatically or hang waiting for input. Do not publish a new output archive; preserve any existing output file unchanged.
