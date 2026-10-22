@@ -3333,3 +3333,23 @@ Validate the original type and structure first: functions = null, an object or a
 A module may have no own functions while re-exporting a dependency function through functionRef. Resolve that reference in the actual owner's table within the validated dependency graph; do not create an artificial own functions entry.
 
 Acceptance: omitted functions and [] produce identical normalized data and main hashes for a module without own functions. Reject an own function remaining in bytecode without a record or an unresolved own-function reference; reject incorrect JSON types. Valid re-export of only a foreign function allows the own table to be absent.
+
+## Absent exports and unknown export properties
+
+For a module with no exported declarations, omitted externals and externals = {} are equivalent. Readers accept both; canonical writers omit the empty object. Apply the same normalization before main-hash computation. Validate the original type and structure first: null, arrays and other incorrect types do not mean absent exports.
+
+Do not remove an existing exported declaration from externals merely because the analyzer has not proved its type, value or specific function. Preserve its name and required mutable flag. Minimal example:
+
+```json
+{
+  "externals": {
+    "something": {
+      "mutable": false
+    }
+  }
+}
+```
+
+Missing type/value/functionId/functionRef means missing corresponding knowledge, not a missing declaration. A minimal record is not an empty export and must survive normalization. An empty record {} is invalid because required mutable is absent. Preserve consistency checks between the external interface and entry-file declarations; omitting externals cannot conceal actual exported declarations.
+
+Acceptance: omitted externals and {} produce identical normalized data and hashes when there are no exports. Unknown properties do not remove named exports with mutable = false or true. Preserve the distinction between an absent name and a declaration with an unknown value; reject an empty record without mutable and incorrect container JSON types.
