@@ -3589,3 +3589,13 @@ goat-merge unions producer information from all inputs; a shared entry appears o
 As informational metadata, producers may be absent; absence and [] mean no producer information, not a special unknown producer. Omit an empty list when writing. Before normalization, validate types and closed structure: null, unknown fields, missing or empty required strings, and duplicate triples within one input list are errors. Combining a shared entry from different inputs does not permit duplicates within one input.
 
 Acceptance in #191/#221/#212/#222: a normal build records one producer, inspect displays all, and merge preserves the union without duplicates regardless of input order. List permutations yield the same canonical form; absence/[] normalize identically. Changes to producers do not change the main hash or compatibility criteria. Test identical names with different versions/buildIds, equivalent JSON escaping, invalid structure and duplicates within an input array.
+
+## Native variant C compiler
+
+Each native variant descriptor may contain an informational cCompiler object with required nonempty name and version strings. The object is closed: unknown fields, null, incorrect types, missing required strings or empty strings are errors. Absence of cCompiler means no information was provided. Preserve strings exactly after JSON decoding, without trimming whitespace or changing case.
+
+During native compilation, Goat records the name and version of the C compiler actually invoked, such as GCC or Clang. This information belongs to the particular DLL/SO, separately from the main build's producers. goat-inspect displays it for each variant; goat-merge carries it with the corresponding variant.
+
+cCompiler does not participate in the main hash, compatible variant selection or ABI checks. The native library hash remains computed over the complete DLL/SO bytes: diagnostic strings do not change those bytes. The C compiler name or version does not replace platform, CPU, system library or Goat ABI requirements.
+
+Acceptance in #208/#211/#212/#215: compilation records the compiler actually invoked; inspect and merge preserve information with its variant; different compilers for different variants are allowed. Changing only cCompiler changes neither the main hash nor compatibility. Test an absent object and invalid structure. Combining different compiler information when deduplicating the same native variant requires a separate decision.
