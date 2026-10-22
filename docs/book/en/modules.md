@@ -293,7 +293,7 @@ Use a separate temporary directory per run. Extract libraries on demand and reus
 Inspection and merging use separate utilities:
 
 ```sh
-goat-merge windows.gbin linux.gbin --output geometry.gbin
+goat-merge geometry.gbin windows.gbin linux.gbin
 goat-inspect geometry.gbin
 ```
 
@@ -1476,7 +1476,7 @@ linux.gbin   → math@2.0.0, dependency main hash H
 ```
 
 ```sh
-goat-merge windows.gbin linux.gbin --output geometry.gbin
+goat-merge geometry.gbin windows.gbin linux.gbin
 ```
 
 If the input modules' own main hashes match and their archives are valid, missing math does not prevent merging. Preserve dependency name, version, and expected main hash. Check dependency availability when building a consumer or executing, not when packaging native variants.
@@ -1485,7 +1485,7 @@ If the input modules' own main hashes match and their archives are valid, missin
 
 ```sh
 # Running on Linux.
-goat-merge windows.gbin linux.gbin --output geometry.gbin
+goat-merge geometry.gbin windows.gbin linux.gbin
 ```
 
 Merge validates archive structure, metadata, hashes, and merge rules. It does not load DLL/SO files, even for the current platform, or run their initialization code. Trial loading belongs to goat-inspect. Merging can run on a computer supporting none of the input libraries' target platforms.
@@ -3601,6 +3601,18 @@ cCompiler does not participate in the main hash, compatible variant selection or
 Acceptance in #208/#211/#212/#215: compilation records the compiler actually invoked; inspect and merge preserve information with its variant; different compilers for different variants are allowed. Changing only cCompiler changes neither the main hash nor compatibility. Test an absent object and invalid structure.
 
 When deduplicating a native variant with identical requirements and an identical DLL/SO hash, goat-merge compares cCompiler by the exact name/version pair after JSON decoding. Identical information is preserved once; if only some inputs provide the object, preserve the available information. Different provided information causes an error without automatic selection, publishing a result or modifying an existing output file. Validate all inputs first; missing information does not eliminate a conflict between two other inputs. This rule does not permit merging different libraries with identical requirements. Acceptance: identical information, absence in all inputs, information in only one input, differing names or versions, and three inputs with one absent object and two conflicting objects; outcomes are independent of input order.
+
+## goat-merge command line and replacing an input archive
+
+The accepted positional syntax is `goat-merge <destination> <source_1> <source_2> <source_3> ...`. The first path names the output archive; subsequent paths explicitly list sources. Earlier --output examples are replaced; that option is no longer used to specify the destination. A path containing spaces is passed as one argument according to shell quoting rules.
+
+Example: `goat-merge geometry.gbin windows.gbin linux.gbin`. The destination may also be explicitly listed as a source: `goat-merge geometry.gbin geometry.gbin linux.gbin`. Whether an existing destination is implicitly included among inputs has not yet been separately agreed.
+
+When the destination matches an input, first read and validate all input data, resolve informational conflicts and build the complete result in a temporary file. Validate it with the shared validator, then atomically replace the destination. Create the publication temporary file beside the destination on the same filesystem; do not truncate an existing destination. Failure before successful replacement preserves the old file even when it is also a source.
+
+If atomic replacement is unavailable or fails, report failure and preserve the previous destination; do not fall back to deleting it and then copying the result. Consume all data from an input matching the destination before replacement. The utility does not load DLL/SO libraries or execute bytecode.
+
+Acceptance in #215/#222/#224: the new syntax and multiple sources; paths containing spaces; destination matching an explicitly listed source; corrupt input, conflict, cancelled selection and write/validation/replacement failures preserve the old output. A successful merge produces a valid archive.
 
 ## goat-inspect exit statuses
 
