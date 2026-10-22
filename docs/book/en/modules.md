@@ -3272,3 +3272,13 @@ The producer records such a reference only when immutable binding is proved thro
 An analytical reference does not shorten runtime execution: A still obtains the value through B. Preserve ordinary chain initialization, observable action order, rights and the specific closure environment. Static analysis reads C's facts without executing modules.
 
 Acceptance: A -> B -> C resolves A's reference to C's function without adding C to A's dependencies. Cover longer chains, two versions of C, an unreachable C present only in another branch of the process-wide graph, a missing function and a mutable intermediate export. Preserve B/C initialization and avoid copying summaries or substituting function environments.
+
+## Normalizing empty analysis
+
+An omitted analysis field and a valid analysis = {"formatVersion": 1, "summaries": []} object are equivalent: neither provides analysis information. Readers accept both. Canonical writers omit analysis with an empty summaries array; apply the same normalization before main-hash computation.
+
+Validate the original structure and version before removing empty analysis. An unknown version remains an error even with empty summaries. Also reject unknown fields, missing required formatVersion/summaries, incorrect types, analysis = null and analysis = {}. Emptiness cannot bypass strict validation.
+
+This rule applies to a valid container with an actually empty array. A nonempty summaries array is not empty merely because its records omit result: summaries may contain effects or other proven facts.
+
+Acceptance: omitted analysis and a valid empty container produce identical normalized data and main hashes. Check unknown versions, extra fields, incorrect types and missing required fields with empty summaries. Preserve nonempty summaries containing effects without result.
