@@ -2622,3 +2622,13 @@ Measure the deadline using monotonic time. One probe has a shared budget for lau
 When the deadline expires, mark the probe unsuccessful. Stop its processes and their owned descendants, and wait for writes to cease before cleaning temporary files. Do not affect unrelated builds. Ordinary automatic discovery continues with the next candidate; full listing continues examining the remaining candidates. With --cc, do not select another compiler. Success arriving after expiry does not undo the recorded timeout.
 
 Acceptance: stop a controlled hung probe, do not advertise its target as available, and allow the next candidate to proceed; explicit --cc prevents substitution. Test hangs in information queries and linking, the configured timeout, invalid option values, stopping owned descendants before cleanup, and absence of this timeout on user builds. Tests use a short explicit timeout, startup acknowledgement and an external fallback timeout in the test harness.
+
+## Native compiler discovery diagnostics
+
+During ordinary execution or compilation, do not print rejected-candidate errors if a suitable compiler is subsequently found. Retain failed-probe reasons until selection completes so that, when no suitable candidate exists, a clear summary identifies each tested compiler and target and the failure reason, including launch, compilation/linking errors or timeout. If no candidate was discovered, state that explicitly rather than showing an empty summary.
+
+Reporting reasons does not change native auto/required or explicit-target policy: apply the previously agreed bytecode-fallback or failure rules after diagnostics. With --cc, reasons concern only the selected compiler; no hidden substitution occurs. Failures to compile actual user-generated C are not rejected-candidate errors and are not hidden by this rule.
+
+In --list-native-targets, always show successfully verified available targets and a separate failed-checks section if any checks failed. Do not include a failed target among available targets. Associate each failure with its compiler and target; retain successful results from other candidates.
+
+Acceptance: the first candidate fails its probe and the second passes; ordinary execution does not print the first error. If all candidates fail, show reasons for every performed check; report absence of candidates separately. Listing shows a successful target and a separate failure from another candidate. Clearly distinguish timeout from compilation failure; user-build errors remain visible.
