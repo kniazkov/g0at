@@ -2450,3 +2450,11 @@ The `.goat` extension is recommended but not required for the file specified by 
 For example, `"main": "src/start"` selects exactly `src/start`, even if `src/start.goat` also exists. Read or syntax errors in the selected source do not trigger a search for an alternative name. This rule concerns main in .gmod and does not redefine mode selection for an arbitrary command-line argument.
 
 Checks: successfully build valid source with the `.goat` extension, another extension and no extension; when both `start` and `start.goat` exist, select the explicitly named file; report an error if `start` is missing even when `start.goat` exists; diagnose unsuitable content as a source error.
+
+### File type of main
+
+After resolving symbolic links, main must refer to a regular file. A symbolic link to a regular file is allowed. Reject directories, devices, named pipes, sockets and other special objects with a diagnostic before reading their contents as source. Failure to determine the type is not confirmation of a regular file.
+
+The check applies to the object actually opened; replacing the object between path checking and opening must not allow a special object to be read. The implementation must not block while opening a named pipe merely to inspect its type. Access and read errors on a regular file remain build errors.
+
+Acceptance: accept a regular file and a link to it; reject a directory, a link to a directory and special objects available on the test OS. The named-pipe test needs no external writer and completes without waiting for data; an external test timeout only detects hangs.
