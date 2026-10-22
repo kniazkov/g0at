@@ -3613,3 +3613,15 @@ Within one report version, do not change the meaning of an assigned code or inco
 The agreed output rule remains: handled errors in --json mode produce a JSON report without unrelated stdout text; errors yield a nonzero exit status. The report version is present even when opening or validating a module fails and its own metadata is unavailable.
 
 Acceptance in #212/#223/#219: parse successful and failed reports as JSON; check reportVersion and diagnostic structure. The same cause retains its code across message languages. Opening, JSON and integrity errors must have documented codes. Module versions do not replace the report version. Implementation and tests remain separate work.
+
+## Multiple independent inspection errors
+
+goat-inspect collects multiple independent errors in one pass when the data required for each check is available and safely parsed. The first error alone does not cancel checks of other independent parts. The shared validation API in #185 must support collecting these diagnostics without a separate, diverging validator in inspect.
+
+Do not run a check that depends on corrupt or unavailable data: a missing result is not a successful check and must not produce derivative errors. For example, syntactically invalid module.json must not cause missing-field or main-hash-mismatch reports based on an invented empty object. If ZIP structure prevents safe identification of entries, stop content checks that depend on it. Independent type errors in correctly parsed JSON may be collected together.
+
+Reports distinguish detected errors from checks not performed because a prerequisite failed, and give the reason for the latter. JSON must distinguish these states structurally, without parsing message text. Their exact fields belong to the complete schema in #223. Diagnostic order must be reproducible for identical input and checking conditions; parallel execution must not introduce random ordering.
+
+Continuing diagnostics does not permit execution of a damaged module. On archive structure, integrity or consistency errors, do not attempt OS loading of DLL/SO files, even if an individual library appears valid. Bytecode and user functions are not executed. Any error retains a nonzero exit status.
+
+Acceptance in #185/#212/#223/#214: two independent invalid fields yield two diagnostics; broken JSON does not cause cascading field and main-hash errors; unavailable ZIP structure stops dependent checks. Unperformed checks are not marked successful; reasons appear in text and JSON reports. A test DLL/SO constructor does not run for an invalid archive. Repeated checks produce stable diagnostic ordering.
