@@ -3674,6 +3674,16 @@ The argument `-` does not designate a standard stream: it is a literal filename.
 
 Acceptance in #215/#222/#224: ordinary sources and destination, an allowed source link, directories and special objects used as inputs/outputs, a literal file named `-`, and redirected stdin/stdout. Verify no wait for pipe data, preservation of special destination objects and no binary archive on stdout. Publish only after complete validation of the temporary result.
 
+## Stop merging at a corrupt source
+
+Goat-merge validates sources in argument order after removing duplicates. On finding a corrupt archive, print its errors and terminate with a nonzero exit status. Do not open or validate subsequent sources; do not collect errors across all input archives in one invocation.
+
+The shared validator may return multiple diagnostics for the current archive when the corresponding checks are safe and their prerequisites hold. Report these diagnostics with the source identified; do not produce cascading errors based on unavailable or unparsed data. This does not require further reading of an unsafe corrupt structure merely to obtain more messages.
+
+On this failure, do not start interactive author selection or create a temporary result; preserve the previous destination, including when it is explicitly listed as a source. The existing requirement to validate all inputs before merging means that a successful merge requires every input to pass; it does not require continuing after corruption has been found.
+
+Acceptance in #215/#222/#224: a valid first source and corrupt second source produce the second source's errors without opening the third. A corrupt first source stops processing immediately; preserve multiple validator diagnostics for that archive. Verify no prompts, temporary result or destination changes.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
