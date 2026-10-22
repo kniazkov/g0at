@@ -3481,3 +3481,17 @@ This is CPU portability within the selected OS/ABI, not a promise that one SO ru
 Acceptance in #208/#211/#219: check effective CPU settings and final variant requirements; build-machine capabilities do not change the baseline profile. Verify actual native execution of the baseline on x86-64 and ARM64; explicitly enabling an extension must appear in metadata and make the variant unsuitable when the target machine lacks the requirement. Execution solely on a modern CI CPU does not prove baseline compatibility: supplement it with settings validation and variant-selection tests using specified capability sets.
 
 Technical references: [GCC x86 options](https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html), [GCC AArch64 options](https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html). Baseline selection is a Goat policy; flag meanings and feature sets were checked against GCC documentation.
+
+## libc family: glibc in v1, musl in a subsequent stage
+
+Required Linux support in v1 implements and tests glibc targets on x86-64 and AArch64. Full native musl support is deferred to #248 and does not block v1. This does not change the agreed Windows support.
+
+The v1 format immediately distinguishes glibc and musl families in system ABI/runtime requirements. Matching Linux, architecture and bitness is insufficient: a glibc variant is not selected for a musl Goat process, or vice versa. Compatibility is determined by the executing process environment, not by files of another libc being present on disk. Neither family is implied when mandatory runtime information is missing.
+
+A valid variant for another known family remains a valid archive component but is unsuitable for native execution in the current environment. Do not turn runtime incompatibility into a structural error of the entire container. General metadata and hash checks for all variants still apply; an unsuitable library is not passed to the OS loader. If no suitable variant exists, apply the already agreed VM and native required rules.
+
+Target discovery and --list-native-targets must not promise musl merely because the schema recognizes the family. An implemented backend and a successful probe of the specific toolchain are required. Existing linux-x86_64-gnu and linux-x86_64-musl examples denote different targets, not interchangeable Linux names.
+
+Runtime family and its minimum version are separate requirements. Selecting glibc does not mean supporting every glibc version; exact minimum-version fields and rules belong to the final #244/#208 schema. Do not choose a more convenient family or guess one when requirements are unknown.
+
+Acceptance in #208/#211/#219: distinguish glibc/musl with identical OS, architecture and bitness; prevent loading an incompatible variant, retain validity of an archive with a foreign runtime, and handle lack of a suitable variant normally. Required end-to-end Linux v1 checks run in a glibc environment on x86-64 and ARM64; #248 adds actual musl builds and execution.
