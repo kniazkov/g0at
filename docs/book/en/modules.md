@@ -3730,6 +3730,12 @@ Paths must reach the layer without prior information loss: Windows command-line 
 
 Acceptance in #249/#212/#215: reading, creating, enumerating, renaming, and deleting files with Cyrillic and non-BMP characters; Windows CLI paths under different system code pages; malformed UTF-8 and unrepresentable names produce diagnosed errors without lossy substitutions.
 
+## Literal output filename in goat-merge
+
+Destination is used as the explicitly supplied path without requiring a .gbin extension or automatically adding or replacing an extension. `goat-merge result source.gbin` creates `result`, not `result.gbin`. Output contents always follow the .gbin format regardless of the filename; all other destination checks and atomic-publication rules still apply.
+
+Acceptance in #215: destinations without an extension, with .gbin, and with another extension; only the explicitly supplied path is created or replaced, leaving a neighboring filename with an added .gbin suffix untouched.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
