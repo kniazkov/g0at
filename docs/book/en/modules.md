@@ -3742,6 +3742,14 @@ Send the result to the waiting client if communication is still available; an in
 
 Acceptance in #245/#214/#223: temporary contention clears before the deadline; permanent contention leaves files and reports failure; multiple files and partial progress do not multiply the budget. Verify inspect exit between seconds 5 and 30 without deadline restart, early success without extra waiting and isolation from unrelated files. Use controlled clocks and synchronization for deadlines.
 
+## Temporary directories left by earlier invocations
+
+Later Goat and goat-inspect invocations do not automatically search for or delete temporary directories left by earlier invocations. Each janitor #245 services only the directory assigned to its specific invocation. A directory name, age, prefix or absence of a process with its recorded PID does not authorize adopting and deleting another invocation's directory.
+
+After failed cleanup, remaining files are removed manually after checking that they are no longer in use. A new invocation creates its own directory and does not resume cleanup of an old one. This does not cancel an already running janitor's cleanup after its owner exits, within the agreed deadline.
+
+Acceptance in #245/#214: a running instance's directory, a completed invocation's leftover directory and an unrelated directory with a similar name coexist. A new invocation and its janitor leave all three unchanged, removing only their own temporary files. Verify independence from directory age and PID reuse.
+
 ## A single load-probe attempt
 
 One goat-inspect invocation performs at most one load-probe attempt for the selected library. There are no automatic retries after a process-start error, load or validation failure, unloading error, crash or timeout. A retry must not replace an already detected failure with success, and cleanup failure does not trigger a retry either.
