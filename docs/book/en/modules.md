@@ -3648,6 +3648,14 @@ A constructor that needs input for successful loading encounters EOF during the 
 
 Acceptance in #213/#214: a constructor reads stdin and immediately receives EOF; inspect leaves its own input untouched. Test terminal, redirected-file and pipe input, including a pipe with its writer still open. Sentinel bytes from the parent's stdin do not reach the child; empty input does not cause an invalid-descriptor error. Verify that ordinary program execution remains unchanged.
 
+## Inspect probe timeout option
+
+The goat-inspect option `--probe-timeout <seconds>` sets the shared deadline for loading, validation, explicit unloading and normal child-process termination. The default is 5 seconds. Accept a nonempty sequence of decimal ASCII digits representing a positive integer number of seconds; signs, fractional parts, exponents, whitespace and unit suffixes are forbidden. Leading zeroes do not change the value.
+
+Zero, negative, fractional, missing or excessively large values are option errors before starting a probe. Parse the integer exactly with overflow checks, including conversion from seconds to internal time units and deadline calculation; truncation, rounding, overflow and silent substitution of the default are forbidden. This option cannot enable infinite waiting. It does not change the separate C-compiler probe timeout `--native-probe-timeout`.
+
+Acceptance in #214/#223: omission gives 5 seconds; explicit 1 and 5 are accepted; 0, -1, 1.5, 1e2, a missing argument, nonnumeric text and an overflowing digit sequence are rejected without starting the child. Verify safe unit conversion and preservation of the shared budget across stages.
+
 ## Load probe timeout
 
 The default goat-inspect load probe timeout is 5 seconds; a command option allows the user to change it. Measure the deadline using a monotonic clock from the start of the child launch attempt, not from library loading or the first received message. Process startup, loading and obtaining the probe result share one budget.
