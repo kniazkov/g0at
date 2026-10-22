@@ -3730,6 +3730,18 @@ Expiry of this wait does not cancel the janitor's work. It continues the cleanup
 
 Acceptance in #214/#245/#223: early success and failure; no response and continuous progress messages; delayed request transmission; successful cleanup after wait expiry and inspect exit. Verify independence from --probe-timeout, preservation of the probe outcome and cleanup error, no cleanup cancellation and no duplicate deletion. Use controlled clocks/synchronization and an external test timeout for time boundaries.
 
+## Deletion retry deadline
+
+The shared janitor #245 limits retries for deleting temporarily busy files to one 30-second monotonic deadline measured from cleanup start. The deadline covers the entire invocation-owned directory, not a fresh budget per file, pass or error. Cleanup starts when processing “clean up now”, or on detecting owner termination if no request has already started cleanup.
+
+Inspect exit, expiry of its five-second wait, repeated owner-termination notification and partial progress do not restart the deadline. On early success the janitor exits immediately. On expiry it stops retrying, records failure and exits, leaving undeleted files. Partial deletion must not be reported as successful cleanup. Retries must not busy-spin; waits must fit within the remaining budget.
+
+Deletion still starts only after operation-owned processes have stopped; deadline expiry does not authorize deleting files under running code or touching unrelated resources. This deadline limits retries, not a promise to interrupt a stuck filesystem system call during OS failure. Inspect's five-second wait remains separate and is not extended to 30 seconds.
+
+Send the result to the waiting client if communication is still available; an inspect process that has already exited produces no new report and cannot change its exit status retroactively. Ordinary Goat retains its selected exit status and does not wait for the janitor before exit.
+
+Acceptance in #245/#214/#223: temporary contention clears before the deadline; permanent contention leaves files and reports failure; multiple files and partial progress do not multiply the budget. Verify inspect exit between seconds 5 and 30 without deadline restart, early success without extra waiting and isolation from unrelated files. Use controlled clocks and synchronization for deadlines.
+
 ## A single load-probe attempt
 
 One goat-inspect invocation performs at most one load-probe attempt for the selected library. There are no automatic retries after a process-start error, load or validation failure, unloading error, crash or timeout. A retry must not replace an already detected failure with success, and cleanup failure does not trigger a retry either.
