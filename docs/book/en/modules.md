@@ -3736,6 +3736,12 @@ Destination is used as the explicitly supplied path without requiring a .gbin ex
 
 Acceptance in #215: destinations without an extension, with .gbin, and with another extension; only the explicitly supplied path is created or replaced, leaving a neighboring filename with an added .gbin suffix untouched.
 
+## Literal input archive paths in inspect and merge
+
+Goat-inspect (#212) and goat-merge (#215) open exactly the explicitly supplied input archive path regardless of its extension, including no extension. They do not append .gbin or search for an alternative file with that suffix. Contents are validated as .gbin under the shared validation contract. A filename extension does not replace format validation or permit an invalid archive.
+
+Acceptance in #212/#215: valid archives with .gbin, another extension, and no extension; when both `input` and `input.gbin` exist, use the explicitly supplied file. Missing `input` is an error even if `input.gbin` exists. Reject invalid contents regardless of filename.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
