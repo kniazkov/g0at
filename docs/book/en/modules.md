@@ -3750,6 +3750,12 @@ All other destination restrictions remain: this does not authorize replacing a s
 
 Acceptance in #215: replace an eligible existing destination without an overwrite prompt, including with unavailable interactive input when author selection is unnecessary. Verify preservation of the previous file on validation or publication failure and that --force is not required.
 
+## Successful goat-merge message
+
+After successful publication, goat-merge prints one short human-readable line to stdout containing the output path, module name and version, and the number of native variants in the resulting archive. Count all resulting variants, not only newly added variants or those compatible with the current machine. Do not print success before publication or instead of an error diagnostic. Detailed output contents are available through goat-inspect; the success line is not a machine-report format.
+
+Acceptance in #215: successful merging and single-source repacking produce one line describing the published result; the variant count matches the resulting archive, including zero. No success message is printed on failure before publication.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
