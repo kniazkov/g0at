@@ -2776,3 +2776,15 @@ The entry file receives index 0 and external = false; its logical name is its fi
 For example, /home/ivan/run.goat links to /work/app/main.goat. The base is /work/app. The entry receives name = main.goat; /work/app/lib/math.goat receives name = lib/math.goat, external = false; /work/shared/math.goat receives name = math.goat, external = true. Relative includes still resolve against the real containing source file, not the shared logical-name base.
 
 Acceptance: direct and linked entry paths produce identical names and external flags; changing cwd does not change classification. Test an internal include, external include and an internal link to an external file. Building through .gmod retains the real .gmod directory as its base.
+
+## File and instruction index ranges in v1
+
+In module format v1, main, include file references and files[].entry use the unsigned 32-bit range: 0 through 4294967295 inclusive. The range is identical on all platforms. In JSON these are exact integers without fractional or exponent notation, not strings; parse without an intermediate double conversion.
+
+The type range does not replace existence checks: main and each include reference must be below the actual file count; entry must identify an existing valid instruction for the corresponding file. An index equal to the element count is invalid. Values outside uint32, negative values and parsing/conversion overflow are errors, never truncation, saturation or wraparound.
+
+The compiler checks representability before writing; the loader checks before indexing tables or executing code. Check all size/offset calculations and conversions to size_t for overflow and available address space. Schema-valid numbers do not guarantee that a module of that size can be loaded; container and memory limits still apply. Binary representations of these indices use 32-bit values with fixed byte order under the portable-bytecode rules, not native size_t.
+
+This applies to the listed indices of the new module format. It does not declare every numeric metadata field or existing native-binding field 32-bit; those widths are specified separately.
+
+Acceptance: test 0, 4294967295 and out-of-range 4294967296 without precision loss; the type maximum may fail object-existence checks but must not truncate. Test negative values, fractional/exponent notation, an index immediately beyond an actual table, size-calculation overflow and consistent interpretation across supported platforms. Boundary tests need not allocate billions of elements.
