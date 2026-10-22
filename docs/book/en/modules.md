@@ -3637,3 +3637,13 @@ In the JSON report, each stream's retained bytes use a dataBase64 string (standa
 The human-readable report labels stdout/stderr, explicitly reports truncation and escapes control and nonprintable bytes without executing terminal control sequences. Preserve byte order within each stream; do not promise a total order across stdout and stderr. Preserve available output on crashes and timeouts as well. Truncation alone does not turn a successful probe into a load failure; capture failures are diagnosed separately.
 
 Acceptance in #213/#214/#223: output on both streams, JSON-like text, NUL/invalid UTF-8/control characters, empty streams, 65536/65537-byte boundaries, heavy simultaneous output and continuous printing until timeout. The utility's JSON remains valid; Base64 decoding restores the retained prefix; capture memory is bounded and printing cannot bypass the timeout. Check availability of received output after a crash.
+
+## Probe process standard input
+
+From startup, the goat-inspect load probe child receives a separate open stdin whose reads immediately return EOF. It does not inherit inspect's standard input or receive user data from a terminal, redirected file or pipe. Do not replace EOF with an invalid descriptor: ordinary reads must observe end of input, not a closed-descriptor error.
+
+Configure this before loading the DLL/SO or running its constructors. The separate control-result channel does not use stdin. The shared process API in #213 provides an explicit empty-input mode; this does not change ordinary Goat execution or all child processes by default.
+
+A constructor that needs input for successful loading encounters EOF during the probe; the utility neither prompts for a response nor retries using user stdin. A library looping on EOF remains subject to the timeout. This is a standard-stream rule, not a prohibition on the library independently opening devices or other data sources.
+
+Acceptance in #213/#214: a constructor reads stdin and immediately receives EOF; inspect leaves its own input untouched. Test terminal, redirected-file and pipe input, including a pipe with its writer still open. Sentinel bytes from the parent's stdin do not reach the child; empty input does not cause an invalid-descriptor error. Verify that ordinary program execution remains unchanged.
