@@ -2434,3 +2434,11 @@ On Windows, reject paths relative to a drive's current directory (for example, `
 An ordinary relative path such as `src/main.goat` and a fully qualified absolute path such as `C:/src/main.goat` remain valid. These examples show values after JSON decoding; backslashes must be escaped inside JSON. This restriction concerns Windows path interpretation: on Linux, `/src/main.goat` remains a fully qualified absolute path.
 
 Windows checks: reject `C:main.goat`, `C:`, `\src\main.goat` and `/src/main.goat` regardless of the current drive and its working directory; retain support for ordinary relative paths and fully qualified drive paths. On Linux, verify that an absolute path starting with `/` is not rejected by the Windows-specific rule.
+
+### Empty values, NUL and spaces in main
+
+After JSON decoding, reject an empty string and any string containing U+0000 (including one written as `\u0000`) before accessing the file system. Do not pass a path containing NUL to a C API that silently truncates it.
+
+Preserve leading, trailing and internal spaces without automatic trimming. For example, `"main": " main.goat "` supplies a path with leading and trailing spaces; a string consisting only of spaces is not empty. Such filenames are possible on Linux. Support for a particular name depends on the OS, file system and file API; ordinary Windows interfaces have restrictions and normalization behavior concerning trailing spaces. The format rule prohibits trimming by Goat's loader itself, but does not promise name portability or changes to OS rules.
+
+Checks: reject an empty string and NUL at the beginning, middle and end; verify preservation of spaces after JSON decoding. On Linux, create distinct files named `main.goat` and ` main.goat ` and verify that the specified file is selected. Report ordinary resolution, missing-source or read errors without an additional attempt using a trimmed name.
