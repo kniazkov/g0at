@@ -3535,3 +3535,13 @@ Goat's lower support boundary and a particular native variant's minimum OS are d
 #211 provides appropriate build settings and reliable requirements, #208 checks them, and #219 retains tests for all three Windows configurations. The windows-latest version does not automatically become the minimum supported OS; execution solely on the current runner does not prove compatibility at the lower boundary. The #244 schema defines the precise technical representation of OS version/build, separately from opaque module versions.
 
 Acceptance: test variant selection below, at and above its declared minimum, a DLL requiring more than the overall baseline, and independent OS, bitness and runtime checks. Include a reference execution in an appropriate Windows 10 environment in the lower-bound validation plan; lack of that environment must not be reported as a passing test. Windows 7/8 are outside the required v1 matrix.
+
+## Exact matching of supported Goat native ABI versions
+
+Match the Goat native ABI version exactly against one of the loader's explicitly supported versions. Numeric “at least the required version” does not apply: a newer ABI is not automatically compatible with an older one. The Goat release version is independent of the ABI version; a release without changes to ABI conventions does not require changing the ABI number.
+
+Increment the ABI version for incompatible changes to its conventions. Retain support for an older version only with an explicit implementation of that interface and its tests; merely listing a number is insufficient. For the selected version, use its actual calling and data-representation conventions. External metadata and the embedded DLL/SO description must agree on the version under the general description-validation rules.
+
+An unsupported ABI alone excludes only the native variant and does not prevent compatible bytecode from executing in the VM. This does not permit ignoring corrupt containers or hashes, unsupported JSON-format versions, or contradictory descriptions. If no suitable native variant exists, apply the agreed VM/native required rules. Do not pass a library with an already unsupported ABI to the OS loader for trial execution.
+
+Acceptance in #208/#209/#219: an exact supported-version match permits further variant checks; lower and higher unsupported versions exclude it without version-order comparison. Test VM execution of a valid module with an unknown ABI, required mode, disagreement between external and embedded descriptions, and independence from the Goat release version. If multiple ABIs are supported in the future, test each through its real interface rather than reinterpreting it using the current structure.
