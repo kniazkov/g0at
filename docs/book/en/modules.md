@@ -3654,6 +3654,16 @@ Check destination before prompting for author order or creating the temporary re
 
 Acceptance in #215/#222/#224: a link to a regular archive, a dangling link, a destination link also listed as a source, and a source link with an ordinary destination. On rejection preserve the link and target without author prompts; successfully read a permitted source link. Cover detectable destination substitution before publication.
 
+## goat-merge destination parent directory
+
+The destination's parent directory must exist. Goat-merge does not create missing directories, including intermediate path components. For example, `goat-merge build/result.gbin source.gbin` fails if build is missing; it creates neither build nor result.gbin. For a simple name such as result.gbin, the parent is the launch working directory.
+
+Diagnose a missing parent, or a regular file where a directory component is required, before author prompts and temporary-result creation. This is a destination filesystem error, not an input metadata conflict. Permitted links in parent components follow the previously agreed rule; the parent must resolve to an existing directory.
+
+If the parent subsequently disappears or becomes inaccessible, fail with a normal filesystem error without recreating it or publishing elsewhere. Atomic publication and preservation of the previous output otherwise retain their existing rules.
+
+Acceptance in #215/#222/#224: existing parent, missing immediate parent, multiple missing components, a file in place of a directory, a simple destination name and a permitted link to an existing parent. On rejection create no directories or temporary result and do not prompt for author order.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
