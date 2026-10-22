@@ -3680,6 +3680,16 @@ Terminate the tree and release channels before final cleanup of probe-owned temp
 
 Acceptance in #213/#214: a constructor launches a long-lived child and grandchild, then the probe either completes successfully or its main process crashes. In both cases descendants terminate and no longer retain output channels or temporary libraries. Also test a load failure after creating a descendant, no descendants and a concurrent independent probe. Normal cleanup after successful loading preserves the successful result.
 
+## Explicit library unloading in a probe
+
+After loading the DLL/SO and checking its embedded description and every declared symbol, the child explicitly releases the acquired library handle using the OS unloading API, then exits normally. Unloading is a mandatory probe stage; process termination does not replace that call. Exported user functions and bytecode are not called.
+
+An unloading API error, crash or hang during unloading makes the probe fail. Loading, validation, unloading and process termination share the established single deadline; unloading receives no new time budget. Preserve completed-stage results and the failure cause in the report. An unloading error belongs to the probe itself, while subsequent process-tree and temporary-file cleanup has a separate outcome.
+
+Successful handle release does not promise immediate removal of every library mapping from memory: that decision belongs to the OS loader. The check covers the normal unloading operation and subsequent process termination; destructors invoked by the OS during these stages remain subject to the shared deadline.
+
+Acceptance in #214/#223: successful explicit unloading; a reported API error; a crash and hang in a destructor during unloading; an unloading error accompanied by a subsequent cleanup error. Verify the shared time budget, preservation of load and symbol-check results and a distinct unloading failure cause.
+
 ## Probe success requires normal process termination
 
 A probe succeeds only when a valid service result reports successful loading and the immediate child process terminates normally with exit code 0 before the shared deadline. A success message alone is insufficient. A zero exit code without a valid result does not establish success either.
