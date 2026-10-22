@@ -3383,3 +3383,15 @@ Processing order: validate the original structure, version, references, formal p
 This valid summary is removed. If summaries becomes empty, apply the agreed empty-analysis omission rule. Normalize before main-hash computation. Do not remove summaries retaining normalReturn = false, nonempty result facts or retained effects; proven purity is also an assertion.
 
 Acceptance: a single when-only summary disappears from canonical output, as does its equivalent with result = {} and effects = {"may": [], "unknown": true}. Reject normalized duplicates before removal. Reject invalid types and conditions. Removing the last summary omits analysis; preserve meaningful assertions and argument positions in retained summaries.
+
+## Normalizing integer facts through the lattice
+
+A singleton range with type = integer canonicalizes to value: {"type":"integer","range":{"min":42,"max":42}} becomes {"type":"integer","value":42}. When value and a consistent range are both present, validate membership first, then remove redundant range. Inconsistent facts are errors before normalization.
+
+Reuse existing make_integer_range_element semantics in src/analysis/lattice.c: min == max already creates an integer constant, and the full INT64_MIN..INT64_MAX interval becomes general INTEGER. Accordingly, canonicalize the full interval by removing range and retaining type = integer. Do not implement a second divergent rule set for the same valid integer facts.
+
+Distinguish analysis semantics from input validation: the constructor returns BOTTOM for min > max, whereas the format requires min <= max. Readers must reject such JSON before constructor normalization could conceal the error. Likewise, first validate int64 bounds, exact JSON types, required min/max and consistency with value. Reusing the lattice does not bypass strict input validation.
+
+Apply these transformations to integer ValueFacts before canonicalization, summary duplicate detection and main-hash computation. They do not authorize losing facts that the lattice does not preserve: for example, distinct accepted real NaN bit patterns must not be collapsed merely because the lattice considers them equal.
+
+Acceptance: singleton ranges and matching constants produce identical canonical data and hashes; value with a containing range canonicalizes to value. Full int64 range canonicalizes to type = integer. Reject min > max, out-of-int64 values and value outside range. Normalization must not conceal duplicate summaries. Reuse the existing constructor for valid intervals while retaining separate strict JSON validation.
