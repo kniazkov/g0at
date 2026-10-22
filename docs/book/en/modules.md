@@ -3226,3 +3226,35 @@ A repeated category after JSON decoding is an input metadata error, not permissi
 Sorting does not change unknown or remove effects. Empty may with unknown = false retains its meaning of proven purity under the current effect system.
 
 Acceptance: permutations of the same categories yield identical canonical data and hashes; reject duplicates including equivalent JSON escape spellings. Detect summaries differing only in may order as duplicates after normalization. Cover empty may and the distinction between unknown = true and false.
+
+## Re-exporting a dependency function through functionRef
+
+An externals record may contain functionRef: a closed object with required module (module-name string), version (exact-version string) and functionId (numeric identifier in that module). It describes a proven immutable binding to a dependency function. Own functions continue to use functionId directly in the export record. Having both functionId and functionRef is forbidden.
+
+Example: const math = import "math@1.0"; external square = math.square; when math.square is proved immutable:
+
+```json
+{
+  "externals": {
+    "square": {
+      "mutable": false,
+      "type": "function",
+      "functionRef": {
+        "module": "math",
+        "version": "1.0",
+        "functionId": 3
+      }
+    }
+  }
+}
+```
+
+Here dependencies includes the direct math@1.0 dependency and its main hash. functionRef neither selects a different build by name/version alone nor repeats the hash: resolve it within the already validated dependency-graph snapshot with pinned hashes. Validate existence of the referenced module and its functions entry. The analyzer uses the target function's description without copying summaries into the current module or executing the dependency. Rules for re-export chains through intermediate modules are specified separately.
+
+functionRef is forbidden with mutable = true. Constness of the new export alone is insufficient: if the original math.square is mutable or its binding to particular code is unproved, omit functionRef. If type is present it must be function. Absence of functionRef/functionId does not prohibit dynamic calls. An invalid recorded reference is a metadata error, not missing analysis information.
+
+The reference identifies code, not a closure instance, captured values or caller privileges. It does not grant direct access to hidden declarations, transfer the original function's privileges or bypass ordinary runtime acquisition of the exported value. Preserve import initialization, the function environment and its rights. Do not replace the runtime closure with a newly created function object solely from functionRef.
+
+Acceptance: a valid immutable re-export uses the dependency's summary; equal function numbers in different modules/versions remain distinct. Reject invalid module/version/functionId, extra fields, mutable = true and a simultaneous own functionId. Mutable original exports receive no false static binding. Execution preserves initialization and captures.
+
+Detailed analytical captures and a separate declarationId table solely for that purpose are not introduced in v1 now. Aggregate externalRead/externalWrite/unknown suffice for the current consumer; runtime closure machinery remains necessary. Detailed relations involving captured state belong to future analysis extensions.
