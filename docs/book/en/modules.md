@@ -3750,6 +3750,16 @@ After failed cleanup, remaining files are removed manually after checking that t
 
 Acceptance in #245/#214: a running instance's directory, a completed invocation's leftover directory and an unrelated directory with a similar name coexist. A new invocation and its janitor leave all three unchanged, removing only their own temporary files. Verify independence from directory age and PID reuse.
 
+## Temporary directory path on cleanup failure
+
+On cleanup failure or expiry of the wait for its outcome, inspect shows the full absolute path of the probe-owned temporary directory if it was created and its path is known. In the JSON cleanup-result data, expose this path as a separate string named temporaryDirectory; scripts must not extract it from message. If no directory has been created or its path is unknown, omit the field: do not substitute an empty string, the current directory or an invented path.
+
+Preserve spaces and name characters; apply normal JSON escaping and safely display control characters in human-readable output. This is a diagnostic path on the current machine, not a module.json or native-description field; it is not included in the archive or its hashes. Presence of the field does not prove that the directory still exists or that all its files remain undeleted.
+
+On a wait timeout, explicitly state that the janitor may still be working and immediate manual deletion is unsafe. A timeout does not confirm termination of the janitor or all probe processes. The path supports later inspection and manual cleanup after confirming that no processes use it; no automatic deletion command is executed.
+
+Acceptance in #223/#245/#214: deletion failure, timeout with ongoing cleanup, partial deletion, a path containing spaces and Unicode, and no created directory. Verify the separate JSON field, agreement with the textual path and absence of a false claim that timeout permits immediate deletion. Cleanup completed after the report does not make the previously reported path a reporting error.
+
 ## A single load-probe attempt
 
 One goat-inspect invocation performs at most one load-probe attempt for the selected library. There are no automatic retries after a process-start error, load or validation failure, unloading error, crash or timeout. A retry must not replace an already detected failure with success, and cleanup failure does not trigger a retry either.
