@@ -3249,7 +3249,7 @@ Example: const math = import "math@1.0"; external square = math.square; when mat
 }
 ```
 
-Here dependencies includes the direct math@1.0 dependency and its main hash. functionRef neither selects a different build by name/version alone nor repeats the hash: resolve it within the already validated dependency-graph snapshot with pinned hashes. Validate existence of the referenced module and its functions entry. The analyzer uses the target function's description without copying summaries into the current module or executing the dependency. Rules for re-export chains through intermediate modules are specified separately.
+Here dependencies includes the direct math@1.0 dependency and its main hash. functionRef neither selects a different build by name/version alone nor repeats the hash: resolve it within the already validated dependency-graph snapshot with pinned hashes. Validate existence of the referenced module and its functions entry. The analyzer uses the target function's description without copying summaries into the current module or executing the dependency. Re-export-chain rules are defined below in the section on the actual function owner.
 
 functionRef is forbidden with mutable = true. Constness of the new export alone is insufficient: if the original math.square is mutable or its binding to particular code is unproved, omit functionRef. If type is present it must be function. Absence of functionRef/functionId does not prohibit dynamic calls. An invalid recorded reference is a metadata error, not missing analysis information.
 
@@ -3258,3 +3258,17 @@ The reference identifies code, not a closure instance, captured values or caller
 Acceptance: a valid immutable re-export uses the dependency's summary; equal function numbers in different modules/versions remain distinct. Reject invalid module/version/functionId, extra fields, mutable = true and a simultaneous own functionId. Mutable original exports receive no false static binding. Execution preserves initialization and captures.
 
 Detailed analytical captures and a separate declarationId table solely for that purpose are not introduced in v1 now. Aggregate externalRead/externalWrite/unknown suffice for the current consumer; runtime closure machinery remains necessary. Detailed relations involving captured state belong to future analysis extensions.
+
+## Re-export chains and the actual function owner
+
+If A directly imports B and B re-exports a function from C, a proven functionRef in A's export identifies the actual code owner C and its exact version/functionId. Intermediate aliases create no new function identifiers in A or B and do not copy C's analysis summaries.
+
+A's dependencies still lists only its direct dependencies: B in this example. Do not add C solely for the analysis reference. An actual direct import of C in A's code naturally creates a normal direct dependency.
+
+Resolve functionRef within the transitive dependency graph of the module containing the reference. That graph has already been validated and pinned by hashes on dependency edges. Finding a matching module elsewhere in the process is insufficient: the target must be reachable from the referencing module's dependencies. Do not perform fresh archive discovery or arbitrary loading based on functionRef. A missing target, wrong version or missing functionId is a preflight error.
+
+The producer records such a reference only when immutable binding is proved throughout the chain. Unknown or mutable intermediate exports do not justify inventing a final identity. The identifier refers to C's functions table, not intermediate B's externals entries.
+
+An analytical reference does not shorten runtime execution: A still obtains the value through B. Preserve ordinary chain initialization, observable action order, rights and the specific closure environment. Static analysis reads C's facts without executing modules.
+
+Acceptance: A -> B -> C resolves A's reference to C's function without adding C to A's dependencies. Cover longer chains, two versions of C, an unreachable C present only in another branch of the process-wide graph, a missing function and a mutable intermediate export. Preserve B/C initialization and avoid copying summaries or substituting function environments.
