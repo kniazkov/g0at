@@ -3461,3 +3461,23 @@ In #219, add module compilation, .gbin packaging, metadata/hash validation, load
 Incompatibility tests must reject a variant for another architecture before OS loading; selection cannot rely only on matching bitness. Identical reference metadata and portable bytecode.bin bytes must yield the same main SHA-256 on x86-64 and ARM64. Native libraries for different architectures have their own hashes and need not be byte-identical.
 
 #208 describes actual platform requirements, #209 provides the corresponding specialization ABI, and #219 tests the complete chain in existing ARM64 GCC/Clang jobs. Failures of required ARM64 checks must not become continue-on-error or success through skipped tests. Add module checks as their dependencies are implemented; existing ARM64 CI does not mean the future module format has already been tested or implemented.
+
+## Conservative default instruction set
+
+The host target selects the build machine's OS, architecture and system ABI, but does not automatically enable every extension of its CPU. The default must be practically portable for ordinary distribution within a compatible platform. Do not require a personal build for each CPU or target every historical processor by disabling standard architectural capabilities.
+
+Baseline profiles for v1:
+- x86-64: baseline x86-64 with SSE2, without requiring AVX, AVX2, AVX-512 or higher x86-64 levels;
+- AArch64: Armv8-A with FP and Advanced SIMD (NEON), without requiring SVE/SVE2 or optional extensions such as crypto or LSE.
+
+Reference GCC settings for these baselines are -march=x86-64 and -march=armv8-a. These are not new native.target values or universal flags for every compiler: each compiler adapter must enforce the same profile using supported settings. Do not automatically add -march=native/-mcpu=native. Ordinary optimizations within the selected instruction set remain allowed; conservatism does not mean disabling the optimizer or baseline SIMD.
+
+An extended profile is explicitly selected for a personally optimized build. As decision 101 already requires, explicitly supplied flags enabling extra instructions raise the metadata requirements even with a nominal host target. Never silently label such output as baseline. If actual requirements cannot be reliably established, fail the build.
+
+Control the effective settings of the entire compiled native part, including the embedded runtime and statically included components: baseline flags on generated C alone are insufficient. Toolchain and environment settings must not silently raise requirements. New CPU extensions on a GitHub runner do not change the baseline either. A system library's normal selection of a faster path with a safe baseline fallback does not by itself impose that extension as a mandatory module requirement.
+
+This is CPU portability within the selected OS/ABI, not a promise that one SO runs on every Linux version. OS, libc/runtime and Goat ABI requirements remain separate checks. Do not automatically treat the Ubuntu runner version as the minimum supported OS version.
+
+Acceptance in #208/#211/#219: check effective CPU settings and final variant requirements; build-machine capabilities do not change the baseline profile. Verify actual native execution of the baseline on x86-64 and ARM64; explicitly enabling an extension must appear in metadata and make the variant unsuitable when the target machine lacks the requirement. Execution solely on a modern CI CPU does not prove baseline compatibility: supplement it with settings validation and variant-selection tests using specified capability sets.
+
+Technical references: [GCC x86 options](https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html), [GCC AArch64 options](https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html). Baseline selection is a Goat policy; flag meanings and feature sets were checked against GCC documentation.
