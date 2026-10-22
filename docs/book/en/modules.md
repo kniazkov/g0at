@@ -2579,7 +2579,7 @@ Use the shared temporary native build and cleanup infrastructure #245. Responsib
 
 Acceptance: a discovered compiler with a successful probe yields a target and compiler details; one that reports its version but cannot link DLL/SO does not yield an available target; successful cross-compilation does not require executing the result. Check that no OS loading occurs, temporary files are cleaned, and absence of available targets is clearly reported. Use controlled compiler stubs for automated tests and available real toolchains for integration checks.
 
-Discovery follows “Compiler discovery and --cc”. Probe deadlines and automatic selection among multiple suitable compilers still require clarification.
+Discovery follows “Compiler discovery and --cc”. Automatic selection is defined below; probe deadlines still require clarification.
 
 ## Compiler discovery and --cc
 
@@ -2590,3 +2590,15 @@ The optional `--cc <compiler-path>` selects one compiler explicitly. In this mod
 These rules also apply to `goat --list-native-targets`: without --cc inspect compilers from PATH; with --cc inspect only the selected compiler. Do not store machine-specific compiler paths in .gmod. Do not introduce additional user-maintained compiler-search directory lists.
 
 Acceptance: discover a compiler on configured PATH; do not find tools outside PATH through hidden scans; environment variables reach both probe and actual builds. With --cc, invoke only the selected compiler; a controlled failure must not launch a fallback compiler from PATH. Target listing with --cc reflects only successful probes of that compiler.
+
+## Automatic native compiler selection
+
+Without --cc, Goat automatically selects a compiler suitable for the requested target. Multiple suitable compilers are neither an error nor a reason to prompt. Running a small program must not require interactive toolchain selection. The optional --cc remains an explicit selection and prohibits substitution.
+
+Automatic selection order must be stable and documented rather than dependent on parallel probe completion times or arbitrary file enumeration. Reuse the existing initial preference: cc on Linux and gcc on Windows, resolved through PATH. If the preferred compiler is unavailable or fails the requested-target probe, automatically consider other discovered supported compilers. Define the exact remaining candidate order in the discovery implementation and its documentation.
+
+Do not conflate a failed candidate probe with a user-program compilation error. After selecting a suitable compiler, failure to build generated C follows the previously agreed rules and is not hidden by trying other compilers or silently falling back to bytecode. If no suitable candidate exists, apply the agreed native auto/required and explicit-target policies.
+
+In --list-native-targets, show verified compilers suitable for a target and identify the automatic choice. Multiple compilers for one target do not create distinct platform identifiers solely because their compiler names differ.
+
+Acceptance: two suitable compilers cause neither a prompt nor an ambiguity error; selection is reproducible with an unchanged environment. An unsuitable preferred candidate allows selection of another; explicit --cc disallows substitution. A user-C build failure with the selected compiler does not trigger a hidden search through other compilers.
