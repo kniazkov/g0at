@@ -3704,6 +3704,10 @@ Acceptance in #215/#222/#224: create two hard links to the previous file; after 
 
 Issue #249 provides a cross-platform file and directory API: object types and links, temporary files and directories, traversal and safe removal, atomic replacement, and access-permission transfer. Extend the existing path/io/binary_file foundation and move shared native-compiler filesystem operations into lib. Janitor #245 uses this API while owning cleanup deadlines and retries. Archive validation and tool policies remain with their consumers. #213, #216, and #249 are independent infrastructure components completed before integrating the janitor and its consumers.
 
+## Atomic publication in goat-merge v1
+
+Publication exposes either the previous file or the fully prepared new result, never a partially written destination. V1 does not provide a separate durability guarantee after sudden power loss or an OS crash; additional file and directory synchronization solely for that guarantee is not required. Write and close errors must still be checked, the temporary result validated before publication, and the previous destination preserved on failure before replacement.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
