@@ -3772,6 +3772,14 @@ This explanation is added only to the text report (#212). Do not extend the JSON
 
 Acceptance in #212/#223: text output explains incompatible variants and distinguishes platform compatibility from the loading outcome; this requirement adds no incompatibility-reason fields to JSON.
 
+## Exported names in goat-inspect
+
+Goat-inspect displays the module's exported names from the validated externals object in module.json. These are Goat public-interface names, not internal DLL/SO symbols. Include every externals entry even when the analyzer has not proved the declaration's type or value. Missing or empty externals means an empty export list; metadata unavailable because validation failed must not be presented as a proven empty interface.
+
+Obtaining the list executes neither bytecode nor exported functions and does not require opening transitive dependencies. Normal native probing remains a separate part of inspection. Display names in a stable order, escaping control characters in the text report. The list also belongs to the JSON report's structured module information (#223); its exact field is defined in the complete report schema.
+
+Acceptance in #212/#223: multiple exports, an empty interface, aliases, and declarations with no proved type; names match externals, ordering is stable, and obtaining the list executes no code.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
