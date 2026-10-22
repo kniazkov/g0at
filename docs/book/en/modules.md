@@ -3700,6 +3700,10 @@ Atomic replacement changes only the destination directory entry. Other hard link
 
 Acceptance in #215/#222/#224: create two hard links to the previous file; after a successful merge, destination contains the result while the other path retains the previous bytes.
 
+## Shared filesystem layer in lib
+
+Issue #249 provides a cross-platform file and directory API: object types and links, temporary files and directories, traversal and safe removal, atomic replacement, and access-permission transfer. Extend the existing path/io/binary_file foundation and move shared native-compiler filesystem operations into lib. Janitor #245 uses this API while owning cleanup deadlines and retries. Archive validation and tool policies remain with their consumers. #213, #216, and #249 are independent infrastructure components completed before integrating the janitor and its consumers.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.

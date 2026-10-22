@@ -8,71 +8,72 @@
 
 Номер строки — порядок работы, номер GitHub issue — постоянный идентификатор. Нумерация в заголовках issues удалена, чтобы перестановки плана не создавали двух разных порядков.
 
-Фиксация форматов #244 предшествует окончательной реализации схем и хеширования. Общие парсеры и валидаторы имён могут разрабатываться независимо. #213 и #216 обеспечивают инфраструктуру общего уборщика #245; его потребители #210, #211 и #230 не реализуют собственные копии сервиса.
+Фиксация форматов #244 предшествует окончательной реализации схем и хеширования. Общие парсеры и валидаторы имён могут разрабатываться независимо. #213, #216 и #249 образуют общий инфраструктурный этап в lib: процессы, потоки, файлы и каталоги. Эти три задачи независимы друг от друга и могут выполняться параллельно с фиксацией форматов. Затем реализуется общий уборщик #245; его потребители #210, #211, #214 и #230 не реализуют собственные копии сервиса. Файловые операции остальных потребителей также используют #249.
 
 #193/#204 вводят модель файлов и доступа с тестами внутренних API; реальные многофайловые проверки завершаются в #218. При построении графа #186 используется синтаксический разбор include, а #194 реализует его исполнение поверх готовой машины состояний #196/#197. Это разные обязанности, обратной зависимости нет.
 
 #207 предоставляет встроенный exit и общий динамический контекст; #217 реализует правила инициализации потоков. #230 затем интегрирует полное завершение с готовыми потоками, native и уборщиком. #217 не зависит от #230.
 
 - [ ] 01. [#244](https://github.com/kniazkov/g0at/issues/244) — Зафиксировать форматы модулей v1 и эталонные данные
-- [ ] 02. [#178](https://github.com/kniazkov/g0at/issues/178) — Строгий разбор JSON описаний модулей
-- [ ] 03. [#179](https://github.com/kniazkov/g0at/issues/179) — Проверка имён и версий модулей
-- [ ] 04. [#180](https://github.com/kniazkov/g0at/issues/180) — Канонический JSON для хэширования
-- [ ] 05. [#181](https://github.com/kniazkov/g0at/issues/181) — Основной SHA-256 модуля
-- [ ] 06. [#247](https://github.com/kniazkov/g0at/issues/247) — Компактная открытая ZIP-библиотека и общая C-обёртка
-- [ ] 07. [#182](https://github.com/kniazkov/g0at/issues/182) — Проверка ZIP-контейнера .gbin
-- [ ] 08. [#184](https://github.com/kniazkov/g0at/issues/184) — Проверка переносимого байткода
-- [ ] 09. [#208](https://github.com/kniazkov/g0at/issues/208) — Метаданные платформенных нативных вариантов
-- [ ] 10. [#209](https://github.com/kniazkov/g0at/issues/209) — Нативный ABI и экспортируемые специализации
-- [ ] 11. [#233](https://github.com/kniazkov/g0at/issues/233) — Согласованность нативных метаданных с байткодом
-- [ ] 12. [#185](https://github.com/kniazkov/g0at/issues/185) — Единый API проверки .gbin
-- [ ] 13. [#183](https://github.com/kniazkov/g0at/issues/183) — Детерминированная запись .gbin
-- [ ] 14. [#221](https://github.com/kniazkov/g0at/issues/221) — Информационные метаданные и сведения об авторе
-- [ ] 15. [#213](https://github.com/kniazkov/g0at/issues/213) — Переносимый запуск дочерних процессов
-- [ ] 16. [#216](https://github.com/kniazkov/g0at/issues/216) — Переносимый API потоков в lib
-- [ ] 17. [#245](https://github.com/kniazkov/g0at/issues/245) — Единый процесс уборки временной нативной сборки и извлечения
-- [ ] 18. [#186](https://github.com/kniazkov/g0at/issues/186) — Чтение .gmod и построение набора исходников
-- [ ] 19. [#193](https://github.com/kniazkov/g0at/issues/193) — Раздельные области видимости исходных файлов
-- [ ] 20. [#204](https://github.com/kniazkov/g0at/issues/204) — Новые границы доступа файлов и модулей
-- [ ] 21. [#187](https://github.com/kniazkov/g0at/issues/187) — Статическое извлечение импортов и версий
-- [ ] 22. [#188](https://github.com/kniazkov/g0at/issues/188) — Поиск модулей в каталогах
-- [ ] 23. [#237](https://github.com/kniazkov/g0at/issues/237) — Точные правила путей GOAT_MODULE_PATH
-- [ ] 24. [#238](https://github.com/kniazkov/g0at/issues/238) — Независимость версий зависимостей библиотеки
-- [ ] 25. [#189](https://github.com/kniazkov/g0at/issues/189) — Итеративная проверка графа зависимостей
-- [ ] 26. [#190](https://github.com/kniazkov/g0at/issues/190) — Детерминированная диагностика зависимостей
-- [ ] 27. [#192](https://github.com/kniazkov/g0at/issues/192) — Загрузка снимка графа модулей в память
-- [ ] 28. [#236](https://github.com/kniazkov/g0at/issues/236) — Поведение при нехватке памяти при загрузке
-- [ ] 29. [#235](https://github.com/kniazkov/g0at/issues/235) — Идентичность экземпляров модулей и копий архива
-- [ ] 30. [#196](https://github.com/kniazkov/g0at/issues/196) — Ленивая однократная инициализация файлов
-- [ ] 31. [#197](https://github.com/kniazkov/g0at/issues/197) — Сохранение ошибок инициализации
-- [ ] 32. [#229](https://github.com/kniazkov/g0at/issues/229) — Точные правила распространения исключений и finally
-- [ ] 33. [#239](https://github.com/kniazkov/g0at/issues/239) — Инициализация: таймаут и идентичность исключения
-- [ ] 34. [#225](https://github.com/kniazkov/g0at/issues/225) — Проверка семантики незавершённых областей
-- [ ] 35. [#226](https://github.com/kniazkov/g0at/issues/226) — Проверка прототипов после ошибки инициализации
-- [ ] 36. [#194](https://github.com/kniazkov/g0at/issues/194) — Оператор include для исходных файлов
-- [ ] 37. [#195](https://github.com/kniazkov/g0at/issues/195) — Оператор import для готовых модулей
-- [ ] 38. [#228](https://github.com/kniazkov/g0at/issues/228) — Переэкспорт и происхождение функций
-- [ ] 39. [#227](https://github.com/kniazkov/g0at/issues/227) — Права и порядок вычисления присваиваний
-- [ ] 40. [#205](https://github.com/kniazkov/g0at/issues/205) — Экспорт интерфейса и анализатор потребителя
-- [ ] 41. [#231](https://github.com/kniazkov/g0at/issues/231) — Проверка аналитических контрактов функций
-- [ ] 42. [#234](https://github.com/kniazkov/g0at/issues/234) — Диагностика исходников в скомпилированных модулях
-- [ ] 43. [#206](https://github.com/kniazkov/g0at/issues/206) — Встроенные __main__ и __dir__
-- [ ] 44. [#207](https://github.com/kniazkov/g0at/issues/207) — Верхнеуровневый return и exit
-- [ ] 45. [#217](https://github.com/kniazkov/g0at/issues/217) — Сериализация инициализации между потоками
-- [ ] 46. [#232](https://github.com/kniazkov/g0at/issues/232) — Проверка нативных специализаций по каждому вызову
-- [ ] 47. [#211](https://github.com/kniazkov/g0at/issues/211) — Интеграция нативной сборки с .gmod
-- [ ] 48. [#210](https://github.com/kniazkov/g0at/issues/210) — Ленивая загрузка нативных библиотек
-- [ ] 49. [#191](https://github.com/kniazkov/g0at/issues/191) — Интеграция сборки .gmod в CLI
-- [ ] 50. [#230](https://github.com/kniazkov/g0at/issues/230) — Полная семантика exit и очистки
-- [ ] 51. [#212](https://github.com/kniazkov/g0at/issues/212) — goat-inspect: просмотр метаданных
-- [ ] 52. [#223](https://github.com/kniazkov/g0at/issues/223) — Машиночитаемый вывод goat-inspect
-- [ ] 53. [#214](https://github.com/kniazkov/g0at/issues/214) — goat-inspect: безопасная пробная загрузка
-- [ ] 54. [#222](https://github.com/kniazkov/g0at/issues/222) — Конфликты информационных метаданных при goat-merge
-- [ ] 55. [#215](https://github.com/kniazkov/g0at/issues/215) — goat-merge: объединение вариантов
-- [ ] 56. [#224](https://github.com/kniazkov/g0at/issues/224) — Инспекция и объединение без транзитивных зависимостей
-- [ ] 57. [#218](https://github.com/kniazkov/g0at/issues/218) — Многофайловые тесты модели доступа
-- [ ] 58. [#219](https://github.com/kniazkov/g0at/issues/219) — Сквозные тесты сборки и поставки
-- [ ] 59. [#220](https://github.com/kniazkov/g0at/issues/220) — Актуализация русской и английской книги
+- [ ] 02. [#213](https://github.com/kniazkov/g0at/issues/213) — Переносимый запуск дочерних процессов
+- [ ] 03. [#216](https://github.com/kniazkov/g0at/issues/216) — Переносимый API потоков в lib
+- [ ] 04. [#249](https://github.com/kniazkov/g0at/issues/249) — Кроссплатформенный API файлов и каталогов в lib
+- [ ] 05. [#245](https://github.com/kniazkov/g0at/issues/245) — Единый процесс уборки временной нативной сборки и извлечения
+- [ ] 06. [#178](https://github.com/kniazkov/g0at/issues/178) — Строгий разбор JSON описаний модулей
+- [ ] 07. [#179](https://github.com/kniazkov/g0at/issues/179) — Проверка имён и версий модулей
+- [ ] 08. [#180](https://github.com/kniazkov/g0at/issues/180) — Канонический JSON для хэширования
+- [ ] 09. [#181](https://github.com/kniazkov/g0at/issues/181) — Основной SHA-256 модуля
+- [ ] 10. [#247](https://github.com/kniazkov/g0at/issues/247) — Компактная открытая ZIP-библиотека и общая C-обёртка
+- [ ] 11. [#182](https://github.com/kniazkov/g0at/issues/182) — Проверка ZIP-контейнера .gbin
+- [ ] 12. [#184](https://github.com/kniazkov/g0at/issues/184) — Проверка переносимого байткода
+- [ ] 13. [#208](https://github.com/kniazkov/g0at/issues/208) — Метаданные платформенных нативных вариантов
+- [ ] 14. [#209](https://github.com/kniazkov/g0at/issues/209) — Нативный ABI и экспортируемые специализации
+- [ ] 15. [#233](https://github.com/kniazkov/g0at/issues/233) — Согласованность нативных метаданных с байткодом
+- [ ] 16. [#185](https://github.com/kniazkov/g0at/issues/185) — Единый API проверки .gbin
+- [ ] 17. [#183](https://github.com/kniazkov/g0at/issues/183) — Детерминированная запись .gbin
+- [ ] 18. [#221](https://github.com/kniazkov/g0at/issues/221) — Информационные метаданные и сведения об авторе
+- [ ] 19. [#186](https://github.com/kniazkov/g0at/issues/186) — Чтение .gmod и построение набора исходников
+- [ ] 20. [#193](https://github.com/kniazkov/g0at/issues/193) — Раздельные области видимости исходных файлов
+- [ ] 21. [#204](https://github.com/kniazkov/g0at/issues/204) — Новые границы доступа файлов и модулей
+- [ ] 22. [#187](https://github.com/kniazkov/g0at/issues/187) — Статическое извлечение импортов и версий
+- [ ] 23. [#188](https://github.com/kniazkov/g0at/issues/188) — Поиск модулей в каталогах
+- [ ] 24. [#237](https://github.com/kniazkov/g0at/issues/237) — Точные правила путей GOAT_MODULE_PATH
+- [ ] 25. [#238](https://github.com/kniazkov/g0at/issues/238) — Независимость версий зависимостей библиотеки
+- [ ] 26. [#189](https://github.com/kniazkov/g0at/issues/189) — Итеративная проверка графа зависимостей
+- [ ] 27. [#190](https://github.com/kniazkov/g0at/issues/190) — Детерминированная диагностика зависимостей
+- [ ] 28. [#192](https://github.com/kniazkov/g0at/issues/192) — Загрузка снимка графа модулей в память
+- [ ] 29. [#236](https://github.com/kniazkov/g0at/issues/236) — Поведение при нехватке памяти при загрузке
+- [ ] 30. [#235](https://github.com/kniazkov/g0at/issues/235) — Идентичность экземпляров модулей и копий архива
+- [ ] 31. [#196](https://github.com/kniazkov/g0at/issues/196) — Ленивая однократная инициализация файлов
+- [ ] 32. [#197](https://github.com/kniazkov/g0at/issues/197) — Сохранение ошибок инициализации
+- [ ] 33. [#229](https://github.com/kniazkov/g0at/issues/229) — Точные правила распространения исключений и finally
+- [ ] 34. [#239](https://github.com/kniazkov/g0at/issues/239) — Инициализация: таймаут и идентичность исключения
+- [ ] 35. [#225](https://github.com/kniazkov/g0at/issues/225) — Проверка семантики незавершённых областей
+- [ ] 36. [#226](https://github.com/kniazkov/g0at/issues/226) — Проверка прототипов после ошибки инициализации
+- [ ] 37. [#194](https://github.com/kniazkov/g0at/issues/194) — Оператор include для исходных файлов
+- [ ] 38. [#195](https://github.com/kniazkov/g0at/issues/195) — Оператор import для готовых модулей
+- [ ] 39. [#228](https://github.com/kniazkov/g0at/issues/228) — Переэкспорт и происхождение функций
+- [ ] 40. [#227](https://github.com/kniazkov/g0at/issues/227) — Права и порядок вычисления присваиваний
+- [ ] 41. [#205](https://github.com/kniazkov/g0at/issues/205) — Экспорт интерфейса и анализатор потребителя
+- [ ] 42. [#231](https://github.com/kniazkov/g0at/issues/231) — Проверка аналитических контрактов функций
+- [ ] 43. [#234](https://github.com/kniazkov/g0at/issues/234) — Диагностика исходников в скомпилированных модулях
+- [ ] 44. [#206](https://github.com/kniazkov/g0at/issues/206) — Встроенные __main__ и __dir__
+- [ ] 45. [#207](https://github.com/kniazkov/g0at/issues/207) — Верхнеуровневый return и exit
+- [ ] 46. [#217](https://github.com/kniazkov/g0at/issues/217) — Сериализация инициализации между потоками
+- [ ] 47. [#232](https://github.com/kniazkov/g0at/issues/232) — Проверка нативных специализаций по каждому вызову
+- [ ] 48. [#211](https://github.com/kniazkov/g0at/issues/211) — Интеграция нативной сборки с .gmod
+- [ ] 49. [#210](https://github.com/kniazkov/g0at/issues/210) — Ленивая загрузка нативных библиотек
+- [ ] 50. [#191](https://github.com/kniazkov/g0at/issues/191) — Интеграция сборки .gmod в CLI
+- [ ] 51. [#230](https://github.com/kniazkov/g0at/issues/230) — Полная семантика exit и очистки
+- [ ] 52. [#212](https://github.com/kniazkov/g0at/issues/212) — goat-inspect: просмотр метаданных
+- [ ] 53. [#223](https://github.com/kniazkov/g0at/issues/223) — Машиночитаемый вывод goat-inspect
+- [ ] 54. [#214](https://github.com/kniazkov/g0at/issues/214) — goat-inspect: безопасная пробная загрузка
+- [ ] 55. [#222](https://github.com/kniazkov/g0at/issues/222) — Конфликты информационных метаданных при goat-merge
+- [ ] 56. [#215](https://github.com/kniazkov/g0at/issues/215) — goat-merge: объединение вариантов
+- [ ] 57. [#224](https://github.com/kniazkov/g0at/issues/224) — Инспекция и объединение без транзитивных зависимостей
+- [ ] 58. [#218](https://github.com/kniazkov/g0at/issues/218) — Многофайловые тесты модели доступа
+- [ ] 59. [#219](https://github.com/kniazkov/g0at/issues/219) — Сквозные тесты сборки и поставки
+- [ ] 60. [#220](https://github.com/kniazkov/g0at/issues/220) — Актуализация русской и английской книги
 
 ## Ключевые зависимости и разделение ответственности
 
@@ -82,7 +83,8 @@
 | #208, #209 | #233 → #185 | Полная проверка включает структуру native-описаний и межкомпонентные ссылки |
 | #197 | #226, #229, #239 | Проверять сохранённую ошибку можно после введения её хранения |
 | #204 | #228, #227, #205 | Переэкспорт и анализ используют новую модель доступа |
-| #213, #216 | #245 → #211, #210, #230 | Общий сервис уборки предшествует его потребителям |
+| #213, #216, #249 | #245 → #211, #210, #214, #230 | Общий сервис уборки использует инфраструктуру lib и предшествует потребителям |
+| #249 | #182, #183, #185, #186, #188, #237, #215 | Файловая интеграция использует общий API; атомарная публикация и права доступа не дублируются |
 | #207 | #217 → #230 | Контекст инициализации не зависит от полной процедуры завершения |
 | #194, #195, #205, #231, #234, #211, #210 | #191 | Полная CLI-интеграция использует готовые компоненты компиляции и исполнения |
 | #212, #214 | #224 | Ранняя проверка автономного inspect может быть частичной; итоговая включает пробную загрузку |
