@@ -3716,9 +3716,19 @@ After the probe finishes, inspect requests cleanup and obtains its outcome befor
 
 If inspect dies before sending the request, during cleanup or before receiving the response, the janitor independently performs or completes the same cleanup after detecting inspect termination. Only the janitor owns deletion: inspect does not start parallel directory removal. A race between the request and owner termination does not create two competing operations; loss of the response recipient does not cancel cleanup.
 
-Ordinary Goat retains cleanup after its termination without waiting for the janitor before exit. Inspect uses the new request without changing explicit exit semantics or an ordinary program's selected exit status. Janitor failure or lost communication is not reported as successful cleanup; the exact limit for inspect's wait for the outcome remains to be defined separately.
+Ordinary Goat retains cleanup after its termination without waiting for the janitor before exit. Inspect uses the new request without changing explicit exit semantics or an ordinary program's selected exit status. Janitor failure or lost communication is not reported as successful cleanup; inspect waits for the outcome for at most 5 seconds under the separate deadline defined below.
 
 Acceptance in #214/#245/#223: normal request and successful response; cleanup failure in the report; inspect failure before the request, during cleanup and before receipt of the response; simultaneous request arrival and owner-termination detection. Verify a single deletion owner, descendant termination before directory removal, isolation of concurrent invocations and preservation of ordinary Goat behavior.
+
+## Inspect cleanup wait limit
+
+Inspect waits for the outcome of “clean up now” for at most 5 seconds on a monotonic clock, starting when it attempts to send the request. Sending the request and receiving the final outcome share one deadline; receipt acknowledgements, progress messages and partial results do not extend it. Handle an early final response immediately without waiting out the deadline.
+
+This is a separate post-probe budget. Loading, validation, unloading and probe-process termination do not consume it; --probe-timeout neither changes these 5 seconds nor gains extra probe time from them. On expiry, inspect records a cleanup-wait error, preserves the probe result and completes its report with a nonzero exit status. No response proves neither successful deletion nor absence of cleanup; late success does not revoke the recorded error.
+
+Expiry of this wait does not cancel the janitor's work. It continues the cleanup attempt independently of inspect's exit; inspect neither starts competing deletion nor kills the janitor merely because this deadline expired. A race with inspect exit continues the same operation. The janitor's own work limits are considered separately from the client's five-second wait.
+
+Acceptance in #214/#245/#223: early success and failure; no response and continuous progress messages; delayed request transmission; successful cleanup after wait expiry and inspect exit. Verify independence from --probe-timeout, preservation of the probe outcome and cleanup error, no cleanup cancellation and no duplicate deletion. Use controlled clocks/synchronization and an external test timeout for time boundaries.
 
 ## A single load-probe attempt
 
