@@ -3604,7 +3604,7 @@ When deduplicating a native variant with identical requirements and an identical
 
 ## goat-merge command line and replacing an input archive
 
-The accepted positional syntax is `goat-merge <destination> <source_1> <source_2> <source_3> ...`. The first path names the output archive; subsequent paths explicitly list sources. Earlier --output examples are replaced; that option is no longer used to specify the destination. A path containing spaces is passed as one argument according to shell quoting rules.
+The accepted positional syntax is `goat-merge <destination> <source_1> [<source_2> ...]`. The first path names the output archive; subsequent paths explicitly list sources. Earlier --output examples are replaced; that option is no longer used to specify the destination. A path containing spaces is passed as one argument according to shell quoting rules.
 
 Example: `goat-merge geometry.gbin windows.gbin linux.gbin`. The destination may also be explicitly listed as a source: `goat-merge geometry.gbin geometry.gbin linux.gbin`. Destination is output only and is never implicitly included among inputs. Its previous contents participate in merging only when it is explicitly listed as a source.
 
@@ -3621,6 +3621,16 @@ In `goat-merge geometry.gbin windows.gbin linux.gbin`, only windows.gbin and lin
 To add variants to the previous contents, list that file explicitly among the sources: `goat-merge geometry.gbin geometry.gbin linux.gbin`. Then geometry.gbin undergoes every input check and participates in conflict resolution under the normal rules. Every failure before successful atomic replacement preserves the previous destination.
 
 Acceptance in #215/#222/#224: identical explicit sources and identical prompt answers produce the same result whether destination is absent, valid, corrupt or unrelated. A destination not listed as a source does not cause author-order prompts. When explicitly included, its contents participate in validation, merging and prompts; corruption of that source preserves the previous output.
+
+## A single source for goat-merge
+
+The command accepts one or more sources: `goat-merge <destination> <source_1> [<source_2> ...]`. A missing destination or no sources is an argument error before archives are opened or files changed.
+
+With one source, `goat-merge result.gbin source.gbin` fully validates the input archive and repackages it with the standard deterministic writer. This is not a byte-for-byte ZIP copy: apply the agreed metadata normalization, canonical representation and packaging settings. Preserve the main hash, bytecode and every native variant; DLL/SO bytes and their hashes remain unchanged. Preserve informational metadata with its previously agreed normalization; do not add goat-merge as a bytecode producer.
+
+Copy the single nonempty author list with its existing order without interactive selection. Repackaging does not load native libraries, execute bytecode or require transitive dependency files. Apply every check to `goat-merge source.gbin source.gbin` as well; publish through a validated temporary file and atomic replacement.
+
+Acceptance in #215/#222/#224: one valid source, a source without native variants, multiple native variants inside one source, author preservation without prompting and unchanged main identity when ZIP representation changes. Reject corrupt input while preserving destination; cover matching source/destination and no sources.
 
 ## goat-inspect exit statuses
 
