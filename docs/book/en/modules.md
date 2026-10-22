@@ -2801,7 +2801,7 @@ Acceptance: anonymous and identically named functions remain distinct; closure i
 
 ## Coverage of function identifiers
 
-Assign a separate function_id to every function in the module, including nested and anonymous functions, regardless of exports or availability of native specializations. Do not number only native-compilation candidates. Adding or removing a native specialization for unchanged source code must not change function_id values. Verify identical identifiers when compiling the same source with and without native specializations, including nested and anonymous functions. Treatment of functions removed by optimization is specified separately.
+Assign a separate function_id to every function in the module, including nested and anonymous functions, regardless of exports or availability of native specializations. Do not number only native-compilation candidates. Adding or removing a native specialization for unchanged source code must not change function_id values. Verify identical identifiers when compiling the same source with and without native specializations, including nested and anonymous functions. Treatment of removed functions is defined in “Functions completely removed by optimization.”
 
 ## JSON fields of the function table
 
@@ -2856,7 +2856,7 @@ The following module.json fragment illustrates these tables, not a complete arch
 
 ## FunctionId assignment order
 
-Numbering starts at 1 and is shared across all of the module's own files. Visit files in files array order; within each file, number functions by the position of their definitions in the source text. An enclosing function receives its number before functions nested within it. Include named, nested and anonymous functions. Assign identifiers before optimizations and native-specialization selection; selecting specializations does not renumber functions. Assignment is reproducible for identical sources and files order. Source changes may change numbers; functionId is not a persistent identifier across different builds. Representation of functions removed by optimization is specified separately and must not produce references to nonexistent FUNC instructions.
+Numbering starts at 1 and is shared across all of the module's own files. Visit files in files array order; within each file, number functions by the position of their definitions in the source text. An enclosing function receives its number before functions nested within it. Include named, nested and anonymous functions. Assign identifiers before optimizations and native-specialization selection; selecting specializations does not renumber functions. Assignment is reproducible for identical sources and files order. Source changes may change numbers; functionId is not a persistent identifier across different builds. Completely removed functions are omitted from the final table while preserving remaining identifiers, as specified below; references to nonexistent FUNC instructions are forbidden.
 
 Acceptance: cover multiple files, nested and anonymous functions, enclosing-before-nested ordering and identical identifiers with different sets of native specializations.
 
@@ -3282,3 +3282,22 @@ Validate the original structure and version before removing empty analysis. An u
 This rule applies to a valid container with an actually empty array. A nonempty summaries array is not empty merely because its records omit result: summaries may contain effects or other proven facts.
 
 Acceptance: omitted analysis and a valid empty container produce identical normalized data and main hashes. Check unknown versions, extra fields, incorrect types and missing required fields with empty summaries. Preserve nonempty summaries containing effects without result.
+
+## Functions completely removed by optimization
+
+Assign functionId before optimization using the agreed order. If a function and its code are completely removed, remove its record from the final functions table. Do not renumber remaining functions or reuse freed identifiers in that build. Gaps are therefore valid, and functionId is not a functions array index.
+
+```json
+{
+  "functions": [
+    { "functionId": 1, "file": 0, "instruction": 12, "parameters": [] },
+    { "functionId": 3, "file": 0, "instruction": 28, "parameters": [] }
+  ]
+}
+```
+
+Function 2 has been completely removed in this example; identifiers 1 and 3 remain. instruction positions describe the final bytecode layout and may change after optimization independently of functionId.
+
+Remove a record only when no references to that removed function remain in exports, bytecode or native specializations. Inlining individual calls alone does not imply complete removal: retain the function while its value or code is still required. Producers must reconcile tables and references after optimization. Readers reject references to absent functionId values rather than redirecting them to neighboring array entries.
+
+Acceptance: removing a middle function preserves other identifiers and leaves a valid gap; resolve references by functionId, not array position. Reject missing targets in exports, bytecode and native bindings. Remaining FUNC references must match final instruction positions.
