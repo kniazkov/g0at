@@ -2692,3 +2692,11 @@ The validator checks every file reference and entry against the shared instructi
 The files order matters for addressing: reordering records changes identifiers and requires consistent updates to main, include and every other file reference. Do not automatically sort this table during reading or canonicalization as though it were unordered dependencies. The compiler assigns deterministic indices before writing all related structures.
 
 Acceptance: the example correctly associates main and include with separate files in one bytecode.bin; identical indices in two modules remain independent. Reject empty/missing files, out-of-range main, include referencing a missing file, invalid entry, a separate id field and invalid types before execution. Consistently changing the table and all references still selects the same logical files.
+
+### Unique logical file names
+
+Values of files[].name must be unique within a module. Different records sharing a logical name make module.json invalid regardless of differing entry values. Compare decoded strings exactly, without case conversion, trimming or Unicode normalization; alternative JSON escaping of one string does not create distinct names. Compare names as logical labels, not through the executing machine's file-system rules.
+
+Names such as `src/math.goat` and `tests/math.goat` are distinct and valid. Identical logical names in different modules are allowed: diagnostics distinguish modules by name and version. The compiler must assign distinguishable logical names to distinct sources; matching labels do not justify combining files with different canonical paths.
+
+Acceptance: reject duplicate name values, including equivalent JSON escaping, before execution; distinguish different directory components in logical names. Verify independence of identically named files across modules and preservation of the common source-identity rules.
