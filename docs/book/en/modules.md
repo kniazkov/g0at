@@ -3565,3 +3565,15 @@ The importer retains required checks of schema and version, types and ranges, re
 A producer bug can cause incorrect consumer optimization; this contract does not promise detection of every semantically false but structurally valid summary. Fix discovered producer errors at the producer and cover them with regressions. Do not add hidden recompilation, dependency execution to check facts, or mandatory dependency-bytecode analysis to ordinary imports. Missing information remains unknown; user-visible import initialization is preserved.
 
 Acceptance in #205/#185/#219: valid summaries are available to the consumer analyzer without dependency sources or bytecode reproving; invalid structure, references, duplicates, detectable contradictions and hashes still fail. Instrument metadata reading to verify that it neither invokes a dependency-bytecode analyzer nor executes dependency code. Producer tests establish that only actually proven guarantees are published; ordinary container validation does not claim a full semantic proof.
+
+## Diagnostic compiler-producer information
+
+Add informational metadata to module.json identifying the compiler that created the module's main part: compiler name, version and build identifier. This supports diagnosis of code-generation and analytical-summary errors. It identifies the producer of Goat bytecode and metadata, not the native ABI version or the system C compiler.
+
+The compiler records its own information when building the module. Name, version and build identifier serve diagnostics, not loading conditions or native-variant selection. Exclude them from the main SHA-256 alongside the other explicitly excluded informational data; changing only this information does not alter main identity. Format, bytecode, ABI and actual platform-requirement checks remain independent.
+
+Do not include build time, absolute paths, machine name or a random packaging identifier. The build identifier describes the compiler build itself and remains stable when repackaging the same result; do not generate a new one for each module. It does not prove analytical-summary truth or replace producer responsibility.
+
+#191 records the information during compilation, #221 defines and validates it as informational metadata, and #212 displays it in goat-inspect. #244 fixes the exact closed schema and representation after agreeing on merge behavior. When combining different producers, do not silently replace provenance with the goat-merge version or arbitrarily keep the first block: preserving multiple producers needs a separate decision in #222.
+
+Acceptance: goat-inspect exposes the producer name, version and build; changing only this information does not change the main hash or compatibility, and repackaging does not generate new identifiers. No build-machine timestamps or paths appear; invalid structure is diagnosed under the final schema. Producer information does not bypass other metadata checks.
