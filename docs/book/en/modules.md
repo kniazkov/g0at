@@ -2859,3 +2859,29 @@ The following module.json fragment illustrates these tables, not a complete arch
 Numbering starts at 1 and is shared across all of the module's own files. Visit files in files array order; within each file, number functions by the position of their definitions in the source text. An enclosing function receives its number before functions nested within it. Include named, nested and anonymous functions. Assign identifiers before optimizations and native-specialization selection; selecting specializations does not renumber functions. Assignment is reproducible for identical sources and files order. Source changes may change numbers; functionId is not a persistent identifier across different builds. Representation of functions removed by optimization is specified separately and must not produce references to nonexistent FUNC instructions.
 
 Acceptance: cover multiple files, nested and anonymous functions, enclosing-before-nested ordering and identical identifiers with different sets of native specializations.
+
+## Basis of the externals table
+
+In module.json, externals is an object whose keys are exported declaration names in the entry file's external interface. Each value describes the declaration. Key order does not define execution order. The general prohibition on duplicate decoded JSON keys applies.
+
+The required boolean mutable field describes whether the declaration's value can be replaced: false for a constant, true for a variable. It does not guarantee immutable object contents or function purity.
+
+The optional integer functionId field is written only when the analyzer proves that the declaration invariably references a particular function belonging to this module. The reference must resolve in the same module's functions table. For mutable = true, an initial function value provides no such guarantee; omit functionId and reject input metadata combining these fields. Absence of functionId does not imply a non-function value: the static binding may be unknown. The identifier describes function code, does not serialize a closure instance or its captures, and does not bypass module initialization.
+
+Example for `external square = func(x) { return x * x; };` and `external var counter = 0;`:
+
+```json
+{
+  "externals": {
+    "square": {
+      "mutable": false,
+      "functionId": 1
+    },
+    "counter": {
+      "mutable": true
+    }
+  }
+}
+```
+
+This is the agreed basis of the description; fields for types, values and analytical properties are specified separately. Acceptance: preserve both declaration names and mutable flags; check functionId existence and reject mutable = true combined with functionId. Replacing an exported variable must affect subsequent calls rather than be bypassed by a static binding to its initial function. Generate and read metadata without executing dependency code.
