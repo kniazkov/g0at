@@ -3694,6 +3694,12 @@ The contract covers filesystem access permissions, including platform-applicable
 
 Acceptance in #215/#222/#224: existing destination with permissions differing from source; new destination under OS file-creation settings; injected permission-read/apply failures preserve the old file. Verify applicable access rules before publication, no copying of source permissions and an unchanged main hash.
 
+## Hard links to goat-merge destination
+
+Atomic replacement changes only the destination directory entry. Other hard links to the previous file continue to refer to that file and retain its contents. goat-merge does not discover or modify those paths.
+
+Acceptance in #215/#222/#224: create two hard links to the previous file; after a successful merge, destination contains the result while the other path retains the previous bytes.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
