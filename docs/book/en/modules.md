@@ -3449,3 +3449,15 @@ After checking when.arguments length against the formal parameter count and vali
 For a function with two parameters, {"when":{"arguments":[{},{}]}} normalizes to {"when":{}}. If any argument contains a constraint, retain the entire positional array, including empty entries. Never remove individual positions, compact or sort it. Reject an incorrectly sized array even when every entry is empty.
 
 Acceptance: a completely unconstrained array and absent arguments yield identical data and hashes; matching summaries are duplicates after normalization. Test zero and multiple parameters, incorrect length, invalid element descriptions and preserved positions when one meaningful constraint remains.
+
+## Required ARM64 support in v1
+
+ARM64 is required for v1 rather than deferred to a later stage. The agreed minimum includes Linux x86-64, Windows x86-64 and Linux ARM64 (AArch64). Architecture, OS and system ABI are described separately; listing an architecture in JSON alone does not implement its support. Preserve existing additional CI configurations.
+
+At the time of this decision, .github/workflows/build_and_test.yml already includes Linux aarch64 on ubuntu-24.04-arm with GCC and Clang, verifies uname -m, and runs builds, native-library, loader, call, execution-mode and package tests. Use these ARM64 jobs for new module checks rather than relying solely on cross-compilation or string-metadata validation.
+
+In #219, add module compilation, .gbin packaging, metadata/hash validation, loading the corresponding SO and an actual native-specialization call on ARM64; compare the result against the VM. Success must demonstrate native execution rather than unnoticed fallback. Test native off/auto/required, separate compilation and execution, and standalone package execution without sources or a C compiler.
+
+Incompatibility tests must reject a variant for another architecture before OS loading; selection cannot rely only on matching bitness. Identical reference metadata and portable bytecode.bin bytes must yield the same main SHA-256 on x86-64 and ARM64. Native libraries for different architectures have their own hashes and need not be byte-identical.
+
+#208 describes actual platform requirements, #209 provides the corresponding specialization ABI, and #219 tests the complete chain in existing ARM64 GCC/Clang jobs. Failures of required ARM64 checks must not become continue-on-error or success through skipped tests. Add module checks as their dependencies are implemented; existing ARM64 CI does not mean the future module format has already been tested or implemented.
