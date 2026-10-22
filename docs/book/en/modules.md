@@ -3574,6 +3574,18 @@ The compiler records its own information when building the module. Name, version
 
 Do not include build time, absolute paths, machine name or a random packaging identifier. The build identifier describes the compiler build itself and remains stable when repackaging the same result; do not generate a new one for each module. It does not prove analytical-summary truth or replace producer responsibility.
 
-#191 records the information during compilation, #221 defines and validates it as informational metadata, and #212 displays it in goat-inspect. #244 fixes the exact closed schema and representation after agreeing on merge behavior. When combining different producers, do not silently replace provenance with the goat-merge version or arbitrarily keep the first block: preserving multiple producers needs a separate decision in #222.
+#191 records the information during compilation, #221 defines and validates it as informational metadata, and #212 displays it in goat-inspect. The producers list schema and union of all producers in #222 are defined below. Repackaging does not change bytecode provenance.
 
 Acceptance: goat-inspect exposes the producer name, version and build; changing only this information does not change the main hash or compatibility, and repackaging does not generate new identifiers. No build-machine timestamps or paths appear; invalid structure is diagnosed under the final schema. Producer information does not bypass other metadata checks.
+
+## Producer list and goat-merge
+
+In module.json, producer information is represented by producers, an array of closed objects with required nonempty strings name, version and buildId. An entry is identified by the exact triple after JSON decoding, without trimming whitespace, case conversion or Unicode normalization. These are diagnostic strings, not imported module names or versions.
+
+An ordinary compiler writes one entry identifying itself. The list has no semantic order. Canonical writers sort lexicographically by the name, version, buildId tuple, comparing each component's decoded UTF-8 bytes; versions are not ordered by release precedence. Exclude the entire producers field from the main SHA-256.
+
+goat-merge unions producer information from all inputs; a shared entry appears once in the result. Different producers are not a conflict and require no interactive choice. Preserve information and do not add goat-merge as a bytecode producer merely for repackaging. Separate rules for description/license/homepage and meaningful authors order remain.
+
+As informational metadata, producers may be absent; absence and [] mean no producer information, not a special unknown producer. Omit an empty list when writing. Before normalization, validate types and closed structure: null, unknown fields, missing or empty required strings, and duplicate triples within one input list are errors. Combining a shared entry from different inputs does not permit duplicates within one input.
+
+Acceptance in #191/#221/#212/#222: a normal build records one producer, inspect displays all, and merge preserves the union without duplicates regardless of input order. List permutations yield the same canonical form; absence/[] normalize identically. Changes to producers do not change the main hash or compatibility criteria. Test identical names with different versions/buildIds, equivalent JSON escaping, invalid structure and duplicates within an input array.
