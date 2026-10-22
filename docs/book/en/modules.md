@@ -2788,3 +2788,13 @@ The compiler checks representability before writing; the loader checks before in
 This applies to the listed indices of the new module format. It does not declare every numeric metadata field or existing native-binding field 32-bit; those widths are specified separately.
 
 Acceptance: test 0, 4294967295 and out-of-range 4294967296 without precision loss; the type maximum may fail object-existence checks but must not truncate. Test negative values, fractional/exponent notation, an index immediately beyond an actual table, size-calculation overflow and consistent interpretation across supported platforms. Boundary tests need not allocate billions of elements.
+
+## Function identity within a module
+
+A function has its own numeric function_id within its module. This is a separate identifier, not a file index, instruction position or function name. The mapping from function_id to its source file (files index) and corresponding FUNC instruction in the shared bytecode is stored separately. Names are not identifiers: anonymous functions and identically named functions in different scopes must remain distinct.
+
+Native specializations reference the function_id of their module. Implementation selection includes module identity; equal numbers in different modules or versions do not identify the same function. Multiple specializations of one function retain its function_id and are distinguished by their specialization descriptions. Creating another closure does not create a new code identity: instances may share a function_id while retaining separate captured values.
+
+Before execution, validate reference consistency: the function and file must exist, the FUNC instruction must be valid, and the binding must agree with the metadata. Missing references, contradictory bindings and duplicate definitions of a function_id are format errors. Metadata validation does not load native libraries through the OS; actual library ABI validation remains at its designated stage.
+
+Acceptance: anonymous and identically named functions remain distinct; closure instances retain their own captures; equal function_id values in different modules or versions never select another module's native implementation. Reject invalid file, function and FUNC references. This decision does not specify the width of function_id or its numbering algorithm.
