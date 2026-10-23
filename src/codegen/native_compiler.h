@@ -4,6 +4,7 @@
  */
 #pragma once
 #include "goat/unicode.h"
+#include "lib/child_process.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -14,7 +15,8 @@ typedef enum {
     NATIVE_COMPILE_UNSUPPORTED,
     NATIVE_COMPILE_IO_ERROR,
     NATIVE_COMPILE_START_ERROR,
-    NATIVE_COMPILE_FAILED
+    NATIVE_COMPILE_FAILED,
+    NATIVE_COMPILE_TIMED_OUT
 } native_compile_status_t;
 
 typedef struct {
@@ -36,8 +38,11 @@ compile_native_library(const gchar_t *source, const char *compiler, const char *
 /** @brief Releases captured diagnostics. */
 void destroy_native_compile_result(native_compile_result_t *result);
 
-/** @brief Reads bounded compiler output; shared by the platform implementations. */
-void native_compiler_read_diagnostics(native_compile_result_t *result, const char *path);
+/** @brief Shared shell-free launch; zero deadline for user builds, one absolute deadline per probe.
+ */
+void native_compiler_run(native_compile_result_t *result,
+                         const char *const *arguments,
+                         child_deadline_t deadline);
 
 /** @brief Private output location, retained until its loaded library is released. */
 typedef struct {

@@ -18,6 +18,7 @@ static messages_t english = {
             U"  --compile                    Save <name>.gbin without execution\n"
             U"  --run                        Execute a .gbin without compiling (native: auto)\n"
             U"  --optimize <none|all>         Optimization level (default: all)\n"
+            U"  --native-probe-timeout <seconds>  Compiler probe budget (default: 10)\n"
             U"  --native <off|auto|required>  Native execution (default: off)\n"
             U"  --print-native               Print native execution counters\n"
             U"  --save-native <file>         Save native execution counters\n"
@@ -43,6 +44,8 @@ static messages_t english = {
     .interactive_prompt = U"> ",
     .continuation_prompt = U"  ",
     .bad_optimization_level = U"Unknown optimization level: '%a' (expected none or all)",
+    .bad_native_probe_timeout =
+        U"Invalid native probe timeout: %a (expected 1..4294967295 seconds)",
     .bad_native_mode = U"Unknown native mode: '%a' (expected off, auto or required)",
     .bad_native_options = U"Native execution requires --optimize all; C/library export cannot be "
                           U"combined with native execution or reports",
@@ -134,6 +137,7 @@ static messages_t russian = {
             U"  --compile                    Сохранить <имя>.gbin без выполнения\n"
             U"  --run                        Выполнить .gbin без компиляции (native: auto)\n"
             U"  --optimize <none|all>         Уровень оптимизаций (по умолчанию: all)\n"
+            U"  --native-probe-timeout <seconds>  Compiler probe budget (default: 10)\n"
             U"  --native <off|auto|required>  Нативное исполнение (по умолчанию: off)\n"
             U"  --print-native               Напечатать счётчики нативных вызовов\n"
             U"  --save-native <file>         Сохранить счётчики нативных вызовов\n"
@@ -154,6 +158,8 @@ static messages_t russian = {
                              U"Win32 %u, очистка Win32 %u",
     .native_diagnostics_truncated = U"Вывод компилятора обрезан до 65536 байт",
     .native_input_conflict = U"Библиотека не должна перезаписывать исходный файл",
+    .bad_native_probe_timeout =
+        U"Неверный таймаут проверки компилятора: %a (ожидается 1..4294967295 секунд)",
     .bad_native_mode = U"Неизвестный нативный режим: '%a' (ожидается off, auto или required)",
     .bad_native_options = U"Нативное исполнение требует --optimize all; экспорт C/библиотеки "
                           U"несовместим с нативным исполнением и отчётами",

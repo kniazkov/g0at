@@ -14,6 +14,7 @@ bool test_native_options(void) {
     options_t *options = create_options();
     ASSERT(options->native_execution == NATIVE_OFF && !options->print_native
            && !options->native_output_file);
+    ASSERT(options->native_probe_timeout == 10);
     destroy_options(options);
     char *modes[] = {"off", "auto", "required"};
     for (size_t i = 0; i < 3; i++) {
@@ -37,6 +38,10 @@ bool test_native_options(void) {
     options = parse_options(8, args);
     ASSERT(options && options->native_execution == NATIVE_OFF
            && options->optimization_level == OPTIMIZATION_NONE);
+    destroy_options(options);
+    char *timeout_args[] = {"goat", "--native-probe-timeout", "4294967295", "test.goat"};
+    options = parse_options(4, timeout_args);
+    ASSERT(options && options->native_probe_timeout == UINT32_MAX);
     destroy_options(options);
     return true;
 }

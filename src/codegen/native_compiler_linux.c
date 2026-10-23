@@ -14,15 +14,11 @@
 
 #    include <errno.h>
 #    include <fcntl.h>
-#    include <spawn.h>
 #    include <stdio.h>
 #    include <stdlib.h>
 #    include <string.h>
 #    include <sys/stat.h>
-#    include <sys/wait.h>
 #    include <unistd.h>
-
-extern char **environ;
 
 static char *join(const char *first, const char *second) {
     size_t a = strlen(first), b = strlen(second);
@@ -30,46 +26,6 @@ static char *join(const char *first, const char *second) {
     memcpy(text, first, a);
     memcpy(text + a, second, b + 1);
     return text;
-}
-
-/** @brief Redirects compiler input from /dev/null and both output streams to the log. */
-static int start_compiler(const char *compiler,
-                          const char *source,
-                          const char *library,
-                          const char *runtime,
-                          const char *log,
-                          pid_t *pid) {
-    posix_spawn_file_actions_t actions;
-    int error = posix_spawn_file_actions_init(&actions);
-    if (error)
-        return error;
-    error = posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null", O_RDONLY, 0);
-    if (!error)
-        error = posix_spawn_file_actions_addopen(&actions,
-                                                 STDERR_FILENO,
-                                                 log,
-                                                 O_WRONLY | O_CREAT | O_TRUNC,
-                                                 0600);
-    if (!error)
-        error = posix_spawn_file_actions_adddup2(&actions, STDERR_FILENO, STDOUT_FILENO);
-    char *const args[] = {(char *)compiler,
-                          "-std=c11",
-                          "-O2",
-                          "-fPIC",
-                          "-shared",
-                          "-fno-fast-math",
-                          "-ffp-contract=off",
-                          "-Wl,-z,defs",
-                          "-o",
-                          (char *)library,
-                          (char *)source,
-                          (char *)runtime,
-                          "-lm",
-                          NULL};
-    if (!error)
-        error = posix_spawnp(pid, compiler, &actions, NULL, args, environ);
-    posix_spawn_file_actions_destroy(&actions);
-    return error;
 }
 
 static void remove_file(native_compile_result_t *result, const char *path) {
@@ -95,34 +51,29 @@ compile_native_library(const gchar_t *source, const char *compiler, const char *
     }
     char *input = join(directory, "/module.c");
     char *output = join(directory, "/module.so");
-    char *log = join(directory, "/compiler.log");
     char *runtime = join(directory, "/" GOAT_NATIVE_ARCHIVE_NAME);
     if (!write_native_runtime_files(input) || !write_utf8_file(input, source)) {
         result.system_error = errno ? errno : EIO;
         goto cleanup;
     }
-    pid_t pid;
-    result.system_error = start_compiler(compiler, input, output, runtime, log, &pid);
-    if (result.system_error) {
-        result.status = NATIVE_COMPILE_START_ERROR;
-        goto cleanup;
-    }
-    int status;
-    pid_t waited;
-    do {
-        waited = waitpid(pid, &status, 0);
-    } while (waited < 0 && errno == EINTR);
-    if (waited < 0) {
-        result.system_error = errno;
-        goto cleanup;
-    }
-    result.status = NATIVE_COMPILE_FAILED;
-    if (WIFEXITED(status))
-        result.exit_code = WEXITSTATUS(status);
-    else if (WIFSIGNALED(status))
-        result.signal_number = WTERMSIG(status);
-    native_compiler_read_diagnostics(&result, log);
-    if (result.exit_code != 0 || result.system_error)
+    const char *args[] = {compiler,
+                          "-std=c11",
+                          "-O2",
+                          "-fPIC",
+                          "-shared",
+                          "-fno-fast-math",
+                          "-ffp-contract=off",
+                          "-Wl,-z,defs",
+                          "-o",
+                          output,
+                          input,
+                          runtime,
+                          "-lm",
+                          NULL};
+    native_compiler_run(&result, args, 0);
+    if (result.cleanup_error)
+        goto release; /* Never delete a workspace while an unconfirmed tree can still write. */
+    if (result.status != NATIVE_COMPILE_OK)
         goto cleanup;
     result.status = NATIVE_COMPILE_IO_ERROR;
     struct stat info;
@@ -143,13 +94,12 @@ cleanup:
     remove_native_runtime_files(input);
     remove_file(&result, input);
     remove_file(&result, output);
-    remove_file(&result, log);
     if (rmdir(directory) && !result.cleanup_error)
         result.cleanup_error = errno;
+release:
     FREE(runtime);
     FREE(input);
     FREE(output);
-    FREE(log);
     FREE(directory);
     FREE(target);
     return result;

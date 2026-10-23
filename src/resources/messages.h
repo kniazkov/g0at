@@ -22,6 +22,7 @@ typedef struct {
     const gchar_t const *bad_optimization_level;
     const gchar_t const *bad_c_options;
     const gchar_t const *bad_native_mode;
+    const gchar_t const *bad_native_probe_timeout;
     const gchar_t const *bad_native_options;
     const gchar_t const *native_report_conflict;
     const gchar_t const *cannot_write_native_report;

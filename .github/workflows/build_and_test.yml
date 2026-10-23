@@ -112,6 +112,8 @@ jobs:
         run: python3 scripts/check_bytecode_v1.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/bytecode-v1"
       - name: Check portable Unicode strings
         run: python3 scripts/check_unicode.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/unicode"
+      - name: Child process primitives
+        run: python3 scripts/check_child_process.py build/${{ matrix.compiler }}/child_process_testing build/${{ matrix.compiler }}/goat
       - name: Check native artifact integrity
         run: python3 scripts/check_native_integrity.py build/${{ matrix.compiler }}/goat "build/${{ matrix.compiler }}/native integrity"
         env:
@@ -306,6 +308,9 @@ jobs:
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_unicode.py build/goat.exe "build/unicode"'
+      - name: Child process primitives
+        shell: msys2 {0}
+        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_child_process.py build/child_process_testing.exe build/goat.exe'
       - name: Check native artifact integrity
         shell: msys2 {0}
         env:
