@@ -2,6 +2,8 @@
 
 [Contents](index.md) · [Русский](../ru/modules.md)
 
+> Exact wire schemas, binary tables, ABI and golden data: [Module formats v1](../../module-format-v1/README.md). That specification completes the previously open representation details. The implementation status of the interpreter is unchanged.
+
 Status: design agreed on October 20, 2026; discussion continues. These are requirements for future implementation, not a description of an existing loader. Issues #154 and #169 have been superseded by the [implementation plan](../../module-implementation-checklist.md). Issue #244 fixes exact v1 schemas and reference data before their implementation is completed; #245 owns the shared cleanup service. Where earlier access-control documents disagree, this page takes precedence.
 
 ## Build and distribution unit
@@ -40,7 +42,7 @@ The description uses JSON:
 }
 ```
 
-Resolve `main` relative to the description file. Its extension is .gmod; the complete schema remains under design.
+Resolve `main` relative to the description file. Its extension is .gmod; the complete schema is fixed in the [v1 specification](../../module-format-v1/README.md).
 
 A dependency version may be specified in the description or directly in an import:
 
@@ -150,7 +152,7 @@ The main dependency hash covers bytecode and common metadata, including dependen
 
 Hash part contents in a fixed order. ZIP entry ordering, timestamps, and compression do not affect identity. Use SHA-256; agreed canonical JSON rules appear below.
 
-Native variant requirements cover OS and minimum version, architecture, bitness, required CPU extensions, system ABI/runtime (for example libc family and minimum version), and Goat native ABI version. An unknown or unverifiable mandatory requirement makes a variant unsuitable. Multiple simultaneously suitable variants are an ambiguity error. Exact platform schemas remain open; metadata alone cannot guarantee successful OS loading. Restricting dependencies to a predefined set of system libraries was not adopted.
+Native variant requirements cover OS and minimum version, architecture, bitness, required CPU extensions, system ABI/runtime (for example libc family and minimum version), and Goat native ABI version. An unknown or unverifiable mandatory requirement makes a variant unsuitable. Multiple simultaneously suitable variants are an ambiguity error. Exact platform schemas are fixed in the [v1 specification](../../module-format-v1/README.md); metadata alone cannot guarantee successful OS loading. Restricting dependencies to a predefined set of system libraries was not adopted.
 
 Extract and load a native library on the first call that needs it. Use the VM if there is no compatible variant or native execution is disabled. If the OS cannot load the selected library, ordinary mode reports the reason and falls back to the VM. Remember failure for the remainder of the run: subsequent calls repeat neither the attempt nor the message. Under `--native required`, inability to load a required native implementation remains an error.
 
@@ -257,7 +259,7 @@ goat modules/app/1.0.0.gbin --module-dir ./modules
 
 ## Native build settings
 
-Example description (the shown fields are agreed; the complete schema is still being designed):
+Example description (the shown fields are agreed; the complete schema is fixed in the v1 specification):
 
 ```json
 {
@@ -316,7 +318,7 @@ The compiler generates an exported UTF-8 JSON string without a small fixed-size 
 }
 ```
 
-The complete function-list schema and service symbol name remain open. Validation checks the declared ABI; it does not prove machine-code behavior. A missing/incompatible description makes the library unusable. Store the DLL/SO's own hash externally to avoid self-reference.
+The full native JSON schema and goat_module_descriptor_v1 data symbol are defined in the [v1 specification](../../module-format-v1/README.md). Validation checks the declared ABI; it does not prove machine-code behavior. A missing/incompatible description makes the library unusable. Store the DLL/SO's own hash externally to avoid self-reference.
 
 ## SHA-256, JSON, and implementation dependencies
 
@@ -1735,7 +1737,7 @@ Library has already initialized successfully. Stop terminates the entire interpr
 
 ## Function analysis metadata: decisions 86–90
 
-These summaries describe proven code properties for the consumer's analyzer. An unknown property does not mean an absent effect. The exact metadata schema remains under design.
+These summaries describe proven code properties for the consumer's analyzer. An unknown property does not mean an absent effect. The exact metadata schema is fixed in the [v1 specification](../../module-format-v1/README.md).
 
 ### 86. Mutable exports do not fix the initial function
 
@@ -2063,7 +2065,7 @@ bytecode length
 bytecode
 ```
 
-Compute SHA-256 over this sequence. Lengths are byte counts encoded as unsigned 64-bit little-endian integers on every platform. The marker separates this hashing format from other SHA-256 uses; its exact bytes must be fixed in the format specification. The significant metadata fields remain unchanged: exclude the hash itself, native variants, and informational fields.
+Compute SHA-256 over this sequence. Lengths are byte counts encoded as unsigned 64-bit little-endian integers on every platform. The marker separates this hashing format from other SHA-256 uses; its exact bytes, ASCII GOAT-MODULE-MAIN followed by 00 01, are fixed in the v1 specification. The significant metadata fields remain unchanged: exclude the hash itself, native variants, and informational fields.
 
 ### 119. A native hash covers the entire library file
 
@@ -3114,7 +3116,7 @@ Current function_summary_type removes constants, ranges, callable identity and a
 
 Improved analysis using existing fields does not change the version. New fields or relation kinds require a new analysis.formatVersion with explicitly implemented reader support. Reject unknown versions, fields and enum values rather than silently ignoring them. Do not reserve fictional identity, sharing, callback or exception fields now. Future versions extend the same result/when/effects structure without conflating value descriptions and function behavior.
 
-Before closing #244, add the agreed scalar encodings, empty-result normalization, may/summaries ordering and duplicate checks to fixtures; finalize other explicitly open normalization rules. Applicable facts do not depend on array order; serialization order and hashing must nevertheless be deterministic.
+Scalar encodings, empty-result normalization, may/summaries ordering and duplicate checks are fixed in docs/module-format-v1 fixtures and tests. Applicable facts do not depend on array order; serialization order and hashing must nevertheless be deterministic.
 
 Acceptance: closed-object and version validation; formal-parameter count; unknown versus null; non-null; int64 and interval boundaries; empty arrays; fact consistency; missing and incomplete effects; no false purity; overlapping consistent summaries and detectable contradictions; no invented facts for unanalyzed signatures; no transfer of facts between distinct closure environments. Metadata neither executes dependencies nor bypasses import initialization nor changes native-implementation selection rules.
 
@@ -3439,7 +3441,7 @@ First validate the original structure, types, versions, required fields, referen
 
 Normalize contents before comparing summaries, detecting duplicates and hashing. Do not silently remove duplicates; the agreed summary duplicate check precedes removal of summaries without assertions. Do not turn lack of a guarantee into a guarantee: unknown effects differ from proven purity, and an unknown value differs from null, an empty string or false. Preserve exact int64 values, real bit patterns, reference identity and the distinction between an absent export and an export with unknown properties.
 
-For each reduction, document one deterministic form, application order and positive/negative examples in RU/EN and implementation issues. All consumers use the same rules; implementations do not choose their own reductions. Normalization terminates and is idempotent: applying it again does not change the result. The exact algorithm and reference bytes remain part of completing #244; this general rule neither replaces them nor claims implementation is complete.
+For each reduction, document one deterministic form, application order and positive/negative examples in RU/EN and implementation issues. All consumers use the same rules; implementations do not choose their own reductions. Normalization terminates and is idempotent: applying it again does not change the result. The exact algorithm and reference bytes are in docs/module-format-v1; the production implementation remains a separate task.
 
 Acceptance: equivalent valid forms yield identical canonical data and main hashes; repeated normalization leaves data unchanged; significant distinctions survive, invalid forms fail before field removal, and equivalent summaries cannot bypass duplicate detection.
 

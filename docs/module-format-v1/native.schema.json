@@ -1,0 +1,682 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kniazkov/g0at/docs/module-format-v1/native.schema.json",
+  "type": "object",
+  "properties": {
+    "formatVersion": {
+      "const": 1
+    },
+    "module": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9_-])?$",
+      "maxLength": 255
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9_-])?$",
+      "maxLength": 250
+    },
+    "mainHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "goatAbiVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4294967295
+    },
+    "target": {
+      "$ref": "#/$defs/target"
+    },
+    "specializations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/specialization"
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "formatVersion",
+    "module",
+    "version",
+    "mainHash",
+    "goatAbiVersion",
+    "target",
+    "specializations"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "author": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "email": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "producer": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "buildId": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "buildId"
+      ],
+      "additionalProperties": false
+    },
+    "compiler": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "dependency": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9_-])?$",
+          "maxLength": 255
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9_-])?$",
+          "maxLength": 250
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "hash"
+      ],
+      "additionalProperties": false
+    },
+    "file": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "entry": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "external": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "entry",
+        "external"
+      ],
+      "additionalProperties": false
+    },
+    "parameter": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "functionRef": {
+      "type": "object",
+      "properties": {
+        "module": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9_-])?$",
+          "maxLength": 255
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9_-])?$",
+          "maxLength": 250
+        },
+        "functionId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "module",
+        "version",
+        "functionId"
+      ],
+      "additionalProperties": false
+    },
+    "facts": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "null",
+            "boolean",
+            "integer",
+            "real",
+            "numeric",
+            "character",
+            "string",
+            "function",
+            "array",
+            "object"
+          ]
+        },
+        "nonNull": {
+          "const": true
+        },
+        "value": {
+          "type": [
+            "null",
+            "boolean",
+            "integer",
+            "string"
+          ]
+        },
+        "range": {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": -9223372036854775808,
+              "maximum": 9223372036854775807
+            },
+            "max": {
+              "type": "integer",
+              "minimum": -9223372036854775808,
+              "maximum": 9223372036854775807
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ],
+          "additionalProperties": false
+        },
+        "elements": {
+          "$ref": "#/$defs/facts"
+        },
+        "empty": {
+          "const": true
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "when": {
+      "type": "object",
+      "properties": {
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/facts"
+          }
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "effects": {
+      "type": "object",
+      "properties": {
+        "may": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "input",
+              "output",
+              "externalRead",
+              "externalWrite"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "unknown": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "may",
+        "unknown"
+      ],
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "when": {
+          "$ref": "#/$defs/when"
+        },
+        "result": {
+          "$ref": "#/$defs/facts"
+        },
+        "effects": {
+          "$ref": "#/$defs/effects"
+        },
+        "normalReturn": {
+          "const": false
+        }
+      },
+      "required": [
+        "when"
+      ],
+      "additionalProperties": false
+    },
+    "analysis": {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "const": 1
+        },
+        "summaries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/summary"
+          }
+        }
+      },
+      "required": [
+        "formatVersion",
+        "summaries"
+      ],
+      "additionalProperties": false
+    },
+    "function": {
+      "type": "object",
+      "properties": {
+        "functionId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "file": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "instruction": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameter"
+          }
+        },
+        "analysis": {
+          "$ref": "#/$defs/analysis"
+        }
+      },
+      "required": [
+        "functionId",
+        "file",
+        "instruction",
+        "parameters"
+      ],
+      "additionalProperties": false
+    },
+    "external": {
+      "type": "object",
+      "properties": {
+        "mutable": {
+          "type": "boolean"
+        },
+        "type": {
+          "enum": [
+            "null",
+            "boolean",
+            "integer",
+            "real",
+            "numeric",
+            "character",
+            "string",
+            "function",
+            "array",
+            "object"
+          ]
+        },
+        "value": {
+          "type": [
+            "null",
+            "boolean",
+            "integer",
+            "string"
+          ]
+        },
+        "functionId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "functionRef": {
+          "$ref": "#/$defs/functionRef"
+        }
+      },
+      "required": [
+        "mutable"
+      ],
+      "additionalProperties": false
+    },
+    "versionTuple": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295
+      },
+      "minItems": 1,
+      "maxItems": 4
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "os": {
+          "enum": [
+            "linux",
+            "windows"
+          ]
+        },
+        "minimumOs": {
+          "$ref": "#/$defs/versionTuple"
+        },
+        "architecture": {
+          "enum": [
+            "x86",
+            "x86_64",
+            "aarch64"
+          ]
+        },
+        "bits": {
+          "enum": [
+            32,
+            64
+          ]
+        },
+        "endian": {
+          "const": "little"
+        },
+        "cpuFeatures": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "runtime": {
+          "type": "object",
+          "properties": {
+            "family": {
+              "enum": [
+                "glibc",
+                "musl",
+                "msvcrt",
+                "ucrt"
+              ]
+            },
+            "minimumVersion": {
+              "$ref": "#/$defs/versionTuple"
+            }
+          },
+          "required": [
+            "family",
+            "minimumVersion"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "os",
+        "minimumOs",
+        "architecture",
+        "bits",
+        "endian",
+        "cpuFeatures",
+        "runtime"
+      ],
+      "additionalProperties": false
+    },
+    "constant": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "null",
+            "boolean",
+            "integer",
+            "real",
+            "character",
+            "string"
+          ]
+        },
+        "value": {
+          "type": [
+            "null",
+            "boolean",
+            "integer",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "predicate": {
+      "type": "object",
+      "properties": {
+        "argument": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "operation": {
+          "enum": [
+            "equal",
+            "notEqual",
+            "less",
+            "lessEqual",
+            "greater",
+            "greaterEqual"
+          ]
+        },
+        "constant": {
+          "$ref": "#/$defs/constant"
+        }
+      },
+      "required": [
+        "argument",
+        "operation",
+        "constant"
+      ],
+      "additionalProperties": false
+    },
+    "guard": {
+      "type": "object",
+      "properties": {
+        "argumentTypes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "null",
+              "boolean",
+              "integer",
+              "real",
+              "character",
+              "string"
+            ]
+          }
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/predicate"
+          }
+        }
+      },
+      "required": [
+        "argumentTypes"
+      ],
+      "additionalProperties": false
+    },
+    "signature": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "const": "goat.adapter.v1"
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "null",
+              "boolean",
+              "integer",
+              "real",
+              "character",
+              "string"
+            ]
+          }
+        },
+        "result": {
+          "enum": [
+            "null",
+            "boolean",
+            "integer",
+            "real",
+            "character",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "arguments",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "specialization": {
+      "type": "object",
+      "properties": {
+        "specializationId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "functionId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "symbol": {
+          "type": "string",
+          "pattern": "^goat_fn_[1-9][0-9]*_v1$"
+        },
+        "signature": {
+          "$ref": "#/$defs/signature"
+        },
+        "when": {
+          "$ref": "#/$defs/guard"
+        }
+      },
+      "required": [
+        "specializationId",
+        "functionId",
+        "symbol",
+        "signature",
+        "when"
+      ],
+      "additionalProperties": false
+    },
+    "variant": {
+      "type": "object",
+      "properties": {
+        "library": {
+          "type": "string",
+          "pattern": "^native/[a-z0-9][a-z0-9._-]*\\.(dll|so)$"
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "goatAbiVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "specializations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/specialization"
+          },
+          "minItems": 1
+        },
+        "cCompiler": {
+          "$ref": "#/$defs/compiler"
+        }
+      },
+      "required": [
+        "library",
+        "hash",
+        "goatAbiVersion",
+        "target",
+        "specializations"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

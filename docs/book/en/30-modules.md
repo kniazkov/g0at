@@ -7,6 +7,8 @@
 > `include`, `import`, and execution of `.gbin` are planned for later tasks.
 > See the complete [module design contract](modules.md).
 
+Exact formats and reference vectors: [v1 specification](../../module-format-v1/README.md).
+
 ## Build descriptor
 
 To build a module, create a JSON file with the `.gmod` extension.
