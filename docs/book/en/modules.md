@@ -1455,18 +1455,9 @@ Terminate before executing user code.
 
 Apply Goat's general memory-exhaustion rule. Do not partially load the module, select another copy, or attempt to continue execution.
 
-### 63. Inspect does not require the module's external dependencies
+### 63. Inspect checks the full dependency graph
 
-```text
-Geometry@1.2.0 depends on math@2.0.0.
-Only geometry.gbin is present on the computer.
-```
-
-```sh
-goat-inspect geometry.gbin
-```
-
-Inspect validates the archive itself, its hashes, and the suitable native library under the agreed rules. Show the math dependency as metadata; its missing file is not an inspection error. Successful inspection of one file does not establish availability of the full graph. Full graph validation remains mandatory when executing a program.
+If geometry@1.2.0 depends on math@2.0.0, `goat-inspect geometry.gbin` requires math and its transitive dependencies. A missing module is an error. See “Inspecting the graph for a selected target”.
 
 ### 64. Merge does not require external dependency files
 
@@ -3766,7 +3757,7 @@ Acceptance in #212/#214: accept one path; a missing path or two paths produce st
 
 ## Incompatibility reasons in the inspect text report
 
-For each native variant, the human-readable goat-inspect report shows the comparison with the current machine: compatible, or specific incompatibility reasons such as a different OS or architecture, an unsupported ABI version, or a missing required CPU extension. An unverifiable mandatory requirement is also explained rather than reported as satisfied. Use the shared compatibility mechanism, without separate selection logic in the report formatter.
+For each native variant, the human-readable goat-inspect report shows the comparison with the selected target: compatible, or specific incompatibility reasons such as a different OS or architecture, an unsupported ABI version, or a missing required CPU extension. An unverifiable mandatory requirement is also explained rather than reported as satisfied. Use the shared compatibility mechanism, without separate selection logic in the report formatter.
 
 This explanation is added only to the text report (#212). Do not extend the JSON report (#223) with a separate list of incompatibility reasons for this requirement; retain previously agreed fields and error diagnostics. An incompatible variant is not itself an archive error. Compatible means that platform requirements match, not that probe loading succeeded; show the probe result separately.
 
@@ -3793,6 +3784,26 @@ If module.json can be read safely and its metadata passes the applicable structu
 Do not reconstruct values from damaged or unavailable data or substitute empty lists or defaults for unknown information. Displaying metadata neither cancels the nonzero exit status nor permits native probing when archive structure, integrity, or consistency checks fail.
 
 Acceptance in #212/#223: valid module.json with damaged bytecode produces available metadata, an explicit validation failure, and diagnostics in both report formats; no native probe runs. Unreadable or syntactically invalid module.json must not produce invented module information.
+
+## Inspecting the graph for a selected target
+
+Goat-inspect accepts one root archive and checks its entire reachable dependency graph. A missing dependency, expected-hash mismatch, cycle, or damaged module is an inspection error. Validate a shared module once per invocation while retaining dependency paths for diagnostics. This supersedes inspection without dependency files. Goat-merge still operates only on explicitly supplied archives and does not discover external modules.
+
+The `--target <target>` option selects the checking environment; the default is the current environment. A target describes OS, architecture, system ABI/runtime, and CPU requirements, not just bitness or a processor name. Its exact representation belongs to the final #244/#208 schema. Inspect uses the loader's search order relative to the root archive: neighboring modules, explicit --module-dir, then GOAT_MODULE_PATH. Target selection does not substitute different physical archive copies for those selected by that order.
+
+For each module, report structural validation and whether a native variant matches the selected target. Explain incompatibility reasons in text as previously agreed; do not add a separate JSON list of those reasons. Clearly distinguish the selected target, metadata-based requirements checks, and loading actually performed.
+
+For the current environment, probe suitable libraries in separate child processes, with one attempt per selected library of each unique module and no automatic retries. For a foreign platform, do not invoke the OS loader: check metadata and hashes and explicitly report that loading was not tested. Matching metadata does not prove that a DLL/SO works on another machine. Isolation, deadlines, output capture, and cleanup still apply to every performed probe.
+
+Absence of a suitable native variant is a warning and does not itself invalidate an otherwise valid graph: VM execution remains possible. This does not promise wholly native execution; specialization applicability depends on actual calls. Runtime native required rules remain separate. Selecting a foreign target requires no target compiler and executes no module code to validate metadata.
+
+## Local validation and external-reference validation
+
+The shared validator #185 checks one archive, its hashes, bytecode structure, and internal references without discovering dependencies. For functionRef, local checks cover shape, types, ranges, and field constraints. The compiler, loader, and inspect separately check target-module/function existence, reachability, and pinned hashes against the complete graph (#189/#233/#212). Goat-merge does not perform this second phase. Local normalization and hashing do not require opening the external function.
+
+The loader and inspect do not repeat program analysis or the producer's proofs. Graph traversal and structural checks are not repeated analysis; per-pass caching prevents validating one module repeatedly.
+
+Acceptance in #185/#189/#212/#214/#223/#224/#233: inspect rejects a missing transitive dependency while merge can still process valid inputs; a dependency diamond does not repeat validation or probing of the shared node. Cover local and graph-level functionRef checks, current and foreign targets, no OS loading of foreign DLL/SO, warnings for absent native variants, VM availability, and explicit untested-loading status.
 
 ## goat-inspect exit statuses
 
@@ -3966,7 +3977,7 @@ Acceptance in #223/#245/#214: deletion failure, timeout with ongoing cleanup, pa
 
 ## A single load-probe attempt
 
-One goat-inspect invocation performs at most one load-probe attempt for the selected library. There are no automatic retries after a process-start error, load or validation failure, unloading error, crash or timeout. A retry must not replace an already detected failure with success, and cleanup failure does not trigger a retry either.
+One goat-inspect invocation performs at most one load-probe attempt for the selected library of each unique graph module when the selected target permits a local probe. There are no automatic retries after a process-start error, load or validation failure, unloading error, crash or timeout. A retry must not replace an already detected failure with success, and cleanup failure does not trigger a retry either.
 
 To check again, the user invokes inspect again. A previous invocation's result does not replace the new probe. This prevents hiding intermittent failures and automatically repeating constructor side effects. Agreed pre-load checks still apply: a damaged archive or absence of a compatible variant causes no load attempt.
 
