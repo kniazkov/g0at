@@ -275,6 +275,19 @@ with tempfile.TemporaryDirectory(prefix='goat-cleanup-данные 😀-') as tm
             a.cleaned()
             ok('5 s client timeout does not cancel 30 s cleanup; busy file released after owner exit')
 
+            a = Owner(root, 'permanently-busy'); owners.append(a); a.ready()
+            handle = kernel.CreateFileW(str(a.directory / 'данные 😀.tmp'), 0x80000000,
+                                        1, None, 3, 0, None)
+            assert handle != ctypes.c_void_p(-1).value
+            try:
+                a.send('finish'); assert a.line(timeout=8) == 'finished 2'
+                a.send('quit'); a.ended()
+                a.cleaner.wait(timeout=28)
+                assert a.directory.exists() and a.done_file.read_text().strip() == '1'
+            finally:
+                kernel.CloseHandle(handle)
+            ok('persistent busy file survives 30 s failure; cleaner terminates after client exit')
+
         b.send('finish'); assert b.line() == 'finished 0'; b.cleaned(); b.send('quit'); b.ended()
     finally:
         for owner in owners:

@@ -121,7 +121,9 @@ static int retry_tests(void) {
     CHECK(cleanup_retry_directory("unused", &ops, fake.now).status == CLEANUP_OK);
     CHECK(fake.attempts == 1 && fake.pauses == 0);
     fake = (fake_t){.now = 100, .success = 250};
-    CHECK(cleanup_retry_directory("unused", &ops, fake.now).status == CLEANUP_OK);
+    cleanup_result_t recovered = cleanup_retry_directory("unused", &ops, fake.now);
+    CHECK(recovered.status == CLEANUP_OK && recovered.file_status == FS_OK
+          && !recovered.native_code);
     CHECK(fake.now == 250 && fake.attempts == 4);
     /* Repeated failures/partial progress and client exit never create a new budget. */
     fake = (fake_t){.now = 100, .permanent = true};

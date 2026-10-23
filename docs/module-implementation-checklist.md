@@ -20,7 +20,7 @@
 - [x] 04. [#213](https://github.com/kniazkov/g0at/issues/213) — Переносимый запуск дочерних процессов ([API и проверки](child-process-api.md))
 - [x] 05. [#216](https://github.com/kniazkov/g0at/issues/216) — Переносимый API потоков в lib ([API и проверки](thread-api.md))
 - [x] 06. [#249](https://github.com/kniazkov/g0at/issues/249) — Кроссплатформенный API файлов и каталогов в lib ([API и проверки](file-system-api.md))
-- [ ] 07. [#245](https://github.com/kniazkov/g0at/issues/245) — Единый процесс уборки временной нативной сборки и извлечения
+- [x] 07. [#245](https://github.com/kniazkov/g0at/issues/245) — Единый процесс уборки временной нативной сборки и извлечения ([API и проверки](cleanup-service-api.md))
 - [ ] 08. [#178](https://github.com/kniazkov/g0at/issues/178) — Строгий разбор JSON описаний модулей
 - [ ] 09. [#179](https://github.com/kniazkov/g0at/issues/179) — Проверка имён и версий модулей
 - [ ] 10. [#180](https://github.com/kniazkov/g0at/issues/180) — Канонический JSON для хэширования

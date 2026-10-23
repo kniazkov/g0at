@@ -315,7 +315,7 @@ cleanup_retry_directory(const char *path, const cleanup_retry_ops_t *ops, uint64
     for (;;) {
         bool removed = ops->remove(ops->context, path, &error);
         if (removed || error.status == FS_NOT_FOUND) {
-            result.status = CLEANUP_OK;
+            result = (cleanup_result_t){.status = CLEANUP_OK};
             break;
         }
         result.file_status = error.status;
