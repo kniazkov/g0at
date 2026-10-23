@@ -142,7 +142,8 @@ double goat_strtod(const goat_char_t *input, goat_char_t **end);
 
 /** @brief Compares whole ranges, including embedded zeros. */
 static inline bool string_view_equals(string_view_t a, string_view_t b) {
-    return a.length == b.length && !goat_memcmp(a.data, b.data, a.length);
+    return (a.data == NULL) == (b.data == NULL) && a.length == b.length
+           && !goat_memcmp(a.data, b.data, a.length);
 }
 
 /** @brief Stable FNV-1a hash of UTF-32LE bytes, including all embedded zeros. */

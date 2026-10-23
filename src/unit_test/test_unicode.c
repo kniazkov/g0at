@@ -57,6 +57,8 @@ bool test_unicode_strings(void) {
     ASSERT(!encode_utf8_path(b));
     ASSERT(!read_utf8_file_view(VALUE_TO_VIEW(STATIC_STRING(U"README.md\0missing"))).data);
     ASSERT(EMPTY_STRING_VALUE.data && !NULL_STRING_VALUE.data);
+    ASSERT(!string_view_equals(EMPTY_STRING_VIEW, (string_view_t){NULL, 0}));
+    ASSERT(string_view_hash(EMPTY_STRING_VIEW) != string_view_hash((string_view_t){NULL, 0}));
     ASSERT(!decode_utf8_n(NULL, 0).data && !decode_utf16(NULL, 0).data);
     ASSERT(!format_string_view((string_view_t){NULL, 0}).data);
     ASSERT(!unicode_string_case((string_view_t){NULL, 0}, true).data);

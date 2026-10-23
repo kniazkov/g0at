@@ -527,6 +527,8 @@ double goat_strtod(const goat_char_t *input, goat_char_t **end) {
 }
 
 uint64_t string_view_hash(string_view_t value) {
+    if (!value.data)
+        return 0;
     uint64_t hash = UINT64_C(14695981039346656037);
     for (size_t i = 0; i < value.length; ++i)
         for (unsigned j = 0; j < 4; ++j) {
