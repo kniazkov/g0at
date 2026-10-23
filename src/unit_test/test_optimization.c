@@ -15,6 +15,7 @@
 #include "graph/variable.h"
 #include "graph/visualization.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/string_ext.h"
 #include "model/process.h"
 #include "test_macro.h"
@@ -249,14 +250,14 @@ bool test_unused_bindings() {
 
 /** @brief Reads and UTF-8 decodes the whole captured stream; caller frees the result. */
 static string_value_t read_captured_file(FILE *file) {
-    fflush(file);
-    if (fseek(file, 0, SEEK_END) != 0)
+    FFLUSH(file);
+    if (FSEEK(file, 0, SEEK_END) != 0)
         return NULL_STRING_VALUE;
-    long size = ftell(file);
-    if (size < 0 || fseek(file, 0, SEEK_SET) != 0)
+    long size = FTELL(file);
+    if (size < 0 || FSEEK(file, 0, SEEK_SET) != 0)
         return NULL_STRING_VALUE;
     char *buffer = (char *)ALLOC((size_t)size + 1);
-    size_t read = fread(buffer, 1, (size_t)size, file);
+    size_t read = FREAD(buffer, 1, (size_t)size, file);
     buffer[read] = 0;
     string_value_t result = decode_utf8(buffer);
     FREE(buffer);
@@ -289,34 +290,34 @@ static string_value_t run_captured_program(const gchar_t *source, const gchar_t 
             FILE *input_file = fopen(input_path, "w+b");
             if (input) {
                 char *encoded = encode_utf8(input);
-                fwrite(encoded, 1, strlen(encoded), input_file);
+                FWRITE(encoded, 1, strlen(encoded), input_file);
                 FREE(encoded);
             }
-            rewind(input_file);
+            REWIND(input_file);
             FILE *output_file = fopen(output_path, "w+b");
-            fflush(stdout);
+            FFLUSH(stdout);
             int saved_stdin = DUP_FD(FILENO_FD(stdin));
             int saved_stdout = DUP_FD(FILENO_FD(stdout));
             DUP2_FD(FILENO_FD(input_file), FILENO_FD(stdin));
             DUP2_FD(FILENO_FD(output_file), FILENO_FD(stdout));
-            fseek(stdin, 0, SEEK_SET);
-            clearerr(stdin);
-            clearerr(stdout);
+            FSEEK(stdin, 0, SEEK_SET);
+            CLEARERR(stdin);
+            CLEARERR(stdout);
             process_t *proc = create_process();
             int status = run(proc, bytecode);
-            fflush(stdout);
+            FFLUSH(stdout);
             DUP2_FD(saved_stdout, FILENO_FD(stdout));
             DUP2_FD(saved_stdin, FILENO_FD(stdin));
             CLOSE_FD(saved_stdin);
             CLOSE_FD(saved_stdout);
             if (!status) {
-                rewind(output_file);
+                REWIND(output_file);
                 output = read_captured_file(output_file);
             }
             destroy_process(proc);
             free_bytecode(bytecode);
-            fclose(input_file);
-            fclose(output_file);
+            FCLOSE(input_file);
+            FCLOSE(output_file);
             remove(input_path);
             remove(output_path);
         }

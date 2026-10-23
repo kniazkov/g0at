@@ -8,6 +8,7 @@
 
 #include "binary_program.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/io.h"
 #include "resources/messages.h"
 
@@ -248,7 +249,7 @@ options_t *parse_options(int argc, char **argv) {
         || (opt->run_binary
             && (optimization_explicit || opt->print_analysis || opt->analysis_output_file
                 || opt->graph_output_file || opt->print_source_code || opt->enable_warnings))) {
-        fprintf(stderr, "Incompatible --compile/--run options.\n");
+        FPRINTF(stderr, "Incompatible --compile/--run options.\n");
         goto error;
     }
     if (opt->run_binary && !native_explicit)

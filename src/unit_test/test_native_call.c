@@ -1,3 +1,4 @@
+#include "lib/file_system.h"
 #include "lib/string_ext.h"
 /** @file test_native_call.c
  * @copyright 2026 Ivan Kniazkov
@@ -296,9 +297,9 @@ static long unload_count(const char *path) {
     FILE *file = fopen(path, "rb");
     if (!file)
         return 0;
-    fseek(file, 0, SEEK_END);
-    long size = ftell(file);
-    fclose(file);
+    FSEEK(file, 0, SEEK_END);
+    long size = FTELL(file);
+    FCLOSE(file);
     return size;
 }
 
@@ -371,7 +372,7 @@ bool test_native_calls(const char *provider, const char *generated, const char *
     test_output_start("native call");
     native_library_result_t loaded = load_native_library(provider);
     if (loaded.status != NATIVE_LIBRARY_OK) {
-        fprintf(stderr, "%s\n", loaded.diagnostic);
+        FPRINTF(stderr, "%s\n", loaded.diagnostic);
         destroy_native_library_result(&loaded);
         test_output_case(false, "load provider");
         test_output_summary("Native call", 0, 1);

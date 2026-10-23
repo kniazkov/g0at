@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
     fs_error_t input_error = {0};
     if (!fs_arguments(&argc, &argv, &input_error)) {
-        fprintf(stderr, "Command line: %s (%lu)\n", input_error.operation, input_error.native_code);
+        FPRINTF(stderr, "Command line: %s (%lu)\n", input_error.operation, input_error.native_code);
         clear_fs_error(&input_error);
         return EXIT_FAILURE;
     }

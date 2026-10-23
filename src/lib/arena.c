@@ -7,6 +7,7 @@
 #include "arena.h"
 
 #include "allocate.h"
+#include "file_system.h"
 #include "string_ext.h"
 
 #include <memory.h>
@@ -18,7 +19,7 @@
 /** @brief Allocates a new chunk with the specified payload size. */
 static chunk_t *create_chunk(size_t size) {
     if (size > SIZE_MAX - sizeof(chunk_t)) {
-        fprintf(stderr, "\nArena size overflow.\n");
+        FPRINTF(stderr, "\nArena size overflow.\n");
         exit(EXIT_FAILURE);
     }
     chunk_t *chunk = (chunk_t *)ALLOC(sizeof(chunk_t) + size);
@@ -39,7 +40,7 @@ static inline size_t calculate_chunk_size(size_t kilobytes) {
         kilobytes = 1;
     }
     if (kilobytes > SIZE_MAX / 1024) {
-        fprintf(stderr, "\nArena size overflow.\n");
+        FPRINTF(stderr, "\nArena size overflow.\n");
         exit(EXIT_FAILURE);
     }
     return kilobytes * 1024 - sizeof(chunk_t) - 64;
@@ -66,7 +67,7 @@ void *alloc_from_arena(arena_t *arena, size_t size) {
     const size_t alignment = _Alignof(memory_alignment_t);
     size_t padding = (alignment - size % alignment) % alignment;
     if (size > SIZE_MAX - padding) {
-        fprintf(stderr, "\nArena size overflow.\n");
+        FPRINTF(stderr, "\nArena size overflow.\n");
         exit(EXIT_FAILURE);
     }
     size += padding;

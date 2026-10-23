@@ -2,6 +2,8 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Common filesystem contracts and checked stream operations.
  */
+#include "file_system.h"
+
 #include "allocate.h"
 #include "file_system_internal.h"
 #include "string_ext.h"
@@ -77,7 +79,7 @@ void clear_fs_entries(fs_entries_t *entries) {
 bool write_fs_file(FILE *file, const void *data, size_t size, const char *path, fs_error_t *error) {
     if (!file || (!data && size))
         return fs_fail(error, FS_INVALID, EINVAL, "write", path);
-    if (fwrite(data, 1, size, file) != size)
+    if (FWRITE(data, 1, size, file) != size)
         return fs_fail(error, FS_IO, errno ? errno : EIO, "write", path);
     return true;
 }
@@ -85,7 +87,7 @@ bool write_fs_file(FILE *file, const void *data, size_t size, const char *path, 
 bool close_fs_file(FILE *file, const char *path, fs_error_t *error) {
     if (!file)
         return fs_fail(error, FS_INVALID, EINVAL, "close", path);
-    if (fclose(file))
+    if (FCLOSE(file))
         return fs_fail(error, FS_IO, errno ? errno : EIO, "close", path);
     return true;
 }

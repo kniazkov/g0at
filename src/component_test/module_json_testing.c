@@ -1,3 +1,4 @@
+#include "lib/file_system.h"
 #include "module_json.h"
 
 #include <assert.h>
@@ -10,7 +11,7 @@ static void check(const char *json, goat_module_json_kind kind, goat_module_json
     yyjson_doc *doc = NULL;
     goat_module_json_error actual = goat_module_json_read(json, strlen(json), kind, &doc);
     if (actual != expected) {
-        fprintf(stderr,
+        FPRINTF(stderr,
                 "Unexpected result: %s (expected %s) for %s\n",
                 goat_module_json_error_string(actual),
                 goat_module_json_error_string(expected),

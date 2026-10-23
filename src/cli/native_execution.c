@@ -62,7 +62,7 @@ static bool prepare(const options_t *options,
                      report->preparation,
                      prepared.diagnostic ? prepared.diagnostic
                                          : "No native functions could be bound");
-        fputc('\n', stderr);
+        FPUTC('\n', stderr);
     }
     destroy_native_prepare_result(&prepared);
     return ready || options->native_execution == NATIVE_AUTO;
@@ -97,7 +97,7 @@ bool output_native_report(const options_t *options,
                                         successes,
                                         retries);
     if (options->print_native) {
-        fputc('\n', stdout);
+        FPUTC('\n', stdout);
         print_utf8(text.data);
     }
     bool written = true;
@@ -112,7 +112,7 @@ bool output_native_report(const options_t *options,
             written = false;
         }
         if (!written)
-            fputc('\n', stderr);
+            FPUTC('\n', stderr);
     }
     FREE_STRING(text);
     return written;

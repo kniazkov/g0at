@@ -7,6 +7,7 @@
 #include "analysis_test_support.h"
 #include "codegen/linker.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "model/context.h"
 #include "model/process.h"
 #include "model/thread.h"
@@ -55,7 +56,7 @@ bool test_finally_parser(void) {
                 parse_analysis_test_program(&memory,
                                             (string_value_t){texts[i], STRLEN(texts[i]), false});
             if (pass ? root != NULL : root == NULL)
-                fprintf(stderr, "finally parser %zu/%zu\n", pass, i);
+                FPRINTF(stderr, "finally parser %zu/%zu\n", pass, i);
             ASSERT(pass ? root == NULL : root != NULL);
             if (root) {
                 string_value_t source = generate_goat_code_from_node(root);

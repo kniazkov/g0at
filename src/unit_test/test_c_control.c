@@ -13,6 +13,7 @@
 #include "graph/common_methods.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
 #include "model/process.h"
@@ -81,7 +82,7 @@ static bool emit_program(source_builder_t *output, const gchar_t *source, const 
                                                            NULL);
         success = result.status == C_GENERATION_OK;
         if (!success)
-            fprintf(stderr,
+            FPRINTF(stderr,
                     "status %d node %ls\n",
                     result.status,
                     result.failed_node ? result.failed_node->vtbl->type_name : U"none");
@@ -94,7 +95,7 @@ static bool emit_program(source_builder_t *output, const gchar_t *source, const 
         for (size_t i = 0; i < 4; i++)
             probes[i].node->vtbl = probes[i].original;
     if (!success)
-        fprintf(stderr, "C control fixture failed: %ls\n", source);
+        FPRINTF(stderr, "C control fixture failed: %ls\n", source);
     destroy_options(options);
     destroy_arena(arena);
     return success;

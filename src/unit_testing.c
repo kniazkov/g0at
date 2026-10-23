@@ -5,6 +5,7 @@
  */
 
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/string_ext.h"
 #include "unit_test/test_c_emission.h"
 #include "unit_test/test_file_system.h"
@@ -35,7 +36,7 @@ static bool unit_testing() {
         if (result) {
             size_t diff = get_allocated_memory_size() - memory_size;
             if (diff > 0) {
-                fprintf(stderr, "Test '%s' leaked %zu bytes\n", tests[i].name, diff);
+                FPRINTF(stderr, "Test '%s' leaked %zu bytes\n", tests[i].name, diff);
                 result = false;
             }
         }

@@ -25,15 +25,15 @@ void *read_binary_file(const char *path, size_t limit, size_t *size) {
     if (!file)
         return NULL;
     long length = -1;
-    if (!fseek(file, 0, SEEK_END))
-        length = ftell(file);
-    if (length < 0 || (uint64_t)length > limit || fseek(file, 0, SEEK_SET)) {
-        fclose(file);
+    if (!FSEEK(file, 0, SEEK_END))
+        length = FTELL(file);
+    if (length < 0 || (uint64_t)length > limit || FSEEK(file, 0, SEEK_SET)) {
+        FCLOSE(file);
         return NULL;
     }
     void *data = ALLOC(length ? (size_t)length : 1);
-    bool ok = fread(data, 1, length, file) == (size_t)length && fgetc(file) == EOF && !ferror(file);
-    if (fclose(file))
+    bool ok = FREAD(data, 1, length, file) == (size_t)length && FGETC(file) == EOF && !FERROR(file);
+    if (FCLOSE(file))
         ok = false;
     if (!ok) {
         FREE(data);

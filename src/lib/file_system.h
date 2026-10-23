@@ -63,6 +63,34 @@ bool remove_fs_entry(const char *path, fs_error_t *error);
 bool remove_fs_tree(const char *path, fs_error_t *error);
 /** @brief UTF-8 fopen; supports rb, wb, and exclusive wbx on both CRTs. */
 FILE *FOPEN(const char *path, const char *mode);
+
+/** @brief Standard stream operations; direct aliases preserve CRT semantics. */
+#define FCLOSE fclose
+#define FFLUSH fflush
+#define FREAD fread
+#define FWRITE fwrite
+#define FSEEK fseek
+#define FTELL ftell
+#define FGETPOS fgetpos
+#define FSETPOS fsetpos
+#define REWIND rewind
+#define FEOF feof
+#define FERROR ferror
+#define CLEARERR clearerr
+#define FGETC fgetc
+#define FGETS fgets
+#define FPUTC fputc
+#define FPUTS fputs
+#define UNGETC ungetc
+#define SETBUF setbuf
+#define SETVBUF setvbuf
+#define FPRINTF fprintf
+#define VFPRINTF vfprintf
+#define FSCANF fscanf
+#define VFSCANF vfscanf
+#define GETC getc
+#define PUTC putc
+
 /** @brief Checked stream writes and close; close consumes the stream even on failure. */
 bool write_fs_file(FILE *file, const void *data, size_t size, const char *path, fs_error_t *error);
 bool close_fs_file(FILE *file, const char *path, fs_error_t *error);

@@ -6,6 +6,7 @@
 
 #include "lib/allocate.h"
 #include "lib/child_process.h"
+#include "lib/file_system.h"
 #include "lib/os_thread.h"
 #include "test_macro.h"
 
@@ -221,13 +222,13 @@ bool test_os_threads(void) {
     bool success = result->status == CHILD_EXITED && result->exit_code == 0 && !result->system_error
                    && !result->cleanup_error;
     if (!success) {
-        fprintf(stderr,
+        FPRINTF(stderr,
                 "Thread fixture: status=%d, exit=%lld, error=%lu, cleanup=%lu\n",
                 result->status,
                 (long long)result->exit_code,
                 result->system_error,
                 result->cleanup_error);
-        fwrite(result->err.data, 1, result->err.size, stderr);
+        FWRITE(result->err.data, 1, result->err.size, stderr);
     }
     destroy_child_process(child);
     return success;

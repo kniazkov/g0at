@@ -7,6 +7,7 @@
 #include "allocate.h"
 
 #include "alignment.h"
+#include "file_system.h"
 
 #include <stdatomic.h>
 #include <stdint.h>
@@ -69,14 +70,14 @@ void *_ALLOC(size_t size) {
     }
     const size_t padding = _Alignof(memory_alignment_t) - 1;
     if (size > SIZE_MAX - sizeof(memory_header_t) - EXTRA_DEBUG_BYTES - padding) {
-        fprintf(stderr, "\nAllocation size overflow.\n");
+        FPRINTF(stderr, "\nAllocation size overflow.\n");
         exit(EXIT_FAILURE);
     }
     size_t total_size = sizeof(memory_header_t) + size + EXTRA_DEBUG_BYTES + padding;
     void *allocation = malloc(total_size);
 
     if (!allocation) {
-        fprintf(stderr, "\nOut of memory.\n");
+        FPRINTF(stderr, "\nOut of memory.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -90,7 +91,7 @@ void *_ALLOC(size_t size) {
     lock_accounting();
     if (size > SIZE_MAX - allocated_memory_size) {
         unlock_accounting();
-        fprintf(stderr, "\nAllocation size overflow.\n");
+        FPRINTF(stderr, "\nAllocation size overflow.\n");
         exit(EXIT_FAILURE);
     }
     allocated_memory_size += size;
@@ -140,7 +141,7 @@ void _FREE(void *ptr) {
     unsigned char *debug_bytes = (unsigned char *)ptr + size;
     for (int i = 0; i < EXTRA_DEBUG_BYTES; i++) {
         if (debug_bytes[i] != 0xFF) {
-            fprintf(stderr,
+            FPRINTF(stderr,
                     "\nMemory corruption detected! File: %s, line: %d\n",
                     header->file_name,
                     header->line);
@@ -181,7 +182,7 @@ void print_list_of_memory_blocks(void) {
     lock_accounting();
     memory_header_t *header = first_block;
     while (header) {
-        fprintf(stderr,
+        FPRINTF(stderr,
                 "%s, %d: %zu byte%s\n",
                 header->file_name,
                 header->line,

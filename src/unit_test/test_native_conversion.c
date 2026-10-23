@@ -8,6 +8,7 @@
 #include "analysis/lattice.h"
 #include "builtins/registry.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/io.h"
 #include "model/process.h"
 #include "model/thread.h"
@@ -164,10 +165,10 @@ bool test_input_lines() {
     ASSERT(file);
     const char content[] =
         "\r\n\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82 \xF0\x9F\x98\x80\n";
-    ASSERT(fwrite(content, 1, sizeof(content) - 1, file) == sizeof(content) - 1);
+    ASSERT(FWRITE(content, 1, sizeof(content) - 1, file) == sizeof(content) - 1);
     for (size_t i = 0; i < 10000; i++)
-        fputc('x', file);
-    rewind(file);
+        FPUTC('x', file);
+    REWIND(file);
     string_value_t text = read_input_line(file);
     ASSERT(text.data && text.length == 0);
     FREE_STRING(text);
@@ -180,18 +181,18 @@ bool test_input_lines() {
     text = read_input_line(file);
     ASSERT(text.data && text.length == 0);
     FREE_STRING(text);
-    ASSERT(!fclose(file));
+    ASSERT(!FCLOSE(file));
     file = fopen(path, "w+b");
     ASSERT(file);
-    fputc(0xff, file);
-    fputc('\n', file);
-    fputc(0, file);
-    rewind(file);
+    FPUTC(0xff, file);
+    FPUTC('\n', file);
+    FPUTC(0, file);
+    REWIND(file);
     text = read_input_line(file);
     ASSERT(!text.data);
     text = read_input_line(file);
     ASSERT(text.data && text.length == 1 && text.data[0] == 0);
     FREE_STRING(text);
-    ASSERT(!fclose(file) && !remove(path));
+    ASSERT(!FCLOSE(file) && !remove(path));
     return true;
 }

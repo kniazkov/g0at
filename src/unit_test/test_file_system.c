@@ -10,6 +10,7 @@
 #include "lib/allocate.h"
 #include "lib/binary_file.h"
 #include "lib/child_process.h"
+#include "lib/file_system.h"
 #include "lib/file_system_internal.h"
 #include "lib/os_thread.h"
 #include "test_macro.h"
@@ -35,7 +36,7 @@ static bool prepare_checked(const char *temporary, const char *destination) {
     fs_error_t error = {0};
     bool ok = prepare_fs_replace(temporary, destination, &error);
     if (!ok)
-        fprintf(stderr,
+        FPRINTF(stderr,
                 "prepare: %s, code %lu, path %s\n",
                 error.operation,
                 error.native_code,
@@ -168,11 +169,11 @@ static bool publication(const char *root) {
     ASSERT(file);
     ASSERT(!write_fs_file(file, "bad", 3, dest, &error));
     clear_fs_error(&error);
-    fclose(file);
+    FCLOSE(file);
 #ifndef _WIN32
     file = fopen("/dev/full", "wb");
     ASSERT(file);
-    ASSERT(setvbuf(file, NULL, _IOFBF, 4096) == 0);
+    ASSERT(SETVBUF(file, NULL, _IOFBF, 4096) == 0);
     ASSERT(write_fs_file(file, "bad", 3, "/dev/full", &error));
     ASSERT(!close_fs_file(file, "/dev/full", &error));
     clear_fs_error(&error);
@@ -359,7 +360,7 @@ static bool linux_contract(const char *root) {
         char *prepared = join_fs_path(root, "permission-failure", NULL);
         FILE *f = FOPEN(prepared, "wb");
         if (f) {
-            fclose(f);
+            FCLOSE(f);
             failed &= !prepare_fs_replace(prepared, sentinel, &e) && e.status == FS_ACCESS;
             remove_fs_entry(prepared, NULL);
         } else
@@ -532,7 +533,7 @@ static bool windows_contract(const char *root) {
     CloseHandle(restricted);
     CloseHandle(token);
     if (created || denied.status != FS_ACCESS)
-        fprintf(stderr,
+        FPRINTF(stderr,
                 "denial fixture: created=%d status=%d code=%lu\n",
                 created,
                 denied.status,
@@ -636,14 +637,14 @@ bool test_file_system(void) {
     bool ok = result->status == CHILD_EXITED && !result->exit_code && !result->system_error
               && !result->cleanup_error;
     if (!ok) {
-        fprintf(stderr,
+        FPRINTF(stderr,
                 "filesystem fixture status=%d exit=%lld error=%lu cleanup=%lu\n",
                 result->status,
                 (long long)result->exit_code,
                 result->system_error,
                 result->cleanup_error);
-        fwrite(result->out.data, 1, result->out.size, stderr);
-        fwrite(result->err.data, 1, result->err.size, stderr);
+        FWRITE(result->out.data, 1, result->out.size, stderr);
+        FWRITE(result->err.data, 1, result->err.size, stderr);
     }
     destroy_child_process(child);
     return ok;

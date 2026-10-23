@@ -7,6 +7,7 @@
 #include "goat/unicode.h"
 #include "lib/alignment.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +23,7 @@ static void *GOAT_NATIVE_CALL allocate_memory(void *state, size_t size) {
     if (!size)
         size = 1;
     if (size > SIZE_MAX - sizeof(native_memory_block_t)) {
-        fputs("\nAllocation size overflow.\n", stderr);
+        FPUTS("\nAllocation size overflow.\n", stderr);
         exit(EXIT_FAILURE);
     }
     native_memory_block_t *block = ALLOC(sizeof(*block) + size);

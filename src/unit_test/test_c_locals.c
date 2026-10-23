@@ -12,6 +12,7 @@
 #include "graph/common_methods.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/string_ext.h"
 #include "test_macro.h"
 
@@ -133,7 +134,7 @@ bool append_c_local_tests(source_builder_t *output, source_builder_t *checks) {
             if (success)
                 add_formatted_source(output, 0, result.source);
             else {
-                fprintf(stderr,
+                FPRINTF(stderr,
                         "Local emission status %d at %ls\n",
                         result.status,
                         result.failed_node ? result.failed_node->vtbl->type_name : U"none");
@@ -149,7 +150,7 @@ bool append_c_local_tests(source_builder_t *output, source_builder_t *checks) {
                 fixtures[i].check,
                 i);
         else
-            fprintf(stderr, "Local fixture %zu failed: %ls\n", i, source);
+            FPRINTF(stderr, "Local fixture %zu failed: %ls\n", i, source);
         FREE_STRING(name);
         destroy_options(options);
         destroy_arena(arena);

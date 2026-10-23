@@ -43,13 +43,13 @@ static bool write_runtime_file(const char *path, const unsigned char *data, size
     if (file) {
         bool same = true;
         for (size_t i = 0; i < size; i++) {
-            if (fgetc(file) != data[i]) {
+            if (FGETC(file) != data[i]) {
                 same = false;
                 break;
             }
         }
-        same = same && fgetc(file) == EOF && !ferror(file);
-        fclose(file);
+        same = same && FGETC(file) == EOF && !FERROR(file);
+        FCLOSE(file);
         if (!same)
             errno = EEXIST;
         return same;
@@ -59,8 +59,8 @@ static bool write_runtime_file(const char *path, const unsigned char *data, size
     file = FOPEN(path, "wbx");
     if (!file)
         return false;
-    bool success = fwrite(data, 1, size, file) == size;
-    if (fclose(file))
+    bool success = FWRITE(data, 1, size, file) == size;
+    if (FCLOSE(file))
         success = false;
     if (!success)
         remove_fs_entry(path, NULL);
