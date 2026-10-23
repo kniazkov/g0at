@@ -113,7 +113,7 @@ goat_module_json_error goat_module_json_read(const char *data,
                && (unsigned char)data[2] == 0xBF)
         return GOAT_MODULE_JSON_SYNTAX;
 
-    yyjson_doc *doc = yyjson_read_opts(data, length, YYJSON_READ_NUMBER_AS_RAW, NULL, NULL);
+    yyjson_doc *doc = yyjson_read(data, length, YYJSON_READ_NUMBER_AS_RAW);
     if (!doc)
         return GOAT_MODULE_JSON_SYNTAX;
     yyjson_val *root = yyjson_doc_get_root(doc);
