@@ -12,6 +12,7 @@
 #include "codegen/native_pipeline.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
+#include "lib/os_thread.h"
 #include "lib/string_ext.h"
 #include "model/context.h"
 #include "model/native_library.h"
@@ -23,7 +24,6 @@
 #include "test_output.h"
 #include "vm/vm.h"
 
-#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -229,13 +229,14 @@ static bool adapter_guards(void) {
     const goat_native_entry_v2_t *entry = recursive_entry(code);
     ASSERT(entry);
     adapter_task_t tasks[4];
-    pthread_t threads[4];
+    os_thread_t *threads[4];
     for (size_t i = 0; i < 4; i++) {
         tasks[i] = (adapter_task_t){.entry = entry};
-        ASSERT(!pthread_create(&threads[i], NULL, adapter_worker, &tasks[i]));
+        ASSERT(create_os_thread(&threads[i], adapter_worker, &tasks[i], 0) == OS_THREAD_OK);
     }
     for (size_t i = 0; i < 4; i++) {
-        ASSERT(!pthread_join(threads[i], NULL));
+        ASSERT(join_os_thread(threads[i], NULL) == OS_THREAD_OK);
+        ASSERT(destroy_os_thread(threads[i]) == OS_THREAD_OK);
         ASSERT(tasks[i].success);
     }
     free_bytecode(code);

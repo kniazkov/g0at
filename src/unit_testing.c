@@ -10,6 +10,7 @@
 #include "unit_test/test_list.h"
 #include "unit_test/test_native_call.h"
 #include "unit_test/test_native_pipeline.h"
+#include "unit_test/test_os_thread.h"
 #include "unit_test/test_output.h"
 #include "unit_test/test_stack_underflow.h"
 
@@ -50,6 +51,8 @@ static bool unit_testing() {
 /** @brief Entry point. */
 int main(int argc, char **argv) {
     init_unicode_locale();
+    if (argc == 2 && !strcmp(argv[1], "--os-thread-tests"))
+        return run_os_thread_tests() ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 6 && !strcmp(argv[1], "--native-pipeline-tests"))
         return test_native_pipeline(argv[2], argv[3], argv[4], argv[5]) ? EXIT_SUCCESS
                                                                         : EXIT_FAILURE;

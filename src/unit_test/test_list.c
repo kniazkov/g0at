@@ -60,6 +60,7 @@
 #include "test_node_properties.h"
 #include "test_operation_result.h"
 #include "test_optimization.h"
+#include "test_os_thread.h"
 #include "test_parser.h"
 #include "test_power.h"
 #include "test_reachability.h"
@@ -76,6 +77,7 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"portable OS threads", test_os_threads},
     {"module identifiers and imports", test_module_identity},
     {"native execution options", test_native_options},
     {"SHA-256 vectors", test_sha256},

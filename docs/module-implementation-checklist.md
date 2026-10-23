@@ -18,7 +18,7 @@
 - [x] 02. [#250](https://github.com/kniazkov/g0at/issues/250) — Полная модернизация строковой библиотеки: переносимый 32-битный символ
 - [x] 03. [#251](https://github.com/kniazkov/g0at/issues/251) — Переносимый бинарный формат v1 без legacy-совместимости
 - [x] 04. [#213](https://github.com/kniazkov/g0at/issues/213) — Переносимый запуск дочерних процессов ([API и проверки](child-process-api.md))
-- [ ] 05. [#216](https://github.com/kniazkov/g0at/issues/216) — Переносимый API потоков в lib
+- [x] 05. [#216](https://github.com/kniazkov/g0at/issues/216) — Переносимый API потоков в lib ([API и проверки](thread-api.md))
 - [ ] 06. [#249](https://github.com/kniazkov/g0at/issues/249) — Кроссплатформенный API файлов и каталогов в lib
 - [ ] 07. [#245](https://github.com/kniazkov/g0at/issues/245) — Единый процесс уборки временной нативной сборки и извлечения
 - [ ] 08. [#178](https://github.com/kniazkov/g0at/issues/178) — Строгий разбор JSON описаний модулей
