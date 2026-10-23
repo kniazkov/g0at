@@ -20,3 +20,5 @@ jobs:
           python-version: '3.13'
       - name: Check portable format vectors without regenerating them
         run: python docs/module-format-v1/test_reference.py
+      - name: Check production JSON schema tables
+        run: python scripts/generate_module_json_schema.py --check
