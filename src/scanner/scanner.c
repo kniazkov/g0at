@@ -18,6 +18,7 @@
 #include <memory.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 /** @brief The size of a tabulation (in columns). */
 #define TABULATION_SIZE 4
@@ -27,44 +28,55 @@
  *
  * The function modifies the input string directly and does not allocate additional memory.
  */
-static void remove_comments_and_carriage_returns(goat_char_t *code) {
-    int i = 0;
-    while (code[i] != U'\0') {
-        if (code[i] == U'\r') {
-            code[i] = U' ';
-            i++;
-        } else if (code[i] == U'/' && code[i + 1] == U'/') {
-            while (code[i] != U'\0' && code[i] != U'\n') {
-                code[i] = U' ';
-                i++;
+static void remove_comments_and_carriage_returns(goat_char_t *code, size_t length) {
+    size_t i = 0;
+    while (i < length) {
+        if (code[i] == U'"' || code[i] == U'\'') {
+            goat_char_t quote = code[i++];
+            while (i < length) {
+                if (code[i] == U'\\' && i + 1 < length) {
+                    i += 2;
+                    continue;
+                }
+                if (code[i++] == quote)
+                    break;
             }
-        } else if (code[i] == U'/' && code[i + 1] == U'*') {
-            code[i] = U' ';
-            code[i + 1] = U' ';
-            i += 2;
-            while (code[i] != U'\0' && !(code[i] == U'*' && code[i + 1] == U'/')) {
-                code[i] = U' ';
-                i++;
+        } else if (code[i] == U'\r') {
+            code[i++] = U' ';
+        } else if (i + 1 < length && code[i] == U'/' && code[i + 1] == U'/') {
+            while (i < length && code[i] != U'\n')
+                code[i++] = U' ';
+        } else if (i + 1 < length && code[i] == U'/' && code[i + 1] == U'*') {
+            code[i++] = U' ';
+            code[i++] = U' ';
+            while (i < length) {
+                if (i + 1 < length && code[i] == U'*' && code[i + 1] == U'/') {
+                    code[i++] = U' ';
+                    code[i++] = U' ';
+                    break;
+                }
+                if (code[i] != U'\n')
+                    code[i] = U' ';
+                ++i;
             }
-            if (code[i] == U'*' && code[i + 1] == U'/') {
-                code[i] = U' ';
-                code[i + 1] = U' ';
-                i += 2;
-            }
-        } else {
-            i++;
-        }
+        } else
+            ++i;
     }
 }
+
+/** @brief Outside the Unicode range, distinct from an embedded zero. */
+#define END_OF_SOURCE UINT32_MAX
 
 /** @brief Returns the current source character. */
 
 static inline goat_char_t get_char(scanner_t *scan) {
-    return *scan->position.code;
+    return scan->position.offset < scan->length ? *scan->position.code : END_OF_SOURCE;
 }
 
 /** @brief Returns the next character and updates the position of the scanner. */
 static goat_char_t next_char(scanner_t *scan) {
+    if (scan->position.offset >= scan->length)
+        return END_OF_SOURCE;
     goat_char_t current = *scan->position.code;
     if (current == U'\n') {
         scan->position.row++;
@@ -75,7 +87,8 @@ static goat_char_t next_char(scanner_t *scan) {
         scan->position.column++;
     }
     scan->position.offset++;
-    return *(++scan->position.code);
+    ++scan->position.code;
+    return get_char(scan);
 }
 
 /** @brief Accepts underscore and the identifier-letter ranges listed below. */
@@ -109,7 +122,7 @@ static bool is_letter(goat_char_t c) {
  */
 static bool is_operator(goat_char_t c) {
     const goat_char_t *operators = U"+-*/%=!<>^&|~.?";
-    return goat_strchr(operators, c) != NULL;
+    return c != 0 && goat_strchr(operators, c) != NULL;
 }
 
 /** @brief Keyword to token type mapping */
@@ -210,7 +223,7 @@ static void parse_string(scanner_t *scan, token_t *token) {
     string_builder_t builder;
     init_string_builder(&builder, 0);
     while (ch != '"') {
-        if (ch == U'\0') {
+        if (ch == END_OF_SOURCE) {
             token->type = TOKEN_ERROR;
             token->text.data = get_messages()->unclosed_quotation_mark;
             goto cleanup;
@@ -218,7 +231,7 @@ static void parse_string(scanner_t *scan, token_t *token) {
         if (ch == U'\\') {
             ch = next_char(scan);
             switch (ch) {
-                case U'\0':
+                case END_OF_SOURCE:
                     token->type = TOKEN_ERROR;
                     token->text.data = get_messages()->unclosed_quotation_mark;
                     goto cleanup;
@@ -277,7 +290,7 @@ static void parse_character(scanner_t *scan, token_t *token) {
         token->text.data = get_messages()->empty_character_literal;
         return;
     }
-    if (ch == U'\0') {
+    if (ch == END_OF_SOURCE) {
         token->type = TOKEN_ERROR;
         token->text.data = get_messages()->unclosed_quotation_mark;
         return;
@@ -285,7 +298,7 @@ static void parse_character(scanner_t *scan, token_t *token) {
     if (ch == U'\\') {
         ch = next_char(scan);
         switch (ch) {
-            case U'\0':
+            case END_OF_SOURCE:
                 token->type = TOKEN_ERROR;
                 token->text.data = get_messages()->unclosed_quotation_mark;
                 return;
@@ -303,7 +316,7 @@ static void parse_character(scanner_t *scan, token_t *token) {
                     if (digit == 16) {
                         token->type = TOKEN_ERROR;
                         token->text.data = get_messages()->invalid_character_literal;
-                        while (ch != U'\'' && ch != 0)
+                        while (ch != U'\'' && ch != END_OF_SOURCE)
                             ch = next_char(scan);
                         if (ch == U'\'')
                             next_char(scan);
@@ -338,7 +351,7 @@ static void parse_character(scanner_t *scan, token_t *token) {
                 token->text = format_string_to_arena(scan->memory->tokens,
                                                      get_messages()->invalid_escape_sequence,
                                                      ch);
-                while (ch != U'\'' && ch != U'\0')
+                while (ch != U'\'' && ch != END_OF_SOURCE)
                     ch = next_char(scan);
                 if (ch == U'\'')
                     next_char(scan);
@@ -348,7 +361,7 @@ static void parse_character(scanner_t *scan, token_t *token) {
         value = (uint32_t)ch;
     }
     ch = next_char(scan);
-    if (ch == U'\0') {
+    if (ch == END_OF_SOURCE) {
         token->type = TOKEN_ERROR;
         token->text.data = get_messages()->unclosed_quotation_mark;
         return;
@@ -356,7 +369,7 @@ static void parse_character(scanner_t *scan, token_t *token) {
     if (ch != U'\'') {
         token->type = TOKEN_ERROR;
         token->text.data = get_messages()->invalid_character_literal;
-        while (ch != U'\'' && ch != U'\0')
+        while (ch != U'\'' && ch != END_OF_SOURCE)
             ch = next_char(scan);
         if (ch == U'\'')
             next_char(scan);
@@ -433,10 +446,14 @@ scanner_t *create_scanner(const char *file_name,
                           parser_memory_t *memory,
                           token_groups_t *groups) {
     scanner_t *scan = alloc_zeroed_from_arena(memory->tokens, sizeof(scanner_t));
+    if (code.length > SIZE_MAX / sizeof(goat_char_t) - 1)
+        abort();
     size_t code_size = sizeof(goat_char_t) * (code.length + 1);
+    scan->length = code.length;
     scan->code = alloc_from_arena(memory->tokens, code_size);
-    memcpy(scan->code, code.data, code_size);
-    remove_comments_and_carriage_returns(scan->code);
+    memcpy(scan->code, code.data, code.length * sizeof(goat_char_t));
+    scan->code[code.length] = 0;
+    remove_comments_and_carriage_returns(scan->code, code.length);
     scan->position = (full_position_t){file_name, 1, 1, scan->code, 0};
     scan->memory = memory;
     scan->groups = groups;
@@ -451,7 +468,7 @@ token_t *get_token(scanner_t *scan) {
         ch = next_char(scan);
     }
 
-    if (ch == U'\0') {
+    if (ch == END_OF_SOURCE) {
         return NULL;
     }
 

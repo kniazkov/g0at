@@ -24,6 +24,9 @@ struct scanner_t {
     /** @brief Code processed by the scanner. */
     goat_char_t *code;
 
+    /** @brief Explicit source length; embedded zeros are not EOF. */
+    size_t length;
+
     /** @brief The current position in the source code. */
     full_position_t position;
 

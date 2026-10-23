@@ -181,6 +181,10 @@ static int encode_utf8_char(uint32_t w, char *c) {
 }
 
 char *encode_utf8_view(string_view_t input, size_t *size_ptr) {
+    if (size_ptr)
+        *size_ptr = 0;
+    if (!input.data)
+        return NULL;
     const goat_char_t *wstr = input.data;
     size_t remaining = input.length;
     const size_t init_capacity = 16;
@@ -225,6 +229,8 @@ char *encode_utf8(const goat_char_t *wstr) {
 }
 
 string_value_t decode_utf8_n(const char *str, size_t length) {
+    if (!str)
+        return NULL_STRING_VALUE;
     const char *end = str + length;
     string_builder_t builder;
     init_string_builder(&builder, 0);
@@ -314,6 +320,8 @@ string_value_t string_to_string_notation(const goat_char_t *prefix, const string
 }
 
 string_value_t format_string_view_vargs(string_view_t input, va_list args) {
+    if (!input.data)
+        return NULL_STRING_VALUE;
     const goat_char_t *format = input.data;
     const goat_char_t *end = format + input.length;
     const goat_char_t *ch = format;
@@ -474,6 +482,8 @@ goat_char_t unicode_towlower(goat_char_t ch) {
 }
 
 string_value_t unicode_string_case(string_view_t value, bool upper) {
+    if (!value.data)
+        return NULL_STRING_VALUE;
     string_builder_t builder;
     init_string_builder(&builder, value.length);
     for (size_t i = 0; i < value.length; ++i) {
@@ -545,6 +555,8 @@ string_value_t format_string_view(string_view_t format, ...) {
 }
 
 string_value_t decode_utf16(const uint16_t *input, size_t length) {
+    if (!input)
+        return NULL_STRING_VALUE;
     string_builder_t builder;
     init_string_builder(&builder, length);
     for (size_t i = 0; i < length; ++i) {
@@ -565,6 +577,10 @@ invalid:
 }
 
 uint16_t *encode_utf16(string_view_t input, size_t *length) {
+    if (length)
+        *length = 0;
+    if (!input.data)
+        return NULL;
     if (input.length > (SIZE_MAX / sizeof(uint16_t) - 1) / 2)
         abort();
     uint16_t *result = ALLOC((2 * input.length + 1) * sizeof(uint16_t));

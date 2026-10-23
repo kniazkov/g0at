@@ -82,6 +82,11 @@ println("%0\\0%1".format("A\\0B", "C"));
         assert run('--native', 'required', '--save-native', report, source, locale=locale) == expected
         fields = dict(line.split('=', 1) for line in report.read_text().splitlines())
         assert int(fields['succeeded']) >= 2 and fields['retries'] == '0', fields
+    raw = work/'raw-nul.goat'
+    raw.write_bytes(b'println("A\x00B".length); println("http://a/*b*/");')
+    assert run(raw) == b'3\nhttp://a/*b*/\n'
+    raw.write_bytes(b'println(1);\x00println(2);')
+    run(raw, ok=False)
     # Compile-time casing and runtime native casing must agree with fixed results.
     print('[ ok ] Unicode: independent fixture, legacy rejection, NULs, VM/folding/native, locales')
 
