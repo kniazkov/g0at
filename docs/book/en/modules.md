@@ -4025,7 +4025,7 @@ Existing binary programs and native artifacts need not remain backward compatibl
 
 Reset version numbers together with the reader/writer, tests and documentation adopting the new contract. The new format identification must distinguish all previous formats, including historical versions numbered 1. Merely replacing FORMAT_VERSION while retaining platform-dependent bytes is insufficient. Reject old files with a clear rebuild diagnostic, without a legacy reader or automatic migration.
 
-First, #250 removes wchar_t dependence from serialized strings; next, #251 specifies and implements the portable representation of the remaining sections. Both precede #244 and the other module-system stages. They define the necessary binary specification themselves; #244 incorporates their results into the overall contract, avoiding a dependency cycle. #184 validates module instructions and references on top of the resulting codec.
+Complete the current specification and golden-data task #244 first. The first implementation task after it closes is #250: modernize the entire string library and migrate its consumers to portable 32-bit characters. Then #251 implements the portable representation of the remaining binary sections. Closing #244 does not depend on completing these implementations; #184 validates module instructions and references on top of the resulting codec.
 
 The string stage defines encoding, lengths, offsets, Unicode rules and embedded U+0000 before implementation; the accepted representation is UTF-32LE: four bytes per code point, with direct use of the buffer in the VM. The exact U+0000 policy is not yet approved. Changing the on-disk representation must not silently alter language string semantics. Acceptance includes golden bytes, non-BMP characters, malformed data and cross-reading on Windows/Linux. Full portability also requires explicit numeric, instruction and table serialization without raw C structures; native machine code remains platform-specific.
 
@@ -4038,3 +4038,13 @@ Use the loaded buffer directly: validate sizes, offsets, alignment and values, t
 Direct access to UTF-32LE as native 32-bit values applies on little-endian platforms. Big-endian systems cannot simultaneously promise identical bytes and no conversion; this is a separate support constraint. Unicode validation does not imply decoding into another representation. Embedded U+0000 and terminator rules still need specification.
 
 The general #251 principle is a specified portable memory-image layout suitable for direct use after validation and pointer setup. Do not require unpacking every section into a separate internal format. Saving a buffer is valid when its layout already follows the file contract; an arbitrary ABI-dependent dump of C structures does not.
+
+## Complete string-library modernization (#250)
+
+The first implementation task after #244 closes migrates the entire string subsystem to one portable 32-bit Unicode element. Use a project type name based on char32_t from <uchar.h>, with U"..." and U'...' static literals. Build checks enforce eight-bit bytes, exactly four bytes per element and UTF-32; an unsuitable configuration must not compile silently.
+
+Migrate string_view_t, string_value_t, string_builder_t, related slices and string containers, STATIC_STRING, empty values, view/value conversions and deallocation. Preserve ownership, lifetime and null-versus-empty contracts. String lengths count 32-bit elements; buffer sizes and file offsets use explicitly identified bytes with overflow checks.
+
+Extend the library with length, comparison, search, copying, building, escaping, formatting, numeric parsing/output and required Unicode operations to cover existing consumers. Migrate the compiler, VM, diagnostics, static messages, C generator and its runtime, tests and other consumers. Do not cast the new type to call wcs*/wmem*/wide printf functions: the corresponding operations must consume the new type directly.
+
+Convert UTF-8 and UTF-16 at I/O and system API boundaries. Internal strings do not depend on wchar_t or the current locale. Bytecode string regions remain UTF-32LE and directly usable from the loaded buffer on supported little-endian platforms. Acceptance covers Windows/Linux, non-BMP characters, matching operation results and bytes, ownership/slices, size boundaries, malformed Unicode and absence of string transcoding during bytecode loading.
