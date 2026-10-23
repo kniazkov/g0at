@@ -108,7 +108,7 @@ def ready(lines, marker=b"READY\n"):
     while True:
         line = lines.get(timeout=8)
         assert line is not None, pids
-        if line == marker:
+        if line.rstrip(b"\r\n") == marker.rstrip(b"\r\n"):
             return pids
         pids.append(int(line))
 
