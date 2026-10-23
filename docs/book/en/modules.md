@@ -299,7 +299,7 @@ goat-inspect geometry.gbin
 
 Include both in the distribution and package tests. Share reading, validation, and packaging code. Merge validates all inputs and matching names, versions, and main hashes before writing through a temporary file. Failure preserves existing output.
 
-Inspect checks loading and all declared native symbols in a child process without calling functions. Corruption, loading failure, or a missing symbol produces a nonzero exit code. No variant for the current platform is a normal result reported to the user.
+Inspect checks loading and all declared native symbols in a child process without calling functions. Corruption or a missing declared symbol produces a nonzero exit code. Loading failure without an established contract violation produces a native-unavailability warning, not an inspection error. No variant for the current platform is a normal result reported to the user.
 
 During normal execution, validate all symbols immediately after loading and before the first call. One missing symbol makes the whole selected library unusable: normal mode reports the cause once and uses the VM; required and inspect report an error.
 
@@ -3807,11 +3807,11 @@ Acceptance in #185/#189/#212/#214/#223/#224/#233: inspect rejects a missing tran
 
 ## goat-inspect exit statuses
 
-Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
+Inspect uses fixed exit statuses for handled completion: 0 means successful inspection, including native-unavailability warnings; 1 means a read, archive or dependency-graph validation error, an established ABI violation, or an inspection-infrastructure or cleanup error; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
 
 Validate arguments before opening the inspected module or starting a probe. A missing required argument, unknown option or invalid --probe-timeout gives 2; a valid path to an inaccessible file gives 1. Multiple inspection errors still give 1 and remain in the report. Normal help or version output gives 0.
 
-Absence of a compatible native variant is not itself an error: if other checks pass, return 0 and mark the probe as not performed for this reason. A nonzero exit status or crash of the probe child is recorded in its result; inspect returns 1 instead of copying the child's status as its own.
+Absence of a compatible native variant is not itself an error: if other checks pass, return 0 and mark the probe as not performed for this reason. A nonzero exit status or crash of the probe child is recorded in its result; this is a native-unavailability warning, not an independent reason to return 1. Inspect does not copy the child's status as its own.
 
 The same rules apply to text and JSON output. External forced termination of inspect itself is not handled completion and promises neither a status from 0/1/2 nor a completed report.
 
@@ -3875,7 +3875,7 @@ Acceptance in #214/#223: omission gives 5 seconds; explicit 1 and 5 are accepted
 
 The default goat-inspect load probe timeout is 5 seconds; a command option allows the user to change it. Measure the deadline using a monotonic clock from the start of the child launch attempt, not from library loading or the first received message. Process startup, loading and obtaining the probe result share one budget.
 
-Control messages and stdout/stderr activity neither restart nor extend the deadline. A probe that completes early does not wait for the remaining time. At the deadline, stop an unfinished probe, terminate the child and report a timeout with a nonzero inspect exit status. A late result does not cancel a recorded timeout; retain available captured output under the bounded-capture rules.
+Control messages and stdout/stderr activity neither restart nor extend the deadline. A probe that completes early does not wait for the remaining time. At the deadline, stop an unfinished probe, terminate the child and report a timeout as a native-unavailability warning; this alone does not make the inspect exit status nonzero. A late result does not cancel a recorded timeout; retain available captured output under the bounded-capture rules.
 
 Waiting for output or results must not block deadline enforcement. This is a diagnostic limit for inspect probes, not a limit on ordinary program execution or module initialization. Process termination and resource cleanup after expiry do not provide extra time for a successful load.
 
@@ -3981,7 +3981,7 @@ One goat-inspect invocation performs at most one load-probe attempt for the sele
 
 To check again, the user invokes inspect again. A previous invocation's result does not replace the new probe. This prevents hiding intermittent failures and automatically repeating constructor side effects. Agreed pre-load checks still apply: a damaged archive or absence of a compatible variant causes no load attempt.
 
-Acceptance in #214/#223: a library that can succeed only on its second attempt fails the first inspect invocation; an invocation counter confirms there are no retries after failure, crash or timeout. A separate user invocation runs a new probe. The report preserves the sole attempt's outcome and its cleanup errors.
+Acceptance in #214/#223: a library that can succeed only on its second attempt fails its first probe and produces a warning in the first inspect invocation; an invocation counter confirms there are no retries after failure, crash or timeout. A separate user invocation runs a new probe. The report preserves the sole attempt's outcome and its cleanup errors.
 
 ## Explicit library unloading in a probe
 
@@ -4010,3 +4010,11 @@ Preserve load and cleanup results separately in human-readable and JSON reports.
 The command cannot report overall success when cleanup is known to have failed, even if metadata and library checks passed. This rule concerns the inspect diagnostic utility; it does not change the agreed preservation of an ordinary program's explicit exit code on cleanup failure.
 
 Acceptance in #214/#223: successful loading and cleanup retain the normal successful outcome; successful loading with an injected descendant-termination or temporary-file-removal failure produces a nonzero exit status while retaining load success. On timeout/crash/load failure plus cleanup failure, report both causes. Verify structurally separate JSON results without parsing message and consistent human-readable reporting.
+
+## Native unavailability is a warning
+
+If the archives and complete dependency graph pass mandatory checks, a native-library loading failure, unloading error, probe crash or timeout means: "Native execution is unavailable; execution on the virtual machine remains possible." This is a warning rather than a critical problem; inspect returns 0 unless other errors occur. Inspect does not run the program or guarantee that its future VM execution will succeed.
+
+A failed probe remains failed: text and JSON retain the stage, cause and actual process outcome separately from the overall inspection result. A warning must not masquerade as a successful probe. Archive corruption, an ABI violation (including a missing declared symbol), a missing required dependency, and inspection-infrastructure or cleanup errors remain errors with status 1. These rules do not relax native required mode when running a program.
+
+Acceptance in #212/#214/#223: with a valid graph and successful cleanup, loading failure, unloading error, crash and timeout produce a warning and status 0; the same events accompanied by an independent error produce 1 and preserve both diagnostics. Text and JSON distinguish warnings, errors, failed probes and checks not performed.
