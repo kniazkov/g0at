@@ -111,3 +111,6 @@ target_link_libraries(child_process_testing PRIVATE core m)
 if(MINGW)
   set_property(TARGET child_process_testing APPEND_STRING PROPERTY LINK_FLAGS " -municode")
 endif()
+
+add_executable(cleanup_service_testing component_test/cleanup_service_testing.c)
+target_link_libraries(cleanup_service_testing PRIVATE core m)

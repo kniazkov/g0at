@@ -6,6 +6,7 @@
 
 #include "cli/launcher.h"
 #include "lib/allocate.h"
+#include "lib/cleanup_service.h"
 #include "lib/file_system.h"
 #include "lib/io.h"
 #include "lib/string_ext.h"
@@ -19,6 +20,9 @@
  * initialization errors).
  */
 int main(int argc, char **argv) {
+    int cleanup_code;
+    if (cleanup_service_main(argc, argv, &cleanup_code))
+        return cleanup_code;
     init_unicode_locale();
     init_messages();
 

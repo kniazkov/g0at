@@ -9,6 +9,7 @@
 
 #define CHILD_OUTPUT_LIMIT 65536
 #define CHILD_RESULT_ARGUMENT "@goat-result-channel@"
+#define CHILD_SERVICE_ARGUMENT "@goat-service-channel@"
 #define CHILD_PARENT_ARGUMENT "@goat-parent-watch@"
 
 typedef struct child_process_t child_process_t;
@@ -55,6 +56,8 @@ typedef struct {
     /** @brief Explicit independent service; owner death does not stop it. Service must own its
      * work. */
     bool survive_parent;
+    /** @brief Optional duplex endpoint; duplicated into child, caller retains its handle. */
+    uintptr_t service_channel;
 } child_options_t;
 
 uint64_t child_monotonic_ms(void);
@@ -64,6 +67,10 @@ child_deadline_t child_deadline_after(uint64_t timeout_ms);
 child_process_t *start_child_process(const child_options_t *options);
 /** @brief Pumps all pipes, enforcing the original deadline; returned storage belongs to child. */
 const child_result_t *wait_child_process(child_process_t *child);
+/** @brief Nonblocking while running; final tree cleanup may wait. Same serialization rules. */
+const child_result_t *poll_child_process(child_process_t *child);
+/** @brief Release a survive_parent service without stopping it. No effect on ordinary children. */
+void release_child_service(child_process_t *child);
 /** @brief Stops the entire owned tree and waits for cleanup, preserving available output. */
 const child_result_t *stop_child_process(child_process_t *child);
 /** @brief Stops a running child before freeing it. No concurrent calls on one object. */
