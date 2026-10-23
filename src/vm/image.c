@@ -148,7 +148,7 @@ bool validate_bytecode_image(bytecode_t *c) {
                 break;
             case CLOAD:
                 arg1 = true;
-                valid = goat_is_scalar(in.arg1);
+                /* Character values preserve all uint32 bits; strings require scalars. */
                 break;
             case GETINDEX:
             case SETINDEX:
