@@ -23,7 +23,7 @@
 - [x] 07. [#245](https://github.com/kniazkov/g0at/issues/245) — Единый процесс уборки временной нативной сборки и извлечения ([API и проверки](cleanup-service-api.md))
 - [x] 08. [#178](https://github.com/kniazkov/g0at/issues/178) — Строгий разбор JSON описаний модулей ([API и проверки](module-json-api.md))
 - [x] 09. [#179](https://github.com/kniazkov/g0at/issues/179) — Проверка имён и версий модулей
-- [ ] 10. [#180](https://github.com/kniazkov/g0at/issues/180) — Канонический JSON для хэширования
+- [x] 10. [#180](https://github.com/kniazkov/g0at/issues/180) — Канонический JSON для хэширования ([API и проверки](module-canonical-json.md))
 - [ ] 11. [#181](https://github.com/kniazkov/g0at/issues/181) — Основной SHA-256 модуля
 - [ ] 12. [#247](https://github.com/kniazkov/g0at/issues/247) — Компактная открытая ZIP-библиотека и общая C-обёртка
 - [ ] 13. [#182](https://github.com/kniazkov/g0at/issues/182) — Проверка ZIP-контейнера .gbin

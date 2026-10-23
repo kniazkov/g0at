@@ -125,7 +125,9 @@ Normalize targets by removing trailing zero version components (retain at least
 one), sorting unique CPU features; normalize native guard conditions by canonical
 bytes, rejecting duplicates and omitting an empty conditions array. Sort
 specializations by numeric specializationId; variants by canonical target bytes,
-ABI version and library hash. Their filenames do not select a platform.
+ABI version and library hash, then unsigned UTF-8 library name to break equal
+keys deterministically. This final tie-break only orders serialization; filenames
+do not select a platform.
 
 Canonical JSON sorts object keys by decoded unsigned UTF-8 bytes; arrays preserve
 their already normalized order. No whitespace or BOM. Quote/backslash use their

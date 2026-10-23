@@ -54,7 +54,8 @@ ID функций и внутренних имён файлов, отсутст�
 
 Это этап чтения и проверки **схемы**, а не готовый загрузчик `.gbin`: сверка entry
 с инструкциями, доказанных фактов, нативных контрактов и графа зависимостей,
-канонизация и хэширование реализуются отдельными задачами. Читатель не обещает,
+хэширование реализуется отдельной задачей. Канонизация и нормализация фактов
+реализованы в [#180](module-canonical-json.md). Читатель не обещает,
 что документ, прошедший схему, пройдёт эти последующие проверки. Подключение к
 сборщику исходников и merge также относится к их задачам.
 
@@ -119,7 +120,8 @@ search. Allocation failures during copying/normalization report
 
 This is schema reading/validation, not a complete `.gbin` loader. Entry/instruction
 consistency, analysis claims, native contracts, dependency graphs,
-canonicalization and hashing belong to their respective tasks. Passing the
+hashing belongs to its own task. Canonicalization and fact normalization are
+implemented in [#180](module-canonical-json.md). Passing the
 schema does not imply passing those later validators. Source builder and merge
 integration likewise belongs to their implementation tasks.
 

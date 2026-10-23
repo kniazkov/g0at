@@ -28,3 +28,22 @@ goat_module_json_error goat_module_json_read(const char *data,
                                              goat_module_json_kind kind,
                                              yyjson_doc **out);
 const char *goat_module_json_error_string(goat_module_json_error error);
+
+/** Canonical JSON syntax only: UTF-8 key order, exact int64, no array reordering.
+ * Rejects duplicate keys, malformed UTF-8, real numbers and non-integer RAW.
+ * Input is borrowed and unchanged. Free successful output with the function below.
+ * Length excludes the convenience trailing NUL. Failure clears output and length.
+ */
+goat_module_json_error goat_json_canonical(const yyjson_val *value, char **out, size_t *length);
+
+/** Validate and normalize a descriptor, then serialize canonical bytes.
+ * main_metadata selects exactly the v1 main-hash fields (metadata kind only).
+ * This does not calculate a hash or validate bytecode/native ABI.
+ */
+goat_module_json_error goat_module_json_write(const yyjson_doc *doc,
+                                              goat_module_json_kind kind,
+                                              bool main_metadata,
+                                              char **out,
+                                              size_t *length);
+/** Release canonical output using the allocator of the module library. */
+void goat_module_json_free(char *data);

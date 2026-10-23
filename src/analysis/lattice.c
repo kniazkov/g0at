@@ -9,6 +9,7 @@
 #include "lib/string_ext.h"
 
 #include <assert.h>
+#include <goat/integer_range.h>
 #include <math.h>
 
 /** @brief Top lattice element singleton. */
@@ -77,14 +78,15 @@ const lattice_element_t *make_integer_element() {
 }
 
 const lattice_element_t *make_integer_range_element(arena_t *arena, int64_t min, int64_t max) {
-    if (min > max) {
-        return make_bottom_element();
-    }
-    if (min == max) {
-        return make_integer_constant_element(arena, min);
-    }
-    if (min == INT64_MIN && max == INT64_MAX) {
-        return make_integer_element();
+    switch (goat_classify_integer_range(min, max)) {
+        case GOAT_RANGE_INVALID:
+            return make_bottom_element();
+        case GOAT_RANGE_CONSTANT:
+            return make_integer_constant_element(arena, min);
+        case GOAT_RANGE_FULL:
+            return make_integer_element();
+        case GOAT_RANGE_BOUNDED:
+            break;
     }
     integer_range_element_t *element = alloc_from_arena(arena, sizeof(integer_range_element_t));
     element->base.type = LATTICE_INTEGER_RANGE;
