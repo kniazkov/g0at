@@ -486,13 +486,25 @@ static bool windows_contract(const char *root) {
                                   NULL,
                                   &descriptor));
     ASSERT(same_acl(copied, original));
-    /* A real ACL denial must be distinguished from absence. */
+    /* Windows may permit attribute reads through parent-directory rights.
+     * Deny actual directory creation instead of assuming Unix stat semantics. */
+    wchar_t *parent = fs_wide(outside);
+    PACL parent_acl = NULL;
+    PSECURITY_DESCRIPTOR parent_descriptor = NULL;
+    ASSERT(!GetNamedSecurityInfoW(parent,
+                                  SE_FILE_OBJECT,
+                                  DACL_SECURITY_INFORMATION,
+                                  NULL,
+                                  NULL,
+                                  &parent_acl,
+                                  NULL,
+                                  &parent_descriptor));
     EXPLICIT_ACCESSW deny = access;
     deny.grfAccessMode = DENY_ACCESS;
-    deny.grfAccessPermissions = FILE_READ_ATTRIBUTES;
+    deny.grfAccessPermissions = FILE_ADD_SUBDIRECTORY;
     PACL blocked = NULL;
-    ASSERT(!SetEntriesInAclW(1, &deny, original, &blocked));
-    ASSERT(!SetNamedSecurityInfoW(ws,
+    ASSERT(!SetEntriesInAclW(1, &deny, parent_acl, &blocked));
+    ASSERT(!SetNamedSecurityInfoW(parent,
                                   SE_FILE_OBJECT,
                                   DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
                                   NULL,
@@ -500,16 +512,20 @@ static bool windows_contract(const char *root) {
                                   blocked,
                                   NULL));
     fs_error_t denied = {0};
-    ASSERT(!inspect_fs_path(sentinel, false, &info, &denied) && denied.status == FS_ACCESS);
+    char *child = join_fs_path(outside, "forbidden", NULL);
+    ASSERT(!create_fs_directory(child, &denied) && denied.status == FS_ACCESS);
     clear_fs_error(&denied);
-    ASSERT(!SetNamedSecurityInfoW(ws,
+    FREE(child);
+    ASSERT(!SetNamedSecurityInfoW(parent,
                                   SE_FILE_OBJECT,
                                   DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
                                   NULL,
                                   NULL,
-                                  original,
+                                  parent_acl,
                                   NULL));
     LocalFree(blocked);
+    LocalFree(parent_descriptor);
+    FREE(parent);
     LocalFree(copy);
     LocalFree(descriptor);
     LocalFree(acl);
