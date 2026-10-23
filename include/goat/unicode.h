@@ -2,7 +2,8 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Portable Unicode scalar storage and locale-independent operations.
  */
-#pragma once
+#ifndef GOAT_UNICODE_H
+#define GOAT_UNICODE_H
 #include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -116,3 +117,5 @@ size_t goat_case_mapping(const goat_char_t *s,
                          size_t index,
                          bool upper,
                          goat_char_t out[3]);
+
+#endif /* GOAT_UNICODE_H */
