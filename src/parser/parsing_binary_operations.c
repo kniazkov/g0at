@@ -4,6 +4,7 @@
  * @brief Defines reduction rules for handling binary operations.
  */
 
+#include "goat/unicode.h"
 #include "graph/binary_operation.h"
 #include "graph/logic.h"
 #include "lib/arena.h"
@@ -11,7 +12,6 @@
 #include "resources/messages.h"
 
 #include <assert.h>
-#include <wchar.h>
 
 /**
  * @brief Validates that both operands of a binary operator are valid expressions.
@@ -72,17 +72,17 @@ parsing_comparison_operators(token_t *operator, parser_memory_t * memory, token_
     expression_t *left_operand = (expression_t *)operator->left->node;
     expression_t *right_operand = (expression_t *)operator->right->node;
     expression_t *operation = NULL;
-    if (!wcscmp(operator->text.data, L"<"))
+    if (!goat_strcmp(operator->text.data, U"<"))
         operation = create_less_node(memory->graph, left_operand, right_operand);
-    else if (!wcscmp(operator->text.data, L"<="))
+    else if (!goat_strcmp(operator->text.data, U"<="))
         operation = create_less_or_equal_node(memory->graph, left_operand, right_operand);
-    else if (!wcscmp(operator->text.data, L">"))
+    else if (!goat_strcmp(operator->text.data, U">"))
         operation = create_greater_node(memory->graph, left_operand, right_operand);
-    else if (!wcscmp(operator->text.data, L">="))
+    else if (!goat_strcmp(operator->text.data, U">="))
         operation = create_greater_or_equal_node(memory->graph, left_operand, right_operand);
-    else if (!wcscmp(operator->text.data, L"=="))
+    else if (!goat_strcmp(operator->text.data, U"=="))
         operation = create_equal_node(memory->graph, left_operand, right_operand);
-    else if (!wcscmp(operator->text.data, L"!="))
+    else if (!goat_strcmp(operator->text.data, U"!="))
         operation = create_not_equal_node(memory->graph, left_operand, right_operand);
 
     assert(operation != NULL);
@@ -100,8 +100,8 @@ parsing_comparison_operators(token_t *operator, parser_memory_t * memory, token_
  */
 compilation_error_t *
 parsing_additive_operators(token_t *operator, parser_memory_t * memory, token_groups_t *groups) {
-    assert(operator->type == TOKEN_OPERATOR &&(operator->text.data[0] == L'+' || operator->text
-                                                   .data[0] == L'-'));
+    assert(operator->type == TOKEN_OPERATOR &&(operator->text.data[0] == U'+' || operator->text
+                                                   .data[0] == U'-'));
 
     compilation_error_t *error = check_operands(operator, memory);
     if (error) {
@@ -111,7 +111,7 @@ parsing_additive_operators(token_t *operator, parser_memory_t * memory, token_gr
     expression_t *left_operand = (expression_t *)operator->left->node;
     expression_t *right_operand = (expression_t *)operator->right->node;
     expression_t *operation;
-    if (operator->text.data[0] == L'+') {
+    if (operator->text.data[0] == U'+') {
         operation = create_addition_node(memory->graph, left_operand, right_operand);
     } else {
         operation = create_subtraction_node(memory->graph, left_operand, right_operand);
@@ -131,9 +131,9 @@ parsing_additive_operators(token_t *operator, parser_memory_t * memory, token_gr
 compilation_error_t *parsing_multiplicative_operators(token_t *operator,
                                                       parser_memory_t * memory,
                                                       token_groups_t *groups) {
-    assert(operator->type == TOKEN_OPERATOR &&(operator->text.data[0] == L'*' || operator->text
-                                                   .data[0] == L'/' || operator->text
-                                                   .data[0] == L'%'));
+    assert(operator->type == TOKEN_OPERATOR &&(operator->text.data[0] == U'*' || operator->text
+                                                   .data[0] == U'/' || operator->text
+                                                   .data[0] == U'%'));
 
     compilation_error_t *error = check_operands(operator, memory);
     if (error) {
@@ -143,11 +143,11 @@ compilation_error_t *parsing_multiplicative_operators(token_t *operator,
     expression_t *left_operand = (expression_t *)operator->left->node;
     expression_t *right_operand = (expression_t *)operator->right->node;
     expression_t *operation = NULL;
-    if (operator->text.data[0] == L'*') {
+    if (operator->text.data[0] == U'*') {
         operation = create_multiplication_node(memory->graph, left_operand, right_operand);
-    } else if (operator->text.data[0] == L'/') {
+    } else if (operator->text.data[0] == U'/') {
         operation = create_division_node(memory->graph, left_operand, right_operand);
-    } else if (operator->text.data[0] == L'%') {
+    } else if (operator->text.data[0] == U'%') {
         operation = create_modulo_node(memory->graph, left_operand, right_operand);
     }
     collapse_tokens_to_token(memory,
@@ -164,7 +164,7 @@ compilation_error_t *parsing_multiplicative_operators(token_t *operator,
  */
 compilation_error_t *
 parsing_power_operators(token_t *operator, parser_memory_t * memory, token_groups_t *groups) {
-    assert(operator->type == TOKEN_OPERATOR && operator->text.data[0] == L'*');
+    assert(operator->type == TOKEN_OPERATOR && operator->text.data[0] == U'*');
 
     compilation_error_t *error = check_operands(operator, memory);
     if (error) {
@@ -190,19 +190,19 @@ parsing_logic_operators(token_t *op, parser_memory_t *memory, token_groups_t *gr
         return error;
     expression_t *left = (expression_t *)op->left->node, *right = (expression_t *)op->right->node,
                  *expr = NULL;
-    if (!wcscmp(op->text.data, L"&&"))
+    if (!goat_strcmp(op->text.data, U"&&"))
         expr = create_logical_and_node(memory->graph, left, right);
-    if (!wcscmp(op->text.data, L"||"))
+    if (!goat_strcmp(op->text.data, U"||"))
         expr = create_logical_or_node(memory->graph, left, right);
-    if (!wcscmp(op->text.data, L"&"))
+    if (!goat_strcmp(op->text.data, U"&"))
         expr = create_bitwise_and_node(memory->graph, left, right);
-    if (!wcscmp(op->text.data, L"|"))
+    if (!goat_strcmp(op->text.data, U"|"))
         expr = create_bitwise_or_node(memory->graph, left, right);
-    if (!wcscmp(op->text.data, L"^"))
+    if (!goat_strcmp(op->text.data, U"^"))
         expr = create_bitwise_xor_node(memory->graph, left, right);
-    if (!wcscmp(op->text.data, L"<<"))
+    if (!goat_strcmp(op->text.data, U"<<"))
         expr = create_shift_left_node(memory->graph, left, right);
-    if (!wcscmp(op->text.data, L">>"))
+    if (!goat_strcmp(op->text.data, U">>"))
         expr = create_shift_right_node(memory->graph, left, right);
     assert(expr);
     collapse_tokens_to_token(memory, op->left, op->right, TOKEN_EXPRESSION, &expr->base);

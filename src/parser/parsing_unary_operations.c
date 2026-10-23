@@ -14,7 +14,7 @@ static compilation_error_t *
 reduce_power_tail(token_t *operand, parser_memory_t *memory, token_groups_t *groups) {
     token_t *power = operand->right;
     if (!power || power->type != TOKEN_OPERATOR || power->text.length != 2
-        || power->text.data[0] != L'*' || power->text.data[1] != L'*')
+        || power->text.data[0] != U'*' || power->text.data[1] != U'*')
         return NULL;
     if (power->right && power->right->type == TOKEN_EXPRESSION) {
         compilation_error_t *error = reduce_power_tail(power->right, memory, groups);
@@ -27,7 +27,7 @@ reduce_power_tail(token_t *operand, parser_memory_t *memory, token_groups_t *gro
 compilation_error_t *
 parsing_unary_operators(token_t *sign, parser_memory_t *memory, token_groups_t *groups) {
     if (sign->left && sign->left->type == TOKEN_EXPRESSION) {
-        if (sign->text.data[0] == L'+' || sign->text.data[0] == L'-')
+        if (sign->text.data[0] == U'+' || sign->text.data[0] == U'-')
             return NULL;
         return create_error_from_token(memory->errors,
                                        sign,
@@ -38,9 +38,9 @@ parsing_unary_operators(token_t *sign, parser_memory_t *memory, token_groups_t *
     token_t *operand = sign->right;
     if (operand && operand->type == TOKEN_INTEGER_MAGNITUDE) {
         token_t *tail = operand->right;
-        if (sign->text.data[0] != L'-'
+        if (sign->text.data[0] != U'-'
             || (tail && tail->type == TOKEN_OPERATOR && tail->text.length == 2
-                && tail->text.data[0] == L'*' && tail->text.data[1] == L'*'))
+                && tail->text.data[0] == U'*' && tail->text.data[1] == U'*'))
             return create_error_from_token(memory->errors,
                                            operand,
                                            CRITICAL,
@@ -63,13 +63,13 @@ parsing_unary_operators(token_t *sign, parser_memory_t *memory, token_groups_t *
         return error;
     expression_t *expr = (expression_t *)sign->right->node;
     switch (sign->text.data[0]) {
-        case L'+':
+        case U'+':
             expr = create_unary_plus_node(memory->graph, expr);
             break;
-        case L'-':
+        case U'-':
             expr = create_unary_minus_node(memory->graph, expr);
             break;
-        case L'~':
+        case U'~':
             expr = create_bitwise_not_node(memory->graph, expr);
             break;
         default:

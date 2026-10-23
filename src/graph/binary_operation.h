@@ -7,6 +7,7 @@
 #pragma once
 
 #include "expression.h"
+#include "goat/unicode.h"
 
 typedef struct binary_operation_t binary_operation_t;
 
@@ -42,7 +43,7 @@ node_t *binop_get_child(const node_t *node, size_t index);
  * `index`: Zero-based child position.
  * @return Static wide string literal or NULL.
  */
-const wchar_t *binop_get_tag(const node_t *node, size_t index);
+const goat_char_t *binop_get_tag(const node_t *node, size_t index);
 
 /** @brief Creates a new addition operation node. */
 expression_t *

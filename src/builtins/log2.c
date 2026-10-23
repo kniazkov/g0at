@@ -16,7 +16,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return interpret_unary_math(state, args, log2);
 }
 
-const builtin_function_t builtin_log2 = {.name = L"log2",
+const builtin_function_t builtin_log2 = {.name = U"log2",
                                          .min_args = 1,
                                          .effects = BUILTIN_EFFECT_NONE,
                                          .execute = execute,

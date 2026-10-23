@@ -46,7 +46,7 @@ bool test_function_lattice() {
 bool test_function_call_budget() {
     arena_t *arena = create_arena(8);
     parser_memory_t memory = {arena, arena, arena, arena};
-    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(L"var f=func(){return 7;};"));
+    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(U"var f=func(){return 7;};"));
     ASSERT(root);
     options_t *options = create_options();
     options->optimization_level = OPTIMIZATION_NONE;
@@ -76,8 +76,8 @@ bool test_function_call_state() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"var x=0;\nvar f=func(c){if(c){x=2;return 10;}x=4;return 20;};\n"
-                      L"var a=f(pi);\nvar y=x;\nvar b=f(true);\nvar z=x;\n"));
+        STATIC_STRING(U"var x=0;\nvar f=func(c){if(c){x=2;return 10;}x=4;return 20;};\n"
+                      U"var a=f(pi);\nvar y=x;\nvar b=f(true);\nvar z=x;\n"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);

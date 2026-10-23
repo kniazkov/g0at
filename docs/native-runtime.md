@@ -62,7 +62,7 @@ thread-local and translation-unit-local, so keep a generated module in one C fil
 
 String algorithms live in `src/native/strings.c`, built separately as
 `libgoat_native.a` (CMake target `goat_native`). The library contains no VM or
-allocator: memory and locale services are dispatched to the interpreter. It is
+allocator: memory and Unicode scalar services are dispatched to the interpreter. It is
 built with PIC and without LTO for linking into native DLL/SO modules. Match the
 archive's OS, architecture, CRT and ABI to the interpreter. Linked code becomes
 part of the resulting module; no additional Goat DLL/SO is needed at execution.

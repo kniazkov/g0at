@@ -4,12 +4,11 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
-
-#include <wchar.h>
 
 /** @brief Runtime executor for the method form `string.charAt(index)`. */
 static operation_result_t
@@ -26,7 +25,7 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
         FREE_STRING(value);
         return operation_exception(get_exception_invalid_argument());
     }
-    wchar_t ch = value.data[index];
+    goat_char_t ch = value.data[index];
     FREE_STRING(value);
     return operation_success(create_character_object(thread->process, (uint32_t)ch));
 }
@@ -56,7 +55,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_char_element();
 }
 
-const builtin_function_t builtin_char_at = {.name = L"charAt",
+const builtin_function_t builtin_char_at = {.name = U"charAt",
                                             .min_args = 1,
                                             .effects = BUILTIN_EFFECT_NONE,
                                             .execute = execute,

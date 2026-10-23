@@ -70,7 +70,7 @@ static node_vtbl_t arg_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"argument",
+    .type_name = U"argument",
     .get_data = arg_get_data,
     .get_property_count = get_property_count_of_declarator,
     .get_property = get_property_of_declarator,
@@ -163,7 +163,7 @@ static node_vtbl_t alist_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"argument list",
+    .type_name = U"argument list",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -272,7 +272,7 @@ static node_vtbl_t function_body_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"function body",
+    .type_name = U"function body",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -343,12 +343,12 @@ static node_t *fobj_get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t *fobj_get_child_tag(const node_t *node, size_t index) {
+static const goat_char_t *fobj_get_child_tag(const node_t *node, size_t index) {
     if (index == 0) {
-        return L"arguments";
+        return U"arguments";
     }
     if (index == 1) {
-        return L"body";
+        return U"body";
     }
     return NULL;
 }
@@ -358,14 +358,14 @@ static const wchar_t *fobj_get_child_tag(const node_t *node, size_t index) {
  * @return The resulting string after appending the header.
  */
 static string_value_t generate_header(const function_object_t *expr, string_builder_t *builder) {
-    append_static_string(builder, L"func(");
+    append_static_string(builder, U"func(");
     for (size_t index = 0; index < expr->arguments->arg_count; index++) {
         if (index > 0) {
-            append_static_string(builder, L", ");
+            append_static_string(builder, U", ");
         }
         append_string_view(builder, expr->arguments->arg_list[index]->base.name);
     }
-    return append_static_string(builder, L") ");
+    return append_static_string(builder, U") ");
 }
 
 /** @brief Implements @ref node_vtbl_t::calculate. */
@@ -390,14 +390,14 @@ fobj_generate_indented_goat_code(const node_t *node, source_builder_t *builder, 
     string_builder_t header;
     init_string_builder(&header, 16);
     generate_header(expr, &header);
-    append_formatted_source(builder, append_char(&header, L'{'));
+    append_formatted_source(builder, append_char(&header, U'{'));
     list_item_t *item = expr->body->statements->head;
     while (item) {
         statement_t *stmt = (statement_t *)item->value.ptr;
         generate_indented_goat_code_from_statement(stmt, builder, indent + 1);
         item = item->next;
     }
-    add_static_source(builder, indent, L"}");
+    add_static_source(builder, indent, U"}");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
@@ -471,13 +471,13 @@ static size_t fobj_get_property_count(const node_t *node) {
 }
 
 /** @brief Implements node_vtbl_t::get_property. */
-static const wchar_t *
+static const goat_char_t *
 fobj_get_property(const node_t *node, size_t index, node_display_value_t *out) {
     const function_summary_set_t *set = get_function_summaries(node);
     const function_summary_t *view = select_function_c_view(set);
     if (view && index == 0) {
         *out = (node_display_value_t){.text = function_signature_to_string(view)};
-        return L"C view";
+        return U"C view";
     }
     if (view)
         index--;
@@ -489,16 +489,16 @@ fobj_get_property(const node_t *node, size_t index, node_display_value_t *out) {
     string_value_t signature = function_signature_to_string(s);
     string_value_t result = lattice_to_string(s->return_type);
     out->kind = NODE_DISPLAY_VALUE_PLAIN;
-    out->text = format_string(L"%s \u2192 %s; %s; C=%s",
+    out->text = format_string(U"%s \u2192 %s; %s; C=%s",
                               signature.data,
                               result.data,
-                              function_summary_is_pure(s) ? L"pure" : L"unknown purity",
-                              s->c_support == FUNCTION_C_SUPPORTED     ? L"supported"
-                              : s->c_support == FUNCTION_C_UNSUPPORTED ? L"unsupported"
-                                                                       : L"unknown");
+                              function_summary_is_pure(s) ? U"pure" : U"unknown purity",
+                              s->c_support == FUNCTION_C_SUPPORTED     ? U"supported"
+                              : s->c_support == FUNCTION_C_UNSUPPORTED ? U"unsupported"
+                                                                       : U"unknown");
     FREE_STRING(signature);
     FREE_STRING(result);
-    return L"specialization";
+    return U"specialization";
 }
 
 /** @brief Virtual table for function object node operations. */
@@ -508,7 +508,7 @@ static node_vtbl_t fo_vtbl = {
     .is_pure = fobj_is_pure,
     .simplify = no_simplification,
     .collect_direct_effects = no_direct_effects,
-    .type_name = L"function object",
+    .type_name = U"function object",
     .get_data = no_data,
     .get_property_count = fobj_get_property_count,
     .get_property = fobj_get_property,

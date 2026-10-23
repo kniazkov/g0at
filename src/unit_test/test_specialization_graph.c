@@ -8,6 +8,7 @@
 #include "analysis/properties.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "goat/unicode.h"
 #include "graph/expression.h"
 #include "graph/visualization.h"
 #include "lib/allocate.h"
@@ -15,13 +16,12 @@
 #include "test_specialization_graph.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
-static size_t occurrences(const wchar_t *text, const wchar_t *part) {
+static size_t occurrences(const goat_char_t *text, const goat_char_t *part) {
     size_t count = 0;
-    while ((text = wcsstr(text, part))) {
+    while ((text = goat_strstr(text, part))) {
         count++;
-        text += wcslen(part);
+        text += goat_strlen(part);
     }
     return count;
 }
@@ -38,8 +38,8 @@ bool test_specialization_graph() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const f=func(n){if(n<1)return 0;if(n==1)return 1;return f(n-1)+f(n-2);};\n"
-                      L"var v=abs(10);var x=f(v);print(x);"));
+        STATIC_STRING(U"const f=func(n){if(n<1)return 0;if(n==1)return 1;return f(n-1)+f(n-2);};\n"
+                      U"var v=abs(10);var x=f(v);print(x);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -60,11 +60,11 @@ bool test_specialization_graph() {
     string_value_t before = analysis_collector_to_text(collector);
     uint32_t flags = function->flags;
     string_value_t dot = generate_graph_dot(function);
-    ASSERT(wcsstr(dot.data, L"C view"));
-    ASSERT(wcsstr(dot.data, L"(integer)"));
-    ASSERT(wcsstr(dot.data, L"C=supported") && wcsstr(dot.data, L"C=unknown"));
-    ASSERT(occurrences(dot.data, L"color=forestgreen") == nodes(function));
-    ASSERT(occurrences(dot.data, L"style=\"rounded,filled\" fillcolor=\"#f2faf2\"")
+    ASSERT(goat_strstr(dot.data, U"C view"));
+    ASSERT(goat_strstr(dot.data, U"(integer)"));
+    ASSERT(goat_strstr(dot.data, U"C=supported") && goat_strstr(dot.data, U"C=unknown"));
+    ASSERT(occurrences(dot.data, U"color=forestgreen") == nodes(function));
+    ASSERT(occurrences(dot.data, U"style=\"rounded,filled\" fillcolor=\"#f2faf2\"")
            == nodes(function));
     ASSERT(function->flags == flags);
     FREE_STRING(dot);
@@ -73,17 +73,17 @@ bool test_specialization_graph() {
     classify_node_properties(root, NULL);
     ASSERT(!(function->flags & (NODE_FLAG_PURE | NODE_FLAG_C_COMPATIBLE)));
     dot = generate_graph_dot(function);
-    ASSERT(!wcsstr(dot.data, L"C view"));
-    ASSERT(occurrences(dot.data, L"color=forestgreen") < nodes(function));
+    ASSERT(!goat_strstr(dot.data, U"C view"));
+    ASSERT(occurrences(dot.data, U"color=forestgreen") < nodes(function));
     FREE_STRING(dot);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!goat_strcmp(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     dot = generate_graph_dot(root);
-    ASSERT(!wcsstr(dot.data, L"C view") && !wcsstr(dot.data, L"color=forestgreen"));
+    ASSERT(!goat_strstr(dot.data, U"C view") && !goat_strstr(dot.data, U"color=forestgreen"));
     FREE_STRING(dot);
     destroy_options(options);
     destroy_arena(arena);
@@ -95,10 +95,10 @@ bool test_specialization_graph_boundaries() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const f=func(n){return n+1;};f(1);f(\"s\");\n"
-                      L"const unused=func(n){return n;};\n"
-                      L"const writer=func(n){print(n);return n;};writer(1);\n"
-                      L"if(false){print(\"dead\");}"));
+        STATIC_STRING(U"const f=func(n){return n+1;};f(1);f(\"s\");\n"
+                      U"const unused=func(n){return n;};\n"
+                      U"const writer=func(n){print(n);return n;};writer(1);\n"
+                      U"if(false){print(\"dead\");}"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -112,14 +112,14 @@ bool test_specialization_graph_boundaries() {
     ASSERT(!node_has_flag(writer, NODE_FLAG_PURE));
     ASSERT(!select_function_c_view(get_function_summaries(writer)));
     string_value_t dot = generate_graph_dot(root);
-    ASSERT(occurrences(dot.data, L"C view") == 1);
-    ASSERT(wcsstr(dot.data, L"C=unsupported"));
-    ASSERT(wcsstr(dot.data, L"color=lightgray fontcolor=gray70 tooltip=\"unreachable\""));
+    ASSERT(occurrences(dot.data, U"C view") == 1);
+    ASSERT(goat_strstr(dot.data, U"C=unsupported"));
+    ASSERT(goat_strstr(dot.data, U"color=lightgray fontcolor=gray70 tooltip=\"unreachable\""));
     FREE_STRING(dot);
     /* A grey function remains grey even if a caller supplies an old positive summary. */
     ((node_t *)function)->flags |= NODE_FLAG_UNREACHABLE;
     dot = generate_graph_dot(function);
-    ASSERT(wcsstr(dot.data, L"color=lightgray fontcolor=gray70 tooltip=\"unreachable\""));
+    ASSERT(goat_strstr(dot.data, U"color=lightgray fontcolor=gray70 tooltip=\"unreachable\""));
     FREE_STRING(dot);
     destroy_options(options);
     destroy_arena(arena);

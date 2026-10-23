@@ -40,7 +40,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 }
 
 static string_value_t generate_goat_code(const node_t *node) {
-    return node->vtbl->type == NODE_BREAK ? STATIC_STRING(L"break;") : STATIC_STRING(L"continue;");
+    return node->vtbl->type == NODE_BREAK ? STATIC_STRING(U"break;") : STATIC_STRING(U"continue;");
 }
 
 static void
@@ -54,7 +54,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
 
 static node_vtbl_t jump_vtbl = {
     .type = NODE_BREAK,
-    .type_name = L"break",
+    .type_name = U"break",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -86,7 +86,7 @@ node_t *create_loop_jump_node(arena_t *arena, bool next) {
     static node_vtbl_t continue_vtbl;
     continue_vtbl = jump_vtbl;
     continue_vtbl.type = NODE_CONTINUE;
-    continue_vtbl.type_name = L"continue";
+    continue_vtbl.type_name = U"continue";
     statement_t *node = alloc_zeroed_from_arena(arena, sizeof(*node));
     node->base.vtbl = next ? &continue_vtbl : &jump_vtbl;
     return &node->base;

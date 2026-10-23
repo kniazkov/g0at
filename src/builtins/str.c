@@ -4,12 +4,11 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "model/context.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
-
-#include <wchar.h>
 
 /** @brief Runtime executor for the plain call form `str(object)`. */
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
@@ -33,7 +32,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_string_element();
 }
 
-const builtin_function_t builtin_str = {.name = L"str",
+const builtin_function_t builtin_str = {.name = U"str",
                                         .min_args = 1,
                                         .effects = BUILTIN_EFFECT_NONE,
                                         .execute = execute,

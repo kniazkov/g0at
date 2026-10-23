@@ -9,7 +9,7 @@
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
     operation_result_t result = builtin_print.execute(args, count, thread);
     if (!result.is_exception)
-        print_utf8(L"\n");
+        print_utf8(U"\n");
     return result;
 }
 
@@ -19,7 +19,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return builtin_print.interpret(state, args, count);
 }
 
-const builtin_function_t builtin_println = {.name = L"println",
+const builtin_function_t builtin_println = {.name = U"println",
                                             .min_args = 1,
                                             .effects = BUILTIN_EFFECT_OUTPUT,
                                             .execute = execute,

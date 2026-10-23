@@ -83,16 +83,16 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
+static const goat_char_t *get_child_tag(const node_t *node, size_t index) {
     const if_else_t *stmt = (const if_else_t *)node;
     switch (index) {
         case 0:
-            return L"condition";
+            return U"condition";
         case 1:
-            return L"true";
+            return U"true";
         case 2:
             if (stmt->false_branch) {
-                return L"false";
+                return U"false";
             }
         default:
             return NULL;
@@ -140,21 +140,21 @@ static string_value_t generate_goat_code(const node_t *node) {
     const if_else_t *stmt = (const if_else_t *)node;
     string_builder_t builder;
     init_string_builder(&builder, 32);
-    append_static_string(&builder, L"if (");
+    append_static_string(&builder, U"if (");
     string_value_t cs = generate_goat_code_from_expression(stmt->condition);
     append_string_value(&builder, cs);
     FREE_STRING(cs);
-    append_static_string(&builder, L") ");
+    append_static_string(&builder, U") ");
     string_value_t tbs = generate_goat_code_from_statement(stmt->true_branch);
     append_string_value(&builder, tbs);
     FREE_STRING(tbs);
     if (stmt->false_branch) {
-        append_static_string(&builder, L" else ");
+        append_static_string(&builder, U" else ");
         string_value_t fbs = generate_goat_code_from_statement(stmt->false_branch);
         append_string_value(&builder, fbs);
         FREE_STRING(fbs);
     }
-    return append_static_string(&builder, L"");
+    return append_static_string(&builder, U"");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
@@ -162,16 +162,16 @@ static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const if_else_t *stmt = (const if_else_t *)node;
     if (node->parent && node->parent->vtbl->type == NODE_IF_ELSE) {
-        append_static_source(builder, L"if ("); // `else if` combination
+        append_static_source(builder, U"if ("); // `else if` combination
         indent--;
     } else {
-        add_static_source(builder, indent, L"if (");
+        add_static_source(builder, indent, U"if (");
     }
     generate_indented_goat_code_from_expression(stmt->condition, builder, indent);
-    append_static_source(builder, L") ");
+    append_static_source(builder, U") ");
     generate_indented_goat_code_from_statement(stmt->true_branch, builder, indent + 1);
     if (stmt->false_branch) {
-        add_static_source(builder, indent, L"else ");
+        add_static_source(builder, indent, U"else ");
         generate_indented_goat_code_from_statement(stmt->false_branch, builder, indent + 1);
     }
 }
@@ -321,7 +321,7 @@ static node_vtbl_t if_else_vtbl = {
     .is_pure = children_are_pure,
     .simplify = simplify,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"if-else",
+    .type_name = U"if-else",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

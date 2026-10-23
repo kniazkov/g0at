@@ -74,7 +74,7 @@ ok
 current='lazy allocator lifetime, alignment and concurrent instances'
 thread_flags=()
 if [[ ${OS:-} != Windows_NT ]]; then thread_flags=(-pthread); fi
-host_sources=("$repo_root/src/model/native_services.c" "$repo_root/src/lib/allocate.c")
+host_sources=("$repo_root/src/model/native_services.c" "$repo_root/src/lib/unicode.c" "$repo_root/src/lib/allocate.c")
 compile -DMEMORY_DEBUG -I"$repo_root/src" "${host_sources[@]}" "$repo_root/test/functional/native_allocator/driver.c" "${thread_flags[@]}" -o "$output_dir/allocator.exe"
 "$output_dir/allocator.exe"
 for mode in overflow corrupt; do

@@ -1,95 +1,95 @@
+#include "lib/string_ext.h"
 /** @file string_proto.c
  * @copyright 2026 Ivan Kniazkov
  * @brief The built-in String prototype and its method/property lookup.
  */
 #include "builtins/registry.h"
 #include "common_methods.h"
+#include "goat/unicode.h"
 #include "object.h"
-
-#include <wchar.h>
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_char_at(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"charAt");
+    return get_static_string_object(&key, U"charAt");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_substring(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"substring");
+    return get_static_string_object(&key, U"substring");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_contains(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"contains");
+    return get_static_string_object(&key, U"contains");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_index_of(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"indexOf");
+    return get_static_string_object(&key, U"indexOf");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_last_index_of(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"lastIndexOf");
+    return get_static_string_object(&key, U"lastIndexOf");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_starts_with(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"startsWith");
+    return get_static_string_object(&key, U"startsWith");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_ends_with(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"endsWith");
+    return get_static_string_object(&key, U"endsWith");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_is_empty(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"isEmpty");
+    return get_static_string_object(&key, U"isEmpty");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_is_blank(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"isBlank");
+    return get_static_string_object(&key, U"isBlank");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_to_upper_case(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"toUpperCase");
+    return get_static_string_object(&key, U"toUpperCase");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_to_lower_case(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"toLowerCase");
+    return get_static_string_object(&key, U"toLowerCase");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_replace(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"replace");
+    return get_static_string_object(&key, U"replace");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_repeat(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"repeat");
+    return get_static_string_object(&key, U"repeat");
 }
 
 /** @brief Immutable method-name key. */
 static object_t *get_string_format(void) {
     static object_static_string_t key;
-    return get_static_string_object(&key, L"format");
+    return get_static_string_object(&key, U"format");
 }
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
@@ -136,37 +136,52 @@ static object_t *proto_get_property(const object_t *obj, const object_t *key) {
     object_t *value = NULL;
     if (key->vtbl->type == TYPE_STRING) {
         string_value_t key_str = convert_object_to_string(key);
-        if (wcscmp(L"length", key_str.data) == 0) {
+        if (string_view_equals(VALUE_TO_VIEW(key_str), VALUE_TO_VIEW(STATIC_STRING(U"length")))) {
             value = get_integer_zero();
-        } else if (wcscmp(L"trim", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"trim")))) {
             value = get_function_trim();
-        } else if (wcscmp(L"charAt", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"charAt")))) {
             value = get_function_char_at();
-        } else if (wcscmp(L"substring", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"substring")))) {
             value = get_function_substring();
-        } else if (wcscmp(L"contains", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"contains")))) {
             value = get_function_contains();
-        } else if (wcscmp(L"indexOf", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"indexOf")))) {
             value = get_function_index_of();
-        } else if (wcscmp(L"lastIndexOf", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"lastIndexOf")))) {
             value = get_function_last_index_of();
-        } else if (wcscmp(L"startsWith", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"startsWith")))) {
             value = get_function_starts_with();
-        } else if (wcscmp(L"endsWith", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"endsWith")))) {
             value = get_function_ends_with();
-        } else if (wcscmp(L"isEmpty", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"isEmpty")))) {
             value = get_function_is_empty();
-        } else if (wcscmp(L"isBlank", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"isBlank")))) {
             value = get_function_is_blank();
-        } else if (wcscmp(L"toUpperCase", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"toUpperCase")))) {
             value = get_function_to_upper_case();
-        } else if (wcscmp(L"toLowerCase", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"toLowerCase")))) {
             value = get_function_to_lower_case();
-        } else if (wcscmp(L"replace", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"replace")))) {
             value = get_function_replace();
-        } else if (wcscmp(L"repeat", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"repeat")))) {
             value = get_function_repeat();
-        } else if (wcscmp(L"format", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"format")))) {
             value = get_function_format();
         }
     }

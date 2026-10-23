@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "goat/unicode.h"
 #include "lib/avl_tree.h"
 #include "lib/value.h"
 
@@ -44,16 +45,17 @@ scope_t *create_scope(arena_t *arena, scope_t *parent);
  * @brief Adds (or updates) a symbol in the given scope.
  * @return The previous node pointer if the symbol existed; otherwise NULL.
  */
-declarator_t *add_symbol_to_scope(scope_t *scope, const wchar_t *name, const declarator_t *node);
+declarator_t *
+add_symbol_to_scope(scope_t *scope, const goat_char_t *name, const declarator_t *node);
 
 /**
  * @brief Looks up a symbol in the given scope only.
  * @return The node pointer if found; otherwise NULL.
  */
-declarator_t *find_symbol_in_scope(const scope_t *scope, const wchar_t *name);
+declarator_t *find_symbol_in_scope(const scope_t *scope, const goat_char_t *name);
 
 /**
  * @brief Looks up a symbol in the scope and its parents (inner-to-outer search).
  * @return The node pointer if found; otherwise NULL.
  */
-declarator_t *find_symbol_in_scope_and_parents(const scope_t *scope, const wchar_t *name);
+declarator_t *find_symbol_in_scope_and_parents(const scope_t *scope, const goat_char_t *name);

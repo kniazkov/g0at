@@ -21,14 +21,14 @@ bool test_access_observation(void) {
     object_t *root = get_root_object();
     object_t *obj = create_user_defined_object_in_module(proc, (object_array_t){&root, 1}, foreign);
     access_domain_t *domain = get_object_access_domain(obj);
-    const wchar_t *names[] = {L"module", L"public", L"protected", L"private"};
+    const goat_char_t *names[] = {U"module", U"public", U"protected", U"private"};
     const access_modifier_t modifiers[] = {ACCESS_MODULE,
                                            ACCESS_PUBLIC,
                                            ACCESS_PROTECTED,
                                            ACCESS_PRIVATE};
     for (size_t i = 0; i < 4; i++) {
         object_t *key =
-            create_string_object(proc, (string_value_t){names[i], wcslen(names[i]), false});
+            create_string_object(proc, (string_value_t){names[i], goat_strlen(names[i]), false});
         ASSERT(create_object_field(obj,
                                    key,
                                    get_boolean_object(true),
@@ -46,7 +46,7 @@ bool test_access_observation(void) {
     add_function_access_domain(&observers[2], domain);
     /* Even a privileged observer must not enumerate internal same-key cells. */
     access_domain_t *hidden_domain = create_access_domain(foreign);
-    object_t *hidden_key = create_string_object(proc, STATIC_STRING(L"public"));
+    object_t *hidden_key = create_string_object(proc, STATIC_STRING(U"public"));
     ASSERT(create_object_field(obj,
                                hidden_key,
                                get_boolean_object(false),
@@ -58,10 +58,10 @@ bool test_access_observation(void) {
     add_function_access_domain(&observers[2], hidden_domain);
     DECREF(hidden_key);
     release_access_domain(hidden_domain);
-    const wchar_t *expected[] = {
-        L"[{\"public\":true}]",
-        L"[{\"module\":true,\"public\":true}]",
-        L"[{\"module\":true,\"private\":true,\"protected\":true,\"public\":true}]"};
+    const goat_char_t *expected[] = {
+        U"[{\"public\":true}]",
+        U"[{\"module\":true,\"public\":true}]",
+        U"[{\"module\":true,\"private\":true,\"protected\":true,\"public\":true}]"};
     size_t counts[] = {1, 2, 4};
     object_t *array = create_array_object(proc, (object_array_t){&obj, 1});
     for (size_t pass = 0; pass < 3; pass++) {
@@ -70,7 +70,7 @@ bool test_access_observation(void) {
             ASSERT(get_array_elements(keys).size == counts[i]);
             DECREF(keys);
             string_value_t text = object_to_string_with_access(array, &observers[i]);
-            ASSERT(!wcscmp(text.data, expected[i]));
+            ASSERT(!goat_strcmp(text.data, expected[i]));
             FREE_STRING(text);
         }
     }
@@ -110,7 +110,7 @@ bool test_access_identities(void) {
     ASSERT(get_access_domain_module(old) == proc->module);
     release_access_domain(old);
     object_static_string_t name = {0};
-    object_t *key = get_static_string_object(&name, L"clone");
+    object_t *key = get_static_string_object(&name, U"clone");
     ASSERT(get_object_property(get_root_object(), key));
     ASSERT(get_object_property_modifier(get_root_object(), key) == ACCESS_PUBLIC);
     ASSERT(get_object_module(get_root_object()) == get_builtin_module_identity());
@@ -124,7 +124,7 @@ bool test_access_identities(void) {
 bool test_access_cells(void) {
     process_t *proc = create_process();
     object_t *obj = new_object(proc);
-    object_t *key = create_string_object(proc, STATIC_STRING(L"x"));
+    object_t *key = create_string_object(proc, STATIC_STRING(U"x"));
     object_t *first = create_integer_object(proc, 10);
     object_t *second = create_integer_object(proc, 20);
     module_t *foreign = create_module_identity();
@@ -179,8 +179,8 @@ bool test_access_cells(void) {
 bool test_access_captures(void) {
     process_t *proc = create_process();
     object_t *storage = new_object(proc);
-    object_t *key = create_string_object(proc, STATIC_STRING(L"hidden"));
-    object_t *value = create_string_object(proc, STATIC_STRING(L"retained"));
+    object_t *key = create_string_object(proc, STATIC_STRING(U"hidden"));
+    object_t *value = create_string_object(proc, STATIC_STRING(U"retained"));
     field_cell_t *cell = create_object_field(storage,
                                              key,
                                              value,
@@ -210,7 +210,7 @@ bool test_access_captures(void) {
     field_capture_t *fc = fa->captures->data[0], *gc = ga->captures->data[0];
     ASSERT(fc->cell == gc->cell && fc->storage == gc->storage);
     string_value_t text = convert_object_to_string(fc->cell->object);
-    ASSERT(!wcscmp(text.data, L"retained"));
+    ASSERT(!goat_strcmp(text.data, U"retained"));
     FREE_STRING(text);
     /* An identical borrowed value must be retained before its old reference is dropped. */
     ASSERT(set_field_cell_value(fc->storage, fc->cell, fc->cell->object) == MSTAT_OK);
@@ -233,7 +233,7 @@ bool test_access_cycles(void) {
     for (int i = 0; i < 40; i++) {
         object_t *storage = new_object(proc);
         object_t *f = create_function_object(proc, NULL, 0, 0, storage, NULL, true);
-        object_t *key = create_string_object(proc, STATIC_STRING(L"cycle"));
+        object_t *key = create_string_object(proc, STATIC_STRING(U"cycle"));
         field_cell_t *cell = create_object_field(storage,
                                                  key,
                                                  f,
@@ -300,11 +300,11 @@ bool test_access_clone_methods(void) {
     size_t baseline = proc->objects.size;
     module_t *foreign = create_module_identity();
     object_static_string_t x_name = {0}, y_name = {0}, f_name = {0}, g_name = {0}, extra_name = {0};
-    object_t *x = get_static_string_object(&x_name, L"x");
-    object_t *y = get_static_string_object(&y_name, L"y");
-    object_t *f = get_static_string_object(&f_name, L"f");
-    object_t *g = get_static_string_object(&g_name, L"g");
-    object_t *extra = get_static_string_object(&extra_name, L"extra");
+    object_t *x = get_static_string_object(&x_name, U"x");
+    object_t *y = get_static_string_object(&y_name, U"y");
+    object_t *f = get_static_string_object(&f_name, U"f");
+    object_t *g = get_static_string_object(&g_name, U"g");
+    object_t *extra = get_static_string_object(&extra_name, U"extra");
     function_access_t caller;
     init_function_access(&caller, proc->module);
     for (int iteration = 0; iteration < 30; iteration++) {
@@ -399,10 +399,10 @@ bool test_access_flat_cells(void) {
     function_access_t caller;
     init_function_access(&caller, proc->module);
     object_static_string_t x_name = {0}, f_name = {0}, l_name = {0}, r_name = {0};
-    object_t *x = get_static_string_object(&x_name, L"x");
-    object_t *f = get_static_string_object(&f_name, L"f");
-    object_t *l = get_static_string_object(&l_name, L"left");
-    object_t *r = get_static_string_object(&r_name, L"right");
+    object_t *x = get_static_string_object(&x_name, U"x");
+    object_t *f = get_static_string_object(&f_name, U"f");
+    object_t *l = get_static_string_object(&l_name, U"left");
+    object_t *r = get_static_string_object(&r_name, U"right");
     size_t baseline = proc->objects.size;
     for (int iteration = 0; iteration < 20; iteration++) {
         object_t *root = get_root_object();
@@ -482,7 +482,7 @@ bool test_access_clone_metadata(void) {
     module_t *module = create_module_identity();
     object_t *obj = create_user_defined_object_in_module(proc, (object_array_t){&root, 1}, module);
     access_domain_t *extra = create_access_domain(module);
-    object_t *key = create_string_object(proc, STATIC_STRING(L"same"));
+    object_t *key = create_string_object(proc, STATIC_STRING(U"same"));
     field_cell_t *visible = create_object_field(obj,
                                                 key,
                                                 obj,

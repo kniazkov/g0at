@@ -10,13 +10,13 @@
 #include "analysis/reachability.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "goat/unicode.h"
 #include "graph/common_methods.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 static size_t count_nodes(const node_t *node) {
     if (is_replacement(node) || is_deletion(node))
@@ -30,7 +30,7 @@ static size_t count_nodes(const node_t *node) {
 bool test_node_property_events() {
     arena_t *arena = create_arena(16);
     parser_memory_t memory = {arena, arena, arena, arena};
-    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(L"var x = 1; +x;"));
+    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(U"var x = 1; +x;"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -58,12 +58,12 @@ bool test_node_property_events() {
     ASSERT(!find_analysis_event(collector, NULL, &query));
     /* Later analysis must not change the earlier event's meaning or rendering. */
     string_value_t before = analysis_collector_to_text(collector);
-    ASSERT(wcsstr(before.data, L"test.goat, 1.9: flags integer = 6 pure c-compatible"));
+    ASSERT(goat_strstr(before.data, U"test.goat, 1.9: flags integer = 6 pure c-compatible"));
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     ASSERT(numeric->node->flags == 0 && numeric->flags == 6);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!goat_strcmp(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);
@@ -84,7 +84,7 @@ static bool no_proofs(const node_t *node) {
 bool test_node_property_reset() {
     arena_t *arena = create_arena(16);
     parser_memory_t memory = {arena, arena, arena, arena};
-    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(L"if (false) { 1; } 2;"));
+    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(U"if (false) { 1; } 2;"));
     ASSERT(root);
     options_t *options = create_options();
     root->flags = UINT32_C(1) << 31; /* Reserved bits belong to other passes. */
@@ -95,7 +95,7 @@ bool test_node_property_reset() {
     ASSERT(!analyze(root, &memory, options, second));
     string_value_t a = analysis_collector_to_text(first);
     string_value_t b = analysis_collector_to_text(second);
-    ASSERT(!wcscmp(a.data, b.data));
+    ASSERT(!goat_strcmp(a.data, b.data));
     FREE_STRING(a);
     FREE_STRING(b);
     options->optimization_level = OPTIMIZATION_NONE;
@@ -133,7 +133,7 @@ static bool custom_c_subset(const node_t *node,
 bool test_node_virtual_analysis() {
     arena_t *arena = create_arena(16);
     parser_memory_t memory = {arena, arena, arena, arena};
-    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(L"7;"));
+    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(U"7;"));
     ASSERT(root);
     node_t *literal = get_node_child(get_node_child(root, 0), 0);
     node_vtbl_t overridden = *literal->vtbl;

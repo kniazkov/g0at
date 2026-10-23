@@ -29,7 +29,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
 }
 
 /** @brief Method descriptor; exposed through Object rather than the global registry. */
-static const builtin_function_t builtin_clone = {.name = L"clone",
+static const builtin_function_t builtin_clone = {.name = U"clone",
                                                  .min_args = 0,
                                                  .effects = BUILTIN_EFFECT_NONE,
                                                  .execute = execute,

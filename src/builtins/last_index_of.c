@@ -4,18 +4,17 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
 
-#include <wchar.h>
-
 /** @brief Searches for the last occurrence of a substring; returns -1 if absent. */
-static int64_t find_substring_last_index(const wchar_t *haystack,
+static int64_t find_substring_last_index(const goat_char_t *haystack,
                                          size_t haystack_len,
-                                         const wchar_t *needle,
+                                         const goat_char_t *needle,
                                          size_t needle_len) {
     if (needle_len == 0)
         return (int64_t)haystack_len;
@@ -23,7 +22,7 @@ static int64_t find_substring_last_index(const wchar_t *haystack,
         return -1;
     size_t i = haystack_len - needle_len;
     while (true) {
-        if (!wmemcmp(haystack + i, needle, needle_len))
+        if (!goat_memcmp(haystack + i, needle, needle_len))
             return (int64_t)i;
         if (i == 0)
             break;
@@ -76,7 +75,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_integer_element();
 }
 
-const builtin_function_t builtin_last_index_of = {.name = L"lastIndexOf",
+const builtin_function_t builtin_last_index_of = {.name = U"lastIndexOf",
                                                   .min_args = 1,
                                                   .effects = BUILTIN_EFFECT_NONE,
                                                   .execute = execute,

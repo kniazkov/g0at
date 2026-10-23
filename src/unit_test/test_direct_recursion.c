@@ -9,13 +9,13 @@
 #include "analysis/function_return.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "goat/unicode.h"
 #include "graph/declarations.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 static const analysis_event_t *integer_summary(analysis_collector_t *collector) {
     analysis_event_query_t query = {.kind = ANALYSIS_FUNCTION_SUMMARY};
@@ -33,7 +33,7 @@ bool test_direct_recursion_limits() {
     node_t *root = parse_analysis_test_program(
         &memory,
         STATIC_STRING(
-            L"const f=func(n){if(n<1)return 0;if(n==1)return 1;return f(n-1)+f(n-2);}; f(0);"));
+            U"const f=func(n){if(n<1)return 0;if(n==1)return 1;return f(n-1)+f(n-2);}; f(0);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -45,7 +45,7 @@ bool test_direct_recursion_limits() {
     ASSERT(event->function_summary->effects == FUNCTION_EFFECT_NONE);
     ASSERT(event->function_summary->c_support == FUNCTION_C_SUPPORTED);
     string_value_t before = analysis_collector_to_text(collector);
-    ASSERT(wcsstr(before.data, L"iterations="));
+    ASSERT(goat_strstr(before.data, U"iterations="));
     function_summary_set_t *set = get_function_summaries(event->node);
     function_call_graph_t *graph = build_function_call_graph(root, arena, 1024);
     size_t node_count = graph->count;
@@ -67,7 +67,7 @@ bool test_direct_recursion_limits() {
     ASSERT(!analyze(root, &memory, options, NULL));
     ASSERT(!set->head);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!goat_strcmp(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);
@@ -81,7 +81,7 @@ bool test_direct_recursion_captures() {
     node_t *root = parse_analysis_test_program(
         &memory,
         STATIC_STRING(
-            L"var external=3;\nconst f=func(n){var local=n;external=local;return local;};f(1);"));
+            U"var external=3;\nconst f=func(n){var local=n;external=local;return local;};f(1);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);

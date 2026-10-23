@@ -9,18 +9,18 @@
 #include "cli/options.h"
 #include "codegen/c_control.h"
 #include "codegen/c_module.h"
+#include "goat/unicode.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
-static node_t *analyzed(arena_t *arena, const wchar_t *source) {
+static node_t *analyzed(arena_t *arena, const goat_char_t *source) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, wcslen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, goat_strlen(source), false});
     options_t *options = create_options();
     bool success = root && !analyze(root, &memory, options, NULL);
     destroy_options(options);
@@ -36,7 +36,7 @@ static c_generated_expression_t counted_return(const node_t *node,
     if (!result.success)
         return result;
     source_builder_t *prelude = create_source_builder();
-    add_static_source(prelude, 0, L"goat_call_trace++;");
+    add_static_source(prelude, 0, U"goat_call_trace++;");
     c_emit_prelude(result.prelude, prelude, 0);
     if (result.prelude)
         destroy_source_builder(result.prelude);
@@ -45,100 +45,100 @@ static c_generated_expression_t counted_return(const node_t *node,
 }
 
 bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
-    add_static_source(output, 0, L"static volatile int goat_call_trace;");
+    add_static_source(output, 0, U"static volatile int goat_call_trace;");
 
     const struct {
-        const wchar_t *source, *check;
+        const goat_char_t *source, *check;
         size_t function_id;
         bool real;
     } fixtures[] = {
-        {L"const leaf=func(n){return n+1;};const f=func(n){return leaf(n)*2;};f(1);",
-         L"(4)==10 && goat_call_case0(INT64_MAX)==INT64_MAX",
+        {U"const leaf=func(n){return n+1;};const f=func(n){return leaf(n)*2;};f(1);",
+         U"(4)==10 && goat_call_case0(INT64_MAX)==INT64_MAX",
          2},
-        {L"const f=func(n){return leaf(n);};const leaf=func(n){return n+2;};f(1);", L"(5)==7", 1},
-        {L"const leaf=func(a,b){return a*10+b;};const f=func(n){var x=n;return "
-         L"leaf((x=x+1),(x=x+2));};f(1);",
-         L"(3)==46",
+        {U"const f=func(n){return leaf(n);};const leaf=func(n){return n+2;};f(1);", U"(5)==7", 1},
+        {U"const leaf=func(a,b){return a*10+b;};const f=func(n){var x=n;return "
+         U"leaf((x=x+1),(x=x+2));};f(1);",
+         U"(3)==46",
          2},
-        {L"const leaf=func(a,b){return a*10+b;};const f=func(n){var x=n;return "
-         L"leaf(x,(x=x+1));};f(1);",
-         L"(3)==34",
+        {U"const leaf=func(a,b){return a*10+b;};const f=func(n){var x=n;return "
+         U"leaf(x,(x=x+1));};f(1);",
+         U"(3)==34",
          2},
-        {L"const leaf=func(a){return a;};const f=func(n){var x=n;var v=leaf(x,(x=x+2));return "
-         L"v*10+x;};f(1);",
-         L"(3)==35",
+        {U"const leaf=func(a){return a;};const f=func(n){var x=n;var v=leaf(x,(x=x+2));return "
+         U"v*10+x;};f(1);",
+         U"(3)==35",
          2},
-        {L"const leaf=func(){return 7;};const f=func(n){var x=n;var v=leaf((x=x+1),(x=x+2));return "
-         L"v*10+x;};f(1);",
-         L"(3)==76",
+        {U"const leaf=func(){return 7;};const f=func(n){var x=n;var v=leaf((x=x+1),(x=x+2));return "
+         U"v*10+x;};f(1);",
+         U"(3)==76",
          2},
-        {L"const leaf=func(n){return n*2;};const pair=func(a,b){return a*10+b;};const "
-         L"f=func(n){var x=n;return pair(leaf(x=x+1),leaf(x=x+2));};f(1);",
-         L"(3)==92",
+        {U"const leaf=func(n){return n*2;};const pair=func(a,b){return a*10+b;};const "
+         U"f=func(n){var x=n;return pair(leaf(x=x+1),leaf(x=x+2));};f(1);",
+         U"(3)==92",
          3},
-        {L"const leaf=func(n){return n+0.5;};const f=func(n){return leaf(n)*2.0;};f(1);",
-         L"(2)==5.0",
+        {U"const leaf=func(n){return n+0.5;};const f=func(n){return leaf(n)*2.0;};f(1);",
+         U"(2)==5.0",
          2},
-        {L"const leaf=func(n){return n+n;};const f=func(n){return leaf(n);};f(1);f(1.5);",
-         L"(INT64_MAX)==INT64_MAX",
+        {U"const leaf=func(n){return n+n;};const f=func(n){return leaf(n);};f(1);f(1.5);",
+         U"(INT64_MAX)==INT64_MAX",
          2},
-        {L"const leaf=func(n){return n+n;};const f=func(n){return leaf(n);};f(1);f(1.5);",
-         L"(1.5)==3.0 && signbit(goat_call_case9(-0.0)) && isnan(goat_call_case9(NAN)) && "
-         L"goat_call_case9(INFINITY)==INFINITY",
+        {U"const leaf=func(n){return n+n;};const f=func(n){return leaf(n);};f(1);f(1.5);",
+         U"(1.5)==3.0 && signbit(goat_call_case9(-0.0)) && isnan(goat_call_case9(NAN)) && "
+         U"goat_call_case9(INFINITY)==INFINITY",
          2,
          true},
-        {L"const leaf=func(a,b){return a-b;};const f=func(n){return leaf(n,0.5);};f(1);",
-         L"(2)==1.5",
+        {U"const leaf=func(a,b){return a-b;};const f=func(n){return leaf(n,0.5);};f(1);",
+         U"(2)==1.5",
          2},
-        {L"const leaf=func(a,b){return a-b;};const f=func(n){return leaf(0.5,n);};f(1);",
-         L"(2)==-1.5",
+        {U"const leaf=func(a,b){return a-b;};const f=func(n){return leaf(0.5,n);};f(1);",
+         U"(2)==-1.5",
          2},
-        {L"const leaf=func(n){return n+3;};const alias=leaf;const another=alias;const "
-         L"f=func(n){return another(n);};f(1);",
-         L"(2)==5",
+        {U"const leaf=func(n){return n+3;};const alias=leaf;const another=alias;const "
+         U"f=func(n){return another(n);};f(1);",
+         U"(2)==5",
          2},
-        {L"const print=func(n){return n+1;};const f=func(n){return print(n);};f(1);", L"(3)==4", 2},
-        {L"const leaf=func(n){return n*2;};const f=func(n){var "
-         L"x=n;if(n<0){x=leaf(x=x-1);}else{x=leaf(x=x+1);}return x;};f(1);",
-         L"(-3)==-8 && goat_call_case14(3)==8",
+        {U"const print=func(n){return n+1;};const f=func(n){return print(n);};f(1);", U"(3)==4", 2},
+        {U"const leaf=func(n){return n*2;};const f=func(n){var "
+         U"x=n;if(n<0){x=leaf(x=x-1);}else{x=leaf(x=x+1);}return x;};f(1);",
+         U"(-3)==-8 && goat_call_case14(3)==8",
          2},
-        {L"const leaf=func(n){return n;};const f=func(n){var x=n;leaf(x=x+2);return x;};f(1);",
-         L"(3)==5",
+        {U"const leaf=func(n){return n;};const f=func(n){var x=n;leaf(x=x+2);return x;};f(1);",
+         U"(3)==5",
          2},
-        {L"const abs=func(n){return n-1;};const f=func(n){return abs(n);};f(1);", L"(-2)==-3", 2},
-        {L"const leaf=func(n){return n;};const f=func(n){return leaf(n,n>0);};f(1);",
-         L"(-7)==-7",
+        {U"const abs=func(n){return n-1;};const f=func(n){return abs(n);};f(1);", U"(-2)==-3", 2},
+        {U"const leaf=func(n){return n;};const f=func(n){return leaf(n,n>0);};f(1);",
+         U"(-7)==-7",
          2},
-        {L"const leaf=func(){return 42;};const f=func(){return leaf();};f();", L"()==42", 2},
-        {L"const leaf=func(n){return n;};const f=func(n){var x=n;return "
-         L"leaf(x=x+1)+leaf(x=x+2);};f(1);",
-         L"(3)==10",
+        {U"const leaf=func(){return 42;};const f=func(){return leaf();};f();", U"()==42", 2},
+        {U"const leaf=func(n){return n;};const f=func(n){var x=n;return "
+         U"leaf(x=x+1)+leaf(x=x+2);};f(1);",
+         U"(3)==10",
          2},
-        {L"const leaf=func(n){return n+2;};const middle=func(n){return leaf(n)*3;};const "
-         L"f=func(n){var x=middle(n);return leaf(x);};f(1);",
-         L"(2)==14",
+        {U"const leaf=func(n){return n+2;};const middle=func(n){return leaf(n)*3;};const "
+         U"f=func(n){var x=middle(n);return leaf(x);};f(1);",
+         U"(2)==14",
          3},
-        {L"const leaf=func(n){return n+1.0;};const f=func(n){return leaf(n)-n;};f(1.0);",
-         L"(0x1p53)==0.0",
+        {U"const leaf=func(n){return n+1.0;};const f=func(n){return leaf(n)-n;};f(1.0);",
+         U"(0x1p53)==0.0",
          2,
          true},
-        {L"const leaf=func(n){return n+1;};const f=func(n){var x=n;if(n<0){return "
-         L"leaf(x=x-1);}return leaf(x=x+1)+leaf(x=x+2);};f(1);",
-         L"(3)==12 && goat_call_trace==2",
+        {U"const leaf=func(n){return n+1;};const f=func(n){var x=n;if(n<0){return "
+         U"leaf(x=x-1);}return leaf(x=x+1)+leaf(x=x+2);};f(1);",
+         U"(3)==12 && goat_call_trace==2",
          2},
-        {L"const f=func(n){return atan(n);};f(1);", L"(1)==atan(1.0)", 1},
-        {L"const f=func(n){return atan(n,1);};f(1);", L"(2)==atan2(2.0,1.0)", 1},
-        {L"const f=func(n){var x=n;return atan(x=x+1,x=x+2);};f(1);", L"(1)==atan2(2.0,4.0)", 1},
-        {L"const f=func(n){return cos(n);};f(1);", L"(1)==cos(1.0)", 1},
-        {L"const f=func(n){return sin(n);};f(1.5);", L"(1.5)==sin(1.5)", 1, true},
-        {L"const f=func(n){return sqrt(n);};f(1);", L"(1)==sqrt(1.0)", 1},
-        {L"const f=func(n){return pow(n,2);};f(1);", L"(2)==pow(2.0,2.0)", 1},
-        {L"const f=func(a,b){return fmod(a,b);};f(7,3);", L"(7,3)==fmod(7.0,3.0)", 1},
-        {L"const f=func(n){var x=n;return pow(x=x+1,x=x+2);};f(1);", L"(1)==16.0", 1},
-        {L"const f=func(n){return max(n,1);};f(1);", L"(1)==fmax(1.0,1.0)", 1},
-        {L"const f=func(n){return min(n,1);};f(1);", L"(1)==fmin(1.0,1.0)", 1},
-        {L"const f=func(n){return sign(n);};f(-3);", L"(-3)==-1", 1},
-        {L"const f=func(n){return int(n);};f(1.5);", L"(1.5)==1", 1, true}};
+        {U"const f=func(n){return atan(n);};f(1);", U"(1)==atan(1.0)", 1},
+        {U"const f=func(n){return atan(n,1);};f(1);", U"(2)==atan2(2.0,1.0)", 1},
+        {U"const f=func(n){var x=n;return atan(x=x+1,x=x+2);};f(1);", U"(1)==atan2(2.0,4.0)", 1},
+        {U"const f=func(n){return cos(n);};f(1);", U"(1)==cos(1.0)", 1},
+        {U"const f=func(n){return sin(n);};f(1.5);", U"(1.5)==sin(1.5)", 1, true},
+        {U"const f=func(n){return sqrt(n);};f(1);", U"(1)==sqrt(1.0)", 1},
+        {U"const f=func(n){return pow(n,2);};f(1);", U"(2)==pow(2.0,2.0)", 1},
+        {U"const f=func(a,b){return fmod(a,b);};f(7,3);", U"(7,3)==fmod(7.0,3.0)", 1},
+        {U"const f=func(n){var x=n;return pow(x=x+1,x=x+2);};f(1);", U"(1)==16.0", 1},
+        {U"const f=func(n){return max(n,1);};f(1);", U"(1)==fmax(1.0,1.0)", 1},
+        {U"const f=func(n){return min(n,1);};f(1);", U"(1)==fmin(1.0,1.0)", 1},
+        {U"const f=func(n){return sign(n);};f(-3);", U"(-3)==-1", 1},
+        {U"const f=func(n){return int(n);};f(1.5);", U"(1.5)==1", 1, true}};
 
     for (size_t i = 0; i < sizeof(fixtures) / sizeof(*fixtures); i++) {
         arena_t *arena = create_arena(32);
@@ -151,8 +151,8 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
             bool real = entry->summary->parameter_count
                         && entry->summary->parameter_types[0]->type == LATTICE_REAL;
             bool choose = entry->function_id == fixtures[i].function_id && real == fixtures[i].real;
-            string_value_t name = choose ? format_string(L"goat_call_case%zu", i)
-                                         : format_string(L"goat_calls%zu_%s", i, entry->name.data);
+            string_value_t name = choose ? format_string(U"goat_call_case%zu", i)
+                                         : format_string(U"goat_calls%zu_%s", i, entry->name.data);
             entry->name = copy_string_to_arena(arena, name.data, name.length);
             FREE_STRING(name);
             if (choose)
@@ -189,27 +189,27 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
                 fprintf(stderr,
                         "Call emission status %d at %ls\n",
                         result.status,
-                        result.failed_node ? result.failed_node->vtbl->type_name : L"none");
+                        result.failed_node ? result.failed_node->vtbl->type_name : U"none");
                 FREE_STRING(result.source);
             }
         }
         if (i == 22)
-            add_static_source(checks, 1, L"goat_call_trace=0;");
+            add_static_source(checks, 1, U"goat_call_trace=0;");
         if (success)
             add_source(
                 checks,
                 1,
-                L"if (!(%s%s)) { fprintf(stderr, \"call fixture %zu failed\\n\"); return 107; }",
+                U"if (!(%s%s)) { fprintf(stderr, \"call fixture %zu failed\\n\"); return 107; }",
                 selected->name.data,
                 fixtures[i].check,
                 i);
         else
             fprintf(stderr, "Call fixture %zu failed: %ls\n", i, fixtures[i].source);
         if (success && i == 22) {
-            add_static_source(checks, 1, L"goat_call_trace=0;");
+            add_static_source(checks, 1, U"goat_call_trace=0;");
             add_static_source(checks,
                               1,
-                              L"if (goat_call_case22(-3)!=-3 || goat_call_trace!=1) return 108;");
+                              U"if (goat_call_case22(-3)!=-3 || goat_call_trace!=1) return 108;");
         }
         destroy_arena(arena);
         if (!success)
@@ -221,8 +221,8 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
 bool test_c_call_rejections(void) {
     arena_t *arena = create_arena(32);
     node_t *root = analyzed(arena,
-                            L"const leaf=func(n){return n+1;};const other=func(n){return n-1;};"
-                            L"const f=func(n){return leaf(n);};f(1);leaf(1.5);other(1);");
+                            U"const leaf=func(n){return n+1;};const other=func(n){return n-1;};"
+                            U"const f=func(n){return leaf(n);};f(1);leaf(1.5);other(1);");
     ASSERT(root);
     c_module_t *module = create_c_module(arena, root);
     ASSERT(module->available_count == 4);
@@ -269,7 +269,7 @@ bool test_c_call_rejections(void) {
     ASSERT(result.status == C_GENERATION_OK);
     FREE_STRING(result.source);
     summary = *caller->summary;
-    binding.name = (string_view_t){L"goat_x;", 7};
+    binding.name = (string_view_t){U"goat_x;", 7};
     result = generate_c_function(&summary, caller->name, NULL, &binding);
     ASSERT(result.status == C_GENERATION_INVALID_REQUEST && !result.source.data);
     binding.name = caller->name;
@@ -304,12 +304,12 @@ bool test_c_call_rejections(void) {
     ASSERT(result.status == C_GENERATION_NOT_PROVEN && !result.source.data);
     destroy_arena(arena);
 
-    const wchar_t *unsupported[] = {
-        L"var leaf=func(n){return n;};const f=func(n){return leaf(n);};f(1);",
-        L"const leaf=func(a,b){return a+b;};const f=func(n){return leaf(n);};f(1);",
-        L"const leaf=func(n){return n;};const f=func(n){return leaf(n,1/n);};f(1);",
-        L"const f=func(n){return min(n,\"x\");};f(1);",
-        L"const f=func(n){return atan(n,\"x\");};f(1);"};
+    const goat_char_t *unsupported[] = {
+        U"var leaf=func(n){return n;};const f=func(n){return leaf(n);};f(1);",
+        U"const leaf=func(a,b){return a+b;};const f=func(n){return leaf(n);};f(1);",
+        U"const leaf=func(n){return n;};const f=func(n){return leaf(n,1/n);};f(1);",
+        U"const f=func(n){return min(n,\"x\");};f(1);",
+        U"const f=func(n){return atan(n,\"x\");};f(1);"};
     for (size_t i = 0; i < sizeof(unsupported) / sizeof(*unsupported); i++) {
         arena = create_arena(32);
         root = analyzed(arena, unsupported[i]);

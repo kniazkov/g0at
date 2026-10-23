@@ -21,12 +21,12 @@ node_t *binop_get_child(const node_t *node, size_t index) {
     return NULL;
 }
 
-const wchar_t *binop_get_tag(const node_t *node, size_t index) {
+const goat_char_t *binop_get_tag(const node_t *node, size_t index) {
     if (index == 0) {
-        return L"left";
+        return U"left";
     }
     if (index == 1) {
-        return L"right";
+        return U"right";
     }
     return NULL;
 }

@@ -16,50 +16,50 @@
 #include <stdio.h>
 
 bool test_inheritance_parser(void) {
-    const wchar_t *valid[] = {L"A -> {}",
-                              L"[A,B,] -> {}",
-                              L"[] -> {}",
-                              L"(A) -> { x=1; }",
-                              L"f(1) -> {}",
-                              L"a.b[1] -> {}",
-                              L"(A -> {}).x",
-                              L"(A -> {})[1]",
-                              L"A -> {} -> {}",
-                              L"A -> { var v = B -> {}; }",
-                              L"[A -> {},B] -> {}",
-                              L"f(A -> {})",
-                              L"[A -> {},B -> {}]",
-                              L"[A /*comment*/, B,] -> {}",
-                              L"var v = A -> { this[true]=1; }",
-                              L"A -> { const f=func(){return x;} }",
-                              L"a = b = A -> {}",
-                              L"([A,B]) -> {}",
-                              L"[f(1),f(2)] -> {}"};
-    const wchar_t *invalid[] = {L"-> {}",
-                                L"A ->",
-                                L"A -> 1",
-                                L"A -> f()",
-                                L"A -> []",
-                                L"A -> ({})",
-                                L"A -> func() {}",
-                                L"[A,,B] -> {}",
-                                L"[A B] -> {}",
-                                L"[,A] -> {}",
-                                L"[A;B] -> {}",
-                                L"A -> -> {}",
-                                L"A -> {",
-                                L"A -> {} = 1",
-                                L"[var a=1] -> {}",
-                                L"[return A] -> {}"};
+    const goat_char_t *valid[] = {U"A -> {}",
+                                  U"[A,B,] -> {}",
+                                  U"[] -> {}",
+                                  U"(A) -> { x=1; }",
+                                  U"f(1) -> {}",
+                                  U"a.b[1] -> {}",
+                                  U"(A -> {}).x",
+                                  U"(A -> {})[1]",
+                                  U"A -> {} -> {}",
+                                  U"A -> { var v = B -> {}; }",
+                                  U"[A -> {},B] -> {}",
+                                  U"f(A -> {})",
+                                  U"[A -> {},B -> {}]",
+                                  U"[A /*comment*/, B,] -> {}",
+                                  U"var v = A -> { this[true]=1; }",
+                                  U"A -> { const f=func(){return x;} }",
+                                  U"a = b = A -> {}",
+                                  U"([A,B]) -> {}",
+                                  U"[f(1),f(2)] -> {}"};
+    const goat_char_t *invalid[] = {U"-> {}",
+                                    U"A ->",
+                                    U"A -> 1",
+                                    U"A -> f()",
+                                    U"A -> []",
+                                    U"A -> ({})",
+                                    U"A -> func() {}",
+                                    U"[A,,B] -> {}",
+                                    U"[A B] -> {}",
+                                    U"[,A] -> {}",
+                                    U"[A;B] -> {}",
+                                    U"A -> -> {}",
+                                    U"A -> {",
+                                    U"A -> {} = 1",
+                                    U"[var a=1] -> {}",
+                                    U"[return A] -> {}"};
     for (size_t pass = 0; pass < 2; pass++) {
-        const wchar_t **texts = pass ? invalid : valid;
+        const goat_char_t **texts = pass ? invalid : valid;
         size_t count = pass ? sizeof(invalid) / sizeof(*invalid) : sizeof(valid) / sizeof(*valid);
         for (size_t i = 0; i < count; i++) {
             arena_t *arena = create_arena(8);
             parser_memory_t memory = {arena, arena, arena, arena};
-            node_t *root =
-                parse_analysis_test_program(&memory,
-                                            (string_value_t){texts[i], wcslen(texts[i]), false});
+            node_t *root = parse_analysis_test_program(
+                &memory,
+                (string_value_t){texts[i], goat_strlen(texts[i]), false});
             ASSERT(pass ? root == NULL : root != NULL);
             if (root) {
                 string_value_t source = generate_goat_code_from_node(root);
@@ -75,7 +75,7 @@ bool test_inheritance_parser(void) {
 bool test_inheritance_bytecode(void) {
     arena_t *arena = create_arena(8);
     parser_memory_t memory = {arena, arena, arena, arena};
-    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(L"[A,B] -> {}"));
+    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(U"[A,B] -> {}"));
     ASSERT(root);
     node_t *expr = get_node_child(get_node_child(root, 0), 0);
     ASSERT(expr->vtbl->type == NODE_INHERITANCE);
@@ -124,7 +124,7 @@ bool test_inheritance_lifetime(void) {
     for (size_t i = 0; i < 100; i++) {
         object_t *parent = create_user_defined_object(proc, (object_array_t){&root, 1});
         object_static_string_t key_store = {0};
-        object_t *key = get_static_string_object(&key_store, L"x");
+        object_t *key = get_static_string_object(&key_store, U"x");
         ASSERT(create_object_property(parent, key, get_static_integer_object(1), true) == MSTAT_OK);
         object_t *child = create_user_defined_object(proc, (object_array_t){&parent, 1});
         enable_prototype_shadowing(child);

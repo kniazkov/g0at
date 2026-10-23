@@ -4,6 +4,7 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
@@ -11,7 +12,6 @@
 #include "registry.h"
 
 #include <stdint.h>
-#include <wchar.h>
 
 /** @brief Runtime executor for the method form `string.repeat(count)`. */
 static operation_result_t
@@ -33,7 +33,7 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
         INCREF(receiver);
         return operation_success(receiver);
     }
-    const size_t maximum_length = SIZE_MAX / sizeof(wchar_t) - 1;
+    const size_t maximum_length = SIZE_MAX / sizeof(goat_char_t) - 1;
     if (repeat_count > (int64_t)(maximum_length / value.length)) {
         FREE_STRING(value);
         return operation_exception(get_exception_invalid_argument());
@@ -67,7 +67,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_string_element();
 }
 
-const builtin_function_t builtin_repeat = {.name = L"repeat",
+const builtin_function_t builtin_repeat = {.name = U"repeat",
                                            .min_args = 1,
                                            .effects = BUILTIN_EFFECT_NONE,
                                            .execute = execute,

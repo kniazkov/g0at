@@ -6,9 +6,10 @@
 
 #pragma once
 
+#include "goat/unicode.h"
+
 #include <stdbool.h>
 #include <stdint.h>
-#include <wchar.h>
 
 /** @brief A union for storing different primitive types in a single collection element. */
 typedef union {
@@ -44,9 +45,9 @@ typedef struct {
      * @brief Pointer to immutable string data (or NULL).
      * @warning Never modify through this pointer - use `string_builder_t` for mutation.
      */
-    const wchar_t *data;
+    const goat_char_t *data;
 
-    /** @brief Length in wchar_t units, excluding the terminator. */
+    /** @brief Length in goat_char_t units, excluding the terminator. */
     size_t length;
 
     /**
@@ -59,13 +60,13 @@ typedef struct {
 /** @brief Wraps a wide string literal without taking ownership. */
 #define STATIC_STRING(str)                                                                         \
     (string_value_t) {                                                                             \
-        .data = (str), .length = sizeof(str) / sizeof(wchar_t) - 1, .should_free = false           \
+        .data = (str), .length = sizeof(str) / sizeof(goat_char_t) - 1, .should_free = false       \
     }
 
 /** @brief Macro to create empty string value. */
 #define EMPTY_STRING_VALUE                                                                         \
     (string_value_t) {                                                                             \
-        L"", 0, false                                                                              \
+        U"", 0, false                                                                              \
     }
 
 /** @brief Macro for creating a null (non-existing) string value. */
@@ -77,7 +78,7 @@ typedef struct {
 /** @brief Macro to clear the memory of a string if it needs to be cleared. */
 #define FREE_STRING(v)                                                                             \
     if ((v).should_free)                                                                           \
-    FREE((wchar_t *)((v).data))
+    FREE((goat_char_t *)((v).data))
 
 /**
  * @brief Borrowed string; its backing storage must outlive the view.
@@ -88,7 +89,7 @@ typedef struct {
      * @brief Pointer to immutable string data (or NULL).
      * @note Unlike string_value_t, views never own their data.
      */
-    const wchar_t *data;
+    const goat_char_t *data;
 
     /** @brief Precomputed length (excluding null terminator). */
     size_t length;
@@ -97,7 +98,7 @@ typedef struct {
 /** @brief Macro to create empty string view. */
 #define EMPTY_STRING_VIEW                                                                          \
     (string_view_t) {                                                                              \
-        L"", 0                                                                                     \
+        U"", 0                                                                                     \
     }
 
 /** @brief Borrows a view without transferring ownership. */

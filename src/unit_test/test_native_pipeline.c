@@ -46,11 +46,11 @@ static void deferred(node_t *node, code_builder_t *code, data_builder_t *data) {
 }
 
 /** @brief Destroys the source graph before running any generated code. */
-static bytecode_t *compile(const wchar_t *source, const char *command) {
+static bytecode_t *compile(const goat_char_t *source, const char *command) {
     arena_t *arena = create_arena(32);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, wcslen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, goat_strlen(source), false});
     options_t *options = create_options();
     bytecode_t *result = NULL;
     if (root && !analyze(root, &memory, options, NULL)) {
@@ -73,14 +73,14 @@ static bytecode_t *compile(const wchar_t *source, const char *command) {
     return result;
 }
 
-static object_t *variable(process_t *proc, const wchar_t *name) {
-    object_t *key = create_string_object(proc, (string_value_t){name, wcslen(name), false});
+static object_t *variable(process_t *proc, const goat_char_t *name) {
+    object_t *key = create_string_object(proc, (string_value_t){name, goat_strlen(name), false});
     object_t *value = get_object_property(proc->main_thread->context->data, key);
     DECREF(key);
     return value;
 }
 
-static bool integer(process_t *proc, const wchar_t *name, int64_t value) {
+static bool integer(process_t *proc, const goat_char_t *name, int64_t value) {
     object_t *object = variable(proc, name);
     return object && is_integer_object(object) && get_object_integer_value(object).value == value;
 }
@@ -94,9 +94,9 @@ static bool counters(process_t *proc, size_t attempts, size_t successes, size_t 
 
 /* Deferred readers keep the storage inspected by the host observable to analysis. */
 static bool dispatch(void) {
-    bytecode_t *code = compile(L"const f=func(n){return n;};const g=func(a,b){return a-b;};"
-                               L"const z=func(){return 42;};var a=f(7);var b=f(2.5);"
-                               L"var c=g(8,0.5);var d=z();func(){a;b;c;d;};",
+    bytecode_t *code = compile(U"const f=func(n){return n;};const g=func(a,b){return a-b;};"
+                               U"const z=func(){return 42;};var a=f(7);var b=f(2.5);"
+                               U"var c=g(8,0.5);var d=z();func(){a;b;c;d;};",
                                compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     /* A missing native binding must not silently pass through the original body. */
@@ -105,13 +105,13 @@ static bool dispatch(void) {
             code->instructions[code->instructions[i - 1].arg1] = (instruction_t){.opcode = END};
     process_t *proc = create_process();
     ASSERT(!run(proc, code));
-    ASSERT(integer(proc, L"a", 7) && integer(proc, L"d", 42));
-    ASSERT(variable(proc, L"b") && is_real_object(variable(proc, L"b"))
-           && get_object_real_value(variable(proc, L"b")).value == 2.5);
-    ASSERT(variable(proc, L"c") && get_object_real_value(variable(proc, L"c")).value == 7.5);
+    ASSERT(integer(proc, U"a", 7) && integer(proc, U"d", 42));
+    ASSERT(variable(proc, U"b") && is_real_object(variable(proc, U"b"))
+           && get_object_real_value(variable(proc, U"b")).value == 2.5);
+    ASSERT(variable(proc, U"c") && get_object_real_value(variable(proc, U"c")).value == 7.5);
     ASSERT(counters(proc, 4, 4, 0));
     free_bytecode(code);
-    object_t *function = variable(proc, L"f");
+    object_t *function = variable(proc, U"f");
     push_object_onto_stack(proc->main_thread->data_stack, create_integer_object(proc, 9));
     ASSERT(call_object(function, 1, NULL, proc->main_thread));
     object_t *result = pop_object_from_stack(proc->main_thread->data_stack);
@@ -122,18 +122,18 @@ static bool dispatch(void) {
     return true;
 }
 
-static const wchar_t *const recursion_source =
-    L"const f=func(n){if(n<=0)return 0;return f(n-1)+1;};"
-    L"var hits=199;var extras=0;"
-    L"var value=f(++hits,++extras);var small=f(3);func(){value;small;hits;extras;};";
+static const goat_char_t *const recursion_source =
+    U"const f=func(n){if(n<=0)return 0;return f(n-1)+1;};"
+    U"var hits=199;var extras=0;"
+    U"var value=f(++hits,++extras);var small=f(3);func(){value;small;hits;extras;};";
 
 static bool recursion(void) {
     bytecode_t *code = compile(recursion_source, compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     process_t *proc = create_process();
     ASSERT(!run(proc, code));
-    ASSERT(integer(proc, L"value", 200) && integer(proc, L"small", 3) && integer(proc, L"hits", 200)
-           && integer(proc, L"extras", 1));
+    ASSERT(integer(proc, U"value", 200) && integer(proc, U"small", 3) && integer(proc, U"hits", 200)
+           && integer(proc, U"extras", 1));
     ASSERT(counters(proc, 2, 1, 1));
     free_bytecode(code);
     destroy_process(proc);
@@ -141,14 +141,14 @@ static bool recursion(void) {
 }
 
 static bool mutual(void) {
-    bytecode_t *code = compile(L"const a=func(n){if(n<=0)return 0;return b(n-1)+1;};"
-                               L"const b=func(n){if(n<=0)return 0;return a(n-1)+1;};"
-                               L"var value=a(150);var small=b(4);func(){value;small;};",
+    bytecode_t *code = compile(U"const a=func(n){if(n<=0)return 0;return b(n-1)+1;};"
+                               U"const b=func(n){if(n<=0)return 0;return a(n-1)+1;};"
+                               U"var value=a(150);var small=b(4);func(){value;small;};",
                                compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     process_t *proc = create_process();
     ASSERT(!run(proc, code));
-    ASSERT(integer(proc, L"value", 150) && integer(proc, L"small", 4));
+    ASSERT(integer(proc, U"value", 150) && integer(proc, U"small", 4));
     ASSERT(counters(proc, 2, 1, 1));
     free_bytecode(code);
     destroy_process(proc);
@@ -156,13 +156,13 @@ static bool mutual(void) {
 }
 
 static bool shallow_calls(void) {
-    bytecode_t *code = compile(L"const f=func(n){if(n<=0)return 1;return f(n-1)+f(n-1);};"
-                               L"var value=f(12);var small=f(2);func(){value;small;};",
+    bytecode_t *code = compile(U"const f=func(n){if(n<=0)return 1;return f(n-1)+f(n-1);};"
+                               U"var value=f(12);var small=f(2);func(){value;small;};",
                                compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     process_t *proc = create_process();
     ASSERT(!run(proc, code));
-    ASSERT(integer(proc, L"value", 4096) && integer(proc, L"small", 4));
+    ASSERT(integer(proc, U"value", 4096) && integer(proc, U"small", 4));
     ASSERT(counters(proc, 2, 2, 0));
     free_bytecode(code);
     destroy_process(proc);
@@ -206,7 +206,7 @@ static void *adapter_worker(void *data) {
 
 static bool adapter_guards(void) {
     bytecode_t *code =
-        compile(L"const f=func(n){if(n<=0)return 0;return f(n-1)+1;};var x=f(3);", compiler);
+        compile(U"const f=func(n){if(n<=0)return 0;return f(n-1)+1;};var x=f(3);", compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     const goat_native_entry_v2_t *entry = recursive_entry(code);
     ASSERT(entry);
@@ -233,12 +233,12 @@ typedef struct {
 static void *small_stack_worker(void *data) {
     stack_task_t *task = data;
     task->success = !native_stack_has_headroom() && !run(task->proc, task->code)
-                    && integer(task->proc, L"x", 7) && counters(task->proc, 0, 0, 1);
+                    && integer(task->proc, U"x", 7) && counters(task->proc, 0, 0, 1);
     return NULL;
 }
 
 static bool small_stack(void) {
-    bytecode_t *code = compile(L"const f=func(n){return n;};var x=f(7);func(){x;};", compiler);
+    bytecode_t *code = compile(U"const f=func(n){return n;};var x=f(7);func(){x;};", compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     stack_task_t task = {.code = code, .proc = create_process()};
     ASSERT(run_on_small_stack(small_stack_worker, &task));
@@ -255,10 +255,10 @@ static bool failures(void) {
                                                 NATIVE_PREPARE_BIND_ERROR};
     for (size_t i = 0; i < 3; i++) {
         bytecode_t *code =
-            compile(L"const f=func(n){return n+1;};var x=f(7);func(){x;};", commands[i]);
+            compile(U"const f=func(n){return n+1;};var x=f(7);func(){x;};", commands[i]);
         ASSERT(code && preparation == statuses[i] && !code->native_functions);
         process_t *proc = create_process();
-        ASSERT(!run(proc, code) && integer(proc, L"x", 8) && counters(proc, 0, 0, 0));
+        ASSERT(!run(proc, code) && integer(proc, U"x", 8) && counters(proc, 0, 0, 0));
         free_bytecode(code);
         destroy_process(proc);
     }
@@ -266,7 +266,7 @@ static bool failures(void) {
 }
 
 static bool empty(void) {
-    bytecode_t *code = compile(L"var x=7;", "goat-missing-compiler-7f01");
+    bytecode_t *code = compile(U"var x=7;", "goat-missing-compiler-7f01");
     ASSERT(code && preparation == NATIVE_PREPARE_EMPTY && !code->native_functions);
     free_bytecode(code);
     return true;
@@ -275,15 +275,15 @@ static bool empty(void) {
 static bool large_frame(void) {
     string_builder_t source;
     init_string_builder(&source, 512);
-    append_string(&source, L"const f=func(n){var x=n;");
+    append_string(&source, U"const f=func(n){var x=n;");
     for (size_t i = 0; i < 80; i++)
-        append_string(&source, L"x=x+n;");
-    string_value_t text = append_string(&source, L"return x;};var value=f(1);func(){value;};");
+        append_string(&source, U"x=x+n;");
+    string_value_t text = append_string(&source, U"return x;};var value=f(1);func(){value;};");
     bytecode_t *code = compile(text.data, "goat-missing-compiler-7f01");
     FREE_STRING(text);
     ASSERT(code && preparation == NATIVE_PREPARE_EMPTY && omitted && !code->native_functions);
     process_t *proc = create_process();
-    ASSERT(!run(proc, code) && integer(proc, L"value", 81));
+    ASSERT(!run(proc, code) && integer(proc, U"value", 81));
     free_bytecode(code);
     destroy_process(proc);
     return true;

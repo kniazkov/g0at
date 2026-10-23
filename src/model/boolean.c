@@ -16,7 +16,7 @@ static int compare(const object_t *obj1, const object_t *obj2) {
 
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t false_to_string(const object_t *obj) {
-    return (string_value_t){L"false", 5, false};
+    return (string_value_t){U"false", 5, false};
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string_notation. */
@@ -26,7 +26,7 @@ static string_value_t false_to_string_notation(const object_t *obj) {
 
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t true_to_string(const object_t *obj) {
-    return (string_value_t){L"true", 4, false};
+    return (string_value_t){U"true", 4, false};
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string_notation. */

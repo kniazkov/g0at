@@ -42,9 +42,9 @@ c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
     source_builder_t *builder = create_source_builder();
     add_static_source(builder,
                       0,
-                      L"/* Generated Goat native specializations; no program entry point. */");
+                      U"/* Generated Goat native specializations; no program entry point. */");
     c_emit_headers(builder, 0);
-    add_static_source(builder, 0, L"");
+    add_static_source(builder, 0, U"");
     c_module_failure_t **tail = &output.failures;
     for (const c_module_function_t *entry = module ? module->head : NULL; entry;
          entry = entry->next) {
@@ -63,10 +63,10 @@ c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
             output.omitted_count++;
         }
     }
-    add_static_source(builder, 0, L"");
+    add_static_source(builder, 0, U"");
     add_source(builder,
                0,
-               L"/* Specializations: %zu emitted, %zu omitted. */",
+               U"/* Specializations: %zu emitted, %zu omitted. */",
                output.generated_count,
                output.omitted_count);
     for (const c_module_function_t *entry = module ? module->head : NULL; entry;

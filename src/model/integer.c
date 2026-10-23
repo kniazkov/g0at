@@ -146,7 +146,7 @@ static object_t *clone(process_t *process, object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t to_string(const object_t *obj) {
     int64_t value = get_object_integer_value(obj).value;
-    return format_string(L"%ld", value);
+    return format_string(U"%ld", value);
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string_notation. */

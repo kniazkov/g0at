@@ -16,7 +16,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return interpret_binary_math(state, args, hypot);
 }
 
-const builtin_function_t builtin_hypot = {.name = L"hypot",
+const builtin_function_t builtin_hypot = {.name = U"hypot",
                                           .min_args = 2,
                                           .effects = BUILTIN_EFFECT_NONE,
                                           .execute = execute,

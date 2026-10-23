@@ -44,7 +44,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_bottom_element();
 }
 
-const builtin_function_t builtin_abs = {.name = L"abs",
+const builtin_function_t builtin_abs = {.name = U"abs",
                                         .min_args = 1,
                                         .effects = BUILTIN_EFFECT_NONE,
                                         .execute = execute,

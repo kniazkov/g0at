@@ -40,27 +40,28 @@ static bytecode_t *make_code(const instruction_t *list, size_t count) {
 /** @brief An update of an undeclared name is allowed inside a function body and rejected at the top
  * level. */
 bool test_update_implicit_in_function(void) {
-    const wchar_t *valid[] = {L"const obj = {}; obj.getX = func() { return ++x };",
-                              L"const obj = {}; obj.getX = func() { return x-- };",
-                              L"const obj = {}; obj.setY = func() { --y; };"};
+    const goat_char_t *valid[] = {U"const obj = {}; obj.getX = func() { return ++x };",
+                                  U"const obj = {}; obj.getX = func() { return x-- };",
+                                  U"const obj = {}; obj.setY = func() { --y; };"};
     for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
         node_t *root =
-            parse_analysis_test_program(&m, (string_value_t){valid[i], wcslen(valid[i]), false});
+            parse_analysis_test_program(&m,
+                                        (string_value_t){valid[i], goat_strlen(valid[i]), false});
         ASSERT(root);
         options_t *options = create_options();
         ASSERT(!analyze(root, &m, options, NULL));
         destroy_options(options);
         destroy_arena(a);
     }
-    const wchar_t *invalid[] = {L"++x;", L"y--;"};
+    const goat_char_t *invalid[] = {U"++x;", U"y--;"};
     for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
-        node_t *root =
-            parse_analysis_test_program(&m,
-                                        (string_value_t){invalid[i], wcslen(invalid[i]), false});
+        node_t *root = parse_analysis_test_program(
+            &m,
+            (string_value_t){invalid[i], goat_strlen(invalid[i]), false});
         ASSERT(root);
         options_t *options = create_options();
         ASSERT(analyze(root, &m, options, NULL));
@@ -126,7 +127,8 @@ bool test_update_models_vm(void) {
                     ASSERT(get_object_integer_value(updated).value == expected_int[decrement][i]);
                 }
                 string_value_t text = bytecode_to_text(code);
-                ASSERT(wcsstr(text.data, L"DUP") && wcsstr(text.data, decrement ? L"DEC" : L"INC"));
+                ASSERT(goat_strstr(text.data, U"DUP")
+                       && goat_strstr(text.data, decrement ? U"DEC" : U"INC"));
                 FREE_STRING(text);
                 free_bytecode(code);
                 destroy_process(proc);
@@ -177,7 +179,7 @@ bool test_update_errors(void) {
     }
     /* DUP retains arbitrary values too, independent of numeric update support. */
     proc = create_process();
-    object_t *string = create_string_object(proc, (string_value_t){L"heap value", 10, false});
+    object_t *string = create_string_object(proc, (string_value_t){U"heap value", 10, false});
     push_object_onto_stack(proc->main_thread->data_stack, string);
     instruction_t instructions[] = {{.opcode = DUP}, {.opcode = POP}, {.opcode = END}};
     bytecode_t *code = make_code(instructions, 3);
@@ -185,7 +187,7 @@ bool test_update_errors(void) {
     collect_garbage(proc);
     ASSERT(peek_object_from_stack(proc->main_thread->data_stack, 0) == string);
     string_value_t text = convert_object_to_string(string);
-    ASSERT(text.length == 10 && !wmemcmp(text.data, L"heap value", 10));
+    ASSERT(text.length == 10 && !goat_memcmp(text.data, U"heap value", 10));
     FREE_STRING(text);
     free_bytecode(code);
     destroy_process(proc);
@@ -200,17 +202,17 @@ bool test_update_ast_parser(void) {
                                                                create_postfix_decrement_node};
     for (size_t i = 0; i < 4; i++) {
         arena_t *arena = create_arena(8);
-        variable_t *var = (variable_t *)create_variable_node(arena, (string_view_t){L"x", 1});
+        variable_t *var = (variable_t *)create_variable_node(arena, (string_view_t){U"x", 1});
         /* A real declarator vtable is needed for the immutability check. */
         variable_declaration_pair_t pair =
-            create_synthetic_variable_declaration_node(arena, (string_view_t){L"x", 1});
+            create_synthetic_variable_declaration_node(arena, (string_view_t){U"x", 1});
         var->declarator = pair.declarator;
         expression_t *node = factories[i](arena, &var->base);
         ASSERT(is_expression(node->base.vtbl->type));
         ASSERT(get_node_child_count(&node->base) == 1
                && get_node_child(&node->base, 0) == &var->base.base.base);
         ASSERT(!get_node_child(&node->base, 1) && !get_node_child_tag(&node->base, 1));
-        ASSERT(!wcscmp(get_node_child_tag(&node->base, 0), L"operand"));
+        ASSERT(!goat_strcmp(get_node_child_tag(&node->base, 0), U"operand"));
         abstract_state_t *state = create_abstract_state(arena);
         set_in_abstract_state(state, var->declarator, make_integer_constant_element(arena, 5));
         const lattice_element_t *value = calculate_expression(node, state, arena);
@@ -234,7 +236,7 @@ bool test_update_ast_parser(void) {
         generate_indented_goat_code_from_expression(node, sb, 0);
         string_value_t pretty = build_source(sb);
         ASSERT(pretty.length == source.length + 1
-               && !wmemcmp(pretty.data, source.data, source.length));
+               && !goat_memcmp(pretty.data, source.data, source.length));
         parser_memory_t memory = {arena, arena, arena, arena};
         ASSERT(parse_analysis_test_program(&memory, source));
         FREE_STRING(source);
@@ -245,41 +247,42 @@ bool test_update_ast_parser(void) {
         destroy_abstract_state(state);
         destroy_arena(arena);
     }
-    const wchar_t *valid[] = {L"var x=1; ++x",
-                              L"var x=1; x--",
-                              L"var x=1; ++((x))",
-                              L"var x=1; (x)++",
-                              L"var x=1; -x++ ** 2",
-                              L"var x=1; 2 ** --x",
-                              L"var x=1; x+++x",
-                              L"var x=1; x++ + ++x"};
-    const wchar_t *invalid[] = {L"++",
-                                L"--",
-                                L"++1",
-                                L"1++",
-                                L"++(1+2)",
-                                L"(1+2)--",
-                                L"++++x",
-                                L"x++++",
-                                L"++x++",
-                                L"++-x",
-                                L"f()++",
-                                L"++f()",
-                                L"(x=1)++",
-                                L"x++=2"};
+    const goat_char_t *valid[] = {U"var x=1; ++x",
+                                  U"var x=1; x--",
+                                  U"var x=1; ++((x))",
+                                  U"var x=1; (x)++",
+                                  U"var x=1; -x++ ** 2",
+                                  U"var x=1; 2 ** --x",
+                                  U"var x=1; x+++x",
+                                  U"var x=1; x++ + ++x"};
+    const goat_char_t *invalid[] = {U"++",
+                                    U"--",
+                                    U"++1",
+                                    U"1++",
+                                    U"++(1+2)",
+                                    U"(1+2)--",
+                                    U"++++x",
+                                    U"x++++",
+                                    U"++x++",
+                                    U"++-x",
+                                    U"f()++",
+                                    U"++f()",
+                                    U"(x=1)++",
+                                    U"x++=2"};
     for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
         ASSERT(
-            parse_analysis_test_program(&m, (string_value_t){valid[i], wcslen(valid[i]), false}));
+            parse_analysis_test_program(&m,
+                                        (string_value_t){valid[i], goat_strlen(valid[i]), false}));
         destroy_arena(a);
     }
     for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
-        ASSERT(
-            !parse_analysis_test_program(&m,
-                                         (string_value_t){invalid[i], wcslen(invalid[i]), false}));
+        ASSERT(!parse_analysis_test_program(
+            &m,
+            (string_value_t){invalid[i], goat_strlen(invalid[i]), false}));
         destroy_arena(a);
     }
     return true;

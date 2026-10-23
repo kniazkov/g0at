@@ -49,7 +49,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_boolean_element();
 }
 
-const builtin_function_t builtin_instance_of = {.name = L"instanceOf",
+const builtin_function_t builtin_instance_of = {.name = U"instanceOf",
                                                 .min_args = 1,
                                                 .effects = BUILTIN_EFFECT_NONE,
                                                 .execute = execute,

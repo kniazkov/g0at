@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "goat/unicode.h"
 #include "lib/value.h"
 
 typedef struct expression_t expression_t;
@@ -29,6 +30,6 @@ typedef struct {
     {                                                                                              \
         .c_equivalent = {                                                                          \
             .data = (c_type_name),                                                                 \
-            .length = sizeof(c_type_name) / sizeof(wchar_t) - 1                                    \
+            .length = sizeof(c_type_name) / sizeof(goat_char_t) - 1                                \
         }                                                                                          \
     }

@@ -134,7 +134,7 @@ array_to_string(object_t *obj, object_t *separator_object, const function_access
                                  object_to_string_with_access(&array->base, access)));
     string_value_t separator = convert_object_to_string(separator_object);
     string_builder_t builder = {0};
-    string_value_t text = STATIC_STRING(L"");
+    string_value_t text = STATIC_STRING(U"");
     for (size_t i = 0; i < array->count; i++) {
         if (i)
             append_string_value(&builder, separator);

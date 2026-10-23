@@ -34,13 +34,13 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
-    return STATIC_STRING(L"null");
+    return STATIC_STRING(U"null");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
-    append_static_source(builder, L"null");
+    append_static_source(builder, U"null");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
@@ -61,7 +61,7 @@ static node_vtbl_t null_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"null",
+    .type_name = U"null",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

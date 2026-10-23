@@ -14,7 +14,7 @@ compilation_error_t *
 parsing_if_else(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
     node_t *result;
     token_t *brackets = token->right;
-    if (brackets == NULL || brackets->type != TOKEN_BRACKET_PAIR || brackets->text.data[0] != L'('
+    if (brackets == NULL || brackets->type != TOKEN_BRACKET_PAIR || brackets->text.data[0] != U'('
         || brackets->children.count != 1 || brackets->children.first->type != TOKEN_EXPRESSION) {
         return create_error_from_token(memory->errors,
                                        token,

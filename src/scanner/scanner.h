@@ -7,9 +7,8 @@
 
 #pragma once
 
+#include "goat/unicode.h"
 #include "token.h"
-
-#include <wchar.h>
 
 typedef struct scanner_t scanner_t;
 typedef struct parser_memory_t parser_memory_t;
@@ -23,7 +22,7 @@ typedef struct parser_memory_t parser_memory_t;
  */
 struct scanner_t {
     /** @brief Code processed by the scanner. */
-    wchar_t *code;
+    goat_char_t *code;
 
     /** @brief The current position in the source code. */
     full_position_t position;

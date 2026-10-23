@@ -8,16 +8,16 @@
 #include "analysis/function_summary.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "goat/unicode.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 bool test_function_signature_types() {
     arena_t *arena = create_arena(16);
-    string_view_t arg = {L"x", 1};
+    string_view_t arg = {U"x", 1};
     node_t *function = create_function_object_node(arena, &arg, 1);
     function_summary_set_t *set = get_function_summaries(function);
     ASSERT(!set->head && !set->tail);
@@ -29,8 +29,8 @@ bool test_function_signature_types() {
         make_real_constant_element(arena, 1.5),
         make_real_constant_element(arena, -2.0),
         make_real_element(),
-        make_string_constant_element(arena, (string_view_t){L"a", 1}),
-        make_string_constant_element(arena, (string_view_t){L"b", 1}),
+        make_string_constant_element(arena, (string_view_t){U"a", 1}),
+        make_string_constant_element(arena, (string_view_t){U"b", 1}),
         make_string_element(),
         make_true_element(),
         make_false_element(),
@@ -82,7 +82,7 @@ bool test_function_signature_types() {
 
 bool test_function_signature_arguments() {
     arena_t *arena = create_arena(16);
-    string_view_t params[] = {{L"a", 1}, {L"b", 1}};
+    string_view_t params[] = {{U"a", 1}, {U"b", 1}};
     node_t *function = create_function_object_node(arena, params, 2);
     function_summary_set_t *set = get_function_summaries(function);
     const lattice_element_t *args[] = {make_integer_element(),
@@ -119,11 +119,11 @@ bool test_function_signature_calls() {
     node_t *root = parse_analysis_test_program(
         &memory,
         STATIC_STRING(
-            L"const f=func(n){return n;};\n"
-            L"f(10); f(20); f(1.5); f(\"x\"); f(true); f(false); f(); f(null); f(10, 99);\n"
-            L"const unused=func(x){return x;};\n"
-            L"const g=func(n){return n;}; g(10);\n"
-            L"const r=func(n){return r(n);}; r(10);\n"));
+            U"const f=func(n){return n;};\n"
+            U"f(10); f(20); f(1.5); f(\"x\"); f(true); f(false); f(); f(null); f(10, 99);\n"
+            U"const unused=func(x){return x;};\n"
+            U"const g=func(n){return n;}; g(10);\n"
+            U"const r=func(n){return r(n);}; r(10);\n"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -155,7 +155,7 @@ bool test_function_signature_calls() {
     analysis_collector_t *again = create_analysis_collector(arena);
     ASSERT(!analyze(root, &memory, options, again));
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!goat_strcmp(before.data, after.data));
     FREE_STRING(after);
     query.row = 1;
     size_t count = 0;

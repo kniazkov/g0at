@@ -10,11 +10,10 @@
 #include "c_lowering.h"
 #include "c_native.h"
 #include "c_string_methods.h"
+#include "goat/unicode.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
-
-#include <wchar.h>
 
 static bool same_signature(const function_summary_t *a, const function_summary_t *b) {
     if (!a || !b || a->function != b->function || a->parameter_count != b->parameter_count)
@@ -28,7 +27,7 @@ static bool same_signature(const function_summary_t *a, const function_summary_t
 }
 
 static bool same_name(string_view_t a, string_view_t b) {
-    return a.length == b.length && !wmemcmp(a.data, b.data, a.length);
+    return a.length == b.length && !goat_memcmp(a.data, b.data, a.length);
 }
 
 static bool usable(const function_summary_t *summary) {
@@ -152,7 +151,7 @@ c_generated_expression_t c_call(const node_t *node, c_generation_context_t *cont
         if (success) {
             arguments[i] = c_capture_operand(prelude, context, &argument, argument.type);
             if (i >= parameters)
-                add_source(prelude, 0, L"(void)%s;", arguments[i].data);
+                add_source(prelude, 0, U"(void)%s;", arguments[i].data);
         }
         destroy_c_expression(&argument);
     }
@@ -161,20 +160,20 @@ c_generated_expression_t c_call(const node_t *node, c_generation_context_t *cont
         string_builder_t call;
         init_string_builder(&call, 64);
         append_substring(&call, callee->name.data, callee->name.length);
-        append_char(&call, L'(');
+        append_char(&call, U'(');
         if (context->module_definition)
-            append_string(&call, L"g_context");
+            append_string(&call, U"g_context");
         for (size_t i = 0; i < parameters; i++) {
             if (i || context->module_definition)
-                append_string(&call, L", ");
+                append_string(&call, U", ");
             append_string_value(&call, arguments[i]);
         }
-        string_value_t expression = append_char(&call, L')');
-        value = format_string(L"g_t%zu", context->temporary_count++);
+        string_value_t expression = append_char(&call, U')');
+        value = format_string(U"g_t%zu", context->temporary_count++);
         add_source(prelude,
                    0,
-                   L"%s%s %s = %s;",
-                   type == C_VALUE_DOUBLE ? L"volatile " : L"",
+                   U"%s%s %s = %s;",
+                   type == C_VALUE_DOUBLE ? U"volatile " : U"",
                    c_type_name(type),
                    value.data,
                    expression.data);
@@ -201,17 +200,17 @@ void c_emit_prototype(const function_summary_t *summary,
     string_builder_t declaration;
     init_string_builder(&declaration, 64);
     append_string(&declaration, c_type_name(c_generation_return_type(&target)));
-    append_char(&declaration, L' ');
+    append_char(&declaration, U' ');
     append_substring(&declaration, name.data, name.length);
-    append_char(&declaration, L'(');
+    append_char(&declaration, U'(');
     if (with_allocator)
-        append_string(&declaration, L"const goat_native_context_v2_t *");
+        append_string(&declaration, U"const goat_native_context_v2_t *");
     else if (!summary->parameter_count)
-        append_string(&declaration, L"void");
+        append_string(&declaration, U"void");
     for (size_t i = 0; i < summary->parameter_count; i++) {
         if (i || with_allocator)
-            append_string(&declaration, L", ");
+            append_string(&declaration, U", ");
         append_string(&declaration, c_type_name(c_generation_parameter_type(&target, i)));
     }
-    add_formatted_source(builder, 0, append_string(&declaration, L");"));
+    add_formatted_source(builder, 0, append_string(&declaration, U");"));
 }

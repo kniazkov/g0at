@@ -29,34 +29,34 @@ bool test_character_scanner() {
     parser_memory_t memory = {arena, arena, arena, arena};
     token_groups_t groups;
     scanner_t *scan = create_scanner("program.goat",
-                                     STATIC_STRING(L"'a' '\\n' '\\'' '' 'ab' '\\q'"),
+                                     STATIC_STRING(U"'a' '\\n' '\\'' '' 'ab' '\\q'"),
                                      &memory,
                                      &groups);
-    const wchar_t *notations[] = {L"'a'", L"'\\n'", L"'\\''"};
+    const goat_char_t *notations[] = {U"'a'", U"'\\n'", U"'\\''"};
     for (size_t i = 0; i < 3; i++) {
         token_t *tok = get_token(scan);
         ASSERT(tok && tok->type == TOKEN_EXPRESSION && tok->node != NULL);
         ASSERT(tok->node->vtbl->type == NODE_CHARACTER);
         string_value_t code = generate_goat_code_from_node(tok->node);
-        ASSERT(!wcscmp(code.data, notations[i]));
+        ASSERT(!goat_strcmp(code.data, notations[i]));
         FREE_STRING(code);
     }
     token_t *tok = get_token(scan);
     ASSERT(tok && tok->type == TOKEN_ERROR);
-    ASSERT(!wcscmp(tok->text.data, get_messages()->empty_character_literal));
+    ASSERT(!goat_strcmp(tok->text.data, get_messages()->empty_character_literal));
     tok = get_token(scan);
     ASSERT(tok && tok->type == TOKEN_ERROR);
-    ASSERT(!wcscmp(tok->text.data, get_messages()->invalid_character_literal));
+    ASSERT(!goat_strcmp(tok->text.data, get_messages()->invalid_character_literal));
     tok = get_token(scan);
     ASSERT(tok && tok->type == TOKEN_ERROR);
     string_view_t formatted =
-        format_string_to_arena(arena, get_messages()->invalid_escape_sequence, L'q');
-    ASSERT(!wcscmp(tok->text.data, formatted.data));
-    const wchar_t *valid[] = {L"'\\0'", L"'\\U0001F600'", L"'\\Uffffffff'"};
+        format_string_to_arena(arena, get_messages()->invalid_escape_sequence, U'q');
+    ASSERT(!goat_strcmp(tok->text.data, formatted.data));
+    const goat_char_t *valid[] = {U"'\\0'", U"'\\U0001F600'", U"'\\Uffffffff'"};
     const uint32_t codes[] = {0, 0x1F600, UINT32_MAX};
     for (size_t i = 0; i < 3; i++) {
         scan = create_scanner("program.goat",
-                              (string_value_t){valid[i], wcslen(valid[i]), false},
+                              (string_value_t){valid[i], goat_strlen(valid[i]), false},
                               &memory,
                               &groups);
         tok = get_token(scan);
@@ -65,10 +65,10 @@ bool test_character_scanner() {
         ASSERT(value->type == LATTICE_CHAR_CONSTANT);
         ASSERT(((const char_constant_element_t *)value)->value == codes[i]);
     }
-    const wchar_t *invalid[] = {L"'\\U123'", L"'\\U0000000g'", L"'\\U000000001'", L"'\\U"};
+    const goat_char_t *invalid[] = {U"'\\U123'", U"'\\U0000000g'", U"'\\U000000001'", U"'\\U"};
     for (size_t i = 0; i < 4; i++) {
         scan = create_scanner("program.goat",
-                              (string_value_t){invalid[i], wcslen(invalid[i]), false},
+                              (string_value_t){invalid[i], goat_strlen(invalid[i]), false},
                               &memory,
                               &groups);
         tok = get_token(scan);
@@ -80,25 +80,25 @@ bool test_character_scanner() {
 
 bool test_character_object() {
     process_t *proc = create_process();
-    object_t *a = create_character_object(proc, L'a');
+    object_t *a = create_character_object(proc, U'a');
     ASSERT(is_character_object(a));
     ASSERT(a->vtbl->type == TYPE_CHARACTER);
     string_value_t text = convert_object_to_string(a);
-    ASSERT(!wcscmp(text.data, L"a"));
+    ASSERT(!goat_strcmp(text.data, U"a"));
     FREE_STRING(text);
     text = convert_object_to_string_notation(a);
-    ASSERT(!wcscmp(text.data, L"'a'"));
+    ASSERT(!goat_strcmp(text.data, U"'a'"));
     FREE_STRING(text);
     int_value_t integer = get_object_integer_value(a);
-    ASSERT(integer.has_value && integer.value == L'a');
+    ASSERT(integer.has_value && integer.value == U'a');
     ASSERT(get_object_boolean_value(a));
 
-    object_t *newline = create_character_object(proc, L'\n');
+    object_t *newline = create_character_object(proc, U'\n');
     text = convert_object_to_string_notation(newline);
-    ASSERT(!wcscmp(text.data, L"'\\n'"));
+    ASSERT(!goat_strcmp(text.data, U"'\\n'"));
     FREE_STRING(text);
 
-    object_t *b = create_character_object(proc, L'b');
+    object_t *b = create_character_object(proc, U'b');
     operation_result_t result = are_objects_equal(proc, a, a);
     ASSERT(!result.is_exception && get_object_boolean_value(result.value));
     result = are_objects_equal(proc, a, b);
@@ -116,22 +116,22 @@ bool test_character_object() {
     ASSERT(!result.is_exception);
     ASSERT(result.value->vtbl->type == TYPE_STRING);
     text = convert_object_to_string(result.value);
-    ASSERT(!wcscmp(text.data, L"ab"));
+    ASSERT(!goat_strcmp(text.data, U"ab"));
     FREE_STRING(text);
 
-    object_t *str = create_string_object(proc, STATIC_STRING(L"c"));
+    object_t *str = create_string_object(proc, STATIC_STRING(U"c"));
     result = add_objects(proc, a, str);
     ASSERT(!result.is_exception);
     text = convert_object_to_string(result.value);
-    ASSERT(!wcscmp(text.data, L"ac"));
+    ASSERT(!goat_strcmp(text.data, U"ac"));
     FREE_STRING(text);
     destroy_process(proc);
     return true;
 }
 
 bool test_character_vm() {
-    instruction_t list[] = {{.opcode = CLOAD, .arg1 = L'a'},
-                            {.opcode = CLOAD, .arg1 = L'z'},
+    instruction_t list[] = {{.opcode = CLOAD, .arg1 = U'a'},
+                            {.opcode = CLOAD, .arg1 = U'z'},
                             {.opcode = END}};
     code_builder_t *code_builder = create_code_builder();
     data_builder_t *data_builder = create_data_builder();
@@ -146,8 +146,8 @@ bool test_character_vm() {
     object_t *first = peek_object_from_stack(proc->main_thread->data_stack, 1);
     object_t *second = peek_object_from_stack(proc->main_thread->data_stack, 0);
     ASSERT(is_character_object(first) && is_character_object(second));
-    ASSERT(get_object_integer_value(first).value == L'a');
-    ASSERT(get_object_integer_value(second).value == L'z');
+    ASSERT(get_object_integer_value(first).value == U'a');
+    ASSERT(get_object_integer_value(second).value == U'z');
     destroy_process(proc);
     free_bytecode(code);
     return true;
@@ -158,27 +158,27 @@ bool test_ord_chr_builtin() {
     arena_t *arena = create_arena(8);
     abstract_state_t *state = create_abstract_state(arena);
 
-    push_object_onto_stack(proc->main_thread->data_stack, create_character_object(proc, L'a'));
+    push_object_onto_stack(proc->main_thread->data_stack, create_character_object(proc, U'a'));
     ASSERT(call_object(get_function_ord(), 1, NULL, proc->main_thread));
     object_t *result = pop_object_from_stack(proc->main_thread->data_stack);
-    ASSERT(is_integer_object(result) && get_object_integer_value(result).value == L'a');
+    ASSERT(is_integer_object(result) && get_object_integer_value(result).value == U'a');
     DECREF(result);
-    const lattice_element_t *args[] = {make_char_constant_element(arena, L'a')};
+    const lattice_element_t *args[] = {make_char_constant_element(arena, U'a')};
     const lattice_element_t *value =
         interpret_function_call(make_builtin_function_element(arena, &builtin_ord), args, 1, state);
     ASSERT(value->type == LATTICE_INTEGER_CONSTANT);
-    ASSERT(((const integer_constant_element_t *)value)->value == L'a');
+    ASSERT(((const integer_constant_element_t *)value)->value == U'a');
 
     push_object_onto_stack(proc->main_thread->data_stack, create_integer_object(proc, 122));
     ASSERT(call_object(get_function_chr(), 1, NULL, proc->main_thread));
     result = pop_object_from_stack(proc->main_thread->data_stack);
-    ASSERT(is_character_object(result) && get_object_integer_value(result).value == L'z');
+    ASSERT(is_character_object(result) && get_object_integer_value(result).value == U'z');
     DECREF(result);
     args[0] = make_integer_constant_element(arena, 122);
     value =
         interpret_function_call(make_builtin_function_element(arena, &builtin_chr), args, 1, state);
     ASSERT(value->type == LATTICE_CHAR_CONSTANT);
-    ASSERT(((const char_constant_element_t *)value)->value == L'z');
+    ASSERT(((const char_constant_element_t *)value)->value == U'z');
 
     args[0] = make_char_element();
     value =
@@ -193,7 +193,7 @@ bool test_ord_chr_builtin() {
     ASSERT(!call_object(get_function_ord(), 1, NULL, proc->main_thread));
     ASSERT(proc->main_thread->exception.value == get_exception_invalid_argument());
     push_object_onto_stack(proc->main_thread->data_stack,
-                           create_string_object(proc, STATIC_STRING(L"a")));
+                           create_string_object(proc, STATIC_STRING(U"a")));
     ASSERT(!call_object(get_function_chr(), 1, NULL, proc->main_thread));
     ASSERT(proc->main_thread->exception.value == get_exception_invalid_argument());
 

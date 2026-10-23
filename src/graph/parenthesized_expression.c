@@ -45,8 +45,8 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
-    return (index == 0) ? L"expression" : NULL;
+static const goat_char_t *get_child_tag(const node_t *node, size_t index) {
+    return (index == 0) ? U"expression" : NULL;
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
@@ -55,9 +55,9 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_value_t inner_str = generate_goat_code_from_expression(expr->inner);
     string_builder_t sb;
     init_string_builder(&sb, inner_str.length + 2); // +2 for parentheses
-    append_char(&sb, L'(');
+    append_char(&sb, U'(');
     append_string_value(&sb, inner_str);
-    string_value_t result = append_char(&sb, L')');
+    string_value_t result = append_char(&sb, U')');
     FREE_STRING(inner_str);
     return result;
 }
@@ -66,9 +66,9 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const parenthesized_expression_t *expr = (const parenthesized_expression_t *)node;
-    append_static_source(builder, L"(");
+    append_static_source(builder, U"(");
     generate_indented_goat_code_from_expression(expr->inner, builder, 0);
-    append_static_source(builder, L")");
+    append_static_source(builder, U")");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
@@ -100,7 +100,7 @@ static node_vtbl_t expression_parenthesized_vtbl = {
     .is_pure = children_are_pure,
     .simplify = simplify_constant_expression,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"parenthesized expression",
+    .type_name = U"parenthesized expression",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

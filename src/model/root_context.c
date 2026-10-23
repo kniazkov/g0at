@@ -13,16 +13,16 @@
 
 /** @brief Global names of the built-in type prototypes. */
 static pair_t type_properties[] = {
-    {L"Array", get_array_proto},
-    {L"Boolean", get_boolean_proto},
-    {L"Character", get_character_proto},
-    {L"Function", get_function_proto},
-    {L"Integer", get_integer_proto},
-    {L"Null", get_null_object},
-    {L"Number", get_numeric_proto},
-    {L"Object", get_root_object},
-    {L"Real", get_real_proto},
-    {L"String", get_string_proto},
+    {U"Array", get_array_proto},
+    {U"Boolean", get_boolean_proto},
+    {U"Character", get_character_proto},
+    {U"Function", get_function_proto},
+    {U"Integer", get_integer_proto},
+    {U"Null", get_null_object},
+    {U"Number", get_numeric_proto},
+    {U"Object", get_root_object},
+    {U"Real", get_real_proto},
+    {U"String", get_string_proto},
 };
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
@@ -40,7 +40,7 @@ static object_array_t get_keys(const object_t *obj) {
         for (size_t index = 0; index < type_count; index++) {
             keys[key_count++] =
                 get_static_string_object(&type_names[index],
-                                         (const wchar_t *)type_properties[index].key);
+                                         (const goat_char_t *)type_properties[index].key);
         }
     }
     return (object_array_t){keys, key_count};
@@ -56,8 +56,8 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
         if (function)
             return function->get_object();
         static pair_t properties[] = {
-            {L"Exceptions", get_exceptions_object},
-            {L"pi", get_pi_object}
+            {U"Exceptions", get_exceptions_object},
+            {U"pi", get_pi_object}
             // ... add other properties later
         };
         static_object_getter_t getter =

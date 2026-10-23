@@ -93,7 +93,7 @@ void run_stack_underflow_case(int index) {
     proc->main_thread->context->ret_value_index = 0;
     code_builder_t *builder = create_code_builder();
     data_builder_t *data = create_data_builder();
-    uint32_t key = add_string_to_data_segment(data, L"x");
+    uint32_t key = add_string_to_data_segment(data, U"x");
     add_instruction(builder, (instruction_t){.opcode = TRY, .arg1 = 2});
     add_instruction(
         builder,

@@ -16,7 +16,7 @@ parsing_member_access(token_t *op, parser_memory_t *memory, token_groups_t *grou
     if (left
         && (left->type == TOKEN_BRACKET_PAIR
             || (left->type == TOKEN_IDENTIFIER && left->left && left->left->type == TOKEN_OPERATOR
-                && left->left->text.data[0] == L'.'))) {
+                && left->left->text.data[0] == U'.'))) {
         token_t *previous = left->type == TOKEN_IDENTIFIER ? left->left : left;
         compilation_error_t *error = parsing_member_access(previous, memory, groups);
         if (error)
@@ -25,8 +25,8 @@ parsing_member_access(token_t *op, parser_memory_t *memory, token_groups_t *grou
     }
     if (op->type == TOKEN_BRACKET_PAIR && op->text.data[0] == '['
         && (!left || (left->type != TOKEN_EXPRESSION && left->type != TOKEN_IDENTIFIER))) {
-        bool prototypes =
-            op->right && op->right->type == TOKEN_OPERATOR && !wcscmp(op->right->text.data, L"->");
+        bool prototypes = op->right && op->right->type == TOKEN_OPERATOR
+                          && !goat_strcmp(op->right->text.data, U"->");
         node_t *node = prototypes ? create_prototype_list_node(memory->graph)
                                   : create_array_node(memory->graph);
         op->type = prototypes ? TOKEN_PROTOTYPE_ITEMS : TOKEN_ARRAY_ITEMS;
@@ -56,7 +56,7 @@ parsing_member_access(token_t *op, parser_memory_t *memory, token_groups_t *grou
         append_token_to_group(&groups->function_arguments, op);
         return NULL;
     }
-    if (op->type != TOKEN_OPERATOR || op->text.data[0] != L'.')
+    if (op->type != TOKEN_OPERATOR || op->text.data[0] != U'.')
         return NULL;
     token_t *right = op->right;
     if (!right || right->type != TOKEN_IDENTIFIER)

@@ -18,18 +18,19 @@ scope_t *create_scope(arena_t *arena, scope_t *parent) {
     return scope;
 }
 
-declarator_t *add_symbol_to_scope(scope_t *scope, const wchar_t *name, const declarator_t *node) {
+declarator_t *
+add_symbol_to_scope(scope_t *scope, const goat_char_t *name, const declarator_t *node) {
     return (declarator_t *)set_in_avl_tree_arena(scope->bindings,
                                                  (void *)name,
                                                  (value_t){.ptr = (void *)node})
         .ptr;
 }
 
-declarator_t *find_symbol_in_scope(const scope_t *scope, const wchar_t *name) {
+declarator_t *find_symbol_in_scope(const scope_t *scope, const goat_char_t *name) {
     return (declarator_t *)get_from_avl_tree(&scope->bindings->base, (void *)name).ptr;
 }
 
-declarator_t *find_symbol_in_scope_and_parents(const scope_t *scope, const wchar_t *name) {
+declarator_t *find_symbol_in_scope_and_parents(const scope_t *scope, const goat_char_t *name) {
     declarator_t *node = find_symbol_in_scope(scope, name);
     if (node) {
         return node;

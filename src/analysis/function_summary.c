@@ -88,7 +88,7 @@ const function_summary_t *snapshot_function_summary(arena_t *arena,
 
 static void append_effects(string_builder_t *builder, uint32_t effects) {
     if (!effects)
-        append_static_string(builder, L"none");
+        append_static_string(builder, U"none");
     else {
         bool separator = false;
         const uint32_t bits[] = {FUNCTION_EFFECT_INPUT,
@@ -96,15 +96,15 @@ static void append_effects(string_builder_t *builder, uint32_t effects) {
                                  FUNCTION_EFFECT_EXTERNAL_READ,
                                  FUNCTION_EFFECT_EXTERNAL_WRITE,
                                  FUNCTION_EFFECT_UNKNOWN};
-        const wchar_t *names[] = {L"input",
-                                  L"output",
-                                  L"external-read",
-                                  L"external-write",
-                                  L"unknown"};
+        const goat_char_t *names[] = {U"input",
+                                      U"output",
+                                      U"external-read",
+                                      U"external-write",
+                                      U"unknown"};
         for (size_t i = 0; i < sizeof(bits) / sizeof(*bits); i++) {
             if (effects & bits[i]) {
                 if (separator)
-                    append_char(builder, L'|');
+                    append_char(builder, U'|');
                 append_string(builder, names[i]);
                 separator = true;
             }
@@ -113,60 +113,60 @@ static void append_effects(string_builder_t *builder, uint32_t effects) {
 }
 
 string_value_t function_summary_to_string(const function_summary_t *summary) {
-    const wchar_t *status = summary->status == FUNCTION_UNANALYZED  ? L"unanalyzed"
-                            : summary->status == FUNCTION_ANALYZING ? L"analyzing"
-                            : summary->status == FUNCTION_ANALYZED  ? L"analyzed"
-                                                                    : L"inconclusive";
-    const wchar_t *support = summary->c_support == FUNCTION_C_SUPPORTED     ? L"supported"
-                             : summary->c_support == FUNCTION_C_UNSUPPORTED ? L"unsupported"
-                                                                            : L"unknown";
+    const goat_char_t *status = summary->status == FUNCTION_UNANALYZED  ? U"unanalyzed"
+                                : summary->status == FUNCTION_ANALYZING ? U"analyzing"
+                                : summary->status == FUNCTION_ANALYZED  ? U"analyzed"
+                                                                        : U"inconclusive";
+    const goat_char_t *support = summary->c_support == FUNCTION_C_SUPPORTED     ? U"supported"
+                                 : summary->c_support == FUNCTION_C_UNSUPPORTED ? U"unsupported"
+                                                                                : U"unknown";
     string_builder_t builder;
     init_string_builder(&builder, 0);
     append_string(&builder, status);
-    append_char(&builder, L' ');
+    append_char(&builder, U' ');
     string_value_t signature = function_signature_to_string(summary);
     append_string_value(&builder, signature);
     FREE_STRING(signature);
-    append_static_string(&builder, L" -> ");
+    append_static_string(&builder, U" -> ");
     string_value_t result = lattice_to_string(summary->return_type);
     append_string_value(&builder, result);
     FREE_STRING(result);
-    append_static_string(&builder, L" effects=");
+    append_static_string(&builder, U" effects=");
     append_effects(&builder, summary->effects);
-    append_static_string(&builder, L" c=");
+    append_static_string(&builder, U" c=");
     append_string(&builder, support);
     if (summary->iterations) {
-        string_value_t suffix = format_string(L" iterations=%zu", summary->iterations);
+        string_value_t suffix = format_string(U" iterations=%zu", summary->iterations);
         append_string_value(&builder, suffix);
         FREE_STRING(suffix);
     }
     append_string(&builder,
-                  function_summary_is_pure(summary) ? L" purity=pure" : L" purity=unknown");
-    append_static_string(&builder, L" direct-effects=");
+                  function_summary_is_pure(summary) ? U" purity=pure" : U" purity=unknown");
+    append_static_string(&builder, U" direct-effects=");
     append_effects(&builder, summary->direct_effects);
     append_string(&builder,
-                  summary->has_calls ? L" calls=yes captures=[" : L" calls=no captures=[");
+                  summary->has_calls ? U" calls=yes captures=[" : U" calls=no captures=[");
     for (const function_capture_t *capture = summary->captures; capture; capture = capture->next) {
         if (capture != summary->captures)
-            append_char(&builder, L',');
+            append_char(&builder, U',');
         append_string_value(&builder, VIEW_TO_VALUE(capture->name));
         const node_t *declaration = &capture->declarator->base;
         while (declaration && (!declaration->position || !declaration->position->begin))
             declaration = declaration->parent;
         const full_position_t *position = declaration ? declaration->position->begin : NULL;
-        string_value_t location = format_string(L"@%zu.%zu:",
+        string_value_t location = format_string(U"@%zu.%zu:",
                                                 position ? position->row : 0,
                                                 position ? position->column : 0);
         append_string_value(&builder, location);
         FREE_STRING(location);
         if (capture->access & FUNCTION_CAPTURE_READ)
-            append_static_string(&builder, L"read");
+            append_static_string(&builder, U"read");
         if (capture->access == (FUNCTION_CAPTURE_READ | FUNCTION_CAPTURE_WRITE))
-            append_char(&builder, L'|');
+            append_char(&builder, U'|');
         if (capture->access & FUNCTION_CAPTURE_WRITE)
-            append_static_string(&builder, L"write");
+            append_static_string(&builder, U"write");
     }
-    append_static_string(&builder, L"] c-blockers=");
+    append_static_string(&builder, U"] c-blockers=");
     string_value_t blockers = c_blockers_to_string(summary->c_blockers);
     string_value_t text = append_string_value(&builder, blockers);
     FREE_STRING(blockers);
@@ -259,15 +259,15 @@ function_summary_t *register_function_specialization(function_summary_set_t *set
 string_value_t function_signature_to_string(const function_summary_t *summary) {
     string_builder_t builder;
     init_string_builder(&builder, 0);
-    append_char(&builder, L'(');
+    append_char(&builder, U'(');
     for (size_t i = 0; i < summary->parameter_count; i++) {
         if (i)
-            append_static_string(&builder, L", ");
+            append_static_string(&builder, U", ");
         string_value_t type = lattice_to_string(summary->parameter_types[i]);
         append_string_value(&builder, type);
         FREE_STRING(type);
     }
-    return append_char(&builder, L')');
+    return append_char(&builder, U')');
 }
 
 bool function_summary_is_pure(const function_summary_t *summary) {

@@ -27,8 +27,8 @@ bool test_analysis_collector() {
     position_range_t range = {.begin = &position};
     node_t parent = {.position = &range};
     node_t node = {.parent = &parent};
-    declarator_t first = {.name = {L"x", 1}};
-    declarator_t second = {.name = {L"x", 1}};
+    declarator_t first = {.name = {U"x", 1}};
+    declarator_t second = {.name = {U"x", 1}};
     const lattice_element_t *one = make_integer_constant_element(arena, 1);
     const analysis_event_t *a =
         add_analysis_event(collector, ANALYSIS_VALUE_WRITE, &node, &first, one);
@@ -96,7 +96,7 @@ bool test_analysis_collector_text() {
     full_position_t position = {.file_name = "тест%.goat", .row = 2, .column = 4};
     position_range_t range = {.begin = &position};
     node_t node = {.position = &range};
-    declarator_t decl = {.name = {L"число", 5}};
+    declarator_t decl = {.name = {U"число", 5}};
     add_analysis_event(collector,
                        ANALYSIS_VALUE_WRITE,
                        &node,
@@ -109,12 +109,12 @@ bool test_analysis_collector_text() {
                        make_integer_range_element(arena, 1, 3));
     add_analysis_event(collector, ANALYSIS_DECLARATION_SUMMARY, NULL, &decl, make_top_element());
     text = analysis_collector_to_text(collector);
-    ASSERT(wcscmp(text.data,
-                  L"#1 тест%.goat, 2.4: write число = 1\n"
-                  L"#2 тест%.goat, 2.4: join число = [1..3]\n"
-                  L"#3 <unknown>, 0.0: summary число = ⊤\n")
+    ASSERT(goat_strcmp(text.data,
+                       U"#1 тест%.goat, 2.4: write число = 1\n"
+                       U"#2 тест%.goat, 2.4: join число = [1..3]\n"
+                       U"#3 <unknown>, 0.0: summary число = ⊤\n")
            == 0);
-    ASSERT(text.length == wcslen(text.data));
+    ASSERT(text.length == goat_strlen(text.data));
     FREE_STRING(text);
     destroy_arena(arena);
     return true;

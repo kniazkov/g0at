@@ -39,8 +39,8 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements node_vtbl_t::get_child_tag. */
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
-    static const wchar_t *tags[] = {L"initial", L"condition", L"step", L"body"};
+static const goat_char_t *get_child_tag(const node_t *node, size_t index) {
+    static const goat_char_t *tags[] = {U"initial", U"condition", U"step", U"body"};
     return index < 4 ? tags[index] : NULL;
 }
 
@@ -159,21 +159,21 @@ static string_value_t header_source(const node_t *node) {
     string_builder_t builder = {0};
     if (node->vtbl->type != NODE_FOR) {
         string_value_t condition = generate_goat_code_from_node(get_child(node, 1));
-        string_value_t result = format_string(L"while (%s) ", condition.data);
+        string_value_t result = format_string(U"while (%s) ", condition.data);
         FREE_STRING(condition);
         return result;
     }
-    append_static_string(&builder, L"for (");
+    append_static_string(&builder, U"for (");
     for (size_t i = 0; i < 3; i++) {
         string_value_t text = generate_goat_code_from_node(get_child(node, i));
-        if (i != 1 && text.length && text.data[text.length - 1] == L';')
+        if (i != 1 && text.length && text.data[text.length - 1] == U';')
             text.length--;
         append_string_value(&builder, text);
         FREE_STRING(text);
         if (i != 2)
-            append_static_string(&builder, L"; ");
+            append_static_string(&builder, U"; ");
     }
-    return append_static_string(&builder, L") ");
+    return append_static_string(&builder, U") ");
 }
 
 /** @brief Implements node_vtbl_t::generate_goat_code. */
@@ -182,7 +182,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     if (node->vtbl->type == NODE_DO_WHILE) {
         string_value_t body = generate_goat_code_from_node(get_child(node, 3));
         string_value_t header = header_source(node);
-        string_value_t result = format_string(L"do %s %s;", body.data, header.data);
+        string_value_t result = format_string(U"do %s %s;", body.data, header.data);
         FREE_STRING(body);
         FREE_STRING(header);
         return result;
@@ -193,17 +193,17 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_value_t body = generate_goat_code_from_node(get_child(node, 3));
     append_string_value(&builder, body);
     FREE_STRING(body);
-    return append_static_string(&builder, L"");
+    return append_static_string(&builder, U"");
 }
 
 /** @brief Implements node_vtbl_t::generate_indented_goat_code. */
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     if (node->vtbl->type == NODE_DO_WHILE) {
-        add_static_source(builder, indent, L"do ");
+        add_static_source(builder, indent, U"do ");
         generate_indented_goat_code_from_node(get_child(node, 3), builder, indent + 1);
         add_formatted_source(builder, indent, header_source(node));
-        append_static_source(builder, L";");
+        append_static_source(builder, U";");
         return;
     }
     add_formatted_source(builder, indent, header_source(node));
@@ -292,7 +292,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
 /** @brief Loop virtual methods. */
 static node_vtbl_t for_vtbl = {
     .type = NODE_FOR,
-    .type_name = L"for",
+    .type_name = U"for",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -339,9 +339,9 @@ create_while_node(arena_t *arena, expression_t *condition, statement_t *body, bo
     static node_vtbl_t pre_vtbl, post_vtbl;
     pre_vtbl = post_vtbl = for_vtbl;
     pre_vtbl.type = NODE_WHILE;
-    pre_vtbl.type_name = L"while";
+    pre_vtbl.type_name = U"while";
     post_vtbl.type = NODE_DO_WHILE;
-    post_vtbl.type_name = L"do while";
+    post_vtbl.type_name = U"do while";
     node_t *node = create_for_node(arena,
                                    create_statement_expression_node(arena, NULL),
                                    condition,
@@ -381,7 +381,7 @@ static size_t property_count_for_in(const node_t *node) {
     return get_property_count_of_declarator((const node_t *)((const for_t *)node)->iteration);
 }
 
-static const wchar_t *
+static const goat_char_t *
 property_for_in(const node_t *node, size_t index, node_display_value_t *value) {
     return get_property_of_declarator((const node_t *)((const for_t *)node)->iteration,
                                       index,
@@ -392,11 +392,11 @@ static string_value_t source_for_in(const node_t *node) {
     string_value_t source = generate_goat_code_from_node(get_child(node, 0));
     string_value_t body = generate_goat_code_from_node(get_child(node, 3));
     access_modifier_t modifier = ((const for_t *)node)->iteration->modifier;
-    const wchar_t *prefix = modifier == ACCESS_PUBLIC      ? L"public "
-                            : modifier == ACCESS_PROTECTED ? L"protected "
-                            : modifier == ACCESS_PRIVATE   ? L"private "
-                                                           : L"";
-    string_value_t result = format_string(L"for (%sconst %s in %s) %s",
+    const goat_char_t *prefix = modifier == ACCESS_PUBLIC      ? U"public "
+                                : modifier == ACCESS_PROTECTED ? U"protected "
+                                : modifier == ACCESS_PRIVATE   ? U"private "
+                                                               : U"";
+    string_value_t result = format_string(U"for (%sconst %s in %s) %s",
                                           prefix,
                                           ((const for_t *)node)->iteration->name.data,
                                           source.data,
@@ -450,7 +450,7 @@ create_for_in_node(arena_t *arena, string_view_t name, expression_t *source, sta
     static node_vtbl_t vtbl;
     vtbl = for_vtbl;
     vtbl.type = NODE_FOR_IN;
-    vtbl.type_name = L"for in";
+    vtbl.type_name = U"for in";
     vtbl.get_property_count = property_count_for_in;
     vtbl.get_property = property_for_in;
     vtbl.execute = execute_for_in;

@@ -30,7 +30,7 @@ static node_display_value_t get_data(const node_t *node) {
     const variable_t *expr = (const variable_t *)node;
     node_display_value_kind_t kind = NODE_DISPLAY_VALUE_PLAIN;
     if (expr->declarator && expr->declarator->name.length > 0
-        && expr->declarator->name.data[0] == L'*') {
+        && expr->declarator->name.data[0] == U'*') {
         kind = NODE_DISPLAY_VALUE_PREDEFINED;
     }
     return (node_display_value_t){.text = VIEW_TO_VALUE(expr->name), .kind = kind};
@@ -65,7 +65,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     const variable_t *expr = (const variable_t *)node;
     if (expr->dynamic_lookup)
         return make_top_element();
-    if (expr->name.length == 4 && !wmemcmp(expr->name.data, L"this", 4))
+    if (expr->name.length == 4 && !goat_memcmp(expr->name.data, U"this", 4))
         return make_user_defined_object_element();
     if (expr->declarator == get_builtin_declarator()) {
         const builtin_function_t *builtin = find_builtin_function(expr->name);
@@ -130,7 +130,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     const variable_t *var = (const variable_t *)node;
     if (var->dynamic_lookup)
         return make_top_element();
-    if (var->name.length == 4 && !wmemcmp(var->name.data, L"this", 4))
+    if (var->name.length == 4 && !goat_memcmp(var->name.data, U"this", 4))
         return make_user_defined_object_element();
     const declarator_t *decl = var->declarator;
     if (decl == get_builtin_declarator())
@@ -191,7 +191,7 @@ static node_vtbl_t variable_vtbl = {
     .is_pure = children_are_pure,
     .simplify = simplify_constant_expression,
     .collect_direct_effects = collect_direct_effects,
-    .type_name = L"variable",
+    .type_name = U"variable",
     .is_assignable_expression = true,
     .get_data = get_data,
     .get_property_count = no_properties,

@@ -20,7 +20,7 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
 
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t to_string(const object_t *obj) {
-    return (string_value_t){L"null", 4, false};
+    return (string_value_t){U"null", 4, false};
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string_notation. */

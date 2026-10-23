@@ -10,6 +10,7 @@
 #include "cli/options.h"
 #include "codegen/c_lowering.h"
 #include "codegen/c_module.h"
+#include "goat/unicode.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/io.h"
@@ -25,12 +26,11 @@
 #include <float.h>
 #include <math.h>
 #include <stdio.h>
-#include <wchar.h>
 
 /** @brief Numeric boundary fixtures use literal ASTs that also occur after transformations. */
 typedef struct {
-    const wchar_t *source; /**< Goat program used to discover the function signature. */
-    const wchar_t *check;  /**< C assertion suffix, appended to the generated function name. */
+    const goat_char_t *source; /**< Goat program used to discover the function signature. */
+    const goat_char_t *check;  /**< C assertion suffix, appended to the generated function name. */
     int literal;
     int64_t integer;
     double real;
@@ -75,19 +75,19 @@ static bool arithmetic_tests(source_builder_t *output, source_builder_t *checks)
             arena_t *arena = create_arena(32);
             parser_memory_t memory = {arena, arena, arena, arena};
             string_value_t source =
-                op < 3 ? format_string(L"const f=func(a,b){return a%c b;};f(%s,%s);",
-                                       L"+-*"[op],
-                                       left_real ? L"1.0" : L"1",
-                                       right_real ? L"2.0" : L"2")
-                       : format_string(L"const f=func(a){return %ca;};f(%s);",
-                                       op == 3 ? L'+' : L'-',
-                                       left_real ? L"1.0" : L"1");
+                op < 3 ? format_string(U"const f=func(a,b){return a%c b;};f(%s,%s);",
+                                       U"+-*"[op],
+                                       left_real ? U"1.0" : U"1",
+                                       right_real ? U"2.0" : U"2")
+                       : format_string(U"const f=func(a){return %ca;};f(%s);",
+                                       op == 3 ? U'+' : U'-',
+                                       left_real ? U"1.0" : U"1");
             node_t *root = parse_analysis_test_program(&memory, source);
             options_t *options = create_options();
             success = root && !analyze(root, &memory, options, NULL);
             c_module_t *module = success ? create_c_module(arena, root) : NULL;
             success = module && module->available_count == 1;
-            string_value_t name = format_string(L"goat_arithmetic%zu_%zu", op, pair);
+            string_value_t name = format_string(U"goat_arithmetic%zu_%zu", op, pair);
             if (success) {
                 c_generation_result_t result =
                     generate_c_function(module->head->summary,
@@ -120,43 +120,43 @@ static bool arithmetic_tests(source_builder_t *output, source_builder_t *checks)
                     if (success) {
                         string_value_t a = object_literal(left), b = object_literal(right),
                                        expected = object_literal(result.value);
-                        add_static_source(checks, 1, L"{");
+                        add_static_source(checks, 1, U"{");
                         add_source(checks,
                                    2,
-                                   L"volatile %s a = %s;",
-                                   left_real ? L"double" : L"int64_t",
+                                   U"volatile %s a = %s;",
+                                   left_real ? U"double" : U"int64_t",
                                    a.data);
                         if (op < 3)
                             add_source(checks,
                                        2,
-                                       L"volatile %s b = %s;",
-                                       right_real ? L"double" : L"int64_t",
+                                       U"volatile %s b = %s;",
+                                       right_real ? U"double" : U"int64_t",
                                        b.data);
                         bool real = !is_integer_object(result.value);
                         add_source(checks,
                                    2,
-                                   L"volatile %s actual = %s(%s);",
-                                   real ? L"double" : L"int64_t",
+                                   U"volatile %s actual = %s(%s);",
+                                   real ? U"double" : U"int64_t",
                                    name.data,
-                                   op < 3 ? L"a,b" : L"a");
+                                   op < 3 ? U"a,b" : U"a");
                         add_source(checks,
                                    2,
-                                   L"volatile %s expected = %s;",
-                                   real ? L"double" : L"int64_t",
+                                   U"volatile %s expected = %s;",
+                                   real ? U"double" : U"int64_t",
                                    expected.data);
                         add_source(
                             checks,
                             2,
-                            L"if (!(%s)) { fprintf(stderr, \"arithmetic %zu/%zu/%zu/%zu "
-                            L"failed\\n\"); return 100; }",
-                            real ? L"(isnan(actual) && isnan(expected)) || (actual == expected && "
-                                   L"(actual != 0 || !!signbit(actual) == !!signbit(expected)))"
-                                 : L"actual == expected",
+                            U"if (!(%s)) { fprintf(stderr, \"arithmetic %zu/%zu/%zu/%zu "
+                            U"failed\\n\"); return 100; }",
+                            real ? U"(isnan(actual) && isnan(expected)) || (actual == expected && "
+                                   U"(actual != 0 || !!signbit(actual) == !!signbit(expected)))"
+                                 : U"actual == expected",
                             op,
                             pair,
                             i,
                             j);
-                        add_static_source(checks, 1, L"}");
+                        add_static_source(checks, 1, U"}");
                         FREE_STRING(a);
                         FREE_STRING(b);
                         FREE_STRING(expected);
@@ -180,38 +180,38 @@ static bool arithmetic_tests(source_builder_t *output, source_builder_t *checks)
 
 static bool generate_tests(source_builder_t *output) {
     const fixture_t fixtures[] = {
-        {L"const f=func(n){return n;};f(1);", L"(INT64_MIN)==INT64_MIN"},
-        {L"const f=func(n){return n;};f(1.0);", L"(-0.0)==0 && signbit(goat_case1(-0.0))"},
-        {L"const f=func(first, second){return second;};f(1,2.5);", L"(7,2.5)==2.5"},
-        {L"const f=func(){return 42;};f();", L"()==42"},
-        {L"const f=func(){return 0;};f();", L"()==INT64_MIN", 1, INT64_MIN},
-        {L"const f=func(){return 0;};f();", L"()==INT64_MAX", 1, INT64_MAX},
-        {L"const f=func(){return 0;};f();", L"()==-7", 1, -7},
-        {L"const f=func(){return 0.0;};f();", L"()==0 && signbit(goat_case7())", 2, 0, -0.0},
-        {L"const f=func(){return 0.0;};f();", L"()==DBL_MAX", 2, 0, DBL_MAX},
-        {L"const f=func(){return 0.0;};f();",
-         L"()==0x0.0000000000001p-1022",
+        {U"const f=func(n){return n;};f(1);", U"(INT64_MIN)==INT64_MIN"},
+        {U"const f=func(n){return n;};f(1.0);", U"(-0.0)==0 && signbit(goat_case1(-0.0))"},
+        {U"const f=func(first, second){return second;};f(1,2.5);", U"(7,2.5)==2.5"},
+        {U"const f=func(){return 42;};f();", U"()==42"},
+        {U"const f=func(){return 0;};f();", U"()==INT64_MIN", 1, INT64_MIN},
+        {U"const f=func(){return 0;};f();", U"()==INT64_MAX", 1, INT64_MAX},
+        {U"const f=func(){return 0;};f();", U"()==-7", 1, -7},
+        {U"const f=func(){return 0.0;};f();", U"()==0 && signbit(goat_case7())", 2, 0, -0.0},
+        {U"const f=func(){return 0.0;};f();", U"()==DBL_MAX", 2, 0, DBL_MAX},
+        {U"const f=func(){return 0.0;};f();",
+         U"()==0x0.0000000000001p-1022",
          2,
          0,
          0x0.0000000000001p-1022},
-        {L"const f=func(){return 0.0;};f();", L"()==INFINITY", 2, 0, INFINITY},
-        {L"const f=func(){return 0.0;};f();", L"()==-INFINITY", 2, 0, -INFINITY},
-        {L"const f=func(){return 0.0;};f();", L"()!=goat_case12()", 2, 0, NAN},
-        {L"const f=func(){return 1.2345678901234567;};f();", L"()==expected_decimal"},
-        {L"const f=func(n){return n;};f(1.0);", L"(INFINITY)==INFINITY"},
-        {L"const f=func(n){return n;};f(1.0);", L"(NAN)!=goat_case15(NAN)"},
-        {L"const f=func(a,b){return -(a+b)*(a-b);};f(1,2);", L"(7,3)==-40"},
-        {L"const f=func(a,b){return a+b;};f(1,2);", L"(INT64_MAX,1)==INT64_MAX"},
-        {L"const f=func(a,b){return a-b;};f(1,2);", L"(INT64_MIN,1)==INT64_MIN"},
-        {L"const f=func(a,b){return a*b;};f(1,2);", L"(INT64_MIN,-1)==INT64_MAX"},
-        {L"const f=func(a){return -a;};f(1);", L"(INT64_MIN)==INT64_MAX"},
-        {L"const f=func(a,b){return (a+b)-a;};f(1.0,2.0);", L"(0x1p53,1.0)==0.0"},
-        {L"const f=func(a,b){return a*b-1.0;};f(1.0,2.0);",
-         L"(0x1.0000000000001p0,0x1.ffffffffffffep-1)==0.0"}};
-    add_static_source(output, 0, L"#include <stdio.h>");
+        {U"const f=func(){return 0.0;};f();", U"()==INFINITY", 2, 0, INFINITY},
+        {U"const f=func(){return 0.0;};f();", U"()==-INFINITY", 2, 0, -INFINITY},
+        {U"const f=func(){return 0.0;};f();", U"()!=goat_case12()", 2, 0, NAN},
+        {U"const f=func(){return 1.2345678901234567;};f();", U"()==expected_decimal"},
+        {U"const f=func(n){return n;};f(1.0);", U"(INFINITY)==INFINITY"},
+        {U"const f=func(n){return n;};f(1.0);", U"(NAN)!=goat_case15(NAN)"},
+        {U"const f=func(a,b){return -(a+b)*(a-b);};f(1,2);", U"(7,3)==-40"},
+        {U"const f=func(a,b){return a+b;};f(1,2);", U"(INT64_MAX,1)==INT64_MAX"},
+        {U"const f=func(a,b){return a-b;};f(1,2);", U"(INT64_MIN,1)==INT64_MIN"},
+        {U"const f=func(a,b){return a*b;};f(1,2);", U"(INT64_MIN,-1)==INT64_MAX"},
+        {U"const f=func(a){return -a;};f(1);", U"(INT64_MIN)==INT64_MAX"},
+        {U"const f=func(a,b){return (a+b)-a;};f(1.0,2.0);", U"(0x1p53,1.0)==0.0"},
+        {U"const f=func(a,b){return a*b-1.0;};f(1.0,2.0);",
+         U"(0x1.0000000000001p0,0x1.ffffffffffffep-1)==0.0"}};
+    add_static_source(output, 0, U"#include <stdio.h>");
     source_builder_t *checks = create_source_builder();
-    add_static_source(checks, 0, L"int main(void) {");
-    add_static_source(checks, 1, L"volatile double expected_decimal = 1.2345678901234567;");
+    add_static_source(checks, 0, U"int main(void) {");
+    add_static_source(checks, 1, U"volatile double expected_decimal = 1.2345678901234567;");
     bool success = true;
     for (size_t i = 0; i < sizeof(fixtures) / sizeof(*fixtures) && success; i++) {
         const fixture_t *fixture = &fixtures[i];
@@ -219,7 +219,7 @@ static bool generate_tests(source_builder_t *output) {
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root = parse_analysis_test_program(
             &memory,
-            (string_value_t){fixture->source, wcslen(fixture->source), false});
+            (string_value_t){fixture->source, goat_strlen(fixture->source), false});
         options_t *options = create_options();
         success = root && !analyze(root, &memory, options, NULL);
         c_module_t *module = success ? create_c_module(arena, root) : NULL;
@@ -234,7 +234,7 @@ static bool generate_tests(source_builder_t *output) {
             success = module && module->available_count == 1;
         }
         if (success) {
-            string_value_t name = format_string(L"goat_case%zu", i);
+            string_value_t name = format_string(U"goat_case%zu", i);
             c_generation_result_t result =
                 generate_c_function(module->head->summary,
                                     (string_view_t){name.data, name.length},
@@ -245,7 +245,7 @@ static bool generate_tests(source_builder_t *output) {
                 add_formatted_source(output, 0, result.source);
                 add_source(checks,
                            1,
-                           L"if (!(%s%s)) return %zu;",
+                           U"if (!(%s%s)) return %zu;",
                            name.data,
                            fixture->check,
                            i + 1);
@@ -269,8 +269,8 @@ static bool generate_tests(source_builder_t *output) {
         success = append_c_call_tests(output, checks);
     if (success)
         success = append_c_recursion_tests(output, checks);
-    add_static_source(checks, 1, L"return 0;");
-    add_static_source(checks, 0, L"}");
+    add_static_source(checks, 1, U"return 0;");
+    add_static_source(checks, 0, U"}");
     if (success)
         add_formatted_source(output, 0, build_source(checks));
     destroy_source_builder(checks);
@@ -302,7 +302,7 @@ bool test_c_emission_rejections(void) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
         parse_analysis_test_program(&memory,
-                                    STATIC_STRING(L"const f=func(n){return n+1;};f(1);f(1.0);"));
+                                    STATIC_STRING(U"const f=func(n){return n+1;};f(1);f(1.0);"));
     ASSERT(root);
     options_t *options = create_options();
     ASSERT(!analyze(root, &memory, options, NULL));
@@ -311,10 +311,10 @@ bool test_c_emission_rejections(void) {
     for (c_module_function_t *entry = module->head; entry; entry = entry->next) {
         c_generation_result_t result = generate_c_function(entry->summary, entry->name, NULL, NULL);
         ASSERT(result.status == C_GENERATION_OK);
-        const wchar_t *type = entry->summary->parameter_types[0]->type == LATTICE_INTEGER
-                                  ? L"int64_t g_p0"
-                                  : L"double g_p0";
-        ASSERT(wcsstr(result.source.data, type));
+        const goat_char_t *type = entry->summary->parameter_types[0]->type == LATTICE_INTEGER
+                                      ? U"int64_t g_p0"
+                                      : U"double g_p0";
+        ASSERT(goat_strstr(result.source.data, type));
         FREE_STRING(result.source);
     }
     function_summary_t changed = *module->head->summary;
@@ -327,7 +327,7 @@ bool test_c_emission_rejections(void) {
     changed.c_expressions = NULL;
     result = generate_c_function(&changed, module->head->name, NULL, NULL);
     ASSERT(result.status == C_GENERATION_NOT_PROVEN && !result.source.data);
-    result = generate_c_function(module->head->summary, (string_view_t){L"goat_x;", 7}, NULL, NULL);
+    result = generate_c_function(module->head->summary, (string_view_t){U"goat_x;", 7}, NULL, NULL);
     ASSERT(result.status == C_GENERATION_INVALID_REQUEST && !result.source.data);
     destroy_options(options);
     destroy_arena(arena);

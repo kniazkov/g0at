@@ -39,14 +39,14 @@ string_value_t trim_and_escape_html_entities(string_value_t input, bool quotes) 
     string_builder_t builder;
     init_string_builder(&builder, MAX_LENGTH + 4 + 2); // +4 for ellipsis and margin, +2 for quotes
     if (quotes) {
-        append_char(&builder, L'"');
+        append_char(&builder, U'"');
     }
 
     bool truncated = false;
     size_t remaining = MAX_LENGTH;
 
     for (size_t index = 0; index < input.length; index++) {
-        wchar_t c = input.data[index];
+        goat_char_t c = input.data[index];
 
         size_t char_len = 1;
         switch (c) {
@@ -74,31 +74,31 @@ string_value_t trim_and_escape_html_entities(string_value_t input, bool quotes) 
 
         switch (c) {
             case '\n':
-                append_string(&builder, L"\\n");
+                append_string(&builder, U"\\n");
                 break;
             case '\r':
-                append_string(&builder, L"\\r");
+                append_string(&builder, U"\\r");
                 break;
             case '\t':
-                append_string(&builder, L"\\t");
+                append_string(&builder, U"\\t");
                 break;
             case '\"':
-                append_string(&builder, L"\\\"");
+                append_string(&builder, U"\\\"");
                 break;
             case '\'':
-                append_string(&builder, L"\\'");
+                append_string(&builder, U"\\'");
                 break;
             case '\\':
-                append_string(&builder, L"\\\\");
+                append_string(&builder, U"\\\\");
                 break;
             case '&':
-                append_string(&builder, L"&amp;");
+                append_string(&builder, U"&amp;");
                 break;
             case '<':
-                append_string(&builder, L"&lt;");
+                append_string(&builder, U"&lt;");
                 break;
             case '>':
-                append_string(&builder, L"&gt;");
+                append_string(&builder, U"&gt;");
                 break;
             default:
                 if (c >= 32 || c == ' ') {
@@ -112,10 +112,10 @@ string_value_t trim_and_escape_html_entities(string_value_t input, bool quotes) 
     }
 
     if (truncated) {
-        append_string(&builder, L"...");
+        append_string(&builder, U"...");
     }
     if (quotes) {
-        append_char(&builder, L'"');
+        append_char(&builder, U'"');
     }
 
     return (string_value_t){builder.data, builder.length, true};
@@ -132,7 +132,7 @@ static string_value_t build_node_properties_html(const node_t *node) {
     string_builder_t builder = {0};
     for (size_t index = 0; index < count; index++) {
         node_display_value_t value;
-        const wchar_t *key = get_node_property(node, index, &value);
+        const goat_char_t *key = get_node_property(node, index, &value);
         if (key == NULL) {
             continue;
         }
@@ -142,13 +142,13 @@ static string_value_t build_node_properties_html(const node_t *node) {
         } else {
             escaped_value.should_free = false;
         }
-        append_string(&builder, L"<br/>");
+        append_string(&builder, U"<br/>");
         append_string(&builder, key);
         append_string(&builder,
-                      node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L": <font color='gray70'>"
-                                                                 : L": <font color='blue'>");
+                      node_has_flag(node, NODE_FLAG_UNREACHABLE) ? U": <font color='gray70'>"
+                                                                 : U": <font color='blue'>");
         append_string_value(&builder, escaped_value);
-        result = append_string(&builder, L"</font>");
+        result = append_string(&builder, U"</font>");
         FREE_STRING(escaped_value);
         FREE_STRING(value.text);
     }
@@ -181,37 +181,37 @@ static int node_to_dot(const node_t *node,
         add_formatted_source(
             builder,
             indent,
-            format_string(L"subgraph cluster_%d { style=\"rounded,dashed\"; color=%s;",
+            format_string(U"subgraph cluster_%d { style=\"rounded,dashed\"; color=%s;",
                           node->scope->id,
-                          node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L"lightgray" : L"gray"));
+                          node_has_flag(node, NODE_FLAG_UNREACHABLE) ? U"lightgray" : U"gray"));
         indent++;
     }
     uint32_t id = ++(*last_node_id);
     append_to_vector(all_nodes, (void *)node);
     set_in_avl_tree(nodes_to_ids, (void *)node, (value_t){.uint32_val = id});
-    const wchar_t *name = node->vtbl->type_name;
+    const goat_char_t *name = node->vtbl->type_name;
     node_display_value_t value = get_node_data(node);
     string_value_t properties = build_node_properties_html(node);
-    const wchar_t *node_color = is_deletion(node)                            ? L"darkred"
-                                : is_replacement(node)                       ? L"purple"
-                                : node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L"lightgray"
-                                : !node->id                                  ? L"midnightblue"
-                                : (display_flags & NODE_FLAG_C_COMPATIBLE)   ? L"forestgreen"
-                                                                             : L"black";
-    const wchar_t *node_style =
-        node_has_flag(node, NODE_FLAG_UNREACHABLE) ? L" fontcolor=gray70 tooltip=\"unreachable\""
-        : is_deletion(node)    ? L" style=\"rounded,filled\" fillcolor=\"#ffe5e5\" ordering=out"
-        : is_replacement(node) ? L" style=\"rounded,filled\" fillcolor=\"#f5efff\" ordering=out"
-        : !node->id            ? L" style=\"rounded,filled\" fillcolor=\"#eaf1fa\""
-        : (display_flags & NODE_FLAG_PURE) ? L" style=\"rounded,filled\" fillcolor=\"#f2faf2\""
-                                           : L"";
+    const goat_char_t *node_color = is_deletion(node)                            ? U"darkred"
+                                    : is_replacement(node)                       ? U"purple"
+                                    : node_has_flag(node, NODE_FLAG_UNREACHABLE) ? U"lightgray"
+                                    : !node->id                                  ? U"midnightblue"
+                                    : (display_flags & NODE_FLAG_C_COMPATIBLE)   ? U"forestgreen"
+                                                                                 : U"black";
+    const goat_char_t *node_style =
+        node_has_flag(node, NODE_FLAG_UNREACHABLE) ? U" fontcolor=gray70 tooltip=\"unreachable\""
+        : is_deletion(node)    ? U" style=\"rounded,filled\" fillcolor=\"#ffe5e5\" ordering=out"
+        : is_replacement(node) ? U" style=\"rounded,filled\" fillcolor=\"#f5efff\" ordering=out"
+        : !node->id            ? U" style=\"rounded,filled\" fillcolor=\"#eaf1fa\""
+        : (display_flags & NODE_FLAG_PURE) ? U" style=\"rounded,filled\" fillcolor=\"#f2faf2\""
+                                           : U"";
     if (value.text.length > 0) {
-        const wchar_t *font_color = L"blue";
+        const goat_char_t *font_color = U"blue";
         if (value.kind == NODE_DISPLAY_VALUE_PREDEFINED) {
-            font_color = L"purple";
+            font_color = U"purple";
         }
         if (node_has_flag(node, NODE_FLAG_UNREACHABLE))
-            font_color = L"gray70";
+            font_color = U"gray70";
         string_value_t formatted_value = value.text;
         if (value.kind == NODE_DISPLAY_VALUE_STRING_LITERAL) {
             formatted_value = trim_and_escape_html_entities(value.text, true);
@@ -221,7 +221,7 @@ static int node_to_dot(const node_t *node,
         add_formatted_source(
             builder,
             indent,
-            format_string(L"node_%u [label=<%s<br/><font color='%s'>%s</font>%s> color=%s%s];",
+            format_string(U"node_%u [label=<%s<br/><font color='%s'>%s</font>%s> color=%s%s];",
                           id,
                           name,
                           font_color,
@@ -234,7 +234,7 @@ static int node_to_dot(const node_t *node,
     } else if (properties.length > 0) {
         add_formatted_source(builder,
                              indent,
-                             format_string(L"node_%u [label=<%s%s> color=%s%s];",
+                             format_string(U"node_%u [label=<%s%s> color=%s%s];",
                                            id,
                                            name,
                                            properties.data,
@@ -244,7 +244,7 @@ static int node_to_dot(const node_t *node,
         add_formatted_source(
             builder,
             indent,
-            format_string(L"node_%u [label=\"%s\" color=%s%s];", id, name, node_color, node_style));
+            format_string(U"node_%u [label=\"%s\" color=%s%s];", id, name, node_color, node_style));
     }
     FREE_STRING(properties);
     size_t count = get_node_child_count(node);
@@ -257,33 +257,33 @@ static int node_to_dot(const node_t *node,
                                    indent,
                                    builder,
                                    view);
-        const wchar_t *tag = get_node_child_tag(node, index);
+        const goat_char_t *tag = get_node_child_tag(node, index);
         if (tag == NULL) {
             add_formatted_source(
                 builder,
                 indent,
-                format_string(L"node_%u -> node_%u [label=\" %zu\"%s];",
+                format_string(U"node_%u -> node_%u [label=\" %zu\"%s];",
                               id,
                               child_id,
                               index,
                               node_has_flag(get_node_child(node, index), NODE_FLAG_UNREACHABLE)
-                                  ? L" color=lightgray fontcolor=gray70"
-                                  : L""));
+                                  ? U" color=lightgray fontcolor=gray70"
+                                  : U""));
         } else {
             add_formatted_source(
                 builder,
                 indent,
-                format_string(L"node_%u -> node_%u [label=\" %s\"%s];",
+                format_string(U"node_%u -> node_%u [label=\" %s\"%s];",
                               id,
                               child_id,
                               tag,
                               node_has_flag(get_node_child(node, index), NODE_FLAG_UNREACHABLE)
-                                  ? L" color=lightgray fontcolor=gray70"
-                                  : L""));
+                                  ? U" color=lightgray fontcolor=gray70"
+                                  : U""));
         }
     }
     if (new_scope) {
-        add_static_source(builder, indent - 1, L"}");
+        add_static_source(builder, indent - 1, U"}");
     }
     return id;
 }
@@ -318,18 +318,18 @@ static void append_related_edges_to_dot(const vector_t *all_nodes,
                 builder,
                 indent,
                 format_string(
-                    L"node_%u -> node_%u [label=\" %s\", style=dashed, color=%s, fontcolor=%s];",
+                    U"node_%u -> node_%u [label=\" %s\", style=dashed, color=%s, fontcolor=%s];",
                     source_id.uint32_val,
                     target_id.uint32_val,
                     relation_name.data,
                     node_has_flag(node, NODE_FLAG_UNREACHABLE)
                             || node_has_flag(related_node, NODE_FLAG_UNREACHABLE)
-                        ? L"lightgray"
-                        : L"navy",
+                        ? U"lightgray"
+                        : U"navy",
                     node_has_flag(node, NODE_FLAG_UNREACHABLE)
                             || node_has_flag(related_node, NODE_FLAG_UNREACHABLE)
-                        ? L"gray70"
-                        : L"black"));
+                        ? U"gray70"
+                        : U"black"));
         }
     }
 }
@@ -350,13 +350,13 @@ static int node_comparator(const void *first, const void *second) {
 
 string_value_t generate_graph_dot(const node_t *root_node) {
     source_builder_t *builder = create_source_builder();
-    add_static_source(builder, 0, L"digraph AST {");
+    add_static_source(builder, 0, U"digraph AST {");
     add_static_source(builder,
                       1,
-                      L"node [shape=box, style=\"rounded\", fontname=\"serif\", fontsize=\"11\", "
-                      L"penwidth=\"0.7\"];");
-    add_static_source(builder, 1, L"edge [fontname=\"serif\", fontsize=\"11\", penwidth=\"0.7\"];");
-    add_static_source(builder, 1, L"graph [fontname=\"serif\", fontsize=\"11\"];");
+                      U"node [shape=box, style=\"rounded\", fontname=\"serif\", fontsize=\"11\", "
+                      U"penwidth=\"0.7\"];");
+    add_static_source(builder, 1, U"edge [fontname=\"serif\", fontsize=\"11\", penwidth=\"0.7\"];");
+    add_static_source(builder, 1, U"graph [fontname=\"serif\", fontsize=\"11\"];");
     uint32_t last_node_id = 0;
     vector_t *all_nodes = create_vector();
     avl_tree_t *nodes_to_ids = create_avl_tree(node_comparator);
@@ -364,7 +364,7 @@ string_value_t generate_graph_dot(const node_t *root_node) {
     append_related_edges_to_dot(all_nodes, nodes_to_ids, 1, builder);
     destroy_avl_tree(nodes_to_ids);
     destroy_vector(all_nodes);
-    add_static_source(builder, 0, L"}");
+    add_static_source(builder, 0, U"}");
     string_value_t dot_code = build_source(builder);
     destroy_source_builder(builder);
     return dot_code;

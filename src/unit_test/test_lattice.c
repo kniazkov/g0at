@@ -41,7 +41,7 @@ static bool equal(const lattice_element_t *a, const lattice_element_t *b) {
         case LATTICE_STRING_CONSTANT: {
             string_view_t x = ((const string_constant_element_t *)a)->value;
             string_view_t y = ((const string_constant_element_t *)b)->value;
-            return x.length == y.length && (!x.length || !wmemcmp(x.data, y.data, x.length));
+            return x.length == y.length && (!x.length || !goat_memcmp(x.data, y.data, x.length));
         }
         case LATTICE_KNOWN_FUNCTION: {
             const known_function_element_t *x = (const known_function_element_t *)a;
@@ -63,10 +63,10 @@ bool test_lattice_examples() {
     const lattice_element_t *r13 = make_integer_range_element(arena, 1, 3);
     const lattice_element_t *r35 = make_integer_range_element(arena, 3, 5);
     const lattice_element_t *real = make_real_constant_element(arena, 1.0);
-    const lattice_element_t *str = make_string_constant_element(arena, (string_view_t){L"a", 1});
+    const lattice_element_t *str = make_string_constant_element(arena, (string_view_t){U"a", 1});
     const lattice_element_t *str_copy =
-        make_string_constant_element(arena, (string_view_t){L"a!", 1});
-    const lattice_element_t *other = make_string_constant_element(arena, (string_view_t){L"b", 1});
+        make_string_constant_element(arena, (string_view_t){U"a!", 1});
+    const lattice_element_t *other = make_string_constant_element(arena, (string_view_t){U"b", 1});
 
     struct {
         const lattice_element_t *left, *right, *join, *meet;
@@ -230,10 +230,10 @@ bool test_lattice_laws() {
     for (size_t i = 0; i < sizeof(reals) / sizeof(*reals); i++) {
         samples[count++] = make_real_constant_element(values, reals[i]);
     }
-    samples[count++] = make_string_constant_element(values, (string_view_t){L"", 0});
-    samples[count++] = make_string_constant_element(values, (string_view_t){L"a", 1});
-    samples[count++] = make_string_constant_element(values, (string_view_t){L"b", 1});
-    samples[count++] = make_string_constant_element(values, (string_view_t){L"a\0b", 3});
+    samples[count++] = make_string_constant_element(values, (string_view_t){U"", 0});
+    samples[count++] = make_string_constant_element(values, (string_view_t){U"a", 1});
+    samples[count++] = make_string_constant_element(values, (string_view_t){U"b", 1});
+    samples[count++] = make_string_constant_element(values, (string_view_t){U"a\0b", 3});
     for (size_t i = 0; i < count; i++) {
         arena_t *arena = create_arena(8);
         const lattice_element_t *a = samples[i];

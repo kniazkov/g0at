@@ -7,12 +7,12 @@
 
 #pragma once
 
+#include "goat/unicode.h"
 #include "lib/avl_tree.h"
 #include "vm/bytecode.h"
 
 #include <stddef.h>
 #include <stdint.h>
-#include <wchar.h>
 
 typedef struct data_builder_t data_builder_t;
 
@@ -52,7 +52,7 @@ data_builder_t *create_data_builder(void);
 uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t size);
 
 /** @brief Adds a string to the builder. */
-uint32_t add_string_to_data_segment(data_builder_t *builder, const wchar_t *string);
+uint32_t add_string_to_data_segment(data_builder_t *builder, const goat_char_t *string);
 
 /** @brief Adds a string to the data segment, using a pre-calculated length. */
 uint32_t add_string_to_data_segment_ex(data_builder_t *builder, string_view_t string);

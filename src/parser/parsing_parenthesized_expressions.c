@@ -33,7 +33,7 @@ compilation_error_t *preparsing_parenthesized_expressions(token_t *token,
     /* Parentheses of a method call `expr.name(...)` are consumed by the member access reduction
      * rule, so they must not be treated as a parenthesized expression. */
     if (token->left && token->left->type == TOKEN_IDENTIFIER && token->left->left
-        && token->left->left->type == TOKEN_OPERATOR && token->left->left->text.data[0] == L'.') {
+        && token->left->left->type == TOKEN_OPERATOR && token->left->left->text.data[0] == U'.') {
         remove_token_from_group(token);
         return NULL;
     }

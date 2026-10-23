@@ -10,6 +10,7 @@
 #include "analysis/c_expression.h"
 #include "analysis/lattice.h"
 #include "data_type.h"
+#include "goat/unicode.h"
 #include "node.h"
 
 typedef struct declarator_spec_t declarator_spec_t;
@@ -62,7 +63,7 @@ static inline node_t *get_expression_child(const expression_t *expr, size_t inde
  * `index`: Zero-based child index.
  * @return Wide character string with the child tag or NULL if not applicable.
  */
-static inline const wchar_t *get_expression_child_tag(const expression_t *expr, size_t index) {
+static inline const goat_char_t *get_expression_child_tag(const expression_t *expr, size_t index) {
     return get_node_child_tag(&expr->base, index);
 }
 
@@ -132,7 +133,7 @@ static inline bool generate_deferred_bytecode_from_expression(const expression_t
  * @brief Creates a new static string expression node.
  * `length`: The length of the string (excluding null terminator).
  */
-node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length);
+node_t *create_static_string_node(arena_t *arena, const goat_char_t *data, size_t length);
 
 /** @brief Creates a new integer literal node. */
 node_t *create_integer_node(arena_t *arena, int64_t value);

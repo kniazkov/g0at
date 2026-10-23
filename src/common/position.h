@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "goat/unicode.h"
+
 #include <stddef.h>
 
 typedef struct arena_t arena_t;
@@ -22,7 +24,7 @@ typedef struct {
     size_t column;
 
     /** @brief Pointer to the source text at the entity position. */
-    const wchar_t *code;
+    const goat_char_t *code;
 
     /** @brief Offset of the entity from the beginning of the file. */
     size_t offset;

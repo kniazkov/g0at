@@ -27,8 +27,8 @@ static node_t *child(const node_t *node, size_t index) {
     return index < 3 ? (node_t *)((const conditional_t *)node)->parts[index] : NULL;
 }
 
-static const wchar_t *tag(const node_t *node, size_t index) {
-    static const wchar_t *tags[] = {L"condition", L"true", L"false"};
+static const goat_char_t *tag(const node_t *node, size_t index) {
+    static const goat_char_t *tags[] = {U"condition", U"true", U"false"};
     return index < 3 ? tags[index] : NULL;
 }
 
@@ -109,7 +109,7 @@ static string_value_t source(const node_t *node) {
     string_value_t a = generate_goat_code_from_node(child(node, 0));
     string_value_t b = generate_goat_code_from_node(child(node, 1));
     string_value_t c = generate_goat_code_from_node(child(node, 2));
-    string_value_t result = format_string(L"(%s ? %s : %s)", a.data, b.data, c.data);
+    string_value_t result = format_string(U"(%s ? %s : %s)", a.data, b.data, c.data);
     FREE_STRING(a);
     FREE_STRING(b);
     FREE_STRING(c);
@@ -144,7 +144,7 @@ native(const node_t *node, const lattice_element_t *value, const c_expression_co
 }
 
 static node_vtbl_t vtbl = {.type = NODE_CONDITIONAL,
-                           .type_name = L"conditional expression",
+                           .type_name = U"conditional expression",
                            .analyze_reachability = reach,
                            .is_pure = children_are_pure,
                            .simplify = simplify_constant_expression,

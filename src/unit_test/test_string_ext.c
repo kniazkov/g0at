@@ -22,22 +22,22 @@ bool test_string_geometric_growth() {
             size_t previous = builder.capacity;
             switch (method) {
                 case 0:
-                    result = append_char(&builder, L'x');
+                    result = append_char(&builder, U'x');
                     break;
                 case 1:
-                    result = append_string(&builder, L"x");
+                    result = append_string(&builder, U"x");
                     break;
                 case 2:
                     result = append_ascii_string(&builder, "x");
                     break;
                 case 3:
-                    result = append_repeated_char(&builder, L'x', 1);
+                    result = append_repeated_char(&builder, U'x', 1);
                     break;
                 case 4:
-                    result = append_string_value(&builder, STATIC_STRING(L"x"));
+                    result = append_string_value(&builder, STATIC_STRING(U"x"));
                     break;
                 case 5:
-                    result = append_string_view(&builder, (string_view_t){L"x", 1});
+                    result = append_string_view(&builder, (string_view_t){U"x", 1});
                     break;
             }
             if (builder.capacity != previous)
@@ -45,7 +45,7 @@ bool test_string_geometric_growth() {
             ASSERT(builder.capacity >= builder.length);
         }
         ASSERT(growths < 25);
-        wchar_t *buffer = builder.data;
+        goat_char_t *buffer = builder.data;
         size_t capacity = builder.capacity;
         resize_string_builder(&builder, capacity);
         ASSERT(builder.data == buffer && builder.capacity == capacity);
@@ -54,7 +54,7 @@ bool test_string_geometric_growth() {
         /* Consume only the final append result; the builder is now finished. */
         ASSERT(result.length == 4096 && result.should_free);
         for (size_t i = 0; i < result.length; i++)
-            ASSERT(result.data[i] == L'x');
+            ASSERT(result.data[i] == U'x');
         ASSERT(result.data[result.length] == 0);
         FREE_STRING(result);
     }
@@ -62,8 +62,8 @@ bool test_string_geometric_growth() {
     init_string_builder(&builder, 0);
     resize_string_builder(&builder, 100);
     ASSERT(builder.capacity >= 100 && builder.length == 0 && builder.data[0] == 0);
-    string_value_t result = append_repeated_char(&builder, L'z', 10000);
-    ASSERT(result.length == 10000 && result.data[9999] == L'z' && result.data[10000] == 0);
+    string_value_t result = append_repeated_char(&builder, U'z', 10000);
+    ASSERT(result.length == 10000 && result.data[9999] == U'z' && result.data[10000] == 0);
     FREE_STRING(result);
     return true;
 }
@@ -85,17 +85,9 @@ bool test_utf8_roundtrip() {
                  {0x10FFFF, "\xF4\x8F\xBF\xBF"}};
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
-        wchar_t wide[3] = {0};
+        goat_char_t wide[3] = {0};
         size_t units = 1;
-#if WCHAR_MAX <= 0xFFFF
-        if (cases[i].scalar >= 0x10000) {
-            uint32_t scalar = cases[i].scalar - 0x10000;
-            wide[0] = (wchar_t)(0xD800 + (scalar >> 10));
-            wide[1] = (wchar_t)(0xDC00 + (scalar & 0x3FF));
-            units = 2;
-        } else
-#endif
-            wide[0] = (wchar_t)cases[i].scalar;
+        wide[0] = (goat_char_t)cases[i].scalar;
         size_t size;
         char *encoded = encode_utf8_ex(wide, &size);
         ASSERT(size == strlen(cases[i].bytes));
@@ -103,7 +95,7 @@ bool test_utf8_roundtrip() {
         FREE(encoded);
         string_value_t decoded = decode_utf8(cases[i].bytes);
         ASSERT(decoded.data && decoded.length == units);
-        ASSERT(memcmp(decoded.data, wide, (units + 1) * sizeof(wchar_t)) == 0);
+        ASSERT(memcmp(decoded.data, wide, (units + 1) * sizeof(goat_char_t)) == 0);
         FREE_STRING(decoded);
     }
     /* Cross multiple output-buffer growth boundaries with mixed UTF-8 widths. */
@@ -121,7 +113,7 @@ bool test_utf8_roundtrip() {
     FREE_STRING(decoded);
     ASSERT(get_allocated_memory_size() == before);
     size_t size = 99;
-    encoded = encode_utf8_ex(L"", &size);
+    encoded = encode_utf8_ex(U"", &size);
     ASSERT(size == 0 && encoded[0] == 0);
     FREE(encoded);
     return true;
@@ -157,23 +149,9 @@ bool test_utf8_invalid_sequences() {
         ASSERT(decoded.data == NULL && decoded.length == 0 && !decoded.should_free);
         ASSERT(get_allocated_memory_size() == before);
     }
-    const wchar_t invalid_wide[] = {(wchar_t)0xD800, L'A', (wchar_t)0xDC00, 0};
-    char *encoded = encode_utf8(invalid_wide);
-    ASSERT(strcmp(encoded,
-                  "\xEF\xBF\xBD"
-                  "A"
-                  "\xEF\xBF\xBD")
-           == 0);
-    FREE(encoded);
-    const wchar_t trailing_high[] = {(wchar_t)0xD800, 0};
-    encoded = encode_utf8(trailing_high);
-    ASSERT(strcmp(encoded, "\xEF\xBF\xBD") == 0);
-    FREE(encoded);
-#if WCHAR_MAX > 0xFFFF
-    const wchar_t out_of_range[] = {(wchar_t)0x110000, (wchar_t)-1, 0};
-    encoded = encode_utf8(out_of_range);
-    ASSERT(strcmp(encoded, "\xEF\xBF\xBD\xEF\xBF\xBD") == 0);
-    FREE(encoded);
-#endif
+    const goat_char_t invalid_wide[] = {0xd800, U'A', 0xdc00, 0};
+    ASSERT(encode_utf8(invalid_wide) == NULL);
+    const goat_char_t out_of_range[] = {0x110000, 0};
+    ASSERT(encode_utf8(out_of_range) == NULL);
     return true;
 }

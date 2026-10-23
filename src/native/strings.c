@@ -17,7 +17,7 @@ static uint32_t goat_native_string_storage(const goat_native_context_v2_t *conte
         return GOAT_NATIVE_ABI_MISMATCH;
     goat_native_string_buffer_v2_t result = {0};
     if (length) {
-        result.data = goat_native_allocate(context, (length + 1) * sizeof(wchar_t));
+        result.data = goat_native_allocate(context, (length + 1) * sizeof(goat_char_t));
         result.length = result.capacity = length;
         result.data[length] = 0;
     }
@@ -31,11 +31,11 @@ uint32_t goat_native_string_copy(const goat_native_context_v2_t *context,
                                  goat_native_string_buffer_v2_t *out) {
     uint32_t status = goat_native_string_storage(context, value.length, out);
     if (status == GOAT_NATIVE_OK && value.length)
-        wmemcpy(out->data, value.data, value.length);
+        goat_memcpy(out->data, value.data, value.length);
     return status;
 }
 
-/** @brief Returns the VM-compatible length in wchar_t code units. */
+/** @brief Returns the VM-compatible length in goat_char_t code units. */
 int64_t goat_native_string_length(goat_native_string_view_v2_t value) {
     return (int64_t)value.length;
 }
@@ -76,7 +76,7 @@ int64_t goat_native_string_index_of(goat_native_string_view_v2_t value,
     if (needle.length > value.length)
         return -1;
     for (size_t i = 0; i <= value.length - needle.length; ++i)
-        if (!wmemcmp(value.data + i, needle.data, needle.length))
+        if (!goat_memcmp(value.data + i, needle.data, needle.length))
             return (int64_t)i;
     return -1;
 }
@@ -90,7 +90,7 @@ int64_t goat_native_string_last_index_of(goat_native_string_view_v2_t value,
         return -1;
     size_t i = value.length - needle.length;
     do {
-        if (!wmemcmp(value.data + i, needle.data, needle.length))
+        if (!goat_memcmp(value.data + i, needle.data, needle.length))
             return (int64_t)i;
     } while (i-- != 0);
     return -1;
@@ -106,7 +106,8 @@ bool goat_native_string_contains(goat_native_string_view_v2_t value,
 bool goat_native_string_starts_with(goat_native_string_view_v2_t value,
                                     goat_native_string_view_v2_t prefix) {
     return !prefix.length
-           || (prefix.length <= value.length && !wmemcmp(value.data, prefix.data, prefix.length));
+           || (prefix.length <= value.length
+               && !goat_memcmp(value.data, prefix.data, prefix.length));
 }
 
 /** @brief Tests a suffix; every string ends with the empty string. */
@@ -114,7 +115,9 @@ bool goat_native_string_ends_with(goat_native_string_view_v2_t value,
                                   goat_native_string_view_v2_t suffix) {
     return !suffix.length
            || (suffix.length <= value.length
-               && !wmemcmp(value.data + value.length - suffix.length, suffix.data, suffix.length));
+               && !goat_memcmp(value.data + value.length - suffix.length,
+                               suffix.data,
+                               suffix.length));
 }
 
 /** @brief Concatenates two views without modifying either operand. */
@@ -128,13 +131,13 @@ uint32_t goat_native_string_concat(const goat_native_context_v2_t *context,
     if (status != GOAT_NATIVE_OK)
         return status;
     if (left.length)
-        wmemcpy(out->data, left.data, left.length);
+        goat_memcpy(out->data, left.data, left.length);
     if (right.length)
-        wmemcpy(out->data + left.length, right.data, right.length);
+        goat_memcpy(out->data + left.length, right.data, right.length);
     return GOAT_NATIVE_OK;
 }
 
-/** @brief Tests whitespace in the interpreter's locale; empty strings are blank. */
+/** @brief Tests whitespace using Unicode 17.0.0; empty strings are blank. */
 uint32_t goat_native_string_is_blank(const goat_native_context_v2_t *context,
                                      goat_native_string_view_v2_t value,
                                      bool *out) {
@@ -150,7 +153,7 @@ uint32_t goat_native_string_is_blank(const goat_native_context_v2_t *context,
     return GOAT_NATIVE_OK;
 }
 
-/** @brief Copies the string after removing leading and trailing host-locale whitespace. */
+/** @brief Copies the string after removing leading and trailing Unicode White_Space. */
 uint32_t goat_native_string_trim(const goat_native_context_v2_t *context,
                                  goat_native_string_view_v2_t value,
                                  goat_native_string_buffer_v2_t *out) {
@@ -164,29 +167,42 @@ uint32_t goat_native_string_trim(const goat_native_context_v2_t *context,
     return goat_native_string_substring(context, value, (int64_t)begin, (int64_t)end, out);
 }
 
-/** @brief Internal one-code-unit case conversion using the interpreter's CRT and locale. */
+/** @brief Full Unicode default case conversion shared with the compiler and VM. */
 static uint32_t goat_native_string_case(const goat_native_context_v2_t *context,
                                         goat_native_string_view_v2_t value,
                                         bool upper,
                                         goat_native_string_buffer_v2_t *out) {
     if (!goat_native_has_string_services(context))
         return GOAT_NATIVE_ABI_MISMATCH;
-    uint32_t status = goat_native_string_storage(context, value.length, out);
-    if (status == GOAT_NATIVE_OK)
-        for (size_t i = 0; i < value.length; ++i)
-            out->data[i] = upper ? context->services->string_to_upper(value.data[i])
-                                 : context->services->string_to_lower(value.data[i]);
+    size_t length = 0;
+    for (size_t i = 0; i < value.length; ++i) {
+        goat_char_t mapped[3];
+        size_t n = goat_case_mapping(value.data, value.length, i, upper, mapped);
+        if (length > SIZE_MAX / sizeof(goat_char_t) - 1 - n)
+            return GOAT_NATIVE_RESOURCE_LIMIT;
+        length += n;
+    }
+    uint32_t status = goat_native_string_storage(context, length, out);
+    if (status == GOAT_NATIVE_OK) {
+        size_t offset = 0;
+        for (size_t i = 0; i < value.length; ++i) {
+            goat_char_t mapped[3];
+            size_t n = goat_case_mapping(value.data, value.length, i, upper, mapped);
+            goat_memcpy(out->data + offset, mapped, n);
+            offset += n;
+        }
+    }
     return status;
 }
 
-/** @brief Converts to uppercase with the same one-unit mapping as the VM. */
+/** @brief Converts to uppercase with the same full mapping as the VM. */
 uint32_t goat_native_string_to_upper_case(const goat_native_context_v2_t *context,
                                           goat_native_string_view_v2_t value,
                                           goat_native_string_buffer_v2_t *out) {
     return goat_native_string_case(context, value, true, out);
 }
 
-/** @brief Converts to lowercase with the same one-unit mapping as the VM. */
+/** @brief Converts to lowercase with the same full mapping as the VM. */
 uint32_t goat_native_string_to_lower_case(const goat_native_context_v2_t *context,
                                           goat_native_string_view_v2_t value,
                                           goat_native_string_buffer_v2_t *out) {
@@ -204,7 +220,7 @@ uint32_t goat_native_string_repeat(const goat_native_context_v2_t *context,
     uint32_t status = goat_native_string_storage(context, length, out);
     if (status == GOAT_NATIVE_OK && value.length)
         for (size_t i = 0; i < length; i += value.length)
-            wmemcpy(out->data + i, value.data, value.length);
+            goat_memcpy(out->data + i, value.data, value.length);
     return status;
 }
 
@@ -222,12 +238,12 @@ uint32_t goat_native_string_replace(const goat_native_context_v2_t *context,
         size_t pos = 0, written = 0;
         while (pos < value.length) {
             bool match = old_part.length <= value.length - pos
-                         && !wmemcmp(value.data + pos, old_part.data, old_part.length);
+                         && !goat_memcmp(value.data + pos, old_part.data, old_part.length);
             size_t count = match ? new_part.length : 1;
             if (count > GOAT_NATIVE_STRING_MAX - written)
                 return GOAT_NATIVE_BAD_REQUEST;
             if (pass && count)
-                wmemcpy(out->data + written, match ? new_part.data : value.data + pos, count);
+                goat_memcpy(out->data + written, match ? new_part.data : value.data + pos, count);
             written += count;
             pos += match ? old_part.length : 1;
         }
@@ -257,13 +273,13 @@ uint32_t goat_native_string_format(const goat_native_context_v2_t *context,
         while (pos < format.length) {
             size_t end = pos + 1;
             goat_native_string_view_v2_t part = {format.data + pos, 1};
-            if (format.data[pos] == L'%' && end < format.length && format.data[end] >= L'0'
-                && format.data[end] <= L'9') {
+            if (format.data[pos] == U'%' && end < format.length && format.data[end] >= U'0'
+                && format.data[end] <= U'9') {
                 size_t index = 0;
                 bool overflow = false;
-                while (end < format.length && format.data[end] >= L'0'
-                       && format.data[end] <= L'9') {
-                    size_t digit = (size_t)(format.data[end++] - L'0');
+                while (end < format.length && format.data[end] >= U'0'
+                       && format.data[end] <= U'9') {
+                    size_t digit = (size_t)(format.data[end++] - U'0');
                     if (index > (SIZE_MAX - digit) / 10)
                         overflow = true;
                     else if (!overflow)
@@ -276,7 +292,7 @@ uint32_t goat_native_string_format(const goat_native_context_v2_t *context,
             if (part.length > GOAT_NATIVE_STRING_MAX - written)
                 return GOAT_NATIVE_BAD_REQUEST;
             if (pass && part.length)
-                wmemcpy(out->data + written, part.data, part.length);
+                goat_memcpy(out->data + written, part.data, part.length);
             written += part.length;
             pos = end;
         }

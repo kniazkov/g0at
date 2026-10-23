@@ -7,11 +7,11 @@
 #define GOAT_NATIVE_RUNTIME_V1_H
 #include "native_abi.h"
 #include "native_strings.h"
+#include "unicode.h"
 
 #include <float.h>
 #include <math.h>
 #include <stdbool.h>
-#include <wchar.h>
 _Static_assert(sizeof(double) == 8 && FLT_RADIX == 2 && DBL_MANT_DIG == 53 && DBL_MAX_EXP == 1024,
                "binary64 required");
 #ifdef __FAST_MATH__

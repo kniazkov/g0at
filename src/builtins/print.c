@@ -14,7 +14,7 @@
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
     string_value_t str = object_to_string_with_access(args[0], &thread->context->access);
     if (str.data) {
-        print_utf8(str.data);
+        print_utf8_view(VALUE_TO_VIEW(str));
         FREE_STRING(str);
     }
     return operation_success(get_null_object());
@@ -26,7 +26,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_null_element();
 }
 
-const builtin_function_t builtin_print = {.name = L"print",
+const builtin_function_t builtin_print = {.name = U"print",
                                           .min_args = 1,
                                           .effects = BUILTIN_EFFECT_OUTPUT,
                                           .execute = execute,

@@ -40,13 +40,13 @@ calculate_true(node_t *node, abstract_state_t *state, arena_t *arena) {
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code_true(const node_t *node) {
-    return STATIC_STRING(L"true");
+    return STATIC_STRING(U"true");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void
 generate_indented_goat_code_true(const node_t *node, source_builder_t *builder, size_t indent) {
-    append_static_source(builder, L"true");
+    append_static_source(builder, U"true");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
@@ -62,7 +62,7 @@ static node_vtbl_t true_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"true",
+    .type_name = U"true",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -100,13 +100,13 @@ calculate_false(node_t *node, abstract_state_t *state, arena_t *arena) {
 
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code_false(const node_t *node) {
-    return STATIC_STRING(L"false");
+    return STATIC_STRING(U"false");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
 static void
 generate_indented_goat_code_false(const node_t *node, source_builder_t *builder, size_t indent) {
-    append_static_source(builder, L"false");
+    append_static_source(builder, U"false");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
@@ -122,7 +122,7 @@ static node_vtbl_t false_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"false",
+    .type_name = U"false",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

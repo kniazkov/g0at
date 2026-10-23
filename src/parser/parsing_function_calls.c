@@ -26,7 +26,7 @@ compilation_error_t *parsing_identifier_and_parentheses(token_t *identifier,
     /* The identifier is a property name in a member access chain (`obj.name` or `obj.name(...)`);
      * the member access reduction rule handles both forms. */
     if (identifier->left && identifier->left->type == TOKEN_OPERATOR
-        && identifier->left->text.data[0] == L'.') {
+        && identifier->left->text.data[0] == U'.') {
         return NULL;
     }
     if (identifier->right && identifier->right->type == TOKEN_BRACKET_PAIR

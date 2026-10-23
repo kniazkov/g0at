@@ -18,12 +18,12 @@
 #include <stdio.h>
 #include <string.h>
 
-const wchar_t *c_type_name(c_value_type_t type) {
-    return type == C_VALUE_INT64    ? L"int64_t"
-           : type == C_VALUE_DOUBLE ? L"double"
-           : type == C_VALUE_BOOL   ? L"bool"
-           : type == C_VALUE_CHAR   ? L"uint32_t"
-           : type == C_VALUE_STRING ? L"goat_native_string_view_v2_t"
+const goat_char_t *c_type_name(c_value_type_t type) {
+    return type == C_VALUE_INT64    ? U"int64_t"
+           : type == C_VALUE_DOUBLE ? U"double"
+           : type == C_VALUE_BOOL   ? U"bool"
+           : type == C_VALUE_CHAR   ? U"uint32_t"
+           : type == C_VALUE_STRING ? U"goat_native_string_view_v2_t"
                                     : NULL;
 }
 
@@ -45,15 +45,15 @@ static c_generated_expression_t literal(const node_t *node,
 
 c_generated_expression_t
 c_integer_literal(const node_t *node, c_generation_context_t *context, int64_t value) {
-    string_value_t text = value == INT64_MIN ? STATIC_STRING(L"(-INT64_C(9223372036854775807)-1)")
-                          : value < 0        ? format_string(L"(-INT64_C(%ld))", -value)
-                                             : format_string(L"INT64_C(%ld)", value);
+    string_value_t text = value == INT64_MIN ? STATIC_STRING(U"(-INT64_C(9223372036854775807)-1)")
+                          : value < 0        ? format_string(U"(-INT64_C(%ld))", -value)
+                                             : format_string(U"INT64_C(%ld)", value);
     return literal(node, context, C_VALUE_INT64, text, value != 0);
 }
 
 c_generated_expression_t
 c_char_literal(const node_t *node, c_generation_context_t *context, uint32_t value) {
-    string_value_t text = format_string(L"UINT32_C(%u)", (unsigned)value);
+    string_value_t text = format_string(U"UINT32_C(%u)", (unsigned)value);
     return literal(node, context, C_VALUE_CHAR, text, value != 0);
 }
 
@@ -65,13 +65,13 @@ c_real_literal(const node_t *node, c_generation_context_t *context, double value
         return (c_generated_expression_t){0};
     }
     if (isnan(value))
-        return literal(node, context, C_VALUE_DOUBLE, STATIC_STRING(L"((double)NAN)"), true);
+        return literal(node, context, C_VALUE_DOUBLE, STATIC_STRING(U"((double)NAN)"), true);
     if (isinf(value))
         return literal(node,
                        context,
                        C_VALUE_DOUBLE,
-                       signbit(value) ? STATIC_STRING(L"(-(double)INFINITY)")
-                                      : STATIC_STRING(L"((double)INFINITY)"),
+                       signbit(value) ? STATIC_STRING(U"(-(double)INFINITY)")
+                                      : STATIC_STRING(U"((double)INFINITY)"),
                        true);
     uint64_t bits;
     memcpy(&bits, &value, sizeof(bits));
@@ -84,7 +84,7 @@ c_real_literal(const node_t *node, c_generation_context_t *context, double value
              exponent ? 1 : 0,
              (unsigned long long)(bits & UINT64_C(0xfffffffffffff)),
              exponent ? (int)exponent - 1023 : -1022);
-    return literal(node, context, C_VALUE_DOUBLE, format_string(L"(%a)", text), value != 0.0);
+    return literal(node, context, C_VALUE_DOUBLE, format_string(U"(%a)", text), value != 0.0);
 }
 
 bool c_emit_return(const node_t *node,
@@ -101,8 +101,8 @@ bool c_emit_return(const node_t *node,
     if (valid) {
         c_emit_prelude(expression.prelude, builder, indent);
         if (context->module_definition)
-            add_static_source(builder, indent, L"g_guard_leave();");
-        add_source(builder, indent, L"return %s;", expression.value.data);
+            add_static_source(builder, indent, U"g_guard_leave();");
+        add_source(builder, indent, U"return %s;", expression.value.data);
     }
     context->terminates = valid;
     destroy_c_expression(&expression);
@@ -128,7 +128,7 @@ static void function_comment(const node_t *node, source_builder_t *builder, size
     const node_t *parent = node->parent;
     while (parent && parent->vtbl->type == NODE_EXPRESSION_PARENTHESIZED)
         parent = parent->parent;
-    string_view_t name = {L"<anonymous>", 11};
+    string_view_t name = {U"<anonymous>", 11};
     if (parent
         && (parent->vtbl->type == NODE_CONSTANT_DECLARATOR
             || parent->vtbl->type == NODE_VARIABLE_DECLARATOR))
@@ -140,24 +140,24 @@ static void function_comment(const node_t *node, source_builder_t *builder, size
     }
     string_builder_t comment;
     init_string_builder(&comment, 64);
-    append_string(&comment, L"/* Goat function: ");
+    append_string(&comment, U"/* Goat function: ");
     append_string_view(&comment, name);
-    append_char(&comment, L'(');
+    append_char(&comment, U'(');
     const node_t *parameters = get_node_child(node, 0);
     for (size_t i = 0; i < get_node_child_count(parameters); i++) {
         if (i)
-            append_string(&comment, L", ");
+            append_string(&comment, U", ");
         append_string_view(&comment, ((const declarator_t *)get_node_child(parameters, i))->name);
     }
-    append_string(&comment, L")");
+    append_string(&comment, U")");
     if (node->position && node->position->begin) {
-        string_value_t location = format_string(L" at %zu:%zu",
+        string_value_t location = format_string(U" at %zu:%zu",
                                                 node->position->begin->row,
                                                 node->position->begin->column);
         append_string_value(&comment, location);
         FREE_STRING(location);
     }
-    add_formatted_source(builder, indent, append_string(&comment, L". */"));
+    add_formatted_source(builder, indent, append_string(&comment, U". */"));
 }
 
 bool c_emit_function(const node_t *node,
@@ -175,38 +175,38 @@ bool c_emit_function(const node_t *node,
     string_builder_t signature;
     init_string_builder(&signature, 64);
     if (context->module_definition)
-        append_string(&signature, L"__attribute__((noinline)) ");
+        append_string(&signature, U"__attribute__((noinline)) ");
     append_string(&signature, c_type_name(c_generation_return_type(context)));
-    append_char(&signature, L' ');
+    append_char(&signature, U' ');
     append_substring(&signature, context->function_name.data, context->function_name.length);
-    append_char(&signature, L'(');
+    append_char(&signature, U'(');
     if (context->module_definition)
-        append_string(&signature, L"const goat_native_context_v2_t *g_context");
+        append_string(&signature, U"const goat_native_context_v2_t *g_context");
     else if (!count)
-        append_string(&signature, L"void");
+        append_string(&signature, U"void");
     for (size_t i = 0; i < count; i++) {
-        string_value_t name = format_string(L"g_p%zu", i);
+        string_value_t name = format_string(U"g_p%zu", i);
         bindings[i] = (c_generation_binding_t){.next = i ? &bindings[i - 1] : saved,
                                                .declaration = get_node_child(parameters, i),
                                                .name = {name.data, name.length},
                                                .type = c_generation_parameter_type(context, i)};
         if (i || context->module_definition)
-            append_string(&signature, L", ");
+            append_string(&signature, U", ");
         append_string(&signature, c_type_name(bindings[i].type));
-        append_char(&signature, L' ');
+        append_char(&signature, U' ');
         append_string_value(&signature, name);
     }
     if (count)
         context->bindings = &bindings[count - 1];
     bool prototypes =
         c_emit_callee_prototypes(context, context->module_definition ? NULL : builder);
-    add_static_source(builder, 0, L"");
+    add_static_source(builder, 0, U"");
     function_comment(node, builder, indent);
-    add_formatted_source(builder, indent, append_string(&signature, L") {"));
+    add_formatted_source(builder, indent, append_string(&signature, U") {"));
     if (context->module_definition)
-        add_static_source(builder, indent + 1, L"(void)g_context; g_guard_enter();");
+        add_static_source(builder, indent + 1, U"(void)g_context; g_guard_enter();");
     for (size_t i = 0; i < count; i++)
-        add_source(builder, indent + 1, L"(void)%s;", bindings[i].name.data);
+        add_source(builder, indent + 1, U"(void)%s;", bindings[i].name.data);
     bool success = prototypes
                    && generate_indented_c_code_from_node(get_node_child(node, 1),
                                                          context,
@@ -215,7 +215,7 @@ bool c_emit_function(const node_t *node,
     if (success && !context->terminates)
         success = fail_c_generation(context, node, C_GENERATION_UNSUPPORTED);
     if (success)
-        add_static_source(builder, indent, L"}");
+        add_static_source(builder, indent, U"}");
     context->bindings = saved;
     for (size_t i = 0; i < count; i++)
         FREE((void *)bindings[i].name.data);
@@ -225,5 +225,5 @@ bool c_emit_function(const node_t *node,
 
 void c_emit_headers(source_builder_t *builder, unsigned helpers) {
     (void)helpers;
-    add_static_source(builder, 0, L"#include \"native_runtime.h\"");
+    add_static_source(builder, 0, U"#include \"native_runtime.h\"");
 }

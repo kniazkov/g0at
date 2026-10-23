@@ -8,16 +8,16 @@
 #include "analysis/function_summary.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "goat/unicode.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 bool test_function_summary_storage() {
     arena_t *arena = create_arena(16);
-    string_view_t args[] = {{L"x", 1}, {L"y", 1}};
+    string_view_t args[] = {{U"x", 1}, {U"y", 1}};
     node_t *function = create_function_object_node(arena, args, 2);
     function_summary_t *summary = create_function_summary(arena, function, 2);
     ASSERT(summary->function == function && summary->parameter_count == 2);
@@ -66,24 +66,25 @@ bool test_function_summary_states() {
                                                    FUNCTION_ANALYZING,
                                                    FUNCTION_ANALYZED,
                                                    FUNCTION_INCONCLUSIVE};
-    const wchar_t *names[] = {L"unanalyzed", L"analyzing", L"analyzed", L"inconclusive"};
+    const goat_char_t *names[] = {U"unanalyzed", U"analyzing", U"analyzed", U"inconclusive"};
     for (size_t i = 0; i < sizeof(statuses) / sizeof(*statuses); i++) {
         summary->status = statuses[i];
         string_value_t text = function_summary_to_string(summary);
-        ASSERT(!wcsncmp(text.data, names[i], wcslen(names[i])));
-        ASSERT(wcsstr(text.data, L"effects=unknown c=unknown"));
+        ASSERT(!goat_strncmp(text.data, names[i], goat_strlen(names[i])));
+        ASSERT(goat_strstr(text.data, U"effects=unknown c=unknown"));
         FREE_STRING(text);
     }
     summary->effects = FUNCTION_EFFECT_INPUT | FUNCTION_EFFECT_OUTPUT
                        | FUNCTION_EFFECT_EXTERNAL_READ | FUNCTION_EFFECT_EXTERNAL_WRITE;
     summary->c_support = FUNCTION_C_UNSUPPORTED;
     string_value_t text = function_summary_to_string(summary);
-    ASSERT(wcsstr(text.data, L"effects=input|output|external-read|external-write c=unsupported"));
+    ASSERT(
+        goat_strstr(text.data, U"effects=input|output|external-read|external-write c=unsupported"));
     FREE_STRING(text);
     summary->effects = FUNCTION_EFFECT_NONE;
     summary->c_support = FUNCTION_C_SUPPORTED;
     text = function_summary_to_string(summary);
-    ASSERT(wcsstr(text.data, L"effects=none c=supported"));
+    ASSERT(goat_strstr(text.data, U"effects=none c=supported"));
     FREE_STRING(text);
     destroy_arena(arena);
     return true;
@@ -94,7 +95,7 @@ bool test_function_summary_events() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const f = func(n) { return func() { return n; }; }; var g = f(10); g();"));
+        STATIC_STRING(U"const f = func(n) { return func() { return n; }; }; var g = f(10); g();"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -112,8 +113,8 @@ bool test_function_summary_events() {
     query.node = second->node;
     ASSERT(find_last_analysis_event(collector, &query) == second);
     string_value_t before = analysis_collector_to_text(collector);
-    ASSERT(wcsstr(before.data, L": function-summary analyzed ("));
-    ASSERT(wcsstr(before.data, L"effects=none c=unsupported"));
+    ASSERT(goat_strstr(before.data, U": function-summary analyzed ("));
+    ASSERT(goat_strstr(before.data, U"effects=none c=unsupported"));
     function_summary_set_t *set = get_function_summaries(second->node);
     function_summary_t *live = set->head;
     live->parameter_types[0] = make_real_element();
@@ -123,7 +124,7 @@ bool test_function_summary_events() {
     live->c_support = FUNCTION_C_SUPPORTED;
     ASSERT(second->function_summary->parameter_types[0]->type == LATTICE_INTEGER);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!goat_strcmp(before.data, after.data));
     FREE_STRING(after);
     ASSERT(!add_function_summary_event(NULL, live));
     options->optimization_level = OPTIMIZATION_NONE;
@@ -132,7 +133,7 @@ bool test_function_summary_events() {
     ASSERT(!set->head && !set->tail);
     ASSERT(second->function_summary->parameter_types[0]->type == LATTICE_INTEGER);
     after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!goat_strcmp(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);

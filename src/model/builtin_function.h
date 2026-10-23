@@ -3,6 +3,8 @@
  * @brief Shared runtime and analysis metadata for native functions.
  */
 #pragma once
+
+#include "goat/unicode.h"
 #include "object.h"
 
 #include <stdint.h>
@@ -22,7 +24,7 @@ typedef enum {
 
 /** @brief Every native function supplies both executors; descriptors are immutable singletons. */
 typedef struct builtin_function_t {
-    const wchar_t *name;
+    const goat_char_t *name;
     size_t min_args;
     unsigned effects;
     /** @brief Executors receive at least min_args; runtime results own a non-NULL value. */

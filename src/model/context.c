@@ -13,7 +13,7 @@
 
 object_t *get_this_key() {
     static object_static_string_t storage;
-    return get_static_string_object(&storage, L"this");
+    return get_static_string_object(&storage, U"this");
 }
 
 context_t *

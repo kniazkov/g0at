@@ -24,43 +24,43 @@ typedef struct {
 
 /** @brief Appends the single-quoted notation of a character with escape sequences. */
 static string_value_t append_character_notation(string_builder_t *builder, uint32_t value) {
-    append_char(builder, L'\'');
+    append_char(builder, U'\'');
     switch (value) {
         case 0:
-            append_substring(builder, L"\\0", 2);
+            append_substring(builder, U"\\0", 2);
             break;
-        case L'\r':
-            append_substring(builder, L"\\r", 2);
+        case U'\r':
+            append_substring(builder, U"\\r", 2);
             break;
-        case L'\n':
-            append_substring(builder, L"\\n", 2);
+        case U'\n':
+            append_substring(builder, U"\\n", 2);
             break;
-        case L'\t':
-            append_substring(builder, L"\\t", 2);
+        case U'\t':
+            append_substring(builder, U"\\t", 2);
             break;
-        case L'\b':
-            append_substring(builder, L"\\b", 2);
+        case U'\b':
+            append_substring(builder, U"\\b", 2);
             break;
-        case L'\\':
-            append_substring(builder, L"\\\\", 2);
+        case U'\\':
+            append_substring(builder, U"\\\\", 2);
             break;
-        case L'\'':
-            append_substring(builder, L"\\'", 2);
+        case U'\'':
+            append_substring(builder, U"\\'", 2);
             break;
-        case L'"':
-            append_substring(builder, L"\\\"", 2);
+        case U'"':
+            append_substring(builder, U"\\\"", 2);
             break;
         default:
             if (value >= 0x10000 || (value >= 0xD800 && value <= 0xDFFF)) {
-                append_substring(builder, L"\\U", 2);
+                append_substring(builder, U"\\U", 2);
                 for (int shift = 28; shift >= 0; shift -= 4)
-                    append_char(builder, L"0123456789abcdef"[(value >> shift) & 15]);
+                    append_char(builder, U"0123456789abcdef"[(value >> shift) & 15]);
             } else {
-                append_char(builder, (wchar_t)value);
+                append_char(builder, (goat_char_t)value);
             }
             break;
     }
-    return append_char(builder, L'\'');
+    return append_char(builder, U'\'');
 }
 
 /** @brief Implements @ref node_vtbl_t::calculate. */
@@ -111,7 +111,7 @@ static node_vtbl_t character_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"character",
+    .type_name = U"character",
     .get_data = get_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -136,7 +136,7 @@ static node_vtbl_t character_vtbl = {
 };
 
 /** @brief Built-in data type */
-static data_type_t data_type = BUILT_IN_DATA_TYPE(L"char");
+static data_type_t data_type = BUILT_IN_DATA_TYPE(U"char");
 
 node_t *create_character_node(arena_t *arena, uint32_t value) {
     character_t *expr = (character_t *)alloc_zeroed_from_arena(arena, sizeof(character_t));

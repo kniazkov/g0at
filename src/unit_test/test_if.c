@@ -46,8 +46,8 @@ bool test_abstract_truthiness() {
                  {make_integer_range_element(arena, -5, 0), ABSTRACT_EITHER},
                  {make_integer_range_element(arena, 0, 5), ABSTRACT_EITHER},
                  {make_integer_range_element(arena, -5, 5), ABSTRACT_EITHER},
-                 {make_string_constant_element(arena, (string_view_t){L"", 0}), ABSTRACT_FALSE},
-                 {make_string_constant_element(arena, (string_view_t){L"\0", 1}), ABSTRACT_TRUE}};
+                 {make_string_constant_element(arena, (string_view_t){U"", 0}), ABSTRACT_FALSE},
+                 {make_string_constant_element(arena, (string_view_t){U"\0", 1}), ABSTRACT_TRUE}};
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
         ASSERT(lattice_truth(cases[i].value) == cases[i].truth);
@@ -156,7 +156,7 @@ bool test_if_return_values() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"var x = 0; if (pi) { return (x = 1); } else { return (x = 3); } x = 99;"));
+        STATIC_STRING(U"var x = 0; if (pi) { return (x = 1); } else { return (x = 3); } x = 99;"));
     ASSERT(root);
     options_t *options = create_options();
     ASSERT(!analyze(root, &memory, options, NULL));

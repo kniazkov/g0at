@@ -109,58 +109,50 @@ static object_t *clone(process_t *process, object_t *obj) {
 
 /** @brief Converts a Unicode code point to its string representation. */
 static string_value_t character_to_string(uint32_t value) {
-    if (sizeof(wchar_t) > 2 || value < 0x10000) {
-        wchar_t *buffer = ALLOC(2 * sizeof(wchar_t));
-        buffer[0] = (wchar_t)value;
-        buffer[1] = 0;
-        return (string_value_t){buffer, 1, true};
-    }
-    value -= 0x10000;
-    wchar_t *buffer = ALLOC(3 * sizeof(wchar_t));
-    buffer[0] = (wchar_t)(0xD800 + (value >> 10));
-    buffer[1] = (wchar_t)(0xDC00 + (value & 0x3FF));
-    buffer[2] = 0;
-    return (string_value_t){buffer, 2, true};
+    goat_char_t *buffer = ALLOC(2 * sizeof(goat_char_t));
+    buffer[0] = (goat_char_t)value;
+    buffer[1] = 0;
+    return (string_value_t){buffer, 1, true};
 }
 
 /** @brief Converts a Unicode code point to its single-quoted notation. */
 static string_value_t character_to_string_notation(uint32_t value) {
     string_builder_t builder;
     init_string_builder(&builder, 4);
-    append_char(&builder, L'\'');
+    append_char(&builder, U'\'');
     switch (value) {
-        case L'\r':
-            append_substring(&builder, L"\\r", 2);
+        case U'\r':
+            append_substring(&builder, U"\\r", 2);
             break;
-        case L'\n':
-            append_substring(&builder, L"\\n", 2);
+        case U'\n':
+            append_substring(&builder, U"\\n", 2);
             break;
-        case L'\t':
-            append_substring(&builder, L"\\t", 2);
+        case U'\t':
+            append_substring(&builder, U"\\t", 2);
             break;
-        case L'\b':
-            append_substring(&builder, L"\\b", 2);
+        case U'\b':
+            append_substring(&builder, U"\\b", 2);
             break;
-        case L'\\':
-            append_substring(&builder, L"\\\\", 2);
+        case U'\\':
+            append_substring(&builder, U"\\\\", 2);
             break;
-        case L'\'':
-            append_substring(&builder, L"\\'", 2);
+        case U'\'':
+            append_substring(&builder, U"\\'", 2);
             break;
-        case L'"':
-            append_substring(&builder, L"\\\"", 2);
+        case U'"':
+            append_substring(&builder, U"\\\"", 2);
             break;
         default:
-            if (sizeof(wchar_t) > 2 || value < 0x10000) {
-                append_char(&builder, (wchar_t)value);
+            if (sizeof(goat_char_t) > 2 || value < 0x10000) {
+                append_char(&builder, (goat_char_t)value);
             } else {
                 value -= 0x10000;
-                append_char(&builder, (wchar_t)(0xD800 + (value >> 10)));
-                append_char(&builder, (wchar_t)(0xDC00 + (value & 0x3FF)));
+                append_char(&builder, (goat_char_t)(0xD800 + (value >> 10)));
+                append_char(&builder, (goat_char_t)(0xDC00 + (value & 0x3FF)));
             }
             break;
     }
-    return append_char(&builder, L'\'');
+    return append_char(&builder, U'\'');
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string. */

@@ -15,7 +15,7 @@
 
 bool test_native_compiler_request(void) {
 #if defined(__linux__) || defined(_WIN32)
-    const wchar_t *sources[] = {NULL, L"", L"", L"", L""};
+    const goat_char_t *sources[] = {NULL, U"", U"", U"", U""};
     const char *compilers[] = {"cc", NULL, "", "cc", "cc"};
     const char *destinations[] = {"unused.so", "unused.so", "unused.so", NULL, ""};
     for (size_t i = 0; i < 5; i++) {
@@ -29,7 +29,7 @@ bool test_native_compiler_request(void) {
     }
 #else
     native_compile_result_t result =
-        compile_native_library(L"int f(void){return 1;}", "nonexistent-compiler", "unused.so");
+        compile_native_library(U"int f(void){return 1;}", "nonexistent-compiler", "unused.so");
     ASSERT(result.status == NATIVE_COMPILE_UNSUPPORTED);
     ASSERT(result.exit_code == -1 && !result.system_error && !result.cleanup_error);
     ASSERT(!result.diagnostics && !result.diagnostics_length);

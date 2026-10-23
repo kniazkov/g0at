@@ -72,7 +72,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     const simple_assignment_t *expr = (const simple_assignment_t *)node;
     string_value_t left = generate_goat_code_from_node(&expr->base.left_operand->base.base);
     string_value_t right = generate_goat_code_from_expression(expr->base.right_operand);
-    string_value_t result = format_string(L"%s = %s", left.data, right.data);
+    string_value_t result = format_string(U"%s = %s", left.data, right.data);
     FREE_STRING(left);
     FREE_STRING(right);
     return result;
@@ -83,7 +83,7 @@ static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const simple_assignment_t *expr = (const simple_assignment_t *)node;
     generate_indented_goat_code_from_node(&expr->base.left_operand->base.base, builder, indent);
-    append_static_source(builder, L" = ");
+    append_static_source(builder, U" = ");
     generate_indented_goat_code_from_expression(expr->base.right_operand, builder, indent);
 }
 
@@ -141,7 +141,7 @@ static node_vtbl_t simple_assignment_vtbl = {
     .is_pure = not_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_direct_effects,
-    .type_name = L"assignment",
+    .type_name = U"assignment",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

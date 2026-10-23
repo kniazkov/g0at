@@ -17,7 +17,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return interpret_binary_math(state, args, builtin_maximum);
 }
 
-const builtin_function_t builtin_max = {.name = L"max",
+const builtin_function_t builtin_max = {.name = U"max",
                                         .min_args = 2,
                                         .effects = BUILTIN_EFFECT_NONE,
                                         .execute = execute,

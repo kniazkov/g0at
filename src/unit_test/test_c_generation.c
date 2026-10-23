@@ -8,13 +8,13 @@
 #include "analysis_test_support.h"
 #include "cli/options.h"
 #include "codegen/c_generation.h"
+#include "goat/unicode.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 bool test_c_generation_context(void) {
     arena_t *arena = create_arena(32);
@@ -54,7 +54,7 @@ static bool partial_function(const node_t *node,
                              c_generation_context_t *context,
                              source_builder_t *builder,
                              size_t indent) {
-    add_source(builder, indent, L"incomplete_%zu", context->summary->parameter_count);
+    add_source(builder, indent, U"incomplete_%zu", context->summary->parameter_count);
     return fail_c_generation(context, get_node_child(node, 1), C_GENERATION_UNSUPPORTED);
 }
 
@@ -69,9 +69,9 @@ static bool complete_function(const node_t *node,
         return false;
     string_builder_t line;
     init_string_builder(&line, 0);
-    append_string(&line, L"int64_t ");
+    append_string(&line, U"int64_t ");
     append_substring(&line, context->function_name.data, context->function_name.length);
-    add_formatted_source(builder, indent, append_string(&line, L"(int64_t n) { return n; }"));
+    add_formatted_source(builder, indent, append_string(&line, U"(int64_t n) { return n; }"));
     return true;
 }
 
@@ -88,7 +88,7 @@ bool test_c_generation_transaction(void) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const f=func(n){if(n<1)return 0;return f(n-1);};f(1);"));
+        STATIC_STRING(U"const f=func(n){if(n<1)return 0;return f(n-1);};f(1);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -98,7 +98,7 @@ bool test_c_generation_transaction(void) {
     ASSERT(event && event->function_summary->c_support == FUNCTION_C_SUPPORTED);
     function_summary_t summary = *event->function_summary;
     node_t *function = (node_t *)summary.function;
-    string_view_t name = {L"goat_f_integer", 14};
+    string_view_t name = {U"goat_f_integer", 14};
     c_generation_result_t result = generate_c_function(&summary, name, NULL, NULL);
     ASSERT(result.status == C_GENERATION_UNSUPPORTED && !result.source.data);
     ASSERT(summary.c_support == FUNCTION_C_SUPPORTED);
@@ -117,12 +117,12 @@ bool test_c_generation_transaction(void) {
     result = generate_c_function(&summary, name, NULL, NULL);
     ASSERT(result.status == C_GENERATION_UNSUPPORTED && !result.source.data);
     c_generation_binding_t binding = {.declaration = function,
-                                      .name = {L"n", 1},
+                                      .name = {U"n", 1},
                                       .type = C_VALUE_INT64};
     c_generation_callee_t callee = {.summary = &summary, .name = name};
     result = generate_c_function(&summary, name, &binding, &callee);
     ASSERT(result.status == C_GENERATION_OK && !result.failed_node);
-    ASSERT(result.source.data && wcsstr(result.source.data, L"goat_f_integer"));
+    ASSERT(result.source.data && goat_strstr(result.source.data, U"goat_f_integer"));
     FREE_STRING(result.source);
     ASSERT(generate_c_function(&summary, (string_view_t){0}, NULL, NULL).status
            == C_GENERATION_INVALID_REQUEST);
@@ -156,11 +156,11 @@ bool test_c_generation_transaction(void) {
 static c_generated_expression_t sequenced_expression(const node_t *node,
                                                      c_generation_context_t *context) {
     source_builder_t *prelude = create_source_builder();
-    add_static_source(prelude, 0, L"int64_t t0 = first();");
-    add_static_source(prelude, 0, L"int64_t t1 = second();");
+    add_static_source(prelude, 0, U"int64_t t0 = first();");
+    add_static_source(prelude, 0, U"int64_t t1 = second();");
     return (c_generated_expression_t){.success = true,
                                       .type = c_generation_expression_type(context, node),
-                                      .value = format_string(L"%s", L"t0 + t1"),
+                                      .value = format_string(U"%s", U"t0 + t1"),
                                       .prelude = prelude};
 }
 
@@ -183,10 +183,10 @@ bool test_c_generation_expression(void) {
     c_generation_context_t context = {.summary = &summary};
     c_generated_expression_t expression = generate_c_code_from_node(node, &context);
     ASSERT(expression.success && expression.type == C_VALUE_INT64);
-    ASSERT(!wcscmp(expression.value.data, L"t0 + t1"));
+    ASSERT(!goat_strcmp(expression.value.data, U"t0 + t1"));
     ASSERT(expression.prelude->count == 2);
-    ASSERT(wcsstr(expression.prelude->lines[0].text.data, L"first()"));
-    ASSERT(wcsstr(expression.prelude->lines[1].text.data, L"second()"));
+    ASSERT(goat_strstr(expression.prelude->lines[0].text.data, U"first()"));
+    ASSERT(goat_strstr(expression.prelude->lines[1].text.data, U"second()"));
     destroy_c_expression(&expression);
     ASSERT(!expression.value.data && !expression.prelude && !expression.success);
     destroy_c_expression(&expression);

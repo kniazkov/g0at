@@ -32,7 +32,7 @@ reduce_update(token_t *op, parser_memory_t *memory, token_groups_t *groups, bool
                                        CRITICAL,
                                        get_messages()->expected_lvalue,
                                        op->text.data);
-    bool decrement = op->text.data[0] == L'-';
+    bool decrement = op->text.data[0] == U'-';
     expression_t *expr =
         postfix
             ? (decrement

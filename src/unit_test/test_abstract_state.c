@@ -45,7 +45,7 @@ bool test_abstract_state_clone_lifetimes() {
                     continue;
                 int order[] = {a, b, c, 6 - a - b - c};
                 arena_t *arena = create_arena(8);
-                declarator_t decl = {.name = {L"x", 1}};
+                declarator_t decl = {.name = {U"x", 1}};
                 abstract_state_t *states[4];
                 states[0] = create_abstract_state(arena);
                 ASSERT(!set_in_abstract_state(states[0],
@@ -133,7 +133,7 @@ bool test_abstract_state_many_declarations() {
 
 bool test_abstract_state_join_isolation() {
     arena_t *arena = create_arena(8);
-    declarator_t decl = {.name = {L"x", 1}};
+    declarator_t decl = {.name = {U"x", 1}};
     abstract_state_t *base = create_abstract_state(arena);
     base->collector = create_analysis_collector(arena);
     set_in_abstract_state(base, &decl, make_integer_constant_element(arena, 0));
@@ -207,10 +207,10 @@ bool test_abstract_state_branch_program() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
         parse_analysis_test_program(&memory,
-                                    STATIC_STRING(L"const choose = func() { return pi; };\n"
-                                                  L"var x = 0;\n"
-                                                  L"if (choose()) { x = 1; } else { x = x + 2; }\n"
-                                                  L"var y = x;\n"));
+                                    STATIC_STRING(U"const choose = func() { return pi; };\n"
+                                                  U"var x = 0;\n"
+                                                  U"if (choose()) { x = 1; } else { x = x + 2; }\n"
+                                                  U"var y = x;\n"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -220,7 +220,7 @@ bool test_abstract_state_branch_program() {
     while (event && !range_is(event->value, 1, 2)) {
         event = find_analysis_event(collector, event, &query);
     }
-    ASSERT(event && event->declarator->name.length == 1 && event->declarator->name.data[0] == L'x');
+    ASSERT(event && event->declarator->name.length == 1 && event->declarator->name.data[0] == U'x');
     query = (analysis_event_query_t){.kind = ANALYSIS_DECLARATION_SUMMARY,
                                      .declarator = event->declarator};
     const analysis_event_t *summary = find_last_analysis_event(collector, &query);
@@ -235,8 +235,8 @@ bool test_abstract_state_branch_program() {
 
 bool test_abstract_state_loop_widening() {
     arena_t *arena = create_arena(8);
-    declarator_t counter = {.name = {L"i", 1}};
-    declarator_t invariant = {.name = {L"n", 1}};
+    declarator_t counter = {.name = {U"i", 1}};
+    declarator_t invariant = {.name = {U"n", 1}};
     abstract_state_t *head = create_abstract_state(arena);
     set_in_abstract_state(head, &counter, make_integer_constant_element(arena, 0));
     set_in_abstract_state(head, &invariant, make_integer_constant_element(arena, 10));

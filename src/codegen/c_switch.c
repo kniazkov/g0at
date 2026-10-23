@@ -78,20 +78,21 @@ static string_value_t equality(c_generation_context_t *context,
                                string_value_t left,
                                string_value_t right) {
     if (a != b && !(number(a) && number(b)))
-        return STATIC_STRING(L"false");
+        return STATIC_STRING(U"false");
     if (a == C_VALUE_STRING)
-        return format_string(L"(%s.length == %s.length && (!%s.length || wmemcmp(%s.data, %s.data, "
-                             L"%s.length) == 0))",
-                             left.data,
-                             right.data,
-                             left.data,
-                             left.data,
-                             right.data,
-                             left.data);
+        return format_string(
+            U"(%s.length == %s.length && (!%s.length || goat_memcmp(%s.data, %s.data, "
+            U"%s.length) == 0))",
+            left.data,
+            right.data,
+            left.data,
+            left.data,
+            right.data,
+            left.data);
     if (a == b)
-        return format_string(L"(%s == %s)", left.data, right.data);
+        return format_string(U"(%s == %s)", left.data, right.data);
     context->helper_flags |= C_HELPER_COMPARISON;
-    return format_string(L"((g_compare_i64_double(%s, %s) & 2) != 0)",
+    return format_string(U"((g_compare_i64_double(%s, %s) & 2) != 0)",
                          a == C_VALUE_INT64 ? left.data : right.data,
                          a == C_VALUE_INT64 ? right.data : left.data);
 }
@@ -108,7 +109,7 @@ bool c_emit_switch(const node_t *node,
     string_value_t saved = c_capture_operand(prelude, context, &selector, selector.type);
     c_emit_prelude(prelude, builder, indent);
     destroy_source_builder(prelude);
-    add_source(builder, indent, L"(void)%s;", saved.data);
+    add_source(builder, indent, U"(void)%s;", saved.data);
     size_t id = context->temporary_count++;
     bool pending = true, success = true, can_finish = false;
     for (size_t i = 0; i < switch_branch_count(node) && pending && success; i++) {
@@ -126,17 +127,17 @@ bool c_emit_switch(const node_t *node,
             string_value_t value = c_capture_operand(prelude, context, &label, label.type);
             c_emit_prelude(prelude, builder, indent);
             destroy_source_builder(prelude);
-            add_source(builder, indent, L"(void)%s;", value.data);
+            add_source(builder, indent, U"(void)%s;", value.data);
             abstract_truth_t truth = match(get_node_child(node, 0), branch->labels[j], &proofs);
             if (truth == ABSTRACT_TRUE) {
-                add_source(builder, indent, L"goto g_switch_%zu_case_%zu;", id, i);
+                add_source(builder, indent, U"goto g_switch_%zu_case_%zu;", id, i);
                 selected = true;
                 pending = false;
             } else if (truth != ABSTRACT_FALSE) {
                 string_value_t test = equality(context, selector.type, label.type, saved, value);
                 add_source(builder,
                            indent,
-                           L"if (%s) goto g_switch_%zu_case_%zu;",
+                           U"if (%s) goto g_switch_%zu_case_%zu;",
                            test.data,
                            id,
                            i);
@@ -148,19 +149,19 @@ bool c_emit_switch(const node_t *node,
         }
         if (selected && success) {
             if (branch->count && pending)
-                add_source(builder, indent, L"goto g_switch_%zu_next_%zu;", id, i);
+                add_source(builder, indent, U"goto g_switch_%zu_next_%zu;", id, i);
             if (branch->count)
-                add_source(builder, indent, L"g_switch_%zu_case_%zu:;", id, i);
+                add_source(builder, indent, U"g_switch_%zu_case_%zu:;", id, i);
             context->terminates = false;
             success = generate_indented_c_code_from_node(branch->body, context, builder, indent);
             can_finish |= !context->terminates;
-            add_source(builder, indent, L"goto g_switch_%zu_end;", id);
+            add_source(builder, indent, U"goto g_switch_%zu_end;", id);
             if (branch->count && pending)
-                add_source(builder, indent, L"g_switch_%zu_next_%zu:;", id, i);
+                add_source(builder, indent, U"g_switch_%zu_next_%zu:;", id, i);
         }
     }
-    add_source(builder, indent, L"goto g_switch_%zu_end;", id);
-    add_source(builder, indent, L"g_switch_%zu_end:;", id);
+    add_source(builder, indent, U"goto g_switch_%zu_end;", id);
+    add_source(builder, indent, U"g_switch_%zu_end:;", id);
     context->terminates = !pending && !can_finish;
     FREE_STRING(saved);
     destroy_c_expression(&selector);

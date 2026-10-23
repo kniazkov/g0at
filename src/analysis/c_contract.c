@@ -81,7 +81,7 @@ void analyze_function_c_contracts(node_t *root) {
 
 string_value_t c_blockers_to_string(uint32_t blockers) {
     if (!blockers)
-        return STATIC_STRING(L"none");
+        return STATIC_STRING(U"none");
     const uint32_t bits[] = {C_BLOCKER_ANALYSIS,
                              C_BLOCKER_PARAMETERS,
                              C_BLOCKER_RETURN,
@@ -89,8 +89,8 @@ string_value_t c_blockers_to_string(uint32_t blockers) {
                              C_BLOCKER_CAPTURES,
                              C_BLOCKER_BODY,
                              C_BLOCKER_ACCESS};
-    const wchar_t *names[] =
-        {L"analysis", L"parameters", L"return", L"effects", L"captures", L"body", L"access"};
+    const goat_char_t *names[] =
+        {U"analysis", U"parameters", U"return", U"effects", U"captures", U"body", U"access"};
     string_builder_t builder;
     init_string_builder(&builder, 0);
     bool separator = false;
@@ -98,7 +98,7 @@ string_value_t c_blockers_to_string(uint32_t blockers) {
     for (size_t i = 0; i < sizeof(bits) / sizeof(*bits); i++) {
         if (blockers & bits[i]) {
             if (separator)
-                append_char(&builder, L'|');
+                append_char(&builder, U'|');
             result = append_string(&builder, names[i]);
             separator = true;
         }

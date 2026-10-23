@@ -21,7 +21,7 @@ bool test_unknown_expression_values() {
     arena_t *arena = create_arena(8);
     abstract_state_t *state = create_abstract_state(arena);
     analysis_collector_t *collector = create_analysis_collector(arena);
-    declarator_t sentinel = {.name = {L"sentinel", 8}};
+    declarator_t sentinel = {.name = {U"sentinel", 8}};
     const lattice_element_t *saved = make_integer_constant_element(arena, 17);
     set_in_abstract_state(state, &sentinel, saved);
     state->collector = collector;
@@ -34,7 +34,7 @@ bool test_unknown_expression_values() {
                                 (expression_t *)create_real_number_node(arena, 1.5),
                                 (expression_t *)create_null_node(arena),
                                 (expression_t *)create_true_node(arena),
-                                (expression_t *)create_static_string_node(arena, L"text", 4)};
+                                (expression_t *)create_static_string_node(arena, U"text", 4)};
     for (size_t i = 0; i < sizeof(operands) / sizeof(*operands); i++) {
         expression_t *expr =
             (expression_t *)create_function_call_node_without_args(arena, operands[i]);
@@ -55,12 +55,12 @@ bool test_unknown_expression_values() {
 }
 
 bool test_unknown_values_in_analysis() {
-    const wchar_t *expressions[] = {L"pi", L"(pi)"};
+    const goat_char_t *expressions[] = {U"pi", U"(pi)"};
     for (size_t i = 0; i < sizeof(expressions) / sizeof(*expressions); i++) {
         arena_t *arena = create_arena(8);
         parser_memory_t memory = {arena, arena, arena, arena};
         string_value_t source =
-            format_string(L"var x = 0;\nx = %s;\nvar y = x;\nconst z = 1 + x;\n", expressions[i]);
+            format_string(U"var x = 0;\nx = %s;\nvar y = x;\nconst z = 1 + x;\n", expressions[i]);
         node_t *root = parse_analysis_test_program(&memory, source);
         ASSERT(root);
         options_t *options = create_options();
@@ -123,7 +123,7 @@ bool test_valueless_nodes_and_known_values() {
     node_t *root = parse_analysis_test_program(
         &memory,
         STATIC_STRING(
-            L"var x = 1; const f = func(a) { if (a) { return a; } else { return 0; } }; x = 2;"));
+            U"var x = 1; const f = func(a) { if (a) { return a; } else { return 0; } }; x = 2;"));
     ASSERT(root);
     abstract_state_t *state = create_abstract_state(arena);
     state->collector = create_analysis_collector(arena);

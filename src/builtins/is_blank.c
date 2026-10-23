@@ -4,19 +4,17 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
 
-#include <wchar.h>
-#include <wctype.h>
-
 /** @brief Checks that every character of the string is whitespace. */
-static bool is_blank_string(const wchar_t *data, size_t length) {
+static bool is_blank_string(const goat_char_t *data, size_t length) {
     for (size_t i = 0; i < length; i++) {
-        if (!iswspace(data[i]))
+        if (!goat_is_space(data[i]))
             return false;
     }
     return true;
@@ -59,7 +57,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_boolean_element();
 }
 
-const builtin_function_t builtin_is_blank = {.name = L"isBlank",
+const builtin_function_t builtin_is_blank = {.name = U"isBlank",
                                              .min_args = 0,
                                              .effects = BUILTIN_EFFECT_NONE,
                                              .execute = execute,

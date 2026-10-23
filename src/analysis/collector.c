@@ -120,26 +120,26 @@ static string_value_t graph_event_to_string(const analysis_event_t *event) {
     string_value_t caller = function_signature_to_string(event->function_summary);
     string_value_t text;
     if (event->kind == ANALYSIS_CALL_GROUP) {
-        text = format_string(L"f%zu %s = g%zu %s size=%zu %s",
+        text = format_string(U"f%zu %s = g%zu %s size=%zu %s",
                              event->caller_id,
                              caller.data,
                              event->component,
-                             event->recursive ? L"recursive" : L"acyclic",
+                             event->recursive ? U"recursive" : U"acyclic",
                              event->component_size,
-                             event->complete ? L"complete" : L"partial");
+                             event->complete ? U"complete" : U"partial");
     } else if (event->callee_summary) {
         string_value_t target = function_signature_to_string(event->callee_summary);
-        text = format_string(L"f%zu %s -> f%zu %s",
+        text = format_string(U"f%zu %s -> f%zu %s",
                              event->caller_id,
                              caller.data,
                              event->callee_id,
                              target.data);
         FREE_STRING(target);
     } else {
-        text = format_string(L"f%zu %s -> %s",
+        text = format_string(U"f%zu %s -> %s",
                              event->caller_id,
                              caller.data,
-                             event->limited ? L"limit" : L"unknown");
+                             event->limited ? U"limit" : U"unknown");
     }
     FREE_STRING(caller);
     return text;
@@ -191,21 +191,21 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
     string_value_t result = EMPTY_STRING_VALUE;
     for (const analysis_event_t *event = collector ? collector->head : NULL; event;
          event = event->next) {
-        const wchar_t *kind = event->kind == ANALYSIS_VALUE_WRITE        ? L"write"
-                              : event->kind == ANALYSIS_STATE_JOIN       ? L"join"
-                              : event->kind == ANALYSIS_UNREACHABLE      ? L"unreachable"
-                              : event->kind == ANALYSIS_NODE_FLAGS       ? L"flags"
-                              : event->kind == ANALYSIS_FUNCTION_SUMMARY ? L"function-summary"
-                              : event->kind == ANALYSIS_CALL_EDGE        ? L"call-edge"
-                              : event->kind == ANALYSIS_CALL_GROUP       ? L"call-group"
-                              : event->kind == ANALYSIS_C_EXPRESSION     ? L"c-expression"
-                                                                         : L"summary";
+        const goat_char_t *kind = event->kind == ANALYSIS_VALUE_WRITE        ? U"write"
+                                  : event->kind == ANALYSIS_STATE_JOIN       ? U"join"
+                                  : event->kind == ANALYSIS_UNREACHABLE      ? U"unreachable"
+                                  : event->kind == ANALYSIS_NODE_FLAGS       ? U"flags"
+                                  : event->kind == ANALYSIS_FUNCTION_SUMMARY ? U"function-summary"
+                                  : event->kind == ANALYSIS_CALL_EDGE        ? U"call-edge"
+                                  : event->kind == ANALYSIS_CALL_GROUP       ? U"call-group"
+                                  : event->kind == ANALYSIS_C_EXPRESSION     ? U"c-expression"
+                                                                             : U"summary";
         string_value_t filename =
-            event->file_name ? decode_utf8(event->file_name) : STATIC_STRING(L"<unknown>");
+            event->file_name ? decode_utf8(event->file_name) : STATIC_STRING(U"<unknown>");
         string_value_t value = event->value ? lattice_to_string(event->value) : EMPTY_STRING_VALUE;
-        string_value_t line = format_string(L"#%zu %s, %zu.%zu: %s ",
+        string_value_t line = format_string(U"#%zu %s, %zu.%zu: %s ",
                                             event->sequence,
-                                            filename.data ? filename.data : L"<unknown>",
+                                            filename.data ? filename.data : U"<unknown>",
                                             event->row,
                                             event->column,
                                             kind);
@@ -217,9 +217,9 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
         } else if (event->kind == ANALYSIS_C_EXPRESSION) {
             string_value_t signature = function_signature_to_string(event->function_summary);
             append_string_value(&builder, signature);
-            append_char(&builder, L' ');
+            append_char(&builder, U' ');
             append_string(&builder, event->node->vtbl->type_name);
-            append_static_string(&builder, L" = ");
+            append_static_string(&builder, U" = ");
             append_string(&builder, c_expression_type_name(event->c_expression->type));
             FREE_STRING(signature);
         } else if (event->kind == ANALYSIS_FUNCTION_SUMMARY) {
@@ -228,28 +228,28 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
             FREE_STRING(summary);
         } else if (event->kind == ANALYSIS_NODE_FLAGS) {
             append_string(&builder, event->node->vtbl->type_name);
-            append_static_string(&builder, L" = ");
+            append_static_string(&builder, U" = ");
             if (!event->flags)
-                append_static_string(&builder, L"none");
+                append_static_string(&builder, U"none");
             else {
-                string_value_t bits = format_string(L"%u", (unsigned)event->flags);
+                string_value_t bits = format_string(U"%u", (unsigned)event->flags);
                 append_string_value(&builder, bits);
                 FREE_STRING(bits);
                 if (event->flags & NODE_FLAG_UNREACHABLE)
-                    append_static_string(&builder, L" unreachable");
+                    append_static_string(&builder, U" unreachable");
                 if (event->flags & NODE_FLAG_PURE)
-                    append_static_string(&builder, L" pure");
+                    append_static_string(&builder, U" pure");
                 if (event->flags & NODE_FLAG_C_COMPATIBLE)
-                    append_static_string(&builder, L" c-compatible");
+                    append_static_string(&builder, U" c-compatible");
             }
         } else if (event->kind == ANALYSIS_UNREACHABLE) {
             append_string(&builder, event->node->vtbl->type_name);
         } else {
             append_string_view(&builder, event->declarator->name);
-            append_static_string(&builder, L" = ");
+            append_static_string(&builder, U" = ");
             append_string_value(&builder, value);
         }
-        result = append_char(&builder, L'\n');
+        result = append_char(&builder, U'\n');
         FREE_STRING(line);
         FREE_STRING(value);
         FREE_STRING(filename);

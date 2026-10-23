@@ -13,26 +13,26 @@
 string_value_t c_string_from_value(source_builder_t *prelude,
                                    c_generation_context_t *context,
                                    c_value_type_t type,
-                                   const wchar_t *value) {
+                                   const goat_char_t *value) {
     if (type == C_VALUE_STRING)
-        return format_string(L"%s", value);
-    const wchar_t *suffix = type == C_VALUE_INT64    ? L"i64"
-                            : type == C_VALUE_DOUBLE ? L"f64"
-                            : type == C_VALUE_BOOL   ? L"bool"
-                            : type == C_VALUE_CHAR   ? L"char"
-                                                     : NULL;
+        return format_string(U"%s", value);
+    const goat_char_t *suffix = type == C_VALUE_INT64    ? U"i64"
+                                : type == C_VALUE_DOUBLE ? U"f64"
+                                : type == C_VALUE_BOOL   ? U"bool"
+                                : type == C_VALUE_CHAR   ? U"char"
+                                                         : NULL;
     if (!suffix || !context->module_definition)
         return (string_value_t){0};
-    string_value_t buffer = format_string(L"g_t%zu", context->temporary_count++);
-    add_source(prelude, 0, L"goat_native_string_buffer_v2_t %s = {0};", buffer.data);
+    string_value_t buffer = format_string(U"g_t%zu", context->temporary_count++);
+    add_source(prelude, 0, U"goat_native_string_buffer_v2_t %s = {0};", buffer.data);
     add_source(prelude,
                0,
-               L"if (goat_native_str_%s(g_context, %s, &%s) != GOAT_NATIVE_OK) "
-               L"longjmp(g_guard->recovery, 1);",
+               U"if (goat_native_str_%s(g_context, %s, &%s) != GOAT_NATIVE_OK) "
+               U"longjmp(g_guard->recovery, 1);",
                suffix,
                value,
                buffer.data);
-    string_value_t result = format_string(L"goat_native_string_view(%s)", buffer.data);
+    string_value_t result = format_string(U"goat_native_string_view(%s)", buffer.data);
     FREE_STRING(buffer);
     return result;
 }
@@ -60,7 +60,7 @@ c_generated_expression_t c_string_call(const node_t *node, c_generation_context_
             first = captured;
             type = arg.type;
         } else {
-            add_source(prelude, 0, L"(void)%s;", captured.data);
+            add_source(prelude, 0, U"(void)%s;", captured.data);
             FREE_STRING(captured);
         }
         destroy_c_expression(&arg);
@@ -85,18 +85,18 @@ c_string_literal(const node_t *node, c_generation_context_t *context, string_vie
         return (c_generated_expression_t){0};
     }
     source_builder_t *prelude = create_source_builder();
-    string_value_t name = format_string(L"g_t%zu", context->temporary_count++);
+    string_value_t name = format_string(U"g_t%zu", context->temporary_count++);
     string_builder_t units;
     init_string_builder(&units, 64);
     for (size_t i = 0; i < value.length; i++) {
-        string_value_t unit = format_string(L"(wchar_t)%u,", (unsigned)(uint32_t)value.data[i]);
+        string_value_t unit = format_string(U"(goat_char_t)%u,", (unsigned)(uint32_t)value.data[i]);
         append_string_value(&units, unit);
         FREE_STRING(unit);
     }
-    string_value_t contents = append_string(&units, L"0");
-    add_source(prelude, 0, L"static const wchar_t %s[] = {%s};", name.data, contents.data);
+    string_value_t contents = append_string(&units, U"0");
+    add_source(prelude, 0, U"static const goat_char_t %s[] = {%s};", name.data, contents.data);
     string_value_t result =
-        format_string(L"((goat_native_string_view_v2_t){%s, %zu})", name.data, value.length);
+        format_string(U"((goat_native_string_view_v2_t){%s, %zu})", name.data, value.length);
     FREE_STRING(contents);
     FREE_STRING(name);
     return (c_generated_expression_t){.success = true,

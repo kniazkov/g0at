@@ -1,3 +1,4 @@
+#include "lib/string_ext.h"
 /**
  * @file root_object.c
  * @copyright 2026 Ivan Kniazkov
@@ -6,9 +7,8 @@
 
 #include "builtins/registry.h"
 #include "common_methods.h"
+#include "goat/unicode.h"
 #include "object.h"
-
-#include <wchar.h>
 
 /** @brief Implements @ref object_vtbl_t::get_prototypes. */
 static object_array_t get_prototypes(const object_t *obj) {
@@ -30,11 +30,14 @@ static object_t *get_property(const object_t *obj, const object_t *key) {
     object_t *value = NULL;
     if (key->vtbl->type == TYPE_STRING) {
         string_value_t key_str = convert_object_to_string(key);
-        if (wcscmp(L"instanceOf", key_str.data) == 0) {
+        if (string_view_equals(VALUE_TO_VIEW(key_str),
+                               VALUE_TO_VIEW(STATIC_STRING(U"instanceOf")))) {
             value = get_function_instance_of();
-        } else if (wcscmp(L"clone", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"clone")))) {
             value = get_function_clone();
-        } else if (wcscmp(L"flat", key_str.data) == 0) {
+        } else if (string_view_equals(VALUE_TO_VIEW(key_str),
+                                      VALUE_TO_VIEW(STATIC_STRING(U"flat")))) {
             value = get_function_flat();
         }
     }

@@ -4,14 +4,12 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
-
-#include <wchar.h>
-#include <wctype.h>
 
 /** @brief Trims whitespace from both ends of a string object. */
 static operation_result_t trim_string(thread_t *thread, object_t *str) {
@@ -20,17 +18,17 @@ static operation_result_t trim_string(thread_t *thread, object_t *str) {
     string_value_t value = convert_object_to_string(str);
     size_t start = 0;
     size_t end = value.length;
-    while (start < end && iswspace(value.data[start]))
+    while (start < end && goat_is_space(value.data[start]))
         start++;
-    while (end > start && iswspace(value.data[end - 1]))
+    while (end > start && goat_is_space(value.data[end - 1]))
         end--;
     if (start == 0 && end == value.length) {
         FREE_STRING(value);
         INCREF(str);
         return operation_success(str);
     }
-    wchar_t *copy = ALLOC((end - start + 1) * sizeof(wchar_t));
-    wmemcpy(copy, value.data + start, end - start);
+    goat_char_t *copy = ALLOC((end - start + 1) * sizeof(goat_char_t));
+    goat_memcpy(copy, value.data + start, end - start);
     copy[end - start] = 0;
     FREE_STRING(value);
     return operation_success(
@@ -63,9 +61,9 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
         string_view_t view = constant->value;
         size_t start = 0;
         size_t end = view.length;
-        while (start < end && iswspace(view.data[start]))
+        while (start < end && goat_is_space(view.data[start]))
             start++;
-        while (end > start && iswspace(view.data[end - 1]))
+        while (end > start && goat_is_space(view.data[end - 1]))
             end--;
         return make_string_constant_element(
             state->arena,
@@ -78,7 +76,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_string_element();
 }
 
-const builtin_function_t builtin_trim = {.name = L"trim",
+const builtin_function_t builtin_trim = {.name = U"trim",
                                          .min_args = 0,
                                          .effects = BUILTIN_EFFECT_NONE,
                                          .execute = execute,

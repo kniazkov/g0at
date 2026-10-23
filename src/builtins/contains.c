@@ -4,25 +4,24 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
 
-#include <wchar.h>
-
 /** @brief Searches for the first occurrence of a substring. */
-static bool find_substring(const wchar_t *haystack,
+static bool find_substring(const goat_char_t *haystack,
                            size_t haystack_len,
-                           const wchar_t *needle,
+                           const goat_char_t *needle,
                            size_t needle_len) {
     if (needle_len == 0)
         return true;
     if (needle_len > haystack_len)
         return false;
     for (size_t i = 0; i + needle_len <= haystack_len; i++) {
-        if (!wmemcmp(haystack + i, needle, needle_len))
+        if (!goat_memcmp(haystack + i, needle, needle_len))
             return true;
     }
     return false;
@@ -68,7 +67,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_boolean_element();
 }
 
-const builtin_function_t builtin_contains = {.name = L"contains",
+const builtin_function_t builtin_contains = {.name = U"contains",
                                              .min_args = 1,
                                              .effects = BUILTIN_EFFECT_NONE,
                                              .execute = execute,
