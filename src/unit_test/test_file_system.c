@@ -513,7 +513,31 @@ static bool windows_contract(const char *root) {
                                   NULL));
     fs_error_t denied = {0};
     char *child = join_fs_path(outside, "forbidden", NULL);
-    ASSERT(!create_fs_directory(child, &denied) && denied.status == FS_ACCESS);
+    HANDLE token = NULL, restricted = NULL;
+    ASSERT(OpenProcessToken(GetCurrentProcess(),
+                            TOKEN_DUPLICATE | TOKEN_QUERY | TOKEN_ASSIGN_PRIMARY,
+                            &token));
+    ASSERT(CreateRestrictedToken(token,
+                                 DISABLE_MAX_PRIVILEGE,
+                                 0,
+                                 NULL,
+                                 0,
+                                 NULL,
+                                 0,
+                                 NULL,
+                                 &restricted));
+    ASSERT(ImpersonateLoggedOnUser(restricted));
+    bool created = create_fs_directory(child, &denied);
+    ASSERT(RevertToSelf());
+    CloseHandle(restricted);
+    CloseHandle(token);
+    if (created || denied.status != FS_ACCESS)
+        fprintf(stderr,
+                "denial fixture: created=%d status=%d code=%lu\n",
+                created,
+                denied.status,
+                denied.native_code);
+    ASSERT(!created && denied.status == FS_ACCESS);
     clear_fs_error(&denied);
     FREE(child);
     ASSERT(!SetNamedSecurityInfoW(parent,

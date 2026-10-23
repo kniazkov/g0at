@@ -12,7 +12,7 @@ passed=0
 current='compile shared library and call numeric adapters'
 printf 'Starting native library testing...\n'
 trap 'printf "[fail] %s\nNative library testing done; total: %d, passed: %d, failed: 1\n" "$current" "$((passed+1))" "$passed"' ERR
-clean() { test -z "$(find "$output_dir" -type d -name '*.goat-??????' -print -quit)"; }
+clean() { test -z "$(find "$output_dir" -type d -name '*.goat-*' -print -quit)"; }
 ok() { clean; printf '[ ok ] %s\n' "$current"; passed=$((passed+1)); }
 compile() { "$compiler" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" "$@"; }
 cp "$repo_root/test/functional/native_abi/program.goat" "$output_dir/program.goat"

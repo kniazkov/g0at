@@ -99,7 +99,13 @@ compile_native_library(const gchar_t *source, const char *compiler, const char *
     }
     fs_error_t error = {0};
     char *target = absolute_fs_path(destination, &error);
-    char *directory = target ? create_fs_temporary(target, true, NULL, &error) : NULL;
+    char *prefix = NULL;
+    if (target) {
+        prefix = ALLOC(strlen(target) + 6);
+        sprintf(prefix, "%s.goat", target);
+    }
+    char *directory = prefix ? create_fs_temporary(prefix, true, NULL, &error) : NULL;
+    FREE(prefix);
     if (!directory) {
         file_error(&result, &error, false);
         clear_fs_error(&error);
