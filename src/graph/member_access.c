@@ -97,11 +97,11 @@ generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_
     return first;
 }
 
-/** @brief The immutable string length property, in host goat_char_t units. */
+/** @brief The immutable string length property, in host gchar_t units. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const member_access_t *member = (const member_access_t *)node;
     const lattice_element_t *value = calculate_expression(member->object, state, arena);
-    if (!goat_strcmp(member->name.data, U"length")) {
+    if (!STRCMP(member->name.data, U"length")) {
         if (value->type == LATTICE_STRING_CONSTANT)
             return make_integer_constant_element(
                 arena,
@@ -116,7 +116,7 @@ static bool can_generate_c_code(const node_t *node,
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context) {
     const member_access_t *member = (const member_access_t *)node;
-    return !goat_strcmp(member->name.data, U"length")
+    return !STRCMP(member->name.data, U"length")
            && c_expression_type(context, (const node_t *)member->object) == C_VALUE_STRING;
 }
 

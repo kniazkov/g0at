@@ -80,15 +80,14 @@ static string_value_t equality(c_generation_context_t *context,
     if (a != b && !(number(a) && number(b)))
         return STATIC_STRING(U"false");
     if (a == C_VALUE_STRING)
-        return format_string(
-            U"(%s.length == %s.length && (!%s.length || goat_memcmp(%s.data, %s.data, "
-            U"%s.length) == 0))",
-            left.data,
-            right.data,
-            left.data,
-            left.data,
-            right.data,
-            left.data);
+        return format_string(U"(%s.length == %s.length && (!%s.length || MEMCMP(%s.data, %s.data, "
+                             U"%s.length) == 0))",
+                             left.data,
+                             right.data,
+                             left.data,
+                             left.data,
+                             right.data,
+                             left.data);
     if (a == b)
         return format_string(U"(%s == %s)", left.data, right.data);
     context->helper_flags |= C_HELPER_COMPARISON;

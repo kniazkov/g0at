@@ -54,8 +54,8 @@ static bool contains(const lattice_element_t *value, object_t *object) {
             return false;
         string_view_t expected = ((const string_constant_element_t *)value)->value;
         string_value_t actual = convert_object_to_string(object);
-        bool equal = expected.length == actual.length
-                     && !goat_memcmp(expected.data, actual.data, actual.length);
+        bool equal =
+            expected.length == actual.length && !MEMCMP(expected.data, actual.data, actual.length);
         FREE_STRING(actual);
         return equal;
     }
@@ -82,16 +82,14 @@ bool test_division_models_and_constants(void) {
         cases[count].object = create_real_number_object(proc, reals[i]);
         cases[count++].value = make_real_constant_element(arena, reals[i]);
     }
-    const goat_char_t *strings[] = {U"", U"x", U"a b", U"\u0416\U0001F410"};
+    const gchar_t *strings[] = {U"", U"x", U"a b", U"\u0416\U0001F410"};
     for (size_t i = 0; i < sizeof(strings) / sizeof(*strings); i++) {
-        cases[count].object =
-            create_string_object(proc,
-                                 (string_value_t){.data = strings[i],
-                                                  .length = goat_strlen(strings[i]),
-                                                  .should_free = false});
+        cases[count].object = create_string_object(proc,
+                                                   (string_value_t){.data = strings[i],
+                                                                    .length = STRLEN(strings[i]),
+                                                                    .should_free = false});
         cases[count++].value =
-            make_string_constant_element(arena,
-                                         (string_view_t){strings[i], goat_strlen(strings[i])});
+            make_string_constant_element(arena, (string_view_t){strings[i], STRLEN(strings[i])});
     }
     cases[count].object = get_null_object();
     cases[count++].value = make_null_element();

@@ -25,10 +25,10 @@ bool init_io(void);
 string_value_t read_utf8_file(const char *filename);
 
 /** @brief Writes UTF-8 text; returns false on open, write, or close failure. */
-bool write_utf8_file(const char *filename, const goat_char_t *content);
+bool write_utf8_file(const char *filename, const gchar_t *content);
 
 /** @brief Writes UTF-8 text to stdout. */
-void print_utf8(const goat_char_t *content);
+void print_utf8(const gchar_t *content);
 
 /** @brief Returns true if the cursor on stdout is at the start of a line. */
 bool stdout_at_line_start(void);
@@ -46,7 +46,7 @@ bool stdout_is_console(void);
  * @brief Writes UTF-8 text using format_string_vargs() formatting rules.
  * Percent signs in substituted values are written literally.
  */
-void fprintf_utf8(FILE *file, const goat_char_t *format, ...);
+void fprintf_utf8(FILE *file, const gchar_t *format, ...);
 
 /** @brief GPIO input stub; returns false. */
 bool read_digital_input(int index);

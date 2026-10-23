@@ -53,7 +53,7 @@ void add_formatted_source(source_builder_t *builder, size_t indent, string_value
 /** @brief Adds count borrowed lines with a common indent; strings must outlive the builder. */
 void add_source_lines(source_builder_t *builder,
                       size_t indent,
-                      const goat_char_t *const *lines,
+                      const gchar_t *const *lines,
                       size_t count);
 
 /** @brief Appends to the last line, consuming text according to its should_free flag. */
@@ -63,10 +63,10 @@ void append_formatted_source(source_builder_t *builder, string_value_t text);
 #define append_static_source(builder, text) append_formatted_source(builder, STATIC_STRING(text))
 
 /** @brief Adds a line of source code with a specified indentation. */
-void add_source(source_builder_t *builder, size_t indent, const goat_char_t *format, ...);
+void add_source(source_builder_t *builder, size_t indent, const gchar_t *format, ...);
 
 /** @brief Appends text to the last line of source code. */
-void append_source(source_builder_t *builder, const goat_char_t *format, ...);
+void append_source(source_builder_t *builder, const gchar_t *format, ...);
 
 /** @brief Returns the assembled source; release with FREE_STRING(). The builder remains separate.
  */

@@ -16,50 +16,50 @@
 #include <stdio.h>
 
 bool test_inheritance_parser(void) {
-    const goat_char_t *valid[] = {U"A -> {}",
-                                  U"[A,B,] -> {}",
-                                  U"[] -> {}",
-                                  U"(A) -> { x=1; }",
-                                  U"f(1) -> {}",
-                                  U"a.b[1] -> {}",
-                                  U"(A -> {}).x",
-                                  U"(A -> {})[1]",
-                                  U"A -> {} -> {}",
-                                  U"A -> { var v = B -> {}; }",
-                                  U"[A -> {},B] -> {}",
-                                  U"f(A -> {})",
-                                  U"[A -> {},B -> {}]",
-                                  U"[A /*comment*/, B,] -> {}",
-                                  U"var v = A -> { this[true]=1; }",
-                                  U"A -> { const f=func(){return x;} }",
-                                  U"a = b = A -> {}",
-                                  U"([A,B]) -> {}",
-                                  U"[f(1),f(2)] -> {}"};
-    const goat_char_t *invalid[] = {U"-> {}",
-                                    U"A ->",
-                                    U"A -> 1",
-                                    U"A -> f()",
-                                    U"A -> []",
-                                    U"A -> ({})",
-                                    U"A -> func() {}",
-                                    U"[A,,B] -> {}",
-                                    U"[A B] -> {}",
-                                    U"[,A] -> {}",
-                                    U"[A;B] -> {}",
-                                    U"A -> -> {}",
-                                    U"A -> {",
-                                    U"A -> {} = 1",
-                                    U"[var a=1] -> {}",
-                                    U"[return A] -> {}"};
+    const gchar_t *valid[] = {U"A -> {}",
+                              U"[A,B,] -> {}",
+                              U"[] -> {}",
+                              U"(A) -> { x=1; }",
+                              U"f(1) -> {}",
+                              U"a.b[1] -> {}",
+                              U"(A -> {}).x",
+                              U"(A -> {})[1]",
+                              U"A -> {} -> {}",
+                              U"A -> { var v = B -> {}; }",
+                              U"[A -> {},B] -> {}",
+                              U"f(A -> {})",
+                              U"[A -> {},B -> {}]",
+                              U"[A /*comment*/, B,] -> {}",
+                              U"var v = A -> { this[true]=1; }",
+                              U"A -> { const f=func(){return x;} }",
+                              U"a = b = A -> {}",
+                              U"([A,B]) -> {}",
+                              U"[f(1),f(2)] -> {}"};
+    const gchar_t *invalid[] = {U"-> {}",
+                                U"A ->",
+                                U"A -> 1",
+                                U"A -> f()",
+                                U"A -> []",
+                                U"A -> ({})",
+                                U"A -> func() {}",
+                                U"[A,,B] -> {}",
+                                U"[A B] -> {}",
+                                U"[,A] -> {}",
+                                U"[A;B] -> {}",
+                                U"A -> -> {}",
+                                U"A -> {",
+                                U"A -> {} = 1",
+                                U"[var a=1] -> {}",
+                                U"[return A] -> {}"};
     for (size_t pass = 0; pass < 2; pass++) {
-        const goat_char_t **texts = pass ? invalid : valid;
+        const gchar_t **texts = pass ? invalid : valid;
         size_t count = pass ? sizeof(invalid) / sizeof(*invalid) : sizeof(valid) / sizeof(*valid);
         for (size_t i = 0; i < count; i++) {
             arena_t *arena = create_arena(8);
             parser_memory_t memory = {arena, arena, arena, arena};
-            node_t *root = parse_analysis_test_program(
-                &memory,
-                (string_value_t){texts[i], goat_strlen(texts[i]), false});
+            node_t *root =
+                parse_analysis_test_program(&memory,
+                                            (string_value_t){texts[i], STRLEN(texts[i]), false});
             ASSERT(pass ? root == NULL : root != NULL);
             if (root) {
                 string_value_t source = generate_goat_code_from_node(root);

@@ -45,7 +45,7 @@ node_t *assignment_get_child(const node_t *node, size_t index);
  * `index`: Zero-based child position.
  * @return Static wide string literal or NULL.
  */
-const goat_char_t *assignment_get_tag(const node_t *node, size_t index);
+const gchar_t *assignment_get_tag(const node_t *node, size_t index);
 
 /** @brief Creates a new simple assignment expression node. */
 expression_t *create_simple_assignment_node(arena_t *arena,

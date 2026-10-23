@@ -104,10 +104,10 @@ static void free_native_arguments(string_value_t *arguments, size_t count) {
 /** @brief Emits an arity-1 or arity-2 libm call rounded to binary64. */
 static void emit_native_call(source_builder_t *prelude,
                              c_generation_context_t *context,
-                             const goat_char_t *name,
+                             const gchar_t *name,
                              const string_value_t *arguments,
                              size_t arity,
-                             const goat_char_t *value) {
+                             const gchar_t *value) {
     if (arity == 2) {
         string_value_t a = format_string(U"g_t%zu", context->temporary_count++);
         string_value_t b = format_string(U"g_t%zu", context->temporary_count++);
@@ -203,7 +203,7 @@ static c_generated_expression_t native_atan(const node_t *node, c_generation_con
 static c_generated_expression_t native_libm(const node_t *node,
                                             c_generation_context_t *context,
                                             const builtin_function_t *builtin,
-                                            const goat_char_t *c_name) {
+                                            const gchar_t *c_name) {
     size_t count = get_node_child_count(node) - 1;
     if (count < builtin->min_args
         || c_generation_expression_type(context, node) != C_VALUE_DOUBLE) {
@@ -403,7 +403,7 @@ static c_generated_expression_t native_ord(const node_t *node, c_generation_cont
 typedef struct c_native_entry_t {
     const builtin_function_t *builtin;
     c_native_generator_t generator;
-    const goat_char_t *c_name; /**< C function name; NULL means the Goat name is used. */
+    const gchar_t *c_name; /**< C function name; NULL means the Goat name is used. */
 } c_native_entry_t;
 
 static const c_native_entry_t generators[] = {

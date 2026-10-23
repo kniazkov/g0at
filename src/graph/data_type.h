@@ -30,6 +30,6 @@ typedef struct {
     {                                                                                              \
         .c_equivalent = {                                                                          \
             .data = (c_type_name),                                                                 \
-            .length = sizeof(c_type_name) / sizeof(goat_char_t) - 1                                \
+            .length = sizeof(c_type_name) / sizeof(gchar_t) - 1                                    \
         }                                                                                          \
     }

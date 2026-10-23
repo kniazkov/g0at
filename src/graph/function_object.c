@@ -343,7 +343,7 @@ static node_t *fobj_get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const goat_char_t *fobj_get_child_tag(const node_t *node, size_t index) {
+static const gchar_t *fobj_get_child_tag(const node_t *node, size_t index) {
     if (index == 0) {
         return U"arguments";
     }
@@ -471,7 +471,7 @@ static size_t fobj_get_property_count(const node_t *node) {
 }
 
 /** @brief Implements node_vtbl_t::get_property. */
-static const goat_char_t *
+static const gchar_t *
 fobj_get_property(const node_t *node, size_t index, node_display_value_t *out) {
     const function_summary_set_t *set = get_function_summaries(node);
     const function_summary_t *view = select_function_c_view(set);

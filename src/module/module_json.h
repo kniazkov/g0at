@@ -1,5 +1,4 @@
-#ifndef GOAT_MODULE_JSON_H
-#define GOAT_MODULE_JSON_H
+#pragma once
 
 #include "yyjson.h"
 
@@ -22,5 +21,3 @@ goat_module_json_error goat_module_json_read(const char *data,
                                              goat_module_json_kind kind,
                                              yyjson_doc **out);
 const char *goat_module_json_error_string(goat_module_json_error error);
-
-#endif

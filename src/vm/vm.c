@@ -44,8 +44,8 @@ static object_t *load_string(runtime_t *runtime, process_t *process, uint32_t st
         data_descriptor_t descriptor = runtime->code->data_descriptors[string_id];
         string = create_string_object(
             process,
-            (string_value_t){(goat_char_t *)(runtime->code->data + descriptor.offset),
-                             descriptor.size / sizeof(goat_char_t) - 1,
+            (string_value_t){(gchar_t *)(runtime->code->data + descriptor.offset),
+                             descriptor.size / sizeof(gchar_t) - 1,
                              false});
         process->string_cache[string_id] = string;
     }

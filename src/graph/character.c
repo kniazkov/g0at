@@ -56,7 +56,7 @@ static string_value_t append_character_notation(string_builder_t *builder, uint3
                 for (int shift = 28; shift >= 0; shift -= 4)
                     append_char(builder, U"0123456789abcdef"[(value >> shift) & 15]);
             } else {
-                append_char(builder, (goat_char_t)value);
+                append_char(builder, (gchar_t)value);
             }
             break;
     }

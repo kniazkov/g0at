@@ -191,15 +191,15 @@ string_value_t analysis_collector_to_text(const analysis_collector_t *collector)
     string_value_t result = EMPTY_STRING_VALUE;
     for (const analysis_event_t *event = collector ? collector->head : NULL; event;
          event = event->next) {
-        const goat_char_t *kind = event->kind == ANALYSIS_VALUE_WRITE        ? U"write"
-                                  : event->kind == ANALYSIS_STATE_JOIN       ? U"join"
-                                  : event->kind == ANALYSIS_UNREACHABLE      ? U"unreachable"
-                                  : event->kind == ANALYSIS_NODE_FLAGS       ? U"flags"
-                                  : event->kind == ANALYSIS_FUNCTION_SUMMARY ? U"function-summary"
-                                  : event->kind == ANALYSIS_CALL_EDGE        ? U"call-edge"
-                                  : event->kind == ANALYSIS_CALL_GROUP       ? U"call-group"
-                                  : event->kind == ANALYSIS_C_EXPRESSION     ? U"c-expression"
-                                                                             : U"summary";
+        const gchar_t *kind = event->kind == ANALYSIS_VALUE_WRITE        ? U"write"
+                              : event->kind == ANALYSIS_STATE_JOIN       ? U"join"
+                              : event->kind == ANALYSIS_UNREACHABLE      ? U"unreachable"
+                              : event->kind == ANALYSIS_NODE_FLAGS       ? U"flags"
+                              : event->kind == ANALYSIS_FUNCTION_SUMMARY ? U"function-summary"
+                              : event->kind == ANALYSIS_CALL_EDGE        ? U"call-edge"
+                              : event->kind == ANALYSIS_CALL_GROUP       ? U"call-group"
+                              : event->kind == ANALYSIS_C_EXPRESSION     ? U"c-expression"
+                                                                         : U"summary";
         string_value_t filename =
             event->file_name ? decode_utf8(event->file_name) : STATIC_STRING(U"<unknown>");
         string_value_t value = event->value ? lattice_to_string(event->value) : EMPTY_STRING_VALUE;

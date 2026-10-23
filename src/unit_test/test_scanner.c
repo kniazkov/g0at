@@ -23,7 +23,7 @@ bool test_identifier() {
         create_scanner("program.goat", STATIC_STRING(U"  test \n abc123  "), &memory, &groups);
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_IDENTIFIER);
-    ASSERT(goat_strcmp(U"test", tok->text.data) == 0);
+    ASSERT(STRCMP(U"test", tok->text.data) == 0);
     ASSERT(tok->text.length == 4);
     ASSERT(strcmp("program.goat", tok->position->begin->file_name) == 0);
     ASSERT(tok->position->begin->row == 1);
@@ -32,7 +32,7 @@ bool test_identifier() {
     ASSERT(tok->position->end->column == 7);
     tok = get_token(scan);
     ASSERT(tok->type == TOKEN_IDENTIFIER);
-    ASSERT(goat_strcmp(U"abc123", tok->text.data) == 0);
+    ASSERT(STRCMP(U"abc123", tok->text.data) == 0);
     ASSERT(tok->text.length == 6);
     ASSERT(tok->position->begin->row == 2);
     ASSERT(tok->position->begin->column == 2);
@@ -51,7 +51,7 @@ bool test_bracket() {
     scanner_t *scan = create_scanner("program.goat", STATIC_STRING(U"  )  "), &memory, &groups);
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_BRACKET);
-    ASSERT(goat_strcmp(U")", tok->text.data) == 0);
+    ASSERT(STRCMP(U")", tok->text.data) == 0);
     ASSERT(tok->text.length == 1);
     destroy_arena(arena);
     return true;
@@ -67,20 +67,20 @@ bool test_static_string() {
                                      &groups);
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_EXPRESSION);
-    ASSERT(goat_strcmp(U"\"test\"", tok->text.data) == 0);
+    ASSERT(STRCMP(U"\"test\"", tok->text.data) == 0);
     ASSERT(tok->text.length == 6);
     tok = get_token(scan);
     ASSERT(tok->type == TOKEN_EXPRESSION);
-    ASSERT(goat_strcmp(U"\"new\\nline\"", tok->text.data) == 0);
+    ASSERT(STRCMP(U"\"new\\nline\"", tok->text.data) == 0);
     ASSERT(tok->text.length == 11);
     ASSERT(tok->node != NULL);
     ASSERT(tok->node->vtbl->type == NODE_STATIC_STRING);
     string_value_t value = generate_goat_code_from_node(tok->node);
-    ASSERT(goat_strcmp(U"\"new\\nline\"", value.data) == 0);
+    ASSERT(STRCMP(U"\"new\\nline\"", value.data) == 0);
     FREE_STRING(value);
     tok = get_token(scan);
     ASSERT(tok->type == TOKEN_EXPRESSION);
-    ASSERT(goat_strcmp(U"\"\"", tok->text.data) == 0);
+    ASSERT(STRCMP(U"\"\"", tok->text.data) == 0);
     ASSERT(tok->text.length == 2);
     tok = get_token(scan);
     ASSERT(tok->type == TOKEN_ERROR);
@@ -96,7 +96,7 @@ bool test_uknown_symbol() {
     scanner_t *scan = create_scanner("program.goat", STATIC_STRING(U"  `  "), &memory, &groups);
     token_t *tok = get_token(scan);
     ASSERT(tok->type == TOKEN_ERROR);
-    ASSERT(goat_strcmp(U"Unknown symbol '`'", tok->text.data) == 0);
+    ASSERT(STRCMP(U"Unknown symbol '`'", tok->text.data) == 0);
     destroy_arena(arena);
     return true;
 }

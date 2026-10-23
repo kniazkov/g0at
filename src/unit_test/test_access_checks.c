@@ -14,13 +14,13 @@
 
 #include <stdio.h>
 
-static object_t *key(process_t *proc, const goat_char_t *name) {
-    return create_string_object(proc, (string_value_t){name, goat_strlen(name), false});
+static object_t *key(process_t *proc, const gchar_t *name) {
+    return create_string_object(proc, (string_value_t){name, STRLEN(name), false});
 }
 
 static field_cell_t *field(process_t *proc,
                            object_t *obj,
-                           const goat_char_t *name,
+                           const gchar_t *name,
                            object_t *value,
                            access_modifier_t modifier,
                            bool constant) {
@@ -127,17 +127,17 @@ static void emit_functions(node_t *node, code_builder_t *builder, data_builder_t
         emit_functions(get_node_child(node, i), builder, data);
 }
 
-static bool run_case(const goat_char_t *body, const goat_char_t *main) {
-    goat_char_t source[8192];
-    goat_snprintf(source,
-                  sizeof(source) / sizeof(*source),
-                  U"const unused = func() { %s }; var result = false; %s",
-                  body,
-                  main);
+static bool run_case(const gchar_t *body, const gchar_t *main) {
+    gchar_t source[8192];
+    SNPRINTF(source,
+             sizeof(source) / sizeof(*source),
+             U"const unused = func() { %s }; var result = false; %s",
+             body,
+             main);
     arena_t *arena = create_arena(8);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *node =
-        parse_analysis_test_program(&memory, (string_value_t){source, goat_strlen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     ASSERT(node);
     code_builder_t *builder = create_code_builder();
     data_builder_t *data = create_data_builder();
@@ -194,8 +194,8 @@ static bool run_case(const goat_char_t *body, const goat_char_t *main) {
 
 bool test_access_vm(void) {
     const struct {
-        const goat_char_t *body;
-        const goat_char_t *main;
+        const gchar_t *body;
+        const gchar_t *main;
     } cases[] = {
         {U"return secret;", U"result = A.read() == 10;"},
         {U"return self[\"secret\"];", U"const detached = A.read; result = detached() == 10;"},

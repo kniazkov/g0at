@@ -16,10 +16,10 @@
 #include <stdio.h>
 #include <string.h>
 
-static node_t *analyzed(arena_t *arena, const goat_char_t *source) {
+static node_t *analyzed(arena_t *arena, const gchar_t *source) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, goat_strlen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     options_t *options = create_options();
     bool success = root && !analyze(root, &memory, options, NULL);
     destroy_options(options);
@@ -42,20 +42,18 @@ bool test_c_module_output(void) {
     ASSERT(module->count == 2 && module->available_count == 2);
     c_module_output_t first = generate_c_module(arena, module);
     ASSERT(first.generated_count == 2 && !first.omitted_count && !first.failures);
-    ASSERT(goat_strstr(first.source.data,
-                       U"int64_t g_f1_i_(const goat_native_context_v2_t *, int64_t);"));
-    ASSERT(goat_strstr(first.source.data,
-                       U"double g_f1_r_(const goat_native_context_v2_t *, double);"));
-    ASSERT(goat_strstr(first.source.data, U"/* Goat function: f(n)"));
-    ASSERT(goat_strstr(first.source.data, U"\n\n/* Goat function:"));
-    ASSERT(goat_strstr(first.source.data, U"\n\n/* Native ABI adapter for g_f1_i_. */"));
-    ASSERT(goat_strstr(first.source.data, U"goat_native_query_v2(uint32_t version)"));
-    ASSERT(!goat_strstr(first.source.data, U"goat_guard")
-           && !goat_strstr(first.source.data, U"goat_t0"));
-    const goat_char_t *header = goat_strstr(first.source.data, U"#include \"native_runtime.h\"");
-    ASSERT(header && !goat_strstr(header + 1, U"#include \"native_runtime.h\""));
-    ASSERT(!goat_strstr(first.source.data, U"static inline"));
-    ASSERT(!goat_strstr(first.source.data, U"typedef struct"));
+    ASSERT(
+        STRSTR(first.source.data, U"int64_t g_f1_i_(const goat_native_context_v2_t *, int64_t);"));
+    ASSERT(STRSTR(first.source.data, U"double g_f1_r_(const goat_native_context_v2_t *, double);"));
+    ASSERT(STRSTR(first.source.data, U"/* Goat function: f(n)"));
+    ASSERT(STRSTR(first.source.data, U"\n\n/* Goat function:"));
+    ASSERT(STRSTR(first.source.data, U"\n\n/* Native ABI adapter for g_f1_i_. */"));
+    ASSERT(STRSTR(first.source.data, U"goat_native_query_v2(uint32_t version)"));
+    ASSERT(!STRSTR(first.source.data, U"goat_guard") && !STRSTR(first.source.data, U"goat_t0"));
+    const gchar_t *header = STRSTR(first.source.data, U"#include \"native_runtime.h\"");
+    ASSERT(header && !STRSTR(header + 1, U"#include \"native_runtime.h\""));
+    ASSERT(!STRSTR(first.source.data, U"static inline"));
+    ASSERT(!STRSTR(first.source.data, U"typedef struct"));
     function_summary_set_t *set = get_function_summaries(module->head->summary->function);
     function_summary_t *a = set->head, *b = a->next;
     ASSERT(b && !b->next);
@@ -65,7 +63,7 @@ bool test_c_module_output(void) {
     set->tail = a;
     ((node_t *)a->function)->id = 9999;
     c_module_output_t second = generate_c_module(arena, create_c_module(arena, root));
-    ASSERT(!goat_strcmp(first.source.data, second.source.data));
+    ASSERT(!STRCMP(first.source.data, second.source.data));
     FREE_STRING(first.source);
     FREE_STRING(second.source);
     root = analyzed(arena,
@@ -84,14 +82,13 @@ bool test_c_module_output(void) {
     function->vtbl = &unsupported;
     first = generate_c_module(arena, module);
     ASSERT(first.generated_count == 1 && first.omitted_count == 3);
-    ASSERT(!goat_strstr(first.source.data, U"partial definition"));
-    ASSERT(!goat_strstr(first.source.data, U"g_adapter_0(")
-           && !goat_strstr(first.source.data, U"g_adapter_1(")
-           && !goat_strstr(first.source.data, U"g_adapter_2(")
-           && goat_strstr(first.source.data, U"g_adapter_3("));
-    ASSERT(!goat_strstr(first.source.data, U"g_f1_") && !goat_strstr(first.source.data, U"g_f2_")
-           && !goat_strstr(first.source.data, U"g_f3_")
-           && goat_strstr(first.source.data, U"g_f4_i_"));
+    ASSERT(!STRSTR(first.source.data, U"partial definition"));
+    ASSERT(!STRSTR(first.source.data, U"g_adapter_0(")
+           && !STRSTR(first.source.data, U"g_adapter_1(")
+           && !STRSTR(first.source.data, U"g_adapter_2(")
+           && STRSTR(first.source.data, U"g_adapter_3("));
+    ASSERT(!STRSTR(first.source.data, U"g_f1_") && !STRSTR(first.source.data, U"g_f2_")
+           && !STRSTR(first.source.data, U"g_f3_") && STRSTR(first.source.data, U"g_f4_i_"));
     size_t failures = 0, propagated = 0;
     for (const c_module_failure_t *failure = first.failures; failure; failure = failure->next) {
         ASSERT(failure->status != C_GENERATION_OK && failure->failed_node);
@@ -102,13 +99,13 @@ bool test_c_module_output(void) {
     for (const c_module_function_t *entry = module->head; entry; entry = entry->next)
         ASSERT(entry->available && entry->summary->c_support == FUNCTION_C_SUPPORTED);
     second = generate_c_module(arena, module);
-    ASSERT(!goat_strcmp(first.source.data, second.source.data));
+    ASSERT(!STRCMP(first.source.data, second.source.data));
     FREE_STRING(first.source);
     FREE_STRING(second.source);
     function->vtbl = original;
     first = generate_c_module(arena, NULL);
     ASSERT(!first.generated_count && !first.omitted_count && first.source.data);
-    ASSERT(!goat_strstr(first.source.data, U"static inline"));
+    ASSERT(!STRSTR(first.source.data, U"static inline"));
     FREE_STRING(first.source);
     destroy_arena(arena);
     return true;

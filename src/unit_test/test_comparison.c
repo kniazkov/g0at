@@ -32,7 +32,7 @@ typedef struct {
     int type; /* 0 integer, 1 real, 2 string, 3 boolean, 4 null, 5 function, 6 prototype */
     int64_t integer;
     double real;
-    const goat_char_t *string;
+    const gchar_t *string;
 } value_tester_t;
 
 static object_t *object_value(process_t *proc, value_tester_t value) {
@@ -44,7 +44,7 @@ static object_t *object_value(process_t *proc, value_tester_t value) {
         case 2:
             return create_string_object(
                 proc,
-                (string_value_t){value.string, goat_strlen(value.string), false});
+                (string_value_t){value.string, STRLEN(value.string), false});
         case 3:
             return get_boolean_object(value.integer);
         case 4:
@@ -65,7 +65,7 @@ static const lattice_element_t *abstract_value(arena_t *arena, value_tester_t va
         case 2:
             return make_string_constant_element(
                 arena,
-                (string_view_t){value.string, goat_strlen(value.string)});
+                (string_view_t){value.string, STRLEN(value.string)});
         case 3:
             return value.integer ? make_true_element() : make_false_element();
         case 4:
@@ -267,8 +267,7 @@ bool test_comparison_nodes(void) {
         source_builder_t *sb = create_source_builder();
         generate_indented_goat_code_from_expression(expr, sb, 0);
         string_value_t pretty = build_source(sb);
-        ASSERT(pretty.length == text.length + 1
-               && !goat_memcmp(pretty.data, text.data, text.length));
+        ASSERT(pretty.length == text.length + 1 && !MEMCMP(pretty.data, text.data, text.length));
         FREE_STRING(text);
         FREE_STRING(pretty);
         destroy_source_builder(sb);
@@ -277,13 +276,13 @@ bool test_comparison_nodes(void) {
         destroy_abstract_state(state);
         destroy_arena(arena);
     }
-    const goat_char_t *invalid[] = {U"1 <=", U">= 2", U"1 ==", U"!= 2", U"1 === 2", U"1 <> 2"};
+    const gchar_t *invalid[] = {U"1 <=", U">= 2", U"1 ==", U"!= 2", U"1 === 2", U"1 <> 2"};
     for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
         arena_t *arena = create_arena(8);
         parser_memory_t memory = {arena, arena, arena, arena};
-        ASSERT(!parse_analysis_test_program(
-            &memory,
-            (string_value_t){invalid[i], goat_strlen(invalid[i]), false}));
+        ASSERT(
+            !parse_analysis_test_program(&memory,
+                                         (string_value_t){invalid[i], STRLEN(invalid[i]), false}));
         destroy_arena(arena);
     }
     return true;
@@ -298,7 +297,7 @@ bool test_comparison_keys(void) {
     ASSERT(compare_objects_using_vtbl(a, b) < 0 && compare_objects_using_vtbl(b, a) > 0);
     ASSERT(compare_objects_using_vtbl(nan, inf) > 0 && compare_objects_using_vtbl(inf, nan) < 0);
     ASSERT(compare_objects_using_vtbl(nan, nan) == 0);
-    const goat_char_t first[] = {U'a', 0, U'b', 0}, second[] = {U'a', 0, U'c', 0};
+    const gchar_t first[] = {U'a', 0, U'b', 0}, second[] = {U'a', 0, U'c', 0};
     object_t *s = create_string_object(proc, (string_value_t){first, 3, false}),
              *t = create_string_object(proc, (string_value_t){second, 3, false});
     ASSERT(compare_objects_using_vtbl(s, t) < 0);

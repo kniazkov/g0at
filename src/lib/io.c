@@ -58,7 +58,7 @@ string_value_t read_utf8_file(const char *filename) {
     return result;
 }
 
-bool write_utf8_file(const char *filename, const goat_char_t *content) {
+bool write_utf8_file(const char *filename, const gchar_t *content) {
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
         return false;
@@ -82,14 +82,14 @@ void print_utf8_view(string_view_t value) {
     fwrite(buffer, 1, size, stdout);
     FREE(buffer);
     size_t length = value.length;
-    const goat_char_t *content = value.data;
+    const gchar_t *content = value.data;
     if (length > 0) {
         stdout_line_start = content[length - 1] == U'\n';
     }
 }
 
-void print_utf8(const goat_char_t *content) {
-    print_utf8_view((string_view_t){content, goat_strlen(content)});
+void print_utf8(const gchar_t *content) {
+    print_utf8_view((string_view_t){content, STRLEN(content)});
 }
 
 bool stdout_at_line_start(void) {
@@ -126,7 +126,7 @@ bool stdout_is_console(void) {
 #endif
 }
 
-void fprintf_utf8(FILE *file, const goat_char_t *format, ...) {
+void fprintf_utf8(FILE *file, const gchar_t *format, ...) {
     va_list args;
     va_start(args, format);
     string_value_t value = format_string_vargs(format, args);

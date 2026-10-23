@@ -31,14 +31,12 @@ static bool append_profiles(source_builder_t *output, source_builder_t *checks) 
     for (const c_module_function_t *entry = success ? module->head : NULL; entry && success;
          entry = entry->next) {
         bool integer = entry->summary->parameter_types[0]->type == LATTICE_INTEGER;
-        const goat_char_t *name = integer ? U"goat_local_integer" : U"goat_local_real";
-        c_generation_result_t result = generate_c_function(entry->summary,
-                                                           (string_view_t){name, goat_strlen(name)},
-                                                           NULL,
-                                                           NULL);
-        success = result.status == C_GENERATION_OK
-                  && goat_strstr(result.source.data,
-                                 integer ? U"int64_t g_l0;" : U"volatile double g_l0;");
+        const gchar_t *name = integer ? U"goat_local_integer" : U"goat_local_real";
+        c_generation_result_t result =
+            generate_c_function(entry->summary, (string_view_t){name, STRLEN(name)}, NULL, NULL);
+        success =
+            result.status == C_GENERATION_OK
+            && STRSTR(result.source.data, integer ? U"int64_t g_l0;" : U"volatile double g_l0;");
         if (success) {
             add_formatted_source(output, 0, result.source);
             add_source(checks,
@@ -62,7 +60,7 @@ bool append_c_local_tests(source_builder_t *output, source_builder_t *checks) {
         return false;
 
     const struct {
-        const goat_char_t *source, *check;
+        const gchar_t *source, *check;
     } fixtures[] = {
         {U"const f=func(n){var x=n;return x;};f(1);", U"(INT64_MIN)==INT64_MIN"},
         {U"const f=func(n){var x=n;return x;};f(1.0);",
@@ -117,10 +115,9 @@ bool append_c_local_tests(source_builder_t *output, source_builder_t *checks) {
     for (size_t i = 0; i < sizeof(fixtures) / sizeof(*fixtures); i++) {
         arena_t *arena = create_arena(32);
         parser_memory_t memory = {arena, arena, arena, arena};
-        const goat_char_t *source = fixtures[i].source;
+        const gchar_t *source = fixtures[i].source;
         node_t *root =
-            parse_analysis_test_program(&memory,
-                                        (string_value_t){source, goat_strlen(source), false});
+            parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
         options_t *options = create_options();
         bool success = root && !analyze(root, &memory, options, NULL);
         c_module_t *module = success ? create_c_module(arena, root) : NULL;
@@ -163,20 +160,20 @@ bool append_c_local_tests(source_builder_t *output, source_builder_t *checks) {
 }
 
 bool test_c_local_rejections(void) {
-    const goat_char_t *sources[] = {U"const f=func(n){var x=1;x=1.5;return x;};f(1);",
-                                    U"const f=func(n){n=1.5;return n;};f(1);",
-                                    U"const f=func(n){var x=1;if(n){x=1.5;}return n;};f(1);",
-                                    U"const f=func(n){var x=n<0;x=1;return n;};f(1);",
-                                    U"const f=func(n){var x;x=n;return x;};f(1);",
-                                    U"const f=func(n){if(n)var x=1;return x;};f(1);",
-                                    U"var x=1;const f=func(n){x=n;return x;};f(1);",
-                                    U"const f=func(n){const x=n;x=2;return x;};f(1);"};
+    const gchar_t *sources[] = {U"const f=func(n){var x=1;x=1.5;return x;};f(1);",
+                                U"const f=func(n){n=1.5;return n;};f(1);",
+                                U"const f=func(n){var x=1;if(n){x=1.5;}return n;};f(1);",
+                                U"const f=func(n){var x=n<0;x=1;return n;};f(1);",
+                                U"const f=func(n){var x;x=n;return x;};f(1);",
+                                U"const f=func(n){if(n)var x=1;return x;};f(1);",
+                                U"var x=1;const f=func(n){x=n;return x;};f(1);",
+                                U"const f=func(n){const x=n;x=2;return x;};f(1);"};
     for (size_t i = 0; i < sizeof(sources) / sizeof(*sources); i++) {
         arena_t *arena = create_arena(32);
         parser_memory_t memory = {arena, arena, arena, arena};
-        node_t *root = parse_analysis_test_program(
-            &memory,
-            (string_value_t){sources[i], goat_strlen(sources[i]), false});
+        node_t *root =
+            parse_analysis_test_program(&memory,
+                                        (string_value_t){sources[i], STRLEN(sources[i]), false});
         ASSERT(root);
         options_t *options = create_options();
         ASSERT(!analyze(root, &memory, options, NULL));

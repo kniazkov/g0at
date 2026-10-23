@@ -24,7 +24,7 @@ typedef struct {
     size_t column;
 
     /** @brief Pointer to the source text at the entity position. */
-    const goat_char_t *code;
+    const gchar_t *code;
 
     /** @brief Offset of the entity from the beginning of the file. */
     size_t offset;

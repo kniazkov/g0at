@@ -12,16 +12,16 @@
 #include "registry.h"
 
 /** @brief Searches for the first occurrence of a substring; returns -1 if absent. */
-static int64_t find_substring_index(const goat_char_t *haystack,
+static int64_t find_substring_index(const gchar_t *haystack,
                                     size_t haystack_len,
-                                    const goat_char_t *needle,
+                                    const gchar_t *needle,
                                     size_t needle_len) {
     if (needle_len == 0)
         return 0;
     if (needle_len > haystack_len)
         return -1;
     for (size_t i = 0; i + needle_len <= haystack_len; i++) {
-        if (!goat_memcmp(haystack + i, needle, needle_len))
+        if (!MEMCMP(haystack + i, needle, needle_len))
             return (int64_t)i;
     }
     return -1;

@@ -96,11 +96,11 @@ static void append_effects(string_builder_t *builder, uint32_t effects) {
                                  FUNCTION_EFFECT_EXTERNAL_READ,
                                  FUNCTION_EFFECT_EXTERNAL_WRITE,
                                  FUNCTION_EFFECT_UNKNOWN};
-        const goat_char_t *names[] = {U"input",
-                                      U"output",
-                                      U"external-read",
-                                      U"external-write",
-                                      U"unknown"};
+        const gchar_t *names[] = {U"input",
+                                  U"output",
+                                  U"external-read",
+                                  U"external-write",
+                                  U"unknown"};
         for (size_t i = 0; i < sizeof(bits) / sizeof(*bits); i++) {
             if (effects & bits[i]) {
                 if (separator)
@@ -113,13 +113,13 @@ static void append_effects(string_builder_t *builder, uint32_t effects) {
 }
 
 string_value_t function_summary_to_string(const function_summary_t *summary) {
-    const goat_char_t *status = summary->status == FUNCTION_UNANALYZED  ? U"unanalyzed"
-                                : summary->status == FUNCTION_ANALYZING ? U"analyzing"
-                                : summary->status == FUNCTION_ANALYZED  ? U"analyzed"
-                                                                        : U"inconclusive";
-    const goat_char_t *support = summary->c_support == FUNCTION_C_SUPPORTED     ? U"supported"
-                                 : summary->c_support == FUNCTION_C_UNSUPPORTED ? U"unsupported"
-                                                                                : U"unknown";
+    const gchar_t *status = summary->status == FUNCTION_UNANALYZED  ? U"unanalyzed"
+                            : summary->status == FUNCTION_ANALYZING ? U"analyzing"
+                            : summary->status == FUNCTION_ANALYZED  ? U"analyzed"
+                                                                    : U"inconclusive";
+    const gchar_t *support = summary->c_support == FUNCTION_C_SUPPORTED     ? U"supported"
+                             : summary->c_support == FUNCTION_C_UNSUPPORTED ? U"unsupported"
+                                                                            : U"unknown";
     string_builder_t builder;
     init_string_builder(&builder, 0);
     append_string(&builder, status);

@@ -12,7 +12,7 @@
 static uint32_t from_ascii(const goat_native_context_v2_t *context,
                            const char *text,
                            goat_native_string_buffer_v2_t *out) {
-    goat_char_t wide[64];
+    gchar_t wide[64];
     size_t length = 0;
     while (text[length]) {
         wide[length] = (unsigned char)text[length];
@@ -46,6 +46,6 @@ uint32_t goat_native_str_bool(const goat_native_context_v2_t *context,
 uint32_t goat_native_str_char(const goat_native_context_v2_t *context,
                               uint32_t value,
                               goat_native_string_buffer_v2_t *out) {
-    goat_char_t text = value;
+    gchar_t text = value;
     return goat_native_string_copy(context, (goat_native_string_view_v2_t){&text, 1}, out);
 }

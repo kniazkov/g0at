@@ -59,7 +59,7 @@ static node_t *get_child(const node_t *node, size_t index) {
     return slot ? *slot : NULL;
 }
 
-static const goat_char_t *get_child_tag(const node_t *node, size_t index) {
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
     if (!index)
         return U"value";
     for (size_t i = 0; i < switch_branch_count(node); i++) {

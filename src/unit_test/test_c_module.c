@@ -50,7 +50,7 @@ bool test_c_module_identity(void) {
         const function_summary_t *copy = snapshot_function_summary(arena, entry->summary);
         ASSERT(c_module_find(module, copy) == entry);
         for (c_module_function_t *other = entry->next; other; other = other->next)
-            ASSERT(goat_strcmp(entry->name.data, other->name.data));
+            ASSERT(STRCMP(entry->name.data, other->name.data));
         /* Node indexes are deliberately made identical: names must not depend on them. */
         ((node_t *)entry->summary->function)->id = 7;
     }
@@ -66,7 +66,7 @@ bool test_c_module_identity(void) {
     for (c_module_function_t *entry = module->head; entry; entry = entry->next) {
         const c_module_function_t *other = c_module_find(again, entry->summary);
         ASSERT(other && entry->id == other->id && entry->function_id == other->function_id);
-        ASSERT(!goat_strcmp(entry->name.data, other->name.data));
+        ASSERT(!STRCMP(entry->name.data, other->name.data));
     }
     ASSERT(!create_c_module(arena, NULL)->count);
     ASSERT(!c_module_find(NULL, module->head->summary));
@@ -94,7 +94,7 @@ bool test_c_module_dependencies(void) {
     ASSERT(caller->dependencies->target == even && caller->dependencies->next->target == even);
     ASSERT(caller->callees && !caller->callees->next);
     ASSERT(caller->callees->summary == even->summary);
-    ASSERT(!goat_strcmp(caller->callees->name.data, even->name.data));
+    ASSERT(!STRCMP(caller->callees->name.data, even->name.data));
     ASSERT(!alone->dependencies);
     function_summary_t *removed = (function_summary_t *)odd->summary;
     removed->c_support = FUNCTION_C_UNKNOWN;

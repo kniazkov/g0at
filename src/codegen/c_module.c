@@ -68,7 +68,7 @@ make_name(arena_t *arena, size_t function_id, const function_summary_t *summary)
                       : summary->parameter_types[i]->type == LATTICE_STRING  ? U"_s"
                                                                              : U"_r");
     string_value_t text = append_char(&builder, U'_');
-    goat_char_t *name = alloc_from_arena(arena, (text.length + 1) * sizeof(*name));
+    gchar_t *name = alloc_from_arena(arena, (text.length + 1) * sizeof(*name));
     memcpy(name, text.data, (text.length + 1) * sizeof(*name));
     string_view_t result = {name, text.length};
     FREE_STRING(text);

@@ -70,7 +70,7 @@ static const declarator_t *own_declaration(const node_t *object, string_view_t n
         for (size_t j = 0; j < get_node_child_count(statement); j++) {
             const declarator_t *decl = (const declarator_t *)get_node_child(statement, j);
             if (decl->name.length == name.length
-                && !goat_memcmp(decl->name.data, name.data, name.length)) {
+                && !MEMCMP(decl->name.data, name.data, name.length)) {
                 if (found)
                     return NULL;
                 found = decl;
@@ -88,7 +88,7 @@ static bool may_have_inherited_grants(const node_t *node) {
     return false;
 }
 
-static const goat_char_t *operation(const node_t *node) {
+static const gchar_t *operation(const node_t *node) {
     const node_t *parent = node->parent;
     if (parent && get_node_child(parent, 0) == node) {
         if (parent->vtbl->type == NODE_SIMPLE_ASSIGNMENT)
@@ -109,7 +109,7 @@ void analyze_access(node_t *node, arena_t *errors, compilation_error_t **list) {
         const variable_t *var = (const variable_t *)node;
         node->access_proof =
             var->dynamic_lookup || !var->declarator ? ACCESS_PROOF_UNKNOWN : ACCESS_PROOF_ALLOWED;
-        if (var->name.length == 4 && !goat_memcmp(var->name.data, U"this", 4))
+        if (var->name.length == 4 && !MEMCMP(var->name.data, U"this", 4))
             node->access_proof = ACCESS_PROOF_UNKNOWN;
     } else if (type == NODE_MEMBER_ACCESS || type == NODE_INDEX_ACCESS) {
         node->access_proof = ACCESS_PROOF_UNKNOWN;

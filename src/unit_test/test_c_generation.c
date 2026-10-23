@@ -122,7 +122,7 @@ bool test_c_generation_transaction(void) {
     c_generation_callee_t callee = {.summary = &summary, .name = name};
     result = generate_c_function(&summary, name, &binding, &callee);
     ASSERT(result.status == C_GENERATION_OK && !result.failed_node);
-    ASSERT(result.source.data && goat_strstr(result.source.data, U"goat_f_integer"));
+    ASSERT(result.source.data && STRSTR(result.source.data, U"goat_f_integer"));
     FREE_STRING(result.source);
     ASSERT(generate_c_function(&summary, (string_view_t){0}, NULL, NULL).status
            == C_GENERATION_INVALID_REQUEST);
@@ -183,10 +183,10 @@ bool test_c_generation_expression(void) {
     c_generation_context_t context = {.summary = &summary};
     c_generated_expression_t expression = generate_c_code_from_node(node, &context);
     ASSERT(expression.success && expression.type == C_VALUE_INT64);
-    ASSERT(!goat_strcmp(expression.value.data, U"t0 + t1"));
+    ASSERT(!STRCMP(expression.value.data, U"t0 + t1"));
     ASSERT(expression.prelude->count == 2);
-    ASSERT(goat_strstr(expression.prelude->lines[0].text.data, U"first()"));
-    ASSERT(goat_strstr(expression.prelude->lines[1].text.data, U"second()"));
+    ASSERT(STRSTR(expression.prelude->lines[0].text.data, U"first()"));
+    ASSERT(STRSTR(expression.prelude->lines[1].text.data, U"second()"));
     destroy_c_expression(&expression);
     ASSERT(!expression.value.data && !expression.prelude && !expression.success);
     destroy_c_expression(&expression);

@@ -42,7 +42,7 @@ path_t *c_output_path(const path_t *input) {
     return output_path(input, "c");
 }
 
-static bool save_library(const options_t *options, const goat_char_t *source) {
+static bool save_library(const options_t *options, const gchar_t *source) {
 #ifdef _WIN32
     path_t *path = output_path(options->input_file, "dll");
 #else
@@ -73,11 +73,10 @@ static bool save_library(const options_t *options, const goat_char_t *source) {
         fprintf_utf8(stderr, get_messages()->native_diagnostics_truncated);
         fprintf(stderr, "\n");
     }
-    const goat_char_t *reason =
-        result.status == NATIVE_COMPILE_UNSUPPORTED   ? U"unsupported platform"
-        : result.status == NATIVE_COMPILE_START_ERROR ? U"cannot start compiler"
-        : result.status == NATIVE_COMPILE_FAILED      ? U"compiler failed"
-                                                      : U"file operation failed";
+    const gchar_t *reason = result.status == NATIVE_COMPILE_UNSUPPORTED   ? U"unsupported platform"
+                            : result.status == NATIVE_COMPILE_START_ERROR ? U"cannot start compiler"
+                            : result.status == NATIVE_COMPILE_FAILED      ? U"compiler failed"
+                                                                     : U"file operation failed";
     bool success = result.status == NATIVE_COMPILE_OK && !result.cleanup_error
                    && !result.windows_cleanup_error;
     if (!success) {
@@ -103,7 +102,7 @@ bool output_c_module(const options_t *options, arena_t *arena, const node_t *roo
     c_module_t *module = create_c_module(arena, root);
     c_module_output_t output = generate_c_module(arena, module);
     for (const c_module_failure_t *failure = output.failures; failure; failure = failure->next) {
-        const goat_char_t *reason =
+        const gchar_t *reason =
             failure->dependency                           ? U"dependency unavailable"
             : failure->status == C_GENERATION_UNSUPPORTED ? U"unsupported lowering"
             : failure->status == C_GENERATION_NOT_PROVEN  ? U"missing proof or dependency"

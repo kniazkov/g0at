@@ -70,7 +70,7 @@ bool test_call_graph_discovery() {
         ((const integer_constant_element_t *)at(collector, ANALYSIS_VALUE_WRITE, 3)->value)->value
         == 0);
     string_value_t text = analysis_collector_to_text(collector);
-    ASSERT(goat_strstr(text.data, U": call-edge f") && goat_strstr(text.data, U": call-group f"));
+    ASSERT(STRSTR(text.data, U": call-edge f") && STRSTR(text.data, U": call-group f"));
     FREE_STRING(text);
     destroy_options(options);
     destroy_arena(arena);
@@ -111,7 +111,7 @@ bool test_call_graph_recursion() {
     ASSERT(mutual->callee_summary->parameter_types[0]->type == LATTICE_INTEGER);
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!goat_strcmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);
@@ -159,7 +159,7 @@ bool test_call_graph_bindings() {
     /* A constant function identity is not proof that its declaration has already run. */
     ASSERT(at(collector, ANALYSIS_CALL_EDGE, 10)->callee_summary->function == target->node);
     string_value_t text = analysis_collector_to_text(collector);
-    ASSERT(goat_strstr(text.data, U"-> unknown") && goat_strstr(text.data, U"partial"));
+    ASSERT(STRSTR(text.data, U"-> unknown") && STRSTR(text.data, U"partial"));
     FREE_STRING(text);
     destroy_options(options);
     destroy_arena(arena);
@@ -187,7 +187,7 @@ bool test_call_graph_limits() {
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!goat_strcmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     ASSERT(group->function_summary->parameter_types[0]->type == LATTICE_INTEGER);
     ASSERT(group->component != 999);
     add_call_graph_events(NULL, graph);

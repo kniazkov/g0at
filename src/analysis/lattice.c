@@ -143,7 +143,7 @@ bool get_string_view_from_constant(arena_t *arena,
     }
     if (element->type == LATTICE_CHAR_CONSTANT) {
         uint32_t value = ((const char_constant_element_t *)element)->value;
-        goat_char_t *buffer = alloc_from_arena(arena, 2 * sizeof(goat_char_t));
+        gchar_t *buffer = alloc_from_arena(arena, 2 * sizeof(gchar_t));
         buffer[0] = value;
         buffer[1] = 0;
         *view = (string_view_t){buffer, 1};
@@ -595,9 +595,9 @@ static const lattice_element_t *lattice_join_string_constant(const lattice_eleme
                 (const string_constant_element_t *)right;
 
             if (left_constant->value.length == right_constant->value.length
-                && goat_memcmp(left_constant->value.data,
-                               right_constant->value.data,
-                               left_constant->value.length)
+                && MEMCMP(left_constant->value.data,
+                          right_constant->value.data,
+                          left_constant->value.length)
                        == 0) {
                 return left;
             }
@@ -1412,9 +1412,9 @@ static const lattice_element_t *lattice_meet_string_constant(const lattice_eleme
                 (const string_constant_element_t *)right;
 
             if (left_constant->value.length == right_constant->value.length
-                && goat_memcmp(left_constant->value.data,
-                               right_constant->value.data,
-                               left_constant->value.length)
+                && MEMCMP(left_constant->value.data,
+                          right_constant->value.data,
+                          left_constant->value.length)
                        == 0) {
                 return left;
             }
@@ -1861,7 +1861,7 @@ lattice_meet(arena_t *arena, const lattice_element_t *left, const lattice_elemen
 }
 
 /** @brief Converts a lattice type to a short human-readable string. */
-static const goat_char_t *lattice_type_to_string(lattice_type_t type) {
+static const gchar_t *lattice_type_to_string(lattice_type_t type) {
     switch (type) {
         case LATTICE_TOP:
             return U"⊤";

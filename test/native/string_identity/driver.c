@@ -32,7 +32,7 @@ int main(void) {
     native_memory_t memory = {0};
     goat_native_context_v2_t context = init_native_context(&memory);
     size_t baseline = get_allocated_memory_size();
-    const goat_char_t data[] = {U'a', 0, U'b'}; /* A view need not be terminated. */
+    const gchar_t data[] = {U'a', 0, U'b'}; /* A view need not be terminated. */
     goat_native_string_view_v2_t view = {data, 3};
     goat_native_value_v2_t argument = {.type = GOAT_NATIVE_STRING, .value.string = &view};
     goat_native_value_v2_t result = {.type = GOAT_NATIVE_I64, .value.integer = 123};
@@ -41,7 +41,7 @@ int main(void) {
     assert(result.type == GOAT_NATIVE_STRING && result.reserved == 0);
     assert(result.value.string->data == data && result.value.string->length == 3);
     assert(get_allocated_memory_size() > baseline);
-    assert(!goat_memcmp(result.value.string->data, data, 3));
+    assert(!MEMCMP(result.value.string->data, data, 3));
     goat_native_deallocate_all(&context);
     assert(get_allocated_memory_size() == baseline);
     view = (goat_native_string_view_v2_t){0};

@@ -108,33 +108,33 @@ void *copy_object_to_arena(arena_t *arena, const void *object, size_t size) {
     return copied_object;
 }
 
-string_view_t copy_string_to_arena(arena_t *arena, const goat_char_t *string, size_t length) {
-    goat_char_t *copied_string;
+string_view_t copy_string_to_arena(arena_t *arena, const gchar_t *string, size_t length) {
+    gchar_t *copied_string;
 
     if (length == 0) {
         return EMPTY_STRING_VIEW;
     }
 
-    if (length > SIZE_MAX / sizeof(goat_char_t) - 1)
+    if (length > SIZE_MAX / sizeof(gchar_t) - 1)
         abort();
-    copied_string = (goat_char_t *)alloc_from_arena(arena, (length + 1) * sizeof(goat_char_t));
-    memcpy(copied_string, string, length * sizeof(goat_char_t));
+    copied_string = (gchar_t *)alloc_from_arena(arena, (length + 1) * sizeof(gchar_t));
+    memcpy(copied_string, string, length * sizeof(gchar_t));
     copied_string[length] = U'\0';
     return (string_view_t){copied_string, length};
 }
 
-string_view_t format_string_to_arena(arena_t *arena, const goat_char_t *format, ...) {
+string_view_t format_string_to_arena(arena_t *arena, const gchar_t *format, ...) {
     va_list args;
     string_value_t value;
     size_t data_length;
-    goat_char_t *buffer;
+    gchar_t *buffer;
 
     va_start(args, format);
     value = format_string_vargs(format, args);
     va_end(args);
 
-    data_length = (value.length + 1) * sizeof(goat_char_t);
-    buffer = (goat_char_t *)alloc_from_arena(arena, data_length);
+    data_length = (value.length + 1) * sizeof(gchar_t);
+    buffer = (gchar_t *)alloc_from_arena(arena, data_length);
     memcpy(buffer, value.data, data_length);
     FREE_STRING(value);
 

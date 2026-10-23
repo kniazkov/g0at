@@ -21,44 +21,44 @@
 #include <stdio.h>
 
 bool test_index_parser(void) {
-    const goat_char_t *valid[] = {U"a[1]",
-                                  U"a[]",
-                                  U"a[1, 2, 3] = 4",
-                                  U"a.b[1].c[2]",
-                                  U"a[1][2].c",
-                                  U"a[b[c[d]]]",
-                                  U"f()[1]",
-                                  U"(a)[1]",
-                                  U"a[1](2)[3].f(4)[5]",
-                                  U"a[1 + 2, f(3), (4 * 5)]",
-                                  U"a[x = 1] = b[y = 2] = 3",
-                                  U"a[func() { return 1 }]",
-                                  U"a[{ var x = 1 }]",
-                                  U"a[1]()(2)",
-                                  U"var a = { this[true] = 1 }",
-                                  U"(a[1])[2]",
-                                  U"a[1] + b[2] * c[3]"};
-    const goat_char_t *invalid[] = {U"a[",
-                                    U"a[1)",
-                                    U"a[,1]",
-                                    U"a[1,]",
-                                    U"a[1,,2]",
-                                    U"a[1 2]",
-                                    U"a[;]",
-                                    U"a[1;2]",
-                                    U"a[+]",
-                                    U"a[1].",
-                                    U"a[1] =",
-                                    U"a[1](,2)",
-                                    U"a[1](2,)",
-                                    U"a[1 +]",
-                                    U"a[return 1]"};
+    const gchar_t *valid[] = {U"a[1]",
+                              U"a[]",
+                              U"a[1, 2, 3] = 4",
+                              U"a.b[1].c[2]",
+                              U"a[1][2].c",
+                              U"a[b[c[d]]]",
+                              U"f()[1]",
+                              U"(a)[1]",
+                              U"a[1](2)[3].f(4)[5]",
+                              U"a[1 + 2, f(3), (4 * 5)]",
+                              U"a[x = 1] = b[y = 2] = 3",
+                              U"a[func() { return 1 }]",
+                              U"a[{ var x = 1 }]",
+                              U"a[1]()(2)",
+                              U"var a = { this[true] = 1 }",
+                              U"(a[1])[2]",
+                              U"a[1] + b[2] * c[3]"};
+    const gchar_t *invalid[] = {U"a[",
+                                U"a[1)",
+                                U"a[,1]",
+                                U"a[1,]",
+                                U"a[1,,2]",
+                                U"a[1 2]",
+                                U"a[;]",
+                                U"a[1;2]",
+                                U"a[+]",
+                                U"a[1].",
+                                U"a[1] =",
+                                U"a[1](,2)",
+                                U"a[1](2,)",
+                                U"a[1 +]",
+                                U"a[return 1]"};
     for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
         arena_t *arena = create_arena(8);
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root =
             parse_analysis_test_program(&memory,
-                                        (string_value_t){valid[i], goat_strlen(valid[i]), false});
+                                        (string_value_t){valid[i], STRLEN(valid[i]), false});
         ASSERT(root);
         string_value_t source = generate_goat_code_from_node(root);
         ASSERT(parse_analysis_test_program(&memory, source));
@@ -68,9 +68,9 @@ bool test_index_parser(void) {
     for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
         arena_t *arena = create_arena(8);
         parser_memory_t memory = {arena, arena, arena, arena};
-        ASSERT(!parse_analysis_test_program(
-            &memory,
-            (string_value_t){invalid[i], goat_strlen(invalid[i]), false}));
+        ASSERT(
+            !parse_analysis_test_program(&memory,
+                                         (string_value_t){invalid[i], STRLEN(invalid[i]), false}));
         destroy_arena(arena);
     }
     return true;
@@ -178,7 +178,7 @@ bool test_index_model(void) {
     ASSERT(result.value == self);
     DECREF(result.value);
     string_value_t text = convert_object_to_string_notation(self);
-    ASSERT(!goat_strcmp(text.data, U"{{...}:{...}}"));
+    ASSERT(!STRCMP(text.data, U"{{...}:{...}}"));
     FREE_STRING(text);
     collect_garbage(proc);
     remove_gc_root(proc, self);

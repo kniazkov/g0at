@@ -28,22 +28,21 @@ bool test_data_builder() {
     index = add_string_to_data_segment(builder, U"alpha");
     ASSERT(index == 0);
     ASSERT(builder->data_size % 4 == 0);
-    ASSERT(builder->descriptors[1].size == sizeof(goat_char_t) * 5);
-    ASSERT(memcmp(builder->data + builder->descriptors[1].offset, U"beta", sizeof(goat_char_t) * 5)
+    ASSERT(builder->descriptors[1].size == sizeof(gchar_t) * 5);
+    ASSERT(memcmp(builder->data + builder->descriptors[1].offset, U"beta", sizeof(gchar_t) * 5)
            == 0);
-    ASSERT(memcmp(builder->data + builder->descriptors[2].offset, U"gamma", sizeof(goat_char_t) * 6)
+    ASSERT(memcmp(builder->data + builder->descriptors[2].offset, U"gamma", sizeof(gchar_t) * 6)
            == 0);
     /* Cross repeated buffer growth and look up old strings after every relocation. */
     for (size_t i = 0; i < 1000; i++) {
-        goat_char_t text[40];
-        goat_snprintf(text, 40, U"new-string-%zu", i);
+        gchar_t text[40];
+        SNPRINTF(text, 40, U"new-string-%zu", i);
         uint32_t added = add_string_to_data_segment(builder, text);
         ASSERT(added == i + 3);
         ASSERT(add_string_to_data_segment(builder, U"alpha") == 0);
-        ASSERT(add_string_to_data_segment_ex(builder, (string_view_t){text, goat_strlen(text)})
+        ASSERT(add_string_to_data_segment_ex(builder, (string_view_t){text, STRLEN(text)})
                == added);
-        ASSERT(!goat_strcmp((goat_char_t *)(builder->data + builder->descriptors[added].offset),
-                            text));
+        ASSERT(!STRCMP((gchar_t *)(builder->data + builder->descriptors[added].offset), text));
     }
     destroy_data_builder(builder);
     return true;
@@ -90,13 +89,12 @@ bool test_node_codegen_stubs() {
     ASSERT(!generate_indented_c_code_from_node(node, &context, source, 2));
     ASSERT(context.status == C_GENERATION_UNSUPPORTED);
     ASSERT(source->count == 1 && source->lines[0].indent == 1);
-    ASSERT(goat_strcmp(source->lines[0].text.data, U"sentinel") == 0);
+    ASSERT(STRCMP(source->lines[0].text.data, U"sentinel") == 0);
     ASSERT(generate_bytecode_assign_from_node(node, code, data) == BAD_INSTR_INDEX);
     ASSERT(generate_deferred_bytecode_from_node(node, code, data));
     ASSERT(code->size == 1 && code->instructions[0].opcode == END);
     ASSERT(data->descriptors_count == 1 && data->data_size == data_size);
-    ASSERT(goat_strcmp((goat_char_t *)(data->data + data->descriptors[0].offset), U"sentinel")
-           == 0);
+    ASSERT(STRCMP((gchar_t *)(data->data + data->descriptors[0].offset), U"sentinel") == 0);
 
     destroy_source_builder(source);
     destroy_data_builder(data);

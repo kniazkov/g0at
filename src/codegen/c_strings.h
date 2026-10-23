@@ -11,9 +11,9 @@
 string_value_t c_string_from_value(source_builder_t *prelude,
                                    c_generation_context_t *context,
                                    c_value_type_t type,
-                                   const goat_char_t *value);
+                                   const gchar_t *value);
 /** @brief Lowers a proven str call, preserving evaluation of extra arguments. */
 c_generated_expression_t c_string_call(const node_t *node, c_generation_context_t *context);
-/** @brief Emits static literal storage with explicit goat_char_t code units. */
+/** @brief Emits static literal storage with explicit gchar_t code units. */
 c_generated_expression_t
 c_string_literal(const node_t *node, c_generation_context_t *context, string_view_t value);

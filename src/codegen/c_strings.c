@@ -13,14 +13,14 @@
 string_value_t c_string_from_value(source_builder_t *prelude,
                                    c_generation_context_t *context,
                                    c_value_type_t type,
-                                   const goat_char_t *value) {
+                                   const gchar_t *value) {
     if (type == C_VALUE_STRING)
         return format_string(U"%s", value);
-    const goat_char_t *suffix = type == C_VALUE_INT64    ? U"i64"
-                                : type == C_VALUE_DOUBLE ? U"f64"
-                                : type == C_VALUE_BOOL   ? U"bool"
-                                : type == C_VALUE_CHAR   ? U"char"
-                                                         : NULL;
+    const gchar_t *suffix = type == C_VALUE_INT64    ? U"i64"
+                            : type == C_VALUE_DOUBLE ? U"f64"
+                            : type == C_VALUE_BOOL   ? U"bool"
+                            : type == C_VALUE_CHAR   ? U"char"
+                                                     : NULL;
     if (!suffix || !context->module_definition)
         return (string_value_t){0};
     string_value_t buffer = format_string(U"g_t%zu", context->temporary_count++);
@@ -89,12 +89,12 @@ c_string_literal(const node_t *node, c_generation_context_t *context, string_vie
     string_builder_t units;
     init_string_builder(&units, 64);
     for (size_t i = 0; i < value.length; i++) {
-        string_value_t unit = format_string(U"(goat_char_t)%u,", (unsigned)(uint32_t)value.data[i]);
+        string_value_t unit = format_string(U"(gchar_t)%u,", (unsigned)(uint32_t)value.data[i]);
         append_string_value(&units, unit);
         FREE_STRING(unit);
     }
     string_value_t contents = append_string(&units, U"0");
-    add_source(prelude, 0, U"static const goat_char_t %s[] = {%s};", name.data, contents.data);
+    add_source(prelude, 0, U"static const gchar_t %s[] = {%s};", name.data, contents.data);
     string_value_t result =
         format_string(U"((goat_native_string_view_v2_t){%s, %zu})", name.data, value.length);
     FREE_STRING(contents);

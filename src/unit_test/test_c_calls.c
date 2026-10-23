@@ -17,10 +17,10 @@
 
 #include <stdio.h>
 
-static node_t *analyzed(arena_t *arena, const goat_char_t *source) {
+static node_t *analyzed(arena_t *arena, const gchar_t *source) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, goat_strlen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     options_t *options = create_options();
     bool success = root && !analyze(root, &memory, options, NULL);
     destroy_options(options);
@@ -48,7 +48,7 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
     add_static_source(output, 0, U"static volatile int goat_call_trace;");
 
     const struct {
-        const goat_char_t *source, *check;
+        const gchar_t *source, *check;
         size_t function_id;
         bool real;
     } fixtures[] = {
@@ -304,7 +304,7 @@ bool test_c_call_rejections(void) {
     ASSERT(result.status == C_GENERATION_NOT_PROVEN && !result.source.data);
     destroy_arena(arena);
 
-    const goat_char_t *unsupported[] = {
+    const gchar_t *unsupported[] = {
         U"var leaf=func(n){return n;};const f=func(n){return leaf(n);};f(1);",
         U"const leaf=func(a,b){return a+b;};const f=func(n){return leaf(n);};f(1);",
         U"const leaf=func(n){return n;};const f=func(n){return leaf(n,1/n);};f(1);",

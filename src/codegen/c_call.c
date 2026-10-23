@@ -27,7 +27,7 @@ static bool same_signature(const function_summary_t *a, const function_summary_t
 }
 
 static bool same_name(string_view_t a, string_view_t b) {
-    return a.length == b.length && !goat_memcmp(a.data, b.data, a.length);
+    return a.length == b.length && !MEMCMP(a.data, b.data, a.length);
 }
 
 static bool usable(const function_summary_t *summary) {

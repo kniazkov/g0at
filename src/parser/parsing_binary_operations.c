@@ -72,17 +72,17 @@ parsing_comparison_operators(token_t *operator, parser_memory_t * memory, token_
     expression_t *left_operand = (expression_t *)operator->left->node;
     expression_t *right_operand = (expression_t *)operator->right->node;
     expression_t *operation = NULL;
-    if (!goat_strcmp(operator->text.data, U"<"))
+    if (!STRCMP(operator->text.data, U"<"))
         operation = create_less_node(memory->graph, left_operand, right_operand);
-    else if (!goat_strcmp(operator->text.data, U"<="))
+    else if (!STRCMP(operator->text.data, U"<="))
         operation = create_less_or_equal_node(memory->graph, left_operand, right_operand);
-    else if (!goat_strcmp(operator->text.data, U">"))
+    else if (!STRCMP(operator->text.data, U">"))
         operation = create_greater_node(memory->graph, left_operand, right_operand);
-    else if (!goat_strcmp(operator->text.data, U">="))
+    else if (!STRCMP(operator->text.data, U">="))
         operation = create_greater_or_equal_node(memory->graph, left_operand, right_operand);
-    else if (!goat_strcmp(operator->text.data, U"=="))
+    else if (!STRCMP(operator->text.data, U"=="))
         operation = create_equal_node(memory->graph, left_operand, right_operand);
-    else if (!goat_strcmp(operator->text.data, U"!="))
+    else if (!STRCMP(operator->text.data, U"!="))
         operation = create_not_equal_node(memory->graph, left_operand, right_operand);
 
     assert(operation != NULL);
@@ -190,19 +190,19 @@ parsing_logic_operators(token_t *op, parser_memory_t *memory, token_groups_t *gr
         return error;
     expression_t *left = (expression_t *)op->left->node, *right = (expression_t *)op->right->node,
                  *expr = NULL;
-    if (!goat_strcmp(op->text.data, U"&&"))
+    if (!STRCMP(op->text.data, U"&&"))
         expr = create_logical_and_node(memory->graph, left, right);
-    if (!goat_strcmp(op->text.data, U"||"))
+    if (!STRCMP(op->text.data, U"||"))
         expr = create_logical_or_node(memory->graph, left, right);
-    if (!goat_strcmp(op->text.data, U"&"))
+    if (!STRCMP(op->text.data, U"&"))
         expr = create_bitwise_and_node(memory->graph, left, right);
-    if (!goat_strcmp(op->text.data, U"|"))
+    if (!STRCMP(op->text.data, U"|"))
         expr = create_bitwise_or_node(memory->graph, left, right);
-    if (!goat_strcmp(op->text.data, U"^"))
+    if (!STRCMP(op->text.data, U"^"))
         expr = create_bitwise_xor_node(memory->graph, left, right);
-    if (!goat_strcmp(op->text.data, U"<<"))
+    if (!STRCMP(op->text.data, U"<<"))
         expr = create_shift_left_node(memory->graph, left, right);
-    if (!goat_strcmp(op->text.data, U">>"))
+    if (!STRCMP(op->text.data, U">>"))
         expr = create_shift_right_node(memory->graph, left, right);
     assert(expr);
     collapse_tokens_to_token(memory, op->left, op->right, TOKEN_EXPRESSION, &expr->base);

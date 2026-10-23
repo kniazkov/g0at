@@ -20,7 +20,7 @@
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t static_to_string(const object_t *obj) {
     builtin_function_object_t *sfobj = (builtin_function_object_t *)obj;
-    return (string_value_t){sfobj->descriptor->name, goat_strlen(sfobj->descriptor->name), false};
+    return (string_value_t){sfobj->descriptor->name, STRLEN(sfobj->descriptor->name), false};
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string_notation. */
@@ -313,7 +313,7 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
         status = GOAT_NATIVE_BAD_REQUEST;
     if (status == GOAT_NATIVE_OK && result.type == GOAT_NATIVE_STRING
         && (!result.value.string || (!result.value.string->data && result.value.string->length)
-            || result.value.string->length > SIZE_MAX / sizeof(goat_char_t) - 1))
+            || result.value.string->length > SIZE_MAX / sizeof(gchar_t) - 1))
         status = GOAT_NATIVE_BAD_REQUEST;
     if (status == GOAT_NATIVE_OK && result.type == GOAT_NATIVE_BOOL && result.value.boolean > 1)
         status = GOAT_NATIVE_BAD_REQUEST;

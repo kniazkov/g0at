@@ -17,7 +17,7 @@ typedef struct {
 
 /** Borrowed wide-character slice; no terminating zero is required. */
 typedef struct {
-    const goat_char_t *data;
+    const gchar_t *data;
     size_t length;
 } goat_module_wide_slice_t;
 
@@ -45,6 +45,6 @@ bool goat_module_version_valid(const char *text, size_t length);
 bool goat_module_parse_import(const char *text, size_t length, goat_module_import_t *result);
 
 /** Parse a wide-character import without allocation or conversion. */
-bool goat_module_parse_import_wide(const goat_char_t *text,
+bool goat_module_parse_import_wide(const gchar_t *text,
                                    size_t length,
                                    goat_module_import_wide_t *result);

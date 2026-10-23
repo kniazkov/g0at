@@ -42,7 +42,7 @@ static object_array_t get_keys(const object_t *obj) {
 
 /** @brief Releases or clears a dynamic string object. */
 static void release_or_clear(object_dynamic_string_t *dsobj) {
-    FREE((goat_char_t *)(dsobj->string.data));
+    FREE((gchar_t *)(dsobj->string.data));
     remove_object_from_list(&dsobj->base.process->objects, &dsobj->base);
     if (dsobj->base.process->dynamic_strings.size == POOL_CAPACITY) {
         FREE(dsobj);
@@ -96,7 +96,7 @@ static void release(object_t *obj) {
     remove_object_from_list(dsobj->state == ZOMBIE ? &obj->process->dynamic_strings
                                                    : &obj->process->objects,
                             obj);
-    FREE((goat_char_t *)(dsobj->string.data));
+    FREE((gchar_t *)(dsobj->string.data));
     FREE(obj);
 }
 
@@ -262,10 +262,10 @@ static object_vtbl_t static_string_vtbl = {.type = TYPE_STRING,
                                            .get_real_value = stub_get_real_value,
                                            .call = stub_call};
 
-object_t *get_static_string_object(object_static_string_t *storage, const goat_char_t *text) {
+object_t *get_static_string_object(object_static_string_t *storage, const gchar_t *text) {
     if (!storage->base.vtbl) {
         storage->base.vtbl = &static_string_vtbl;
-        storage->string = (string_view_t){text, goat_strlen(text)};
+        storage->string = (string_view_t){text, STRLEN(text)};
     }
     return &storage->base;
 }
@@ -273,7 +273,7 @@ object_t *get_static_string_object(object_static_string_t *storage, const goat_c
 /** @brief Macro to declare a static string object and provide access to it. */
 #define DECLARE_STATIC_STRING(name, string)                                                        \
     static object_static_string_t name = {{&static_string_vtbl, NULL, NULL, NULL},                 \
-                                          {(string), sizeof(string) / sizeof(goat_char_t) - 1}};   \
+                                          {(string), sizeof(string) / sizeof(gchar_t) - 1}};       \
     object_t *get_##name() {                                                                       \
         return &name.base;                                                                         \
     }
@@ -362,8 +362,8 @@ object_t *create_string_object(process_t *process, string_value_t value) {
     if (value.should_free) {
         obj->string.data = value.data;
     } else {
-        goat_char_t *copy = ALLOC((value.length + 1) * sizeof(goat_char_t));
-        goat_memcpy(copy, value.data, value.length);
+        gchar_t *copy = ALLOC((value.length + 1) * sizeof(gchar_t));
+        MEMCPY(copy, value.data, value.length);
         copy[value.length] = 0;
         obj->string.data = copy;
     }

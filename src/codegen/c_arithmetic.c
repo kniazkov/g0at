@@ -40,7 +40,7 @@ string_value_t c_capture_operand(source_builder_t *prelude,
 }
 
 c_generated_expression_t
-c_binary_arithmetic(const node_t *node, c_generation_context_t *context, goat_char_t operation) {
+c_binary_arithmetic(const node_t *node, c_generation_context_t *context, gchar_t operation) {
     if (operation != U'+' && operation != U'-' && operation != U'*') {
         fail_c_generation(context, node, C_GENERATION_UNSUPPORTED);
         return (c_generated_expression_t){0};

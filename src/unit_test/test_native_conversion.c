@@ -18,7 +18,7 @@
 
 bool test_native_int() {
     struct {
-        const goat_char_t *text;
+        const gchar_t *text;
         double real;
         bool is_real, valid;
         int64_t expected;
@@ -61,7 +61,7 @@ bool test_native_int() {
                 arg = create_real_number_object(proc, cases[i].real);
                 abstract = make_real_constant_element(arena, cases[i].real);
             } else {
-                string_value_t text = {cases[i].text, goat_strlen(cases[i].text), false};
+                string_value_t text = {cases[i].text, STRLEN(cases[i].text), false};
                 arg = create_string_object(proc, text);
                 abstract = make_string_constant_element(arena, VALUE_TO_VIEW(text));
             }
@@ -90,7 +90,7 @@ bool test_native_int() {
             } else {
                 ASSERT(result == fallback && value->type == LATTICE_STRING_CONSTANT);
                 string_value_t text = convert_object_to_string(result);
-                ASSERT(!goat_strcmp(text.data, U"fallback"));
+                ASSERT(!STRCMP(text.data, U"fallback"));
                 FREE_STRING(text);
             }
             DECREF(result);
@@ -172,8 +172,7 @@ bool test_input_lines() {
     ASSERT(text.data && text.length == 0);
     FREE_STRING(text);
     text = read_input_line(file);
-    ASSERT(text.data
-           && !goat_strcmp(text.data, U"\u041f\u0440\u0438\u0432\u0435\u0442 \U0001f600"));
+    ASSERT(text.data && !STRCMP(text.data, U"\u041f\u0440\u0438\u0432\u0435\u0442 \U0001f600"));
     FREE_STRING(text);
     text = read_input_line(file);
     ASSERT(text.data && text.length == 10000 && text.data[9999] == U'x');

@@ -18,42 +18,42 @@
 #include <stdio.h>
 
 bool test_finally_parser(void) {
-    const goat_char_t *valid[] = {U"try {} finally {}",
-                                  U"try f(); finally g();",
-                                  U"try throw 1; catch(e) println(e); finally g();",
-                                  U"try ; finally ;",
-                                  U"try {} catch(e);",
-                                  U"try f(); catch(e) x=e;",
-                                  U"try f(); finally x=1;",
-                                  U"try if(x) f(); else g(); finally h();",
-                                  U"try f(); catch(e) if(x) g(); else h(); finally h();",
-                                  U"do try f(); finally if(x) g(); else h(); while(x);",
-                                  U"do try f(); catch(e) while(x) break; finally h(); while(x);",
-                                  U"try try f(); finally g(); finally h();",
-                                  U"while(x) try break; finally continue;",
-                                  U"try f(); finally {const f=func(){return 1;};}",
-                                  U"try return 1; finally return 2;",
-                                  U"try {} catch(e) var x=1; finally var x=2;"};
-    const goat_char_t *invalid[] = {U"finally {}",
-                                    U"try {} finally",
-                                    U"try finally {}",
-                                    U"try {} finally {} catch(e) {}",
-                                    U"try {} finally {} finally {}",
-                                    U"try {} catch(e) finally {}",
-                                    U"try {} catch(e) {} catch(e) {}",
-                                    U"try {} finally (a,b) {}",
-                                    U"try {} finally break;",
-                                    U"while(x) try {} finally {const f=func(){continue;};}",
-                                    U"try ;; finally {}"};
+    const gchar_t *valid[] = {U"try {} finally {}",
+                              U"try f(); finally g();",
+                              U"try throw 1; catch(e) println(e); finally g();",
+                              U"try ; finally ;",
+                              U"try {} catch(e);",
+                              U"try f(); catch(e) x=e;",
+                              U"try f(); finally x=1;",
+                              U"try if(x) f(); else g(); finally h();",
+                              U"try f(); catch(e) if(x) g(); else h(); finally h();",
+                              U"do try f(); finally if(x) g(); else h(); while(x);",
+                              U"do try f(); catch(e) while(x) break; finally h(); while(x);",
+                              U"try try f(); finally g(); finally h();",
+                              U"while(x) try break; finally continue;",
+                              U"try f(); finally {const f=func(){return 1;};}",
+                              U"try return 1; finally return 2;",
+                              U"try {} catch(e) var x=1; finally var x=2;"};
+    const gchar_t *invalid[] = {U"finally {}",
+                                U"try {} finally",
+                                U"try finally {}",
+                                U"try {} finally {} catch(e) {}",
+                                U"try {} finally {} finally {}",
+                                U"try {} catch(e) finally {}",
+                                U"try {} catch(e) {} catch(e) {}",
+                                U"try {} finally (a,b) {}",
+                                U"try {} finally break;",
+                                U"while(x) try {} finally {const f=func(){continue;};}",
+                                U"try ;; finally {}"};
     for (size_t pass = 0; pass < 2; pass++) {
-        const goat_char_t **texts = pass ? invalid : valid;
+        const gchar_t **texts = pass ? invalid : valid;
         size_t count = pass ? sizeof(invalid) / sizeof(*invalid) : sizeof(valid) / sizeof(*valid);
         for (size_t i = 0; i < count; i++) {
             arena_t *arena = create_arena(8);
             parser_memory_t memory = {arena, arena, arena, arena};
-            node_t *root = parse_analysis_test_program(
-                &memory,
-                (string_value_t){texts[i], goat_strlen(texts[i]), false});
+            node_t *root =
+                parse_analysis_test_program(&memory,
+                                            (string_value_t){texts[i], STRLEN(texts[i]), false});
             if (pass ? root != NULL : root == NULL)
                 fprintf(stderr, "finally parser %zu/%zu\n", pass, i);
             ASSERT(pass ? root == NULL : root != NULL);
@@ -82,7 +82,7 @@ bool test_finally_gc(void) {
     object_array_t values = get_array_elements(cleanup->pending_value);
     ASSERT(values.size == 1);
     string_value_t value = convert_object_to_string(values.items[0]);
-    ASSERT(!goat_strcmp(value.data, U"pending value"));
+    ASSERT(!STRCMP(value.data, U"pending value"));
     FREE_STRING(value);
     thread->context = destroy_context(thread->context);
     thread->context = destroy_context(thread->context);

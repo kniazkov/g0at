@@ -17,11 +17,11 @@
 
 #include <stdio.h>
 
-static size_t occurrences(const goat_char_t *text, const goat_char_t *part) {
+static size_t occurrences(const gchar_t *text, const gchar_t *part) {
     size_t count = 0;
-    while ((text = goat_strstr(text, part))) {
+    while ((text = STRSTR(text, part))) {
         count++;
-        text += goat_strlen(part);
+        text += STRLEN(part);
     }
     return count;
 }
@@ -60,9 +60,9 @@ bool test_specialization_graph() {
     string_value_t before = analysis_collector_to_text(collector);
     uint32_t flags = function->flags;
     string_value_t dot = generate_graph_dot(function);
-    ASSERT(goat_strstr(dot.data, U"C view"));
-    ASSERT(goat_strstr(dot.data, U"(integer)"));
-    ASSERT(goat_strstr(dot.data, U"C=supported") && goat_strstr(dot.data, U"C=unknown"));
+    ASSERT(STRSTR(dot.data, U"C view"));
+    ASSERT(STRSTR(dot.data, U"(integer)"));
+    ASSERT(STRSTR(dot.data, U"C=supported") && STRSTR(dot.data, U"C=unknown"));
     ASSERT(occurrences(dot.data, U"color=forestgreen") == nodes(function));
     ASSERT(occurrences(dot.data, U"style=\"rounded,filled\" fillcolor=\"#f2faf2\"")
            == nodes(function));
@@ -73,17 +73,17 @@ bool test_specialization_graph() {
     classify_node_properties(root, NULL);
     ASSERT(!(function->flags & (NODE_FLAG_PURE | NODE_FLAG_C_COMPATIBLE)));
     dot = generate_graph_dot(function);
-    ASSERT(!goat_strstr(dot.data, U"C view"));
+    ASSERT(!STRSTR(dot.data, U"C view"));
     ASSERT(occurrences(dot.data, U"color=forestgreen") < nodes(function));
     FREE_STRING(dot);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!goat_strcmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     dot = generate_graph_dot(root);
-    ASSERT(!goat_strstr(dot.data, U"C view") && !goat_strstr(dot.data, U"color=forestgreen"));
+    ASSERT(!STRSTR(dot.data, U"C view") && !STRSTR(dot.data, U"color=forestgreen"));
     FREE_STRING(dot);
     destroy_options(options);
     destroy_arena(arena);
@@ -113,13 +113,13 @@ bool test_specialization_graph_boundaries() {
     ASSERT(!select_function_c_view(get_function_summaries(writer)));
     string_value_t dot = generate_graph_dot(root);
     ASSERT(occurrences(dot.data, U"C view") == 1);
-    ASSERT(goat_strstr(dot.data, U"C=unsupported"));
-    ASSERT(goat_strstr(dot.data, U"color=lightgray fontcolor=gray70 tooltip=\"unreachable\""));
+    ASSERT(STRSTR(dot.data, U"C=unsupported"));
+    ASSERT(STRSTR(dot.data, U"color=lightgray fontcolor=gray70 tooltip=\"unreachable\""));
     FREE_STRING(dot);
     /* A grey function remains grey even if a caller supplies an old positive summary. */
     ((node_t *)function)->flags |= NODE_FLAG_UNREACHABLE;
     dot = generate_graph_dot(function);
-    ASSERT(goat_strstr(dot.data, U"color=lightgray fontcolor=gray70 tooltip=\"unreachable\""));
+    ASSERT(STRSTR(dot.data, U"color=lightgray fontcolor=gray70 tooltip=\"unreachable\""));
     FREE_STRING(dot);
     destroy_options(options);
     destroy_arena(arena);

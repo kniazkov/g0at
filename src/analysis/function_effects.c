@@ -14,7 +14,7 @@ const function_capture_t *find_function_capture(const function_summary_t *summar
                                                 string_view_t name) {
     for (const function_capture_t *capture = summary->captures; capture; capture = capture->next) {
         if (capture->declarator == declarator && capture->name.length == name.length
-            && !goat_memcmp(capture->name.data, name.data, name.length))
+            && !MEMCMP(capture->name.data, name.data, name.length))
             return capture;
     }
     return NULL;

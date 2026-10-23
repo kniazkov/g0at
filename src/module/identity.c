@@ -65,13 +65,13 @@ bool goat_module_parse_import(const char *text, size_t length, goat_module_impor
     return true;
 }
 
-static bool wide_identifier_valid(const goat_char_t *text, size_t length, size_t maximum) {
+static bool wide_identifier_valid(const gchar_t *text, size_t length, size_t maximum) {
     if (!text || length == 0 || length > maximum || text[length - 1] == U'.')
         return false;
     if (!((text[0] >= U'a' && text[0] <= U'z') || (text[0] >= U'0' && text[0] <= U'9')))
         return false;
     for (size_t i = 0; i < length; i++) {
-        goat_char_t ch = text[i];
+        gchar_t ch = text[i];
         if (!((ch >= U'a' && ch <= U'z') || (ch >= U'0' && ch <= U'9') || ch == U'.' || ch == U'-'
               || ch == U'_'))
             return false;
@@ -95,7 +95,7 @@ static bool wide_identifier_valid(const goat_char_t *text, size_t length, size_t
     return true;
 }
 
-bool goat_module_parse_import_wide(const goat_char_t *text,
+bool goat_module_parse_import_wide(const gchar_t *text,
                                    size_t length,
                                    goat_module_import_wide_t *result) {
     if (!result)

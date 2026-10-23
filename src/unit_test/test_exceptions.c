@@ -13,15 +13,15 @@
 bool test_exceptions_object(void) {
     object_t *exceptions = get_exceptions_object();
     ASSERT(get_object_property(get_root_context()->data, get_string_exceptions()) == exceptions);
-    const goat_char_t *names[] = {U"DIVISION_BY_ZERO",
-                                  U"IMMUTABLE_OBJECT",
-                                  U"INVALID_ARGUMENT",
-                                  U"INVALID_OPERATION",
-                                  U"PROPERTY_ALREADY_EXISTS",
-                                  U"PROPERTY_IS_CONSTANT",
-                                  U"PROPERTY_NOT_FOUND",
-                                  U"ACCESS_DENIED",
-                                  U"FOREIGN_OBJECT"};
+    const gchar_t *names[] = {U"DIVISION_BY_ZERO",
+                              U"IMMUTABLE_OBJECT",
+                              U"INVALID_ARGUMENT",
+                              U"INVALID_OPERATION",
+                              U"PROPERTY_ALREADY_EXISTS",
+                              U"PROPERTY_IS_CONSTANT",
+                              U"PROPERTY_NOT_FOUND",
+                              U"ACCESS_DENIED",
+                              U"FOREIGN_OBJECT"};
     object_t *values[] = {get_exception_division_by_zero(),
                           get_exception_immutable_object(),
                           get_exception_invalid_argument(),
@@ -37,13 +37,12 @@ bool test_exceptions_object(void) {
     for (size_t i = 0; i < keys.size; i++) {
         /* Separately allocated keys must work by content, not singleton identity. */
         object_t *key =
-            create_string_object(process, (string_value_t){names[i], goat_strlen(names[i]), false});
+            create_string_object(process, (string_value_t){names[i], STRLEN(names[i]), false});
         object_t *value = get_object_property(exceptions, key);
         ASSERT(value == values[i]);
         ASSERT(value->vtbl->type == TYPE_STRING);
         string_value_t text = convert_object_to_string(value);
-        ASSERT(text.length == goat_strlen(names[i])
-               && !goat_memcmp(text.data, names[i], text.length));
+        ASSERT(text.length == STRLEN(names[i]) && !MEMCMP(text.data, names[i], text.length));
         FREE_STRING(text);
         ASSERT(get_object_property(exceptions, keys.items[i]) == value);
         ASSERT(set_object_property(exceptions, key, get_null_object()) == MSTAT_IMMUTABLE_OBJECT);

@@ -77,8 +77,8 @@ bool test_module_identity(void) {
     ASSERT(!goat_module_parse_import("a", 1, NULL));
 
     goat_module_import_wide_t wide = {0};
-    const goat_char_t *wtext = U"geometry@1.02.0";
-    ASSERT(goat_module_parse_import_wide(wtext, goat_strlen(wtext), &wide));
+    const gchar_t *wtext = U"geometry@1.02.0";
+    ASSERT(goat_module_parse_import_wide(wtext, STRLEN(wtext), &wide));
     ASSERT(wide.name.data == wtext && wide.name.length == 8);
     ASSERT(wide.version.data == wtext + 9 && wide.version.length == 6);
     ASSERT(goat_module_parse_import_wide(U"geometry", 8, &wide));

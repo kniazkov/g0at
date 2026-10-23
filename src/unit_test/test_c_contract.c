@@ -87,7 +87,7 @@ bool test_c_contract_checks() {
     ASSERT(summary->c_support == FUNCTION_C_UNKNOWN && summary->c_blockers == C_BLOCKER_ANALYSIS);
     ASSERT(snapshot->c_blockers == C_BLOCKER_BODY && snapshot->c_support == FUNCTION_C_UNKNOWN);
     string_value_t text = function_summary_to_string(snapshot);
-    ASSERT(goat_strstr(text.data, U"c-blockers=body"));
+    ASSERT(STRSTR(text.data, U"c-blockers=body"));
     FREE_STRING(text);
     destroy_arena(arena);
     return true;

@@ -56,8 +56,8 @@ static bool value_matches(const lattice_element_t *value, const char *text) {
             return false;
         string_value_t expected = decode_utf8(text + 7);
         string_view_t actual = ((const string_constant_element_t *)value)->value;
-        bool equal = expected.length == actual.length
-                     && !goat_memcmp(expected.data, actual.data, actual.length);
+        bool equal =
+            expected.length == actual.length && !MEMCMP(expected.data, actual.data, actual.length);
         FREE_STRING(expected);
         return equal;
     }
@@ -122,8 +122,8 @@ static bool return_type_matches(const function_summary_t *summary, const char *t
 }
 
 /** @brief Display names use underscores instead of spaces in expectation selectors. */
-static bool node_type_matches(const node_t *node, const goat_char_t *expected) {
-    const goat_char_t *actual = node->vtbl->type_name;
+static bool node_type_matches(const node_t *node, const gchar_t *expected) {
+    const gchar_t *actual = node->vtbl->type_name;
     for (; *actual && *expected; actual++, expected++) {
         if ((*actual == U' ' ? U'_' : *actual) != *expected)
             return false;
@@ -178,7 +178,7 @@ static bool effects_match(uint32_t effects, const char *expected) {
 
 static bool c_expression_matches(c_value_type_t type, const char *expected) {
     string_value_t wanted = decode_utf8(expected);
-    bool matches = wanted.data && !goat_strcmp(c_expression_type_name(type), wanted.data);
+    bool matches = wanted.data && !STRCMP(c_expression_type_name(type), wanted.data);
     FREE_STRING(wanted);
     return matches;
 }
@@ -186,7 +186,7 @@ static bool c_expression_matches(c_value_type_t type, const char *expected) {
 static bool c_blockers_match(uint32_t blockers, const char *expected) {
     string_value_t actual = c_blockers_to_string(blockers);
     string_value_t wanted = decode_utf8(expected);
-    bool matches = wanted.data && !goat_strcmp(actual.data, wanted.data);
+    bool matches = wanted.data && !STRCMP(actual.data, wanted.data);
     FREE_STRING(actual);
     FREE_STRING(wanted);
     return matches;
@@ -304,8 +304,7 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
                     continue;
             } else if (!unreachable) {
                 string_view_t actual = event->declarator->name;
-                if (actual.length != wide.length
-                    || goat_memcmp(actual.data, wide.data, wide.length))
+                if (actual.length != wide.length || MEMCMP(actual.data, wide.data, wide.length))
                     continue;
                 if (decl_row && declaration_row(event->declarator) != decl_row)
                     continue;

@@ -35,7 +35,7 @@ compilation_error_t *parsing_for(token_t *token, parser_memory_t *memory, token_
             || binding->node->vtbl->type != NODE_VARIABLE || !source
             || source->type != TOKEN_EXPRESSION || source->right))
         goto invalid;
-    if (collection && !goat_strcmp(((variable_t *)binding->node)->name.data, U"this"))
+    if (collection && !STRCMP(((variable_t *)binding->node)->name.data, U"this"))
         return create_error_from_token(memory->errors,
                                        binding,
                                        CRITICAL,

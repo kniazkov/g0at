@@ -106,7 +106,7 @@ bool test_c_expression_isolation() {
     reset_function_summary(set->head);
     ASSERT(!set->head->c_expressions);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!goat_strcmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     ASSERT(integer->node->flags == flags);
     ASSERT(integer->c_expression->type == C_VALUE_INT64);
     ASSERT(real->c_expression->type == C_VALUE_DOUBLE);

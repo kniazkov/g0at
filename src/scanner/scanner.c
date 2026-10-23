@@ -28,11 +28,11 @@
  *
  * The function modifies the input string directly and does not allocate additional memory.
  */
-static void remove_comments_and_carriage_returns(goat_char_t *code, size_t length) {
+static void remove_comments_and_carriage_returns(gchar_t *code, size_t length) {
     size_t i = 0;
     while (i < length) {
         if (code[i] == U'"' || code[i] == U'\'') {
-            goat_char_t quote = code[i++];
+            gchar_t quote = code[i++];
             while (i < length) {
                 if (code[i] == U'\\' && i + 1 < length) {
                     i += 2;
@@ -69,15 +69,15 @@ static void remove_comments_and_carriage_returns(goat_char_t *code, size_t lengt
 
 /** @brief Returns the current source character. */
 
-static inline goat_char_t get_char(scanner_t *scan) {
+static inline gchar_t get_char(scanner_t *scan) {
     return scan->position.offset < scan->length ? *scan->position.code : END_OF_SOURCE;
 }
 
 /** @brief Returns the next character and updates the position of the scanner. */
-static goat_char_t next_char(scanner_t *scan) {
+static gchar_t next_char(scanner_t *scan) {
     if (scan->position.offset >= scan->length)
         return END_OF_SOURCE;
-    goat_char_t current = *scan->position.code;
+    gchar_t current = *scan->position.code;
     if (current == U'\n') {
         scan->position.row++;
         scan->position.column = 1;
@@ -92,7 +92,7 @@ static goat_char_t next_char(scanner_t *scan) {
 }
 
 /** @brief Accepts underscore and the identifier-letter ranges listed below. */
-static bool is_letter(goat_char_t c) {
+static bool is_letter(gchar_t c) {
     return (c >= U'A' && c <= U'Z') ||     // Uppercase Latin letters
            c == U'_' ||                    // Underscore is considered a letter in identifiers
            (c >= U'a' && c <= U'z') ||     // Lowercase Latin letters
@@ -120,14 +120,14 @@ static bool is_letter(goat_char_t c) {
  * @brief Checks if a wide character is considered an operator.
  * @return `true` if the character is an operator, `false` otherwise.
  */
-static bool is_operator(goat_char_t c) {
-    const goat_char_t *operators = U"+-*/%=!<>^&|~.?";
-    return c != 0 && goat_strchr(operators, c) != NULL;
+static bool is_operator(gchar_t c) {
+    const gchar_t *operators = U"+-*/%=!<>^&|~.?";
+    return c != 0 && STRCHR(operators, c) != NULL;
 }
 
 /** @brief Keyword to token type mapping */
 typedef struct {
-    const goat_char_t *keyword;         /**< Keyword string */
+    const gchar_t *keyword;             /**< Keyword string */
     size_t length;                      /**< Length of keyword */
     token_type_t type;                  /**< Corresponding token type */
     node_t *(*node_factory)(arena_t *); /**< Optional AST node factory (NULL for simple keywords) */
@@ -165,8 +165,8 @@ static const keyword_lookup_t keywords[] = {
 };
 
 typedef struct {
-    const goat_char_t *oper; /**< Operator string */
-    size_t group_offset;     /**< Group offset in the group structure */
+    const gchar_t *oper; /**< Operator string */
+    size_t group_offset; /**< Group offset in the group structure */
 } operator_mapping_t;
 
 static const operator_mapping_t operator_mappings[] = {
@@ -219,7 +219,7 @@ static const operator_mapping_t operator_mappings[] = {
 static void parse_string(scanner_t *scan, token_t *token) {
     assert(get_char(scan) == U'"');
     token->type = TOKEN_EXPRESSION;
-    goat_char_t ch = next_char(scan);
+    gchar_t ch = next_char(scan);
     string_builder_t builder;
     init_string_builder(&builder, 0);
     while (ch != '"') {
@@ -282,7 +282,7 @@ cleanup:
 static void parse_character(scanner_t *scan, token_t *token) {
     assert(get_char(scan) == U'\'');
     token->type = TOKEN_EXPRESSION;
-    goat_char_t ch = next_char(scan);
+    gchar_t ch = next_char(scan);
     uint32_t value;
     if (ch == U'\'') {
         next_char(scan);
@@ -388,16 +388,16 @@ static void parse_character(scanner_t *scan, token_t *token) {
  * @note The exponent part must follow the format `[eE][+/-]digits`.
  */
 static void parse_number(scanner_t *scan, token_t *token) {
-    goat_char_t ch = get_char(scan);
-    assert(goat_is_digit(ch));
+    gchar_t ch = get_char(scan);
+    assert(ISDIGIT(ch));
 
     token->type = TOKEN_EXPRESSION;
 
-    const goat_char_t *begin = scan->position.code;
+    const gchar_t *begin = scan->position.code;
     uint64_t int_part = 0;
     uint64_t limit = (uint64_t)INT64_MAX + 1;
     bool overflow = false;
-    while (goat_is_digit(ch)) {
+    while (ISDIGIT(ch)) {
         uint64_t digit = ch - '0';
         if (int_part > (limit - digit) / 10)
             overflow = true;
@@ -410,7 +410,7 @@ static void parse_number(scanner_t *scan, token_t *token) {
     if (ch == U'.') {
         is_real = true;
         ch = next_char(scan);
-        while (goat_is_digit(ch))
+        while (ISDIGIT(ch))
             ch = next_char(scan);
     }
     if (ch == U'e' || ch == U'E') {
@@ -418,13 +418,13 @@ static void parse_number(scanner_t *scan, token_t *token) {
         ch = next_char(scan);
         if (ch == U'-' || ch == U'+')
             ch = next_char(scan);
-        while (goat_is_digit(ch))
+        while (ISDIGIT(ch))
             ch = next_char(scan);
     }
 
     if (is_real) {
         /* Avoid overflowing integer accumulators for fractions and exponents. */
-        double value = goat_strtod(begin, NULL);
+        double value = STRTOD(begin, NULL);
         token->node = create_real_number_node(scan->memory->graph, value);
     } else {
         if (overflow) {
@@ -446,12 +446,12 @@ scanner_t *create_scanner(const char *file_name,
                           parser_memory_t *memory,
                           token_groups_t *groups) {
     scanner_t *scan = alloc_zeroed_from_arena(memory->tokens, sizeof(scanner_t));
-    if (code.length > SIZE_MAX / sizeof(goat_char_t) - 1)
+    if (code.length > SIZE_MAX / sizeof(gchar_t) - 1)
         abort();
-    size_t code_size = sizeof(goat_char_t) * (code.length + 1);
+    size_t code_size = sizeof(gchar_t) * (code.length + 1);
     scan->length = code.length;
     scan->code = alloc_from_arena(memory->tokens, code_size);
-    memcpy(scan->code, code.data, code.length * sizeof(goat_char_t));
+    memcpy(scan->code, code.data, code.length * sizeof(gchar_t));
     scan->code[code.length] = 0;
     remove_comments_and_carriage_returns(scan->code, code.length);
     scan->position = (full_position_t){file_name, 1, 1, scan->code, 0};
@@ -462,9 +462,9 @@ scanner_t *create_scanner(const char *file_name,
 }
 
 token_t *get_token(scanner_t *scan) {
-    goat_char_t ch = get_char(scan);
+    gchar_t ch = get_char(scan);
 
-    while (goat_is_space(ch)) {
+    while (ISSPACE(ch)) {
         ch = next_char(scan);
     }
 
@@ -480,11 +480,11 @@ token_t *get_token(scanner_t *scan) {
         bool predefined = false;
         do {
             ch = next_char(scan);
-        } while (is_letter(ch) || goat_is_digit(ch));
+        } while (is_letter(ch) || ISDIGIT(ch));
         size_t length = scan->position.code - begin->code;
         for (size_t index = 0; index < sizeof(keywords) / sizeof(keyword_lookup_t); index++) {
             const keyword_lookup_t *kw = &keywords[index];
-            if (length == kw->length && goat_strncmp(begin->code, kw->keyword, kw->length) == 0) {
+            if (length == kw->length && STRNCMP(begin->code, kw->keyword, kw->length) == 0) {
                 predefined = true;
                 token->type = kw->type;
                 token->text = (string_view_t){kw->keyword, kw->length};
@@ -507,9 +507,9 @@ token_t *get_token(scanner_t *scan) {
         token->type = TOKEN_OPERATOR;
         size_t length = 1;
         for (size_t i = 0; i < sizeof(operator_mappings) / sizeof(*operator_mappings); i++) {
-            const goat_char_t *op = operator_mappings[i].oper;
-            size_t n = goat_strlen(op);
-            if (n > length && !goat_strncmp(scan->position.code, op, n))
+            const gchar_t *op = operator_mappings[i].oper;
+            size_t n = STRLEN(op);
+            if (n > length && !STRNCMP(scan->position.code, op, n))
                 length = n;
         }
         for (size_t i = 0; i < length; i++)
@@ -521,7 +521,7 @@ token_t *get_token(scanner_t *scan) {
         parse_string(scan, token);
     } else if (ch == U'\'') {
         parse_character(scan, token);
-    } else if (goat_is_digit(ch)) {
+    } else if (ISDIGIT(ch)) {
         parse_number(scan, token);
     } else if (ch == U',') {
         token->type = TOKEN_COMMA;
@@ -545,7 +545,7 @@ token_t *get_token(scanner_t *scan) {
         size_t length = scan->position.code - begin->code;
         token->text = copy_string_to_arena(scan->memory->tokens, begin->code, length);
     } else if (token->text.length == 0) {
-        token->text.length = goat_strlen(token->text.data);
+        token->text.length = STRLEN(token->text.data);
     }
 
     short_position_t *end =
@@ -558,7 +558,7 @@ token_t *get_token(scanner_t *scan) {
     if (token->type == TOKEN_OPERATOR) {
         for (size_t index = 0; index < sizeof(operator_mappings) / sizeof(operator_mapping_t);
              index++) {
-            if (goat_strcmp(operator_mappings[index].oper, token->text.data) == 0) {
+            if (STRCMP(operator_mappings[index].oper, token->text.data) == 0) {
                 token_list_t *group = (token_list_t *)((char *)(scan->groups)
                                                        + operator_mappings[index].group_offset);
                 append_token_to_group(group, token);

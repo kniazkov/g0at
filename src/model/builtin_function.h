@@ -24,7 +24,7 @@ typedef enum {
 
 /** @brief Every native function supplies both executors; descriptors are immutable singletons. */
 typedef struct builtin_function_t {
-    const goat_char_t *name;
+    const gchar_t *name;
     size_t min_args;
     unsigned effects;
     /** @brief Executors receive at least min_args; runtime results own a non-NULL value. */

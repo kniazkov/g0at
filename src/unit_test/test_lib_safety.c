@@ -89,7 +89,7 @@ bool test_arena_alignment_and_growth() {
         ASSERT(memcmp(copy_object_to_arena(arena, source, sizeof(source)), source, sizeof(source))
                == 0);
         string_view_t text = copy_string_to_arena(arena, U"abc", 3);
-        ASSERT(text.length == 3 && goat_strcmp(text.data, U"abc") == 0);
+        ASSERT(text.length == 3 && STRCMP(text.data, U"abc") == 0);
         destroy_arena(arena);
     }
     ASSERT(get_allocated_memory_size() == before);
@@ -205,8 +205,7 @@ bool test_utf8_file_io() {
     bool written = write_utf8_file(name, U"hello\n\u041f\u0440\u0438\u0432\u0435\u0442\n100%");
     text = read_utf8_file(name);
     bool roundtrip_ok =
-        text.data
-        && goat_strcmp(text.data, U"hello\n\u041f\u0440\u0438\u0432\u0435\u0442\n100%") == 0;
+        text.data && STRCMP(text.data, U"hello\n\u041f\u0440\u0438\u0432\u0435\u0442\n100%") == 0;
     FREE_STRING(text);
     int removed = remove(name);
     ASSERT(empty_ok && no_leak && written && roundtrip_ok && removed == 0);

@@ -22,7 +22,7 @@ typedef struct parser_memory_t parser_memory_t;
  */
 struct scanner_t {
     /** @brief Code processed by the scanner. */
-    goat_char_t *code;
+    gchar_t *code;
 
     /** @brief Explicit source length; embedded zeros are not EOF. */
     size_t length;

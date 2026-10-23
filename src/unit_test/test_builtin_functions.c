@@ -16,8 +16,8 @@
 #include <math.h>
 #include <stdio.h>
 
-static const builtin_function_t *lookup(const goat_char_t *name) {
-    return find_builtin_function((string_view_t){name, goat_strlen(name)});
+static const builtin_function_t *lookup(const gchar_t *name) {
+    return find_builtin_function((string_view_t){name, STRLEN(name)});
 }
 
 bool test_builtin_registry() {
@@ -31,18 +31,18 @@ bool test_builtin_registry() {
         ASSERT(lookup(f->name) == f);
         process_t *proc = create_process();
         object_t *key =
-            create_string_object(proc, (string_value_t){f->name, goat_strlen(f->name), false});
+            create_string_object(proc, (string_value_t){f->name, STRLEN(f->name), false});
         ASSERT(get_object_property(get_root_context()->data, key) == f->get_object());
         DECREF(key);
         destroy_process(proc);
         ASSERT(f->effects
-               == ((!goat_strcmp(f->name, U"print") || !goat_strcmp(f->name, U"println"))
+               == ((!STRCMP(f->name, U"print") || !STRCMP(f->name, U"println"))
                        ? BUILTIN_EFFECT_OUTPUT
-                   : !goat_strcmp(f->name, U"input") ? BUILTIN_EFFECT_INPUT
-                                                     : BUILTIN_EFFECT_NONE));
+                   : !STRCMP(f->name, U"input") ? BUILTIN_EFFECT_INPUT
+                                                : BUILTIN_EFFECT_NONE));
     }
     ASSERT(!lookup(U"pi") && !lookup(U"Exceptions") && !lookup(U"sig") && !lookup(U"signx"));
-    const goat_char_t raw[] = {U's', U'i', U'g', U'n', U'x'};
+    const gchar_t raw[] = {U's', U'i', U'g', U'n', U'x'};
     ASSERT(find_builtin_function((string_view_t){raw, 4}) == lookup(U"sign"));
     arena_t *arena = create_arena(8);
     const lattice_element_t *a = make_builtin_function_element(arena, lookup(U"sign"));
@@ -298,14 +298,14 @@ bool test_string_builtin_char_arguments() {
     ASSERT(value->type == LATTICE_STRING_CONSTANT);
     string_view_t replaced = ((const string_constant_element_t *)value)->value;
     ASSERT(replaced.length == 5);
-    ASSERT(!goat_memcmp(replaced.data, U"hebbo", 5));
+    ASSERT(!MEMCMP(replaced.data, U"hebbo", 5));
 
     args[2] = make_char_constant_element(arena, U'x');
     value = builtin_replace.interpret(state, args, 3);
     ASSERT(value->type == LATTICE_STRING_CONSTANT);
     replaced = ((const string_constant_element_t *)value)->value;
     ASSERT(replaced.length == 5);
-    ASSERT(!goat_memcmp(replaced.data, U"hexxo", 5));
+    ASSERT(!MEMCMP(replaced.data, U"hexxo", 5));
 
     destroy_abstract_state(state);
     destroy_arena(arena);

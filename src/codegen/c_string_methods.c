@@ -18,7 +18,7 @@ typedef enum { DIRECT, CHECKED, BUFFER, FORMAT } method_kind_t;
 
 typedef struct {
     const builtin_function_t *builtin;
-    const goat_char_t *name;
+    const gchar_t *name;
     c_value_type_t result;
     method_kind_t kind;
     size_t min, max; /**< Counts include the receiver. */
@@ -57,8 +57,7 @@ bool is_native_string_method(const builtin_function_t *builtin) {
 const builtin_function_t *find_native_string_method(string_view_t name) {
     for (size_t i = 0; i < sizeof(methods) / sizeof(*methods); i++) {
         const builtin_function_t *builtin = methods[i].builtin;
-        if (goat_strlen(builtin->name) == name.length
-            && !goat_memcmp(name.data, builtin->name, name.length))
+        if (STRLEN(builtin->name) == name.length && !MEMCMP(name.data, builtin->name, name.length))
             return builtin;
     }
     return NULL;

@@ -67,7 +67,7 @@ static bool replace_result(node_t *node, node_t *old_child, node_t *new_child) {
 }
 
 /** @brief Implements node_vtbl_t::get_child_tag. */
-static const goat_char_t *get_child_tag(const node_t *node, size_t index) {
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
     return index == 0 ? U"original" : index == 1 ? U"replacement" : NULL;
 }
 

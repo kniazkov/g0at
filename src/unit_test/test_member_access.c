@@ -34,7 +34,7 @@ bool test_member_access_scanner(void) {
     ASSERT(token && token->type == TOKEN_IDENTIFIER);
     token = get_token(scan);
     ASSERT(token && token->type == TOKEN_OPERATOR);
-    ASSERT(!goat_strcmp(token->text.data, U"."));
+    ASSERT(!STRCMP(token->text.data, U"."));
     token = get_token(scan);
     ASSERT(token && token->type == TOKEN_IDENTIFIER);
     ASSERT(groups->member_access_operators.count == 1);
@@ -52,7 +52,7 @@ bool test_member_access_scanner(void) {
     ASSERT(tokens.first->type == TOKEN_EXPRESSION);
     ASSERT(tokens.first->node->vtbl->type == NODE_MEMBER_ACCESS);
     string_value_t code = generate_goat_code_from_node(tokens.first->node);
-    ASSERT(!goat_strcmp(code.data, U"a.b.c"));
+    ASSERT(!STRCMP(code.data, U"a.b.c"));
     FREE_STRING(code);
     FREE(groups);
     destroy_arena(arena);
@@ -60,7 +60,7 @@ bool test_member_access_scanner(void) {
 }
 
 bool test_member_access_parser(void) {
-    const goat_char_t *valid[] = {
+    const gchar_t *valid[] = {
         U"var obj = {}; obj.x = 10; print(obj.x);",
         U"var obj = {}; obj.a.b = 20;",
         U"var obj = {}; (obj).x = 5;",
@@ -76,23 +76,22 @@ bool test_member_access_parser(void) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
         ASSERT(
-            parse_analysis_test_program(&m,
-                                        (string_value_t){valid[i], goat_strlen(valid[i]), false}));
+            parse_analysis_test_program(&m, (string_value_t){valid[i], STRLEN(valid[i]), false}));
         destroy_arena(a);
     }
-    const goat_char_t *invalid[] = {U"obj.;",
-                                    U".x;",
-                                    U"var obj = {}; obj..x;",
-                                    U"var obj = {}; obj.1;",
-                                    U"f(1,);",
-                                    U"f(,1);",
-                                    U"var obj = {}; obj.f(1,);"};
+    const gchar_t *invalid[] = {U"obj.;",
+                                U".x;",
+                                U"var obj = {}; obj..x;",
+                                U"var obj = {}; obj.1;",
+                                U"f(1,);",
+                                U"f(,1);",
+                                U"var obj = {}; obj.f(1,);"};
     for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
-        ASSERT(!parse_analysis_test_program(
-            &m,
-            (string_value_t){invalid[i], goat_strlen(invalid[i]), false}));
+        ASSERT(
+            !parse_analysis_test_program(&m,
+                                         (string_value_t){invalid[i], STRLEN(invalid[i]), false}));
         destroy_arena(a);
     }
     return true;
@@ -110,7 +109,7 @@ bool test_member_access_ast(void) {
     ASSERT(!get_node_child(&node->base, 1));
 
     string_value_t source = generate_goat_code_from_expression(node);
-    ASSERT(!goat_strcmp(source.data, U"obj.x"));
+    ASSERT(!STRCMP(source.data, U"obj.x"));
     FREE_STRING(source);
 
     code_builder_t *builder = create_code_builder();
@@ -140,7 +139,7 @@ bool test_member_access_ast(void) {
     string_value_t pretty = build_source(sb);
     string_value_t indented_source = generate_goat_code_from_expression(node);
     ASSERT(pretty.length == indented_source.length + 1
-           && !goat_memcmp(pretty.data, indented_source.data, indented_source.length));
+           && !MEMCMP(pretty.data, indented_source.data, indented_source.length));
     FREE_STRING(pretty);
     FREE_STRING(indented_source);
     destroy_source_builder(sb);
@@ -160,7 +159,7 @@ bool test_member_access_method_call_ast(void) {
     ASSERT(get_node_child(call, 0)->vtbl->type == NODE_MEMBER_ACCESS);
 
     string_value_t source = generate_goat_code_from_node(call);
-    ASSERT(!goat_strcmp(source.data, U"obj.foo()"));
+    ASSERT(!STRCMP(source.data, U"obj.foo()"));
     FREE_STRING(source);
 
     code_builder_t *builder = create_code_builder();
@@ -285,7 +284,7 @@ bool test_member_access_vm(void) {
 
     code = make_member_access_code(getprop, 2);
     string_value_t text = bytecode_to_text(code);
-    ASSERT(goat_strstr(text.data, U"GETPROP"));
+    ASSERT(STRSTR(text.data, U"GETPROP"));
     FREE_STRING(text);
     free_bytecode(code);
 

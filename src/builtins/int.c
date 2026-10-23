@@ -10,7 +10,7 @@
 
 #include <math.h>
 
-static bool ascii_space(goat_char_t ch) {
+static bool ascii_space(gchar_t ch) {
     return ch == U' ' || (ch >= U'\t' && ch <= U'\r');
 }
 
@@ -28,7 +28,7 @@ static int_value_t from_string(string_view_t text) {
         return (int_value_t){false, 0};
     uint64_t limit = (uint64_t)INT64_MAX + negative, number = 0;
     for (size_t i = begin; i < end; i++) {
-        goat_char_t ch = text.data[i];
+        gchar_t ch = text.data[i];
         if (ch < U'0' || ch > U'9')
             return (int_value_t){false, 0};
         unsigned digit = (unsigned)(ch - U'0');

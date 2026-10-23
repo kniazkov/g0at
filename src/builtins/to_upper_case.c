@@ -46,8 +46,8 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     if (args[0]->type == LATTICE_STRING_CONSTANT) {
         const string_constant_element_t *str = (const string_constant_element_t *)args[0];
         string_value_t result = unicode_string_case(str->value, true);
-        goat_char_t *copy = alloc_from_arena(state->arena, (result.length + 1) * sizeof(*copy));
-        goat_memcpy(copy, result.data, result.length);
+        gchar_t *copy = alloc_from_arena(state->arena, (result.length + 1) * sizeof(*copy));
+        MEMCPY(copy, result.data, result.length);
         copy[result.length] = 0;
         const lattice_element_t *element =
             make_string_constant_element(state->arena, (string_view_t){copy, result.length});

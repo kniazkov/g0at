@@ -303,10 +303,10 @@ bool test_logic_nodes(void) {
         bytecode_t *code = link_code_and_data(cb, db);
         process_t *proc = create_process();
         ASSERT(run(proc, code) == 0 && proc->main_thread->data_stack->size == 1);
-        const goat_char_t *names[] =
+        const gchar_t *names[] =
             {U"LNOT", U"BOOL", U"BNOT", U"LAND", U"LOR", U"BAND", U"BOR", U"BXOR", U"SHL", U"SHR"};
         string_value_t dump = bytecode_to_text(code);
-        ASSERT(goat_strstr(dump.data, names[op]));
+        ASSERT(STRSTR(dump.data, names[op]));
         FREE_STRING(dump);
         int64_t expected[] = {0, 1, -2, 1, 1, 0, 3, 3, 4, 0};
         object_t *value = peek_object_from_stack(proc->main_thread->data_stack, 0);
@@ -344,14 +344,14 @@ bool test_logic_nodes(void) {
         destroy_options(options);
         destroy_arena(arena);
     }
-    const goat_char_t *invalid[] =
+    const gchar_t *invalid[] =
         {U"!", U"~", U"1 &&", U"|| 1", U"1 <<", U"1 &", U"1 ! 2", U"1 ~~ 2", U"1 <<< 2"};
     for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
         arena_t *arena = create_arena(8);
         parser_memory_t m = {arena, arena, arena, arena};
-        ASSERT(!parse_analysis_test_program(
-            &m,
-            (string_value_t){invalid[i], goat_strlen(invalid[i]), false}));
+        ASSERT(
+            !parse_analysis_test_program(&m,
+                                         (string_value_t){invalid[i], STRLEN(invalid[i]), false}));
         destroy_arena(arena);
     }
     return true;

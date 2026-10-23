@@ -17,7 +17,7 @@ static uint32_t goat_native_string_storage(const goat_native_context_v2_t *conte
         return GOAT_NATIVE_ABI_MISMATCH;
     goat_native_string_buffer_v2_t result = {0};
     if (length) {
-        result.data = goat_native_allocate(context, (length + 1) * sizeof(goat_char_t));
+        result.data = goat_native_allocate(context, (length + 1) * sizeof(gchar_t));
         result.length = result.capacity = length;
         result.data[length] = 0;
     }
@@ -31,11 +31,11 @@ uint32_t goat_native_string_copy(const goat_native_context_v2_t *context,
                                  goat_native_string_buffer_v2_t *out) {
     uint32_t status = goat_native_string_storage(context, value.length, out);
     if (status == GOAT_NATIVE_OK && value.length)
-        goat_memcpy(out->data, value.data, value.length);
+        MEMCPY(out->data, value.data, value.length);
     return status;
 }
 
-/** @brief Returns the VM-compatible length in goat_char_t code units. */
+/** @brief Returns the VM-compatible length in gchar_t code units. */
 int64_t goat_native_string_length(goat_native_string_view_v2_t value) {
     return (int64_t)value.length;
 }
@@ -76,7 +76,7 @@ int64_t goat_native_string_index_of(goat_native_string_view_v2_t value,
     if (needle.length > value.length)
         return -1;
     for (size_t i = 0; i <= value.length - needle.length; ++i)
-        if (!goat_memcmp(value.data + i, needle.data, needle.length))
+        if (!MEMCMP(value.data + i, needle.data, needle.length))
             return (int64_t)i;
     return -1;
 }
@@ -90,7 +90,7 @@ int64_t goat_native_string_last_index_of(goat_native_string_view_v2_t value,
         return -1;
     size_t i = value.length - needle.length;
     do {
-        if (!goat_memcmp(value.data + i, needle.data, needle.length))
+        if (!MEMCMP(value.data + i, needle.data, needle.length))
             return (int64_t)i;
     } while (i-- != 0);
     return -1;
@@ -106,8 +106,7 @@ bool goat_native_string_contains(goat_native_string_view_v2_t value,
 bool goat_native_string_starts_with(goat_native_string_view_v2_t value,
                                     goat_native_string_view_v2_t prefix) {
     return !prefix.length
-           || (prefix.length <= value.length
-               && !goat_memcmp(value.data, prefix.data, prefix.length));
+           || (prefix.length <= value.length && !MEMCMP(value.data, prefix.data, prefix.length));
 }
 
 /** @brief Tests a suffix; every string ends with the empty string. */
@@ -115,9 +114,7 @@ bool goat_native_string_ends_with(goat_native_string_view_v2_t value,
                                   goat_native_string_view_v2_t suffix) {
     return !suffix.length
            || (suffix.length <= value.length
-               && !goat_memcmp(value.data + value.length - suffix.length,
-                               suffix.data,
-                               suffix.length));
+               && !MEMCMP(value.data + value.length - suffix.length, suffix.data, suffix.length));
 }
 
 /** @brief Concatenates two views without modifying either operand. */
@@ -131,9 +128,9 @@ uint32_t goat_native_string_concat(const goat_native_context_v2_t *context,
     if (status != GOAT_NATIVE_OK)
         return status;
     if (left.length)
-        goat_memcpy(out->data, left.data, left.length);
+        MEMCPY(out->data, left.data, left.length);
     if (right.length)
-        goat_memcpy(out->data + left.length, right.data, right.length);
+        MEMCPY(out->data + left.length, right.data, right.length);
     return GOAT_NATIVE_OK;
 }
 
@@ -176,9 +173,9 @@ static uint32_t goat_native_string_case(const goat_native_context_v2_t *context,
         return GOAT_NATIVE_ABI_MISMATCH;
     size_t length = 0;
     for (size_t i = 0; i < value.length; ++i) {
-        goat_char_t mapped[3];
+        gchar_t mapped[3];
         size_t n = goat_case_mapping(value.data, value.length, i, upper, mapped);
-        if (length > SIZE_MAX / sizeof(goat_char_t) - 1 - n)
+        if (length > SIZE_MAX / sizeof(gchar_t) - 1 - n)
             return GOAT_NATIVE_RESOURCE_LIMIT;
         length += n;
     }
@@ -186,9 +183,9 @@ static uint32_t goat_native_string_case(const goat_native_context_v2_t *context,
     if (status == GOAT_NATIVE_OK) {
         size_t offset = 0;
         for (size_t i = 0; i < value.length; ++i) {
-            goat_char_t mapped[3];
+            gchar_t mapped[3];
             size_t n = goat_case_mapping(value.data, value.length, i, upper, mapped);
-            goat_memcpy(out->data + offset, mapped, n);
+            MEMCPY(out->data + offset, mapped, n);
             offset += n;
         }
     }
@@ -220,7 +217,7 @@ uint32_t goat_native_string_repeat(const goat_native_context_v2_t *context,
     uint32_t status = goat_native_string_storage(context, length, out);
     if (status == GOAT_NATIVE_OK && value.length)
         for (size_t i = 0; i < length; i += value.length)
-            goat_memcpy(out->data + i, value.data, value.length);
+            MEMCPY(out->data + i, value.data, value.length);
     return status;
 }
 
@@ -238,12 +235,12 @@ uint32_t goat_native_string_replace(const goat_native_context_v2_t *context,
         size_t pos = 0, written = 0;
         while (pos < value.length) {
             bool match = old_part.length <= value.length - pos
-                         && !goat_memcmp(value.data + pos, old_part.data, old_part.length);
+                         && !MEMCMP(value.data + pos, old_part.data, old_part.length);
             size_t count = match ? new_part.length : 1;
             if (count > GOAT_NATIVE_STRING_MAX - written)
                 return GOAT_NATIVE_BAD_REQUEST;
             if (pass && count)
-                goat_memcpy(out->data + written, match ? new_part.data : value.data + pos, count);
+                MEMCPY(out->data + written, match ? new_part.data : value.data + pos, count);
             written += count;
             pos += match ? old_part.length : 1;
         }
@@ -292,7 +289,7 @@ uint32_t goat_native_string_format(const goat_native_context_v2_t *context,
             if (part.length > GOAT_NATIVE_STRING_MAX - written)
                 return GOAT_NATIVE_BAD_REQUEST;
             if (pass && part.length)
-                goat_memcpy(out->data + written, part.data, part.length);
+                MEMCPY(out->data + written, part.data, part.length);
             written += part.length;
             pos = end;
         }

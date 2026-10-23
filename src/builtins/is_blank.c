@@ -12,9 +12,9 @@
 #include "registry.h"
 
 /** @brief Checks that every character of the string is whitespace. */
-static bool is_blank_string(const goat_char_t *data, size_t length) {
+static bool is_blank_string(const gchar_t *data, size_t length) {
     for (size_t i = 0; i < length; i++) {
-        if (!goat_is_space(data[i]))
+        if (!ISSPACE(data[i]))
             return false;
     }
     return true;

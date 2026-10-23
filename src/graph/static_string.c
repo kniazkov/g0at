@@ -107,7 +107,7 @@ static node_vtbl_t static_string_vtbl = {
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
-node_t *create_static_string_node(arena_t *arena, const goat_char_t *data, size_t length) {
+node_t *create_static_string_node(arena_t *arena, const gchar_t *data, size_t length) {
     static_string_t *expr =
         (static_string_t *)alloc_zeroed_from_arena(arena, sizeof(static_string_t));
     expr->base.base.vtbl = &static_string_vtbl;

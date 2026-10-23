@@ -45,9 +45,9 @@ typedef struct {
      * @brief Pointer to immutable string data (or NULL).
      * @warning Never modify through this pointer - use `string_builder_t` for mutation.
      */
-    const goat_char_t *data;
+    const gchar_t *data;
 
-    /** @brief Length in goat_char_t units, excluding the terminator. */
+    /** @brief Length in gchar_t units, excluding the terminator. */
     size_t length;
 
     /**
@@ -60,7 +60,7 @@ typedef struct {
 /** @brief Wraps a wide string literal without taking ownership. */
 #define STATIC_STRING(str)                                                                         \
     (string_value_t) {                                                                             \
-        .data = (str), .length = sizeof(str) / sizeof(goat_char_t) - 1, .should_free = false       \
+        .data = (str), .length = sizeof(str) / sizeof(gchar_t) - 1, .should_free = false           \
     }
 
 /** @brief Macro to create empty string value. */
@@ -78,7 +78,7 @@ typedef struct {
 /** @brief Macro to clear the memory of a string if it needs to be cleared. */
 #define FREE_STRING(v)                                                                             \
     if ((v).should_free)                                                                           \
-    FREE((goat_char_t *)((v).data))
+    FREE((gchar_t *)((v).data))
 
 /**
  * @brief Borrowed string; its backing storage must outlive the view.
@@ -89,7 +89,7 @@ typedef struct {
      * @brief Pointer to immutable string data (or NULL).
      * @note Unlike string_value_t, views never own their data.
      */
-    const goat_char_t *data;
+    const gchar_t *data;
 
     /** @brief Precomputed length (excluding null terminator). */
     size_t length;

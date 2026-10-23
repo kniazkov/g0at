@@ -112,7 +112,7 @@ def main():
 #include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
-#define V(s) ((goat_native_string_view_v2_t){s, sizeof(s)/sizeof(goat_char_t)-1})
+#define V(s) ((goat_native_string_view_v2_t){s, sizeof(s)/sizeof(gchar_t)-1})
 static void show(goat_native_string_buffer_v2_t value) {
     printf("%zu:", value.length);
     for(size_t i=0;i<value.length;++i) printf("%" PRIu32 ",", (uint32_t)value.data[i]);

@@ -39,8 +39,8 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements node_vtbl_t::get_child_tag. */
-static const goat_char_t *get_child_tag(const node_t *node, size_t index) {
-    static const goat_char_t *tags[] = {U"initial", U"condition", U"step", U"body"};
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
+    static const gchar_t *tags[] = {U"initial", U"condition", U"step", U"body"};
     return index < 4 ? tags[index] : NULL;
 }
 
@@ -381,7 +381,7 @@ static size_t property_count_for_in(const node_t *node) {
     return get_property_count_of_declarator((const node_t *)((const for_t *)node)->iteration);
 }
 
-static const goat_char_t *
+static const gchar_t *
 property_for_in(const node_t *node, size_t index, node_display_value_t *value) {
     return get_property_of_declarator((const node_t *)((const for_t *)node)->iteration,
                                       index,
@@ -392,10 +392,10 @@ static string_value_t source_for_in(const node_t *node) {
     string_value_t source = generate_goat_code_from_node(get_child(node, 0));
     string_value_t body = generate_goat_code_from_node(get_child(node, 3));
     access_modifier_t modifier = ((const for_t *)node)->iteration->modifier;
-    const goat_char_t *prefix = modifier == ACCESS_PUBLIC      ? U"public "
-                                : modifier == ACCESS_PROTECTED ? U"protected "
-                                : modifier == ACCESS_PRIVATE   ? U"private "
-                                                               : U"";
+    const gchar_t *prefix = modifier == ACCESS_PUBLIC      ? U"public "
+                            : modifier == ACCESS_PROTECTED ? U"protected "
+                            : modifier == ACCESS_PRIVATE   ? U"private "
+                                                           : U"";
     string_value_t result = format_string(U"for (%sconst %s in %s) %s",
                                           prefix,
                                           ((const for_t *)node)->iteration->name.data,

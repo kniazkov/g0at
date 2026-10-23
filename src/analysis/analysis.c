@@ -320,7 +320,7 @@ static void bind_variables_from_node_and_children(node_t *node,
                 parent_type == NODE_SIMPLE_ASSIGNMENT && get_node_child(parent, 0) == (node_t *)var;
             if (is_left_operand) {
                 if (var->name.length == 4 && var->name.data
-                    && !goat_memcmp(var->name.data, U"this", 4)) {
+                    && !MEMCMP(var->name.data, U"this", 4)) {
                     compilation_error_t *error =
                         create_error_from_node(memory->errors,
                                                node,
@@ -393,7 +393,7 @@ static void bind_variables_from_node_and_children(node_t *node,
             } else {
                 /* A read of an undeclared name yields null and declares nothing. */
                 if (options->enable_warnings && !options->interactive
-                    && !(var->name.length == 4 && !goat_memcmp(var->name.data, U"this", 4))) {
+                    && !(var->name.length == 4 && !MEMCMP(var->name.data, U"this", 4))) {
                     compilation_error_t *error =
                         create_error_from_node(memory->errors,
                                                node,

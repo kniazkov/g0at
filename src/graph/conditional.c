@@ -27,8 +27,8 @@ static node_t *child(const node_t *node, size_t index) {
     return index < 3 ? (node_t *)((const conditional_t *)node)->parts[index] : NULL;
 }
 
-static const goat_char_t *tag(const node_t *node, size_t index) {
-    static const goat_char_t *tags[] = {U"condition", U"true", U"false"};
+static const gchar_t *tag(const node_t *node, size_t index) {
+    static const gchar_t *tags[] = {U"condition", U"true", U"false"};
     return index < 3 ? tags[index] : NULL;
 }
 

@@ -109,8 +109,8 @@ static object_t *clone(process_t *process, object_t *obj) {
 
 /** @brief Converts a Unicode code point to its string representation. */
 static string_value_t character_to_string(uint32_t value) {
-    goat_char_t *buffer = ALLOC(2 * sizeof(goat_char_t));
-    buffer[0] = (goat_char_t)value;
+    gchar_t *buffer = ALLOC(2 * sizeof(gchar_t));
+    buffer[0] = (gchar_t)value;
     buffer[1] = 0;
     return (string_value_t){buffer, 1, true};
 }
@@ -143,12 +143,12 @@ static string_value_t character_to_string_notation(uint32_t value) {
             append_substring(&builder, U"\\\"", 2);
             break;
         default:
-            if (sizeof(goat_char_t) > 2 || value < 0x10000) {
-                append_char(&builder, (goat_char_t)value);
+            if (sizeof(gchar_t) > 2 || value < 0x10000) {
+                append_char(&builder, (gchar_t)value);
             } else {
                 value -= 0x10000;
-                append_char(&builder, (goat_char_t)(0xD800 + (value >> 10)));
-                append_char(&builder, (goat_char_t)(0xDC00 + (value & 0x3FF)));
+                append_char(&builder, (gchar_t)(0xD800 + (value >> 10)));
+                append_char(&builder, (gchar_t)(0xDC00 + (value & 0x3FF)));
             }
             break;
     }

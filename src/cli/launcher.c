@@ -36,7 +36,7 @@
 static void print_compilation_errors(compilation_error_t *error, unsigned int line_offset) {
     error = reverse_compilation_errors(error);
     while (error != NULL) {
-        const goat_char_t const *error_msg_format = NULL;
+        const gchar_t const *error_msg_format = NULL;
         switch (error->severity) {
             case WARNING:
                 error_msg_format = get_messages()->compilation_warning;
@@ -109,7 +109,7 @@ static int run_interactive(options_t *opt) {
         string_builder_t builder;
         init_string_builder(&builder, 0);
         size_t content_length = line.length;
-        while (content_length > 0 && goat_is_space(line.data[content_length - 1])) {
+        while (content_length > 0 && ISSPACE(line.data[content_length - 1])) {
             content_length--;
         }
         bool input_failed = false;
@@ -134,7 +134,7 @@ static int run_interactive(options_t *opt) {
                 set_stdout_line_start(true);
             }
             content_length = line.length;
-            while (content_length > 0 && goat_is_space(line.data[content_length - 1])) {
+            while (content_length > 0 && ISSPACE(line.data[content_length - 1])) {
                 content_length--;
             }
         }

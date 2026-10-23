@@ -18,52 +18,52 @@
 #include <stdio.h>
 
 bool test_array_parser(void) {
-    const goat_char_t *valid[] = {U"[]",
-                                  U"[1]",
-                                  U"[1,]",
-                                  U"[[1,],[],[2,3],]",
-                                  U"[1+2, f(3), (4*5)]",
-                                  U"var a = [1,2,]",
-                                  U"f([1], [2,])",
-                                  U"[1,2][0]",
-                                  U"([1,2])[0]",
-                                  U"[[1]][0][0]",
-                                  U"[func(x) { return [x,] }][0](1)[0]",
-                                  U"[1].length",
-                                  U"[{ var x = [1] }][0].x[0]",
-                                  U"a[[1]]",
-                                  U"[x = 1, x = 2]",
-                                  U"[] == []",
-                                  U"![]",
-                                  U"func() { return [] }",
-                                  U"[1][0] = 2",
-                                  U"[1, /* last */ ]",
-                                  U"[1]; [2]",
-                                  U"var a = [1]; a[0] = []"};
-    const goat_char_t *invalid[] = {U"[,]",
-                                    U"[,1]",
-                                    U"[1,,]",
-                                    U"[1,,2]",
-                                    U"[1 2]",
-                                    U"[1;2]",
-                                    U"[;]",
-                                    U"[+]",
-                                    U"[return 1]",
-                                    U"[1",
-                                    U"[1)",
-                                    U"[1] = 2",
-                                    U"[1][0,]",
-                                    U"f(1,)",
-                                    U"[var a = 1]"};
+    const gchar_t *valid[] = {U"[]",
+                              U"[1]",
+                              U"[1,]",
+                              U"[[1,],[],[2,3],]",
+                              U"[1+2, f(3), (4*5)]",
+                              U"var a = [1,2,]",
+                              U"f([1], [2,])",
+                              U"[1,2][0]",
+                              U"([1,2])[0]",
+                              U"[[1]][0][0]",
+                              U"[func(x) { return [x,] }][0](1)[0]",
+                              U"[1].length",
+                              U"[{ var x = [1] }][0].x[0]",
+                              U"a[[1]]",
+                              U"[x = 1, x = 2]",
+                              U"[] == []",
+                              U"![]",
+                              U"func() { return [] }",
+                              U"[1][0] = 2",
+                              U"[1, /* last */ ]",
+                              U"[1]; [2]",
+                              U"var a = [1]; a[0] = []"};
+    const gchar_t *invalid[] = {U"[,]",
+                                U"[,1]",
+                                U"[1,,]",
+                                U"[1,,2]",
+                                U"[1 2]",
+                                U"[1;2]",
+                                U"[;]",
+                                U"[+]",
+                                U"[return 1]",
+                                U"[1",
+                                U"[1)",
+                                U"[1] = 2",
+                                U"[1][0,]",
+                                U"f(1,)",
+                                U"[var a = 1]"};
     for (size_t pass = 0; pass < 2; pass++) {
-        const goat_char_t **texts = pass ? invalid : valid;
+        const gchar_t **texts = pass ? invalid : valid;
         size_t count = pass ? sizeof(invalid) / sizeof(*invalid) : sizeof(valid) / sizeof(*valid);
         for (size_t i = 0; i < count; i++) {
             arena_t *arena = create_arena(8);
             parser_memory_t memory = {arena, arena, arena, arena};
-            node_t *root = parse_analysis_test_program(
-                &memory,
-                (string_value_t){texts[i], goat_strlen(texts[i]), false});
+            node_t *root =
+                parse_analysis_test_program(&memory,
+                                            (string_value_t){texts[i], STRLEN(texts[i]), false});
             ASSERT(pass ? root == NULL : root != NULL);
             if (root) {
                 string_value_t code = generate_goat_code_from_node(root);
@@ -120,7 +120,7 @@ bool test_array_model(void) {
     collect_garbage(proc);
     ASSERT(get_array_elements(copy).items[0] == copy);
     string_value_t notation = convert_object_to_string_notation(copy);
-    ASSERT(goat_strcmp(notation.data, U"[[...],[ ]]") == 0);
+    ASSERT(STRCMP(notation.data, U"[[...],[ ]]") == 0);
     FREE_STRING(notation);
     remove_gc_root(proc, copy);
     DECREF(copy);
@@ -137,7 +137,7 @@ bool test_array_model(void) {
         collect_garbage(proc);
         ASSERT(get_array_elements(array).items[0] == dict);
         notation = convert_object_to_string_notation(array);
-        ASSERT(goat_strcmp(notation.data, U"[{[...]:[...]}]") == 0);
+        ASSERT(STRCMP(notation.data, U"[{[...]:[...]}]") == 0);
         FREE_STRING(notation);
         remove_gc_root(proc, array);
         collect_garbage(proc);
@@ -170,12 +170,12 @@ bool test_array_graph_labels(void) {
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t dot = generate_graph_dot(root);
-    ASSERT(goat_strstr(dot.data, U"member access"));
-    ASSERT(goat_strstr(dot.data, U"index access"));
-    ASSERT(goat_strstr(dot.data, U"statement list"));
-    ASSERT(!goat_strstr(dot.data, U"member_access"));
-    ASSERT(!goat_strstr(dot.data, U"index_access"));
-    ASSERT(!goat_strstr(dot.data, U"statement_list"));
+    ASSERT(STRSTR(dot.data, U"member access"));
+    ASSERT(STRSTR(dot.data, U"index access"));
+    ASSERT(STRSTR(dot.data, U"statement list"));
+    ASSERT(!STRSTR(dot.data, U"member_access"));
+    ASSERT(!STRSTR(dot.data, U"index_access"));
+    ASSERT(!STRSTR(dot.data, U"statement_list"));
     FREE_STRING(dot);
     destroy_options(options);
     destroy_arena(arena);
@@ -183,12 +183,9 @@ bool test_array_graph_labels(void) {
 }
 
 /** @brief Calls an Array method while preserving the caller's references. */
-static operation_result_t array_call(process_t *proc,
-                                     object_t *array,
-                                     const goat_char_t *name,
-                                     object_t **args,
-                                     size_t count) {
-    object_t *key = create_string_object(proc, (string_value_t){name, goat_strlen(name), false});
+static operation_result_t
+array_call(process_t *proc, object_t *array, const gchar_t *name, object_t **args, size_t count) {
+    object_t *key = create_string_object(proc, (string_value_t){name, STRLEN(name), false});
     object_t *method = get_object_property(get_array_proto(), key);
     DECREF(key);
     for (size_t i = 0; i < count; i++) {
@@ -269,7 +266,7 @@ bool test_array_methods(void) {
     result = array_call(proc, array, U"sort", NULL, 0);
     ASSERT(result.is_exception);
     string_value_t error = convert_object_to_string(result.value);
-    ASSERT(!goat_strcmp(error.data, U"comparison failed"));
+    ASSERT(!STRCMP(error.data, U"comparison failed"));
     FREE_STRING(error);
     DECREF(result.value);
     ASSERT(get_array_elements(array).items[0] == first

@@ -80,10 +80,10 @@ void *copy_object_to_arena(arena_t *arena, const void *object, size_t size);
  * @brief Copies a wide-character string to the specified memory arena and returns as string view.
  * `length`: The length of the string (excluding the null terminator).
  */
-string_view_t copy_string_to_arena(arena_t *arena, const goat_char_t *string, size_t length);
+string_view_t copy_string_to_arena(arena_t *arena, const gchar_t *string, size_t length);
 
 /** @brief Formats a string using the memory arena and returns it. */
-string_view_t format_string_to_arena(arena_t *arena, const goat_char_t *format, ...);
+string_view_t format_string_to_arena(arena_t *arena, const gchar_t *format, ...);
 
 /** @brief Releases the arena and all its storage. The arena must be non-NULL. */
 void destroy_arena(arena_t *arena);

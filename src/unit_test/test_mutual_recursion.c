@@ -53,7 +53,7 @@ bool test_mutual_recursion_limits() {
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!goat_strcmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);

@@ -34,7 +34,7 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements node_vtbl_t::get_child_tag. */
-static const goat_char_t *get_child_tag(const node_t *node, size_t index) {
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
     return index == 0 ? U"operand" : NULL;
 }
 
@@ -49,7 +49,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 static string_value_t generate_goat_code(const node_t *node) {
     string_value_t operand =
         generate_goat_code_from_expression(((const unary_expression_t *)node)->operand);
-    const goat_char_t *op = node->vtbl->type == NODE_UNARY_MINUS ? U"-" : U"+";
+    const gchar_t *op = node->vtbl->type == NODE_UNARY_MINUS ? U"-" : U"+";
     string_value_t result = operand.data[0] == op[0] ? format_string(U"%s %s", op, operand.data)
                                                      : format_string(U"%s%s", op, operand.data);
     FREE_STRING(operand);

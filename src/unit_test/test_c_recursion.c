@@ -15,10 +15,10 @@
 
 #include <stdio.h>
 
-static c_module_t *analyzed(arena_t *arena, const goat_char_t *source) {
+static c_module_t *analyzed(arena_t *arena, const gchar_t *source) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, goat_strlen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     options_t *options = create_options();
     bool success = root && !analyze(root, &memory, options, NULL);
     destroy_options(options);
@@ -27,7 +27,7 @@ static c_module_t *analyzed(arena_t *arena, const goat_char_t *source) {
 
 bool append_c_recursion_tests(source_builder_t *output, source_builder_t *checks) {
     const struct {
-        const goat_char_t *source, *check;
+        const gchar_t *source, *check;
         size_t count;
     } fixtures[] = {
         {U"const f=func(n){if(n<1)return 0;if(n==1)return 1;return f(n-1)+f(n-2);};f(2);",

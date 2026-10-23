@@ -29,8 +29,8 @@
 
 /** @brief Numeric boundary fixtures use literal ASTs that also occur after transformations. */
 typedef struct {
-    const goat_char_t *source; /**< Goat program used to discover the function signature. */
-    const goat_char_t *check;  /**< C assertion suffix, appended to the generated function name. */
+    const gchar_t *source; /**< Goat program used to discover the function signature. */
+    const gchar_t *check;  /**< C assertion suffix, appended to the generated function name. */
     int literal;
     int64_t integer;
     double real;
@@ -219,7 +219,7 @@ static bool generate_tests(source_builder_t *output) {
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root = parse_analysis_test_program(
             &memory,
-            (string_value_t){fixture->source, goat_strlen(fixture->source), false});
+            (string_value_t){fixture->source, STRLEN(fixture->source), false});
         options_t *options = create_options();
         success = root && !analyze(root, &memory, options, NULL);
         c_module_t *module = success ? create_c_module(arena, root) : NULL;
@@ -311,10 +311,10 @@ bool test_c_emission_rejections(void) {
     for (c_module_function_t *entry = module->head; entry; entry = entry->next) {
         c_generation_result_t result = generate_c_function(entry->summary, entry->name, NULL, NULL);
         ASSERT(result.status == C_GENERATION_OK);
-        const goat_char_t *type = entry->summary->parameter_types[0]->type == LATTICE_INTEGER
-                                      ? U"int64_t g_p0"
-                                      : U"double g_p0";
-        ASSERT(goat_strstr(result.source.data, type));
+        const gchar_t *type = entry->summary->parameter_types[0]->type == LATTICE_INTEGER
+                                  ? U"int64_t g_p0"
+                                  : U"double g_p0";
+        ASSERT(STRSTR(result.source.data, type));
         FREE_STRING(result.source);
     }
     function_summary_t changed = *module->head->summary;

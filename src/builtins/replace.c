@@ -36,7 +36,7 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
     size_t pos = 0;
     while (pos < value.length) {
         if (pos + old_part.length <= value.length
-            && !goat_memcmp(value.data + pos, old_part.data, old_part.length)) {
+            && !MEMCMP(value.data + pos, old_part.data, old_part.length)) {
             append_string_value(&builder, new_part);
             pos += old_part.length;
         } else {
@@ -79,7 +79,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
             size_t pos = 0;
             while (pos < str->value.length) {
                 if (pos + old_part.length <= str->value.length
-                    && !goat_memcmp(str->value.data + pos, old_part.data, old_part.length)) {
+                    && !MEMCMP(str->value.data + pos, old_part.data, old_part.length)) {
                     append_string_view(&builder, new_part);
                     pos += old_part.length;
                 } else {

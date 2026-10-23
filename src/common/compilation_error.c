@@ -19,7 +19,7 @@
 static compilation_error_t *create_error_from_position_vargs(arena_t *arena,
                                                              position_range_t *position,
                                                              compilation_error_severity_t severity,
-                                                             const goat_char_t *format,
+                                                             const gchar_t *format,
                                                              va_list args) {
     assert(format != NULL);
 
@@ -41,7 +41,7 @@ static compilation_error_t *create_error_from_position_vargs(arena_t *arena,
 compilation_error_t *create_error_from_token(arena_t *arena,
                                              const token_t *token,
                                              compilation_error_severity_t severity,
-                                             const goat_char_t *format,
+                                             const gchar_t *format,
                                              ...) {
     compilation_error_t *error;
     va_list args;
@@ -56,7 +56,7 @@ compilation_error_t *create_error_from_token(arena_t *arena,
 compilation_error_t *create_error_from_node(arena_t *arena,
                                             const node_t *node,
                                             compilation_error_severity_t severity,
-                                            const goat_char_t *format,
+                                            const gchar_t *format,
                                             ...) {
     compilation_error_t *error;
     va_list args;

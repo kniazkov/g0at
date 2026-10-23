@@ -65,7 +65,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     const variable_t *expr = (const variable_t *)node;
     if (expr->dynamic_lookup)
         return make_top_element();
-    if (expr->name.length == 4 && !goat_memcmp(expr->name.data, U"this", 4))
+    if (expr->name.length == 4 && !MEMCMP(expr->name.data, U"this", 4))
         return make_user_defined_object_element();
     if (expr->declarator == get_builtin_declarator()) {
         const builtin_function_t *builtin = find_builtin_function(expr->name);
@@ -130,7 +130,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
     const variable_t *var = (const variable_t *)node;
     if (var->dynamic_lookup)
         return make_top_element();
-    if (var->name.length == 4 && !goat_memcmp(var->name.data, U"this", 4))
+    if (var->name.length == 4 && !MEMCMP(var->name.data, U"this", 4))
         return make_user_defined_object_element();
     const declarator_t *decl = var->declarator;
     if (decl == get_builtin_declarator())

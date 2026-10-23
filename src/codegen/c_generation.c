@@ -52,11 +52,11 @@ void destroy_c_expression(c_generated_expression_t *expression) {
 
 /** @brief Backend-owned names avoid C keywords and arbitrary source fragments. */
 bool c_function_name_is_valid(string_view_t name) {
-    size_t prefix = name.data && name.length > 2 && !goat_memcmp(name.data, U"g_", 2) ? 2 : 5;
-    if (!name.data || name.length <= prefix || (prefix == 5 && goat_memcmp(name.data, U"goat_", 5)))
+    size_t prefix = name.data && name.length > 2 && !MEMCMP(name.data, U"g_", 2) ? 2 : 5;
+    if (!name.data || name.length <= prefix || (prefix == 5 && MEMCMP(name.data, U"goat_", 5)))
         return false;
     for (size_t i = prefix; i < name.length; i++) {
-        goat_char_t c = name.data[i];
+        gchar_t c = name.data[i];
         if (c != U'_' && !(c >= U'a' && c <= U'z') && !(c >= U'A' && c <= U'Z')
             && !(c >= U'0' && c <= U'9'))
             return false;

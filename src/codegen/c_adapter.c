@@ -8,7 +8,7 @@
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 
-static const goat_char_t *type_tag(c_value_type_t type) {
+static const gchar_t *type_tag(c_value_type_t type) {
     return type == C_VALUE_INT64    ? U"GOAT_NATIVE_I64"
            : type == C_VALUE_BOOL   ? U"GOAT_NATIVE_BOOL"
            : type == C_VALUE_CHAR   ? U"GOAT_NATIVE_CHAR"
@@ -16,7 +16,7 @@ static const goat_char_t *type_tag(c_value_type_t type) {
                                     : U"GOAT_NATIVE_F64";
 }
 
-static const goat_char_t *value_field(c_value_type_t type) {
+static const gchar_t *value_field(c_value_type_t type) {
     return type == C_VALUE_BOOL     ? U"boolean"
            : type == C_VALUE_CHAR   ? U"character"
            : type == C_VALUE_INT64  ? U"integer"

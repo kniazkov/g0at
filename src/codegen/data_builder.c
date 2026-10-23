@@ -46,18 +46,18 @@ uint32_t add_declaration_to_data_segment(data_builder_t *builder, const declarat
 static int compare_string_keys(const void *a, const void *b) {
     const string_view_t *left = a, *right = b;
     size_t n = left->length < right->length ? left->length : right->length;
-    int result = goat_memcmp(left->data, right->data, n);
+    int result = MEMCMP(left->data, right->data, n);
     return result ? result : left->length < right->length ? -1 : left->length > right->length;
 }
 
 static void *copy_string_key(void *key) {
     string_view_t *view = key;
-    if (view->length > (SIZE_MAX - sizeof(*view)) / sizeof(goat_char_t) - 1)
+    if (view->length > (SIZE_MAX - sizeof(*view)) / sizeof(gchar_t) - 1)
         abort();
-    string_view_t *copy = ALLOC(sizeof(*copy) + (view->length + 1) * sizeof(goat_char_t));
-    *copy = (string_view_t){(goat_char_t *)(copy + 1), view->length};
-    goat_memcpy((goat_char_t *)copy->data, view->data, view->length);
-    ((goat_char_t *)copy->data)[view->length] = 0;
+    string_view_t *copy = ALLOC(sizeof(*copy) + (view->length + 1) * sizeof(gchar_t));
+    *copy = (string_view_t){(gchar_t *)(copy + 1), view->length};
+    MEMCPY((gchar_t *)copy->data, view->data, view->length);
+    ((gchar_t *)copy->data)[view->length] = 0;
     return copy;
 }
 
@@ -116,8 +116,8 @@ uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t si
     return index;
 }
 
-uint32_t add_string_to_data_segment(data_builder_t *builder, const goat_char_t *string) {
-    return add_string_to_data_segment_ex(builder, (string_view_t){string, goat_strlen(string)});
+uint32_t add_string_to_data_segment(data_builder_t *builder, const gchar_t *string) {
+    return add_string_to_data_segment_ex(builder, (string_view_t){string, STRLEN(string)});
 }
 
 uint32_t add_string_to_data_segment_ex(data_builder_t *builder, string_view_t string) {

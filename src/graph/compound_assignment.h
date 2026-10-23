@@ -9,7 +9,7 @@
 expression_t *create_compound_assignment_node(arena_t *arena,
                                               assignable_expression_t *left,
                                               expression_t *right,
-                                              const goat_char_t *symbol);
+                                              const gchar_t *symbol);
 /** @brief Returns the target nested inside the ordinary operation. */
 node_t *compound_assignment_target(const node_t *node);
 /** @brief Whether a variable occurrence is the read/write target of a compound assignment. */

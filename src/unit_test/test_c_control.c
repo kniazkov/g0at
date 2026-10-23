@@ -47,17 +47,16 @@ static c_generated_expression_t traced_expression(const node_t *node,
     return (c_generated_expression_t){0};
 }
 
-static bool
-emit_program(source_builder_t *output, const goat_char_t *source, const goat_char_t *name) {
+static bool emit_program(source_builder_t *output, const gchar_t *source, const gchar_t *name) {
     arena_t *arena = create_arena(32);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, goat_strlen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     options_t *options = create_options();
     bool success = root && !analyze(root, &memory, options, NULL);
     c_module_t *module = success ? create_c_module(arena, root) : NULL;
     success = module && module->available_count == 1;
-    bool traced = success && !goat_strcmp(name, U"goat_traced_branch");
+    bool traced = success && !STRCMP(name, U"goat_traced_branch");
     if (traced) {
         node_t *branch = (node_t *)replacement_original(
             get_node_child(get_node_child(module->head->summary->function, 1), 0));
@@ -77,7 +76,7 @@ emit_program(source_builder_t *output, const goat_char_t *source, const goat_cha
     }
     if (success) {
         c_generation_result_t result = generate_c_function(module->head->summary,
-                                                           (string_view_t){name, goat_strlen(name)},
+                                                           (string_view_t){name, STRLEN(name)},
                                                            NULL,
                                                            NULL);
         success = result.status == C_GENERATION_OK;
@@ -139,7 +138,7 @@ static bool comparison_tests(source_builder_t *output, source_builder_t *checks)
         U"static volatile double goat_cmp_reals[] = {-INFINITY, -0x1.0000000000001p63, -0x1p63, "
         U"-0x1.fffffffffffffp62, -9007199254740992.0, -1.5, -0.5, -0.0, 0.0, 0.5, 1.5, "
         U"9007199254740992.0, 0x1.fffffffffffffp62, 0x1p63, 0x1.0000000000001p63, INFINITY, NAN};");
-    static const goat_char_t *symbols[] = {U"<", U"<=", U">", U">=", U"==", U"!="};
+    static const gchar_t *symbols[] = {U"<", U"<=", U">", U">=", U"==", U"!="};
     operation_result_t (*operations[])(process_t *, object_t *, object_t *) = {
         is_object_less_than,
         is_object_less_or_equal,
@@ -230,7 +229,7 @@ bool append_c_control_tests(source_builder_t *output, source_builder_t *checks) 
                       U"if (goat_traced_branch(2)!=1 || goat_branch_trace!=124) return 104;");
 
     const struct {
-        const goat_char_t *source, *check;
+        const gchar_t *source, *check;
     } fixtures[] = {
         {U"const f=func(n){if(n<0){return -n;}else{return n+1;}};f(1);",
          U"(-7)==7 && goat_branch0(3)==4"},

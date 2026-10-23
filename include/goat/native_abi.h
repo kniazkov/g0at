@@ -2,6 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Version 2 native boundary, independent of VM objects and analysis storage.
  */
+#pragma once
 /* ABI declarations begin. */
 #ifndef GOAT_NATIVE_ABI_V2_H
 #    define GOAT_NATIVE_ABI_V2_H
@@ -56,14 +57,14 @@ extern "C" {
  * Elements are fixed-width char32_t on every supported target.
  */
 typedef struct goat_native_string_view_v2_t {
-    const goat_char_t *data; ///< Borrowed code units; NULL is valid for an empty view.
-    size_t length;           ///< Number of readable code units.
+    const gchar_t *data; ///< Borrowed code units; NULL is valid for an empty view.
+    size_t length;       ///< Number of readable code units.
 } goat_native_string_view_v2_t;
 
 /** @brief Mutable string storage allocated through the current native context.
  * The zero-initialized value is an empty buffer with no allocation. Otherwise data is
  * the original pointer returned by goat_native_allocate for at least capacity + 1
- * goat_char_t units, length <= capacity, and data[length] is zero. capacity excludes the
+ * gchar_t units, length <= capacity, and data[length] is zero. capacity excludes the
  * terminator; embedded zeros are allowed and length remains authoritative. Check
  * capacity + 1 and its byte-size multiplication for overflow before allocation.
  * Only the owning buffer may mutate or individually deallocate the block, using the
@@ -74,9 +75,9 @@ typedef struct goat_native_string_view_v2_t {
  * reference-counted ownership crosses this boundary.
  */
 typedef struct goat_native_string_buffer_v2_t {
-    goat_char_t *data; ///< Context allocation, or NULL when length and capacity are zero.
-    size_t length;     ///< Number of used code units, excluding the trailing zero.
-    size_t capacity;   ///< Number of available code units, excluding the trailing zero.
+    gchar_t *data;   ///< Context allocation, or NULL when length and capacity are zero.
+    size_t length;   ///< Number of used code units, excluding the trailing zero.
+    size_t capacity; ///< Number of available code units, excluding the trailing zero.
 } goat_native_string_buffer_v2_t;
 
 typedef struct goat_native_value_v2_t {
@@ -113,9 +114,9 @@ typedef struct goat_native_services_v2_t {
     void(GOAT_NATIVE_CALL *deallocate)(void *state, void *pointer);
     void(GOAT_NATIVE_CALL *deallocate_all)(void *state);
     /** @brief Optional string services use the pinned Unicode 17.0.0 tables. */
-    int(GOAT_NATIVE_CALL *string_is_space)(goat_char_t value);
-    goat_char_t(GOAT_NATIVE_CALL *string_to_upper)(goat_char_t value);
-    goat_char_t(GOAT_NATIVE_CALL *string_to_lower)(goat_char_t value);
+    int(GOAT_NATIVE_CALL *string_is_space)(gchar_t value);
+    gchar_t(GOAT_NATIVE_CALL *string_to_upper)(gchar_t value);
+    gchar_t(GOAT_NATIVE_CALL *string_to_lower)(gchar_t value);
 } goat_native_services_v2_t;
 
 /** @brief Borrowed host context. State is opaque to native code and thread-confined.

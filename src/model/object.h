@@ -602,7 +602,7 @@ typedef struct {
 } object_static_string_t;
 
 /** @brief Initializes once; storage and text must live for the entire process. */
-object_t *get_static_string_object(object_static_string_t *storage, const goat_char_t *text);
+object_t *get_static_string_object(object_static_string_t *storage, const gchar_t *text);
 
 /** @brief Creates a dynamic string object from a string value. */
 object_t *create_string_object(process_t *process, string_value_t value);

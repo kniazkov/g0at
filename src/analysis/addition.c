@@ -57,11 +57,9 @@ static const lattice_element_t *add_string_constants(arena_t *arena,
         return left;
     }
     size_t length = left_string->value.length + right_string->value.length;
-    goat_char_t *data = (goat_char_t *)alloc_from_arena(arena, sizeof(goat_char_t) * length);
-    goat_memcpy(data, left_string->value.data, left_string->value.length);
-    goat_memcpy(data + left_string->value.length,
-                right_string->value.data,
-                right_string->value.length);
+    gchar_t *data = (gchar_t *)alloc_from_arena(arena, sizeof(gchar_t) * length);
+    MEMCPY(data, left_string->value.data, left_string->value.length);
+    MEMCPY(data + left_string->value.length, right_string->value.data, right_string->value.length);
     return make_string_constant_element(arena, (string_view_t){.data = data, .length = length});
 }
 
@@ -215,9 +213,9 @@ static const lattice_element_t *calculate_string_addition(arena_t *arena,
     /* Copy even for an empty left operand: text is temporary storage. */
     const string_constant_element_t *str = (const string_constant_element_t *)left;
     size_t length = str->value.length + text.length;
-    goat_char_t *data = alloc_from_arena(arena, (length + 1) * sizeof(goat_char_t));
-    goat_memcpy(data, str->value.data, str->value.length);
-    goat_memcpy(data + str->value.length, text.data, text.length);
+    gchar_t *data = alloc_from_arena(arena, (length + 1) * sizeof(gchar_t));
+    MEMCPY(data, str->value.data, str->value.length);
+    MEMCPY(data + str->value.length, text.data, text.length);
     data[length] = 0;
     FREE_STRING(text);
     return make_string_constant_element(arena, (string_view_t){data, length});
@@ -225,16 +223,16 @@ static const lattice_element_t *calculate_string_addition(arena_t *arena,
 
 /** @brief Converts a character code to an arena-allocated string view. */
 static string_view_t char_to_string_view(arena_t *arena, uint32_t value) {
-    if (sizeof(goat_char_t) > 2 || value < 0x10000) {
-        goat_char_t *data = alloc_from_arena(arena, 2 * sizeof(goat_char_t));
-        data[0] = (goat_char_t)value;
+    if (sizeof(gchar_t) > 2 || value < 0x10000) {
+        gchar_t *data = alloc_from_arena(arena, 2 * sizeof(gchar_t));
+        data[0] = (gchar_t)value;
         data[1] = 0;
         return (string_view_t){data, 1};
     }
     value -= 0x10000;
-    goat_char_t *data = alloc_from_arena(arena, 3 * sizeof(goat_char_t));
-    data[0] = (goat_char_t)(0xD800 + (value >> 10));
-    data[1] = (goat_char_t)(0xDC00 + (value & 0x3FF));
+    gchar_t *data = alloc_from_arena(arena, 3 * sizeof(gchar_t));
+    data[0] = (gchar_t)(0xD800 + (value >> 10));
+    data[1] = (gchar_t)(0xDC00 + (value & 0x3FF));
     data[2] = 0;
     return (string_view_t){data, 2};
 }
@@ -243,9 +241,9 @@ static string_view_t char_to_string_view(arena_t *arena, uint32_t value) {
 static const lattice_element_t *
 append_char_and_text(arena_t *arena, string_view_t left_text, string_view_t right_text) {
     size_t length = left_text.length + right_text.length;
-    goat_char_t *data = alloc_from_arena(arena, sizeof(goat_char_t) * length);
-    goat_memcpy(data, left_text.data, left_text.length);
-    goat_memcpy(data + left_text.length, right_text.data, right_text.length);
+    gchar_t *data = alloc_from_arena(arena, sizeof(gchar_t) * length);
+    MEMCPY(data, left_text.data, left_text.length);
+    MEMCPY(data + left_text.length, right_text.data, right_text.length);
     return make_string_constant_element(arena, (string_view_t){.data = data, .length = length});
 }
 

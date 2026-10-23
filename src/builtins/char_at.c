@@ -25,7 +25,7 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
         FREE_STRING(value);
         return operation_exception(get_exception_invalid_argument());
     }
-    goat_char_t ch = value.data[index];
+    gchar_t ch = value.data[index];
     FREE_STRING(value);
     return operation_success(create_character_object(thread->process, (uint32_t)ch));
 }

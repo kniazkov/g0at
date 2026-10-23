@@ -39,7 +39,7 @@ void record_c_expression(c_expression_context_t *context,
 bool c_numeric_operands(const node_t *node, const c_expression_context_t *context);
 
 /** @brief Stable representation names for diagnostics. */
-const goat_char_t *c_expression_type_name(c_value_type_t type);
+const gchar_t *c_expression_type_name(c_value_type_t type);
 
 /** @brief Checks expressions with generic parameters; calls/control still need a body proof. */
 void analyze_function_c_expressions(node_t *root);

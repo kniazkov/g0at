@@ -33,7 +33,7 @@ bool test_memory_allocation() {
 /** @brief Callback function for iterating over the AVL tree. */
 static void avl_callback(void *user_data, void *key, value_t value) {
     vector_t *keys = (vector_t *)user_data;
-    append_to_vector(keys, WSTRDUP((goat_char_t *)key));
+    append_to_vector(keys, WSTRDUP((gchar_t *)key));
 }
 
 bool test_avl_tree() {
@@ -47,17 +47,17 @@ bool test_avl_tree() {
     vector_t *keys = create_vector();
     avl_tree_for_each(tree, avl_callback, keys);
     ASSERT(keys->size == 3);
-    ASSERT(goat_strcmp(U"alpha", (goat_char_t *)keys->data[0]) == 0);
-    ASSERT(goat_strcmp(U"beta", (goat_char_t *)keys->data[1]) == 0);
-    ASSERT(goat_strcmp(U"gamma", (goat_char_t *)keys->data[2]) == 0);
+    ASSERT(STRCMP(U"alpha", (gchar_t *)keys->data[0]) == 0);
+    ASSERT(STRCMP(U"beta", (gchar_t *)keys->data[1]) == 0);
+    ASSERT(STRCMP(U"gamma", (gchar_t *)keys->data[2]) == 0);
     destroy_vector_ex(keys, FREE);
-    ASSERT(goat_strcmp(U"first", (goat_char_t *)get_from_avl_tree(tree, U"alpha").ptr) == 0);
-    ASSERT(goat_strcmp(U"second", (goat_char_t *)get_from_avl_tree(tree, U"beta").ptr) == 0);
-    ASSERT(goat_strcmp(U"third", (goat_char_t *)get_from_avl_tree(tree, U"gamma").ptr) == 0);
+    ASSERT(STRCMP(U"first", (gchar_t *)get_from_avl_tree(tree, U"alpha").ptr) == 0);
+    ASSERT(STRCMP(U"second", (gchar_t *)get_from_avl_tree(tree, U"beta").ptr) == 0);
+    ASSERT(STRCMP(U"third", (gchar_t *)get_from_avl_tree(tree, U"gamma").ptr) == 0);
     ASSERT(get_from_avl_tree(tree, U"delta").ptr == NULL);
     previous = set_in_avl_tree(tree, U"alpha", (value_t){.ptr = U"primary"});
-    ASSERT(goat_strcmp(U"first", previous.ptr) == 0);
-    ASSERT(goat_strcmp(U"primary", (goat_char_t *)get_from_avl_tree(tree, U"alpha").ptr) == 0);
+    ASSERT(STRCMP(U"first", previous.ptr) == 0);
+    ASSERT(STRCMP(U"primary", (gchar_t *)get_from_avl_tree(tree, U"alpha").ptr) == 0);
     destroy_avl_tree(tree);
     return true;
 }
@@ -66,13 +66,13 @@ bool test_string_builder() {
     string_builder_t sb;
     init_string_builder(&sb, 0);
     string_value_t result = append_string(&sb, U"it");
-    ASSERT(goat_strcmp(U"it", result.data) == 0);
+    ASSERT(STRCMP(U"it", result.data) == 0);
     ASSERT(result.length == 2);
     result = append_char(&sb, U' ');
-    ASSERT(goat_strcmp(U"it ", result.data) == 0);
+    ASSERT(STRCMP(U"it ", result.data) == 0);
     ASSERT(result.length == 3);
     result = append_string(&sb, U"works");
-    ASSERT(goat_strcmp(U"it works", result.data) == 0);
+    ASSERT(STRCMP(U"it works", result.data) == 0);
     ASSERT(result.length == 8);
     FREE_STRING(result);
     return true;
@@ -84,18 +84,11 @@ bool test_binary_search() {
                       {U"fourth", U"four"},
                       {U"second", U"two"},
                       {U"third", U"three"}};
-    ASSERT(goat_strcmp(U"one", (goat_char_t *)binary_search(pairs, 5, U"first", string_comparator))
-           == 0);
-    ASSERT(goat_strcmp(U"two", (goat_char_t *)binary_search(pairs, 5, U"second", string_comparator))
-           == 0);
-    ASSERT(
-        goat_strcmp(U"three", (goat_char_t *)binary_search(pairs, 5, U"third", string_comparator))
-        == 0);
-    ASSERT(
-        goat_strcmp(U"four", (goat_char_t *)binary_search(pairs, 5, U"fourth", string_comparator))
-        == 0);
-    ASSERT(goat_strcmp(U"five", (goat_char_t *)binary_search(pairs, 5, U"fifth", string_comparator))
-           == 0);
+    ASSERT(STRCMP(U"one", (gchar_t *)binary_search(pairs, 5, U"first", string_comparator)) == 0);
+    ASSERT(STRCMP(U"two", (gchar_t *)binary_search(pairs, 5, U"second", string_comparator)) == 0);
+    ASSERT(STRCMP(U"three", (gchar_t *)binary_search(pairs, 5, U"third", string_comparator)) == 0);
+    ASSERT(STRCMP(U"four", (gchar_t *)binary_search(pairs, 5, U"fourth", string_comparator)) == 0);
+    ASSERT(STRCMP(U"five", (gchar_t *)binary_search(pairs, 5, U"fifth", string_comparator)) == 0);
     ASSERT(binary_search(pairs, 5, U"sixth", string_comparator) == NULL);
     return true;
 }
@@ -115,40 +108,40 @@ bool test_double_to_string() {
 
 bool test_format_string() {
     string_value_t value = format_string(U"test");
-    ASSERT(goat_strcmp(U"test", value.data) == 0);
+    ASSERT(STRCMP(U"test", value.data) == 0);
     ASSERT(value.length == 4);
     ASSERT(value.should_free == false);
     value = format_string(U"a%cb", U'c');
-    ASSERT(goat_strcmp(U"acb", value.data) == 0);
+    ASSERT(STRCMP(U"acb", value.data) == 0);
     ASSERT(value.length == 3);
     ASSERT(value.should_free == true);
     FREE_STRING(value);
     value = format_string(U"aaa%sbbb", U"ccc");
-    ASSERT(goat_strcmp(U"aaacccbbb", value.data) == 0);
+    ASSERT(STRCMP(U"aaacccbbb", value.data) == 0);
     ASSERT(value.length == 9);
     ASSERT(value.should_free == true);
     FREE_STRING(value);
     value = format_string(U"value = %f%%;", (double)-1.024);
-    ASSERT(goat_strcmp(U"value = -1.024%;", value.data) == 0);
+    ASSERT(STRCMP(U"value = -1.024%;", value.data) == 0);
     ASSERT(value.length == 16);
     ASSERT(value.should_free == true);
     FREE_STRING(value);
     value = format_string(U"value = %d;", -1);
-    ASSERT(goat_strcmp(U"value = -1;", value.data) == 0);
+    ASSERT(STRCMP(U"value = -1;", value.data) == 0);
     ASSERT(value.should_free == true);
     FREE_STRING(value);
     value = format_string(U"value = %u;", 777);
-    ASSERT(goat_strcmp(U"value = 777;", value.data) == 0);
+    ASSERT(STRCMP(U"value = 777;", value.data) == 0);
     ASSERT(value.should_free == true);
     FREE_STRING(value);
     int64_t l = 1000000000000L;
     value = format_string(U"value = %li;", l);
-    ASSERT(goat_strcmp(U"value = 1000000000000;", value.data) == 0);
+    ASSERT(STRCMP(U"value = 1000000000000;", value.data) == 0);
     ASSERT(value.should_free == true);
     FREE_STRING(value);
     size_t s = 17;
     value = format_string(U"size = %zu;", s);
-    ASSERT(goat_strcmp(U"size = 17;", value.data) == 0);
+    ASSERT(STRCMP(U"size = 17;", value.data) == 0);
     ASSERT(value.should_free == true);
     FREE_STRING(value);
     return true;
@@ -160,19 +153,19 @@ bool test_align_text() {
     ASSERT(text.should_free == false);
     text = align_text(STATIC_STRING(U"abc"), 9, ALIGN_LEFT);
     ASSERT(text.length == 9);
-    ASSERT(goat_strcmp(U"abc      ", text.data) == 0);
+    ASSERT(STRCMP(U"abc      ", text.data) == 0);
     FREE_STRING(text);
     text = align_text(STATIC_STRING(U"abc"), 11, ALIGN_CENTER);
     ASSERT(text.length == 11);
-    ASSERT(goat_strcmp(U"    abc    ", text.data) == 0);
+    ASSERT(STRCMP(U"    abc    ", text.data) == 0);
     FREE_STRING(text);
     text = align_text(STATIC_STRING(U"abc"), 13, ALIGN_RIGHT);
     ASSERT(text.length == 13);
-    ASSERT(goat_strcmp(U"          abc", text.data) == 0);
+    ASSERT(STRCMP(U"          abc", text.data) == 0);
     FREE_STRING(text);
     text = align_text(STATIC_STRING(U"abcdef"), 3, ALIGN_LEFT);
     ASSERT(text.length == 3);
-    ASSERT(goat_strcmp(U"abc", text.data) == 0);
+    ASSERT(STRCMP(U"abc", text.data) == 0);
     FREE_STRING(text);
     return true;
 }

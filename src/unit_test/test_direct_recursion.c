@@ -45,7 +45,7 @@ bool test_direct_recursion_limits() {
     ASSERT(event->function_summary->effects == FUNCTION_EFFECT_NONE);
     ASSERT(event->function_summary->c_support == FUNCTION_C_SUPPORTED);
     string_value_t before = analysis_collector_to_text(collector);
-    ASSERT(goat_strstr(before.data, U"iterations="));
+    ASSERT(STRSTR(before.data, U"iterations="));
     function_summary_set_t *set = get_function_summaries(event->node);
     function_call_graph_t *graph = build_function_call_graph(root, arena, 1024);
     size_t node_count = graph->count;
@@ -67,7 +67,7 @@ bool test_direct_recursion_limits() {
     ASSERT(!analyze(root, &memory, options, NULL));
     ASSERT(!set->head);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!goat_strcmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);

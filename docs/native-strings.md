@@ -6,10 +6,10 @@
 
 | Тип | Поля | Назначение |
 | --- | --- | --- |
-| `goat_native_string_view_v2_t` | `const goat_char_t *data`, `size_t length` | Неизменяемое представление чужой памяти, в том числе подстроки |
-| `goat_native_string_buffer_v2_t` | `goat_char_t *data`, `size_t length`, `size_t capacity` | Изменяемый буфер, выделенный через контекст нативного вызова |
+| `goat_native_string_view_v2_t` | `const gchar_t *data`, `size_t length` | Неизменяемое представление чужой памяти, в том числе подстроки |
+| `goat_native_string_buffer_v2_t` | `gchar_t *data`, `size_t length`, `size_t capacity` | Изменяемый буфер, выделенный через контекст нативного вызова |
 
-Длина и вместимость измеряются в Unicode-скалярах `goat_char_t` (C11 `char32_t`,
+Длина и вместимость измеряются в Unicode-скалярах `gchar_t` (C11 `char32_t`,
 ровно четыре байта), а не в байтах или видимых графемах. Символ вне BMP занимает
 один элемент на Windows и Linux. Нормализация не выполняется. Это внутрипроцессные
 структуры; остальные части переносимого ABI реализуются отдельно.
@@ -22,7 +22,7 @@
 Буфер `{NULL, 0, 0}` не требует выделения памяти. Непустое выделение содержит
 `capacity + 1` единиц, `length <= capacity`, `data[length] == 0`. Перед
 выделением необходимо проверить переполнение сложения и умножения на
-`sizeof(goat_char_t)`. Вместимость не включает завершающий ноль. Даже пустой
+`sizeof(gchar_t)`. Вместимость не включает завершающий ноль. Даже пустой
 буфер может сохранять выделенную память.
 
 Память выделяется только через `goat_native_allocate` и освобождается через
@@ -112,7 +112,7 @@
 Явные вызовы `str` (в том числе через неизменяемый псевдоним) используют те же
 реализации. Преобразование строки возвращает её представление без копирования.
 Форматирование вещественных чисел использует общий с VM исходный код.
-Строковые литералы сохраняются как статические массивы кодовых единиц `goat_char_t`.
+Строковые литералы сохраняются как статические массивы кодовых единиц `gchar_t`.
 Типы, ещё не представимые в нативном коде (например объекты), остаются в VM.
 
 Пример `example/native_quadratic.goat` принимает три вещественных коэффициента
@@ -202,7 +202,7 @@ allocates through the host context. Tests also cover chained concatenation and
 context-owned result lifetime. A non-string right operand (integer, real, boolean or
 character) is converted by the native str implementation, also used for explicit
 str calls and immutable aliases. Real formatting shares its source with the VM.
-String literals use static goat_char_t arrays. Objects and other values without a native
+String literals use static gchar_t arrays. Objects and other values without a native
 representation remain in the VM.
 
 All string methods listed above now lower to the linked runtime, both as direct
@@ -229,7 +229,7 @@ zero strings, Unicode, bounds, overflow, missing services and memory cleanup.
 
 ## Portable strings (#250)
 
-`goat_char_t` is C11 `char32_t`, exactly four bytes. Native views count Unicode
+`gchar_t` is C11 `char32_t`, exactly four bytes. Native views count Unicode
 scalars; supplementary characters occupy one element, and embedded zeros are
 content. Full case conversion uses the bundled Unicode 17.0.0 tables, including
 expansions and Final_Sigma, shared with compiler folding and the VM. Scalar case

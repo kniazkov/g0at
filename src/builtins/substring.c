@@ -36,8 +36,8 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
     }
     size_t start = (size_t)begin;
     size_t stop = (size_t)end;
-    goat_char_t *copy = ALLOC((stop - start + 1) * sizeof(goat_char_t));
-    goat_memcpy(copy, value.data + start, stop - start);
+    gchar_t *copy = ALLOC((stop - start + 1) * sizeof(gchar_t));
+    MEMCPY(copy, value.data + start, stop - start);
     copy[stop - start] = 0;
     FREE_STRING(value);
     return operation_success(

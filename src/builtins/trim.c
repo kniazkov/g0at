@@ -18,17 +18,17 @@ static operation_result_t trim_string(thread_t *thread, object_t *str) {
     string_value_t value = convert_object_to_string(str);
     size_t start = 0;
     size_t end = value.length;
-    while (start < end && goat_is_space(value.data[start]))
+    while (start < end && ISSPACE(value.data[start]))
         start++;
-    while (end > start && goat_is_space(value.data[end - 1]))
+    while (end > start && ISSPACE(value.data[end - 1]))
         end--;
     if (start == 0 && end == value.length) {
         FREE_STRING(value);
         INCREF(str);
         return operation_success(str);
     }
-    goat_char_t *copy = ALLOC((end - start + 1) * sizeof(goat_char_t));
-    goat_memcpy(copy, value.data + start, end - start);
+    gchar_t *copy = ALLOC((end - start + 1) * sizeof(gchar_t));
+    MEMCPY(copy, value.data + start, end - start);
     copy[end - start] = 0;
     FREE_STRING(value);
     return operation_success(
@@ -61,9 +61,9 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
         string_view_t view = constant->value;
         size_t start = 0;
         size_t end = view.length;
-        while (start < end && goat_is_space(view.data[start]))
+        while (start < end && ISSPACE(view.data[start]))
             start++;
-        while (end > start && goat_is_space(view.data[end - 1]))
+        while (end > start && ISSPACE(view.data[end - 1]))
             end--;
         return make_string_constant_element(
             state->arena,

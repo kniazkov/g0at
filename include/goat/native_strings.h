@@ -6,19 +6,20 @@
  * Locale-dependent operations require host string services; allocation uses host memory
  * services. The caller performs language-object/character-to-string conversions.
  */
+#pragma once
 #ifndef GOAT_NATIVE_STRINGS_V2_H
-#define GOAT_NATIVE_STRINGS_V2_H
-#include "native_abi.h"
-#include "unicode.h"
+#    define GOAT_NATIVE_STRINGS_V2_H
+#    include "native_abi.h"
+#    include "unicode.h"
 
-#include <stdbool.h>
+#    include <stdbool.h>
 
 /** @brief Largest materializable string length, reserving its terminating code unit. */
-#define GOAT_NATIVE_STRING_MAX (SIZE_MAX / sizeof(goat_char_t) - 1)
+#    define GOAT_NATIVE_STRING_MAX (SIZE_MAX / sizeof(gchar_t) - 1)
 
-#ifdef __cplusplus
+#    ifdef __cplusplus
 extern "C" {
-#endif
+#    endif
 /** @brief Borrows a buffer; the view does not extend its lifetime. */
 static inline goat_native_string_view_v2_t
 goat_native_string_view(goat_native_string_buffer_v2_t buffer) {
@@ -37,7 +38,7 @@ uint32_t goat_native_string_copy(const goat_native_context_v2_t *context,
                                  goat_native_string_view_v2_t value,
                                  goat_native_string_buffer_v2_t *out);
 
-/** @brief Returns the VM-compatible length in goat_char_t code units. */
+/** @brief Returns the VM-compatible length in gchar_t code units. */
 int64_t goat_native_string_length(goat_native_string_view_v2_t value);
 
 /** @brief Tests emptiness without dereferencing the data pointer. */
@@ -86,7 +87,7 @@ uint32_t goat_native_str_f64(const goat_native_context_v2_t *context,
 uint32_t goat_native_str_bool(const goat_native_context_v2_t *context,
                               bool value,
                               goat_native_string_buffer_v2_t *out);
-/** @brief Native str for a character, preserving host goat_char_t encoding and embedded NUL. */
+/** @brief Native str for a character, preserving host gchar_t encoding and embedded NUL. */
 uint32_t goat_native_str_char(const goat_native_context_v2_t *context,
                               uint32_t value,
                               goat_native_string_buffer_v2_t *out);
@@ -147,7 +148,7 @@ uint32_t goat_native_string_format(const goat_native_context_v2_t *context,
                                    const goat_native_string_view_v2_t *arguments,
                                    size_t count,
                                    goat_native_string_buffer_v2_t *out);
-#ifdef __cplusplus
+#    ifdef __cplusplus
 }
-#endif
+#    endif
 #endif

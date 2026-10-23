@@ -58,12 +58,12 @@ bool test_node_property_events() {
     ASSERT(!find_analysis_event(collector, NULL, &query));
     /* Later analysis must not change the earlier event's meaning or rendering. */
     string_value_t before = analysis_collector_to_text(collector);
-    ASSERT(goat_strstr(before.data, U"test.goat, 1.9: flags integer = 6 pure c-compatible"));
+    ASSERT(STRSTR(before.data, U"test.goat, 1.9: flags integer = 6 pure c-compatible"));
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     ASSERT(numeric->node->flags == 0 && numeric->flags == 6);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!goat_strcmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);
@@ -95,7 +95,7 @@ bool test_node_property_reset() {
     ASSERT(!analyze(root, &memory, options, second));
     string_value_t a = analysis_collector_to_text(first);
     string_value_t b = analysis_collector_to_text(second);
-    ASSERT(!goat_strcmp(a.data, b.data));
+    ASSERT(!STRCMP(a.data, b.data));
     FREE_STRING(a);
     FREE_STRING(b);
     options->optimization_level = OPTIMIZATION_NONE;

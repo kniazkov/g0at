@@ -46,7 +46,7 @@ string_value_t trim_and_escape_html_entities(string_value_t input, bool quotes) 
     size_t remaining = MAX_LENGTH;
 
     for (size_t index = 0; index < input.length; index++) {
-        goat_char_t c = input.data[index];
+        gchar_t c = input.data[index];
 
         size_t char_len = 1;
         switch (c) {
@@ -132,7 +132,7 @@ static string_value_t build_node_properties_html(const node_t *node) {
     string_builder_t builder = {0};
     for (size_t index = 0; index < count; index++) {
         node_display_value_t value;
-        const goat_char_t *key = get_node_property(node, index, &value);
+        const gchar_t *key = get_node_property(node, index, &value);
         if (key == NULL) {
             continue;
         }
@@ -189,16 +189,16 @@ static int node_to_dot(const node_t *node,
     uint32_t id = ++(*last_node_id);
     append_to_vector(all_nodes, (void *)node);
     set_in_avl_tree(nodes_to_ids, (void *)node, (value_t){.uint32_val = id});
-    const goat_char_t *name = node->vtbl->type_name;
+    const gchar_t *name = node->vtbl->type_name;
     node_display_value_t value = get_node_data(node);
     string_value_t properties = build_node_properties_html(node);
-    const goat_char_t *node_color = is_deletion(node)                            ? U"darkred"
-                                    : is_replacement(node)                       ? U"purple"
-                                    : node_has_flag(node, NODE_FLAG_UNREACHABLE) ? U"lightgray"
-                                    : !node->id                                  ? U"midnightblue"
-                                    : (display_flags & NODE_FLAG_C_COMPATIBLE)   ? U"forestgreen"
-                                                                                 : U"black";
-    const goat_char_t *node_style =
+    const gchar_t *node_color = is_deletion(node)                            ? U"darkred"
+                                : is_replacement(node)                       ? U"purple"
+                                : node_has_flag(node, NODE_FLAG_UNREACHABLE) ? U"lightgray"
+                                : !node->id                                  ? U"midnightblue"
+                                : (display_flags & NODE_FLAG_C_COMPATIBLE)   ? U"forestgreen"
+                                                                             : U"black";
+    const gchar_t *node_style =
         node_has_flag(node, NODE_FLAG_UNREACHABLE) ? U" fontcolor=gray70 tooltip=\"unreachable\""
         : is_deletion(node)    ? U" style=\"rounded,filled\" fillcolor=\"#ffe5e5\" ordering=out"
         : is_replacement(node) ? U" style=\"rounded,filled\" fillcolor=\"#f5efff\" ordering=out"
@@ -206,7 +206,7 @@ static int node_to_dot(const node_t *node,
         : (display_flags & NODE_FLAG_PURE) ? U" style=\"rounded,filled\" fillcolor=\"#f2faf2\""
                                            : U"";
     if (value.text.length > 0) {
-        const goat_char_t *font_color = U"blue";
+        const gchar_t *font_color = U"blue";
         if (value.kind == NODE_DISPLAY_VALUE_PREDEFINED) {
             font_color = U"purple";
         }
@@ -257,7 +257,7 @@ static int node_to_dot(const node_t *node,
                                    indent,
                                    builder,
                                    view);
-        const goat_char_t *tag = get_node_child_tag(node, index);
+        const gchar_t *tag = get_node_child_tag(node, index);
         if (tag == NULL) {
             add_formatted_source(
                 builder,

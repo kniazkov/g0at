@@ -134,7 +134,7 @@ parser supports the compiler's `wchar_t` strings.
 ## Portable scalar strings (#250)
 
 All internal strings, compiler messages, slices and native runtime strings now
-use `goat_char_t`, an alias of C11 `char32_t`. A scalar occupies exactly four
+use `gchar_t`, an alias of C11 `char32_t`. A scalar occupies exactly four
 8-bit bytes. Literals use `U"..."` and `U'...'`. Configuration and public-header
 checks reject big-endian and unknown byte order, non-UTF-32 targets and other
 widths. These checks concern the compilation target, including cross builds.

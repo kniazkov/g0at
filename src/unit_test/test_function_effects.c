@@ -41,7 +41,7 @@ bool test_function_effect_captures() {
            == (FUNCTION_EFFECT_EXTERNAL_READ | FUNCTION_EFFECT_EXTERNAL_WRITE));
     const function_capture_t *outer = snapshot->captures;
     ASSERT(outer && outer->access == (FUNCTION_CAPTURE_READ | FUNCTION_CAPTURE_WRITE));
-    ASSERT(outer->name.length == 5 && !goat_memcmp(outer->name.data, U"outer", 5));
+    ASSERT(outer->name.length == 5 && !MEMCMP(outer->name.data, U"outer", 5));
     const function_capture_t *print =
         find_function_capture(snapshot, get_builtin_declarator(), (string_view_t){U"print", 5});
     const function_capture_t *input =
@@ -53,8 +53,8 @@ bool test_function_effect_captures() {
     function_summary_t *live = get_function_summaries(event->node)->head;
     ASSERT(live->captures != snapshot->captures);
     string_value_t before = analysis_collector_to_text(collector);
-    ASSERT(goat_strstr(before.data, U"outer@1.1:read|write"));
-    ASSERT(goat_strstr(before.data, U"print@0.0:read,input@0.0:read"));
+    ASSERT(STRSTR(before.data, U"outer@1.1:read|write"));
+    ASSERT(STRSTR(before.data, U"print@0.0:read,input@0.0:read"));
     live->captures->access = 0;
     reset_function_summary(live);
     ASSERT(live->direct_effects == FUNCTION_EFFECT_UNKNOWN && !live->captures && !live->has_calls);
@@ -63,7 +63,7 @@ bool test_function_effect_captures() {
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!goat_strcmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);

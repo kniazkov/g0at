@@ -19,7 +19,7 @@ size_t no_properties(const node_t *node) {
     return 0;
 }
 
-const goat_char_t *no_property(const node_t *node, size_t index, node_display_value_t *out_value) {
+const gchar_t *no_property(const node_t *node, size_t index, node_display_value_t *out_value) {
     *out_value =
         (node_display_value_t){.text = EMPTY_STRING_VALUE, .kind = NODE_DISPLAY_VALUE_PLAIN};
     return NULL;
@@ -33,7 +33,7 @@ node_t *no_child(const node_t *node, size_t index) {
     return NULL;
 }
 
-const goat_char_t *no_tags(const node_t *node, size_t index) {
+const gchar_t *no_tags(const node_t *node, size_t index) {
     return NULL;
 }
 

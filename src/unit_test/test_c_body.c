@@ -82,7 +82,7 @@ bool test_c_body_limits() {
     ASSERT(graph->head->summary->c_support == FUNCTION_C_SUPPORTED);
     ASSERT(event->node->flags == flags);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!goat_strcmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     ASSERT(event->function_summary->c_support == FUNCTION_C_SUPPORTED);
     FREE_STRING(before);
     FREE_STRING(after);

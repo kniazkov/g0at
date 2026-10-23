@@ -158,7 +158,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
                                            token->text.data);
         }
         if (token->type == TOKEN_BRACKET) {
-            goat_char_t bracket = token->text.data[0];
+            gchar_t bracket = token->text.data[0];
             if (bracket == U'(' || bracket == U'{' || bracket == '[') {
                 token_t *pair = (token_t *)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
                 pair->type = TOKEN_BRACKET_PAIR;
@@ -174,8 +174,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
                 pair->position = create_position_range(memory->positions,
                                                        token->position->begin,
                                                        previous->position->end);
-                goat_char_t *text =
-                    (goat_char_t *)alloc_from_arena(memory->tokens, sizeof(goat_char_t) * 3);
+                gchar_t *text = (gchar_t *)alloc_from_arena(memory->tokens, sizeof(gchar_t) * 3);
                 text[0] = bracket;
                 text[1] = previous->text.data[0];
                 text[2] = U'\0';
@@ -197,7 +196,7 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
                                                    get_messages()->missing_opening_bracket,
                                                    bracket);
                 }
-                goat_char_t opening_bracket = U'\0';
+                gchar_t opening_bracket = U'\0';
                 if (bracket == U')') {
                     opening_bracket = U'(';
                 } else if (bracket == U']') {

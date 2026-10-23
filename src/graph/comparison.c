@@ -37,7 +37,7 @@ comparison_kind_t node_comparison_kind(node_type_t type) {
     }
 }
 
-static const goat_char_t *symbols[] = {U"<", U"<=", U">", U">=", U"==", U"!="};
+static const gchar_t *symbols[] = {U"<", U"<=", U">", U">=", U"==", U"!="};
 static const opcode_t opcodes[] = {LESS, LEQ, GREATER, GREQ, EQUAL, DIFF};
 
 /** @brief Numeric operations use the wrap, rounding and comparison rules of the C contract. */

@@ -83,7 +83,7 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const goat_char_t *get_child_tag(const node_t *node, size_t index) {
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
     const if_else_t *stmt = (const if_else_t *)node;
     switch (index) {
         case 0:

@@ -45,7 +45,7 @@ bool test_string_geometric_growth() {
             ASSERT(builder.capacity >= builder.length);
         }
         ASSERT(growths < 25);
-        goat_char_t *buffer = builder.data;
+        gchar_t *buffer = builder.data;
         size_t capacity = builder.capacity;
         resize_string_builder(&builder, capacity);
         ASSERT(builder.data == buffer && builder.capacity == capacity);
@@ -85,9 +85,9 @@ bool test_utf8_roundtrip() {
                  {0x10FFFF, "\xF4\x8F\xBF\xBF"}};
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
-        goat_char_t wide[3] = {0};
+        gchar_t wide[3] = {0};
         size_t units = 1;
-        wide[0] = (goat_char_t)cases[i].scalar;
+        wide[0] = (gchar_t)cases[i].scalar;
         size_t size;
         char *encoded = encode_utf8_ex(wide, &size);
         ASSERT(size == strlen(cases[i].bytes));
@@ -95,7 +95,7 @@ bool test_utf8_roundtrip() {
         FREE(encoded);
         string_value_t decoded = decode_utf8(cases[i].bytes);
         ASSERT(decoded.data && decoded.length == units);
-        ASSERT(memcmp(decoded.data, wide, (units + 1) * sizeof(goat_char_t)) == 0);
+        ASSERT(memcmp(decoded.data, wide, (units + 1) * sizeof(gchar_t)) == 0);
         FREE_STRING(decoded);
     }
     /* Cross multiple output-buffer growth boundaries with mixed UTF-8 widths. */
@@ -149,9 +149,9 @@ bool test_utf8_invalid_sequences() {
         ASSERT(decoded.data == NULL && decoded.length == 0 && !decoded.should_free);
         ASSERT(get_allocated_memory_size() == before);
     }
-    const goat_char_t invalid_wide[] = {0xd800, U'A', 0xdc00, 0};
+    const gchar_t invalid_wide[] = {0xd800, U'A', 0xdc00, 0};
     ASSERT(encode_utf8(invalid_wide) == NULL);
-    const goat_char_t out_of_range[] = {0x110000, 0};
+    const gchar_t out_of_range[] = {0x110000, 0};
     ASSERT(encode_utf8(out_of_range) == NULL);
     return true;
 }

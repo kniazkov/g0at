@@ -23,8 +23,7 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
         return operation_exception(get_exception_invalid_argument());
     string_value_t value = convert_object_to_string(receiver);
     string_value_t prefix = convert_object_to_string(args[0]);
-    bool result =
-        prefix.length <= value.length && !goat_memcmp(value.data, prefix.data, prefix.length);
+    bool result = prefix.length <= value.length && !MEMCMP(value.data, prefix.data, prefix.length);
     FREE_STRING(value);
     FREE_STRING(prefix);
     return operation_success(get_boolean_object(result));
@@ -50,7 +49,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
         string_view_t prefix;
         if (get_string_view_from_constant(state->arena, args[1], &prefix)) {
             bool result = prefix.length <= str->value.length
-                          && !goat_memcmp(str->value.data, prefix.data, prefix.length);
+                          && !MEMCMP(str->value.data, prefix.data, prefix.length);
             return result ? make_true_element() : make_false_element();
         }
     }

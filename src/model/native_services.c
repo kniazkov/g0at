@@ -55,18 +55,18 @@ static void GOAT_NATIVE_CALL deallocate_all_memory(void *state) {
 }
 
 /** @brief Uses the same pinned Unicode classification as the interpreter. */
-static int GOAT_NATIVE_CALL string_is_space(goat_char_t value) {
-    return goat_is_space(value);
+static int GOAT_NATIVE_CALL string_is_space(gchar_t value) {
+    return ISSPACE(value);
 }
 
 /** @brief Uses the pinned Unicode 17.0.0 simple mapping. */
-static goat_char_t GOAT_NATIVE_CALL string_to_upper(goat_char_t value) {
-    return (goat_char_t)goat_simple_upper(value);
+static gchar_t GOAT_NATIVE_CALL string_to_upper(gchar_t value) {
+    return (gchar_t)TOUPPER(value);
 }
 
 /** @brief Uses the pinned Unicode 17.0.0 simple mapping. */
-static goat_char_t GOAT_NATIVE_CALL string_to_lower(goat_char_t value) {
-    return (goat_char_t)goat_simple_lower(value);
+static gchar_t GOAT_NATIVE_CALL string_to_lower(gchar_t value) {
+    return (gchar_t)TOLOWER(value);
 }
 
 /** @brief Shared immutable table; mutable state belongs exclusively to each invocation. */

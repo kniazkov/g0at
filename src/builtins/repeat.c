@@ -33,7 +33,7 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
         INCREF(receiver);
         return operation_success(receiver);
     }
-    const size_t maximum_length = SIZE_MAX / sizeof(goat_char_t) - 1;
+    const size_t maximum_length = SIZE_MAX / sizeof(gchar_t) - 1;
     if (repeat_count > (int64_t)(maximum_length / value.length)) {
         FREE_STRING(value);
         return operation_exception(get_exception_invalid_argument());

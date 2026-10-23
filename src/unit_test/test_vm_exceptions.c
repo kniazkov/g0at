@@ -45,9 +45,9 @@ bool test_vm_restore(void) {
     ASSERT(get_object_integer_value(peek_object_from_stack(proc->main_thread->data_stack, 0)).value
            == 7);
     string_value_t text = bytecode_to_text(code);
-    ASSERT(goat_strstr(text.data, U"RESTORE") && goat_strstr(text.data, U"TRY")
-           && goat_strstr(text.data, U"THROW"));
-    ASSERT(goat_strstr(text.data, U"6"));
+    ASSERT(STRSTR(text.data, U"RESTORE") && STRSTR(text.data, U"TRY")
+           && STRSTR(text.data, U"THROW"));
+    ASSERT(STRSTR(text.data, U"6"));
     FREE_STRING(text);
     free_bytecode(code);
     destroy_process(proc);

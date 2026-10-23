@@ -21,18 +21,18 @@ static size_t proofs(const node_t *node, access_proof_t proof) {
 }
 
 bool test_access_analysis(void) {
-    const goat_char_t *denied[] = {U"const a={private x=1;}; a.x;",
-                                   U"const a={private var x=1;}; a.x=2;",
-                                   U"const a={private var x=1;}; a.x+=2;",
-                                   U"const a={private x=1;}; a[\"x\"];",
-                                   U"const a={private var x=1;}; a[\"x\"]*=2;",
-                                   U"const a={private x=1;}; const b=a; const c=b; c.x;",
-                                   U"const a={private x=1;}; const key=\"x\"; a[key];",
-                                   U"({private x=1;}).x;",
-                                   U"const a={protected x=1;}; a.x;",
-                                   U"const a={private x=1;}; try a.x; catch(e) println(e);",
-                                   U"const a={private x=1;}; if(false) println(a.x);"};
-    const goat_char_t *unknown[] = {
+    const gchar_t *denied[] = {U"const a={private x=1;}; a.x;",
+                               U"const a={private var x=1;}; a.x=2;",
+                               U"const a={private var x=1;}; a.x+=2;",
+                               U"const a={private x=1;}; a[\"x\"];",
+                               U"const a={private var x=1;}; a[\"x\"]*=2;",
+                               U"const a={private x=1;}; const b=a; const c=b; c.x;",
+                               U"const a={private x=1;}; const key=\"x\"; a[key];",
+                               U"({private x=1;}).x;",
+                               U"const a={protected x=1;}; a.x;",
+                               U"const a={private x=1;}; try a.x; catch(e) println(e);",
+                               U"const a={private x=1;}; if(false) println(a.x);"};
+    const gchar_t *unknown[] = {
         U"private x=7; const a={private x=1;}; a.x;",
         U"private x=7; const a={protected x=1;}; a[\"x\"];",
         U"const a={private x=1;}; const f=func(){return a.x;};",
@@ -48,7 +48,7 @@ bool test_access_analysis(void) {
         U"const f=func(){private x=1; return this;}; f();"};
     for (size_t optimize = 0; optimize < 2; optimize++) {
         for (size_t group = 0; group < 2; group++) {
-            const goat_char_t **texts = group ? unknown : denied;
+            const gchar_t **texts = group ? unknown : denied;
             size_t count =
                 group ? sizeof(unknown) / sizeof(*unknown) : sizeof(denied) / sizeof(*denied);
             for (size_t i = 0; i < count; i++) {
@@ -56,7 +56,7 @@ bool test_access_analysis(void) {
                 parser_memory_t memory = {arena, arena, arena, arena};
                 node_t *root = parse_analysis_test_program(
                     &memory,
-                    (string_value_t){texts[i], goat_strlen(texts[i]), false});
+                    (string_value_t){texts[i], STRLEN(texts[i]), false});
                 if (!root)
                     fprintf(stderr, "access syntax case %zu/%zu\n", group, i);
                 ASSERT(root);
@@ -66,7 +66,7 @@ bool test_access_analysis(void) {
                 if (!group) {
                     ASSERT(get_most_severe_compilation_error(errors) >= ERROR);
                     ASSERT(proofs(root, ACCESS_PROOF_DENIED) == 1);
-                    ASSERT(errors->position && goat_strstr(errors->message.data, U"x"));
+                    ASSERT(errors->position && STRSTR(errors->message.data, U"x"));
                 } else {
                     ASSERT(get_most_severe_compilation_error(errors) < ERROR);
                     ASSERT(!proofs(root, ACCESS_PROOF_DENIED));

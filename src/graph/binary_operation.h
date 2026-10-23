@@ -43,7 +43,7 @@ node_t *binop_get_child(const node_t *node, size_t index);
  * `index`: Zero-based child position.
  * @return Static wide string literal or NULL.
  */
-const goat_char_t *binop_get_tag(const node_t *node, size_t index);
+const gchar_t *binop_get_tag(const node_t *node, size_t index);
 
 /** @brief Creates a new addition operation node. */
 expression_t *

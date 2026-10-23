@@ -40,7 +40,7 @@ static object_array_t get_keys(const object_t *obj) {
         for (size_t index = 0; index < type_count; index++) {
             keys[key_count++] =
                 get_static_string_object(&type_names[index],
-                                         (const goat_char_t *)type_properties[index].key);
+                                         (const gchar_t *)type_properties[index].key);
         }
     }
     return (object_array_t){keys, key_count};

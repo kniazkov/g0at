@@ -27,7 +27,7 @@
 typedef struct {
     expression_t base;
     expression_t *operation;
-    const goat_char_t *symbol;
+    const gchar_t *symbol;
     opcode_t opcode;
 } compound_assignment_t;
 
@@ -214,9 +214,9 @@ static node_vtbl_t vtbl = {.type = NODE_COMPOUND_ASSIGNMENT,
 expression_t *create_compound_assignment_node(arena_t *arena,
                                               assignable_expression_t *left,
                                               expression_t *right,
-                                              const goat_char_t *symbol) {
+                                              const gchar_t *symbol) {
     typedef struct {
-        const goat_char_t *symbol;
+        const gchar_t *symbol;
         opcode_t opcode;
         expression_t *(*create)(arena_t *, expression_t *, expression_t *);
     } operation_t;
@@ -233,7 +233,7 @@ expression_t *create_compound_assignment_node(arena_t *arena,
                                              {U"<<=", SHL, create_shift_left_node},
                                              {U">>=", SHR, create_shift_right_node}};
     for (size_t i = 0; i < sizeof(operations) / sizeof(*operations); i++) {
-        if (goat_strcmp(symbol, operations[i].symbol))
+        if (STRCMP(symbol, operations[i].symbol))
             continue;
         compound_assignment_t *expr = alloc_zeroed_from_arena(arena, sizeof(*expr));
         expr->base.base.vtbl = &vtbl;

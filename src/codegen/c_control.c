@@ -61,7 +61,7 @@ c_generated_expression_t c_comparison(const node_t *node, c_generation_context_t
                    value.data,
                    equality && node->vtbl->type == NODE_NOT_EQUAL ? U"true" : U"false");
     } else if (integer_like || left.type == right.type) {
-        static const goat_char_t *symbols[] = {U"<", U"<=", U">", U">=", U"==", U"!="};
+        static const gchar_t *symbols[] = {U"<", U"<=", U">", U">=", U"==", U"!="};
         add_source(prelude, 0, U"bool %s = %s %s %s;", value.data, a.data, symbols[kind], b.data);
     } else {
         context->helper_flags |= C_HELPER_COMPARISON;

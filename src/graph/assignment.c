@@ -21,7 +21,7 @@ node_t *assignment_get_child(const node_t *node, size_t index) {
     return NULL;
 }
 
-const goat_char_t *assignment_get_tag(const node_t *node, size_t index) {
+const gchar_t *assignment_get_tag(const node_t *node, size_t index) {
     if (index == 0) {
         return U"target";
     }

@@ -51,7 +51,7 @@ bool test_function_return_isolation() {
     analyze_function_return_types(root);
     analyze_function_return_types(root);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!goat_strcmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     ASSERT(result->declarator->abstract_value == fact && function->flags == flags);
     ASSERT(set->head == set->tail && set->head->return_type->type == LATTICE_INTEGER);
     ASSERT(event->function_summary->return_type->type == LATTICE_INTEGER);

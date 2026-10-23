@@ -36,8 +36,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     const real_t *expr = (const real_t *)node;
     string_value_t text = format_string(U"%f", expr->element.value);
     /* A real literal must remain real when regenerated source is parsed again. */
-    if (!goat_strchr(text.data, U'.') && !goat_strchr(text.data, U'e')
-        && !goat_strchr(text.data, U'E')) {
+    if (!STRCHR(text.data, U'.') && !STRCHR(text.data, U'e') && !STRCHR(text.data, U'E')) {
         string_builder_t builder = {0};
         append_string_value(&builder, text);
         FREE_STRING(text);

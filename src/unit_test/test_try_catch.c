@@ -35,7 +35,7 @@ bool test_try_catch_structure(void) {
     statement_t *body =
         create_statement_expression_node(arena, (expression_t *)create_integer_node(arena, 1));
     statement_list_t *handler = block(arena, NULL);
-    goat_char_t name[] = U"error_extra";
+    gchar_t name[] = U"error_extra";
     node_t *node = create_try_catch_node(arena, body, (string_view_t){name, 5}, handler);
     name[0] = U'X';
     ASSERT(is_statement(node->vtbl->type));
@@ -44,19 +44,19 @@ bool test_try_catch_structure(void) {
     ASSERT(get_node_child(node, 0) == &body->base
            && get_node_child(node, 1) == &handler->base.base);
     ASSERT(!get_node_child(node, 2) && !get_node_child(node, SIZE_MAX));
-    ASSERT(!goat_strcmp(get_node_child_tag(node, 0), U"try"));
-    ASSERT(!goat_strcmp(get_node_child_tag(node, 1), U"catch"));
+    ASSERT(!STRCMP(get_node_child_tag(node, 0), U"try"));
+    ASSERT(!STRCMP(get_node_child_tag(node, 1), U"catch"));
     ASSERT(!get_node_child_tag(node, 2));
     node_display_value_t display = get_node_data(node);
-    ASSERT(!goat_strcmp(display.text.data, U"error"));
+    ASSERT(!STRCMP(display.text.data, U"error"));
     ASSERT(!display.text.should_free);
     string_value_t source = generate_goat_code_from_node(node);
-    ASSERT(!goat_strcmp(source.data, U"try 1; catch (error) { }"));
+    ASSERT(!STRCMP(source.data, U"try 1; catch (error) { }"));
     FREE_STRING(source);
     source_builder_t *builder = create_source_builder();
     generate_indented_goat_code_from_node(node, builder, 0);
     source = build_source(builder);
-    ASSERT(goat_strstr(source.data, U"try\n") && goat_strstr(source.data, U"catch (error) { }"));
+    ASSERT(STRSTR(source.data, U"try\n") && STRSTR(source.data, U"catch (error) { }"));
     FREE_STRING(source);
     destroy_source_builder(builder);
     node->id = 1;
@@ -67,7 +67,7 @@ bool test_try_catch_structure(void) {
     node->scope = body->base.scope = get_node_child(&body->base, 0)->scope =
         handler->base.base.scope = scope;
     source = generate_graph_dot(node);
-    ASSERT(goat_strstr(source.data, U"try-catch") && goat_strstr(source.data, U"error"));
+    ASSERT(STRSTR(source.data, U"try-catch") && STRSTR(source.data, U"error"));
     FREE_STRING(source);
     ASSERT(!can_generate_c_code_from_node(node, NULL));
     function_summary_t summary = {0};
@@ -82,12 +82,12 @@ bool test_try_catch_structure(void) {
                                            (string_view_t){U"outer", 5},
                                            block(arena, NULL));
     source = generate_goat_code_from_node(nested);
-    ASSERT(!goat_strcmp(source.data, U"try try { } catch (e) { } catch (outer) { }"));
+    ASSERT(!STRCMP(source.data, U"try try { } catch (e) { } catch (outer) { }"));
     FREE_STRING(source);
     builder = create_source_builder();
     generate_indented_goat_code_from_node(empty, builder, 0);
     source = build_source(builder);
-    ASSERT(!goat_strcmp(source.data, U"try { }\ncatch (e) { }\n"));
+    ASSERT(!STRCMP(source.data, U"try { }\ncatch (e) { }\n"));
     FREE_STRING(source);
     destroy_source_builder(builder);
     node_t *container = &block(arena, &body->base)->base.base;

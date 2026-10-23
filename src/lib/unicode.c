@@ -8,7 +8,7 @@
 typedef struct {
     uint32_t scalar;
     unsigned length;
-    goat_char_t mapped[3];
+    gchar_t mapped[3];
 } case_entry_t;
 
 /** @brief Inclusive Unicode property range. */
@@ -43,21 +43,21 @@ static bool property(const scalar_range_t *table, size_t count, uint32_t c) {
     return lo < count && table[lo].first <= c;
 }
 
-int goat_is_space(goat_char_t c) {
+int ISSPACE(gchar_t c) {
     return property(White_Space, COUNT(White_Space), c);
 }
 
-goat_char_t goat_simple_upper(goat_char_t c) {
+gchar_t TOUPPER(gchar_t c) {
     const case_entry_t *e = lookup(simple_upper, COUNT(simple_upper), c);
     return e ? e->mapped[0] : c;
 }
 
-goat_char_t goat_simple_lower(goat_char_t c) {
+gchar_t TOLOWER(gchar_t c) {
     const case_entry_t *e = lookup(simple_lower, COUNT(simple_lower), c);
     return e ? e->mapped[0] : c;
 }
 
-static bool final_sigma(const goat_char_t *s, size_t n, size_t i) {
+static bool final_sigma(const gchar_t *s, size_t n, size_t i) {
     size_t before = i;
     while (before && property(Case_Ignorable, COUNT(Case_Ignorable), s[before - 1]))
         --before;
@@ -69,11 +69,8 @@ static bool final_sigma(const goat_char_t *s, size_t n, size_t i) {
     return after == n || !property(Cased, COUNT(Cased), s[after]);
 }
 
-size_t goat_case_mapping(const goat_char_t *s,
-                         size_t length,
-                         size_t index,
-                         bool upper,
-                         goat_char_t out[3]) {
+size_t
+goat_case_mapping(const gchar_t *s, size_t length, size_t index, bool upper, gchar_t out[3]) {
     if (!upper && s[index] == 0x3a3 && final_sigma(s, length, index)) {
         out[0] = 0x3c2;
         return 1;
@@ -84,6 +81,6 @@ size_t goat_case_mapping(const goat_char_t *s,
         out[0] = s[index];
         return 1;
     }
-    goat_memcpy(out, e->mapped, e->length);
+    MEMCPY(out, e->mapped, e->length);
     return e->length;
 }

@@ -21,14 +21,14 @@ bool test_access_observation(void) {
     object_t *root = get_root_object();
     object_t *obj = create_user_defined_object_in_module(proc, (object_array_t){&root, 1}, foreign);
     access_domain_t *domain = get_object_access_domain(obj);
-    const goat_char_t *names[] = {U"module", U"public", U"protected", U"private"};
+    const gchar_t *names[] = {U"module", U"public", U"protected", U"private"};
     const access_modifier_t modifiers[] = {ACCESS_MODULE,
                                            ACCESS_PUBLIC,
                                            ACCESS_PROTECTED,
                                            ACCESS_PRIVATE};
     for (size_t i = 0; i < 4; i++) {
         object_t *key =
-            create_string_object(proc, (string_value_t){names[i], goat_strlen(names[i]), false});
+            create_string_object(proc, (string_value_t){names[i], STRLEN(names[i]), false});
         ASSERT(create_object_field(obj,
                                    key,
                                    get_boolean_object(true),
@@ -58,7 +58,7 @@ bool test_access_observation(void) {
     add_function_access_domain(&observers[2], hidden_domain);
     DECREF(hidden_key);
     release_access_domain(hidden_domain);
-    const goat_char_t *expected[] = {
+    const gchar_t *expected[] = {
         U"[{\"public\":true}]",
         U"[{\"module\":true,\"public\":true}]",
         U"[{\"module\":true,\"private\":true,\"protected\":true,\"public\":true}]"};
@@ -70,7 +70,7 @@ bool test_access_observation(void) {
             ASSERT(get_array_elements(keys).size == counts[i]);
             DECREF(keys);
             string_value_t text = object_to_string_with_access(array, &observers[i]);
-            ASSERT(!goat_strcmp(text.data, expected[i]));
+            ASSERT(!STRCMP(text.data, expected[i]));
             FREE_STRING(text);
         }
     }
@@ -210,7 +210,7 @@ bool test_access_captures(void) {
     field_capture_t *fc = fa->captures->data[0], *gc = ga->captures->data[0];
     ASSERT(fc->cell == gc->cell && fc->storage == gc->storage);
     string_value_t text = convert_object_to_string(fc->cell->object);
-    ASSERT(!goat_strcmp(text.data, U"retained"));
+    ASSERT(!STRCMP(text.data, U"retained"));
     FREE_STRING(text);
     /* An identical borrowed value must be retained before its old reference is dropped. */
     ASSERT(set_field_cell_value(fc->storage, fc->cell, fc->cell->object) == MSTAT_OK);

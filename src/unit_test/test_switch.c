@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 bool test_switch_parser(void) {
-    const goat_char_t *valid[] = {
+    const gchar_t *valid[] = {
         U"switch(x) {}",
         U"switch(x) {default:}",
         U"switch(x) {case 1:}",
@@ -37,48 +37,47 @@ bool test_switch_parser(void) {
         U"switch(x) {case 1: { var a=1; } case 2: ;}",
         U"switch(x) {case 1: return; default: return 2;}",
         U"for(;;) {switch(x){case 1: const f=func(){while(x)break;}; break;}}"};
-    const goat_char_t *invalid[] = {
-        U"switch",
-        U"switch() {}",
-        U"switch x {}",
-        U"switch(x)",
-        U"switch(x);",
-        U"switch(x) []",
-        U"switch(x,y) {}",
-        U"switch(x) {println(1);}",
-        U"switch(x) {case:}",
-        U"switch(x) {case ,1:}",
-        U"switch(x) {case 1,,2:}",
-        U"switch(x) {case 1 2:}",
-        U"switch(x) {case 1;}",
-        U"switch(x) {case 1,}",
-        U"switch(x) {default 1:}",
-        U"switch(x) {default}",
-        U"switch(x) {default: default:}",
-        U"switch(x) {default: case 1:}",
-        U"case 1:",
-        U"default:",
-        U"{case 1:}",
-        U"var x=switch(y) {case 1:}",
-        U"f(switch(x){})",
-        U"switch(x) {case 1: break;}",
-        U"switch(x) {default: continue;}",
-        U"while(x) {switch(x){case 1: const f=func(){break;};}}",
-        U"switch(x) {case 1: if(x) println(1); case 2: else println(2);}",
-        U"switch(x) {case 1: {case 2:}}",
-        U"switch(x) {case 1: :}",
-        U"switch(x) {case 1: while(x) default:}",
-        U"switch(x) {case 1: do x++; case 2: while(x);}",
-        U"switch(x) {case 1: switch(y) {default: case 1:}}"};
+    const gchar_t *invalid[] = {U"switch",
+                                U"switch() {}",
+                                U"switch x {}",
+                                U"switch(x)",
+                                U"switch(x);",
+                                U"switch(x) []",
+                                U"switch(x,y) {}",
+                                U"switch(x) {println(1);}",
+                                U"switch(x) {case:}",
+                                U"switch(x) {case ,1:}",
+                                U"switch(x) {case 1,,2:}",
+                                U"switch(x) {case 1 2:}",
+                                U"switch(x) {case 1;}",
+                                U"switch(x) {case 1,}",
+                                U"switch(x) {default 1:}",
+                                U"switch(x) {default}",
+                                U"switch(x) {default: default:}",
+                                U"switch(x) {default: case 1:}",
+                                U"case 1:",
+                                U"default:",
+                                U"{case 1:}",
+                                U"var x=switch(y) {case 1:}",
+                                U"f(switch(x){})",
+                                U"switch(x) {case 1: break;}",
+                                U"switch(x) {default: continue;}",
+                                U"while(x) {switch(x){case 1: const f=func(){break;};}}",
+                                U"switch(x) {case 1: if(x) println(1); case 2: else println(2);}",
+                                U"switch(x) {case 1: {case 2:}}",
+                                U"switch(x) {case 1: :}",
+                                U"switch(x) {case 1: while(x) default:}",
+                                U"switch(x) {case 1: do x++; case 2: while(x);}",
+                                U"switch(x) {case 1: switch(y) {default: case 1:}}"};
     for (size_t pass = 0; pass < 2; pass++) {
-        const goat_char_t **texts = pass ? invalid : valid;
+        const gchar_t **texts = pass ? invalid : valid;
         size_t count = pass ? sizeof(invalid) / sizeof(*invalid) : sizeof(valid) / sizeof(*valid);
         for (size_t i = 0; i < count; i++) {
             arena_t *arena = create_arena(8);
             parser_memory_t memory = {arena, arena, arena, arena};
-            node_t *root = parse_analysis_test_program(
-                &memory,
-                (string_value_t){texts[i], goat_strlen(texts[i]), false});
+            node_t *root =
+                parse_analysis_test_program(&memory,
+                                            (string_value_t){texts[i], STRLEN(texts[i]), false});
             if (pass ? root != NULL : root == NULL)
                 fprintf(stderr, "switch grammar %zu/%zu\n", pass, i);
             ASSERT(pass ? root == NULL : root != NULL);

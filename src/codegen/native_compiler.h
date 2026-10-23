@@ -32,7 +32,7 @@ typedef struct {
 
 /** @brief Builds beside destination, then atomically replaces it; compiler is one executable. */
 native_compile_result_t
-compile_native_library(const goat_char_t *source, const char *compiler, const char *destination);
+compile_native_library(const gchar_t *source, const char *compiler, const char *destination);
 /** @brief Releases captured diagnostics. */
 void destroy_native_compile_result(native_compile_result_t *result);
 

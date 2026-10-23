@@ -29,7 +29,7 @@ bool test_brackets_one_level_nesting() {
     ASSERT(token->type == TOKEN_IDENTIFIER);
     ASSERT(token->right->type == TOKEN_BRACKET_PAIR);
     ASSERT(token->right->right->type == TOKEN_IDENTIFIER);
-    ASSERT(goat_strcmp(token->right->text.data, U"()") == 0);
+    ASSERT(STRCMP(token->right->text.data, U"()") == 0);
     ASSERT(token->right->children.count == 2);
     ASSERT(token->right->children.first->type == TOKEN_EXPRESSION);
     ASSERT(token->right->children.first->right->type == TOKEN_IDENTIFIER);
@@ -54,11 +54,11 @@ bool test_brackets_two_levels_nesting() {
     ASSERT(token->type == TOKEN_IDENTIFIER);
     ASSERT(token->right->type == TOKEN_BRACKET_PAIR);
     ASSERT(token->right->right->type == TOKEN_IDENTIFIER);
-    ASSERT(goat_strcmp(token->right->text.data, U"()") == 0);
+    ASSERT(STRCMP(token->right->text.data, U"()") == 0);
     ASSERT(token->right->children.count == 2);
     ASSERT(token->right->children.first->type == TOKEN_EXPRESSION);
     ASSERT(token->right->children.first->right->type == TOKEN_BRACKET_PAIR);
-    ASSERT(goat_strcmp(token->right->children.first->right->text.data, U"[]") == 0);
+    ASSERT(STRCMP(token->right->children.first->right->text.data, U"[]") == 0);
     ASSERT(token->right->children.first->right->children.count == 2);
     ASSERT(groups->identifiers.count == 4);
     FREE(groups);
@@ -80,8 +80,8 @@ bool test_unclosed_bracket() {
     ASSERT(error->position->begin->code[0] == U'(');
     ASSERT(error->position->end->row == 1);
     ASSERT(error->position->end->column == 10);
-    ASSERT(goat_strcmp(U"Unclosed opening bracket: expected a closing bracket to match '('",
-                       error->message.data)
+    ASSERT(STRCMP(U"Unclosed opening bracket: expected a closing bracket to match '('",
+                  error->message.data)
            == 0);
     FREE(groups);
     destroy_arena(arena);
@@ -102,7 +102,7 @@ bool test_missing_opening_bracket() {
     ASSERT(error->position->begin->code[0] == U']');
     ASSERT(error->position->end->row == 2);
     ASSERT(error->position->end->column == 7);
-    ASSERT(goat_strcmp(U"Missing opening bracket corresponding to ']'", error->message.data) == 0);
+    ASSERT(STRCMP(U"Missing opening bracket corresponding to ']'", error->message.data) == 0);
     FREE(groups);
     destroy_arena(arena);
     return true;
@@ -122,9 +122,9 @@ bool test_closing_bracket_does_not_match_opening() {
     ASSERT(error->position->begin->code[0] == U'{');
     ASSERT(error->position->end->row == 2);
     ASSERT(error->position->end->column == 7);
-    ASSERT(goat_strcmp(U"Closing bracket ']' does not match the opening bracket '{'",
-                       error->message.data)
-           == 0);
+    ASSERT(
+        STRCMP(U"Closing bracket ']' does not match the opening bracket '{'", error->message.data)
+        == 0);
     FREE(groups);
     destroy_arena(arena);
     return true;
@@ -134,9 +134,9 @@ bool test_parsing_function_calls() {
     arena_t *arena = create_arena(8);
     parser_memory_t memory = {arena, arena, arena, arena};
     token_groups_t *groups = (token_groups_t *)CALLOC(sizeof(token_groups_t));
-    goat_char_t *code = U"print(\"test\")";
+    gchar_t *code = U"print(\"test\")";
     scanner_t *scan = create_scanner("program.goat",
-                                     (string_value_t){code, goat_strlen(code), false},
+                                     (string_value_t){code, STRLEN(code), false},
                                      &memory,
                                      groups);
     token_list_t tokens;
@@ -151,7 +151,7 @@ bool test_parsing_function_calls() {
     ASSERT(groups->identifiers.count == 0);
     ASSERT(tokens.first->node->vtbl->type == NODE_FUNCTION_CALL);
     string_value_t code2 = generate_goat_code_from_node(tokens.first->node);
-    ASSERT(goat_strcmp(code, code2.data) == 0);
+    ASSERT(STRCMP(code, code2.data) == 0);
     FREE_STRING(code2);
     node_t *root_node;
     error = process_root_token_list(&memory, &tokens, &root_node);
@@ -159,7 +159,7 @@ bool test_parsing_function_calls() {
     ASSERT(root_node != NULL);
     ASSERT(root_node->vtbl->type == NODE_ROOT);
     code2 = generate_goat_code_from_node(root_node);
-    ASSERT(goat_strcmp(U"print(\"test\");", code2.data) == 0);
+    ASSERT(STRCMP(U"print(\"test\");", code2.data) == 0);
     FREE_STRING(code2);
     FREE(groups);
     destroy_arena(arena);

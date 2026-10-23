@@ -40,28 +40,27 @@ static bytecode_t *make_code(const instruction_t *list, size_t count) {
 /** @brief An update of an undeclared name is allowed inside a function body and rejected at the top
  * level. */
 bool test_update_implicit_in_function(void) {
-    const goat_char_t *valid[] = {U"const obj = {}; obj.getX = func() { return ++x };",
-                                  U"const obj = {}; obj.getX = func() { return x-- };",
-                                  U"const obj = {}; obj.setY = func() { --y; };"};
+    const gchar_t *valid[] = {U"const obj = {}; obj.getX = func() { return ++x };",
+                              U"const obj = {}; obj.getX = func() { return x-- };",
+                              U"const obj = {}; obj.setY = func() { --y; };"};
     for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
         node_t *root =
-            parse_analysis_test_program(&m,
-                                        (string_value_t){valid[i], goat_strlen(valid[i]), false});
+            parse_analysis_test_program(&m, (string_value_t){valid[i], STRLEN(valid[i]), false});
         ASSERT(root);
         options_t *options = create_options();
         ASSERT(!analyze(root, &m, options, NULL));
         destroy_options(options);
         destroy_arena(a);
     }
-    const goat_char_t *invalid[] = {U"++x;", U"y--;"};
+    const gchar_t *invalid[] = {U"++x;", U"y--;"};
     for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
-        node_t *root = parse_analysis_test_program(
-            &m,
-            (string_value_t){invalid[i], goat_strlen(invalid[i]), false});
+        node_t *root =
+            parse_analysis_test_program(&m,
+                                        (string_value_t){invalid[i], STRLEN(invalid[i]), false});
         ASSERT(root);
         options_t *options = create_options();
         ASSERT(analyze(root, &m, options, NULL));
@@ -127,8 +126,7 @@ bool test_update_models_vm(void) {
                     ASSERT(get_object_integer_value(updated).value == expected_int[decrement][i]);
                 }
                 string_value_t text = bytecode_to_text(code);
-                ASSERT(goat_strstr(text.data, U"DUP")
-                       && goat_strstr(text.data, decrement ? U"DEC" : U"INC"));
+                ASSERT(STRSTR(text.data, U"DUP") && STRSTR(text.data, decrement ? U"DEC" : U"INC"));
                 FREE_STRING(text);
                 free_bytecode(code);
                 destroy_process(proc);
@@ -187,7 +185,7 @@ bool test_update_errors(void) {
     collect_garbage(proc);
     ASSERT(peek_object_from_stack(proc->main_thread->data_stack, 0) == string);
     string_value_t text = convert_object_to_string(string);
-    ASSERT(text.length == 10 && !goat_memcmp(text.data, U"heap value", 10));
+    ASSERT(text.length == 10 && !MEMCMP(text.data, U"heap value", 10));
     FREE_STRING(text);
     free_bytecode(code);
     destroy_process(proc);
@@ -212,7 +210,7 @@ bool test_update_ast_parser(void) {
         ASSERT(get_node_child_count(&node->base) == 1
                && get_node_child(&node->base, 0) == &var->base.base.base);
         ASSERT(!get_node_child(&node->base, 1) && !get_node_child_tag(&node->base, 1));
-        ASSERT(!goat_strcmp(get_node_child_tag(&node->base, 0), U"operand"));
+        ASSERT(!STRCMP(get_node_child_tag(&node->base, 0), U"operand"));
         abstract_state_t *state = create_abstract_state(arena);
         set_in_abstract_state(state, var->declarator, make_integer_constant_element(arena, 5));
         const lattice_element_t *value = calculate_expression(node, state, arena);
@@ -236,7 +234,7 @@ bool test_update_ast_parser(void) {
         generate_indented_goat_code_from_expression(node, sb, 0);
         string_value_t pretty = build_source(sb);
         ASSERT(pretty.length == source.length + 1
-               && !goat_memcmp(pretty.data, source.data, source.length));
+               && !MEMCMP(pretty.data, source.data, source.length));
         parser_memory_t memory = {arena, arena, arena, arena};
         ASSERT(parse_analysis_test_program(&memory, source));
         FREE_STRING(source);
@@ -247,42 +245,41 @@ bool test_update_ast_parser(void) {
         destroy_abstract_state(state);
         destroy_arena(arena);
     }
-    const goat_char_t *valid[] = {U"var x=1; ++x",
-                                  U"var x=1; x--",
-                                  U"var x=1; ++((x))",
-                                  U"var x=1; (x)++",
-                                  U"var x=1; -x++ ** 2",
-                                  U"var x=1; 2 ** --x",
-                                  U"var x=1; x+++x",
-                                  U"var x=1; x++ + ++x"};
-    const goat_char_t *invalid[] = {U"++",
-                                    U"--",
-                                    U"++1",
-                                    U"1++",
-                                    U"++(1+2)",
-                                    U"(1+2)--",
-                                    U"++++x",
-                                    U"x++++",
-                                    U"++x++",
-                                    U"++-x",
-                                    U"f()++",
-                                    U"++f()",
-                                    U"(x=1)++",
-                                    U"x++=2"};
+    const gchar_t *valid[] = {U"var x=1; ++x",
+                              U"var x=1; x--",
+                              U"var x=1; ++((x))",
+                              U"var x=1; (x)++",
+                              U"var x=1; -x++ ** 2",
+                              U"var x=1; 2 ** --x",
+                              U"var x=1; x+++x",
+                              U"var x=1; x++ + ++x"};
+    const gchar_t *invalid[] = {U"++",
+                                U"--",
+                                U"++1",
+                                U"1++",
+                                U"++(1+2)",
+                                U"(1+2)--",
+                                U"++++x",
+                                U"x++++",
+                                U"++x++",
+                                U"++-x",
+                                U"f()++",
+                                U"++f()",
+                                U"(x=1)++",
+                                U"x++=2"};
     for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
         ASSERT(
-            parse_analysis_test_program(&m,
-                                        (string_value_t){valid[i], goat_strlen(valid[i]), false}));
+            parse_analysis_test_program(&m, (string_value_t){valid[i], STRLEN(valid[i]), false}));
         destroy_arena(a);
     }
     for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
-        ASSERT(!parse_analysis_test_program(
-            &m,
-            (string_value_t){invalid[i], goat_strlen(invalid[i]), false}));
+        ASSERT(
+            !parse_analysis_test_program(&m,
+                                         (string_value_t){invalid[i], STRLEN(invalid[i]), false}));
         destroy_arena(a);
     }
     return true;

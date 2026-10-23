@@ -9,7 +9,7 @@
 
 /** @brief Lowers +, - or * with explicit operand evaluation and numeric rounding. */
 c_generated_expression_t
-c_binary_arithmetic(const node_t *node, c_generation_context_t *context, goat_char_t operation);
+c_binary_arithmetic(const node_t *node, c_generation_context_t *context, gchar_t operation);
 /** @brief Lowers unary signs with saturating integer negation. */
 c_generated_expression_t
 c_unary_arithmetic(const node_t *node, c_generation_context_t *context, bool negative);

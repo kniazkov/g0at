@@ -46,11 +46,11 @@ static void deferred(node_t *node, code_builder_t *code, data_builder_t *data) {
 }
 
 /** @brief Destroys the source graph before running any generated code. */
-static bytecode_t *compile(const goat_char_t *source, const char *command) {
+static bytecode_t *compile(const gchar_t *source, const char *command) {
     arena_t *arena = create_arena(32);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, goat_strlen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     options_t *options = create_options();
     bytecode_t *result = NULL;
     if (root && !analyze(root, &memory, options, NULL)) {
@@ -73,14 +73,14 @@ static bytecode_t *compile(const goat_char_t *source, const char *command) {
     return result;
 }
 
-static object_t *variable(process_t *proc, const goat_char_t *name) {
-    object_t *key = create_string_object(proc, (string_value_t){name, goat_strlen(name), false});
+static object_t *variable(process_t *proc, const gchar_t *name) {
+    object_t *key = create_string_object(proc, (string_value_t){name, STRLEN(name), false});
     object_t *value = get_object_property(proc->main_thread->context->data, key);
     DECREF(key);
     return value;
 }
 
-static bool integer(process_t *proc, const goat_char_t *name, int64_t value) {
+static bool integer(process_t *proc, const gchar_t *name, int64_t value) {
     object_t *object = variable(proc, name);
     return object && is_integer_object(object) && get_object_integer_value(object).value == value;
 }
@@ -122,7 +122,7 @@ static bool dispatch(void) {
     return true;
 }
 
-static const goat_char_t *const recursion_source =
+static const gchar_t *const recursion_source =
     U"const f=func(n){if(n<=0)return 0;return f(n-1)+1;};"
     U"var hits=199;var extras=0;"
     U"var value=f(++hits,++extras);var small=f(3);func(){value;small;hits;extras;};";

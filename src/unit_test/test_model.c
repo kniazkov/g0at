@@ -34,11 +34,11 @@ static bytecode_t *create_test_bytecode(instruction_t *list, int count) {
 bool test_boolean_object() {
     object_t *obj1 = get_boolean_object(true);
     string_value_t value = convert_object_to_string(obj1);
-    ASSERT(goat_strcmp(U"true", value.data) == 0);
+    ASSERT(STRCMP(U"true", value.data) == 0);
     ASSERT(value.should_free == false);
     object_t *obj2 = get_boolean_object(false);
     value = convert_object_to_string(obj2);
-    ASSERT(goat_strcmp(U"false", value.data) == 0);
+    ASSERT(STRCMP(U"false", value.data) == 0);
     ASSERT(value.should_free == false);
     return true;
 }
@@ -47,7 +47,7 @@ bool test_integer_object() {
     process_t *proc = create_process();
     object_t *obj = create_integer_object(proc, -1024);
     string_value_t value = convert_object_to_string(obj);
-    ASSERT(goat_strcmp(U"-1024", value.data) == 0);
+    ASSERT(STRCMP(U"-1024", value.data) == 0);
     ASSERT(value.should_free);
     FREE_STRING(value);
     destroy_process(proc);
@@ -114,7 +114,7 @@ bool test_strings_concatenation() {
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
     string_value_t value = convert_object_to_string(result);
     ASSERT(value.data != NULL);
-    ASSERT(goat_strcmp(value.data, U"it works.") == 0);
+    ASSERT(STRCMP(value.data, U"it works.") == 0);
     ASSERT(value.length == 9);
     destroy_process(proc);
     free_bytecode(code);
@@ -142,19 +142,19 @@ bool test_properties() {
                            create_string_object(process, STATIC_STRING(U"boolean")),
                            true);
     object_t *clone = clone_object(process, obj);
-    const goat_char_t *expected =
+    const gchar_t *expected =
         U"{true:\"boolean\",3:\"three\",\"first\":\"one\",\"second\":\"two\"}";
     string_value_t str = convert_object_to_string(obj);
-    ASSERT(0 == goat_strcmp(str.data, expected));
+    ASSERT(0 == STRCMP(str.data, expected));
     FREE_STRING(str);
     str = convert_object_to_string(clone);
-    ASSERT(0 == goat_strcmp(str.data, expected));
+    ASSERT(0 == STRCMP(str.data, expected));
     FREE_STRING(str);
     object_t *key = create_string_object(process, STATIC_STRING(U"first"));
     object_t *value = get_object_property(obj, key);
     ASSERT(value != NULL);
     str = convert_object_to_string(value);
-    ASSERT(0 == goat_strcmp(str.data, U"one"));
+    ASSERT(0 == STRCMP(str.data, U"one"));
     FREE_STRING(str);
     key = create_string_object(process, STATIC_STRING(U"length"));
     value = get_object_property(value, key);
@@ -177,15 +177,15 @@ bool test_string_topology() {
     object_t *obj = create_string_object(process, STATIC_STRING(U"test"));
     object_array_t topology = get_object_topology(obj);
     ASSERT(topology.size = 2);
-    const goat_char_t *expected = U"{\"length\"=0;\"trim\"=trim;\"charAt\"=charAt;"
-                                  U"\"substring\"=substring;\"contains\"=contains;"
-                                  U"\"indexOf\"=indexOf;\"lastIndexOf\"=lastIndexOf;"
-                                  U"\"startsWith\"=startsWith;\"endsWith\"=endsWith;"
-                                  U"\"isEmpty\"=isEmpty;\"isBlank\"=isBlank;"
-                                  U"\"toUpperCase\"=toUpperCase;\"toLowerCase\"=toLowerCase;"
-                                  U"\"replace\"=replace;\"repeat\"=repeat;\"format\"=format}";
+    const gchar_t *expected = U"{\"length\"=0;\"trim\"=trim;\"charAt\"=charAt;"
+                              U"\"substring\"=substring;\"contains\"=contains;"
+                              U"\"indexOf\"=indexOf;\"lastIndexOf\"=lastIndexOf;"
+                              U"\"startsWith\"=startsWith;\"endsWith\"=endsWith;"
+                              U"\"isEmpty\"=isEmpty;\"isBlank\"=isBlank;"
+                              U"\"toUpperCase\"=toUpperCase;\"toLowerCase\"=toLowerCase;"
+                              U"\"replace\"=replace;\"repeat\"=repeat;\"format\"=format}";
     string_value_t str = convert_object_to_string(topology.items[0]);
-    ASSERT(0 == goat_strcmp(str.data, expected));
+    ASSERT(0 == STRCMP(str.data, expected));
     FREE_STRING(str);
     destroy_process(process);
     return true;
@@ -230,7 +230,7 @@ bool test_trim_function() {
     ASSERT(thread->data_stack->size == 1);
     object_t *result = pop_object_from_stack(thread->data_stack);
     string_value_t value = convert_object_to_string(result);
-    ASSERT(goat_strcmp(value.data, U"abcde") == 0 && value.length == 5);
+    ASSERT(STRCMP(value.data, U"abcde") == 0 && value.length == 5);
     FREE_STRING(value);
     DECREF(result);
 
@@ -261,7 +261,7 @@ bool test_instance_of_function() {
     DECREF(key);
 
     static const struct {
-        const goat_char_t *name;
+        const gchar_t *name;
         object_t *(*getter)(void);
     } types[] = {
         {U"Array", get_array_proto},
@@ -277,9 +277,8 @@ bool test_instance_of_function() {
     };
 
     for (size_t i = 0; i < sizeof(types) / sizeof(*types); i++) {
-        key = create_string_object(
-            proc,
-            (string_value_t){types[i].name, goat_strlen(types[i].name), false});
+        key = create_string_object(proc,
+                                   (string_value_t){types[i].name, STRLEN(types[i].name), false});
         ASSERT(get_object_property(get_root_context()->data, key) == types[i].getter());
         DECREF(key);
     }
@@ -434,7 +433,7 @@ bool test_context_cloning() {
     object_t *value = get_object_property(obj, key);
     ASSERT(value != NULL);
     string_value_t str = convert_object_to_string(value);
-    ASSERT(0 == goat_strcmp(str.data, U"5"));
+    ASSERT(0 == STRCMP(str.data, U"5"));
     FREE_STRING(str);
     destroy_process(proc);
     free_bytecode(code);

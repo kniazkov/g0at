@@ -41,7 +41,7 @@ static bool equal(const lattice_element_t *a, const lattice_element_t *b) {
         case LATTICE_STRING_CONSTANT: {
             string_view_t x = ((const string_constant_element_t *)a)->value;
             string_view_t y = ((const string_constant_element_t *)b)->value;
-            return x.length == y.length && (!x.length || !goat_memcmp(x.data, y.data, x.length));
+            return x.length == y.length && (!x.length || !MEMCMP(x.data, y.data, x.length));
         }
         case LATTICE_KNOWN_FUNCTION: {
             const known_function_element_t *x = (const known_function_element_t *)a;

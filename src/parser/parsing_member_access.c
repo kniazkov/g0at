@@ -25,8 +25,8 @@ parsing_member_access(token_t *op, parser_memory_t *memory, token_groups_t *grou
     }
     if (op->type == TOKEN_BRACKET_PAIR && op->text.data[0] == '['
         && (!left || (left->type != TOKEN_EXPRESSION && left->type != TOKEN_IDENTIFIER))) {
-        bool prototypes = op->right && op->right->type == TOKEN_OPERATOR
-                          && !goat_strcmp(op->right->text.data, U"->");
+        bool prototypes =
+            op->right && op->right->type == TOKEN_OPERATOR && !STRCMP(op->right->text.data, U"->");
         node_t *node = prototypes ? create_prototype_list_node(memory->graph)
                                   : create_array_node(memory->graph);
         op->type = prototypes ? TOKEN_PROTOTYPE_ITEMS : TOKEN_ARRAY_ITEMS;

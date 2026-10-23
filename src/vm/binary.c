@@ -29,18 +29,17 @@ static void write64(uint8_t *p, uint64_t value) {
 
 static uint64_t platform(void) {
     uint32_t endian = 1;
-    return sizeof(goat_char_t) | (uint64_t) * (uint8_t *)&endian << 8;
+    return sizeof(gchar_t) | (uint64_t) * (uint8_t *)&endian << 8;
 }
 
 static bool string_valid(const bytecode_t *code, uint32_t index) {
     if (index >= code->data_descriptor_count)
         return false;
     data_descriptor_t d = code->data_descriptors[index];
-    if (d.size < sizeof(goat_char_t) || d.size % sizeof(goat_char_t)
-        || d.offset % sizeof(goat_char_t))
+    if (d.size < sizeof(gchar_t) || d.size % sizeof(gchar_t) || d.offset % sizeof(gchar_t))
         return false;
-    const goat_char_t *text = (const goat_char_t *)(code->data + d.offset);
-    size_t length = d.size / sizeof(goat_char_t);
+    const gchar_t *text = (const gchar_t *)(code->data + d.offset);
+    size_t length = d.size / sizeof(gchar_t);
     if (text[length - 1])
         return false;
     for (size_t i = 0; i + 1 < length; ++i)

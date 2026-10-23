@@ -31,10 +31,10 @@ static void boundaries(const goat_native_context_v2_t *context) {
     assert(goat_native_string_format(context, V(U"%0"), NULL, 1, &out) == GOAT_NATIVE_BAD_REQUEST);
     assert(!out.data);
     /* Zero-terminated data is not a precondition of views. Embedded zeros are data. */
-    const goat_char_t units[] = {U'a', 0, U'b'};
+    const gchar_t units[] = {U'a', 0, U'b'};
     goat_native_string_view_v2_t raw = {units, 3};
     assert(goat_native_string_copy(context, raw, &out) == GOAT_NATIVE_OK);
-    assert(out.length == 3 && !goat_memcmp(out.data, units, 3) && out.data[3] == 0);
+    assert(out.length == 3 && !MEMCMP(out.data, units, 3) && out.data[3] == 0);
     goat_native_string_view_v2_t slice = {out.data + 1, 2};
     goat_native_string_buffer_v2_t joined = {0};
     assert(goat_native_string_concat(context, slice, slice, &joined) == GOAT_NATIVE_OK);
@@ -62,7 +62,7 @@ static void boundaries(const goat_native_context_v2_t *context) {
     assert(goat_native_string_to_lower_case(&old, V(U"X"), &out) == GOAT_NATIVE_ABI_MISMATCH);
     assert(goat_native_string_copy(NULL, V(U"x"), &out) == GOAT_NATIVE_ABI_MISMATCH);
     assert(goat_native_str_i64(context, INT64_MIN, &out) == GOAT_NATIVE_OK);
-    assert(out.length == 20 && !goat_strcmp(out.data, U"-9223372036854775808"));
+    assert(out.length == 20 && !STRCMP(out.data, U"-9223372036854775808"));
     goat_native_string_release(context, &out);
     assert(goat_native_str_f64(NULL, 1.0, &out) == GOAT_NATIVE_ABI_MISMATCH);
     assert(!out.data);

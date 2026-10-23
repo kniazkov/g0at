@@ -132,7 +132,7 @@ bool test_optimization_modes() {
 
 bool test_optimized_if_bytecode() {
     struct {
-        const goat_char_t *source;
+        const gchar_t *source;
         size_t jumps, stores, pops, functions;
     } cases[] = {{U"if (true) { } else { }", 0, 0, 1, 0},
                  {U"if ((true)) { }", 0, 0, 1, 0},
@@ -151,7 +151,7 @@ bool test_optimized_if_bytecode() {
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root = parse_analysis_test_program(
             &memory,
-            (string_value_t){cases[c].source, goat_strlen(cases[c].source), false});
+            (string_value_t){cases[c].source, STRLEN(cases[c].source), false});
         ASSERT(root);
         options_t *options = create_options();
         ASSERT(!analyze(root, &memory, options, NULL));
@@ -173,9 +173,9 @@ bool test_optimized_if_bytecode() {
 
 bool test_unused_bindings() {
     struct {
-        const goat_char_t *source;
+        const gchar_t *source;
         size_t vars, stores, calls;
-        const goat_char_t *printed;
+        const gchar_t *printed;
     } cases[] = {
         {U"a=2;b=3;x=a+b;println(x);", 0, 0, 1, U"println(5);"},
         {U"var a=1;var b=a;const c=b;", 0, 0, 0, U""},
@@ -211,7 +211,7 @@ bool test_unused_bindings() {
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root = parse_analysis_test_program(
             &memory,
-            (string_value_t){cases[i].source, goat_strlen(cases[i].source), false});
+            (string_value_t){cases[i].source, STRLEN(cases[i].source), false});
         options_t *options = create_options();
         ASSERT(root && !analyze(root, &memory, options, NULL));
         code_builder_t *code = create_code_builder();
@@ -221,7 +221,7 @@ bool test_unused_bindings() {
         ASSERT(opcode_count(code, STORE) == cases[i].stores);
         ASSERT(opcode_count(code, CALL) == cases[i].calls);
         string_value_t printed = generate_goat_code_from_node(root);
-        ASSERT(!goat_strcmp(printed.data, cases[i].printed));
+        ASSERT(!STRCMP(printed.data, cases[i].printed));
         FREE_STRING(printed);
         if (i == 0) {
             ASSERT(code->size == 5 && code->instructions[0].opcode == ILOAD32
@@ -229,8 +229,8 @@ bool test_unused_bindings() {
             const node_t *deleted = get_node_child(get_node_child(root, 0), 0);
             ASSERT(is_deletion(deleted) && get_node_child_count(deleted) == 1);
             string_value_t dot = generate_graph_dot(root);
-            ASSERT(goat_strstr(dot.data, U"darkred") && goat_strstr(dot.data, U"#ffe5e5"));
-            ASSERT(goat_strstr(dot.data, U"midnightblue") && goat_strstr(dot.data, U"#eaf1fa"));
+            ASSERT(STRSTR(dot.data, U"darkred") && STRSTR(dot.data, U"#ffe5e5"));
+            ASSERT(STRSTR(dot.data, U"midnightblue") && STRSTR(dot.data, U"#eaf1fa"));
             FREE_STRING(dot);
             options->optimization_level = OPTIMIZATION_NONE;
             ASSERT(!analyze(root, &memory, options, NULL));
@@ -269,11 +269,11 @@ static string_value_t read_captured_file(FILE *file) {
  * The stdout produced by the program is returned as a decoded string; NULL_STRING_VALUE
  * indicates a compile error, an uncaught exception, or an I/O failure.
  */
-static string_value_t run_captured_program(const goat_char_t *source, const goat_char_t *input) {
+static string_value_t run_captured_program(const gchar_t *source, const gchar_t *input) {
     arena_t *arena = create_arena(16);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, goat_strlen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     string_value_t output = NULL_STRING_VALUE;
     if (root) {
         options_t *options = create_options();
@@ -328,11 +328,11 @@ static string_value_t run_captured_program(const goat_char_t *source, const goat
 
 bool test_printed_source_recompiles() {
     struct {
-        const goat_char_t *source;
-        const goat_char_t *input;
-        const goat_char_t *single;
-        const goat_char_t *indented;
-        const goat_char_t *output;
+        const gchar_t *source;
+        const gchar_t *input;
+        const gchar_t *single;
+        const gchar_t *indented;
+        const gchar_t *output;
     } cases[] = {
         {U"for (var a=println(1), b=println(2); false;) {}",
          NULL,
@@ -393,33 +393,33 @@ bool test_printed_source_recompiles() {
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
         string_value_t output = run_captured_program(cases[i].source, cases[i].input);
-        ASSERT(output.data && !goat_strcmp(output.data, cases[i].output));
+        ASSERT(output.data && !STRCMP(output.data, cases[i].output));
         FREE_STRING(output);
 
         arena_t *arena = create_arena(16);
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root = parse_analysis_test_program(
             &memory,
-            (string_value_t){cases[i].source, goat_strlen(cases[i].source), false});
+            (string_value_t){cases[i].source, STRLEN(cases[i].source), false});
         ASSERT(root);
         options_t *options = create_options();
         ASSERT(!analyze(root, &memory, options, NULL));
 
         string_value_t single = generate_goat_code_from_node(root);
-        ASSERT(!goat_strcmp(single.data, cases[i].single));
+        ASSERT(!STRCMP(single.data, cases[i].single));
         FREE_STRING(single);
 
         source_builder_t *builder = create_source_builder();
         generate_indented_goat_code_from_node(root, builder, 0);
         string_value_t indented = build_source(builder);
-        ASSERT(!goat_strcmp(indented.data, cases[i].indented));
+        ASSERT(!STRCMP(indented.data, cases[i].indented));
         FREE_STRING(indented);
         destroy_source_builder(builder);
 
-        const goat_char_t *forms[] = {cases[i].single, cases[i].indented};
+        const gchar_t *forms[] = {cases[i].single, cases[i].indented};
         for (size_t f = 0; f < 2; f++) {
             string_value_t again = run_captured_program(forms[f], cases[i].input);
-            ASSERT(again.data && !goat_strcmp(again.data, cases[i].output));
+            ASSERT(again.data && !STRCMP(again.data, cases[i].output));
             FREE_STRING(again);
         }
         destroy_options(options);

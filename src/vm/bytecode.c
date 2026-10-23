@@ -16,9 +16,9 @@
 
 /** @brief Describes the properties of a bytecode instruction. */
 typedef struct {
-    const goat_char_t *code; /**< The opcode name as a wide-character string. */
-    bool has_flags;          /**< Indicates if the instruction has flag bits. */
-    bool has_arg_0;          /**< Indicates if the instruction has a first argument (`arg0`). */
+    const gchar_t *code; /**< The opcode name as a wide-character string. */
+    bool has_flags;      /**< Indicates if the instruction has flag bits. */
+    bool has_arg_0;      /**< Indicates if the instruction has a first argument (`arg0`). */
     bool arg_1_is_unsigned_integer; /**< Indicates if `arg1` is an unsigned integer. */
     bool arg_1_is_signed_integer;   /**< Indicates if `arg1` is a signed integer. */
     bool arg_1_is_string;           /**< Indicates if `arg1` is a string reference. */
@@ -137,7 +137,7 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
         }
 
         // 2. opcode
-        size_t opcode_size = goat_strlen(descr.code);
+        size_t opcode_size = STRLEN(descr.code);
         append_substring(&builder, descr.code, opcode_size);
         append_repeated_char(&builder, U' ', OPCODE_COLUMN_SIZE - opcode_size - 1);
 
@@ -175,8 +175,8 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
                 data_descriptor_t data = code->data_descriptors[instr.arg1];
                 string_value_t str = string_to_string_notation(
                     U"",
-                    (string_value_t){(goat_char_t *)(code->data + data.offset),
-                                     data.size / sizeof(goat_char_t) - 1,
+                    (string_value_t){(gchar_t *)(code->data + data.offset),
+                                     data.size / sizeof(gchar_t) - 1,
                                      false});
                 append_char(&builder, U' ');
                 append_string_value(&builder, str);

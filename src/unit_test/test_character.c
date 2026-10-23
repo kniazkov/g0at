@@ -32,31 +32,31 @@ bool test_character_scanner() {
                                      STATIC_STRING(U"'a' '\\n' '\\'' '' 'ab' '\\q'"),
                                      &memory,
                                      &groups);
-    const goat_char_t *notations[] = {U"'a'", U"'\\n'", U"'\\''"};
+    const gchar_t *notations[] = {U"'a'", U"'\\n'", U"'\\''"};
     for (size_t i = 0; i < 3; i++) {
         token_t *tok = get_token(scan);
         ASSERT(tok && tok->type == TOKEN_EXPRESSION && tok->node != NULL);
         ASSERT(tok->node->vtbl->type == NODE_CHARACTER);
         string_value_t code = generate_goat_code_from_node(tok->node);
-        ASSERT(!goat_strcmp(code.data, notations[i]));
+        ASSERT(!STRCMP(code.data, notations[i]));
         FREE_STRING(code);
     }
     token_t *tok = get_token(scan);
     ASSERT(tok && tok->type == TOKEN_ERROR);
-    ASSERT(!goat_strcmp(tok->text.data, get_messages()->empty_character_literal));
+    ASSERT(!STRCMP(tok->text.data, get_messages()->empty_character_literal));
     tok = get_token(scan);
     ASSERT(tok && tok->type == TOKEN_ERROR);
-    ASSERT(!goat_strcmp(tok->text.data, get_messages()->invalid_character_literal));
+    ASSERT(!STRCMP(tok->text.data, get_messages()->invalid_character_literal));
     tok = get_token(scan);
     ASSERT(tok && tok->type == TOKEN_ERROR);
     string_view_t formatted =
         format_string_to_arena(arena, get_messages()->invalid_escape_sequence, U'q');
-    ASSERT(!goat_strcmp(tok->text.data, formatted.data));
-    const goat_char_t *valid[] = {U"'\\0'", U"'\\U0001F600'", U"'\\Uffffffff'"};
+    ASSERT(!STRCMP(tok->text.data, formatted.data));
+    const gchar_t *valid[] = {U"'\\0'", U"'\\U0001F600'", U"'\\Uffffffff'"};
     const uint32_t codes[] = {0, 0x1F600, UINT32_MAX};
     for (size_t i = 0; i < 3; i++) {
         scan = create_scanner("program.goat",
-                              (string_value_t){valid[i], goat_strlen(valid[i]), false},
+                              (string_value_t){valid[i], STRLEN(valid[i]), false},
                               &memory,
                               &groups);
         tok = get_token(scan);
@@ -65,10 +65,10 @@ bool test_character_scanner() {
         ASSERT(value->type == LATTICE_CHAR_CONSTANT);
         ASSERT(((const char_constant_element_t *)value)->value == codes[i]);
     }
-    const goat_char_t *invalid[] = {U"'\\U123'", U"'\\U0000000g'", U"'\\U000000001'", U"'\\U"};
+    const gchar_t *invalid[] = {U"'\\U123'", U"'\\U0000000g'", U"'\\U000000001'", U"'\\U"};
     for (size_t i = 0; i < 4; i++) {
         scan = create_scanner("program.goat",
-                              (string_value_t){invalid[i], goat_strlen(invalid[i]), false},
+                              (string_value_t){invalid[i], STRLEN(invalid[i]), false},
                               &memory,
                               &groups);
         tok = get_token(scan);
@@ -84,10 +84,10 @@ bool test_character_object() {
     ASSERT(is_character_object(a));
     ASSERT(a->vtbl->type == TYPE_CHARACTER);
     string_value_t text = convert_object_to_string(a);
-    ASSERT(!goat_strcmp(text.data, U"a"));
+    ASSERT(!STRCMP(text.data, U"a"));
     FREE_STRING(text);
     text = convert_object_to_string_notation(a);
-    ASSERT(!goat_strcmp(text.data, U"'a'"));
+    ASSERT(!STRCMP(text.data, U"'a'"));
     FREE_STRING(text);
     int_value_t integer = get_object_integer_value(a);
     ASSERT(integer.has_value && integer.value == U'a');
@@ -95,7 +95,7 @@ bool test_character_object() {
 
     object_t *newline = create_character_object(proc, U'\n');
     text = convert_object_to_string_notation(newline);
-    ASSERT(!goat_strcmp(text.data, U"'\\n'"));
+    ASSERT(!STRCMP(text.data, U"'\\n'"));
     FREE_STRING(text);
 
     object_t *b = create_character_object(proc, U'b');
@@ -116,14 +116,14 @@ bool test_character_object() {
     ASSERT(!result.is_exception);
     ASSERT(result.value->vtbl->type == TYPE_STRING);
     text = convert_object_to_string(result.value);
-    ASSERT(!goat_strcmp(text.data, U"ab"));
+    ASSERT(!STRCMP(text.data, U"ab"));
     FREE_STRING(text);
 
     object_t *str = create_string_object(proc, STATIC_STRING(U"c"));
     result = add_objects(proc, a, str);
     ASSERT(!result.is_exception);
     text = convert_object_to_string(result.value);
-    ASSERT(!goat_strcmp(text.data, U"ac"));
+    ASSERT(!STRCMP(text.data, U"ac"));
     FREE_STRING(text);
     destroy_process(proc);
     return true;

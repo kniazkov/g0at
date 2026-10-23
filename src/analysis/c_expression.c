@@ -138,7 +138,7 @@ bool c_numeric_operands(const node_t *node, const c_expression_context_t *contex
     return get_node_child_count(node) != 0;
 }
 
-const goat_char_t *c_expression_type_name(c_value_type_t type) {
+const gchar_t *c_expression_type_name(c_value_type_t type) {
     return type == C_VALUE_INT64    ? U"int64"
            : type == C_VALUE_DOUBLE ? U"double"
            : type == C_VALUE_BOOL   ? U"bool"

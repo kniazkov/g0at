@@ -56,7 +56,7 @@ bool test_reachability_flags() {
     ASSERT(event && !event->declarator && !event->value && event->row == 2);
     ASSERT(!find_analysis_event(collector, event, &query));
     string_value_t text = analysis_collector_to_text(collector);
-    ASSERT(goat_strstr(text.data, U"test.goat, 2.12: unreachable statement expression"));
+    ASSERT(STRSTR(text.data, U"test.goat, 2.12: unreachable statement expression"));
     FREE_STRING(text);
     /* Re-running proofs resets old flags, including untouched function bodies. */
     get_node_child(root, 2)->flags |= NODE_FLAG_UNREACHABLE;
@@ -104,19 +104,19 @@ bool test_reachability_bytecode() {
 }
 
 bool test_reachability_bytecode_boundaries() {
-    const goat_char_t *sources[] = {U"if (false) { var x = 99; }",
-                                    U"if (true) { } else { var x = 99; }",
-                                    U"if (1 < 2) { return; } else { return; } var x = 99;",
-                                    U"var a = { return; }, b = 99;",
-                                    U"const a = { return; }, b = 99;",
-                                    U"var f = func(a, b) {}; f({ return; }, 99);",
-                                    U"return; var f = func() { return 99; };"};
+    const gchar_t *sources[] = {U"if (false) { var x = 99; }",
+                                U"if (true) { } else { var x = 99; }",
+                                U"if (1 < 2) { return; } else { return; } var x = 99;",
+                                U"var a = { return; }, b = 99;",
+                                U"const a = { return; }, b = 99;",
+                                U"var f = func(a, b) {}; f({ return; }, 99);",
+                                U"return; var f = func() { return 99; };"};
     for (size_t c = 0; c < sizeof(sources) / sizeof(*sources); c++) {
         arena_t *arena = create_arena(16);
         parser_memory_t memory = {arena, arena, arena, arena};
-        node_t *root = parse_analysis_test_program(
-            &memory,
-            (string_value_t){sources[c], goat_strlen(sources[c]), false});
+        node_t *root =
+            parse_analysis_test_program(&memory,
+                                        (string_value_t){sources[c], STRLEN(sources[c]), false});
         ASSERT(root);
         options_t *options = create_options();
         ASSERT(!analyze(root, &memory, options, NULL));
@@ -149,16 +149,15 @@ bool test_reachability_graph() {
     options_t *options = create_options();
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t dot = generate_graph_dot(root);
-    ASSERT(goat_strstr(dot.data, U"fontcolor=gray70 tooltip=\"unreachable\""));
-    ASSERT(
-        goat_strstr(dot.data, U"color=forestgreen style=\"rounded,filled\" fillcolor=\"#f2faf2\""));
-    ASSERT(goat_strstr(dot.data, U"color=black style=\"rounded,filled\" fillcolor=\"#f2faf2\""));
-    ASSERT(goat_strstr(dot.data, U"color=lightgray fontcolor=gray70 tooltip=\"unreachable\"];"));
-    ASSERT(goat_strstr(dot.data, U"font color='gray70'>\"dead\"</font>"));
-    ASSERT(goat_strstr(dot.data, U"color=lightgray fontcolor=gray70"));
-    ASSERT(goat_strstr(dot.data, U"style=dashed, color=lightgray, fontcolor=gray70"));
-    ASSERT(goat_strstr(dot.data, U"style=dashed, color=navy, fontcolor=black"));
-    ASSERT(goat_strstr(dot.data, U"color=black"));
+    ASSERT(STRSTR(dot.data, U"fontcolor=gray70 tooltip=\"unreachable\""));
+    ASSERT(STRSTR(dot.data, U"color=forestgreen style=\"rounded,filled\" fillcolor=\"#f2faf2\""));
+    ASSERT(STRSTR(dot.data, U"color=black style=\"rounded,filled\" fillcolor=\"#f2faf2\""));
+    ASSERT(STRSTR(dot.data, U"color=lightgray fontcolor=gray70 tooltip=\"unreachable\"];"));
+    ASSERT(STRSTR(dot.data, U"font color='gray70'>\"dead\"</font>"));
+    ASSERT(STRSTR(dot.data, U"color=lightgray fontcolor=gray70"));
+    ASSERT(STRSTR(dot.data, U"style=dashed, color=lightgray, fontcolor=gray70"));
+    ASSERT(STRSTR(dot.data, U"style=dashed, color=navy, fontcolor=black"));
+    ASSERT(STRSTR(dot.data, U"color=black"));
     FREE_STRING(dot);
     destroy_options(options);
     destroy_arena(arena);

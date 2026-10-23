@@ -32,7 +32,7 @@ void native_compiler_read_diagnostics(native_compile_result_t *result, const cha
 
 #if !defined(__linux__) && !defined(_WIN32)
 native_compile_result_t
-compile_native_library(const goat_char_t *source, const char *compiler, const char *destination) {
+compile_native_library(const gchar_t *source, const char *compiler, const char *destination) {
     (void)source;
     (void)compiler;
     (void)destination;

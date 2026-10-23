@@ -35,11 +35,11 @@ static void deferred(node_t *node, code_builder_t *code, data_builder_t *data) {
 }
 
 /** @brief Releases every analysis arena before any VM execution. */
-static bytecode_t *compile(const goat_char_t *source) {
+static bytecode_t *compile(const gchar_t *source) {
     arena_t *arena = create_arena(32);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, goat_strlen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     options_t *options = create_options();
     options->optimization_level = OPTIMIZATION_NONE;
     bytecode_t *result = NULL;
@@ -81,14 +81,14 @@ static int64_t calls(void) {
     return value.value.integer;
 }
 
-static object_t *variable(process_t *proc, const goat_char_t *name) {
-    object_t *key = create_string_object(proc, (string_value_t){name, goat_strlen(name), false});
+static object_t *variable(process_t *proc, const gchar_t *name) {
+    object_t *key = create_string_object(proc, (string_value_t){name, STRLEN(name), false});
     object_t *value = get_object_property(proc->main_thread->context->data, key);
     DECREF(key);
     return value;
 }
 
-static bool integer_variable(process_t *proc, const goat_char_t *name, int64_t expected) {
+static bool integer_variable(process_t *proc, const gchar_t *name, int64_t expected) {
     object_t *value = variable(proc, name);
     return value && is_integer_object(value) && get_object_integer_value(value).value == expected;
 }
@@ -232,12 +232,12 @@ static bool native_without_context(void) {
 
 static bool backend_failures(void) {
     for (unsigned mode = 0; mode <= 8; mode++) {
-        goat_char_t source[240];
-        goat_snprintf(source,
-                      240,
-                      U"var f=func(n){throw 123;};var caught=false;"
-                      U"try {f(%u);} catch(e){caught=true;}",
-                      mode);
+        gchar_t source[240];
+        SNPRINTF(source,
+                 240,
+                 U"var f=func(n){throw 123;};var caught=false;"
+                 U"try {f(%u);} catch(e){caught=true;}",
+                 mode);
         bytecode_t *code = compile(source);
         ASSERT(code && bind_function(code, 0, 4));
         process_t *proc = create_process();

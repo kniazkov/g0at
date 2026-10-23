@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 
-const goat_char_t *c_type_name(c_value_type_t type) {
+const gchar_t *c_type_name(c_value_type_t type) {
     return type == C_VALUE_INT64    ? U"int64_t"
            : type == C_VALUE_DOUBLE ? U"double"
            : type == C_VALUE_BOOL   ? U"bool"

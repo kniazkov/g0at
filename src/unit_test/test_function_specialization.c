@@ -155,7 +155,7 @@ bool test_function_signature_calls() {
     analysis_collector_t *again = create_analysis_collector(arena);
     ASSERT(!analyze(root, &memory, options, again));
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!goat_strcmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     FREE_STRING(after);
     query.row = 1;
     size_t count = 0;

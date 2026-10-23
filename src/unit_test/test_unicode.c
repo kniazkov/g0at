@@ -22,10 +22,10 @@ bool test_unicode_strings(void) {
     string_value_t copy = append_string_value(&builder, value);
     ASSERT(string_view_equals(VALUE_TO_VIEW(copy), VALUE_TO_VIEW(value)));
     /* Nonterminated slices and self-append across a reallocation. */
-    const goat_char_t slice[] = {U'x', 0, U'y'};
+    const gchar_t slice[] = {U'x', 0, U'y'};
     copy = append_substring(&builder, slice, 3);
     copy = append_substring(&builder, builder.data, builder.length);
-    ASSERT(copy.length == 20 && !goat_memcmp(copy.data, copy.data + 10, 10));
+    ASSERT(copy.length == 20 && !MEMCMP(copy.data, copy.data + 10, 10));
     FREE_STRING(copy);
     size_t bytes;
     char *utf8 = encode_utf8_view(VALUE_TO_VIEW(value), &bytes);
@@ -49,7 +49,7 @@ bool test_unicode_strings(void) {
     ASSERT(copy.length == 12 && copy.data[10] == U'4' && copy.data[11] == U'2');
     FREE_STRING(copy);
     copy = string_to_string_notation(U"", STATIC_STRING(U"A\0B"));
-    ASSERT(!goat_strcmp(copy.data, U"\"A\\0B\""));
+    ASSERT(!STRCMP(copy.data, U"\"A\\0B\""));
     FREE_STRING(copy);
     string_view_t a = VALUE_TO_VIEW(STATIC_STRING(U"A"));
     string_view_t b = VALUE_TO_VIEW(STATIC_STRING(U"A\0B"));
@@ -69,8 +69,8 @@ bool test_unicode_case(void) {
     const char *locales[] = {"C", "C.UTF-8", "en_US.UTF-8", "tr_TR.UTF-8", ""};
     for (size_t i = 0; i < sizeof(locales) / sizeof(*locales); ++i) {
         setlocale(LC_ALL, locales[i]);
-        goat_char_t *end;
-        ASSERT(goat_strtod(U"1.5tail", &end) == 1.5 && *end == U't');
+        gchar_t *end;
+        ASSERT(STRTOD(U"1.5tail", &end) == 1.5 && *end == U't');
         char number[32];
         double_to_string(1.5, number, sizeof(number));
         ASSERT(!strcmp(number, "1.5"));
@@ -86,8 +86,8 @@ bool test_unicode_case(void) {
         ASSERT(!strcmp(number, "nan"));
         double_to_string(123.5, number, 3);
         ASSERT(!strcmp(number, "12"));
-        ASSERT(goat_simple_upper(0xdf) == 0xdf);
-        ASSERT(goat_simple_lower(0x10400) == 0x10428);
+        ASSERT(TOUPPER(0xdf) == 0xdf);
+        ASSERT(TOLOWER(0x10400) == 0x10428);
         string_value_t upper =
             unicode_string_case(VALUE_TO_VIEW(STATIC_STRING(U"aß\0я\U00010428")), true);
         ASSERT(string_view_equals(VALUE_TO_VIEW(upper),
@@ -146,8 +146,8 @@ bool test_unicode_binary(void) {
         binary_program_t loaded = load_binary_program(path);
         ASSERT((loaded.code != NULL) == (test == 0));
         if (loaded.code) {
-            const goat_char_t *s = (const goat_char_t *)loaded.code->data;
-            ASSERT(!goat_memcmp(s, text.data, text.length));
+            const gchar_t *s = (const gchar_t *)loaded.code->data;
+            ASSERT(!MEMCMP(s, text.data, text.length));
             ASSERT((const uint8_t *)s >= (const uint8_t *)loaded.code->buffer);
             ASSERT((const uint8_t *)(s + text.length + 1)
                    <= (const uint8_t *)loaded.code->buffer + loaded.code->buffer_size);

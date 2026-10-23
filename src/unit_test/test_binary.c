@@ -61,7 +61,7 @@ bool test_binary_roundtrip(void) {
     ASSERT(!memcmp(loaded.code->buffer, code->buffer, code->buffer_size));
     ASSERT(loaded.code->instructions_count == 3 && loaded.code->data_descriptor_count == 1);
     ASSERT(!loaded.code->native_functions);
-    ASSERT(!goat_strcmp((const goat_char_t *)loaded.code->data, U"Unicode: \u03bb\u0416"));
+    ASSERT(!STRCMP((const gchar_t *)loaded.code->data, U"Unicode: \u03bb\u0416"));
     destroy_binary_program(&loaded);
     free_bytecode(code);
     ASSERT(!remove(filename));
@@ -211,7 +211,7 @@ bool test_binary_rejection(void) {
         ASSERT(rejected(copy, size));
     }
     memcpy(copy, bytes, size);
-    copy[size - sizeof(goat_char_t)] = 1; /* Missing string terminator. */
+    copy[size - sizeof(gchar_t)] = 1; /* Missing string terminator. */
     put64(copy, 56, 0);
     put64(copy, 56, binary_checksum(copy, size));
     ASSERT(rejected(copy, size));

@@ -44,7 +44,7 @@ static node_t *child(const node_t *node, size_t index) {
     return index < child_count(node) ? binop_get_child(node, index) : NULL;
 }
 
-static const goat_char_t *tag(const node_t *node, size_t index) {
+static const gchar_t *tag(const node_t *node, size_t index) {
     return index < child_count(node) ? (index ? U"right" : U"left") : NULL;
 }
 
@@ -92,7 +92,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     return lattice_bitwise(arena, left, right, node_bitwise_kind(type));
 }
 
-static const goat_char_t *symbol(node_type_t type) {
+static const gchar_t *symbol(node_type_t type) {
     switch (type) {
         case NODE_LOGICAL_NOT:
             return U"!";
@@ -157,7 +157,7 @@ static string_value_t generate_goat_code(const node_t *node) {
         result = format_string(U"%s %s %s", left.data, symbol(node->vtbl->type), right.data);
         FREE_STRING(right);
     } else {
-        const goat_char_t *op = symbol(node->vtbl->type);
+        const gchar_t *op = symbol(node->vtbl->type);
         result = left.data[0] == op[0] ? format_string(U"%s %s", op, left.data)
                                        : format_string(U"%s%s", op, left.data);
     }
