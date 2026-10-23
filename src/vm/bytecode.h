@@ -72,12 +72,12 @@ _Static_assert(_Alignof(instruction_t) <= 8 && _Alignof(data_descriptor_t) <= 8
 typedef struct native_function_descriptor_t native_function_descriptor_t;
 
 /** @brief File-local declaration identity is its data descriptor index, never a C address.
- * module is currently zero (the program module); future loaders may introduce a module table.
+ * file is the local file-table index; runtime identities live outside the image.
  */
 typedef struct {
     uint32_t tag;
     uint32_t name;
-    uint32_t module;
+    uint32_t file;
     uint32_t modifier;
 } declaration_descriptor_t;
 

@@ -110,7 +110,7 @@ static bool declaration_rejection(void) {
     destroy_data_builder(data);
     instruction_t original = ((instruction_t *)code->instructions)[0];
     data_descriptor_t descriptor = ((data_descriptor_t *)code->data_descriptors)[id];
-    for (unsigned test = 0; test < 12; test++) {
+    for (unsigned test = 0; test < 13; test++) {
         declaration_descriptor_t altered = declaration;
         ((instruction_t *)code->instructions)[0] = original;
         ((instruction_t *)code->instructions)[1].opcode = BLOAD;
@@ -123,7 +123,7 @@ static bool declaration_rejection(void) {
                 altered.name = UINT32_MAX;
                 break;
             case 3:
-                altered.module = 1;
+                altered.file = 1;
                 break;
             case 4:
                 altered.modifier = 99;
@@ -147,6 +147,9 @@ static bool declaration_rejection(void) {
                 ((instruction_t *)code->instructions)[1].opcode =
                     DCONST; /* Duplicate declaration identity. */
                 break;
+            case 12:
+                altered.modifier = ACCESS_MODULE;
+                break;
             case 11:
                 altered.name = id; /* Metadata is not a name string. */
                 break;
@@ -154,7 +157,7 @@ static bool declaration_rejection(void) {
         memcpy((uint8_t *)code->data + descriptor.offset, &altered, sizeof(altered));
         ASSERT(save_binary_program(filename, code, NULL));
         binary_program_t loaded = load_binary_program(filename);
-        ASSERT((loaded.code != NULL) == (test == 0));
+        ASSERT((loaded.code != NULL) == (test == 0 || test == 12));
         destroy_binary_program(&loaded);
     }
     free_bytecode(code);

@@ -223,7 +223,7 @@ bool get_bytecode_declaration(const bytecode_t *code,
         || d.size > code->buffer_size - prefix - d.offset)
         return false;
     memcpy(out, code->data + d.offset, sizeof(*out));
-    return out->tag == DECLARATION_TAG && out->module == 0 && out->modifier >= ACCESS_PUBLIC
+    return out->tag == DECLARATION_TAG && out->file < code->file_count
            && out->modifier <= ACCESS_PRIVATE && out->name < code->data_descriptor_count;
 }
 
