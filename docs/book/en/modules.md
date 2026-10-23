@@ -2077,7 +2077,7 @@ Validate bytecode structure and references before executing any user code. For e
 
 ### 121. Architecture-independent bytecode
 
-Bytecode inside .gbin uses fixed-width numeric fields and little-endian encoding, without serialized C structures, pointers, or platform-dependent size_t. For example, the same geometry.gbin without native libraries must execute on Windows x64 and Linux ARM64 without rebuilding when the interpreter supports its bytecode version. The loader converts the file representation into its internal representation. This is a format requirement, not a claim that rewriting is necessary: inspect the existing format during implementation and reuse its existing portability properties.
+Bytecode inside .gbin uses fixed-width numeric fields and little-endian encoding, without serialized C structures, pointers, or platform-dependent size_t. For example, the same geometry.gbin without native libraries must execute on Windows x64 and Linux ARM64 without rebuilding when the interpreter supports its bytecode version. After validation, the loader establishes pointers into the loaded buffer; the file layout is designed for direct use under #250/#251. Inspect the existing format during implementation and reuse its existing portability properties.
 
 ### 122. Cross-check metadata against bytecode
 
@@ -4058,3 +4058,13 @@ Retain the existing trailing zero in representations whose contracts require it,
 At external boundaries where zero is forbidden or causes truncation (in particular paths and arguments to NUL-terminated system APIs), inspect the entire input range and report an error before calling the API. Silent truncation is forbidden. Length-aware text/binary conversions preserve representable embedded zeros; diagnostic escaping retains the string suffix.
 
 Acceptance: zeros at the beginning, middle and end of contents, repeated zeros and all-zero strings; comparison distinguishes A from A/U+0000/B and hashing processes all contents; copying, search, builders, formatting and encoding conversions retain data after zero. Test static U-literals containing zero, bytecode save/load round trips without transcoding and rejection before a system operation can use a truncated path.
+
+## Portable case conversion (#250)
+
+String uppercase and lowercase operations follow full, locale-independent Unicode mappings, including one-to-many and contextual rules. For example, uppercasing the string ß produces SS. Output length may differ from input length; allocation and construction account for this with overflow checks. Processing uses explicit length, including content after U+0000.
+
+An individual-character operation uses the simple one-to-one Unicode mapping. If no such mapping exists, preserve the character. Never obtain a character result by truncating a full string mapping to its first element. String conversion is not merely a loop of these individual-character operations.
+
+Use tables and rules from one explicitly pinned Unicode Character Database version. Record the version, source data and reproducible table-generation procedure in the repository when implementing #250; builds must not fetch a floating latest version. Compiler constant folding, the VM and native execution use the same rules. Results do not depend on the OS, system towupper/towlower, installed locales or setlocale. This decision does not introduce language-specific modes; Unicode normalization and case folding do not substitute for case conversion.
+
+Acceptance covers ASCII, Cyrillic, string expansion from ß to SS, simple individual-character mappings without truncation, contextual Greek sigma conversion, non-BMP characters, empty strings, embedded zeros and output growth. Verify identical results under different system locales on Windows/Linux and across constant folding, VM and native execution.
