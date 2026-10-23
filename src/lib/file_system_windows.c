@@ -297,8 +297,14 @@ static HANDLE open_child(HANDLE parent, wchar_t *name, DWORD access) {
                                         ULONG);
     typedef ULONG(WINAPI * error_fn)(NTSTATUS);
     HMODULE module = GetModuleHandleW(L"ntdll.dll");
-    create_fn create = (create_fn)(void *)GetProcAddress(module, "NtCreateFile");
-    error_fn convert = (error_fn)(void *)GetProcAddress(module, "RtlNtStatusToDosError");
+    FARPROC create_address = GetProcAddress(module, "NtCreateFile");
+    FARPROC error_address = GetProcAddress(module, "RtlNtStatusToDosError");
+    create_fn create;
+    error_fn convert;
+    _Static_assert(sizeof(create) == sizeof(create_address), "Windows function pointers");
+    _Static_assert(sizeof(convert) == sizeof(error_address), "Windows function pointers");
+    memcpy(&create, &create_address, sizeof(create));
+    memcpy(&convert, &error_address, sizeof(convert));
     if (!create || !convert) {
         SetLastError(ERROR_NOT_SUPPORTED);
         return INVALID_HANDLE_VALUE;

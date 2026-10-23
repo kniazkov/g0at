@@ -22,8 +22,12 @@ int main(int argc, char **argv) {
     init_unicode_locale();
     init_messages();
 
-    if (!fs_arguments(&argc, &argv, NULL))
+    fs_error_t input_error = {0};
+    if (!fs_arguments(&argc, &argv, &input_error)) {
+        fprintf(stderr, "Command line: %s (%lu)\n", input_error.operation, input_error.native_code);
+        clear_fs_error(&input_error);
         return EXIT_FAILURE;
+    }
     options_t *opt = parse_options(argc, argv);
     if (opt == NULL) {
         free_fs_arguments(argc, argv);
