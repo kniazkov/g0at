@@ -33,7 +33,7 @@ typedef enum { FS_FILE, FS_DIRECTORY, FS_LINK, FS_OTHER } fs_kind_t;
 
 typedef struct {
     fs_kind_t kind;
-    uint64_t size, device, identity;
+    uint64_t size, device, identity, hard_links;
 } fs_info_t;
 
 /** @brief A complete owned list, excluding dot and dot-dot. No partial list on failure. */
@@ -73,6 +73,8 @@ bool close_fs_file(FILE *file, const char *path, fs_error_t *error);
  */
 bool prepare_fs_replace(const char *prepared, const char *destination, fs_error_t *error);
 /** @brief Atomic same-filesystem rename only. No delete/copy fallback. Call prepare first. */
+bool rename_fs_path(const char *source, const char *destination, fs_error_t *error);
+/** @brief Publishes a uniquely owned regular file using rename_fs_path. */
 bool publish_fs_replace(const char *prepared, const char *destination, fs_error_t *error);
 /** @brief Strict Windows UTF-16 CLI adapter, owned UTF-8 argv. Free with free_fs_arguments. */
 bool fs_arguments(int *argc, char ***argv, fs_error_t *error);

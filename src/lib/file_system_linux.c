@@ -82,11 +82,14 @@ static void info_from_stat(const struct stat *s, fs_info_t *info) {
                                                       : FS_OTHER,
                         .size = s->st_size,
                         .device = s->st_dev,
-                        .identity = s->st_ino};
+                        .identity = s->st_ino,
+                        .hard_links = s->st_nlink};
 }
 
 bool inspect_fs_path(const char *path, bool follow_links, fs_info_t *info, fs_error_t *error) {
-    if (!fs_valid(path, error) || !info)
+    if (!info)
+        return fs_fail(error, FS_INVALID, EINVAL, "stat output", path);
+    if (!fs_valid(path, error))
         return false;
     struct stat s;
     if ((follow_links ? stat(path, &s) : lstat(path, &s)))
@@ -148,7 +151,9 @@ char *create_fs_temporary(const char *prefix, bool directory, FILE **file, fs_er
 }
 
 bool list_fs_directory(const char *path, fs_entries_t *entries, fs_error_t *error) {
-    if (!entries || !fs_valid(path, error))
+    if (!entries)
+        return fs_fail(error, FS_INVALID, EINVAL, "list output", path);
+    if (!fs_valid(path, error))
         return false;
     *entries = (fs_entries_t){0};
     DIR *dir = opendir(path);
@@ -332,7 +337,7 @@ bool prepare_fs_replace(const char *prepared, const char *destination, fs_error_
     return ok;
 }
 
-bool publish_fs_replace(const char *prepared, const char *destination, fs_error_t *error) {
+bool rename_fs_path(const char *prepared, const char *destination, fs_error_t *error) {
     if (!fs_valid(prepared, error) || !fs_valid(destination, error))
         return false;
     return !rename(prepared, destination) || fs_native_error(error, "publish rename", destination);

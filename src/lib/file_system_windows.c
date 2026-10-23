@@ -172,7 +172,9 @@ static HANDLE open_path(const char *path, DWORD access, bool follow, DWORD share
 }
 
 bool inspect_fs_path(const char *path, bool follow_links, fs_info_t *info, fs_error_t *error) {
-    if (!info || !fs_valid(path, error))
+    if (!info)
+        return fs_fail(error, FS_INVALID, EINVAL, "stat output", path);
+    if (!fs_valid(path, error))
         return false;
     HANDLE h = open_path(path,
                          FILE_READ_ATTRIBUTES,
@@ -191,7 +193,8 @@ bool inspect_fs_path(const char *path, bool follow_links, fs_info_t *info, fs_er
                                                                                       : FS_OTHER,
                             .size = ((uint64_t)s.nFileSizeHigh << 32) | s.nFileSizeLow,
                             .device = s.dwVolumeSerialNumber,
-                            .identity = ((uint64_t)s.nFileIndexHigh << 32) | s.nFileIndexLow};
+                            .identity = ((uint64_t)s.nFileIndexHigh << 32) | s.nFileIndexLow,
+                            .hard_links = s.nNumberOfLinks};
     if (!CloseHandle(h) && ok)
         ok = fs_native_error(error, "close stat", path);
     return ok;
@@ -422,7 +425,9 @@ static bool walk_directory(HANDLE h,
 }
 
 bool list_fs_directory(const char *path, fs_entries_t *entries, fs_error_t *error) {
-    if (!entries || !fs_valid(path, error))
+    if (!entries)
+        return fs_fail(error, FS_INVALID, EINVAL, "list output", path);
+    if (!fs_valid(path, error))
         return false;
     *entries = (fs_entries_t){0};
     HANDLE h = open_path(path, FILE_LIST_DIRECTORY, true, FILE_SHARE_READ | FILE_SHARE_WRITE);
@@ -467,7 +472,7 @@ bool prepare_fs_replace(const char *prepared, const char *destination, fs_error_
     fs_info_t temp, old;
     if (!inspect_fs_path(prepared, false, &temp, error))
         return false;
-    if (temp.kind != FS_FILE)
+    if (temp.kind != FS_FILE || temp.hard_links != 1)
         return fs_fail(error, FS_INVALID, ERROR_INVALID_DATA, "prepared regular file", prepared);
     fs_error_t probe = {0};
     bool exists = inspect_fs_path(destination, false, &old, &probe);
@@ -564,7 +569,7 @@ bool prepare_fs_replace(const char *prepared, const char *destination, fs_error_
     return ok;
 }
 
-bool publish_fs_replace(const char *prepared, const char *destination, fs_error_t *error) {
+bool rename_fs_path(const char *prepared, const char *destination, fs_error_t *error) {
     if (!fs_valid(prepared, error) || !fs_valid(destination, error))
         return false;
     wchar_t *a = fs_wide(prepared), *b = fs_wide(destination);

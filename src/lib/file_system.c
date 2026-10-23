@@ -95,3 +95,12 @@ void free_fs_arguments(int argc, char **argv) {
         FREE(argv[i]);
     FREE(argv);
 }
+
+bool publish_fs_replace(const char *prepared, const char *destination, fs_error_t *error) {
+    fs_info_t info;
+    if (!inspect_fs_path(prepared, false, &info, error))
+        return false;
+    if (info.kind != FS_FILE || info.hard_links != 1)
+        return fs_fail(error, FS_INVALID, EINVAL, "publish regular unique file", prepared);
+    return rename_fs_path(prepared, destination, error);
+}

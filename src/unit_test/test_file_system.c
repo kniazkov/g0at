@@ -123,6 +123,13 @@ static bool publication(const char *root) {
     ASSERT(!link(dest, hard));
     ASSERT(!chmod(dest, 0640));
 #endif
+    char *absent = join_fs_path(root, "unpublished", NULL);
+    fs_error_t ownership = {0};
+    ASSERT(!prepare_fs_replace(hard, absent, &ownership) && ownership.status == FS_INVALID);
+    clear_fs_error(&ownership);
+    ASSERT(!publish_fs_replace(hard, absent, &ownership) && ownership.status == FS_INVALID);
+    clear_fs_error(&ownership);
+    FREE(absent);
     FILE *file;
     char *temp = create_fs_temporary(dest, false, &file, NULL);
     ASSERT(temp);
@@ -200,7 +207,7 @@ static void *swap_tree(void *data) {
     wchar_t *tree = fs_wide(task->tree), *outside = fs_wide(task->outside);
 #endif
     while (!atomic_load(&task->stop)) {
-        if (publish_fs_replace(task->tree, task->parked, NULL)) {
+        if (rename_fs_path(task->tree, task->parked, NULL)) {
 #ifdef _WIN32
             if (CreateSymbolicLinkW(tree, outside, SYMBOLIC_LINK_FLAG_DIRECTORY | 2))
                 remove_fs_entry(task->tree, NULL);
@@ -208,7 +215,7 @@ static void *swap_tree(void *data) {
             if (!symlink(task->outside, task->tree))
                 unlink(task->tree);
 #endif
-            publish_fs_replace(task->parked, task->tree, NULL);
+            rename_fs_path(task->parked, task->tree, NULL);
         }
     }
 #ifdef _WIN32
@@ -370,6 +377,20 @@ static bool linux_contract(const char *root) {
     return true;
 }
 #else
+static bool same_acl(PACL left, PACL right) {
+    if (!left || !right || left->AceCount != right->AceCount)
+        return left == right;
+    for (DWORD i = 0; i < left->AceCount; i++) {
+        void *a, *b;
+        if (!GetAce(left, i, &a) || !GetAce(right, i, &b))
+            return false;
+        ACE_HEADER *x = a, *y = b;
+        if (x->AceSize != y->AceSize || memcmp(a, b, x->AceSize))
+            return false;
+    }
+    return true;
+}
+
 static bool windows_contract(const char *root) {
     char *outside = join_fs_path(root, "outside", NULL);
     ASSERT(create_fs_directory(outside, NULL));
@@ -453,7 +474,42 @@ static bool windows_contract(const char *root) {
                                   &copied,
                                   NULL,
                                   &copy));
-    ASSERT(copied && copied->AclSize == acl->AclSize && !memcmp(copied, acl, acl->AclSize));
+    /* Compare persisted ACEs, not allocator padding in SetEntriesInAcl's buffer. */
+    LocalFree(descriptor);
+    descriptor = NULL;
+    ASSERT(!GetNamedSecurityInfoW(ws,
+                                  SE_FILE_OBJECT,
+                                  DACL_SECURITY_INFORMATION,
+                                  NULL,
+                                  NULL,
+                                  &original,
+                                  NULL,
+                                  &descriptor));
+    ASSERT(same_acl(copied, original));
+    /* A real ACL denial must be distinguished from absence. */
+    EXPLICIT_ACCESSW deny = access;
+    deny.grfAccessMode = DENY_ACCESS;
+    deny.grfAccessPermissions = FILE_READ_ATTRIBUTES;
+    PACL blocked = NULL;
+    ASSERT(!SetEntriesInAclW(1, &deny, original, &blocked));
+    ASSERT(!SetNamedSecurityInfoW(ws,
+                                  SE_FILE_OBJECT,
+                                  DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+                                  NULL,
+                                  NULL,
+                                  blocked,
+                                  NULL));
+    fs_error_t denied = {0};
+    ASSERT(!inspect_fs_path(sentinel, false, &info, &denied) && denied.status == FS_ACCESS);
+    clear_fs_error(&denied);
+    ASSERT(!SetNamedSecurityInfoW(ws,
+                                  SE_FILE_OBJECT,
+                                  DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+                                  NULL,
+                                  NULL,
+                                  original,
+                                  NULL));
+    LocalFree(blocked);
     LocalFree(copy);
     LocalFree(descriptor);
     LocalFree(acl);
