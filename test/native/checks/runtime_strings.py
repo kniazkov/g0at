@@ -138,7 +138,7 @@ GOAT_NATIVE_API void GOAT_NATIVE_CALL run_strings(const goat_native_context_v2_t
     if flags:
         runtime = work / "libgoat_native-instrumented.a"
         objects = []
-        for name in ("native/strings.c", "native/str.c", "lib/number_format.c"):
+        for name in ("native/strings.c", "native/str.c", "lib/number_format.c", "lib/unicode.c"):
             obj = work / (Path(name).stem + "-runtime.o")
             subprocess.run([*common, "-I" + str(ROOT / "src"), "-fPIC", "-c", str(ROOT / "src" / name),
                             "-o", str(obj)], check=True)
