@@ -6,10 +6,11 @@
 
 #pragma once
 
+#include "goat/unicode.h"
 #include "value.h"
 
 #include <stdbool.h>
-#include <wchar.h>
+#include <stdio.h>
 
 /**
  * @brief Initializes the input-output system.
@@ -24,10 +25,10 @@ bool init_io(void);
 string_value_t read_utf8_file(const char *filename);
 
 /** @brief Writes UTF-8 text; returns false on open, write, or close failure. */
-bool write_utf8_file(const char *filename, const wchar_t *content);
+bool write_utf8_file(const char *filename, const gchar_t *content);
 
 /** @brief Writes UTF-8 text to stdout. */
-void print_utf8(const wchar_t *content);
+void print_utf8(const gchar_t *content);
 
 /** @brief Returns true if the cursor on stdout is at the start of a line. */
 bool stdout_at_line_start(void);
@@ -45,7 +46,7 @@ bool stdout_is_console(void);
  * @brief Writes UTF-8 text using format_string_vargs() formatting rules.
  * Percent signs in substituted values are written literally.
  */
-void fprintf_utf8(FILE *file, const wchar_t *format, ...);
+void fprintf_utf8(FILE *file, const gchar_t *format, ...);
 
 /** @brief GPIO input stub; returns false. */
 bool read_digital_input(int index);
@@ -55,3 +56,9 @@ void write_digital_output(int index, bool value);
 
 /** @brief Reads one line without LF/CRLF; EOF is empty, errors return NULL. Caller frees. */
 string_value_t read_input_line(FILE *file);
+
+/** @brief Prints the complete scalar range, including embedded zeros. */
+void print_utf8_view(string_view_t value);
+
+/** @brief Reads a UTF-8 file through a checked scalar path; embedded zeros fail before I/O. */
+string_value_t read_utf8_file_view(string_view_t filename);

@@ -12,12 +12,11 @@
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
 #include "common_methods.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
 #include "replacement.h"
-
-#include <wchar.h>
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t get_data(const node_t *node) {
@@ -57,7 +56,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     const member_access_t *expr = (const member_access_t *)node;
     string_value_t object = generate_goat_code_from_expression(expr->object);
     string_value_t result =
-        format_string(numeric_receiver(expr) ? L"(%s).%s" : L"%s.%s", object.data, expr->name.data);
+        format_string(numeric_receiver(expr) ? U"(%s).%s" : U"%s.%s", object.data, expr->name.data);
     FREE_STRING(object);
     return result;
 }
@@ -67,11 +66,11 @@ static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const member_access_t *expr = (const member_access_t *)node;
     if (numeric_receiver(expr))
-        append_static_source(builder, L"(");
+        append_static_source(builder, U"(");
     generate_indented_goat_code_from_expression(expr->object, builder, indent);
     if (numeric_receiver(expr))
-        append_static_source(builder, L")");
-    append_static_source(builder, L".");
+        append_static_source(builder, U")");
+    append_static_source(builder, U".");
     append_formatted_source(builder, VIEW_TO_VALUE(expr->name));
 }
 
@@ -98,11 +97,11 @@ generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_
     return first;
 }
 
-/** @brief The immutable string length property, in host wchar_t units. */
+/** @brief The immutable string length property, in host gchar_t units. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const member_access_t *member = (const member_access_t *)node;
     const lattice_element_t *value = calculate_expression(member->object, state, arena);
-    if (!wcscmp(member->name.data, L"length")) {
+    if (!STRCMP(member->name.data, U"length")) {
         if (value->type == LATTICE_STRING_CONSTANT)
             return make_integer_constant_element(
                 arena,
@@ -117,7 +116,7 @@ static bool can_generate_c_code(const node_t *node,
                                 const lattice_element_t *value,
                                 const c_expression_context_t *context) {
     const member_access_t *member = (const member_access_t *)node;
-    return !wcscmp(member->name.data, L"length")
+    return !STRCMP(member->name.data, U"length")
            && c_expression_type(context, (const node_t *)member->object) == C_VALUE_STRING;
 }
 
@@ -128,7 +127,7 @@ static node_vtbl_t member_access_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"member access",
+    .type_name = U"member access",
     .is_assignable_expression = true,
     .get_data = get_data,
     .get_property_count = no_properties,

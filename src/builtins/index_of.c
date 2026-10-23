@@ -4,25 +4,24 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
 
-#include <wchar.h>
-
 /** @brief Searches for the first occurrence of a substring; returns -1 if absent. */
-static int64_t find_substring_index(const wchar_t *haystack,
+static int64_t find_substring_index(const gchar_t *haystack,
                                     size_t haystack_len,
-                                    const wchar_t *needle,
+                                    const gchar_t *needle,
                                     size_t needle_len) {
     if (needle_len == 0)
         return 0;
     if (needle_len > haystack_len)
         return -1;
     for (size_t i = 0; i + needle_len <= haystack_len; i++) {
-        if (!wmemcmp(haystack + i, needle, needle_len))
+        if (!MEMCMP(haystack + i, needle, needle_len))
             return (int64_t)i;
     }
     return -1;
@@ -72,7 +71,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_integer_element();
 }
 
-const builtin_function_t builtin_index_of = {.name = L"indexOf",
+const builtin_function_t builtin_index_of = {.name = U"indexOf",
                                              .min_args = 1,
                                              .effects = BUILTIN_EFFECT_NONE,
                                              .execute = execute,

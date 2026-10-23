@@ -16,7 +16,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return interpret_binary_math(state, args, pow);
 }
 
-const builtin_function_t builtin_pow = {.name = L"pow",
+const builtin_function_t builtin_pow = {.name = U"pow",
                                         .min_args = 2,
                                         .effects = BUILTIN_EFFECT_NONE,
                                         .execute = execute,

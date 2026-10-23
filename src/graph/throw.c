@@ -44,10 +44,10 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
     const throw_t *stmt = (const throw_t *)node;
     if (index == 0 && stmt->value) {
-        return L"expression";
+        return U"expression";
     }
     return NULL;
 }
@@ -65,7 +65,7 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
 static string_value_t generate_goat_code(const node_t *node) {
     const throw_t *stmt = (const throw_t *)node;
     string_value_t value = generate_goat_code_from_expression(stmt->value);
-    string_value_t result = format_string(L"throw %s;", value.data);
+    string_value_t result = format_string(U"throw %s;", value.data);
     FREE_STRING(value);
     return result;
 }
@@ -74,9 +74,9 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const throw_t *stmt = (const throw_t *)node;
-    add_static_source(builder, indent, L"throw ");
+    add_static_source(builder, indent, U"throw ");
     generate_indented_goat_code_from_expression(stmt->value, builder, indent);
-    append_static_source(builder, L";");
+    append_static_source(builder, U";");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
@@ -112,7 +112,7 @@ static node_vtbl_t throw_vtbl = {
     .is_pure = not_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"throw",
+    .type_name = U"throw",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

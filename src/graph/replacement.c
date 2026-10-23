@@ -67,8 +67,8 @@ static bool replace_result(node_t *node, node_t *old_child, node_t *new_child) {
 }
 
 /** @brief Implements node_vtbl_t::get_child_tag. */
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
-    return index == 0 ? L"original" : index == 1 ? L"replacement" : NULL;
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
+    return index == 0 ? U"original" : index == 1 ? U"replacement" : NULL;
 }
 
 /** @brief Implements node_vtbl_t::calculate through the executable expression. */
@@ -154,7 +154,7 @@ generate_bytecode_deferred(const node_t *node, code_builder_t *code, data_builde
 /** @brief Virtual methods for expression replacements. */
 static node_vtbl_t expression_vtbl = {
     .type = NODE_EXPRESSION_REPLACEMENT,
-    .type_name = L"expression replacement",
+    .type_name = U"expression replacement",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -198,7 +198,7 @@ create_expression_replacement(arena_t *arena, expression_t *original, expression
 /** @brief Virtual methods for statement replacements. */
 static node_vtbl_t statement_vtbl = {
     .type = NODE_STATEMENT_REPLACEMENT,
-    .type_name = L"statement replacement",
+    .type_name = U"statement replacement",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -247,11 +247,11 @@ static instr_index_t deletion_bytecode(node_t *node, code_builder_t *code, data_
 }
 
 static string_value_t deletion_source(const node_t *node) {
-    return STATIC_STRING(L";");
+    return STATIC_STRING(U";");
 }
 
 static void deletion_indented_source(const node_t *node, source_builder_t *builder, size_t indent) {
-    add_static_source(builder, indent, L";");
+    add_static_source(builder, indent, U";");
 }
 
 static bool deletion_pure(const node_t *node) {
@@ -281,7 +281,7 @@ static c_generated_expression_t deletion_c_expression(const node_t *node,
 static node_vtbl_t deletion_vtbl(bool expression) {
     node_vtbl_t result = statement_vtbl;
     result.type = expression ? NODE_EXPRESSION_DELETION : NODE_STATEMENT_DELETION;
-    result.type_name = expression ? L"expression deletion" : L"statement deletion";
+    result.type_name = expression ? U"expression deletion" : U"statement deletion";
     result.get_child_count = deletion_child_count;
     result.replace_child = no_child_replacement;
     result.execute = execute_nothing;

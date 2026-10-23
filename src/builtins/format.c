@@ -4,6 +4,7 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "model/context.h"
@@ -12,7 +13,6 @@
 #include "registry.h"
 
 #include <stdint.h>
-#include <wchar.h>
 
 /** @brief Runtime executor for the method form `string.format(arg0, ...)`. */
 static operation_result_t
@@ -24,13 +24,13 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
     init_string_builder(&builder, format.length);
     size_t pos = 0;
     while (pos < format.length) {
-        if (format.data[pos] == L'%' && pos + 1 < format.length && format.data[pos + 1] >= L'0'
-            && format.data[pos + 1] <= L'9') {
+        if (format.data[pos] == U'%' && pos + 1 < format.length && format.data[pos + 1] >= U'0'
+            && format.data[pos + 1] <= U'9') {
             size_t index = 0;
             size_t end = pos + 1;
             bool index_overflow = false;
-            while (end < format.length && format.data[end] >= L'0' && format.data[end] <= L'9') {
-                size_t digit = (size_t)(format.data[end] - L'0');
+            while (end < format.length && format.data[end] >= U'0' && format.data[end] <= U'9') {
+                size_t digit = (size_t)(format.data[end] - U'0');
                 if (index > (SIZE_MAX - digit) / 10)
                     index_overflow = true;
                 else if (!index_overflow)
@@ -74,7 +74,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_string_element();
 }
 
-const builtin_function_t builtin_format = {.name = L"format",
+const builtin_function_t builtin_format = {.name = U"format",
                                            .min_args = 0,
                                            .effects = BUILTIN_EFFECT_NONE,
                                            .execute = execute,

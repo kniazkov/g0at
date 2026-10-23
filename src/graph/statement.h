@@ -7,6 +7,7 @@
 #pragma once
 
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "node.h"
 
 typedef struct declarator_spec_t declarator_spec_t;
@@ -48,7 +49,7 @@ static inline node_t *get_statement_child(const statement_t *stmt, size_t index)
  * `index`: Zero-based child index.
  * @return Wide character string with the child tag or NULL if not applicable.
  */
-static inline const wchar_t *get_statement_child_tag(const statement_t *stmt, size_t index) {
+static inline const gchar_t *get_statement_child_tag(const statement_t *stmt, size_t index) {
     return get_node_child_tag(&stmt->base, index);
 }
 

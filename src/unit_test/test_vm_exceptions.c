@@ -17,7 +17,7 @@
 static bytecode_t *make_code(const instruction_t *instructions, size_t count) {
     code_builder_t *builder = create_code_builder();
     data_builder_t *data = create_data_builder();
-    add_string_to_data_segment(data, L"value");
+    add_string_to_data_segment(data, U"value");
     for (size_t i = 0; i < count; i++)
         add_instruction(builder, instructions[i]);
     bytecode_t *code = link_code_and_data(builder, data);
@@ -45,9 +45,9 @@ bool test_vm_restore(void) {
     ASSERT(get_object_integer_value(peek_object_from_stack(proc->main_thread->data_stack, 0)).value
            == 7);
     string_value_t text = bytecode_to_text(code);
-    ASSERT(wcsstr(text.data, L"RESTORE") && wcsstr(text.data, L"TRY")
-           && wcsstr(text.data, L"THROW"));
-    ASSERT(wcsstr(text.data, L"6"));
+    ASSERT(STRSTR(text.data, U"RESTORE") && STRSTR(text.data, U"TRY")
+           && STRSTR(text.data, U"THROW"));
+    ASSERT(STRSTR(text.data, U"6"));
     FREE_STRING(text);
     free_bytecode(code);
     destroy_process(proc);
@@ -72,10 +72,10 @@ bool test_vm_throw_values(void) {
                           : kind == 2 ? create_integer_object(proc, 5000)
                           : kind == 3 ? create_real_number_object(proc, 1.5)
                           : kind == 4
-                              ? create_string_object(proc, (string_value_t){L"arbitrary", 9, false})
+                              ? create_string_object(proc, (string_value_t){U"arbitrary", 9, false})
                               : create_user_defined_object(proc, (object_array_t){&root, 1});
         context_t *initial = proc->main_thread->context;
-        object_t *key = create_string_object(proc, (string_value_t){L"value", 5, false});
+        object_t *key = create_string_object(proc, (string_value_t){U"value", 5, false});
         ASSERT(create_object_property(initial->data, key, value, false) == MSTAT_OK);
         DECREF(key);
         DECREF(value);

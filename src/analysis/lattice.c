@@ -143,17 +143,10 @@ bool get_string_view_from_constant(arena_t *arena,
     }
     if (element->type == LATTICE_CHAR_CONSTANT) {
         uint32_t value = ((const char_constant_element_t *)element)->value;
-        if (sizeof(wchar_t) > 2 || value < 0x10000) {
-            wchar_t *buffer = alloc_from_arena(arena, sizeof(wchar_t));
-            buffer[0] = (wchar_t)value;
-            *view = (string_view_t){buffer, 1};
-        } else {
-            value -= 0x10000;
-            wchar_t *buffer = alloc_from_arena(arena, 2 * sizeof(wchar_t));
-            buffer[0] = (wchar_t)(0xD800 + (value >> 10));
-            buffer[1] = (wchar_t)(0xDC00 + (value & 0x3FF));
-            *view = (string_view_t){buffer, 2};
-        }
+        gchar_t *buffer = alloc_from_arena(arena, 2 * sizeof(gchar_t));
+        buffer[0] = value;
+        buffer[1] = 0;
+        *view = (string_view_t){buffer, 1};
         return true;
     }
     return false;
@@ -602,9 +595,9 @@ static const lattice_element_t *lattice_join_string_constant(const lattice_eleme
                 (const string_constant_element_t *)right;
 
             if (left_constant->value.length == right_constant->value.length
-                && wmemcmp(left_constant->value.data,
-                           right_constant->value.data,
-                           left_constant->value.length)
+                && MEMCMP(left_constant->value.data,
+                          right_constant->value.data,
+                          left_constant->value.length)
                        == 0) {
                 return left;
             }
@@ -1419,9 +1412,9 @@ static const lattice_element_t *lattice_meet_string_constant(const lattice_eleme
                 (const string_constant_element_t *)right;
 
             if (left_constant->value.length == right_constant->value.length
-                && wmemcmp(left_constant->value.data,
-                           right_constant->value.data,
-                           left_constant->value.length)
+                && MEMCMP(left_constant->value.data,
+                          right_constant->value.data,
+                          left_constant->value.length)
                        == 0) {
                 return left;
             }
@@ -1868,117 +1861,117 @@ lattice_meet(arena_t *arena, const lattice_element_t *left, const lattice_elemen
 }
 
 /** @brief Converts a lattice type to a short human-readable string. */
-static const wchar_t *lattice_type_to_string(lattice_type_t type) {
+static const gchar_t *lattice_type_to_string(lattice_type_t type) {
     switch (type) {
         case LATTICE_TOP:
-            return L"⊤";
+            return U"⊤";
 
         case LATTICE_BOTTOM:
-            return L"⊥";
+            return U"⊥";
 
         case LATTICE_NOT_NULL:
-            return L"not null";
+            return U"not null";
 
         case LATTICE_NULL:
-            return L"null";
+            return U"null";
 
         case LATTICE_NUMERIC:
-            return L"numeric";
+            return U"numeric";
 
         case LATTICE_INTEGER:
-            return L"integer";
+            return U"integer";
 
         case LATTICE_INTEGER_RANGE:
-            return L"integer range";
+            return U"integer range";
 
         case LATTICE_INTEGER_CONSTANT:
-            return L"const integer";
+            return U"const integer";
 
         case LATTICE_REAL:
-            return L"real";
+            return U"real";
 
         case LATTICE_REAL_CONSTANT:
-            return L"const real";
+            return U"const real";
 
         case LATTICE_STRING:
-            return L"string";
+            return U"string";
 
         case LATTICE_STRING_CONSTANT:
-            return L"const string";
+            return U"const string";
 
         case LATTICE_CHAR:
-            return L"char";
+            return U"char";
 
         case LATTICE_CHAR_CONSTANT:
-            return L"const char";
+            return U"const char";
 
         case LATTICE_BOOLEAN:
-            return L"boolean";
+            return U"boolean";
 
         case LATTICE_TRUE:
-            return L"true";
+            return U"true";
 
         case LATTICE_FALSE:
-            return L"false";
+            return U"false";
 
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
-            return L"function";
+            return U"function";
 
         case LATTICE_ARRAY:
-            return L"array";
+            return U"array";
 
         case LATTICE_TYPED_ARRAY:
-            return L"array<>";
+            return U"array<>";
 
         case LATTICE_USER_DEFINED_OBJECT:
-            return L"object";
+            return U"object";
     }
 
-    return L"?";
+    return U"?";
 }
 
 string_value_t lattice_to_string(const lattice_element_t *element) {
     switch (element->type) {
         case LATTICE_TOP:
-            return STATIC_STRING(L"⊤");
+            return STATIC_STRING(U"⊤");
 
         case LATTICE_BOTTOM:
-            return STATIC_STRING(L"⊥");
+            return STATIC_STRING(U"⊥");
 
         case LATTICE_NOT_NULL:
-            return STATIC_STRING(L"not null");
+            return STATIC_STRING(U"not null");
 
         case LATTICE_NULL:
-            return STATIC_STRING(L"null");
+            return STATIC_STRING(U"null");
 
         case LATTICE_NUMERIC:
-            return STATIC_STRING(L"numeric");
+            return STATIC_STRING(U"numeric");
 
         case LATTICE_INTEGER:
-            return STATIC_STRING(L"integer");
+            return STATIC_STRING(U"integer");
 
         case LATTICE_INTEGER_RANGE: {
             const integer_range_element_t *range = (const integer_range_element_t *)element;
-            return format_string(L"[%ld..%ld]", range->min, range->max);
+            return format_string(U"[%ld..%ld]", range->min, range->max);
         }
 
         case LATTICE_INTEGER_CONSTANT: {
             const integer_constant_element_t *constant =
                 (const integer_constant_element_t *)element;
-            return format_string(L"%ld", constant->value);
+            return format_string(U"%ld", constant->value);
         }
 
         case LATTICE_REAL:
-            return STATIC_STRING(L"real");
+            return STATIC_STRING(U"real");
 
         case LATTICE_REAL_CONSTANT: {
             const real_constant_element_t *constant = (const real_constant_element_t *)element;
-            return format_string(L"%f", constant->value);
+            return format_string(U"%f", constant->value);
         }
 
         case LATTICE_STRING:
-            return STATIC_STRING(L"string");
+            return STATIC_STRING(U"string");
 
         case LATTICE_STRING_CONSTANT: {
             const string_constant_element_t *constant = (const string_constant_element_t *)element;
@@ -1986,39 +1979,39 @@ string_value_t lattice_to_string(const lattice_element_t *element) {
         }
 
         case LATTICE_CHAR:
-            return STATIC_STRING(L"char");
+            return STATIC_STRING(U"char");
 
         case LATTICE_CHAR_CONSTANT: {
             const char_constant_element_t *constant = (const char_constant_element_t *)element;
-            return format_string(L"%c", (int)constant->value);
+            return format_string(U"%c", (int)constant->value);
         }
 
         case LATTICE_BOOLEAN:
-            return STATIC_STRING(L"boolean");
+            return STATIC_STRING(U"boolean");
 
         case LATTICE_TRUE:
-            return STATIC_STRING(L"true");
+            return STATIC_STRING(U"true");
 
         case LATTICE_FALSE:
-            return STATIC_STRING(L"false");
+            return STATIC_STRING(U"false");
 
         case LATTICE_KNOWN_FUNCTION:
         case LATTICE_FUNCTION:
-            return STATIC_STRING(L"function");
+            return STATIC_STRING(U"function");
 
         case LATTICE_ARRAY:
-            return STATIC_STRING(L"array");
+            return STATIC_STRING(U"array");
 
         case LATTICE_TYPED_ARRAY: {
             const typed_array_element_t *array = (const typed_array_element_t *)element;
-            return format_string(L"array<%s>", lattice_type_to_string(array->element_type));
+            return format_string(U"array<%s>", lattice_type_to_string(array->element_type));
         }
 
         case LATTICE_USER_DEFINED_OBJECT:
-            return STATIC_STRING(L"object");
+            return STATIC_STRING(U"object");
     }
 
-    return STATIC_STRING(L"?");
+    return STATIC_STRING(U"?");
 }
 
 abstract_truth_t lattice_truth(const lattice_element_t *value) {

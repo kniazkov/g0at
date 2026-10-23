@@ -53,12 +53,12 @@ string_value_t read_utf8_file(const char *filename) {
         FREE(buffer);
         return NULL_STRING_VALUE;
     }
-    string_value_t result = bytes_read ? decode_utf8(buffer) : EMPTY_STRING_VALUE;
+    string_value_t result = bytes_read ? decode_utf8_n(buffer, bytes_read) : EMPTY_STRING_VALUE;
     FREE(buffer);
     return result;
 }
 
-bool write_utf8_file(const char *filename, const wchar_t *content) {
+bool write_utf8_file(const char *filename, const gchar_t *content) {
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
         return false;
@@ -74,14 +74,22 @@ bool write_utf8_file(const char *filename, const wchar_t *content) {
     return result;
 }
 
-void print_utf8(const wchar_t *content) {
-    char *buffer = encode_utf8(content);
-    printf("%s", buffer);
+void print_utf8_view(string_view_t value) {
+    size_t size;
+    char *buffer = encode_utf8_view(value, &size);
+    if (!buffer)
+        return;
+    fwrite(buffer, 1, size, stdout);
     FREE(buffer);
-    size_t length = wcslen(content);
+    size_t length = value.length;
+    const gchar_t *content = value.data;
     if (length > 0) {
-        stdout_line_start = content[length - 1] == L'\n';
+        stdout_line_start = content[length - 1] == U'\n';
     }
+}
+
+void print_utf8(const gchar_t *content) {
+    print_utf8_view((string_view_t){content, STRLEN(content)});
 }
 
 bool stdout_at_line_start(void) {
@@ -118,14 +126,16 @@ bool stdout_is_console(void) {
 #endif
 }
 
-void fprintf_utf8(FILE *file, const wchar_t *format, ...) {
+void fprintf_utf8(FILE *file, const gchar_t *format, ...) {
     va_list args;
     va_start(args, format);
     string_value_t value = format_string_vargs(format, args);
     va_end(args);
     if (value.data) {
-        char *encoded_buffer = encode_utf8(value.data);
-        fputs(encoded_buffer, file);
+        size_t size;
+        char *encoded_buffer = encode_utf8_view(VALUE_TO_VIEW(value), &size);
+        if (encoded_buffer)
+            fwrite(encoded_buffer, 1, size, file);
         FREE(encoded_buffer);
         FREE_STRING(value);
     }
@@ -154,11 +164,25 @@ string_value_t read_input_line(FILE *file) {
                 FREE_STRING(result);
                 return NULL_STRING_VALUE;
             }
-            if (!read || ch == L'\n')
+            if (!read || ch == U'\n')
                 break;
-            result = append_char(&builder, ch);
+            uint32_t scalar = ch;
+            if (ch >= 0xd800 && ch <= 0xdbff) {
+                wchar_t low;
+                if (!ReadConsoleW(handle, &low, 1, &read, NULL) || !read || low < 0xdc00
+                    || low > 0xdfff) {
+                    FREE_STRING(result);
+                    return NULL_STRING_VALUE;
+                }
+                scalar = 0x10000 + ((ch - 0xd800) << 10) + low - 0xdc00;
+            }
+            if (!goat_is_scalar(scalar)) {
+                FREE_STRING(result);
+                return NULL_STRING_VALUE;
+            }
+            result = append_char(&builder, scalar);
         }
-        if (result.length && result.data[result.length - 1] == L'\r') {
+        if (result.length && result.data[result.length - 1] == U'\r') {
             builder.data[--builder.length] = 0;
             result.length--;
         }
@@ -170,8 +194,6 @@ string_value_t read_input_line(FILE *file) {
     bool valid = true;
     int ch;
     while ((ch = fgetc(file)) != EOF && ch != '\n') {
-        if (!ch)
-            valid = false;
         if (length == capacity - 1) {
             if (capacity > SIZE_MAX / 2) {
                 FREE(buffer);
@@ -189,8 +211,17 @@ string_value_t read_input_line(FILE *file) {
         length--;
     buffer[length] = 0;
     string_value_t result = !valid || ferror(file) ? NULL_STRING_VALUE
-                            : length               ? decode_utf8(buffer)
+                            : length               ? decode_utf8_n(buffer, length)
                                                    : EMPTY_STRING_VALUE;
     FREE(buffer);
+    return result;
+}
+
+string_value_t read_utf8_file_view(string_view_t filename) {
+    char *path = encode_utf8_path(filename);
+    if (!path)
+        return NULL_STRING_VALUE;
+    string_value_t result = read_utf8_file(path);
+    FREE(path);
     return result;
 }

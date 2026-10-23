@@ -24,7 +24,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return count ? make_top_element() : make_bottom_element();
 }
 
-static const builtin_function_t builtin_flat = {.name = L"flat",
+static const builtin_function_t builtin_flat = {.name = U"flat",
                                                 .min_args = 0,
                                                 .effects = BUILTIN_EFFECT_NONE,
                                                 .execute = execute,

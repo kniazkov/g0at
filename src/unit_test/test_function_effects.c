@@ -8,6 +8,7 @@
 #include "analysis/function_effects.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "goat/unicode.h"
 #include "graph/common_methods.h"
 #include "graph/expression.h"
 #include "graph/variable.h"
@@ -15,7 +16,6 @@
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 bool test_function_effect_captures() {
     arena_t *arena = create_arena(16);
@@ -23,7 +23,7 @@ bool test_function_effect_captures() {
     node_t *root = parse_analysis_test_program(
         &memory,
         STATIC_STRING(
-            L"var outer=1;\nconst f=func(n){outer=n;outer++;print(n);return input();};f(1);"));
+            U"var outer=1;\nconst f=func(n){outer=n;outer++;print(n);return input();};f(1);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -41,20 +41,20 @@ bool test_function_effect_captures() {
            == (FUNCTION_EFFECT_EXTERNAL_READ | FUNCTION_EFFECT_EXTERNAL_WRITE));
     const function_capture_t *outer = snapshot->captures;
     ASSERT(outer && outer->access == (FUNCTION_CAPTURE_READ | FUNCTION_CAPTURE_WRITE));
-    ASSERT(outer->name.length == 5 && !wmemcmp(outer->name.data, L"outer", 5));
+    ASSERT(outer->name.length == 5 && !MEMCMP(outer->name.data, U"outer", 5));
     const function_capture_t *print =
-        find_function_capture(snapshot, get_builtin_declarator(), (string_view_t){L"print", 5});
+        find_function_capture(snapshot, get_builtin_declarator(), (string_view_t){U"print", 5});
     const function_capture_t *input =
-        find_function_capture(snapshot, get_builtin_declarator(), (string_view_t){L"input", 5});
+        find_function_capture(snapshot, get_builtin_declarator(), (string_view_t){U"input", 5});
     ASSERT(print && input && print != input);
     ASSERT(print->access == FUNCTION_CAPTURE_READ && input->access == FUNCTION_CAPTURE_READ);
     ASSERT(!input->next);
-    ASSERT(!find_function_capture(snapshot, outer->declarator, (string_view_t){L"print", 5}));
+    ASSERT(!find_function_capture(snapshot, outer->declarator, (string_view_t){U"print", 5}));
     function_summary_t *live = get_function_summaries(event->node)->head;
     ASSERT(live->captures != snapshot->captures);
     string_value_t before = analysis_collector_to_text(collector);
-    ASSERT(wcsstr(before.data, L"outer@1.1:read|write"));
-    ASSERT(wcsstr(before.data, L"print@0.0:read,input@0.0:read"));
+    ASSERT(STRSTR(before.data, U"outer@1.1:read|write"));
+    ASSERT(STRSTR(before.data, U"print@0.0:read,input@0.0:read"));
     live->captures->access = 0;
     reset_function_summary(live);
     ASSERT(live->direct_effects == FUNCTION_EFFECT_UNKNOWN && !live->captures && !live->has_calls);
@@ -63,7 +63,7 @@ bool test_function_effect_captures() {
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);
@@ -75,7 +75,7 @@ bool test_function_effect_unknown() {
     arena_t *arena = create_arena(16);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, STATIC_STRING(L"const f=func(n){return n;};f(1);"));
+        parse_analysis_test_program(&memory, STATIC_STRING(U"const f=func(n){return n;};f(1);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);

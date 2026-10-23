@@ -78,7 +78,7 @@ static void remove_file(native_compile_result_t *result, const char *path) {
 }
 
 native_compile_result_t
-compile_native_library(const wchar_t *source, const char *compiler, const char *destination) {
+compile_native_library(const gchar_t *source, const char *compiler, const char *destination) {
     native_compile_result_t result = {.status = NATIVE_COMPILE_IO_ERROR, .exit_code = -1};
     if (!source || !destination || !destination[0] || !compiler || !compiler[0]) {
         result.system_error = EINVAL;

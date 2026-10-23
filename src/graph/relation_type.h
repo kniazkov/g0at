@@ -21,9 +21,9 @@ typedef enum {
 static inline string_value_t relation_type_to_string(relation_type_t type) {
     switch (type) {
         case RELATION_DECLARATION:
-            return STATIC_STRING(L"declaration");
+            return STATIC_STRING(U"declaration");
 
         default:
-            return STATIC_STRING(L"none");
+            return STATIC_STRING(U"none");
     }
 }

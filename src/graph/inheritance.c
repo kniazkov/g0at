@@ -49,13 +49,13 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_builder_t builder = {0};
     bool list = expr->prototype->base.vtbl->type == NODE_PROTOTYPE_LIST;
     if (!list)
-        append_char(&builder, L'(');
+        append_char(&builder, U'(');
     string_value_t text = generate_goat_code_from_expression(expr->prototype);
     append_string_value(&builder, text);
     FREE_STRING(text);
     if (!list)
-        append_char(&builder, L')');
-    append_static_string(&builder, L" -> ");
+        append_char(&builder, U')');
+    append_static_string(&builder, U" -> ");
     text = generate_goat_code_from_expression(&expr->constructor->base);
     string_value_t result = append_string_value(&builder, text);
     FREE_STRING(text);
@@ -98,7 +98,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 }
 
 static node_vtbl_t vtbl = {.type = NODE_INHERITANCE,
-                           .type_name = L"inheritance",
+                           .type_name = U"inheritance",
                            .is_assignable_expression = false,
                            .analyze_reachability = analyze_reachability,
                            .is_pure = not_pure,

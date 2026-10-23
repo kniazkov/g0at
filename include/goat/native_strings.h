@@ -6,19 +6,20 @@
  * Locale-dependent operations require host string services; allocation uses host memory
  * services. The caller performs language-object/character-to-string conversions.
  */
+#pragma once
 #ifndef GOAT_NATIVE_STRINGS_V2_H
-#define GOAT_NATIVE_STRINGS_V2_H
-#include "native_abi.h"
+#    define GOAT_NATIVE_STRINGS_V2_H
+#    include "native_abi.h"
+#    include "unicode.h"
 
-#include <stdbool.h>
-#include <wchar.h>
+#    include <stdbool.h>
 
 /** @brief Largest materializable string length, reserving its terminating code unit. */
-#define GOAT_NATIVE_STRING_MAX (SIZE_MAX / sizeof(wchar_t) - 1)
+#    define GOAT_NATIVE_STRING_MAX (SIZE_MAX / sizeof(gchar_t) - 1)
 
-#ifdef __cplusplus
+#    ifdef __cplusplus
 extern "C" {
-#endif
+#    endif
 /** @brief Borrows a buffer; the view does not extend its lifetime. */
 static inline goat_native_string_view_v2_t
 goat_native_string_view(goat_native_string_buffer_v2_t buffer) {
@@ -37,7 +38,7 @@ uint32_t goat_native_string_copy(const goat_native_context_v2_t *context,
                                  goat_native_string_view_v2_t value,
                                  goat_native_string_buffer_v2_t *out);
 
-/** @brief Returns the VM-compatible length in wchar_t code units. */
+/** @brief Returns the VM-compatible length in gchar_t code units. */
 int64_t goat_native_string_length(goat_native_string_view_v2_t value);
 
 /** @brief Tests emptiness without dereferencing the data pointer. */
@@ -86,7 +87,7 @@ uint32_t goat_native_str_f64(const goat_native_context_v2_t *context,
 uint32_t goat_native_str_bool(const goat_native_context_v2_t *context,
                               bool value,
                               goat_native_string_buffer_v2_t *out);
-/** @brief Native str for a character, preserving host wchar_t encoding and embedded NUL. */
+/** @brief Native str for a character, preserving host gchar_t encoding and embedded NUL. */
 uint32_t goat_native_str_char(const goat_native_context_v2_t *context,
                               uint32_t value,
                               goat_native_string_buffer_v2_t *out);
@@ -105,22 +106,22 @@ static inline bool goat_native_has_string_services(const goat_native_context_v2_
            && context->services->string_to_lower;
 }
 
-/** @brief Tests whitespace in the interpreter's locale; empty strings are blank. */
+/** @brief Tests whitespace using Unicode 17.0.0; empty strings are blank. */
 uint32_t goat_native_string_is_blank(const goat_native_context_v2_t *context,
                                      goat_native_string_view_v2_t value,
                                      bool *out);
 
-/** @brief Copies the string after removing leading and trailing host-locale whitespace. */
+/** @brief Copies the string after removing leading and trailing Unicode White_Space. */
 uint32_t goat_native_string_trim(const goat_native_context_v2_t *context,
                                  goat_native_string_view_v2_t value,
                                  goat_native_string_buffer_v2_t *out);
 
-/** @brief Converts to uppercase with the same one-unit mapping as the VM. */
+/** @brief Converts to uppercase with the same full Unicode mapping as the VM. */
 uint32_t goat_native_string_to_upper_case(const goat_native_context_v2_t *context,
                                           goat_native_string_view_v2_t value,
                                           goat_native_string_buffer_v2_t *out);
 
-/** @brief Converts to lowercase with the same one-unit mapping as the VM. */
+/** @brief Converts to lowercase with the same full Unicode mapping as the VM. */
 uint32_t goat_native_string_to_lower_case(const goat_native_context_v2_t *context,
                                           goat_native_string_view_v2_t value,
                                           goat_native_string_buffer_v2_t *out);
@@ -147,7 +148,7 @@ uint32_t goat_native_string_format(const goat_native_context_v2_t *context,
                                    const goat_native_string_view_v2_t *arguments,
                                    size_t count,
                                    goat_native_string_buffer_v2_t *out);
-#ifdef __cplusplus
+#    ifdef __cplusplus
 }
-#endif
+#    endif
 #endif

@@ -16,7 +16,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return interpret_unary_math(state, args, acos);
 }
 
-const builtin_function_t builtin_acos = {.name = L"acos",
+const builtin_function_t builtin_acos = {.name = U"acos",
                                          .min_args = 1,
                                          .effects = BUILTIN_EFFECT_NONE,
                                          .execute = execute,

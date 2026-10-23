@@ -16,7 +16,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return interpret_binary_math(state, args, fmod);
 }
 
-const builtin_function_t builtin_fmod = {.name = L"fmod",
+const builtin_function_t builtin_fmod = {.name = U"fmod",
                                          .min_args = 2,
                                          .effects = BUILTIN_EFFECT_NONE,
                                          .execute = execute,

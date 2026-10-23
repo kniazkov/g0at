@@ -92,7 +92,7 @@ def program_case(exe, case, work):
         execute([os.environ.get('CC', 'gcc'), '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror',
                  '-DMEMORY_DEBUG', '-I' + str(ROOT / 'include'), '-I' + str(ROOT / 'src'),
                  str(fixture / case['driver']), str(source.with_suffix('.c')),
-                 str(ROOT / 'src/model/native_services.c'), str(ROOT / 'src/lib/allocate.c'),
+                 str(ROOT / 'src/model/native_services.c'), str(ROOT / 'src/lib/unicode.c'), str(ROOT / 'src/lib/allocate.c'),
                  str(work / 'libgoat_native.a'), '-lm', '-o', str(driver)], work, 'driver-build')
         execute([str(driver)], work, 'driver')
     compare_output(goat('compile', '--compile', '--native', 'required', source), b'', 'compile')

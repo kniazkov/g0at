@@ -93,7 +93,7 @@ def main():
         executable = output / ('portable.exe' if portable else 'builtin.exe')
         flags = ['-DGOAT_FORCE_PORTABLE_INTEGER_MATH'] if portable else []
         run([os.environ.get('CC', 'gcc'), '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror',
-             *flags, '-I' + str(root / 'src/lib'), driver, '-lm', '-o', executable])
+             *flags, '-iquote' + str(root / 'src/lib'), driver, '-lm', '-o', executable])
         run([executable])
     print('[ ok ] exact oracle: %d operand pairs, intrinsics and portable C' % len(pairs))
 

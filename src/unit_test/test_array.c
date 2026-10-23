@@ -18,52 +18,52 @@
 #include <stdio.h>
 
 bool test_array_parser(void) {
-    const wchar_t *valid[] = {L"[]",
-                              L"[1]",
-                              L"[1,]",
-                              L"[[1,],[],[2,3],]",
-                              L"[1+2, f(3), (4*5)]",
-                              L"var a = [1,2,]",
-                              L"f([1], [2,])",
-                              L"[1,2][0]",
-                              L"([1,2])[0]",
-                              L"[[1]][0][0]",
-                              L"[func(x) { return [x,] }][0](1)[0]",
-                              L"[1].length",
-                              L"[{ var x = [1] }][0].x[0]",
-                              L"a[[1]]",
-                              L"[x = 1, x = 2]",
-                              L"[] == []",
-                              L"![]",
-                              L"func() { return [] }",
-                              L"[1][0] = 2",
-                              L"[1, /* last */ ]",
-                              L"[1]; [2]",
-                              L"var a = [1]; a[0] = []"};
-    const wchar_t *invalid[] = {L"[,]",
-                                L"[,1]",
-                                L"[1,,]",
-                                L"[1,,2]",
-                                L"[1 2]",
-                                L"[1;2]",
-                                L"[;]",
-                                L"[+]",
-                                L"[return 1]",
-                                L"[1",
-                                L"[1)",
-                                L"[1] = 2",
-                                L"[1][0,]",
-                                L"f(1,)",
-                                L"[var a = 1]"};
+    const gchar_t *valid[] = {U"[]",
+                              U"[1]",
+                              U"[1,]",
+                              U"[[1,],[],[2,3],]",
+                              U"[1+2, f(3), (4*5)]",
+                              U"var a = [1,2,]",
+                              U"f([1], [2,])",
+                              U"[1,2][0]",
+                              U"([1,2])[0]",
+                              U"[[1]][0][0]",
+                              U"[func(x) { return [x,] }][0](1)[0]",
+                              U"[1].length",
+                              U"[{ var x = [1] }][0].x[0]",
+                              U"a[[1]]",
+                              U"[x = 1, x = 2]",
+                              U"[] == []",
+                              U"![]",
+                              U"func() { return [] }",
+                              U"[1][0] = 2",
+                              U"[1, /* last */ ]",
+                              U"[1]; [2]",
+                              U"var a = [1]; a[0] = []"};
+    const gchar_t *invalid[] = {U"[,]",
+                                U"[,1]",
+                                U"[1,,]",
+                                U"[1,,2]",
+                                U"[1 2]",
+                                U"[1;2]",
+                                U"[;]",
+                                U"[+]",
+                                U"[return 1]",
+                                U"[1",
+                                U"[1)",
+                                U"[1] = 2",
+                                U"[1][0,]",
+                                U"f(1,)",
+                                U"[var a = 1]"};
     for (size_t pass = 0; pass < 2; pass++) {
-        const wchar_t **texts = pass ? invalid : valid;
+        const gchar_t **texts = pass ? invalid : valid;
         size_t count = pass ? sizeof(invalid) / sizeof(*invalid) : sizeof(valid) / sizeof(*valid);
         for (size_t i = 0; i < count; i++) {
             arena_t *arena = create_arena(8);
             parser_memory_t memory = {arena, arena, arena, arena};
             node_t *root =
                 parse_analysis_test_program(&memory,
-                                            (string_value_t){texts[i], wcslen(texts[i]), false});
+                                            (string_value_t){texts[i], STRLEN(texts[i]), false});
             ASSERT(pass ? root == NULL : root != NULL);
             if (root) {
                 string_value_t code = generate_goat_code_from_node(root);
@@ -120,7 +120,7 @@ bool test_array_model(void) {
     collect_garbage(proc);
     ASSERT(get_array_elements(copy).items[0] == copy);
     string_value_t notation = convert_object_to_string_notation(copy);
-    ASSERT(wcscmp(notation.data, L"[[...],[ ]]") == 0);
+    ASSERT(STRCMP(notation.data, U"[[...],[ ]]") == 0);
     FREE_STRING(notation);
     remove_gc_root(proc, copy);
     DECREF(copy);
@@ -137,7 +137,7 @@ bool test_array_model(void) {
         collect_garbage(proc);
         ASSERT(get_array_elements(array).items[0] == dict);
         notation = convert_object_to_string_notation(array);
-        ASSERT(wcscmp(notation.data, L"[{[...]:[...]}]") == 0);
+        ASSERT(STRCMP(notation.data, U"[{[...]:[...]}]") == 0);
         FREE_STRING(notation);
         remove_gc_root(proc, array);
         collect_garbage(proc);
@@ -164,18 +164,18 @@ bool test_array_graph_labels(void) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"var obj = { var x = [1] }; println(obj.x[0]);"));
+        STATIC_STRING(U"var obj = { var x = [1] }; println(obj.x[0]);"));
     ASSERT(root);
     options_t *options = create_options();
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t dot = generate_graph_dot(root);
-    ASSERT(wcsstr(dot.data, L"member access"));
-    ASSERT(wcsstr(dot.data, L"index access"));
-    ASSERT(wcsstr(dot.data, L"statement list"));
-    ASSERT(!wcsstr(dot.data, L"member_access"));
-    ASSERT(!wcsstr(dot.data, L"index_access"));
-    ASSERT(!wcsstr(dot.data, L"statement_list"));
+    ASSERT(STRSTR(dot.data, U"member access"));
+    ASSERT(STRSTR(dot.data, U"index access"));
+    ASSERT(STRSTR(dot.data, U"statement list"));
+    ASSERT(!STRSTR(dot.data, U"member_access"));
+    ASSERT(!STRSTR(dot.data, U"index_access"));
+    ASSERT(!STRSTR(dot.data, U"statement_list"));
     FREE_STRING(dot);
     destroy_options(options);
     destroy_arena(arena);
@@ -184,8 +184,8 @@ bool test_array_graph_labels(void) {
 
 /** @brief Calls an Array method while preserving the caller's references. */
 static operation_result_t
-array_call(process_t *proc, object_t *array, const wchar_t *name, object_t **args, size_t count) {
-    object_t *key = create_string_object(proc, (string_value_t){name, wcslen(name), false});
+array_call(process_t *proc, object_t *array, const gchar_t *name, object_t **args, size_t count) {
+    object_t *key = create_string_object(proc, (string_value_t){name, STRLEN(name), false});
     object_t *method = get_object_property(get_array_proto(), key);
     DECREF(key);
     for (size_t i = 0; i < count; i++) {
@@ -202,7 +202,7 @@ array_call(process_t *proc, object_t *array, const wchar_t *name, object_t **arg
 
 /** @brief Custom comparison proves dispatch and ownership of dynamically allocated exceptions. */
 static operation_result_t comparison_error(process_t *proc, object_t *a, object_t *b) {
-    return operation_exception(create_string_object(proc, STATIC_STRING(L"comparison failed")));
+    return operation_exception(create_string_object(proc, STATIC_STRING(U"comparison failed")));
 }
 
 bool test_array_methods(void) {
@@ -214,7 +214,7 @@ bool test_array_methods(void) {
     for (size_t pass = 0; pass < 50; pass++) {
         for (size_t i = 0; i < 256; i++) {
             object_t *child = create_array_object(proc, (object_array_t){&array, 1});
-            operation_result_t result = array_call(proc, array, L"push", &child, 1);
+            operation_result_t result = array_call(proc, array, U"push", &child, 1);
             ASSERT(!result.is_exception
                    && get_object_integer_value(result.value).value == (int64_t)i + 1);
             DECREF(result.value);
@@ -225,7 +225,7 @@ bool test_array_methods(void) {
         ASSERT(get_array_elements(get_array_elements(array).items[0]).items[0] == array);
         object_t *old_length = get_object_property(array, get_string_length());
         INCREF(old_length);
-        operation_result_t result = array_call(proc, array, L"clear", NULL, 0);
+        operation_result_t result = array_call(proc, array, U"clear", NULL, 0);
         ASSERT(!result.is_exception && result.value == array);
         DECREF(result.value);
         ASSERT(get_object_integer_value(old_length).value == 256);
@@ -234,18 +234,18 @@ bool test_array_methods(void) {
         ASSERT(proc->objects.size == baseline);
     }
     object_t *child = create_array_object(proc, (object_array_t){0});
-    operation_result_t result = array_call(proc, array, L"push", &child, 1);
+    operation_result_t result = array_call(proc, array, U"push", &child, 1);
     DECREF(result.value);
     DECREF(child);
-    result = array_call(proc, array, L"slice", NULL, 0);
+    result = array_call(proc, array, U"slice", NULL, 0);
     ASSERT(!result.is_exception);
     object_t *slice = result.value;
     add_gc_root(proc, slice);
-    result = array_call(proc, array, L"clear", NULL, 0);
+    result = array_call(proc, array, U"clear", NULL, 0);
     DECREF(result.value);
     collect_garbage(proc);
     ASSERT(get_array_elements(slice).items[0] == child);
-    result = array_call(proc, slice, L"pop", NULL, 0);
+    result = array_call(proc, slice, U"pop", NULL, 0);
     ASSERT(!result.is_exception && result.value == child);
     ASSERT(get_array_elements(result.value).size == 0);
     DECREF(result.value);
@@ -261,20 +261,20 @@ bool test_array_methods(void) {
     first->vtbl = &vtbl;
     second->vtbl = &vtbl;
     object_t *items[] = {first, second};
-    result = array_call(proc, array, L"push", items, 2);
+    result = array_call(proc, array, U"push", items, 2);
     DECREF(result.value);
-    result = array_call(proc, array, L"sort", NULL, 0);
+    result = array_call(proc, array, U"sort", NULL, 0);
     ASSERT(result.is_exception);
     string_value_t error = convert_object_to_string(result.value);
-    ASSERT(!wcscmp(error.data, L"comparison failed"));
+    ASSERT(!STRCMP(error.data, U"comparison failed"));
     FREE_STRING(error);
     DECREF(result.value);
     ASSERT(get_array_elements(array).items[0] == first
            && get_array_elements(array).items[1] == second);
-    result = array_call(proc, array, L"indexOf", &first, 1);
+    result = array_call(proc, array, U"indexOf", &first, 1);
     ASSERT(result.is_exception);
     DECREF(result.value);
-    result = array_call(proc, array, L"lastIndexOf", &first, 1);
+    result = array_call(proc, array, U"lastIndexOf", &first, 1);
     ASSERT(result.is_exception);
     DECREF(result.value);
     DECREF(first);

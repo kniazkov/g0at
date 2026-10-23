@@ -100,7 +100,7 @@ cleanup:
  */
 compilation_error_t *
 parsing_scopes_and_functions(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
-    assert(token->type == TOKEN_BRACKET_PAIR && token->text.data[0] == L'{');
+    assert(token->type == TOKEN_BRACKET_PAIR && token->text.data[0] == U'{');
     if (token->left && token->left->type == TOKEN_BRACKET_PAIR && token->left->left
         && token->left->left->type == TOKEN_SWITCH) {
         remove_token_from_group(token);
@@ -112,7 +112,7 @@ parsing_scopes_and_functions(token_t *token, parser_memory_t *memory, token_grou
             init_function_wo_args(token, memory, groups);
             return NULL;
         }
-        if (token->left->type == TOKEN_BRACKET_PAIR && token->left->text.data[0] == L'('
+        if (token->left->type == TOKEN_BRACKET_PAIR && token->left->text.data[0] == U'('
             && token->left->left && token->left->left->type == TOKEN_FUNC) {
             // func ( ... ) { ... } - function with arguments
             return init_function_with_args(token, memory, groups);

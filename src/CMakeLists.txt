@@ -7,6 +7,19 @@ cmake_minimum_required(VERSION 3.10)
 project(goat LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+include(TestBigEndian)
+test_big_endian(GOAT_BIG_ENDIAN)
+if(GOAT_BIG_ENDIAN)
+  message(FATAL_ERROR "Goat v1 supports only little-endian targets")
+endif()
+include(CheckCSourceCompiles)
+set(CMAKE_REQUIRED_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+check_c_source_compiles("#include <goat/unicode.h>
+_Static_assert(U'😀' == 0x1f600, \"UTF-32 required\");
+int main(void) { return 0; }" GOAT_UTF32_TARGET)
+if(NOT GOAT_UTF32_TARGET)
+  message(FATAL_ERROR "Goat requires known little-endian UTF-32 char32_t and 8-bit bytes")
+endif()
 include_directories(. ../include)
 
 add_library(yyjson STATIC ../third_party/yyjson/yyjson.c)
@@ -29,7 +42,7 @@ file(GLOB core_sources
   cli/*.c
 )
 # Build the native runtime separately; never depend on VM internals or its allocator.
-add_library(goat_native STATIC native/strings.c native/str.c lib/number_format.c)
+add_library(goat_native STATIC native/strings.c native/str.c lib/number_format.c lib/unicode.c)
 set_target_properties(goat_native PROPERTIES
   OUTPUT_NAME goat_native PREFIX "lib" SUFFIX ".a"
   POSITION_INDEPENDENT_CODE ON INTERPROCEDURAL_OPTIMIZATION FALSE
@@ -47,6 +60,7 @@ add_custom_command(
     -P "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/embed_native_runtime.cmake"
   DEPENDS
     goat_native
+    "${native_headers_dir}/unicode.h"
     "${native_headers_dir}/native_abi.h"
     "${native_headers_dir}/native_runtime.h"
     "${native_headers_dir}/native_strings.h"

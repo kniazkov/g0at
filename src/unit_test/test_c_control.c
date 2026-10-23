@@ -9,6 +9,7 @@
 #include "cli/options.h"
 #include "codegen/c_control.h"
 #include "codegen/c_module.h"
+#include "goat/unicode.h"
 #include "graph/common_methods.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
@@ -19,7 +20,6 @@
 
 #include <math.h>
 #include <stdio.h>
-#include <wchar.h>
 
 /** @brief Instrumentation is confined to test ASTs and the generated test translation unit. */
 static struct {
@@ -37,7 +37,7 @@ static c_generated_expression_t traced_expression(const node_t *node,
         if (!result.success)
             return result;
         source_builder_t *prelude = create_source_builder();
-        add_source(prelude, 0, L"goat_branch_trace = goat_branch_trace * 10 + %zu;", i + 1);
+        add_source(prelude, 0, U"goat_branch_trace = goat_branch_trace * 10 + %zu;", i + 1);
         c_emit_prelude(result.prelude, prelude, 0);
         if (result.prelude)
             destroy_source_builder(result.prelude);
@@ -47,16 +47,16 @@ static c_generated_expression_t traced_expression(const node_t *node,
     return (c_generated_expression_t){0};
 }
 
-static bool emit_program(source_builder_t *output, const wchar_t *source, const wchar_t *name) {
+static bool emit_program(source_builder_t *output, const gchar_t *source, const gchar_t *name) {
     arena_t *arena = create_arena(32);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, wcslen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     options_t *options = create_options();
     bool success = root && !analyze(root, &memory, options, NULL);
     c_module_t *module = success ? create_c_module(arena, root) : NULL;
     success = module && module->available_count == 1;
-    bool traced = success && !wcscmp(name, L"goat_traced_branch");
+    bool traced = success && !STRCMP(name, U"goat_traced_branch");
     if (traced) {
         node_t *branch = (node_t *)replacement_original(
             get_node_child(get_node_child(module->head->summary->function, 1), 0));
@@ -76,7 +76,7 @@ static bool emit_program(source_builder_t *output, const wchar_t *source, const 
     }
     if (success) {
         c_generation_result_t result = generate_c_function(module->head->summary,
-                                                           (string_view_t){name, wcslen(name)},
+                                                           (string_view_t){name, STRLEN(name)},
                                                            NULL,
                                                            NULL);
         success = result.status == C_GENERATION_OK;
@@ -84,7 +84,7 @@ static bool emit_program(source_builder_t *output, const wchar_t *source, const 
             fprintf(stderr,
                     "status %d node %ls\n",
                     result.status,
-                    result.failed_node ? result.failed_node->vtbl->type_name : L"none");
+                    result.failed_node ? result.failed_node->vtbl->type_name : U"none");
         if (success)
             add_formatted_source(output, 0, result.source);
         else
@@ -129,16 +129,16 @@ static bool comparison_tests(source_builder_t *output, source_builder_t *checks)
                             NAN};
     add_static_source(output,
                       0,
-                      L"static volatile int64_t goat_cmp_ints[] = {INT64_MIN, INT64_MIN+1, "
-                      L"-INT64_C(9007199254740993), -1, 0, 1, INT64_C(9007199254740993), "
-                      L"INT64_MAX-1, INT64_MAX};");
+                      U"static volatile int64_t goat_cmp_ints[] = {INT64_MIN, INT64_MIN+1, "
+                      U"-INT64_C(9007199254740993), -1, 0, 1, INT64_C(9007199254740993), "
+                      U"INT64_MAX-1, INT64_MAX};");
     add_static_source(
         output,
         0,
-        L"static volatile double goat_cmp_reals[] = {-INFINITY, -0x1.0000000000001p63, -0x1p63, "
-        L"-0x1.fffffffffffffp62, -9007199254740992.0, -1.5, -0.5, -0.0, 0.0, 0.5, 1.5, "
-        L"9007199254740992.0, 0x1.fffffffffffffp62, 0x1p63, 0x1.0000000000001p63, INFINITY, NAN};");
-    static const wchar_t *symbols[] = {L"<", L"<=", L">", L">=", L"==", L"!="};
+        U"static volatile double goat_cmp_reals[] = {-INFINITY, -0x1.0000000000001p63, -0x1p63, "
+        U"-0x1.fffffffffffffp62, -9007199254740992.0, -1.5, -0.5, -0.0, 0.0, 0.5, 1.5, "
+        U"9007199254740992.0, 0x1.fffffffffffffp62, 0x1p63, 0x1.0000000000001p63, INFINITY, NAN};");
+    static const gchar_t *symbols[] = {U"<", U"<=", U">", U">=", U"==", U"!="};
     operation_result_t (*operations[])(process_t *, object_t *, object_t *) = {
         is_object_less_than,
         is_object_less_or_equal,
@@ -152,17 +152,17 @@ static bool comparison_tests(source_builder_t *output, source_builder_t *checks)
         for (size_t pair = 0; pair < 4 && success; pair++) {
             bool left_real = pair & 1, right_real = pair & 2;
             string_value_t source =
-                format_string(L"const f=func(a,b){if(a%s b)return 1 else return 0;};f(%s,%s);",
+                format_string(U"const f=func(a,b){if(a%s b)return 1 else return 0;};f(%s,%s);",
                               symbols[op],
-                              left_real ? L"1.0" : L"1",
-                              right_real ? L"2.0" : L"2");
-            string_value_t name = format_string(L"goat_compare%zu_%zu", op, pair);
+                              left_real ? U"1.0" : U"1",
+                              right_real ? U"2.0" : U"2");
+            string_value_t name = format_string(U"goat_compare%zu_%zu", op, pair);
             success = emit_program(output, source.data, name.data);
             size_t rows =
                 left_real ? sizeof(reals) / sizeof(*reals) : sizeof(integers) / sizeof(*integers);
             size_t cols =
                 right_real ? sizeof(reals) / sizeof(*reals) : sizeof(integers) / sizeof(*integers);
-            add_source(output, 0, L"static const unsigned char %s_expected[] = {", name.data);
+            add_source(output, 0, U"static const unsigned char %s_expected[] = {", name.data);
             for (size_t i = 0; i < rows && success; i++) {
                 for (size_t j = 0; j < cols && success; j++) {
                     object_t *left = left_real ? create_real_number_object(process, reals[i])
@@ -174,35 +174,35 @@ static bool comparison_tests(source_builder_t *output, source_builder_t *checks)
                     if (success)
                         add_source(output,
                                    1,
-                                   L"%u,",
+                                   U"%u,",
                                    get_object_boolean_value(result.value) ? 1 : 0);
                     DECREF(result.value);
                     DECREF(left);
                     DECREF(right);
                 }
             }
-            add_static_source(output, 0, L"};");
+            add_static_source(output, 0, U"};");
             add_source(checks,
                        1,
-                       L"for (size_t i=0; i<%zu; i++) for (size_t j=0; j<%zu; j++) {",
+                       U"for (size_t i=0; i<%zu; i++) for (size_t j=0; j<%zu; j++) {",
                        rows,
                        cols);
             add_source(checks,
                        2,
-                       L"if (%s(%s[i], %s[j]) != %s_expected[i*%zu+j]) {",
+                       U"if (%s(%s[i], %s[j]) != %s_expected[i*%zu+j]) {",
                        name.data,
-                       left_real ? L"goat_cmp_reals" : L"goat_cmp_ints",
-                       right_real ? L"goat_cmp_reals" : L"goat_cmp_ints",
+                       left_real ? U"goat_cmp_reals" : U"goat_cmp_ints",
+                       right_real ? U"goat_cmp_reals" : U"goat_cmp_ints",
                        name.data,
                        cols);
             add_source(
                 checks,
                 3,
-                L"fprintf(stderr, \"comparison %zu/%zu %%zu/%%zu failed\\n\", i, j); return 101;",
+                U"fprintf(stderr, \"comparison %zu/%zu %%zu/%%zu failed\\n\", i, j); return 101;",
                 op,
                 pair);
-            add_static_source(checks, 2, L"}");
-            add_static_source(checks, 1, L"}");
+            add_static_source(checks, 2, U"}");
+            add_static_source(checks, 1, U"}");
             FREE_STRING(source);
             FREE_STRING(name);
         }
@@ -214,69 +214,69 @@ static bool comparison_tests(source_builder_t *output, source_builder_t *checks)
 bool append_c_control_tests(source_builder_t *output, source_builder_t *checks) {
     if (!comparison_tests(output, checks))
         return false;
-    add_static_source(output, 0, L"static int goat_branch_trace;");
+    add_static_source(output, 0, U"static int goat_branch_trace;");
     if (!emit_program(output,
-                      L"const f=func(n){if(n<0)return n+1 else return n-1;};f(1);",
-                      L"goat_traced_branch"))
+                      U"const f=func(n){if(n<0)return n+1 else return n-1;};f(1);",
+                      U"goat_traced_branch"))
         return false;
-    add_static_source(checks, 1, L"goat_branch_trace=0;");
+    add_static_source(checks, 1, U"goat_branch_trace=0;");
     add_static_source(checks,
                       1,
-                      L"if (goat_traced_branch(-2)!=-1 || goat_branch_trace!=123) return 103;");
-    add_static_source(checks, 1, L"goat_branch_trace=0;");
+                      U"if (goat_traced_branch(-2)!=-1 || goat_branch_trace!=123) return 103;");
+    add_static_source(checks, 1, U"goat_branch_trace=0;");
     add_static_source(checks,
                       1,
-                      L"if (goat_traced_branch(2)!=1 || goat_branch_trace!=124) return 104;");
+                      U"if (goat_traced_branch(2)!=1 || goat_branch_trace!=124) return 104;");
 
     const struct {
-        const wchar_t *source, *check;
+        const gchar_t *source, *check;
     } fixtures[] = {
-        {L"const f=func(n){if(n<0){return -n;}else{return n+1;}};f(1);",
-         L"(-7)==7 && goat_branch0(3)==4"},
-        {L"const f=func(n){if(n<0)return -1;if(n==0)return 0;return 1;};f(1);",
-         L"(-1)==-1 && goat_branch1(0)==0 && goat_branch1(1)==1"},
-        {L"const f=func(n){if(n){if(n<0)return 1 else return 2;}else return 3;};f(1);",
-         L"(-1)==1 && goat_branch2(1)==2 && goat_branch2(0)==3"},
-        {L"const f=func(n){if(n){if(n<0){return 1;}}else{return 2;}return 3;};f(1);",
-         L"(-1)==1 && goat_branch3(0)==2 && goat_branch3(1)==3"},
-        {L"const f=func(n){if(n)return 1;return 0;};f(1.0);",
-         L"(NAN)==1 && goat_branch4(INFINITY)==1 && goat_branch4(-INFINITY)==1 && "
-         L"goat_branch4(-0.0)==0 && goat_branch4(0.0)==0 && "
-         L"goat_branch4(0x0.0000000000001p-1022)==1"},
-        {L"const f=func(n){if(n)return 1;return 0;};f(1);",
-         L"(INT64_MIN)==1 && goat_branch5(INT64_MAX)==1 && goat_branch5(0)==0"},
-        {L"const f=func(n){if((n-1)<(n+1))return n*2 else return -n;};f(1);",
-         L"(4)==8 && goat_branch6(INT64_MAX)==INT64_MAX"},
-        {L"const f=func(n){if((n<0)){return -n;}else if((n>0)){return n;}else{return 0;}};f(1);",
-         L"(-3)==3 && goat_branch7(3)==3 && goat_branch7(0)==0"},
-        {L"const f=func(n){if(n){}else{};return n;};f(1);", L"(4)==4 && goat_branch8(0)==0"},
-        {L"const f=func(n){if(n){n+2;}else{n-2;}return n;};f(1);", L"(4)==4 && goat_branch9(0)==0"},
-        {L"const f=func(n){if(n>0)return 1.5 else return -2.5;};f(1.0);",
-         L"(1.0)==1.5 && goat_branch10(NAN)==-2.5"},
-        {L"const f=func(n){if(n<1)return 0;if(n==1)return 1;return n+2;};f(1);",
-         L"(0)==0 && goat_branch11(1)==1 && goat_branch11(4)==6"},
+        {U"const f=func(n){if(n<0){return -n;}else{return n+1;}};f(1);",
+         U"(-7)==7 && goat_branch0(3)==4"},
+        {U"const f=func(n){if(n<0)return -1;if(n==0)return 0;return 1;};f(1);",
+         U"(-1)==-1 && goat_branch1(0)==0 && goat_branch1(1)==1"},
+        {U"const f=func(n){if(n){if(n<0)return 1 else return 2;}else return 3;};f(1);",
+         U"(-1)==1 && goat_branch2(1)==2 && goat_branch2(0)==3"},
+        {U"const f=func(n){if(n){if(n<0){return 1;}}else{return 2;}return 3;};f(1);",
+         U"(-1)==1 && goat_branch3(0)==2 && goat_branch3(1)==3"},
+        {U"const f=func(n){if(n)return 1;return 0;};f(1.0);",
+         U"(NAN)==1 && goat_branch4(INFINITY)==1 && goat_branch4(-INFINITY)==1 && "
+         U"goat_branch4(-0.0)==0 && goat_branch4(0.0)==0 && "
+         U"goat_branch4(0x0.0000000000001p-1022)==1"},
+        {U"const f=func(n){if(n)return 1;return 0;};f(1);",
+         U"(INT64_MIN)==1 && goat_branch5(INT64_MAX)==1 && goat_branch5(0)==0"},
+        {U"const f=func(n){if((n-1)<(n+1))return n*2 else return -n;};f(1);",
+         U"(4)==8 && goat_branch6(INT64_MAX)==INT64_MAX"},
+        {U"const f=func(n){if((n<0)){return -n;}else if((n>0)){return n;}else{return 0;}};f(1);",
+         U"(-3)==3 && goat_branch7(3)==3 && goat_branch7(0)==0"},
+        {U"const f=func(n){if(n){}else{};return n;};f(1);", U"(4)==4 && goat_branch8(0)==0"},
+        {U"const f=func(n){if(n){n+2;}else{n-2;}return n;};f(1);", U"(4)==4 && goat_branch9(0)==0"},
+        {U"const f=func(n){if(n>0)return 1.5 else return -2.5;};f(1.0);",
+         U"(1.0)==1.5 && goat_branch10(NAN)==-2.5"},
+        {U"const f=func(n){if(n<1)return 0;if(n==1)return 1;return n+2;};f(1);",
+         U"(0)==0 && goat_branch11(1)==1 && goat_branch11(4)==6"},
         /* Expectations independent of the runtime comparison helper. */
-        {L"const f=func(a,b){if(a==b)return 1;return 0;};f(1,1.0);",
-         L"(INT64_C(9007199254740993),9007199254740992.0)==0 && "
-         L"goat_branch12(INT64_MIN,-0x1p63)==1 && goat_branch12(INT64_MAX,0x1p63)==0"},
-        {L"const f=func(a,b){if(a>b)return 1;return 0;};f(1,1.0);",
-         L"(INT64_C(9007199254740993),9007199254740992.0)==1 && goat_branch13(0,-0.5)==1 && "
-         L"goat_branch13(0,NAN)==0"},
-        {L"const f=func(a,b){if(a<b)return 1;return 0;};f(1.0,1);",
-         L"(9007199254740992.0,INT64_C(9007199254740993))==1 && goat_branch14(NAN,0)==0"},
-        {L"const f=func(n){if(true)return n;};f(1);", L"(7)==7"},
-        {L"const f=func(n){if(false){}return n;};f(1);", L"(8)==8"},
-        {L"const f=func(n){if((1))return n;};f(1);", L"(9)==9"},
-        {L"const f=func(n){if(-1.0)return n;};f(1);", L"(10)==10"}};
+        {U"const f=func(a,b){if(a==b)return 1;return 0;};f(1,1.0);",
+         U"(INT64_C(9007199254740993),9007199254740992.0)==0 && "
+         U"goat_branch12(INT64_MIN,-0x1p63)==1 && goat_branch12(INT64_MAX,0x1p63)==0"},
+        {U"const f=func(a,b){if(a>b)return 1;return 0;};f(1,1.0);",
+         U"(INT64_C(9007199254740993),9007199254740992.0)==1 && goat_branch13(0,-0.5)==1 && "
+         U"goat_branch13(0,NAN)==0"},
+        {U"const f=func(a,b){if(a<b)return 1;return 0;};f(1.0,1);",
+         U"(9007199254740992.0,INT64_C(9007199254740993))==1 && goat_branch14(NAN,0)==0"},
+        {U"const f=func(n){if(true)return n;};f(1);", U"(7)==7"},
+        {U"const f=func(n){if(false){}return n;};f(1);", U"(8)==8"},
+        {U"const f=func(n){if((1))return n;};f(1);", U"(9)==9"},
+        {U"const f=func(n){if(-1.0)return n;};f(1);", U"(10)==10"}};
 
     for (size_t i = 0; i < sizeof(fixtures) / sizeof(*fixtures); i++) {
-        string_value_t name = format_string(L"goat_branch%zu", i);
+        string_value_t name = format_string(U"goat_branch%zu", i);
         bool success = emit_program(output, fixtures[i].source, name.data);
         if (success) {
             add_source(
                 checks,
                 1,
-                L"if (!(%s%s)) { fprintf(stderr, \"branch fixture %zu failed\\n\"); return 102; }",
+                U"if (!(%s%s)) { fprintf(stderr, \"branch fixture %zu failed\\n\"); return 102; }",
                 name.data,
                 fixtures[i].check,
                 i);
@@ -293,7 +293,7 @@ bool test_c_control_rejections(void) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const f=func(n){if(n<0)return n+0 else return n+1;};f(1);"));
+        STATIC_STRING(U"const f=func(n){if(n<0)return n+0 else return n+1;};f(1);"));
     ASSERT(root);
     options_t *options = create_options();
     ASSERT(!analyze(root, &memory, options, NULL));

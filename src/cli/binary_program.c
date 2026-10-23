@@ -120,7 +120,9 @@ int execute_program(const options_t *options,
 int run_binary_program(const options_t *options) {
     binary_program_t program = load_binary_program(options->input_file->full_path);
     if (!program.code) {
-        fprintf(stderr, "Invalid, incompatible or unreadable Goat binary.\n");
+        fprintf(stderr,
+                "Invalid, incompatible or unreadable Goat binary. Recompile the source with this "
+                "Goat version.\n");
         return -1;
     }
     native_execution_report_t report = {.preparation = "disabled"};

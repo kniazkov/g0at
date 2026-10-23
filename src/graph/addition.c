@@ -51,7 +51,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     const addition_t *expr = (const addition_t *)node;
     string_value_t left = generate_goat_code_from_expression(expr->base.left_operand);
     string_value_t right = generate_goat_code_from_expression(expr->base.right_operand);
-    string_value_t result = format_string(L"%s + %s", left.data, right.data);
+    string_value_t result = format_string(U"%s + %s", left.data, right.data);
     FREE_STRING(left);
     FREE_STRING(right);
     return result;
@@ -62,7 +62,7 @@ static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const addition_t *expr = (const addition_t *)node;
     generate_indented_goat_code_from_expression(expr->base.left_operand, builder, indent);
-    append_static_source(builder, L" + ");
+    append_static_source(builder, U" + ");
     generate_indented_goat_code_from_expression(expr->base.right_operand, builder, indent);
 }
 
@@ -84,7 +84,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 /** @brief Implements node_vtbl_t::generate_c_code. */
 static c_generated_expression_t generate_c_code(const node_t *node,
                                                 c_generation_context_t *context) {
-    return c_binary_arithmetic(node, context, L'+');
+    return c_binary_arithmetic(node, context, U'+');
 }
 
 /** @brief Virtual table for addition operations. */
@@ -94,7 +94,7 @@ static node_vtbl_t addition_vtbl = {
     .is_pure = children_are_pure,
     .simplify = simplify_constant_expression,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"addition",
+    .type_name = U"addition",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

@@ -4,13 +4,12 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
-
-#include <wchar.h>
 
 /** @brief Runtime executor for the method form `string.toUpperCase()`. */
 static operation_result_t
@@ -25,14 +24,9 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
         INCREF(receiver);
         return operation_success(receiver);
     }
-    size_t length = value.length;
-    wchar_t *copy = ALLOC((length + 1) * sizeof(wchar_t));
-    for (size_t i = 0; i < length; i++)
-        copy[i] = unicode_towupper(value.data[i]);
-    copy[length] = 0;
+    string_value_t result = unicode_string_case(VALUE_TO_VIEW(value), true);
     FREE_STRING(value);
-    return operation_success(
-        create_string_object(thread->process, (string_value_t){copy, length, true}));
+    return operation_success(create_string_object(thread->process, result));
 }
 
 /** @brief Runtime executor for the plain call form `toUpperCase(string)`. */
@@ -51,16 +45,19 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
         return make_bottom_element();
     if (args[0]->type == LATTICE_STRING_CONSTANT) {
         const string_constant_element_t *str = (const string_constant_element_t *)args[0];
-        wchar_t *copy = alloc_from_arena(state->arena, (str->value.length + 1) * sizeof(wchar_t));
-        for (size_t i = 0; i < str->value.length; i++)
-            copy[i] = unicode_towupper(str->value.data[i]);
-        copy[str->value.length] = 0;
-        return make_string_constant_element(state->arena, (string_view_t){copy, str->value.length});
+        string_value_t result = unicode_string_case(str->value, true);
+        gchar_t *copy = alloc_from_arena(state->arena, (result.length + 1) * sizeof(*copy));
+        MEMCPY(copy, result.data, result.length);
+        copy[result.length] = 0;
+        const lattice_element_t *element =
+            make_string_constant_element(state->arena, (string_view_t){copy, result.length});
+        FREE_STRING(result);
+        return element;
     }
     return make_string_element();
 }
 
-const builtin_function_t builtin_to_upper_case = {.name = L"toUpperCase",
+const builtin_function_t builtin_to_upper_case = {.name = U"toUpperCase",
                                                   .min_args = 0,
                                                   .effects = BUILTIN_EFFECT_NONE,
                                                   .execute = execute,

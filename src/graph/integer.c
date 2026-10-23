@@ -33,7 +33,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const integer_t *expr = (const integer_t *)node;
-    return format_string(L"%ld", expr->element.value);
+    return format_string(U"%ld", expr->element.value);
 }
 
 /** @brief Implements @ref node_vtbl_t::get_data. */
@@ -46,7 +46,7 @@ static node_display_value_t get_data(const node_t *node) {
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const integer_t *expr = (const integer_t *)node;
-    append_formatted_source(builder, format_string(L"%ld", expr->element.value));
+    append_formatted_source(builder, format_string(U"%ld", expr->element.value));
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
@@ -78,7 +78,7 @@ static node_vtbl_t integer_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"integer",
+    .type_name = U"integer",
     .get_data = get_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -103,7 +103,7 @@ static node_vtbl_t integer_vtbl = {
 };
 
 /** @brief Built-in data type */
-static data_type_t data_type = BUILT_IN_DATA_TYPE(L"int");
+static data_type_t data_type = BUILT_IN_DATA_TYPE(U"int");
 
 node_t *create_integer_node(arena_t *arena, int64_t value) {
     integer_t *expr = (integer_t *)alloc_zeroed_from_arena(arena, sizeof(integer_t));

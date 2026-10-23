@@ -46,7 +46,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_real_element();
 }
 
-const builtin_function_t builtin_atan = {.name = L"atan",
+const builtin_function_t builtin_atan = {.name = U"atan",
                                          .min_args = 1,
                                          .effects = BUILTIN_EFFECT_NONE,
                                          .execute = execute,

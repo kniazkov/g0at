@@ -3,10 +3,11 @@
  * @brief Synchronous native compilation, independent of the VM and loader.
  */
 #pragma once
+#include "goat/unicode.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <wchar.h>
 
 typedef enum {
     NATIVE_COMPILE_OK,
@@ -31,7 +32,7 @@ typedef struct {
 
 /** @brief Builds beside destination, then atomically replaces it; compiler is one executable. */
 native_compile_result_t
-compile_native_library(const wchar_t *source, const char *compiler, const char *destination);
+compile_native_library(const gchar_t *source, const char *compiler, const char *destination);
 /** @brief Releases captured diagnostics. */
 void destroy_native_compile_result(native_compile_result_t *result);
 

@@ -59,10 +59,10 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
     const return_t *stmt = (const return_t *)node;
     if (index == 0 && stmt->value) {
-        return L"expression";
+        return U"expression";
     }
     return NULL;
 }
@@ -96,12 +96,12 @@ static string_value_t generate_goat_code(const node_t *node) {
         string_builder_t builder;
         string_value_t value_as_string = generate_goat_code_from_expression(stmt->value);
         init_string_builder(&builder, value_as_string.length + 8);
-        append_static_string(&builder, L"return ");
+        append_static_string(&builder, U"return ");
         append_string_value(&builder, value_as_string);
         FREE_STRING(value_as_string);
-        return append_char(&builder, L';');
+        return append_char(&builder, U';');
     } else {
-        return STATIC_STRING(L"return;");
+        return STATIC_STRING(U"return;");
     }
 }
 
@@ -110,11 +110,11 @@ static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const return_t *stmt = (const return_t *)node;
     if (stmt->value) {
-        add_static_source(builder, indent, L"return ");
+        add_static_source(builder, indent, U"return ");
         generate_indented_goat_code_from_expression(stmt->value, builder, indent);
-        append_static_source(builder, L";");
+        append_static_source(builder, U";");
     } else {
-        add_static_source(builder, indent, L"return;");
+        add_static_source(builder, indent, U"return;");
     }
 }
 
@@ -156,7 +156,7 @@ static node_vtbl_t return_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"return",
+    .type_name = U"return",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

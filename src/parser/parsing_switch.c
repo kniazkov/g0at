@@ -18,9 +18,9 @@ static bool flow(token_t *token) {
 compilation_error_t *
 parsing_switch(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
     token_t *header = token->right, *block = header ? header->right : NULL;
-    if (!header || header->type != TOKEN_BRACKET_PAIR || header->text.data[0] != L'('
+    if (!header || header->type != TOKEN_BRACKET_PAIR || header->text.data[0] != U'('
         || header->children.count != 1 || header->children.first->type != TOKEN_EXPRESSION || !block
-        || block->type != TOKEN_BRACKET_PAIR || block->text.data[0] != L'{')
+        || block->type != TOKEN_BRACKET_PAIR || block->text.data[0] != U'{')
         goto invalid;
     switch_branch_t *branches =
         alloc_zeroed_from_arena(memory->graph, (block->children.count + 1) * sizeof(*branches));

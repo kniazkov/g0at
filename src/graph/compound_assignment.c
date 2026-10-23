@@ -27,7 +27,7 @@
 typedef struct {
     expression_t base;
     expression_t *operation;
-    const wchar_t *symbol;
+    const gchar_t *symbol;
     opcode_t opcode;
 } compound_assignment_t;
 
@@ -111,7 +111,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_value_t left = generate_goat_code_from_node(compound_assignment_target(node));
     string_value_t right = generate_goat_code_from_expression(
         (expression_t *)get_node_child((node_t *)expr->operation, 1));
-    string_value_t result = format_string(L"%s %s %s", left.data, expr->symbol, right.data);
+    string_value_t result = format_string(U"%s %s %s", left.data, expr->symbol, right.data);
     FREE_STRING(left);
     FREE_STRING(right);
     return result;
@@ -184,7 +184,7 @@ static c_generated_expression_t generate_c_code(const node_t *node,
 }
 
 static node_vtbl_t vtbl = {.type = NODE_COMPOUND_ASSIGNMENT,
-                           .type_name = L"compound assignment",
+                           .type_name = U"compound assignment",
                            .analyze_reachability = analyze_reachability,
                            .is_pure = not_pure,
                            .simplify = no_simplification,
@@ -214,26 +214,26 @@ static node_vtbl_t vtbl = {.type = NODE_COMPOUND_ASSIGNMENT,
 expression_t *create_compound_assignment_node(arena_t *arena,
                                               assignable_expression_t *left,
                                               expression_t *right,
-                                              const wchar_t *symbol) {
+                                              const gchar_t *symbol) {
     typedef struct {
-        const wchar_t *symbol;
+        const gchar_t *symbol;
         opcode_t opcode;
         expression_t *(*create)(arena_t *, expression_t *, expression_t *);
     } operation_t;
 
-    static const operation_t operations[] = {{L"+=", ADD, create_addition_node},
-                                             {L"-=", SUB, create_subtraction_node},
-                                             {L"*=", MUL, create_multiplication_node},
-                                             {L"/=", DIVIDE, create_division_node},
-                                             {L"%=", MODULO, create_modulo_node},
-                                             {L"**=", POWER, create_power_node},
-                                             {L"&=", BAND, create_bitwise_and_node},
-                                             {L"|=", BOR, create_bitwise_or_node},
-                                             {L"^=", BXOR, create_bitwise_xor_node},
-                                             {L"<<=", SHL, create_shift_left_node},
-                                             {L">>=", SHR, create_shift_right_node}};
+    static const operation_t operations[] = {{U"+=", ADD, create_addition_node},
+                                             {U"-=", SUB, create_subtraction_node},
+                                             {U"*=", MUL, create_multiplication_node},
+                                             {U"/=", DIVIDE, create_division_node},
+                                             {U"%=", MODULO, create_modulo_node},
+                                             {U"**=", POWER, create_power_node},
+                                             {U"&=", BAND, create_bitwise_and_node},
+                                             {U"|=", BOR, create_bitwise_or_node},
+                                             {U"^=", BXOR, create_bitwise_xor_node},
+                                             {U"<<=", SHL, create_shift_left_node},
+                                             {U">>=", SHR, create_shift_right_node}};
     for (size_t i = 0; i < sizeof(operations) / sizeof(*operations); i++) {
-        if (wcscmp(symbol, operations[i].symbol))
+        if (STRCMP(symbol, operations[i].symbol))
             continue;
         compound_assignment_t *expr = alloc_zeroed_from_arena(arena, sizeof(*expr));
         expr->base.base.vtbl = &vtbl;

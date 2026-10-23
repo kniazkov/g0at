@@ -29,7 +29,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_char_element();
 }
 
-const builtin_function_t builtin_chr = {.name = L"chr",
+const builtin_function_t builtin_chr = {.name = U"chr",
                                         .min_args = 1,
                                         .effects = BUILTIN_EFFECT_NONE,
                                         .execute = execute,

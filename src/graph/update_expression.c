@@ -28,8 +28,8 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements node_vtbl_t::get_child_tag. */
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
-    return index == 0 ? L"operand" : NULL;
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
+    return index == 0 ? U"operand" : NULL;
 }
 
 /** @brief Implements node_vtbl_t::calculate. */
@@ -53,10 +53,10 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 static string_value_t generate_goat_code(const node_t *node) {
     string_value_t operand =
         generate_goat_code_from_expression(((const unary_expression_t *)node)->operand);
-    const wchar_t *op = update_is_decrement(node->vtbl->type) ? L"--" : L"++";
+    const gchar_t *op = update_is_decrement(node->vtbl->type) ? U"--" : U"++";
     string_value_t result = update_is_postfix(node->vtbl->type)
-                                ? format_string(L"%s%s", operand.data, op)
-                                : format_string(L"%s%s", op, operand.data);
+                                ? format_string(U"%s%s", operand.data, op)
+                                : format_string(U"%s%s", op, operand.data);
     FREE_STRING(operand);
     return result;
 }
@@ -132,7 +132,7 @@ static node_vtbl_t prefix_increment_vtbl = {
     .is_pure = not_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_direct_effects,
-    .type_name = L"prefix increment",
+    .type_name = U"prefix increment",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -163,7 +163,7 @@ static node_vtbl_t prefix_decrement_vtbl = {
     .is_pure = not_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_direct_effects,
-    .type_name = L"prefix decrement",
+    .type_name = U"prefix decrement",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -194,7 +194,7 @@ static node_vtbl_t postfix_increment_vtbl = {
     .is_pure = not_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_direct_effects,
-    .type_name = L"postfix increment",
+    .type_name = U"postfix increment",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -225,7 +225,7 @@ static node_vtbl_t postfix_decrement_vtbl = {
     .is_pure = not_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_direct_effects,
-    .type_name = L"postfix decrement",
+    .type_name = U"postfix decrement",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

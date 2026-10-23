@@ -29,18 +29,18 @@ bool test_member_access_scanner(void) {
     arena_t *arena = create_arena(8);
     parser_memory_t memory = {arena, arena, arena, arena};
     token_groups_t *groups = (token_groups_t *)CALLOC(sizeof(token_groups_t));
-    scanner_t *scan = create_scanner("program.goat", STATIC_STRING(L"obj . x"), &memory, groups);
+    scanner_t *scan = create_scanner("program.goat", STATIC_STRING(U"obj . x"), &memory, groups);
     token_t *token = get_token(scan);
     ASSERT(token && token->type == TOKEN_IDENTIFIER);
     token = get_token(scan);
     ASSERT(token && token->type == TOKEN_OPERATOR);
-    ASSERT(!wcscmp(token->text.data, L"."));
+    ASSERT(!STRCMP(token->text.data, U"."));
     token = get_token(scan);
     ASSERT(token && token->type == TOKEN_IDENTIFIER);
     ASSERT(groups->member_access_operators.count == 1);
     ASSERT(groups->member_access_operators.first == groups->member_access_operators.last);
 
-    scan = create_scanner("program.goat", STATIC_STRING(L"a.b.c"), &memory, groups);
+    scan = create_scanner("program.goat", STATIC_STRING(U"a.b.c"), &memory, groups);
     token_list_t tokens;
     compilation_error_t *error = process_brackets(&memory, scan, &tokens, groups);
     ASSERT(error == NULL);
@@ -52,7 +52,7 @@ bool test_member_access_scanner(void) {
     ASSERT(tokens.first->type == TOKEN_EXPRESSION);
     ASSERT(tokens.first->node->vtbl->type == NODE_MEMBER_ACCESS);
     string_value_t code = generate_goat_code_from_node(tokens.first->node);
-    ASSERT(!wcscmp(code.data, L"a.b.c"));
+    ASSERT(!STRCMP(code.data, U"a.b.c"));
     FREE_STRING(code);
     FREE(groups);
     destroy_arena(arena);
@@ -60,38 +60,38 @@ bool test_member_access_scanner(void) {
 }
 
 bool test_member_access_parser(void) {
-    const wchar_t *valid[] = {
-        L"var obj = {}; obj.x = 10; print(obj.x);",
-        L"var obj = {}; obj.a.b = 20;",
-        L"var obj = {}; (obj).x = 5;",
-        L"var obj = {}; print(obj.x);",
-        L"var obj = {}; obj.x;",
-        L"obj.x = obj.y;",
-        L"var obj = {const f = func() { return 1; }}; obj.f();",
-        L"var obj = {const f = func(x) { return x; }}; obj.f(42);",
-        L"var obj = {var inner = {}; inner.g = func() { return 2; }}; obj.inner.g();",
-        L"var obj = {const f = func() { return 1; }}; (obj).f();",
-        L"var obj = {}; obj.f = func() { return 3; }; print(obj.f());"};
+    const gchar_t *valid[] = {
+        U"var obj = {}; obj.x = 10; print(obj.x);",
+        U"var obj = {}; obj.a.b = 20;",
+        U"var obj = {}; (obj).x = 5;",
+        U"var obj = {}; print(obj.x);",
+        U"var obj = {}; obj.x;",
+        U"obj.x = obj.y;",
+        U"var obj = {const f = func() { return 1; }}; obj.f();",
+        U"var obj = {const f = func(x) { return x; }}; obj.f(42);",
+        U"var obj = {var inner = {}; inner.g = func() { return 2; }}; obj.inner.g();",
+        U"var obj = {const f = func() { return 1; }}; (obj).f();",
+        U"var obj = {}; obj.f = func() { return 3; }; print(obj.f());"};
     for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
         ASSERT(
-            parse_analysis_test_program(&m, (string_value_t){valid[i], wcslen(valid[i]), false}));
+            parse_analysis_test_program(&m, (string_value_t){valid[i], STRLEN(valid[i]), false}));
         destroy_arena(a);
     }
-    const wchar_t *invalid[] = {L"obj.;",
-                                L".x;",
-                                L"var obj = {}; obj..x;",
-                                L"var obj = {}; obj.1;",
-                                L"f(1,);",
-                                L"f(,1);",
-                                L"var obj = {}; obj.f(1,);"};
+    const gchar_t *invalid[] = {U"obj.;",
+                                U".x;",
+                                U"var obj = {}; obj..x;",
+                                U"var obj = {}; obj.1;",
+                                U"f(1,);",
+                                U"f(,1);",
+                                U"var obj = {}; obj.f(1,);"};
     for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
         arena_t *a = create_arena(8);
         parser_memory_t m = {a, a, a, a};
         ASSERT(
             !parse_analysis_test_program(&m,
-                                         (string_value_t){invalid[i], wcslen(invalid[i]), false}));
+                                         (string_value_t){invalid[i], STRLEN(invalid[i]), false}));
         destroy_arena(a);
     }
     return true;
@@ -99,9 +99,9 @@ bool test_member_access_parser(void) {
 
 bool test_member_access_ast(void) {
     arena_t *arena = create_arena(8);
-    variable_t *var = (variable_t *)create_variable_node(arena, (string_view_t){L"obj", 3});
+    variable_t *var = (variable_t *)create_variable_node(arena, (string_view_t){U"obj", 3});
     expression_t *node =
-        create_member_access_node(arena, &var->base.base, (string_view_t){L"x", 1});
+        create_member_access_node(arena, &var->base.base, (string_view_t){U"x", 1});
     ASSERT(is_expression(node->base.vtbl->type));
     ASSERT(node->base.vtbl->is_assignable_expression);
     ASSERT(get_node_child_count(&node->base) == 1);
@@ -109,7 +109,7 @@ bool test_member_access_ast(void) {
     ASSERT(!get_node_child(&node->base, 1));
 
     string_value_t source = generate_goat_code_from_expression(node);
-    ASSERT(!wcscmp(source.data, L"obj.x"));
+    ASSERT(!STRCMP(source.data, U"obj.x"));
     FREE_STRING(source);
 
     code_builder_t *builder = create_code_builder();
@@ -139,7 +139,7 @@ bool test_member_access_ast(void) {
     string_value_t pretty = build_source(sb);
     string_value_t indented_source = generate_goat_code_from_expression(node);
     ASSERT(pretty.length == indented_source.length + 1
-           && !wmemcmp(pretty.data, indented_source.data, indented_source.length));
+           && !MEMCMP(pretty.data, indented_source.data, indented_source.length));
     FREE_STRING(pretty);
     FREE_STRING(indented_source);
     destroy_source_builder(sb);
@@ -149,9 +149,9 @@ bool test_member_access_ast(void) {
 
 bool test_member_access_method_call_ast(void) {
     arena_t *arena = create_arena(8);
-    variable_t *var = (variable_t *)create_variable_node(arena, (string_view_t){L"obj", 3});
+    variable_t *var = (variable_t *)create_variable_node(arena, (string_view_t){U"obj", 3});
     expression_t *member =
-        create_member_access_node(arena, &var->base.base, (string_view_t){L"foo", 3});
+        create_member_access_node(arena, &var->base.base, (string_view_t){U"foo", 3});
     node_t *call = create_function_call_node_without_args(arena, member);
     ASSERT(call->vtbl->type == NODE_FUNCTION_CALL);
     ASSERT(get_node_child_count(call) == 1);
@@ -159,7 +159,7 @@ bool test_member_access_method_call_ast(void) {
     ASSERT(get_node_child(call, 0)->vtbl->type == NODE_MEMBER_ACCESS);
 
     string_value_t source = generate_goat_code_from_node(call);
-    ASSERT(!wcscmp(source.data, L"obj.foo()"));
+    ASSERT(!STRCMP(source.data, U"obj.foo()"));
     FREE_STRING(source);
 
     code_builder_t *builder = create_code_builder();
@@ -180,8 +180,8 @@ bool test_member_access_method_call_ast(void) {
 static bytecode_t *make_member_access_code(const instruction_t *list, size_t count) {
     code_builder_t *builder = create_code_builder();
     data_builder_t *data = create_data_builder();
-    add_string_to_data_segment(data, L"x");
-    add_string_to_data_segment(data, L"y");
+    add_string_to_data_segment(data, U"x");
+    add_string_to_data_segment(data, U"y");
     for (size_t i = 0; i < count; i++)
         add_instruction(builder, list[i]);
     bytecode_t *code = link_code_and_data(builder, data);
@@ -193,7 +193,7 @@ static bytecode_t *make_member_access_code(const instruction_t *list, size_t cou
 bool test_member_access_vm(void) {
     process_t *proc = create_process();
     object_t *root = get_root_object();
-    object_t *key = create_string_object(proc, (string_value_t){L"x", 1, false});
+    object_t *key = create_string_object(proc, (string_value_t){U"x", 1, false});
     add_gc_root(proc, key);
     object_t *obj = create_user_defined_object(proc, (object_array_t){&root, 1});
     add_gc_root(proc, obj);
@@ -284,7 +284,7 @@ bool test_member_access_vm(void) {
 
     code = make_member_access_code(getprop, 2);
     string_value_t text = bytecode_to_text(code);
-    ASSERT(wcsstr(text.data, L"GETPROP"));
+    ASSERT(STRSTR(text.data, U"GETPROP"));
     FREE_STRING(text);
     free_bytecode(code);
 
@@ -307,8 +307,8 @@ bool test_member_access_vm(void) {
 /** @brief Tests that CALLM passes the receiver as the method context and 'this' resolves to it. */
 bool test_method_call_receiver_vm(void) {
     data_builder_t *data_builder = create_data_builder();
-    uint32_t name_x_idx = add_string_to_data_segment(data_builder, L"x");
-    uint32_t name_this_idx = add_string_to_data_segment(data_builder, L"this");
+    uint32_t name_x_idx = add_string_to_data_segment(data_builder, U"x");
+    uint32_t name_this_idx = add_string_to_data_segment(data_builder, U"this");
     code_builder_t *code_builder = create_code_builder();
     add_instruction(code_builder, (instruction_t){.opcode = ARG, .arg1 = 4});
     add_instruction(code_builder, (instruction_t){.opcode = FUNC, .arg0 = 0, .arg1 = 0});
@@ -325,7 +325,7 @@ bool test_method_call_receiver_vm(void) {
     object_t *root = get_root_object();
     object_t *receiver = create_user_defined_object(proc, (object_array_t){&root, 1});
     add_gc_root(proc, receiver);
-    object_t *key = create_string_object(proc, (string_value_t){L"x", 1, false});
+    object_t *key = create_string_object(proc, (string_value_t){U"x", 1, false});
     add_gc_root(proc, key);
     ASSERT(create_object_property(receiver, key, get_static_integer_object(5), false) == MSTAT_OK);
     INCREF(receiver);

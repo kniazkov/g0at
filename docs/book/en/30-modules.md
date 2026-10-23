@@ -130,3 +130,41 @@ in `include/goat/module_identity.h`. It accepts explicit lengths, does not
 require null termination, and does not allocate memory. The existing
 `string_view_t` contract remains unchanged. A separate wide-character
 parser supports the compiler's `wchar_t` strings.
+
+## Portable scalar strings (#250)
+
+All internal strings, compiler messages, slices and native runtime strings now
+use `gchar_t`, an alias of C11 `char32_t`. A scalar occupies exactly four
+8-bit bytes. Literals use `U"..."` and `U'...'`. Configuration and public-header
+checks reject big-endian and unknown byte order, non-UTF-32 targets and other
+widths. These checks concern the compilation target, including cross builds.
+
+Lengths and indices count Unicode scalars, not UTF-8 bytes, UTF-16 units or
+visual graphemes. A supplementary character has length one on Windows as on
+Linux; `e` followed by U+0301 has length two. No normalization occurs. U+0000 is
+ordinary content: `"A\0B"` has length three and differs from `"A"`. Terminated
+views retain the extra zero outside their length; bounded slices need no extra
+readable element. Ownership and the null/empty distinction are unchanged.
+
+The string library supplies bounded copying, comparison, searching, builders,
+formatting (`%v` takes a whole view), escaping, hashing and strict UTF-8/UTF-16
+boundaries. Invalid Unicode is rejected, never repaired. OS path conversion
+rejects zeros anywhere in the input before calling a terminated system API.
+Unicode casing is pinned to **17.0.0**: strings use full default mappings
+(`ß → SS`, contextual Greek final sigma), single characters use simple mappings.
+Compiler folding, VM and native runtime share tables and algorithms. UCD inputs,
+license and SHA-256 manifest are in `third_party/unicode`; regenerate with
+`python scripts/generate_unicode.py`. Builds never download Unicode data.
+
+String payloads are explicitly serialized as UTF-32LE without BOM, with one
+four-byte terminator outside the declared content length. The loader checks
+length, bounds, alignment, terminator and every scalar, then uses the loaded
+buffer directly. No per-string allocation, transcoding or byte swapping occurs.
+
+This step uses transitional signatures `GOATST01` (container) and `GOATSC01`
+(inner image), version 1. They reject all old images, including `GOATBI11` and
+`goat v.1`, with a request to recompile. They deliberately do **not** claim the
+final `GOATBC01` layout: the remaining sections and container migration belong
+to #251. The independent `test/unicode/scalars.gbin.hex` fixture is read unchanged
+by the C loader in the Windows/Linux CI matrix. `scripts/check_unicode.py`
+checks VM, folding, native execution, embedded zeros and locale independence.

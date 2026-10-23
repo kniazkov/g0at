@@ -72,7 +72,7 @@ int main(void) {
                          '-I' + str(Path(__file__).resolve().parent.parent / 'test/functional/native_abi'),
                         *flags, str(host), '-o', str(executable)], check=True, timeout=30)
         subprocess.run([str(executable)], check=True, timeout=30)
-    print('[ ok ] characters: Unicode, source/binary round trips, VM/native, 16-bit wchar_t')
+    print('[ ok ] characters: Unicode, source/binary round trips, VM/native, 16-bit system wchar_t')
 
 
 if __name__ == '__main__':

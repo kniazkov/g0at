@@ -9,20 +9,20 @@
 #include "analysis/function_effects.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "goat/unicode.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 bool test_function_purity_limits() {
     arena_t *arena = create_arena(16);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"var x=0;\nconst a=func(n){return b(n);};\n"
-                      L"const b=func(n){return c(n);};\nconst c=func(n){x=n;return n;};a(1);"));
+        STATIC_STRING(U"var x=0;\nconst a=func(n){return b(n);};\n"
+                      U"const b=func(n){return c(n);};\nconst c=func(n){x=n;return n;};a(1);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -68,7 +68,7 @@ bool test_function_purity_limits() {
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);

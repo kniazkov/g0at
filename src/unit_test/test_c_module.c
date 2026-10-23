@@ -9,11 +9,11 @@
 #include "analysis_test_support.h"
 #include "cli/options.h"
 #include "codegen/c_module.h"
+#include "goat/unicode.h"
 #include "graph/replacement.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 static node_t *analyzed(arena_t *arena, string_value_t text) {
     parser_memory_t memory = {arena, arena, arena, arena};
@@ -30,10 +30,10 @@ bool test_c_module_identity(void) {
     arena_t *arena = create_arena(32);
     node_t *root =
         analyzed(arena,
-                 STATIC_STRING(L"const f=func(n){return n+1;}; const alias=f;"
-                               L"const g=func(n){return f(n);}; const z=func(){return 0;};"
-                               L"const uncalled=func(n){return n;};"
-                               L"alias(1.0); f(1); f(2); g(1); g(1.0); z();"));
+                 STATIC_STRING(U"const f=func(n){return n+1;}; const alias=f;"
+                               U"const g=func(n){return f(n);}; const z=func(){return 0;};"
+                               U"const uncalled=func(n){return n;};"
+                               U"alias(1.0); f(1); f(2); g(1); g(1.0); z();"));
     ASSERT(root);
     c_module_t *module = create_c_module(arena, root);
     ASSERT(module->count == 5 && module->available_count == 5);
@@ -50,7 +50,7 @@ bool test_c_module_identity(void) {
         const function_summary_t *copy = snapshot_function_summary(arena, entry->summary);
         ASSERT(c_module_find(module, copy) == entry);
         for (c_module_function_t *other = entry->next; other; other = other->next)
-            ASSERT(wcscmp(entry->name.data, other->name.data));
+            ASSERT(STRCMP(entry->name.data, other->name.data));
         /* Node indexes are deliberately made identical: names must not depend on them. */
         ((node_t *)entry->summary->function)->id = 7;
     }
@@ -66,7 +66,7 @@ bool test_c_module_identity(void) {
     for (c_module_function_t *entry = module->head; entry; entry = entry->next) {
         const c_module_function_t *other = c_module_find(again, entry->summary);
         ASSERT(other && entry->id == other->id && entry->function_id == other->function_id);
-        ASSERT(!wcscmp(entry->name.data, other->name.data));
+        ASSERT(!STRCMP(entry->name.data, other->name.data));
     }
     ASSERT(!create_c_module(arena, NULL)->count);
     ASSERT(!c_module_find(NULL, module->head->summary));
@@ -78,11 +78,11 @@ bool test_c_module_dependencies(void) {
     arena_t *arena = create_arena(32);
     node_t *root =
         analyzed(arena,
-                 STATIC_STRING(L"const even=func(n){if(n<1)return 1;return odd(n-1);};"
-                               L"const odd=func(n){if(n<1)return 0;return even(n-1);};"
-                               L"const alias=even;"
-                               L"const caller=func(n){return alias(n)+alias(n);};"
-                               L"const alone=func(n){return n+1;}; alone(1); caller(2);"));
+                 STATIC_STRING(U"const even=func(n){if(n<1)return 1;return odd(n-1);};"
+                               U"const odd=func(n){if(n<1)return 0;return even(n-1);};"
+                               U"const alias=even;"
+                               U"const caller=func(n){return alias(n)+alias(n);};"
+                               U"const alone=func(n){return n+1;}; alone(1); caller(2);"));
     ASSERT(root);
     c_module_t *module = create_c_module(arena, root);
     ASSERT(module->count == 4 && module->available_count == 4);
@@ -94,7 +94,7 @@ bool test_c_module_dependencies(void) {
     ASSERT(caller->dependencies->target == even && caller->dependencies->next->target == even);
     ASSERT(caller->callees && !caller->callees->next);
     ASSERT(caller->callees->summary == even->summary);
-    ASSERT(!wcscmp(caller->callees->name.data, even->name.data));
+    ASSERT(!STRCMP(caller->callees->name.data, even->name.data));
     ASSERT(!alone->dependencies);
     function_summary_t *removed = (function_summary_t *)odd->summary;
     removed->c_support = FUNCTION_C_UNKNOWN;
@@ -122,7 +122,7 @@ bool test_c_module_dependencies(void) {
 bool test_c_module_call_lifetime(void) {
     arena_t *arena = create_arena(32);
     node_t *root =
-        analyzed(arena, STATIC_STRING(L"const f=func(n){if(n<1)return 0;return f(n-1);};f(2);"));
+        analyzed(arena, STATIC_STRING(U"const f=func(n){if(n<1)return 0;return f(n-1);};f(2);"));
     ASSERT(root);
     c_module_t *module = create_c_module(arena, root);
     ASSERT(module->count == 1 && module->available_count == 1);

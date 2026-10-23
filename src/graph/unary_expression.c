@@ -34,8 +34,8 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements node_vtbl_t::get_child_tag. */
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
-    return index == 0 ? L"operand" : NULL;
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
+    return index == 0 ? U"operand" : NULL;
 }
 
 /** @brief Implements node_vtbl_t::calculate. */
@@ -49,9 +49,9 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 static string_value_t generate_goat_code(const node_t *node) {
     string_value_t operand =
         generate_goat_code_from_expression(((const unary_expression_t *)node)->operand);
-    const wchar_t *op = node->vtbl->type == NODE_UNARY_MINUS ? L"-" : L"+";
-    string_value_t result = operand.data[0] == op[0] ? format_string(L"%s %s", op, operand.data)
-                                                     : format_string(L"%s%s", op, operand.data);
+    const gchar_t *op = node->vtbl->type == NODE_UNARY_MINUS ? U"-" : U"+";
+    string_value_t result = operand.data[0] == op[0] ? format_string(U"%s %s", op, operand.data)
+                                                     : format_string(U"%s%s", op, operand.data);
     FREE_STRING(operand);
     return result;
 }
@@ -107,7 +107,7 @@ static node_vtbl_t unary_plus_vtbl = {
     .is_pure = children_are_pure,
     .simplify = simplify_constant_expression,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"unary plus",
+    .type_name = U"unary plus",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -138,7 +138,7 @@ static node_vtbl_t unary_minus_vtbl = {
     .is_pure = children_are_pure,
     .simplify = simplify_constant_expression,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"unary minus",
+    .type_name = U"unary minus",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

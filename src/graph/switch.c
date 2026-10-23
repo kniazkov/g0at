@@ -59,15 +59,15 @@ static node_t *get_child(const node_t *node, size_t index) {
     return slot ? *slot : NULL;
 }
 
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
     if (!index)
-        return L"value";
+        return U"value";
     for (size_t i = 0; i < switch_branch_count(node); i++) {
         const switch_branch_t *branch = switch_branch(node, i);
         if (get_child(node, index) == branch->body)
-            return branch->count ? L"case body" : L"default body";
+            return branch->count ? U"case body" : U"default body";
     }
-    return L"case value";
+    return U"case value";
 }
 
 static bool replace_child(node_t *node, node_t *old, node_t *replacement) {
@@ -139,58 +139,58 @@ reach(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
 static string_value_t generate_goat_code(const node_t *node) {
     string_builder_t out = {0};
     string_value_t selector = generate_goat_code_from_node(get_child(node, 0));
-    append_static_string(&out, L"switch (");
+    append_static_string(&out, U"switch (");
     append_string_value(&out, selector);
     FREE_STRING(selector);
-    append_static_string(&out, L") { ");
+    append_static_string(&out, U") { ");
     for (size_t i = 0; i < switch_branch_count(node); i++) {
         const switch_branch_t *branch = switch_branch(node, i);
         if (branch->count)
-            append_static_string(&out, L"case ");
+            append_static_string(&out, U"case ");
         else
-            append_static_string(&out, L"default");
+            append_static_string(&out, U"default");
         for (size_t j = 0; j < branch->count; j++) {
             if (j)
-                append_static_string(&out, L", ");
+                append_static_string(&out, U", ");
             string_value_t label = generate_goat_code_from_node(branch->labels[j]);
             append_string_value(&out, label);
             FREE_STRING(label);
         }
-        append_static_string(&out, L": ");
+        append_static_string(&out, U": ");
         /* Emit the branch statements, not an additional object block. */
         const node_t *block = get_node_child(branch->body, 0);
         for (size_t j = 0; j < get_node_child_count(block); j++) {
             string_value_t item = generate_goat_code_from_node(get_node_child(block, j));
             append_string_value(&out, item);
             FREE_STRING(item);
-            append_static_string(&out, L" ");
+            append_static_string(&out, U" ");
         }
     }
-    return append_static_string(&out, L"}");
+    return append_static_string(&out, U"}");
 }
 
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     string_value_t selector = generate_goat_code_from_node(get_child(node, 0));
-    add_source(builder, indent, L"switch (%s) {", selector.data);
+    add_source(builder, indent, U"switch (%s) {", selector.data);
     FREE_STRING(selector);
     for (size_t i = 0; i < switch_branch_count(node); i++) {
         const switch_branch_t *branch = switch_branch(node, i);
         if (branch->count) {
-            add_static_source(builder, indent + 1, L"case ");
+            add_static_source(builder, indent + 1, U"case ");
             for (size_t j = 0; j < branch->count; j++) {
                 if (j)
-                    append_static_source(builder, L", ");
+                    append_static_source(builder, U", ");
                 append_formatted_source(builder, generate_goat_code_from_node(branch->labels[j]));
             }
-            append_static_source(builder, L":");
+            append_static_source(builder, U":");
         } else
-            add_static_source(builder, indent + 1, L"default:");
+            add_static_source(builder, indent + 1, U"default:");
         const node_t *block = get_node_child(branch->body, 0);
         for (size_t j = 0; j < get_node_child_count(block); j++)
             generate_indented_goat_code_from_node(get_node_child(block, j), builder, indent + 2);
     }
-    add_static_source(builder, indent, L"}");
+    add_static_source(builder, indent, U"}");
 }
 
 static void patch(code_builder_t *code, instr_index_t head, instr_index_t target) {
@@ -231,7 +231,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
 }
 
 static node_vtbl_t vtbl = {.type = NODE_SWITCH,
-                           .type_name = L"switch",
+                           .type_name = U"switch",
                            .get_data = no_data,
                            .get_property_count = no_properties,
                            .get_property = no_property,

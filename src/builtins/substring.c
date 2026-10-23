@@ -4,13 +4,12 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
-
-#include <wchar.h>
 
 /** @brief Runtime executor for the method form `string.substring(begin, end)`. */
 static operation_result_t
@@ -37,8 +36,8 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
     }
     size_t start = (size_t)begin;
     size_t stop = (size_t)end;
-    wchar_t *copy = ALLOC((stop - start + 1) * sizeof(wchar_t));
-    wmemcpy(copy, value.data + start, stop - start);
+    gchar_t *copy = ALLOC((stop - start + 1) * sizeof(gchar_t));
+    MEMCPY(copy, value.data + start, stop - start);
     copy[stop - start] = 0;
     FREE_STRING(value);
     return operation_success(
@@ -79,7 +78,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_string_element();
 }
 
-const builtin_function_t builtin_substring = {.name = L"substring",
+const builtin_function_t builtin_substring = {.name = U"substring",
                                               .min_args = 1,
                                               .effects = BUILTIN_EFFECT_NONE,
                                               .execute = execute,

@@ -34,9 +34,10 @@
 #    define CLOSE_FD close
 #    define FILENO_FD fileno
 #endif
+#include "goat/unicode.h"
+
 #include <stdio.h>
 #include <string.h>
-#include <wchar.h>
 
 bool test_optimization_options() {
     options_t *options = create_options();
@@ -76,7 +77,7 @@ bool test_optimization_modes() {
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root = parse_analysis_test_program(
             &memory,
-            STATIC_STRING(L"var x = 0; if (true) { x = 1; } else { x = 2; } print(x);"));
+            STATIC_STRING(U"var x = 0; if (true) { x = 1; } else { x = 2; } print(x);"));
         ASSERT(root);
         options_t *options = create_options();
         options->optimization_level = disabled ? OPTIMIZATION_NONE : OPTIMIZATION_ALL;
@@ -101,7 +102,7 @@ bool test_optimization_modes() {
     }
     arena_t *arena = create_arena(16);
     parser_memory_t memory = {arena, arena, arena, arena};
-    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(L"x;"));
+    node_t *root = parse_analysis_test_program(&memory, STATIC_STRING(U"x;"));
     ASSERT(root);
     options_t *options = create_options();
     options->optimization_level = OPTIMIZATION_NONE;
@@ -114,7 +115,7 @@ bool test_optimization_modes() {
     destroy_arena(arena);
     arena = create_arena(16);
     memory = (parser_memory_t){arena, arena, arena, arena};
-    root = parse_analysis_test_program(&memory, STATIC_STRING(L"x = 1;"));
+    root = parse_analysis_test_program(&memory, STATIC_STRING(U"x = 1;"));
     ASSERT(root);
     options = create_options();
     options->optimization_level = OPTIMIZATION_NONE;
@@ -131,26 +132,26 @@ bool test_optimization_modes() {
 
 bool test_optimized_if_bytecode() {
     struct {
-        const wchar_t *source;
+        const gchar_t *source;
         size_t jumps, stores, pops, functions;
-    } cases[] = {{L"if (true) { } else { }", 0, 0, 1, 0},
-                 {L"if ((true)) { }", 0, 0, 1, 0},
-                 {L"if (false) { }", 0, 0, 0, 0},
-                 {L"if (null) { } else { }", 0, 0, 1, 0},
-                 {L"var x = 0; if ((x = 1)) { } else { }", 0, 0, 2, 0},
-                 {L"var x = 1; if ((x = 0)) { }", 0, 0, 1, 0},
-                 {L"var x = 1; if (x) { }", 0, 0, 1, 0},
-                 {L"if (func() {}) { }", 0, 0, 2, 1},
-                 {L"if (1 < 2) { } else { }", 0, 0, 1, 0},
-                 {L"if (pi) { } else { }", 2, 0, 2, 0},
-                 {L"if ({ return; }) { } else { }", 0, 0, 0, 0}};
+    } cases[] = {{U"if (true) { } else { }", 0, 0, 1, 0},
+                 {U"if ((true)) { }", 0, 0, 1, 0},
+                 {U"if (false) { }", 0, 0, 0, 0},
+                 {U"if (null) { } else { }", 0, 0, 1, 0},
+                 {U"var x = 0; if ((x = 1)) { } else { }", 0, 0, 2, 0},
+                 {U"var x = 1; if ((x = 0)) { }", 0, 0, 1, 0},
+                 {U"var x = 1; if (x) { }", 0, 0, 1, 0},
+                 {U"if (func() {}) { }", 0, 0, 2, 1},
+                 {U"if (1 < 2) { } else { }", 0, 0, 1, 0},
+                 {U"if (pi) { } else { }", 2, 0, 2, 0},
+                 {U"if ({ return; }) { } else { }", 0, 0, 0, 0}};
 
     for (size_t c = 0; c < sizeof(cases) / sizeof(*cases); c++) {
         arena_t *arena = create_arena(16);
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root = parse_analysis_test_program(
             &memory,
-            (string_value_t){cases[c].source, wcslen(cases[c].source), false});
+            (string_value_t){cases[c].source, STRLEN(cases[c].source), false});
         ASSERT(root);
         options_t *options = create_options();
         ASSERT(!analyze(root, &memory, options, NULL));
@@ -172,37 +173,37 @@ bool test_optimized_if_bytecode() {
 
 bool test_unused_bindings() {
     struct {
-        const wchar_t *source;
+        const gchar_t *source;
         size_t vars, stores, calls;
-        const wchar_t *printed;
+        const gchar_t *printed;
     } cases[] = {
-        {L"a=2;b=3;x=a+b;println(x);", 0, 0, 1, L"println(5);"},
-        {L"var a=1;var b=a;const c=b;", 0, 0, 0, L""},
-        {L"var a=input();", 0, 0, 1, L"input();"},
-        {L"var a=input(); const unused=func(){return a;};", 0, 0, 1, L"input();"},
-        {L"var a=input(),b=input();println(b);", 1, 0, 3, L"input(); var b = input(); println(b);"},
-        {L"a=input();println(a);", 0, 0, 2, L"const a = input(); println(a);"},
-        {L"var a=1;const f=func(){return a;};println(f());",
+        {U"a=2;b=3;x=a+b;println(x);", 0, 0, 1, U"println(5);"},
+        {U"var a=1;var b=a;const c=b;", 0, 0, 0, U""},
+        {U"var a=input();", 0, 0, 1, U"input();"},
+        {U"var a=input(); const unused=func(){return a;};", 0, 0, 1, U"input();"},
+        {U"var a=input(),b=input();println(b);", 1, 0, 3, U"input(); var b = input(); println(b);"},
+        {U"a=input();println(a);", 0, 0, 2, U"const a = input(); println(a);"},
+        {U"var a=1;const f=func(){return a;};println(f());",
          1,
          0,
          2,
-         L"var a = 1; const f = func() {return a;}; println(f());"},
-        {L"var a=1; a++;", 1, 1, 0, L"var a = 1; a++;"},
-        {L"const a=1;try{a=2;}catch(e){println(e);}",
+         U"var a = 1; const f = func() {return a;}; println(f());"},
+        {U"var a=1; a++;", 1, 1, 0, U"var a = 1; a++;"},
+        {U"const a=1;try{a=2;}catch(e){println(e);}",
          1,
          1,
          1,
-         L"const a = 1; try {a = 2;} catch (e) {println(e);}"},
-        {L"for (var i = 0, j = 5; i < 2; i++) println(i);",
+         U"const a = 1; try {a = 2;} catch (e) {println(e);}"},
+        {U"for (var i = 0, j = 5; i < 2; i++) println(i);",
          1,
          1,
          1,
-         L"for (var i = 0; i < 2; i++) {println(i);}"},
-        {L"for (var i = 0, j = input(); i < 2; i++) println(i);",
+         U"for (var i = 0; i < 2; i++) {println(i);}"},
+        {U"for (var i = 0, j = input(); i < 2; i++) println(i);",
          1,
          1,
          2,
-         L"for (var i = 0, j = input(); i < 2; i++) {println(i);}"},
+         U"for (var i = 0, j = input(); i < 2; i++) {println(i);}"},
     };
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
@@ -210,7 +211,7 @@ bool test_unused_bindings() {
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root = parse_analysis_test_program(
             &memory,
-            (string_value_t){cases[i].source, wcslen(cases[i].source), false});
+            (string_value_t){cases[i].source, STRLEN(cases[i].source), false});
         options_t *options = create_options();
         ASSERT(root && !analyze(root, &memory, options, NULL));
         code_builder_t *code = create_code_builder();
@@ -220,7 +221,7 @@ bool test_unused_bindings() {
         ASSERT(opcode_count(code, STORE) == cases[i].stores);
         ASSERT(opcode_count(code, CALL) == cases[i].calls);
         string_value_t printed = generate_goat_code_from_node(root);
-        ASSERT(!wcscmp(printed.data, cases[i].printed));
+        ASSERT(!STRCMP(printed.data, cases[i].printed));
         FREE_STRING(printed);
         if (i == 0) {
             ASSERT(code->size == 5 && code->instructions[0].opcode == ILOAD32
@@ -228,8 +229,8 @@ bool test_unused_bindings() {
             const node_t *deleted = get_node_child(get_node_child(root, 0), 0);
             ASSERT(is_deletion(deleted) && get_node_child_count(deleted) == 1);
             string_value_t dot = generate_graph_dot(root);
-            ASSERT(wcsstr(dot.data, L"darkred") && wcsstr(dot.data, L"#ffe5e5"));
-            ASSERT(wcsstr(dot.data, L"midnightblue") && wcsstr(dot.data, L"#eaf1fa"));
+            ASSERT(STRSTR(dot.data, U"darkred") && STRSTR(dot.data, U"#ffe5e5"));
+            ASSERT(STRSTR(dot.data, U"midnightblue") && STRSTR(dot.data, U"#eaf1fa"));
             FREE_STRING(dot);
             options->optimization_level = OPTIMIZATION_NONE;
             ASSERT(!analyze(root, &memory, options, NULL));
@@ -268,11 +269,11 @@ static string_value_t read_captured_file(FILE *file) {
  * The stdout produced by the program is returned as a decoded string; NULL_STRING_VALUE
  * indicates a compile error, an uncaught exception, or an I/O failure.
  */
-static string_value_t run_captured_program(const wchar_t *source, const wchar_t *input) {
+static string_value_t run_captured_program(const gchar_t *source, const gchar_t *input) {
     arena_t *arena = create_arena(16);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, wcslen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     string_value_t output = NULL_STRING_VALUE;
     if (root) {
         options_t *options = create_options();
@@ -327,98 +328,98 @@ static string_value_t run_captured_program(const wchar_t *source, const wchar_t 
 
 bool test_printed_source_recompiles() {
     struct {
-        const wchar_t *source;
-        const wchar_t *input;
-        const wchar_t *single;
-        const wchar_t *indented;
-        const wchar_t *output;
+        const gchar_t *source;
+        const gchar_t *input;
+        const gchar_t *single;
+        const gchar_t *indented;
+        const gchar_t *output;
     } cases[] = {
-        {L"for (var a=println(1), b=println(2); false;) {}",
+        {U"for (var a=println(1), b=println(2); false;) {}",
          NULL,
-         L"for (var a = println(1), b = println(2); false; ) { }",
-         L"for (var a = println(1), b = println(2); false; ) { }\n",
-         L"1\n2\n"},
-        {L"for (const a=println(1), b=println(2); false;) {}",
+         U"for (var a = println(1), b = println(2); false; ) { }",
+         U"for (var a = println(1), b = println(2); false; ) { }\n",
+         U"1\n2\n"},
+        {U"for (const a=println(1), b=println(2); false;) {}",
          NULL,
-         L"for (const a = println(1), b = println(2); false; ) { }",
-         L"for (const a = println(1), b = println(2); false; ) { }\n",
-         L"1\n2\n"},
-        {L"if (input()) var a=println(1), b=println(2);\nprintln(\"after\");",
-         L"",
-         L"if (input()) { println(1); println(2); } println(\"after\");",
-         L"if (input()) {\n    println(1);\n    println(2);\n}\nprintln(\"after\");\n",
-         L"after\n"},
-        {L"if (input()) const a=println(1), b=println(2);\nprintln(\"after\");",
-         L"",
-         L"if (input()) { println(1); println(2); } println(\"after\");",
-         L"if (input()) {\n    println(1);\n    println(2);\n}\nprintln(\"after\");\n",
-         L"after\n"},
-        {L"if (input()) var a=println(1), b=println(2);\nprintln(\"after\");",
-         L"x",
-         L"if (input()) { println(1); println(2); } println(\"after\");",
-         L"if (input()) {\n    println(1);\n    println(2);\n}\nprintln(\"after\");\n",
-         L"1\n2\nafter\n"},
-        {L"if (input()) var x=1;\nprintln(\"after\");",
-         L"",
-         L"if (input()) { } println(\"after\");",
-         L"if (input()) { }\nprintln(\"after\");\n",
-         L"after\n"},
-        {L"if (input()) const x=1;\nprintln(\"after\");",
-         L"",
-         L"if (input()) { } println(\"after\");",
-         L"if (input()) { }\nprintln(\"after\");\n",
-         L"after\n"},
-        {L"if (input()) var a=println(1), b=input();\nprintln(b);",
-         L"",
-         L"if (input()) var a = println(1), b = input(); println(b);",
-         L"if (input()) \n    var a = println(1), b = input();\nprintln(b);\n",
-         L"null\n"},
-        {L"if (input()) const a=println(1), b=input();\nprintln(b);",
-         L"",
-         L"if (input()) const a = println(1), b = input(); println(b);",
-         L"if (input()) \n    const a = println(1), b = input();\nprintln(b);\n",
-         L"null\n"},
-        {L"if (input()) var a=println(1), b=input();\nprintln(b);",
-         L"x\nhello\n",
-         L"if (input()) var a = println(1), b = input(); println(b);",
-         L"if (input()) \n    var a = println(1), b = input();\nprintln(b);\n",
-         L"1\nhello\n"},
-        {L"if (input()) const a=println(1), b=input();\nprintln(b);",
-         L"x\nhello\n",
-         L"if (input()) const a = println(1), b = input(); println(b);",
-         L"if (input()) \n    const a = println(1), b = input();\nprintln(b);\n",
-         L"1\nhello\n"},
+         U"for (const a = println(1), b = println(2); false; ) { }",
+         U"for (const a = println(1), b = println(2); false; ) { }\n",
+         U"1\n2\n"},
+        {U"if (input()) var a=println(1), b=println(2);\nprintln(\"after\");",
+         U"",
+         U"if (input()) { println(1); println(2); } println(\"after\");",
+         U"if (input()) {\n    println(1);\n    println(2);\n}\nprintln(\"after\");\n",
+         U"after\n"},
+        {U"if (input()) const a=println(1), b=println(2);\nprintln(\"after\");",
+         U"",
+         U"if (input()) { println(1); println(2); } println(\"after\");",
+         U"if (input()) {\n    println(1);\n    println(2);\n}\nprintln(\"after\");\n",
+         U"after\n"},
+        {U"if (input()) var a=println(1), b=println(2);\nprintln(\"after\");",
+         U"x",
+         U"if (input()) { println(1); println(2); } println(\"after\");",
+         U"if (input()) {\n    println(1);\n    println(2);\n}\nprintln(\"after\");\n",
+         U"1\n2\nafter\n"},
+        {U"if (input()) var x=1;\nprintln(\"after\");",
+         U"",
+         U"if (input()) { } println(\"after\");",
+         U"if (input()) { }\nprintln(\"after\");\n",
+         U"after\n"},
+        {U"if (input()) const x=1;\nprintln(\"after\");",
+         U"",
+         U"if (input()) { } println(\"after\");",
+         U"if (input()) { }\nprintln(\"after\");\n",
+         U"after\n"},
+        {U"if (input()) var a=println(1), b=input();\nprintln(b);",
+         U"",
+         U"if (input()) var a = println(1), b = input(); println(b);",
+         U"if (input()) \n    var a = println(1), b = input();\nprintln(b);\n",
+         U"null\n"},
+        {U"if (input()) const a=println(1), b=input();\nprintln(b);",
+         U"",
+         U"if (input()) const a = println(1), b = input(); println(b);",
+         U"if (input()) \n    const a = println(1), b = input();\nprintln(b);\n",
+         U"null\n"},
+        {U"if (input()) var a=println(1), b=input();\nprintln(b);",
+         U"x\nhello\n",
+         U"if (input()) var a = println(1), b = input(); println(b);",
+         U"if (input()) \n    var a = println(1), b = input();\nprintln(b);\n",
+         U"1\nhello\n"},
+        {U"if (input()) const a=println(1), b=input();\nprintln(b);",
+         U"x\nhello\n",
+         U"if (input()) const a = println(1), b = input(); println(b);",
+         U"if (input()) \n    const a = println(1), b = input();\nprintln(b);\n",
+         U"1\nhello\n"},
     };
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
         string_value_t output = run_captured_program(cases[i].source, cases[i].input);
-        ASSERT(output.data && !wcscmp(output.data, cases[i].output));
+        ASSERT(output.data && !STRCMP(output.data, cases[i].output));
         FREE_STRING(output);
 
         arena_t *arena = create_arena(16);
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root = parse_analysis_test_program(
             &memory,
-            (string_value_t){cases[i].source, wcslen(cases[i].source), false});
+            (string_value_t){cases[i].source, STRLEN(cases[i].source), false});
         ASSERT(root);
         options_t *options = create_options();
         ASSERT(!analyze(root, &memory, options, NULL));
 
         string_value_t single = generate_goat_code_from_node(root);
-        ASSERT(!wcscmp(single.data, cases[i].single));
+        ASSERT(!STRCMP(single.data, cases[i].single));
         FREE_STRING(single);
 
         source_builder_t *builder = create_source_builder();
         generate_indented_goat_code_from_node(root, builder, 0);
         string_value_t indented = build_source(builder);
-        ASSERT(!wcscmp(indented.data, cases[i].indented));
+        ASSERT(!STRCMP(indented.data, cases[i].indented));
         FREE_STRING(indented);
         destroy_source_builder(builder);
 
-        const wchar_t *forms[] = {cases[i].single, cases[i].indented};
+        const gchar_t *forms[] = {cases[i].single, cases[i].indented};
         for (size_t f = 0; f < 2; f++) {
             string_value_t again = run_captured_program(forms[f], cases[i].input);
-            ASSERT(again.data && !wcscmp(again.data, cases[i].output));
+            ASSERT(again.data && !STRCMP(again.data, cases[i].output));
             FREE_STRING(again);
         }
         destroy_options(options);

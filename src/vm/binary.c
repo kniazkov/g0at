@@ -13,7 +13,7 @@
 #include <string.h>
 
 #define HEADER_SIZE 96
-#define FORMAT_VERSION 11
+#define FORMAT_VERSION 1
 
 static uint64_t read64(const uint8_t *p) {
     uint64_t value = 0;
@@ -29,18 +29,23 @@ static void write64(uint8_t *p, uint64_t value) {
 
 static uint64_t platform(void) {
     uint32_t endian = 1;
-    return sizeof(wchar_t) | (uint64_t) * (uint8_t *)&endian << 8;
+    return sizeof(gchar_t) | (uint64_t) * (uint8_t *)&endian << 8;
 }
 
 static bool string_valid(const bytecode_t *code, uint32_t index) {
     if (index >= code->data_descriptor_count)
         return false;
     data_descriptor_t d = code->data_descriptors[index];
-    if (d.size < sizeof(wchar_t) || d.size % sizeof(wchar_t) || d.offset % sizeof(wchar_t))
+    if (d.size < sizeof(gchar_t) || d.size % sizeof(gchar_t) || d.offset % sizeof(gchar_t))
         return false;
-    const wchar_t *text = (const wchar_t *)(code->data + d.offset);
-    size_t length = d.size / sizeof(wchar_t);
-    return !text[length - 1] && !wmemchr(text, 0, length - 1);
+    const gchar_t *text = (const gchar_t *)(code->data + d.offset);
+    size_t length = d.size / sizeof(gchar_t);
+    if (text[length - 1])
+        return false;
+    for (size_t i = 0; i + 1 < length; ++i)
+        if (!goat_is_scalar(text[i]))
+            return false;
+    return true;
 }
 
 /** @brief Validates offsets before forming pointers, then all instruction data references. */
@@ -168,7 +173,7 @@ bool save_binary_program(const char *path,
         return false;
     size_t size = HEADER_SIZE + code->buffer_size + count * 16;
     uint8_t *bytes = CALLOC(size);
-    memcpy(bytes, "GOATBI11", 8);
+    memcpy(bytes, "GOATST01", 8);
     write64(bytes + 8, FORMAT_VERSION);
     write64(bytes + 16, platform());
     write64(bytes + 24, code->buffer_size);
@@ -210,7 +215,7 @@ binary_program_t decode_binary_program(const void *data, size_t size) {
     checksum = extend_binary_checksum(checksum, zero_checksum, sizeof(zero_checksum));
     checksum = extend_binary_checksum(checksum, bytes + 64, size - 64);
     uint64_t code_size = read64(bytes + 24), count = read64(bytes + 32);
-    if (memcmp(bytes, "GOATBI11", 8) || read64(bytes + 8) != FORMAT_VERSION
+    if (memcmp(bytes, "GOATST01", 8) || read64(bytes + 8) != FORMAT_VERSION
         || read64(bytes + 16) != platform() || read64(bytes + 40) || read64(bytes + 48)
         || expected != checksum || code_size > size - HEADER_SIZE
         || count > (size - HEADER_SIZE - code_size) / 16

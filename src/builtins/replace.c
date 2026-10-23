@@ -4,13 +4,12 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
-
-#include <wchar.h>
 
 /** @brief Runtime executor for the method form `string.replace(old, new)`. */
 static operation_result_t
@@ -37,7 +36,7 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
     size_t pos = 0;
     while (pos < value.length) {
         if (pos + old_part.length <= value.length
-            && !wmemcmp(value.data + pos, old_part.data, old_part.length)) {
+            && !MEMCMP(value.data + pos, old_part.data, old_part.length)) {
             append_string_value(&builder, new_part);
             pos += old_part.length;
         } else {
@@ -80,7 +79,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
             size_t pos = 0;
             while (pos < str->value.length) {
                 if (pos + old_part.length <= str->value.length
-                    && !wmemcmp(str->value.data + pos, old_part.data, old_part.length)) {
+                    && !MEMCMP(str->value.data + pos, old_part.data, old_part.length)) {
                     append_string_view(&builder, new_part);
                     pos += old_part.length;
                 } else {
@@ -97,7 +96,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_string_element();
 }
 
-const builtin_function_t builtin_replace = {.name = L"replace",
+const builtin_function_t builtin_replace = {.name = U"replace",
                                             .min_args = 2,
                                             .effects = BUILTIN_EFFECT_NONE,
                                             .execute = execute,

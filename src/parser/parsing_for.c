@@ -23,7 +23,7 @@ static statement_t *as_statement(token_t *token, parser_memory_t *memory) {
 /** @brief Parses exactly two separators and three optional header clauses. */
 compilation_error_t *parsing_for(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
     token_t *header = token->right;
-    if (!header || header->type != TOKEN_BRACKET_PAIR || header->text.data[0] != L'(')
+    if (!header || header->type != TOKEN_BRACKET_PAIR || header->text.data[0] != U'(')
         goto invalid;
     token_t *binding = header->children.first;
     if (binding && binding->type == TOKEN_CONST)
@@ -35,7 +35,7 @@ compilation_error_t *parsing_for(token_t *token, parser_memory_t *memory, token_
             || binding->node->vtbl->type != NODE_VARIABLE || !source
             || source->type != TOKEN_EXPRESSION || source->right))
         goto invalid;
-    if (collection && !wcscmp(((variable_t *)binding->node)->name.data, L"this"))
+    if (collection && !STRCMP(((variable_t *)binding->node)->name.data, U"this"))
         return create_error_from_token(memory->errors,
                                        binding,
                                        CRITICAL,

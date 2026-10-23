@@ -20,7 +20,8 @@ static const struct {
     const char *name;
     const unsigned char *data;
     size_t size;
-} files[] = {{"native_abi.h", native_abi_data, sizeof(native_abi_data)},
+} files[] = {{"unicode.h", unicode_data, sizeof(unicode_data)},
+             {"native_abi.h", native_abi_data, sizeof(native_abi_data)},
              {"native_runtime.h", native_runtime_data, sizeof(native_runtime_data)},
              {"native_strings.h", native_strings_data, sizeof(native_strings_data)},
              {GOAT_NATIVE_ARCHIVE_NAME, native_archive_data, sizeof(native_archive_data)}};

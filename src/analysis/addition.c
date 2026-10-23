@@ -57,9 +57,9 @@ static const lattice_element_t *add_string_constants(arena_t *arena,
         return left;
     }
     size_t length = left_string->value.length + right_string->value.length;
-    wchar_t *data = (wchar_t *)alloc_from_arena(arena, sizeof(wchar_t) * length);
-    wmemcpy(data, left_string->value.data, left_string->value.length);
-    wmemcpy(data + left_string->value.length, right_string->value.data, right_string->value.length);
+    gchar_t *data = (gchar_t *)alloc_from_arena(arena, sizeof(gchar_t) * length);
+    MEMCPY(data, left_string->value.data, left_string->value.length);
+    MEMCPY(data + left_string->value.length, right_string->value.data, right_string->value.length);
     return make_string_constant_element(arena, (string_view_t){.data = data, .length = length});
 }
 
@@ -193,19 +193,19 @@ static const lattice_element_t *calculate_string_addition(arena_t *arena,
     string_value_t text;
     switch (right->type) {
         case LATTICE_NULL:
-            text = format_string(L"null");
+            text = format_string(U"null");
             break;
         case LATTICE_TRUE:
-            text = format_string(L"true");
+            text = format_string(U"true");
             break;
         case LATTICE_FALSE:
-            text = format_string(L"false");
+            text = format_string(U"false");
             break;
         case LATTICE_INTEGER_CONSTANT:
-            text = format_string(L"%ld", ((const integer_constant_element_t *)right)->value);
+            text = format_string(U"%ld", ((const integer_constant_element_t *)right)->value);
             break;
         case LATTICE_REAL_CONSTANT:
-            text = format_string(L"%f", ((const real_constant_element_t *)right)->value);
+            text = format_string(U"%f", ((const real_constant_element_t *)right)->value);
             break;
         default:
             return make_string_element();
@@ -213,9 +213,9 @@ static const lattice_element_t *calculate_string_addition(arena_t *arena,
     /* Copy even for an empty left operand: text is temporary storage. */
     const string_constant_element_t *str = (const string_constant_element_t *)left;
     size_t length = str->value.length + text.length;
-    wchar_t *data = alloc_from_arena(arena, (length + 1) * sizeof(wchar_t));
-    wmemcpy(data, str->value.data, str->value.length);
-    wmemcpy(data + str->value.length, text.data, text.length);
+    gchar_t *data = alloc_from_arena(arena, (length + 1) * sizeof(gchar_t));
+    MEMCPY(data, str->value.data, str->value.length);
+    MEMCPY(data + str->value.length, text.data, text.length);
     data[length] = 0;
     FREE_STRING(text);
     return make_string_constant_element(arena, (string_view_t){data, length});
@@ -223,16 +223,16 @@ static const lattice_element_t *calculate_string_addition(arena_t *arena,
 
 /** @brief Converts a character code to an arena-allocated string view. */
 static string_view_t char_to_string_view(arena_t *arena, uint32_t value) {
-    if (sizeof(wchar_t) > 2 || value < 0x10000) {
-        wchar_t *data = alloc_from_arena(arena, 2 * sizeof(wchar_t));
-        data[0] = (wchar_t)value;
+    if (sizeof(gchar_t) > 2 || value < 0x10000) {
+        gchar_t *data = alloc_from_arena(arena, 2 * sizeof(gchar_t));
+        data[0] = (gchar_t)value;
         data[1] = 0;
         return (string_view_t){data, 1};
     }
     value -= 0x10000;
-    wchar_t *data = alloc_from_arena(arena, 3 * sizeof(wchar_t));
-    data[0] = (wchar_t)(0xD800 + (value >> 10));
-    data[1] = (wchar_t)(0xDC00 + (value & 0x3FF));
+    gchar_t *data = alloc_from_arena(arena, 3 * sizeof(gchar_t));
+    data[0] = (gchar_t)(0xD800 + (value >> 10));
+    data[1] = (gchar_t)(0xDC00 + (value & 0x3FF));
     data[2] = 0;
     return (string_view_t){data, 2};
 }
@@ -241,9 +241,9 @@ static string_view_t char_to_string_view(arena_t *arena, uint32_t value) {
 static const lattice_element_t *
 append_char_and_text(arena_t *arena, string_view_t left_text, string_view_t right_text) {
     size_t length = left_text.length + right_text.length;
-    wchar_t *data = alloc_from_arena(arena, sizeof(wchar_t) * length);
-    wmemcpy(data, left_text.data, left_text.length);
-    wmemcpy(data + left_text.length, right_text.data, right_text.length);
+    gchar_t *data = alloc_from_arena(arena, sizeof(gchar_t) * length);
+    MEMCPY(data, left_text.data, left_text.length);
+    MEMCPY(data + left_text.length, right_text.data, right_text.length);
     return make_string_constant_element(arena, (string_view_t){.data = data, .length = length});
 }
 
@@ -265,7 +265,7 @@ static const lattice_element_t *calculate_char_addition(arena_t *arena,
     }
     if (right->type == LATTICE_INTEGER_CONSTANT) {
         string_value_t right_text =
-            format_string(L"%ld", ((const integer_constant_element_t *)right)->value);
+            format_string(U"%ld", ((const integer_constant_element_t *)right)->value);
         const lattice_element_t *result =
             append_char_and_text(arena,
                                  char_to_string_view(arena, left_char->value),

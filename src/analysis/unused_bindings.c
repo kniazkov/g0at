@@ -13,7 +13,7 @@
 static bool uses_this(const node_t *node) {
     if (node->vtbl->type == NODE_VARIABLE) {
         const variable_t *variable = (const variable_t *)node;
-        if (variable->name.length == 4 && !wmemcmp(variable->name.data, L"this", 4))
+        if (variable->name.length == 4 && !MEMCMP(variable->name.data, U"this", 4))
             return true;
     }
     for (size_t i = 0; i < get_node_child_count(node); i++)
@@ -48,7 +48,7 @@ static bool reads(const node_t *node, const declarator_t *binding) {
         const variable_t *variable = (const variable_t *)node;
         return variable->declarator == binding
                || (variable->dynamic_lookup && variable->name.length == binding->name.length
-                   && !wmemcmp(variable->name.data, binding->name.data, variable->name.length));
+                   && !MEMCMP(variable->name.data, binding->name.data, variable->name.length));
     }
     size_t first = 0;
     if (node->vtbl->type == NODE_SIMPLE_ASSIGNMENT) {

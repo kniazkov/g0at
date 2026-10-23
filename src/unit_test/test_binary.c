@@ -20,7 +20,7 @@ static const char *filename = "goat-binary-unit.gbin";
 static bytecode_t *sample(void) {
     code_builder_t *code = create_code_builder();
     data_builder_t *data = create_data_builder();
-    uint32_t id = add_string_to_data_segment(data, L"Unicode: \u03bb\u0416");
+    uint32_t id = add_string_to_data_segment(data, U"Unicode: \u03bb\u0416");
     add_instruction(code, (instruction_t){.opcode = SLOAD, .arg1 = id});
     add_instruction(code, (instruction_t){.opcode = POP});
     add_instruction(code, (instruction_t){.opcode = END});
@@ -61,7 +61,7 @@ bool test_binary_roundtrip(void) {
     ASSERT(!memcmp(loaded.code->buffer, code->buffer, code->buffer_size));
     ASSERT(loaded.code->instructions_count == 3 && loaded.code->data_descriptor_count == 1);
     ASSERT(!loaded.code->native_functions);
-    ASSERT(!wcscmp((const wchar_t *)loaded.code->data, L"Unicode: \u03bb\u0416"));
+    ASSERT(!STRCMP((const gchar_t *)loaded.code->data, U"Unicode: \u03bb\u0416"));
     destroy_binary_program(&loaded);
     free_bytecode(code);
     ASSERT(!remove(filename));
@@ -86,7 +86,7 @@ static bool rejected(const void *bytes, size_t size) {
 static bool declaration_rejection(void) {
     code_builder_t *builder = create_code_builder();
     data_builder_t *data = create_data_builder();
-    uint32_t name = add_string_to_data_segment(data, L"field");
+    uint32_t name = add_string_to_data_segment(data, U"field");
     declaration_descriptor_t declaration = {DECLARATION_TAG, name, 0, ACCESS_PRIVATE};
     uint32_t id = add_data_to_data_segment(data, &declaration, sizeof(declaration));
     add_instruction(builder, (instruction_t){.opcode = DVAR, .arg1 = id});
@@ -211,7 +211,7 @@ bool test_binary_rejection(void) {
         ASSERT(rejected(copy, size));
     }
     memcpy(copy, bytes, size);
-    copy[size - sizeof(wchar_t)] = 1; /* Missing string terminator. */
+    copy[size - sizeof(gchar_t)] = 1; /* Missing string terminator. */
     put64(copy, 56, 0);
     put64(copy, 56, binary_checksum(copy, size));
     ASSERT(rejected(copy, size));

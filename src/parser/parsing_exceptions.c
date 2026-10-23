@@ -13,7 +13,7 @@ preparsing_catch(token_t *token, parser_memory_t *memory, token_groups_t *groups
     if (token->type == TOKEN_FINALLY)
         return NULL;
     token_t *binding = token->right;
-    if (!binding || binding->type != TOKEN_BRACKET_PAIR || binding->text.data[0] != L'('
+    if (!binding || binding->type != TOKEN_BRACKET_PAIR || binding->text.data[0] != U'('
         || binding->children.count != 1 || binding->children.first->type != TOKEN_IDENTIFIER)
         return create_error_from_token(memory->errors,
                                        token,

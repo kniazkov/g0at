@@ -57,18 +57,18 @@ static string_view_t
 make_name(arena_t *arena, size_t function_id, const function_summary_t *summary) {
     string_builder_t builder;
     init_string_builder(&builder, 32);
-    string_value_t prefix = format_string(L"g_f%zu", function_id);
+    string_value_t prefix = format_string(U"g_f%zu", function_id);
     append_string_value(&builder, prefix);
     FREE_STRING(prefix);
     for (size_t i = 0; i < summary->parameter_count; i++)
         append_string(&builder,
-                      summary->parameter_types[i]->type == LATTICE_INTEGER   ? L"_i"
-                      : summary->parameter_types[i]->type == LATTICE_BOOLEAN ? L"_b"
-                      : summary->parameter_types[i]->type == LATTICE_CHAR    ? L"_c"
-                      : summary->parameter_types[i]->type == LATTICE_STRING  ? L"_s"
-                                                                             : L"_r");
-    string_value_t text = append_char(&builder, L'_');
-    wchar_t *name = alloc_from_arena(arena, (text.length + 1) * sizeof(*name));
+                      summary->parameter_types[i]->type == LATTICE_INTEGER   ? U"_i"
+                      : summary->parameter_types[i]->type == LATTICE_BOOLEAN ? U"_b"
+                      : summary->parameter_types[i]->type == LATTICE_CHAR    ? U"_c"
+                      : summary->parameter_types[i]->type == LATTICE_STRING  ? U"_s"
+                                                                             : U"_r");
+    string_value_t text = append_char(&builder, U'_');
+    gchar_t *name = alloc_from_arena(arena, (text.length + 1) * sizeof(*name));
     memcpy(name, text.data, (text.length + 1) * sizeof(*name));
     string_view_t result = {name, text.length};
     FREE_STRING(text);

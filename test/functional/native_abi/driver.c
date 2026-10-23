@@ -23,7 +23,7 @@ find(const goat_native_module_v2_t *module, uint64_t function, uint32_t first) {
 
 int test_native_abi(goat_native_query_v2_t query) {
     assert(!query(0));
-    assert(!query(1));
+    assert(!query(0));
     assert(!query(GOAT_NATIVE_ABI_VERSION + 1));
     const goat_native_module_v2_t *module = query(GOAT_NATIVE_ABI_VERSION);
     assert(module && module == query(GOAT_NATIVE_ABI_VERSION));
@@ -52,7 +52,7 @@ int test_native_abi(goat_native_query_v2_t query) {
     assert(reverse->parameter_count == 2 && reverse->parameter_types[1] == GOAT_NATIVE_I64);
     assert(!constant->parameter_count && !constant->parameter_types);
     goat_native_value_v2_t untouched = {.type = 99};
-    assert(constant->invoke(1, NULL, 0, NULL, &untouched) == GOAT_NATIVE_ABI_MISMATCH);
+    assert(constant->invoke(0, NULL, 0, NULL, &untouched) == GOAT_NATIVE_ABI_MISMATCH);
     assert(constant->invoke(GOAT_NATIVE_ABI_VERSION, NULL, 0, NULL, &untouched)
            == GOAT_NATIVE_BAD_REQUEST);
     goat_native_context_v2_t allocator = test_context();

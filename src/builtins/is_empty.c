@@ -4,13 +4,12 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
-
-#include <wchar.h>
 
 /** @brief Runtime executor for the method form `string.isEmpty()`. */
 static operation_result_t
@@ -48,7 +47,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_boolean_element();
 }
 
-const builtin_function_t builtin_is_empty = {.name = L"isEmpty",
+const builtin_function_t builtin_is_empty = {.name = U"isEmpty",
                                              .min_args = 0,
                                              .effects = BUILTIN_EFFECT_NONE,
                                              .execute = execute,

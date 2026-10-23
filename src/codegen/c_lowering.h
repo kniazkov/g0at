@@ -3,9 +3,11 @@
  * @brief Minimal numeric C lowering shared by node virtual methods.
  */
 #pragma once
-#include "c_generation.h"
 
-const wchar_t *c_type_name(c_value_type_t type);
+#include "c_generation.h"
+#include "goat/unicode.h"
+
+const gchar_t *c_type_name(c_value_type_t type);
 c_generated_expression_t
 c_integer_literal(const node_t *node, c_generation_context_t *context, int64_t value);
 c_generated_expression_t

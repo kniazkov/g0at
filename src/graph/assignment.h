@@ -8,6 +8,7 @@
 
 #include "assignable_expression.h"
 #include "expression.h"
+#include "goat/unicode.h"
 
 typedef struct assignment_t assignment_t;
 
@@ -44,7 +45,7 @@ node_t *assignment_get_child(const node_t *node, size_t index);
  * `index`: Zero-based child position.
  * @return Static wide string literal or NULL.
  */
-const wchar_t *assignment_get_tag(const node_t *node, size_t index);
+const gchar_t *assignment_get_tag(const node_t *node, size_t index);
 
 /** @brief Creates a new simple assignment expression node. */
 expression_t *create_simple_assignment_node(arena_t *arena,

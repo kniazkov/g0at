@@ -74,7 +74,7 @@ bool test_unary_models_and_vm(void) {
                 instruction_t list[] = {{.opcode = minus ? UMINUS : UPLUS}, {.opcode = END}};
                 bytecode_t *code = make_code(list, 2);
                 string_value_t text = bytecode_to_text(code);
-                ASSERT(wcsstr(text.data, minus ? L"UMINUS" : L"UPLUS"));
+                ASSERT(STRSTR(text.data, minus ? U"UMINUS" : U"UPLUS"));
                 FREE_STRING(text);
                 ASSERT(run(proc, code) == 0);
                 /* An unretained alias would be recycled here. */
@@ -155,16 +155,16 @@ bool test_unary_ast_and_domains(void) {
         ASSERT(get_node_child_count(&node->base) == 1);
         ASSERT(get_node_child(&node->base, 0) == &operand->base);
         ASSERT(!get_node_child(&node->base, 1) && !get_node_child(&node->base, SIZE_MAX));
-        ASSERT(!wcscmp(get_node_child_tag(&node->base, 0), L"operand"));
+        ASSERT(!STRCMP(get_node_child_tag(&node->base, 0), U"operand"));
         ASSERT(!get_node_child_tag(&node->base, 1));
         string_value_t source = generate_goat_code_from_expression(node);
-        ASSERT(!wcscmp(source.data, minus ? L"-2 + 3" : L"+2 + 3"));
+        ASSERT(!STRCMP(source.data, minus ? U"-2 + 3" : U"+2 + 3"));
         source_builder_t *builder = create_source_builder();
         generate_indented_goat_code_from_expression(node, builder, 0);
         string_value_t indented = build_source(builder);
         ASSERT(indented.length == source.length + 1
-               && !wmemcmp(source.data, indented.data, source.length)
-               && indented.data[source.length] == L'\n');
+               && !MEMCMP(source.data, indented.data, source.length)
+               && indented.data[source.length] == U'\n');
         FREE_STRING(source);
         FREE_STRING(indented);
         destroy_source_builder(builder);
@@ -205,27 +205,27 @@ bool test_unary_ast_and_domains(void) {
 }
 
 bool test_unary_parser(void) {
-    const wchar_t *valid[] = {L"-2**2",
-                              L"2**-3",
-                              L"-2**-3**-2",
-                              L"+ + +1",
-                              L"1- -2",
-                              L"1+-2",
-                              L"2*-3",
-                              L"var x=-2; +x",
-                              L"-(1+2)",
-                              L"var f=func { return -1; }; -f()",
-                              L"throw -1",
-                              L"-9223372036854775808",
-                              L"-2**3**2"};
-    const wchar_t *invalid[] =
-        {L"+", L"-", L"1+-", L"-*2", L"2**-", L"-( )", L"var x=+;", L"print(-)", L"-2**", L"-2**+"};
+    const gchar_t *valid[] = {U"-2**2",
+                              U"2**-3",
+                              U"-2**-3**-2",
+                              U"+ + +1",
+                              U"1- -2",
+                              U"1+-2",
+                              U"2*-3",
+                              U"var x=-2; +x",
+                              U"-(1+2)",
+                              U"var f=func { return -1; }; -f()",
+                              U"throw -1",
+                              U"-9223372036854775808",
+                              U"-2**3**2"};
+    const gchar_t *invalid[] =
+        {U"+", U"-", U"1+-", U"-*2", U"2**-", U"-( )", U"var x=+;", U"print(-)", U"-2**", U"-2**+"};
     for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
         arena_t *arena = create_arena(8);
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root =
             parse_analysis_test_program(&memory,
-                                        (string_value_t){valid[i], wcslen(valid[i]), false});
+                                        (string_value_t){valid[i], STRLEN(valid[i]), false});
         ASSERT(root);
         string_value_t source = generate_goat_code_from_node(root);
         ASSERT(parse_analysis_test_program(&memory, source));
@@ -237,7 +237,7 @@ bool test_unary_parser(void) {
         parser_memory_t memory = {arena, arena, arena, arena};
         ASSERT(
             !parse_analysis_test_program(&memory,
-                                         (string_value_t){invalid[i], wcslen(invalid[i]), false}));
+                                         (string_value_t){invalid[i], STRLEN(invalid[i]), false}));
         destroy_arena(arena);
     }
     return true;

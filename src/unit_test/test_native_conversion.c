@@ -18,29 +18,29 @@
 
 bool test_native_int() {
     struct {
-        const wchar_t *text;
+        const gchar_t *text;
         double real;
         bool is_real, valid;
         int64_t expected;
-    } cases[] = {{L"0", 0, false, true, 0},
-                 {L" -0012 \t", 0, false, true, -12},
-                 {L"+42", 0, false, true, 42},
-                 {L"9223372036854775807", 0, false, true, INT64_MAX},
-                 {L"-9223372036854775808", 0, false, true, INT64_MIN},
-                 {L"9223372036854775808", 0, false, false, 0},
-                 {L"-9223372036854775809", 0, false, false, 0},
-                 {L"99999999999999999999999999999999", 0, false, false, 0},
-                 {L"", 0, false, false, 0},
-                 {L"  ", 0, false, false, 0},
-                 {L"+", 0, false, false, 0},
-                 {L"--1", 0, false, false, 0},
-                 {L"1.5", 0, false, false, 0},
-                 {L"1e2", 0, false, false, 0},
-                 {L"0xff", 0, false, false, 0},
-                 {L"12x", 0, false, false, 0},
-                 {L"nan", 0, false, false, 0},
-                 {L"inf", 0, false, false, 0},
-                 {L"\u0661", 0, false, false, 0},
+    } cases[] = {{U"0", 0, false, true, 0},
+                 {U" -0012 \t", 0, false, true, -12},
+                 {U"+42", 0, false, true, 42},
+                 {U"9223372036854775807", 0, false, true, INT64_MAX},
+                 {U"-9223372036854775808", 0, false, true, INT64_MIN},
+                 {U"9223372036854775808", 0, false, false, 0},
+                 {U"-9223372036854775809", 0, false, false, 0},
+                 {U"99999999999999999999999999999999", 0, false, false, 0},
+                 {U"", 0, false, false, 0},
+                 {U"  ", 0, false, false, 0},
+                 {U"+", 0, false, false, 0},
+                 {U"--1", 0, false, false, 0},
+                 {U"1.5", 0, false, false, 0},
+                 {U"1e2", 0, false, false, 0},
+                 {U"0xff", 0, false, false, 0},
+                 {U"12x", 0, false, false, 0},
+                 {U"nan", 0, false, false, 0},
+                 {U"inf", 0, false, false, 0},
+                 {U"\u0661", 0, false, false, 0},
                  {NULL, 3.9, true, true, 3},
                  {NULL, -3.9, true, true, -3},
                  {NULL, -0.0, true, true, 0},
@@ -61,11 +61,11 @@ bool test_native_int() {
                 arg = create_real_number_object(proc, cases[i].real);
                 abstract = make_real_constant_element(arena, cases[i].real);
             } else {
-                string_value_t text = {cases[i].text, wcslen(cases[i].text), false};
+                string_value_t text = {cases[i].text, STRLEN(cases[i].text), false};
                 arg = create_string_object(proc, text);
                 abstract = make_string_constant_element(arena, VALUE_TO_VIEW(text));
             }
-            object_t *fallback = create_string_object(proc, STATIC_STRING(L"fallback"));
+            object_t *fallback = create_string_object(proc, STATIC_STRING(U"fallback"));
             push_object_onto_stack(proc->main_thread->data_stack, arg);
             if (count == 2)
                 push_object_onto_stack(proc->main_thread->data_stack, fallback);
@@ -75,7 +75,7 @@ bool test_native_int() {
             object_t *result = pop_object_from_stack(proc->main_thread->data_stack);
             const lattice_element_t *args[] = {
                 abstract,
-                make_string_constant_element(arena, (string_view_t){L"fallback", 8})};
+                make_string_constant_element(arena, (string_view_t){U"fallback", 8})};
             const lattice_element_t *value =
                 interpret_function_call(make_builtin_function_element(arena, &builtin_int),
                                         args,
@@ -90,7 +90,7 @@ bool test_native_int() {
             } else {
                 ASSERT(result == fallback && value->type == LATTICE_STRING_CONSTANT);
                 string_value_t text = convert_object_to_string(result);
-                ASSERT(!wcscmp(text.data, L"fallback"));
+                ASSERT(!STRCMP(text.data, U"fallback"));
                 FREE_STRING(text);
             }
             DECREF(result);
@@ -172,10 +172,10 @@ bool test_input_lines() {
     ASSERT(text.data && text.length == 0);
     FREE_STRING(text);
     text = read_input_line(file);
-    ASSERT(text.data && !wcscmp(text.data, L"\u041f\u0440\u0438\u0432\u0435\u0442 \U0001f600"));
+    ASSERT(text.data && !STRCMP(text.data, U"\u041f\u0440\u0438\u0432\u0435\u0442 \U0001f600"));
     FREE_STRING(text);
     text = read_input_line(file);
-    ASSERT(text.data && text.length == 10000 && text.data[9999] == L'x');
+    ASSERT(text.data && text.length == 10000 && text.data[9999] == U'x');
     FREE_STRING(text);
     text = read_input_line(file);
     ASSERT(text.data && text.length == 0);
@@ -190,7 +190,8 @@ bool test_input_lines() {
     text = read_input_line(file);
     ASSERT(!text.data);
     text = read_input_line(file);
-    ASSERT(!text.data);
+    ASSERT(text.data && text.length == 1 && text.data[0] == 0);
+    FREE_STRING(text);
     ASSERT(!fclose(file) && !remove(path));
     return true;
 }

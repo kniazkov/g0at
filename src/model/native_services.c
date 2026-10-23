@@ -4,12 +4,12 @@
  */
 #include "native_services.h"
 
+#include "goat/unicode.h"
 #include "lib/alignment.h"
 #include "lib/allocate.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <wctype.h>
 
 /** @brief Aligned list header included in the interpreter's tracked allocation. */
 struct native_memory_block_t {
@@ -54,19 +54,19 @@ static void GOAT_NATIVE_CALL deallocate_all_memory(void *state) {
         deallocate_memory(state, memory->first + 1);
 }
 
-/** @brief Uses the same CRT classification as the interpreter's string methods. */
-static int GOAT_NATIVE_CALL string_is_space(wchar_t value) {
-    return iswspace(value);
+/** @brief Uses the same pinned Unicode classification as the interpreter. */
+static int GOAT_NATIVE_CALL string_is_space(gchar_t value) {
+    return ISSPACE(value);
 }
 
-/** @brief Uses the interpreter's initialized LC_CTYPE, including across Windows CRTs. */
-static wchar_t GOAT_NATIVE_CALL string_to_upper(wchar_t value) {
-    return (wchar_t)towupper(value);
+/** @brief Uses the pinned Unicode 17.0.0 simple mapping. */
+static gchar_t GOAT_NATIVE_CALL string_to_upper(gchar_t value) {
+    return (gchar_t)TOUPPER(value);
 }
 
-/** @brief Uses the interpreter's initialized LC_CTYPE, including across Windows CRTs. */
-static wchar_t GOAT_NATIVE_CALL string_to_lower(wchar_t value) {
-    return (wchar_t)towlower(value);
+/** @brief Uses the pinned Unicode 17.0.0 simple mapping. */
+static gchar_t GOAT_NATIVE_CALL string_to_lower(gchar_t value) {
+    return (gchar_t)TOLOWER(value);
 }
 
 /** @brief Shared immutable table; mutable state belongs exclusively to each invocation. */

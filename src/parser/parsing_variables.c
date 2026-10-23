@@ -33,7 +33,7 @@ parsing_single_identifiers(token_t *identifier, parser_memory_t *memory, token_g
             || identifier->left->type == TOKEN_CATCH_BINDING
             || identifier->left->type == TOKEN_FINALLY
             || (identifier->left->type == TOKEN_BRACKET_PAIR
-                && identifier->left->text.data[0] == L'{')
+                && identifier->left->text.data[0] == U'{')
             || (identifier->left->type == TOKEN_BRACKET_PAIR && identifier->left->left
                 && (identifier->left->left->type == TOKEN_IF
                     || identifier->left->left->type == TOKEN_FOR

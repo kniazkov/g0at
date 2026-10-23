@@ -16,8 +16,8 @@
 #include <math.h>
 #include <stdio.h>
 
-static const builtin_function_t *lookup(const wchar_t *name) {
-    return find_builtin_function((string_view_t){name, wcslen(name)});
+static const builtin_function_t *lookup(const gchar_t *name) {
+    return find_builtin_function((string_view_t){name, STRLEN(name)});
 }
 
 bool test_builtin_registry() {
@@ -31,23 +31,23 @@ bool test_builtin_registry() {
         ASSERT(lookup(f->name) == f);
         process_t *proc = create_process();
         object_t *key =
-            create_string_object(proc, (string_value_t){f->name, wcslen(f->name), false});
+            create_string_object(proc, (string_value_t){f->name, STRLEN(f->name), false});
         ASSERT(get_object_property(get_root_context()->data, key) == f->get_object());
         DECREF(key);
         destroy_process(proc);
         ASSERT(f->effects
-               == ((!wcscmp(f->name, L"print") || !wcscmp(f->name, L"println"))
+               == ((!STRCMP(f->name, U"print") || !STRCMP(f->name, U"println"))
                        ? BUILTIN_EFFECT_OUTPUT
-                   : !wcscmp(f->name, L"input") ? BUILTIN_EFFECT_INPUT
+                   : !STRCMP(f->name, U"input") ? BUILTIN_EFFECT_INPUT
                                                 : BUILTIN_EFFECT_NONE));
     }
-    ASSERT(!lookup(L"pi") && !lookup(L"Exceptions") && !lookup(L"sig") && !lookup(L"signx"));
-    const wchar_t raw[] = {L's', L'i', L'g', L'n', L'x'};
-    ASSERT(find_builtin_function((string_view_t){raw, 4}) == lookup(L"sign"));
+    ASSERT(!lookup(U"pi") && !lookup(U"Exceptions") && !lookup(U"sig") && !lookup(U"signx"));
+    const gchar_t raw[] = {U's', U'i', U'g', U'n', U'x'};
+    ASSERT(find_builtin_function((string_view_t){raw, 4}) == lookup(U"sign"));
     arena_t *arena = create_arena(8);
-    const lattice_element_t *a = make_builtin_function_element(arena, lookup(L"sign"));
-    const lattice_element_t *b = make_builtin_function_element(arena, lookup(L"sqrt"));
-    const lattice_element_t *same = make_builtin_function_element(arena, lookup(L"sign"));
+    const lattice_element_t *a = make_builtin_function_element(arena, lookup(U"sign"));
+    const lattice_element_t *b = make_builtin_function_element(arena, lookup(U"sqrt"));
+    const lattice_element_t *same = make_builtin_function_element(arena, lookup(U"sign"));
     ASSERT(lattice_join(arena, a, same) == a);
     ASSERT(lattice_join(arena, a, b)->type == LATTICE_FUNCTION);
     ASSERT(lattice_meet(arena, a, b)->type == LATTICE_BOTTOM);
@@ -190,7 +190,7 @@ bool test_builtin_errors() {
                 object_t *wrong =
                     kind == 0   ? get_null_object()
                     : kind == 1 ? get_boolean_object(true)
-                    : kind == 2 ? create_string_object(proc, (string_value_t){L"4", 1, false})
+                    : kind == 2 ? create_string_object(proc, (string_value_t){U"4", 1, false})
                     : kind == 3 ? get_function_sign()
                                 : create_user_defined_object(proc, (object_array_t){&root, 1});
                 for (size_t k = 0; k < f->min_args; k++)
@@ -209,8 +209,8 @@ bool test_builtin_errors() {
 bool test_builtin_domains() {
     arena_t *arena = create_arena(8);
     abstract_state_t *state = create_abstract_state(arena);
-    const lattice_element_t *sign = make_builtin_function_element(arena, lookup(L"sign"));
-    const lattice_element_t *sqrt_value = make_builtin_function_element(arena, lookup(L"sqrt"));
+    const lattice_element_t *sign = make_builtin_function_element(arena, lookup(U"sign"));
+    const lattice_element_t *sqrt_value = make_builtin_function_element(arena, lookup(U"sqrt"));
     const lattice_element_t *args[] = {make_integer_range_element(arena, -9, -1),
                                        make_top_element()};
     const lattice_element_t *value = interpret_function_call(sign, args, 1, state);
@@ -223,22 +223,22 @@ bool test_builtin_domains() {
            && ((const integer_range_element_t *)value)->max == 1);
     args[0] = make_top_element();
     ASSERT(interpret_function_call(sqrt_value, args, 1, state)->type == LATTICE_REAL);
-    ASSERT(interpret_function_call(make_builtin_function_element(arena, lookup(L"atan")),
+    ASSERT(interpret_function_call(make_builtin_function_element(arena, lookup(U"atan")),
                                    args,
                                    2,
                                    state)
                ->type
            == LATTICE_REAL);
     ASSERT(!state->builtin_bindings_unknown);
-    declarator_t sentinel = {.name = {L"sentinel", 8}};
+    declarator_t sentinel = {.name = {U"sentinel", 8}};
     const lattice_element_t *saved = make_integer_constant_element(arena, 17);
     set_in_abstract_state(state, &sentinel, saved);
-    const builtin_function_t *printer = lookup(L"print");
+    const builtin_function_t *printer = lookup(U"print");
     ASSERT(
         interpret_function_call(make_builtin_function_element(arena, printer), args, 1, state)->type
         == LATTICE_NULL);
     ASSERT(get_from_abstract_state(state, &sentinel) == saved);
-    ASSERT(interpret_function_call(make_builtin_function_element(arena, lookup(L"println")),
+    ASSERT(interpret_function_call(make_builtin_function_element(arena, lookup(U"println")),
                                    args,
                                    1,
                                    state)
@@ -265,9 +265,9 @@ bool test_string_builtin_char_arguments() {
     arena_t *arena = create_arena(8);
     abstract_state_t *state = create_abstract_state(arena);
     const lattice_element_t *str =
-        make_string_constant_element(arena, (string_view_t){L"hello", 5});
-    const lattice_element_t *ch = make_char_constant_element(arena, L'l');
-    const lattice_element_t *ch_b = make_char_constant_element(arena, L'b');
+        make_string_constant_element(arena, (string_view_t){U"hello", 5});
+    const lattice_element_t *ch = make_char_constant_element(arena, U'l');
+    const lattice_element_t *ch_b = make_char_constant_element(arena, U'b');
     const lattice_element_t *args[3];
     const lattice_element_t *value;
 
@@ -284,28 +284,28 @@ bool test_string_builtin_char_arguments() {
     value = builtin_ends_with.interpret(state, args, 2);
     ASSERT(value->type == LATTICE_FALSE);
 
-    args[1] = make_char_constant_element(arena, L'h');
+    args[1] = make_char_constant_element(arena, U'h');
     value = builtin_starts_with.interpret(state, args, 2);
     ASSERT(value->type == LATTICE_TRUE);
 
-    args[1] = make_char_constant_element(arena, L'o');
+    args[1] = make_char_constant_element(arena, U'o');
     value = builtin_ends_with.interpret(state, args, 2);
     ASSERT(value->type == LATTICE_TRUE);
 
-    args[1] = make_char_constant_element(arena, L'l');
+    args[1] = make_char_constant_element(arena, U'l');
     args[2] = ch_b;
     value = builtin_replace.interpret(state, args, 3);
     ASSERT(value->type == LATTICE_STRING_CONSTANT);
     string_view_t replaced = ((const string_constant_element_t *)value)->value;
     ASSERT(replaced.length == 5);
-    ASSERT(!wmemcmp(replaced.data, L"hebbo", 5));
+    ASSERT(!MEMCMP(replaced.data, U"hebbo", 5));
 
-    args[2] = make_char_constant_element(arena, L'x');
+    args[2] = make_char_constant_element(arena, U'x');
     value = builtin_replace.interpret(state, args, 3);
     ASSERT(value->type == LATTICE_STRING_CONSTANT);
     replaced = ((const string_constant_element_t *)value)->value;
     ASSERT(replaced.length == 5);
-    ASSERT(!wmemcmp(replaced.data, L"hexxo", 5));
+    ASSERT(!MEMCMP(replaced.data, U"hexxo", 5));
 
     destroy_abstract_state(state);
     destroy_arena(arena);

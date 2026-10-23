@@ -20,7 +20,7 @@ bool test_analysis_observations() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
         parse_analysis_test_program(&memory,
-                                    STATIC_STRING(L"var x = 1;\nx = 3;\nconst y = x + 1;\n"));
+                                    STATIC_STRING(U"var x = 1;\nx = 3;\nconst y = x + 1;\n"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(events);
@@ -49,7 +49,7 @@ bool test_analysis_observations() {
 
     node_t *plain =
         parse_analysis_test_program(&memory,
-                                    STATIC_STRING(L"var x = 1;\nx = 3;\nconst y = x + 1;\n"));
+                                    STATIC_STRING(U"var x = 1;\nx = 3;\nconst y = x + 1;\n"));
     ASSERT(plain && !analyze(plain, &memory, options, NULL));
     node_t *declaration = get_node_child(plain, 2);
     declarator_t *y = (declarator_t *)replacement_original(get_node_child(declaration, 0));
@@ -66,7 +66,7 @@ bool test_analysis_branch_observations() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"var x = 1;\nif (pi) { x = 1; } else { x = 1; }\nx = 2;\n"));
+        STATIC_STRING(U"var x = 1;\nif (pi) { x = 1; } else { x = 1; }\nx = 2;\n"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);

@@ -17,7 +17,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return interpret_binary_math(state, args, builtin_minimum);
 }
 
-const builtin_function_t builtin_min = {.name = L"min",
+const builtin_function_t builtin_min = {.name = U"min",
                                         .min_args = 2,
                                         .effects = BUILTIN_EFFECT_NONE,
                                         .execute = execute,

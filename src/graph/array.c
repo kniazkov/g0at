@@ -42,15 +42,15 @@ static bool replace_child(node_t *node, node_t *old, node_t *replacement) {
 static string_value_t generate_goat_code(const node_t *node) {
     const array_literal_t *expr = (const array_literal_t *)node;
     string_builder_t builder = {0};
-    append_char(&builder, L'[');
+    append_char(&builder, U'[');
     for (size_t i = 0; i < expr->count; i++) {
         if (i)
-            append_static_string(&builder, L", ");
+            append_static_string(&builder, U", ");
         string_value_t index = generate_goat_code_from_expression(expr->elements[i]);
         append_string_value(&builder, index);
         FREE_STRING(index);
     }
-    return append_char(&builder, L']');
+    return append_char(&builder, U']');
 }
 
 /** @brief Emits formatted source. */
@@ -91,7 +91,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 
 /** @brief Virtual table for array literals. */
 static node_vtbl_t vtbl = {.type = NODE_ARRAY,
-                           .type_name = L"array",
+                           .type_name = U"array",
                            .is_assignable_expression = false,
                            .analyze_reachability = analyze_reachability,
                            .is_pure = not_pure,
@@ -139,7 +139,7 @@ node_t *create_prototype_list_node(arena_t *arena) {
     static node_vtbl_t prototype_vtbl;
     prototype_vtbl = vtbl;
     prototype_vtbl.type = NODE_PROTOTYPE_LIST;
-    prototype_vtbl.type_name = L"prototype list";
+    prototype_vtbl.type_name = U"prototype list";
     prototype_vtbl.generate_bytecode = generate_prototype_bytecode;
     node_t *node = create_array_node(arena);
     node->vtbl = &prototype_vtbl;

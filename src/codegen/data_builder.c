@@ -43,8 +43,22 @@ uint32_t add_declaration_to_data_segment(data_builder_t *builder, const declarat
 #define INITIAL_DATA_ARRAY_CAPACITY 256
 
 /** @brief Deduplication keys must survive growth of the packed data buffer. */
+static int compare_string_keys(const void *a, const void *b) {
+    const string_view_t *left = a, *right = b;
+    size_t n = left->length < right->length ? left->length : right->length;
+    int result = MEMCMP(left->data, right->data, n);
+    return result ? result : left->length < right->length ? -1 : left->length > right->length;
+}
+
 static void *copy_string_key(void *key) {
-    return WSTRDUP(key);
+    string_view_t *view = key;
+    if (view->length > (SIZE_MAX - sizeof(*view)) / sizeof(gchar_t) - 1)
+        abort();
+    string_view_t *copy = ALLOC(sizeof(*copy) + (view->length + 1) * sizeof(gchar_t));
+    *copy = (string_view_t){(gchar_t *)(copy + 1), view->length};
+    MEMCPY((gchar_t *)copy->data, view->data, view->length);
+    ((gchar_t *)copy->data)[view->length] = 0;
+    return copy;
 }
 
 data_builder_t *create_data_builder(void) {
@@ -56,7 +70,7 @@ data_builder_t *create_data_builder(void) {
     builder->data_capacity = INITIAL_DATA_ARRAY_CAPACITY;
     builder->descriptors_count = 0;
     builder->descriptors_capacity = INITIAL_DESCRIPTORS_LIST_CAPACITY;
-    builder->strings = create_avl_tree(string_comparator);
+    builder->strings = create_avl_tree(compare_string_keys);
     builder->declarations = NULL;
     builder->strings->copy_key = copy_string_key;
     builder->strings->destroy_key = FREE;
@@ -64,7 +78,10 @@ data_builder_t *create_data_builder(void) {
 }
 
 uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t size) {
-    size_t aligned_size = (size + 3) & ~3;
+    if (size > UINT32_MAX - 3 || builder->data_size > SIZE_MAX - size - 3
+        || builder->descriptors_count >= UINT32_MAX - 1)
+        abort();
+    size_t aligned_size = (size + 3) & ~(size_t)3;
     size_t new_size = builder->data_size + aligned_size;
     if (new_size > builder->data_capacity) {
         size_t new_capacity = builder->data_capacity * 2;
@@ -99,31 +116,28 @@ uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t si
     return index;
 }
 
-uint32_t add_string_to_data_segment(data_builder_t *builder, const wchar_t *string) {
-    uint32_t old_index = get_from_avl_tree(builder->strings, string).uint32_val;
-    if (old_index) {
-        return old_index - 1;
-    }
-    size_t len = (wcslen(string) + 1) * sizeof(wchar_t);
-    uint32_t index = add_data_to_data_segment(builder, (void *)string, len);
-    data_descriptor_t *descriptor = &builder->descriptors[index];
-    set_in_avl_tree(builder->strings,
-                    &builder->data[descriptor->offset],
-                    (value_t){.uint32_val = index + 1});
-    return index;
+uint32_t add_string_to_data_segment(data_builder_t *builder, const gchar_t *string) {
+    return add_string_to_data_segment_ex(builder, (string_view_t){string, STRLEN(string)});
 }
 
 uint32_t add_string_to_data_segment_ex(data_builder_t *builder, string_view_t string) {
-    uint32_t old_index = get_from_avl_tree(builder->strings, string.data).uint32_val;
-    if (old_index) {
+    uint32_t old_index = get_from_avl_tree(builder->strings, &string).uint32_val;
+    if (old_index)
         return old_index - 1;
+    if (string.length > UINT32_MAX / 4 - 1)
+        abort();
+    size_t bytes = (string.length + 1) * 4;
+    uint8_t *encoded = CALLOC(bytes);
+    for (size_t i = 0; i < string.length; ++i) {
+        uint32_t scalar = string.data[i];
+        if (!goat_is_scalar(scalar))
+            abort();
+        for (unsigned j = 0; j < 4; ++j)
+            encoded[4 * i + j] = (uint8_t)(scalar >> (8 * j));
     }
-    size_t len = (string.length + 1) * sizeof(wchar_t);
-    uint32_t index = add_data_to_data_segment(builder, (void *)string.data, len);
-    data_descriptor_t *descriptor = &builder->descriptors[index];
-    set_in_avl_tree(builder->strings,
-                    &builder->data[descriptor->offset],
-                    (value_t){.uint32_val = index + 1});
+    uint32_t index = add_data_to_data_segment(builder, encoded, bytes);
+    FREE(encoded);
+    set_in_avl_tree(builder->strings, &string, (value_t){.uint32_val = index + 1});
     return index;
 }
 

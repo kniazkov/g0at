@@ -16,7 +16,7 @@
 void c_emit_prelude(const source_builder_t *prelude, source_builder_t *builder, size_t indent) {
     for (size_t i = 0; prelude && i < prelude->count; i++) {
         const line_of_code_t *line = &prelude->lines[i];
-        add_source(builder, indent + line->indent, L"%s", line->text.data);
+        add_source(builder, indent + line->indent, U"%s", line->text.data);
     }
 }
 
@@ -50,19 +50,19 @@ c_generated_expression_t c_comparison(const node_t *node, c_generation_context_t
     string_value_t a = c_capture_operand(prelude, context, &left, left.type);
     string_value_t b = c_capture_operand(prelude, context, &right, right.type);
     comparison_kind_t kind = node_comparison_kind(node->vtbl->type);
-    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+    string_value_t value = format_string(U"g_t%zu", context->temporary_count++);
     bool integer_like = (left.type == C_VALUE_INT64 || left.type == C_VALUE_CHAR)
                         && (right.type == C_VALUE_INT64 || right.type == C_VALUE_CHAR);
     if (!same_domain) {
-        add_source(prelude, 0, L"(void)%s; (void)%s;", a.data, b.data);
+        add_source(prelude, 0, U"(void)%s; (void)%s;", a.data, b.data);
         add_source(prelude,
                    0,
-                   L"bool %s = %s;",
+                   U"bool %s = %s;",
                    value.data,
-                   equality && node->vtbl->type == NODE_NOT_EQUAL ? L"true" : L"false");
+                   equality && node->vtbl->type == NODE_NOT_EQUAL ? U"true" : U"false");
     } else if (integer_like || left.type == right.type) {
-        static const wchar_t *symbols[] = {L"<", L"<=", L">", L">=", L"==", L"!="};
-        add_source(prelude, 0, L"bool %s = %s %s %s;", value.data, a.data, symbols[kind], b.data);
+        static const gchar_t *symbols[] = {U"<", U"<=", U">", U">=", U"==", U"!="};
+        add_source(prelude, 0, U"bool %s = %s %s %s;", value.data, a.data, symbols[kind], b.data);
     } else {
         context->helper_flags |= C_HELPER_COMPARISON;
         /* Helper bits: less=1, equal=2, greater=4, unordered=8. */
@@ -71,7 +71,7 @@ c_generated_expression_t c_comparison(const node_t *node, c_generation_context_t
         bool integer_left = left.type == C_VALUE_INT64 || left.type == C_VALUE_CHAR;
         add_source(prelude,
                    0,
-                   L"bool %s = (g_compare_i64_double(%s, %s) & %u) != 0;",
+                   U"bool %s = (g_compare_i64_double(%s, %s) & %u) != 0;",
                    value.data,
                    integer_left ? a.data : b.data,
                    integer_left ? b.data : a.data,
@@ -96,7 +96,7 @@ c_generated_expression_t c_boolean(const node_t *node, c_generation_context_t *c
         .success = true,
         .type = C_VALUE_BOOL,
         .literal_truth = node->vtbl->type == NODE_TRUE ? ABSTRACT_TRUE : ABSTRACT_FALSE,
-        .value = node->vtbl->type == NODE_TRUE ? STATIC_STRING(L"true") : STATIC_STRING(L"false")};
+        .value = node->vtbl->type == NODE_TRUE ? STATIC_STRING(U"true") : STATIC_STRING(U"false")};
 }
 
 bool c_emit_if(const node_t *node,
@@ -120,14 +120,14 @@ bool c_emit_if(const node_t *node,
     c_emit_prelude(condition.prelude, builder, indent);
     abstract_truth_t truth = condition.literal_truth;
     if (truth == ABSTRACT_TRUE || truth == ABSTRACT_FALSE) {
-        add_source(builder, indent, L"(void)(%s);", condition.value.data);
+        add_source(builder, indent, U"(void)(%s);", condition.value.data);
         destroy_c_expression(&condition);
         context->terminates = false;
         const node_t *chosen = get_node_child(node, truth == ABSTRACT_TRUE ? 1 : 2);
         return !chosen || generate_indented_c_code_from_node(chosen, context, builder, indent);
     }
     /* Goat and C both consider NaN true and either signed zero false. */
-    add_source(builder, indent, L"if (%s) {", condition.value.data);
+    add_source(builder, indent, U"if (%s) {", condition.value.data);
     destroy_c_expression(&condition);
     context->terminates = false;
     if (!generate_indented_c_code_from_node(get_node_child(node, 1), context, builder, indent + 1))
@@ -136,12 +136,12 @@ bool c_emit_if(const node_t *node,
     context->terminates = false;
     const node_t *otherwise = get_node_child(node, 2);
     if (otherwise) {
-        add_static_source(builder, indent, L"} else {");
+        add_static_source(builder, indent, U"} else {");
         if (!generate_indented_c_code_from_node(otherwise, context, builder, indent + 1))
             return false;
     }
     context->terminates = true_returns && context->terminates;
-    add_static_source(builder, indent, L"}");
+    add_static_source(builder, indent, U"}");
     return true;
 }
 
@@ -149,10 +149,10 @@ bool c_emit_block(const node_t *node,
                   c_generation_context_t *context,
                   source_builder_t *builder,
                   size_t indent) {
-    add_static_source(builder, indent, L"{");
+    add_static_source(builder, indent, U"{");
     if (!c_emit_body(node, context, builder, indent + 1))
         return false;
-    add_static_source(builder, indent, L"}");
+    add_static_source(builder, indent, U"}");
     return true;
 }
 
@@ -165,7 +165,7 @@ bool c_emit_statement(const node_t *node,
     if (child && is_deletion(child) && c_generation_replacement(context, child) == child)
         return true;
     if (!child) {
-        add_static_source(builder, indent, L";");
+        add_static_source(builder, indent, U";");
         return true;
     }
     if (replacement_original(child)->vtbl->type == NODE_STATEMENT_LIST)
@@ -174,7 +174,7 @@ bool c_emit_statement(const node_t *node,
     if (!expression.success)
         return false;
     c_emit_prelude(expression.prelude, builder, indent);
-    add_source(builder, indent, L"(void)(%s);", expression.value.data);
+    add_source(builder, indent, U"(void)(%s);", expression.value.data);
     destroy_c_expression(&expression);
     return true;
 }
@@ -189,9 +189,9 @@ bool c_emit_loop_jump(const node_t *node,
         return fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
     add_source(builder,
                indent,
-               L"goto g_loop_%zu_%s;",
+               U"goto g_loop_%zu_%s;",
                context->loop_id,
-               node->vtbl->type == NODE_BREAK ? L"end" : L"next");
+               node->vtbl->type == NODE_BREAK ? U"end" : U"next");
     context->terminates = true;
     return true;
 }
@@ -207,7 +207,7 @@ bool c_emit_for(const node_t *node,
     context->loop_id = id;
     context->in_loop = true;
     bool post = node->vtbl->type == NODE_DO_WHILE;
-    add_static_source(builder, indent, L"{");
+    add_static_source(builder, indent, U"{");
     bool success = c_prepare_locals(node, context, builder, indent + 1)
                    && generate_indented_c_code_from_node(get_node_child(node, 0),
                                                          context,
@@ -221,10 +221,10 @@ bool c_emit_for(const node_t *node,
     }
     if (success) {
         string_value_t truth = post ? (string_value_t){0} : truth_value(&condition);
-        add_static_source(builder, indent + 1, L"for (;;) {");
+        add_static_source(builder, indent + 1, U"for (;;) {");
         if (!post) {
             c_emit_prelude(condition.prelude, builder, indent + 2);
-            add_source(builder, indent + 2, L"if (!(%s)) goto g_loop_%zu_end;", truth.data, id);
+            add_source(builder, indent + 2, U"if (!(%s)) goto g_loop_%zu_end;", truth.data, id);
         }
         context->terminates = false;
         success = generate_indented_c_code_from_node(get_node_child(node, 3),
@@ -233,8 +233,8 @@ bool c_emit_for(const node_t *node,
                                                      indent + 2);
         bool reaches_step = !context->terminates || loop_has_jump(node, true);
         body_stops = !reaches_step;
-        add_source(builder, indent + 2, L"goto g_loop_%zu_next;", id);
-        add_source(builder, indent + 2, L"g_loop_%zu_next:;", id);
+        add_source(builder, indent + 2, U"goto g_loop_%zu_next;", id);
+        add_source(builder, indent + 2, U"g_loop_%zu_next:;", id);
         context->terminates = false;
         if (success && reaches_step)
             success = generate_indented_c_code_from_node(get_node_child(node, 2),
@@ -247,12 +247,12 @@ bool c_emit_for(const node_t *node,
             if (success) {
                 truth = truth_value(&condition);
                 c_emit_prelude(condition.prelude, builder, indent + 2);
-                add_source(builder, indent + 2, L"if (!(%s)) goto g_loop_%zu_end;", truth.data, id);
+                add_source(builder, indent + 2, U"if (!(%s)) goto g_loop_%zu_end;", truth.data, id);
             }
         }
-        add_static_source(builder, indent + 1, L"}");
-        add_source(builder, indent + 1, L"goto g_loop_%zu_end;", id);
-        add_source(builder, indent + 1, L"g_loop_%zu_end:;", id);
+        add_static_source(builder, indent + 1, U"}");
+        add_source(builder, indent + 1, U"goto g_loop_%zu_end;", id);
+        add_source(builder, indent + 1, U"g_loop_%zu_end:;", id);
         FREE_STRING(truth);
     }
     destroy_c_expression(&condition);
@@ -263,13 +263,13 @@ bool c_emit_for(const node_t *node,
         ((post && body_stops)
          || c_generation_condition_truth(context, get_node_child(node, 1)) == ABSTRACT_TRUE)
         && !loop_has_jump(node, false);
-    add_static_source(builder, indent, L"}");
+    add_static_source(builder, indent, U"}");
     return success;
 }
 
 /** @brief Tests native scalar truth without changing the represented value. */
 static string_value_t truth_value(const c_generated_expression_t *expression) {
-    return format_string(expression->type == C_VALUE_STRING ? L"(%s).length != 0" : L"(%s) != 0",
+    return format_string(expression->type == C_VALUE_STRING ? U"(%s).length != 0" : U"(%s) != 0",
                          expression->value.data);
 }
 
@@ -284,13 +284,13 @@ c_generated_expression_t c_logic(const node_t *node, c_generation_context_t *con
     source_builder_t *prelude = create_source_builder();
     c_emit_prelude(left.prelude, prelude, 0);
     string_value_t truth = truth_value(&left);
-    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+    string_value_t value = format_string(U"g_t%zu", context->temporary_count++);
     node_type_t type = node->vtbl->type;
     add_source(prelude,
                0,
-               L"bool %s = %s(%s);",
+               U"bool %s = %s(%s);",
                value.data,
-               type == NODE_LOGICAL_NOT ? L"!" : L"",
+               type == NODE_LOGICAL_NOT ? U"!" : U"",
                truth.data);
     FREE_STRING(truth);
     destroy_c_expression(&left);
@@ -307,13 +307,13 @@ c_generated_expression_t c_logic(const node_t *node, c_generation_context_t *con
             }
             add_source(prelude,
                        0,
-                       L"if (%s%s) {",
-                       type == NODE_LOGICAL_OR ? L"!" : L"",
+                       U"if (%s%s) {",
+                       type == NODE_LOGICAL_OR ? U"!" : U"",
                        value.data);
             c_emit_prelude(right.prelude, prelude, 1);
             truth = truth_value(&right);
-            add_source(prelude, 1, L"%s = %s;", value.data, truth.data);
-            add_static_source(prelude, 0, L"}");
+            add_source(prelude, 1, U"%s = %s;", value.data, truth.data);
+            add_static_source(prelude, 0, U"}");
             FREE_STRING(truth);
             destroy_c_expression(&right);
         }

@@ -8,22 +8,22 @@
 #include "analysis/c_body.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "goat/unicode.h"
 #include "graph/common_methods.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 bool test_c_body_limits() {
     arena_t *arena = create_arena(16);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
         parse_analysis_test_program(&memory,
-                                    STATIC_STRING(L"const a=func(n){return b(n);};\n"
-                                                  L"const b=func(n){return c(n);};\n"
-                                                  L"const c=func(n){return n+1;};a(1);"));
+                                    STATIC_STRING(U"const a=func(n){return b(n);};\n"
+                                                  U"const b=func(n){return c(n);};\n"
+                                                  U"const c=func(n){return n+1;};a(1);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -82,7 +82,7 @@ bool test_c_body_limits() {
     ASSERT(graph->head->summary->c_support == FUNCTION_C_SUPPORTED);
     ASSERT(event->node->flags == flags);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     ASSERT(event->function_summary->c_support == FUNCTION_C_SUPPORTED);
     FREE_STRING(before);
     FREE_STRING(after);
@@ -96,8 +96,8 @@ bool test_c_body_virtual() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const a=func(n){if(n<1)return 0;return b(n-1);};\n"
-                      L"const b=func(n){if(n<1)return 1;return a(n-1);};a(0);"));
+        STATIC_STRING(U"const a=func(n){if(n<1)return 0;return b(n-1);};\n"
+                      U"const b=func(n){if(n<1)return 1;return a(n-1);};a(0);"));
     ASSERT(root);
     options_t *options = create_options();
     ASSERT(!analyze(root, &memory, options, NULL));

@@ -10,13 +10,13 @@
 #include "analysis/simplification.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "goat/unicode.h"
 #include "graph/declarations.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 bool test_function_return_isolation() {
     arena_t *arena = create_arena(16);
@@ -24,7 +24,7 @@ bool test_function_return_isolation() {
     node_t *root = parse_analysis_test_program(
         &memory,
         STATIC_STRING(
-            L"var x=0;\nconst f=func(n){x=n;if(n==1)return 10;return 20;};\nvar y=f(1);"));
+            U"var x=0;\nconst f=func(n){x=n;if(n==1)return 10;return 20;};\nvar y=f(1);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -51,7 +51,7 @@ bool test_function_return_isolation() {
     analyze_function_return_types(root);
     analyze_function_return_types(root);
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     ASSERT(result->declarator->abstract_value == fact && function->flags == flags);
     ASSERT(set->head == set->tail && set->head->return_type->type == LATTICE_INTEGER);
     ASSERT(event->function_summary->return_type->type == LATTICE_INTEGER);

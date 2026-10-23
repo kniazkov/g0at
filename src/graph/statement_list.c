@@ -65,11 +65,11 @@ static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const statement_list_t *list = (const statement_list_t *)node;
     if (list->statements->size == 0) {
-        append_static_source(builder, L"{ }");
+        append_static_source(builder, U"{ }");
         return;
     }
 
-    append_static_source(builder, L"{");
+    append_static_source(builder, U"{");
 
     list_item_t *item = list->statements->head;
     while (item) {
@@ -78,7 +78,7 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
         item = item->next;
     }
 
-    add_static_source(builder, indent, L"}");
+    add_static_source(builder, indent, U"}");
 }
 
 /**
@@ -115,7 +115,7 @@ static node_vtbl_t statement_list_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"statement list",
+    .type_name = U"statement list",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

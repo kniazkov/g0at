@@ -8,6 +8,7 @@
 #include "analysis_test_support.h"
 #include "cli/options.h"
 #include "codegen/c_module.h"
+#include "goat/unicode.h"
 #include "graph/common_methods.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
@@ -15,7 +16,6 @@
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 /** @brief One AST produces different local representations for its numeric signatures. */
 static bool append_profiles(source_builder_t *output, source_builder_t *checks) {
@@ -23,7 +23,7 @@ static bool append_profiles(source_builder_t *output, source_builder_t *checks) 
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const f=func(n){var x=n;x=x+x;return x;};f(1);f(1.5);"));
+        STATIC_STRING(U"const f=func(n){var x=n;x=x+x;return x;};f(1);f(1.5);"));
     options_t *options = create_options();
     bool success = root && !analyze(root, &memory, options, NULL);
     c_module_t *module = success ? create_c_module(arena, root) : NULL;
@@ -31,22 +31,22 @@ static bool append_profiles(source_builder_t *output, source_builder_t *checks) 
     for (const c_module_function_t *entry = success ? module->head : NULL; entry && success;
          entry = entry->next) {
         bool integer = entry->summary->parameter_types[0]->type == LATTICE_INTEGER;
-        const wchar_t *name = integer ? L"goat_local_integer" : L"goat_local_real";
+        const gchar_t *name = integer ? U"goat_local_integer" : U"goat_local_real";
         c_generation_result_t result =
-            generate_c_function(entry->summary, (string_view_t){name, wcslen(name)}, NULL, NULL);
+            generate_c_function(entry->summary, (string_view_t){name, STRLEN(name)}, NULL, NULL);
         success =
             result.status == C_GENERATION_OK
-            && wcsstr(result.source.data, integer ? L"int64_t g_l0;" : L"volatile double g_l0;");
+            && STRSTR(result.source.data, integer ? U"int64_t g_l0;" : U"volatile double g_l0;");
         if (success) {
             add_formatted_source(output, 0, result.source);
             add_source(checks,
                        1,
-                       L"if (!(%s)) return 106;",
+                       U"if (!(%s)) return 106;",
                        integer
-                           ? L"goat_local_integer(INT64_MAX)==INT64_MAX && "
-                             L"goat_local_integer(INT64_MIN)==INT64_MIN"
-                           : L"goat_local_real(1.5)==3.0 && goat_local_real(INFINITY)==INFINITY && "
-                             L"isnan(goat_local_real(NAN))");
+                           ? U"goat_local_integer(INT64_MAX)==INT64_MAX && "
+                             U"goat_local_integer(INT64_MIN)==INT64_MIN"
+                           : U"goat_local_real(1.5)==3.0 && goat_local_real(INFINITY)==INFINITY && "
+                             U"isnan(goat_local_real(NAN))");
         } else
             FREE_STRING(result.source);
     }
@@ -60,69 +60,69 @@ bool append_c_local_tests(source_builder_t *output, source_builder_t *checks) {
         return false;
 
     const struct {
-        const wchar_t *source, *check;
+        const gchar_t *source, *check;
     } fixtures[] = {
-        {L"const f=func(n){var x=n;return x;};f(1);", L"(INT64_MIN)==INT64_MIN"},
-        {L"const f=func(n){var x=n;return x;};f(1.0);",
-         L"(-0.0)==0 && signbit(goat_local1(-0.0)) && isnan(goat_local1(NAN))"},
-        {L"const f=func(n){const x=n+1;return x*2;};f(1);", L"(4)==10"},
-        {L"const f=func(n){var x=n;x=x+1;return x;};f(1);", L"(INT64_MAX)==INT64_MAX"},
-        {L"const f=func(n){n=n+2;return n;};f(1);", L"(5)==7"},
-        {L"const f=func(n){var x=n,y=x+1;return x+y;};f(1);", L"(3)==7"},
-        {L"const f=func(n){var x=n;const y=(x=x+1),z=(x=x+2);return y*10+z;};f(1);", L"(3)==46"},
-        {L"const f=func(n){var x=n,y=n;x=y=n+3;return x*10+y;};f(1);", L"(2)==55"},
-        {L"const f=func(n){var x=n;return (x=1)+(x=2);};f(1);", L"(9)==3"},
-        {L"const f=func(n){var x=n;return x+(x=2);};f(1);", L"(9)==11"},
-        {L"const f=func(n){var x=n;return (x=2)+x;};f(1);", L"(9)==4"},
-        {L"const f=func(n){var x=n;return (x=x+1)*(x=x+2);};f(1);", L"(3)==24"},
-        {L"const f=func(n){var x=n;if((x=x+1)<(x=x+2))return x;return 0;};f(1);", L"(3)==6"},
-        {L"const f=func(n){var x=1;if(n){x=2;}else{x=3;}return x;};f(1);",
-         L"(1)==2 && goat_local13(0)==3"},
-        {L"const f=func(n){var x=1;if(n){var x=2;x=x+1;}else{var x=4;x=x+1;}return x;};f(1);",
-         L"(1)==1 && goat_local14(0)==1"},
-        {L"const f=func(n){var x=n;{var x=1.5;x=x+0.5;}return x;};f(1);", L"(7)==7"},
-        {L"const f=func(n){var x=n;{var y=x+1;x=y*2;}return x;};f(1);", L"(3)==8"},
-        {L"const f=func(n){{var n=5;return n;}};f(1);", L"(2)==5"},
-        {L"const f=func(n){var test=n<0;if(test)return -1;test=n>0;if(test)return 1;return "
-         L"0;};f(1);",
-         L"(-2)==-1 && goat_local18(2)==1 && goat_local18(0)==0"},
-        {L"const f=func(n){const test=n==0;if(test)return 1;return 0;};f(1.0);",
-         L"(-0.0)==1 && goat_local19(NAN)==0"},
-        {L"const f=func(n){var x=n;if(n<0){var x=2;return x;}return x;};f(1);",
-         L"(-1)==2 && goat_local20(8)==8"},
-        {L"const f=func(n){var x=n;{var x=2;{var x=3;x=x+1;}x=x+1;}return x;};f(1);", L"(7)==7"},
-        {L"const f=func(n){var x=n;{const first=x;var x=first+1;x=x+2;}return x;};f(1);",
-         L"(7)==7"},
-        {L"const f=func(n){var unused=n;unused=n+2;return n;};f(1);", L"(7)==7"},
-        {L"const f=func(n){var g_l0=n,g_t0=n+1;return g_l0+g_t0;};f(1);", L"(3)==7"},
-        {L"const f=func(n){var значение=n;значение=значение+1;return значение;};f(1);", L"(3)==4"},
-        {L"const f=func(n){var x=n;x=x+1.0;return x-n;};f(1.0);", L"(0x1p53)==0.0"},
-        {L"const f=func(n){var x=n,y=0.0;return (y=x)+((x=2.0)-y);};f(1.0);", L"(0x1p53)==2.0"},
-        {L"const f=func(n){var x=n;x=-x;return x;};f(1.0);",
-         L"(0.0)==0 && signbit(goat_local28(0.0)) && isnan(goat_local28(NAN)) && "
-         L"goat_local28(INFINITY)==-INFINITY"},
-        {L"const f=func(n){var x=n;return x=(x=1)+2;};f(1);", L"(9)==3"},
-        {L"const f=func(n){var x=n;if((x=n-1))return x;return x;};f(1);",
-         L"(1)==0 && goat_local30(9)==8"},
-        {L"const f=func(n){if(n)var x=1;x=2;return x;};f(1);", L"(0)==2 && goat_local31(1)==2"},
-        {L"const f=func(n){if(true)var x=n;return x;};f(1);", L"(7)==7"},
-        {L"const f=func(n){var x=n;if(n){const x=3;return x;}else{const x=4;return x;}};f(1);",
-         L"(1)==3 && goat_local33(0)==4"},
-        {L"const f=func(n){var x=n;{var y=x;{var x=y+2;y=x;}x=y;}return x;};f(1);", L"(7)==9"},
-        {L"const f=func(n){var x=n,b=n<0;if((b=n>0)){x=1;}return x;};f(1);",
-         L"(-7)==-7 && goat_local35(7)==1"}};
+        {U"const f=func(n){var x=n;return x;};f(1);", U"(INT64_MIN)==INT64_MIN"},
+        {U"const f=func(n){var x=n;return x;};f(1.0);",
+         U"(-0.0)==0 && signbit(goat_local1(-0.0)) && isnan(goat_local1(NAN))"},
+        {U"const f=func(n){const x=n+1;return x*2;};f(1);", U"(4)==10"},
+        {U"const f=func(n){var x=n;x=x+1;return x;};f(1);", U"(INT64_MAX)==INT64_MAX"},
+        {U"const f=func(n){n=n+2;return n;};f(1);", U"(5)==7"},
+        {U"const f=func(n){var x=n,y=x+1;return x+y;};f(1);", U"(3)==7"},
+        {U"const f=func(n){var x=n;const y=(x=x+1),z=(x=x+2);return y*10+z;};f(1);", U"(3)==46"},
+        {U"const f=func(n){var x=n,y=n;x=y=n+3;return x*10+y;};f(1);", U"(2)==55"},
+        {U"const f=func(n){var x=n;return (x=1)+(x=2);};f(1);", U"(9)==3"},
+        {U"const f=func(n){var x=n;return x+(x=2);};f(1);", U"(9)==11"},
+        {U"const f=func(n){var x=n;return (x=2)+x;};f(1);", U"(9)==4"},
+        {U"const f=func(n){var x=n;return (x=x+1)*(x=x+2);};f(1);", U"(3)==24"},
+        {U"const f=func(n){var x=n;if((x=x+1)<(x=x+2))return x;return 0;};f(1);", U"(3)==6"},
+        {U"const f=func(n){var x=1;if(n){x=2;}else{x=3;}return x;};f(1);",
+         U"(1)==2 && goat_local13(0)==3"},
+        {U"const f=func(n){var x=1;if(n){var x=2;x=x+1;}else{var x=4;x=x+1;}return x;};f(1);",
+         U"(1)==1 && goat_local14(0)==1"},
+        {U"const f=func(n){var x=n;{var x=1.5;x=x+0.5;}return x;};f(1);", U"(7)==7"},
+        {U"const f=func(n){var x=n;{var y=x+1;x=y*2;}return x;};f(1);", U"(3)==8"},
+        {U"const f=func(n){{var n=5;return n;}};f(1);", U"(2)==5"},
+        {U"const f=func(n){var test=n<0;if(test)return -1;test=n>0;if(test)return 1;return "
+         U"0;};f(1);",
+         U"(-2)==-1 && goat_local18(2)==1 && goat_local18(0)==0"},
+        {U"const f=func(n){const test=n==0;if(test)return 1;return 0;};f(1.0);",
+         U"(-0.0)==1 && goat_local19(NAN)==0"},
+        {U"const f=func(n){var x=n;if(n<0){var x=2;return x;}return x;};f(1);",
+         U"(-1)==2 && goat_local20(8)==8"},
+        {U"const f=func(n){var x=n;{var x=2;{var x=3;x=x+1;}x=x+1;}return x;};f(1);", U"(7)==7"},
+        {U"const f=func(n){var x=n;{const first=x;var x=first+1;x=x+2;}return x;};f(1);",
+         U"(7)==7"},
+        {U"const f=func(n){var unused=n;unused=n+2;return n;};f(1);", U"(7)==7"},
+        {U"const f=func(n){var g_l0=n,g_t0=n+1;return g_l0+g_t0;};f(1);", U"(3)==7"},
+        {U"const f=func(n){var значение=n;значение=значение+1;return значение;};f(1);", U"(3)==4"},
+        {U"const f=func(n){var x=n;x=x+1.0;return x-n;};f(1.0);", U"(0x1p53)==0.0"},
+        {U"const f=func(n){var x=n,y=0.0;return (y=x)+((x=2.0)-y);};f(1.0);", U"(0x1p53)==2.0"},
+        {U"const f=func(n){var x=n;x=-x;return x;};f(1.0);",
+         U"(0.0)==0 && signbit(goat_local28(0.0)) && isnan(goat_local28(NAN)) && "
+         U"goat_local28(INFINITY)==-INFINITY"},
+        {U"const f=func(n){var x=n;return x=(x=1)+2;};f(1);", U"(9)==3"},
+        {U"const f=func(n){var x=n;if((x=n-1))return x;return x;};f(1);",
+         U"(1)==0 && goat_local30(9)==8"},
+        {U"const f=func(n){if(n)var x=1;x=2;return x;};f(1);", U"(0)==2 && goat_local31(1)==2"},
+        {U"const f=func(n){if(true)var x=n;return x;};f(1);", U"(7)==7"},
+        {U"const f=func(n){var x=n;if(n){const x=3;return x;}else{const x=4;return x;}};f(1);",
+         U"(1)==3 && goat_local33(0)==4"},
+        {U"const f=func(n){var x=n;{var y=x;{var x=y+2;y=x;}x=y;}return x;};f(1);", U"(7)==9"},
+        {U"const f=func(n){var x=n,b=n<0;if((b=n>0)){x=1;}return x;};f(1);",
+         U"(-7)==-7 && goat_local35(7)==1"}};
 
     for (size_t i = 0; i < sizeof(fixtures) / sizeof(*fixtures); i++) {
         arena_t *arena = create_arena(32);
         parser_memory_t memory = {arena, arena, arena, arena};
-        const wchar_t *source = fixtures[i].source;
+        const gchar_t *source = fixtures[i].source;
         node_t *root =
-            parse_analysis_test_program(&memory, (string_value_t){source, wcslen(source), false});
+            parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
         options_t *options = create_options();
         bool success = root && !analyze(root, &memory, options, NULL);
         c_module_t *module = success ? create_c_module(arena, root) : NULL;
         success = module && module->available_count == 1;
-        string_value_t name = format_string(L"goat_local%zu", i);
+        string_value_t name = format_string(U"goat_local%zu", i);
         if (success) {
             c_generation_result_t result =
                 generate_c_function(module->head->summary,
@@ -136,7 +136,7 @@ bool append_c_local_tests(source_builder_t *output, source_builder_t *checks) {
                 fprintf(stderr,
                         "Local emission status %d at %ls\n",
                         result.status,
-                        result.failed_node ? result.failed_node->vtbl->type_name : L"none");
+                        result.failed_node ? result.failed_node->vtbl->type_name : U"none");
                 FREE_STRING(result.source);
             }
         }
@@ -144,7 +144,7 @@ bool append_c_local_tests(source_builder_t *output, source_builder_t *checks) {
             add_source(
                 checks,
                 1,
-                L"if (!(%s%s)) { fprintf(stderr, \"local fixture %zu failed\\n\"); return 105; }",
+                U"if (!(%s%s)) { fprintf(stderr, \"local fixture %zu failed\\n\"); return 105; }",
                 name.data,
                 fixtures[i].check,
                 i);
@@ -160,20 +160,20 @@ bool append_c_local_tests(source_builder_t *output, source_builder_t *checks) {
 }
 
 bool test_c_local_rejections(void) {
-    const wchar_t *sources[] = {L"const f=func(n){var x=1;x=1.5;return x;};f(1);",
-                                L"const f=func(n){n=1.5;return n;};f(1);",
-                                L"const f=func(n){var x=1;if(n){x=1.5;}return n;};f(1);",
-                                L"const f=func(n){var x=n<0;x=1;return n;};f(1);",
-                                L"const f=func(n){var x;x=n;return x;};f(1);",
-                                L"const f=func(n){if(n)var x=1;return x;};f(1);",
-                                L"var x=1;const f=func(n){x=n;return x;};f(1);",
-                                L"const f=func(n){const x=n;x=2;return x;};f(1);"};
+    const gchar_t *sources[] = {U"const f=func(n){var x=1;x=1.5;return x;};f(1);",
+                                U"const f=func(n){n=1.5;return n;};f(1);",
+                                U"const f=func(n){var x=1;if(n){x=1.5;}return n;};f(1);",
+                                U"const f=func(n){var x=n<0;x=1;return n;};f(1);",
+                                U"const f=func(n){var x;x=n;return x;};f(1);",
+                                U"const f=func(n){if(n)var x=1;return x;};f(1);",
+                                U"var x=1;const f=func(n){x=n;return x;};f(1);",
+                                U"const f=func(n){const x=n;x=2;return x;};f(1);"};
     for (size_t i = 0; i < sizeof(sources) / sizeof(*sources); i++) {
         arena_t *arena = create_arena(32);
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root =
             parse_analysis_test_program(&memory,
-                                        (string_value_t){sources[i], wcslen(sources[i]), false});
+                                        (string_value_t){sources[i], STRLEN(sources[i]), false});
         ASSERT(root);
         options_t *options = create_options();
         ASSERT(!analyze(root, &memory, options, NULL));
@@ -185,7 +185,7 @@ bool test_c_local_rejections(void) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const f=func(n){var x=n;{var y=x;x=y+1;}return x;};f(1);"));
+        STATIC_STRING(U"const f=func(n){var x=n;{var y=x;x=y+1;}return x;};f(1);"));
     ASSERT(root);
     options_t *options = create_options();
     ASSERT(!analyze(root, &memory, options, NULL));

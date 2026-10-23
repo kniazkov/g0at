@@ -3,12 +3,12 @@
  */
 #include "test_module_identity.h"
 
+#include "goat/unicode.h"
 #include "test_macro.h"
 
 #include <goat/module_identity.h>
 #include <stdio.h>
 #include <string.h>
-#include <wchar.h>
 
 bool test_module_identity(void) {
     ASSERT(goat_module_name_valid("geometry", 8));
@@ -77,18 +77,18 @@ bool test_module_identity(void) {
     ASSERT(!goat_module_parse_import("a", 1, NULL));
 
     goat_module_import_wide_t wide = {0};
-    const wchar_t *wtext = L"geometry@1.02.0";
-    ASSERT(goat_module_parse_import_wide(wtext, wcslen(wtext), &wide));
+    const gchar_t *wtext = U"geometry@1.02.0";
+    ASSERT(goat_module_parse_import_wide(wtext, STRLEN(wtext), &wide));
     ASSERT(wide.name.data == wtext && wide.name.length == 8);
     ASSERT(wide.version.data == wtext + 9 && wide.version.length == 6);
-    ASSERT(goat_module_parse_import_wide(L"geometry", 8, &wide));
+    ASSERT(goat_module_parse_import_wide(U"geometry", 8, &wide));
     ASSERT(!wide.has_version && !wide.version.data);
-    ASSERT(!goat_module_parse_import_wide(L"geometry@", 9, &wide));
-    ASSERT(!goat_module_parse_import_wide(L"geometry@1@2", 12, &wide));
-    ASSERT(!goat_module_parse_import_wide(L"con.txt", 7, &wide));
-    ASSERT(!goat_module_parse_import_wide(L"a\0b", 3, &wide));
-    ASSERT(!goat_module_parse_import_wide(L"g\u00e9o", 3, &wide));
+    ASSERT(!goat_module_parse_import_wide(U"geometry@", 9, &wide));
+    ASSERT(!goat_module_parse_import_wide(U"geometry@1@2", 12, &wide));
+    ASSERT(!goat_module_parse_import_wide(U"con.txt", 7, &wide));
+    ASSERT(!goat_module_parse_import_wide(U"a\0b", 3, &wide));
+    ASSERT(!goat_module_parse_import_wide(U"g\u00e9o", 3, &wide));
     ASSERT(!goat_module_parse_import_wide(NULL, 0, &wide));
-    ASSERT(!goat_module_parse_import_wide(L"a", 1, NULL));
+    ASSERT(!goat_module_parse_import_wide(U"a", 1, NULL));
     return true;
 }

@@ -43,7 +43,7 @@ parsing_while(token_t *token, parser_memory_t *memory, token_groups_t *groups) {
         header = tail->right;
         last = header;
     }
-    if (!header || header->type != TOKEN_BRACKET_PAIR || header->text.data[0] != L'('
+    if (!header || header->type != TOKEN_BRACKET_PAIR || header->text.data[0] != U'('
         || header->children.count != 1 || header->children.first->type != TOKEN_EXPRESSION)
         goto invalid;
     node_t *node = create_while_node(memory->graph,

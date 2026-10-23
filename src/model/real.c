@@ -111,7 +111,7 @@ static object_t *clone(process_t *process, object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::to_string. */
 static string_value_t to_string(const object_t *obj) {
     double value = get_object_real_value(obj).value;
-    return format_string(L"%f", value);
+    return format_string(U"%f", value);
 }
 
 /** @brief Implements @ref object_vtbl_t::to_string_notation. */

@@ -23,7 +23,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return make_string_element();
 }
 
-const builtin_function_t builtin_input = {.name = L"input",
+const builtin_function_t builtin_input = {.name = U"input",
                                           .min_args = 0,
                                           .effects = BUILTIN_EFFECT_INPUT,
                                           .execute = execute,

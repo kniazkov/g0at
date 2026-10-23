@@ -37,7 +37,7 @@ comparison_kind_t node_comparison_kind(node_type_t type) {
     }
 }
 
-static const wchar_t *symbols[] = {L"<", L"<=", L">", L">=", L"==", L"!="};
+static const gchar_t *symbols[] = {U"<", U"<=", U">", U">=", U"==", U"!="};
 static const opcode_t opcodes[] = {LESS, LEQ, GREATER, GREQ, EQUAL, DIFF};
 
 /** @brief Numeric operations use the wrap, rounding and comparison rules of the C contract. */
@@ -73,7 +73,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     const binary_operation_t *expr = (const binary_operation_t *)node;
     string_value_t left = generate_goat_code_from_expression(expr->left_operand);
     string_value_t right = generate_goat_code_from_expression(expr->right_operand);
-    string_value_t result = format_string(L"%s %s %s",
+    string_value_t result = format_string(U"%s %s %s",
                                           left.data,
                                           symbols[node_comparison_kind(node->vtbl->type)],
                                           right.data);
@@ -118,7 +118,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"less",
+        .type_name = U"less",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -147,7 +147,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"less or equal",
+        .type_name = U"less or equal",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -176,7 +176,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"greater",
+        .type_name = U"greater",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -205,7 +205,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"greater or equal",
+        .type_name = U"greater or equal",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -234,7 +234,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"equal",
+        .type_name = U"equal",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -263,7 +263,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"not equal",
+        .type_name = U"not equal",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,

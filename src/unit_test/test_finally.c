@@ -18,42 +18,42 @@
 #include <stdio.h>
 
 bool test_finally_parser(void) {
-    const wchar_t *valid[] = {L"try {} finally {}",
-                              L"try f(); finally g();",
-                              L"try throw 1; catch(e) println(e); finally g();",
-                              L"try ; finally ;",
-                              L"try {} catch(e);",
-                              L"try f(); catch(e) x=e;",
-                              L"try f(); finally x=1;",
-                              L"try if(x) f(); else g(); finally h();",
-                              L"try f(); catch(e) if(x) g(); else h(); finally h();",
-                              L"do try f(); finally if(x) g(); else h(); while(x);",
-                              L"do try f(); catch(e) while(x) break; finally h(); while(x);",
-                              L"try try f(); finally g(); finally h();",
-                              L"while(x) try break; finally continue;",
-                              L"try f(); finally {const f=func(){return 1;};}",
-                              L"try return 1; finally return 2;",
-                              L"try {} catch(e) var x=1; finally var x=2;"};
-    const wchar_t *invalid[] = {L"finally {}",
-                                L"try {} finally",
-                                L"try finally {}",
-                                L"try {} finally {} catch(e) {}",
-                                L"try {} finally {} finally {}",
-                                L"try {} catch(e) finally {}",
-                                L"try {} catch(e) {} catch(e) {}",
-                                L"try {} finally (a,b) {}",
-                                L"try {} finally break;",
-                                L"while(x) try {} finally {const f=func(){continue;};}",
-                                L"try ;; finally {}"};
+    const gchar_t *valid[] = {U"try {} finally {}",
+                              U"try f(); finally g();",
+                              U"try throw 1; catch(e) println(e); finally g();",
+                              U"try ; finally ;",
+                              U"try {} catch(e);",
+                              U"try f(); catch(e) x=e;",
+                              U"try f(); finally x=1;",
+                              U"try if(x) f(); else g(); finally h();",
+                              U"try f(); catch(e) if(x) g(); else h(); finally h();",
+                              U"do try f(); finally if(x) g(); else h(); while(x);",
+                              U"do try f(); catch(e) while(x) break; finally h(); while(x);",
+                              U"try try f(); finally g(); finally h();",
+                              U"while(x) try break; finally continue;",
+                              U"try f(); finally {const f=func(){return 1;};}",
+                              U"try return 1; finally return 2;",
+                              U"try {} catch(e) var x=1; finally var x=2;"};
+    const gchar_t *invalid[] = {U"finally {}",
+                                U"try {} finally",
+                                U"try finally {}",
+                                U"try {} finally {} catch(e) {}",
+                                U"try {} finally {} finally {}",
+                                U"try {} catch(e) finally {}",
+                                U"try {} catch(e) {} catch(e) {}",
+                                U"try {} finally (a,b) {}",
+                                U"try {} finally break;",
+                                U"while(x) try {} finally {const f=func(){continue;};}",
+                                U"try ;; finally {}"};
     for (size_t pass = 0; pass < 2; pass++) {
-        const wchar_t **texts = pass ? invalid : valid;
+        const gchar_t **texts = pass ? invalid : valid;
         size_t count = pass ? sizeof(invalid) / sizeof(*invalid) : sizeof(valid) / sizeof(*valid);
         for (size_t i = 0; i < count; i++) {
             arena_t *arena = create_arena(8);
             parser_memory_t memory = {arena, arena, arena, arena};
             node_t *root =
                 parse_analysis_test_program(&memory,
-                                            (string_value_t){texts[i], wcslen(texts[i]), false});
+                                            (string_value_t){texts[i], STRLEN(texts[i]), false});
             if (pass ? root != NULL : root == NULL)
                 fprintf(stderr, "finally parser %zu/%zu\n", pass, i);
             ASSERT(pass ? root == NULL : root != NULL);
@@ -73,7 +73,7 @@ bool test_finally_gc(void) {
     thread_t *thread = proc->main_thread;
     context_t *cleanup = create_context(proc, thread->context, NULL);
     cleanup->control_flow = FLOW_CLEANUP;
-    object_t *text = create_string_object(proc, STATIC_STRING(L"pending value"));
+    object_t *text = create_string_object(proc, STATIC_STRING(U"pending value"));
     cleanup->pending_value = create_array_object(proc, (object_array_t){&text, 1});
     DECREF(text);
     /* A nested call/scope must retain pending values of every outer cleanup. */
@@ -82,7 +82,7 @@ bool test_finally_gc(void) {
     object_array_t values = get_array_elements(cleanup->pending_value);
     ASSERT(values.size == 1);
     string_value_t value = convert_object_to_string(values.items[0]);
-    ASSERT(!wcscmp(value.data, L"pending value"));
+    ASSERT(!STRCMP(value.data, U"pending value"));
     FREE_STRING(value);
     thread->context = destroy_context(thread->context);
     thread->context = destroy_context(thread->context);

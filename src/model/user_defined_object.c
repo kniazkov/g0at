@@ -395,11 +395,11 @@ static string_value_t render_user_defined_object_notation(notation_renderer_t *r
                                                           object_user_defined_t *uobj) {
     for (size_t index = 0; index < renderer->active->size; index++) {
         if (renderer->active->data[index] == &uobj->base) {
-            return append_string(renderer->builder, L"{...}");
+            return append_string(renderer->builder, U"{...}");
         }
     }
     if (uobj->properties->root == NULL) {
-        return append_string(renderer->builder, L"{ }");
+        return append_string(renderer->builder, U"{ }");
     }
     size_t saved_mark = renderer->mark;
     renderer->mark = renderer->builder->length;
@@ -418,19 +418,19 @@ static string_value_t render_user_defined_object_notation(notation_renderer_t *r
 static string_value_t render_array_notation(notation_renderer_t *renderer, const object_t *obj) {
     for (size_t i = 0; i < renderer->active->size; i++)
         if (renderer->active->data[i] == obj)
-            return append_string(renderer->builder, L"[...]");
+            return append_string(renderer->builder, U"[...]");
     append_to_vector(renderer->active, (void *)obj);
-    append_char(renderer->builder, L'[');
+    append_char(renderer->builder, U'[');
     object_array_t elements = get_array_elements(obj);
     if (!elements.size)
-        append_char(renderer->builder, L' ');
+        append_char(renderer->builder, U' ');
     for (size_t i = 0; i < elements.size; i++) {
         if (i)
-            append_char(renderer->builder, L',');
+            append_char(renderer->builder, U',');
         render_object_value_notation(renderer, elements.items[i]);
     }
     renderer->active->size--;
-    return append_char(renderer->builder, L']');
+    return append_char(renderer->builder, U']');
 }
 
 string_value_t object_to_string_with_access(const object_t *obj, const function_access_t *access) {

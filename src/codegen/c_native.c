@@ -9,11 +9,10 @@
 #include "c_lowering.h"
 #include "c_string_methods.h"
 #include "c_strings.h"
+#include "goat/unicode.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
-
-#include <wchar.h>
 
 typedef c_generated_expression_t (*c_native_generator_t)(const node_t *node,
                                                          c_generation_context_t *context);
@@ -87,7 +86,7 @@ static bool capture_native_arguments(const node_t *node,
             if (i <= max_args)
                 out[i - 1] = captured;
             else {
-                add_source(prelude, 0, L"(void)%s;", captured.data);
+                add_source(prelude, 0, U"(void)%s;", captured.data);
                 FREE_STRING(captured);
             }
         }
@@ -105,20 +104,20 @@ static void free_native_arguments(string_value_t *arguments, size_t count) {
 /** @brief Emits an arity-1 or arity-2 libm call rounded to binary64. */
 static void emit_native_call(source_builder_t *prelude,
                              c_generation_context_t *context,
-                             const wchar_t *name,
+                             const gchar_t *name,
                              const string_value_t *arguments,
                              size_t arity,
-                             const wchar_t *value) {
+                             const gchar_t *value) {
     if (arity == 2) {
-        string_value_t a = format_string(L"g_t%zu", context->temporary_count++);
-        string_value_t b = format_string(L"g_t%zu", context->temporary_count++);
-        add_source(prelude, 0, L"double %s = %s;", a.data, arguments[0].data);
-        add_source(prelude, 0, L"double %s = %s;", b.data, arguments[1].data);
-        add_source(prelude, 0, L"volatile double %s = %s(%s, %s);", value, name, a.data, b.data);
+        string_value_t a = format_string(U"g_t%zu", context->temporary_count++);
+        string_value_t b = format_string(U"g_t%zu", context->temporary_count++);
+        add_source(prelude, 0, U"double %s = %s;", a.data, arguments[0].data);
+        add_source(prelude, 0, U"double %s = %s;", b.data, arguments[1].data);
+        add_source(prelude, 0, U"volatile double %s = %s(%s, %s);", value, name, a.data, b.data);
         FREE_STRING(a);
         FREE_STRING(b);
     } else {
-        add_source(prelude, 0, L"volatile double %s = %s(%s);", value, name, arguments[0].data);
+        add_source(prelude, 0, U"volatile double %s = %s(%s);", value, name, arguments[0].data);
     }
 }
 
@@ -144,18 +143,18 @@ static c_generated_expression_t native_abs(const node_t *node, c_generation_cont
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
         return (c_generated_expression_t){0};
     }
-    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+    string_value_t value = format_string(U"g_t%zu", context->temporary_count++);
     if (type == C_VALUE_INT64) {
         context->helper_flags |= C_HELPER_I64_NEG;
         add_source(prelude,
                    0,
-                   L"int64_t %s = %s < 0 ? g_i64_neg(%s) : %s;",
+                   U"int64_t %s = %s < 0 ? g_i64_neg(%s) : %s;",
                    value.data,
                    arguments[0].data,
                    arguments[0].data,
                    arguments[0].data);
     } else {
-        add_source(prelude, 0, L"volatile double %s = fabs(%s);", value.data, arguments[0].data);
+        add_source(prelude, 0, U"volatile double %s = fabs(%s);", value.data, arguments[0].data);
     }
     free_native_arguments(arguments, 1);
     return (c_generated_expression_t){.success = true,
@@ -186,10 +185,10 @@ static c_generated_expression_t native_atan(const node_t *node, c_generation_con
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
         return (c_generated_expression_t){0};
     }
-    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+    string_value_t value = format_string(U"g_t%zu", context->temporary_count++);
     emit_native_call(prelude,
                      context,
-                     count == 1 ? L"atan" : L"atan2",
+                     count == 1 ? U"atan" : U"atan2",
                      arguments,
                      count > 1 ? 2 : 1,
                      value.data);
@@ -204,7 +203,7 @@ static c_generated_expression_t native_atan(const node_t *node, c_generation_con
 static c_generated_expression_t native_libm(const node_t *node,
                                             c_generation_context_t *context,
                                             const builtin_function_t *builtin,
-                                            const wchar_t *c_name) {
+                                            const gchar_t *c_name) {
     size_t count = get_node_child_count(node) - 1;
     if (count < builtin->min_args
         || c_generation_expression_type(context, node) != C_VALUE_DOUBLE) {
@@ -225,18 +224,18 @@ static c_generated_expression_t native_libm(const node_t *node,
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
         return (c_generated_expression_t){0};
     }
-    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+    string_value_t value = format_string(U"g_t%zu", context->temporary_count++);
     emit_native_call(prelude, context, c_name, arguments, builtin->min_args, value.data);
     if (builtin == &builtin_min || builtin == &builtin_max) {
         add_source(prelude,
                    0,
-                   L"if (%s == 0 && %s == 0) %s = (signbit((double)%s) %s "
-                   L"signbit((double)%s)) ? -0.0 : 0.0;",
+                   U"if (%s == 0 && %s == 0) %s = (signbit((double)%s) %s "
+                   U"signbit((double)%s)) ? -0.0 : 0.0;",
                    arguments[0].data,
                    arguments[1].data,
                    value.data,
                    arguments[0].data,
-                   builtin == &builtin_min ? L"||" : L"&&",
+                   builtin == &builtin_min ? U"||" : U"&&",
                    arguments[1].data);
     }
     free_native_arguments(arguments, builtin->min_args);
@@ -279,17 +278,17 @@ static c_generated_expression_t native_int(const node_t *node, c_generation_cont
         return (c_generated_expression_t){0};
     }
     if (double_arg) {
-        string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+        string_value_t value = format_string(U"g_t%zu", context->temporary_count++);
         add_source(prelude,
                    0,
-                   L"int64_t %s = (isfinite(%s) && %s >= -0x1p63 && %s < 0x1p63)"
-                   L" ? (int64_t)%s : %s;",
+                   U"int64_t %s = (isfinite(%s) && %s >= -0x1p63 && %s < 0x1p63)"
+                   U" ? (int64_t)%s : %s;",
                    value.data,
                    arguments[0].data,
                    arguments[0].data,
                    arguments[0].data,
                    arguments[0].data,
-                   count >= 2 ? arguments[1].data : L"INT64_C(0)");
+                   count >= 2 ? arguments[1].data : U"INT64_C(0)");
         free_native_arguments(arguments, 2);
         return (c_generated_expression_t){.success = true,
                                           .type = C_VALUE_INT64,
@@ -297,7 +296,7 @@ static c_generated_expression_t native_int(const node_t *node, c_generation_cont
                                           .prelude = prelude};
     }
     if (count >= 2)
-        add_source(prelude, 0, L"(void)%s;", arguments[1].data);
+        add_source(prelude, 0, U"(void)%s;", arguments[1].data);
     FREE_STRING(arguments[1]);
     return (c_generated_expression_t){.success = true,
                                       .type = C_VALUE_INT64,
@@ -326,10 +325,10 @@ static c_generated_expression_t native_sign(const node_t *node, c_generation_con
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
         return (c_generated_expression_t){0};
     }
-    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
+    string_value_t value = format_string(U"g_t%zu", context->temporary_count++);
     add_source(prelude,
                0,
-               L"int64_t %s = %s > 0 ? 1 : %s < 0 ? -1 : 0;",
+               U"int64_t %s = %s > 0 ? 1 : %s < 0 ? -1 : 0;",
                value.data,
                arguments[0].data,
                arguments[0].data);
@@ -361,8 +360,8 @@ static c_generated_expression_t native_chr(const node_t *node, c_generation_cont
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
         return (c_generated_expression_t){0};
     }
-    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
-    add_source(prelude, 0, L"uint32_t %s = (uint32_t)%s;", value.data, arguments[0].data);
+    string_value_t value = format_string(U"g_t%zu", context->temporary_count++);
+    add_source(prelude, 0, U"uint32_t %s = (uint32_t)%s;", value.data, arguments[0].data);
     free_native_arguments(arguments, 1);
     return (c_generated_expression_t){.success = true,
                                       .type = C_VALUE_CHAR,
@@ -391,8 +390,8 @@ static c_generated_expression_t native_ord(const node_t *node, c_generation_cont
         fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
         return (c_generated_expression_t){0};
     }
-    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
-    add_source(prelude, 0, L"int64_t %s = (int64_t)(uint32_t)%s;", value.data, arguments[0].data);
+    string_value_t value = format_string(U"g_t%zu", context->temporary_count++);
+    add_source(prelude, 0, U"int64_t %s = (int64_t)(uint32_t)%s;", value.data, arguments[0].data);
     free_native_arguments(arguments, 1);
     return (c_generated_expression_t){.success = true,
                                       .type = C_VALUE_INT64,
@@ -404,7 +403,7 @@ static c_generated_expression_t native_ord(const node_t *node, c_generation_cont
 typedef struct c_native_entry_t {
     const builtin_function_t *builtin;
     c_native_generator_t generator;
-    const wchar_t *c_name; /**< C function name; NULL means the Goat name is used. */
+    const gchar_t *c_name; /**< C function name; NULL means the Goat name is used. */
 } c_native_entry_t;
 
 static const c_native_entry_t generators[] = {
@@ -418,8 +417,8 @@ static const c_native_entry_t generators[] = {
     {&builtin_fmod, NULL, NULL},         {&builtin_hypot, NULL, NULL},
     {&builtin_int, native_int, NULL},    {&builtin_log, NULL, NULL},
     {&builtin_log10, NULL, NULL},        {&builtin_log1p, NULL, NULL},
-    {&builtin_log2, NULL, NULL},         {&builtin_max, NULL, L"fmax"},
-    {&builtin_min, NULL, L"fmin"},       {&builtin_ord, native_ord, NULL},
+    {&builtin_log2, NULL, NULL},         {&builtin_max, NULL, U"fmax"},
+    {&builtin_min, NULL, U"fmin"},       {&builtin_ord, native_ord, NULL},
     {&builtin_pow, NULL, NULL},          {&builtin_round, NULL, NULL},
     {&builtin_sign, native_sign, NULL},  {&builtin_sin, NULL, NULL},
     {&builtin_sinh, NULL, NULL},         {&builtin_sqrt, NULL, NULL},

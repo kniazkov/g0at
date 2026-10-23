@@ -1,9 +1,8 @@
+#include "lib/string_ext.h"
 /** @file test_native_call.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Native selection, bytecode fallback and descriptor ownership through FUNC/CALL.
  */
-#include "test_native_call.h"
-
 #include "../../test/functional/native_abi/test_allocator.h"
 #include "analysis/analysis.h"
 #include "analysis_test_support.h"
@@ -16,6 +15,7 @@
 #include "model/process.h"
 #include "model/thread.h"
 #include "test_macro.h"
+#include "test_native_call.h"
 #include "test_output.h"
 #include "vm/gc.h"
 #include "vm/vm.h"
@@ -35,11 +35,11 @@ static void deferred(node_t *node, code_builder_t *code, data_builder_t *data) {
 }
 
 /** @brief Releases every analysis arena before any VM execution. */
-static bytecode_t *compile(const wchar_t *source) {
+static bytecode_t *compile(const gchar_t *source) {
     arena_t *arena = create_arena(32);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
-        parse_analysis_test_program(&memory, (string_value_t){source, wcslen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     options_t *options = create_options();
     options->optimization_level = OPTIMIZATION_NONE;
     bytecode_t *result = NULL;
@@ -81,20 +81,20 @@ static int64_t calls(void) {
     return value.value.integer;
 }
 
-static object_t *variable(process_t *proc, const wchar_t *name) {
-    object_t *key = create_string_object(proc, (string_value_t){name, wcslen(name), false});
+static object_t *variable(process_t *proc, const gchar_t *name) {
+    object_t *key = create_string_object(proc, (string_value_t){name, STRLEN(name), false});
     object_t *value = get_object_property(proc->main_thread->context->data, key);
     DECREF(key);
     return value;
 }
 
-static bool integer_variable(process_t *proc, const wchar_t *name, int64_t expected) {
+static bool integer_variable(process_t *proc, const gchar_t *name, int64_t expected) {
     object_t *value = variable(proc, name);
     return value && is_integer_object(value) && get_object_integer_value(value).value == expected;
 }
 
 static bool metadata(void) {
-    bytecode_t *code = compile(L"var f=func(n){return n;};var g=func(){return 42;};");
+    bytecode_t *code = compile(U"var f=func(n){return n;};var g=func(){return 42;};");
     ASSERT(code && !code->native_functions);
     instr_index_t instruction = function_instruction(code, 0);
     native_function_descriptor_t *function = create_native_function_descriptor(library, 1);
@@ -119,9 +119,9 @@ static bool metadata(void) {
 
 static bool exact_types(void) {
     bytecode_t *code =
-        compile(L"var f=func(n){return n;};var g=func(a,b){return a-b;};"
-                L"var z=func(){return 42;};var a=f(10);var b=f(11);var c=f(10.0);"
-                L"var d=g(7,0.5);var e=g(0.5,7);var q=z();var h=g(7,2);var j=g(7.0,2.0);");
+        compile(U"var f=func(n){return n;};var g=func(a,b){return a-b;};"
+                U"var z=func(){return 42;};var a=f(10);var b=f(11);var c=f(10.0);"
+                U"var d=g(7,0.5);var e=g(0.5,7);var q=z();var h=g(7,2);var j=g(7.0,2.0);");
     ASSERT(code && bind_function(code, 0, 1) && bind_function(code, 1, 2)
            && bind_function(code, 2, 3));
     int64_t before = calls();
@@ -130,33 +130,33 @@ static bool exact_types(void) {
     ASSERT(!run(proc, code));
     ASSERT(calls() == before + 6);
     ASSERT(proc->main_thread->context == initial && !proc->main_thread->data_stack->size);
-    ASSERT(integer_variable(proc, L"a", 10) && integer_variable(proc, L"b", 11));
-    ASSERT(is_real_object(variable(proc, L"c"))
-           && get_object_real_value(variable(proc, L"c")).value == 10);
-    ASSERT(get_object_real_value(variable(proc, L"d")).value == 6.5);
-    ASSERT(get_object_real_value(variable(proc, L"e")).value == -6.5);
-    ASSERT(integer_variable(proc, L"q", 42) && integer_variable(proc, L"h", 5));
-    ASSERT(is_real_object(variable(proc, L"j"))
-           && get_object_real_value(variable(proc, L"j")).value == 5);
+    ASSERT(integer_variable(proc, U"a", 10) && integer_variable(proc, U"b", 11));
+    ASSERT(is_real_object(variable(proc, U"c"))
+           && get_object_real_value(variable(proc, U"c")).value == 10);
+    ASSERT(get_object_real_value(variable(proc, U"d")).value == 6.5);
+    ASSERT(get_object_real_value(variable(proc, U"e")).value == -6.5);
+    ASSERT(integer_variable(proc, U"q", 42) && integer_variable(proc, U"h", 5));
+    ASSERT(is_real_object(variable(proc, U"j"))
+           && get_object_real_value(variable(proc, U"j")).value == 5);
     free_bytecode(code);
     destroy_process(proc);
     return true;
 }
 
 static bool fallback(void) {
-    bytecode_t *code = compile(L"var f=func(n){return n;};var a=f();var b=f(true);"
-                               L"var c=f(\"text\");var d=f({});var e=f(10.0);var q=f(10);"
-                               L"var plain=func(n){return n+1;};var r=plain(4);");
+    bytecode_t *code = compile(U"var f=func(n){return n;};var a=f();var b=f(true);"
+                               U"var c=f(\"text\");var d=f({});var e=f(10.0);var q=f(10);"
+                               U"var plain=func(n){return n+1;};var r=plain(4);");
     ASSERT(code && bind_function(code, 0, 5));
     int64_t before = calls();
     process_t *proc = create_process();
     ASSERT(!run(proc, code) && calls() == before + 1);
-    ASSERT(variable(proc, L"a") == get_null_object());
-    ASSERT(variable(proc, L"b") == get_boolean_object(true));
-    ASSERT(variable(proc, L"c")->vtbl->type == TYPE_STRING);
-    ASSERT(variable(proc, L"d")->vtbl->type == TYPE_USER_DEFINED_OBJECT);
-    ASSERT(is_real_object(variable(proc, L"e")));
-    ASSERT(integer_variable(proc, L"q", 10) && integer_variable(proc, L"r", 5));
+    ASSERT(variable(proc, U"a") == get_null_object());
+    ASSERT(variable(proc, U"b") == get_boolean_object(true));
+    ASSERT(variable(proc, U"c")->vtbl->type == TYPE_STRING);
+    ASSERT(variable(proc, U"d")->vtbl->type == TYPE_USER_DEFINED_OBJECT);
+    ASSERT(is_real_object(variable(proc, U"e")));
+    ASSERT(integer_variable(proc, U"q", 10) && integer_variable(proc, U"r", 5));
     free_bytecode(code);
     destroy_process(proc);
     return true;
@@ -164,34 +164,34 @@ static bool fallback(void) {
 
 static bool evaluation_and_identity(void) {
     bytecode_t *code =
-        compile(L"var trace=0;var tick=func(n){trace=trace*10+n;return n;};"
-                L"var f=func(n){return n;};var alias=f;"
-                L"var a=alias(tick(1),tick(2));var first=trace;trace=0;"
-                L"var b=alias(true,tick(3));var second=trace;"
-                L"f=func(n){return n+100;};var c=f(1);var d=alias(2);"
-                L"var print=alias;var e=print(3);var z=func(){return 42;};var q=z(tick(4));"
-                L"var builtin_result=abs(-3);");
+        compile(U"var trace=0;var tick=func(n){trace=trace*10+n;return n;};"
+                U"var f=func(n){return n;};var alias=f;"
+                U"var a=alias(tick(1),tick(2));var first=trace;trace=0;"
+                U"var b=alias(true,tick(3));var second=trace;"
+                U"f=func(n){return n+100;};var c=f(1);var d=alias(2);"
+                U"var print=alias;var e=print(3);var z=func(){return 42;};var q=z(tick(4));"
+                U"var builtin_result=abs(-3);");
     ASSERT(code && bind_function(code, 1, 1) && bind_function(code, 3, 3));
     int64_t before = calls();
     process_t *proc = create_process();
     ASSERT(!run(proc, code) && calls() == before + 4);
-    ASSERT(integer_variable(proc, L"first", 12) && integer_variable(proc, L"second", 3));
-    ASSERT(integer_variable(proc, L"trace", 34));
-    ASSERT(integer_variable(proc, L"a", 1) && variable(proc, L"b") == get_boolean_object(true));
-    ASSERT(integer_variable(proc, L"c", 101) && integer_variable(proc, L"d", 2));
-    ASSERT(integer_variable(proc, L"e", 3) && integer_variable(proc, L"q", 42));
-    ASSERT(integer_variable(proc, L"builtin_result", 3));
+    ASSERT(integer_variable(proc, U"first", 12) && integer_variable(proc, U"second", 3));
+    ASSERT(integer_variable(proc, U"trace", 34));
+    ASSERT(integer_variable(proc, U"a", 1) && variable(proc, U"b") == get_boolean_object(true));
+    ASSERT(integer_variable(proc, U"c", 101) && integer_variable(proc, U"d", 2));
+    ASSERT(integer_variable(proc, U"e", 3) && integer_variable(proc, U"q", 42));
+    ASSERT(integer_variable(proc, U"builtin_result", 3));
     free_bytecode(code);
     destroy_process(proc);
     return true;
 }
 
 static bool native_without_context(void) {
-    bytecode_t *code = compile(L"var f=func(n){return n;};");
+    bytecode_t *code = compile(U"var f=func(n){return n;};");
     ASSERT(code && bind_function(code, 0, 1));
     process_t *proc = create_process();
     ASSERT(!run(proc, code));
-    object_t *function = variable(proc, L"f");
+    object_t *function = variable(proc, U"f");
     /* Function keeps its descriptor after bytecode metadata has been destroyed. */
     free_bytecode(code);
     thread_t *thread = proc->main_thread;
@@ -205,7 +205,7 @@ static bool native_without_context(void) {
         push_object_onto_stack(thread->data_stack, create_integer_object(proc, 73));
         push_object_onto_stack(thread->data_stack, arg);
         push_object_onto_stack(thread->data_stack,
-                               create_string_object(proc, STATIC_STRING(L"ignored")));
+                               create_string_object(proc, STATIC_STRING(U"ignored")));
         thread->instr_id = 123;
         ASSERT(call_object(function, 2, NULL, thread));
         ASSERT(thread->context == context && thread->instr_id == 124
@@ -232,11 +232,11 @@ static bool native_without_context(void) {
 
 static bool backend_failures(void) {
     for (unsigned mode = 0; mode <= 8; mode++) {
-        wchar_t source[240];
-        swprintf(source,
+        gchar_t source[240];
+        SNPRINTF(source,
                  240,
-                 L"var f=func(n){throw 123;};var caught=false;"
-                 L"try {f(%u);} catch(e){caught=true;}",
+                 U"var f=func(n){throw 123;};var caught=false;"
+                 U"try {f(%u);} catch(e){caught=true;}",
                  mode);
         bytecode_t *code = compile(source);
         ASSERT(code && bind_function(code, 0, 4));
@@ -263,8 +263,8 @@ static bool backend_failures(void) {
 }
 
 static bool invalid_boolean_result(void) {
-    bytecode_t *code = compile(L"var f=func(flag){throw 123;};var caught=false;"
-                               L"try {f(true);} catch(e){caught=true;}");
+    bytecode_t *code = compile(U"var f=func(flag){throw 123;};var caught=false;"
+                               U"try {f(true);} catch(e){caught=true;}");
     ASSERT(code && bind_function(code, 0, 7));
     process_t *proc = create_process();
     ASSERT(run(proc, code) != 0);
@@ -279,13 +279,13 @@ static bool invalid_boolean_result(void) {
 }
 
 static bool fallback_exception(void) {
-    bytecode_t *code = compile(L"var f=func(n){throw n;};var caught=false;"
-                               L"try {f(true);} catch(e){caught=e;}");
+    bytecode_t *code = compile(U"var f=func(n){throw n;};var caught=false;"
+                               U"try {f(true);} catch(e){caught=e;}");
     ASSERT(code && bind_function(code, 0, 1));
     process_t *proc = create_process();
     int64_t before = calls();
     ASSERT(!run(proc, code) && calls() == before);
-    ASSERT(variable(proc, L"caught") == get_boolean_object(true));
+    ASSERT(variable(proc, U"caught") == get_boolean_object(true));
     ASSERT(!proc->main_thread->exception.value && !proc->main_thread->native_status);
     free_bytecode(code);
     destroy_process(proc);
@@ -308,9 +308,9 @@ static bool lifetime(const char *path, const char *marker) {
         native_library_result_t loaded = load_native_library(path);
         ASSERT(loaded.status == NATIVE_LIBRARY_OK);
         library = loaded.library;
-        bytecode_t *code = compile(route == 1 ? L"var maker=func(){const local=func(n){return "
-                                                L"n;};return local;};var f=maker();var alias=f;"
-                                              : L"var f=func(n){return n;};var alias=f;");
+        bytecode_t *code = compile(route == 1 ? U"var maker=func(){const local=func(n){return "
+                                                U"n;};return local;};var f=maker();var alias=f;"
+                                              : U"var f=func(n){return n;};var alias=f;");
         ASSERT(code && bind_function(code, route == 1 ? 1 : 0, 1));
         destroy_native_library_result(&loaded);
         library = NULL;
@@ -319,20 +319,20 @@ static bool lifetime(const char *path, const char *marker) {
         free_bytecode(code);
         collect_garbage(proc);
         ASSERT(unload_count(marker) == before);
-        object_t *function = variable(proc, L"alias");
+        object_t *function = variable(proc, U"alias");
         push_object_onto_stack(proc->main_thread->data_stack, create_integer_object(proc, 888));
         ASSERT(call_object(function, 1, NULL, proc->main_thread));
         ASSERT(
             get_object_integer_value(peek_object_from_stack(proc->main_thread->data_stack, 0)).value
             == 888);
         if (route < 2) {
-            object_t *key = create_string_object(proc, STATIC_STRING(L"f"));
+            object_t *key = create_string_object(proc, STATIC_STRING(U"f"));
             ASSERT(set_object_property(proc->main_thread->context->data, key, get_null_object())
                    == MSTAT_OK);
             DECREF(key);
             ASSERT(unload_count(marker) == before);
             /* Route 0: final DECREF; route 1: an unreachable reference cycle. */
-            key = create_string_object(proc, STATIC_STRING(L"alias"));
+            key = create_string_object(proc, STATIC_STRING(U"alias"));
             ASSERT(set_object_property(proc->main_thread->context->data, key, get_null_object())
                    == MSTAT_OK);
             DECREF(key);
@@ -350,14 +350,14 @@ static bool lifetime(const char *path, const char *marker) {
 
 /** @brief A bytecode exception must unwind the retry scope, including nested TRY contexts. */
 static bool retry_exception(void) {
-    bytecode_t *code = compile(L"const g=func(n){return n;};"
-                               L"const f=func(n){try {g(n);throw n;}catch(e){g(e);throw e;}};"
-                               L"var caught=0;try {f(4);}catch(e){caught=e;}var after=g(7);");
+    bytecode_t *code = compile(U"const g=func(n){return n;};"
+                               U"const f=func(n){try {g(n);throw n;}catch(e){g(e);throw e;}};"
+                               U"var caught=0;try {f(4);}catch(e){caught=e;}var after=g(7);");
     ASSERT(code && bind_function(code, 0, 1) && bind_function(code, 1, 6));
     process_t *proc = create_process();
     ASSERT(!run(proc, code));
     thread_t *thread = proc->main_thread;
-    ASSERT(integer_variable(proc, L"caught", 4) && integer_variable(proc, L"after", 7));
+    ASSERT(integer_variable(proc, U"caught", 4) && integer_variable(proc, U"after", 7));
     ASSERT(thread->native_attempts == 2 && thread->native_retries == 1
            && thread->native_successes == 1 && !thread->context->native_disabled
            && !thread->native_status && !thread->exception.value && !thread->data_stack->size);
@@ -416,8 +416,8 @@ bool test_native_calls(const char *provider, const char *generated, const char *
     /* The generated provider has the same first three function identities. */
     if (loaded.status == NATIVE_LIBRARY_OK) {
         bytecode_t *code =
-            compile(L"var f=func(n){return n;};var g=func(a,b){return a-b;};"
-                    L"var z=func(){return 42;};var a=f(77);var b=f(2.5);var c=g(8,0.5);var d=z();");
+            compile(U"var f=func(n){return n;};var g=func(a,b){return a-b;};"
+                    U"var z=func(){return 42;};var a=f(77);var b=f(2.5);var c=g(8,0.5);var d=z();");
         ok = code && bind_function(code, 0, 1) && bind_function(code, 1, 2)
              && bind_function(code, 2, 3);
         process_t *proc = create_process();
@@ -425,11 +425,11 @@ bool test_native_calls(const char *provider, const char *generated, const char *
         for (size_t i = 0; code && i < code->instructions_count; i++)
             if (code->instructions[i].opcode == FUNC)
                 code->instructions[code->instructions[i - 1].arg1] = (instruction_t){.opcode = END};
-        ok = ok && !run(proc, code) && integer_variable(proc, L"a", 77) && variable(proc, L"b")
-             && is_real_object(variable(proc, L"b"))
-             && get_object_real_value(variable(proc, L"b")).value == 2.5 && variable(proc, L"c")
-             && get_object_real_value(variable(proc, L"c")).value == 7.5
-             && integer_variable(proc, L"d", 42);
+        ok = ok && !run(proc, code) && integer_variable(proc, U"a", 77) && variable(proc, U"b")
+             && is_real_object(variable(proc, U"b"))
+             && get_object_real_value(variable(proc, U"b")).value == 2.5 && variable(proc, U"c")
+             && get_object_real_value(variable(proc, U"c")).value == 7.5
+             && integer_variable(proc, U"d", 42);
         if (code)
             free_bytecode(code);
         destroy_process(proc);

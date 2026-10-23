@@ -44,8 +44,8 @@ static node_t *child(const node_t *node, size_t index) {
     return index < child_count(node) ? binop_get_child(node, index) : NULL;
 }
 
-static const wchar_t *tag(const node_t *node, size_t index) {
-    return index < child_count(node) ? (index ? L"right" : L"left") : NULL;
+static const gchar_t *tag(const node_t *node, size_t index) {
+    return index < child_count(node) ? (index ? U"right" : U"left") : NULL;
 }
 
 /** @brief Evaluates only feasible paths and merges their effects. */
@@ -92,31 +92,31 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     return lattice_bitwise(arena, left, right, node_bitwise_kind(type));
 }
 
-static const wchar_t *symbol(node_type_t type) {
+static const gchar_t *symbol(node_type_t type) {
     switch (type) {
         case NODE_LOGICAL_NOT:
-            return L"!";
+            return U"!";
         case NODE_BOOLEAN_CONVERSION:
-            return L"!!";
+            return U"!!";
         case NODE_BITWISE_NOT:
-            return L"~";
+            return U"~";
         case NODE_LOGICAL_AND:
-            return L"&&";
+            return U"&&";
         case NODE_LOGICAL_OR:
-            return L"||";
+            return U"||";
         case NODE_BITWISE_AND:
-            return L"&";
+            return U"&";
         case NODE_BITWISE_OR:
-            return L"|";
+            return U"|";
         case NODE_BITWISE_XOR:
-            return L"^";
+            return U"^";
         case NODE_SHIFT_LEFT:
-            return L"<<";
+            return U"<<";
         case NODE_SHIFT_RIGHT:
-            return L">>";
+            return U">>";
         default:
             assert(false);
-            return L"";
+            return U"";
     }
 }
 
@@ -154,12 +154,12 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_value_t left = generate_goat_code_from_expression(expr->left_operand), result;
     if (expr->right_operand) {
         string_value_t right = generate_goat_code_from_expression(expr->right_operand);
-        result = format_string(L"%s %s %s", left.data, symbol(node->vtbl->type), right.data);
+        result = format_string(U"%s %s %s", left.data, symbol(node->vtbl->type), right.data);
         FREE_STRING(right);
     } else {
-        const wchar_t *op = symbol(node->vtbl->type);
-        result = left.data[0] == op[0] ? format_string(L"%s %s", op, left.data)
-                                       : format_string(L"%s%s", op, left.data);
+        const gchar_t *op = symbol(node->vtbl->type);
+        result = left.data[0] == op[0] ? format_string(U"%s %s", op, left.data)
+                                       : format_string(U"%s%s", op, left.data);
     }
     FREE_STRING(left);
     return result;
@@ -277,7 +277,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"logical not",
+        .type_name = U"logical not",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -306,7 +306,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"boolean conversion",
+        .type_name = U"boolean conversion",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -335,7 +335,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"bitwise not",
+        .type_name = U"bitwise not",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -364,7 +364,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"logical and",
+        .type_name = U"logical and",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -393,7 +393,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"logical or",
+        .type_name = U"logical or",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -422,7 +422,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"bitwise and",
+        .type_name = U"bitwise and",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -451,7 +451,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"bitwise or",
+        .type_name = U"bitwise or",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -480,7 +480,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"bitwise xor",
+        .type_name = U"bitwise xor",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -509,7 +509,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"shift left",
+        .type_name = U"shift left",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,
@@ -538,7 +538,7 @@ static node_vtbl_t vtables[] = {
         .is_pure = children_are_pure,
         .simplify = simplify_constant_expression,
         .collect_direct_effects = collect_child_effects,
-        .type_name = L"shift right",
+        .type_name = U"shift right",
         .get_data = no_data,
         .get_property_count = no_properties,
         .get_property = no_property,

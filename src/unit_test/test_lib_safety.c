@@ -88,8 +88,8 @@ bool test_arena_alignment_and_growth() {
         const unsigned char source[] = {1, 2, 3};
         ASSERT(memcmp(copy_object_to_arena(arena, source, sizeof(source)), source, sizeof(source))
                == 0);
-        string_view_t text = copy_string_to_arena(arena, L"abc", 3);
-        ASSERT(text.length == 3 && wcscmp(text.data, L"abc") == 0);
+        string_view_t text = copy_string_to_arena(arena, U"abc", 3);
+        ASSERT(text.length == 3 && STRCMP(text.data, U"abc") == 0);
         destroy_arena(arena);
     }
     ASSERT(get_allocated_memory_size() == before);
@@ -97,16 +97,16 @@ bool test_arena_alignment_and_growth() {
 }
 
 bool test_binary_search_boundaries() {
-    pair_t pairs[] = {{L"b", L"first"}, {L"d", L"last"}};
-    ASSERT(binary_search(NULL, 0, L"a", string_comparator) == NULL);
-    ASSERT(binary_search(pairs, 1, L"a", string_comparator) == NULL);
-    ASSERT(binary_search(pairs, 1, L"c", string_comparator) == NULL);
-    ASSERT(binary_search(pairs, 1, L"b", string_comparator) == pairs[0].value);
-    ASSERT(binary_search(pairs, 2, L"a", string_comparator) == NULL);
-    ASSERT(binary_search(pairs, 2, L"c", string_comparator) == NULL);
-    ASSERT(binary_search(pairs, 2, L"z", string_comparator) == NULL);
-    ASSERT(binary_search(pairs, 2, L"b", string_comparator) == pairs[0].value);
-    ASSERT(binary_search(pairs, 2, L"d", string_comparator) == pairs[1].value);
+    pair_t pairs[] = {{U"b", U"first"}, {U"d", U"last"}};
+    ASSERT(binary_search(NULL, 0, U"a", string_comparator) == NULL);
+    ASSERT(binary_search(pairs, 1, U"a", string_comparator) == NULL);
+    ASSERT(binary_search(pairs, 1, U"c", string_comparator) == NULL);
+    ASSERT(binary_search(pairs, 1, U"b", string_comparator) == pairs[0].value);
+    ASSERT(binary_search(pairs, 2, U"a", string_comparator) == NULL);
+    ASSERT(binary_search(pairs, 2, U"c", string_comparator) == NULL);
+    ASSERT(binary_search(pairs, 2, U"z", string_comparator) == NULL);
+    ASSERT(binary_search(pairs, 2, U"b", string_comparator) == pairs[0].value);
+    ASSERT(binary_search(pairs, 2, U"d", string_comparator) == pairs[1].value);
     return true;
 }
 
@@ -173,11 +173,11 @@ bool test_utf8_formatted_output() {
     ASSERT(file != NULL);
     /* Percent signs supplied as data must never become a second format string. */
     fprintf_utf8(file,
-                 L"%s | %a | %d%% | %s",
-                 L"100%% %s %n %",
+                 U"%s | %a | %d%% | %s",
+                 U"100%% %s %n %",
                  "file%name",
                  42,
-                 L"\u041f\u0440\u0438\u0432\u0435\u0442");
+                 U"\u041f\u0440\u0438\u0432\u0435\u0442");
     ASSERT(fflush(file) == 0);
     rewind(file);
     char buffer[128] = {0};
@@ -202,10 +202,10 @@ bool test_utf8_file_io() {
     bool empty_ok = text.data != NULL && text.length == 0;
     FREE_STRING(text);
     bool no_leak = get_allocated_memory_size() == before;
-    bool written = write_utf8_file(name, L"hello\n\u041f\u0440\u0438\u0432\u0435\u0442\n100%");
+    bool written = write_utf8_file(name, U"hello\n\u041f\u0440\u0438\u0432\u0435\u0442\n100%");
     text = read_utf8_file(name);
     bool roundtrip_ok =
-        text.data && wcscmp(text.data, L"hello\n\u041f\u0440\u0438\u0432\u0435\u0442\n100%") == 0;
+        text.data && STRCMP(text.data, U"hello\n\u041f\u0440\u0438\u0432\u0435\u0442\n100%") == 0;
     FREE_STRING(text);
     int removed = remove(name);
     ASSERT(empty_ok && no_leak && written && roundtrip_ok && removed == 0);
@@ -217,7 +217,7 @@ bool test_utf8_file_io() {
     file = fopen("/dev/full", "r");
     if (file) {
         fclose(file);
-        ASSERT(!write_utf8_file("/dev/full", L"test"));
+        ASSERT(!write_utf8_file("/dev/full", U"test"));
     }
 #endif
     return true;

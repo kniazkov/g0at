@@ -50,7 +50,7 @@ static bool prepare(const node_t *node,
         c_value_type_t type = c_generation_expression_type(context, initial);
         if (!initial || !c_type_name(type) || find_binding(context, node))
             return fail_c_generation(context, node, C_GENERATION_NOT_PROVEN);
-        string_value_t name = format_string(L"g_l%zu", context->local_count++);
+        string_value_t name = format_string(U"g_l%zu", context->local_count++);
         c_generation_binding_t *binding = ALLOC(sizeof(*binding));
         *binding = (c_generation_binding_t){.next = context->bindings,
                                             .declaration = node,
@@ -59,12 +59,12 @@ static bool prepare(const node_t *node,
         context->bindings = binding;
         add_source(builder,
                    indent,
-                   L"%s%s %s;",
-                   type == C_VALUE_DOUBLE ? L"volatile " : L"",
+                   U"%s%s %s;",
+                   type == C_VALUE_DOUBLE ? U"volatile " : U"",
                    c_type_name(type),
                    name.data);
         /* Suppress unused-storage warnings without reading an uninitialized value. */
-        add_source(builder, indent, L"(void)&%s;", name.data);
+        add_source(builder, indent, U"(void)&%s;", name.data);
         return true;
     }
     for (size_t i = 0; i < get_node_child_count(node); i++) {
@@ -120,7 +120,7 @@ bool c_emit_declarator(const node_t *node,
     bool valid = binding->type == value.type;
     if (valid) {
         c_emit_prelude(value.prelude, builder, indent);
-        add_source(builder, indent, L"%s = %s;", binding->name.data, value.value.data);
+        add_source(builder, indent, U"%s = %s;", binding->name.data, value.value.data);
     }
     destroy_c_expression(&value);
     context->terminates = false;
@@ -158,7 +158,7 @@ c_generated_expression_t c_store_local(const node_t *node,
     }
     source_builder_t *prelude = create_source_builder();
     string_value_t value = c_capture_operand(prelude, context, &right, binding->type);
-    add_source(prelude, 0, L"%s = %s;", binding->name.data, value.data);
+    add_source(prelude, 0, U"%s = %s;", binding->name.data, value.data);
     destroy_c_expression(&right);
     return (c_generated_expression_t){.success = true,
                                       .type = binding->type,
@@ -184,25 +184,25 @@ c_generated_expression_t c_update(const node_t *node, c_generation_context_t *co
     source_builder_t *prelude = create_source_builder();
     string_value_t old = c_capture_operand(prelude, context, &operand, binding->type);
     destroy_c_expression(&operand);
-    string_value_t next = format_string(L"g_t%zu", context->temporary_count++);
+    string_value_t next = format_string(U"g_t%zu", context->temporary_count++);
     bool decrement = update_is_decrement(node->vtbl->type);
     if (binding->type == C_VALUE_INT64) {
         context->helper_flags |= decrement ? C_HELPER_I64_SUB : C_HELPER_I64_ADD;
         add_source(prelude,
                    0,
-                   L"int64_t %s = g_i64_%s(%s, INT64_C(1));",
+                   U"int64_t %s = g_i64_%s(%s, INT64_C(1));",
                    next.data,
-                   decrement ? L"sub" : L"add",
+                   decrement ? U"sub" : U"add",
                    old.data);
     } else {
         add_source(prelude,
                    0,
-                   L"volatile double %s = %s %s 1.0;",
+                   U"volatile double %s = %s %s 1.0;",
                    next.data,
                    old.data,
-                   decrement ? L"-" : L"+");
+                   decrement ? U"-" : U"+");
     }
-    add_source(prelude, 0, L"%s = %s;", binding->name.data, next.data);
+    add_source(prelude, 0, U"%s = %s;", binding->name.data, next.data);
     bool postfix = update_is_postfix(node->vtbl->type);
     string_value_t value = postfix ? old : next;
     if (postfix) {

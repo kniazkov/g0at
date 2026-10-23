@@ -34,11 +34,11 @@ static bytecode_t *create_test_bytecode(instruction_t *list, int count) {
 bool test_boolean_object() {
     object_t *obj1 = get_boolean_object(true);
     string_value_t value = convert_object_to_string(obj1);
-    ASSERT(wcscmp(L"true", value.data) == 0);
+    ASSERT(STRCMP(U"true", value.data) == 0);
     ASSERT(value.should_free == false);
     object_t *obj2 = get_boolean_object(false);
     value = convert_object_to_string(obj2);
-    ASSERT(wcscmp(L"false", value.data) == 0);
+    ASSERT(STRCMP(U"false", value.data) == 0);
     ASSERT(value.should_free == false);
     return true;
 }
@@ -47,7 +47,7 @@ bool test_integer_object() {
     process_t *proc = create_process();
     object_t *obj = create_integer_object(proc, -1024);
     string_value_t value = convert_object_to_string(obj);
-    ASSERT(wcscmp(L"-1024", value.data) == 0);
+    ASSERT(STRCMP(U"-1024", value.data) == 0);
     ASSERT(value.should_free);
     FREE_STRING(value);
     destroy_process(proc);
@@ -95,9 +95,9 @@ bool test_subtraction_of_two_integers() {
 
 bool test_strings_concatenation() {
     data_builder_t *data_builder = create_data_builder();
-    uint32_t first = add_string_to_data_segment(data_builder, L"it");
-    uint32_t second = add_string_to_data_segment(data_builder, L" ");
-    uint32_t third = add_string_to_data_segment(data_builder, L"works.");
+    uint32_t first = add_string_to_data_segment(data_builder, U"it");
+    uint32_t second = add_string_to_data_segment(data_builder, U" ");
+    uint32_t third = add_string_to_data_segment(data_builder, U"works.");
     code_builder_t *code_bulder = create_code_builder();
     add_instruction(code_bulder, (instruction_t){.opcode = SLOAD, .arg1 = first});
     add_instruction(code_bulder, (instruction_t){.opcode = SLOAD, .arg1 = second});
@@ -114,7 +114,7 @@ bool test_strings_concatenation() {
     object_t *result = peek_object_from_stack(proc->main_thread->data_stack, 0);
     string_value_t value = convert_object_to_string(result);
     ASSERT(value.data != NULL);
-    ASSERT(wcscmp(value.data, L"it works.") == 0);
+    ASSERT(STRCMP(value.data, U"it works.") == 0);
     ASSERT(value.length == 9);
     destroy_process(proc);
     free_bytecode(code);
@@ -126,41 +126,41 @@ bool test_properties() {
     object_t *root_object = get_root_object();
     object_t *obj = create_user_defined_object(process, (object_array_t){&root_object, 1});
     create_object_property(obj,
-                           create_string_object(process, STATIC_STRING(L"first")),
-                           create_string_object(process, STATIC_STRING(L"one")),
+                           create_string_object(process, STATIC_STRING(U"first")),
+                           create_string_object(process, STATIC_STRING(U"one")),
                            true);
     create_object_property(obj,
-                           create_string_object(process, STATIC_STRING(L"second")),
-                           create_string_object(process, STATIC_STRING(L"two")),
+                           create_string_object(process, STATIC_STRING(U"second")),
+                           create_string_object(process, STATIC_STRING(U"two")),
                            true);
     create_object_property(obj,
                            create_integer_object(process, 3),
-                           create_string_object(process, STATIC_STRING(L"three")),
+                           create_string_object(process, STATIC_STRING(U"three")),
                            true);
     create_object_property(obj,
                            get_boolean_object(true),
-                           create_string_object(process, STATIC_STRING(L"boolean")),
+                           create_string_object(process, STATIC_STRING(U"boolean")),
                            true);
     object_t *clone = clone_object(process, obj);
-    const wchar_t *expected =
-        L"{true:\"boolean\",3:\"three\",\"first\":\"one\",\"second\":\"two\"}";
+    const gchar_t *expected =
+        U"{true:\"boolean\",3:\"three\",\"first\":\"one\",\"second\":\"two\"}";
     string_value_t str = convert_object_to_string(obj);
-    ASSERT(0 == wcscmp(str.data, expected));
+    ASSERT(0 == STRCMP(str.data, expected));
     FREE_STRING(str);
     str = convert_object_to_string(clone);
-    ASSERT(0 == wcscmp(str.data, expected));
+    ASSERT(0 == STRCMP(str.data, expected));
     FREE_STRING(str);
-    object_t *key = create_string_object(process, STATIC_STRING(L"first"));
+    object_t *key = create_string_object(process, STATIC_STRING(U"first"));
     object_t *value = get_object_property(obj, key);
     ASSERT(value != NULL);
     str = convert_object_to_string(value);
-    ASSERT(0 == wcscmp(str.data, L"one"));
+    ASSERT(0 == STRCMP(str.data, U"one"));
     FREE_STRING(str);
-    key = create_string_object(process, STATIC_STRING(L"length"));
+    key = create_string_object(process, STATIC_STRING(U"length"));
     value = get_object_property(value, key);
     ASSERT(value != NULL);
     ASSERT(get_object_integer_value(value).value == 3);
-    key = create_string_object(process, STATIC_STRING(L"third"));
+    key = create_string_object(process, STATIC_STRING(U"third"));
     value = get_object_property(obj, key);
     ASSERT(value == NULL);
     object_array_t keys = get_object_keys(obj);
@@ -174,18 +174,18 @@ bool test_properties() {
 
 bool test_string_topology() {
     process_t *process = create_process();
-    object_t *obj = create_string_object(process, STATIC_STRING(L"test"));
+    object_t *obj = create_string_object(process, STATIC_STRING(U"test"));
     object_array_t topology = get_object_topology(obj);
     ASSERT(topology.size = 2);
-    const wchar_t *expected = L"{\"length\"=0;\"trim\"=trim;\"charAt\"=charAt;"
-                              L"\"substring\"=substring;\"contains\"=contains;"
-                              L"\"indexOf\"=indexOf;\"lastIndexOf\"=lastIndexOf;"
-                              L"\"startsWith\"=startsWith;\"endsWith\"=endsWith;"
-                              L"\"isEmpty\"=isEmpty;\"isBlank\"=isBlank;"
-                              L"\"toUpperCase\"=toUpperCase;\"toLowerCase\"=toLowerCase;"
-                              L"\"replace\"=replace;\"repeat\"=repeat;\"format\"=format}";
+    const gchar_t *expected = U"{\"length\"=0;\"trim\"=trim;\"charAt\"=charAt;"
+                              U"\"substring\"=substring;\"contains\"=contains;"
+                              U"\"indexOf\"=indexOf;\"lastIndexOf\"=lastIndexOf;"
+                              U"\"startsWith\"=startsWith;\"endsWith\"=endsWith;"
+                              U"\"isEmpty\"=isEmpty;\"isBlank\"=isBlank;"
+                              U"\"toUpperCase\"=toUpperCase;\"toLowerCase\"=toLowerCase;"
+                              U"\"replace\"=replace;\"repeat\"=repeat;\"format\"=format}";
     string_value_t str = convert_object_to_string(topology.items[0]);
-    ASSERT(0 == wcscmp(str.data, expected));
+    ASSERT(0 == STRCMP(str.data, expected));
     FREE_STRING(str);
     destroy_process(process);
     return true;
@@ -193,7 +193,7 @@ bool test_string_topology() {
 
 bool test_store_and_load() {
     data_builder_t *data_builder = create_data_builder();
-    uint32_t name_idx = add_string_to_data_segment(data_builder, L"value");
+    uint32_t name_idx = add_string_to_data_segment(data_builder, U"value");
     code_builder_t *code_bulder = create_code_builder();
     add_instruction(code_bulder, (instruction_t){.opcode = ILOAD32, .arg1 = 1024});
     add_instruction(code_bulder, (instruction_t){.opcode = STORE, .arg1 = name_idx});
@@ -221,16 +221,16 @@ bool test_trim_function() {
     thread_t *thread = proc->main_thread;
     object_t *function = get_function_trim();
 
-    object_t *key = create_string_object(proc, STATIC_STRING(L"trim"));
+    object_t *key = create_string_object(proc, STATIC_STRING(U"trim"));
     ASSERT(get_object_property(get_string_proto(), key) == function);
-    object_t *str = create_string_object(proc, STATIC_STRING(L"   abcde   "));
+    object_t *str = create_string_object(proc, STATIC_STRING(U"   abcde   "));
     DECREF(key);
 
     ASSERT(call_object(function, 0, str, thread));
     ASSERT(thread->data_stack->size == 1);
     object_t *result = pop_object_from_stack(thread->data_stack);
     string_value_t value = convert_object_to_string(result);
-    ASSERT(wcscmp(value.data, L"abcde") == 0 && value.length == 5);
+    ASSERT(STRCMP(value.data, U"abcde") == 0 && value.length == 5);
     FREE_STRING(value);
     DECREF(result);
 
@@ -256,34 +256,34 @@ bool test_instance_of_function() {
     thread_t *thread = proc->main_thread;
     object_t *function = get_function_instance_of();
 
-    object_t *key = create_string_object(proc, STATIC_STRING(L"instanceOf"));
+    object_t *key = create_string_object(proc, STATIC_STRING(U"instanceOf"));
     ASSERT(get_object_property(get_root_object(), key) == function);
     DECREF(key);
 
     static const struct {
-        const wchar_t *name;
+        const gchar_t *name;
         object_t *(*getter)(void);
     } types[] = {
-        {L"Array", get_array_proto},
-        {L"Boolean", get_boolean_proto},
-        {L"Character", get_character_proto},
-        {L"Function", get_function_proto},
-        {L"Integer", get_integer_proto},
-        {L"Null", get_null_object},
-        {L"Number", get_numeric_proto},
-        {L"Object", get_root_object},
-        {L"Real", get_real_proto},
-        {L"String", get_string_proto},
+        {U"Array", get_array_proto},
+        {U"Boolean", get_boolean_proto},
+        {U"Character", get_character_proto},
+        {U"Function", get_function_proto},
+        {U"Integer", get_integer_proto},
+        {U"Null", get_null_object},
+        {U"Number", get_numeric_proto},
+        {U"Object", get_root_object},
+        {U"Real", get_real_proto},
+        {U"String", get_string_proto},
     };
 
     for (size_t i = 0; i < sizeof(types) / sizeof(*types); i++) {
         key = create_string_object(proc,
-                                   (string_value_t){types[i].name, wcslen(types[i].name), false});
+                                   (string_value_t){types[i].name, STRLEN(types[i].name), false});
         ASSERT(get_object_property(get_root_context()->data, key) == types[i].getter());
         DECREF(key);
     }
 
-    object_t *str = create_string_object(proc, STATIC_STRING(L"abs"));
+    object_t *str = create_string_object(proc, STATIC_STRING(U"abs"));
     push_object_onto_stack(thread->data_stack, get_string_proto());
     ASSERT(call_object(function, 1, str, thread));
     object_t *result = pop_object_from_stack(thread->data_stack);
@@ -387,7 +387,7 @@ bool test_instance_of_function() {
 
 bool test_sign_function() {
     data_builder_t *data_builder = create_data_builder();
-    uint32_t name_idx = add_string_to_data_segment(data_builder, L"sign");
+    uint32_t name_idx = add_string_to_data_segment(data_builder, U"sign");
     code_builder_t *code_bulder = create_code_builder();
     add_instruction(code_bulder, (instruction_t){.opcode = ILOAD32, .arg1 = -1024});
     add_instruction(code_bulder, (instruction_t){.opcode = VLOAD, .arg1 = name_idx});
@@ -410,8 +410,8 @@ bool test_sign_function() {
 
 bool test_context_cloning() {
     data_builder_t *data_builder = create_data_builder();
-    uint32_t name_x_idx = add_string_to_data_segment(data_builder, L"x");
-    uint32_t name_y_idx = add_string_to_data_segment(data_builder, L"y");
+    uint32_t name_x_idx = add_string_to_data_segment(data_builder, U"x");
+    uint32_t name_y_idx = add_string_to_data_segment(data_builder, U"y");
     code_builder_t *code_bulder = create_code_builder();
     add_instruction(code_bulder, (instruction_t){.opcode = ILOAD32, .arg1 = 2});
     add_instruction(code_bulder, (instruction_t){.opcode = VAR, .arg1 = name_x_idx});
@@ -429,11 +429,11 @@ bool test_context_cloning() {
     run(proc, code);
     ASSERT(proc->main_thread->data_stack->size == 1);
     object_t *obj = peek_object_from_stack(proc->main_thread->data_stack, 0);
-    object_t *key = create_string_object(proc, STATIC_STRING(L"y"));
+    object_t *key = create_string_object(proc, STATIC_STRING(U"y"));
     object_t *value = get_object_property(obj, key);
     ASSERT(value != NULL);
     string_value_t str = convert_object_to_string(value);
-    ASSERT(0 == wcscmp(str.data, L"5"));
+    ASSERT(0 == STRCMP(str.data, U"5"));
     FREE_STRING(str);
     destroy_process(proc);
     free_bytecode(code);
@@ -442,8 +442,8 @@ bool test_context_cloning() {
 
 bool test_function_definition() {
     data_builder_t *data_builder = create_data_builder();
-    uint32_t name_a_idx = add_string_to_data_segment(data_builder, L"a");
-    uint32_t name_b_idx = add_string_to_data_segment(data_builder, L"b");
+    uint32_t name_a_idx = add_string_to_data_segment(data_builder, U"a");
+    uint32_t name_b_idx = add_string_to_data_segment(data_builder, U"b");
     uint32_t arg_names[] = {name_a_idx, name_b_idx};
     uint32_t arg_names_idx = add_data_to_data_segment(data_builder, arg_names, sizeof(arg_names));
     code_builder_t *code_bulder = create_code_builder();
@@ -474,8 +474,8 @@ bool test_function_definition() {
 
 bool test_closure() {
     data_builder_t *data_builder = create_data_builder();
-    uint32_t name_a_idx = add_string_to_data_segment(data_builder, L"a");
-    uint32_t name_b_idx = add_string_to_data_segment(data_builder, L"b");
+    uint32_t name_a_idx = add_string_to_data_segment(data_builder, U"a");
+    uint32_t name_b_idx = add_string_to_data_segment(data_builder, U"b");
     uint32_t arg_names[] = {name_a_idx};
     uint32_t arg_names_idx = add_data_to_data_segment(data_builder, arg_names, sizeof(arg_names));
     code_builder_t *code_bulder = create_code_builder();
@@ -514,7 +514,7 @@ bool test_set_property_self_reference() {
     process_t *process = create_process();
     object_t *root_object = get_root_object();
     object_t *obj = create_user_defined_object(process, (object_array_t){&root_object, 1});
-    object_t *key = create_string_object(process, STATIC_STRING(L"self"));
+    object_t *key = create_string_object(process, STATIC_STRING(U"self"));
     /* A self-reference holds no reference count (see create_property), so replacing it must not
        release it and a new self-reference must not be retained. */
     ASSERT(create_object_property(obj, key, obj, false) == MSTAT_OK);
@@ -573,7 +573,7 @@ static object_t *custom_clone(process_t *process, object_t *obj) {
 
 bool test_clone_method(void) {
     process_t *proc = create_process();
-    object_t *key = create_string_object(proc, STATIC_STRING(L"clone"));
+    object_t *key = create_string_object(proc, STATIC_STRING(U"clone"));
     object_t *method = get_object_property(get_root_object(), key);
     ASSERT(method == get_function_clone());
     object_vtbl_t vtbl = *get_root_object()->vtbl;
@@ -587,7 +587,7 @@ bool test_clone_method(void) {
     object_t *values[] = {create_integer_object(proc, 1000),
                           create_real_number_object(proc, 2.5),
                           create_character_object(proc, 0x416),
-                          create_string_object(proc, STATIC_STRING(L"dynamic string"))};
+                          create_string_object(proc, STATIC_STRING(U"dynamic string"))};
     for (size_t i = 0; i < sizeof(values) / sizeof(*values); i++) {
         object_t *copy = clone_object(proc, values[i]);
         ASSERT(copy == values[i]);
@@ -607,7 +607,7 @@ bool test_flat_method(void) {
     object_t *root = get_root_object();
     object_t *parent = create_user_defined_object(proc, (object_array_t){&root, 1});
     object_t *child = create_user_defined_object(proc, (object_array_t){&parent, 1});
-    object_t *key = create_string_object(proc, STATIC_STRING(L"value"));
+    object_t *key = create_string_object(proc, STATIC_STRING(U"value"));
     object_t *nested = create_array_object(proc, (object_array_t){0});
     ASSERT(create_object_property(parent, key, nested, true) == MSTAT_OK);
     ASSERT(call_object(get_function_flat(), 0, child, proc->main_thread));

@@ -34,13 +34,13 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const real_t *expr = (const real_t *)node;
-    string_value_t text = format_string(L"%f", expr->element.value);
+    string_value_t text = format_string(U"%f", expr->element.value);
     /* A real literal must remain real when regenerated source is parsed again. */
-    if (!wcschr(text.data, L'.') && !wcschr(text.data, L'e') && !wcschr(text.data, L'E')) {
+    if (!STRCHR(text.data, U'.') && !STRCHR(text.data, U'e') && !STRCHR(text.data, U'E')) {
         string_builder_t builder = {0};
         append_string_value(&builder, text);
         FREE_STRING(text);
-        return append_string(&builder, L".0");
+        return append_string(&builder, U".0");
     }
     return text;
 }
@@ -48,7 +48,7 @@ static string_value_t generate_goat_code(const node_t *node) {
 /** @brief Implements @ref node_vtbl_t::get_data. */
 static node_display_value_t get_data(const node_t *node) {
     return (node_display_value_t){.text =
-                                      format_string(L"%f", ((const real_t *)node)->element.value),
+                                      format_string(U"%f", ((const real_t *)node)->element.value),
                                   .kind = NODE_DISPLAY_VALUE_PLAIN};
 }
 
@@ -81,7 +81,7 @@ static node_vtbl_t real_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"real number",
+    .type_name = U"real number",
     .get_data = get_data,
     .get_property_count = no_properties,
     .get_property = no_property,

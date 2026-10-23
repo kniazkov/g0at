@@ -5,13 +5,13 @@
 #include "test_c_contract.h"
 
 #include "analysis/c_contract.h"
+#include "goat/unicode.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
 #include <math.h>
 #include <stdio.h>
-#include <wchar.h>
 
 bool test_c_contract_types() {
     const struct {
@@ -87,7 +87,7 @@ bool test_c_contract_checks() {
     ASSERT(summary->c_support == FUNCTION_C_UNKNOWN && summary->c_blockers == C_BLOCKER_ANALYSIS);
     ASSERT(snapshot->c_blockers == C_BLOCKER_BODY && snapshot->c_support == FUNCTION_C_UNKNOWN);
     string_value_t text = function_summary_to_string(snapshot);
-    ASSERT(wcsstr(text.data, L"c-blockers=body"));
+    ASSERT(STRSTR(text.data, U"c-blockers=body"));
     FREE_STRING(text);
     destroy_arena(arena);
     return true;

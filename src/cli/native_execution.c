@@ -84,8 +84,8 @@ bool output_native_report(const options_t *options,
     const char *mode = options->native_execution == NATIVE_OFF    ? "off"
                        : options->native_execution == NATIVE_AUTO ? "auto"
                                                                   : "required";
-    string_value_t text = format_string(L"mode=%a\npreparation=%a\nbound=%zu\nomitted=%zu\n"
-                                        L"attempts=%zu\nsucceeded=%zu\nretries=%zu\n",
+    string_value_t text = format_string(U"mode=%a\npreparation=%a\nbound=%zu\nomitted=%zu\n"
+                                        U"attempts=%zu\nsucceeded=%zu\nretries=%zu\n",
                                         mode,
                                         report->preparation,
                                         report->bound_functions,

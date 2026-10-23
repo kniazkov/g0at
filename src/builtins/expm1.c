@@ -16,7 +16,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return interpret_unary_math(state, args, expm1);
 }
 
-const builtin_function_t builtin_expm1 = {.name = L"expm1",
+const builtin_function_t builtin_expm1 = {.name = U"expm1",
                                           .min_args = 1,
                                           .effects = BUILTIN_EFFECT_NONE,
                                           .execute = execute,

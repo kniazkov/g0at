@@ -30,18 +30,18 @@ c_generated_expression_t c_conditional(const node_t *node, c_generation_context_
     }
     source_builder_t *prelude = create_source_builder();
     c_emit_prelude(parts[0].prelude, prelude, 0);
-    string_value_t value = format_string(L"g_t%zu", context->temporary_count++);
-    add_source(prelude, 0, L"%s %s;", c_type_name(type), value.data);
+    string_value_t value = format_string(U"g_t%zu", context->temporary_count++);
+    add_source(prelude, 0, U"%s %s;", c_type_name(type), value.data);
     add_source(prelude,
                0,
-               parts[0].type == C_VALUE_STRING ? L"if ((%s).length != 0) {" : L"if ((%s) != 0) {",
+               parts[0].type == C_VALUE_STRING ? U"if ((%s).length != 0) {" : U"if ((%s) != 0) {",
                parts[0].value.data);
     c_emit_prelude(parts[1].prelude, prelude, 1);
-    add_source(prelude, 1, L"%s = %s;", value.data, parts[1].value.data);
-    add_static_source(prelude, 0, L"} else {");
+    add_source(prelude, 1, U"%s = %s;", value.data, parts[1].value.data);
+    add_static_source(prelude, 0, U"} else {");
     c_emit_prelude(parts[2].prelude, prelude, 1);
-    add_source(prelude, 1, L"%s = %s;", value.data, parts[2].value.data);
-    add_static_source(prelude, 0, L"}");
+    add_source(prelude, 1, U"%s = %s;", value.data, parts[2].value.data);
+    add_static_source(prelude, 0, U"}");
     for (size_t i = 0; i < 3; i++)
         destroy_c_expression(&parts[i]);
     return (c_generated_expression_t){.success = true,

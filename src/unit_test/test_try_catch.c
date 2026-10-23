@@ -35,28 +35,28 @@ bool test_try_catch_structure(void) {
     statement_t *body =
         create_statement_expression_node(arena, (expression_t *)create_integer_node(arena, 1));
     statement_list_t *handler = block(arena, NULL);
-    wchar_t name[] = L"error_extra";
+    gchar_t name[] = U"error_extra";
     node_t *node = create_try_catch_node(arena, body, (string_view_t){name, 5}, handler);
-    name[0] = L'X';
+    name[0] = U'X';
     ASSERT(is_statement(node->vtbl->type));
     ASSERT(!is_expression(node->vtbl->type));
     ASSERT(get_node_child_count(node) == 2);
     ASSERT(get_node_child(node, 0) == &body->base
            && get_node_child(node, 1) == &handler->base.base);
     ASSERT(!get_node_child(node, 2) && !get_node_child(node, SIZE_MAX));
-    ASSERT(!wcscmp(get_node_child_tag(node, 0), L"try"));
-    ASSERT(!wcscmp(get_node_child_tag(node, 1), L"catch"));
+    ASSERT(!STRCMP(get_node_child_tag(node, 0), U"try"));
+    ASSERT(!STRCMP(get_node_child_tag(node, 1), U"catch"));
     ASSERT(!get_node_child_tag(node, 2));
     node_display_value_t display = get_node_data(node);
-    ASSERT(!wcscmp(display.text.data, L"error"));
+    ASSERT(!STRCMP(display.text.data, U"error"));
     ASSERT(!display.text.should_free);
     string_value_t source = generate_goat_code_from_node(node);
-    ASSERT(!wcscmp(source.data, L"try 1; catch (error) { }"));
+    ASSERT(!STRCMP(source.data, U"try 1; catch (error) { }"));
     FREE_STRING(source);
     source_builder_t *builder = create_source_builder();
     generate_indented_goat_code_from_node(node, builder, 0);
     source = build_source(builder);
-    ASSERT(wcsstr(source.data, L"try\n") && wcsstr(source.data, L"catch (error) { }"));
+    ASSERT(STRSTR(source.data, U"try\n") && STRSTR(source.data, U"catch (error) { }"));
     FREE_STRING(source);
     destroy_source_builder(builder);
     node->id = 1;
@@ -67,7 +67,7 @@ bool test_try_catch_structure(void) {
     node->scope = body->base.scope = get_node_child(&body->base, 0)->scope =
         handler->base.base.scope = scope;
     source = generate_graph_dot(node);
-    ASSERT(wcsstr(source.data, L"try-catch") && wcsstr(source.data, L"error"));
+    ASSERT(STRSTR(source.data, U"try-catch") && STRSTR(source.data, U"error"));
     FREE_STRING(source);
     ASSERT(!can_generate_c_code_from_node(node, NULL));
     function_summary_t summary = {0};
@@ -76,18 +76,18 @@ bool test_try_catch_structure(void) {
     ASSERT(!generated.success && context.status == C_GENERATION_UNSUPPORTED);
     statement_t *empty_body = create_statement_expression_node(arena, &block(arena, NULL)->base);
     node_t *empty =
-        create_try_catch_node(arena, empty_body, (string_view_t){L"e", 1}, block(arena, NULL));
+        create_try_catch_node(arena, empty_body, (string_view_t){U"e", 1}, block(arena, NULL));
     node_t *nested = create_try_catch_node(arena,
                                            (statement_t *)empty,
-                                           (string_view_t){L"outer", 5},
+                                           (string_view_t){U"outer", 5},
                                            block(arena, NULL));
     source = generate_goat_code_from_node(nested);
-    ASSERT(!wcscmp(source.data, L"try try { } catch (e) { } catch (outer) { }"));
+    ASSERT(!STRCMP(source.data, U"try try { } catch (e) { } catch (outer) { }"));
     FREE_STRING(source);
     builder = create_source_builder();
     generate_indented_goat_code_from_node(empty, builder, 0);
     source = build_source(builder);
-    ASSERT(!wcscmp(source.data, L"try { }\ncatch (e) { }\n"));
+    ASSERT(!STRCMP(source.data, U"try { }\ncatch (e) { }\n"));
     FREE_STRING(source);
     destroy_source_builder(builder);
     node_t *container = &block(arena, &body->base)->base.base;
@@ -115,13 +115,13 @@ bool test_try_catch_bytecode(void) {
             body->base.vtbl = &throwing;
         /* Return in catch exposes the bound value through an actual function call. */
         node_t *ret =
-            create_return_node(arena, create_variable_node(arena, (string_view_t){L"error", 5}));
+            create_return_node(arena, create_variable_node(arena, (string_view_t){U"error", 5}));
         node_t *node =
-            create_try_catch_node(arena, body, (string_view_t){L"error", 5}, block(arena, ret));
+            create_try_catch_node(arena, body, (string_view_t){U"error", 5}, block(arena, ret));
         if (throws == 2) {
             node = create_try_catch_node(arena,
                                          body,
-                                         (string_view_t){L"error", 5},
+                                         (string_view_t){U"error", 5},
                                          block(arena, NULL));
         } else if (throws == 3) {
             statement_t *again =
@@ -130,11 +130,11 @@ bool test_try_catch_bytecode(void) {
             again->base.vtbl = &throwing;
             node_t *inner = create_try_catch_node(arena,
                                                   body,
-                                                  (string_view_t){L"inner", 5},
+                                                  (string_view_t){U"inner", 5},
                                                   block(arena, &again->base));
             node = create_try_catch_node(arena,
                                          (statement_t *)inner,
-                                         (string_view_t){L"error", 5},
+                                         (string_view_t){U"error", 5},
                                          block(arena, ret));
         }
         code_builder_t *code = create_code_builder();
@@ -153,7 +153,7 @@ bool test_try_catch_bytecode(void) {
         bytecode_t *bytecode = link_code_and_data(code, data);
         process_t *proc = create_process();
         context_t *initial = proc->main_thread->context;
-        object_t *key = create_string_object(proc, (string_value_t){L"error", 5, false});
+        object_t *key = create_string_object(proc, (string_value_t){U"error", 5, false});
         ASSERT(create_object_property(initial->data, key, get_static_integer_object(99), false)
                == MSTAT_OK);
         DECREF(key);
@@ -176,12 +176,12 @@ bool test_try_catch_bytecode(void) {
 bool test_try_catch_analysis_placeholder(void) {
     arena_t *arena = create_arena(8);
     variable_declaration_pair_t decl =
-        create_synthetic_variable_declaration_node(arena, (string_view_t){L"x", 1});
+        create_synthetic_variable_declaration_node(arena, (string_view_t){U"x", 1});
     abstract_state_t *state = create_abstract_state(arena);
     set_in_abstract_state(state, decl.declarator, make_integer_constant_element(arena, 1));
     node_t *node = create_try_catch_node(arena,
                                          (statement_t *)create_return_node(arena, NULL),
-                                         (string_view_t){L"e", 1},
+                                         (string_view_t){U"e", 1},
                                          block(arena, NULL));
     ASSERT(execute_node(node, state, arena) == state);
     ASSERT(state->control_flow == FLOW_NORMAL);

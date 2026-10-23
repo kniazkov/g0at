@@ -67,9 +67,9 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
     if (index == 0) {
-        return L"object";
+        return U"object";
     }
     return NULL;
 }
@@ -124,10 +124,10 @@ static string_value_t generate_goat_code(const node_t *node) {
     append_string_value(&builder, func_object_as_string);
     FREE_STRING(func_object_as_string);
 
-    append_char(&builder, L'(');
+    append_char(&builder, U'(');
     for (size_t index = 0; index < expr->args_count; index++) {
         if (index > 0) {
-            append_static_string(&builder, L", ");
+            append_static_string(&builder, U", ");
         }
         expression_t *arg = expr->args[index];
         string_value_t arg_as_string = generate_goat_code_from_expression(arg);
@@ -135,7 +135,7 @@ static string_value_t generate_goat_code(const node_t *node) {
         FREE_STRING(arg_as_string);
     }
 
-    return append_char(&builder, L')');
+    return append_char(&builder, U')');
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
@@ -143,15 +143,15 @@ static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const function_call_t *expr = (const function_call_t *)node;
     generate_indented_goat_code_from_expression(expr->func_object, builder, indent);
-    append_static_source(builder, L"(");
+    append_static_source(builder, U"(");
     for (size_t index = 0; index < expr->args_count; index++) {
         if (index > 0) {
-            append_static_source(builder, L", ");
+            append_static_source(builder, U", ");
         }
         expression_t *arg = expr->args[index];
         generate_indented_goat_code_from_expression(arg, builder, indent);
     }
-    append_static_source(builder, L")");
+    append_static_source(builder, U")");
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
@@ -246,7 +246,7 @@ static node_vtbl_t function_call_vtbl = {
     .is_pure = is_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_direct_effects,
-    .type_name = L"function call",
+    .type_name = U"function call",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,

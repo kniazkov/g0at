@@ -45,7 +45,7 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 /** @brief Implements @ref node_vtbl_t::generate_goat_code. */
 static string_value_t generate_goat_code(const node_t *node) {
     const static_string_t *expr = (const static_string_t *)node;
-    return string_to_string_notation(L"", VIEW_TO_VALUE(expr->element.value));
+    return string_to_string_notation(U"", VIEW_TO_VALUE(expr->element.value));
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_indented_goat_code. */
@@ -53,7 +53,7 @@ static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const static_string_t *expr = (const static_string_t *)node;
     append_formatted_source(builder,
-                            string_to_string_notation(L"", VIEW_TO_VALUE(expr->element.value)));
+                            string_to_string_notation(U"", VIEW_TO_VALUE(expr->element.value)));
 }
 
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
@@ -83,7 +83,7 @@ static node_vtbl_t static_string_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"static string",
+    .type_name = U"static string",
     .get_data = get_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -107,7 +107,7 @@ static node_vtbl_t static_string_vtbl = {
     .generate_bytecode_deferred = no_deferred_bytecode,
 };
 
-node_t *create_static_string_node(arena_t *arena, const wchar_t *data, size_t length) {
+node_t *create_static_string_node(arena_t *arena, const gchar_t *data, size_t length) {
     static_string_t *expr =
         (static_string_t *)alloc_zeroed_from_arena(arena, sizeof(static_string_t));
     expr->base.base.vtbl = &static_string_vtbl;

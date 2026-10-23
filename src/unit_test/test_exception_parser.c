@@ -14,33 +14,33 @@
 #include <stdio.h>
 
 bool test_exception_parser(void) {
-    const wchar_t *valid[] = {L"try { } catch (e) { }",
-                              L"try {} catch (e) print(e);",
-                              L"try ; catch (e) {}",
-                              L"try throw 1; catch (e) { throw e; }",
-                              L"try try throw null catch (e) { throw e; } catch (outer) { }",
-                              L"try if (true) { throw 1; } else { } catch (e) { }",
-                              L"if (false) try throw 1 catch (e) { } else { }",
-                              L"try return; catch (e) { return e; }"};
-    const wchar_t *invalid[] = {L"try",
-                                L"try {}",
-                                L"catch (e) {}",
-                                L"try {} catch {}",
-                                L"try {} catch () {}",
-                                L"try {} catch (a,b) {}",
-                                L"try {} catch (1) {}",
-                                L"try {} catch (e+1) {}",
-                                L"try {} catch ((e)) {}",
-                                L"try {} catch (null) {}",
-                                L"try {} catch (e) {} catch (f) {}",
-                                L"throw;",
-                                L"try throw catch (e) {}"};
+    const gchar_t *valid[] = {U"try { } catch (e) { }",
+                              U"try {} catch (e) print(e);",
+                              U"try ; catch (e) {}",
+                              U"try throw 1; catch (e) { throw e; }",
+                              U"try try throw null catch (e) { throw e; } catch (outer) { }",
+                              U"try if (true) { throw 1; } else { } catch (e) { }",
+                              U"if (false) try throw 1 catch (e) { } else { }",
+                              U"try return; catch (e) { return e; }"};
+    const gchar_t *invalid[] = {U"try",
+                                U"try {}",
+                                U"catch (e) {}",
+                                U"try {} catch {}",
+                                U"try {} catch () {}",
+                                U"try {} catch (a,b) {}",
+                                U"try {} catch (1) {}",
+                                U"try {} catch (e+1) {}",
+                                U"try {} catch ((e)) {}",
+                                U"try {} catch (null) {}",
+                                U"try {} catch (e) {} catch (f) {}",
+                                U"throw;",
+                                U"try throw catch (e) {}"};
     for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++) {
         arena_t *arena = create_arena(8);
         parser_memory_t memory = {arena, arena, arena, arena};
         node_t *root =
             parse_analysis_test_program(&memory,
-                                        (string_value_t){valid[i], wcslen(valid[i]), false});
+                                        (string_value_t){valid[i], STRLEN(valid[i]), false});
         ASSERT(root);
         string_value_t source = generate_goat_code_from_node(root);
         ASSERT(parse_analysis_test_program(&memory, source));
@@ -52,7 +52,7 @@ bool test_exception_parser(void) {
         parser_memory_t memory = {arena, arena, arena, arena};
         ASSERT(
             !parse_analysis_test_program(&memory,
-                                         (string_value_t){invalid[i], wcslen(invalid[i]), false}));
+                                         (string_value_t){invalid[i], STRLEN(invalid[i]), false}));
         destroy_arena(arena);
     }
     return true;
@@ -60,7 +60,7 @@ bool test_exception_parser(void) {
 
 /** @brief Checks that handler references resolve to its declaration, including in closures. */
 static bool bound_to(node_t *node, declarator_t *decl, size_t *count) {
-    if (node->vtbl->type == NODE_VARIABLE && !wcscmp(((variable_t *)node)->name.data, L"e")) {
+    if (node->vtbl->type == NODE_VARIABLE && !STRCMP(((variable_t *)node)->name.data, U"e")) {
         if (((variable_t *)node)->declarator != decl)
             return false;
         (*count)++;
@@ -76,8 +76,8 @@ bool test_catch_binding(void) {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
         parse_analysis_test_program(&memory,
-                                    STATIC_STRING(L"var e = 1; try throw 2 catch (e) { print(e); "
-                                                  L"var f = func { return e; }; } print(e);"));
+                                    STATIC_STRING(U"var e = 1; try throw 2 catch (e) { print(e); "
+                                                  U"var f = func { return e; }; } print(e);"));
     ASSERT(root);
     options_t *options = create_options();
     options->optimization_level = OPTIMIZATION_NONE;

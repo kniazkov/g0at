@@ -65,37 +65,37 @@ bool goat_module_parse_import(const char *text, size_t length, goat_module_impor
     return true;
 }
 
-static bool wide_identifier_valid(const wchar_t *text, size_t length, size_t maximum) {
-    if (!text || length == 0 || length > maximum || text[length - 1] == L'.')
+static bool wide_identifier_valid(const gchar_t *text, size_t length, size_t maximum) {
+    if (!text || length == 0 || length > maximum || text[length - 1] == U'.')
         return false;
-    if (!((text[0] >= L'a' && text[0] <= L'z') || (text[0] >= L'0' && text[0] <= L'9')))
+    if (!((text[0] >= U'a' && text[0] <= U'z') || (text[0] >= U'0' && text[0] <= U'9')))
         return false;
     for (size_t i = 0; i < length; i++) {
-        wchar_t ch = text[i];
-        if (!((ch >= L'a' && ch <= L'z') || (ch >= L'0' && ch <= L'9') || ch == L'.' || ch == L'-'
-              || ch == L'_'))
+        gchar_t ch = text[i];
+        if (!((ch >= U'a' && ch <= U'z') || (ch >= U'0' && ch <= U'9') || ch == U'.' || ch == U'-'
+              || ch == U'_'))
             return false;
     }
     /* The reserved device names are ASCII and never exceed four characters. */
     size_t stem = 0;
-    while (stem < length && text[stem] != L'.')
+    while (stem < length && text[stem] != U'.')
         stem++;
     if (stem == 3) {
-        if ((text[0] == L'c' && text[1] == L'o' && text[2] == L'n')
-            || (text[0] == L'p' && text[1] == L'r' && text[2] == L'n')
-            || (text[0] == L'a' && text[1] == L'u' && text[2] == L'x')
-            || (text[0] == L'n' && text[1] == L'u' && text[2] == L'l'))
+        if ((text[0] == U'c' && text[1] == U'o' && text[2] == U'n')
+            || (text[0] == U'p' && text[1] == U'r' && text[2] == U'n')
+            || (text[0] == U'a' && text[1] == U'u' && text[2] == U'x')
+            || (text[0] == U'n' && text[1] == U'u' && text[2] == U'l'))
             return false;
     }
     if (stem == 4
-        && ((text[0] == L'c' && text[1] == L'o' && text[2] == L'm')
-            || (text[0] == L'l' && text[1] == L'p' && text[2] == L't'))
-        && text[3] >= L'0' && text[3] <= L'9')
+        && ((text[0] == U'c' && text[1] == U'o' && text[2] == U'm')
+            || (text[0] == U'l' && text[1] == U'p' && text[2] == U't'))
+        && text[3] >= U'0' && text[3] <= U'9')
         return false;
     return true;
 }
 
-bool goat_module_parse_import_wide(const wchar_t *text,
+bool goat_module_parse_import_wide(const gchar_t *text,
                                    size_t length,
                                    goat_module_import_wide_t *result) {
     if (!result)
@@ -104,7 +104,7 @@ bool goat_module_parse_import_wide(const wchar_t *text,
     if (!text)
         return false;
     size_t split = 0;
-    while (split < length && text[split] != L'@')
+    while (split < length && text[split] != U'@')
         split++;
     if (!wide_identifier_valid(text, split, 255))
         return false;

@@ -2,9 +2,12 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Version 2 native boundary, independent of VM objects and analysis storage.
  */
+#pragma once
 /* ABI declarations begin. */
 #ifndef GOAT_NATIVE_ABI_V2_H
 #    define GOAT_NATIVE_ABI_V2_H
+#    include "unicode.h"
+
 #    include <stddef.h>
 #    include <stdint.h>
 
@@ -21,7 +24,7 @@
 #    endif
 
 enum {
-    GOAT_NATIVE_ABI_VERSION = 2,
+    GOAT_NATIVE_ABI_VERSION = 1,
     GOAT_NATIVE_INVALID = 0,
     GOAT_NATIVE_I64 = 1,
     GOAT_NATIVE_F64 = 2,
@@ -45,23 +48,23 @@ enum { GOAT_NATIVE_PURE = 1 };
 extern "C" {
 #    endif
 
-/** @brief Borrowed, immutable sequence of the host's wchar_t code units.
- * length counts code units, not bytes or Unicode characters, and excludes any terminator.
+/** @brief Borrowed, immutable sequence of the Unicode scalar values.
+ * length counts scalars, not bytes or grapheme clusters, and excludes any terminator.
  * The first length units are readable; no trailing NUL is required. Embedded zero units
  * are allowed. data may be NULL only when length is zero. A view never owns storage and
  * must not be passed to deallocate. Its lifetime is bounded by the backing storage and
  * the outer native call. Substring views may point into the middle of another string.
- * Host and module must use the same wchar_t representation (including its width).
+ * Elements are fixed-width char32_t on every supported target.
  */
 typedef struct goat_native_string_view_v2_t {
-    const wchar_t *data; ///< Borrowed code units; NULL is valid for an empty view.
+    const gchar_t *data; ///< Borrowed code units; NULL is valid for an empty view.
     size_t length;       ///< Number of readable code units.
 } goat_native_string_view_v2_t;
 
 /** @brief Mutable string storage allocated through the current native context.
  * The zero-initialized value is an empty buffer with no allocation. Otherwise data is
  * the original pointer returned by goat_native_allocate for at least capacity + 1
- * wchar_t units, length <= capacity, and data[length] is zero. capacity excludes the
+ * gchar_t units, length <= capacity, and data[length] is zero. capacity excludes the
  * terminator; embedded zeros are allowed and length remains authoritative. Check
  * capacity + 1 and its byte-size multiplication for overflow before allocation.
  * Only the owning buffer may mutate or individually deallocate the block, using the
@@ -72,7 +75,7 @@ typedef struct goat_native_string_view_v2_t {
  * reference-counted ownership crosses this boundary.
  */
 typedef struct goat_native_string_buffer_v2_t {
-    wchar_t *data;   ///< Context allocation, or NULL when length and capacity are zero.
+    gchar_t *data;   ///< Context allocation, or NULL when length and capacity are zero.
     size_t length;   ///< Number of used code units, excluding the trailing zero.
     size_t capacity; ///< Number of available code units, excluding the trailing zero.
 } goat_native_string_buffer_v2_t;
@@ -110,10 +113,10 @@ typedef struct goat_native_services_v2_t {
     void *(GOAT_NATIVE_CALL *allocate)(void *state, size_t size);
     void(GOAT_NATIVE_CALL *deallocate)(void *state, void *pointer);
     void(GOAT_NATIVE_CALL *deallocate_all)(void *state);
-    /** @brief Optional string services execute in the host CRT and its initialized locale. */
-    int(GOAT_NATIVE_CALL *string_is_space)(wchar_t value);
-    wchar_t(GOAT_NATIVE_CALL *string_to_upper)(wchar_t value);
-    wchar_t(GOAT_NATIVE_CALL *string_to_lower)(wchar_t value);
+    /** @brief Optional string services use the pinned Unicode 17.0.0 tables. */
+    int(GOAT_NATIVE_CALL *string_is_space)(gchar_t value);
+    gchar_t(GOAT_NATIVE_CALL *string_to_upper)(gchar_t value);
+    gchar_t(GOAT_NATIVE_CALL *string_to_lower)(gchar_t value);
 } goat_native_services_v2_t;
 
 /** @brief Borrowed host context. State is opaque to native code and thread-confined.
@@ -131,7 +134,7 @@ typedef struct goat_native_context_v2_t {
         (offsetof(goat_native_services_v2_t, deallocate_all)                                       \
          + sizeof(((goat_native_services_v2_t *)0)->deallocate_all))
 
-/** @brief Required table prefix for locale-dependent string operations. */
+/** @brief Required table prefix for Unicode string operations. */
 #    define GOAT_NATIVE_STRING_SERVICES_SIZE                                                       \
         (offsetof(goat_native_services_v2_t, string_to_lower)                                      \
          + sizeof(((goat_native_services_v2_t *)0)->string_to_lower))

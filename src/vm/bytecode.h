@@ -13,7 +13,7 @@
 #include <stdint.h>
 
 /** @brief Signature added to the beginning of each binary file. */
-#define BINARY_FILE_SIGNATURE "goat v.1"
+#define BINARY_FILE_SIGNATURE "GOATSC01"
 
 #pragma pack(push, 1)
 

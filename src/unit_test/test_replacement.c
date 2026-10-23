@@ -10,6 +10,7 @@
 #include "cli/options.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
+#include "goat/unicode.h"
 #include "graph/binary_operation.h"
 #include "graph/replacement.h"
 #include "graph/visualization.h"
@@ -18,7 +19,6 @@
 
 #include <math.h>
 #include <stdio.h>
-#include <wchar.h>
 
 static size_t opcode_count(const code_builder_t *code, opcode_t opcode) {
     size_t count = 0;
@@ -51,15 +51,15 @@ bool test_replacement_nodes() {
     ASSERT(get_node_child_count(node) == 2);
     ASSERT(get_node_child(node, 0) == (node_t *)old && get_node_child(node, 1) == (node_t *)value);
     ASSERT(!get_node_child(node, 2) && !get_node_child_tag(node, 2));
-    ASSERT(!wcscmp(get_node_child_tag(node, 0), L"original"));
-    ASSERT(!wcscmp(get_node_child_tag(node, 1), L"replacement"));
+    ASSERT(!STRCMP(get_node_child_tag(node, 0), U"original"));
+    ASSERT(!STRCMP(get_node_child_tag(node, 1), U"replacement"));
     ASSERT(!replace_child_node(node, (node_t *)old, (node_t *)value));
     abstract_state_t *state = create_abstract_state(arena);
     const lattice_element_t *result = calculate_node(node, state, arena);
     ASSERT(result->type == LATTICE_INTEGER_CONSTANT);
     ASSERT(((const integer_constant_element_t *)result)->value == 5);
     string_value_t source = generate_goat_code_from_node(node);
-    ASSERT(!wcscmp(source.data, L"5"));
+    ASSERT(!STRCMP(source.data, U"5"));
     FREE_STRING(source);
     code_builder_t *code = create_code_builder();
     data_builder_t *data = create_data_builder();
@@ -86,10 +86,10 @@ bool test_replacement_folding() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"var a = 2 + 3 * 4; var b = 1 + 0.5; var c = \"a\" + \"b\";\n"
-                      L"var d = 1 < 2; var e = -0.0; var f = null; var g = f;\n"
-                      L"var h = (-1.0) ** 0.5; var i = 0.0 ** -1;\n"
-                      L"var x=1; var y=x+1; x=8; var z=x+1;"));
+        STATIC_STRING(U"var a = 2 + 3 * 4; var b = 1 + 0.5; var c = \"a\" + \"b\";\n"
+                      U"var d = 1 < 2; var e = -0.0; var f = null; var g = f;\n"
+                      U"var h = (-1.0) ** 0.5; var i = 0.0 ** -1;\n"
+                      U"var x=1; var y=x+1; x=8; var z=x+1;"));
     ASSERT(root);
     options_t *options = create_options();
     ASSERT(!analyze(root, &memory, options, NULL));
@@ -141,9 +141,9 @@ bool test_replacement_branches() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"var x=0; if (1<2) {var x=1; print(x);} else {print(9);}\n"
-                      L"if (false) print(8);\n"
-                      L"if (false) print(7) else if (true) print(2) else print(6);"));
+        STATIC_STRING(U"var x=0; if (1<2) {var x=1; print(x);} else {print(9);}\n"
+                      U"if (false) print(8);\n"
+                      U"if (false) print(7) else if (true) print(2) else print(6);"));
     ASSERT(root);
     node_t *original = get_node_child(root, 1);
     node_t *selected = get_node_child(original, 1);
@@ -156,10 +156,10 @@ bool test_replacement_branches() {
     ASSERT(get_node_child(selected, 0)->scope != root->scope);
     ASSERT(!count_type(root, NODE_IF_ELSE));
     string_value_t dot = generate_graph_dot(root);
-    ASSERT(wcsstr(dot.data, L"statement replacement"));
-    ASSERT(wcsstr(dot.data, L"expression replacement"));
-    ASSERT(wcsstr(dot.data, L"style=\"rounded,filled\" fillcolor=\"#f5efff\""));
-    ASSERT(wcsstr(dot.data, L"if-else") && wcsstr(dot.data, L"color=lightgray"));
+    ASSERT(STRSTR(dot.data, U"statement replacement"));
+    ASSERT(STRSTR(dot.data, U"expression replacement"));
+    ASSERT(STRSTR(dot.data, U"style=\"rounded,filled\" fillcolor=\"#f5efff\""));
+    ASSERT(STRSTR(dot.data, U"if-else") && STRSTR(dot.data, U"color=lightgray"));
     FREE_STRING(dot);
     code_builder_t *code = create_code_builder();
     data_builder_t *data = create_data_builder();
@@ -178,11 +178,11 @@ bool test_replacement_boundaries() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const f=func(n){return n+1;};f(1);f(2);\n"
-                      L"const closed=func(n){return n+(2*3);};closed(4);\n"
-                      L"var x=0;if ((x=1)) print(x);++x;x++;\n"
-                      L"if (abs(1)) print(x);\n"
-                      L"try { 1 + true; } catch(e) { print(e); }"));
+        STATIC_STRING(U"const f=func(n){return n+1;};f(1);f(2);\n"
+                      U"const closed=func(n){return n+(2*3);};closed(4);\n"
+                      U"var x=0;if ((x=1)) print(x);++x;x++;\n"
+                      U"if (abs(1)) print(x);\n"
+                      U"try { 1 + true; } catch(e) { print(e); }"));
     ASSERT(root);
     options_t *options = create_options();
     ASSERT(!analyze(root, &memory, options, NULL));
@@ -207,13 +207,13 @@ bool test_replacement_reset() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root =
         parse_analysis_test_program(&memory,
-                                    STATIC_STRING(L"var x=2+3; if (x==5) print(x) else print(9);"));
+                                    STATIC_STRING(U"var x=2+3; if (x==5) print(x) else print(9);"));
     options_t *options = create_options();
     ASSERT(root && !analyze(root, &memory, options, NULL));
     string_value_t first = generate_graph_dot(root);
     simplify_graph(root, arena);
     string_value_t second = generate_graph_dot(root);
-    ASSERT(!wcscmp(first.data, second.data));
+    ASSERT(!STRCMP(first.data, second.data));
     FREE_STRING(second);
     ASSERT(!analyze(root, &memory, options, NULL));
     ASSERT(count_type(root, NODE_STATEMENT_REPLACEMENT) == 1);
@@ -223,7 +223,7 @@ bool test_replacement_reset() {
     ASSERT(!count_type(root, NODE_EXPRESSION_REPLACEMENT));
     ASSERT(count_type(root, NODE_ADDITION) == 1 && count_type(root, NODE_IF_ELSE) == 1);
     second = generate_graph_dot(root);
-    ASSERT(!wcsstr(second.data, L"#f5efff"));
+    ASSERT(!STRSTR(second.data, U"#f5efff"));
     FREE_STRING(second);
     FREE_STRING(first);
     destroy_options(options);

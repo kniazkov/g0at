@@ -42,7 +42,7 @@ static object_array_t get_keys(const object_t *obj) {
 
 /** @brief Releases or clears a dynamic string object. */
 static void release_or_clear(object_dynamic_string_t *dsobj) {
-    FREE((wchar_t *)(dsobj->string.data));
+    FREE((gchar_t *)(dsobj->string.data));
     remove_object_from_list(&dsobj->base.process->objects, &dsobj->base);
     if (dsobj->base.process->dynamic_strings.size == POOL_CAPACITY) {
         FREE(dsobj);
@@ -96,7 +96,7 @@ static void release(object_t *obj) {
     remove_object_from_list(dsobj->state == ZOMBIE ? &obj->process->dynamic_strings
                                                    : &obj->process->objects,
                             obj);
-    FREE((wchar_t *)(dsobj->string.data));
+    FREE((gchar_t *)(dsobj->string.data));
     FREE(obj);
 }
 
@@ -136,7 +136,7 @@ static string_value_t dynamic_to_string(const object_t *obj) {
 /** @brief Implements @ref object_vtbl_t::to_string_notation. */
 static string_value_t to_string_notation(const object_t *obj) {
     string_value_t value = convert_object_to_string(obj);
-    return string_to_string_notation(L"", value);
+    return string_to_string_notation(U"", value);
 }
 
 /** @brief Array of prototypes for the string object. */
@@ -166,7 +166,7 @@ static object_t *static_get_property(const object_t *obj, const object_t *key) {
     if (key->vtbl->type == TYPE_STRING) {
         object_static_string_t *stsobj = (object_static_string_t *)obj;
         string_value_t key_str = convert_object_to_string(key);
-        if (wcscmp(L"length", key_str.data) == 0) {
+        if (string_view_equals(VALUE_TO_VIEW(key_str), VALUE_TO_VIEW(STATIC_STRING(U"length")))) {
             return get_static_integer_object((int)stsobj->string.length);
         }
     }
@@ -178,7 +178,7 @@ static object_t *dynamic_get_property(const object_t *obj, const object_t *key) 
     if (key->vtbl->type == TYPE_STRING) {
         object_dynamic_string_t *dsobj = (object_dynamic_string_t *)obj;
         string_value_t key_str = convert_object_to_string(key);
-        if (wcscmp(L"length", key_str.data) == 0) {
+        if (string_view_equals(VALUE_TO_VIEW(key_str), VALUE_TO_VIEW(STATIC_STRING(U"length")))) {
             return create_integer_object(obj->process, (int64_t)dsobj->string.length);
         }
     }
@@ -262,10 +262,10 @@ static object_vtbl_t static_string_vtbl = {.type = TYPE_STRING,
                                            .get_real_value = stub_get_real_value,
                                            .call = stub_call};
 
-object_t *get_static_string_object(object_static_string_t *storage, const wchar_t *text) {
+object_t *get_static_string_object(object_static_string_t *storage, const gchar_t *text) {
     if (!storage->base.vtbl) {
         storage->base.vtbl = &static_string_vtbl;
-        storage->string = (string_view_t){text, wcslen(text)};
+        storage->string = (string_view_t){text, STRLEN(text)};
     }
     return &storage->base;
 }
@@ -273,30 +273,30 @@ object_t *get_static_string_object(object_static_string_t *storage, const wchar_
 /** @brief Macro to declare a static string object and provide access to it. */
 #define DECLARE_STATIC_STRING(name, string)                                                        \
     static object_static_string_t name = {{&static_string_vtbl, NULL, NULL, NULL},                 \
-                                          {(string), sizeof(string) / sizeof(wchar_t) - 1}};       \
+                                          {(string), sizeof(string) / sizeof(gchar_t) - 1}};       \
     object_t *get_##name() {                                                                       \
         return &name.base;                                                                         \
     }
 
 /** @brief Declares some common static string objects. */
-DECLARE_STATIC_STRING(empty_string, L"")
-DECLARE_STATIC_STRING(string_exceptions, L"Exceptions")
-DECLARE_STATIC_STRING(exception_division_by_zero, L"DIVISION_BY_ZERO")
-DECLARE_STATIC_STRING(exception_immutable_object, L"IMMUTABLE_OBJECT")
-DECLARE_STATIC_STRING(exception_invalid_argument, L"INVALID_ARGUMENT")
-DECLARE_STATIC_STRING(exception_invalid_operation, L"INVALID_OPERATION")
-DECLARE_STATIC_STRING(exception_property_already_exists, L"PROPERTY_ALREADY_EXISTS")
-DECLARE_STATIC_STRING(exception_property_is_constant, L"PROPERTY_IS_CONSTANT")
-DECLARE_STATIC_STRING(exception_property_not_found, L"PROPERTY_NOT_FOUND")
-DECLARE_STATIC_STRING(exception_access_denied, L"ACCESS_DENIED")
-DECLARE_STATIC_STRING(exception_foreign_object, L"FOREIGN_OBJECT")
-DECLARE_STATIC_STRING(string_atan, L"atan")
-DECLARE_STATIC_STRING(string_length, L"length")
-DECLARE_STATIC_STRING(string_pi, L"pi")
-DECLARE_STATIC_STRING(string_print, L"print")
-DECLARE_STATIC_STRING(string_sign, L"sign")
-DECLARE_STATIC_STRING(string_sqrt, L"sqrt")
-DECLARE_STATIC_STRING(string_trim, L"trim")
+DECLARE_STATIC_STRING(empty_string, U"")
+DECLARE_STATIC_STRING(string_exceptions, U"Exceptions")
+DECLARE_STATIC_STRING(exception_division_by_zero, U"DIVISION_BY_ZERO")
+DECLARE_STATIC_STRING(exception_immutable_object, U"IMMUTABLE_OBJECT")
+DECLARE_STATIC_STRING(exception_invalid_argument, U"INVALID_ARGUMENT")
+DECLARE_STATIC_STRING(exception_invalid_operation, U"INVALID_OPERATION")
+DECLARE_STATIC_STRING(exception_property_already_exists, U"PROPERTY_ALREADY_EXISTS")
+DECLARE_STATIC_STRING(exception_property_is_constant, U"PROPERTY_IS_CONSTANT")
+DECLARE_STATIC_STRING(exception_property_not_found, U"PROPERTY_NOT_FOUND")
+DECLARE_STATIC_STRING(exception_access_denied, U"ACCESS_DENIED")
+DECLARE_STATIC_STRING(exception_foreign_object, U"FOREIGN_OBJECT")
+DECLARE_STATIC_STRING(string_atan, U"atan")
+DECLARE_STATIC_STRING(string_length, U"length")
+DECLARE_STATIC_STRING(string_pi, U"pi")
+DECLARE_STATIC_STRING(string_print, U"print")
+DECLARE_STATIC_STRING(string_sign, U"sign")
+DECLARE_STATIC_STRING(string_sqrt, U"sqrt")
+DECLARE_STATIC_STRING(string_trim, U"trim")
 
 /** @brief Virtual table defining the behavior of the dynamic string object. */
 static object_vtbl_t dynamic_string_vtbl = {.type = TYPE_STRING,
@@ -362,8 +362,8 @@ object_t *create_string_object(process_t *process, string_value_t value) {
     if (value.should_free) {
         obj->string.data = value.data;
     } else {
-        wchar_t *copy = ALLOC((value.length + 1) * sizeof(wchar_t));
-        wmemcpy(copy, value.data, value.length);
+        gchar_t *copy = ALLOC((value.length + 1) * sizeof(gchar_t));
+        MEMCPY(copy, value.data, value.length);
         copy[value.length] = 0;
         obj->string.data = copy;
     }

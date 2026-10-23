@@ -51,15 +51,15 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_value_t object = generate_goat_code_from_expression(expr->object);
     append_string_value(&builder, object);
     FREE_STRING(object);
-    append_char(&builder, L'[');
+    append_char(&builder, U'[');
     for (size_t i = 0; i < expr->count; i++) {
         if (i)
-            append_static_string(&builder, L", ");
+            append_static_string(&builder, U", ");
         string_value_t index = generate_goat_code_from_expression(expr->indices[i]);
         append_string_value(&builder, index);
         FREE_STRING(index);
     }
-    return append_char(&builder, L']');
+    return append_char(&builder, U']');
 }
 
 /** @brief Emits formatted source. */
@@ -123,7 +123,7 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 
 /** @brief Virtual table for index expressions. */
 static node_vtbl_t vtbl = {.type = NODE_INDEX_ACCESS,
-                           .type_name = L"index access",
+                           .type_name = U"index access",
                            .is_assignable_expression = true,
                            .analyze_reachability = analyze_reachability,
                            .is_pure = not_pure,

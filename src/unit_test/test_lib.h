@@ -56,3 +56,10 @@ bool test_utf8_file_io();
 bool test_string_geometric_growth();
 bool test_utf8_roundtrip();
 bool test_utf8_invalid_sequences();
+
+/** @brief Tests explicit scalar ranges and Unicode boundaries. */
+bool test_unicode_strings(void);
+/** @brief Tests pinned simple/full/contextual casing. */
+bool test_unicode_case(void);
+/** @brief Tests UTF-32LE bytes and direct checked loading. */
+bool test_unicode_binary(void);

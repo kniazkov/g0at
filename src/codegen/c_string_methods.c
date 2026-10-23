@@ -8,18 +8,17 @@
 #include "c_arithmetic.h"
 #include "c_lowering.h"
 #include "c_strings.h"
+#include "goat/unicode.h"
 #include "graph/member_access.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 
-#include <wchar.h>
-
 typedef enum { DIRECT, CHECKED, BUFFER, FORMAT } method_kind_t;
 
 typedef struct {
     const builtin_function_t *builtin;
-    const wchar_t *name;
+    const gchar_t *name;
     c_value_type_t result;
     method_kind_t kind;
     size_t min, max; /**< Counts include the receiver. */
@@ -28,21 +27,21 @@ typedef struct {
 } method_t;
 
 static const method_t methods[] = {
-    {&builtin_is_empty, L"is_empty", C_VALUE_BOOL, DIRECT, 1, 1, false, false},
-    {&builtin_is_blank, L"is_blank", C_VALUE_BOOL, CHECKED, 1, 1, false, false},
-    {&builtin_char_at, L"char_at", C_VALUE_CHAR, CHECKED, 2, 2, false, true},
-    {&builtin_substring, L"substring", C_VALUE_STRING, BUFFER, 2, 3, false, true},
-    {&builtin_contains, L"contains", C_VALUE_BOOL, DIRECT, 2, 2, false, false},
-    {&builtin_index_of, L"index_of", C_VALUE_INT64, DIRECT, 2, 2, true, false},
-    {&builtin_last_index_of, L"last_index_of", C_VALUE_INT64, DIRECT, 2, 2, true, false},
-    {&builtin_starts_with, L"starts_with", C_VALUE_BOOL, DIRECT, 2, 2, true, false},
-    {&builtin_ends_with, L"ends_with", C_VALUE_BOOL, DIRECT, 2, 2, true, false},
-    {&builtin_trim, L"trim", C_VALUE_STRING, BUFFER, 1, 1, false, false},
-    {&builtin_to_upper_case, L"to_upper_case", C_VALUE_STRING, BUFFER, 1, 1, false, false},
-    {&builtin_to_lower_case, L"to_lower_case", C_VALUE_STRING, BUFFER, 1, 1, false, false},
-    {&builtin_repeat, L"repeat", C_VALUE_STRING, BUFFER, 2, 2, false, true},
-    {&builtin_replace, L"replace", C_VALUE_STRING, BUFFER, 3, 3, true, false},
-    {&builtin_format, L"format", C_VALUE_STRING, FORMAT, 1, SIZE_MAX, false, false}};
+    {&builtin_is_empty, U"is_empty", C_VALUE_BOOL, DIRECT, 1, 1, false, false},
+    {&builtin_is_blank, U"is_blank", C_VALUE_BOOL, CHECKED, 1, 1, false, false},
+    {&builtin_char_at, U"char_at", C_VALUE_CHAR, CHECKED, 2, 2, false, true},
+    {&builtin_substring, U"substring", C_VALUE_STRING, BUFFER, 2, 3, false, true},
+    {&builtin_contains, U"contains", C_VALUE_BOOL, DIRECT, 2, 2, false, false},
+    {&builtin_index_of, U"index_of", C_VALUE_INT64, DIRECT, 2, 2, true, false},
+    {&builtin_last_index_of, U"last_index_of", C_VALUE_INT64, DIRECT, 2, 2, true, false},
+    {&builtin_starts_with, U"starts_with", C_VALUE_BOOL, DIRECT, 2, 2, true, false},
+    {&builtin_ends_with, U"ends_with", C_VALUE_BOOL, DIRECT, 2, 2, true, false},
+    {&builtin_trim, U"trim", C_VALUE_STRING, BUFFER, 1, 1, false, false},
+    {&builtin_to_upper_case, U"to_upper_case", C_VALUE_STRING, BUFFER, 1, 1, false, false},
+    {&builtin_to_lower_case, U"to_lower_case", C_VALUE_STRING, BUFFER, 1, 1, false, false},
+    {&builtin_repeat, U"repeat", C_VALUE_STRING, BUFFER, 2, 2, false, true},
+    {&builtin_replace, U"replace", C_VALUE_STRING, BUFFER, 3, 3, true, false},
+    {&builtin_format, U"format", C_VALUE_STRING, FORMAT, 1, SIZE_MAX, false, false}};
 
 static const method_t *find_method(const builtin_function_t *builtin) {
     for (size_t i = 0; i < sizeof(methods) / sizeof(*methods); i++)
@@ -58,7 +57,7 @@ bool is_native_string_method(const builtin_function_t *builtin) {
 const builtin_function_t *find_native_string_method(string_view_t name) {
     for (size_t i = 0; i < sizeof(methods) / sizeof(*methods); i++) {
         const builtin_function_t *builtin = methods[i].builtin;
-        if (wcslen(builtin->name) == name.length && !wmemcmp(name.data, builtin->name, name.length))
+        if (STRLEN(builtin->name) == name.length && !MEMCMP(name.data, builtin->name, name.length))
             return builtin;
     }
     return NULL;
@@ -146,7 +145,7 @@ c_generated_expression_t c_string_method_call(const node_t *site,
         size_t used = count < method->max ? count : method->max;
         for (size_t i = 1; i < count; i++) {
             if (i >= used)
-                add_source(prelude, 0, L"(void)%s;", values[i].data);
+                add_source(prelude, 0, U"(void)%s;", values[i].data);
             else if (method->kind == FORMAT || (method->characters && types[i] == C_VALUE_CHAR)) {
                 string_value_t converted =
                     c_string_from_value(prelude, context, types[i], values[i].data);
@@ -156,47 +155,47 @@ c_generated_expression_t c_string_method_call(const node_t *site,
         }
         string_builder_t call;
         init_string_builder(&call, 128);
-        string_value_t prefix = format_string(L"goat_native_string_%s(", method->name);
+        string_value_t prefix = format_string(U"goat_native_string_%s(", method->name);
         append_string_value(&call, prefix);
         FREE_STRING(prefix);
         if (method->kind != DIRECT && builtin != &builtin_char_at)
-            append_string(&call, L"g_context, ");
+            append_string(&call, U"g_context, ");
         append_string_value(&call, values[0]);
         if (method->kind == FORMAT) {
             if (count > 1) {
-                string_value_t array = format_string(L"g_t%zu", context->temporary_count++);
+                string_value_t array = format_string(U"g_t%zu", context->temporary_count++);
                 add_source(prelude,
                            0,
-                           L"goat_native_string_view_v2_t %s[%zu];",
+                           U"goat_native_string_view_v2_t %s[%zu];",
                            array.data,
                            count - 1);
                 for (size_t i = 1; i < count; i++)
-                    add_source(prelude, 0, L"%s[%zu] = %s;", array.data, i - 1, values[i].data);
-                string_value_t text = format_string(L", %s, %zu", array.data, count - 1);
+                    add_source(prelude, 0, U"%s[%zu] = %s;", array.data, i - 1, values[i].data);
+                string_value_t text = format_string(U", %s, %zu", array.data, count - 1);
                 append_string_value(&call, text);
                 FREE_STRING(text);
                 FREE_STRING(array);
             } else
-                append_string(&call, L", NULL, 0");
+                append_string(&call, U", NULL, 0");
         } else {
             for (size_t i = 1; i < used; i++) {
-                append_string(&call, L", ");
+                append_string(&call, U", ");
                 append_string_value(&call, values[i]);
             }
             if (builtin == &builtin_substring && used == 2) {
                 string_value_t end =
-                    format_string(L", goat_native_string_length(%s)", values[0].data);
+                    format_string(U", goat_native_string_length(%s)", values[0].data);
                 append_string_value(&call, end);
                 FREE_STRING(end);
             }
         }
-        string_value_t output = format_string(L"g_t%zu", context->temporary_count++);
+        string_value_t output = format_string(U"g_t%zu", context->temporary_count++);
         bool buffer = method->kind == BUFFER || method->kind == FORMAT;
         if (method->kind == DIRECT) {
-            string_value_t text = append_char(&call, L')');
+            string_value_t text = append_char(&call, U')');
             add_source(prelude,
                        0,
-                       L"%s %s = %s;",
+                       U"%s %s = %s;",
                        c_type_name(method->result),
                        output.data,
                        text.data);
@@ -204,20 +203,20 @@ c_generated_expression_t c_string_method_call(const node_t *site,
         } else {
             add_source(prelude,
                        0,
-                       L"%s %s = {0};",
-                       buffer ? L"goat_native_string_buffer_v2_t" : c_type_name(method->result),
+                       U"%s %s = {0};",
+                       buffer ? U"goat_native_string_buffer_v2_t" : c_type_name(method->result),
                        output.data);
-            append_string(&call, L", &");
+            append_string(&call, U", &");
             append_string_value(&call, output);
-            string_value_t text = append_char(&call, L')');
+            string_value_t text = append_char(&call, U')');
             add_source(prelude,
                        0,
-                       L"if (%s != GOAT_NATIVE_OK) longjmp(g_guard->recovery, 1);",
+                       U"if (%s != GOAT_NATIVE_OK) longjmp(g_guard->recovery, 1);",
                        text.data);
             FREE_STRING(text);
         }
-        result = buffer ? format_string(L"goat_native_string_view(%s)", output.data)
-                        : format_string(L"%s", output.data);
+        result = buffer ? format_string(U"goat_native_string_view(%s)", output.data)
+                        : format_string(U"%s", output.data);
         FREE_STRING(output);
     }
     for (size_t i = 0; i < count; i++)
@@ -243,7 +242,7 @@ c_generated_expression_t c_string_length(const node_t *node, c_generation_contex
     }
     source_builder_t *prelude = create_source_builder();
     string_value_t value = c_capture_operand(prelude, context, &receiver, C_VALUE_STRING);
-    string_value_t result = format_string(L"goat_native_string_length(%s)", value.data);
+    string_value_t result = format_string(U"goat_native_string_length(%s)", value.data);
     FREE_STRING(value);
     destroy_c_expression(&receiver);
     return (c_generated_expression_t){.success = true,

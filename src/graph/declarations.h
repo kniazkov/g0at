@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "goat/unicode.h"
 #include "model/access.h"
 #include "node.h"
 
@@ -113,5 +114,5 @@ size_t get_property_count_of_declarator(const node_t *node);
  * `index`: Zero-based property index.
  * @return Property key as a constant wide string, or NULL if unavailable.
  */
-const wchar_t *
+const gchar_t *
 get_property_of_declarator(const node_t *node, size_t index, node_display_value_t *out_value);

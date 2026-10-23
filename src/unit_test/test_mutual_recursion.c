@@ -9,20 +9,20 @@
 #include "analysis/function_return.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 bool test_mutual_recursion_limits() {
     arena_t *arena = create_arena(16);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const a=func(n){return b(n);};"
-                      L"const b=func(n){if(n==0)return 1;return c(n-1);};"
-                      L"const c=func(n){return a(n);};a(0);"));
+        STATIC_STRING(U"const a=func(n){return b(n);};"
+                      U"const b=func(n){if(n==0)return 1;return c(n-1);};"
+                      U"const c=func(n){return a(n);};a(0);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -53,7 +53,7 @@ bool test_mutual_recursion_limits() {
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);

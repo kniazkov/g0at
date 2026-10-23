@@ -10,8 +10,8 @@
 
 #include <math.h>
 
-static bool ascii_space(wchar_t ch) {
-    return ch == L' ' || (ch >= L'\t' && ch <= L'\r');
+static bool ascii_space(gchar_t ch) {
+    return ch == U' ' || (ch >= U'\t' && ch <= U'\r');
 }
 
 /** @brief Parses a whole signed decimal string, checking overflow before each digit. */
@@ -21,17 +21,17 @@ static int_value_t from_string(string_view_t text) {
         begin++;
     while (end > begin && ascii_space(text.data[end - 1]))
         end--;
-    bool negative = begin < end && text.data[begin] == L'-';
-    if (begin < end && (text.data[begin] == L'+' || negative))
+    bool negative = begin < end && text.data[begin] == U'-';
+    if (begin < end && (text.data[begin] == U'+' || negative))
         begin++;
     if (begin == end)
         return (int_value_t){false, 0};
     uint64_t limit = (uint64_t)INT64_MAX + negative, number = 0;
     for (size_t i = begin; i < end; i++) {
-        wchar_t ch = text.data[i];
-        if (ch < L'0' || ch > L'9')
+        gchar_t ch = text.data[i];
+        if (ch < U'0' || ch > U'9')
             return (int_value_t){false, 0};
-        unsigned digit = (unsigned)(ch - L'0');
+        unsigned digit = (unsigned)(ch - U'0');
         if (number > (limit - digit) / 10)
             return (int_value_t){false, 0};
         number = number * 10 + digit;
@@ -104,7 +104,7 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
     return value.has_value ? make_integer_constant_element(state->arena, value.value) : fallback;
 }
 
-const builtin_function_t builtin_int = {.name = L"int",
+const builtin_function_t builtin_int = {.name = U"int",
                                         .min_args = 1,
                                         .effects = BUILTIN_EFFECT_NONE,
                                         .execute = execute,

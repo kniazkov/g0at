@@ -32,15 +32,6 @@ comparison_order_t compare_reals(double left, double right) {
 
 static uint32_t next_scalar(string_view_t str, size_t *index) {
     uint32_t value = (uint32_t)str.data[(*index)++];
-#if WCHAR_MAX <= 0xffff
-    if (value >= 0xd800 && value <= 0xdbff && *index < str.length) {
-        uint32_t low = (uint32_t)str.data[*index];
-        if (low >= 0xdc00 && low <= 0xdfff) {
-            (*index)++;
-            value = 0x10000 + ((value - 0xd800) << 10) + low - 0xdc00;
-        }
-    }
-#endif
     return value;
 }
 

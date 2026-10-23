@@ -33,8 +33,8 @@ def main():
     def case(op, value, *args):
         nonlocal cases
         cases += 1
-        c_args = ["V(L" + literal(value) + ")"]
-        c_args += ["V(L" + literal(a) + ")" if isinstance(a, str) else str(a) for a in args]
+        c_args = ["V(U" + literal(value) + ")"]
+        c_args += ["V(U" + literal(a) + ")" if isinstance(a, str) else str(a) for a in args]
         names = {"char_at": "charAt", "index_of": "indexOf", "last_index_of": "lastIndexOf",
                  "starts_with": "startsWith", "ends_with": "endsWith", "is_empty": "isEmpty",
                  "is_blank": "isBlank", "to_upper_case": "toUpperCase", "to_lower_case": "toLowerCase"}
@@ -112,7 +112,7 @@ def main():
 #include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
-#define V(s) ((goat_native_string_view_v2_t){s, sizeof(s)/sizeof(wchar_t)-1})
+#define V(s) ((goat_native_string_view_v2_t){s, sizeof(s)/sizeof(gchar_t)-1})
 static void show(goat_native_string_buffer_v2_t value) {
     printf("%zu:", value.length);
     for(size_t i=0;i<value.length;++i) printf("%" PRIu32 ",", (uint32_t)value.data[i]);
@@ -138,7 +138,7 @@ GOAT_NATIVE_API void GOAT_NATIVE_CALL run_strings(const goat_native_context_v2_t
     if flags:
         runtime = work / "libgoat_native-instrumented.a"
         objects = []
-        for name in ("native/strings.c", "native/str.c", "lib/number_format.c"):
+        for name in ("native/strings.c", "native/str.c", "lib/number_format.c", "lib/unicode.c"):
             obj = work / (Path(name).stem + "-runtime.o")
             subprocess.run([*common, "-I" + str(ROOT / "src"), "-fPIC", "-c", str(ROOT / "src" / name),
                             "-o", str(obj)], check=True)
@@ -148,7 +148,7 @@ GOAT_NATIVE_API void GOAT_NATIVE_CALL run_strings(const goat_native_context_v2_t
                     str(module), str(runtime), "-o", str(library)], check=True)
     subprocess.run([*common, "-DMEMORY_DEBUG", "-I" + str(ROOT / "src"),
                     str(ROOT / "test/native/runtime_strings/host.c"),
-                    str(ROOT / "src/model/native_services.c"), str(ROOT / "src/lib/allocate.c"),
+                    str(ROOT / "src/model/native_services.c"), str(ROOT / "src/lib/unicode.c"), str(ROOT / "src/lib/allocate.c"),
                     "-o", str(host), *([] if os.name == "nt" else ["-ldl"])], check=True)
     native = subprocess.run([str(host), str(library)], check=True, capture_output=True, timeout=90)
     reference = subprocess.run([str(interpreter), "--optimize", "none", "--native", "off", str(program)],

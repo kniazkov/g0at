@@ -6,15 +6,13 @@
 
 | Тип | Поля | Назначение |
 | --- | --- | --- |
-| `goat_native_string_view_v2_t` | `const wchar_t *data`, `size_t length` | Неизменяемое представление чужой памяти, в том числе подстроки |
-| `goat_native_string_buffer_v2_t` | `wchar_t *data`, `size_t length`, `size_t capacity` | Изменяемый буфер, выделенный через контекст нативного вызова |
+| `goat_native_string_view_v2_t` | `const gchar_t *data`, `size_t length` | Неизменяемое представление чужой памяти, в том числе подстроки |
+| `goat_native_string_buffer_v2_t` | `gchar_t *data`, `size_t length`, `size_t capacity` | Изменяемый буфер, выделенный через контекст нативного вызова |
 
-Длина и вместимость измеряются в единицах `wchar_t`, как в текущей VM,
-а не в байтах или видимых символах. На Windows символ вне BMP занимает две
-UTF-16 единицы; на обычном Linux — одну 32-битную единицу. Представление
-`wchar_t` у интерпретатора и модуля должно совпадать. Это внутрипроцессные
-структуры, а не переносимый формат сериализации. Они сохраняют единицы VM
-без нормализации или проверки Unicode.
+Длина и вместимость измеряются в Unicode-скалярах `gchar_t` (C11 `char32_t`,
+ровно четыре байта), а не в байтах или видимых графемах. Символ вне BMP занимает
+один элемент на Windows и Linux. Нормализация не выполняется. Это внутрипроцессные
+структуры; остальные части переносимого ABI реализуются отдельно.
 
 Представление не требует завершающего нуля и никогда не освобождает память.
 `{NULL, 0}` — допустимая пустая строка. При ненулевой длине указатель обязан
@@ -24,7 +22,7 @@ UTF-16 единицы; на обычном Linux — одну 32-битную е
 Буфер `{NULL, 0, 0}` не требует выделения памяти. Непустое выделение содержит
 `capacity + 1` единиц, `length <= capacity`, `data[length] == 0`. Перед
 выделением необходимо проверить переполнение сложения и умножения на
-`sizeof(wchar_t)`. Вместимость не включает завершающий ноль. Даже пустой
+`sizeof(gchar_t)`. Вместимость не включает завершающий ноль. Даже пустой
 буфер может сохранять выделенную память.
 
 Память выделяется только через `goat_native_allocate` и освобождается через
@@ -74,13 +72,10 @@ UTF-16 единицы; на обычном Linux — одну 32-битную е
 поиска, замены и конкатенации также передаются как строковые представления.
 Преобразование произвольных объектов языка — обязанность вызывающего адаптера.
 
-Для `trim`, `is_blank` и регистра используются три дополнительных сервиса хоста
-в конце таблицы: `string_is_space`, `string_to_upper`, `string_to_lower`.
-Они работают в CRT интерпретатора с его инициализированной `LC_CTYPE`, поэтому
-статически слинкованная Windows DLL не получает другую локаль. Операции не
-меняют локаль. Размер префикса проверяется перед доступом; старый хост только
-с памятью возвращает `ABI_MISMATCH` для этих операций. Числовые модули сохраняют
-совместимость. Хост обязан инициализировать локаль до конкурентных вызовов.
+`trim` и `is_blank` используют Unicode White_Space, отдельные символы — простые
+отображения регистра, строки — полные отображения с расширениями и контекстом.
+Все таблицы зафиксированы на Unicode 17.0.0; локаль и CRT не влияют на результат.
+Проверка префикса таблицы сервисов сохраняется. Старые native-модули требуют пересборки.
 
 ## Сквозной нативный вызов
 
@@ -117,7 +112,7 @@ UTF-16 единицы; на обычном Linux — одну 32-битную е
 Явные вызовы `str` (в том числе через неизменяемый псевдоним) используют те же
 реализации. Преобразование строки возвращает её представление без копирования.
 Форматирование вещественных чисел использует общий с VM исходный код.
-Строковые литералы сохраняются как статические массивы кодовых единиц `wchar_t`.
+Строковые литералы сохраняются как статические массивы кодовых единиц `gchar_t`.
 Типы, ещё не представимые в нативном коде (например объекты), остаются в VM.
 
 Пример `example/native_quadratic.goat` принимает три вещественных коэффициента
@@ -152,10 +147,9 @@ UTF-16 единицы; на обычном Linux — одну 32-битную е
 
 `goat/native_abi.h` declares an immutable borrowed `goat_native_string_view_v2_t`
 (data, length) and a mutable context-owned `goat_native_string_buffer_v2_t`
-(data, length, capacity). Length and capacity count host `wchar_t` code units,
-matching the VM; they do not count bytes or Unicode characters. Host and module
-must agree on the wchar_t representation. These are in-process declarations,
-not a portable serialization format; no Unicode validation or normalization is implied.
+(data, length, capacity). Length and capacity count Unicode scalars stored as
+four-byte C11 char32_t on every supported OS. No normalization occurs. These are
+in-process declarations; the remaining portable ABI layout is a separate step.
 
 A view needs no terminator, permits embedded zeros, and never releases storage.
 NULL data is permitted only for zero length. A buffer starts as `{NULL, 0, 0}`;
@@ -186,15 +180,14 @@ Other predicates/searches return values directly, with -1 for a missing substrin
 and preserves missing/overflowing placeholders. Character arguments to searches and
 replacement likewise use converted views; VM object conversion belongs to the caller.
 
-Locale-dependent operations call optional host services appended after the memory
-prefix. This preserves the host CRT/LC_CTYPE even with separate Windows CRTs. The host
-initializes its locale before concurrent calls; native operations never change it.
-A host with only memory services remains valid for numeric modules and returns
-ABI_MISMATCH for the new locale-dependent operations. Existing value layout is unchanged.
+Classification and casing use pinned Unicode 17.0.0 tables, independently of
+CRT and locale. Full string mappings may expand and apply context rules; scalar
+callbacks use simple one-to-one mappings. Service-prefix checks remain in place.
+Previously compiled native modules must be rebuilt.
 
 `GOAT_NATIVE_STRING` now transports a pointer to a borrowed string view without
 changing the numeric ABI v2 value size/alignment. Older hosts reject the new tag;
-numeric modules remain compatible. The generated pure identity function takes and
+old modules must be rebuilt. The generated pure identity function takes and
 returns a view by value; its adapter allocates a result descriptor in the context.
 The host copies the result into a Goat string before context cleanup and argument
 release, making aliased results safe. Bounds/descriptor checks precede native entry.
@@ -209,7 +202,7 @@ allocates through the host context. Tests also cover chained concatenation and
 context-owned result lifetime. A non-string right operand (integer, real, boolean or
 character) is converted by the native str implementation, also used for explicit
 str calls and immutable aliases. Real formatting shares its source with the VM.
-String literals use static wchar_t arrays. Objects and other values without a native
+String literals use static gchar_t arrays. Objects and other values without a native
 representation remain in the VM.
 
 All string methods listed above now lower to the linked runtime, both as direct
@@ -232,3 +225,15 @@ all discriminant cases, chained conversions, evaluation order and saved executio
 The differential test builds an independent shared module, invokes it through host
 callbacks, compares all methods with unoptimized VM execution, and checks empty/embedded
 zero strings, Unicode, bounds, overflow, missing services and memory cleanup.
+
+
+## Portable strings (#250)
+
+`gchar_t` is C11 `char32_t`, exactly four bytes. Native views count Unicode
+scalars; supplementary characters occupy one element, and embedded zeros are
+content. Full case conversion uses the bundled Unicode 17.0.0 tables, including
+expansions and Final_Sigma, shared with compiler folding and the VM. Scalar case
+callbacks remain simple one-to-one mappings. No casing/classification uses the
+host locale. Public headers now include `unicode.h`; saved native modules must
+be rebuilt (the transitional native API's numeric ABI version restarts at 1).
+The historical `_v2` C symbol names remain until the dedicated ABI work.

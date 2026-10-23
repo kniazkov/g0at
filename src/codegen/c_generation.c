@@ -52,13 +52,13 @@ void destroy_c_expression(c_generated_expression_t *expression) {
 
 /** @brief Backend-owned names avoid C keywords and arbitrary source fragments. */
 bool c_function_name_is_valid(string_view_t name) {
-    size_t prefix = name.data && name.length > 2 && !wmemcmp(name.data, L"g_", 2) ? 2 : 5;
-    if (!name.data || name.length <= prefix || (prefix == 5 && wmemcmp(name.data, L"goat_", 5)))
+    size_t prefix = name.data && name.length > 2 && !MEMCMP(name.data, U"g_", 2) ? 2 : 5;
+    if (!name.data || name.length <= prefix || (prefix == 5 && MEMCMP(name.data, U"goat_", 5)))
         return false;
     for (size_t i = prefix; i < name.length; i++) {
-        wchar_t c = name.data[i];
-        if (c != L'_' && !(c >= L'a' && c <= L'z') && !(c >= L'A' && c <= L'Z')
-            && !(c >= L'0' && c <= L'9'))
+        gchar_t c = name.data[i];
+        if (c != U'_' && !(c >= U'a' && c <= U'z') && !(c >= U'A' && c <= U'Z')
+            && !(c >= U'0' && c <= U'9'))
             return false;
     }
     return true;
@@ -149,7 +149,7 @@ static c_generation_result_t generate_function(const function_summary_t *summary
             result.source = build_source(builder);
         } else {
             source_builder_t *complete = create_source_builder();
-            add_static_source(complete, 0, L"#include <stdint.h>");
+            add_static_source(complete, 0, U"#include <stdint.h>");
             c_emit_headers(complete, context.helper_flags);
             add_formatted_source(complete, 0, build_source(builder));
             result.source = build_source(complete);

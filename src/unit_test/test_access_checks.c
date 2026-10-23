@@ -1,26 +1,26 @@
+#include "lib/string_ext.h"
 /** @file test_access_checks.c
  * @copyright 2026 Ivan Kniazkov
  * @brief Exercises two artificial modules through real bytecode and shared model operations.
  */
-#include "test_access_checks.h"
-
 #include "analysis_test_support.h"
 #include "codegen/linker.h"
 #include "lib/allocate.h"
 #include "model/context.h"
 #include "model/thread.h"
+#include "test_access_checks.h"
 #include "test_macro.h"
 #include "vm/vm.h"
 
 #include <stdio.h>
 
-static object_t *key(process_t *proc, const wchar_t *name) {
-    return create_string_object(proc, (string_value_t){name, wcslen(name), false});
+static object_t *key(process_t *proc, const gchar_t *name) {
+    return create_string_object(proc, (string_value_t){name, STRLEN(name), false});
 }
 
 static field_cell_t *field(process_t *proc,
                            object_t *obj,
-                           const wchar_t *name,
+                           const gchar_t *name,
                            object_t *value,
                            access_modifier_t modifier,
                            bool constant) {
@@ -52,11 +52,11 @@ bool test_access_policy(void) {
     add_protected_object_access(&child, b);
     const function_access_t *outside = &proc->main_thread->context->access;
     object_t *one = get_static_integer_object(1), *two = get_static_integer_object(2);
-    field_cell_t *secret = field(proc, a, L"secret", one, ACCESS_PRIVATE, false);
-    field_cell_t *prot = field(proc, a, L"prot", one, ACCESS_PROTECTED, false);
-    field_cell_t *internal = field(proc, a, L"internal", one, ACCESS_MODULE, false);
-    field_cell_t *pub = field(proc, a, L"pub", one, ACCESS_PUBLIC, false);
-    field_cell_t *fixed = field(proc, a, L"fixed", one, ACCESS_PUBLIC, true);
+    field_cell_t *secret = field(proc, a, U"secret", one, ACCESS_PRIVATE, false);
+    field_cell_t *prot = field(proc, a, U"prot", one, ACCESS_PROTECTED, false);
+    field_cell_t *internal = field(proc, a, U"internal", one, ACCESS_MODULE, false);
+    field_cell_t *pub = field(proc, a, U"pub", one, ACCESS_PUBLIC, false);
+    field_cell_t *fixed = field(proc, a, U"fixed", one, ACCESS_PUBLIC, true);
     ASSERT(can_access_field(&owner, secret) && !can_access_field(&child, secret));
     ASSERT(can_access_field(&child, prot) && !can_access_field(outside, prot));
     ASSERT(can_access_field(&owner, internal) && !can_access_field(&child, internal));
@@ -64,21 +64,21 @@ bool test_access_policy(void) {
     ASSERT(write_accessible_property(outside, a, pub->key, two) == MSTAT_OK);
     ASSERT(write_accessible_property(outside, a, fixed->key, two) == MSTAT_PROPERTY_IS_CONSTANT);
     ASSERT(write_accessible_property(outside, a, secret->key, two) == MSTAT_ACCESS_DENIED);
-    object_t *new_key = key(proc, L"new");
+    object_t *new_key = key(proc, U"new");
     ASSERT(lookup_accessible_property(outside, a, new_key, true).status
            == MSTAT_PROPERTY_NOT_FOUND);
     ASSERT(write_accessible_property(outside, a, new_key, one) == MSTAT_FOREIGN_OBJECT);
     ASSERT(create_accessible_property(outside, a, new_key, one, false) == MSTAT_FOREIGN_OBJECT);
     ASSERT(create_accessible_property(&owner, a, new_key, one, false) == MSTAT_OK);
-    field_cell_t *other = field(proc, unrelated, L"secret", two, ACCESS_PRIVATE, false);
+    field_cell_t *other = field(proc, unrelated, U"secret", two, ACCESS_PRIVATE, false);
     ASSERT(!can_access_field(&owner, other));
     /* An inaccessible winner must not fall back to a public prototype field. */
-    field_cell_t *blocked = field(proc, b, L"pub", one, ACCESS_PRIVATE, false);
+    field_cell_t *blocked = field(proc, b, U"pub", one, ACCESS_PRIVATE, false);
     ASSERT(lookup_accessible_property(outside, b, blocked->key, true).status
            == MSTAT_ACCESS_DENIED);
     ASSERT(write_accessible_property(outside, b, blocked->key, two) == MSTAT_ACCESS_DENIED);
     /* A method's own private slot is distinct from the descendant's ordinary winner. */
-    field(proc, b, L"secret", two, ACCESS_PUBLIC, false);
+    field(proc, b, U"secret", two, ACCESS_PUBLIC, false);
     ASSERT(lookup_accessible_property(&owner, b, secret->key, true).cell == secret);
     ASSERT(lookup_accessible_property(&owner, b, secret->key, false).value == two);
     ASSERT(write_accessible_property(&owner, b, secret->key, two) == MSTAT_OK);
@@ -127,17 +127,17 @@ static void emit_functions(node_t *node, code_builder_t *builder, data_builder_t
         emit_functions(get_node_child(node, i), builder, data);
 }
 
-static bool run_case(const wchar_t *body, const wchar_t *main) {
-    wchar_t source[8192];
-    swprintf(source,
+static bool run_case(const gchar_t *body, const gchar_t *main) {
+    gchar_t source[8192];
+    SNPRINTF(source,
              sizeof(source) / sizeof(*source),
-             L"const unused = func() { %ls }; var result = false; %ls",
+             U"const unused = func() { %s }; var result = false; %s",
              body,
              main);
     arena_t *arena = create_arena(8);
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *node =
-        parse_analysis_test_program(&memory, (string_value_t){source, wcslen(source), false});
+        parse_analysis_test_program(&memory, (string_value_t){source, STRLEN(source), false});
     ASSERT(node);
     code_builder_t *builder = create_code_builder();
     data_builder_t *data = create_data_builder();
@@ -158,31 +158,31 @@ static bool run_case(const wchar_t *body, const wchar_t *main) {
     object_t *root = get_root_context()->data;
     object_t *a = create_user_defined_object_in_module(proc, (object_array_t){&root, 1}, module);
     object_t *one = get_static_integer_object(1), *ten = get_static_integer_object(10);
-    field(proc, a, L"secret", ten, ACCESS_PRIVATE, false);
-    field(proc, a, L"prot", ten, ACCESS_PROTECTED, false);
-    field(proc, a, L"internal", ten, ACCESS_MODULE, false);
-    field(proc, a, L"writable", one, ACCESS_PUBLIC, false);
-    field(proc, a, L"fixed", one, ACCESS_PUBLIC, true);
-    field(proc, a, L"callback", get_null_object(), ACCESS_PUBLIC, false);
-    field(proc, a, L"other", get_null_object(), ACCESS_PUBLIC, false);
-    field(proc, a, L"self", a, ACCESS_PUBLIC, true);
+    field(proc, a, U"secret", ten, ACCESS_PRIVATE, false);
+    field(proc, a, U"prot", ten, ACCESS_PROTECTED, false);
+    field(proc, a, U"internal", ten, ACCESS_MODULE, false);
+    field(proc, a, U"writable", one, ACCESS_PUBLIC, false);
+    field(proc, a, U"fixed", one, ACCESS_PUBLIC, true);
+    field(proc, a, U"callback", get_null_object(), ACCESS_PUBLIC, false);
+    field(proc, a, U"other", get_null_object(), ACCESS_PUBLIC, false);
+    field(proc, a, U"self", a, ACCESS_PUBLIC, true);
     object_t *array = create_array_object(proc, (object_array_t){&one, 1});
-    field(proc, a, L"items", array, ACCESS_PRIVATE, false);
+    field(proc, a, U"items", array, ACCESS_PRIVATE, false);
     DECREF(array);
     object_t *method = create_function_object(proc, NULL, 0, entry, a, NULL, true);
-    field(proc, a, L"read", method, ACCESS_PUBLIC, true);
-    field(proc, a, L"hidden", method, ACCESS_PRIVATE, true);
+    field(proc, a, U"read", method, ACCESS_PUBLIC, true);
+    field(proc, a, U"hidden", method, ACCESS_PRIVATE, true);
     DECREF(method);
-    field(proc, thread->context->data, L"A", a, ACCESS_MODULE, true);
+    field(proc, thread->context->data, U"A", a, ACCESS_MODULE, true);
     DECREF(a);
     release_module_identity(module);
     int status = run(proc, code);
-    object_t *result_key = key(proc, L"result");
+    object_t *result_key = key(proc, U"result");
     object_t *result = get_object_property(thread->context->data, result_key);
     bool ok = status == 0 && result && get_object_boolean_value(result)
               && thread->context->module == proc->module;
     if (!ok)
-        fprintf(stderr, "Access VM case failed (%d): %ls\n", status, main);
+        fprintf(stderr, "Access VM case failed (%d)\n", status);
     DECREF(result_key);
     destroy_process(proc);
     free_bytecode(code);
@@ -194,97 +194,97 @@ static bool run_case(const wchar_t *body, const wchar_t *main) {
 
 bool test_access_vm(void) {
     const struct {
-        const wchar_t *body;
-        const wchar_t *main;
+        const gchar_t *body;
+        const gchar_t *main;
     } cases[] = {
-        {L"return secret;", L"result = A.read() == 10;"},
-        {L"return self[\"secret\"];", L"const detached = A.read; result = detached() == 10;"},
-        {L"return secret;", L"try A.secret; catch(e) result = e == Exceptions.ACCESS_DENIED;"},
-        {L"return secret;",
-         L"var k=\"internal\"; try A[k]; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return secret;", L"try A.secret=2; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return secret;", L"try A[\"secret\"]+=2; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return ++secret;", L"result=A.read()==11;"},
-        {L"return secret;", L"try A.extra=2; catch(e) result=e==Exceptions.FOREIGN_OBJECT;"},
-        {L"return secret;", L"try A[true]=2; catch(e) result=e==Exceptions.FOREIGN_OBJECT;"},
-        {L"return secret;", L"try A.fixed=2; catch(e) result=e==Exceptions.PROPERTY_IS_CONSTANT;"},
-        {L"return secret;", L"A.writable+=2; result=A.writable==3;"},
-        {L"return secret;",
-         L"var calls=0; const obj=func(){calls+=1;return A;}; const key=func(){calls+=1;return "
-         L"\"writable\";}; obj()[key()]+=4; result=calls==2 && A.writable==5;"},
-        {L"return secret;",
-         L"var calls=0; const obj=func(){calls+=1;return A;}; const key=func(){calls+=1;return "
-         L"\"secret\";}; try obj()[key()]+=1; catch(e) result=calls==2 && "
-         L"e==Exceptions.ACCESS_DENIED;"},
-        {L"return func(){return secret;};", L"const escaped=A.read(); result=escaped()==10;"},
-        {L"return {const get=func(){return secret;};};",
-         L"var escaped=A.read(); try escaped.get; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return callback();",
-         L"A.callback=func(){return A.secret;}; try A.read(); catch(e) "
-         L"result=e==Exceptions.ACCESS_DENIED;"},
-        {L"throw secret;",
-         L"try A.read(); catch(e) {if(e==10) {try A.secret; catch(f) "
-         L"result=f==Exceptions.ACCESS_DENIED;}}"},
-        {L"return secret;",
-         L"A.read(); try A.secret; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return items;",
-         L"var arr=A.read(); arr[0]=4; arr.push(5); result=A.read()[0]==4 && A.read()[1]==5;"},
-        {L"return {};",
-         L"var made=A.read(); try made.newField=1; catch(e) result=e==Exceptions.FOREIGN_OBJECT;"},
-        {L"return secret;",
-         L"var copy=A.clone(); copy.extra=3; try copy.internal; catch(e) "
-         L"result=e==Exceptions.ACCESS_DENIED && copy.extra==3;"},
-        {L"return other.secret;",
-         L"A.other=A.clone(); try A.read(); catch(e) result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return secret;",
-         L"var child=A -> {const get=func(){return A.prot;};}; result=child.get()==10;"},
-        {L"return secret;",
-         L"var child=A -> {const get=func(){return A.secret;};}; try child.get(); catch(e) "
-         L"result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return secret;",
-         L"var child=A -> {var secret=99;}; result=child.read()==10 && child.secret==99;"},
-        {L"return secret;",
-         L"var child=A -> {}; try child.internal; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return secret;",
-         L"var child=A -> {var own=1;}; child.extra=2; result=child.own+child.extra==3;"},
-        {L"return secret;",
-         L"var child=A -> {}; child.get=func(){return A.prot;}; try child.get(); catch(e) "
-         L"result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return secret;", L"var copy={var read=A.read;}; result=copy.read()==10;"},
-        {L"return internal;", L"result=A.read()==10;"},
-        {L"return internal;",
-         L"var copy=A.flat(); copy.extra=3; try copy.internal; catch(e) "
-         L"result=e==Exceptions.ACCESS_DENIED && copy.extra==3 && copy.read()==10;"},
-        {L"return secret;",
-         L"var child=A -> {const get=func(){return ++secret;};}; try child.get(); catch(e) "
-         L"result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return secret;", L"var child=A -> {var fixed=9;}; result=child.fixed==9;"},
-        {L"return secret;",
-         L"var child=A -> {const get=func(){return {const nested=func(){return A.prot;};};};}; "
-         L"result=child.get().nested()==10;"},
-        {L"return secret;",
-         L"var child=A -> {const get=func(){return func(){return A.prot;};};}; const "
-         L"escaped=child.get(); result=escaped()==10;"},
-        {L"return callback();",
-         L"A.callback=func(){throw 2;}; try A.read(); catch(e) {try A.internal; catch(f) "
-         L"result=f==Exceptions.ACCESS_DENIED;} finally {try A.secret; catch(e) result=result && "
-         L"e==Exceptions.ACCESS_DENIED;}"},
-        {L"secret+=1; return secret;",
-         L"var child=A -> {var secret=99;}; result=child.read()==11 && child.secret==99;"},
-        {L"return secret;",
-         L"var child=A -> {}; child.get=func(){try return A.prot; catch(e) return e;}; "
-         L"result=child.get()==Exceptions.ACCESS_DENIED;"},
-        {L"return secret;",
-         L"var child=A -> {}; child.get=func(){return func(){return A.prot;};}; const "
-         L"escaped=child.get(); try escaped(); catch(e) result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return secret;",
-         L"var child=A -> {}; child.get=func(){return {const get=func(){return A.prot;};};}; const "
-         L"escaped=child.get(); try escaped.get(); catch(e) result=e==Exceptions.ACCESS_DENIED;"},
-        {L"var nested={const get=func(){return secret;};}; return nested.get;",
-         L"const escaped=A.read(); result=escaped()==10;"},
-        {L"return secret;", L"try A.hidden(); catch(e) result=e==Exceptions.ACCESS_DENIED;"},
-        {L"return secret;",
-         L"var k=\"hidden\"; try A[k](); catch(e) result=e==Exceptions.ACCESS_DENIED;"}};
+        {U"return secret;", U"result = A.read() == 10;"},
+        {U"return self[\"secret\"];", U"const detached = A.read; result = detached() == 10;"},
+        {U"return secret;", U"try A.secret; catch(e) result = e == Exceptions.ACCESS_DENIED;"},
+        {U"return secret;",
+         U"var k=\"internal\"; try A[k]; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return secret;", U"try A.secret=2; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return secret;", U"try A[\"secret\"]+=2; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return ++secret;", U"result=A.read()==11;"},
+        {U"return secret;", U"try A.extra=2; catch(e) result=e==Exceptions.FOREIGN_OBJECT;"},
+        {U"return secret;", U"try A[true]=2; catch(e) result=e==Exceptions.FOREIGN_OBJECT;"},
+        {U"return secret;", U"try A.fixed=2; catch(e) result=e==Exceptions.PROPERTY_IS_CONSTANT;"},
+        {U"return secret;", U"A.writable+=2; result=A.writable==3;"},
+        {U"return secret;",
+         U"var calls=0; const obj=func(){calls+=1;return A;}; const key=func(){calls+=1;return "
+         U"\"writable\";}; obj()[key()]+=4; result=calls==2 && A.writable==5;"},
+        {U"return secret;",
+         U"var calls=0; const obj=func(){calls+=1;return A;}; const key=func(){calls+=1;return "
+         U"\"secret\";}; try obj()[key()]+=1; catch(e) result=calls==2 && "
+         U"e==Exceptions.ACCESS_DENIED;"},
+        {U"return func(){return secret;};", U"const escaped=A.read(); result=escaped()==10;"},
+        {U"return {const get=func(){return secret;};};",
+         U"var escaped=A.read(); try escaped.get; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return callback();",
+         U"A.callback=func(){return A.secret;}; try A.read(); catch(e) "
+         U"result=e==Exceptions.ACCESS_DENIED;"},
+        {U"throw secret;",
+         U"try A.read(); catch(e) {if(e==10) {try A.secret; catch(f) "
+         U"result=f==Exceptions.ACCESS_DENIED;}}"},
+        {U"return secret;",
+         U"A.read(); try A.secret; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return items;",
+         U"var arr=A.read(); arr[0]=4; arr.push(5); result=A.read()[0]==4 && A.read()[1]==5;"},
+        {U"return {};",
+         U"var made=A.read(); try made.newField=1; catch(e) result=e==Exceptions.FOREIGN_OBJECT;"},
+        {U"return secret;",
+         U"var copy=A.clone(); copy.extra=3; try copy.internal; catch(e) "
+         U"result=e==Exceptions.ACCESS_DENIED && copy.extra==3;"},
+        {U"return other.secret;",
+         U"A.other=A.clone(); try A.read(); catch(e) result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return secret;",
+         U"var child=A -> {const get=func(){return A.prot;};}; result=child.get()==10;"},
+        {U"return secret;",
+         U"var child=A -> {const get=func(){return A.secret;};}; try child.get(); catch(e) "
+         U"result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return secret;",
+         U"var child=A -> {var secret=99;}; result=child.read()==10 && child.secret==99;"},
+        {U"return secret;",
+         U"var child=A -> {}; try child.internal; catch(e) result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return secret;",
+         U"var child=A -> {var own=1;}; child.extra=2; result=child.own+child.extra==3;"},
+        {U"return secret;",
+         U"var child=A -> {}; child.get=func(){return A.prot;}; try child.get(); catch(e) "
+         U"result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return secret;", U"var copy={var read=A.read;}; result=copy.read()==10;"},
+        {U"return internal;", U"result=A.read()==10;"},
+        {U"return internal;",
+         U"var copy=A.flat(); copy.extra=3; try copy.internal; catch(e) "
+         U"result=e==Exceptions.ACCESS_DENIED && copy.extra==3 && copy.read()==10;"},
+        {U"return secret;",
+         U"var child=A -> {const get=func(){return ++secret;};}; try child.get(); catch(e) "
+         U"result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return secret;", U"var child=A -> {var fixed=9;}; result=child.fixed==9;"},
+        {U"return secret;",
+         U"var child=A -> {const get=func(){return {const nested=func(){return A.prot;};};};}; "
+         U"result=child.get().nested()==10;"},
+        {U"return secret;",
+         U"var child=A -> {const get=func(){return func(){return A.prot;};};}; const "
+         U"escaped=child.get(); result=escaped()==10;"},
+        {U"return callback();",
+         U"A.callback=func(){throw 2;}; try A.read(); catch(e) {try A.internal; catch(f) "
+         U"result=f==Exceptions.ACCESS_DENIED;} finally {try A.secret; catch(e) result=result && "
+         U"e==Exceptions.ACCESS_DENIED;}"},
+        {U"secret+=1; return secret;",
+         U"var child=A -> {var secret=99;}; result=child.read()==11 && child.secret==99;"},
+        {U"return secret;",
+         U"var child=A -> {}; child.get=func(){try return A.prot; catch(e) return e;}; "
+         U"result=child.get()==Exceptions.ACCESS_DENIED;"},
+        {U"return secret;",
+         U"var child=A -> {}; child.get=func(){return func(){return A.prot;};}; const "
+         U"escaped=child.get(); try escaped(); catch(e) result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return secret;",
+         U"var child=A -> {}; child.get=func(){return {const get=func(){return A.prot;};};}; const "
+         U"escaped=child.get(); try escaped.get(); catch(e) result=e==Exceptions.ACCESS_DENIED;"},
+        {U"var nested={const get=func(){return secret;};}; return nested.get;",
+         U"const escaped=A.read(); result=escaped()==10;"},
+        {U"return secret;", U"try A.hidden(); catch(e) result=e==Exceptions.ACCESS_DENIED;"},
+        {U"return secret;",
+         U"var k=\"hidden\"; try A[k](); catch(e) result=e==Exceptions.ACCESS_DENIED;"}};
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
         if (!run_case(cases[i].body, cases[i].main)) {

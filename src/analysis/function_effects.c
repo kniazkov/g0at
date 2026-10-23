@@ -4,18 +4,17 @@
  */
 #include "function_effects.h"
 
+#include "goat/unicode.h"
 #include "graph/common_methods.h"
 #include "graph/expression.h"
 #include "graph/variable.h"
-
-#include <wchar.h>
 
 const function_capture_t *find_function_capture(const function_summary_t *summary,
                                                 const declarator_t *declarator,
                                                 string_view_t name) {
     for (const function_capture_t *capture = summary->captures; capture; capture = capture->next) {
         if (capture->declarator == declarator && capture->name.length == name.length
-            && !wmemcmp(capture->name.data, name.data, name.length))
+            && !MEMCMP(capture->name.data, name.data, name.length))
             return capture;
     }
     return NULL;

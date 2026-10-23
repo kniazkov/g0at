@@ -6,11 +6,10 @@
 
 #include "builtins/registry.h"
 #include "codegen/c_native.h"
+#include "goat/unicode.h"
 #include "graph/compound_assignment.h"
 #include "graph/replacement.h"
 #include "graph/variable.h"
-
-#include <wchar.h>
 
 static bool writes_builtin(const node_t *node, const builtin_function_t *builtin) {
     node = replacement_original(node);

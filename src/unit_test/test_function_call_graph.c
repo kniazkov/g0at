@@ -8,12 +8,12 @@
 #include "analysis/function_call_graph.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
+#include "goat/unicode.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
 #include "test_macro.h"
 
 #include <stdio.h>
-#include <wchar.h>
 
 static const analysis_event_t *
 at(const analysis_collector_t *collector, analysis_event_kind_t kind, size_t row) {
@@ -40,10 +40,10 @@ bool test_call_graph_discovery() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const leaf=func(n){return n;};\n"
-                      L"const caller=func(n){if(n==1)return 0;return leaf(n-1);};\n"
-                      L"var result=caller(1); caller(1.5);\n"
-                      L"const unused=func(n){return leaf(n);};"));
+        STATIC_STRING(U"const leaf=func(n){return n;};\n"
+                      U"const caller=func(n){if(n==1)return 0;return leaf(n-1);};\n"
+                      U"var result=caller(1); caller(1.5);\n"
+                      U"const unused=func(n){return leaf(n);};"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -70,7 +70,7 @@ bool test_call_graph_discovery() {
         ((const integer_constant_element_t *)at(collector, ANALYSIS_VALUE_WRITE, 3)->value)->value
         == 0);
     string_value_t text = analysis_collector_to_text(collector);
-    ASSERT(wcsstr(text.data, L": call-edge f") && wcsstr(text.data, L": call-group f"));
+    ASSERT(STRSTR(text.data, U": call-edge f") && STRSTR(text.data, U": call-group f"));
     FREE_STRING(text);
     destroy_options(options);
     destroy_arena(arena);
@@ -78,10 +78,10 @@ bool test_call_graph_discovery() {
 }
 
 static string_value_t recursive_source() {
-    return STATIC_STRING(L"const even=func(n){if(n<1)return true;return odd(n-1);};\n"
-                         L"const odd=func(n){if(n<1)return false;return even(n-1);};\n"
-                         L"even(2);\n"
-                         L"const self=func(n){if(n)return 1;return self(n);}; self(true);");
+    return STATIC_STRING(U"const even=func(n){if(n<1)return true;return odd(n-1);};\n"
+                         U"const odd=func(n){if(n<1)return false;return even(n-1);};\n"
+                         U"even(2);\n"
+                         U"const self=func(n){if(n)return 1;return self(n);}; self(true);");
 }
 
 bool test_call_graph_recursion() {
@@ -111,7 +111,7 @@ bool test_call_graph_recursion() {
     ASSERT(mutual->callee_summary->parameter_types[0]->type == LATTICE_INTEGER);
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     FREE_STRING(before);
     FREE_STRING(after);
     destroy_options(options);
@@ -124,18 +124,18 @@ bool test_call_graph_bindings() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(L"const target=func(n){return n;};\n"
-                      L"const alias=(target);\n"
-                      L"const use=func(n){const print=alias;return print(n);}; use(1);\n"
-                      L"var changing=target;\n"
-                      L"const unknown=func(n){return changing(n);}; unknown(1);\n"
-                      L"const shadow=func(target){return target(1);}; shadow(alias);\n"
-                      L"const local=func(n){var t=func(x){return x;};t=func(x){return x+1;};return "
-                      L"t(n);}; local(1);\n"
-                      L"const dead=func(n){return n;target(n);}; dead(1);\n"
-                      L"const native=func(){print(1);}; native();\n"
-                      L"const guarded=func(n){if(later)return 0;return target(n);}; guarded(1);\n"
-                      L"const later=func(){return 1;};"));
+        STATIC_STRING(U"const target=func(n){return n;};\n"
+                      U"const alias=(target);\n"
+                      U"const use=func(n){const print=alias;return print(n);}; use(1);\n"
+                      U"var changing=target;\n"
+                      U"const unknown=func(n){return changing(n);}; unknown(1);\n"
+                      U"const shadow=func(target){return target(1);}; shadow(alias);\n"
+                      U"const local=func(n){var t=func(x){return x;};t=func(x){return x+1;};return "
+                      U"t(n);}; local(1);\n"
+                      U"const dead=func(n){return n;target(n);}; dead(1);\n"
+                      U"const native=func(){print(1);}; native();\n"
+                      U"const guarded=func(n){if(later)return 0;return target(n);}; guarded(1);\n"
+                      U"const later=func(){return 1;};"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);
@@ -159,7 +159,7 @@ bool test_call_graph_bindings() {
     /* A constant function identity is not proof that its declaration has already run. */
     ASSERT(at(collector, ANALYSIS_CALL_EDGE, 10)->callee_summary->function == target->node);
     string_value_t text = analysis_collector_to_text(collector);
-    ASSERT(wcsstr(text.data, L"-> unknown") && wcsstr(text.data, L"partial"));
+    ASSERT(STRSTR(text.data, U"-> unknown") && STRSTR(text.data, U"partial"));
     FREE_STRING(text);
     destroy_options(options);
     destroy_arena(arena);
@@ -187,7 +187,7 @@ bool test_call_graph_limits() {
     options->optimization_level = OPTIMIZATION_NONE;
     ASSERT(!analyze(root, &memory, options, NULL));
     string_value_t after = analysis_collector_to_text(collector);
-    ASSERT(!wcscmp(before.data, after.data));
+    ASSERT(!STRCMP(before.data, after.data));
     ASSERT(group->function_summary->parameter_types[0]->type == LATTICE_INTEGER);
     ASSERT(group->component != 999);
     add_call_graph_events(NULL, graph);

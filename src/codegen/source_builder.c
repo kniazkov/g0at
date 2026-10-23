@@ -38,10 +38,10 @@ void add_formatted_source(source_builder_t *builder, size_t indent, string_value
 
 void add_source_lines(source_builder_t *builder,
                       size_t indent,
-                      const wchar_t *const *lines,
+                      const gchar_t *const *lines,
                       size_t count) {
     for (size_t i = 0; i < count; i++)
-        add_formatted_source(builder, indent, (string_value_t){lines[i], wcslen(lines[i]), false});
+        add_formatted_source(builder, indent, (string_value_t){lines[i], STRLEN(lines[i]), false});
 }
 
 void append_formatted_source(source_builder_t *builder, string_value_t text) {
@@ -59,7 +59,7 @@ void append_formatted_source(source_builder_t *builder, string_value_t text) {
     line->text = new_text;
 };
 
-void add_source(source_builder_t *builder, size_t indent, const wchar_t *format, ...) {
+void add_source(source_builder_t *builder, size_t indent, const gchar_t *format, ...) {
     va_list args;
     va_start(args, format);
     string_value_t formatted_line = format_string_vargs(format, args);
@@ -67,7 +67,7 @@ void add_source(source_builder_t *builder, size_t indent, const wchar_t *format,
     va_end(args);
 }
 
-void append_source(source_builder_t *builder, const wchar_t *format, ...) {
+void append_source(source_builder_t *builder, const gchar_t *format, ...) {
     va_list args;
     va_start(args, format);
     string_value_t formatted_line = format_string_vargs(format, args);
@@ -79,7 +79,7 @@ void append_source(source_builder_t *builder, const wchar_t *format, ...) {
 #define TAB_SIZE 4
 
 /** @brief Tabulation as a set of spaces */
-static wchar_t *tabulation = L"    ";
+static gchar_t *tabulation = U"    ";
 
 string_value_t build_source(source_builder_t *builder) {
     string_builder_t code_builder;
@@ -91,7 +91,7 @@ string_value_t build_source(source_builder_t *builder) {
             append_substring(&code_builder, tabulation, TAB_SIZE);
         }
         append_string_value(&code_builder, line.text);
-        result = append_char(&code_builder, L'\n');
+        result = append_char(&code_builder, U'\n');
     }
     return result;
 }

@@ -34,16 +34,16 @@ string_value_t
 generate_goat_code_from_statement_list(list_t *list, string_builder_t *builder, bool brackets) {
     if (list->size == 0) {
         if (builder->length > 0) { // there is already a header
-            return append_static_string(builder, L"{ }");
+            return append_static_string(builder, U"{ }");
         } else if (brackets) {
-            return STATIC_STRING(L"{ }");
+            return STATIC_STRING(U"{ }");
         } else {
             return EMPTY_STRING_VALUE;
         }
     }
 
     if (brackets) {
-        append_char(builder, L'{');
+        append_char(builder, U'{');
     }
     bool has_previous = false;
     list_item_t *item = list->head;
@@ -54,7 +54,7 @@ generate_goat_code_from_statement_list(list_t *list, string_builder_t *builder, 
         string_value_t stmt_as_string = generate_goat_code_from_statement(stmt);
         if (stmt_as_string.length > 0) {
             if (has_previous) {
-                append_char(builder, L' ');
+                append_char(builder, U' ');
             }
             has_previous = true;
             result = append_string_value(builder, stmt_as_string);
@@ -65,7 +65,7 @@ generate_goat_code_from_statement_list(list_t *list, string_builder_t *builder, 
     }
 
     if (brackets) {
-        result = append_char(builder, L'}');
+        result = append_char(builder, U'}');
     }
     return result;
 }

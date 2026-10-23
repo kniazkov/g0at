@@ -4,13 +4,12 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "goat/unicode.h"
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
 #include "model/thread.h"
 #include "registry.h"
-
-#include <wchar.h>
 
 /** @brief Runtime executor for the method form `string.endsWith(str)`. */
 static operation_result_t
@@ -24,9 +23,8 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
         return operation_exception(get_exception_invalid_argument());
     string_value_t value = convert_object_to_string(receiver);
     string_value_t suffix = convert_object_to_string(args[0]);
-    bool result =
-        suffix.length <= value.length
-        && !wmemcmp(value.data + value.length - suffix.length, suffix.data, suffix.length);
+    bool result = suffix.length <= value.length
+                  && !MEMCMP(value.data + value.length - suffix.length, suffix.data, suffix.length);
     FREE_STRING(value);
     FREE_STRING(suffix);
     return operation_success(get_boolean_object(result));
@@ -52,16 +50,16 @@ interpret(abstract_state_t *state, const lattice_element_t *const *args, size_t 
         string_view_t suffix;
         if (get_string_view_from_constant(state->arena, args[1], &suffix)) {
             bool result = suffix.length <= str->value.length
-                          && !wmemcmp(str->value.data + str->value.length - suffix.length,
-                                      suffix.data,
-                                      suffix.length);
+                          && !MEMCMP(str->value.data + str->value.length - suffix.length,
+                                     suffix.data,
+                                     suffix.length);
             return result ? make_true_element() : make_false_element();
         }
     }
     return make_boolean_element();
 }
 
-const builtin_function_t builtin_ends_with = {.name = L"endsWith",
+const builtin_function_t builtin_ends_with = {.name = U"endsWith",
                                               .min_args = 1,
                                               .effects = BUILTIN_EFFECT_NONE,
                                               .execute = execute,

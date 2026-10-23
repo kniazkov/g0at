@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "goat/unicode.h"
 #include "lib/value.h"
 #include "position.h"
 
@@ -53,14 +54,14 @@ struct compilation_error_t {
 compilation_error_t *create_error_from_token(arena_t *arena,
                                              const token_t *token,
                                              compilation_error_severity_t severity,
-                                             const wchar_t *format,
+                                             const gchar_t *format,
                                              ...);
 
 /** @brief Creates a compilation diagnostic from an AST node with a formatted message. */
 compilation_error_t *create_error_from_node(arena_t *arena,
                                             const node_t *node,
                                             compilation_error_severity_t severity,
-                                            const wchar_t *format,
+                                            const gchar_t *format,
                                             ...);
 
 /**

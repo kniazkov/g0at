@@ -154,12 +154,12 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
             return create_error_from_token(memory->errors,
                                            token,
                                            CRITICAL,
-                                           L"%s",
+                                           U"%s",
                                            token->text.data);
         }
         if (token->type == TOKEN_BRACKET) {
-            wchar_t bracket = token->text.data[0];
-            if (bracket == L'(' || bracket == L'{' || bracket == '[') {
+            gchar_t bracket = token->text.data[0];
+            if (bracket == U'(' || bracket == U'{' || bracket == '[') {
                 token_t *pair = (token_t *)alloc_zeroed_from_arena(memory->tokens, sizeof(token_t));
                 pair->type = TOKEN_BRACKET_PAIR;
                 compilation_error_t *error = scan_and_analyze_for_brackets(memory,
@@ -174,10 +174,10 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
                 pair->position = create_position_range(memory->positions,
                                                        token->position->begin,
                                                        previous->position->end);
-                wchar_t *text = (wchar_t *)alloc_from_arena(memory->tokens, sizeof(wchar_t) * 3);
+                gchar_t *text = (gchar_t *)alloc_from_arena(memory->tokens, sizeof(gchar_t) * 3);
                 text[0] = bracket;
                 text[1] = previous->text.data[0];
-                text[2] = L'\0';
+                text[2] = U'\0';
                 pair->text = (string_view_t){text, 2};
                 append_token_to_neighbors(list, pair);
                 if (bracket == '(') {
@@ -196,15 +196,15 @@ static compilation_error_t *scan_and_analyze_for_brackets(parser_memory_t *memor
                                                    get_messages()->missing_opening_bracket,
                                                    bracket);
                 }
-                wchar_t opening_bracket = L'\0';
-                if (bracket == L')') {
-                    opening_bracket = L'(';
-                } else if (bracket == L']') {
-                    opening_bracket = L'[';
-                } else if (bracket == L'}') {
-                    opening_bracket = L'{';
+                gchar_t opening_bracket = U'\0';
+                if (bracket == U')') {
+                    opening_bracket = U'(';
+                } else if (bracket == U']') {
+                    opening_bracket = U'[';
+                } else if (bracket == U'}') {
+                    opening_bracket = U'{';
                 }
-                assert(opening_bracket != L'\0');
+                assert(opening_bracket != U'\0');
                 if (opening_token->text.data[0] != opening_bracket) {
                     compilation_error_t *error =
                         create_error_from_token(memory->errors,

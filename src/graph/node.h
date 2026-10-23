@@ -9,6 +9,7 @@
 #include "codegen/c_generation.h"
 #include "common/position.h"
 #include "common/types.h"
+#include "goat/unicode.h"
 #include "lib/value.h"
 #include "node_type.h"
 #include "relation_type.h"
@@ -80,7 +81,7 @@ typedef struct {
     node_type_t type;
 
     /** @brief Human-readable type name of the node. */
-    const wchar_t *type_name;
+    const gchar_t *type_name;
 
     /** @brief Marks an lvalue; generate_bytecode_assign must be implemented. */
     bool is_assignable_expression;
@@ -96,7 +97,7 @@ typedef struct {
      * `index`: Zero-based index in range [0, get_property_count(node)).
      * @return Property key as a constant wide string, or NULL if the property is not available.
      */
-    const wchar_t *(*get_property)(const node_t *node,
+    const gchar_t *(*get_property)(const node_t *node,
                                    size_t index,
                                    node_display_value_t *out_value);
 
@@ -113,10 +114,10 @@ typedef struct {
     /**
      * @brief Gets the tag/label for a child node.
      * `index`: Zero-based index of the child node.
-     * @return Wide character string (const wchar_t*) with the child's tag or NULL if not
+     * @return Wide character string (const gchar_t*) with the child's tag or NULL if not
      * applicable.
      */
-    const wchar_t *(*get_child_tag)(const node_t *node, size_t index);
+    const gchar_t *(*get_child_tag)(const node_t *node, size_t index);
 
     /**
      * @brief Inserts new_child before before_child.
@@ -276,7 +277,7 @@ static inline size_t get_node_property_count(const node_t *node) {
  * `index`: Zero-based property index.
  * @return Property key as a constant wide string, or NULL if unavailable.
  */
-static inline const wchar_t *
+static inline const gchar_t *
 get_node_property(const node_t *node, size_t index, node_display_value_t *out_value) {
     return node->vtbl->get_property(node, index, out_value);
 }
@@ -300,7 +301,7 @@ static inline node_t *get_node_child(const node_t *node, size_t index) {
  * `index`: Zero-based child index.
  * @return Wide character string with the child tag or NULL if not applicable.
  */
-static inline const wchar_t *get_node_child_tag(const node_t *node, size_t index) {
+static inline const gchar_t *get_node_child_tag(const node_t *node, size_t index) {
     return node->vtbl->get_child_tag(node, index);
 }
 

@@ -43,8 +43,8 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
-    return index == 0 ? L"try" : index == 1 ? L"catch" : NULL;
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
+    return index == 0 ? U"try" : index == 1 ? U"catch" : NULL;
 }
 
 /** @brief Preserve potential non-local transfers even while exception paths are opaque. */
@@ -83,7 +83,7 @@ static string_value_t generate_goat_code(const node_t *node) {
     string_value_t body = generate_goat_code_from_statement(stmt->body);
     string_value_t handler = generate_goat_code_from_expression(&stmt->handler->base);
     string_value_t result =
-        format_string(L"try %s catch (%s) %s", body.data, stmt->exception_name.data, handler.data);
+        format_string(U"try %s catch (%s) %s", body.data, stmt->exception_name.data, handler.data);
     FREE_STRING(body);
     FREE_STRING(handler);
     return result;
@@ -93,16 +93,16 @@ static string_value_t generate_goat_code(const node_t *node) {
 static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const try_catch_t *stmt = (const try_catch_t *)node;
-    add_static_source(builder, indent, L"try");
+    add_static_source(builder, indent, U"try");
     const node_t *body = &stmt->body->base;
     if (body->vtbl->type == NODE_STATEMENT_EXPRESSION
         && get_node_child(body, 0)->vtbl->type == NODE_STATEMENT_LIST) {
-        append_static_source(builder, L" ");
+        append_static_source(builder, U" ");
         generate_indented_goat_code_from_node(get_node_child(body, 0), builder, indent);
     } else {
         generate_indented_goat_code_from_statement(stmt->body, builder, indent + 1);
     }
-    add_source(builder, indent, L"catch (%s) ", stmt->exception_name.data);
+    add_source(builder, indent, U"catch (%s) ", stmt->exception_name.data);
     generate_indented_goat_code_from_expression(&stmt->handler->base, builder, indent);
 }
 
@@ -143,7 +143,7 @@ static node_vtbl_t vtbl = {
     .is_pure = not_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"try-catch",
+    .type_name = U"try-catch",
     .get_data = get_data,
     .get_property_count = no_properties,
     .get_property = no_property,
@@ -191,8 +191,8 @@ declarator_t *get_catch_declarator(node_t *node) {
 }
 
 /** @brief Cleanup uses the same two scoped children but has no catch binding. */
-static const wchar_t *finally_tag(const node_t *node, size_t index) {
-    return index == 0 ? L"try" : index == 1 ? L"finally" : NULL;
+static const gchar_t *finally_tag(const node_t *node, size_t index) {
+    return index == 0 ? U"try" : index == 1 ? U"finally" : NULL;
 }
 
 static string_value_t finally_source(const node_t *node) {
@@ -200,7 +200,7 @@ static string_value_t finally_source(const node_t *node) {
     string_value_t body = generate_goat_code_from_statement(stmt->body);
     string_value_t cleanup = generate_goat_code_from_expression(&stmt->handler->base);
     string_value_t result = format_string(
-        stmt->body->base.vtbl->type == NODE_TRY_CATCH ? L"%s finally %s" : L"try %s finally %s",
+        stmt->body->base.vtbl->type == NODE_TRY_CATCH ? U"%s finally %s" : U"try %s finally %s",
         body.data,
         cleanup.data);
     FREE_STRING(body);
@@ -230,7 +230,7 @@ node_t *create_try_finally_node(arena_t *arena, statement_t *body, statement_lis
     static node_vtbl_t finally_vtbl;
     finally_vtbl = vtbl;
     finally_vtbl.type = NODE_TRY_FINALLY;
-    finally_vtbl.type_name = L"try finally";
+    finally_vtbl.type_name = U"try finally";
     finally_vtbl.get_data = no_data;
     finally_vtbl.get_child_tag = finally_tag;
     finally_vtbl.generate_goat_code = finally_source;

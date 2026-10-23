@@ -52,9 +52,9 @@ static node_t *get_child(const node_t *node, size_t index) {
 }
 
 /** @brief Implements @ref node_vtbl_t::get_child_tag. */
-static const wchar_t *get_child_tag(const node_t *node, size_t index) {
+static const gchar_t *get_child_tag(const node_t *node, size_t index) {
     if (index == 0 && ((const statement_expression_t *)node)->wrapped) {
-        return L"expression";
+        return U"expression";
     }
     return NULL;
 }
@@ -71,14 +71,14 @@ static abstract_state_t *execute(node_t *node, abstract_state_t *state, arena_t 
 static string_value_t generate_goat_code(const node_t *node) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
     if (!stmt->wrapped || is_deletion(&stmt->wrapped->base))
-        return STATIC_STRING(L";");
+        return STATIC_STRING(U";");
     string_value_t expr_as_string = generate_goat_code_from_expression(stmt->wrapped);
     if (stmt->wrapped->base.vtbl->type != NODE_STATEMENT_LIST) {
         string_builder_t builder;
         init_string_builder(&builder, expr_as_string.length + 1); // +1 for the semicolon
         append_string_value(&builder, expr_as_string);
         FREE_STRING(expr_as_string);
-        return append_char(&builder, L';');
+        return append_char(&builder, U';');
     } else {
         return expr_as_string;
     }
@@ -89,16 +89,16 @@ static void
 generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_t indent) {
     const statement_expression_t *stmt = (const statement_expression_t *)node;
     if (!stmt->wrapped || is_deletion(&stmt->wrapped->base)) {
-        add_static_source(builder, indent, L";");
+        add_static_source(builder, indent, U";");
         return;
     }
     if (stmt->wrapped->base.vtbl->type == NODE_STATEMENT_LIST && stmt->base.base.parent != NULL
         && is_branch_or_loop(stmt->base.base.parent->vtbl->type)) {
         generate_indented_goat_code_from_expression(stmt->wrapped, builder, indent - 1);
     } else {
-        add_static_source(builder, indent, L"");
+        add_static_source(builder, indent, U"");
         generate_indented_goat_code_from_expression(stmt->wrapped, builder, indent);
-        append_static_source(builder, L";");
+        append_static_source(builder, U";");
     }
 }
 
@@ -129,7 +129,7 @@ static node_vtbl_t statement_expression_vtbl = {
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,
-    .type_name = L"statement expression",
+    .type_name = U"statement expression",
     .get_data = no_data,
     .get_property_count = no_properties,
     .get_property = no_property,
