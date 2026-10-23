@@ -12,6 +12,7 @@
 #include "vm/binary.h"
 
 #include <locale.h>
+#include <math.h>
 
 bool test_unicode_strings(void) {
     string_value_t value = STATIC_STRING(U"\0A\0B\0\0\U0001f600");
@@ -71,6 +72,18 @@ bool test_unicode_case(void) {
         char number[32];
         double_to_string(1.5, number, sizeof(number));
         ASSERT(!strcmp(number, "1.5"));
+        double_to_string(1e20, number, sizeof(number));
+        ASSERT(!strcmp(number, "1e+20"));
+        double_to_string(-1e-20, number, sizeof(number));
+        ASSERT(!strcmp(number, "-1e-20"));
+        double_to_string(INFINITY, number, sizeof(number));
+        ASSERT(!strcmp(number, "inf"));
+        double_to_string(-INFINITY, number, sizeof(number));
+        ASSERT(!strcmp(number, "-inf"));
+        double_to_string(NAN, number, sizeof(number));
+        ASSERT(!strcmp(number, "nan"));
+        double_to_string(123.5, number, 3);
+        ASSERT(!strcmp(number, "12"));
         ASSERT(goat_simple_upper(0xdf) == 0xdf);
         ASSERT(goat_simple_lower(0x10400) == 0x10428);
         string_value_t upper =
