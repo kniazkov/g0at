@@ -8,6 +8,7 @@
 #include "io.h"
 
 #include "allocate.h"
+#include "file_system.h"
 #include "string_ext.h"
 
 #include <stdarg.h>
@@ -32,7 +33,7 @@ bool init_io(void) {
 }
 
 string_value_t read_utf8_file(const char *filename) {
-    FILE *file = fopen(filename, "r");
+    FILE *file = FOPEN(filename, "r");
     if (file == NULL) {
         return NULL_STRING_VALUE;
     }
@@ -59,7 +60,7 @@ string_value_t read_utf8_file(const char *filename) {
 }
 
 bool write_utf8_file(const char *filename, const gchar_t *content) {
-    FILE *file = fopen(filename, "w");
+    FILE *file = FOPEN(filename, "w");
     if (file == NULL) {
         return false;
     }

@@ -5,6 +5,7 @@
 #include "native_runtime.h"
 
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "native_runtime_data.inc"
 
 #include <errno.h>
@@ -38,7 +39,7 @@ static char *runtime_path(const char *source, const char *name) {
 }
 
 static bool write_runtime_file(const char *path, const unsigned char *data, size_t size) {
-    FILE *file = fopen(path, "rb");
+    FILE *file = FOPEN(path, "rb");
     if (file) {
         bool same = true;
         for (size_t i = 0; i < size; i++) {
@@ -55,29 +56,14 @@ static bool write_runtime_file(const char *path, const unsigned char *data, size
     }
     if (errno != ENOENT)
         return false;
-#ifdef _WIN32
-    /* The legacy MSVCRT used by MinGW does not support fopen's C11 'x' mode. */
-    int fd = _open(path, _O_WRONLY | _O_CREAT | _O_EXCL | _O_BINARY, _S_IREAD | _S_IWRITE);
-    if (fd < 0)
-        return false;
-    file = _fdopen(fd, "wb");
-    if (!file) {
-        int error = errno;
-        _close(fd);
-        remove(path);
-        errno = error;
-        return false;
-    }
-#else
-    file = fopen(path, "wbx");
-#endif
+    file = FOPEN(path, "wbx");
     if (!file)
         return false;
     bool success = fwrite(data, 1, size, file) == size;
     if (fclose(file))
         success = false;
     if (!success)
-        remove(path);
+        remove_fs_entry(path, NULL);
     return success;
 }
 
@@ -95,7 +81,7 @@ bool write_native_runtime_files(const char *source_path) {
 void remove_native_runtime_files(const char *source_path) {
     for (size_t i = 0; i < sizeof(files) / sizeof(*files); i++) {
         char *path = runtime_path(source_path, files[i].name);
-        remove(path);
+        remove_fs_entry(path, NULL);
         FREE(path);
     }
 }

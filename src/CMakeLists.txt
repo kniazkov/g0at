@@ -79,7 +79,7 @@ if(CMAKE_DL_LIBS)
   target_link_libraries(core PUBLIC ${CMAKE_DL_LIBS})
 endif()
 if(WIN32)
-  target_link_libraries(core PUBLIC bcrypt)
+  target_link_libraries(core PUBLIC bcrypt advapi32 shell32)
 endif()
 # Keep the allocator API consistent between core and its consumers.
 target_compile_definitions(core PUBLIC "$<$<NOT:$<CONFIG:Release>>:MEMORY_DEBUG>")

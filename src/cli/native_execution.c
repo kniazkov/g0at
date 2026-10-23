@@ -6,6 +6,7 @@
 
 #include "codegen/native_pipeline.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/io.h"
 #include "lib/string_ext.h"
 #include "model/process.h"
@@ -41,13 +42,15 @@ static bool prepare(const options_t *options,
     *report = (native_execution_report_t){.preparation = "disabled"};
     if (options->native_execution == NATIVE_OFF)
         return true;
-    const char *compiler = getenv("CC");
+    char *compiler_value = fs_environment("CC", NULL);
+    const char *compiler = compiler_value;
     native_prepare_result_t prepared =
         destination ? prepare_native_artifact(root,
                                               code,
                                               compiler && *compiler ? compiler : NULL,
                                               destination)
                     : prepare_native_execution(root, code, compiler && *compiler ? compiler : NULL);
+    FREE(compiler_value);
     report->preparation = status_name(prepared.status);
     report->bound_functions = prepared.bound_functions;
     report->omitted_specializations = prepared.omitted_specializations;

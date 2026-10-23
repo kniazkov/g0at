@@ -8,6 +8,7 @@
 #include "codegen/native_compiler.h"
 #include "codegen/native_runtime.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/io.h"
 #include "resources/messages.h"
 
@@ -53,7 +54,8 @@ static bool save_library(const options_t *options, const gchar_t *source) {
         fprintf(stderr, "\n");
         return false;
     }
-    const char *compiler = getenv("CC");
+    char *compiler_value = fs_environment("CC", NULL);
+    const char *compiler = compiler_value;
     if (!compiler || !compiler[0])
         compiler =
 #ifdef _WIN32
@@ -63,6 +65,7 @@ static bool save_library(const options_t *options, const gchar_t *source) {
 #endif
     /* Keep the final component unresolved: rename replaces a symlink, never its target. */
     native_compile_result_t result = compile_native_library(source, compiler, path->normal_path);
+    FREE(compiler_value);
     if (result.diagnostics_length) {
         fwrite(result.diagnostics, 1, result.diagnostics_length, stderr);
         if (result.diagnostics[result.diagnostics_length - 1] != '\n')

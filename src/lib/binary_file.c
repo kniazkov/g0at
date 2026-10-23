@@ -5,6 +5,7 @@
 #include "binary_file.h"
 
 #include "allocate.h"
+#include "file_system.h"
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -20,7 +21,7 @@
 
 void *read_binary_file(const char *path, size_t limit, size_t *size) {
     *size = 0;
-    FILE *file = fopen(path, "rb");
+    FILE *file = FOPEN(path, "rb");
     if (!file)
         return NULL;
     long length = -1;
@@ -43,48 +44,24 @@ void *read_binary_file(const char *path, size_t limit, size_t *size) {
 }
 
 bool write_binary_file(const char *path, const void *data, size_t size) {
-    size_t length = strlen(path) + 64;
-    char *temporary = ALLOC(length);
-    int fd = -1;
-    for (unsigned i = 0; i < 128 && fd < 0; i++) {
-#ifdef _WIN32
-        snprintf(temporary, length, "%s.tmp-%lu-%u", path, (unsigned long)_getpid(), i);
-        fd = _open(temporary, _O_WRONLY | _O_CREAT | _O_EXCL | _O_BINARY, _S_IREAD | _S_IWRITE);
-#else
-        snprintf(temporary, length, "%s.tmp-%lu-%u", path, (unsigned long)getpid(), i);
-        fd = open(temporary, O_WRONLY | O_CREAT | O_EXCL, 0600);
-#endif
+    fs_error_t error = {0};
+    FILE *file = NULL;
+    char *temporary = create_fs_temporary(path, false, &file, &error);
+    if (!temporary) {
+        clear_fs_error(&error);
+        return false;
     }
-    bool ok = false;
-    if (fd >= 0) {
-#ifdef _WIN32
-        FILE *file = _fdopen(fd, "wb");
-#else
-        FILE *file = fdopen(fd, "wb");
-#endif
-        if (file) {
-            ok = fwrite(data, 1, size, file) == size;
-            if (fclose(file))
-                ok = false;
-        } else {
-#ifdef _WIN32
-            _close(fd);
-#else
-            close(fd);
-#endif
-        }
-        if (ok) {
-#ifdef _WIN32
-            ok = MoveFileExA(temporary, path, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)
-                 != 0;
-#else
-            ok = rename(temporary, path) == 0;
-#endif
-        }
-        if (!ok)
-            remove(temporary);
-    }
+    bool ok = write_fs_file(file, data, size, temporary, &error);
+    if (!close_fs_file(file, temporary, &error))
+        ok = false;
+    if (ok)
+        ok = prepare_fs_replace(temporary, path, &error);
+    if (ok)
+        ok = publish_fs_replace(temporary, path, &error);
+    if (!ok)
+        remove_fs_entry(temporary, NULL);
     FREE(temporary);
+    clear_fs_error(&error);
     return ok;
 }
 

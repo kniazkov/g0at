@@ -7,6 +7,7 @@
 
 #ifdef _WIN32
 #    include "lib/allocate.h"
+#    include "lib/file_system_internal.h"
 
 #    include <stdio.h>
 #    include <string.h>
@@ -27,22 +28,15 @@ static char *last_error(void) {
 }
 
 void *open_native_library_handle(const char *path, char **diagnostic) {
-    DWORD size = GetFullPathNameA(path, 0, NULL, NULL);
-    if (!size) {
+    char *full = absolute_fs_path(path, NULL);
+    wchar_t *absolute = full ? fs_wide(full) : NULL;
+    FREE(full);
+    if (!absolute) {
         *diagnostic = last_error();
-        return NULL;
-    }
-    char *absolute = ALLOC(size);
-    DWORD length = GetFullPathNameA(path, size, absolute, NULL);
-    if (!length || length >= size) {
-        if (length)
-            SetLastError(ERROR_INSUFFICIENT_BUFFER);
-        *diagnostic = last_error();
-        FREE(absolute);
         return NULL;
     }
     HMODULE handle =
-        LoadLibraryExA(absolute,
+        LoadLibraryExW(absolute,
                        NULL,
                        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     if (!handle)
