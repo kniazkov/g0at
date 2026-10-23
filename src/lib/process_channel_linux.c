@@ -77,7 +77,7 @@ transfer(uintptr_t channel, void *data, size_t size, child_deadline_t deadline, 
         bytes += n;
         size -= (size_t)n;
     }
-    return CHANNEL_OK;
+    return deadline && child_monotonic_ms() >= deadline ? CHANNEL_TIMEOUT : CHANNEL_OK;
 }
 
 channel_status_t
