@@ -128,8 +128,25 @@ An explicit version affects only that import.
 The shared C API for name validation and import-specifier parsing is declared
 in `include/goat/module_identity.h`. It accepts explicit lengths, does not
 require null termination, and does not allocate memory. The existing
-`string_view_t` contract remains unchanged. A separate wide-character
-parser supports the compiler's `wchar_t` strings.
+`string_view_t` contract remains unchanged. `goat_module_name_valid` and
+`goat_module_version_valid` accept bytes; their `_wide` counterparts accept
+portable `gchar_t` (UTF-32) elements. Both storage types share one implementation
+of the grammar and reserved stems: `con`, `prn`, `aux`, `nul`, `com0`–`com9`,
+`lpt0`–`lpt9`, before the first dot. Thus `con..txt` is invalid, while `con-`,
+`com10` and `x.con` are valid. Public limits are `GOAT_MODULE_NAME_MAX_LENGTH`
+(255) and `GOAT_MODULE_VERSION_MAX_LENGTH` (250). Since identifiers are ASCII,
+valid byte and UTF-32 element counts coincide.
+
+`goat_module_parse_import` and `goat_module_parse_import_wide` borrow slices of
+the original buffer without copying. Without `@`, `has_version` is false and
+the version slice is null/empty; version resolution happens later. Failure
+clears every result field; a null result pointer returns false. Result storage
+must not overlap the input. Oversized imports are rejected before reading the
+buffer: the maximum is `255 + 1 + 250 = 506` elements. Embedded NUL, whitespace,
+uppercase and non-ASCII characters are rejected, never repaired. `1.02` and
+`1.2` are distinct exact versions; `latest` is an ordinary literal version with
+no special meaning. The JSON reader uses these same validators for identities,
+dependencies and `functionRef` records, including unused dependencies.
 
 ## Portable scalar strings (#250)
 

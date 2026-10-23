@@ -10,7 +10,154 @@
 #include <stdio.h>
 #include <string.h>
 
+/* Exercise both storage types and both import positions without terminators. */
+static bool check_identifier(const char *text, size_t length, bool name_ok, bool version_ok) {
+    gchar_t wide[257], wide_import[259];
+    char import[259];
+    ASSERT(length <= 257);
+    for (size_t i = 0; i < length; i++)
+        wide[i] = (unsigned char)text[i];
+    ASSERT(goat_module_name_valid(text, length) == name_ok);
+    ASSERT(goat_module_version_valid(text, length) == version_ok);
+    ASSERT(goat_module_name_valid_wide(wide, length) == name_ok);
+    ASSERT(goat_module_version_valid_wide(wide, length) == version_ok);
+    goat_module_import_t parsed = {{text, 9}, {text, 8}, true};
+    goat_module_import_wide_t parsed_wide = {{wide, 9}, {wide, 8}, true};
+    if (!memchr(text, '@', length)) {
+        ASSERT(goat_module_parse_import(text, length, &parsed) == name_ok);
+        ASSERT(goat_module_parse_import_wide(wide, length, &parsed_wide) == name_ok);
+        ASSERT(!parsed.has_version && !parsed.version.data && !parsed.version.length);
+        ASSERT(!parsed_wide.has_version && !parsed_wide.version.data
+               && !parsed_wide.version.length);
+        ASSERT(parsed.name.data == (name_ok ? text : NULL));
+        ASSERT(parsed.name.length == (name_ok ? length : 0));
+        ASSERT(parsed_wide.name.data == (name_ok ? wide : NULL));
+        ASSERT(parsed_wide.name.length == (name_ok ? length : 0));
+    }
+    import[0] = 'a';
+    import[1] = '@';
+    wide_import[0] = U'a';
+    wide_import[1] = U'@';
+    for (size_t i = 0; i < length; i++) {
+        import[i + 2] = text[i];
+        wide_import[i + 2] = wide[i];
+    }
+    ASSERT(goat_module_parse_import(import, length + 2, &parsed) == version_ok);
+    ASSERT(goat_module_parse_import_wide(wide_import, length + 2, &parsed_wide) == version_ok);
+    ASSERT(parsed.has_version == version_ok && parsed_wide.has_version == version_ok);
+    ASSERT(parsed.name.data == (version_ok ? import : NULL));
+    ASSERT(parsed.name.length == (version_ok ? 1 : 0));
+    ASSERT(parsed.version.data == (version_ok ? import + 2 : NULL));
+    ASSERT(parsed.version.length == (version_ok ? length : 0));
+    ASSERT(parsed_wide.name.data == (version_ok ? wide_import : NULL));
+    ASSERT(parsed_wide.name.length == (version_ok ? 1 : 0));
+    ASSERT(parsed_wide.version.data == (version_ok ? wide_import + 2 : NULL));
+    ASSERT(parsed_wide.version.length == (version_ok ? length : 0));
+    return true;
+}
+
+static bool test_identifier_alphabet(void) {
+    for (unsigned ch = 0; ch <= 255; ch++) {
+        bool alnum = (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9');
+        for (size_t position = 0; position < 3; position++) {
+            char text[] = {'a', 'a', 'a'};
+            text[position] = (char)ch;
+            bool ok = alnum || (position != 0 && (ch == '-' || ch == '_'))
+                      || (position == 1 && ch == '.');
+            ASSERT(check_identifier(text, 3, ok, ok));
+        }
+    }
+    const uint32_t invalid[] = {0x100, 0x430, 0xd800, 0xdc00, 0x1f600, 0x110000, UINT32_MAX};
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
+        gchar_t text[] = {U'a', (gchar_t)invalid[i], U'a'};
+        ASSERT(!goat_module_name_valid_wide(text, 3));
+        ASSERT(!goat_module_version_valid_wide(text, 3));
+        goat_module_import_wide_t parsed;
+        ASSERT(!goat_module_parse_import_wide(text, 3, &parsed));
+    }
+    return true;
+}
+
+static bool test_device_names(void) {
+    const char *stems[] = {"con",  "prn",  "aux",  "nul",  "com0", "com1", "com2", "com3",
+                           "com4", "com5", "com6", "com7", "com8", "com9", "lpt0", "lpt1",
+                           "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9"};
+    const char *suffixes[] = {"", ".txt", "..txt", ".a.b", "."};
+    for (size_t i = 0; i < sizeof(stems) / sizeof(*stems); i++) {
+        for (size_t j = 0; j < sizeof(suffixes) / sizeof(*suffixes); j++) {
+            char text[32];
+            size_t n = strlen(stems[i]), m = strlen(suffixes[j]);
+            memcpy(text, stems[i], n);
+            memcpy(text + n, suffixes[j], m);
+            ASSERT(check_identifier(text, n + m, false, false));
+        }
+    }
+    const char *valid[] = {"conx",
+                           "con-",
+                           "con_",
+                           "com10",
+                           "lpt10",
+                           "x.con",
+                           "x.com1.txt",
+                           "a..b",
+                           "a-",
+                           "a_",
+                           "0",
+                           "1.02",
+                           "1.2",
+                           "beta",
+                           "latest"};
+    for (size_t i = 0; i < sizeof(valid) / sizeof(*valid); i++)
+        ASSERT(check_identifier(valid[i], strlen(valid[i]), true, true));
+    return true;
+}
+
+static bool test_identity_limits(void) {
+    char text[257];
+    memset(text, 'a', sizeof(text));
+    const size_t lengths[] = {0, 1, 249, 250, 251, 254, 255, 256, 257};
+    for (size_t i = 0; i < sizeof(lengths) / sizeof(*lengths); i++) {
+        size_t n = lengths[i];
+        ASSERT(check_identifier(text, n, n > 0 && n <= 255, n > 0 && n <= 250));
+    }
+    char import[507];
+    gchar_t wide[507];
+    memset(import, 'a', sizeof(import));
+    import[255] = '@';
+    for (size_t i = 0; i < sizeof(import); i++)
+        wide[i] = (unsigned char)import[i];
+    goat_module_import_t parsed;
+    goat_module_import_wide_t parsed_wide;
+    ASSERT(goat_module_parse_import(import, 506, &parsed));
+    ASSERT(parsed.name.data == import && parsed.name.length == 255);
+    ASSERT(parsed.version.data == import + 256 && parsed.version.length == 250
+           && parsed.has_version);
+    ASSERT(goat_module_parse_import_wide(wide, 506, &parsed_wide));
+    ASSERT(parsed_wide.name.data == wide && parsed_wide.name.length == 255);
+    ASSERT(parsed_wide.version.data == wide + 256 && parsed_wide.version.length == 250
+           && parsed_wide.has_version);
+    ASSERT(!goat_module_parse_import(import, 507, &parsed));
+    ASSERT(!goat_module_parse_import_wide(wide, 507, &parsed_wide));
+    /* Oversized lengths must be rejected before reading even the first element. */
+    ASSERT(!goat_module_name_valid("", SIZE_MAX));
+    ASSERT(!goat_module_version_valid("", SIZE_MAX));
+    ASSERT(!goat_module_name_valid_wide(U"", SIZE_MAX));
+    ASSERT(!goat_module_version_valid_wide(U"", SIZE_MAX));
+    ASSERT(!goat_module_parse_import("", SIZE_MAX, &parsed));
+    ASSERT(!goat_module_parse_import_wide(U"", SIZE_MAX, &parsed_wide));
+    ASSERT(!parsed.name.data && !parsed.name.length && !parsed.version.data
+           && !parsed.version.length && !parsed.has_version);
+    ASSERT(!parsed_wide.name.data && !parsed_wide.name.length && !parsed_wide.version.data
+           && !parsed_wide.version.length && !parsed_wide.has_version);
+    ASSERT(!goat_module_name_valid_wide(NULL, 1));
+    ASSERT(!goat_module_version_valid_wide(NULL, 1));
+    return true;
+}
+
 bool test_module_identity(void) {
+    ASSERT(test_identifier_alphabet());
+    ASSERT(test_device_names());
+    ASSERT(test_identity_limits());
     ASSERT(goat_module_name_valid("geometry", 8));
     ASSERT(goat_module_name_valid("123module", 9));
     ASSERT(goat_module_name_valid("a..b-_", 6));

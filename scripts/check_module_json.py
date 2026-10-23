@@ -185,6 +185,24 @@ def main():
     read(b'{"x":' + b'[' * 300 + b'0' + b']' * 300 + b'}', error='nesting limit')
     for filename in ['empty', 'math-1', 'math-2', 'two-versions']:
         read((ROOT / f'docs/module-format-v1/vectors/{filename}.module.json').read_bytes())
+    # Every identity-bearing descriptor position uses the shared validator.
+    for value in ['con.txt', 'lpt0.bin', 'a.', 'A', 'a/b', 'a\\b', 'a\0b', 'ёж', '', 'a' * 256]:
+        read(dict(G, name=value), 'gmod', True)
+        read(dict(G, version=value), 'gmod', True)
+        read(dict(G, dependencies={value: '1'}), 'gmod', True)
+        read(dict(G, dependencies={'unused': value}), 'gmod', True)
+        read(dict(M, name=value), error=True)
+        read(dict(M, version=value), error=True)
+        read(dict(M, dependencies=[dict(dep, name=value)]), error=True)
+        read(dict(M, dependencies=[dict(dep, version=value)]), error=True)
+        read(modify(rich, ('externals', 'g', 'functionRef', 'module'), value), error=True)
+        read(modify(rich, ('externals', 'g', 'functionRef', 'version'), value), error=True)
+    for kind, base in [('gmod', G), ('module', M)]:
+        normalized = read(dict(base, name='a' * 255, version='1' * 250), kind)
+        assert normalized['name'] == 'a' * 255 and normalized['version'] == '1' * 250
+        read(dict(base, version='1' * 251), kind, True)
+    distinct = read(dict(M, dependencies=[dict(dep, version='1.02'), dict(dep, version='1.2')]))
+    assert [d['version'] for d in distinct['dependencies']] == ['1.02', '1.2']
     print(f'Module JSON black-box checks passed: {COUNT}')
 
 
