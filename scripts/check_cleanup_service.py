@@ -49,6 +49,11 @@ class ProcessWatch:
         else:
             assert select.select([self.handle], [], [], timeout)[0]
 
+    def alive(self):
+        if os.name == 'nt':
+            return self.kernel.WaitForSingleObject(self.handle, 0) == 258
+        return not select.select([self.handle], [], [], 0)[0]
+
     def kill(self):
         if os.name == 'nt':
             assert self.kernel.TerminateProcess(self.handle, 99)
@@ -128,6 +133,7 @@ class Owner:
         self.process.stdout.close()
         self.process.stderr.close()
         if self.cleaner:
+            self.cleaner.wait(timeout=40)
             self.cleaner.close()
 
 
@@ -179,10 +185,21 @@ with tempfile.TemporaryDirectory(prefix='goat-cleanup-данные 😀-') as tm
         ok('eight first callers, managed result, explicit cleanup, preserved saved/old objects')
 
         b = Owner(root, 'parallel'); owners.append(b); b.ready()
+        b.send('run')
+        parallel_workers = []
+        for name in ('compiler', 'worker'):
+            path = b.directory / name
+            def read_parallel(path=path):
+                try:
+                    text = path.read_text().strip()
+                    return int(text) if text else None
+                except FileNotFoundError:
+                    return None
+            parallel_workers.append(ProcessWatch(until(read_parallel)))
         for command, code in [('quit', 0), ('exit', 23)]:
             a = Owner(root, "owner-" + command); owners.append(a); a.ready()
             a.send(command); a.ended(code); a.cleaned()
-            assert b.directory.exists()
+            assert b.directory.exists() and all(worker.alive() for worker in parallel_workers)
         ok('ordinary and explicit owner exit, isolated concurrent run')
 
         a = Owner(root, 'detached-client'); owners.append(a); a.ready()
@@ -206,7 +223,7 @@ with tempfile.TemporaryDirectory(prefix='goat-cleanup-данные 😀-') as tm
 
         a = Owner(root, 'killed-owner'); owners.append(a); a.ready()
         a.process.kill(); a.process.wait(timeout=10); a.cleaned()
-        assert b.directory.exists()
+        assert b.directory.exists() and all(worker.alive() for worker in parallel_workers)
         ok('external owner termination triggers independent cleanup')
 
         # Caller policy is outside the service. A confirmed READY stays READY after cleaner death.
@@ -235,7 +252,7 @@ with tempfile.TemporaryDirectory(prefix='goat-cleanup-данные 😀-') as tm
         for worker in workers:
             worker.wait(); worker.close()
         a.cleaned()
-        assert b.directory.exists()
+        assert b.directory.exists() and all(worker.alive() for worker in parallel_workers)
         ok('compiler and descendant stopped before directory cleanup, parallel owner unaffected')
 
         a = Owner(root, 'child-deadline'); owners.append(a); a.ready()
@@ -288,7 +305,12 @@ with tempfile.TemporaryDirectory(prefix='goat-cleanup-данные 😀-') as tm
                 kernel.CloseHandle(handle)
             ok('persistent busy file survives 30 s failure; cleaner terminates after client exit')
 
-        b.send('finish'); assert b.line() == 'finished 0'; b.cleaned(); b.send('quit'); b.ended()
+        assert all(worker.alive() for worker in parallel_workers)
+        b.process.kill(); b.process.wait(timeout=10)
+        for worker in parallel_workers:
+            worker.wait(); worker.close()
+        b.cleaned()
+        ok('parallel compiler tree survived every unrelated cleanup')
     finally:
         for owner in owners:
             owner.close()
