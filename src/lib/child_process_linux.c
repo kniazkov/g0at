@@ -36,7 +36,7 @@ struct child_process_t {
     child_deadline_t deadline;
     pid_t supervisor;
     int control, pipes[3];
-    bool done, stopped;
+    bool done, stopped, service;
 };
 
 uint64_t child_monotonic_ms(void) {
@@ -156,7 +156,9 @@ static void supervise(int control,
                       const int outputs[3],
                       int input,
                       int watch,
+                      int channel,
                       const char *executable,
+                      const char *working_directory,
                       char *const *args,
                       int maximum,
                       bool survive_parent) {
@@ -204,8 +206,12 @@ static void supervise(int control,
             fcntl(outputs[2], F_SETFD, 0);
         if (watch >= 0)
             fcntl(watch, F_SETFD, 0);
-        int keep[] = {errors[1], outputs[2], watch};
-        close_except(keep, 3, maximum);
+        if (channel >= 0)
+            fcntl(channel, F_SETFD, 0);
+        int keep[] = {errors[1], outputs[2], watch, channel};
+        close_except(keep, 4, maximum);
+        if (!error && working_directory && chdir(working_directory))
+            error = errno;
         if (!error)
             execve(executable, args, environ);
         if (!error)
@@ -300,9 +306,20 @@ child_process_t *start_child_process(const child_options_t *options) {
     for (int i = 0; i < 3; i++)
         p->pipes[i] = -1;
     p->deadline = options->deadline;
+    p->service = options->survive_parent;
     p->result.exit_code = -1;
     int outputs[3] = {-1, -1, -1}, control[2] = {-1, -1}, input = -1, watch = -1;
     char *executable = resolve_executable(options->executable);
+    if (executable && options->working_directory && executable[0] != '/') {
+        char *absolute = realpath(executable, NULL);
+        FREE(executable);
+        executable = NULL;
+        if (absolute) {
+            executable = ALLOC(strlen(absolute) + 1);
+            strcpy(executable, absolute);
+            free(absolute);
+        }
+    }
     char **args = NULL;
     int error = executable ? 0 : errno;
     struct rlimit limit;
@@ -343,7 +360,11 @@ child_process_t *start_child_process(const child_options_t *options) {
         if (control[0] < 0 || control[1] < 0)
             error = errno;
     }
-    char result_arg[32], parent_arg[32];
+    char result_arg[32], parent_arg[32], service_arg[32];
+    snprintf(service_arg,
+             sizeof(service_arg),
+             "%llu",
+             (unsigned long long)options->service_channel);
     snprintf(result_arg, sizeof(result_arg), "%d", outputs[2]);
     snprintf(parent_arg, sizeof(parent_arg), "%d", watch);
     if (!error) {
@@ -357,6 +378,8 @@ child_process_t *start_child_process(const child_options_t *options) {
                 arg = result_arg;
             if (arg && options->parent_watch && !strcmp(arg, CHILD_PARENT_ARGUMENT))
                 arg = parent_arg;
+            if (arg && options->service_channel && !strcmp(arg, CHILD_SERVICE_ARGUMENT))
+                arg = service_arg;
             args[i] = (char *)arg;
         }
         if (p->deadline && child_monotonic_ms() >= p->deadline) {
@@ -368,19 +391,37 @@ child_process_t *start_child_process(const child_options_t *options) {
             sigprocmask(SIG_BLOCK, &blocked, &previous);
             p->supervisor = fork();
             int fork_error = errno;
-            if (!p->supervisor)
+            if (!p->supervisor) {
+                if (options->survive_parent) {
+                    pid_t detached = fork();
+                    if (detached < 0) {
+                        child_reply_t failed = {.error = errno, .code = -1};
+                        (void)send(control[1], &failed, sizeof(failed), MSG_NOSIGNAL);
+                        _exit(1);
+                    }
+                    if (detached > 0)
+                        _exit(0);
+                }
                 supervise(control[1],
                           outputs,
                           input,
                           watch,
+                          options->service_channel ? (int)options->service_channel : -1,
                           executable,
+                          options->working_directory,
                           args,
                           limit.rlim_cur > INT_MAX ? INT_MAX : (int)limit.rlim_cur,
                           options->survive_parent);
+            }
             sigprocmask(SIG_SETMASK, &previous, NULL);
             if (p->supervisor < 0)
                 error = fork_error;
             else {
+                if (options->survive_parent) {
+                    while (waitpid(p->supervisor, NULL, 0) < 0 && errno == EINTR) {
+                    }
+                    p->supervisor = 0;
+                }
                 p->control = control[0];
                 control[0] = -1;
             }
@@ -424,7 +465,7 @@ static void drain(child_process_t *p) {
     }
 }
 
-static const child_result_t *wait_process(child_process_t *p, bool stop) {
+static const child_result_t *wait_process(child_process_t *p, bool stop, bool polling) {
     if (p->done)
         return &p->result;
     uint64_t cleanup_deadline = 0;
@@ -454,7 +495,7 @@ static const child_result_t *wait_process(child_process_t *p, bool stop) {
             /* Tree is gone: pipes have a finite buffered tail, never wait for foreign EOF. */
             drain(p);
             int status;
-            while (waitpid(p->supervisor, &status, 0) < 0 && errno == EINTR) {
+            while (p->supervisor > 0 && waitpid(p->supervisor, &status, 0) < 0 && errno == EINTR) {
             }
             p->supervisor = 0;
             break;
@@ -466,6 +507,8 @@ static const child_result_t *wait_process(child_process_t *p, bool stop) {
                 p->result.status = CHILD_IO_ERROR;
             break;
         }
+        if (polling && !p->stopped)
+            return &p->result;
         struct pollfd fds[4] = {{.fd = p->control, .events = POLLIN}};
         for (int i = 0; i < 3; i++)
             fds[i + 1] = (struct pollfd){.fd = p->pipes[i], .events = POLLIN};
@@ -476,11 +519,24 @@ static const child_result_t *wait_process(child_process_t *p, bool stop) {
 }
 
 const child_result_t *wait_child_process(child_process_t *p) {
-    return wait_process(p, false);
+    return wait_process(p, false, false);
 }
 
 const child_result_t *stop_child_process(child_process_t *p) {
-    return wait_process(p, true);
+    return wait_process(p, true, false);
+}
+
+const child_result_t *poll_child_process(child_process_t *p) {
+    return wait_process(p, false, true);
+}
+
+void release_child_service(child_process_t *p) {
+    if (!p || !p->service)
+        return;
+    close_fd(&p->control);
+    for (int i = 0; i < 3; i++)
+        close_fd(&p->pipes[i]);
+    FREE(p);
 }
 
 void destroy_child_process(child_process_t *p) {

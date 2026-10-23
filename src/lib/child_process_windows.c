@@ -19,7 +19,7 @@ struct child_process_t {
     child_result_t result;
     child_deadline_t deadline;
     HANDLE process, job, pipes[3];
-    bool done;
+    bool done, service;
 };
 
 uint64_t child_monotonic_ms(void) {
@@ -76,12 +76,16 @@ child_process_t *start_child_process(const child_options_t *options) {
     child_process_t *p = CALLOC(sizeof(*p));
     p->result.exit_code = -1;
     p->deadline = options->deadline;
-    HANDLE inherited[5] = {0};
+    p->service = options->survive_parent;
+    HANDLE inherited[6] = {0};
     size_t count = 3;
     SECURITY_ATTRIBUTES sa = {.nLength = sizeof(sa), .bInheritHandle = TRUE};
     DWORD error = 0;
     wchar_t *executable = executable_path(options->executable), *command = NULL;
     if (!executable)
+        error = GetLastError();
+    wchar_t *directory = options->working_directory ? wide(options->working_directory) : NULL;
+    if (options->working_directory && !directory)
         error = GetLastError();
     STARTUPINFOEXW startup = {0};
     startup.StartupInfo.cb = sizeof(startup);
@@ -134,12 +138,28 @@ child_process_t *start_child_process(const child_options_t *options) {
             error = GetLastError();
         parent_handle = inherited[count++];
     }
+    HANDLE service_handle = NULL;
+    if (!error && options->service_channel) {
+        if (!DuplicateHandle(GetCurrentProcess(),
+                             (HANDLE)options->service_channel,
+                             GetCurrentProcess(),
+                             &inherited[count],
+                             0,
+                             TRUE,
+                             DUPLICATE_SAME_ACCESS))
+            error = GetLastError();
+        service_handle = inherited[count++];
+    }
     if (!error) {
         size_t argc = 0;
         while (options->arguments[argc])
             argc++;
         const char **args = ALLOC((argc + 1) * sizeof(*args));
-        char result_arg[32], parent_arg[32];
+        char result_arg[32], parent_arg[32], service_arg[32];
+        snprintf(service_arg,
+                 sizeof(service_arg),
+                 "%llu",
+                 (unsigned long long)(uintptr_t)service_handle);
         snprintf(result_arg,
                  sizeof(result_arg),
                  "%llu",
@@ -154,6 +174,8 @@ child_process_t *start_child_process(const child_options_t *options) {
                 arg = result_arg;
             if (arg && options->parent_watch && !strcmp(arg, CHILD_PARENT_ARGUMENT))
                 arg = parent_arg;
+            if (arg && options->service_channel && !strcmp(arg, CHILD_SERVICE_ARGUMENT))
+                arg = service_arg;
             args[i] = arg;
         }
         char *quoted = create_windows_command_line(args);
@@ -220,7 +242,7 @@ child_process_t *start_child_process(const child_options_t *options) {
                                    TRUE,
                                    EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW,
                                    NULL,
-                                   NULL,
+                                   directory,
                                    &startup.StartupInfo,
                                    &info))
             error = GetLastError();
@@ -233,6 +255,7 @@ child_process_t *start_child_process(const child_options_t *options) {
     FREE(startup.lpAttributeList);
     for (size_t i = 0; i < count; i++)
         close_handle(&inherited[i]);
+    FREE(directory);
     FREE(executable);
     FREE(command);
     if (error) {
@@ -273,7 +296,7 @@ static void drain(child_process_t *p) {
     }
 }
 
-static const child_result_t *wait_process(child_process_t *p, bool stop) {
+static const child_result_t *wait_process(child_process_t *p, bool stop, bool polling) {
     if (p->done)
         return &p->result;
     for (;;) {
@@ -301,6 +324,8 @@ static const child_result_t *wait_process(child_process_t *p, bool stop) {
             p->result.status = CHILD_IO_ERROR;
             break;
         }
+        if (polling)
+            return &p->result;
         Sleep(1);
     }
     /* Even a successful root may have left descendants holding pipes or DLLs. */
@@ -332,11 +357,25 @@ static const child_result_t *wait_process(child_process_t *p, bool stop) {
 }
 
 const child_result_t *wait_child_process(child_process_t *p) {
-    return wait_process(p, false);
+    return wait_process(p, false, false);
 }
 
 const child_result_t *stop_child_process(child_process_t *p) {
-    return wait_process(p, true);
+    return wait_process(p, true, false);
+}
+
+const child_result_t *poll_child_process(child_process_t *p) {
+    return wait_process(p, false, true);
+}
+
+void release_child_service(child_process_t *p) {
+    if (!p || !p->service)
+        return;
+    close_handle(&p->process);
+    close_handle(&p->job);
+    for (int i = 0; i < 3; i++)
+        close_handle(&p->pipes[i]);
+    FREE(p);
 }
 
 void destroy_child_process(child_process_t *p) {

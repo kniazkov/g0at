@@ -16,9 +16,19 @@ Linux запускает отдельного наблюдателя-subreaper �
 
 Явный `survive_parent` предназначен для независимого процесса сервиса уборки #245. Его смерть владельца не останавливает; сервис ждёт `parent_watch` и владеет своими рабочими деревьями через обычные объекты. На Windows этот режим отключает kill-on-close для самого сервиса: при исчезновении его владельца за собственную работу отвечает сервис, а не уже исчезнувший вызывающий процесс. Обычный запуск этот режим не использует. Это управление владением, не песочница против намеренно враждебного native-кода.
 
-Существующая сборка DLL/SO использует общий API, пустой stdin и ограниченные диагностики в памяти вместо неограниченного log-файла. Она не ограничена сроком пробы. `--native-probe-timeout` принимает целые секунды 1..4294967295, по умолчанию 10. Параметр хранится в CLI; обнаружение кандидатов, `--cc` и `--list-native-targets` реализуются в #211 и должны передать один срок всем вызовам `native_compiler_run` для кандидата. Сам сервис уборки, файловые операции и inspect остаются в #245/#249/#214.
+Существующая сборка DLL/SO использует общий API, пустой stdin и ограниченные диагностики в памяти вместо неограниченного log-файла. Она не ограничена сроком пробы. `--native-probe-timeout` принимает целые секунды 1..4294967295, по умолчанию 10. Параметр хранится в CLI; обнаружение кандидатов, `--cc` и `--list-native-targets` реализуются в #211 и должны передать один срок всем вызовам `native_compiler_run` для кандидата. Общий сервис уборки и файловый слой реализованы в #245/#249; интеграция потребителей и inspect остаётся в #210/#211/#214/#230.
 
 `scripts/check_child_process.py` запускает управляемые C-процессы с независимым внешним таймаутом. Проверяются успех/ошибка/авария, остановка, общий бюджет, потоки и границы, EOF/наследование ввода, quoting, отдельный результат, устойчивое ожидание родителя, потомки/внуки, выход корня до потомков, смерть владельца и независимые параллельные запуски. Готовность дерева подтверждают сами потомки через канал; паузы не задают порядок теста. Набор включён в Linux и все три Windows-конфигурации CI.
+
+Дополнения для #245: `working_directory` меняет cwd только ребёнка;
+`poll_child_process` возвращает CHILD_RUNNING без ожидания, но окончательное
+подтверждение остановки дерева сохраняет прежний ограниченный срок.
+`service_channel` и `CHILD_SERVICE_ARGUMENT` передают явно выбранный duplex
+endpoint (владение исходным дескриптором остаётся у вызывающего).
+`release_child_service` освобождает только объект `survive_parent`, не останавливая
+его процесс; в Linux такой supervisor отсоединён двойным fork и не оставляет
+клиенту обязанность ждать его перед выходом. Общий сервис описан в
+[cleanup-service-api.md](cleanup-service-api.md).
 
 ## English
 
@@ -36,6 +46,15 @@ Linux creates a private subreaper before the worker. Owner socket closure trigge
 
 Explicit `survive_parent` supports the independent cleanup service in #245. Such a service waits on its stable parent reference and owns its work using ordinary child objects. On Windows this disables kill-on-close for the service itself: after owner death, the service is responsible for its work. This is ownership management, not a sandbox for hostile native code.
 
-Existing DLL/SO compilation now uses the common API, EOF stdin and bounded in-memory diagnostics instead of an unlimited log file. User compilation remains unlimited. CLI `--native-probe-timeout` accepts integer seconds 1..4294967295, default 10. Candidate discovery, `--cc` and `--list-native-targets` belong to #211, which must pass one deadline to all `native_compiler_run` calls for a candidate. Cleanup policy, common filesystem operations and inspect remain #245/#249/#214.
+Existing DLL/SO compilation now uses the common API, EOF stdin and bounded in-memory diagnostics instead of an unlimited log file. User compilation remains unlimited. CLI `--native-probe-timeout` accepts integer seconds 1..4294967295, default 10. Candidate discovery, `--cc` and `--list-native-targets` belong to #211, which must pass one deadline to all `native_compiler_run` calls for a candidate. The shared cleanup service and filesystem layer are implemented in #245/#249; consumer and inspect integration remains in #210/#211/#214/#230.
 
 `scripts/check_child_process.py` exercises controlled C fixtures with independent external watchdogs on Linux and all three Windows CI configurations. Coverage includes exit/failure/crash, stop, shared budgets, binary stream boundaries, EOF/inherited input, quoting, separate results, parent references, children/grandchildren, early root exit, owner death, launch races and independent concurrent trees. Descendant readiness is acknowledged over a pipe rather than inferred from sleeps.
+
+Extensions for #245: `working_directory` changes only the child's cwd.
+`poll_child_process` returns CHILD_RUNNING without waiting; final tree shutdown
+still uses the existing bounded confirmation period. `service_channel` and
+`CHILD_SERVICE_ARGUMENT` explicitly transfer a duplex endpoint while the caller
+retains its original handle. `release_child_service` releases only a
+`survive_parent` object, without stopping its process. On Linux its supervisor is
+detached by double fork, so the client need not wait for it before exit. See
+[cleanup-service-api.md](cleanup-service-api.md) for the shared service contract.

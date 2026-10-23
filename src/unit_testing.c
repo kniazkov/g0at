@@ -5,6 +5,7 @@
  */
 
 #include "lib/allocate.h"
+#include "lib/cleanup_service.h"
 #include "lib/file_system.h"
 #include "lib/string_ext.h"
 #include "unit_test/test_c_emission.h"
@@ -52,6 +53,9 @@ static bool unit_testing() {
 
 /** @brief Entry point. */
 int main(int argc, char **argv) {
+    int cleanup_code;
+    if (cleanup_service_main(argc, argv, &cleanup_code))
+        return cleanup_code;
     init_unicode_locale();
     if (argc == 2 && !strcmp(argv[1], "--file-system-tests"))
         return run_file_system_tests() ? EXIT_SUCCESS : EXIT_FAILURE;

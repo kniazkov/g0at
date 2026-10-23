@@ -27,6 +27,8 @@ for target in 0x0501 0x0A00; do
     "$compiler" "${flags[@]}" -c src/codegen/native_compiler.c -o "$output_dir/compiler-$target.o"
     "$compiler" "${flags[@]}" -c src/lib/file_system_windows.c -o "$output_dir/filesystem-$target.o"
     "$compiler" "${flags[@]}" -c src/lib/child_process_windows.c -o "$output_dir/process-$target.o"
+    "$compiler" "${flags[@]}" -c src/lib/process_channel_windows.c -o "$output_dir/channel-$target.o"
+    "$compiler" "${flags[@]}" -c src/lib/cleanup_service.c -o "$output_dir/cleanup-$target.o"
     "$compiler" "${flags[@]}" -c src/model/native_library_windows.c -o "$output_dir/loader-$target.o"
     printf '[ ok ] %s\n' "$current"
     passed=$((passed+1))
