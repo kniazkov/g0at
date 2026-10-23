@@ -490,8 +490,10 @@ bool prepare_fs_replace(const char *prepared, const char *destination, fs_error_
         open_path(destination, READ_CONTROL | FILE_READ_ATTRIBUTES, false, FILE_SHARE_READ);
     if (source == INVALID_HANDLE_VALUE)
         return fs_native_error(error, "open permissions", destination);
-    HANDLE target =
-        open_path(prepared, WRITE_DAC | WRITE_OWNER | FILE_READ_ATTRIBUTES, false, FILE_SHARE_READ);
+    HANDLE target = open_path(prepared,
+                              READ_CONTROL | WRITE_DAC | WRITE_OWNER | FILE_READ_ATTRIBUTES,
+                              false,
+                              FILE_SHARE_READ);
     bool ok = target != INVALID_HANDLE_VALUE;
     if (!ok)
         fs_native_error(error, "open prepared permissions", prepared);
@@ -524,20 +526,35 @@ bool prepare_fs_replace(const char *prepared, const char *destination, fs_error_
         if (code)
             ok = fs_fail(error, FS_ACCESS, code, "read ACL", destination);
     }
+    PSECURITY_DESCRIPTOR target_descriptor = NULL;
+    PSID target_owner = NULL, target_group = NULL;
     if (ok) {
-        /* Protect the exact copied DACL from parent reinheritance during publication. */
-        code =
-            SetSecurityInfo(target,
-                            SE_FILE_OBJECT,
-                            OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION
-                                | DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
-                            owner,
-                            group,
-                            dacl,
-                            NULL);
+        code = GetSecurityInfo(target,
+                               SE_FILE_OBJECT,
+                               OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION,
+                               &target_owner,
+                               &target_group,
+                               NULL,
+                               NULL,
+                               &target_descriptor);
+        if (code)
+            ok = fs_fail(error, FS_ACCESS, code, "read prepared owner", prepared);
+    }
+    if (ok) {
+        /* Reassigning an unchanged owner/group can require restore privileges.
+         * Only request ownership changes when they are actually necessary. */
+        SECURITY_INFORMATION changes =
+            DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION;
+        if (!EqualSid(owner, target_owner))
+            changes |= OWNER_SECURITY_INFORMATION;
+        if (!EqualSid(group, target_group))
+            changes |= GROUP_SECURITY_INFORMATION;
+        code = SetSecurityInfo(target, SE_FILE_OBJECT, changes, owner, group, dacl, NULL);
         if (code)
             ok = fs_fail(error, FS_ACCESS, code, "copy ACL", prepared);
     }
+    if (target_descriptor)
+        LocalFree(target_descriptor);
     if (descriptor)
         LocalFree(descriptor);
     if (target != INVALID_HANDLE_VALUE && !CloseHandle(target) && ok)

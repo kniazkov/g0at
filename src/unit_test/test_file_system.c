@@ -178,6 +178,8 @@ static bool publication(const char *root) {
     clear_fs_error(&error);
 #endif
     ASSERT(content_is(dest, "new"));
+    ASSERT(!write_binary_file(dest, NULL, 1));
+    ASSERT(content_is(dest, "new"));
     FREE(dest);
     FREE(hard);
     return true;
@@ -305,6 +307,26 @@ static bool linux_contract(const char *root) {
     ASSERT(close_fs_file(file, temp, NULL));
     ASSERT(prepare_fs_replace(temp, sentinel, &error));
     uint32_t copied[32];
+    ASSERT(getxattr(temp, "system.posix_acl_access", copied, sizeof(copied)) == sizeof(acl));
+    ASSERT(!memcmp(acl, copied, sizeof(acl)));
+    ASSERT(remove_fs_entry(temp, NULL));
+    FREE(temp);
+    /* New files obey umask and the parent's default ACL rather than replacement rights. */
+    mode_t saved_mask = umask(0027);
+    temp = create_fs_temporary(sentinel, false, &file, NULL);
+    umask(saved_mask);
+    ASSERT(temp && close_fs_file(file, temp, NULL));
+    struct stat created;
+    ASSERT(!stat(temp, &created) && (created.st_mode & 0777) == 0640);
+    char *absent = join_fs_path(root, "new-destination", NULL);
+    ASSERT(prepare_fs_replace(temp, absent, NULL));
+    ASSERT(!stat(temp, &created) && (created.st_mode & 0777) == 0640);
+    ASSERT(remove_fs_entry(temp, NULL));
+    FREE(temp);
+    FREE(absent);
+    ASSERT(!setxattr(outside, "system.posix_acl_default", acl, sizeof(acl), 0));
+    temp = create_fs_temporary(sentinel, false, &file, NULL);
+    ASSERT(temp && close_fs_file(file, temp, NULL));
     ASSERT(getxattr(temp, "system.posix_acl_access", copied, sizeof(copied)) == sizeof(acl));
     ASSERT(!memcmp(acl, copied, sizeof(acl)));
     ASSERT(remove_fs_entry(temp, NULL));
@@ -465,6 +487,7 @@ static bool windows_contract(const char *root) {
 }
 #endif
 bool run_file_system_tests(void) {
+    size_t memory_before = get_allocated_memory_size();
     fs_error_t error = {0};
     ASSERT(!validate_fs_path("a\0b", 3, &error) && error.status == FS_INVALID);
     clear_fs_error(&error);
@@ -501,6 +524,7 @@ bool run_file_system_tests(void) {
     FREE(root);
     FREE(prefix);
     FREE(base);
+    ASSERT(get_allocated_memory_size() == memory_before);
     return true;
 }
 
