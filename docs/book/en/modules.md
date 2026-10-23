@@ -4035,7 +4035,7 @@ Bytecode strings and VM memory use the same 32-bit Unicode elements: four bytes 
 
 Use the loaded buffer directly: validate sizes, offsets, alignment and values, then establish pointers into string regions without transcoding or separately copying every string. Both the buffer base and string regions provide alignment for 32-bit elements. Use a fixed-width element type (for example, a project type based on uint32_t), not wchar_t; VM string operations must consume it directly. Conversion to system API representations occurs at external boundaries, not during bytecode string loading.
 
-Direct access to UTF-32LE as native 32-bit values applies on little-endian platforms. Big-endian systems cannot simultaneously promise identical bytes and no conversion; this is a separate support constraint. Unicode validation does not imply decoding into another representation. Embedded U+0000 is content; explicit length excludes any trailing terminator.
+Direct access to UTF-32LE as native 32-bit values applies on little-endian platforms. Big-endian platforms are unsupported in v1; configuration/build checks explicitly reject such a target. Unicode validation does not imply decoding into another representation. Embedded U+0000 is content; explicit length excludes any trailing terminator.
 
 The general #251 principle is a specified portable memory-image layout suitable for direct use after validation and pointer setup. Do not require unpacking every section into a separate internal format. Saving a buffer is valid when its layout already follows the file contract; an arbitrary ABI-dependent dump of C structures does not.
 
@@ -4068,3 +4068,11 @@ An individual-character operation uses the simple one-to-one Unicode mapping. If
 Use tables and rules from one explicitly pinned Unicode Character Database version. Record the version, source data and reproducible table-generation procedure in the repository when implementing #250; builds must not fetch a floating latest version. Compiler constant folding, the VM and native execution use the same rules. Results do not depend on the OS, system towupper/towlower, installed locales or setlocale. This decision does not introduce language-specific modes; Unicode normalization and case folding do not substitute for case conversion.
 
 Acceptance covers ASCII, Cyrillic, string expansion from ß to SS, simple individual-character mappings without truncation, contextual Greek sigma conversion, non-BMP characters, empty strings, embedded zeros and output growth. Verify identical results under different system locales on Windows/Linux and across constant folding, VM and native execution.
+
+## v1 portability boundary: little-endian only (#251)
+
+Goat v1 supports execution only on little-endian platforms. This is an explicit portability boundary for the common binary memory image: multibyte numeric fields and UTF-32LE strings are used in the loaded buffer without byte swapping. Process bitness does not change the on-disk layout. The supported-target list separately determines architecture support; little-endian alone does not promise support for every architecture.
+
+Big-endian platforms are unsupported in v1. Configuration/build checks must explicitly reject a big-endian target; an unknown byte order must not silently default to little-endian. Cross-compilation checks the target platform rather than the build host. v1 does not introduce automatic bytecode conversion for big-endian execution.
+
+Size, bounds, alignment, reference and Unicode validation remain mandatory before using the buffer. Acceptance in #251/#184 covers the same golden image on supported little-endian targets and bitnesses, configuration rejection for big-endian, target byte-order validation during cross-compilation and no byte swapping when loading strings.
