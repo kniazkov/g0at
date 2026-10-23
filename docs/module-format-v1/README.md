@@ -109,8 +109,8 @@ No other reductions are implicit in v1.
 
 Normalize summaries: preserve positional arguments; remove the entire arguments
 array only if all normalized elements are empty and its original arity was
-correct. Remove empty result. Order effects.may as input, output, externalRead,
-externalWrite; remove effects only when may=[] and unknown=true. Compare whole
+correct. Remove empty result. Order effects.may as externalRead, externalWrite, input,
+output; remove effects only when may=[] and unknown=true. Compare whole
 normalized summaries as canonical bytes and reject duplicates **before**
 removing when-only summaries. Sort retained summaries by canonical unsigned UTF-8
 bytes. Remove an analysis container whose validated summaries become empty.
