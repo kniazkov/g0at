@@ -3786,6 +3786,14 @@ Beside each exported name, goat-inspect displays mutable and type from the valid
 
 Structured JSON export descriptions carry the existing mutable and optional type with the same meaning. Do not replace an absent type with an invented type or localized text. Acceptance in #212/#223: a constant with a known type, a mutable declaration, and an export without type; output matches module.json without additional inference.
 
+## Metadata in reports for invalid archives
+
+If module.json can be read safely and its metadata passes the applicable structural checks, goat-inspect retains available information in the report even when another archive component fails validation, such as a bytecode hash mismatch. This is information declared by the metadata, not confirmation of module integrity. The text report explicitly states that archive validation failed and includes the specific errors; JSON retains the overall unsuccessful result and diagnostics alongside available module information.
+
+Do not reconstruct values from damaged or unavailable data or substitute empty lists or defaults for unknown information. Displaying metadata neither cancels the nonzero exit status nor permits native probing when archive structure, integrity, or consistency checks fail.
+
+Acceptance in #212/#223: valid module.json with damaged bytecode produces available metadata, an explicit validation failure, and diagnostics in both report formats; no native probe runs. Unreadable or syntactically invalid module.json must not produce invented module information.
+
 ## goat-inspect exit statuses
 
 Inspect uses fixed exit statuses for handled completion: 0 means successful inspection; 1 means a read, archive-validation, load-probe, unloading, probe-process or cleanup failure; 2 means invalid command-line arguments. Detailed causes are conveyed through stable diagnostic code values rather than a separate exit status for every cause.
