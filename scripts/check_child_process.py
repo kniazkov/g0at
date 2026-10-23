@@ -141,7 +141,7 @@ other, other_lines = start_owner("owner")
 try:
     owned = ready(lines)
     independent = ready(other_lines)
-    assert len(owned) == len(independent) == 3
+    assert len(owned) == len(independent) == 3, (owned, independent)
     # A separate successful/crashing probe cannot stop either independent tree.
     for mode in ["tree-exit", "tree-fail", "tree-crash", "tree"]:
         value = run(mode)

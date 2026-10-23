@@ -99,6 +99,8 @@ static int worker(int argc, char **argv) {
     const char *mode = argv[2];
     uintptr_t channel = argc > 3 ? (uintptr_t)strtoull(argv[3], NULL, 10) : 0;
 #ifdef _WIN32
+    if (!channel)
+        channel = (uintptr_t)GetStdHandle(STD_OUTPUT_HANDLE);
     _setmode(_fileno(stdout), _O_BINARY);
     _setmode(_fileno(stderr), _O_BINARY);
     SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
