@@ -3,59 +3,98 @@
  * @brief Module identifier validation and zero-copy import parsing.
  */
 #include <goat/module_identity.h>
-#include <string.h>
 
-static bool ascii_alnum(unsigned int ch) {
+/* Only storage access differs. Grammar, limits and reserved names are shared. */
+typedef struct {
+    const void *data;
+    bool wide;
+} identifier_input;
+
+static uint32_t character(identifier_input input, size_t index) {
+    return input.wide ? ((const gchar_t *)input.data)[index]
+                      : ((const unsigned char *)input.data)[index];
+}
+
+static bool ascii_alnum(uint32_t ch) {
     return (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9');
 }
 
-static bool reserved_device(const char *text, size_t length) {
+static bool reserved_device(identifier_input input, size_t start, size_t length) {
     size_t stem = 0;
-    while (stem < length && text[stem] != '.')
+    while (stem < length && character(input, start + stem) != '.')
         stem++;
-    if (stem == 3) {
-        return !memcmp(text, "con", 3) || !memcmp(text, "prn", 3) || !memcmp(text, "aux", 3)
-               || !memcmp(text, "nul", 3);
-    }
-    if (stem == 4) {
-        bool port = !memcmp(text, "com", 3) || !memcmp(text, "lpt", 3);
-        return port && text[3] >= '0' && text[3] <= '9';
-    }
-    return false;
+    if (stem != 3 && stem != 4)
+        return false;
+    uint32_t a = character(input, start), b = character(input, start + 1);
+    uint32_t c = character(input, start + 2);
+    if (stem == 3)
+        return (a == 'c' && b == 'o' && c == 'n') || (a == 'p' && b == 'r' && c == 'n')
+               || (a == 'a' && b == 'u' && c == 'x') || (a == 'n' && b == 'u' && c == 'l');
+    uint32_t digit = character(input, start + 3);
+    return ((a == 'c' && b == 'o' && c == 'm') || (a == 'l' && b == 'p' && c == 't'))
+           && digit >= '0' && digit <= '9';
 }
 
-static bool identifier_valid(const char *text, size_t length, size_t maximum) {
-    if (!text || length == 0 || length > maximum || !ascii_alnum((unsigned char)text[0])
-        || text[length - 1] == '.')
+static bool identifier_valid(identifier_input input, size_t start, size_t length, size_t maximum) {
+    if (!input.data || length == 0 || length > maximum || !ascii_alnum(character(input, start))
+        || character(input, start + length - 1) == '.')
         return false;
     for (size_t i = 1; i < length; i++) {
-        unsigned int ch = (unsigned char)text[i];
+        uint32_t ch = character(input, start + i);
         if (!ascii_alnum(ch) && ch != '.' && ch != '-' && ch != '_')
             return false;
     }
-    return !reserved_device(text, length);
+    return !reserved_device(input, start, length);
 }
 
 bool goat_module_name_valid(const char *text, size_t length) {
-    return identifier_valid(text, length, 255);
+    return identifier_valid((identifier_input){text, false},
+                            0,
+                            length,
+                            GOAT_MODULE_NAME_MAX_LENGTH);
 }
 
 bool goat_module_version_valid(const char *text, size_t length) {
-    return identifier_valid(text, length, 250);
+    return identifier_valid((identifier_input){text, false},
+                            0,
+                            length,
+                            GOAT_MODULE_VERSION_MAX_LENGTH);
+}
+
+bool goat_module_name_valid_wide(const gchar_t *text, size_t length) {
+    return identifier_valid((identifier_input){text, true}, 0, length, GOAT_MODULE_NAME_MAX_LENGTH);
+}
+
+bool goat_module_version_valid_wide(const gchar_t *text, size_t length) {
+    return identifier_valid((identifier_input){text, true},
+                            0,
+                            length,
+                            GOAT_MODULE_VERSION_MAX_LENGTH);
+}
+
+static bool parse_import(identifier_input input, size_t length, size_t *split) {
+    /* Reject excessive lengths before scanning or doing offset arithmetic. */
+    if (!input.data || !length
+        || length > GOAT_MODULE_NAME_MAX_LENGTH + 1 + GOAT_MODULE_VERSION_MAX_LENGTH)
+        return false;
+    *split = 0;
+    while (*split < length && character(input, *split) != '@')
+        ++*split;
+    if (!identifier_valid(input, 0, *split, GOAT_MODULE_NAME_MAX_LENGTH))
+        return false;
+    return *split == length
+           || identifier_valid(input,
+                               *split + 1,
+                               length - *split - 1,
+                               GOAT_MODULE_VERSION_MAX_LENGTH);
 }
 
 bool goat_module_parse_import(const char *text, size_t length, goat_module_import_t *result) {
     if (!result)
         return false;
     *result = (goat_module_import_t){0};
-    if (!text)
-        return false;
-    size_t split = 0;
-    while (split < length && text[split] != '@')
-        split++;
-    if (!goat_module_name_valid(text, split))
-        return false;
-    if (split < length && !goat_module_version_valid(text + split + 1, length - split - 1))
+    size_t split;
+    if (!parse_import((identifier_input){text, false}, length, &split))
         return false;
     result->name = (goat_module_slice_t){text, split};
     if (split < length) {
@@ -65,50 +104,14 @@ bool goat_module_parse_import(const char *text, size_t length, goat_module_impor
     return true;
 }
 
-static bool wide_identifier_valid(const gchar_t *text, size_t length, size_t maximum) {
-    if (!text || length == 0 || length > maximum || text[length - 1] == U'.')
-        return false;
-    if (!((text[0] >= U'a' && text[0] <= U'z') || (text[0] >= U'0' && text[0] <= U'9')))
-        return false;
-    for (size_t i = 0; i < length; i++) {
-        gchar_t ch = text[i];
-        if (!((ch >= U'a' && ch <= U'z') || (ch >= U'0' && ch <= U'9') || ch == U'.' || ch == U'-'
-              || ch == U'_'))
-            return false;
-    }
-    /* The reserved device names are ASCII and never exceed four characters. */
-    size_t stem = 0;
-    while (stem < length && text[stem] != U'.')
-        stem++;
-    if (stem == 3) {
-        if ((text[0] == U'c' && text[1] == U'o' && text[2] == U'n')
-            || (text[0] == U'p' && text[1] == U'r' && text[2] == U'n')
-            || (text[0] == U'a' && text[1] == U'u' && text[2] == U'x')
-            || (text[0] == U'n' && text[1] == U'u' && text[2] == U'l'))
-            return false;
-    }
-    if (stem == 4
-        && ((text[0] == U'c' && text[1] == U'o' && text[2] == U'm')
-            || (text[0] == U'l' && text[1] == U'p' && text[2] == U't'))
-        && text[3] >= U'0' && text[3] <= U'9')
-        return false;
-    return true;
-}
-
 bool goat_module_parse_import_wide(const gchar_t *text,
                                    size_t length,
                                    goat_module_import_wide_t *result) {
     if (!result)
         return false;
     *result = (goat_module_import_wide_t){0};
-    if (!text)
-        return false;
-    size_t split = 0;
-    while (split < length && text[split] != U'@')
-        split++;
-    if (!wide_identifier_valid(text, split, 255))
-        return false;
-    if (split < length && !wide_identifier_valid(text + split + 1, length - split - 1, 250))
+    size_t split;
+    if (!parse_import((identifier_input){text, true}, length, &split))
         return false;
     result->name = (goat_module_wide_slice_t){text, split};
     if (split < length) {
