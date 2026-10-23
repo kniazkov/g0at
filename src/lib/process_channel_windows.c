@@ -5,9 +5,10 @@
 #include "process_channel.h"
 #include "windows_target.h"
 #ifdef _WIN32
+#    include <windows.h>
+/* bcrypt.h requires the Win32 declarations above. */
 #    include <bcrypt.h>
 #    include <stdio.h>
-#    include <windows.h>
 
 bool create_process_channel(uintptr_t pair[2]) {
     pair[0] = pair[1] = 0;

@@ -138,6 +138,8 @@ def ok(name):
 
 
 print('Starting cleanup service testing...', flush=True)
+subprocess.run([fixture, 'channel'], check=True, timeout=10)
+ok('duplex large messages, receive/send deadlines and closed peer without SIGPIPE')
 subprocess.run([fixture, 'retry'], check=True, timeout=10)
 ok('deterministic 30 s total retry budget, immediate success, retry and saturation')
 with tempfile.TemporaryDirectory(prefix='goat-cleanup-данные 😀-') as tmp:
@@ -182,6 +184,25 @@ with tempfile.TemporaryDirectory(prefix='goat-cleanup-данные 😀-') as tm
             a.send(command); a.ended(code); a.cleaned()
             assert b.directory.exists()
         ok('ordinary and explicit owner exit, isolated concurrent run')
+
+        a = Owner(root, 'detached-client'); owners.append(a); a.ready()
+        a.send('detach'); assert a.line() == 'detached'
+        assert a.directory.exists() and not a.done_file.exists()
+        a.send('touch'); assert a.line() == 'still-owner'
+        assert (a.directory / 'данные 😀.tmp').read_text().strip() == '43'
+        a.send('quit'); a.ended(); a.cleaned()
+        ok('releasing the client channel is not owner death')
+
+        if os.name != 'nt':
+            a = Owner(root, 'invalid-native-name'); owners.append(a); a.ready()
+            bad = os.fsencode(a.directory) + b'/invalid-\xff'
+            with open(bad, 'wb') as stream:
+                stream.write(b'not UTF-8')
+            a.send('finish'); assert a.line() == 'finished 4'
+            a.cleaner.wait()
+            assert a.directory.exists() and a.done_file.read_text().strip() == '1'
+            a.send('quit'); a.ended()
+            ok('explicit deletion failure is distinct from success and leaves diagnostic path')
 
         a = Owner(root, 'killed-owner'); owners.append(a); a.ready()
         a.process.kill(); a.process.wait(timeout=10); a.cleaned()

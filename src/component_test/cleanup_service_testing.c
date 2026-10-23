@@ -74,6 +74,47 @@ static bool fake_remove(void *context, const char *path, fs_error_t *error) {
     return false;
 }
 
+typedef struct {
+    uintptr_t channel;
+    const unsigned char *data;
+    size_t size;
+    channel_status_t status;
+} writer_t;
+
+static void *channel_writer(void *context) {
+    writer_t *writer = context;
+    writer->status = write_process_channel(writer->channel,
+                                           writer->data,
+                                           writer->size,
+                                           child_deadline_after(3000));
+    return NULL;
+}
+
+static int channel_tests(void) {
+    uintptr_t pair[2];
+    CHECK(create_process_channel(pair));
+    CHECK(wait_process_channel(pair[0], child_deadline_after(5)) == CHANNEL_TIMEOUT);
+    size_t size = 1024 * 1024;
+    unsigned char *data = ALLOC(size), *copy = ALLOC(size);
+    for (size_t i = 0; i < size; i++)
+        data[i] = (unsigned char)i;
+    writer_t writer = {pair[1], data, size, CHANNEL_ERROR};
+    os_thread_t *thread;
+    CHECK(create_os_thread(&thread, channel_writer, &writer, 0) == OS_THREAD_OK);
+    CHECK(read_process_channel(pair[0], copy, size, child_deadline_after(3000)) == CHANNEL_OK);
+    CHECK(join_os_thread(thread, NULL) == OS_THREAD_OK);
+    CHECK(destroy_os_thread(thread) == OS_THREAD_OK);
+    CHECK(writer.status == CHANNEL_OK && !memcmp(data, copy, size));
+    /* A peer which stops reading must not make a command send unbounded. */
+    CHECK(write_process_channel(pair[1], data, size, child_deadline_after(20)) == CHANNEL_TIMEOUT);
+    close_process_channel(pair[0]);
+    CHECK(write_process_channel(pair[1], data, 1, child_deadline_after(100)) != CHANNEL_OK);
+    close_process_channel(pair[1]);
+    FREE(data);
+    FREE(copy);
+    return 0;
+}
+
 static int retry_tests(void) {
     fake_t fake = {.now = 100, .success = 100};
     cleanup_retry_ops_t ops = {fake_now, fake_pause, fake_remove, &fake};
@@ -148,6 +189,17 @@ static int owner(const char *mode, const char *executable) {
             CHECK(finish_cleanup_service(service).status == result.status);
             printf("finished %d\n", result.status);
             FFLUSH(stdout);
+        } else if (!strcmp(command, "detach\n")) {
+            destroy_cleanup_service(service);
+            service = NULL;
+            puts("detached");
+            FFLUSH(stdout);
+            CHECK(FGETS(command, sizeof(command), stdin));
+            marker(file, 43);
+            puts("still-owner");
+            FFLUSH(stdout);
+            CHECK(FGETS(command, sizeof(command), stdin));
+            break;
         } else if (!strcmp(command, "check\n")) {
             CHECK(ensure_cleanup_service(service) == CLEANUP_OK);
             puts("alive");
@@ -223,6 +275,8 @@ static int fixture_main(int argc, char **argv) {
         FREE(done);
         return code;
     }
+    if (argc == 2 && !strcmp(argv[1], "channel"))
+        return channel_tests();
     if (argc == 2 && !strcmp(argv[1], "retry"))
         return retry_tests();
     if (argc >= 2 && !strcmp(argv[1], "answer")) {
