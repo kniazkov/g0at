@@ -164,7 +164,7 @@ const char *cleanup_service_directory(const cleanup_service_t *s) {
 /* Bounded NUL-delimited argv follows an absolute monotonic deadline and argc. */
 typedef struct {
     uint64_t deadline;
-    uint32_t argc, executable_size;
+    uint32_t argc, executable_size, directory_size;
 } run_header_t;
 
 cleanup_status_t
@@ -178,6 +178,10 @@ run_cleanup_process(cleanup_service_t *s, const child_options_t *options, child_
     if (executable_size > CLEANUP_FRAME_LIMIT - size)
         return CLEANUP_INVALID;
     size += executable_size;
+    size_t directory_size = options->working_directory ? strlen(options->working_directory) + 1 : 0;
+    if (directory_size > CLEANUP_FRAME_LIMIT - size)
+        return CLEANUP_INVALID;
+    size += directory_size;
     while (options->arguments[count]) {
         size_t length = strlen(options->arguments[count]) + 1;
         if (length > CLEANUP_FRAME_LIMIT - size || count == 4096)
@@ -186,12 +190,19 @@ run_cleanup_process(cleanup_service_t *s, const child_options_t *options, child_
         count++;
     }
     unsigned char *data = CALLOC(size);
-    run_header_t header = {options->deadline, (uint32_t)count, (uint32_t)executable_size};
+    run_header_t header = {options->deadline,
+                           (uint32_t)count,
+                           (uint32_t)executable_size,
+                           (uint32_t)directory_size};
     memcpy(data, &header, sizeof(header));
     size_t offset = sizeof(header);
     if (executable_size) {
         memcpy(data + offset, options->executable, executable_size);
         offset += executable_size;
+    }
+    if (directory_size) {
+        memcpy(data + offset, options->working_directory, directory_size);
+        offset += directory_size;
     }
     for (size_t i = 0; i < count; i++) {
         size_t length = strlen(options->arguments[i]) + 1;
@@ -356,6 +367,15 @@ static child_process_t *start_managed(void *data, size_t size) {
         executable = cursor;
         cursor += header.executable_size;
     }
+    char *directory = NULL;
+    if (header.directory_size) {
+        if (header.directory_size > (size_t)(end - cursor)
+            || !memchr(cursor, 0, header.directory_size)
+            || strlen(cursor) + 1 != header.directory_size)
+            return NULL;
+        directory = cursor;
+        cursor += header.directory_size;
+    }
     const char **args = CALLOC((header.argc + 1) * sizeof(*args));
     bool valid = true;
     for (unsigned i = 0; i < header.argc; i++) {
@@ -370,6 +390,7 @@ static child_process_t *start_managed(void *data, size_t size) {
     child_process_t *process = NULL;
     if (valid && cursor == end) {
         child_options_t options = {.executable = executable,
+                                   .working_directory = directory,
                                    .arguments = args,
                                    .deadline = header.deadline,
                                    .empty_stdin = true,
@@ -382,8 +403,10 @@ static child_process_t *start_managed(void *data, size_t size) {
 
 static int serve(uintptr_t watch, uintptr_t channel, child_deadline_t startup_deadline) {
     if (!watch || !channel || child_parent_state(watch) != 0 || !startup_deadline
-        || child_monotonic_ms() >= startup_deadline)
+        || child_monotonic_ms() >= startup_deadline) {
+        close_process_channel(channel);
         return 1;
+    }
     fs_error_t error = {0};
     char *base = temporary_fs_directory(&error);
     char *prefix = base ? join_fs_path(base, "goat-run", &error) : NULL;
@@ -391,8 +414,10 @@ static int serve(uintptr_t watch, uintptr_t channel, child_deadline_t startup_de
     FREE(base);
     FREE(prefix);
     clear_fs_error(&error);
-    if (!directory)
+    if (!directory) {
+        close_process_channel(channel);
         return 1;
+    }
     bool admitted = false, cleaning = false, connected = true, tree_failed = false;
     child_process_t *process = NULL;
     if (send_frame(channel, MESSAGE_READY, directory, strlen(directory) + 1, startup_deadline)
@@ -430,6 +455,8 @@ static int serve(uintptr_t watch, uintptr_t channel, child_deadline_t startup_de
             }
         }
         if (!connected) {
+            close_process_channel(channel);
+            channel = 0;
             process_pause(10);
             continue;
         }
@@ -469,6 +496,7 @@ static int serve(uintptr_t watch, uintptr_t channel, child_deadline_t startup_de
     if (connected && admitted)
         (void)
             send_frame(channel, MESSAGE_DONE, &result, sizeof(result), child_deadline_after(1000));
+    close_process_channel(channel);
     FREE(directory);
     return result.status == CLEANUP_OK ? 0 : 1;
 }
@@ -495,6 +523,5 @@ bool cleanup_service_main(int argc, char **argv, int *exit_code) {
         return true;
     *exit_code = serve((uintptr_t)watch, (uintptr_t)channel, deadline);
     child_close_channel((uintptr_t)watch);
-    close_process_channel((uintptr_t)channel);
     return true;
 }

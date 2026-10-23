@@ -55,6 +55,11 @@ bool create_process_channel(uintptr_t pair[2]) {
     }
     BOOL connected = ConnectNamedPipe(server, &connect);
     DWORD error = connected ? 0 : GetLastError();
+    if (!connected && error == ERROR_IO_PENDING) {
+        CancelIoEx(server, &connect);
+        DWORD ignored;
+        GetOverlappedResult(server, &connect, &ignored, TRUE);
+    }
     CloseHandle(connect.hEvent);
     if (!connected && error != ERROR_PIPE_CONNECTED) {
         CloseHandle(client);

@@ -22,7 +22,7 @@ ACK с тем же сроком завершает согласование. О�
 Потребитель auto предупреждает один раз и выбирает VM до конца запуска; required
 возвращает ошибку. Эти политики интегрируются задачами потребителей.
 
-`run_cleanup_process` синхронно передаёт уборщику executable, argv и абсолютный
+`run_cleanup_process` синхронно передаёт уборщику executable, рабочий каталог, argv и абсолютный
 срок процесса. Весь вывод ограниченно захватывается, stdin пуст. Остальные поля
 `child_options_t` должны быть нулевыми. Результат процесса копируется в выходной
 `child_result_t`; CLEANUP_OK здесь означает доставленный результат, а не нулевой
@@ -31,8 +31,9 @@ exit code. Это **регистрация до запуска**, а не пер
 Если владелец погибает в фазе запуска, уборщик завершает созданное дерево до
 удаления. Произвольные внешние PID не принимаются. Вызовы сериализуются; память
 argv можно освобождать после возврата. Потребитель передаёт абсолютные пути своих
-временных файлов. Рабочий каталог процесса сейчас наследуется от уборщика;
-изолированный cwd пробы должен быть добавлен при интеграции #214.
+временных файлов и при необходимости `working_directory`. Для inspect это
+собственный каталог пробы; cwd владельца не меняется. При NULL дочерний процесс
+наследует cwd уборщика. Это не ограничивает доступ к внешним абсолютным путям.
 
 Уборщик наблюдает за **фактическим завершением владельца**, используя Linux pidfd
 или наследованный Windows process HANDLE. Закрытие клиентского канала либо
@@ -40,7 +41,7 @@ argv можно освобождать после возврата. Потреб
 удаление используемых файлов. Уничтожение контекста освобождает только клиентские
 ресурсы и не ждёт уборки. В Linux служебный supervisor отсоединяется двойным fork;
 в Windows служебный Job не имеет kill-on-close. Обычные дочерние деревья сохраняют
-прежние правила остановки. Убийство самого уборщика после READY не отзываeт
+прежние правила остановки. Убийство самого уборщика после READY не отзывает
 готовность и не меняет код владельца; новые запросы возвращают явную ошибку связи.
 Компенсирующего удаления или выгрузки библиотек в владельце нет.
 
@@ -102,15 +103,16 @@ deadline; late readiness never revokes a sticky failure. There are no relaunches
 Consumers implement one warning plus run-wide VM fallback in auto, or a startup
 error in required.
 
-`run_cleanup_process` synchronously delegates executable, argv and an absolute
+`run_cleanup_process` synchronously delegates executable, working directory, argv and an absolute
 process deadline. Output capture is bounded and stdin is empty; other
 `child_options_t` fields must be zero. CLEANUP_OK means the child result was
 received, not that its exit code was zero. The cleaner launches the owned tree
 through #213 itself, establishing ownership **before launch**, rather than
 registering a bare PID afterwards. Owner death during launch cannot create an
 unregistered compiler. Calls are serialized; argument memory may be released
-on return. Use absolute temporary paths. Working directory currently inherits
-from the cleaner; #214 integration must add an isolated probe cwd.
+on return. Use absolute temporary paths and optionally `working_directory` (the owned probe
+directory for inspect). NULL inherits the cleaner cwd. The owner cwd never changes;
+external absolute paths remain accessible.
 
 The cleaner watches actual owner death via Linux pidfd or an inherited Windows
 process HANDLE, never a reused numeric PID. Channel closure and

@@ -44,6 +44,8 @@ typedef struct {
 typedef struct {
     /** @brief UTF-8 executable, NULL launches this executable. No shell is involved. */
     const char *executable;
+    /** @brief Optional UTF-8 child working directory; parent cwd is never changed. */
+    const char *working_directory;
     /** @brief NULL-terminated arguments, including argv[0]. Strings are copied by start. */
     const char *const *arguments;
     child_deadline_t deadline;

@@ -45,8 +45,8 @@ cleanup_status_t ensure_cleanup_service(cleanup_service_t *service);
 const char *cleanup_service_directory(const cleanup_service_t *service);
 /** @brief Synchronous managed launch, not post-launch PID registration.
  * Cleaner owns the child/tree before any child code can run. All output is captured, stdin empty.
- * executable/arguments/deadline are copied; other child_options fields must be zero.
- * A child failure is reported in result with CLEANUP_OK; transport failure is distinct.
+ * executable/working_directory/arguments/deadline are copied; other child_options fields must be
+ * zero. A child failure is reported in result with CLEANUP_OK; transport failure is distinct.
  * Serializes calls. After connection loss no new launches; existing owner code may continue.
  */
 cleanup_status_t run_cleanup_process(cleanup_service_t *service,

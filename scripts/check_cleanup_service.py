@@ -106,6 +106,7 @@ class Owner:
         assert self.directory.is_absolute() and self.directory.parent == self.root
         assert (self.directory / 'данные 😀.tmp').exists()
         self.pin()
+        assert len(list(self.root.glob("goat-run-*"))) == 1
 
     def send(self, command):
         self.process.stdin.write((command + '\n').encode())
@@ -168,6 +169,7 @@ with tempfile.TemporaryDirectory(prefix='goat-cleanup-данные 😀-') as tm
         unrelated.mkdir(); (unrelated / 'saved.gbin').write_bytes(b'saved')
         saved = a.root / 'saved.so'; saved.write_bytes(b'published')
         a.send('short'); assert a.line() == 'ran 0 1'
+        assert (a.directory / 'relative-output').exists()
         a.send('finish'); assert a.line() == 'finished 0'
         a.cleaned()
         assert saved.read_bytes() == b'published' and (unrelated / 'saved.gbin').read_bytes() == b'saved'
@@ -226,6 +228,11 @@ with tempfile.TemporaryDirectory(prefix='goat-cleanup-данные 😀-') as tm
             a = Owner(root, 'race-' + str(i)); owners.append(a); a.ready()
             a.send('finish'); a.process.kill(); a.process.wait(timeout=10); a.cleaned()
         ok('cleanup request/owner death/lost receiver race')
+
+        for i in range(8):
+            a = Owner(root, 'launch-race-' + str(i)); owners.append(a); a.ready()
+            a.send('run'); a.process.kill(); a.process.wait(timeout=10); a.cleaned()
+        ok('owner death racing compiler launch leaves no unregistered tree')
 
         if os.name == 'nt':
             kernel = ctypes.WinDLL('kernel32', use_last_error=True)

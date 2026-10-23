@@ -84,6 +84,9 @@ child_process_t *start_child_process(const child_options_t *options) {
     wchar_t *executable = executable_path(options->executable), *command = NULL;
     if (!executable)
         error = GetLastError();
+    wchar_t *directory = options->working_directory ? wide(options->working_directory) : NULL;
+    if (options->working_directory && !directory)
+        error = GetLastError();
     STARTUPINFOEXW startup = {0};
     startup.StartupInfo.cb = sizeof(startup);
     startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
@@ -239,7 +242,7 @@ child_process_t *start_child_process(const child_options_t *options) {
                                    TRUE,
                                    EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW,
                                    NULL,
-                                   NULL,
+                                   directory,
                                    &startup.StartupInfo,
                                    &info))
             error = GetLastError();
@@ -252,6 +255,7 @@ child_process_t *start_child_process(const child_options_t *options) {
     FREE(startup.lpAttributeList);
     for (size_t i = 0; i < count; i++)
         close_handle(&inherited[i]);
+    FREE(directory);
     FREE(executable);
     FREE(command);
     if (error) {

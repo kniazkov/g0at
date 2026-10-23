@@ -87,6 +87,9 @@ static int retry_tests(void) {
     cleanup_result_t result = cleanup_retry_directory("unused", &ops, fake.now);
     CHECK(result.status == CLEANUP_DELETE_FAILED && result.file_status == FS_ACCESS);
     CHECK(result.native_code == 17 && fake.now == 30100 && fake.pauses == 600);
+    fake = (fake_t){.now = 25100, .permanent = true};
+    CHECK(cleanup_retry_directory("unused", &ops, 100).status == CLEANUP_DELETE_FAILED);
+    CHECK(fake.now == 30100 && fake.pauses == 100);
     fake = (fake_t){.now = UINT64_MAX - 75, .permanent = true};
     CHECK(cleanup_retry_directory("unused", &ops, fake.now).status == CLEANUP_DELETE_FAILED);
     CHECK(fake.now == UINT64_MAX && fake.pauses == 2);
@@ -161,6 +164,7 @@ static int owner(const char *mode, const char *executable) {
             const char *args[] = {"fixture", short_run ? "answer" : "compiler", directory, NULL};
             child_options_t options = {
                 .executable = executable,
+                .working_directory = directory,
                 .arguments = args,
                 .deadline = !strcmp(command, "timeout\n") ? child_deadline_after(200) : 0};
             child_result_t *result = ALLOC(sizeof(*result));
@@ -222,6 +226,7 @@ static int fixture_main(int argc, char **argv) {
     if (argc == 2 && !strcmp(argv[1], "retry"))
         return retry_tests();
     if (argc >= 2 && !strcmp(argv[1], "answer")) {
+        marker("relative-output", 42);
         FWRITE("answer", 1, 6, stdout);
         return 7;
     }

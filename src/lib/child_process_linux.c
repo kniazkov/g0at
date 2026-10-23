@@ -158,6 +158,7 @@ static void supervise(int control,
                       int watch,
                       int channel,
                       const char *executable,
+                      const char *working_directory,
                       char *const *args,
                       int maximum,
                       bool survive_parent) {
@@ -209,6 +210,8 @@ static void supervise(int control,
             fcntl(channel, F_SETFD, 0);
         int keep[] = {errors[1], outputs[2], watch, channel};
         close_except(keep, 4, maximum);
+        if (!error && working_directory && chdir(working_directory))
+            error = errno;
         if (!error)
             execve(executable, args, environ);
         if (!error)
@@ -307,6 +310,16 @@ child_process_t *start_child_process(const child_options_t *options) {
     p->result.exit_code = -1;
     int outputs[3] = {-1, -1, -1}, control[2] = {-1, -1}, input = -1, watch = -1;
     char *executable = resolve_executable(options->executable);
+    if (executable && options->working_directory && executable[0] != '/') {
+        char *absolute = realpath(executable, NULL);
+        FREE(executable);
+        executable = NULL;
+        if (absolute) {
+            executable = ALLOC(strlen(absolute) + 1);
+            strcpy(executable, absolute);
+            free(absolute);
+        }
+    }
     char **args = NULL;
     int error = executable ? 0 : errno;
     struct rlimit limit;
@@ -395,6 +408,7 @@ child_process_t *start_child_process(const child_options_t *options) {
                           watch,
                           options->service_channel ? (int)options->service_channel : -1,
                           executable,
+                          options->working_directory,
                           args,
                           limit.rlim_cur > INT_MAX ? INT_MAX : (int)limit.rlim_cur,
                           options->survive_parent);
