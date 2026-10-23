@@ -7,6 +7,8 @@
 > `include`, `import`, and execution of `.gbin` are planned for later tasks.
 > See the complete [module design contract](modules.md).
 
+Exact formats and reference vectors: [v1 specification](../../module-format-v1/README.md).
+
 ## Build descriptor
 
 To build a module, create a JSON file with the `.gmod` extension.
@@ -31,7 +33,14 @@ For example, `geometry.gmod`:
 `formatVersion`, `name`, `version`, and `main` are required.
 `formatVersion` must be the JSON integer `1`, not `1.0` or `1e0`.
 `name` identifies the module; `version` is its exact string version.
-`main` is the entry `.goat` file path, relative to the `.gmod` file.
+`main` is a literal relative or absolute path to the entry source.
+Relative paths resolve from the real `.gmod` directory after resolving symbolic
+links, independently of the working directory. Sources may be outside the project;
+the `.goat` extension is recommended, not required. Environment variables and `~`
+are not expanded. Empty paths and `NUL` are forbidden; whitespace is not trimmed.
+After resolving links, the source must be a regular file. `/` works on every target
+OS; backslashes follow OS rules. On Windows, incomplete paths such as `C:main.goat`
+and `/src/main.goat` are forbidden; the full `C:/src/main.goat` is allowed.
 
 The optional `dependencies` object maps module names to exact string versions.
 The optional `native` object specifies `off`, `auto` (the default), or
@@ -42,6 +51,44 @@ Unknown fields and duplicate JSON keys are rejected, including keys that become
 identical after decoding `\\u` escapes. Input must be valid UTF-8 without BOM.
 Unicode strings are not normalized. Integer fields are parsed exactly, without
 rounding through `double`.
+
+## Descriptor fields v1
+
+All objects are closed: only the listed fields are allowed. `null` is forbidden.
+Validate the entire `.gmod` before applying command-line overrides, including
+native build settings when `mode = off`.
+
+| Field | Type | Required / when absent |
+| --- | --- | --- |
+| `formatVersion` | Integer `1` | Required |
+| `name` | Module-name string | Required; rules below |
+| `version` | Exact-version string | Required; rules below |
+| `main` | Path string | Required; rules above |
+| `dependencies` | Name-to-version object | Empty object |
+| `native` | Object with `mode` and `target` | `auto` and `host` |
+| `native.mode` | `off`, `auto`, `required` | `auto` |
+| `native.target` | Target-platform string | `host` |
+| `description`, `license`, `homepage` | Strings | Absent |
+| `authors` | Array of author objects | Empty list |
+| `authors[].name` | Nonempty string | Required in each entry |
+| `authors[].email` | String | Absent |
+
+`native.mode` and `native.target` are independently optional;
+`native: {}` and `dependencies: {}` are valid. The exact set of explicit native
+targets still needs to be fixed in issue #244; this table does not substitute
+an arbitrary string for that set. `host` resolves to a concrete platform at build time.
+
+Empty `description`, `license`, `homepage`, `email`, and `authors: []` are
+equivalent to absence; whitespace is not empty. Informational strings retain
+whitespace, case, and Unicode sequences unchanged. `email` and `homepage`
+undergo no address/URL syntax validation or network requests.
+Authors retain their order; duplicate `name + email` pairs after empty-email
+normalization are forbidden. Author objects contain only `name` and `email`.
+
+Versions in `dependencies` are defaults for imports without `@`.
+Explicit imports may use multiple versions of the same module;
+the compiled `module.json` represents dependencies as an array of
+`name`, `version`, `hash` records, not the `.gmod` object.
 
 ## Names and versions
 
