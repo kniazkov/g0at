@@ -4076,3 +4076,13 @@ Goat v1 supports execution only on little-endian platforms. This is an explicit 
 Big-endian platforms are unsupported in v1. Configuration/build checks must explicitly reject a big-endian target; an unknown byte order must not silently default to little-endian. Cross-compilation checks the target platform rather than the build host. v1 does not introduce automatic bytecode conversion for big-endian execution.
 
 Size, bounds, alignment, reference and Unicode validation remain mandatory before using the buffer. Acceptance in #251/#184 covers the same golden image on supported little-endian targets and bitnesses, configuration rejection for big-endian, target byte-order validation during cross-compilation and no byte swapping when loading strings.
+
+## Finished bytecode is immutable (#251/#192)
+
+Finished bytecode is immutable. This is a general loading and execution invariant, not an optional optimization. After the final binary image is produced, neither the loader, VM nor native execution modifies its instructions, string regions, tables or any other bytes. Validation must not normalize or repair the image in place: reject invalid data.
+
+Pointer setup populates external structures pointing into the buffer. Resolved imports, native function addresses, caches, counters, initialization state and other execution data live outside finished bytecode. Patching addresses or accelerated instructions into the original image is forbidden. Building and optimizing bytecode before finalization is unaffected.
+
+Instruction, string and table read APIs express immutability through const. Casts must not introduce writes into the buffer. Immutable string data may be borrowed without copying while respecting owner lifetime; operations producing modified strings allocate their results separately. Sharing an immutable image across threads does not automatically make external mutable structures thread-safe.
+
+Acceptance: retain an exact copy of the finished image and verify byte-for-byte immutability after validation, dependency resolution, initialization, VM execution, native binding and calls, error handling and multithreaded execution. Verify that mutable state lives in external structures and that the image is released only after all uses end. These are test checks, not a requirement to recompute a hash on every execution or call.
