@@ -52,11 +52,12 @@ static int compare_string_keys(const void *a, const void *b) {
 
 static void *copy_string_key(void *key) {
     string_view_t *view = key;
-    if (view->length > (SIZE_MAX - sizeof(*view)) / sizeof(goat_char_t))
+    if (view->length > (SIZE_MAX - sizeof(*view)) / sizeof(goat_char_t) - 1)
         abort();
-    string_view_t *copy = ALLOC(sizeof(*copy) + view->length * sizeof(goat_char_t));
+    string_view_t *copy = ALLOC(sizeof(*copy) + (view->length + 1) * sizeof(goat_char_t));
     *copy = (string_view_t){(goat_char_t *)(copy + 1), view->length};
     goat_memcpy((goat_char_t *)copy->data, view->data, view->length);
+    ((goat_char_t *)copy->data)[view->length] = 0;
     return copy;
 }
 
