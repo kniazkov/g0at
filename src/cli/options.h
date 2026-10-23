@@ -10,6 +10,7 @@
 #include "lib/vector.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct options_t options_t;
 
@@ -75,6 +76,8 @@ struct options_t {
     native_execution_mode_t native_execution;
 
     /** @brief Optional execution counters, separate from the program output. */
+    /** @brief Positive compiler-probe budget in seconds; never limits user C compilation. */
+    uint32_t native_probe_timeout;
     bool print_native;
     path_t *native_output_file;
 

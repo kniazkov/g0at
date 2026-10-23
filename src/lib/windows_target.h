@@ -5,12 +5,12 @@
 #pragma once
 
 #ifdef _WIN32
-/* Restricted handle inheritance, BCrypt and safe DLL search require modern Windows APIs. */
-#    if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0602
+/* Windows 10: atomic process Job Object assignment closes the launch/owner-death race. */
+#    if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0A00
 #        undef _WIN32_WINNT
-#        define _WIN32_WINNT 0x0602
+#        define _WIN32_WINNT 0x0A00
 #    endif
-#    if !defined(WINVER) || WINVER < 0x0602
+#    if !defined(WINVER) || WINVER < 0x0A00
 #        undef WINVER
 #        define WINVER _WIN32_WINNT
 #    endif

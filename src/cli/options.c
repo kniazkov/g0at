@@ -37,6 +37,7 @@ static bool check_graph_file(const char *filename) {
 options_t *create_options() {
     options_t *opt = (options_t *)CALLOC(sizeof(options_t));
     opt->script_args = create_vector();
+    opt->native_probe_timeout = 10;
     opt->optimization_level = OPTIMIZATION_ALL;
     return opt;
 }
@@ -90,6 +91,29 @@ options_t *parse_options(int argc, char **argv) {
                     fprintf_utf8(stderr, get_messages()->bad_optimization_level, level);
                     goto error;
                 }
+                continue;
+            }
+
+            if (!strcmp(arg, "--native-probe-timeout")) {
+                if (++index >= argc) {
+                    fprintf_utf8(stderr, get_messages()->missing_specification, arg);
+                    goto error;
+                }
+                const char *value = argv[index];
+                uint32_t seconds = 0;
+                bool valid = *value != 0;
+                for (const unsigned char *p = (const unsigned char *)value; *p; p++) {
+                    if (*p < '0' || *p > '9' || seconds > (UINT32_MAX - (*p - '0')) / 10) {
+                        valid = false;
+                        break;
+                    }
+                    seconds = seconds * 10 + *p - '0';
+                }
+                if (!valid || !seconds) {
+                    fprintf_utf8(stderr, get_messages()->bad_native_probe_timeout, value);
+                    goto error;
+                }
+                opt->native_probe_timeout = seconds;
                 continue;
             }
 

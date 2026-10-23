@@ -58,127 +58,6 @@ static char *create_directory(const char *target) {
     return NULL;
 }
 
-/** @brief Starts one executable with only the redirected standard handles inherited. */
-static DWORD run_compiler(const char *compiler,
-                          const char *source,
-                          const char *library,
-                          const char *runtime,
-                          const char *log,
-                          int64_t *exit_code) {
-    DWORD size = SearchPathA(NULL, compiler, ".exe", 0, NULL, NULL);
-    if (!size)
-        return GetLastError();
-    char *executable = ALLOC(size + 1);
-    DWORD length = SearchPathA(NULL, compiler, ".exe", size + 1, executable, NULL);
-    if (!length || length > size) {
-        DWORD error = length ? ERROR_INSUFFICIENT_BUFFER : GetLastError();
-        FREE(executable);
-        return error;
-    }
-    const char *args[] = {executable,
-                          "-std=c11",
-                          "-O2",
-                          "-shared",
-                          /* Keep MinGW runtimes inside the DLL, including POSIX threads. */
-                          "-static",
-                          "-static-libgcc",
-                          "-DGOAT_NATIVE_BUILD",
-#    ifdef _WIN64
-                          "-m64",
-#    else
-                          "-m32",
-#    endif
-                          "-fno-fast-math",
-                          "-ffp-contract=off",
-                          "-Wl,--no-undefined",
-                          "-Wl,--exclude-all-symbols",
-                          "-o",
-                          library,
-                          source,
-                          runtime,
-                          "-lm",
-                          NULL};
-    char *command = create_windows_command_line(args);
-    if (!command) {
-        FREE(executable);
-        return ERROR_BAD_LENGTH;
-    }
-    SECURITY_ATTRIBUTES security = {.nLength = sizeof(security), .bInheritHandle = TRUE};
-    HANDLE input = CreateFileA("NUL",
-                               GENERIC_READ,
-                               FILE_SHARE_READ | FILE_SHARE_WRITE,
-                               &security,
-                               OPEN_EXISTING,
-                               0,
-                               NULL);
-    HANDLE output = INVALID_HANDLE_VALUE;
-    DWORD error = input == INVALID_HANDLE_VALUE ? GetLastError() : 0;
-    if (!error) {
-        output =
-            CreateFileA(log, GENERIC_WRITE, FILE_SHARE_READ, &security, CREATE_ALWAYS, 0, NULL);
-        if (output == INVALID_HANDLE_VALUE)
-            error = GetLastError();
-    }
-    STARTUPINFOEXA startup = {0};
-    startup.StartupInfo.cb = sizeof(startup);
-    startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
-    startup.StartupInfo.hStdInput = input;
-    startup.StartupInfo.hStdOutput = output;
-    startup.StartupInfo.hStdError = output;
-    SIZE_T bytes = 0;
-    bool initialized = false;
-    if (!error) {
-        InitializeProcThreadAttributeList(NULL, 1, 0, &bytes);
-        startup.lpAttributeList = ALLOC(bytes);
-        initialized = InitializeProcThreadAttributeList(startup.lpAttributeList, 1, 0, &bytes);
-        if (!initialized)
-            error = GetLastError();
-    }
-    HANDLE handles[] = {input, output};
-    if (!error
-        && !UpdateProcThreadAttribute(startup.lpAttributeList,
-                                      0,
-                                      PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
-                                      handles,
-                                      sizeof(handles),
-                                      NULL,
-                                      NULL))
-        error = GetLastError();
-    PROCESS_INFORMATION process = {0};
-    if (!error
-        && !CreateProcessA(executable,
-                           command,
-                           NULL,
-                           NULL,
-                           TRUE,
-                           EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW,
-                           NULL,
-                           NULL,
-                           &startup.StartupInfo,
-                           &process))
-        error = GetLastError();
-    if (process.hProcess) {
-        DWORD code;
-        if (WaitForSingleObject(process.hProcess, INFINITE) != WAIT_OBJECT_0
-            || !GetExitCodeProcess(process.hProcess, &code))
-            error = GetLastError();
-        else
-            *exit_code = code;
-        CloseHandle(process.hThread);
-        CloseHandle(process.hProcess);
-    }
-    if (initialized)
-        DeleteProcThreadAttributeList(startup.lpAttributeList);
-    FREE(startup.lpAttributeList);
-    if (input != INVALID_HANDLE_VALUE)
-        CloseHandle(input);
-    if (output != INVALID_HANDLE_VALUE)
-        CloseHandle(output);
-    FREE(command);
-    FREE(executable);
-    return error;
-}
-
 static void remove_file(native_compile_result_t *result, const char *path) {
     if (!DeleteFileA(path)) {
         DWORD error = GetLastError();
@@ -220,20 +99,38 @@ compile_native_library(const gchar_t *source, const char *compiler, const char *
             name = p + 1;
     char *output = ALLOC(strlen(directory) + strlen(name) + 2);
     sprintf(output, "%s\\%s", directory, name);
-    char *log = join(directory, "\\compiler.log");
     char *runtime = join(directory, "\\" GOAT_NATIVE_ARCHIVE_NAME);
     if (!write_native_runtime_files(input) || !write_utf8_file(input, source)) {
         result.system_error = errno ? errno : EIO;
         goto cleanup;
     }
-    result.windows_error = run_compiler(compiler, input, output, runtime, log, &result.exit_code);
-    if (result.windows_error) {
-        result.status = NATIVE_COMPILE_START_ERROR;
-        goto cleanup;
-    }
-    result.status = NATIVE_COMPILE_FAILED;
-    native_compiler_read_diagnostics(&result, log);
-    if (result.exit_code || result.system_error)
+    const char *args[] = {compiler,
+                          "-std=c11",
+                          "-O2",
+                          "-shared",
+                          /* Keep MinGW runtimes inside the DLL, including POSIX threads. */
+                          "-static",
+                          "-static-libgcc",
+                          "-DGOAT_NATIVE_BUILD",
+#    ifdef _WIN64
+                          "-m64",
+#    else
+                          "-m32",
+#    endif
+                          "-fno-fast-math",
+                          "-ffp-contract=off",
+                          "-Wl,--no-undefined",
+                          "-Wl,--exclude-all-symbols",
+                          "-o",
+                          output,
+                          input,
+                          runtime,
+                          "-lm",
+                          NULL};
+    native_compiler_run(&result, args, 0);
+    if (result.windows_cleanup_error)
+        goto release;
+    if (result.status != NATIVE_COMPILE_OK)
         goto cleanup;
     result.status = NATIVE_COMPILE_IO_ERROR;
     WIN32_FILE_ATTRIBUTE_DATA info;
@@ -255,13 +152,12 @@ cleanup:
     remove_native_runtime_files(input);
     remove_file(&result, input);
     remove_file(&result, output);
-    remove_file(&result, log);
     if (!RemoveDirectoryA(directory) && !result.windows_cleanup_error)
         result.windows_cleanup_error = GetLastError();
+release:
     FREE(runtime);
     FREE(input);
     FREE(output);
-    FREE(log);
     FREE(directory);
     FREE(target);
     return result;
