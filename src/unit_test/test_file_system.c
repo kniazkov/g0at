@@ -15,6 +15,7 @@
 #include "test_macro.h"
 
 #include <errno.h>
+#include <stdatomic.h>
 #include <string.h>
 #ifdef _WIN32
 #    include <aclapi.h>
@@ -29,6 +30,19 @@
 #    include <sys/xattr.h>
 #    include <unistd.h>
 #endif
+
+static bool prepare_checked(const char *temporary, const char *destination) {
+    fs_error_t error = {0};
+    bool ok = prepare_fs_replace(temporary, destination, &error);
+    if (!ok)
+        fprintf(stderr,
+                "prepare: %s, code %lu, path %s\n",
+                error.operation,
+                error.native_code,
+                error.path);
+    clear_fs_error(&error);
+    return ok;
+}
 
 static bool content_is(const char *path, const char *expected) {
     size_t size;
@@ -114,7 +128,7 @@ static bool publication(const char *root) {
     ASSERT(temp);
     ASSERT(write_fs_file(file, "new", 3, temp, NULL));
     ASSERT(close_fs_file(file, temp, NULL));
-    ASSERT(prepare_fs_replace(temp, dest, NULL));
+    ASSERT(prepare_checked(temp, dest));
     ASSERT(content_is(dest, "old"));
     ASSERT(content_is(temp, "new"));
     ASSERT(publish_fs_replace(temp, dest, NULL));
@@ -166,6 +180,80 @@ static bool publication(const char *root) {
     ASSERT(content_is(dest, "new"));
     FREE(dest);
     FREE(hard);
+    return true;
+}
+
+/* Race a directory rename/link substitution against descriptor-relative cleanup.
+ * The outcome of cleanup may be success or an explicit error; the external
+ * target must survive every interleaving. No sleep controls the ordering.
+ */
+typedef struct {
+    const char *tree, *parked, *outside;
+    atomic_bool stop;
+} swap_task_t;
+
+static void *swap_tree(void *data) {
+    swap_task_t *task = data;
+#ifdef _WIN32
+    wchar_t *tree = fs_wide(task->tree), *outside = fs_wide(task->outside);
+#endif
+    while (!atomic_load(&task->stop)) {
+        if (publish_fs_replace(task->tree, task->parked, NULL)) {
+#ifdef _WIN32
+            if (CreateSymbolicLinkW(tree, outside, SYMBOLIC_LINK_FLAG_DIRECTORY | 2))
+                remove_fs_entry(task->tree, NULL);
+#else
+            if (!symlink(task->outside, task->tree))
+                unlink(task->tree);
+#endif
+            publish_fs_replace(task->parked, task->tree, NULL);
+        }
+    }
+#ifdef _WIN32
+    FREE(tree);
+    FREE(outside);
+#endif
+    return data;
+}
+
+static bool substitution(const char *root) {
+    char *outside = join_fs_path(root, "race-outside", NULL);
+    char *sentinel = join_fs_path(outside, "sentinel", NULL);
+    char *tree = join_fs_path(root, "race-tree", NULL);
+    char *parked = join_fs_path(root, "race-parked", NULL);
+    ASSERT(create_fs_directory(outside, NULL));
+    ASSERT(put(sentinel, "untouched"));
+    for (int attempt = 0; attempt < 40; attempt++) {
+        ASSERT(create_fs_directory(tree, NULL));
+        for (int i = 0; i < 8; i++) {
+            char name[20];
+            snprintf(name, sizeof(name), "child-%d", i);
+            char *child = join_fs_path(tree, name, NULL);
+            ASSERT(put(child, "owned"));
+            FREE(child);
+        }
+        swap_task_t task = {.tree = tree, .parked = parked, .outside = outside};
+        atomic_init(&task.stop, false);
+        os_thread_t *thread;
+        ASSERT(create_os_thread(&thread, swap_tree, &task, 0) == OS_THREAD_OK);
+        fs_error_t error = {0};
+        bool removed = remove_fs_tree(tree, &error);
+        ASSERT(removed || (error.status != FS_OK && error.operation));
+        clear_fs_error(&error);
+        atomic_store(&task.stop, true);
+        ASSERT(join_os_thread(thread, NULL) == OS_THREAD_OK);
+        ASSERT(destroy_os_thread(thread) == OS_THREAD_OK);
+        ASSERT(content_is(sentinel, "untouched"));
+        fs_info_t info;
+        if (inspect_fs_path(tree, false, &info, NULL))
+            ASSERT(remove_fs_tree(tree, NULL));
+        if (inspect_fs_path(parked, false, &info, NULL))
+            ASSERT(remove_fs_tree(parked, NULL));
+    }
+    FREE(outside);
+    FREE(sentinel);
+    FREE(tree);
+    FREE(parked);
     return true;
 }
 #ifndef _WIN32
@@ -239,6 +327,14 @@ static bool linux_contract(const char *root) {
         fs_info_t denied;
         fs_error_t e = {0};
         bool failed = !inspect_fs_path(sentinel, true, &denied, &e) && e.status == FS_ACCESS;
+        char *prepared = join_fs_path(root, "permission-failure", NULL);
+        FILE *f = FOPEN(prepared, "wb");
+        if (f) {
+            fclose(f);
+            failed &= !prepare_fs_replace(prepared, sentinel, &e) && e.status == FS_ACCESS;
+            remove_fs_entry(prepared, NULL);
+        } else
+            failed = false;
         _exit(failed ? 0 : 1);
     }
     int status;
@@ -270,6 +366,27 @@ static bool windows_contract(const char *root) {
     ASSERT(inspect_fs_path(linkpath, true, &info, NULL) && info.kind == FS_DIRECTORY);
     ASSERT(remove_fs_tree(tree, NULL));
     ASSERT(content_is(sentinel, "safe"));
+    ASSERT(create_fs_directory(tree, NULL));
+    wchar_t *badbase = fs_wide(tree);
+    size_t badlen = wcslen(badbase);
+    wchar_t *bad = ALLOC((badlen + 4) * sizeof(*bad));
+    memcpy(bad, badbase, badlen * sizeof(*bad));
+    bad[badlen] = L'/';
+    bad[badlen + 1] = 0xd800;
+    bad[badlen + 2] = 0;
+    HANDLE invalid = CreateFileW(bad, GENERIC_WRITE, 0, NULL, CREATE_NEW, 0, NULL);
+    ASSERT(invalid != INVALID_HANDLE_VALUE);
+    ASSERT(CloseHandle(invalid));
+    fs_error_t encoding = {0};
+    fs_entries_t entries;
+    ASSERT(!list_fs_directory(tree, &entries, &encoding) && encoding.status == FS_INVALID);
+    clear_fs_error(&encoding);
+    ASSERT(!remove_fs_tree(tree, &encoding) && encoding.status == FS_INVALID);
+    clear_fs_error(&encoding);
+    ASSERT(DeleteFileW(bad));
+    FREE(bad);
+    FREE(badbase);
+    ASSERT(remove_fs_tree(tree, NULL));
     /* Copy a protected DACL with a distinct read-only Everyone entry. */
     wchar_t *ws = fs_wide(sentinel);
     PSID everyone = NULL;
@@ -302,7 +419,7 @@ static bool windows_contract(const char *root) {
     char *temp = create_fs_temporary(sentinel, false, &file, NULL);
     ASSERT(temp);
     ASSERT(close_fs_file(file, temp, NULL));
-    ASSERT(prepare_fs_replace(temp, sentinel, NULL));
+    ASSERT(prepare_checked(temp, sentinel));
     wchar_t *wt = fs_wide(temp);
     PACL copied = NULL;
     PSECURITY_DESCRIPTOR copy = NULL;
@@ -368,6 +485,7 @@ bool run_file_system_tests(void) {
     clear_fs_error(&error);
     FREE(missing);
     ASSERT(temporary_concurrency(root));
+    ASSERT(substitution(root));
     ASSERT(publication(root));
 #ifdef _WIN32
     ASSERT(windows_contract(root));
@@ -397,8 +515,16 @@ bool test_file_system(void) {
     const child_result_t *result = wait_child_process(child);
     bool ok = result->status == CHILD_EXITED && !result->exit_code && !result->system_error
               && !result->cleanup_error;
-    if (!ok)
+    if (!ok) {
+        fprintf(stderr,
+                "filesystem fixture status=%d exit=%lld error=%lu cleanup=%lu\n",
+                result->status,
+                (long long)result->exit_code,
+                result->system_error,
+                result->cleanup_error);
+        fwrite(result->out.data, 1, result->out.size, stderr);
         fwrite(result->err.data, 1, result->err.size, stderr);
+    }
     destroy_child_process(child);
     return ok;
 }

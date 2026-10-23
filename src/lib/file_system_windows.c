@@ -486,7 +486,8 @@ bool prepare_fs_replace(const char *prepared, const char *destination, fs_error_
                        ERROR_INVALID_DATA,
                        "destination regular file",
                        destination);
-    HANDLE source = open_path(destination, READ_CONTROL, false, FILE_SHARE_READ);
+    HANDLE source =
+        open_path(destination, READ_CONTROL | FILE_READ_ATTRIBUTES, false, FILE_SHARE_READ);
     if (source == INVALID_HANDLE_VALUE)
         return fs_native_error(error, "open permissions", destination);
     HANDLE target =

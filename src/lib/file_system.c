@@ -35,14 +35,21 @@ bool fs_fail(fs_error_t *error,
 }
 
 bool validate_fs_path(const char *path, size_t length, fs_error_t *error) {
-    if (!path || !length || memchr(path, 0, length))
-        return fs_fail(error, FS_INVALID, EINVAL, "validate path", NULL);
-    string_value_t decoded = decode_utf8_n(path, length);
-    bool valid = decoded.data != NULL;
-    FREE_STRING(decoded);
-    if (!valid)
-        return fs_fail(error, FS_INVALID, EILSEQ, "validate UTF-8", NULL);
-    return true;
+    bool valid = path && length && !memchr(path, 0, length);
+    if (valid) {
+        string_value_t decoded = decode_utf8_n(path, length);
+        valid = decoded.data != NULL;
+        FREE_STRING(decoded);
+    }
+    if (valid)
+        return true;
+    fs_fail(error, FS_INVALID, EILSEQ, "validate UTF-8 path", NULL);
+    if (error && path) {
+        error->path = ALLOC(length + 1);
+        memcpy(error->path, path, length);
+        error->path[length] = 0;
+    }
+    return false;
 }
 
 bool fs_valid(const char *path, fs_error_t *error) {
