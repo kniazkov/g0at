@@ -300,7 +300,9 @@ int main(int argc, char **argv) {
         child = start_child_process(&options);
         result = wait_child_process(child);
     }
-    printf("{\"status\":%d,\"code\":%lld,\"signal\":%d,\"error\":%lu,\"cleanup\":%lu,\"ms\":%llu,",
+    int parent_input = !strcmp(mode, "stdin") ? getchar() : -1;
+    printf("{\"parentInput\":%d,", parent_input);
+    printf("\"status\":%d,\"code\":%lld,\"signal\":%d,\"error\":%lu,\"cleanup\":%lu,\"ms\":%llu,",
            result->status,
            (long long)result->exit_code,
            result->signal_number,

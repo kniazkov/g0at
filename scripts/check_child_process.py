@@ -8,6 +8,7 @@ import queue
 import subprocess
 import sys
 import threading
+import tempfile
 import time
 
 fixture = str(Path(sys.argv[1]).resolve())
@@ -29,6 +30,40 @@ for mode, code in [("empty", 0), ("exit", 23), ("stdin", 0), ("inherit", 0), ("p
     if mode == "empty":
         assert not value["out"] and not value["err"]
         assert not value["outTruncated"] and not value["errTruncated"]
+    if mode == "stdin":
+        assert value["parentInput"] == ord("Q")
+
+# EOF child input must not depend on the parent's pipe writer closing.
+process = subprocess.Popen([fixture, "stdin"], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+process.stdin.write(b"Q")
+process.stdin.flush()
+try:
+    process.wait(timeout=8)
+    value = json.loads(process.stdout.read())
+    assert value["code"] == 0 and value["parentInput"] == ord("Q")
+finally:
+    process.stdin.close()
+    if process.poll() is None:
+        process.kill()
+        process.wait(timeout=8)
+with tempfile.TemporaryFile() as input_file:
+    input_file.write(b"Qcontrol")
+    input_file.seek(0)
+    result = subprocess.run([fixture, "stdin"], stdin=input_file, capture_output=True, timeout=8)
+    value = json.loads(result.stdout)
+    assert value["code"] == 0 and value["parentInput"] == ord("Q")
+if os.name != "nt":
+    import pty
+    master, slave = pty.openpty()
+    try:
+        os.write(master, b"Q\n")
+        result = subprocess.run([fixture, "stdin"], stdin=slave, capture_output=True, timeout=8)
+        value = json.loads(result.stdout)
+        assert value["code"] == 0 and value["parentInput"] == ord("Q")
+    finally:
+        os.close(master)
+        os.close(slave)
+
 for mode, size in [("exact", 65536), ("over", 65537), ("large", 1048576)]:
     value = run(mode)
     prefix = bytes(range(256)) * 256

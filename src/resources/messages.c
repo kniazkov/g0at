@@ -137,7 +137,7 @@ static messages_t russian = {
             U"  --compile                    Сохранить <имя>.gbin без выполнения\n"
             U"  --run                        Выполнить .gbin без компиляции (native: auto)\n"
             U"  --optimize <none|all>         Уровень оптимизаций (по умолчанию: all)\n"
-            U"  --native-probe-timeout <seconds>  Compiler probe budget (default: 10)\n"
+            U"  --native-probe-timeout <секунды>  Срок проверки компилятора (по умолчанию: 10)\n"
             U"  --native <off|auto|required>  Нативное исполнение (по умолчанию: off)\n"
             U"  --print-native               Напечатать счётчики нативных вызовов\n"
             U"  --save-native <file>         Сохранить счётчики нативных вызовов\n"

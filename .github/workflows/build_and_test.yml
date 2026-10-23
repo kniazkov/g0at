@@ -310,6 +310,8 @@ jobs:
         run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_unicode.py build/goat.exe "build/unicode"'
       - name: Child process primitives
         shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_child_process.py build/child_process_testing.exe build/goat.exe'
       - name: Check native artifact integrity
         shell: msys2 {0}

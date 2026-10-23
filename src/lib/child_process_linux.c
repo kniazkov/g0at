@@ -235,15 +235,16 @@ finish:
 
 static char *resolve_executable(const char *name) {
     if (!name)
-        return strdup("/proc/self/exe");
-    if (strchr(name, '/'))
-        return strdup(name);
+        name = "/proc/self/exe";
+    if (strchr(name, '/')) {
+        char *copy = ALLOC(strlen(name) + 1);
+        strcpy(copy, name);
+        return copy;
+    }
     const char *path = getenv("PATH");
     if (!path)
         path = "/bin:/usr/bin";
-    char *candidate = malloc(strlen(path) + strlen(name) + 3);
-    if (!candidate)
-        return NULL;
+    char *candidate = ALLOC(strlen(path) + strlen(name) + 3);
     const char *part = path;
     for (;;) {
         const char *end = strchr(part, ':');
@@ -258,7 +259,7 @@ static char *resolve_executable(const char *name) {
             break;
         part = end + 1;
     }
-    free(candidate);
+    FREE(candidate);
     errno = ENOENT;
     return NULL;
 }
@@ -358,7 +359,7 @@ child_process_t *start_child_process(const child_options_t *options) {
     for (int i = 0; i < 3; i++)
         close_fd(&outputs[i]);
     FREE(args);
-    free(executable);
+    FREE(executable);
     return p;
 }
 
