@@ -10,6 +10,7 @@
 #include "codegen/c_module.h"
 #include "goat/unicode.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/string_ext.h"
 #include "test_macro.h"
 
@@ -99,7 +100,7 @@ bool append_c_recursion_tests(source_builder_t *output, source_builder_t *checks
             if (success)
                 add_formatted_source(output, 0, result.source);
             else {
-                fprintf(stderr,
+                FPRINTF(stderr,
                         "Recursive emission status %d at %ls\n",
                         result.status,
                         result.failed_node ? result.failed_node->vtbl->type_name : U"none");
@@ -109,7 +110,7 @@ bool append_c_recursion_tests(source_builder_t *output, source_builder_t *checks
         if (success)
             add_source(checks, 1, U"%s", fixtures[i].check);
         else
-            fprintf(stderr,
+            FPRINTF(stderr,
                     "Recursion fixture %zu failed (entries: %zu)\n",
                     i,
                     module ? module->count : 0);

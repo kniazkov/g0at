@@ -13,6 +13,7 @@
 #include "goat/unicode.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/io.h"
 #include "lib/string_ext.h"
 #include "model/object.h"
@@ -167,7 +168,7 @@ static bool arithmetic_tests(source_builder_t *output, source_builder_t *checks)
                 }
             }
             if (!success)
-                fprintf(stderr, "Arithmetic emission %zu/%zu failed\n", op, pair);
+                FPRINTF(stderr, "Arithmetic emission %zu/%zu failed\n", op, pair);
             FREE_STRING(name);
             FREE_STRING(source);
             destroy_options(options);
@@ -255,7 +256,7 @@ static bool generate_tests(source_builder_t *output) {
             FREE_STRING(name);
         }
         if (!success)
-            fprintf(stderr, "C emission fixture %zu failed\n", i);
+            FPRINTF(stderr, "C emission fixture %zu failed\n", i);
         destroy_options(options);
         destroy_arena(arena);
     }

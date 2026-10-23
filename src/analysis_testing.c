@@ -11,6 +11,7 @@
 #include "cli/options.h"
 #include "graph/declarations.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/io.h"
 #include "lib/string_ext.h"
 #include "parser/parser.h"
@@ -225,9 +226,9 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
     char line[512];
     size_t line_number = 0, checks = 0;
     bool passed = true;
-    while (fgets(line, sizeof(line), file)) {
+    while (FGETS(line, sizeof(line), file)) {
         line_number++;
-        if (!strchr(line, '\n') && !feof(file))
+        if (!strchr(line, '\n') && !FEOF(file))
             return false;
         char mode[16], kind[16], variable[128], expected[128], extra;
         size_t row, decl_row;
@@ -244,7 +245,7 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
                    &extra)
                 != 6
             || (strcmp(mode, "one") && strcmp(mode, "last") && strcmp(mode, "none"))) {
-            fprintf(stderr, "%s.expect:%zu: invalid expectation\n", name, line_number);
+            FPRINTF(stderr, "%s.expect:%zu: invalid expectation\n", name, line_number);
             return false;
         }
         analysis_event_query_t query = {.row = row};
@@ -268,7 +269,7 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
         } else if (!strcmp(kind, "unreachable"))
             query.kind = ANALYSIS_UNREACHABLE;
         else {
-            fprintf(stderr, "%s.expect:%zu: invalid event kind\n", name, line_number);
+            FPRINTF(stderr, "%s.expect:%zu: invalid event kind\n", name, line_number);
             return false;
         }
         if (!strcmp(mode, "none") && strcmp(expected, "-"))
@@ -325,7 +326,7 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
                               : flags ? flags_match(last->flags, expected)
                                       : value_matches(last->value, expected)));
         if (!ok) {
-            fprintf(stderr,
+            FPRINTF(stderr,
                     "%s.expect:%zu: %s (selector matched %zu events)\n",
                     name,
                     line_number,
@@ -334,7 +335,7 @@ check_expectations(FILE *file, const analysis_collector_t *collector, const char
             passed = false;
         }
     }
-    return passed && checks > 0 && !ferror(file);
+    return passed && checks > 0 && !FERROR(file);
 }
 
 static bool run_case(const char *directory, const char *name) {
@@ -348,10 +349,10 @@ static bool run_case(const char *directory, const char *name) {
     string_value_t source = read_utf8_file(source_path);
     FILE *expected = fopen(expected_path, "r");
     if (!source.data || !expected) {
-        fprintf(stderr, "Cannot read %s or %s\n", source_path, expected_path);
+        FPRINTF(stderr, "Cannot read %s or %s\n", source_path, expected_path);
         FREE_STRING(source);
         if (expected)
-            fclose(expected);
+            FCLOSE(expected);
         return false;
     }
     arena_t *arena = create_arena(16);
@@ -387,13 +388,13 @@ static bool run_case(const char *directory, const char *name) {
         fprintf_utf8(stderr, U"%s", report.data);
         FREE_STRING(report);
     }
-    fclose(expected);
+    FCLOSE(expected);
     destroy_options(options);
     FREE(groups);
     destroy_arena(arena);
     FREE_STRING(source);
     if (get_allocated_memory_size() != before) {
-        fprintf(stderr, "%s: memory leak\n", name);
+        FPRINTF(stderr, "%s: memory leak\n", name);
         passed = false;
     }
     return passed;
@@ -401,7 +402,7 @@ static bool run_case(const char *directory, const char *name) {
 
 int main(int argc, char **argv) {
     if (argc != 2) {
-        fprintf(stderr, "Usage: analysis_testing <fixture-directory>\n");
+        FPRINTF(stderr, "Usage: analysis_testing <fixture-directory>\n");
         return 1;
     }
     init_unicode_locale();
@@ -421,7 +422,7 @@ int main(int argc, char **argv) {
     }
     size_t total = 0, passed = 0;
     bool valid = true;
-    while (fgets(line, sizeof(line), list)) {
+    while (FGETS(line, sizeof(line), list)) {
         char name[128], extra;
         if (line[0] == '#' || strspn(line, " \t\r\n") == strlen(line))
             continue;
@@ -434,8 +435,8 @@ int main(int argc, char **argv) {
         test_output_case(ok, "%s", name);
         passed += ok;
     }
-    valid = valid && !ferror(list);
-    fclose(list);
+    valid = valid && !FERROR(list);
+    FCLOSE(list);
     if (!valid || !total) {
         test_output_case(false, "test list (%s)", valid ? "empty" : "invalid or unreadable");
         total++;

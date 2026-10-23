@@ -16,6 +16,7 @@
 #include "graph/visualization.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
+#include "lib/file_system.h"
 #include "lib/io.h"
 #include "lib/string_ext.h"
 #include "model/context.h"
@@ -54,7 +55,7 @@ static void print_compilation_errors(compilation_error_t *error, unsigned int li
                      error->position->begin->row + line_offset,
                      error->position->begin->column,
                      error->message.data);
-        fprintf(stderr, "\n");
+        FPRINTF(stderr, "\n");
         error = error->next;
     }
 }
@@ -85,7 +86,7 @@ static int run_interactive(options_t *opt) {
             print_utf8(U"\n");
         }
         print_utf8(get_messages()->interactive_prompt);
-        fflush(stdout);
+        FFLUSH(stdout);
         string_value_t line = read_input_line(stdin);
         if (line.data == NULL) {
             break; // console read error
@@ -96,7 +97,7 @@ static int run_interactive(options_t *opt) {
         }
         if (line.length == 0) {
             FREE_STRING(line);
-            if (feof(stdin)) {
+            if (FEOF(stdin)) {
                 break; // end of input
             }
             line_counter++;
@@ -122,7 +123,7 @@ static int run_interactive(options_t *opt) {
                 print_utf8(U"\n");
             }
             print_utf8(get_messages()->continuation_prompt);
-            fflush(stdout);
+            FFLUSH(stdout);
             line = read_input_line(stdin);
             if (line.data == NULL) {
                 FREE_STRING(line);
@@ -147,7 +148,7 @@ static int run_interactive(options_t *opt) {
         line = (string_value_t){builder.data, builder.length, builder.data != NULL};
         if (line.length == 0) {
             FREE_STRING(line);
-            if (feof(stdin)) {
+            if (FEOF(stdin)) {
                 break; // end of input
             }
             line_counter++;
@@ -280,7 +281,7 @@ static int run_interactive(options_t *opt) {
                     object_to_string_with_access(thread->exception.value, &observer);
                 clear_function_access(&observer, true);
                 fprintf_utf8(stderr, get_messages()->uncaught_exception, text.data);
-                fprintf(stderr, "\n");
+                FPRINTF(stderr, "\n");
                 FREE_STRING(text);
             }
 
@@ -325,7 +326,7 @@ int go(options_t *opt) {
     if (opt->interactive) {
         int status = run_interactive(opt);
         if (get_allocated_memory_size() != previously_allocated) {
-            fprintf(stderr, "Memory leak after interactive execution.\n");
+            FPRINTF(stderr, "Memory leak after interactive execution.\n");
             return -1;
         }
         return status;
@@ -334,7 +335,7 @@ int go(options_t *opt) {
     if (opt->run_binary) {
         int status = run_binary_program(opt);
         if (get_allocated_memory_size() != previously_allocated) {
-            fprintf(stderr, "Memory leak after compiled execution.\n");
+            FPRINTF(stderr, "Memory leak after compiled execution.\n");
             return -1;
         }
         return status;
@@ -410,7 +411,7 @@ int go(options_t *opt) {
                 fprintf_utf8(stderr,
                              get_messages()->cannot_write_analysis_file,
                              opt->analysis_output_file->normal_path);
-                fprintf(stderr, "\n");
+                FPRINTF(stderr, "\n");
                 break;
             }
         }
@@ -431,11 +432,11 @@ int go(options_t *opt) {
                 bool image_generated = generate_image(root_node, opt->graph_output_file->full_path);
                 if (!image_generated) {
                     fprintf_utf8(stderr, get_messages()->graphviz_failed);
-                    fprintf(stderr, "\n");
+                    FPRINTF(stderr, "\n");
                 }
             } else {
                 fprintf_utf8(stderr, get_messages()->no_graphviz);
-                fprintf(stderr, "\n");
+                FPRINTF(stderr, "\n");
             }
         }
 
@@ -517,9 +518,9 @@ int go(options_t *opt) {
 
     size_t leaked_memory_size = get_allocated_memory_size() - previously_allocated;
     if (leaked_memory_size > 0) {
-        fprintf(stderr, "\n");
+        FPRINTF(stderr, "\n");
         fprintf_utf8(stderr, get_messages()->memory_leak, leaked_memory_size);
-        fprintf(stderr, "\n");
+        FPRINTF(stderr, "\n");
         return -1;
     }
 

@@ -4,6 +4,7 @@
  * @brief A program for performing functional tests on the project's output.
  */
 
+#include "lib/file_system.h"
 #include "unit_test/test_output.h"
 
 #include <ctype.h>
@@ -43,26 +44,26 @@ static void fix_path_separator(char *path) {
 
 /** @brief Compares the contents of two files, ignoring carriage return characters. */
 static int compare_files(FILE *actual, FILE *expected) {
-    while (!feof(actual)) {
-        int a = fgetc(actual);
+    while (!FEOF(actual)) {
+        int a = FGETC(actual);
         while (a == '\r')
-            a = fgetc(actual);
+            a = FGETC(actual);
 
-        int e = fgetc(expected);
+        int e = FGETC(expected);
         while (e == '\r')
-            e = fgetc(expected);
+            e = FGETC(expected);
 
         if (a != e)
             return 0;
     }
-    return feof(expected);
+    return FEOF(expected);
 }
 
 /** @brief Calculates the size of a file in bytes. */
 static int get_file_size(FILE *file) {
-    fseek(file, 0, SEEK_END);
-    int result = ftell(file);
-    rewind(file);
+    FSEEK(file, 0, SEEK_END);
+    int result = FTELL(file);
+    REWIND(file);
     return result;
 }
 
@@ -93,7 +94,7 @@ int do_test(char *interpreter, char *test_name, const char *optimization, const 
     snprintf(path_input, sizeof(path_input), "%s%cinput.txt", test_name, path_separator());
     FILE *input = fopen(path_input, "r");
     if (input)
-        fclose(input);
+        FCLOSE(input);
     else {
 #ifdef _WIN32
         strcpy(path_input, "NUL");
@@ -179,13 +180,13 @@ int do_test(char *interpreter, char *test_name, const char *optimization, const 
 
 cleanup:
     if (actual_output)
-        fclose(actual_output);
+        FCLOSE(actual_output);
     if (expected_output)
-        fclose(expected_output);
+        FCLOSE(expected_output);
     if (actual_error)
-        fclose(actual_error);
+        FCLOSE(actual_error);
     if (expected_error)
-        fclose(expected_error);
+        FCLOSE(expected_error);
     if (result) {
         remove(path_actual_output);
         remove(path_actual_error);
@@ -211,7 +212,7 @@ int main(int argc, char **argv) {
     fix_path_separator(argv[1]);
     FILE *list = fopen(argv[2], "r");
     if (!list) {
-        fprintf(stderr, "Could not open '%s'\n", argv[2]);
+        FPRINTF(stderr, "Could not open '%s'\n", argv[2]);
         test_output_case(false, "test list (unreadable)");
         test_output_summary("Functional", 0, 1);
         return -1;
@@ -222,10 +223,10 @@ int main(int argc, char **argv) {
     const char *levels[] = {"none", "all"};
     for (size_t level = (strcmp(native, "off") && strcmp(native, "compiled")) ? 1 : 0; level < 2;
          level++) {
-        rewind(list);
+        REWIND(list);
         printf("\nConfiguration: optimize=%s, native=%s\n", levels[level], native);
         char test_name[128];
-        while (fgets(test_name, sizeof(test_name), list)) {
+        while (FGETS(test_name, sizeof(test_name), list)) {
             char *test_name_trim = trim(test_name);
             if (strlen(test_name_trim) > 0 && test_name_trim[0] != '#') {
                 int result = do_test(argv[1], test_name_trim, levels[level], native);
@@ -237,7 +238,7 @@ int main(int argc, char **argv) {
                 test_output_case(result, "%s", test_name_trim);
             }
         }
-        if (ferror(list)) {
+        if (FERROR(list)) {
             test_output_case(false, "test list (unreadable)");
             failed++;
             break;
@@ -245,7 +246,7 @@ int main(int argc, char **argv) {
     }
     test_output_summary("Functional", passed, failed);
 
-    fclose(list);
+    FCLOSE(list);
     if (failed > 0)
         return -1;
     return 0;

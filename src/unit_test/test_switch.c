@@ -9,6 +9,7 @@
 #include "cli/options.h"
 #include "graph/switch.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "test_macro.h"
 
 #include <stdio.h>
@@ -79,7 +80,7 @@ bool test_switch_parser(void) {
                 parse_analysis_test_program(&memory,
                                             (string_value_t){texts[i], STRLEN(texts[i]), false});
             if (pass ? root != NULL : root == NULL)
-                fprintf(stderr, "switch grammar %zu/%zu\n", pass, i);
+                FPRINTF(stderr, "switch grammar %zu/%zu\n", pass, i);
             ASSERT(pass ? root == NULL : root != NULL);
             if (root) {
                 string_value_t source = generate_goat_code_from_node(root);

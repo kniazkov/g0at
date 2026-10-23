@@ -4,6 +4,7 @@
  */
 #include "analysis/abstract_state.h"
 #include "analysis/lattice.h"
+#include "lib/file_system.h"
 #include "lib/io.h"
 #include "model/thread.h"
 #include "registry.h"
@@ -11,7 +12,7 @@
 #include <stdio.h>
 
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
-    fflush(stdout);
+    FFLUSH(stdout);
     string_value_t line = read_input_line(stdin);
     if (!line.data)
         return operation_exception(get_exception_invalid_operation());

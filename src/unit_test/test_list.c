@@ -34,6 +34,7 @@
 #include "test_conditional.h"
 #include "test_direct_recursion.h"
 #include "test_division.h"
+#include "test_file_system.h"
 #include "test_finally.h"
 #include "test_function_analysis.h"
 #include "test_function_call_graph.h"
@@ -77,6 +78,7 @@ static bool stub() {
 }
 
 static test_description_t test_list[] = {
+    {"portable filesystem", test_file_system},
     {"portable OS threads", test_os_threads},
     {"module identifiers and imports", test_module_identity},
     {"native execution options", test_native_options},

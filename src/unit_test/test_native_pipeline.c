@@ -12,6 +12,7 @@
 #include "codegen/native_pipeline.h"
 #include "graph/expression.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/os_thread.h"
 #include "lib/string_ext.h"
 #include "model/context.h"
@@ -79,7 +80,7 @@ static bytecode_t *compile(const gchar_t *source, const char *command) {
         preparation = prepared.status;
         omitted = prepared.omitted_specializations;
         if (command == compiler && preparation != NATIVE_PREPARE_READY && prepared.diagnostic)
-            fprintf(stderr, "%s\n", prepared.diagnostic);
+            FPRINTF(stderr, "%s\n", prepared.diagnostic);
         destroy_native_prepare_result(&prepared);
         destroy_code_builder(code);
         destroy_data_builder(data);
@@ -348,7 +349,7 @@ bool test_native_pipeline(const char *command,
         size_t memory = get_allocated_memory_size();
         bool ok = tests[i].test();
         if (get_allocated_memory_size() != memory) {
-            fprintf(stderr, "Allocation balance changed in %s\n", tests[i].name);
+            FPRINTF(stderr, "Allocation balance changed in %s\n", tests[i].name);
             ok = false;
         }
         test_output_case(ok, "%s", tests[i].name);

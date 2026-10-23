@@ -8,6 +8,7 @@
 #include "codegen/native_compiler.h"
 #include "lib/allocate.h"
 #include "lib/child_process.h"
+#include "lib/file_system.h"
 #include "lib/windows_target.h"
 
 #include <signal.h>
@@ -114,7 +115,7 @@ static int worker(int argc, char **argv) {
     }
     if (!strcmp(mode, "stdin")) {
         int value = getchar();
-        return value == EOF && feof(stdin) && !ferror(stdin) ? 0 : 90;
+        return value == EOF && FEOF(stdin) && !FERROR(stdin) ? 0 : 90;
     }
     if (!strcmp(mode, "inherit"))
         return getchar() == 'Q' ? 0 : 91;
@@ -125,11 +126,11 @@ static int worker(int argc, char **argv) {
     }
     if (!strcmp(mode, "watch")) {
         puts("WATCH_READY");
-        fflush(stdout);
+        FFLUSH(stdout);
         if (!child_wait_parent(channel, child_deadline_after(5000)))
             return 93;
         puts("PARENT_GONE");
-        fflush(stdout);
+        FFLUSH(stdout);
         child_close_channel(channel);
         return 0;
     }
@@ -191,7 +192,7 @@ static int worker(int argc, char **argv) {
         }
         /* Explicit readiness for the external owner-death test, after both descendants exist. */
         puts("READY");
-        fflush(stdout);
+        FFLUSH(stdout);
         forever();
     }
     if (!strcmp(mode, "pause")) {
@@ -209,11 +210,11 @@ static int worker(int argc, char **argv) {
     size_t sent = 0;
     while (sent < count) {
         size_t amount = count - sent < sizeof(block) ? count - sent : sizeof(block);
-        if (fwrite(block, 1, amount, stdout) != amount
-            || fwrite(block, 1, amount, stderr) != amount)
+        if (FWRITE(block, 1, amount, stdout) != amount
+            || FWRITE(block, 1, amount, stderr) != amount)
             return 83;
-        fflush(stdout);
-        fflush(stderr);
+        FFLUSH(stdout);
+        FFLUSH(stderr);
         sent += amount;
     }
     return 0;
@@ -313,7 +314,7 @@ static int fixture_main(int argc, char **argv) {
     uint64_t start = child_monotonic_ms();
     if (!strcmp(mode, "launch-owner")) {
         puts("LAUNCHING");
-        fflush(stdout);
+        FFLUSH(stdout);
     }
     child_process_t *child = start_child_process(&options);
     if (!child)

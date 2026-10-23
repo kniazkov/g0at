@@ -5,8 +5,10 @@
  */
 
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/string_ext.h"
 #include "unit_test/test_c_emission.h"
+#include "unit_test/test_file_system.h"
 #include "unit_test/test_list.h"
 #include "unit_test/test_native_call.h"
 #include "unit_test/test_native_pipeline.h"
@@ -34,7 +36,7 @@ static bool unit_testing() {
         if (result) {
             size_t diff = get_allocated_memory_size() - memory_size;
             if (diff > 0) {
-                fprintf(stderr, "Test '%s' leaked %zu bytes\n", tests[i].name, diff);
+                FPRINTF(stderr, "Test '%s' leaked %zu bytes\n", tests[i].name, diff);
                 result = false;
             }
         }
@@ -51,6 +53,8 @@ static bool unit_testing() {
 /** @brief Entry point. */
 int main(int argc, char **argv) {
     init_unicode_locale();
+    if (argc == 2 && !strcmp(argv[1], "--file-system-tests"))
+        return run_file_system_tests() ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 2 && !strcmp(argv[1], "--os-thread-tests"))
         return run_os_thread_tests() ? EXIT_SUCCESS : EXIT_FAILURE;
     if (argc == 6 && !strcmp(argv[1], "--native-pipeline-tests"))

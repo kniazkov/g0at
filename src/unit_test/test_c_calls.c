@@ -12,6 +12,7 @@
 #include "goat/unicode.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/string_ext.h"
 #include "test_macro.h"
 
@@ -186,7 +187,7 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
             if (success)
                 add_formatted_source(output, 0, result.source);
             else {
-                fprintf(stderr,
+                FPRINTF(stderr,
                         "Call emission status %d at %ls\n",
                         result.status,
                         result.failed_node ? result.failed_node->vtbl->type_name : U"none");
@@ -204,7 +205,7 @@ bool append_c_call_tests(source_builder_t *output, source_builder_t *checks) {
                 fixtures[i].check,
                 i);
         else
-            fprintf(stderr, "Call fixture %zu failed: %ls\n", i, fixtures[i].source);
+            FPRINTF(stderr, "Call fixture %zu failed: %ls\n", i, fixtures[i].source);
         if (success && i == 22) {
             add_static_source(checks, 1, U"goat_call_trace=0;");
             add_static_source(checks,

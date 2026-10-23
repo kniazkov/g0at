@@ -7,6 +7,7 @@
 #include "object_stack.h"
 
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "object.h"
 
 #include <stdio.h>
@@ -14,7 +15,7 @@
 
 /** @brief Terminates the process on a broken stack invariant. */
 _Noreturn void fail_stack_underflow(void) {
-    fputs("FATAL: Stack underflow! The interpreter is broken. Aborting.\n", stderr);
+    FPUTS("FATAL: Stack underflow! The interpreter is broken. Aborting.\n", stderr);
     exit(EXIT_FAILURE);
 }
 

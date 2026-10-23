@@ -5,6 +5,7 @@
 #include "test_stack_underflow.h"
 
 #include "codegen/linker.h"
+#include "lib/file_system.h"
 #include "model/context.h"
 #include "model/process.h"
 #include "model/thread.h"
@@ -137,9 +138,9 @@ bool test_stack_underflow(const char *executable) {
 #endif
         FILE *stream = fopen(file, "r");
         char message[256] = {0};
-        size_t length = stream ? fread(message, 1, sizeof(message) - 1, stream) : 0;
+        size_t length = stream ? FREAD(message, 1, sizeof(message) - 1, stream) : 0;
         if (stream)
-            fclose(stream);
+            FCLOSE(stream);
         remove(file);
         bool ok =
             exited && length
@@ -147,7 +148,7 @@ bool test_stack_underflow(const char *executable) {
         test_output_case(ok, "stack underflow case %zu", i);
         passed += ok;
         if (!ok) {
-            fprintf(stderr,
+            FPRINTF(stderr,
                     "Stack underflow case %zu failed: status=%d, stderr=%s\n",
                     i,
                     status,

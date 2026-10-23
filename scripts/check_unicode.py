@@ -52,6 +52,17 @@ def main():
                                 env=dict(os.environ, GOAT_LANGUAGE='en', LC_ALL=locale), timeout=60)
         assert (result.returncode == 0) == ok, (args, result.returncode, result.stderr)
         return result.stdout.replace(b'\r\n', b'\n')
+    # File paths enter Windows through UTF-16 argv, independently of the ANSI codepage.
+    unicode_dir = work/'каталог-😀'
+    unicode_dir.mkdir(exist_ok=True)
+    unicode_source = unicode_dir/'программа-𐐨.goat'
+    unicode_source.write_text('println("path-ok");\n', encoding='utf-8')
+    assert run(unicode_source) == b'path-ok\n'
+    run('--compile', unicode_source)
+    assert run('--run', unicode_source.with_suffix('.gbin')) == b'path-ok\n'
+    unicode_source.with_suffix('.gbin').unlink()
+    unicode_source.unlink()
+    unicode_dir.rmdir()
     image = bytes.fromhex((ROOT/'test/unicode/scalars.gbin.hex').read_text())
     assert image == fixture()
     path = work/'scalars.gbin'

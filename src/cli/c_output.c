@@ -8,6 +8,7 @@
 #include "codegen/native_compiler.h"
 #include "codegen/native_runtime.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/io.h"
 #include "resources/messages.h"
 
@@ -50,10 +51,11 @@ static bool save_library(const options_t *options, const gchar_t *source) {
 #endif
     if (!path) {
         fprintf_utf8(stderr, get_messages()->native_input_conflict);
-        fprintf(stderr, "\n");
+        FPRINTF(stderr, "\n");
         return false;
     }
-    const char *compiler = getenv("CC");
+    char *compiler_value = fs_environment("CC", NULL);
+    const char *compiler = compiler_value;
     if (!compiler || !compiler[0])
         compiler =
 #ifdef _WIN32
@@ -63,15 +65,16 @@ static bool save_library(const options_t *options, const gchar_t *source) {
 #endif
     /* Keep the final component unresolved: rename replaces a symlink, never its target. */
     native_compile_result_t result = compile_native_library(source, compiler, path->normal_path);
+    FREE(compiler_value);
     if (result.diagnostics_length) {
-        fwrite(result.diagnostics, 1, result.diagnostics_length, stderr);
+        FWRITE(result.diagnostics, 1, result.diagnostics_length, stderr);
         if (result.diagnostics[result.diagnostics_length - 1] != '\n')
-            fputc('\n', stderr);
+            FPUTC('\n', stderr);
     }
     if (result.diagnostics_truncated) {
-        fprintf(stderr, "\n");
+        FPRINTF(stderr, "\n");
         fprintf_utf8(stderr, get_messages()->native_diagnostics_truncated);
-        fprintf(stderr, "\n");
+        FPRINTF(stderr, "\n");
     }
     const gchar_t *reason = result.status == NATIVE_COMPILE_UNSUPPORTED   ? U"unsupported platform"
                             : result.status == NATIVE_COMPILE_START_ERROR ? U"cannot start compiler"
@@ -91,7 +94,7 @@ static bool save_library(const options_t *options, const gchar_t *source) {
                      result.cleanup_error ? strerror(result.cleanup_error) : "-",
                      result.windows_error,
                      result.windows_cleanup_error);
-        fprintf(stderr, "\n");
+        FPRINTF(stderr, "\n");
     }
     destroy_native_compile_result(&result);
     free_path(path);
@@ -112,7 +115,7 @@ bool output_c_module(const options_t *options, arena_t *arena, const node_t *roo
             fprintf_utf8(stderr, U" (%s)", failure->dependency->name.data);
         else if (failure->failed_node)
             fprintf_utf8(stderr, U" (%s)", failure->failed_node->vtbl->type_name);
-        fprintf(stderr, "\n");
+        FPRINTF(stderr, "\n");
     }
     bool success = true;
     if (options->save_c) {
@@ -123,7 +126,7 @@ bool output_c_module(const options_t *options, arena_t *arena, const node_t *roo
             fprintf_utf8(stderr,
                          get_messages()->cannot_write_c_file,
                          path ? path->normal_path : options->input_file->normal_path);
-            fprintf(stderr, "\n");
+            FPRINTF(stderr, "\n");
         }
         free_path(path);
     }
@@ -131,7 +134,7 @@ bool output_c_module(const options_t *options, arena_t *arena, const node_t *roo
         success = save_library(options, output.source.data);
     if (success && options->print_c) {
         print_utf8(output.source.data);
-        success = fflush(stdout) == 0 && !ferror(stdout);
+        success = FFLUSH(stdout) == 0 && !FERROR(stdout);
     }
     FREE_STRING(output.source);
     return success;

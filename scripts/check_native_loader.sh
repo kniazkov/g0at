@@ -9,11 +9,15 @@ compiler="$(command -v "${CC:-gcc}")"
 ext=so
 shared=(-shared -fPIC)
 libs=(-ldl -pthread)
+file_sources=()
 compiler_env="$compiler"
 if [[ ${OS:-} == Windows_NT ]]; then
     ext=dll
     shared=(-shared -Wl,--exclude-all-symbols)
-    libs=()
+    libs=(-lbcrypt -ladvapi32 -lshell32 -lm)
+    file_sources=("$repo_root/src/lib/file_system.c" "$repo_root/src/lib/file_system_windows.c"
+                  "$repo_root/src/lib/string_ext.c" "$repo_root/src/lib/unicode.c"
+                  "$repo_root/src/lib/number_format.c")
     compiler_env="$(cygpath -am "$compiler")"
 fi
 passed=0
@@ -39,7 +43,7 @@ mv "$output_dir/dependency.$ext" "$output_dir/dependency.hidden"
 compile -DMEMORY_DEBUG "$repo_root/test/functional/native_loader/driver.c" \
     "$repo_root/src/model/native_library.c" "$repo_root/src/model/native_library_linux.c" \
     "$repo_root/src/model/native_library_windows.c" "$repo_root/src/lib/allocate.c" \
-    "${libs[@]}" -o "$output_dir/loader-host"
+    "${file_sources[@]}" "${libs[@]}" -o "$output_dir/loader-host"
 ok
 current='ABI rejection, metadata snapshots, descriptor ownership and actual unload'
 (cd "$output_dir" && ./loader-host "$output_dir/program.$ext" "provider.$ext" \

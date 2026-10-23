@@ -7,6 +7,7 @@
 #include "c_output.h"
 #include "lib/allocate.h"
 #include "lib/binary_file.h"
+#include "lib/file_system.h"
 #include "lib/io.h"
 #include "model/context.h"
 #include "model/thread.h"
@@ -42,7 +43,7 @@ bool binary_program_options_valid(const options_t *options) {
     free_path(binary);
     free_path(library);
     if (!ok)
-        fprintf(stderr, "Compiled output conflicts with input or a report.\n");
+        FPRINTF(stderr, "Compiled output conflicts with input or a report.\n");
     return ok;
 }
 
@@ -53,7 +54,7 @@ bool compile_binary_program(const options_t *options, const node_t *root, byteco
               && (options->native_execution == NATIVE_OFF || !conflicts(options, library));
     native_execution_report_t report = {.preparation = "disabled"};
     if (!ok) {
-        fprintf(stderr, "Compiled output conflicts with input or a report.\n");
+        FPRINTF(stderr, "Compiled output conflicts with input or a report.\n");
         goto done;
     }
     if (!prepare_native_program_artifact(options,
@@ -76,7 +77,7 @@ bool compile_binary_program(const options_t *options, const node_t *root, byteco
     if (ok)
         ok = save_binary_program(binary->normal_path, code, digest);
     if (!ok)
-        fprintf(stderr, "Could not save compiled program.\n");
+        FPRINTF(stderr, "Could not save compiled program.\n");
 done:
     if (!output_native_report(options, &report, NULL))
         ok = false;
@@ -100,7 +101,7 @@ int execute_program(const options_t *options,
     thread_t *thread = process->main_thread;
     do {
         if (thread->native_status)
-            fprintf(stderr, "Native backend failed (status %u).\n", thread->native_status);
+            FPRINTF(stderr, "Native backend failed (status %u).\n", thread->native_status);
         if (thread->exception.value) {
             /* Unwinding has removed function grants; retain only the entry module. */
             function_access_t observer;
@@ -108,7 +109,7 @@ int execute_program(const options_t *options,
             string_value_t text = object_to_string_with_access(thread->exception.value, &observer);
             clear_function_access(&observer, true);
             fprintf_utf8(stderr, get_messages()->uncaught_exception, text.data);
-            fprintf(stderr, "\n");
+            FPRINTF(stderr, "\n");
             FREE_STRING(text);
         }
         thread = thread->next;
@@ -122,7 +123,7 @@ int execute_program(const options_t *options,
 int run_binary_program(const options_t *options) {
     binary_program_t program = load_binary_program(options->input_file->full_path);
     if (!program.code) {
-        fprintf(stderr,
+        FPRINTF(stderr,
                 "Invalid, incompatible or unreadable Goat binary. Recompile the source with this "
                 "Goat version.\n");
         return -1;
@@ -132,7 +133,7 @@ int run_binary_program(const options_t *options) {
     if (options->native_execution != NATIVE_OFF) {
         path_t *library = output_path(options->input_file, LIBRARY_EXTENSION);
         if (program.binding_count && conflicts(options, library)) {
-            fprintf(stderr, "Native library conflicts with input or a report.\n");
+            FPRINTF(stderr, "Native library conflicts with input or a report.\n");
             free_path(library);
             destroy_binary_program(&program);
             return -1;
@@ -143,7 +144,7 @@ int run_binary_program(const options_t *options) {
         report.bound_functions = bound ? program.binding_count : 0;
         ready = bound || options->native_execution == NATIVE_AUTO;
         if ((!bound && program.binding_count) || !ready)
-            fprintf(stderr, "Native artifact unavailable, incompatible or mismatched.\n");
+            FPRINTF(stderr, "Native artifact unavailable, incompatible or mismatched.\n");
         free_path(library);
     }
     int status;

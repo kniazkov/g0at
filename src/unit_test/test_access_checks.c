@@ -1,3 +1,4 @@
+#include "lib/file_system.h"
 #include "lib/string_ext.h"
 /** @file test_access_checks.c
  * @copyright 2026 Ivan Kniazkov
@@ -182,7 +183,7 @@ static bool run_case(const gchar_t *body, const gchar_t *main) {
     bool ok = status == 0 && result && get_object_boolean_value(result)
               && thread->context->module == proc->module;
     if (!ok)
-        fprintf(stderr, "Access VM case failed (%d)\n", status);
+        FPRINTF(stderr, "Access VM case failed (%d)\n", status);
     DECREF(result_key);
     destroy_process(proc);
     free_bytecode(code);
@@ -288,7 +289,7 @@ bool test_access_vm(void) {
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
         if (!run_case(cases[i].body, cases[i].main)) {
-            fprintf(stderr, "Access case %zu\n", i);
+            FPRINTF(stderr, "Access case %zu\n", i);
             return false;
         }
     }

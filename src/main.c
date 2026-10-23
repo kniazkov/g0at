@@ -6,6 +6,7 @@
 
 #include "cli/launcher.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "lib/io.h"
 #include "lib/string_ext.h"
 #include "resources/messages.h"
@@ -21,8 +22,15 @@ int main(int argc, char **argv) {
     init_unicode_locale();
     init_messages();
 
+    fs_error_t input_error = {0};
+    if (!fs_arguments(&argc, &argv, &input_error)) {
+        FPRINTF(stderr, "Command line: %s (%lu)\n", input_error.operation, input_error.native_code);
+        clear_fs_error(&input_error);
+        return EXIT_FAILURE;
+    }
     options_t *opt = parse_options(argc, argv);
     if (opt == NULL) {
+        free_fs_arguments(argc, argv);
         return EXIT_FAILURE;
     }
 
@@ -34,6 +42,7 @@ int main(int argc, char **argv) {
     int ret_val = go(opt);
 
     destroy_options(opt);
+    free_fs_arguments(argc, argv);
     print_list_of_memory_blocks();
 
     /* Avoid Windows system() confusing a child exit code of -1 with launch failure. */

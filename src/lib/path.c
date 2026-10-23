@@ -13,6 +13,7 @@
 #    include <sys/stat.h>
 #endif
 
+#include "file_system.h"
 #include "lib/allocate.h"
 #include "path.h"
 
@@ -31,7 +32,11 @@ static char *normalize_path(const char *path) {
     size_t len = strlen(path);
     char *normal = (char *)ALLOC(len + 1);
     for (size_t index = 0; index < len; index++) {
-        if (path[index] == '/' || path[index] == '\\') {
+        if (path[index] == '/'
+#ifdef _WIN32
+            || path[index] == '\\'
+#endif
+        ) {
             normal[index] = PATH_SEPARATOR;
         } else {
             normal[index] = path[index];
@@ -46,25 +51,7 @@ static char *normalize_path(const char *path) {
  * @return Absolute path or NULL if absolute path can't be extracted.
  */
 static char *get_absolute_path(const char *rel_path) {
-    char *full_path = NULL;
-#ifdef _WIN32
-    DWORD size = GetFullPathNameA(rel_path, 0, NULL, NULL);
-    if (size == 0) {
-        return NULL;
-    }
-    full_path = (char *)ALLOC(size);
-    if (GetFullPathNameA(rel_path, size, full_path, NULL) == 0) {
-        FREE(full_path);
-        return NULL;
-    }
-#else
-    full_path = (char *)ALLOC(PATH_MAX);
-    if (!realpath(rel_path, full_path)) {
-        FREE(full_path);
-        return NULL;
-    }
-#endif
-    return full_path;
+    return absolute_fs_path(rel_path, NULL);
 }
 
 path_t *create_path(const char *input) {
@@ -115,38 +102,8 @@ void free_path(path_t *path) {
 bool paths_refer_to_same_file(const path_t *left, const path_t *right) {
     if (!left || !right || !left->full_path || !right->full_path)
         return false;
-#ifdef _WIN32
-    if (!strcasecmp(left->full_path, right->full_path))
-        return true;
-    HANDLE a = CreateFileA(left->full_path,
-                           FILE_READ_ATTRIBUTES,
-                           FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                           NULL,
-                           OPEN_EXISTING,
-                           0,
-                           NULL);
-    HANDLE b = CreateFileA(right->full_path,
-                           FILE_READ_ATTRIBUTES,
-                           FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                           NULL,
-                           OPEN_EXISTING,
-                           0,
-                           NULL);
-    BY_HANDLE_FILE_INFORMATION x, y;
-    bool same = a != INVALID_HANDLE_VALUE && b != INVALID_HANDLE_VALUE
-                && GetFileInformationByHandle(a, &x) && GetFileInformationByHandle(b, &y)
-                && x.dwVolumeSerialNumber == y.dwVolumeSerialNumber
-                && x.nFileIndexHigh == y.nFileIndexHigh && x.nFileIndexLow == y.nFileIndexLow;
-    if (a != INVALID_HANDLE_VALUE)
-        CloseHandle(a);
-    if (b != INVALID_HANDLE_VALUE)
-        CloseHandle(b);
-    return same;
-#else
-    if (!strcmp(left->full_path, right->full_path))
-        return true;
-    struct stat a, b;
-    return !stat(left->full_path, &a) && !stat(right->full_path, &b) && a.st_dev == b.st_dev
-           && a.st_ino == b.st_ino;
-#endif
+    fs_info_t a, b;
+    return inspect_fs_path(left->full_path, true, &a, NULL)
+           && inspect_fs_path(right->full_path, true, &b, NULL) && a.device == b.device
+           && a.identity == b.identity;
 }

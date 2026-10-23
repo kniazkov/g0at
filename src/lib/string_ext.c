@@ -7,6 +7,7 @@
 #include "string_ext.h"
 
 #include "allocate.h"
+#include "file_system.h"
 #include "goat/unicode.h"
 
 #include <inttypes.h>
@@ -54,7 +55,7 @@ void resize_string_builder(string_builder_t *builder, size_t new_capacity) {
     }
     const size_t maximum = SIZE_MAX / sizeof(gchar_t) - 1;
     if (new_capacity > maximum) {
-        fprintf(stderr, "\nString capacity overflow.\n");
+        FPRINTF(stderr, "\nString capacity overflow.\n");
         exit(EXIT_FAILURE);
     }
     size_t capacity = builder->capacity;
@@ -200,7 +201,7 @@ char *encode_utf8_view(string_view_t input, size_t *size_ptr) {
         }
         int bytes_count = encode_utf8_char(scalar, symbol);
         if (size > SIZE_MAX - (size_t)bytes_count - 1) {
-            fprintf(stderr, "\nUTF-8 size overflow.\n");
+            FPRINTF(stderr, "\nUTF-8 size overflow.\n");
             exit(EXIT_FAILURE);
         }
         if (size + bytes_count + 1 > capacity) {

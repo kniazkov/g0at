@@ -9,6 +9,7 @@
 #include "cli/options.h"
 #include "graph/declarations.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "test_macro.h"
 
 #include <stdio.h>
@@ -58,7 +59,7 @@ bool test_access_analysis(void) {
                     &memory,
                     (string_value_t){texts[i], STRLEN(texts[i]), false});
                 if (!root)
-                    fprintf(stderr, "access syntax case %zu/%zu\n", group, i);
+                    FPRINTF(stderr, "access syntax case %zu/%zu\n", group, i);
                 ASSERT(root);
                 options_t *options = create_options();
                 options->optimization_level = optimize ? OPTIMIZATION_ALL : OPTIMIZATION_NONE;

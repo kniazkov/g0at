@@ -4,6 +4,8 @@
  * @brief Regression tests for allocation, paths, search boundaries, and UTF-8 I/O.
  */
 
+#include "lib/file_system.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdint.h>
@@ -178,12 +180,12 @@ bool test_utf8_formatted_output() {
                  "file%name",
                  42,
                  U"\u041f\u0440\u0438\u0432\u0435\u0442");
-    ASSERT(fflush(file) == 0);
-    rewind(file);
+    ASSERT(FFLUSH(file) == 0);
+    REWIND(file);
     char buffer[128] = {0};
-    size_t count = fread(buffer, 1, sizeof(buffer) - 1, file);
-    ASSERT(!ferror(file));
-    ASSERT(fclose(file) == 0);
+    size_t count = FREAD(buffer, 1, sizeof(buffer) - 1, file);
+    ASSERT(!FERROR(file));
+    ASSERT(FCLOSE(file) == 0);
     ASSERT(remove(name) == 0);
     const char expected[] = "100%% %s %n % | file%name | 42% | "
                             "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82";
@@ -196,7 +198,7 @@ bool test_utf8_file_io() {
     char name[80];
     FILE *file = create_test_file(name, sizeof(name));
     ASSERT(file != NULL);
-    ASSERT(fclose(file) == 0);
+    ASSERT(FCLOSE(file) == 0);
     size_t before = get_allocated_memory_size();
     string_value_t text = read_utf8_file(name);
     bool empty_ok = text.data != NULL && text.length == 0;
@@ -216,7 +218,7 @@ bool test_utf8_file_io() {
     /* Linux may defer a write error until fclose flushes the stdio buffer. */
     file = fopen("/dev/full", "r");
     if (file) {
-        fclose(file);
+        FCLOSE(file);
         ASSERT(!write_utf8_file("/dev/full", U"test"));
     }
 #endif

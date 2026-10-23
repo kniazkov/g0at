@@ -8,6 +8,7 @@
 #include "io.h"
 
 #include "allocate.h"
+#include "file_system.h"
 #include "string_ext.h"
 
 #include <stdarg.h>
@@ -32,24 +33,24 @@ bool init_io(void) {
 }
 
 string_value_t read_utf8_file(const char *filename) {
-    FILE *file = fopen(filename, "r");
+    FILE *file = FOPEN(filename, "r");
     if (file == NULL) {
         return NULL_STRING_VALUE;
     }
-    if (fseek(file, 0, SEEK_END) != 0) {
-        fclose(file);
+    if (FSEEK(file, 0, SEEK_END) != 0) {
+        FCLOSE(file);
         return NULL_STRING_VALUE;
     }
-    long file_size = ftell(file);
-    if (file_size < 0 || (uintmax_t)file_size >= SIZE_MAX || fseek(file, 0, SEEK_SET) != 0) {
-        fclose(file);
+    long file_size = FTELL(file);
+    if (file_size < 0 || (uintmax_t)file_size >= SIZE_MAX || FSEEK(file, 0, SEEK_SET) != 0) {
+        FCLOSE(file);
         return NULL_STRING_VALUE;
     }
     char *buffer = (char *)ALLOC((size_t)file_size + 1);
-    size_t bytes_read = fread(buffer, 1, file_size, file);
+    size_t bytes_read = FREAD(buffer, 1, file_size, file);
     buffer[bytes_read] = '\0';
-    bool read_failed = ferror(file) != 0;
-    if (fclose(file) != 0 || read_failed) {
+    bool read_failed = FERROR(file) != 0;
+    if (FCLOSE(file) != 0 || read_failed) {
         FREE(buffer);
         return NULL_STRING_VALUE;
     }
@@ -59,15 +60,15 @@ string_value_t read_utf8_file(const char *filename) {
 }
 
 bool write_utf8_file(const char *filename, const gchar_t *content) {
-    FILE *file = fopen(filename, "w");
+    FILE *file = FOPEN(filename, "w");
     if (file == NULL) {
         return false;
     }
     size_t size_of_buffer;
     char *buffer = encode_utf8_ex(content, &size_of_buffer);
-    size_t bytes_written = fwrite(buffer, 1, size_of_buffer, file);
+    size_t bytes_written = FWRITE(buffer, 1, size_of_buffer, file);
     bool result = bytes_written == size_of_buffer;
-    if (fclose(file) != 0) {
+    if (FCLOSE(file) != 0) {
         result = false;
     }
     FREE(buffer);
@@ -79,7 +80,7 @@ void print_utf8_view(string_view_t value) {
     char *buffer = encode_utf8_view(value, &size);
     if (!buffer)
         return;
-    fwrite(buffer, 1, size, stdout);
+    FWRITE(buffer, 1, size, stdout);
     FREE(buffer);
     size_t length = value.length;
     const gchar_t *content = value.data;
@@ -135,7 +136,7 @@ void fprintf_utf8(FILE *file, const gchar_t *format, ...) {
         size_t size;
         char *encoded_buffer = encode_utf8_view(VALUE_TO_VIEW(value), &size);
         if (encoded_buffer)
-            fwrite(encoded_buffer, 1, size, file);
+            FWRITE(encoded_buffer, 1, size, file);
         FREE(encoded_buffer);
         FREE_STRING(value);
     }
@@ -193,7 +194,7 @@ string_value_t read_input_line(FILE *file) {
     char *buffer = ALLOC(capacity);
     bool valid = true;
     int ch;
-    while ((ch = fgetc(file)) != EOF && ch != '\n') {
+    while ((ch = FGETC(file)) != EOF && ch != '\n') {
         if (length == capacity - 1) {
             if (capacity > SIZE_MAX / 2) {
                 FREE(buffer);
@@ -210,7 +211,7 @@ string_value_t read_input_line(FILE *file) {
     if (ch == '\n' && length && buffer[length - 1] == '\r')
         length--;
     buffer[length] = 0;
-    string_value_t result = !valid || ferror(file) ? NULL_STRING_VALUE
+    string_value_t result = !valid || FERROR(file) ? NULL_STRING_VALUE
                             : length               ? decode_utf8_n(buffer, length)
                                                    : EMPTY_STRING_VALUE;
     FREE(buffer);

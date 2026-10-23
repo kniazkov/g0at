@@ -7,6 +7,7 @@
 #include "analysis_test_support.h"
 #include "codegen/linker.h"
 #include "lib/allocate.h"
+#include "lib/file_system.h"
 #include "test_macro.h"
 #include "vm/binary.h"
 #include "vm/vm.h"
@@ -85,7 +86,7 @@ bool test_loops_parser(void) {
                 parse_analysis_test_program(&memory,
                                             (string_value_t){texts[i], STRLEN(texts[i]), false});
             if (pass ? root != NULL : root == NULL)
-                fprintf(stderr, "loop parser case %zu/%zu\n", pass, i);
+                FPRINTF(stderr, "loop parser case %zu/%zu\n", pass, i);
             ASSERT(pass ? root == NULL : root != NULL);
             if (root) {
                 string_value_t source = generate_goat_code_from_node(root);

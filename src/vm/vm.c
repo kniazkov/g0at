@@ -9,6 +9,7 @@
 #include "gc.h"
 #include "lib/allocate.h"
 #include "lib/avl_tree.h"
+#include "lib/file_system.h"
 #include "lib/split64.h"
 #include "model/common_methods.h"
 #include "model/context.h"
@@ -761,7 +762,7 @@ static bool exec_ITER_NEXT(runtime_t *runtime, instruction_t instr, thread_t *th
     object_t *snapshot = peek_object_from_stack(thread->data_stack, 0);
     if (snapshot->vtbl->type != TYPE_ARRAY || thread->context->control_flow != FLOW_LOOP
         || instr.arg1 >= runtime->code->instructions_count) {
-        fprintf(stderr, "Invalid iteration bytecode.\n");
+        FPRINTF(stderr, "Invalid iteration bytecode.\n");
         runtime->status = 1;
         return false;
     }
@@ -818,7 +819,7 @@ static bool exec_LOOP_JUMP(runtime_t *runtime, instruction_t instr, thread_t *th
     thread->instr_id = instr.arg1;
     return true;
 invalid:
-    fprintf(stderr, "Invalid loop transfer bytecode.\n");
+    FPRINTF(stderr, "Invalid loop transfer bytecode.\n");
     runtime->status = 1;
     return false;
 }
@@ -1090,7 +1091,7 @@ int run(process_t *proc, bytecode_t *code) {
         if (thread->instr_id >= code->instructions_count
             || code->instructions[thread->instr_id].opcode
                    >= sizeof(executors) / sizeof(*executors)) {
-            fprintf(stderr, "Invalid bytecode instruction address or opcode.\n");
+            FPRINTF(stderr, "Invalid bytecode instruction address or opcode.\n");
             runtime.status = 1;
             break;
         }
