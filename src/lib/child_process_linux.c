@@ -162,7 +162,14 @@ static void supervise(int control,
                       bool survive_parent) {
     child_reply_t reply = {.code = -1};
     int errors[2] = {-1, -1};
-    if (prctl(PR_SET_CHILD_SUBREAPER, 1) || pipe2(errors, O_CLOEXEC | O_NONBLOCK)) {
+    /* Terminal signals aimed at the owner must not kill its cleanup supervisor. */
+    struct sigaction ignored = {.sa_handler = SIG_IGN};
+    sigemptyset(&ignored.sa_mask);
+    sigaction(SIGINT, &ignored, NULL);
+    sigaction(SIGTERM, &ignored, NULL);
+    sigaction(SIGHUP, &ignored, NULL);
+    sigaction(SIGQUIT, &ignored, NULL);
+    if (setsid() < 0 || prctl(PR_SET_CHILD_SUBREAPER, 1) || pipe2(errors, O_CLOEXEC | O_NONBLOCK)) {
         reply.error = errno;
         goto finish;
     }
@@ -181,6 +188,10 @@ static void supervise(int control,
     sigprocmask(SIG_SETMASK, &mask, NULL);
     pid_t root = fork();
     if (root == 0) {
+        sigaction(SIGINT, &action, NULL);
+        sigaction(SIGTERM, &action, NULL);
+        sigaction(SIGHUP, &action, NULL);
+        sigaction(SIGQUIT, &action, NULL);
         int error = 0;
         if (setpgid(0, 0))
             error = errno;
@@ -352,7 +363,11 @@ child_process_t *start_child_process(const child_options_t *options) {
             p->result.status = CHILD_TIMED_OUT;
             p->done = true;
         } else {
+            sigset_t blocked, previous;
+            sigfillset(&blocked);
+            sigprocmask(SIG_BLOCK, &blocked, &previous);
             p->supervisor = fork();
+            int fork_error = errno;
             if (!p->supervisor)
                 supervise(control[1],
                           outputs,
@@ -362,8 +377,9 @@ child_process_t *start_child_process(const child_options_t *options) {
                           args,
                           limit.rlim_cur > INT_MAX ? INT_MAX : (int)limit.rlim_cur,
                           options->survive_parent);
+            sigprocmask(SIG_SETMASK, &previous, NULL);
             if (p->supervisor < 0)
-                error = errno;
+                error = fork_error;
             else {
                 p->control = control[0];
                 control[0] = -1;

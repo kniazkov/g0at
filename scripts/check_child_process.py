@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import signal
 import subprocess
 import sys
 import threading
@@ -92,8 +93,8 @@ for mode in ["crash", "tree-exit", "tree-fail", "tree-crash"]:
     assert value["result"], mode  # output survives crashes too
 
 # Readiness comes from the worker only after both descendants have confirmed startup.
-def start_owner(mode):
-    process = subprocess.Popen([fixture, mode], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+def start_owner(mode, **kwargs):
+    process = subprocess.Popen([fixture, mode], stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
     lines = queue.Queue()
     def collect():
         for line in process.stdout:
@@ -157,6 +158,20 @@ finally:
             process.kill()
         process.wait(timeout=8)
 gone(independent)
+
+# A terminal-style signal to the owner's process group must leave cleanup operational.
+if os.name != "nt":
+    owner, lines = start_owner("owner", start_new_session=True)
+    try:
+        owned = ready(lines)
+        os.killpg(owner.pid, signal.SIGTERM)
+        owner.wait(timeout=8)
+        gone(owned)
+        assert lines.get(timeout=8) is None
+    finally:
+        if owner.poll() is None:
+            owner.kill()
+            owner.wait(timeout=8)
 
 # Stable parent reference, in an explicitly independent cleanup-service process.
 owner, lines = start_owner("watch-owner")
