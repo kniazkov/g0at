@@ -16,24 +16,30 @@ def checksum(data):
     return value
 
 def fixture():
-    # A complete independent legacy-container transition fixture. #251 replaces
-    # the non-string sections; this test deliberately pins the #250 signature.
+    # Independent portable v1 image, identical on every supported target.
     strings = ['', 'ASCII', 'Привет', '😀', 'e\u0301', '\0A\0B\0\0']
     payload = bytearray()
     descriptors = bytearray()
     instructions = bytearray()
     for index, text in enumerate(strings):
         encoded = text.encode('utf-32-le') + bytes(4)
-        descriptors += struct.pack('<QI', len(payload), len(encoded))
+        payload += bytes((-len(payload)) % 8)
+        descriptors += struct.pack('<4I', len(payload), len(encoded), 1, len(text))
         payload += encoded
         instructions += struct.pack('<BBHI', 13, 0, 0, index)  # SLOAD
         instructions += struct.pack('<BBHI', 5, 0, 0, 0)      # POP
     instructions += struct.pack('<BBHI', 2, 0, 0, 0)          # END
-    inner = struct.pack('<8sQQQ', b'GOATSC01', 32, 32 + len(instructions),
-                        32 + len(instructions) + len(descriptors))
-    inner += instructions + descriptors + payload
+    ni, nd = len(instructions)//8, len(strings)
+    od = 64 + len(instructions)
+    of = od + len(descriptors)
+    ol = of + 16
+    start = ol + 24
+    inner = struct.pack('<8s14I', b'GOATBC01', 1, 64, start+len(payload),
+                        ni, nd, 1, 0, 1, 64, od, of, ol, ol, start)
+    inner += instructions + descriptors + struct.pack('<4I', 0, ni, 0, 0)
+    inner += struct.pack('<6I', 0, ni, 0, 1, 1, 0) + payload
     outer = bytearray(96)
-    struct.pack_into('<8sQQQQ', outer, 0, b'GOATST01', 1, 0x104, len(inner), 0)
+    struct.pack_into('<8sQQQQ', outer, 0, b'GOATPG01', 1, 0, len(inner), 0)
     outer += inner
     struct.pack_into('<Q', outer, 56, checksum(outer))
     return outer
@@ -51,7 +57,7 @@ def main():
     path = work/'scalars.gbin'
     path.write_bytes(image)
     run('--run', path)
-    for magic in [b'GOATBI11', b'GOATBIN1', b'goat v.1']:
+    for magic in [b'GOATBI11', b'GOATBIN1', b'goat v.1', b'GOATST01', b'GOATSC01']:
         damaged = bytearray(image); damaged[:8] = magic
         damaged[56:64] = bytes(8)
         struct.pack_into('<Q', damaged, 56, checksum(damaged))

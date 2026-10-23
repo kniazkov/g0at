@@ -11,6 +11,7 @@
 #include "model/access.h"
 #include "test_macro.h"
 #include "vm/binary.h"
+#include "vm/vm.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -61,6 +62,16 @@ bool test_binary_roundtrip(void) {
     ASSERT(!memcmp(loaded.code->buffer, code->buffer, code->buffer_size));
     ASSERT(loaded.code->instructions_count == 3 && loaded.code->data_descriptor_count == 1);
     ASSERT(!loaded.code->native_functions);
+    void *snapshot = ALLOC(code->buffer_size);
+    memcpy(snapshot, loaded.code->buffer, code->buffer_size);
+    ASSERT(validate_bytecode_image(loaded.code));
+    for (unsigned i = 0; i < 2; ++i) {
+        process_t *process = create_process();
+        ASSERT(!run(process, loaded.code));
+        destroy_process(process);
+        ASSERT(!memcmp(snapshot, loaded.code->buffer, code->buffer_size));
+    }
+    FREE(snapshot);
     ASSERT(!STRCMP((const gchar_t *)loaded.code->data, U"Unicode: \u03bb\u0416"));
     destroy_binary_program(&loaded);
     free_bytecode(code);
@@ -89,19 +100,21 @@ static bool declaration_rejection(void) {
     uint32_t name = add_string_to_data_segment(data, U"field");
     declaration_descriptor_t declaration = {DECLARATION_TAG, name, 0, ACCESS_PRIVATE};
     uint32_t id = add_data_to_data_segment(data, &declaration, sizeof(declaration));
+    data->descriptors[id].kind = DATA_DECLARATION;
+    data->descriptors[id].count = 1;
     add_instruction(builder, (instruction_t){.opcode = DVAR, .arg1 = id});
     add_instruction(builder, (instruction_t){.opcode = BLOAD, .arg1 = id});
     add_instruction(builder, (instruction_t){.opcode = END});
     bytecode_t *code = link_code_and_data(builder, data);
     destroy_code_builder(builder);
     destroy_data_builder(data);
-    instruction_t original = code->instructions[0];
-    data_descriptor_t descriptor = code->data_descriptors[id];
+    instruction_t original = ((instruction_t *)code->instructions)[0];
+    data_descriptor_t descriptor = ((data_descriptor_t *)code->data_descriptors)[id];
     for (unsigned test = 0; test < 12; test++) {
         declaration_descriptor_t altered = declaration;
-        code->instructions[0] = original;
-        code->instructions[1].opcode = BLOAD;
-        code->data_descriptors[id] = descriptor;
+        ((instruction_t *)code->instructions)[0] = original;
+        ((instruction_t *)code->instructions)[1].opcode = BLOAD;
+        ((data_descriptor_t *)code->data_descriptors)[id] = descriptor;
         switch (test) {
             case 1:
                 altered.tag = 0;
@@ -116,28 +129,29 @@ static bool declaration_rejection(void) {
                 altered.modifier = 99;
                 break;
             case 5:
-                altered.modifier = ACCESS_MODULE;
+                altered.modifier = 5;
                 break;
             case 6:
-                code->data_descriptors[id].size--;
+                ((data_descriptor_t *)code->data_descriptors)[id].size--;
                 break;
             case 7:
-                code->instructions[0].arg1 = UINT32_MAX;
+                ((instruction_t *)code->instructions)[0].arg1 = UINT32_MAX;
                 break;
             case 8:
-                code->instructions[0].opcode = BLOAD;
+                ((instruction_t *)code->instructions)[0].opcode = BLOAD;
                 break; /* No declaration. */
             case 9:
-                code->instructions[0].arg0 = 1;
+                ((instruction_t *)code->instructions)[0].arg0 = 1;
                 break;
             case 10:
-                code->instructions[1].opcode = DCONST; /* Duplicate declaration identity. */
+                ((instruction_t *)code->instructions)[1].opcode =
+                    DCONST; /* Duplicate declaration identity. */
                 break;
             case 11:
                 altered.name = id; /* Metadata is not a name string. */
                 break;
         }
-        memcpy(code->data + descriptor.offset, &altered, sizeof(altered));
+        memcpy((uint8_t *)code->data + descriptor.offset, &altered, sizeof(altered));
         ASSERT(save_binary_program(filename, code, NULL));
         binary_program_t loaded = load_binary_program(filename);
         ASSERT((loaded.code != NULL) == (test == 0));

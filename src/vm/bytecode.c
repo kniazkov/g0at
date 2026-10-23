@@ -98,7 +98,11 @@ static instruction_descriptor_t descriptors[] = {
     {.code = U"DVAR", .arg_1_is_unsigned_integer = true},
     {.code = U"DCONST", .arg_1_is_unsigned_integer = true},
     {.code = U"BLOAD", .arg_1_is_unsigned_integer = true},
-    {.code = U"BSTORE", .arg_1_is_unsigned_integer = true}};
+    {.code = U"BSTORE", .arg_1_is_unsigned_integer = true},
+    {.code = U"INCLUDE", .arg_1_is_unsigned_integer = true},
+    {.code = U"IMPORT", .arg_1_is_string = true},
+    {.code = U"MAIN"},
+    {.code = U"DIR"}};
 
 /** @brief Defines the column width for instruction numbers in the bytecode text representation. */
 #define NUMBER_COLUMN_SIZE 8
@@ -175,7 +179,7 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
                 data_descriptor_t data = code->data_descriptors[instr.arg1];
                 string_value_t str = string_to_string_notation(
                     U"",
-                    (string_value_t){(gchar_t *)(code->data + data.offset),
+                    (string_value_t){(const gchar_t *)(code->data + data.offset),
                                      data.size / sizeof(gchar_t) - 1,
                                      false});
                 append_char(&builder, U' ');
@@ -203,7 +207,7 @@ void free_bytecode(bytecode_t *code) {
             release_native_function_descriptor(code->native_functions[i]);
         FREE(code->native_functions);
     }
-    FREE(code->buffer);
+    FREE((void *)code->buffer);
     FREE(code);
 }
 
@@ -213,9 +217,10 @@ bool get_bytecode_declaration(const bytecode_t *code,
     if (index >= code->data_descriptor_count)
         return false;
     data_descriptor_t d = code->data_descriptors[index];
-    size_t prefix = (size_t)(code->data - (uint8_t *)code->buffer);
-    if (prefix > code->buffer_size || d.offset > code->buffer_size - prefix
-        || d.size != sizeof(*out) || d.size > code->buffer_size - prefix - d.offset)
+    size_t prefix = (size_t)(code->data - (const uint8_t *)code->buffer);
+    if (d.kind != DATA_DECLARATION || prefix > code->buffer_size
+        || d.offset > code->buffer_size - prefix || d.size != sizeof(*out)
+        || d.size > code->buffer_size - prefix - d.offset)
         return false;
     memcpy(out, code->data + d.offset, sizeof(*out));
     return out->tag == DECLARATION_TAG && out->module == 0 && out->modifier >= ACCESS_PUBLIC

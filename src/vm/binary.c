@@ -27,138 +27,6 @@ static void write64(uint8_t *p, uint64_t value) {
         p[i] = (uint8_t)(value >> (8 * i));
 }
 
-static uint64_t platform(void) {
-    uint32_t endian = 1;
-    return sizeof(gchar_t) | (uint64_t) * (uint8_t *)&endian << 8;
-}
-
-static bool string_valid(const bytecode_t *code, uint32_t index) {
-    if (index >= code->data_descriptor_count)
-        return false;
-    data_descriptor_t d = code->data_descriptors[index];
-    if (d.size < sizeof(gchar_t) || d.size % sizeof(gchar_t) || d.offset % sizeof(gchar_t))
-        return false;
-    const gchar_t *text = (const gchar_t *)(code->data + d.offset);
-    size_t length = d.size / sizeof(gchar_t);
-    if (text[length - 1])
-        return false;
-    for (size_t i = 0; i + 1 < length; ++i)
-        if (!goat_is_scalar(text[i]))
-            return false;
-    return true;
-}
-
-/** @brief Validates offsets before forming pointers, then all instruction data references. */
-static bool decode(bytecode_t *code) {
-    if (sizeof(double) != 8 || FLT_RADIX != 2 || DBL_MANT_DIG != 53 || DBL_MAX_EXP != 1024
-        || code->buffer_size < sizeof(goat_binary_header_t))
-        return false;
-    goat_binary_header_t h;
-    memcpy(&h, code->buffer, sizeof(h));
-    if (memcmp(h.signature, BINARY_FILE_SIGNATURE, 8) || h.instructions_offset != sizeof(h)
-        || h.data_descriptors_offset < sizeof(h) || h.data_offset < h.data_descriptors_offset
-        || h.data_offset > code->buffer_size
-        || (h.data_descriptors_offset - sizeof(h)) % sizeof(instruction_t)
-        || (h.data_offset - h.data_descriptors_offset) % sizeof(data_descriptor_t))
-        return false;
-    code->instructions = (instruction_t *)((uint8_t *)code->buffer + sizeof(h));
-    code->instructions_count = (h.data_descriptors_offset - sizeof(h)) / sizeof(instruction_t);
-    code->data_descriptors =
-        (data_descriptor_t *)((uint8_t *)code->buffer + h.data_descriptors_offset);
-    code->data_descriptor_count =
-        (h.data_offset - h.data_descriptors_offset) / sizeof(data_descriptor_t);
-    code->data = (uint8_t *)code->buffer + h.data_offset;
-    if (!code->instructions_count)
-        return false;
-    size_t size = code->buffer_size - h.data_offset;
-    for (size_t i = 0; i < code->data_descriptor_count; i++) {
-        data_descriptor_t d = code->data_descriptors[i];
-        if (d.offset > size || d.size > size - d.offset || d.offset % 4)
-            return false;
-    }
-    for (size_t i = 0; i < code->instructions_count; i++) {
-        instruction_t in = code->instructions[i];
-        if (in.opcode > BSTORE || in.flags)
-            return false;
-        if (in.opcode == INHERIT && (in.arg0 > 1 || (!in.arg0 && in.arg1 != 1)))
-            return false;
-        switch (in.opcode) {
-            case DVAR:
-            case DCONST:
-            case BLOAD:
-            case BSTORE: {
-                declaration_descriptor_t declaration;
-                if (in.arg0 || !get_bytecode_declaration(code, in.arg1, &declaration)
-                    || !string_valid(code, declaration.name))
-                    return false;
-                break;
-            }
-            case FINALLY_ENTER:
-            case FINALLY_LEAVE:
-            case ITER_NEXT:
-            case LOOP_JUMP:
-            case JUMP:
-            case JIF:
-            case LAND:
-            case LOR:
-            case TRY:
-                if (in.arg1 >= code->instructions_count)
-                    return false;
-                break;
-            case ILOAD64:
-            case RLOAD:
-            case FUNC:
-                if (!i || code->instructions[i - 1].opcode != ARG)
-                    return false;
-                if (in.opcode != FUNC)
-                    break;
-                if (code->instructions[i - 1].arg1 >= code->instructions_count)
-                    return false;
-                if (in.arg0) {
-                    if (in.arg1 >= code->data_descriptor_count)
-                        return false;
-                    data_descriptor_t d = code->data_descriptors[in.arg1];
-                    if (d.size != (size_t)in.arg0 * sizeof(uint32_t))
-                        return false;
-                    const uint32_t *names = (const uint32_t *)(code->data + d.offset);
-                    for (size_t j = 0; j < in.arg0; j++)
-                        if (!string_valid(code, names[j]))
-                            return false;
-                }
-                break;
-            case SLOAD:
-            case VLOAD:
-            case VAR:
-            case CONST:
-            case STORE:
-            case GETPROP:
-            case SETPROP:
-                if (!string_valid(code, in.arg1))
-                    return false;
-                break;
-            default:
-                break;
-        }
-    }
-    uint8_t *declared = CALLOC(code->data_descriptor_count ? code->data_descriptor_count : 1);
-    bool valid = true;
-    for (size_t i = 0; i < code->instructions_count; i++) {
-        instruction_t in = code->instructions[i];
-        if (in.opcode == DVAR || in.opcode == DCONST) {
-            if (declared[in.arg1])
-                valid = false;
-            declared[in.arg1] = 1;
-        }
-    }
-    for (size_t i = 0; i < code->instructions_count; i++) {
-        instruction_t in = code->instructions[i];
-        if ((in.opcode == BLOAD || in.opcode == BSTORE) && !declared[in.arg1])
-            valid = false;
-    }
-    FREE(declared);
-    return valid;
-}
-
 bool save_binary_program(const char *path,
                          const bytecode_t *code,
                          const uint8_t library_digest[SHA256_SIZE]) {
@@ -173,9 +41,9 @@ bool save_binary_program(const char *path,
         return false;
     size_t size = HEADER_SIZE + code->buffer_size + count * 16;
     uint8_t *bytes = CALLOC(size);
-    memcpy(bytes, "GOATST01", 8);
+    memcpy(bytes, "GOATPG01", 8);
     write64(bytes + 8, FORMAT_VERSION);
-    write64(bytes + 16, platform());
+    write64(bytes + 16, 0);
     write64(bytes + 24, code->buffer_size);
     write64(bytes + 32, count);
     if (count)
@@ -207,6 +75,11 @@ binary_program_t load_binary_program(const char *path) {
 binary_program_t decode_binary_program(const void *data, size_t size) {
     binary_program_t result = {0};
     const uint8_t *bytes = data;
+    if (bytes && size >= 64 && size <= GOAT_BINARY_LIMIT
+        && !memcmp(bytes, BINARY_FILE_SIGNATURE, 8)) {
+        result.code = decode_bytecode_image(bytes, size);
+        return result;
+    }
     if (!bytes || size < HEADER_SIZE || size > GOAT_BINARY_LIMIT)
         goto done;
     uint64_t expected = read64(bytes + 56);
@@ -215,17 +88,14 @@ binary_program_t decode_binary_program(const void *data, size_t size) {
     checksum = extend_binary_checksum(checksum, zero_checksum, sizeof(zero_checksum));
     checksum = extend_binary_checksum(checksum, bytes + 64, size - 64);
     uint64_t code_size = read64(bytes + 24), count = read64(bytes + 32);
-    if (memcmp(bytes, "GOATST01", 8) || read64(bytes + 8) != FORMAT_VERSION
-        || read64(bytes + 16) != platform() || read64(bytes + 40) || read64(bytes + 48)
+    if (memcmp(bytes, "GOATPG01", 8) || read64(bytes + 8) != FORMAT_VERSION
+        || read64(bytes + 16) != 0 || read64(bytes + 40) || read64(bytes + 48)
         || expected != checksum || code_size > size - HEADER_SIZE
         || count > (size - HEADER_SIZE - code_size) / 16
         || size != HEADER_SIZE + code_size + count * 16)
         goto done;
-    result.code = CALLOC(sizeof(bytecode_t));
-    result.code->buffer_size = (size_t)code_size;
-    result.code->buffer = ALLOC(code_size ? (size_t)code_size : 1);
-    memcpy(result.code->buffer, bytes + HEADER_SIZE, code_size);
-    if (!decode(result.code))
+    result.code = decode_bytecode_image(bytes + HEADER_SIZE, (size_t)code_size);
+    if (!result.code)
         goto invalid;
     result.binding_count = (size_t)count;
     memcpy(result.library_digest, bytes + 64, SHA256_SIZE);
@@ -239,6 +109,17 @@ binary_program_t decode_binary_program(const void *data, size_t size) {
         if (index >= result.code->instructions_count || !id
             || result.code->instructions[index].opcode != FUNC
             || (i && index <= result.bindings[2 * (i - 1)]))
+            goto invalid;
+        size_t lo = 0, hi = result.code->function_count;
+        while (lo < hi) {
+            size_t mid = lo + (hi - lo) / 2;
+            if (result.code->functions[mid].id < id)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+        if (lo == result.code->function_count || result.code->functions[lo].id != id
+            || result.code->functions[lo].instruction != index)
             goto invalid;
         result.bindings[2 * i] = index;
         result.bindings[2 * i + 1] = id;

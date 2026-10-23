@@ -12,7 +12,12 @@ typedef struct access_domain_t access_domain_t;
 typedef struct field_cell_t field_cell_t;
 
 /** @brief Declaration visibility, independent of the constant flag. */
-typedef enum { ACCESS_MODULE, ACCESS_PUBLIC, ACCESS_PROTECTED, ACCESS_PRIVATE } access_modifier_t;
+typedef enum {
+    ACCESS_MODULE = 0,
+    ACCESS_PUBLIC = 1,
+    ACCESS_PROTECTED = 3,
+    ACCESS_PRIVATE = 4
+} access_modifier_t;
 
 /** @brief Stable cell owned by one storage object; all pointers are borrowed by readers.
  * Keys and declaration metadata are immutable after insertion. Change values through the API.

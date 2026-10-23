@@ -7,6 +7,7 @@
 #pragma once
 
 #include "codegen/c_generation.h"
+#include "codegen/code_builder.h"
 #include "common/position.h"
 #include "common/types.h"
 #include "goat/unicode.h"
@@ -16,6 +17,7 @@
 #include "scope.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 
 /** @brief Proven properties; an absent bit means unknown or unsupported. */
 typedef enum {
@@ -255,6 +257,7 @@ struct node_t {
     /** @brief Analysis proofs; function-object purity describes its body, not allocation. */
     uint32_t flags;
     access_proof_t access_proof;
+    uint32_t bytecode_function_id; /**< Stable source-order ID for function objects. */
 };
 
 /** @brief Checks a single analysis flag. */
@@ -408,7 +411,18 @@ static inline instr_index_t
 generate_bytecode_from_node(node_t *node, code_builder_t *code, data_builder_t *data) {
     if (node_has_flag(node, NODE_FLAG_UNREACHABLE))
         return BAD_INSTR_INDEX;
-    return node->vtbl->generate_bytecode(node, code, data);
+    bytecode_location_t saved = code->location;
+    if (node->position && node->position->begin) {
+        if (node->position->begin->row > UINT32_MAX || node->position->begin->column > UINT32_MAX)
+            abort();
+        code->location.line = (uint32_t)node->position->begin->row;
+        code->location.column = (uint32_t)node->position->begin->column;
+    } else {
+        code->location.line = code->location.column = 0;
+    }
+    instr_index_t result = node->vtbl->generate_bytecode(node, code, data);
+    code->location = saved;
+    return result;
 }
 
 /** @brief Generates bytecode for storing a value into a node. */

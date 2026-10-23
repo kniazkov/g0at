@@ -27,6 +27,16 @@
 #include <stdio.h>
 #include <string.h>
 
+/** @brief Native calls, VM fallback, failures and thread execution must not patch the image. */
+static int run_immutable(process_t *process, bytecode_t *code) {
+    void *snapshot = ALLOC(code->buffer_size);
+    memcpy(snapshot, code->buffer, code->buffer_size);
+    int status = run(process, code);
+    bool unchanged = !memcmp(snapshot, code->buffer, code->buffer_size);
+    FREE(snapshot);
+    return unchanged ? status : -1;
+}
+
 static const char *compiler;
 static const char *invalid_compiler;
 static const char *wrong_compiler;
@@ -38,7 +48,8 @@ static size_t omitted;
 static void deferred(node_t *node, code_builder_t *code, data_builder_t *data) {
     if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
         instr_index_t index = get_function_bytecode_instruction(node);
-        if (index != BAD_INSTR_INDEX && code->instructions[index - 1].arg1 == UINT32_MAX)
+        if (index != BAD_INSTR_INDEX
+            && ((instruction_t *)code->instructions)[index - 1].arg1 == UINT32_MAX)
             generate_deferred_bytecode_from_node(node, code, data);
     }
     for (size_t i = 0; i < get_node_child_count(node); i++)
@@ -59,7 +70,12 @@ static bytecode_t *compile(const gchar_t *source, const char *command) {
         generate_bytecode_from_node(root, code, data);
         deferred(root, code, data);
         result = link_code_and_data(code, data);
+        void *snapshot = ALLOC(result->buffer_size);
+        memcpy(snapshot, result->buffer, result->buffer_size);
         native_prepare_result_t prepared = prepare_native_execution(root, result, command);
+        if (memcmp(snapshot, result->buffer, result->buffer_size))
+            prepared.status = NATIVE_PREPARE_BIND_ERROR;
+        FREE(snapshot);
         preparation = prepared.status;
         omitted = prepared.omitted_specializations;
         if (command == compiler && preparation != NATIVE_PREPARE_READY && prepared.diagnostic)
@@ -101,10 +117,12 @@ static bool dispatch(void) {
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     /* A missing native binding must not silently pass through the original body. */
     for (size_t i = 0; i < code->instructions_count; i++)
-        if (code->instructions[i].opcode == FUNC)
-            code->instructions[code->instructions[i - 1].arg1] = (instruction_t){.opcode = END};
+        if (((instruction_t *)code->instructions)[i].opcode == FUNC)
+            ((instruction_t *)
+                 code->instructions)[((instruction_t *)code->instructions)[i - 1].arg1] =
+                (instruction_t){.opcode = END};
     process_t *proc = create_process();
-    ASSERT(!run(proc, code));
+    ASSERT(!run_immutable(proc, code));
     ASSERT(integer(proc, U"a", 7) && integer(proc, U"d", 42));
     ASSERT(variable(proc, U"b") && is_real_object(variable(proc, U"b"))
            && get_object_real_value(variable(proc, U"b")).value == 2.5);
@@ -131,7 +149,7 @@ static bool recursion(void) {
     bytecode_t *code = compile(recursion_source, compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     process_t *proc = create_process();
-    ASSERT(!run(proc, code));
+    ASSERT(!run_immutable(proc, code));
     ASSERT(integer(proc, U"value", 200) && integer(proc, U"small", 3) && integer(proc, U"hits", 200)
            && integer(proc, U"extras", 1));
     ASSERT(counters(proc, 2, 1, 1));
@@ -147,7 +165,7 @@ static bool mutual(void) {
                                compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     process_t *proc = create_process();
-    ASSERT(!run(proc, code));
+    ASSERT(!run_immutable(proc, code));
     ASSERT(integer(proc, U"value", 150) && integer(proc, U"small", 4));
     ASSERT(counters(proc, 2, 1, 1));
     free_bytecode(code);
@@ -161,7 +179,7 @@ static bool shallow_calls(void) {
                                compiler);
     ASSERT(code && preparation == NATIVE_PREPARE_READY);
     process_t *proc = create_process();
-    ASSERT(!run(proc, code));
+    ASSERT(!run_immutable(proc, code));
     ASSERT(integer(proc, U"value", 4096) && integer(proc, U"small", 4));
     ASSERT(counters(proc, 2, 2, 0));
     free_bytecode(code);
@@ -232,7 +250,7 @@ typedef struct {
 
 static void *small_stack_worker(void *data) {
     stack_task_t *task = data;
-    task->success = !native_stack_has_headroom() && !run(task->proc, task->code)
+    task->success = !native_stack_has_headroom() && !run_immutable(task->proc, task->code)
                     && integer(task->proc, U"x", 7) && counters(task->proc, 0, 0, 1);
     return NULL;
 }
@@ -258,7 +276,7 @@ static bool failures(void) {
             compile(U"const f=func(n){return n+1;};var x=f(7);func(){x;};", commands[i]);
         ASSERT(code && preparation == statuses[i] && !code->native_functions);
         process_t *proc = create_process();
-        ASSERT(!run(proc, code) && integer(proc, U"x", 8) && counters(proc, 0, 0, 0));
+        ASSERT(!run_immutable(proc, code) && integer(proc, U"x", 8) && counters(proc, 0, 0, 0));
         free_bytecode(code);
         destroy_process(proc);
     }
@@ -283,7 +301,7 @@ static bool large_frame(void) {
     FREE_STRING(text);
     ASSERT(code && preparation == NATIVE_PREPARE_EMPTY && omitted && !code->native_functions);
     process_t *proc = create_process();
-    ASSERT(!run(proc, code) && integer(proc, U"value", 81));
+    ASSERT(!run_immutable(proc, code) && integer(proc, U"value", 81));
     free_bytecode(code);
     destroy_process(proc);
     return true;

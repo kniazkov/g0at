@@ -59,7 +59,7 @@ static bytecode_t *compile(const gchar_t *source) {
 
 static instr_index_t function_instruction(const bytecode_t *code, size_t ordinal) {
     for (size_t i = 0; i < code->instructions_count; i++)
-        if (code->instructions[i].opcode == FUNC && !ordinal--)
+        if (((instruction_t *)code->instructions)[i].opcode == FUNC && !ordinal--)
             return i;
     return BAD_INSTR_INDEX;
 }
@@ -423,8 +423,10 @@ bool test_native_calls(const char *provider, const char *generated, const char *
         process_t *proc = create_process();
         /* Trap bytecode entry: a silently falling-back implementation must fail this test. */
         for (size_t i = 0; code && i < code->instructions_count; i++)
-            if (code->instructions[i].opcode == FUNC)
-                code->instructions[code->instructions[i - 1].arg1] = (instruction_t){.opcode = END};
+            if (((instruction_t *)code->instructions)[i].opcode == FUNC)
+                ((instruction_t *)
+                     code->instructions)[((instruction_t *)code->instructions)[i - 1].arg1] =
+                    (instruction_t){.opcode = END};
         ok = ok && !run(proc, code) && integer_variable(proc, U"a", 77) && variable(proc, U"b")
              && is_real_object(variable(proc, U"b"))
              && get_object_real_value(variable(proc, U"b")).value == 2.5 && variable(proc, U"c")

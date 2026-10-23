@@ -94,6 +94,8 @@ int execute_program(const options_t *options,
         FREE_STRING(text);
     }
     process_t *process = create_process();
+    if (code->file_count)
+        process->main_thread->instr_id = code->files[0].entry;
     int status = run(process, code);
     thread_t *thread = process->main_thread;
     do {

@@ -161,10 +161,41 @@ four-byte terminator outside the declared content length. The loader checks
 length, bounds, alignment, terminator and every scalar, then uses the loaded
 buffer directly. No per-string allocation, transcoding or byte swapping occurs.
 
-This step uses transitional signatures `GOATST01` (container) and `GOATSC01`
-(inner image), version 1. They reject all old images, including `GOATBI11` and
-`goat v.1`, with a request to recompile. They deliberately do **not** claim the
-final `GOATBC01` layout: the remaining sections and container migration belong
-to #251. The independent `test/unicode/scalars.gbin.hex` fixture is read unchanged
-by the C loader in the Windows/Linux CI matrix. `scripts/check_unicode.py`
-checks VM, folding, native execution, embedded zeros and locale independence.
+## Portable bytecode v1
+
+The compiler now writes the fixed `GOATBC01` image described in
+[the wire specification](../../module-format-v1/README.md#direct-use-bytecode-image).
+Its 64-byte header addresses instructions, typed data descriptors, file records,
+function records, source-location runs and payload. All fields have fixed widths
+and explicit little-endian encoding. No C structure padding, pointers or `size_t`
+are persisted. Layout assertions permit direct const views after validation.
+The current compiler produces one file span; source-order function IDs retain
+removed-function gaps. Source positions and function ownership are recorded per
+instruction and compressed into runs. Generated positions use line/column zero.
+No source text or absolute path is stored in this image.
+
+A standalone `.gbin` wraps exactly those bytes in `GOATPG01` v1 with a checksum,
+optional native library SHA-256 and external binding records. It does not use a
+second bytecode codec. The loader also accepts a bare image for tools and module
+integration. ZIP module packaging and JSON/table cross-validation remain separate
+tasks. Module opcodes have reserved v1 IDs; their execution requires the future
+module loader. Native machine code remains specific to its target.
+
+The loader rejects previous `GOATST01`, `GOATSC01`, `GOATBI11`, `goat v.1` and
+other old images with a request to recompile. There is no migration reader.
+Bytecode, standalone envelope and native ABI use independent version counters;
+each is currently 1. Incompatible changes must increment the affected version.
+
+Instructions, tables and strings remain immutable through validation, VM execution
+and native attachment. Runtime identities, caches and native addresses live outside
+the buffer. Strings point directly into its UTF-32LE payload. The owner retains the
+image until all users have finished. The common codec validates bounds, overflow,
+padding, scalar values, data kinds, function/entry references and table coverage.
+Module dependency/JSON semantics belong to #184 and the subsequent loader tasks.
+
+`test/binary-v1/scalars.hex` and `test/unicode/scalars.gbin.hex` are independent
+Python-produced fixtures, consumed unchanged by the actual C loader on every
+Linux/Windows CI target. `scripts/check_bytecode_v1.py` checks numeric bits,
+function metadata, malformed records and raw/wrapped equivalence. Unit/native
+pipeline tests compare image bytes before and after validation, execution,
+native preparation, fallback and worker-thread execution.

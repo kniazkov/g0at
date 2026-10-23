@@ -124,24 +124,24 @@ bool test_unicode_binary(void) {
     destroy_data_builder(data);
     const char *path = "unicode-binary-test.gbin";
     for (unsigned test = 0; test < 6; ++test) {
-        memcpy(code->data, expected, sizeof(expected));
-        code->data_descriptors[id].offset = 0;
-        code->data_descriptors[id].size = sizeof(expected);
+        memcpy((void *)code->data, expected, sizeof(expected));
+        ((data_descriptor_t *)code->data_descriptors)[id].offset = 0;
+        ((data_descriptor_t *)code->data_descriptors)[id].size = sizeof(expected);
         if (test == 1) {
-            code->data[0] = 0;
-            code->data[1] = 0xd8;
+            ((uint8_t *)code->data)[0] = 0;
+            ((uint8_t *)code->data)[1] = 0xd8;
         }
         if (test == 2) {
-            code->data[0] = 0;
-            code->data[1] = 0;
-            code->data[2] = 0x11;
+            ((uint8_t *)code->data)[0] = 0;
+            ((uint8_t *)code->data)[1] = 0;
+            ((uint8_t *)code->data)[2] = 0x11;
         }
         if (test == 3)
-            code->data_descriptors[id].size--;
+            ((data_descriptor_t *)code->data_descriptors)[id].size--;
         if (test == 4)
-            code->data_descriptors[id].offset = 1;
+            ((data_descriptor_t *)code->data_descriptors)[id].offset = 1;
         if (test == 5)
-            code->data[sizeof(expected) - 4] = 1;
+            ((uint8_t *)code->data)[sizeof(expected) - 4] = 1;
         ASSERT(save_binary_program(path, code, NULL));
         binary_program_t loaded = load_binary_program(path);
         ASSERT((loaded.code != NULL) == (test == 0));

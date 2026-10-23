@@ -102,7 +102,7 @@ bool test_inheritance_bytecode(void) {
     for (size_t i = 0; i < code->instructions_count; i++) {
         if (code->instructions[i].opcode != INHERIT)
             continue;
-        code->instructions[i].arg0 = 2;
+        ((instruction_t *)code->instructions)[i].arg0 = 2;
         ASSERT(save_binary_program(path, code, NULL));
         saved = load_binary_program(path);
         ASSERT(!saved.code);
