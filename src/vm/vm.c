@@ -44,7 +44,7 @@ static object_t *load_string(runtime_t *runtime, process_t *process, uint32_t st
         data_descriptor_t descriptor = runtime->code->data_descriptors[string_id];
         string = create_string_object(
             process,
-            (string_value_t){(gchar_t *)(runtime->code->data + descriptor.offset),
+            (string_value_t){(const gchar_t *)(runtime->code->data + descriptor.offset),
                              descriptor.size / sizeof(gchar_t) - 1,
                              false});
         process->string_cache[string_id] = string;
@@ -577,7 +577,7 @@ static bool exec_FUNC(runtime_t *runtime, instruction_t instr, thread_t *thread)
         if (arg_count * sizeof(uint32_t) != descriptor.size) {
             return false; // bad bytecode
         }
-        uint32_t *strings = (uint32_t *)(runtime->code->data + descriptor.offset);
+        const uint32_t *strings = (const uint32_t *)(runtime->code->data + descriptor.offset);
         arg_names = ALLOC(arg_count * sizeof(object_t *));
         for (uint16_t index = 0; index < arg_count; index++) {
             arg_names[index] = load_string(runtime, thread->process, strings[index]);

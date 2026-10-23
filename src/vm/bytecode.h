@@ -12,74 +12,72 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/** @brief Signature added to the beginning of each binary file. */
-#define BINARY_FILE_SIGNATURE "GOATSC01"
+/** @brief Independent v1 wire identity, shared by standalone and module images. */
+#define BINARY_FILE_SIGNATURE "GOATBC01"
+#define BYTECODE_VERSION 1u
+#define BYTECODE_HEADER_SIZE 64u
 
-#pragma pack(push, 1)
-
-/** @brief A single bytecode instruction. */
 typedef struct {
-    /** @brief The opcode (1 byte) specifies the type of operation to be performed. */
-    uint8_t opcode;
-
-    /** @brief Flags (1 byte) that modify the behavior of the instruction. */
-    uint8_t flags;
-
-    /** @brief First argument (16 bits, 2 bytes). */
+    uint8_t opcode, flags;
     uint16_t arg0;
-
-    /** @brief Second argument (32 bits, 4 bytes). */
     uint32_t arg1;
 } instruction_t;
 
-#pragma pack(pop)
-
-#pragma pack(push, 4)
-
-/**
- * @brief A descriptor that addresses data within a segment.
- *
- * The structure is packed to ensure it occupies exactly 12 bytes with 4-byte alignment.
- */
 typedef struct {
-    /** @brief Offset (8 bytes) from the beginning of the data segment to the start of the data
-     * block. */
-    uint64_t offset;
-
-    /** @brief Size (4 bytes) of the data block. */
-    uint32_t size;
+    uint32_t offset, size, kind, count;
 } data_descriptor_t;
 
-#pragma pack(pop)
+enum { DATA_STRING = 1, DATA_PARAMETERS = 2, DATA_DECLARATION = 3 };
 
-#pragma pack(push, 8)
-
-/** @brief The header of the Goat binary file. */
 typedef struct {
-    /** @brief 8-byte signature that uniquely identifies the file format. */
     uint8_t signature[8];
-
-    /** @brief 8-byte offset from the beginning of the file to the list of instructions. */
-    uint64_t instructions_offset;
-
-    /** @brief 8-byte offset from the beginning of the file to the list of data descriptors. */
-    uint64_t data_descriptors_offset;
-
-    /** @brief 8-byte offset from the beginning of the file to the actual data. */
-    uint64_t data_offset;
+    uint32_t version, header_size, total_size;
+    uint32_t instruction_count, data_count, file_count, function_count, location_count;
+    uint32_t instructions_offset, data_descriptors_offset, files_offset;
+    uint32_t functions_offset, locations_offset, data_offset;
 } goat_binary_header_t;
 
-#pragma pack(pop)
+typedef struct {
+    uint32_t first, count, entry, reserved;
+} bytecode_file_t;
+
+typedef struct {
+    uint32_t id, file, instruction, body, parameters, parameter_count, name, reserved;
+} bytecode_function_t;
+
+typedef struct {
+    uint32_t first, count, file, line, column, function;
+} bytecode_location_t;
+
+_Static_assert(BSTORE == 72 && MODULE_DIR == 76, "v1 opcode numbering");
+
+/* These are checked views of an explicit wire layout, never an ABI-dependent dump. */
+_Static_assert(sizeof(instruction_t) == 8 && offsetof(instruction_t, arg0) == 2
+                   && offsetof(instruction_t, arg1) == 4,
+               "instruction layout");
+_Static_assert(sizeof(data_descriptor_t) == 16 && offsetof(data_descriptor_t, count) == 12,
+               "data descriptor layout");
+_Static_assert(sizeof(goat_binary_header_t) == 64
+                   && offsetof(goat_binary_header_t, instructions_offset) == 40
+                   && offsetof(goat_binary_header_t, data_offset) == 60,
+               "header layout");
+_Static_assert(sizeof(bytecode_file_t) == 16 && sizeof(bytecode_function_t) == 32
+                   && sizeof(bytecode_location_t) == 24,
+               "table layouts");
+_Static_assert(_Alignof(instruction_t) <= 8 && _Alignof(data_descriptor_t) <= 8
+                   && _Alignof(bytecode_file_t) <= 8 && _Alignof(bytecode_function_t) <= 8
+                   && _Alignof(bytecode_location_t) <= 8,
+               "image alignment");
 
 typedef struct native_function_descriptor_t native_function_descriptor_t;
 
 /** @brief File-local declaration identity is its data descriptor index, never a C address.
- * module is currently zero (the program module); future loaders may introduce a module table.
+ * file is the local file-table index; runtime identities live outside the image.
  */
 typedef struct {
     uint32_t tag;
     uint32_t name;
-    uint32_t module;
+    uint32_t file;
     uint32_t modifier;
 } declaration_descriptor_t;
 
@@ -88,25 +86,30 @@ typedef struct {
 /** @brief A loaded bytecode file in memory. */
 typedef struct {
     /** @brief Pointer to the entire loaded bytecode file in memory. */
-    void *buffer;
+    const void *buffer;
 
     /** @brief The buffer (file) size in bytes. */
     size_t buffer_size;
 
     /** @brief Pointer to the list of instructions (type: instruction_t*). */
-    instruction_t *instructions;
+    const instruction_t *instructions;
 
     /** @brief The number of instructions in the bytecode. */
     size_t instructions_count;
 
     /** @brief Pointer to the list of data descriptors (type: data_descriptor_t*). */
-    data_descriptor_t *data_descriptors;
+    const data_descriptor_t *data_descriptors;
 
     /** @brief The number of data descriptors in the bytecode. */
     size_t data_descriptor_count;
 
     /** @brief Pointer to the actual data (type: uint8_t*). */
-    uint8_t *data;
+    const uint8_t *data;
+
+    const bytecode_file_t *files;
+    const bytecode_function_t *functions;
+    const bytecode_location_t *locations;
+    size_t file_count, function_count, location_count;
 
     /** @brief Optional owned descriptors indexed by FUNC instruction; never serialized. */
     native_function_descriptor_t **native_functions;
@@ -135,3 +138,8 @@ bool bind_bytecode_native_function(bytecode_t *code,
 /** @brief Borrows the descriptor associated with a FUNC instruction. */
 native_function_descriptor_t *get_bytecode_native_function(const bytecode_t *code,
                                                            instr_index_t instruction);
+
+/** @brief Validates an owned aligned image and sets const views; never changes image bytes. */
+bool validate_bytecode_image(bytecode_t *code);
+/** @brief Copies an untrusted image once into aligned storage and validates it. */
+bytecode_t *decode_bytecode_image(const void *data, size_t size);

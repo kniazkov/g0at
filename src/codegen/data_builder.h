@@ -47,7 +47,7 @@ data_builder_t *create_data_builder(void);
 /**
  * @brief Adds a piece of data to the builder.
  *
- * The data is aligned to 4-byte boundaries.
+ * The data is aligned to 8-byte boundaries.
  */
 uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t size);
 

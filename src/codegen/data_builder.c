@@ -32,6 +32,8 @@ uint32_t add_declaration_to_data_segment(data_builder_t *builder, const declarat
         decl,
         add_data_to_data_segment(builder, &descriptor, sizeof(descriptor)),
         builder->declarations};
+    builder->descriptors[entry->index].kind = DATA_DECLARATION;
+    builder->descriptors[entry->index].count = 1;
     builder->declarations = entry;
     return entry->index;
 }
@@ -78,11 +80,11 @@ data_builder_t *create_data_builder(void) {
 }
 
 uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t size) {
-    if (size > UINT32_MAX - 3 || builder->data_size > SIZE_MAX - size - 3
-        || builder->descriptors_count >= UINT32_MAX - 1)
+    if (size % 4 || size > UINT32_MAX - 7 || builder->data_size > UINT32_MAX - size - 7
+        || builder->descriptors_count >= UINT32_MAX / sizeof(data_descriptor_t))
         abort();
-    size_t aligned_size = (size + 3) & ~(size_t)3;
-    size_t new_size = builder->data_size + aligned_size;
+    size_t offset = (builder->data_size + 7) & ~(size_t)7;
+    size_t new_size = offset + size;
     if (new_size > builder->data_capacity) {
         size_t new_capacity = builder->data_capacity * 2;
         if (new_capacity < new_size) {
@@ -94,13 +96,13 @@ uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t si
         FREE(builder->data);
         builder->data = new_data;
     }
-    size_t offset = builder->data_size;
-    builder->data_size += aligned_size;
-    memcpy(&builder->data[offset], data, size);
-    if (aligned_size > size) {
-        memset(&builder->data[offset + size], 0, aligned_size - size);
-    }
+    memset(builder->data + builder->data_size, 0, offset - builder->data_size);
+    builder->data_size = new_size;
+    if (size)
+        memcpy(&builder->data[offset], data, size);
     if (builder->descriptors_count >= builder->descriptors_capacity) {
+        if (builder->descriptors_capacity > SIZE_MAX / 2 / sizeof(data_descriptor_t))
+            abort();
         builder->descriptors_capacity *= 2;
         data_descriptor_t *new_descriptors =
             (data_descriptor_t *)ALLOC(builder->descriptors_capacity * sizeof(data_descriptor_t));
@@ -111,7 +113,10 @@ uint32_t add_data_to_data_segment(data_builder_t *builder, void *data, size_t si
         builder->descriptors = new_descriptors;
     }
     uint32_t index = (uint32_t)builder->descriptors_count++;
-    data_descriptor_t descriptor = {.offset = (uint64_t)offset, .size = (uint32_t)size};
+    data_descriptor_t descriptor = {.offset = (uint32_t)offset,
+                                    .size = (uint32_t)size,
+                                    .kind = DATA_PARAMETERS,
+                                    .count = (uint32_t)(size / 4)};
     builder->descriptors[index] = descriptor;
     return index;
 }
@@ -136,6 +141,8 @@ uint32_t add_string_to_data_segment_ex(data_builder_t *builder, string_view_t st
             encoded[4 * i + j] = (uint8_t)(scalar >> (8 * j));
     }
     uint32_t index = add_data_to_data_segment(builder, encoded, bytes);
+    builder->descriptors[index].kind = DATA_STRING;
+    builder->descriptors[index].count = (uint32_t)string.length;
     FREE(encoded);
     set_in_avl_tree(builder->strings, &string, (value_t){.uint32_val = index + 1});
     return index;

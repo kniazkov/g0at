@@ -12,6 +12,7 @@
 #include "lib/arena.h"
 #include "lib/linked_list.h"
 #include "lib/string_ext.h"
+#include "replacement.h"
 #include "statement.h"
 #include "statement_sequence.h"
 
@@ -73,8 +74,21 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
     }
 }
 
+/** @brief Share native's source traversal order, retaining gaps for removed functions. */
+static void number_functions(node_t *node, code_builder_t *code) {
+    node = (node_t *)replacement_original(node);
+    if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
+        if (code->next_function_id == UINT32_MAX)
+            abort();
+        node->bytecode_function_id = ++code->next_function_id;
+    }
+    for (size_t i = 0; i < get_node_child_count(node); ++i)
+        number_functions(get_node_child(node, i), code);
+}
+
 /** @brief Implements @ref node_vtbl_t::generate_bytecode. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
+    number_functions(node, code);
     const root_node_t *root = (const root_node_t *)node;
     list_item_t *item = root->statements->head;
     while (item) {

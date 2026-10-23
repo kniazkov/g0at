@@ -23,6 +23,7 @@
 #include "statement_sequence.h"
 
 #include <assert.h>
+#include <stdlib.h>
 
 /** @brief A single function argument in the abstract syntax tree. */
 typedef struct {
@@ -407,6 +408,10 @@ fobj_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data)
     instr_index_t first = expr->code_instr_index =
         add_instruction(code, (instruction_t){.opcode = ARG, .arg1 = 0xFFFFFFFF} // placeholder
         );
+    if (!node->bytecode_function_id)
+        node->bytecode_function_id = ++code->next_function_id;
+    if (expr->arguments->arg_count > UINT16_MAX)
+        abort();
     uint32_t arg_names_idx = 0;
     if (expr->arguments->arg_count > 0) {
         size_t arg_size = expr->arguments->arg_count * sizeof(uint32_t);
@@ -422,6 +427,7 @@ fobj_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data)
                     (instruction_t){.opcode = FUNC,
                                     .arg0 = (uint16_t)expr->arguments->arg_count,
                                     .arg1 = arg_names_idx});
+    code->function_ids[first + 1] = node->bytecode_function_id;
     return first;
 }
 
@@ -432,6 +438,9 @@ fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *code, data_b
     if (expr->code_instr_index == BAD_INSTR_INDEX) {
         return false;
     }
+    bytecode_location_t saved = code->location;
+    code->location.function = node->bytecode_function_id;
+    code->location.line = code->location.column = 0;
     instr_index_t first;
     if (expr->body->statements->size == 0) {
         first = add_instruction(code, (instruction_t){.opcode = NIL});
@@ -453,6 +462,7 @@ fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *code, data_b
         }
     }
     code->instructions[expr->code_instr_index].arg1 = (uint32_t)first;
+    code->location = saved;
     return true;
 }
 
