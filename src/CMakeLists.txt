@@ -104,3 +104,6 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/../scripts/package.cmake")
 
 add_executable(child_process_testing component_test/child_process_testing.c)
 target_link_libraries(child_process_testing PRIVATE core pthread m)
+if(MINGW)
+  set_property(TARGET child_process_testing APPEND_STRING PROPERTY LINK_FLAGS " -municode")
+endif()

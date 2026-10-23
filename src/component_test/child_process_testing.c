@@ -5,6 +5,7 @@
 #ifndef _GNU_SOURCE
 #    define _GNU_SOURCE
 #endif
+#include "codegen/native_compiler.h"
 #include "lib/allocate.h"
 #include "lib/child_process.h"
 #include "lib/windows_target.h"
@@ -221,11 +222,24 @@ static void print_hex(const child_output_t *out) {
         printf("%02x", out->data[i]);
 }
 
-int main(int argc, char **argv) {
+static int fixture_main(int argc, char **argv) {
     if (argc > 2 && !strcmp(argv[1], "--worker"))
         return worker(argc, argv);
     if (argc < 2)
         return 2;
+    if (!strcmp(argv[1], "compiler-probe")) {
+        const char *commands[] = {argv[0], "--worker", "continuous", NULL};
+        native_compile_result_t result = {.exit_code = -1};
+        native_compiler_run(&result, commands, child_deadline_after(150));
+        bool ok = result.status == NATIVE_COMPILE_TIMED_OUT && result.diagnostics_length
+                  && !result.cleanup_error && !result.windows_cleanup_error;
+        destroy_native_compile_result(&result);
+        commands[2] = "delay";
+        native_compiler_run(&result, commands, 0);
+        ok = ok && result.status == NATIVE_COMPILE_OK && !result.exit_code;
+        destroy_native_compile_result(&result);
+        return ok && !get_allocated_memory_size() ? 0 : 94;
+    }
     const char *mode = argv[1];
     const char *args[] = {"process fixture",
                           "--worker",
@@ -251,11 +265,20 @@ int main(int argc, char **argv) {
     }
     if (!strcmp(mode, "inherit"))
         options.empty_stdin = false;
+    if (!strcmp(mode, "closed-input")) {
+        args[2] = "stdin";
+#ifdef _WIN32
+        _close(0);
+        SetStdHandle(STD_INPUT_HANDLE, NULL);
+#else
+        close(0);
+#endif
+    }
     if (!strcmp(mode, "continuous") || !strcmp(mode, "tree") || !strcmp(mode, "pause"))
         options.deadline = child_deadline_after(150);
     if (!strcmp(mode, "expired"))
         options.deadline = 1;
-    if (!strcmp(mode, "owner")) {
+    if (!strcmp(mode, "owner") || !strcmp(mode, "launch-owner")) {
         args[2] = "tree";
         options.deadline = 0;
         options.capture_output = false;
@@ -286,10 +309,14 @@ int main(int argc, char **argv) {
         options.deadline = child_deadline_after(350);
     }
     uint64_t start = child_monotonic_ms();
+    if (!strcmp(mode, "launch-owner")) {
+        puts("LAUNCHING");
+        fflush(stdout);
+    }
     child_process_t *child = start_child_process(&options);
     if (!child)
         return 3;
-    if (!strcmp(mode, "owner") || !strcmp(mode, "watch-owner"))
+    if (!strcmp(mode, "owner") || !strcmp(mode, "launch-owner") || !strcmp(mode, "watch-owner"))
         forever();
     const child_result_t *result =
         !strcmp(mode, "stop") ? stop_child_process(child) : wait_child_process(child);
@@ -321,3 +348,44 @@ int main(int argc, char **argv) {
     destroy_child_process(child);
     return get_allocated_memory_size() ? 5 : 0;
 }
+
+#ifdef _WIN32
+/* The fixture observes UTF-16 arguments without the CRT's lossy ANSI argv conversion. */
+int wmain(int argc, wchar_t **wide_args) {
+    char **args = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, ((size_t)argc + 1) * sizeof(*args));
+    if (!args)
+        return 95;
+    for (int i = 0; i < argc; i++) {
+        int size = WideCharToMultiByte(CP_UTF8,
+                                       WC_ERR_INVALID_CHARS,
+                                       wide_args[i],
+                                       -1,
+                                       NULL,
+                                       0,
+                                       NULL,
+                                       NULL);
+        if (!size)
+            return 96;
+        args[i] = HeapAlloc(GetProcessHeap(), 0, size);
+        if (!args[i]
+            || !WideCharToMultiByte(CP_UTF8,
+                                    WC_ERR_INVALID_CHARS,
+                                    wide_args[i],
+                                    -1,
+                                    args[i],
+                                    size,
+                                    NULL,
+                                    NULL))
+            return 97;
+    }
+    int result = fixture_main(argc, args);
+    for (int i = 0; i < argc; i++)
+        HeapFree(GetProcessHeap(), 0, args[i]);
+    HeapFree(GetProcessHeap(), 0, args);
+    return result;
+}
+#else
+int main(int argc, char **argv) {
+    return fixture_main(argc, argv);
+}
+#endif

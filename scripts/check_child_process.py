@@ -24,7 +24,7 @@ def run(mode, stdin=b"Q", **kwargs):
         assert value["error"] == 0, (mode, value)
     return value
 
-for mode, code in [("empty", 0), ("exit", 23), ("stdin", 0), ("inherit", 0), ("parent", 0)]:
+for mode, code in [("empty", 0), ("exit", 23), ("stdin", 0), ("closed-input", 0), ("inherit", 0), ("parent", 0)]:
     value = run(mode)
     assert value["status"] == 1 and value["code"] == code, (mode, value)
     if mode == "empty":
@@ -173,7 +173,8 @@ finally:
 
 # Owner death in the launch window: output pipe closure is also externally bounded.
 for _ in range(20):
-    owner, lines = start_owner("owner")
+    owner, lines = start_owner("launch-owner")
+    ready(lines, b"LAUNCHING\n")
     owner.kill()
     owner.wait(timeout=8)
     observed = []
@@ -184,6 +185,9 @@ for _ in range(20):
         if line.strip().isdigit():
             observed.append(int(line))
     gone(observed)
+
+# The same compiler adapter enforces probe deadlines but leaves user builds unlimited.
+subprocess.run([fixture, "compiler-probe"], check=True, timeout=8)
 
 # Invalid timeout syntax is rejected before opening an input file; valid values parse.
 if goat:

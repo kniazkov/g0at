@@ -52,6 +52,17 @@ static void close_fd(int *fd) {
     *fd = -1;
 }
 
+/* Keep internal descriptors separate from standard streams even when the caller closed them. */
+static int high_fd(int fd) {
+    if (fd < 0 || fd >= 3)
+        return fd;
+    int copy = fcntl(fd, F_DUPFD_CLOEXEC, 3);
+    int error = errno;
+    close(fd);
+    errno = error;
+    return copy;
+}
+
 /* No allocation or inherited libc locks in either fork child. */
 static void close_except(const int *keep, size_t count, int maximum) {
     unsigned first = 3;
@@ -152,6 +163,12 @@ static void supervise(int control,
     child_reply_t reply = {.code = -1};
     int errors[2] = {-1, -1};
     if (prctl(PR_SET_CHILD_SUBREAPER, 1) || pipe2(errors, O_CLOEXEC | O_NONBLOCK)) {
+        reply.error = errno;
+        goto finish;
+    }
+    errors[0] = high_fd(errors[0]);
+    errors[1] = high_fd(errors[1]);
+    if (errors[0] < 0 || errors[1] < 0) {
         reply.error = errno;
         goto finish;
     }
@@ -281,13 +298,13 @@ child_process_t *start_child_process(const child_options_t *options) {
     if (!error && getrlimit(RLIMIT_NOFILE, &limit))
         error = errno;
     if (!error && options->empty_stdin) {
-        input = open("/dev/null", O_RDONLY | O_CLOEXEC);
+        input = high_fd(open("/dev/null", O_RDONLY | O_CLOEXEC));
         if (input < 0)
             error = errno;
     }
     if (!error && options->parent_watch) {
 #ifdef SYS_pidfd_open
-        watch = (int)syscall(SYS_pidfd_open, getpid(), 0);
+        watch = high_fd((int)syscall(SYS_pidfd_open, getpid(), 0));
         if (watch < 0)
             error = errno;
 #else
@@ -302,13 +319,19 @@ child_process_t *start_child_process(const child_options_t *options) {
             error = errno;
             break;
         }
-        p->pipes[i] = pipe_fds[0];
-        outputs[i] = pipe_fds[1];
-        if (fcntl(pipe_fds[0], F_SETFL, O_NONBLOCK))
+        p->pipes[i] = high_fd(pipe_fds[0]);
+        outputs[i] = high_fd(pipe_fds[1]);
+        if (p->pipes[i] < 0 || outputs[i] < 0 || fcntl(p->pipes[i], F_SETFL, O_NONBLOCK))
             error = errno;
     }
     if (!error && socketpair(AF_UNIX, SOCK_SEQPACKET | SOCK_CLOEXEC, 0, control))
         error = errno;
+    if (!error) {
+        control[0] = high_fd(control[0]);
+        control[1] = high_fd(control[1]);
+        if (control[0] < 0 || control[1] < 0)
+            error = errno;
+    }
     char result_arg[32], parent_arg[32];
     snprintf(result_arg, sizeof(result_arg), "%d", outputs[2]);
     snprintf(parent_arg, sizeof(parent_arg), "%d", watch);
