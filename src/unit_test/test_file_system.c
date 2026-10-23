@@ -567,8 +567,8 @@ static bool windows_contract(const char *root) {
     ASSERT(temp);
     ASSERT(close_fs_file(file, temp, NULL));
     fs_error_t error = {0};
-    ASSERT(!prepare_fs_replace(temp, sentinel, &error));
-    clear_fs_error(&error);
+    ASSERT(prepare_fs_replace(temp, sentinel, &error));
+    ASSERT(content_is(temp, ""));
     ASSERT(!publish_fs_replace(temp, sentinel, &error));
     clear_fs_error(&error);
     CloseHandle(held);
