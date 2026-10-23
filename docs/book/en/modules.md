@@ -4027,7 +4027,7 @@ Reset version numbers together with the reader/writer, tests and documentation a
 
 Complete the current specification and golden-data task #244 first. The first implementation task after it closes is #250: modernize the entire string library and migrate its consumers to portable 32-bit characters. Then #251 implements the portable representation of the remaining binary sections. Closing #244 does not depend on completing these implementations; #184 validates module instructions and references on top of the resulting codec.
 
-The string stage defines encoding, lengths, offsets, Unicode rules and embedded U+0000 before implementation; the accepted representation is UTF-32LE: four bytes per code point, with direct use of the buffer in the VM. The exact U+0000 policy is not yet approved. Changing the on-disk representation must not silently alter language string semantics. Acceptance includes golden bytes, non-BMP characters, malformed data and cross-reading on Windows/Linux. Full portability also requires explicit numeric, instruction and table serialization without raw C structures; native machine code remains platform-specific.
+The string stage defines encoding, lengths, offsets, Unicode rules and embedded U+0000 before implementation; the accepted representation is UTF-32LE: four bytes per code point, with direct use of the buffer in the VM. U+0000 is permitted within strings; explicit length defines their contents. Changing the on-disk representation must not silently alter language string semantics. Acceptance includes golden bytes, non-BMP characters, malformed data and cross-reading on Windows/Linux. Full portability also requires explicit numeric, instruction and table serialization without raw C structures; native machine code remains platform-specific.
 
 ## Bytecode strings without transcoding (#250)
 
@@ -4035,7 +4035,7 @@ Bytecode strings and VM memory use the same 32-bit Unicode elements: four bytes 
 
 Use the loaded buffer directly: validate sizes, offsets, alignment and values, then establish pointers into string regions without transcoding or separately copying every string. Both the buffer base and string regions provide alignment for 32-bit elements. Use a fixed-width element type (for example, a project type based on uint32_t), not wchar_t; VM string operations must consume it directly. Conversion to system API representations occurs at external boundaries, not during bytecode string loading.
 
-Direct access to UTF-32LE as native 32-bit values applies on little-endian platforms. Big-endian systems cannot simultaneously promise identical bytes and no conversion; this is a separate support constraint. Unicode validation does not imply decoding into another representation. Embedded U+0000 and terminator rules still need specification.
+Direct access to UTF-32LE as native 32-bit values applies on little-endian platforms. Big-endian systems cannot simultaneously promise identical bytes and no conversion; this is a separate support constraint. Unicode validation does not imply decoding into another representation. Embedded U+0000 is content; explicit length excludes any trailing terminator.
 
 The general #251 principle is a specified portable memory-image layout suitable for direct use after validation and pointer setup. Do not require unpacking every section into a separate internal format. Saving a buffer is valid when its layout already follows the file contract; an arbitrary ABI-dependent dump of C structures does not.
 
@@ -4048,3 +4048,13 @@ Migrate string_view_t, string_value_t, string_builder_t, related slices and stri
 Extend the library with length, comparison, search, copying, building, escaping, formatting, numeric parsing/output and required Unicode operations to cover existing consumers. Migrate the compiler, VM, diagnostics, static messages, C generator and its runtime, tests and other consumers. Do not cast the new type to call wcs*/wmem*/wide printf functions: the corresponding operations must consume the new type directly.
 
 Convert UTF-8 and UTF-16 at I/O and system API boundaries. Internal strings do not depend on wchar_t or the current locale. Bytecode string regions remain UTF-32LE and directly usable from the loaded buffer on supported little-endian platforms. Acceptance covers Windows/Linux, non-BMP characters, matching operation results and bytes, ownership/slices, size boundaries, malformed Unicode and absence of string transcoding during bytecode loading.
+
+## Embedded zero characters and explicit lengths (#250)
+
+An ordinary string permits U+0000 at any position. The explicit length in string_value_t and string_view_t defines its complete contents in 32-bit elements: A, U+0000, B has length 3 and differs from A. A zero element within this range does not terminate the string. Copying, comparison, search, hashing, concatenation, formatting, escaping and encoding conversions process the entire range.
+
+Retain the existing trailing zero in representations whose contracts require it, excluding it from the length; it does not replace the length. Respect slices' own bounds and guarantees without reading past their range. The bytecode decoder checks explicit length, bounds, alignment and any required terminator, but accepts U+0000 within contents. Preserve null versus empty and ownership contracts.
+
+At external boundaries where zero is forbidden or causes truncation (in particular paths and arguments to NUL-terminated system APIs), inspect the entire input range and report an error before calling the API. Silent truncation is forbidden. Length-aware text/binary conversions preserve representable embedded zeros; diagnostic escaping retains the string suffix.
+
+Acceptance: zeros at the beginning, middle and end of contents, repeated zeros and all-zero strings; comparison distinguishes A from A/U+0000/B and hashing processes all contents; copying, search, builders, formatting and encoding conversions retain data after zero. Test static U-literals containing zero, bytecode save/load round trips without transcoding and rejection before a system operation can use a truncated path.
