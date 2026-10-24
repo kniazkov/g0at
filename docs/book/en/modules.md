@@ -4265,8 +4265,32 @@ Different versions coexist, and a conflicting expected hash fails independently
 of successful application lookups. Only direct records are emitted: neither
 transitive records nor external bytecode/native payloads are embedded.
 
-One binding covers one consumer, not the complete graph. Iterative traversal,
-shared-node caching and cycle detection remain #189, and CLI wiring #191/#218;
+One binding covers one consumer, not the complete graph. The iterative graph API
+(#189) supplies shared-node caching and cycle detection; CLI wiring remains #191/#218;
 the entire graph must be checked before execution/publication. The Linux/Windows
 fixtures inspect per-consumer edges and independently bind their targets.
 See [API, ownership and tests](../../module-dependencies-api.md).
+
+
+### Iterative dependency preflight (#189)
+
+The shared `vm/module_graph.h` API validates the complete reachable graph from an
+archive or syntax-collected source imports, using one root-program search object.
+It checks each exact name/version once per pass, caching successful snapshots and
+failures while retaining every incoming edge and its expected hash. Different
+versions coexist; conflicting expectations cannot override library records.
+Explicit work stacks handle deep chains and distinguish valid diamonds from
+import cycles. Invalid branches do not suppress independent errors.
+
+Path enumeration retains every complete diagnostic chain without expanding an
+exponential list during validation. Function references must resolve to functions
+reachable through the referencing module's own hash-pinned dependencies, not an
+unrelated branch. No user code, initializer or OS loader runs. Invalid results
+remain available for diagnostics but never permit execution or publication.
+Source preflight has a synthetic root and permits dependency analysis, not
+publication of a named artifact. Before publication the compiler must validate the
+final temporary archive with `validate_module_graph` and the same original search
+object. This catches dependencies back to the final root's own name/version,
+including an old installed application copy. Caching is per pass.
+This is the common internal preflight; CLI wiring remains #191/#218 and diagnostic
+presentation #190. See [API, ownership and tests](../../module-graph-api.md).
