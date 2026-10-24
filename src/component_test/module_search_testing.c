@@ -16,6 +16,7 @@
 #    include <direct.h>
 void begin_module_search_permissions(void);
 void end_module_search_permissions(void);
+unsigned long probe_module_search_access(const char *path, int directory);
 #    define chdir _chdir
 #else
 #    include <unistd.h>
@@ -62,6 +63,13 @@ int main(int argc, char **argv) {
     assert(fs_arguments(&argc, &argv, &arguments_error));
     clear_fs_error(&arguments_error);
     begin_module_search_permissions();
+    if (argc == 4 && !strcmp(argv[1], "--probe")) {
+        printf("%lu\n", probe_module_search_access(argv[2], !strcmp(argv[3], "directory")));
+        end_module_search_permissions();
+        free_fs_arguments(argc, argv);
+        assert(!get_allocated_memory_size());
+        return 0;
+    }
 #endif
     assert(argc == 10);
     module_search_t *search = NULL;

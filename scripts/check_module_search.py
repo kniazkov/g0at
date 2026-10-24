@@ -275,7 +275,8 @@ with tempfile.TemporaryDirectory(prefix='goat-search-') as temp:
         paths(result['attempted'], [candidates[0], broken_parent / 'child/sample/1.gbin'])
     # Rules 49-50: prove real access denial, then require it to stop before a valid fallback.
     # The ACL is scoped to a disposable fixture and always restored before cleanup.
-    denied = root / 'denied'
+    denied_wrapper = root / 'denied-wrapper'
+    denied = denied_wrapper / 'denied'
     denied_candidate = put(denied / 'sample/1.gbin', good)
     put(candidates[1], good)
     identity = {}
@@ -298,17 +299,29 @@ with tempfile.TemporaryDirectory(prefix='goat-search-') as temp:
             path.chmod(mode)
     for blocked, directory in ((denied_candidate, False), (denied, True)):
         restrict(blocked)
+        if os.name == 'nt' and directory:
+            # Remove the parent's attribute-access fallback as well as the
+            # denied directory's own read rights, without changing traversal.
+            subprocess.run(['icacls', str(denied_wrapper), '/deny', '*S-1-1-0:(RD)'],
+                           check=True, capture_output=True)
         try:
-            probe = subprocess.run(
-                [sys.executable, '-c',
-                 'import os,sys; list(os.scandir(sys.argv[1]))' if directory else
-                 'import sys; open(sys.argv[1], "rb").read()', str(blocked)],
-                cwd=temp, capture_output=True, **identity)
-            if probe.returncode == 0:
-                assert not os.environ.get('CI'), 'CI must enforce access-denied search fixtures'
-                print('Access-denied fixture unavailable: filesystem ignores mode bits')
-                continue
-            assert b'PermissionError' in probe.stderr, probe.stderr
+            if os.name == 'nt':
+                probe = subprocess.run([EXE, '--probe', str(blocked),
+                                        'directory' if directory else 'file'],
+                                       cwd=temp, capture_output=True, text=True)
+                assert probe.returncode == 0 and probe.stdout.strip() == '5', (
+                    blocked, probe.returncode, probe.stdout, probe.stderr)
+            else:
+                probe = subprocess.run(
+                    [sys.executable, '-c',
+                     'import os,sys; list(os.scandir(sys.argv[1]))' if directory else
+                     'import sys; open(sys.argv[1], "rb").read()', str(blocked)],
+                    cwd=temp, capture_output=True, **identity)
+                if probe.returncode == 0:
+                    assert not os.environ.get('CI'), 'CI must enforce access-denied search fixtures'
+                    print('Access-denied fixture unavailable: filesystem ignores mode bits')
+                    continue
+                assert b'PermissionError' in probe.stderr, probe.stderr
             # First-candidate success must still ignore an inaccessible later directory.
             put(candidates[0], good)
             _, result = run(source, environment=str(denied), identity=identity)
@@ -331,6 +344,8 @@ with tempfile.TemporaryDirectory(prefix='goat-search-') as temp:
                 paths(result['attempted'], [local / 'missing/1.gbin', denied / 'missing/1.gbin'])
         finally:
             restore(blocked, 0o755 if directory else 0o644)
+            if os.name == 'nt' and directory:
+                restore(denied_wrapper, 0o755)
     if os.name != 'nt':
         # Exact lookup needs search permission, not directory enumeration permission.
         put(explicit / 'missing/1.gbin', archive(name='missing')[0])
