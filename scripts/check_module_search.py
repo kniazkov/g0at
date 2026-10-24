@@ -284,7 +284,8 @@ with tempfile.TemporaryDirectory(prefix='goat-search-') as temp:
         identity = dict(user=65534, group=65534, extra_groups=[])
     def restrict(path):
         if os.name == 'nt':
-            rights = '*S-1-1-0:(OI)(CI)(RX)' if path.is_dir() else '*S-1-1-0:(RX)'
+            # Keep READ_CONTROL available so icacls can restore the disposable ACL.
+            rights = '*S-1-1-0:(OI)(CI)(RD,RA,X)' if path.is_dir() else '*S-1-1-0:(RD,RA,X)'
             subprocess.run(['icacls', str(path), '/deny', rights],
                            check=True, capture_output=True)
         else:

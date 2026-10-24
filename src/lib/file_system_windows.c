@@ -159,22 +159,26 @@ char *temporary_fs_directory(fs_error_t *error) {
     return out;
 }
 
-static HANDLE open_path(const char *path, DWORD access, bool follow, DWORD share) {
+static HANDLE
+open_path_flags(const char *path, DWORD access, bool follow, DWORD share, DWORD flags) {
     wchar_t *wide = fs_wide(path);
     if (!wide)
         return INVALID_HANDLE_VALUE;
-    HANDLE handle =
-        CreateFileW(wide,
-                    access,
-                    share,
-                    NULL,
-                    OPEN_EXISTING,
-                    FILE_FLAG_BACKUP_SEMANTICS | (follow ? 0 : FILE_FLAG_OPEN_REPARSE_POINT),
-                    NULL);
+    HANDLE handle = CreateFileW(wide,
+                                access,
+                                share,
+                                NULL,
+                                OPEN_EXISTING,
+                                flags | (follow ? 0 : FILE_FLAG_OPEN_REPARSE_POINT),
+                                NULL);
     DWORD saved = GetLastError();
     FREE(wide);
     SetLastError(saved);
     return handle;
+}
+
+static HANDLE open_path(const char *path, DWORD access, bool follow, DWORD share) {
+    return open_path_flags(path, access, follow, share, FILE_FLAG_BACKUP_SEMANTICS);
 }
 
 static bool source_path_valid(const char *path, fs_error_t *error) {
@@ -265,8 +269,13 @@ bool read_fs_regular_file(const char *path,
                        path);
     if (!source_path_valid(path, error))
         return false;
-    HANDLE handle =
-        open_path(path, GENERIC_READ, true, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE);
+    /* Ordinary module/source reads must not opt into backup-privilege ACL bypass.
+     * Directory metadata operations still need BACKUP_SEMANTICS to open directories. */
+    HANDLE handle = open_path_flags(path,
+                                    GENERIC_READ,
+                                    true,
+                                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                                    0);
     if (handle == INVALID_HANDLE_VALUE)
         return fs_native_error(error, "open regular file", path);
     BY_HANDLE_FILE_INFORMATION info;

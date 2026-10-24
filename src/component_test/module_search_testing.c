@@ -14,6 +14,7 @@
 #include <string.h>
 #ifdef _WIN32
 #    include <direct.h>
+#    include <windows.h>
 #    define chdir _chdir
 #else
 #    include <unistd.h>
@@ -59,6 +60,22 @@ int main(int argc, char **argv) {
     fs_error_t arguments_error = {0};
     assert(fs_arguments(&argc, &argv, &arguments_error));
     clear_fs_error(&arguments_error);
+    /* Hosted Windows runners may have backup privileges: exercise ordinary
+     * filesystem permissions, not the elevated token's backup bypass. */
+    HANDLE token = NULL, restricted = NULL;
+    assert(OpenProcessToken(GetCurrentProcess(),
+                            TOKEN_DUPLICATE | TOKEN_QUERY | TOKEN_ASSIGN_PRIMARY,
+                            &token));
+    assert(CreateRestrictedToken(token,
+                                 DISABLE_MAX_PRIVILEGE,
+                                 0,
+                                 NULL,
+                                 0,
+                                 NULL,
+                                 0,
+                                 NULL,
+                                 &restricted));
+    assert(ImpersonateLoggedOnUser(restricted));
 #endif
     assert(argc == 10);
     module_search_t *search = NULL;
@@ -160,6 +177,9 @@ int main(int argc, char **argv) {
     free_module_search(search);
     clear_module_search_error(&error);
 #ifdef _WIN32
+    assert(RevertToSelf());
+    CloseHandle(restricted);
+    CloseHandle(token);
     free_fs_arguments(argc, argv);
 #endif
     assert(!get_allocated_memory_size());
