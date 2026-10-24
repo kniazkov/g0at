@@ -4137,3 +4137,6 @@ against exact archive records by module identity, target, ABI and specialization
 A separate iterative traversal of supplied snapshots resolves functionRef only
 through reachable hash-pinned dependencies, never conflating equal IDs across
 modules. Graph discovery/loading, dispatch and closure execution remain separate.
+
+
+The shared local .gbin validation API (#185) is documented in [module-validation-api.md](../../module-validation-api.md): owned snapshots and deterministic failed/skipped checks without execution or dependency lookup.

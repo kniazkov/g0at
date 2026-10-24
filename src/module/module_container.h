@@ -47,6 +47,56 @@ goat_container_status goat_module_container_read(const void *data,
                                                  size_t max_expanded,
                                                  goat_module_container **out,
                                                  goat_container_error *error);
+
+/** Reporting stages are ordered and independent of any native execution mode. */
+typedef enum {
+    GOAT_CONTAINER_CHECK_LAYOUT,
+    GOAT_CONTAINER_CHECK_CONTENT,
+    GOAT_CONTAINER_CHECK_JSON,
+    GOAT_CONTAINER_CHECK_DECLARATIONS,
+    GOAT_CONTAINER_CHECK_NATIVE_HASH,
+    GOAT_CONTAINER_CHECK_MAIN_HASH
+} goat_container_check;
+
+typedef enum {
+    GOAT_CONTAINER_CHECK_PASSED,
+    GOAT_CONTAINER_CHECK_FAILED,
+    GOAT_CONTAINER_CHECK_SKIPPED
+} goat_container_check_state;
+
+typedef struct {
+    goat_container_check check;
+    goat_container_check_state state;
+    goat_container_check prerequisite; /* Meaningful only for SKIPPED. */
+    goat_container_error error;
+    zip_view_t entry;  /* Bounded borrowed name, valid only during callback. */
+    const char *field; /* JSON path, valid only during callback; otherwise NULL. */
+    size_t field_length;
+} goat_container_diagnostic;
+
+typedef void (*goat_container_report_fn)(const goat_container_diagnostic *diagnostic,
+                                         void *context);
+/** Borrowed partial snapshot for diagnostics ONLY: metadata has passed schema
+ * validation, but hashes/declarations/individual payload CRCs MAY HAVE FAILED.
+ * Bytecode data is NULL when its CRC/read failed. Native entries may be absent;
+ * any non-NULL payload data has passed CRC, not necessarily SHA-256. Inspection
+ * may validate available bytes or metadata independently, never execute, OS-load,
+ * or retain the snapshot beyond this callback. Only read's successful output is
+ * a fully verified container usable by consumers.
+ */
+typedef void (*goat_container_inspect_fn)(const goat_module_container *container, void *context);
+/** Same validation engine and ownership as read. Collects independent failures;
+ * unavailable dependent checks are explicitly skipped, never marked passed.
+ * Callback data is borrowed only during the callback. Output is NULL on any error.
+ */
+goat_container_status goat_module_container_read_report(const void *data,
+                                                        size_t size,
+                                                        size_t max_expanded,
+                                                        goat_module_container **out,
+                                                        goat_container_error *error,
+                                                        goat_container_report_fn report,
+                                                        void *context,
+                                                        goat_container_inspect_fn inspect);
 void goat_module_container_free(goat_module_container *container);
 const char *goat_container_status_string(goat_container_status status);
 /** Borrowed immutable views, valid until container_free. NULL handles yield empty views. */

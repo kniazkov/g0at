@@ -142,6 +142,78 @@ static void canonical_api_checks(void) {
     goat_module_json_free(NULL);
 }
 
+typedef struct {
+    size_t count;
+    goat_module_json_error errors[16];
+    char paths[16][128];
+    size_t lengths[16];
+} json_diagnostics;
+
+static void
+collect_diagnostic(goat_module_json_error error, const char *path, size_t length, void *context) {
+    json_diagnostics *result = context;
+    assert(result->count < 16 && length < 128);
+    size_t i = result->count++;
+    result->errors[i] = error;
+    result->lengths[i] = length;
+    memcpy(result->paths[i], path, length);
+    result->paths[i][length] = 0;
+}
+
+static void diagnostic_checks(void) {
+    const char *cases[] = {
+        "{\"formatVersion\":1,\"name\":42,\"version\":false,\"main\":\"a\"}",
+        "{\"formatVersion\":1,\"name\":\"g\",\"version\":\"1\",\"main\":\"a\","
+        "\"native\":false,\"authors\":[{\"name\":3},{\"email\":false}]}",
+        "{\"formatVersion\":1,\"name\":\"g\",\"version\":\"1\",\"main\":\"a\","
+        "\"a/b~c\":0,\"nul\\u0000key\":0}",
+        "{\"formatVersion\":1,\"name\":false,",
+        "{\"formatVersion\":1,\"name\":false,\"name\":3}",
+        "{\"formatVersion\":1,\"name\":\"g\",\"version\":\"1\",\"main\":\"a\"}",
+    };
+    const size_t counts[] = {2, 4, 2, 1, 1, 0};
+    const goat_module_json_error errors[] = {GOAT_MODULE_JSON_INVALID_FIELD,
+                                             GOAT_MODULE_JSON_INVALID_FIELD,
+                                             GOAT_MODULE_JSON_UNKNOWN_FIELD,
+                                             GOAT_MODULE_JSON_SYNTAX,
+                                             GOAT_MODULE_JSON_DUPLICATE_KEY,
+                                             GOAT_MODULE_JSON_OK};
+    json_diagnostics results[6] = {0};
+    for (size_t i = 0; i < 6; i++) {
+        yyjson_doc *doc = NULL;
+        assert(goat_module_json_read_diagnostics(cases[i],
+                                                 strlen(cases[i]),
+                                                 GOAT_MODULE_GMOD,
+                                                 &doc,
+                                                 collect_diagnostic,
+                                                 &results[i])
+               == errors[i]);
+        assert(results[i].count == counts[i]);
+        assert((doc != NULL) == (errors[i] == GOAT_MODULE_JSON_OK));
+        yyjson_doc_free(doc);
+        json_diagnostics again = {0};
+        assert(goat_module_json_read_diagnostics(cases[i],
+                                                 strlen(cases[i]),
+                                                 GOAT_MODULE_GMOD,
+                                                 &doc,
+                                                 collect_diagnostic,
+                                                 &again)
+               == errors[i]);
+        assert(!memcmp(&again, &results[i], sizeof(again)));
+        yyjson_doc_free(doc);
+    }
+    assert(!strcmp(results[0].paths[0], "/name"));
+    assert(!strcmp(results[0].paths[1], "/version"));
+    assert(!strcmp(results[1].paths[0], "/native"));
+    assert(!strcmp(results[1].paths[1], "/authors/0/name"));
+    assert(!strcmp(results[1].paths[2], "/authors/1/email"));
+    assert(!strcmp(results[1].paths[3], "/authors/1/name"));
+    assert(!strcmp(results[2].paths[0], "/a~1b~0c"));
+    assert(results[2].lengths[1] == 8 && !memcmp(results[2].paths[1], "/nul\0key", 8));
+    assert(!results[3].lengths[0] && !results[4].lengths[0]);
+    puts("[ ok ] module JSON independent diagnostics");
+}
+
 int main(int argc, char **argv) {
     if (argc == 2 && !strcmp(argv[1], "--gmod"))
         return read_stdin(GOAT_MODULE_GMOD, 0);
@@ -174,6 +246,7 @@ int main(int argc, char **argv) {
     assert(goat_module_main_hash(NULL, "", SIZE_MAX, hash) == GOAT_MODULE_JSON_LIMIT);
 #endif
     canonical_api_checks();
+    diagnostic_checks();
     puts("Starting module JSON testing...");
     yyjson_doc *invalid_doc = (yyjson_doc *)(uintptr_t)1;
     assert(goat_module_json_read("{}", 2, (goat_module_json_kind)42, &invalid_doc)

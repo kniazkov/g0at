@@ -32,6 +32,25 @@ goat_module_json_error goat_module_json_read(const char *data,
                                              size_t length,
                                              goat_module_json_kind kind,
                                              yyjson_doc **out);
+/** Diagnostic paths are RFC 6901 JSON pointers, root is empty. The path is
+ * borrowed only during the callback and length-delimited (keys may contain NUL).
+ * Independent schema errors are reported in document order, followed by missing
+ * required fields in schema order. Malformed syntax/duplicate keys prevent schema
+ * checks; record invariants and normalization run only after the schema succeeds.
+ */
+typedef void (*goat_module_json_diagnostic)(goat_module_json_error error,
+                                            const char *path,
+                                            size_t path_length,
+                                            void *context);
+/** Same ownership/result contract as read. On errors no partial document escapes.
+ * Returns the first schema error (allocation failure takes precedence).
+ */
+goat_module_json_error goat_module_json_read_diagnostics(const char *data,
+                                                         size_t length,
+                                                         goat_module_json_kind kind,
+                                                         yyjson_doc **out,
+                                                         goat_module_json_diagnostic callback,
+                                                         void *context);
 const char *goat_module_json_error_string(goat_module_json_error error);
 
 /** Canonical JSON syntax only: UTF-8 key order, exact int64, no array reordering.

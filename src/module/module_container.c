@@ -20,6 +20,8 @@ typedef struct {
     zip_local_t local;
     size_t index;
     part_kind kind;
+    zip_view_t bytes;
+    bool readable;
 } record;
 
 static uint16_t le16(const uint8_t *p) {
@@ -306,48 +308,126 @@ static bool native_hash(zip_view_t bytes, const char *expected) {
     return true;
 }
 
-goat_container_status goat_module_container_read(const void *data,
-                                                 size_t size,
-                                                 size_t max_expanded,
-                                                 goat_module_container **out,
-                                                 goat_container_error *error) {
-    goat_container_error local_error = {0};
-    if (!error)
-        error = &local_error;
-    *error = (goat_container_error){.entry_index = SIZE_MAX};
+typedef struct {
+    goat_container_report_fn callback;
+    void *context;
+    goat_container_error first;
+    record *json;
+} report_state;
+
+static void report_check(report_state *r,
+                         goat_container_check check,
+                         goat_container_check_state state,
+                         goat_container_check prerequisite,
+                         const goat_container_error *error,
+                         const record *entry,
+                         const char *field,
+                         size_t field_length) {
+    goat_container_diagnostic d = {.check = check,
+                                   .state = state,
+                                   .prerequisite = prerequisite,
+                                   .error = {.entry_index = SIZE_MAX},
+                                   .field = field,
+                                   .field_length = field_length};
+    if (error)
+        d.error = *error;
+    if (entry) {
+        d.entry = entry->central.name;
+        d.error.entry_index = entry->index;
+    }
+    if (state == GOAT_CONTAINER_CHECK_FAILED
+        && (!r->first.status || d.error.status == GOAT_CONTAINER_MEMORY))
+        r->first = d.error;
+    if (r->callback)
+        r->callback(&d, r->context);
+}
+
+static void skipped(report_state *r,
+                    goat_container_check check,
+                    goat_container_check prerequisite,
+                    const record *entry) {
+    report_check(r, check, GOAT_CONTAINER_CHECK_SKIPPED, prerequisite, NULL, entry, NULL, 0);
+}
+
+static void checked(report_state *r,
+                    goat_container_check check,
+                    const goat_container_error *error,
+                    const record *entry) {
+    report_check(r,
+                 check,
+                 error && error->status ? GOAT_CONTAINER_CHECK_FAILED : GOAT_CONTAINER_CHECK_PASSED,
+                 GOAT_CONTAINER_CHECK_LAYOUT,
+                 error,
+                 entry,
+                 NULL,
+                 0);
+}
+
+static void
+json_report(goat_module_json_error status, const char *path, size_t length, void *context) {
+    report_state *r = context;
+    goat_container_error error = {
+        .status = status == GOAT_MODULE_JSON_MEMORY ? GOAT_CONTAINER_MEMORY : GOAT_CONTAINER_JSON,
+        .json_error = status,
+        .entry_index = SIZE_MAX};
+    report_check(r,
+                 GOAT_CONTAINER_CHECK_JSON,
+                 GOAT_CONTAINER_CHECK_FAILED,
+                 GOAT_CONTAINER_CHECK_CONTENT,
+                 &error,
+                 r->json,
+                 path,
+                 length);
+}
+
+goat_container_status goat_module_container_read_report(const void *data,
+                                                        size_t size,
+                                                        size_t max_expanded,
+                                                        goat_module_container **out,
+                                                        goat_container_error *error,
+                                                        goat_container_report_fn report,
+                                                        void *context,
+                                                        goat_container_inspect_fn inspect) {
+    goat_container_error local = {.entry_index = SIZE_MAX};
+    report_state rs = {.callback = report, .context = context, .first = {.entry_index = SIZE_MAX}};
     if (out)
         *out = NULL;
-    if (!out || (!data && size))
-        return fail(error, GOAT_CONTAINER_INVALID, SIZE_MAX, 0, 0);
-    if (size >= UINT32_MAX)
-        return fail(error, GOAT_CONTAINER_LIMIT, SIZE_MAX, 0, 0);
     zip_archive_t *zip = NULL;
-    zip_status_t zs = zip_archive_open(data, size, &zip);
-    if (zs)
-        return zip_failure(error, zs, SIZE_MAX);
-    zip_layout_t layout;
-    zip_archive_layout(zip, &layout);
     goat_module_container *c = NULL;
     record *records = NULL, **order = NULL, *json = NULL, *bytecode = NULL;
-    zip_view_t json_bytes = {0};
-    goat_container_status status = GOAT_CONTAINER_OK;
+    zip_layout_t layout = {0};
+    bool layout_valid = false;
+    if (!out || (!data && size)) {
+        fail(&local, GOAT_CONTAINER_INVALID, SIZE_MAX, 0, 0);
+        goto done;
+    }
+    if (size >= UINT32_MAX) {
+        fail(&local, GOAT_CONTAINER_LIMIT, SIZE_MAX, 0, 0);
+        goto done;
+    }
+    zip_status_t zs = zip_archive_open(data, size, &zip);
+    if (zs) {
+        zip_failure(&local, zs, SIZE_MAX);
+        goto done;
+    }
+    zip_archive_layout(zip, &layout);
     if (layout.prefix_size || layout.trailing_size) {
-        status = fail(error, GOAT_CONTAINER_LAYOUT, SIZE_MAX, 0, 0);
+        fail(&local, GOAT_CONTAINER_LAYOUT, SIZE_MAX, 0, 0);
         goto done;
     }
     if (!layout.count) {
-        status = fail(error, GOAT_CONTAINER_REQUIRED, SIZE_MAX, 0, 0);
+        fail(&local, GOAT_CONTAINER_REQUIRED, SIZE_MAX, 0, 0);
         goto done;
     }
     if (layout.count > SIZE_MAX / sizeof(*records) || layout.count > SIZE_MAX / sizeof(*order)) {
-        status = fail(error, GOAT_CONTAINER_LIMIT, SIZE_MAX, 0, 0);
+        fail(&local, GOAT_CONTAINER_LIMIT, SIZE_MAX, 0, 0);
         goto done;
     }
     records = calloc(layout.count, sizeof(*records));
     order = malloc(layout.count * sizeof(*order));
     c = calloc(1, sizeof(*c));
     if (!records || !order || !c) {
-        status = fail(error, GOAT_CONTAINER_MEMORY, SIZE_MAX, 0, 0);
+        fail(&local, GOAT_CONTAINER_MEMORY, SIZE_MAX, 0, 0);
         goto done;
     }
     size_t total = 0, native_count = 0;
@@ -360,28 +440,27 @@ goat_container_status goat_module_container_read(const void *data,
     qsort(order, layout.count, sizeof(*order), by_name);
     for (size_t i = 1; i < layout.count; i++) {
         if (!name_compare(order[i - 1]->central.name, order[i]->central.name)) {
-            status = fail(error, GOAT_CONTAINER_DUPLICATE, order[i]->index, 0, 0);
+            fail(&local, GOAT_CONTAINER_DUPLICATE, order[i]->index, 0, 0);
             goto done;
         }
     }
     for (size_t i = 0; i < layout.count; i++) {
         record *r = &records[i];
         if (!path_kind(r->central.name, &r->kind)) {
-            status = fail(error, GOAT_CONTAINER_PATH, i, 0, 0);
+            fail(&local, GOAT_CONTAINER_PATH, i, 0, 0);
             goto done;
         }
         bool dir = r->kind == PART_DIRECTORY;
         if (!file_type(r->central.external_attributes, dir) || (dir && r->central.size)) {
-            status = fail(error, GOAT_CONTAINER_FILE_TYPE, i, 0, 0);
+            fail(&local, GOAT_CONTAINER_FILE_TYPE, i, 0, 0);
             goto done;
         }
         if (r->central.size > SIZE_MAX - total || r->central.size > max_expanded - total) {
-            status = fail(error, GOAT_CONTAINER_LIMIT, i, 0, 0);
+            fail(&local, GOAT_CONTAINER_LIMIT, i, 0, 0);
             goto done;
         }
         total += r->central.size;
-        status = headers(zip, r, error);
-        if (status)
+        if (headers(zip, r, &local))
             goto done;
         if (r->kind == PART_JSON)
             json = r;
@@ -391,105 +470,158 @@ goat_container_status goat_module_container_read(const void *data,
             native_count++;
     }
     if (!json || !bytecode) {
-        status = fail(error, GOAT_CONTAINER_REQUIRED, SIZE_MAX, 0, 0);
+        fail(&local, GOAT_CONTAINER_REQUIRED, SIZE_MAX, 0, 0);
         goto done;
     }
-    status = physical(order, layout.count, layout, error);
-    if (status)
+    if (physical(order, layout.count, layout, &local))
         goto done;
     qsort(order, layout.count, sizeof(*order), by_name);
-    status = read_part(zip, json, &json_bytes, error);
-    if (status)
-        goto done;
-    goat_module_json_error je = goat_module_json_read((const char *)json_bytes.data,
-                                                      json_bytes.size,
-                                                      GOAT_MODULE_METADATA,
-                                                      &c->metadata);
-    free((void *)json_bytes.data);
-    json_bytes = (zip_view_t){0};
-    if (je) {
-        status = fail(error,
-                      je == GOAT_MODULE_JSON_MEMORY ? GOAT_CONTAINER_MEMORY : GOAT_CONTAINER_JSON,
-                      json->index,
-                      0,
-                      je);
-        goto done;
-    }
-    yyjson_val *variants = yyjson_obj_get(yyjson_doc_get_root(c->metadata), "native");
-    size_t variants_count = yyjson_arr_size(variants);
-    if (variants_count != native_count) {
-        status = fail(error, GOAT_CONTAINER_UNDECLARED, SIZE_MAX, 0, 0);
-        goto done;
-    }
-    /* Resolve all declared names before allocating or unpacking native payloads. */
-    for (size_t i = 0; i < variants_count; i++) {
-        yyjson_val *v = yyjson_obj_get(yyjson_arr_get(variants, i), "library");
-        record *r = find_record(order, layout.count, yyjson_get_str(v), yyjson_get_len(v));
-        if (!r || r->kind != PART_NATIVE || r->central.name.size != yyjson_get_len(v)
-            || memcmp(r->central.name.data, yyjson_get_str(v), yyjson_get_len(v))) {
-            status = fail(error, GOAT_CONTAINER_UNDECLARED, SIZE_MAX, 0, 0);
-            goto done;
-        }
-    }
-    if (native_count) {
-        if (native_count > SIZE_MAX / sizeof(*c->native)) {
-            status = fail(error, GOAT_CONTAINER_LIMIT, SIZE_MAX, 0, 0);
-            goto done;
-        }
-        c->native = calloc(native_count, sizeof(*c->native));
-        if (!c->native) {
-            status = fail(error, GOAT_CONTAINER_MEMORY, SIZE_MAX, 0, 0);
-            goto done;
-        }
-        c->native_count = native_count;
-    }
-    status = read_part(zip, bytecode, &c->bytecode, error);
-    if (status)
-        goto done;
+    layout_valid = true;
+    checked(&rs, GOAT_CONTAINER_CHECK_LAYOUT, NULL, NULL);
+    /* Once the layout is safe, one bad CRC must not hide independent entries. */
     for (size_t i = 0; i < layout.count; i++) {
-        if (records[i].kind == PART_DIRECTORY) {
-            size_t written = 0;
-            zs = zip_archive_read(zip, i, NULL, 0, &written);
-            if (zs) {
-                status = zip_failure(error, zs, i);
-                goto done;
+        record *r = &records[i];
+        local = (goat_container_error){.entry_index = SIZE_MAX};
+        r->readable = !read_part(zip, r, &r->bytes, &local);
+        checked(&rs, GOAT_CONTAINER_CHECK_CONTENT, &local, r);
+    }
+    if (json->readable) {
+        rs.json = json;
+        goat_module_json_error je =
+            goat_module_json_read_diagnostics((const char *)json->bytes.data,
+                                              json->bytes.size,
+                                              GOAT_MODULE_METADATA,
+                                              &c->metadata,
+                                              json_report,
+                                              &rs);
+        if (!je)
+            checked(&rs, GOAT_CONTAINER_CHECK_JSON, NULL, json);
+    } else {
+        skipped(&rs, GOAT_CONTAINER_CHECK_JSON, GOAT_CONTAINER_CHECK_CONTENT, json);
+    }
+    if (c->metadata) {
+        yyjson_val *variants = yyjson_obj_get(yyjson_doc_get_root(c->metadata), "native");
+        size_t count = yyjson_arr_size(variants);
+        local = (goat_container_error){.entry_index = SIZE_MAX};
+        if (count != native_count)
+            fail(&local, GOAT_CONTAINER_UNDECLARED, SIZE_MAX, 0, 0);
+        for (size_t i = 0; i < count; i++) {
+            yyjson_val *v = yyjson_obj_get(yyjson_arr_get(variants, i), "library");
+            record *r = find_record(order, layout.count, yyjson_get_str(v), yyjson_get_len(v));
+            if (!r || r->kind != PART_NATIVE || r->central.name.size != yyjson_get_len(v)
+                || memcmp(r->central.name.data, yyjson_get_str(v), yyjson_get_len(v)))
+                fail(&local, GOAT_CONTAINER_UNDECLARED, SIZE_MAX, 0, 0);
+        }
+        checked(&rs, GOAT_CONTAINER_CHECK_DECLARATIONS, &local, NULL);
+        bool declarations_ok = !local.status;
+        if (declarations_ok && count) {
+            c->native = calloc(count, sizeof(*c->native));
+            if (!c->native) {
+                fail(&local, GOAT_CONTAINER_MEMORY, SIZE_MAX, 0, 0);
+                checked(&rs, GOAT_CONTAINER_CHECK_NATIVE_HASH, &local, NULL);
+            } else {
+                c->native_count = count;
             }
         }
-    }
-    for (size_t i = 0; i < native_count; i++) {
-        yyjson_val *v = yyjson_arr_get(variants, i), *name = yyjson_obj_get(v, "library");
-        record *r = find_record(order, layout.count, yyjson_get_str(name), yyjson_get_len(name));
-        c->native[i].name = yyjson_get_str(name);
-        c->native[i].name_length = yyjson_get_len(name);
-        status = read_part(zip, r, &c->native[i].bytes, error);
-        if (status)
-            goto done;
-        if (!native_hash(c->native[i].bytes, yyjson_get_str(yyjson_obj_get(v, "hash")))) {
-            status = fail(error, GOAT_CONTAINER_NATIVE_HASH, r->index, 0, 0);
-            goto done;
+        for (size_t i = 0; i < count; i++) {
+            yyjson_val *v = yyjson_arr_get(variants, i), *name = yyjson_obj_get(v, "library");
+            record *r =
+                find_record(order, layout.count, yyjson_get_str(name), yyjson_get_len(name));
+            if (!r || r->kind != PART_NATIVE) {
+                skipped(&rs,
+                        GOAT_CONTAINER_CHECK_NATIVE_HASH,
+                        GOAT_CONTAINER_CHECK_DECLARATIONS,
+                        NULL);
+                continue;
+            }
+            if (!r->readable) {
+                skipped(&rs, GOAT_CONTAINER_CHECK_NATIVE_HASH, GOAT_CONTAINER_CHECK_CONTENT, r);
+                continue;
+            }
+            local = (goat_container_error){.entry_index = SIZE_MAX};
+            if (!native_hash(r->bytes, yyjson_get_str(yyjson_obj_get(v, "hash"))))
+                fail(&local, GOAT_CONTAINER_NATIVE_HASH, r->index, 0, 0);
+            checked(&rs, GOAT_CONTAINER_CHECK_NATIVE_HASH, &local, r);
+            if (c->native) {
+                c->native[i].name = yyjson_get_str(name);
+                c->native[i].name_length = yyjson_get_len(name);
+                c->native[i].bytes = r->bytes;
+                r->bytes = (zip_view_t){0};
+            }
         }
+        if (!count) {
+            if (native_count)
+                skipped(&rs,
+                        GOAT_CONTAINER_CHECK_NATIVE_HASH,
+                        GOAT_CONTAINER_CHECK_DECLARATIONS,
+                        NULL);
+            else
+                checked(&rs, GOAT_CONTAINER_CHECK_NATIVE_HASH, NULL, NULL);
+        }
+        if (bytecode->readable) {
+            bool matches = false;
+            goat_module_json_error je = goat_module_main_hash_verify(c->metadata,
+                                                                     bytecode->bytes.data,
+                                                                     bytecode->bytes.size,
+                                                                     &matches);
+            local = (goat_container_error){.entry_index = SIZE_MAX};
+            if (je)
+                fail(&local,
+                     je == GOAT_MODULE_JSON_MEMORY ? GOAT_CONTAINER_MEMORY : GOAT_CONTAINER_JSON,
+                     json->index,
+                     0,
+                     je);
+            else if (!matches)
+                fail(&local, GOAT_CONTAINER_MAIN_HASH, json->index, 0, 0);
+            checked(&rs, GOAT_CONTAINER_CHECK_MAIN_HASH, &local, json);
+            c->bytecode = bytecode->bytes;
+            bytecode->bytes = (zip_view_t){0};
+        } else {
+            skipped(&rs, GOAT_CONTAINER_CHECK_MAIN_HASH, GOAT_CONTAINER_CHECK_CONTENT, bytecode);
+        }
+    } else {
+        skipped(&rs, GOAT_CONTAINER_CHECK_DECLARATIONS, GOAT_CONTAINER_CHECK_JSON, json);
+        skipped(&rs, GOAT_CONTAINER_CHECK_NATIVE_HASH, GOAT_CONTAINER_CHECK_JSON, json);
+        skipped(&rs, GOAT_CONTAINER_CHECK_MAIN_HASH, GOAT_CONTAINER_CHECK_JSON, json);
     }
-    bool matches = false;
-    je = goat_module_main_hash_verify(c->metadata, c->bytecode.data, c->bytecode.size, &matches);
-    if (je) {
-        status = fail(error,
-                      je == GOAT_MODULE_JSON_MEMORY ? GOAT_CONTAINER_MEMORY : GOAT_CONTAINER_JSON,
-                      json->index,
-                      0,
-                      je);
-        goto done;
+    if (inspect && c->metadata)
+        inspect(c, context);
+    if (!rs.first.status) {
+        *out = c;
+        c = NULL;
     }
-    if (!matches) {
-        status = fail(error, GOAT_CONTAINER_MAIN_HASH, json->index, 0, 0);
-        goto done;
-    }
-    *out = c;
-    c = NULL;
 done:
-    free((void *)json_bytes.data);
+    if (!layout_valid) {
+        const record *entry =
+            records && local.entry_index < layout.count ? &records[local.entry_index] : NULL;
+        checked(&rs, GOAT_CONTAINER_CHECK_LAYOUT, &local, entry);
+        for (int check = GOAT_CONTAINER_CHECK_CONTENT; check <= GOAT_CONTAINER_CHECK_MAIN_HASH;
+             check++)
+            skipped(&rs, (goat_container_check)check, GOAT_CONTAINER_CHECK_LAYOUT, NULL);
+    }
+    if (records)
+        for (size_t i = 0; i < layout.count; i++)
+            free((void *)records[i].bytes.data);
     free(order);
     free(records);
     zip_archive_close(zip);
     goat_module_container_free(c);
-    return status;
+    if (error)
+        *error = rs.first;
+    return rs.first.status;
+}
+
+goat_container_status goat_module_container_read(const void *data,
+                                                 size_t size,
+                                                 size_t max_expanded,
+                                                 goat_module_container **out,
+                                                 goat_container_error *error) {
+    return goat_module_container_read_report(data,
+                                             size,
+                                             max_expanded,
+                                             out,
+                                             error,
+                                             NULL,
+                                             NULL,
+                                             NULL);
 }
