@@ -20,6 +20,35 @@ static const node_t *enclosing_function(const node_t *node) {
     return NULL;
 }
 
+/** @brief An AST root is a source identity, never a display path. Different or unknown
+ * roots do not prove common file/module provenance. */
+static bool same_source_tree(const node_t *left, const node_t *right) {
+    if (!left || !right)
+        return false;
+    while (left->parent)
+        left = left->parent;
+    while (right->parent)
+        right = right->parent;
+    return left == right;
+}
+
+/** @brief Cross-tree bindings require runtime provenance even without explicit modifiers. */
+static bool has_foreign_binding(const node_t *node) {
+    if (node->vtbl->type == NODE_VARIABLE) {
+        const declarator_t *decl = ((const variable_t *)node)->declarator;
+        if (decl && decl != get_builtin_declarator() && !same_source_tree(node, &decl->base))
+            return true;
+    }
+    for (size_t i = 0; i < get_node_child_count(node); i++)
+        if (has_foreign_binding(get_node_child(node, i)))
+            return true;
+    return false;
+}
+
+bool requires_access_safe_optimization(const node_t *root) {
+    return has_access_modifiers(root) || has_foreign_binding(root);
+}
+
 /** @brief Captured constants can become mutable cells in flat; never resolve across functions. */
 static const node_t *resolve(const node_t *node, const node_t *observer) {
     for (size_t depth = 0; node && depth < 64; depth++) {
@@ -107,8 +136,12 @@ void analyze_access(node_t *node, arena_t *errors, compilation_error_t **list) {
     node_type_t type = node->vtbl->type;
     if (type == NODE_VARIABLE) {
         const variable_t *var = (const variable_t *)node;
-        node->access_proof =
-            var->dynamic_lookup || !var->declarator ? ACCESS_PROOF_UNKNOWN : ACCESS_PROOF_ALLOWED;
+        node->access_proof = var->dynamic_lookup || !var->declarator
+                                     || (var->declarator != get_builtin_declarator()
+                                         && var->declarator->modifier != ACCESS_EXTERNAL
+                                         && !same_source_tree(node, &var->declarator->base))
+                                 ? ACCESS_PROOF_UNKNOWN
+                                 : ACCESS_PROOF_ALLOWED;
         if (var->name.length == 4 && !MEMCMP(var->name.data, U"this", 4))
             node->access_proof = ACCESS_PROOF_UNKNOWN;
     } else if (type == NODE_MEMBER_ACCESS || type == NODE_INDEX_ACCESS) {
@@ -131,8 +164,11 @@ void analyze_access(node_t *node, arena_t *errors, compilation_error_t **list) {
         if (decl) {
             if (has_private_slot(node, name))
                 node->access_proof = ACCESS_PROOF_UNKNOWN;
-            else if (decl->modifier == ACCESS_PUBLIC || decl->modifier == ACCESS_MODULE)
+            else if (decl->modifier == ACCESS_EXTERNAL)
                 node->access_proof = ACCESS_PROOF_ALLOWED;
+            else if (decl->modifier == ACCESS_PUBLIC || decl->modifier == ACCESS_FILE)
+                node->access_proof = same_source_tree(node, &decl->base) ? ACCESS_PROOF_ALLOWED
+                                                                         : ACCESS_PROOF_UNKNOWN;
             else if (within(node->scope, decl->base.scope))
                 /* A lexical template is not proof of a particular factory activation. */
                 node->access_proof = ACCESS_PROOF_UNKNOWN;
@@ -181,7 +217,7 @@ needs_checks(const node_t *node, const node_t *function, const c_expression_cont
         return true;
     if (node->vtbl->type == NODE_VARIABLE) {
         const declarator_t *decl = ((const variable_t *)node)->declarator;
-        if (decl && decl != get_builtin_declarator() && decl->modifier != ACCESS_MODULE
+        if (decl && decl != get_builtin_declarator() && decl->modifier != ACCESS_FILE
             && !within(decl->base.scope, function->scope))
             return true;
     }
@@ -198,7 +234,7 @@ bool function_needs_access_checks(const node_t *function) {
     const node_t *root = function;
     while (root->parent)
         root = root->parent;
-    return has_access_modifiers(root) && needs_checks(function, function, NULL);
+    return requires_access_safe_optimization(root) && needs_checks(function, function, NULL);
 }
 
 bool function_signature_needs_access_checks(const function_summary_t *summary) {

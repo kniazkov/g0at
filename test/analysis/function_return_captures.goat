@@ -1,8 +1,8 @@
-var external = 10
-const read = func() { return external; }
+var captured_value = 10
+const read = func() { return captured_value; }
 var a = read()
-external = "changed"
+captured_value = "changed"
 var b = read()
-const write = func(n) { external = 99; return n + 1; }
+const write = func(n) { captured_value = 99; return n + 1; }
 var c = write(4)
-var d = external
+var d = captured_value

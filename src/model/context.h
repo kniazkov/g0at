@@ -88,5 +88,12 @@ context_t *create_context_with_protos_in_module(process_t *process,
                                                 object_array_t protos,
                                                 module_t *module);
 
+/** @brief Creates a frame with the callee's stable source-file identity. */
+context_t *create_context_with_protos_in_file(process_t *process,
+                                              context_t *caller,
+                                              object_array_t protos,
+                                              module_t *module,
+                                              uint32_t file_id);
+
 /** @brief Releases the context and its data reference; returns the previous context. */
 context_t *destroy_context(context_t *context);

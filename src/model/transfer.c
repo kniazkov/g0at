@@ -94,9 +94,10 @@ object_t *transfer_closure(transfer_t *transfer, object_t *source) {
     items[0] = target;
     for (size_t i = 1; i < count; i++)
         items[i] = parents.items[inherited + i - 1];
-    view = create_user_defined_object_in_module(transfer->process,
-                                                (object_array_t){items, count},
-                                                get_object_module(source));
+    view = create_user_defined_object_in_file(transfer->process,
+                                              (object_array_t){items, count},
+                                              get_object_module(source),
+                                              get_object_file_id(source));
     set_inheritance_prototype_count(view, 0);
     mark_transfer_view(view);
     FREE(items);
@@ -137,6 +138,7 @@ static void copy_grants(const transfer_t *transfer, vector_t *destination, const
 void transfer_function_access(const transfer_t *transfer,
                               function_access_t *destination,
                               const function_access_t *source) {
+    destination->file_id = source->file_id;
     function_access_t effective;
     init_function_access(&effective, source->module);
     inherit_function_access(&effective, source);

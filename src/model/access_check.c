@@ -28,10 +28,12 @@ static bool contains_domain(const vector_t *domains, const access_domain_t *doma
 
 bool can_access_field(const function_access_t *access, const field_cell_t *cell) {
     switch (cell->modifier) {
-        case ACCESS_PUBLIC:
+        case ACCESS_EXTERNAL:
             return true;
-        case ACCESS_MODULE:
+        case ACCESS_PUBLIC:
             return access->module == cell->module;
+        case ACCESS_FILE:
+            return access->module == cell->module && access->file_id == cell->file_id;
         case ACCESS_PRIVATE:
             return contains_domain(access->domains, cell->domain);
         case ACCESS_PROTECTED:
@@ -111,7 +113,12 @@ model_status_t create_accessible_property(const function_access_t *access,
     if (object->vtbl->type == TYPE_USER_DEFINED_OBJECT
         && get_object_module(object) != access->module)
         return MSTAT_FOREIGN_OBJECT;
-    return create_object_property(object, key, value, constant);
+    model_status_t status = create_object_property(object, key, value, constant);
+    if (status == MSTAT_OK && object->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+        field_cell_t *cell = get_own_field_cell(object, key);
+        cell->file_id = access->file_id;
+    }
+    return status;
 }
 
 model_status_t write_accessible_property(const function_access_t *access,

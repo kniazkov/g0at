@@ -27,7 +27,7 @@
 
 size_t get_property_count_of_declarator(const node_t *node) {
     const declarator_t *decl = (const declarator_t *)node;
-    return (decl->abstract_value ? 1 : 0) + (decl->modifier != ACCESS_MODULE);
+    return (decl->abstract_value ? 1 : 0) + (decl->modifier != ACCESS_FILE);
 }
 
 void set_declaration_modifier(node_t *declaration, access_modifier_t modifier) {
@@ -36,9 +36,9 @@ void set_declaration_modifier(node_t *declaration, access_modifier_t modifier) {
 }
 
 bool has_access_modifiers(const node_t *node) {
-    if (node->vtbl->type == NODE_FOR_IN && get_for_in_declarator(node)->modifier != ACCESS_MODULE)
+    if (node->vtbl->type == NODE_FOR_IN && get_for_in_declarator(node)->modifier != ACCESS_FILE)
         return true;
-    if (is_declarator(node->vtbl->type) && ((const declarator_t *)node)->modifier != ACCESS_MODULE)
+    if (is_declarator(node->vtbl->type) && ((const declarator_t *)node)->modifier != ACCESS_FILE)
         return true;
     for (size_t i = 0; i < get_node_child_count(node); i++)
         if (has_access_modifiers(get_node_child(node, i)))
@@ -49,6 +49,8 @@ bool has_access_modifiers(const node_t *node) {
 static const gchar_t *declaration_keyword(const node_t *node, bool constant) {
     const declarator_t *decl = (const declarator_t *)replacement_original(get_node_child(node, 0));
     switch (decl->modifier) {
+        case ACCESS_EXTERNAL:
+            return constant ? U"external const " : U"external var ";
         case ACCESS_PUBLIC:
             return constant ? U"public const " : U"public var ";
         case ACCESS_PROTECTED:
@@ -78,9 +80,10 @@ static bool can_generate_c_code(const node_t *node,
 const gchar_t *
 get_property_of_declarator(const node_t *node, size_t index, node_display_value_t *out_value) {
     const declarator_t *decl = (const declarator_t *)node;
-    if (decl->modifier != ACCESS_MODULE) {
+    if (decl->modifier != ACCESS_FILE) {
         if (index == 0) {
             const gchar_t *text = decl->modifier == ACCESS_PUBLIC      ? U"public"
+                                  : decl->modifier == ACCESS_EXTERNAL  ? U"external"
                                   : decl->modifier == ACCESS_PROTECTED ? U"protected"
                                                                        : U"private";
             *out_value = (node_display_value_t){.text = {text, STRLEN(text), false},
@@ -197,7 +200,7 @@ vdeclr_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *dat
         first = add_instruction(code, (instruction_t){.opcode = NIL});
     }
     uint32_t index = add_string_to_data_segment_ex(data, decl->base.name);
-    if (decl->base.modifier != ACCESS_MODULE)
+    if (decl->base.modifier != ACCESS_FILE)
         add_instruction(
             code,
             (instruction_t){.opcode = DVAR,
@@ -682,7 +685,7 @@ cdeclr_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *dat
     const constant_declarator_t *decl = (const constant_declarator_t *)node;
     instr_index_t first = generate_bytecode_from_expression(decl->initial, code, data);
     uint32_t index = add_string_to_data_segment_ex(data, decl->base.name);
-    if (decl->base.modifier != ACCESS_MODULE)
+    if (decl->base.modifier != ACCESS_FILE)
         add_instruction(
             code,
             (instruction_t){.opcode = DCONST,

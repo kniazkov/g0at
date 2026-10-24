@@ -393,6 +393,7 @@ static string_value_t source_for_in(const node_t *node) {
     string_value_t body = generate_goat_code_from_node(get_child(node, 3));
     access_modifier_t modifier = ((const for_t *)node)->iteration->modifier;
     const gchar_t *prefix = modifier == ACCESS_PUBLIC      ? U"public "
+                            : modifier == ACCESS_EXTERNAL  ? U"external "
                             : modifier == ACCESS_PROTECTED ? U"protected "
                             : modifier == ACCESS_PRIVATE   ? U"private "
                                                            : U"";

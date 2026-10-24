@@ -4,10 +4,12 @@
  */
 #include "test_access_analysis.h"
 
+#include "analysis/access.h"
 #include "analysis/analysis.h"
 #include "analysis_test_support.h"
 #include "cli/options.h"
 #include "graph/declarations.h"
+#include "graph/variable.h"
 #include "lib/allocate.h"
 #include "lib/file_system.h"
 #include "test_macro.h"
@@ -21,7 +23,57 @@ static size_t proofs(const node_t *node, access_proof_t proof) {
     return result;
 }
 
+/** @brief Locate a proof site without relying on child layout. */
+static node_t *find_type(node_t *node, node_type_t type) {
+    if (node->vtbl->type == type)
+        return node;
+    for (size_t i = 0; i < get_node_child_count(node); i++) {
+        node_t *found = find_type(get_node_child(node, i), type);
+        if (found)
+            return found;
+    }
+    return NULL;
+}
+
+/** @brief Separate trees with identical diagnostic filenames do not establish provenance. */
+static bool cross_source_proofs(void) {
+    const gchar_t *texts[] = {U"const value=1; value;",
+                              U"public value=1; value;",
+                              U"external value=1; value;",
+                              U"const object={const value=1;}; object.value;",
+                              U"const object={public value=1;}; object.value;",
+                              U"const object={external value=1;}; object.value;"};
+    for (size_t i = 0; i < sizeof(texts) / sizeof(*texts); i++) {
+        arena_t *arena = create_arena(8);
+        parser_memory_t memory = {arena, arena, arena, arena};
+        string_value_t source = {texts[i], STRLEN(texts[i]), false};
+        node_t *local = parse_analysis_test_program(&memory, source);
+        node_t *foreign = parse_analysis_test_program(&memory, source);
+        ASSERT(local && foreign);
+        options_t *options = create_options();
+        options->optimization_level = OPTIMIZATION_NONE;
+        ASSERT(get_most_severe_compilation_error(analyze(local, &memory, options, NULL)) < ERROR);
+        ASSERT(get_most_severe_compilation_error(analyze(foreign, &memory, options, NULL)) < ERROR);
+        variable_t *reference = (variable_t *)find_type(local, NODE_VARIABLE);
+        variable_t *foreign_reference = (variable_t *)find_type(foreign, NODE_VARIABLE);
+        node_t *site = i < 3 ? (node_t *)reference : find_type(local, NODE_MEMBER_ACCESS);
+        ASSERT(reference && foreign_reference && site);
+        ASSERT(site->access_proof == ACCESS_PROOF_ALLOWED);
+        ASSERT(requires_access_safe_optimization(local) == (i % 3 != 0));
+        reference->declarator = foreign_reference->declarator;
+        ASSERT(requires_access_safe_optimization(local));
+        compilation_error_t *errors = NULL;
+        analyze_access(local, arena, &errors);
+        ASSERT(!errors);
+        ASSERT(site->access_proof == (i % 3 == 2 ? ACCESS_PROOF_ALLOWED : ACCESS_PROOF_UNKNOWN));
+        destroy_options(options);
+        destroy_arena(arena);
+    }
+    return true;
+}
+
 bool test_access_analysis(void) {
+    ASSERT(cross_source_proofs());
     const gchar_t *denied[] = {U"const a={private x=1;}; a.x;",
                                U"const a={private var x=1;}; a.x=2;",
                                U"const a={private var x=1;}; a.x+=2;",

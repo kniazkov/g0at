@@ -13,8 +13,9 @@ typedef struct field_cell_t field_cell_t;
 
 /** @brief Declaration visibility, independent of the constant flag. */
 typedef enum {
-    ACCESS_MODULE = 0,
+    ACCESS_FILE = 0,
     ACCESS_PUBLIC = 1,
+    ACCESS_EXTERNAL = 2,
     ACCESS_PROTECTED = 3,
     ACCESS_PRIVATE = 4
 } access_modifier_t;
@@ -29,6 +30,7 @@ struct field_cell_t {
     access_modifier_t modifier;
     /** @brief Declaring module, independent of the storage object's owning module. */
     module_t *module;
+    uint32_t file_id; /**< Declaring file index within the retained module instance. */
     /** @brief Distinguishes same-key declarations belonging to different objects. */
     access_domain_t *domain;
     module_t *binding_unit;  /**< Owned load identity; never persisted as a pointer. */
@@ -44,6 +46,7 @@ typedef struct {
 /** @brief Function/context snapshot. Captures and domains are populated before publication. */
 typedef struct {
     module_t *module;
+    uint32_t file_id; /**< Lexical source-file identity, never the dynamic caller. */
     /** @brief Retained access_domain_t pointers, nearest lexical domain first, without duplicates.
      */
     vector_t *domains;
@@ -84,6 +87,13 @@ module_t *get_access_domain_module(const access_domain_t *domain);
 object_t *create_user_defined_object_in_module(process_t *process,
                                                object_array_t prototypes,
                                                module_t *module);
+/** @brief Creates storage owned by a stable module/file pair. */
+object_t *create_user_defined_object_in_file(process_t *process,
+                                             object_array_t prototypes,
+                                             module_t *module,
+                                             uint32_t file_id);
+/** @brief Originating file index; builtins use zero in their immortal module. */
+uint32_t get_object_file_id(const object_t *obj);
 /** @brief Borrows the object's owning module, or the declaring module for a function. */
 module_t *get_object_module(const object_t *obj);
 access_domain_t *get_object_access_domain(const object_t *obj);
@@ -106,15 +116,27 @@ field_cell_t *create_object_field(object_t *obj,
                                   module_t *module,
                                   access_domain_t *domain,
                                   bool selected);
+/** @brief Explicit declaring file; metadata does not depend on the storage owner. */
+field_cell_t *create_object_field_in_file(object_t *obj,
+                                          object_t *key,
+                                          object_t *value,
+                                          bool constant,
+                                          access_modifier_t modifier,
+                                          module_t *module,
+                                          uint32_t file_id,
+                                          access_domain_t *domain,
+                                          bool selected);
 /** @brief Trusted storage write: respects constness; language callers must check access first. */
 model_status_t set_field_cell_value(object_t *storage, field_cell_t *cell, object_t *value);
 /** @brief Metadata of an existing own property, not an inherited lookup or an access check.
- * Built-in properties are public; user fields carry their explicit modifier.
+ * Built-in properties are external; user fields carry their explicit modifier.
  */
 access_modifier_t get_object_property_modifier(const object_t *obj, const object_t *key);
 
 /** @brief Initializes owned metadata; no captures or domain grants initially. */
 void init_function_access(function_access_t *access, module_t *module);
+/** @brief Initializes lexical rights for one file of a module instance. */
+void init_function_access_in_file(function_access_t *access, module_t *module, uint32_t file_id);
 void add_function_access_domain(function_access_t *access, access_domain_t *domain);
 /** @brief Copies grants and captures into an unpublished context in the same module. */
 void inherit_function_access(function_access_t *target, const function_access_t *source);

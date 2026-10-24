@@ -379,11 +379,12 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
         thread->native_status = GOAT_NATIVE_OK;
     }
     object_t *method_protos[2] = {dfobj->closure, receiver};
-    context_t *ctx = create_context_with_protos_in_module(
+    context_t *ctx = create_context_with_protos_in_file(
         thread->process,
         thread->context,
         receiver ? (object_array_t){method_protos, 2} : (object_array_t){&dfobj->closure, 1},
-        dfobj->access.module);
+        dfobj->access.module,
+        dfobj->access.file_id);
     inherit_function_access(&ctx->access, &dfobj->access);
     add_inherited_receiver_access(&ctx->access, receiver, &dfobj->access);
     create_object_property(ctx->data, get_this_key(), ctx->data, true);
@@ -487,7 +488,9 @@ object_t *create_function_object(process_t *process,
     obj->first_instr_id = first_instr_id;
     obj->native_function = retain_native_function_descriptor(native_function);
     obj->closure = closure;
-    init_function_access(&obj->access, get_object_module(closure));
+    init_function_access_in_file(&obj->access,
+                                 get_object_module(closure),
+                                 get_object_file_id(closure));
     access_domain_t *domain = get_object_access_domain(closure);
     if (domain)
         add_function_access_domain(&obj->access, domain);
@@ -517,7 +520,7 @@ object_t *create_transferred_function(process_t *process, object_t *source) {
                                               true);
     function_access_t *access = get_function_access(result);
     clear_function_access(access, true);
-    init_function_access(access, original->access.module);
+    init_function_access_in_file(access, original->access.module, original->access.file_id);
     return result;
 }
 

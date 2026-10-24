@@ -34,6 +34,7 @@ typedef enum {
     TOKEN_VAR,   /**< The 'var' keyword for variable declarations */
     TOKEN_CONST, /**< The 'const' keyword for constant declarations */
     TOKEN_PUBLIC,
+    TOKEN_EXTERNAL,
     TOKEN_PROTECTED,
     TOKEN_PRIVATE, /**< Declaration visibility modifiers. */
     TOKEN_FUNC,    /**< The 'func' keyword for function declarations */

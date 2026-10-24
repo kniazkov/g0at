@@ -55,9 +55,9 @@ bool test_access_policy(void) {
     object_t *one = get_static_integer_object(1), *two = get_static_integer_object(2);
     field_cell_t *secret = field(proc, a, U"secret", one, ACCESS_PRIVATE, false);
     field_cell_t *prot = field(proc, a, U"prot", one, ACCESS_PROTECTED, false);
-    field_cell_t *internal = field(proc, a, U"internal", one, ACCESS_MODULE, false);
-    field_cell_t *pub = field(proc, a, U"pub", one, ACCESS_PUBLIC, false);
-    field_cell_t *fixed = field(proc, a, U"fixed", one, ACCESS_PUBLIC, true);
+    field_cell_t *internal = field(proc, a, U"internal", one, ACCESS_FILE, false);
+    field_cell_t *pub = field(proc, a, U"pub", one, ACCESS_EXTERNAL, false);
+    field_cell_t *fixed = field(proc, a, U"fixed", one, ACCESS_EXTERNAL, true);
     ASSERT(can_access_field(&owner, secret) && !can_access_field(&child, secret));
     ASSERT(can_access_field(&child, prot) && !can_access_field(outside, prot));
     ASSERT(can_access_field(&owner, internal) && !can_access_field(&child, internal));
@@ -73,17 +73,17 @@ bool test_access_policy(void) {
     ASSERT(create_accessible_property(&owner, a, new_key, one, false) == MSTAT_OK);
     field_cell_t *other = field(proc, unrelated, U"secret", two, ACCESS_PRIVATE, false);
     ASSERT(!can_access_field(&owner, other));
-    /* An inaccessible winner must not fall back to a public prototype field. */
+    /* An inaccessible winner must not fall back to a external prototype field. */
     field_cell_t *blocked = field(proc, b, U"pub", one, ACCESS_PRIVATE, false);
     ASSERT(lookup_accessible_property(outside, b, blocked->key, true).status
            == MSTAT_ACCESS_DENIED);
     ASSERT(write_accessible_property(outside, b, blocked->key, two) == MSTAT_ACCESS_DENIED);
     /* A method's own private slot is distinct from the descendant's ordinary winner. */
-    field(proc, b, U"secret", two, ACCESS_PUBLIC, false);
+    field(proc, b, U"secret", two, ACCESS_EXTERNAL, false);
     ASSERT(lookup_accessible_property(&owner, b, secret->key, true).cell == secret);
     ASSERT(lookup_accessible_property(&owner, b, secret->key, false).value == two);
     ASSERT(write_accessible_property(&owner, b, secret->key, two) == MSTAT_OK);
-    /* Public constness never masks an access denial. */
+    /* External constness never masks an access denial. */
     fixed->modifier = ACCESS_PRIVATE; /* Test setup only; no language mutation of metadata. */
     ASSERT(write_accessible_property(outside, a, fixed->key, two) == MSTAT_ACCESS_DENIED);
     /* Arbitrary keys use the same policy. */
@@ -161,20 +161,20 @@ static bool run_case(const gchar_t *body, const gchar_t *main) {
     object_t *one = get_static_integer_object(1), *ten = get_static_integer_object(10);
     field(proc, a, U"secret", ten, ACCESS_PRIVATE, false);
     field(proc, a, U"prot", ten, ACCESS_PROTECTED, false);
-    field(proc, a, U"internal", ten, ACCESS_MODULE, false);
-    field(proc, a, U"writable", one, ACCESS_PUBLIC, false);
-    field(proc, a, U"fixed", one, ACCESS_PUBLIC, true);
-    field(proc, a, U"callback", get_null_object(), ACCESS_PUBLIC, false);
-    field(proc, a, U"other", get_null_object(), ACCESS_PUBLIC, false);
-    field(proc, a, U"self", a, ACCESS_PUBLIC, true);
+    field(proc, a, U"internal", ten, ACCESS_FILE, false);
+    field(proc, a, U"writable", one, ACCESS_EXTERNAL, false);
+    field(proc, a, U"fixed", one, ACCESS_EXTERNAL, true);
+    field(proc, a, U"callback", get_null_object(), ACCESS_EXTERNAL, false);
+    field(proc, a, U"other", get_null_object(), ACCESS_EXTERNAL, false);
+    field(proc, a, U"self", a, ACCESS_EXTERNAL, true);
     object_t *array = create_array_object(proc, (object_array_t){&one, 1});
     field(proc, a, U"items", array, ACCESS_PRIVATE, false);
     DECREF(array);
     object_t *method = create_function_object(proc, NULL, 0, entry, a, NULL, true);
-    field(proc, a, U"read", method, ACCESS_PUBLIC, true);
+    field(proc, a, U"read", method, ACCESS_EXTERNAL, true);
     field(proc, a, U"hidden", method, ACCESS_PRIVATE, true);
     DECREF(method);
-    field(proc, thread->context->data, U"A", a, ACCESS_MODULE, true);
+    field(proc, thread->context->data, U"A", a, ACCESS_FILE, true);
     DECREF(a);
     release_module_identity(module);
     int status = run(proc, code);

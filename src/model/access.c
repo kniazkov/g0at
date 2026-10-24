@@ -69,7 +69,12 @@ module_t *get_access_domain_module(const access_domain_t *domain) {
 }
 
 void init_function_access(function_access_t *access, module_t *module) {
+    init_function_access_in_file(access, module, 0);
+}
+
+void init_function_access_in_file(function_access_t *access, module_t *module, uint32_t file_id) {
     access->module = retain_module_identity(module);
+    access->file_id = file_id;
     access->domains = create_vector();
     access->protected_domains = create_vector();
     access->captures = create_vector();
@@ -189,6 +194,7 @@ void add_inherited_receiver_access(function_access_t *access,
 
 void inherit_function_access(function_access_t *target, const function_access_t *source) {
     assert(target->module == source->module);
+    target->file_id = source->file_id;
     for (size_t i = 0; i < source->domains->size; i++)
         add_function_access_domain(target, source->domains->data[i]);
     for (size_t i = 0; i < source->protected_domains->size; i++)

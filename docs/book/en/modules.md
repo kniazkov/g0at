@@ -4197,7 +4197,24 @@ lifetime. Frame creation neither copies nor modifies bytecode.
 
 This is the model and a tested internal API, not eager execution of all files.
 The once-only initialization/error machine belongs to #196/#197, include execution
-to #194, file access policy to #204, and complete multi-file compiler integration
+to #194, and complete multi-file compiler integration
 to #218. Creating a scope does not execute it or mark it initialized. Archive,
 hash and native-data checks remain the responsibility of the shared #185
 validator; this model API is not a loader validation bypass.
+
+
+### File/module visibility (#204)
+
+The runtime now carries a stable `(module instance, file index)` origin in field
+cells and function/context rights. Unmodified fields are file-local, `public`
+fields are module-local, and `external` fields cross module boundaries. Builtins
+remain accessible externally; `private`/`protected` domain rules are unchanged.
+Callbacks and transferred methods retain their lexical origin. `clone`/`flat`
+change the new object's owner without changing copied cells' origin or exposing
+hidden fields. Same-module extensions belong to the adding file; foreign-module
+extensions are rejected. Keys and recursive rendering use the executing observer.
+
+The analyzer requires source identity rather than equal diagnostic names to prove
+file/module access. Internal multi-file API/VM fixtures cover the permission
+matrix, closures, copies, GC and immutable images; loader/compiler integration
+remains #218. See the [implemented access rules](30-modules.md#file-and-module-access-boundaries-204).

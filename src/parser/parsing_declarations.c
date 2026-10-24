@@ -27,6 +27,7 @@ parsing_access_modifier(token_t *token, parser_memory_t *memory, token_groups_t 
                                        CRITICAL,
                                        get_messages()->invalid_access_modifier);
     token->access_modifier = token->type == TOKEN_PUBLIC      ? ACCESS_PUBLIC
+                             : token->type == TOKEN_EXTERNAL  ? ACCESS_EXTERNAL
                              : token->type == TOKEN_PROTECTED ? ACCESS_PROTECTED
                                                               : ACCESS_PRIVATE;
     remove_token_from_group(token);

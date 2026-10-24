@@ -80,8 +80,8 @@ bool test_direct_recursion_captures() {
     parser_memory_t memory = {arena, arena, arena, arena};
     node_t *root = parse_analysis_test_program(
         &memory,
-        STATIC_STRING(
-            U"var external=3;\nconst f=func(n){var local=n;external=local;return local;};f(1);"));
+        STATIC_STRING(U"var captured_value=3;\nconst f=func(n){var "
+                      U"local=n;captured_value=local;return local;};f(1);"));
     ASSERT(root);
     options_t *options = create_options();
     analysis_collector_t *collector = create_analysis_collector(arena);

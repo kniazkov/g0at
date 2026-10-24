@@ -216,3 +216,41 @@ Linux/Windows CI target. `scripts/check_bytecode_v1.py` checks numeric bits,
 function metadata, malformed records and raw/wrapped equivalence. Unit/native
 pipeline tests compare image bytes before and after validation, execution,
 native preparation, fallback and worker-thread execution.
+
+
+## File and module access boundaries (#204)
+
+The runtime identifies a source file by its immutable file-table index **and the
+retained module instance**, not its path, display name or a globally shared index.
+Two instances both containing file 0 therefore have independent permissions.
+The internal multi-file API creates one persistent scope per file; `include` and
+`import` execution and loader caching remain subsequent stages.
+
+| Declaration | Who may access the cell |
+| --- | --- |
+| No modifier | Code defined in the same file of the same module instance |
+| `public` | Code defined in any file of the same module instance |
+| `external` | Code from any module |
+| `protected`, `private` | Existing object-domain and inheritance rules |
+
+`external var value = 1;` and `external function = func() {};` use the same
+single-modifier syntax as `public`; omitting `var`/`const` implies a constant.
+The wire values remain 0, 1, 2, 3, 4 respectively; bytecode version is unchanged.
+
+Methods, callbacks and returned closures retain the file of their definition,
+regardless of who calls them or which receiver is used. The same identity controls
+reads, writes, keys and recursive rendering, including nested arrays. The analyzer
+only proves file/module access when source-root identity establishes it; unknown
+provenance remains checked by the VM rather than inferred from equal names.
+
+Another file in the same module may add a field, which belongs to the adding file.
+An inaccessible winning property is an access error, not permission to create a
+second cell. Another module cannot extend the original object, but may write its
+accessible `external var` cells. `clone` and `flat` produce objects owned by the
+caller's module/file while retaining every copied cell's original file, module and
+modifier. Transferred methods retain their defining-file rights and relocate their
+captures; copying does not make hidden fields visible.
+
+`scripts/test_module_access.py` checks these rules through internal multi-file
+fixtures and real VM execution, including independent module instances, GC and
+unchanged wire bytes. End-to-end `include`/`import` integration is tracked by #218.

@@ -1,6 +1,6 @@
 # Appendix I. Access Modifiers: Agreed Rules
 
-> October 20, 2026 update: the [module contract](modules.md) changes access boundaries: unmodified declarations belong to their source file, `public` to their module, and `external` allows other modules. The text below preserves the A–G model before this change; its cross-module examples and plan require adaptation. The new rules take precedence; the loader and `external` are not implemented here yet.
+> #204 implements the [module contract](modules.md): unmodified declarations are file-local, `public` is module-local, and `external` crosses module boundaries. The visibility table below is current; later historical cross-module examples still describe the A–G model and must be read using these new boundaries. Module loading remains a separate stage.
 
 [Contents](index.md) · [Русский](../ru/appendix-i-access-control.md) · [Previous](appendix-h-decision-history.md)
 
@@ -12,7 +12,7 @@ Stage C (#164) enables declaration modifiers in every scope, source regeneration
 
 ## I.1. Declarations
 
-The keywords `public`, `protected`, and `private` appear only before a variable or constant declaration. A declaration may have only one modifier; combinations such as `public private` are forbidden. Modifiers are allowed in any scope, including function bodies and module top level, even where they have no practical effect.
+The keywords `public`, `external`, `protected`, and `private` appear only before a variable or constant declaration. A declaration may have only one modifier; combinations such as `public private` are forbidden. Modifiers are allowed in any scope, including function bodies and module top level, even where they have no practical effect.
 
 Omitting `const` after a modifier implies it:
 
@@ -28,16 +28,17 @@ The first two declarations create public function constants. A modifier applies 
 
 | Declaration | Access rule |
 | --- | --- |
-| No modifier | Accessible to all code in its own module, including through `obj.x`; inaccessible to other modules. This is analogous to module/package-private visibility. |
-| `public` | Also accessible from other modules. |
+| No modifier | Accessible only to code originating in the declaring source file of this module instance, including through `obj.x`. |
+| `public` | Accessible to code in any file of the same module instance. |
+| `external` | Accessible from other modules as well. |
 | `protected` | Accessible in its object's body and methods, and in descendant constructors and methods. A descendant may be in another module. |
 | `private` | Accessible in its object's body and methods; inheritance alone does not grant descendant methods this access. |
 
-Existing single-module programs without modifiers must retain their behavior. Being accessible within a module does not make an unmodified declaration `public`.
+Existing single-file programs without modifiers retain their behavior. An unmodified declaration does not become `public`.
 
 The same restrictions apply to name access, `obj.x`, and `obj["x"]`. Indexing does not bypass protection. A violation throws an exception; if static analysis proves the violation unambiguously, compilation fails.
 
-Built-in methods, including `clone`, `instanceOf`, and string and array methods, are public.
+Built-in methods, including `clone`, `instanceOf`, and string and array methods, are accessible as `external`.
 
 ## I.3. Functions, Scopes, and Concrete Objects
 
