@@ -86,6 +86,15 @@ jobs:
         run: |
           python3 scripts/check_module_json.py build/${{ matrix.compiler }}/module_json_testing
           python3 scripts/check_module_canonical.py build/${{ matrix.compiler }}/module_json_testing
+      - name: Module JSON with nonzero automatic-variable initialization
+        run: |
+          cmake -S src -B build/json-stack-pattern \
+            -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=${{ matrix.compiler }} \
+            -DCMAKE_C_FLAGS=-ftrivial-auto-var-init=pattern
+          cmake --build build/json-stack-pattern --parallel 2 --target module_json_testing
+          build/json-stack-pattern/module_json_testing
+          python3 scripts/check_module_json.py build/json-stack-pattern/module_json_testing
+          python3 scripts/check_module_canonical.py build/json-stack-pattern/module_json_testing
       - name: Cleanup service
         run: python3 scripts/check_cleanup_service.py build/${{ matrix.compiler }}/cleanup_service_testing
       - name: Compile Linux shared libraries

@@ -88,7 +88,7 @@ static void canonical_api_checks(void) {
     size_t length = 123;
     assert(goat_json_canonical(NULL, &out, &length) == GOAT_MODULE_JSON_INVALID_FIELD);
     assert(!out && !length);
-    yyjson_val value;
+    yyjson_val value = {0};
     yyjson_set_uint(&value, UINT64_MAX);
     assert(goat_json_canonical(&value, &out, &length) == GOAT_MODULE_JSON_INVALID_FIELD);
     yyjson_set_real(&value, 1.0);

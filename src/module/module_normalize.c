@@ -30,7 +30,8 @@ static int text_compare(value *a, value *b) {
 }
 
 static int64_t number(value *v) {
-    yyjson_val temp;
+    /* yyjson setters inspect the existing tag before replacing a scalar. */
+    yyjson_val temp = {0};
     if (yyjson_mut_is_raw(v))
         yyjson_set_raw(&temp, yyjson_mut_get_raw(v), yyjson_mut_get_len(v));
     else if (yyjson_mut_is_sint(v))
