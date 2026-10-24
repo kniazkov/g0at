@@ -4218,3 +4218,20 @@ The analyzer requires source identity rather than equal diagnostic names to prov
 file/module access. Internal multi-file API/VM fixtures cover the permission
 matrix, closures, copies, GC and immutable images; loader/compiler integration
 remains #218. See the [implemented access rules](30-modules.md#file-and-module-access-boundaries-204).
+
+
+### Ordered directory lookup (#188)
+
+The shared `vm/module_search.h` API fixes one search set for the complete program:
+`modules` beside the canonical real root (`.gmod`, `.goat`, or `.gbin`), then the
+explicit module directory, then the environment snapshot in platform order.
+Relative supplied paths use the initial cwd; aliases deduplicate without changing
+precedence. Root symlink retargeting and later cwd changes do not change this set.
+Libraries do not contribute directories.
+
+Only exact `<name>/<version>.gbin` candidates are probed. The first existing file
+is read into an owned snapshot and fully validated; corruption, wrong identity,
+expected-mainHash mismatch or I/O failure never fall through to another copy.
+No recursive scan, version selection, graph traversal or code loading occurs.
+This is a tested internal API; CLI and whole-graph integration remain separate.
+See [API and tests](../../module-search-api.md).
