@@ -71,3 +71,15 @@ goat_module_json_error goat_module_json_write(const yyjson_doc *doc,
                                               size_t *length);
 /** Release canonical output using the allocator of the module library. */
 void goat_module_json_free(char *data);
+
+/** Validate a complete .gmod or module.json and return an owned information-only
+ * object (description, license, homepage, authors, and metadata-only producers).
+ * Empty values are omitted, author order is retained and producers are sorted.
+ * Strings are decoded UTF-8 with explicit lengths: embedded NUL is data, not a
+ * terminator. No trimming, Unicode normalization, URL/email parsing or network
+ * access occurs. A successful empty projection is {}, never NULL. Input remains
+ * unchanged; free the independent result with yyjson_doc_free. Failure clears out.
+ * This is not a hash projection, producer generator or merge-conflict resolver.
+ */
+goat_module_json_error
+goat_module_information(const yyjson_doc *descriptor, goat_module_json_kind kind, yyjson_doc **out);

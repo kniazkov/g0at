@@ -46,7 +46,7 @@ static int read_stdin(goat_module_json_kind kind, int canonical) {
         free(buffer);
         return 2;
     }
-    if (canonical >= 4) {
+    if (canonical == 4 || canonical == 5) {
         char *separator = memchr(buffer, 0, length);
         if (!separator) {
             free(buffer);
@@ -90,7 +90,14 @@ static int read_stdin(goat_module_json_kind kind, int canonical) {
     }
     char *output = NULL;
     size_t output_length = 0;
-    if (canonical == 1)
+    if (canonical == 6) {
+        yyjson_doc *info = NULL;
+        err = goat_module_information(doc, kind, &info);
+        yyjson_doc_free(doc);
+        doc = info; /* Projection must own its bytes independently. */
+        if (!err)
+            err = goat_json_canonical(yyjson_doc_get_root(doc), &output, &output_length);
+    } else if (canonical == 1)
         err = goat_json_canonical(yyjson_doc_get_root(doc), &output, &output_length);
     else if (canonical)
         err = goat_module_json_write(doc, kind, canonical == 3, &output, &output_length);
@@ -215,6 +222,10 @@ static void diagnostic_checks(void) {
 }
 
 int main(int argc, char **argv) {
+    if (argc == 2 && !strcmp(argv[1], "--information-module"))
+        return read_stdin(GOAT_MODULE_METADATA, 6);
+    if (argc == 2 && !strcmp(argv[1], "--information-gmod"))
+        return read_stdin(GOAT_MODULE_GMOD, 6);
     if (argc == 2 && !strcmp(argv[1], "--gmod"))
         return read_stdin(GOAT_MODULE_GMOD, 0);
     if (argc == 2 && !strcmp(argv[1], "--module"))
@@ -245,6 +256,21 @@ int main(int argc, char **argv) {
 #if SIZE_MAX > UINT32_MAX
     assert(goat_module_main_hash(NULL, "", SIZE_MAX, hash) == GOAT_MODULE_JSON_LIMIT);
 #endif
+    yyjson_doc *info = (yyjson_doc *)(uintptr_t)1;
+    assert(goat_module_information(NULL, GOAT_MODULE_METADATA, &info)
+               == GOAT_MODULE_JSON_INVALID_FIELD
+           && !info);
+    const char *empty = "{}";
+    yyjson_doc *bad_info = yyjson_read(empty, 2, 0);
+    assert(goat_module_information(bad_info, GOAT_MODULE_METADATA, &info)
+               == GOAT_MODULE_JSON_INVALID_FIELD
+           && !info);
+    assert(goat_module_information(bad_info, GOAT_MODULE_NATIVE, &info)
+               == GOAT_MODULE_JSON_INVALID_FIELD
+           && !info);
+    assert(goat_module_information(bad_info, GOAT_MODULE_GMOD, NULL)
+           == GOAT_MODULE_JSON_INVALID_FIELD);
+    yyjson_doc_free(bad_info);
     canonical_api_checks();
     diagnostic_checks();
     puts("Starting module JSON testing...");
