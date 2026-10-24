@@ -155,3 +155,6 @@ target_link_libraries(module_writer_fault_testing PRIVATE goat_validation m)
 
 add_executable(module_sources_testing component_test/module_sources_testing.c)
 target_link_libraries(module_sources_testing PRIVATE core m)
+
+add_executable(module_files_testing component_test/module_files_testing.c)
+target_link_libraries(module_files_testing PRIVATE core m)

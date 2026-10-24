@@ -4178,3 +4178,26 @@ scopes belong to subsequent compilation phases; CLI integration and runtime incl
 remain separate tasks. Logical names and external flags are separate from absolute
 build paths; those paths and source text must not be serialized into `.gbin`.
 See the [source API](../../module-sources-api.md) for ownership, limits and tests.
+
+### Separate file model (#193)
+
+The internal `model/module_files.h` API creates a module instance's file set only
+after validating metadata and links to the shared bytecode section. The process
+owns one immutable binary image and a separate persistent scope object for every
+`files` index. Repeated lookup returns the same object with its current values;
+equal indices or names in different module instances do not share a scope.
+External files with equal diagnostic names remain distinct by index. Names are
+labels only and are never opened from disk during execution.
+
+`main` selects a file; that file's `entry` selects an instruction. A file number
+is never substituted for an instruction address. Execution frames use the
+persistent file scope and builtins, not the dynamic caller's locals, receiver or
+access grants. The garbage collector retains all file scopes for the process
+lifetime. Frame creation neither copies nor modifies bytecode.
+
+This is the model and a tested internal API, not eager execution of all files.
+The once-only initialization/error machine belongs to #196/#197, include execution
+to #194, file access policy to #204, and complete multi-file compiler integration
+to #218. Creating a scope does not execute it or mark it initialized. Archive,
+hash and native-data checks remain the responsibility of the shared #185
+validator; this model API is not a loader validation bypass.

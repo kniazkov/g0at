@@ -8,6 +8,7 @@
 
 #include "lib/allocate.h"
 #include "model/context.h"
+#include "model/module_files.h"
 #include "model/object.h"
 #include "model/thread.h"
 
@@ -32,6 +33,7 @@ static void mark_objects_in_context_and_stack(thread_t *thread) {
 
 /** @brief Marks all reachable objects in the process. */
 static void mark_reachable_objects(process_t *proc) {
+    mark_module_files(proc);
     for (size_t index = 0; index < proc->string_cache_size; index++) {
         mark_object(proc->string_cache[index]);
     }
