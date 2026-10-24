@@ -107,6 +107,9 @@ target_link_libraries(analysis_testing core yyjson m)
 add_executable(functional_testing functional_testing.c)
 target_link_libraries(functional_testing PRIVATE yyjson)
 
+add_executable(module_container_testing component_test/module_container_testing.c)
+target_link_libraries(module_container_testing PRIVATE goat_module)
+
 add_executable(zip_testing component_test/zip_testing.c)
 target_link_libraries(zip_testing PRIVATE goat_zip yyjson)
 
