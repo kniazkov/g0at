@@ -25,7 +25,7 @@
 - [x] 09. [#179](https://github.com/kniazkov/g0at/issues/179) — Проверка имён и версий модулей
 - [x] 10. [#180](https://github.com/kniazkov/g0at/issues/180) — Канонический JSON для хэширования ([API и проверки](module-canonical-json.md))
 - [x] 11. [#181](https://github.com/kniazkov/g0at/issues/181) — Основной SHA-256 модуля
-- [ ] 12. [#247](https://github.com/kniazkov/g0at/issues/247) — Компактная открытая ZIP-библиотека и общая C-обёртка
+- [x] 12. [#247](https://github.com/kniazkov/g0at/issues/247) — Компактная открытая ZIP-библиотека и общая C-обёртка
 - [ ] 13. [#182](https://github.com/kniazkov/g0at/issues/182) — Проверка ZIP-контейнера .gbin
 - [ ] 14. [#184](https://github.com/kniazkov/g0at/issues/184) — Проверка переносимого байткода
 - [ ] 15. [#208](https://github.com/kniazkov/g0at/issues/208) — Метаданные платформенных нативных вариантов

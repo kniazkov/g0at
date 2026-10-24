@@ -1,0 +1,12 @@
+--- a/contrib/minizip/zip.c
++++ b/contrib/minizip/zip.c
+@@ -1393,6 +1393,9 @@
+     zi->ci.size_centralExtraFree = 32; /* Extra space we have reserved in case we need to add ZIP64 extra info data */
+ 
+     zi->ci.central_header = (char*)ALLOC((uInt)zi->ci.size_centralheader + zi->ci.size_centralExtraFree);
++    /* Goat local change: do not dereference a failed header allocation. */
++    if (zi->ci.central_header == NULL)
++        return ZIP_INTERNALERROR;
+ 
+     zi->ci.size_centralExtra = size_extrafield_global;
+     zip64local_putValue_inmemory(zi->ci.central_header,(uLong)CENTRALHEADERMAGIC,4);

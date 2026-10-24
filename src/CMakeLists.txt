@@ -25,6 +25,11 @@ include_directories(. ../include)
 add_library(yyjson STATIC ../third_party/yyjson/yyjson.c)
 target_include_directories(yyjson PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/yyjson")
 set_target_properties(yyjson PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../third_party/zlib" "${CMAKE_CURRENT_BINARY_DIR}/third_party/zlib")
+add_library(goat_zip STATIC lib/zip_archive.c)
+target_include_directories(goat_zip PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(goat_zip PRIVATE goat_minizip)
+set_target_properties(goat_zip PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(module)
 
 file(GLOB core_sources
@@ -41,7 +46,7 @@ file(GLOB core_sources
   vm/*.c
   cli/*.c
 )
-list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/lib/sha256.c")
+list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/lib/sha256.c" "${CMAKE_CURRENT_SOURCE_DIR}/lib/zip_archive.c")
 # Build the native runtime separately; never depend on VM internals or its allocator.
 add_library(goat_native STATIC native/strings.c native/str.c lib/number_format.c lib/unicode.c)
 set_target_properties(goat_native PROPERTIES
@@ -70,7 +75,7 @@ add_custom_command(
   VERBATIM
 )
 add_library(core STATIC ${core_sources} "${native_runtime_data}")
-target_link_libraries(core PUBLIC goat_module)
+target_link_libraries(core PUBLIC goat_module goat_zip)
 if(NOT WIN32)
   find_package(Threads REQUIRED)
   target_link_libraries(core PUBLIC Threads::Threads)
@@ -101,6 +106,9 @@ target_link_libraries(analysis_testing core yyjson m)
 
 add_executable(functional_testing functional_testing.c)
 target_link_libraries(functional_testing PRIVATE yyjson)
+
+add_executable(zip_testing component_test/zip_testing.c)
+target_link_libraries(zip_testing PRIVATE goat_zip yyjson)
 
 add_executable(module_json_testing component_test/module_json_testing.c)
 target_link_libraries(module_json_testing PRIVATE goat_module)
