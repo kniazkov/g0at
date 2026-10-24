@@ -4140,3 +4140,5 @@ modules. Graph discovery/loading, dispatch and closure execution remain separate
 
 
 The shared local .gbin validation API (#185) is documented in [module-validation-api.md](../../module-validation-api.md): owned snapshots and deterministic failed/skipped checks without execution or dependency lookup.
+
+The deterministic .gbin writer (#183) is documented in [module-writer-api.md](../../module-writer-api.md): fixed profile, shared validation and atomic publication.

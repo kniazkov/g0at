@@ -47,7 +47,7 @@ file(GLOB core_sources
   cli/*.c
 )
 list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/lib/sha256.c" "${CMAKE_CURRENT_SOURCE_DIR}/lib/zip_archive.c")
-list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_validation.c")
+list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_validation.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_writer.c")
 # Build the native runtime separately; never depend on VM internals or its allocator.
 add_library(goat_native STATIC native/strings.c native/str.c lib/number_format.c lib/unicode.c)
 set_target_properties(goat_native PROPERTIES
@@ -141,8 +141,14 @@ add_executable(module_consistency_testing component_test/module_consistency_test
 target_link_libraries(module_consistency_testing PRIVATE core m)
 
 # One validation library for compiler, loader, inspect and merge.
-add_library(goat_validation STATIC vm/module_validation.c)
+add_library(goat_validation STATIC vm/module_validation.c vm/module_writer.c)
 target_link_libraries(goat_validation PUBLIC core)
 target_include_directories(goat_validation PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 add_executable(module_validation_testing component_test/module_validation_testing.c)
 target_link_libraries(module_validation_testing PRIVATE goat_validation m)
+
+add_executable(module_writer_testing component_test/module_writer_testing.c)
+target_link_libraries(module_writer_testing PRIVATE goat_validation m)
+
+add_executable(module_writer_fault_testing component_test/module_writer_fault_testing.c)
+target_link_libraries(module_writer_fault_testing PRIVATE goat_validation m)
