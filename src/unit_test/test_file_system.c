@@ -624,6 +624,102 @@ static bool windows_contract(const char *root) {
     return true;
 }
 #endif
+static bool source_file_contract(const char *root) {
+    fs_error_t error = {0};
+    char *file = join_fs_path(root, "source-😀.goat", NULL);
+    char *hard = join_fs_path(root, "hard.goat", NULL);
+    char *link = join_fs_path(root, "source-link.goat", NULL);
+    ASSERT(put(file, "abc"));
+    char *canonical = canonical_fs_path(file, &error);
+    ASSERT(canonical);
+    char *dotted = join_fs_path(root, "./source-😀.goat", NULL);
+    char *same = canonical_fs_path(dotted, &error);
+    ASSERT(same && !strcmp(canonical, same));
+    FREE(same);
+    FREE(dotted);
+    void *data = NULL;
+    size_t size = 0;
+    ASSERT(read_fs_regular_file(file, 3, &data, &size, &error));
+    ASSERT(size == 3 && !memcmp(data, "abc\0", 4));
+    FREE(data);
+    ASSERT(!read_fs_regular_file(file, 2, &data, &size, &error));
+    ASSERT(!data && !size && error.status == FS_INVALID);
+    clear_fs_error(&error);
+    ASSERT(!read_fs_regular_file(root, 100, &data, &size, &error));
+    ASSERT(!data && !size);
+    clear_fs_error(&error);
+    ASSERT(put(file, ""));
+    ASSERT(read_fs_regular_file(file, 0, &data, &size, &error));
+    ASSERT(!size && !*(char *)data);
+    FREE(data);
+    char *large = ALLOC(9001);
+    memset(large, 'a', 9000);
+    large[9000] = 0;
+    ASSERT(put(file, large));
+    ASSERT(read_fs_regular_file(file, 10000, &data, &size, &error));
+    ASSERT(size == 9000 && !memcmp(data, large, 9001));
+    FREE(large);
+    FREE(data);
+    ASSERT(!read_fs_regular_file(file, SIZE_MAX, &data, &size, &error));
+    clear_fs_error(&error);
+#ifdef _WIN32
+    wchar_t *wfile = fs_wide(file), *whard = fs_wide(hard), *wlink = fs_wide(link);
+    ASSERT(CreateHardLinkW(whard, wfile, NULL));
+    bool linked = CreateSymbolicLinkW(wlink, wfile, SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE);
+    if (!linked && GetLastError() == ERROR_INVALID_PARAMETER)
+        linked = CreateSymbolicLinkW(wlink, wfile, 0);
+    ASSERT(linked || GetLastError() == ERROR_PRIVILEGE_NOT_HELD);
+    FREE(wfile);
+    FREE(whard);
+    FREE(wlink);
+    const char *invalid[] = {"C:main.goat", "C:", "/src/main.goat", "\\src\\main.goat"};
+    for (size_t i = 0; i < sizeof(invalid) / sizeof(*invalid); i++) {
+        ASSERT(!canonical_fs_path(invalid[i], &error) && error.status == FS_INVALID);
+        clear_fs_error(&error);
+        ASSERT(!read_fs_regular_file(invalid[i], 100, &data, &size, &error));
+        ASSERT(error.status == FS_INVALID);
+        clear_fs_error(&error);
+    }
+#else
+    ASSERT(!linkat(AT_FDCWD, file, AT_FDCWD, hard, 0));
+    bool linked = !symlink(file, link);
+    ASSERT(linked);
+    char *fifo = join_fs_path(root, "source-fifo", NULL);
+    ASSERT(!mkfifo(fifo, 0600));
+    ASSERT(!read_fs_regular_file(fifo, 100, &data, &size, &error));
+    ASSERT(error.status == FS_INVALID && !data && !size);
+    clear_fs_error(&error);
+    ASSERT(remove_fs_entry(fifo, &error));
+    FREE(fifo);
+    ASSERT(!read_fs_regular_file("/dev/null", 100, &data, &size, &error));
+    ASSERT(error.status == FS_INVALID);
+    clear_fs_error(&error);
+#endif
+    same = canonical_fs_path(hard, &error);
+    ASSERT(same && strcmp(canonical, same));
+    FREE(same);
+    if (linked) {
+        same = canonical_fs_path(link, &error);
+        ASSERT(same && !strcmp(canonical, same));
+        FREE(same);
+        ASSERT(read_fs_regular_file(link, 10000, &data, &size, &error) && size == 9000);
+        FREE(data);
+        ASSERT(remove_fs_entry(link, &error));
+    }
+    ASSERT(remove_fs_entry(file, &error));
+    ASSERT(remove_fs_entry(hard, &error));
+    ASSERT(!canonical_fs_path(file, &error) && error.status == FS_NOT_FOUND);
+    clear_fs_error(&error);
+    ASSERT(!read_fs_regular_file(file, 10, &data, &size, &error));
+    ASSERT(error.status == FS_NOT_FOUND && !data && !size);
+    clear_fs_error(&error);
+    FREE(canonical);
+    FREE(file);
+    FREE(hard);
+    FREE(link);
+    return true;
+}
+
 bool run_file_system_tests(void) {
     size_t memory_before = get_allocated_memory_size();
     fs_error_t error = {0};
@@ -645,6 +741,7 @@ bool run_file_system_tests(void) {
     ASSERT(!inspect_fs_path(missing, true, &info, &error) && error.status == FS_NOT_FOUND);
     clear_fs_error(&error);
     FREE(missing);
+    ASSERT(source_file_contract(root));
     ASSERT(temporary_concurrency(root));
     ASSERT(substitution(root));
     ASSERT(publication(root));

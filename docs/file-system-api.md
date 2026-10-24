@@ -42,6 +42,14 @@ clear_fs_error(&error);
 
 Unit-проверки запускаются в дочернем процессе с таймаутом: конкурентное создание, Unicode вне BMP, отсутствие/отказы, запись/закрытие, ACL, ссылки, сохранность результата при ошибках и жёсткие ссылки. CLI-проверка Unicode-путей включена в существующий кроссплатформенный стенд.
 
+Начиная с #186, `canonical_fs_path` разрешает существующий путь и символические
+ссылки; идентичность — получившееся имя, а не inode, поэтому жёсткие ссылки не
+объединяются. `read_fs_regular_file` проверяет тип фактически открытого объекта
+до чтения, отклоняет FIFO без ожидания писателя и читает не более заданного лимита.
+Буфер принадлежит вызывающему (`FREE`), имеет дополнительный NUL за явной длиной;
+при ошибке выходы очищены. На Windows оба API отвергают пути относительно диска
+и корня текущего диска; канонический результат использует `/`.
+
 ## English
 
 `src/lib/file_system.h` provides UTF-8 filesystem operations for Linux and Windows. Bounded input must pass `validate_fs_path`, which rejects embedded NUL, empty paths and malformed UTF-8. C-string APIs necessarily stop at NUL. Windows uses strict UTF-16 conversion and W APIs; Linux preserves bytes, case and normalization. Unrepresentable directory names fail enumeration/cleanup explicitly.
@@ -57,3 +65,12 @@ Publication separates checked write/close, permission preparation, consumer vali
 `rename_fs_path` renames an entry; `publish_fs_replace` additionally requires a regular file with one hard link. Neither falls back to delete/copy, including cross-filesystem failure. Other hard links retain the old contents. The guarantee is atomic visibility, not crash/power-loss durability. Callers must check writes, close and validation before publishing. Concurrent hostile destination changes are outside the serialization contract.
 
 `fs_arguments` and `fs_environment` preserve original Windows Unicode input. `free_fs_arguments` releases the copied argv. The interpreter, binary/text I/O, path helpers, native compilation/runtime extraction and Windows loading now use this layer. Future inspect/merge CLIs should reuse the adapter. Unit tests cover Unicode, exclusive concurrent creation, errors, ACLs, links, checked I/O and old-result preservation; the existing CLI Unicode suite also exercises non-BMP paths.
+
+For #186, `canonical_fs_path` resolves an existing path and symbolic links. The
+resulting path, not inode/file ID, is the identity: different hard-link paths stay
+distinct. `read_fs_regular_file` checks the actual opened object's type before
+reading, rejects FIFOs without waiting for a writer, and bounds the read by its
+explicit limit. The caller owns the buffer (`FREE`); a convenience NUL follows the
+explicit length, and failures clear both outputs. Both APIs reject incomplete
+Windows drive-relative/current-drive-root-relative paths. Canonical Windows names
+use `/` separators. Inputs are never expanded or trimmed.
