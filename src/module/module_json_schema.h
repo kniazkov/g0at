@@ -2,7 +2,7 @@
 /* clang-format off */
 #pragma once
 
-static const json_schema schemas[147];
+static const json_schema schemas[148];
 
 static const json_field fields_0[] = {
     {"name", &schemas[1], true},
@@ -279,7 +279,7 @@ static const json_literal literals_123[] = {
 static const json_literal literals_124[] = {
     {JSON_INTEGER, "1"},
 };
-static const json_schema schemas[147] = {
+static const json_schema schemas[148] = {
     {.types = JSON_OBJECT, .fields = fields_0, .field_count = 2, .closed = true},
     {.types = JSON_STRING, .min_length = 1},
     {.types = JSON_STRING},
@@ -427,7 +427,9 @@ static const json_schema schemas[147] = {
     {.reference = &schemas[0]},
     {.types = JSON_ARRAY, .items = &schemas[146]},
     {.reference = &schemas[3]},
+    {.reference = &schemas[64]},
 };
 
 #define GMOD_SCHEMA (&schemas[106])
 #define METADATA_SCHEMA (&schemas[122])
+#define TARGET_SCHEMA (&schemas[147])

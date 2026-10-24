@@ -28,7 +28,7 @@
 - [x] 12. [#247](https://github.com/kniazkov/g0at/issues/247) — Компактная открытая ZIP-библиотека и общая C-обёртка
 - [x] 13. [#182](https://github.com/kniazkov/g0at/issues/182) — Проверка ZIP-контейнера .gbin
 - [x] 14. [#184](https://github.com/kniazkov/g0at/issues/184) — Проверка переносимого байткода
-- [ ] 15. [#208](https://github.com/kniazkov/g0at/issues/208) — Метаданные платформенных нативных вариантов
+- [x] 15. [#208](https://github.com/kniazkov/g0at/issues/208) — Метаданные платформенных нативных вариантов ([API и проверки](module-native-api.md))
 - [ ] 16. [#209](https://github.com/kniazkov/g0at/issues/209) — Нативный ABI и экспортируемые специализации
 - [ ] 17. [#233](https://github.com/kniazkov/g0at/issues/233) — Согласованность нативных метаданных с байткодом
 - [ ] 18. [#185](https://github.com/kniazkov/g0at/issues/185) — Единый API проверки .gbin

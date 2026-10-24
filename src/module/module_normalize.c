@@ -376,7 +376,12 @@ goat_module_json_error goat_module_json_normalize(yyjson_mut_doc *doc, goat_modu
     context ctx = {.doc = doc};
     if (kind == GOAT_MODULE_GMOD)
         return GOAT_MODULE_JSON_OK;
-    value *root = yyjson_mut_doc_get_root(doc), *functions = get(root, "functions");
+    value *root = yyjson_mut_doc_get_root(doc);
+    if (kind == GOAT_MODULE_TARGET) {
+        normalize_target(&ctx, root);
+        return ctx.error;
+    }
+    value *functions = get(root, "functions");
     sort(&ctx, get(root, "dependencies"), SORT_DEPENDENCY, true);
     sort(&ctx, get(root, "producers"), SORT_PRODUCER, true);
     sort(&ctx, functions, SORT_FUNCTION, true);

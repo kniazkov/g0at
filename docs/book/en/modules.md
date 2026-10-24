@@ -4102,3 +4102,16 @@ same function (or top-level code). The selected `main` is resolved through the f
 never silently replaced with zero. Sparse function IDs remain identifiers, not
 array positions. Container hashing, graph validation and native ABI consistency
 remain separate layers; this API neither executes code nor opens source files.
+
+### Implemented native platform metadata (#208)
+
+The shared [native metadata API](../../module-native-api.md) selects a unique
+compatible variant before OS loading, from a container whose complete native
+hashes have already been verified. It checks actual process architecture, CRT
+family, numeric OS/runtime minimums, usable CPU prerequisites and exact supported
+Goat ABI membership. Unknown requirements exclude variants; multiple matches are
+an error. Compiler information does not affect selection. Actual host detection
+and strict synthetic target profiles are available; all existing CI platforms
+exercise selection and a real baseline control-library call. This does not yet
+implement the specialization ABI, full module loader or producer-side requirement
+discovery (#209/#210/#211/#219), nor prove execution on older OS/runtime minimums.

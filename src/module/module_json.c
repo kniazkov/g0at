@@ -264,6 +264,8 @@ static bool no_nul(yyjson_val *v) {
 
 /* Descriptor-local invariants. Binary/graph/native ABI checks belong to their loaders. */
 static bool records_valid(yyjson_val *root, goat_module_json_kind kind) {
+    if (kind == GOAT_MODULE_TARGET)
+        return true;
     yyjson_val *authors = yyjson_obj_get(root, "authors");
     for (size_t i = 0; i < yyjson_arr_size(authors); i++) {
         yyjson_val *a = yyjson_arr_get(authors, i);
@@ -356,7 +358,7 @@ normalize(yyjson_doc *doc, goat_module_json_kind kind, goat_module_json_error *e
             ok = yyjson_mut_obj_add_str(copy, native, "mode", "auto");
         if (ok && !yyjson_mut_obj_get(native, "target"))
             ok = yyjson_mut_obj_add_str(copy, native, "target", "host");
-    } else {
+    } else if (kind == GOAT_MODULE_METADATA) {
         const char *empty[] = {"dependencies", "functions", "externals", "native", "producers"};
         for (size_t j = 0; j < sizeof(empty) / sizeof(*empty); j++) {
             yyjson_mut_val *v = yyjson_mut_obj_get(root, empty[j]);
@@ -378,7 +380,7 @@ goat_module_json_error goat_module_json_read(const char *data,
     if (!out)
         return GOAT_MODULE_JSON_INVALID_FIELD;
     *out = NULL;
-    if (kind != GOAT_MODULE_GMOD && kind != GOAT_MODULE_METADATA)
+    if (kind != GOAT_MODULE_GMOD && kind != GOAT_MODULE_METADATA && kind != GOAT_MODULE_TARGET)
         return GOAT_MODULE_JSON_INVALID_FIELD;
     if (!data || (length >= 3 && !memcmp(data, "\xef\xbb\xbf", 3)))
         return GOAT_MODULE_JSON_SYNTAX;
@@ -388,7 +390,10 @@ goat_module_json_error goat_module_json_read(const char *data,
     yyjson_val *root = yyjson_doc_get_root(doc);
     goat_module_json_error err = preflight(root, 0);
     if (err == GOAT_MODULE_JSON_OK)
-        err = shape(root, kind == GOAT_MODULE_GMOD ? GMOD_SCHEMA : METADATA_SCHEMA);
+        err = shape(root,
+                    kind == GOAT_MODULE_GMOD       ? GMOD_SCHEMA
+                    : kind == GOAT_MODULE_METADATA ? METADATA_SCHEMA
+                                                   : TARGET_SCHEMA);
     if (err == GOAT_MODULE_JSON_OK && !records_valid(root, kind))
         err = GOAT_MODULE_JSON_INVALID_FIELD;
     if (err == GOAT_MODULE_JSON_OK) {
