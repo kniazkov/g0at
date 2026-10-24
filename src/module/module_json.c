@@ -517,6 +517,42 @@ goat_module_json_error goat_module_json_read(const char *data,
     return goat_module_json_read_diagnostics(data, length, kind, out, NULL, NULL);
 }
 
+goat_module_json_error goat_module_information(const yyjson_doc *descriptor,
+                                               goat_module_json_kind kind,
+                                               yyjson_doc **out) {
+    if (out)
+        *out = NULL;
+    if (!descriptor || !out || (kind != GOAT_MODULE_GMOD && kind != GOAT_MODULE_METADATA))
+        return GOAT_MODULE_JSON_INVALID_FIELD;
+    char *bytes = NULL;
+    size_t length = 0;
+    goat_module_json_error error = goat_module_json_write(descriptor, kind, false, &bytes, &length);
+    if (error)
+        return error;
+    yyjson_doc *normalized = yyjson_read(bytes, length, YYJSON_READ_NUMBER_AS_RAW);
+    goat_module_json_free(bytes);
+    if (!normalized)
+        return GOAT_MODULE_JSON_MEMORY;
+    yyjson_mut_doc *result = yyjson_mut_doc_new(NULL);
+    yyjson_mut_val *root = result ? yyjson_mut_obj(result) : NULL;
+    bool ok = root != NULL;
+    if (ok)
+        yyjson_mut_doc_set_root(result, root);
+    const char *fields[] = {"description", "license", "homepage", "authors", "producers"};
+    for (size_t i = 0; ok && i < sizeof(fields) / sizeof(*fields); i++) {
+        yyjson_val *value = yyjson_obj_get(yyjson_doc_get_root(normalized), fields[i]);
+        if (value) {
+            yyjson_mut_val *copy = yyjson_val_mut_copy(result, value);
+            ok = copy && yyjson_mut_obj_add_val(result, root, fields[i], copy);
+        }
+    }
+    if (ok)
+        *out = yyjson_mut_doc_imut_copy(result, NULL);
+    yyjson_mut_doc_free(result);
+    yyjson_doc_free(normalized);
+    return *out ? GOAT_MODULE_JSON_OK : GOAT_MODULE_JSON_MEMORY;
+}
+
 const char *goat_module_json_error_string(goat_module_json_error error) {
     switch (error) {
         case GOAT_MODULE_JSON_OK:

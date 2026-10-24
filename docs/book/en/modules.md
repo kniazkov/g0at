@@ -4142,3 +4142,22 @@ modules. Graph discovery/loading, dispatch and closure execution remain separate
 The shared local .gbin validation API (#185) is documented in [module-validation-api.md](../../module-validation-api.md): owned snapshots and deterministic failed/skipped checks without execution or dependency lookup.
 
 The deterministic .gbin writer (#183) is documented in [module-writer-api.md](../../module-writer-api.md): fixed profile, shared validation and atomic publication.
+
+
+### Informational fields implementation (#221)
+
+`goat_module_information` in `src/module/module_json.h` validates the complete
+`.gmod` or `module.json` with the existing strict reader and returns an independent
+JSON object containing only `description`, `license`, `homepage`, `authors`, and,
+for `module.json`, `producers`. Empty fields are omitted, author order is retained,
+and producers are sorted by the exact UTF-8 bytes of their triples. Strings have
+explicit lengths: even U+0000 does not truncate data. Email/URL/SPDX syntax is not
+validated and no network access occurs.
+
+All these fields are excluded from the main hash, not from correctness checks.
+Types, closed records and duplicates are checked before normalization; extracting
+information cannot hide invalid technical fields. Repackaging preserves authors
+and compiler build identifiers without adding a producer or packaging-machine data.
+Compiler provenance generation, CLI display and interactive author choice during
+merge remain later tasks rather than responsibilities of this API.
+[Contract and tests](../../module-information-api.md).
