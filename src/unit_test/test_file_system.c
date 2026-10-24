@@ -401,13 +401,21 @@ static bool windows_contract(const char *root) {
     ASSERT(create_fs_directory(tree, NULL));
     char *linkpath = join_fs_path(tree, "link", NULL);
     wchar_t *wl = fs_wide(linkpath), *wo = fs_wide(outside);
-    ASSERT(CreateSymbolicLinkW(wl, wo, SYMBOLIC_LINK_FLAG_DIRECTORY | 2)
-           || CreateSymbolicLinkW(wl, wo, SYMBOLIC_LINK_FLAG_DIRECTORY));
+    bool linked = CreateSymbolicLinkW(wl, wo, SYMBOLIC_LINK_FLAG_DIRECTORY | 2)
+                  || CreateSymbolicLinkW(wl, wo, SYMBOLIC_LINK_FLAG_DIRECTORY);
+    DWORD link_error = linked ? ERROR_SUCCESS : GetLastError();
+    if (!linked) {
+        FPRINTF(stderr, "symbolic link: code %lu\n", (unsigned long)link_error);
+        ASSERT(link_error == ERROR_PRIVILEGE_NOT_HELD);
+        FPRINTF(stderr, "[skip] symbolic-link isolation: privilege unavailable\n");
+    }
     FREE(wl);
     FREE(wo);
     fs_info_t info;
-    ASSERT(inspect_fs_path(linkpath, false, &info, NULL) && info.kind == FS_LINK);
-    ASSERT(inspect_fs_path(linkpath, true, &info, NULL) && info.kind == FS_DIRECTORY);
+    if (linked) {
+        ASSERT(inspect_fs_path(linkpath, false, &info, NULL) && info.kind == FS_LINK);
+        ASSERT(inspect_fs_path(linkpath, true, &info, NULL) && info.kind == FS_DIRECTORY);
+    }
     ASSERT(remove_fs_tree(tree, NULL));
     ASSERT(content_is(sentinel, "safe"));
     ASSERT(create_fs_directory(tree, NULL));
@@ -463,8 +471,41 @@ static bool windows_contract(const char *root) {
     char *temp = create_fs_temporary(sentinel, false, &file, NULL);
     ASSERT(temp);
     ASSERT(close_fs_file(file, temp, NULL));
-    ASSERT(prepare_checked(temp, sentinel));
     wchar_t *wt = fs_wide(temp);
+    PACL temporary_acl = NULL, restricted_acl = NULL;
+    PSECURITY_DESCRIPTOR temporary_descriptor = NULL;
+    ASSERT(!GetNamedSecurityInfoW(wt,
+                                  SE_FILE_OBJECT,
+                                  DACL_SECURITY_INFORMATION,
+                                  NULL,
+                                  NULL,
+                                  &temporary_acl,
+                                  NULL,
+                                  &temporary_descriptor));
+    EXPLICIT_ACCESSW deny_owner = {0};
+    deny_owner.grfAccessPermissions = WRITE_OWNER;
+    deny_owner.grfAccessMode = DENY_ACCESS;
+    deny_owner.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+    deny_owner.Trustee.ptstrName = everyone;
+    ASSERT(!SetEntriesInAclW(1, &deny_owner, temporary_acl, &restricted_acl));
+    ASSERT(!SetNamedSecurityInfoW(wt,
+                                  SE_FILE_OBJECT,
+                                  DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+                                  NULL,
+                                  NULL,
+                                  restricted_acl,
+                                  NULL));
+    HANDLE forbidden = CreateFileW(wt,
+                                   WRITE_OWNER,
+                                   FILE_SHARE_READ,
+                                   NULL,
+                                   OPEN_EXISTING,
+                                   FILE_ATTRIBUTE_NORMAL,
+                                   NULL);
+    ASSERT(forbidden == INVALID_HANDLE_VALUE && GetLastError() == ERROR_ACCESS_DENIED);
+    LocalFree(restricted_acl);
+    LocalFree(temporary_descriptor);
+    ASSERT(prepare_checked(temp, sentinel));
     PACL copied = NULL;
     PSECURITY_DESCRIPTOR copy = NULL;
     ASSERT(!GetNamedSecurityInfoW(wt,
@@ -644,8 +685,9 @@ bool test_file_system(void) {
                 result->system_error,
                 result->cleanup_error);
         FWRITE(result->out.data, 1, result->out.size, stderr);
-        FWRITE(result->err.data, 1, result->err.size, stderr);
     }
+    if (result->err.size)
+        FWRITE(result->err.data, 1, result->err.size, stderr);
     destroy_child_process(child);
     return ok;
 }

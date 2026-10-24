@@ -502,7 +502,7 @@ bool prepare_fs_replace(const char *prepared, const char *destination, fs_error_
     if (source == INVALID_HANDLE_VALUE)
         return fs_native_error(error, "open permissions", destination);
     HANDLE target = open_path(prepared,
-                              READ_CONTROL | WRITE_DAC | WRITE_OWNER | FILE_READ_ATTRIBUTES,
+                              READ_CONTROL | WRITE_DAC | FILE_READ_ATTRIBUTES,
                               false,
                               FILE_SHARE_READ);
     bool ok = target != INVALID_HANDLE_VALUE;
@@ -560,9 +560,27 @@ bool prepare_fs_replace(const char *prepared, const char *destination, fs_error_
             changes |= OWNER_SECURITY_INFORMATION;
         if (!EqualSid(group, target_group))
             changes |= GROUP_SECURITY_INFORMATION;
-        code = SetSecurityInfo(target, SE_FILE_OBJECT, changes, owner, group, dacl, NULL);
-        if (code)
-            ok = fs_fail(error, FS_ACCESS, code, "copy ACL", prepared);
+        HANDLE ownership = INVALID_HANDLE_VALUE;
+        if (changes & (OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION)) {
+            /* Reopen the same object, not its path: only real ownership changes
+             * require WRITE_OWNER. Ordinary replacement must not require it. */
+            ownership = ReOpenFile(target, WRITE_DAC | WRITE_OWNER, FILE_SHARE_READ, 0);
+            if (ownership == INVALID_HANDLE_VALUE)
+                ok = fs_native_error(error, "open prepared ownership", prepared);
+        }
+        if (ok) {
+            code = SetSecurityInfo(ownership == INVALID_HANDLE_VALUE ? target : ownership,
+                                   SE_FILE_OBJECT,
+                                   changes,
+                                   owner,
+                                   group,
+                                   dacl,
+                                   NULL);
+            if (code)
+                ok = fs_fail(error, FS_ACCESS, code, "copy ACL", prepared);
+        }
+        if (ownership != INVALID_HANDLE_VALUE && !CloseHandle(ownership) && ok)
+            ok = fs_native_error(error, "close prepared ownership", prepared);
     }
     if (target_descriptor)
         LocalFree(target_descriptor);

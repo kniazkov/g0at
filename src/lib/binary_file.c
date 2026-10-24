@@ -48,6 +48,11 @@ bool write_binary_file(const char *path, const void *data, size_t size) {
     FILE *file = NULL;
     char *temporary = create_fs_temporary(path, false, &file, &error);
     if (!temporary) {
+        FPRINTF(stderr,
+                "write binary: %s, code %lu, path %s\n",
+                error.operation,
+                error.native_code,
+                error.path);
         clear_fs_error(&error);
         return false;
     }
@@ -58,8 +63,14 @@ bool write_binary_file(const char *path, const void *data, size_t size) {
         ok = prepare_fs_replace(temporary, path, &error);
     if (ok)
         ok = publish_fs_replace(temporary, path, &error);
-    if (!ok)
+    if (!ok) {
+        FPRINTF(stderr,
+                "write binary: %s, code %lu, path %s\n",
+                error.operation,
+                error.native_code,
+                error.path);
         remove_fs_entry(temporary, NULL);
+    }
     FREE(temporary);
     clear_fs_error(&error);
     return ok;
