@@ -23,12 +23,12 @@ typedef enum goat_module_abi_error {
  * All decoded JSON fields are validated before returning an owned document.
  * Unknown ABI is rejected, never reinterpreted using the current interface.
  * No DLL/SO is opened. #210 supplies mapped-region ownership checks before copying;
- * #233 compares decoded identity/target/specializations with the selected archive.
+ * match_module_descriptor compares identity/target/specializations with the archive.
  */
 goat_module_abi_error goat_module_descriptor_read(const void *bytes, size_t size, yyjson_doc **out);
 
 /** Validate specialization declarations in one schema-validated variant/descriptor.
- * No library is loaded. Function/FUNC cross-links belong to #184/#233.
+ * No library is loaded. read_module_consistency checks Function/FUNC cross-links.
  */
 goat_module_abi_error goat_module_abi_validate(const yyjson_val *variant);
 

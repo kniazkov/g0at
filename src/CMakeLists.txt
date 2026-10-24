@@ -135,3 +135,6 @@ target_link_libraries(module_abi_testing PRIVATE goat_module ${CMAKE_DL_LIBS})
 
 add_executable(module_native_testing component_test/module_native_testing.c)
 target_link_libraries(module_native_testing PRIVATE goat_module ${CMAKE_DL_LIBS})
+
+add_executable(module_consistency_testing component_test/module_consistency_testing.c)
+target_link_libraries(module_consistency_testing PRIVATE core m)

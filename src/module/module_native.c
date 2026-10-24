@@ -4,6 +4,7 @@
  */
 #include "module_native.h"
 
+#include "module_abi.h"
 #include "module_json_internal.h"
 
 #include <string.h>
@@ -142,6 +143,30 @@ finish(goat_native_error *error, goat_native_status status, size_t index) {
     return status;
 }
 
+goat_native_status goat_module_native_validate(const goat_module_container *container,
+                                               goat_native_error *error) {
+    if (!container)
+        return finish(error, GOAT_NATIVE_ARGUMENT, SIZE_MAX);
+    yyjson_val *variants =
+        yyjson_obj_get(yyjson_doc_get_root(goat_module_container_metadata(container)), "native");
+    for (size_t i = 0; i < yyjson_arr_size(variants); i++) {
+        yyjson_val *variant = yyjson_arr_get(variants, i);
+        goat_native_environment required;
+        bool unknown;
+        if (!target(yyjson_obj_get(variant, "target"), &required, &unknown))
+            return finish(error, GOAT_NATIVE_INVALID_METADATA, i);
+        yyjson_val *library = yyjson_obj_get(variant, "library");
+        const char *suffix = required.os == GOAT_OS_WINDOWS ? ".dll" : ".so";
+        size_t length = yyjson_get_len(library), n = strlen(suffix);
+        if (length < n || memcmp(yyjson_get_str(library) + length - n, suffix, n))
+            return finish(error, GOAT_NATIVE_INVALID_METADATA, i);
+        goat_module_abi_error abi = goat_module_abi_validate(variant);
+        if (abi != GOAT_ABI_OK && abi != GOAT_ABI_UNSUPPORTED)
+            return finish(error, GOAT_NATIVE_INVALID_METADATA, i);
+    }
+    return finish(error, GOAT_NATIVE_OK, SIZE_MAX);
+}
+
 goat_native_status goat_module_native_select(const goat_module_container *container,
                                              const goat_native_environment *environment,
                                              const uint32_t *supported_abis,
@@ -152,6 +177,9 @@ goat_native_status goat_module_native_select(const goat_module_container *contai
         *selected_index = SIZE_MAX;
     if (!container || !environment || !selected_index || (!supported_abis && abi_count))
         return finish(error, GOAT_NATIVE_ARGUMENT, SIZE_MAX);
+    goat_native_status validation = goat_module_native_validate(container, error);
+    if (validation != GOAT_NATIVE_OK)
+        return validation;
     yyjson_val *variants =
         yyjson_obj_get(yyjson_doc_get_root(goat_module_container_metadata(container)), "native");
     size_t selected = SIZE_MAX, ambiguous = SIZE_MAX;
