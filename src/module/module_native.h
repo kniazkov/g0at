@@ -106,3 +106,10 @@ goat_native_status goat_module_native_select(const goat_module_container *contai
                                              size_t *selected_index,
                                              goat_native_error *error);
 const char *goat_native_status_string(goat_native_status status);
+
+/** Check every target, library suffix and specialization declaration without
+ * selecting a host or loading code. Unknown ABI/CPU requirements are permitted
+ * incompatibilities, not malformed metadata. Container hashes are already checked.
+ */
+goat_native_status goat_module_native_validate(const goat_module_container *container,
+                                               goat_native_error *error);

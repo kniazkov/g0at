@@ -19,7 +19,7 @@
   уже проверенного схемой варианта. Символ точно соответствует specializationId;
   идентификаторы уникальны внутри варианта. Для одной functionId пересекающиеся
   условия отвергаются. Разные модули проверяются отдельно, числовой ID не создаёт
-  глобальной привязки. Связи с FUNC/байткодом завершаются в #233.
+  глобальной привязки. Связи с FUNC/байткодом проверяет [этап #233](module-consistency-api.md).
 - `goat_module_value_valid`: проверка tag/reserved/payload, нулей в padding,
   Unicode scalars и размеров строк. Перед разыменованием строк вызывается
   предоставленная хостом проверка читаемого диапазона. Этот callback не является
@@ -79,8 +79,8 @@ strict native JSON schema support, exact ABI/symbol validation and checked one-s
 calls. Truncation, overflow, trailing bytes, a missing terminal zero, unsupported
 versions and noncanonical JSON are errors. Specialization IDs are unique within
 a variant; overlapping guards for one function are rejected. IDs remain local
-to each independently validated module, not a global binding key. #233 finishes
-links to FUNC/bytecode and comparison with the archive's selected descriptor.
+to each independently validated module, not a global binding key. #233 now checks links to FUNC/bytecode and comparison with the archive's
+selected descriptor; see [consistency API](module-consistency-api.md).
 
 Value checks cover tags, reserved fields, padding, canonical payloads, Unicode
 scalars and overflow-safe explicit string lengths. A host readable-range callback

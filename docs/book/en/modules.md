@@ -4124,6 +4124,16 @@ symbols, side-effect-free predicates and decidable overlap rejection. Checked
 calls validate arguments and returned status/type/payload and never retry on the
 VM after native entry. The new interface is separate from the legacy query ABI;
 real control libraries exercise it on all existing CI architectures, including
-MINGW32. Archive/bytecode consistency (#233), OS loader integration (#210),
+MINGW32. OS loader integration (#210),
 per-call VM dispatch and clone/flat bindings (#232), and full exit (#230) remain
 separate stages, not implied by descriptor validity.
+
+### Implemented native/bytecode consistency (#233)
+
+The [consistency API](../../module-consistency-api.md) checks all native records
+and file/FUNC references without loading DLL/SO code, independent of native mode.
+Hashes cover complete bytes of every library. Embedded descriptors are matched
+against exact archive records by module identity, target, ABI and specializations.
+A separate iterative traversal of supplied snapshots resolves functionRef only
+through reachable hash-pinned dependencies, never conflating equal IDs across
+modules. Graph discovery/loading, dispatch and closure execution remain separate.

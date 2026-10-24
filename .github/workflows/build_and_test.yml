@@ -91,6 +91,7 @@ jobs:
           python3 scripts/check_module_bytecode.py build/${{ matrix.compiler }}/module_bytecode_testing
           python3 scripts/check_module_native.py build/${{ matrix.compiler }}/module_native_testing
           python3 scripts/check_module_abi.py build/${{ matrix.compiler }}/module_abi_testing
+          python3 scripts/check_module_consistency.py build/${{ matrix.compiler }}/module_consistency_testing
       - name: Strict module JSON
         run: |
           python3 scripts/check_module_json.py build/${{ matrix.compiler }}/module_json_testing
@@ -306,6 +307,7 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_bytecode.py build/module_bytecode_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_native.py build/module_native_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_abi.py build/module_abi_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_consistency.py build/module_consistency_testing.exe
       - name: Strict module JSON
         shell: msys2 {0}
         env:
