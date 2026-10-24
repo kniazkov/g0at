@@ -1,0 +1,4 @@
+external a = 5;
+public b = 7;
+const c = a + b;
+external var d = c + 1;

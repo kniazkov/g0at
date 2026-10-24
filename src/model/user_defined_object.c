@@ -60,6 +60,7 @@ typedef struct {
     /** @brief Owns every stable cell; properties is only a borrowed lookup index. */
     vector_t *fields;
     module_t *module;
+    uint32_t file_id;
     access_domain_t *domain;
 } object_user_defined_t;
 
@@ -197,13 +198,17 @@ static void release(object_t *obj) {
 }
 
 /** @brief Copies all cells, preserving the selected-key index and existing shallow semantics. */
-static object_t *
-clone_in_module(process_t *process, object_t *obj, module_t *module, bool relocate) {
+static object_t *clone_in_module(process_t *process,
+                                 object_t *obj,
+                                 module_t *module,
+                                 uint32_t file_id,
+                                 bool relocate) {
     object_user_defined_t *uobj = (object_user_defined_t *)obj;
     object_user_defined_t *copy = create_empty_user_defined_object(
         process,
         (object_array_t){(object_t *const *)uobj->proto->data, uobj->proto->size},
         module);
+    copy->file_id = file_id;
     copy->shadow_inherited = uobj->shadow_inherited;
     copy->inheritance_count = uobj->inheritance_count;
     transfer_t *transfer = relocate ? create_transfer(process) : NULL;
@@ -224,6 +229,7 @@ clone_in_module(process_t *process, object_t *obj, module_t *module, bool reloca
                                             cell->module,
                                             domain,
                                             get_own_field_cell(obj, cell->key) == cell);
+        copied->file_id = cell->file_id;
         copied->declaration_id = cell->declaration_id;
         copied->binding_unit =
             cell->binding_unit ? retain_module_identity(cell->binding_unit) : NULL;
@@ -241,13 +247,13 @@ clone_in_module(process_t *process, object_t *obj, module_t *module, bool reloca
 }
 
 static object_t *clone(process_t *process, object_t *obj) {
-    return clone_in_module(process, obj, process->module, false);
+    return clone_in_module(process, obj, process->module, 0, false);
 }
 
 object_t *
 clone_object_with_access(process_t *process, object_t *obj, const function_access_t *access) {
     return obj->vtbl->type == TYPE_USER_DEFINED_OBJECT
-               ? clone_in_module(process, obj, access->module, true)
+               ? clone_in_module(process, obj, access->module, access->file_id, true)
                : clone_object(process, obj);
 }
 
@@ -276,6 +282,7 @@ static void flatten_storage(transfer_t *transfer, object_t *target, object_t *so
                                           old->module,
                                           transfer_domain(transfer, old->domain),
                                           selected);
+        cell->file_id = old->file_id;
         cell->declaration_id = old->declaration_id;
         cell->binding_unit = old->binding_unit ? retain_module_identity(old->binding_unit) : NULL;
         transfer_add_cell(transfer, source, old, target, cell);
@@ -288,7 +295,7 @@ static void flatten_storage(transfer_t *transfer, object_t *target, object_t *so
                              keys.items[i],
                              get_object_property(source, keys.items[i]),
                              false,
-                             ACCESS_PUBLIC,
+                             ACCESS_EXTERNAL,
                              get_builtin_module_identity(),
                              get_object_access_domain(target),
                              true);
@@ -302,8 +309,10 @@ flat_object_with_access(process_t *process, object_t *source, const function_acc
         return source;
     }
     object_t *root = get_root_object();
-    object_t *target =
-        create_user_defined_object_in_module(process, (object_array_t){&root, 1}, access->module);
+    object_t *target = create_user_defined_object_in_file(process,
+                                                          (object_array_t){&root, 1},
+                                                          access->module,
+                                                          access->file_id);
     vector_t *ancestors = create_vector();
     append_to_vector(ancestors, source);
     for (size_t i = 0; i < ancestors->size; i++) {
@@ -525,7 +534,7 @@ create_property(object_t *obj, object_t *key, object_t *value, bool constant) {
             && get_domain_field_cell(obj, key, uobj->domain))) {
         return MSTAT_PROPERTY_ALREADY_EXISTS;
     }
-    append_field(obj, key, value, constant, ACCESS_MODULE, uobj->module, uobj->domain, true);
+    append_field(obj, key, value, constant, ACCESS_FILE, uobj->module, uobj->domain, true);
     return MSTAT_OK;
 }
 
@@ -700,6 +709,7 @@ create_empty_user_defined_object(process_t *process, object_array_t proto, modul
         uobj->properties = create_avl_tree(key_comparator);
     }
     uobj->module = retain_module_identity(module);
+    uobj->file_id = 0;
     uobj->domain = create_access_domain(module);
     uobj->shadow_inherited = false;
     uobj->refs = 1;
@@ -731,7 +741,23 @@ bool object_shadows_inherited(const object_t *obj) {
 object_t *create_user_defined_object_in_module(process_t *process,
                                                object_array_t prototypes,
                                                module_t *module) {
-    return &create_empty_user_defined_object(process, prototypes, module)->base;
+    return create_user_defined_object_in_file(process, prototypes, module, 0);
+}
+
+object_t *create_user_defined_object_in_file(process_t *process,
+                                             object_array_t prototypes,
+                                             module_t *module,
+                                             uint32_t file_id) {
+    object_user_defined_t *obj = create_empty_user_defined_object(process, prototypes, module);
+    obj->file_id = file_id;
+    return &obj->base;
+}
+
+uint32_t get_object_file_id(const object_t *obj) {
+    if (obj->vtbl->type == TYPE_USER_DEFINED_OBJECT)
+        return ((const object_user_defined_t *)obj)->file_id;
+    function_access_t *access = get_function_access((object_t *)obj);
+    return access ? access->file_id : 0;
 }
 
 module_t *get_object_module(const object_t *obj) {
@@ -781,15 +807,38 @@ field_cell_t *create_object_field(object_t *obj,
                                   module_t *module,
                                   access_domain_t *domain,
                                   bool selected) {
+    return create_object_field_in_file(obj,
+                                       key,
+                                       value,
+                                       constant,
+                                       modifier,
+                                       module,
+                                       get_object_file_id(obj),
+                                       domain,
+                                       selected);
+}
+
+field_cell_t *create_object_field_in_file(object_t *obj,
+                                          object_t *key,
+                                          object_t *value,
+                                          bool constant,
+                                          access_modifier_t modifier,
+                                          module_t *module,
+                                          uint32_t file_id,
+                                          access_domain_t *domain,
+                                          bool selected) {
     assert(obj->vtbl->type == TYPE_USER_DEFINED_OBJECT);
     assert(module && domain);
-    assert(modifier >= ACCESS_MODULE && modifier <= ACCESS_PRIVATE);
+    assert(modifier >= ACCESS_FILE && modifier <= ACCESS_PRIVATE);
     if (get_domain_field_cell(obj, key, domain) || (selected && get_own_field_cell(obj, key)))
         return NULL;
     if (key->vtbl->type == TYPE_STRING && !compare_objects_using_vtbl(key, get_this_key())
         && (value != obj || !constant))
         return NULL;
-    return append_field(obj, key, value, constant, modifier, module, domain, selected);
+    field_cell_t *cell =
+        append_field(obj, key, value, constant, modifier, module, domain, selected);
+    cell->file_id = file_id;
+    return cell;
 }
 
 static field_cell_t *append_field(object_t *obj,
@@ -807,6 +856,7 @@ static field_cell_t *append_field(object_t *obj,
                            constant,
                            modifier,
                            retain_module_identity(module),
+                           uobj->file_id,
                            retain_access_domain(domain)};
     INCREF(key);
     if (value != obj)
@@ -846,8 +896,8 @@ static model_status_t write_field(object_t *storage, field_cell_t *cell, object_
 access_modifier_t get_object_property_modifier(const object_t *obj, const object_t *key) {
     field_cell_t *cell = get_own_field_cell(obj, key);
     return cell                                          ? cell->modifier
-           : obj->vtbl->type == TYPE_USER_DEFINED_OBJECT ? ACCESS_MODULE
-                                                         : ACCESS_PUBLIC;
+           : obj->vtbl->type == TYPE_USER_DEFINED_OBJECT ? ACCESS_FILE
+                                                         : ACCESS_EXTERNAL;
 }
 
 /** @brief Collects keys in dictionary comparison order. */

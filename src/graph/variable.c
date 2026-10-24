@@ -100,7 +100,7 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const variable_t *expr = (const variable_t *)node;
     uint32_t index = add_string_to_data_segment_ex(data, expr->name);
-    if (expr->declarator && expr->declarator->modifier != ACCESS_MODULE && !expr->dynamic_lookup)
+    if (expr->declarator && expr->declarator->modifier != ACCESS_FILE && !expr->dynamic_lookup)
         return add_instruction(
             code,
             (instruction_t){.opcode = BLOAD,
@@ -116,7 +116,7 @@ static instr_index_t
 generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_t *data) {
     const variable_t *expr = (const variable_t *)node;
     uint32_t index = add_string_to_data_segment_ex(data, expr->name);
-    if (expr->declarator && expr->declarator->modifier != ACCESS_MODULE && !expr->dynamic_lookup)
+    if (expr->declarator && expr->declarator->modifier != ACCESS_FILE && !expr->dynamic_lookup)
         return add_instruction(
             code,
             (instruction_t){.opcode = BSTORE,

@@ -158,3 +158,6 @@ target_link_libraries(module_sources_testing PRIVATE core m)
 
 add_executable(module_files_testing component_test/module_files_testing.c)
 target_link_libraries(module_files_testing PRIVATE core m)
+
+add_executable(module_access_testing component_test/module_access_testing.c unit_test/analysis_test_support.c)
+target_link_libraries(module_access_testing PRIVATE core m)

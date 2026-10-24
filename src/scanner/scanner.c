@@ -139,6 +139,7 @@ static const keyword_lookup_t keywords[] = {
     {U"var", 3, TOKEN_VAR, NULL, offsetof(token_groups_t, var_keywords)},
     {U"const", 5, TOKEN_CONST, NULL, offsetof(token_groups_t, const_keywords)},
     {U"public", 6, TOKEN_PUBLIC, NULL, offsetof(token_groups_t, access_keywords)},
+    {U"external", 8, TOKEN_EXTERNAL, NULL, offsetof(token_groups_t, access_keywords)},
     {U"protected", 9, TOKEN_PROTECTED, NULL, offsetof(token_groups_t, access_keywords)},
     {U"private", 7, TOKEN_PRIVATE, NULL, offsetof(token_groups_t, access_keywords)},
     {U"null", 4, TOKEN_EXPRESSION, create_null_node, SIZE_MAX},

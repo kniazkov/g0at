@@ -563,3 +563,6 @@ access_observation
 access_observation_snapshot
 throw_uncaught_visibility
 access_analysis_dynamic
+access_external
+access_external_duplicate
+access_external_after_var

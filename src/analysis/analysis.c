@@ -510,7 +510,7 @@ compilation_error_t *analyze(node_t *root_node,
     propagate_function_effects(calls, 64);
     analyze_function_c_contracts(root_node);
     analyze_function_c_bodies(calls, 64);
-    if (has_access_modifiers(root_node)) {
+    if (requires_access_safe_optimization(root_node)) {
         /* Scope identities and mutable flat captures are observable. Do not prune or fold
            bindings from abstract samples; only closed scalar expressions can be replaced. */
         classify_node_properties(root_node, collector);

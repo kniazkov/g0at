@@ -165,7 +165,7 @@ static bool declaration_rejection(void) {
                     DCONST; /* Duplicate declaration identity. */
                 break;
             case 12:
-                altered.modifier = ACCESS_MODULE;
+                altered.modifier = ACCESS_FILE;
                 break;
             case 11:
                 altered.name = id; /* Metadata is not a name string. */

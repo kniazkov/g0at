@@ -19,10 +19,11 @@ object_t *get_this_key() {
 context_t *
 create_context_with_protos(process_t *process, context_t *caller, object_array_t protos) {
     context_t *ctx =
-        create_context_with_protos_in_module(process,
-                                             caller,
-                                             protos,
-                                             caller->module ? caller->module : process->module);
+        create_context_with_protos_in_file(process,
+                                           caller,
+                                           protos,
+                                           caller->module ? caller->module : process->module,
+                                           caller->module ? caller->access.file_id : 0);
     if (caller->module) {
         add_lexical_scope(&ctx->access, caller->data);
         inherit_function_access(&ctx->access, &caller->access);
@@ -34,11 +35,19 @@ context_t *create_context_with_protos_in_module(process_t *process,
                                                 context_t *caller,
                                                 object_array_t protos,
                                                 module_t *module) {
+    return create_context_with_protos_in_file(process, caller, protos, module, 0);
+}
+
+context_t *create_context_with_protos_in_file(process_t *process,
+                                              context_t *caller,
+                                              object_array_t protos,
+                                              module_t *module,
+                                              uint32_t file_id) {
     context_t *ctx = (context_t *)ALLOC(sizeof(context_t));
     ctx->module = retain_module_identity(module);
-    ctx->data = create_user_defined_object_in_module(process, protos, ctx->module);
+    ctx->data = create_user_defined_object_in_file(process, protos, ctx->module, file_id);
     set_inheritance_prototype_count(ctx->data, 0);
-    init_function_access(&ctx->access, module);
+    init_function_access_in_file(&ctx->access, module, file_id);
     add_function_access_domain(&ctx->access, get_object_access_domain(ctx->data));
     ctx->native_disabled = caller->native_disabled;
     ctx->iteration_index = 0;

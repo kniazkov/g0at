@@ -22,7 +22,7 @@ bool test_access_observation(void) {
     object_t *obj = create_user_defined_object_in_module(proc, (object_array_t){&root, 1}, foreign);
     access_domain_t *domain = get_object_access_domain(obj);
     const gchar_t *names[] = {U"module", U"public", U"protected", U"private"};
-    const access_modifier_t modifiers[] = {ACCESS_MODULE,
+    const access_modifier_t modifiers[] = {ACCESS_FILE,
                                            ACCESS_PUBLIC,
                                            ACCESS_PROTECTED,
                                            ACCESS_PRIVATE};
@@ -59,10 +59,10 @@ bool test_access_observation(void) {
     DECREF(hidden_key);
     release_access_domain(hidden_domain);
     const gchar_t *expected[] = {
-        U"[{\"public\":true}]",
+        U"[{ }]",
         U"[{\"module\":true,\"public\":true}]",
         U"[{\"module\":true,\"private\":true,\"protected\":true,\"public\":true}]"};
-    size_t counts[] = {1, 2, 4};
+    size_t counts[] = {0, 2, 4};
     object_t *array = create_array_object(proc, (object_array_t){&obj, 1});
     for (size_t pass = 0; pass < 3; pass++) {
         for (size_t i = 0; i < 3; i++) {
@@ -74,11 +74,12 @@ bool test_access_observation(void) {
             FREE_STRING(text);
         }
     }
-    /* A foreign caller copies all fields, but still sees only public declarations. */
+    /* A foreign caller copies all fields, but cannot see file-local or module-public declarations.
+     */
     object_t *copy = flat_object_with_access(proc, obj, &observers[0]);
     ASSERT(get_object_field_count(copy) == 5);
     object_t *keys = snapshot_object_keys_with_access(proc, copy, &observers[0]);
-    ASSERT(get_array_elements(keys).size == 1);
+    ASSERT(get_array_elements(keys).size == 0);
     DECREF(keys);
     DECREF(copy);
     for (size_t i = 0; i < 3; i++)
@@ -112,7 +113,7 @@ bool test_access_identities(void) {
     object_static_string_t name = {0};
     object_t *key = get_static_string_object(&name, U"clone");
     ASSERT(get_object_property(get_root_object(), key));
-    ASSERT(get_object_property_modifier(get_root_object(), key) == ACCESS_PUBLIC);
+    ASSERT(get_object_property_modifier(get_root_object(), key) == ACCESS_EXTERNAL);
     ASSERT(get_object_module(get_root_object()) == get_builtin_module_identity());
     DECREF(a);
     DECREF(b);
@@ -158,7 +159,7 @@ bool test_access_cells(void) {
                                    k,
                                    get_null_object(),
                                    false,
-                                   ACCESS_MODULE,
+                                   ACCESS_FILE,
                                    proc->module,
                                    get_object_access_domain(obj),
                                    true));
@@ -325,7 +326,7 @@ bool test_access_clone_methods(void) {
                                    y,
                                    get_null_object(),
                                    false,
-                                   ACCESS_MODULE,
+                                   ACCESS_FILE,
                                    foreign,
                                    get_object_access_domain(original),
                                    true));

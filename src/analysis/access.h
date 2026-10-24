@@ -14,3 +14,6 @@ bool function_needs_access_checks(const node_t *function);
 bool function_signature_needs_access_checks(const function_summary_t *summary);
 /** @brief Folds only closed scalar expressions, preserving declarations, scopes and reads. */
 void simplify_access_safe_expressions(node_t *root, arena_t *arena);
+
+/** @brief Explicit modifiers or foreign AST bindings preclude identity-erasing optimizations. */
+bool requires_access_safe_optimization(const node_t *root);

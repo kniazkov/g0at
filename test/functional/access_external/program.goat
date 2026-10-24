@@ -1,0 +1,17 @@
+external answer = 42;
+external var counter = 1;
+external const add = func(x) { counter += x; return counter; };
+println(answer);
+println(add(2));
+const object = {
+    const local = 10;
+    public shared = 20;
+    external var exposed = 30;
+    external read = func() { return local + shared + exposed; };
+};
+println(object.read());
+object.exposed += 1;
+println(object.read());
+println(object.clone().read());
+println(object.flat().read());
+for (external const item in [1, 2]) println(item);

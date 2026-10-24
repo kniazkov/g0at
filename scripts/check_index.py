@@ -31,6 +31,18 @@ def main():
         source = fixture / "program.goat"
         if not source.is_file():
             continue
+        error_file = fixture / "expected_error.txt"
+        if error_file.is_file():
+            expected_error = error_file.read_text(encoding="utf-8")
+            for optimization in ("none", "all"):
+                result = subprocess.run(
+                    [str(goat), "--compile", "--optimize", optimization, str(source)],
+                    env=env, text=True, encoding="utf-8", capture_output=True, timeout=30)
+                assert (result.returncode, result.stdout, result.stderr) == (1, "", expected_error), (
+                    result.args, result.returncode, result.stdout, result.stderr)
+            count += 1
+            print("[ ok ]", fixture.name, "(rejected)")
+            continue
         expected = (fixture / "expected_output.txt").read_text(encoding="utf-8")
         for optimization in ("none", "all"):
             directory = output / (fixture.name + "-" + optimization)

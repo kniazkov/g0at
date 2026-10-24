@@ -86,9 +86,10 @@ module_bytecode_status_t create_module_files(process_t *process,
         yyjson_val *name = yyjson_obj_get(record, "name");
         file->name = decode_utf8_n(yyjson_get_str(name), yyjson_get_len(name));
         file->external = yyjson_get_bool(yyjson_obj_get(record, "external"));
-        file->scope = create_user_defined_object_in_module(process,
-                                                           (object_array_t){&builtins, 1},
-                                                           set->identity);
+        file->scope = create_user_defined_object_in_file(process,
+                                                         (object_array_t){&builtins, 1},
+                                                         set->identity,
+                                                         file->id);
         set_inheritance_prototype_count(file->scope, 0);
     }
     yyjson_doc_free(doc);
@@ -153,7 +154,7 @@ context_t *create_module_file_context(module_file_t *file, context_t *caller) {
     DECREF(context->data);
     context->data = file->scope;
     INCREF(context->data);
-    init_function_access(&context->access, file->owner->identity);
+    init_function_access_in_file(&context->access, file->owner->identity, file->id);
     add_function_access_domain(&context->access, get_object_access_domain(file->scope));
     return context;
 }
