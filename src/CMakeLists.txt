@@ -165,5 +165,7 @@ target_link_libraries(module_access_testing PRIVATE core m)
 add_executable(module_imports_testing component_test/module_imports_testing.c)
 target_link_libraries(module_imports_testing PRIVATE core m)
 
-add_executable(module_search_testing component_test/module_search_testing.c)
+add_executable(module_search_testing
+  component_test/module_search_testing.c
+  component_test/module_search_permissions.c)
 target_link_libraries(module_search_testing PRIVATE goat_validation m)

@@ -14,9 +14,8 @@
 #include <string.h>
 #ifdef _WIN32
 #    include <direct.h>
-#    define BOOL WIN32_BOOL
-#    include <windows.h>
-#    undef BOOL
+void begin_module_search_permissions(void);
+void end_module_search_permissions(void);
 #    define chdir _chdir
 #else
 #    include <unistd.h>
@@ -62,31 +61,7 @@ int main(int argc, char **argv) {
     fs_error_t arguments_error = {0};
     assert(fs_arguments(&argc, &argv, &arguments_error));
     clear_fs_error(&arguments_error);
-    /* Hosted Windows runners may have backup privileges: exercise ordinary
-     * filesystem permissions, not the elevated token's backup bypass. */
-    HANDLE token = NULL, restricted = NULL;
-    assert(OpenProcessToken(GetCurrentProcess(),
-                            TOKEN_DUPLICATE | TOKEN_QUERY | TOKEN_ASSIGN_PRIMARY
-                                | TOKEN_ADJUST_PRIVILEGES,
-                            &token));
-    assert(CreateRestrictedToken(token,
-                                 DISABLE_MAX_PRIVILEGE,
-                                 0,
-                                 NULL,
-                                 0,
-                                 NULL,
-                                 0,
-                                 NULL,
-                                 &restricted));
-    /* DISABLE_MAX_PRIVILEGE deliberately retains traverse bypass. Disable it
-     * too so a denied directory really prevents checking even a missing child. */
-    TOKEN_PRIVILEGES traversal = {0};
-    traversal.PrivilegeCount = 1;
-    assert(LookupPrivilegeValueW(NULL, L"SeChangeNotifyPrivilege", &traversal.Privileges[0].Luid));
-    SetLastError(ERROR_SUCCESS);
-    assert(AdjustTokenPrivileges(restricted, FALSE, &traversal, 0, NULL, NULL));
-    assert(GetLastError() == ERROR_SUCCESS);
-    assert(ImpersonateLoggedOnUser(restricted));
+    begin_module_search_permissions();
 #endif
     assert(argc == 10);
     module_search_t *search = NULL;
@@ -188,9 +163,7 @@ int main(int argc, char **argv) {
     free_module_search(search);
     clear_module_search_error(&error);
 #ifdef _WIN32
-    assert(RevertToSelf());
-    CloseHandle(restricted);
-    CloseHandle(token);
+    end_module_search_permissions();
     free_fs_arguments(argc, argv);
 #endif
     assert(!get_allocated_memory_size());
