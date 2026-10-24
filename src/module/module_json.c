@@ -1,7 +1,7 @@
 /** @file module_json.c
  * @brief Strict descriptor parsing against the frozen module v1 schema.
  */
-#include "module_json.h"
+#include "module_json_internal.h"
 
 #include <goat/module_identity.h>
 #include <stdint.h>
@@ -9,7 +9,7 @@
 #include <string.h>
 
 /* A resource limit, not a format version. Bounds recursive schema/facts walking. */
-#define JSON_MAX_DEPTH 256
+#define JSON_MAX_DEPTH GOAT_JSON_MAX_DEPTH
 
 enum json_type {
     JSON_NULL = 1,
@@ -57,30 +57,6 @@ struct json_schema {
 static bool text_is(const yyjson_val *v, const char *s) {
     return yyjson_is_str(v) && yyjson_get_len(v) == strlen(s)
            && !memcmp(yyjson_get_str(v), s, strlen(s));
-}
-
-/* No intermediate double, signed overflow, or platform-sized integer. */
-static bool integer(const yyjson_val *v, int64_t *out) {
-    if (!yyjson_is_raw(v))
-        return false;
-    const char *s = yyjson_get_raw(v);
-    size_t n = yyjson_get_len(v), i = 0;
-    bool negative = n && s[0] == '-';
-    if (negative)
-        i++;
-    if (i == n || (s[i] == '0' && i + 1 != n))
-        return false;
-    uint64_t value = 0;
-    uint64_t limit = negative ? UINT64_C(9223372036854775808) : INT64_MAX;
-    for (; i < n; i++) {
-        unsigned digit = (unsigned)(s[i] - '0');
-        if (digit > 9 || value > (limit - digit) / 10)
-            return false;
-        value = value * 10 + digit;
-    }
-    *out = negative ? (value == UINT64_C(9223372036854775808) ? INT64_MIN : -(int64_t)value)
-                    : (int64_t)value;
-    return true;
 }
 
 static int compare_keys(const void *a, const void *b) {
@@ -194,13 +170,13 @@ static goat_module_json_error shape(yyjson_val *v, const json_schema *s) {
     if (s->reference)
         return shape(v, s->reference);
     int64_t number = 0;
-    unsigned type = yyjson_is_obj(v)      ? JSON_OBJECT
-                    : yyjson_is_arr(v)    ? JSON_ARRAY
-                    : yyjson_is_str(v)    ? JSON_STRING
-                    : yyjson_is_bool(v)   ? JSON_BOOL
-                    : yyjson_is_null(v)   ? JSON_NULL
-                    : integer(v, &number) ? JSON_INTEGER
-                                          : 0;
+    unsigned type = yyjson_is_obj(v)                ? JSON_OBJECT
+                    : yyjson_is_arr(v)              ? JSON_ARRAY
+                    : yyjson_is_str(v)              ? JSON_STRING
+                    : yyjson_is_bool(v)             ? JSON_BOOL
+                    : yyjson_is_null(v)             ? JSON_NULL
+                    : goat_json_integer(v, &number) ? JSON_INTEGER
+                                                    : 0;
     if (!type || (s->types && !(s->types & type)))
         return GOAT_MODULE_JSON_INVALID_FIELD;
     if (s->literal_count) {
@@ -314,7 +290,7 @@ static bool records_valid(yyjson_val *root, goat_module_json_kind kind) {
     }
     int64_t index;
     yyjson_val *files = yyjson_obj_get(root, "files");
-    integer(yyjson_obj_get(root, "main"), &index);
+    goat_json_integer(yyjson_obj_get(root, "main"), &index);
     if ((uint64_t)index >= yyjson_arr_size(files))
         return false;
     for (size_t i = 0; i < yyjson_arr_size(files); i++) {
@@ -333,13 +309,13 @@ static bool records_valid(yyjson_val *root, goat_module_json_kind kind) {
     yyjson_val *functions = yyjson_obj_get(root, "functions");
     for (size_t i = 0; i < yyjson_arr_size(functions); i++) {
         yyjson_val *a = yyjson_arr_get(functions, i);
-        integer(yyjson_obj_get(a, "file"), &index);
+        goat_json_integer(yyjson_obj_get(a, "file"), &index);
         if ((uint64_t)index >= yyjson_arr_size(files))
             return false;
         int64_t id;
-        integer(yyjson_obj_get(a, "functionId"), &id);
+        goat_json_integer(yyjson_obj_get(a, "functionId"), &id);
         for (size_t j = 0; j < i; j++) {
-            integer(yyjson_obj_get(yyjson_arr_get(functions, j), "functionId"), &index);
+            goat_json_integer(yyjson_obj_get(yyjson_arr_get(functions, j), "functionId"), &index);
             if (id == index)
                 return false;
         }
@@ -353,7 +329,8 @@ static void remove_empty_text(yyjson_mut_val *obj, const char *key) {
         yyjson_mut_obj_remove_key(obj, key);
 }
 
-static yyjson_doc *normalize(yyjson_doc *doc, goat_module_json_kind kind) {
+static yyjson_doc *
+normalize(yyjson_doc *doc, goat_module_json_kind kind, goat_module_json_error *error) {
     yyjson_mut_doc *copy = yyjson_doc_mut_copy(doc, NULL);
     if (!copy)
         return NULL;
@@ -387,7 +364,9 @@ static yyjson_doc *normalize(yyjson_doc *doc, goat_module_json_kind kind) {
                 yyjson_mut_obj_remove_key(root, empty[j]);
         }
     }
-    yyjson_doc *result = ok ? yyjson_mut_doc_imut_copy(copy, NULL) : NULL;
+    *error = ok ? goat_module_json_normalize(copy, kind) : GOAT_MODULE_JSON_MEMORY;
+    yyjson_doc *result =
+        *error == GOAT_MODULE_JSON_OK ? yyjson_mut_doc_imut_copy(copy, NULL) : NULL;
     yyjson_mut_doc_free(copy);
     return result;
 }
@@ -413,8 +392,8 @@ goat_module_json_error goat_module_json_read(const char *data,
     if (err == GOAT_MODULE_JSON_OK && !records_valid(root, kind))
         err = GOAT_MODULE_JSON_INVALID_FIELD;
     if (err == GOAT_MODULE_JSON_OK) {
-        *out = normalize(doc, kind);
-        if (!*out)
+        *out = normalize(doc, kind, &err);
+        if (!*out && err == GOAT_MODULE_JSON_OK)
             err = GOAT_MODULE_JSON_MEMORY;
     }
     yyjson_doc_free(doc);

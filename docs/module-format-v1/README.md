@@ -109,8 +109,8 @@ No other reductions are implicit in v1.
 
 Normalize summaries: preserve positional arguments; remove the entire arguments
 array only if all normalized elements are empty and its original arity was
-correct. Remove empty result. Order effects.may as input, output, externalRead,
-externalWrite; remove effects only when may=[] and unknown=true. Compare whole
+correct. Remove empty result. Order effects.may as externalRead, externalWrite, input,
+output; remove effects only when may=[] and unknown=true. Compare whole
 normalized summaries as canonical bytes and reject duplicates **before**
 removing when-only summaries. Sort retained summaries by canonical unsigned UTF-8
 bytes. Remove an analysis container whose validated summaries become empty.
@@ -125,7 +125,9 @@ Normalize targets by removing trailing zero version components (retain at least
 one), sorting unique CPU features; normalize native guard conditions by canonical
 bytes, rejecting duplicates and omitting an empty conditions array. Sort
 specializations by numeric specializationId; variants by canonical target bytes,
-ABI version and library hash. Their filenames do not select a platform.
+ABI version and library hash, then unsigned UTF-8 library name to break equal
+keys deterministically. This final tie-break only orders serialization; filenames
+do not select a platform.
 
 Canonical JSON sorts object keys by decoded unsigned UTF-8 bytes; arrays preserve
 their already normalized order. No whitespace or BOM. Quote/backslash use their

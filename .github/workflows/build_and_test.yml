@@ -83,7 +83,18 @@ jobs:
       - name: Child process primitives
         run: python3 scripts/check_child_process.py build/${{ matrix.compiler }}/child_process_testing build/${{ matrix.compiler }}/goat
       - name: Strict module JSON
-        run: python3 scripts/check_module_json.py build/${{ matrix.compiler }}/module_json_testing
+        run: |
+          python3 scripts/check_module_json.py build/${{ matrix.compiler }}/module_json_testing
+          python3 scripts/check_module_canonical.py build/${{ matrix.compiler }}/module_json_testing
+      - name: Module JSON with nonzero automatic-variable initialization
+        run: |
+          cmake -S src -B build/json-stack-pattern \
+            -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=${{ matrix.compiler }} \
+            -DCMAKE_C_FLAGS=-ftrivial-auto-var-init=pattern
+          cmake --build build/json-stack-pattern --parallel 2 --target module_json_testing
+          build/json-stack-pattern/module_json_testing
+          python3 scripts/check_module_json.py build/json-stack-pattern/module_json_testing
+          python3 scripts/check_module_canonical.py build/json-stack-pattern/module_json_testing
       - name: Cleanup service
         run: python3 scripts/check_cleanup_service.py build/${{ matrix.compiler }}/cleanup_service_testing
       - name: Compile Linux shared libraries
@@ -278,7 +289,9 @@ jobs:
         shell: msys2 {0}
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
-        run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_json.py build/module_json_testing.exe'
+        run: |
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_json.py build/module_json_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_canonical.py build/module_json_testing.exe
       - name: Cleanup service
         shell: msys2 {0}
         env:

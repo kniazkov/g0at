@@ -20,7 +20,7 @@ MAGIC = b"GOATBC01"
 NATIVE_MAGIC = b"GOATND01"
 HASH_FIELDS = ("formatVersion", "bytecodeVersion", "name", "version", "main",
                "files", "dependencies", "functions", "externals")
-EFFECTS = ["input", "output", "externalRead", "externalWrite"]
+EFFECTS = ["externalRead", "externalWrite", "input", "output"]
 OPCODES = ("NOP ARG END JUMP JIF POP DUP NIL TRUE FALSE ILOAD32 ILOAD64 RLOAD SLOAD CLOAD "
            "VLOAD VAR CONST STORE GETPROP SETPROP UPLUS UMINUS INC DEC LNOT BOOL BNOT LAND LOR "
            "BAND BOR BXOR SHL SHR ADD SUB MUL DIVIDE MODULO POWER LESS LEQ GREATER GREQ EQUAL "
@@ -237,6 +237,8 @@ def normalize(value, kind="module"):
     unique(v.get("producers", []), canonical, "duplicate producer")
     if "producers" in v:
         v["producers"].sort(key=lambda p: tuple(p[k].encode('utf-8') for k in ("name", "version", "buildId")))
+    if v.get("authors") == []:
+        del v["authors"]
     if kind == "gmod":
         require('\0' not in v['main'], "NUL path")
         for name, version in v.get("dependencies", {}).items():
@@ -289,7 +291,7 @@ def normalize(value, kind="module"):
             guards(native["specializations"], {f['functionId']: len(f['parameters']) for f in functions})
         unique(v.get("native", []), lambda n: n["library"], "duplicate native library")
         if "native" in v:
-            v["native"].sort(key=lambda n: (canonical(n["target"]), n["goatAbiVersion"], n["hash"]))
+            v["native"].sort(key=lambda n: (canonical(n["target"]), n["goatAbiVersion"], n["hash"], n["library"].encode("utf-8")))
     elif kind == "native":
         target(v["target"])
         guards(v["specializations"])

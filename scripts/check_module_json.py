@@ -152,7 +152,7 @@ def main():
     rich = dict(M, dependencies=[dep], authors=[dict(name='Ivan', email='связаться через сайт')],
                 producers=[dict(name='compiler', version='dev', buildId='build')],
                 functions=[dict(functionId=1, file=0, instruction=0, parameters=[dict(name='x'), dict(name='y')],
-                    analysis=dict(formatVersion=1, summaries=[dict(when=dict(arguments=[{}, {}]),
+                    analysis=dict(formatVersion=1, summaries=[dict(when={},
                         result=dict(type='array', elements=dict(type='integer', range=dict(min=-2, max=3))),
                         effects=dict(may=['input', 'output'], unknown=False))]))],
                 externals=dict(f=dict(mutable=False, type='function', functionId=1),

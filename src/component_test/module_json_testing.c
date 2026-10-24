@@ -31,7 +31,7 @@ static void check(const char *json, goat_module_json_kind kind, goat_module_json
 }
 
 /* A bounded stdin fixture for cross-platform black-box parser tests. */
-static int read_stdin(goat_module_json_kind kind) {
+static int read_stdin(goat_module_json_kind kind, int canonical) {
 #ifdef _WIN32
     _setmode(_fileno(stdin), _O_BINARY);
     _setmode(_fileno(stdout), _O_BINARY);
@@ -46,7 +46,14 @@ static int read_stdin(goat_module_json_kind kind) {
         return 2;
     }
     yyjson_doc *doc = NULL;
-    goat_module_json_error err = goat_module_json_read(buffer, length, kind, &doc);
+    goat_module_json_error err;
+    if (canonical == 1) {
+        doc = length >= 3 && !memcmp(buffer, "\xef\xbb\xbf", 3)
+                  ? NULL
+                  : yyjson_read(buffer, length, YYJSON_READ_NUMBER_AS_RAW);
+        err = doc ? GOAT_MODULE_JSON_OK : GOAT_MODULE_JSON_SYNTAX;
+    } else
+        err = goat_module_json_read(buffer, length, kind, &doc);
     /* The returned tree must own all strings and raw integer tokens. */
     memset(buffer, 0xAA, length);
     free(buffer);
@@ -54,22 +61,74 @@ static int read_stdin(goat_module_json_kind kind) {
         FPRINTF(stderr, "%s\n", goat_module_json_error_string(err));
         return 1;
     }
-    char *output = yyjson_write(doc, 0, NULL);
-    if (!output) {
-        yyjson_doc_free(doc);
-        return 2;
+    char *output = NULL;
+    size_t output_length = 0;
+    if (canonical == 1)
+        err = goat_json_canonical(yyjson_doc_get_root(doc), &output, &output_length);
+    else if (canonical)
+        err = goat_module_json_write(doc, kind, canonical == 3, &output, &output_length);
+    else {
+        output = yyjson_write(doc, 0, &output_length);
+        err = output ? GOAT_MODULE_JSON_OK : GOAT_MODULE_JSON_MEMORY;
     }
-    FPUTS(output, stdout);
-    free(output);
+    if (err) {
+        FPRINTF(stderr, "%s\n", goat_module_json_error_string(err));
+        yyjson_doc_free(doc);
+        return 1;
+    }
+    FWRITE(output, 1, output_length, stdout);
+    goat_module_json_free(output);
     yyjson_doc_free(doc);
     return 0;
 }
 
+/* Programmatically constructed values must not bypass canonical validation. */
+static void canonical_api_checks(void) {
+    char *out = (char *)(uintptr_t)1;
+    size_t length = 123;
+    assert(goat_json_canonical(NULL, &out, &length) == GOAT_MODULE_JSON_INVALID_FIELD);
+    assert(!out && !length);
+    yyjson_val value = {0};
+    yyjson_set_uint(&value, UINT64_MAX);
+    assert(goat_json_canonical(&value, &out, &length) == GOAT_MODULE_JSON_INVALID_FIELD);
+    yyjson_set_real(&value, 1.0);
+    assert(goat_json_canonical(&value, &out, &length) == GOAT_MODULE_JSON_INVALID_FIELD);
+    const char *bad[] = {"", "-", "+1", "01", "-01", "1.0", "1e0", "null", "[1]"};
+    for (size_t i = 0; i < sizeof(bad) / sizeof(*bad); i++) {
+        yyjson_set_raw(&value, bad[i], strlen(bad[i]));
+        assert(goat_json_canonical(&value, &out, &length) == GOAT_MODULE_JSON_INVALID_FIELD);
+        assert(!out && !length);
+    }
+    yyjson_set_strn(&value, "\xed\xa0\x80", 3);
+    assert(goat_json_canonical(&value, &out, &length) == GOAT_MODULE_JSON_INVALID_FIELD);
+    yyjson_set_sint(&value, INT64_MIN);
+    assert(goat_json_canonical(&value, &out, &length) == GOAT_MODULE_JSON_OK);
+    assert(length == 20 && !memcmp(out, "-9223372036854775808", 20) && !out[length]);
+    goat_module_json_free(out);
+    assert(goat_json_canonical(&value, NULL, &length) == GOAT_MODULE_JSON_INVALID_FIELD);
+    assert(!length);
+    assert(goat_json_canonical(&value, &out, NULL) == GOAT_MODULE_JSON_INVALID_FIELD);
+    assert(!out);
+    assert(goat_module_json_write(NULL, GOAT_MODULE_METADATA, false, &out, &length)
+           == GOAT_MODULE_JSON_INVALID_FIELD);
+    assert(!out && !length);
+    goat_module_json_free(NULL);
+}
+
 int main(int argc, char **argv) {
     if (argc == 2 && !strcmp(argv[1], "--gmod"))
-        return read_stdin(GOAT_MODULE_GMOD);
+        return read_stdin(GOAT_MODULE_GMOD, 0);
     if (argc == 2 && !strcmp(argv[1], "--module"))
-        return read_stdin(GOAT_MODULE_METADATA);
+        return read_stdin(GOAT_MODULE_METADATA, 0);
+    if (argc == 2 && !strcmp(argv[1], "--canonical"))
+        return read_stdin(GOAT_MODULE_METADATA, 1);
+    if (argc == 2 && !strcmp(argv[1], "--canonical-module"))
+        return read_stdin(GOAT_MODULE_METADATA, 2);
+    if (argc == 2 && !strcmp(argv[1], "--canonical-gmod"))
+        return read_stdin(GOAT_MODULE_GMOD, 2);
+    if (argc == 2 && !strcmp(argv[1], "--main-metadata"))
+        return read_stdin(GOAT_MODULE_METADATA, 3);
+    canonical_api_checks();
     puts("Starting module JSON testing...");
     yyjson_doc *invalid_doc = (yyjson_doc *)(uintptr_t)1;
     assert(goat_module_json_read("{}", 2, (goat_module_json_kind)42, &invalid_doc)
