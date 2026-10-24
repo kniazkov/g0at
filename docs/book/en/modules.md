@@ -4115,3 +4115,15 @@ and strict synthetic target profiles are available; all existing CI platforms
 exercise selection and a real baseline control-library call. This does not yet
 implement the specialization ABI, full module loader or producer-side requirement
 discovery (#209/#210/#211/#219), nor prove execution on older OS/runtime minimums.
+
+### Implemented specialization ABI (#209)
+
+The [module ABI API](../../module-abi-api.md) now provides the fixed 16-byte scalar
+boundary, canonical bounded embedded-descriptor parsing, exact specialization
+symbols, side-effect-free predicates and decidable overlap rejection. Checked
+calls validate arguments and returned status/type/payload and never retry on the
+VM after native entry. The new interface is separate from the legacy query ABI;
+real control libraries exercise it on all existing CI architectures, including
+MINGW32. Archive/bytecode consistency (#233), OS loader integration (#210),
+per-call VM dispatch and clone/flat bindings (#232), and full exit (#230) remain
+separate stages, not implied by descriptor validity.

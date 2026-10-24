@@ -319,6 +319,49 @@ static void normalize_target(context *ctx, value *target) {
     sort(ctx, get(target, "cpuFeatures"), SORT_TEXT, true);
 }
 
+static void native_variant(context *ctx, value *variant, value *functions, bool standalone) {
+    normalize_target(ctx, get(variant, "target"));
+    value *specs = get(variant, "specializations");
+    size_t j, count;
+    value *spec;
+    yyjson_mut_arr_foreach(specs, j, count, spec) {
+        value *f = find_function(functions, number(get(spec, "functionId")));
+        value *signature = get(spec, "signature"), *guard = get(spec, "when");
+        value *args = get(signature, "arguments"), *types = get(guard, "argumentTypes");
+        if (!require(
+                ctx,
+                (standalone
+                 || (f && yyjson_mut_arr_size(args) == yyjson_mut_arr_size(get(f, "parameters"))))
+                    && yyjson_mut_arr_size(args) == yyjson_mut_arr_size(types)))
+            return;
+        for (size_t k = 0; k < yyjson_mut_arr_size(args); k++)
+            if (!require(ctx,
+                         !text_compare(yyjson_mut_arr_get(args, k), yyjson_mut_arr_get(types, k))))
+                return;
+        value *conditions = get(guard, "conditions");
+        size_t k, length;
+        value *predicate;
+        yyjson_mut_arr_foreach(conditions, k, length, predicate) {
+            int64_t index = number(get(predicate, "argument"));
+            value *constant = get(predicate, "constant"), *type = get(constant, "type");
+            if (!require(ctx, (uint64_t)index < yyjson_mut_arr_size(args)))
+                return;
+            if (!require(ctx, !text_compare(type, yyjson_mut_arr_get(args, (size_t)index)))
+                || !scalar(ctx, type, get(constant, "value")))
+                return;
+            value *op = get(predicate, "operation");
+            if (!require(ctx,
+                         is(op, "equal") || is(op, "notEqual") || is(type, "integer")
+                             || is(type, "real") || is(type, "character")))
+                return;
+        }
+        sort(ctx, conditions, SORT_CANONICAL, true);
+        if (conditions && !yyjson_mut_arr_size(conditions))
+            yyjson_mut_obj_remove_key(guard, "conditions");
+    }
+    sort(ctx, specs, SORT_SPECIALIZATION, true);
+}
+
 static void native(context *ctx, value *variants, value *functions) {
     size_t i, max;
     value *variant;
@@ -329,45 +372,7 @@ static void native(context *ctx, value *variants, value *functions) {
                                       get(yyjson_mut_arr_get(variants, j), "library"))
                              != 0))
                 return;
-        normalize_target(ctx, get(variant, "target"));
-        value *specs = get(variant, "specializations");
-        size_t j, count;
-        value *spec;
-        yyjson_mut_arr_foreach(specs, j, count, spec) {
-            value *f = find_function(functions, number(get(spec, "functionId")));
-            value *signature = get(spec, "signature"), *guard = get(spec, "when");
-            value *args = get(signature, "arguments"), *types = get(guard, "argumentTypes");
-            if (!require(ctx,
-                         f && yyjson_mut_arr_size(args) == yyjson_mut_arr_size(get(f, "parameters"))
-                             && yyjson_mut_arr_size(args) == yyjson_mut_arr_size(types)))
-                return;
-            for (size_t k = 0; k < yyjson_mut_arr_size(args); k++)
-                if (!require(
-                        ctx,
-                        !text_compare(yyjson_mut_arr_get(args, k), yyjson_mut_arr_get(types, k))))
-                    return;
-            value *conditions = get(guard, "conditions");
-            size_t k, length;
-            value *predicate;
-            yyjson_mut_arr_foreach(conditions, k, length, predicate) {
-                int64_t index = number(get(predicate, "argument"));
-                value *constant = get(predicate, "constant"), *type = get(constant, "type");
-                if (!require(ctx, (uint64_t)index < yyjson_mut_arr_size(args)))
-                    return;
-                if (!require(ctx, !text_compare(type, yyjson_mut_arr_get(args, (size_t)index)))
-                    || !scalar(ctx, type, get(constant, "value")))
-                    return;
-                value *op = get(predicate, "operation");
-                if (!require(ctx,
-                             is(op, "equal") || is(op, "notEqual") || is(type, "integer")
-                                 || is(type, "real") || is(type, "character")))
-                    return;
-            }
-            sort(ctx, conditions, SORT_CANONICAL, true);
-            if (conditions && !yyjson_mut_arr_size(conditions))
-                yyjson_mut_obj_remove_key(guard, "conditions");
-        }
-        sort(ctx, specs, SORT_SPECIALIZATION, true);
+        native_variant(ctx, variant, functions, false);
     }
     sort(ctx, variants, SORT_VARIANT, false);
 }
@@ -379,6 +384,10 @@ goat_module_json_error goat_module_json_normalize(yyjson_mut_doc *doc, goat_modu
     value *root = yyjson_mut_doc_get_root(doc);
     if (kind == GOAT_MODULE_TARGET) {
         normalize_target(&ctx, root);
+        return ctx.error;
+    }
+    if (kind == GOAT_MODULE_NATIVE) {
+        native_variant(&ctx, root, NULL, true);
         return ctx.error;
     }
     value *functions = get(root, "functions");
