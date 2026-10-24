@@ -182,8 +182,119 @@ static bool declaration_rejection(void) {
     return true;
 }
 
+/** @brief Validate unreachable code and entry ownership without executing any instruction. */
+static bool instruction_rejection(void) {
+    code_builder_t *builder = create_code_builder();
+    data_builder_t *data = create_data_builder();
+    add_instruction(builder, (instruction_t){.opcode = END});
+    add_instruction(builder, (instruction_t){.opcode = ARG, .arg1 = 8});
+    add_instruction(builder, (instruction_t){.opcode = FUNC});
+    builder->function_ids[2] = 1;
+    add_instruction(builder, (instruction_t){.opcode = POP});
+    add_instruction(builder, (instruction_t){.opcode = ARG, .arg1 = 10});
+    add_instruction(builder, (instruction_t){.opcode = FUNC});
+    builder->function_ids[5] = UINT32_MAX;
+    add_instruction(builder, (instruction_t){.opcode = POP});
+    add_instruction(builder, (instruction_t){.opcode = END});
+    builder->location.function = 1;
+    add_instruction(builder, (instruction_t){.opcode = NIL});
+    add_instruction(builder, (instruction_t){.opcode = RET});
+    builder->location.function = UINT32_MAX;
+    add_instruction(builder, (instruction_t){.opcode = NIL});
+    add_instruction(builder, (instruction_t){.opcode = RET});
+    bytecode_t *code = link_code_and_data(builder, data);
+    destroy_code_builder(builder);
+    destroy_data_builder(data);
+    /* UINT32_MAX and sparse IDs are valid identities, not table indices. */
+    bytecode_t *loaded = decode_bytecode_image(code->buffer, code->buffer_size);
+    ASSERT(loaded);
+    free_bytecode(loaded);
+    void *snapshot = ALLOC(code->buffer_size);
+    memcpy(snapshot, code->buffer, code->buffer_size);
+    for (unsigned test = 0; test < 15; ++test) {
+        memcpy((void *)code->buffer, snapshot, code->buffer_size);
+        instruction_t *instructions = (instruction_t *)code->instructions;
+        bytecode_function_t *functions = (bytecode_function_t *)code->functions;
+        bytecode_location_t *locations = (bytecode_location_t *)code->locations;
+        switch (test) {
+            case 0:
+                ((bytecode_file_t *)code->files)[0].entry = 8;
+                break; /* A valid address, but a function body instead of top-level code. */
+            case 1:
+                functions[0].body = instructions[1].arg1 = 0;
+                break; /* A function cannot start in top-level code. */
+            case 2:
+                functions[0].body = instructions[1].arg1 = 10;
+                break; /* Nor in another function's body. */
+            case 3:
+                locations[0].count = 2;
+                locations[1].first = 2;
+                locations[1].count = 8;
+                break; /* ARG/consumer must retain the same code owner. */
+            case 4:
+                instructions[3].opcode = 255;
+                break;
+            case 5:
+                instructions[3].flags = 1;
+                break;
+            case 6:
+                instructions[3].arg0 = 1;
+                break;
+            case 7:
+                instructions[3].arg1 = 1;
+                break;
+            case 8:
+                instructions[3] = (instruction_t){.opcode = JUMP, .arg1 = 12};
+                break;
+            case 9:
+                instructions[3] = (instruction_t){.opcode = TRY, .arg1 = 5};
+                break; /* No branch or structured-control target may skip ARG. */
+            case 10:
+                instructions[1].opcode = NOP;
+                instructions[1].arg1 = 0;
+                break;
+            case 11:
+                instructions[3] = (instruction_t){.opcode = SLOAD};
+                break;
+            case 12:
+                instructions[3] = (instruction_t){.opcode = MODULE_INCLUDE, .arg1 = 1};
+                break;
+            case 13:
+                functions[1].id = functions[0].id;
+                break;
+            case 14:
+                locations[2].function = 2;
+                break;
+        }
+        ASSERT(rejected(code->buffer, code->buffer_size));
+    }
+    const opcode_t branches[] =
+        {JUMP, JIF, LAND, LOR, TRY, LOOP_JUMP, ITER_NEXT, FINALLY_ENTER, FINALLY_LEAVE};
+    for (size_t i = 0; i < sizeof(branches) / sizeof(*branches); ++i) {
+        memcpy((void *)code->buffer, snapshot, code->buffer_size);
+        instruction_t *instructions = (instruction_t *)code->instructions;
+        instructions[8] = (instruction_t){.opcode = branches[i], .arg1 = 0};
+        ASSERT(rejected(code->buffer, code->buffer_size)); /* Function to top-level. */
+        instructions[8].arg1 = 10;
+        ASSERT(rejected(code->buffer, code->buffer_size)); /* Between functions. */
+        instructions[8].arg1 = 9;
+        bytecode_t *valid = decode_bytecode_image(code->buffer, code->buffer_size);
+        ASSERT(valid); /* A control target within the same function is allowed. */
+        free_bytecode(valid);
+        instructions[3] = (instruction_t){.opcode = branches[i], .arg1 = 8};
+        ASSERT(rejected(code->buffer, code->buffer_size)); /* Top-level to function. */
+    }
+    memcpy((void *)code->buffer, snapshot, code->buffer_size);
+    ASSERT(validate_bytecode_image(code));
+    ASSERT(!memcmp(code->buffer, snapshot, code->buffer_size));
+    FREE(snapshot);
+    free_bytecode(code);
+    return true;
+}
+
 bool test_binary_rejection(void) {
     ASSERT(declaration_rejection());
+    ASSERT(instruction_rejection());
     bytecode_t *code = sample();
     ASSERT(save_binary_program(filename, code, 0));
     size_t size;
