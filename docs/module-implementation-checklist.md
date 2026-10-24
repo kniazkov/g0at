@@ -40,7 +40,7 @@
 - [x] 24. [#187](https://github.com/kniazkov/g0at/issues/187) — Статическое извлечение импортов и версий
 - [x] 25. [#188](https://github.com/kniazkov/g0at/issues/188) — Поиск модулей в каталогах ([API и проверки](module-search-api.md))
 - [x] 26. [#237](https://github.com/kniazkov/g0at/issues/237) — Точные правила путей GOAT_MODULE_PATH
-- [ ] 27. [#238](https://github.com/kniazkov/g0at/issues/238) — Независимость версий зависимостей библиотеки
+- [x] 27. [#238](https://github.com/kniazkov/g0at/issues/238) — Независимость версий зависимостей библиотеки ([API и проверки](module-dependencies-api.md))
 - [ ] 28. [#189](https://github.com/kniazkov/g0at/issues/189) — Итеративная проверка графа зависимостей
 - [ ] 29. [#190](https://github.com/kniazkov/g0at/issues/190) — Детерминированная диагностика зависимостей
 - [ ] 30. [#192](https://github.com/kniazkov/g0at/issues/192) — Загрузка снимка графа модулей в память
