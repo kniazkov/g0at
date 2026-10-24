@@ -57,33 +57,63 @@ static void compress(uint32_t state[8], const uint8_t block[64]) {
     state[7] += h;
 }
 
-void sha256(const void *data, size_t size, uint8_t digest[SHA256_SIZE]) {
-    uint32_t state[8] = {0x6a09e667,
-                         0xbb67ae85,
-                         0x3c6ef372,
-                         0xa54ff53a,
-                         0x510e527f,
-                         0x9b05688c,
-                         0x1f83d9ab,
-                         0x5be0cd19};
+void sha256_init(sha256_context *ctx) {
+    static const uint32_t initial[8] = {0x6a09e667,
+                                        0xbb67ae85,
+                                        0x3c6ef372,
+                                        0xa54ff53a,
+                                        0x510e527f,
+                                        0x9b05688c,
+                                        0x1f83d9ab,
+                                        0x5be0cd19};
+    memcpy(ctx->state, initial, sizeof(initial));
+    ctx->size = 0;
+    ctx->used = 0;
+}
+
+void sha256_update(sha256_context *ctx, const void *data, size_t size) {
     const uint8_t *bytes = data;
-    uint64_t bits = (uint64_t)size * 8;
-    while (size >= 64) {
-        compress(state, bytes);
-        bytes += 64;
-        size -= 64;
+    ctx->size += size;
+    while (size) {
+        if (!ctx->used && size >= 64) {
+            compress(ctx->state, bytes);
+            bytes += 64;
+            size -= 64;
+        } else {
+            size_t count = 64 - ctx->used;
+            if (count > size)
+                count = size;
+            memcpy(ctx->tail + ctx->used, bytes, count);
+            ctx->used += count;
+            bytes += count;
+            size -= count;
+            if (ctx->used == 64) {
+                compress(ctx->state, ctx->tail);
+                ctx->used = 0;
+            }
+        }
     }
+}
+
+void sha256_finish(sha256_context *ctx, uint8_t digest[SHA256_SIZE]) {
+    uint64_t bits = ctx->size * 8;
     uint8_t tail[128] = {0};
-    if (size)
-        memcpy(tail, bytes, size);
-    tail[size] = 0x80;
-    size_t padded = size < 56 ? 64 : 128;
+    memcpy(tail, ctx->tail, ctx->used);
+    tail[ctx->used] = 0x80;
+    size_t padded = ctx->used < 56 ? 64 : 128;
     for (unsigned i = 0; i < 8; i++)
         tail[padded - 1 - i] = (uint8_t)(bits >> (8 * i));
-    compress(state, tail);
+    compress(ctx->state, tail);
     if (padded == 128)
-        compress(state, tail + 64);
+        compress(ctx->state, tail + 64);
     for (size_t i = 0; i < 8; i++)
         for (unsigned j = 0; j < 4; j++)
-            digest[4 * i + j] = (uint8_t)(state[i] >> (24 - 8 * j));
+            digest[4 * i + j] = (uint8_t)(ctx->state[i] >> (24 - 8 * j));
+}
+
+void sha256(const void *data, size_t size, uint8_t digest[SHA256_SIZE]) {
+    sha256_context ctx;
+    sha256_init(&ctx);
+    sha256_update(&ctx, data, size);
+    sha256_finish(&ctx, digest);
 }

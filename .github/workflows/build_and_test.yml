@@ -86,6 +86,7 @@ jobs:
         run: |
           python3 scripts/check_module_json.py build/${{ matrix.compiler }}/module_json_testing
           python3 scripts/check_module_canonical.py build/${{ matrix.compiler }}/module_json_testing
+          python3 scripts/check_module_hash.py build/${{ matrix.compiler }}/module_json_testing
       - name: Module JSON with nonzero automatic-variable initialization
         run: |
           cmake -S src -B build/json-stack-pattern \
@@ -95,6 +96,7 @@ jobs:
           build/json-stack-pattern/module_json_testing
           python3 scripts/check_module_json.py build/json-stack-pattern/module_json_testing
           python3 scripts/check_module_canonical.py build/json-stack-pattern/module_json_testing
+          python3 scripts/check_module_hash.py build/json-stack-pattern/module_json_testing
       - name: Cleanup service
         run: python3 scripts/check_cleanup_service.py build/${{ matrix.compiler }}/cleanup_service_testing
       - name: Compile Linux shared libraries
@@ -292,6 +294,7 @@ jobs:
         run: |
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_json.py build/module_json_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_canonical.py build/module_json_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_hash.py build/module_json_testing.exe
       - name: Cleanup service
         shell: msys2 {0}
         env:
