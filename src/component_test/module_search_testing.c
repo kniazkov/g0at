@@ -88,7 +88,11 @@ int main(int argc, char **argv) {
             quoted(module_search_directory(search, i));
         }
     }
-    puts("]}");
+    fputs("],\"operation\":", stdout);
+    quoted(error.filesystem.operation);
+    fputs(",\"error_path\":", stdout);
+    quoted(error.filesystem.path);
+    printf(",\"native_code\":%lu}\n", error.filesystem.native_code);
     fflush(stdout);
     if (status == MODULE_SEARCH_OK) {
         /* Python may retarget the root link after preparation, before lookup. */

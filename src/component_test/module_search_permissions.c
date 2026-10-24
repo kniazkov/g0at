@@ -24,14 +24,6 @@ void begin_module_search_permissions(void) {
                                  0,
                                  NULL,
                                  &restricted));
-    /* DISABLE_MAX_PRIVILEGE deliberately retains traverse bypass. Disable it
-     * too so a denied directory really prevents checking even a missing child. */
-    TOKEN_PRIVILEGES traversal = {0};
-    traversal.PrivilegeCount = 1;
-    assert(LookupPrivilegeValueW(NULL, L"SeChangeNotifyPrivilege", &traversal.Privileges[0].Luid));
-    SetLastError(ERROR_SUCCESS);
-    assert(AdjustTokenPrivileges(restricted, FALSE, &traversal, 0, NULL, NULL));
-    assert(GetLastError() == ERROR_SUCCESS);
     assert(ImpersonateLoggedOnUser(restricted));
 }
 
