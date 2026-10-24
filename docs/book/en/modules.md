@@ -4254,3 +4254,19 @@ filesystem/validation/identity/hash failures, and list only actually checked pat
 The diagnostic includes the stopping path and underlying filesystem cause/code.
 These remain internal APIs; CLI and dependency-graph integration are separate tasks.
 See [API and tests](../../module-search-api.md).
+
+### Consumer-local dependency binding (#238)
+
+The tested internal `vm/module_dependencies.h` API binds collected direct imports
+to verified main hashes. Unused defaults remain warnings and cause no lookup.
+Binding a ready library instead reads only its own exact dependency records and
+enforces their stored hashes; application defaults cannot override library edges.
+Different versions coexist, and a conflicting expected hash fails independently
+of successful application lookups. Only direct records are emitted: neither
+transitive records nor external bytecode/native payloads are embedded.
+
+One binding covers one consumer, not the complete graph. Iterative traversal,
+shared-node caching and cycle detection remain #189, and CLI wiring #191/#218;
+the entire graph must be checked before execution/publication. The Linux/Windows
+fixtures inspect per-consumer edges and independently bind their targets.
+See [API, ownership and tests](../../module-dependencies-api.md).
