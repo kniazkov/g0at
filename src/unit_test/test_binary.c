@@ -42,6 +42,23 @@ bool test_sha256(void) {
             memset(large, 'a', 1000000);
         uint8_t digest[SHA256_SIZE];
         sha256(large ? large : inputs[i], large ? 1000000 : strlen(inputs[i]), digest);
+        for (size_t chunk = 1; chunk <= 129; chunk += 8) {
+            sha256_context ctx;
+            sha256_init(&ctx);
+            const char *data = large ? large : inputs[i];
+            size_t length = large ? 1000000 : strlen(inputs[i]);
+            sha256_update(&ctx, NULL, 0);
+            for (size_t offset = 0; offset < length;) {
+                size_t count = length - offset;
+                if (count > chunk)
+                    count = chunk;
+                sha256_update(&ctx, data + offset, count);
+                offset += count;
+            }
+            uint8_t streamed[SHA256_SIZE];
+            sha256_finish(&ctx, streamed);
+            ASSERT(!memcmp(digest, streamed, SHA256_SIZE));
+        }
         FREE(large);
         char hex[65];
         for (size_t j = 0; j < SHA256_SIZE; j++)

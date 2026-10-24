@@ -41,6 +41,7 @@ file(GLOB core_sources
   vm/*.c
   cli/*.c
 )
+list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/lib/sha256.c")
 # Build the native runtime separately; never depend on VM internals or its allocator.
 add_library(goat_native STATIC native/strings.c native/str.c lib/number_format.c lib/unicode.c)
 set_target_properties(goat_native PROPERTIES

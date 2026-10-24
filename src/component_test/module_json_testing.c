@@ -1,4 +1,5 @@
 #include "lib/file_system.h"
+#include "module_hash.h"
 #include "module_json.h"
 
 #include <assert.h>
@@ -44,6 +45,32 @@ static int read_stdin(goat_module_json_kind kind, int canonical) {
     if (FERROR(stdin) || length == capacity) {
         free(buffer);
         return 2;
+    }
+    if (canonical >= 4) {
+        char *separator = memchr(buffer, 0, length);
+        if (!separator) {
+            free(buffer);
+            return 2;
+        }
+        yyjson_doc *metadata = NULL;
+        goat_module_json_error error = goat_module_json_read(buffer,
+                                                             (size_t)(separator - buffer),
+                                                             GOAT_MODULE_METADATA,
+                                                             &metadata);
+        char digest[GOAT_MODULE_HASH_HEX_SIZE];
+        bool matches = false;
+        size_t bytes = length - (size_t)(separator + 1 - buffer);
+        if (!error) {
+            if (canonical == 4)
+                error = goat_module_main_hash(metadata, separator + 1, bytes, digest);
+            else
+                error = goat_module_main_hash_verify(metadata, separator + 1, bytes, &matches);
+        }
+        if (!error && canonical == 4)
+            FWRITE(digest, 1, 64, stdout);
+        yyjson_doc_free(metadata);
+        free(buffer);
+        return error ? 1 : canonical == 5 && !matches ? 3 : 0;
     }
     yyjson_doc *doc = NULL;
     goat_module_json_error err;
@@ -128,6 +155,24 @@ int main(int argc, char **argv) {
         return read_stdin(GOAT_MODULE_GMOD, 2);
     if (argc == 2 && !strcmp(argv[1], "--main-metadata"))
         return read_stdin(GOAT_MODULE_METADATA, 3);
+    if (argc == 2 && !strcmp(argv[1], "--hash"))
+        return read_stdin(GOAT_MODULE_METADATA, 4);
+    if (argc == 2 && !strcmp(argv[1], "--verify-hash"))
+        return read_stdin(GOAT_MODULE_METADATA, 5);
+    char hash[GOAT_MODULE_HASH_HEX_SIZE];
+    memset(hash, 'x', sizeof(hash));
+    assert(goat_module_main_hash(NULL, NULL, 0, hash) == GOAT_MODULE_JSON_INVALID_FIELD);
+    for (size_t i = 0; i < sizeof(hash); i++)
+        assert(!hash[i]);
+    assert(goat_module_main_hash(NULL, NULL, 1, hash) == GOAT_MODULE_JSON_INVALID_FIELD);
+    assert(goat_module_main_hash(NULL, NULL, 0, NULL) == GOAT_MODULE_JSON_INVALID_FIELD);
+    bool matches = true;
+    assert(goat_module_main_hash_verify(NULL, NULL, 0, &matches) == GOAT_MODULE_JSON_INVALID_FIELD);
+    assert(!matches);
+    assert(goat_module_main_hash_verify(NULL, NULL, 0, NULL) == GOAT_MODULE_JSON_INVALID_FIELD);
+#if SIZE_MAX > UINT32_MAX
+    assert(goat_module_main_hash(NULL, "", SIZE_MAX, hash) == GOAT_MODULE_JSON_LIMIT);
+#endif
     canonical_api_checks();
     puts("Starting module JSON testing...");
     yyjson_doc *invalid_doc = (yyjson_doc *)(uintptr_t)1;
