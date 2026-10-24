@@ -169,13 +169,15 @@ for path in ('../x', '/module.json', 'C:/x', 'native\\x.so', 'native/../x.so',
              'native//x.so', './module.json', 'native/a/b.so', 'native/x.so/',
              'native/x:ads.so', 'native/x .so', 'native/con.so', 'native/lpt9.dll',
              'module.json\0evil', 'README', 'Native/x.so', 'native/😀.so'):
-    if '\0' in path:
-        base = pack([*parts(), ('module.jsonXevil', b'', 0)])
-        r = entries(base)[-1]
-        base = patch(patch(base, r['l']+30+11, '<B', 0), r['c']+46+11, '<B', 0)
-        check(base, PATH)
-    else:
-        check(pack([*parts(), (path, b'', 0)]), PATH)
+    # ZipInfo sanitizes NUL on every host and backslash on Windows. Build a
+    # safe placeholder, then put the exact forbidden bytes into both headers.
+    name = path.encode('utf-8')
+    base = bytearray(pack([*parts(), ('x' * len(name), b'', 0)]))
+    r = entries(base)[-1]
+    for offset in (r['l'] + 30, r['c'] + 46):
+        base[offset:offset + len(name)] = name
+        assert base[offset:offset + len(name)] == name
+    check(bytes(base), PATH)
 for path in ('module.json', 'Module.json', 'MODULE.JSON', 'bytecode.bin', 'ByteCode.Bin'):
     check(pack([*parts(), (path, b'', 0)]), DUPLICATE)
 check(pack([*parts(), ('native/', b'', 0), ('native/', b'', 0)]), DUPLICATE)
