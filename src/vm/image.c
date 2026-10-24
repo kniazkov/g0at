@@ -36,6 +36,22 @@ static const bytecode_function_t *find_function(const bytecode_t *c, uint32_t id
     return lo < c->function_count && c->functions[lo].id == id ? c->functions + lo : NULL;
 }
 
+/* Call only after the location runs have been checked to partition the image. */
+static const bytecode_location_t *location_at(const bytecode_t *c, uint32_t instruction) {
+    size_t lo = 0, hi = c->location_count;
+    while (lo < hi) {
+        size_t mid = lo + (hi - lo) / 2;
+        const bytecode_location_t *location = c->locations + mid;
+        if (instruction < location->first)
+            hi = mid;
+        else if (instruction - location->first >= location->count)
+            lo = mid + 1;
+        else
+            return location;
+    }
+    return NULL;
+}
+
 bool validate_bytecode_image(bytecode_t *c) {
     const uint8_t *b = c->buffer;
     size_t size = c->buffer_size;
@@ -265,7 +281,52 @@ bool validate_bytecode_image(bytecode_t *c) {
         }
         previous += l->count;
     }
-    return previous == c->instructions_count;
+    if (previous != c->instructions_count)
+        return false;
+    /* A valid in-file address is not enough: file initialization must not enter
+     * a function body, and each body must belong to its declared function. */
+    for (size_t i = 0; i < c->file_count; ++i) {
+        const bytecode_location_t *location = location_at(c, c->files[i].entry);
+        if (!location || location->function)
+            return false;
+    }
+    for (size_t i = 0; i < c->function_count; ++i) {
+        const bytecode_function_t *function = c->functions + i;
+        const bytecode_location_t *location = location_at(c, function->body);
+        if (!location || location->function != function->id)
+            return false;
+    }
+    /* ARG pairs and local control transfers cannot cross a top-level/function
+     * boundary. Source positions may differ; code ownership may not. */
+    size_t location_id = 0;
+    for (size_t i = 0; i < c->instructions_count; ++i) {
+        while (i - c->locations[location_id].first >= c->locations[location_id].count)
+            ++location_id;
+        instruction_t instruction = c->instructions[i];
+        uint32_t destination;
+        switch (instruction.opcode) {
+            case ARG:
+                destination = (uint32_t)i + 1;
+                break;
+            case FINALLY_ENTER:
+            case FINALLY_LEAVE:
+            case ITER_NEXT:
+            case LOOP_JUMP:
+            case JUMP:
+            case JIF:
+            case LAND:
+            case LOR:
+            case TRY:
+                destination = instruction.arg1;
+                break;
+            default:
+                continue;
+        }
+        const bytecode_location_t *next = location_at(c, destination);
+        if (!next || next->function != c->locations[location_id].function)
+            return false;
+    }
+    return true;
 }
 
 bytecode_t *decode_bytecode_image(const void *data, size_t size) {

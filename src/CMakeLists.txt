@@ -126,3 +126,6 @@ endif()
 
 add_executable(cleanup_service_testing component_test/cleanup_service_testing.c)
 target_link_libraries(cleanup_service_testing PRIVATE core m)
+
+add_executable(module_bytecode_testing component_test/module_bytecode_testing.c)
+target_link_libraries(module_bytecode_testing PRIVATE core m)

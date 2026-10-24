@@ -53,6 +53,9 @@ def main():
         result = subprocess.run([str(goat), '--run', '--native', 'off', str(path)],
                                 capture_output=True, timeout=20)
         assert (result.returncode == 0) == valid, (result.returncode, result.stderr, data[:64].hex())
+        if not valid:
+            assert b'Invalid, incompatible or unreadable Goat binary' in result.stderr
+            assert result.stdout == b'', 'invalid image executed user code before rejection'
         assert path.read_bytes() == data
         return result.stdout.replace(b'\r\n', b'\n')
     image = bytes.fromhex((ROOT/'test/binary-v1/scalars.hex').read_text())
@@ -92,6 +95,14 @@ def main():
     bad(on+8, 1)  # Function table points to a real constant.
     bad(on+12, 1)  # Function body is an ARG consumer.
     bad(ol+24+20, 8)  # Missing function ID.
+    body = struct.unpack_from('<I', image, on+12)[0]
+    bad(of+8, body)  # File entry may not start inside a function.
+    bad(ol+24+20, 0)  # The body must retain its declared function identity.
+    # Sparse IDs cover the entire uint32 range, not the function-array index.
+    sparse = bytearray(image)
+    struct.pack_into('<I', sparse, on, 0xffffffff)
+    struct.pack_into('<I', sparse, ol+24+20, 0xffffffff)
+    assert run(sparse) == expected
     sys.path.insert(0, str(ROOT/'docs/module-format-v1'))
     spec = importlib.util.spec_from_file_location('format_reference', ROOT/'docs/module-format-v1/reference.py')
     ref = importlib.util.module_from_spec(spec); spec.loader.exec_module(ref)

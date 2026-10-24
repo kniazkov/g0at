@@ -86,6 +86,7 @@ jobs:
         run: |
           python3 scripts/check_zip.py build/${{ matrix.compiler }}/zip_testing
           python3 scripts/check_module_container.py build/${{ matrix.compiler }}/module_container_testing
+          python3 scripts/check_module_bytecode.py build/${{ matrix.compiler }}/module_bytecode_testing
       - name: Strict module JSON
         run: |
           python3 scripts/check_module_json.py build/${{ matrix.compiler }}/module_json_testing
@@ -298,6 +299,7 @@ jobs:
         run: |
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_zip.py build/zip_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_container.py build/module_container_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_bytecode.py build/module_bytecode_testing.exe
       - name: Strict module JSON
         shell: msys2 {0}
         env:

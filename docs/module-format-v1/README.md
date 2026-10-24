@@ -193,7 +193,7 @@ instructions cannot be independent branch/entry targets. For ILOAD64/RLOAD the
 ARG.arg1 supplies low 32 bits and the following arg1 supplies high 32 bits;
 arg0 is zero. FUNC uses ARG.arg1 as body entry, arg0 as formal count, and arg1 as
 the kind-2 parameter-name vector (zero when arity is zero). Jump targets are
-instruction indices within the same file; file/function entries, continuation
+instruction indices within the same file and function ownership; file/function entries, continuation
 targets and structured-control operands must reference valid instructions.
 The compiler and validator apply the opcode-specific constraints from the
 existing decoder, including to unreachable instructions; runtime stack/type

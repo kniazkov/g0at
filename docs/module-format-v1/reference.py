@@ -491,7 +491,8 @@ def check_module(metadata, bytecode):
             name = bytecode[payload+off:payload+off+size-4].decode('utf-32-le')
             require(name.count('@') == 1, 'qualified import')
             required_imports.add(tuple(name.split('@')))
-    require(required_imports == {(d['name'],d['version']) for d in v.get('dependencies',[])}, 'actual dependency list')
+    # Dependencies retain syntactic source imports even after optimization removes code.
+    require(required_imports <= {(d['name'],d['version']) for d in v.get('dependencies',[])}, 'undeclared import')
     require(main_hash(v, bytecode) == v['mainHash'], 'main hash mismatch')
     return v
 

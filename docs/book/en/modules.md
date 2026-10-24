@@ -4088,3 +4088,17 @@ Pointer setup populates external structures pointing into the buffer. Resolved i
 Instruction, string and table read APIs express immutability through const. Casts must not introduce writes into the buffer. Immutable string data may be borrowed without copying while respecting owner lifetime; operations producing modified strings allocate their results separately. Sharing an immutable image across threads does not automatically make external mutable structures thread-safe.
 
 Acceptance: retain an exact copy of the finished image and verify byte-for-byte immutability after validation, dependency resolution, initialization, VM execution, native binding and calls, error handling and multithreaded execution. Verify that mutable state lives in external structures and that the image is released only after all uses end. These are test checks, not a requirement to recompute a hash on every execution or call.
+
+### Implemented portable bytecode validation (#184)
+
+The [module bytecode validation API](../../module-bytecode-validation.md) now
+checks the entire immutable image, including unreachable instructions, and its
+agreement with `module.json`: file entries, function identities, parameter names
+and qualified imports against the source-derived dependency set. Dependencies
+remain valid when optimization removes their IMPORT instructions. A file entry must designate top-level
+code, a function body must belong to that function, and ARG pairs cannot cross
+file/function ownership. Branches and control continuations stay within the
+same function (or top-level code). The selected `main` is resolved through the file table,
+never silently replaced with zero. Sparse function IDs remain identifiers, not
+array positions. Container hashing, graph validation and native ABI consistency
+remain separate layers; this API neither executes code nor opens source files.

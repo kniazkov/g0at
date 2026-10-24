@@ -122,6 +122,13 @@ class FormatTests(unittest.TestCase):
         m=r.parse((ROOT/'vectors/two-versions.module.json').read_bytes())
         r.check_module(m, imports)
         with self.assertRaises(ValueError): r.check_module(m,b)
+        optimized = copy.deepcopy(m)
+        optimized['mainHash'] = r.main_hash(optimized, b)
+        r.check_module(optimized, b)  # Syntactic dependencies survive eliminated IMPORTs.
+        undeclared = copy.deepcopy(m)
+        undeclared['dependencies'] = undeclared['dependencies'][:1]
+        undeclared['mainHash'] = r.main_hash(undeclared, imports)
+        with self.assertRaises(ValueError): r.check_module(undeclared, imports)
         for version in ['1','2']:
             dependency=r.parse((ROOT/('vectors/math-'+version+'.module.json')).read_bytes())
             r.check_module(dependency,b)
