@@ -35,7 +35,7 @@
 - [x] 19. [#183](https://github.com/kniazkov/g0at/issues/183) — Детерминированная запись .gbin ([API и проверки](module-writer-api.md))
 - [x] 20. [#221](https://github.com/kniazkov/g0at/issues/221) — Информационные метаданные и сведения об авторе ([API и проверки](module-information-api.md))
 - [x] 21. [#186](https://github.com/kniazkov/g0at/issues/186) — Чтение .gmod и построение набора исходников ([API и проверки](module-sources-api.md))
-- [ ] 22. [#193](https://github.com/kniazkov/g0at/issues/193) — Раздельные области видимости исходных файлов
+- [x] 22. [#193](https://github.com/kniazkov/g0at/issues/193) — Раздельные области видимости исходных файлов
 - [ ] 23. [#204](https://github.com/kniazkov/g0at/issues/204) — Новые границы доступа файлов и модулей
 - [ ] 24. [#187](https://github.com/kniazkov/g0at/issues/187) — Статическое извлечение импортов и версий
 - [ ] 25. [#188](https://github.com/kniazkov/g0at/issues/188) — Поиск модулей в каталогах

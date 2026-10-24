@@ -18,6 +18,8 @@ typedef struct module_t module_t;
 struct process_t {
     /** @brief Owned identity of the single program module until module loading is added. */
     module_t *module;
+    /** @brief Owned per-module file scopes/images, destroyed after managed objects. */
+    struct module_files_t *module_files;
     /** @brief A unique identifier for the process. */
     uint64_t id;
 

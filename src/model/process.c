@@ -9,6 +9,7 @@
 #include "access.h"
 #include "context.h"
 #include "lib/allocate.h"
+#include "module_files.h"
 #include "object_list.h"
 #include "thread.h"
 
@@ -49,6 +50,7 @@ void destroy_process(process_t *process) {
     destroy_all_objects_in_the_list(&process->dynamic_strings);
     destroy_all_objects_in_the_list(&process->user_defined_objects);
     destroy_all_objects_in_the_list(&process->characters);
+    destroy_module_files(process);
     FREE(process->string_cache);
     FREE(process->gc_roots);
     release_module_identity(process->module);
