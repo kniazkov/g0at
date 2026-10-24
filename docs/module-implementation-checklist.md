@@ -38,7 +38,7 @@
 - [x] 22. [#193](https://github.com/kniazkov/g0at/issues/193) — Раздельные области видимости исходных файлов
 - [x] 23. [#204](https://github.com/kniazkov/g0at/issues/204) — Новые границы доступа файлов и модулей
 - [x] 24. [#187](https://github.com/kniazkov/g0at/issues/187) — Статическое извлечение импортов и версий
-- [ ] 25. [#188](https://github.com/kniazkov/g0at/issues/188) — Поиск модулей в каталогах
+- [x] 25. [#188](https://github.com/kniazkov/g0at/issues/188) — Поиск модулей в каталогах ([API и проверки](module-search-api.md))
 - [ ] 26. [#237](https://github.com/kniazkov/g0at/issues/237) — Точные правила путей GOAT_MODULE_PATH
 - [ ] 27. [#238](https://github.com/kniazkov/g0at/issues/238) — Независимость версий зависимостей библиотеки
 - [ ] 28. [#189](https://github.com/kniazkov/g0at/issues/189) — Итеративная проверка графа зависимостей
