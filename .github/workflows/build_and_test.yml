@@ -95,6 +95,7 @@ jobs:
           python3 scripts/check_module_validation.py build/${{ matrix.compiler }}/module_validation_testing
           python3 scripts/check_module_writer.py build/${{ matrix.compiler }}/module_writer_testing
           python3 scripts/check_module_sources.py build/${{ matrix.compiler }}/module_sources_testing
+          python3 scripts/check_module_imports.py build/${{ matrix.compiler }}/module_imports_testing
           python3 scripts/check_module_files.py build/${{ matrix.compiler }}/module_files_testing
           python3 scripts/test_module_access.py build/${{ matrix.compiler }}/module_access_testing
           python3 scripts/check_module_information.py build/${{ matrix.compiler }}/module_json_testing build/${{ matrix.compiler }}/module_writer_testing
@@ -317,6 +318,7 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_validation.py build/module_validation_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_writer.py build/module_writer_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_sources.py build/module_sources_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_imports.py build/module_imports_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_files.py build/module_files_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/test_module_access.py build/module_access_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_information.py build/module_json_testing.exe build/module_writer_testing.exe

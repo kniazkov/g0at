@@ -37,7 +37,7 @@
 - [x] 21. [#186](https://github.com/kniazkov/g0at/issues/186) — Чтение .gmod и построение набора исходников ([API и проверки](module-sources-api.md))
 - [x] 22. [#193](https://github.com/kniazkov/g0at/issues/193) — Раздельные области видимости исходных файлов
 - [x] 23. [#204](https://github.com/kniazkov/g0at/issues/204) — Новые границы доступа файлов и модулей
-- [ ] 24. [#187](https://github.com/kniazkov/g0at/issues/187) — Статическое извлечение импортов и версий
+- [x] 24. [#187](https://github.com/kniazkov/g0at/issues/187) — Статическое извлечение импортов и версий
 - [ ] 25. [#188](https://github.com/kniazkov/g0at/issues/188) — Поиск модулей в каталогах
 - [ ] 26. [#237](https://github.com/kniazkov/g0at/issues/237) — Точные правила путей GOAT_MODULE_PATH
 - [ ] 27. [#238](https://github.com/kniazkov/g0at/issues/238) — Независимость версий зависимостей библиотеки
