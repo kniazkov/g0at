@@ -41,7 +41,7 @@
 - [x] 25. [#188](https://github.com/kniazkov/g0at/issues/188) — Поиск модулей в каталогах ([API и проверки](module-search-api.md))
 - [x] 26. [#237](https://github.com/kniazkov/g0at/issues/237) — Точные правила путей GOAT_MODULE_PATH
 - [x] 27. [#238](https://github.com/kniazkov/g0at/issues/238) — Независимость версий зависимостей библиотеки ([API и проверки](module-dependencies-api.md))
-- [ ] 28. [#189](https://github.com/kniazkov/g0at/issues/189) — Итеративная проверка графа зависимостей
+- [x] 28. [#189](https://github.com/kniazkov/g0at/issues/189) — Итеративная проверка графа зависимостей ([API и проверки](module-graph-api.md))
 - [ ] 29. [#190](https://github.com/kniazkov/g0at/issues/190) — Детерминированная диагностика зависимостей
 - [ ] 30. [#192](https://github.com/kniazkov/g0at/issues/192) — Загрузка снимка графа модулей в память
 - [ ] 31. [#236](https://github.com/kniazkov/g0at/issues/236) — Поведение при нехватке памяти при загрузке

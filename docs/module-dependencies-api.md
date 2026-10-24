@@ -25,8 +25,9 @@ validation: callers must also process each returned snapshot's own direct record
 A → B → C thus retains B in A and C in B; importing C directly (including via an
 own include) adds C to A as well.
 
-This primitive intentionally does not implement the next task's iterative graph
-walk, node cache, cycle detection or all-path diagnostics (#189/#190). A caller
+This primitive intentionally does not implement whole-graph traversal. Use the
+[iterative graph API](module-graph-api.md) for node caching, cycle checking and
+retained diagnostic paths (#189); diagnostic presentation remains #190. A caller
 must never treat a successful single-consumer binding as permission to execute or
 publish an unverified complete graph. CLI integration remains #191/#218.
 
@@ -70,8 +71,9 @@ unordered dependency sets while retaining the authors ordering contract.
 Для A → B → C массив A содержит B, массив B содержит C. Собственный import C
 (включая import из include) добавляет C в A независимо от транзитивного пути.
 
-Операция проверяет один уровень, а не весь граф. Итеративный обход, кеш общих
-узлов, циклы и все цепочки диагностики относятся к #189/#190; CLI — к #191/#218.
+Операция проверяет один уровень, а не весь граф. Для итеративного обхода, кеша,
+циклов и сохранения цепочек используется [API графа](module-graph-api.md) (#189).
+Представление диагностики остаётся в #190; CLI — в #191/#218.
 До исполнения или публикации необходима проверка всего достижимого графа.
 Код и OS loader здесь не запускаются. Результат переживает освобождение всех
 входов, освобождается через `free_module_dependencies`; при ошибке частичного
