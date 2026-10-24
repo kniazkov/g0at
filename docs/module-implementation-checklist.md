@@ -29,7 +29,7 @@
 - [x] 13. [#182](https://github.com/kniazkov/g0at/issues/182) — Проверка ZIP-контейнера .gbin
 - [x] 14. [#184](https://github.com/kniazkov/g0at/issues/184) — Проверка переносимого байткода
 - [x] 15. [#208](https://github.com/kniazkov/g0at/issues/208) — Метаданные платформенных нативных вариантов ([API и проверки](module-native-api.md))
-- [ ] 16. [#209](https://github.com/kniazkov/g0at/issues/209) — Нативный ABI и экспортируемые специализации
+- [x] 16. [#209](https://github.com/kniazkov/g0at/issues/209) — Нативный ABI и экспортируемые специализации ([API и проверки](module-abi-api.md))
 - [ ] 17. [#233](https://github.com/kniazkov/g0at/issues/233) — Согласованность нативных метаданных с байткодом
 - [ ] 18. [#185](https://github.com/kniazkov/g0at/issues/185) — Единый API проверки .gbin
 - [ ] 19. [#183](https://github.com/kniazkov/g0at/issues/183) — Детерминированная запись .gbin

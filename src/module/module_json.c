@@ -264,7 +264,7 @@ static bool no_nul(yyjson_val *v) {
 
 /* Descriptor-local invariants. Binary/graph/native ABI checks belong to their loaders. */
 static bool records_valid(yyjson_val *root, goat_module_json_kind kind) {
-    if (kind == GOAT_MODULE_TARGET)
+    if (kind == GOAT_MODULE_TARGET || kind == GOAT_MODULE_NATIVE)
         return true;
     yyjson_val *authors = yyjson_obj_get(root, "authors");
     for (size_t i = 0; i < yyjson_arr_size(authors); i++) {
@@ -380,7 +380,8 @@ goat_module_json_error goat_module_json_read(const char *data,
     if (!out)
         return GOAT_MODULE_JSON_INVALID_FIELD;
     *out = NULL;
-    if (kind != GOAT_MODULE_GMOD && kind != GOAT_MODULE_METADATA && kind != GOAT_MODULE_TARGET)
+    if (kind != GOAT_MODULE_GMOD && kind != GOAT_MODULE_METADATA && kind != GOAT_MODULE_TARGET
+        && kind != GOAT_MODULE_NATIVE)
         return GOAT_MODULE_JSON_INVALID_FIELD;
     if (!data || (length >= 3 && !memcmp(data, "\xef\xbb\xbf", 3)))
         return GOAT_MODULE_JSON_SYNTAX;
@@ -393,7 +394,8 @@ goat_module_json_error goat_module_json_read(const char *data,
         err = shape(root,
                     kind == GOAT_MODULE_GMOD       ? GMOD_SCHEMA
                     : kind == GOAT_MODULE_METADATA ? METADATA_SCHEMA
-                                                   : TARGET_SCHEMA);
+                    : kind == GOAT_MODULE_TARGET   ? TARGET_SCHEMA
+                                                   : NATIVE_SCHEMA);
     if (err == GOAT_MODULE_JSON_OK && !records_valid(root, kind))
         err = GOAT_MODULE_JSON_INVALID_FIELD;
     if (err == GOAT_MODULE_JSON_OK) {

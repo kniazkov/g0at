@@ -2,7 +2,7 @@
 /* clang-format off */
 #pragma once
 
-static const json_schema schemas[148];
+static const json_schema schemas[157];
 
 static const json_field fields_0[] = {
     {"name", &schemas[1], true},
@@ -279,7 +279,19 @@ static const json_literal literals_123[] = {
 static const json_literal literals_124[] = {
     {JSON_INTEGER, "1"},
 };
-static const json_schema schemas[148] = {
+static const json_field fields_148[] = {
+    {"formatVersion", &schemas[149], true},
+    {"module", &schemas[150], true},
+    {"version", &schemas[151], true},
+    {"mainHash", &schemas[152], true},
+    {"goatAbiVersion", &schemas[153], true},
+    {"target", &schemas[154], true},
+    {"specializations", &schemas[155], true},
+};
+static const json_literal literals_149[] = {
+    {JSON_INTEGER, "1"},
+};
+static const json_schema schemas[157] = {
     {.types = JSON_OBJECT, .fields = fields_0, .field_count = 2, .closed = true},
     {.types = JSON_STRING, .min_length = 1},
     {.types = JSON_STRING},
@@ -428,8 +440,18 @@ static const json_schema schemas[148] = {
     {.types = JSON_ARRAY, .items = &schemas[146]},
     {.reference = &schemas[3]},
     {.reference = &schemas[64]},
+    {.types = JSON_OBJECT, .fields = fields_148, .field_count = 7, .closed = true},
+    {.literals = literals_149, .literal_count = 1, .format_version = true},
+    {.types = JSON_STRING, .max_length = 255, .pattern = PATTERN_NAME},
+    {.types = JSON_STRING, .max_length = 250, .pattern = PATTERN_NAME},
+    {.types = JSON_STRING, .pattern = PATTERN_HASH},
+    {.types = JSON_INTEGER, .bounded = true, .minimum = INT64_C(1), .maximum = INT64_C(4294967295)},
+    {.reference = &schemas[64]},
+    {.types = JSON_ARRAY, .items = &schemas[156], .min_count = 1},
+    {.reference = &schemas[92]},
 };
 
 #define GMOD_SCHEMA (&schemas[106])
 #define METADATA_SCHEMA (&schemas[122])
 #define TARGET_SCHEMA (&schemas[147])
+#define NATIVE_SCHEMA (&schemas[148])

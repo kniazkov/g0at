@@ -13,7 +13,8 @@
 typedef enum goat_module_json_kind {
     GOAT_MODULE_GMOD,
     GOAT_MODULE_METADATA,
-    GOAT_MODULE_TARGET
+    GOAT_MODULE_TARGET,
+    GOAT_MODULE_NATIVE
 } goat_module_json_kind;
 
 typedef enum goat_module_json_error {
