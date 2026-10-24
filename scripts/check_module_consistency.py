@@ -70,8 +70,9 @@ def archive(m, code=IMAGE, libraries=None, rehash=True):
         m = hashed(m, code)
     if libraries is None:
         libraries = {v['library']: b'not executable' for v in m.get('native', [])}
+    # These are semantic fixtures, not golden compressed bytes; host zlib is irrelevant.
     return ref.zip_bytes({'module.json': json.dumps(m, ensure_ascii=False).encode(),
-                          'bytecode.bin': code, **libraries})
+                          'bytecode.bin': code, **libraries}, compressed=False)
 
 
 def run(archives, expected=0, mode='off', descriptor=b'', index=0):
