@@ -1,5 +1,5 @@
 # Shared module infrastructure, independent of core and the Goat VM.
-add_library(goat_module STATIC identity.c module_json.c json_canonical.c module_normalize.c module_hash.c module_container.c ../lib/sha256.c)
+add_library(goat_module STATIC identity.c module_json.c json_canonical.c module_normalize.c module_hash.c module_container.c module_native.c module_native_host.c ../lib/sha256.c)
 target_include_directories(goat_module PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/../../include"
     "${CMAKE_CURRENT_SOURCE_DIR}"

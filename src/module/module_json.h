@@ -10,7 +10,11 @@
  * normalized document and frees it with yyjson_doc_free. On failure *out is NULL.
  * Does not validate bytecode, dependency graphs, analysis proofs or native ABI.
  */
-typedef enum goat_module_json_kind { GOAT_MODULE_GMOD, GOAT_MODULE_METADATA } goat_module_json_kind;
+typedef enum goat_module_json_kind {
+    GOAT_MODULE_GMOD,
+    GOAT_MODULE_METADATA,
+    GOAT_MODULE_TARGET
+} goat_module_json_kind;
 
 typedef enum goat_module_json_error {
     GOAT_MODULE_JSON_OK,

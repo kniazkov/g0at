@@ -83,10 +83,13 @@ jobs:
       - name: Child process primitives
         run: python3 scripts/check_child_process.py build/${{ matrix.compiler }}/child_process_testing build/${{ matrix.compiler }}/goat
       - name: Bounded ZIP infrastructure
+        env:
+          CC: ${{ matrix.compiler }}
         run: |
           python3 scripts/check_zip.py build/${{ matrix.compiler }}/zip_testing
           python3 scripts/check_module_container.py build/${{ matrix.compiler }}/module_container_testing
           python3 scripts/check_module_bytecode.py build/${{ matrix.compiler }}/module_bytecode_testing
+          python3 scripts/check_module_native.py build/${{ matrix.compiler }}/module_native_testing
       - name: Strict module JSON
         run: |
           python3 scripts/check_module_json.py build/${{ matrix.compiler }}/module_json_testing
@@ -300,6 +303,7 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_zip.py build/zip_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_container.py build/module_container_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_bytecode.py build/module_bytecode_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_native.py build/module_native_testing.exe
       - name: Strict module JSON
         shell: msys2 {0}
         env:

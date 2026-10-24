@@ -3,7 +3,8 @@
 ## Русский
 
 `src/module/module_json.h`: `goat_module_json_read(data, length, kind, &doc)`
-читает `.gmod` (`GOAT_MODULE_GMOD`) или `module.json` (`GOAT_MODULE_METADATA`).
+читает `.gmod` (`GOAT_MODULE_GMOD`) или `module.json` (`GOAT_MODULE_METADATA`), а также самостоятельный
+профиль `target.schema.json` (`GOAT_MODULE_TARGET`, см. [выбор native](module-native-api.md)).
 Длина задаётся в байтах; вход не обязан завершаться NUL и не изменяется.
 При успехе вызывающий владеет самостоятельным `yyjson_doc` и освобождает его
 через `yyjson_doc_free`. Исходный буфер можно сразу освободить. При ошибке
@@ -70,7 +71,8 @@ MINGW32/MINGW64/UCRT64. Проверяются положительные эта
 ## English
 
 `goat_module_json_read(data, length, kind, &doc)` in `src/module/module_json.h`
-reads `.gmod` (`GOAT_MODULE_GMOD`) or `module.json` (`GOAT_MODULE_METADATA`).
+reads `.gmod` (`GOAT_MODULE_GMOD`) or `module.json` (`GOAT_MODULE_METADATA`), and standalone
+`target.schema.json` profiles (`GOAT_MODULE_TARGET`; see [native selection](module-native-api.md)).
 The byte buffer need not be NUL-terminated and is never modified. Success returns
 an independently owned `yyjson_doc`; release it with `yyjson_doc_free`. The input
 may be freed immediately. Failure sets `doc` to NULL. Errors distinguish syntax/

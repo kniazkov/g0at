@@ -129,3 +129,6 @@ target_link_libraries(cleanup_service_testing PRIVATE core m)
 
 add_executable(module_bytecode_testing component_test/module_bytecode_testing.c)
 target_link_libraries(module_bytecode_testing PRIVATE core m)
+
+add_executable(module_native_testing component_test/module_native_testing.c)
+target_link_libraries(module_native_testing PRIVATE goat_module ${CMAKE_DL_LIBS})
