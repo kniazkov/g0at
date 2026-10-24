@@ -7,10 +7,9 @@
 #include "goat/module_identity.h"
 #include "lib/allocate.h"
 
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
-#ifndef _WIN32
-#    include <errno.h>
-#endif
 
 struct module_search {
     char *root;
@@ -222,6 +221,173 @@ done:
     return status;
 }
 
+module_search_status_t prepare_module_search_from_environment(const char *root,
+                                                              const char *module_dir,
+                                                              module_search_t **out,
+                                                              module_search_error_t *error) {
+    fs_error_t environment_error = {0};
+    char *environment = fs_environment("GOAT_MODULE_PATH", &environment_error);
+    if (!environment && environment_error.status != FS_NOT_FOUND) {
+        if (out)
+            *out = NULL;
+        if (error) {
+            clear_module_search_error(error);
+            error->status = MODULE_SEARCH_IO;
+            error->filesystem = environment_error;
+        } else
+            clear_fs_error(&environment_error);
+        return MODULE_SEARCH_IO;
+    }
+    clear_fs_error(&environment_error);
+    module_search_status_t status =
+        prepare_module_search(root, module_dir, environment, out, error);
+    FREE(environment);
+    return status;
+}
+
+static void diagnostic_append(char **text, size_t *length, const char *format, ...) {
+    va_list args, measure;
+    va_start(args, format);
+    va_copy(measure, args);
+    int size = vsnprintf(NULL, 0, format, measure);
+    va_end(measure);
+    if (size >= 0) {
+        char *next = ALLOC(*length + (size_t)size + 1);
+        if (*length)
+            memcpy(next, *text, *length);
+        vsnprintf(next + *length, (size_t)size + 1, format, args);
+        FREE(*text);
+        *text = next;
+        *length += (size_t)size;
+    }
+    va_end(args);
+}
+
+char *format_module_search_error(const module_search_error_t *error,
+                                 const char *name,
+                                 const char *version,
+                                 const char *consumer) {
+    const char *cause = "invalid search arguments";
+    if (error) {
+        switch (error->status) {
+            case MODULE_SEARCH_OK:
+                cause = "loaded successfully";
+                break;
+            case MODULE_SEARCH_NOT_FOUND:
+                cause = "not found";
+                break;
+            case MODULE_SEARCH_IO:
+                cause = "filesystem access or inspection failure";
+                break;
+            case MODULE_SEARCH_INVALID_MODULE:
+                cause = "invalid or corrupt module";
+                break;
+            case MODULE_SEARCH_IDENTITY:
+                cause = "module name/version mismatch";
+                break;
+            case MODULE_SEARCH_HASH:
+                cause = "mainHash mismatch";
+                break;
+            default:
+                break;
+        }
+    }
+    char *text = copy("", 0);
+    size_t length = 0;
+    diagnostic_append(&text,
+                      &length,
+                      "Module %s@%s: %s.\n",
+                      name ? name : "?",
+                      version ? version : "?",
+                      cause);
+    if (consumer)
+        diagnostic_append(&text, &length, "Required by %s.\n", consumer);
+    if (error && error->status == MODULE_SEARCH_IO) {
+        const char *filesystem_cause = "I/O failure";
+        switch (error->filesystem.status) {
+            case FS_ACCESS:
+                filesystem_cause = "access denied";
+                break;
+            case FS_NOT_FOUND:
+                filesystem_cause = "path disappeared or link target missing";
+                break;
+            case FS_INVALID:
+                filesystem_cause = "invalid path or object type";
+                break;
+            case FS_CHANGED:
+                filesystem_cause = "filesystem object changed";
+                break;
+            case FS_UNSUPPORTED:
+                filesystem_cause = "unsupported filesystem operation";
+                break;
+            default:
+                break;
+        }
+        diagnostic_append(&text, &length, "Cause: %s.\n", filesystem_cause);
+        diagnostic_append(&text,
+                          &length,
+                          "Filesystem: %s; category %d; native code %lu; path %s.\n",
+                          error->filesystem.operation ? error->filesystem.operation
+                                                      : "unknown operation",
+                          error->filesystem.status,
+                          error->filesystem.native_code,
+                          error->filesystem.path ? error->filesystem.path : "unknown");
+    }
+    if (error && error->status == MODULE_SEARCH_INVALID_MODULE)
+        diagnostic_append(&text,
+                          &length,
+                          "Validation status %d; failures %zu.\n",
+                          error->validation.status,
+                          error->validation.failures);
+    if (error && error->count) {
+        diagnostic_append(&text, &length, "Checked:\n");
+        for (size_t i = 0; i < error->count; i++)
+            diagnostic_append(&text, &length, "  %s\n", error->attempted[i]);
+        if (error->status != MODULE_SEARCH_OK && error->status != MODULE_SEARCH_NOT_FOUND)
+            diagnostic_append(&text,
+                              &length,
+                              "Stopped at: %s\n",
+                              error->attempted[error->count - 1]);
+    }
+    return text;
+}
+
+/* Some OSes report a non-directory ancestor as a missing path. Distinguish
+ * that case (and dangling directory links) from genuinely absent components.
+ * Probe ancestors only after an absent candidate, not lower-priority paths.
+ */
+static bool confirmed_absent(const char *path, fs_error_t *error) {
+    unsigned long native_code = error->native_code;
+    char *parent = copy(path, strlen(path));
+    bool absent = false;
+    for (;;) {
+        size_t n = parent_length(parent);
+        if (n >= strlen(parent))
+            break;
+        parent[n] = 0;
+        fs_info_t info;
+        clear_fs_error(error);
+        if (inspect_fs_path(parent, false, &info, error)) {
+            if (info.kind == FS_LINK && !inspect_fs_path(parent, true, &info, error))
+                break;
+            if (info.kind != FS_DIRECTORY) {
+                clear_fs_error(error);
+                error->status = FS_INVALID;
+                error->native_code = native_code;
+                error->operation = "require module search directory";
+                error->path = copy(parent, strlen(parent));
+                break;
+            }
+            absent = true;
+            break;
+        }
+        if (error->status != FS_NOT_FOUND)
+            break;
+    }
+    FREE(parent);
+    return absent;
+}
+
 static bool same(yyjson_val *metadata, const char *key, const char *expected) {
     yyjson_val *v = yyjson_obj_get(metadata, key);
     return yyjson_is_str(v) && yyjson_get_len(v) == strlen(expected)
@@ -271,11 +437,7 @@ module_search_status_t find_module(const module_search_t *search,
         append(&e->attempted, &e->count, path);
         fs_info_t info;
         if (!inspect_fs_path(path, false, &info, &e->filesystem)) {
-            if (e->filesystem.status == FS_NOT_FOUND
-#ifndef _WIN32
-                && e->filesystem.native_code != ENOTDIR
-#endif
-            ) {
+            if (e->filesystem.status == FS_NOT_FOUND && confirmed_absent(path, &e->filesystem)) {
                 clear_fs_error(&e->filesystem);
                 continue;
             }

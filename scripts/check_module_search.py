@@ -67,13 +67,15 @@ def paths(actual, expected):
 
 
 def run(root, module_dir='', environment='', name='sample', version='1', expected_hash='',
-        cwd=None, after_cwd='', mutation=None, status=OK, preparation=OK):
+        cwd=None, after_cwd='', mutation=None, status=OK, preparation=OK,
+        environment_mode='explicit', process_environment=None, after_environment='', identity=None):
     global COUNT
     COUNT += 1
     args = [EXE, str(root), str(module_dir), environment, name, version,
-            expected_hash, str(after_cwd)]
+            expected_hash, str(after_cwd), environment_mode, after_environment]
     p = subprocess.Popen(args, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE, text=True, encoding='utf-8')
+                         stderr=subprocess.PIPE, text=True, encoding='utf-8',
+                         env=process_environment, **(identity or {}))
     prepared = json.loads(p.stdout.readline())
     assert prepared['status'] == preparation, (COUNT, prepared, preparation)
     if mutation:
@@ -83,6 +85,11 @@ def run(root, module_dir='', environment='', name='sample', version='1', expecte
     result = json.loads(output) if output else None
     if preparation == OK:
         assert result['status'] == status, (COUNT, result, status)
+    if preparation == OK and status != OK:
+        assert result['diagnostic'], result
+        assert 'fixture.goat' in result['diagnostic'], result
+        for candidate in result['attempted']:
+            assert candidate in result['diagnostic'], result
     return prepared, result
 
 
@@ -118,6 +125,8 @@ with tempfile.TemporaryDirectory(prefix='goat-search-') as temp:
         candidates[index].unlink()
     _, result = run(source, explicit, environment, status=NOT_FOUND)
     paths(result['attempted'], candidates)
+    absence_diagnostic = result['diagnostic']
+    failure_diagnostics = []
     # No recursion, version guessing, or discovery from a library's directory.
     put(local / 'nested/sample/1.gbin', good)
     put(local / 'sample/2.gbin', good)
@@ -130,6 +139,9 @@ with tempfile.TemporaryDirectory(prefix='goat-search-') as temp:
         _, result = run(source, explicit, environment, expected_hash=digest, status=status)
         paths(result['attempted'], candidates[:1])
         assert result['archive'] is None
+        failure_diagnostics.append(result['diagnostic'])
+        assert str(candidates[1]) not in result['diagnostic'], result
+    assert len(set([absence_diagnostic] + failure_diagnostics)) >= 4
     put(candidates[0], good)
     run(source, explicit, environment, expected_hash=digest)
     run(source, explicit, environment, expected_hash='bad', status=ARGUMENT)
@@ -149,12 +161,35 @@ with tempfile.TemporaryDirectory(prefix='goat-search-') as temp:
                                                     str(explicit / '.'), '', str(env1), '']))
     paths(prepared['directories'], [local, explicit, env1])
     # Relative CLI/environment paths resolve from initial cwd, never the root directory.
-    relative = elsewhere / 'relative'
+    relative = elsewhere / 'relative-окружение'
     put(relative / 'sample/1.gbin', good)
-    prepared, result = run(source, './relative', '.relative-missing' + os.pathsep + './relative',
+    prepared, result = run(source, './relative-окружение', '.relative-missing' + os.pathsep + './relative-окружение',
                            cwd=elsewhere, after_cwd=root)
     paths(prepared['directories'], [local, relative, elsewhere / '.relative-missing'])
     paths([result['archive']], [relative / 'sample/1.gbin'])
+    # Rule 52: exercise relative environment paths without a CLI alias masking them.
+    changed = elsewhere / 'replacement'
+    put(changed / 'sample/1.gbin', b'must not reread environment')
+    process_environment = dict(os.environ, GOAT_MODULE_PATH='./relative-окружение')
+    prepared, result = run(source, cwd=elsewhere, after_cwd=root,
+                           environment_mode='process', process_environment=process_environment,
+                           after_environment='replacement')
+    paths(prepared['directories'], [local, relative])
+    paths([result['archive']], [relative / 'sample/1.gbin'])
+    # Rules 53-54: absent, empty and separator-only inputs never add cwd implicitly.
+    put(elsewhere / 'sample/1.gbin', b'empty elements must not mean cwd')
+    for value in (None, '', os.pathsep * 3):
+        process_environment = dict(os.environ)
+        process_environment.pop('GOAT_MODULE_PATH', None)
+        if value is not None:
+            process_environment['GOAT_MODULE_PATH'] = value
+        prepared, result = run(source, cwd=elsewhere, environment_mode='process',
+                               process_environment=process_environment, status=NOT_FOUND)
+        paths(prepared['directories'], [local])
+        paths(result['attempted'], [candidates[0]])
+    for mode in ('absent', 'explicit'):
+        prepared, _ = run(source, cwd=elsewhere, environment_mode=mode, status=NOT_FOUND)
+        paths(prepared['directories'], [local])
     # Separator is native. The other platform separator is literal on POSIX.
     if os.name != 'nt':
         literal = root / 'one;two'
@@ -222,30 +257,89 @@ with tempfile.TemporaryDirectory(prefix='goat-search-') as temp:
         _, result = run(source, explicit, environment, status=IO)
         paths(result['attempted'], candidates[:1])
         candidates[0].unlink()
-    # A later unavailable directory is irrelevant when the local candidate succeeds.
-    put(candidates[0], good)
+    # Rule 50: a regular file or dangling parent is not an absent directory.
+    non_directory = put(root / 'not-a-directory')
+    _, result = run(source, environment=str(non_directory / 'child') + os.pathsep + str(explicit),
+                    status=IO)
+    assert result['filesystem'] != 2 and result['native_code'], result
+    paths(result['attempted'], [candidates[0], non_directory / 'child/sample/1.gbin'])
+    try:
+        broken_parent = root / 'broken-parent'
+        broken_parent.symlink_to(root / 'missing-target', target_is_directory=True)
+    except OSError:
+        if os.name != 'nt':
+            raise
+    else:
+        _, result = run(source, environment=str(broken_parent / 'child') + os.pathsep + str(explicit),
+                        status=IO)
+        paths(result['attempted'], [candidates[0], broken_parent / 'child/sample/1.gbin'])
+    # Rules 49-50: prove real access denial, then require it to stop before a valid fallback.
+    # The ACL is scoped to a disposable fixture and always restored before cleanup.
     denied = root / 'denied'
-    (denied / 'child').mkdir(parents=True)
-    if os.name != 'nt':
-        denied.chmod(0)
-        try:
-            _, result = run(source, denied / 'child')
-            paths(result['attempted'], candidates[:1])
-        finally:
-            denied.chmod(0o700)
-    # Keep access failures distinct from absence when ACLs can actually be changed.
-    if os.name != 'nt' and os.geteuid() != 0:
-        put(candidates[0], good)
-        candidates[0].chmod(0)
-        try:
-            with candidates[0].open('rb'):
-                pass
-        except PermissionError:
-            _, result = run(source, explicit, environment, status=IO)
-            paths(result['attempted'], candidates[:1])
+    denied_candidate = put(denied / 'sample/1.gbin', good)
+    put(candidates[1], good)
+    identity = {}
+    if os.name != 'nt' and os.geteuid() == 0:
+        root.chmod(0o755)
+        identity = dict(user=65534, group=65534, extra_groups=[])
+    def restrict(path):
+        if os.name == 'nt':
+            rights = '*S-1-1-0:(OI)(CI)(RX)' if path.is_dir() else '*S-1-1-0:(RX)'
+            subprocess.run(['icacls', str(path), '/deny', rights],
+                           check=True, capture_output=True)
         else:
-            assert not os.environ.get('CI'), 'CI must enforce permission-denied search fixture'
-            print('Access-denied fixture unavailable: filesystem ignores mode bits')
+            path.chmod(0)
+    def restore(path, mode):
+        if os.name == 'nt':
+            subprocess.run(['icacls', str(path), '/remove:d', '*S-1-1-0'],
+                           check=True, capture_output=True)
+        else:
+            path.chmod(mode)
+    for blocked, directory in ((denied_candidate, False), (denied, True)):
+        restrict(blocked)
+        try:
+            probe = subprocess.run(
+                [sys.executable, '-c',
+                 'import os,sys; list(os.scandir(sys.argv[1]))' if directory else
+                 'import sys; open(sys.argv[1], "rb").read()', str(blocked)],
+                cwd=temp, capture_output=True, **identity)
+            if probe.returncode == 0:
+                assert not os.environ.get('CI'), 'CI must enforce access-denied search fixtures'
+                print('Access-denied fixture unavailable: filesystem ignores mode bits')
+                continue
+            assert b'PermissionError' in probe.stderr, probe.stderr
+            # First-candidate success must still ignore an inaccessible later directory.
+            put(candidates[0], good)
+            _, result = run(source, environment=str(denied), identity=identity)
+            paths(result['attempted'], candidates[:1])
+            candidates[0].unlink()
+            _, result = run(source, environment=os.pathsep.join(map(str, [denied, explicit])),
+                            identity=identity, status=IO)
+            assert result['filesystem'] == 3 and result['native_code'], result
+            assert result['operation'] and result['error_path'], result
+            paths(result['attempted'], [candidates[0], denied_candidate])
+            assert str(candidates[1]) not in result['diagnostic'], result
+            assert result['diagnostic'] not in [absence_diagnostic] + failure_diagnostics
+            if directory:
+                # Missing below an uninspectable directory is not proof of absence.
+                put(explicit / 'missing/1.gbin', archive(name='missing')[0])
+                _, result = run(source, name='missing',
+                                environment=os.pathsep.join(map(str, [denied, explicit])),
+                                identity=identity, status=IO)
+                assert result['filesystem'] == 3 and result['native_code'], result
+                paths(result['attempted'], [local / 'missing/1.gbin', denied / 'missing/1.gbin'])
         finally:
-            candidates[0].chmod(0o600)
+            restore(blocked, 0o755 if directory else 0o644)
+    if os.name != 'nt':
+        # Exact lookup needs search permission, not directory enumeration permission.
+        put(explicit / 'missing/1.gbin', archive(name='missing')[0])
+        denied.chmod(0o111)
+        try:
+            _, result = run(source, name='missing',
+                            environment=os.pathsep.join(map(str, [denied, explicit])),
+                            identity=identity)
+            paths(result['attempted'], [local / 'missing/1.gbin', denied / 'missing/1.gbin',
+                                        explicit / 'missing/1.gbin'])
+        finally:
+            denied.chmod(0o755)
 print(f'Module directory search: {COUNT} fixtures passed')

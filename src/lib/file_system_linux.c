@@ -120,7 +120,7 @@ char *fs_environment(const char *name, fs_error_t *error) {
         fs_fail(error, FS_NOT_FOUND, ENOENT, "environment", name);
         return NULL;
     }
-    if (!fs_valid(value, error))
+    if (*value && !fs_valid(value, error))
         return NULL;
     char *out = ALLOC(strlen(value) + 1);
     strcpy(out, value);

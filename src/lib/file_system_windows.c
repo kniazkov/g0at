@@ -115,12 +115,18 @@ char *fs_environment(const char *name, fs_error_t *error) {
         fs_native_error(error, "environment name", name);
         return NULL;
     }
+    SetLastError(ERROR_SUCCESS);
     DWORD size = GetEnvironmentVariableW(wide, NULL, 0);
     char *out = NULL;
+    if (!size && GetLastError() == ERROR_SUCCESS) {
+        out = ALLOC(1);
+        *out = 0;
+    }
     if (size) {
         wchar_t *value = ALLOC((size_t)size * sizeof(*value));
+        SetLastError(ERROR_SUCCESS);
         DWORD n = GetEnvironmentVariableW(wide, value, size);
-        if (n && n < size)
+        if (n < size && (n || GetLastError() == ERROR_SUCCESS))
             out = fs_utf8(value);
         else if (n)
             SetLastError(ERROR_INSUFFICIENT_BUFFER);

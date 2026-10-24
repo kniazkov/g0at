@@ -4235,3 +4235,22 @@ expected-mainHash mismatch or I/O failure never fall through to another copy.
 No recursive scan, version selection, graph traversal or code loading occurs.
 This is a tested internal API; CLI and whole-graph integration remain separate.
 See [API and tests](../../module-search-api.md).
+
+
+### Startup search-path edge rules (#237)
+
+The shared search API now captures `GOAT_MODULE_PATH` from the UTF-8 OS environment
+once at startup. Missing or empty values are valid; empty list entries are ignored,
+while an explicit `.` includes the initial cwd. Both relative environment entries
+and an explicit relative `--module-dir` are fixed against that cwd, independently
+of the real root's local `modules` directory. Later environment/cwd changes do not
+redirect the search object.
+
+Rules 49–55 are covered by the shared Linux/Windows fixtures: an unreadable file,
+a directory-access failure, a non-directory parent or a broken directory link
+stops lookup rather than hiding the problem with a later copy. Diagnostics identify
+the requested name/version and supplied consumer, distinguish absence from
+filesystem/validation/identity/hash failures, and list only actually checked paths.
+The diagnostic includes the stopping path and underlying filesystem cause/code.
+These remain internal APIs; CLI and dependency-graph integration are separate tasks.
+See [API and tests](../../module-search-api.md).
