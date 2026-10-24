@@ -298,13 +298,17 @@ with tempfile.TemporaryDirectory(prefix='goat-search-') as temp:
         else:
             path.chmod(mode)
     for blocked, directory in ((denied_candidate, False), (denied, True)):
-        restrict(blocked)
-        if os.name == 'nt' and directory:
-            # Remove the parent's attribute-access fallback as well as the
-            # denied directory's own read rights, without changing traversal.
-            subprocess.run(['icacls', str(denied_wrapper), '/deny', '*S-1-1-0:(RD)'],
-                           check=True, capture_output=True)
+        wrapper_attempted = False
         try:
+            # Setup belongs inside the cleanup scope: even a failed command
+            # may already have applied part of its ACL update.
+            restrict(blocked)
+            if os.name == 'nt' and directory:
+                # Remove the parent's attribute-access fallback as well as the
+                # denied directory's own read rights, without changing traversal.
+                wrapper_attempted = True
+                subprocess.run(['icacls', str(denied_wrapper), '/deny', '*S-1-1-0:(RD)'],
+                               check=True, capture_output=True)
             if os.name == 'nt':
                 probe = subprocess.run([EXE, '--probe', str(blocked),
                                         'directory' if directory else 'file'],
@@ -345,9 +349,12 @@ with tempfile.TemporaryDirectory(prefix='goat-search-') as temp:
         finally:
             # Restore parent enumeration first: icacls needs attribute access
             # to the child even though its DACL editing rights were retained.
-            if os.name == 'nt' and directory:
-                restore(denied_wrapper, 0o755)
-            restore(blocked, 0o755 if directory else 0o644)
+            try:
+                if wrapper_attempted:
+                    restore(denied_wrapper, 0o755)
+            finally:
+                # Attempt child restoration even if parent restoration fails.
+                restore(blocked, 0o755 if directory else 0o644)
     if os.name != 'nt':
         # Exact lookup needs search permission, not directory enumeration permission.
         put(explicit / 'missing/1.gbin', archive(name='missing')[0])
