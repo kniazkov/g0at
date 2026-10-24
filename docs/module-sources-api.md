@@ -4,7 +4,8 @@
 `.gmod` builds and direct `.goat` inputs use `module_sources_read`; the boolean
 selects the input kind explicitly, not by suffix. The existing CLI is integrated
 in #191; this API does not implement runtime `include` (#194), file scopes (#193),
-import extraction (#187), or build/output module-directory selection (#188/#237).
+build/output module-directory selection (#188/#237). Static imports consume this
+graph through [module_imports_collect](module-imports-api.md) (#187).
 
 ## Ownership and ordering
 
