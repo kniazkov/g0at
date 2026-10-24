@@ -143,28 +143,46 @@ finish(goat_native_error *error, goat_native_status status, size_t index) {
     return status;
 }
 
-goat_native_status goat_module_native_validate(const goat_module_container *container,
-                                               goat_native_error *error) {
-    if (!container)
+static bool variant_valid(yyjson_val *variant) {
+    goat_native_environment required;
+    bool unknown;
+    if (!target(yyjson_obj_get(variant, "target"), &required, &unknown))
+        return false;
+    yyjson_val *library = yyjson_obj_get(variant, "library");
+    const char *suffix = required.os == GOAT_OS_WINDOWS ? ".dll" : ".so";
+    size_t length = yyjson_get_len(library), n = strlen(suffix);
+    if (length < n || memcmp(yyjson_get_str(library) + length - n, suffix, n))
+        return false;
+    goat_module_abi_error abi = goat_module_abi_validate(variant);
+    return abi == GOAT_ABI_OK || abi == GOAT_ABI_UNSUPPORTED;
+}
+
+goat_native_status goat_module_native_validate_diagnostics(const goat_module_container *container,
+                                                           goat_native_error *error,
+                                                           goat_native_diagnostic callback,
+                                                           void *context) {
+    if (!container) {
+        if (callback)
+            callback(GOAT_NATIVE_ARGUMENT, SIZE_MAX, context);
         return finish(error, GOAT_NATIVE_ARGUMENT, SIZE_MAX);
+    }
     yyjson_val *variants =
         yyjson_obj_get(yyjson_doc_get_root(goat_module_container_metadata(container)), "native");
+    size_t first = SIZE_MAX;
     for (size_t i = 0; i < yyjson_arr_size(variants); i++) {
-        yyjson_val *variant = yyjson_arr_get(variants, i);
-        goat_native_environment required;
-        bool unknown;
-        if (!target(yyjson_obj_get(variant, "target"), &required, &unknown))
-            return finish(error, GOAT_NATIVE_INVALID_METADATA, i);
-        yyjson_val *library = yyjson_obj_get(variant, "library");
-        const char *suffix = required.os == GOAT_OS_WINDOWS ? ".dll" : ".so";
-        size_t length = yyjson_get_len(library), n = strlen(suffix);
-        if (length < n || memcmp(yyjson_get_str(library) + length - n, suffix, n))
-            return finish(error, GOAT_NATIVE_INVALID_METADATA, i);
-        goat_module_abi_error abi = goat_module_abi_validate(variant);
-        if (abi != GOAT_ABI_OK && abi != GOAT_ABI_UNSUPPORTED)
-            return finish(error, GOAT_NATIVE_INVALID_METADATA, i);
+        if (!variant_valid(yyjson_arr_get(variants, i))) {
+            if (first == SIZE_MAX)
+                first = i;
+            if (callback)
+                callback(GOAT_NATIVE_INVALID_METADATA, i, context);
+        }
     }
-    return finish(error, GOAT_NATIVE_OK, SIZE_MAX);
+    return finish(error, first == SIZE_MAX ? GOAT_NATIVE_OK : GOAT_NATIVE_INVALID_METADATA, first);
+}
+
+goat_native_status goat_module_native_validate(const goat_module_container *container,
+                                               goat_native_error *error) {
+    return goat_module_native_validate_diagnostics(container, error, NULL, NULL);
 }
 
 goat_native_status goat_module_native_select(const goat_module_container *container,

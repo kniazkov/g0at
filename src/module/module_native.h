@@ -113,3 +113,18 @@ const char *goat_native_status_string(goat_native_status status);
  */
 goat_native_status goat_module_native_validate(const goat_module_container *container,
                                                goat_native_error *error);
+
+/** Called once for each malformed variant, in normalized metadata array order.
+ * SIZE_MAX identifies an invalid API argument. No callbacks denote success.
+ */
+typedef void (*goat_native_diagnostic)(goat_native_status status,
+                                       size_t variant_index,
+                                       void *context);
+/** Validate all independent native records and report failures. The returned
+ * status/error identify the first failure, preserving validate's contract.
+ * Does not select or load a native library, even after a successful record.
+ */
+goat_native_status goat_module_native_validate_diagnostics(const goat_module_container *container,
+                                                           goat_native_error *error,
+                                                           goat_native_diagnostic callback,
+                                                           void *context);

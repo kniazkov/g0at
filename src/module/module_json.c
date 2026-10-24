@@ -5,6 +5,7 @@
 
 #include <goat/module_identity.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -166,9 +167,53 @@ static bool pattern_valid(yyjson_val *v, const json_schema *s) {
     return false;
 }
 
-static goat_module_json_error shape(yyjson_val *v, const json_schema *s) {
+typedef struct {
+    goat_module_json_diagnostic callback;
+    void *context;
+    goat_module_json_error first;
+} diagnostics;
+
+static goat_module_json_error
+report(diagnostics *d, goat_module_json_error error, const char *path, size_t length) {
+    if (error && d) {
+        if (!d->first || error == GOAT_MODULE_JSON_MEMORY)
+            d->first = error;
+        if (d->callback)
+            d->callback(error, path, length, d->context);
+    }
+    return error;
+}
+
+/* JSON pointers are length-delimited: keys may contain embedded NUL. */
+static char *child_path(const char *path,
+                        size_t length,
+                        const char *key,
+                        size_t key_length,
+                        size_t *out_length) {
+    if (length > SIZE_MAX - 2 || key_length > (SIZE_MAX - length - 2) / 2)
+        return NULL;
+    char *result = malloc(length + 2 * key_length + 2);
+    if (!result)
+        return NULL;
+    memcpy(result, path, length);
+    size_t n = length;
+    result[n++] = '/';
+    for (size_t i = 0; i < key_length; i++) {
+        if (key[i] == '~' || key[i] == '/') {
+            result[n++] = '~';
+            result[n++] = key[i] == '~' ? '0' : '1';
+        } else
+            result[n++] = key[i];
+    }
+    result[n] = 0;
+    *out_length = n;
+    return result;
+}
+
+static goat_module_json_error
+shape(yyjson_val *v, const json_schema *s, diagnostics *d, const char *path, size_t path_length) {
     if (s->reference)
-        return shape(v, s->reference);
+        return shape(v, s->reference, d, path, path_length);
     int64_t number = 0;
     unsigned type = yyjson_is_obj(v)                ? JSON_OBJECT
                     : yyjson_is_arr(v)              ? JSON_ARRAY
@@ -178,7 +223,7 @@ static goat_module_json_error shape(yyjson_val *v, const json_schema *s) {
                     : goat_json_integer(v, &number) ? JSON_INTEGER
                                                     : 0;
     if (!type || (s->types && !(s->types & type)))
-        return GOAT_MODULE_JSON_INVALID_FIELD;
+        return report(d, GOAT_MODULE_JSON_INVALID_FIELD, path, path_length);
     if (s->literal_count) {
         bool match = false;
         for (size_t i = 0; i < s->literal_count; i++) {
@@ -193,16 +238,21 @@ static goat_module_json_error shape(yyjson_val *v, const json_schema *s) {
                 match |= number == strtoll(lit->text, NULL, 10);
         }
         if (!match)
-            return s->format_version && type == JSON_INTEGER ? GOAT_MODULE_JSON_UNSUPPORTED_VERSION
-                                                             : GOAT_MODULE_JSON_INVALID_FIELD;
+            return report(d,
+                          s->format_version && type == JSON_INTEGER
+                              ? GOAT_MODULE_JSON_UNSUPPORTED_VERSION
+                              : GOAT_MODULE_JSON_INVALID_FIELD,
+                          path,
+                          path_length);
     }
     if (type == JSON_INTEGER && s->bounded && (number < s->minimum || number > s->maximum))
-        return GOAT_MODULE_JSON_INVALID_FIELD;
+        return report(d, GOAT_MODULE_JSON_INVALID_FIELD, path, path_length);
     if (type == JSON_STRING) {
         size_t n = yyjson_get_len(v);
         if (n < s->min_length || (s->max_length && n > s->max_length) || !pattern_valid(v, s))
-            return GOAT_MODULE_JSON_INVALID_FIELD;
+            return report(d, GOAT_MODULE_JSON_INVALID_FIELD, path, path_length);
     }
+    goat_module_json_error first = GOAT_MODULE_JSON_OK;
     if (type == JSON_OBJECT) {
         yyjson_obj_iter it = yyjson_obj_iter_with(v);
         yyjson_val *key;
@@ -213,44 +263,80 @@ static goat_module_json_error shape(yyjson_val *v, const json_schema *s) {
                     child = s->fields[i].schema;
                     break;
                 }
+            size_t length = 0;
+            char *p =
+                child_path(path, path_length, yyjson_get_str(key), yyjson_get_len(key), &length);
+            if (!p)
+                return report(d, GOAT_MODULE_JSON_MEMORY, path, path_length);
+            goat_module_json_error err = GOAT_MODULE_JSON_OK;
             if (!child && s->closed)
-                return GOAT_MODULE_JSON_UNKNOWN_FIELD;
-            if (s->keys) {
-                goat_module_json_error err = shape(key, s->keys);
-                if (err != GOAT_MODULE_JSON_OK)
-                    return err;
+                err = report(d, GOAT_MODULE_JSON_UNKNOWN_FIELD, p, length);
+            else {
+                if (s->keys)
+                    err = shape(key, s->keys, d, p, length);
+                if (child) {
+                    goat_module_json_error value_error =
+                        shape(yyjson_obj_iter_get_val(key), child, d, p, length);
+                    if (!err)
+                        err = value_error;
+                }
             }
-            if (child) {
-                goat_module_json_error err = shape(yyjson_obj_iter_get_val(key), child);
-                if (err != GOAT_MODULE_JSON_OK)
-                    return err;
+            free(p);
+            if (!first)
+                first = err;
+            if (err == GOAT_MODULE_JSON_MEMORY)
+                return err;
+        }
+        for (size_t i = 0; i < s->field_count; i++) {
+            if (s->fields[i].required && !yyjson_obj_get(v, s->fields[i].name)) {
+                size_t length = 0;
+                char *p = child_path(path,
+                                     path_length,
+                                     s->fields[i].name,
+                                     strlen(s->fields[i].name),
+                                     &length);
+                if (!p)
+                    return report(d, GOAT_MODULE_JSON_MEMORY, path, path_length);
+                goat_module_json_error err = report(d, GOAT_MODULE_JSON_INVALID_FIELD, p, length);
+                free(p);
+                if (!first)
+                    first = err;
             }
         }
-        for (size_t i = 0; i < s->field_count; i++)
-            if (s->fields[i].required && !yyjson_obj_get(v, s->fields[i].name))
-                return GOAT_MODULE_JSON_INVALID_FIELD;
     }
     if (type == JSON_ARRAY) {
         size_t n = yyjson_arr_size(v);
         if (n < s->min_count || (s->max_count && n > s->max_count))
-            return GOAT_MODULE_JSON_INVALID_FIELD;
+            first = report(d, GOAT_MODULE_JSON_INVALID_FIELD, path, path_length);
         size_t i, max;
         yyjson_val *item;
         yyjson_arr_foreach(v, i, max, item) {
-            goat_module_json_error err = shape(item, s->items);
-            if (err != GOAT_MODULE_JSON_OK)
-                return err;
-            if (s->unique) {
-                /* v1 uniqueItems arrays contain strings only. */
+            char index[32];
+            snprintf(index, sizeof(index), "%zu", i);
+            size_t length = 0;
+            char *p = child_path(path, path_length, index, strlen(index), &length);
+            if (!p)
+                return report(d, GOAT_MODULE_JSON_MEMORY, path, path_length);
+            goat_module_json_error err = shape(item, s->items, d, p, length);
+            if (!err && s->unique) {
+                /* v1 uniqueItems arrays contain strings only. Invalid prior
+                 * elements must not participate in string comparisons. */
                 for (size_t j = 0; j < i; j++) {
                     yyjson_val *prev = yyjson_arr_get(v, j);
-                    if (!compare_keys(&prev, &item))
-                        return GOAT_MODULE_JSON_INVALID_FIELD;
+                    if (yyjson_is_str(prev) && yyjson_is_str(item) && !compare_keys(&prev, &item)) {
+                        err = report(d, GOAT_MODULE_JSON_INVALID_FIELD, p, length);
+                        break;
+                    }
                 }
             }
+            free(p);
+            if (!first)
+                first = err;
+            if (err == GOAT_MODULE_JSON_MEMORY)
+                return err;
         }
     }
-    return GOAT_MODULE_JSON_OK;
+    return first;
 }
 
 static bool equal_text(yyjson_val *a, yyjson_val *b) {
@@ -373,38 +459,62 @@ normalize(yyjson_doc *doc, goat_module_json_kind kind, goat_module_json_error *e
     return result;
 }
 
-goat_module_json_error goat_module_json_read(const char *data,
-                                             size_t length,
-                                             goat_module_json_kind kind,
-                                             yyjson_doc **out) {
+goat_module_json_error goat_module_json_read_diagnostics(const char *data,
+                                                         size_t length,
+                                                         goat_module_json_kind kind,
+                                                         yyjson_doc **out,
+                                                         goat_module_json_diagnostic callback,
+                                                         void *context) {
+    diagnostics d = {callback, context, GOAT_MODULE_JSON_OK};
     if (!out)
-        return GOAT_MODULE_JSON_INVALID_FIELD;
+        return report(&d, GOAT_MODULE_JSON_INVALID_FIELD, "", 0);
     *out = NULL;
     if (kind != GOAT_MODULE_GMOD && kind != GOAT_MODULE_METADATA && kind != GOAT_MODULE_TARGET
         && kind != GOAT_MODULE_NATIVE)
-        return GOAT_MODULE_JSON_INVALID_FIELD;
+        return report(&d, GOAT_MODULE_JSON_INVALID_FIELD, "", 0);
     if (!data || (length >= 3 && !memcmp(data, "\xef\xbb\xbf", 3)))
-        return GOAT_MODULE_JSON_SYNTAX;
-    yyjson_doc *doc = yyjson_read(data, length, YYJSON_READ_NUMBER_AS_RAW);
+        return report(&d, GOAT_MODULE_JSON_SYNTAX, "", 0);
+    yyjson_read_err read_error;
+    yyjson_doc *doc =
+        yyjson_read_opts((char *)data, length, YYJSON_READ_NUMBER_AS_RAW, NULL, &read_error);
     if (!doc)
-        return GOAT_MODULE_JSON_SYNTAX;
+        return report(&d,
+                      read_error.code == YYJSON_READ_ERROR_MEMORY_ALLOCATION
+                          ? GOAT_MODULE_JSON_MEMORY
+                          : GOAT_MODULE_JSON_SYNTAX,
+                      "",
+                      0);
     yyjson_val *root = yyjson_doc_get_root(doc);
     goat_module_json_error err = preflight(root, 0);
+    if (err)
+        report(&d, err, "", 0);
     if (err == GOAT_MODULE_JSON_OK)
         err = shape(root,
                     kind == GOAT_MODULE_GMOD       ? GMOD_SCHEMA
                     : kind == GOAT_MODULE_METADATA ? METADATA_SCHEMA
                     : kind == GOAT_MODULE_TARGET   ? TARGET_SCHEMA
-                                                   : NATIVE_SCHEMA);
+                                                   : NATIVE_SCHEMA,
+                    &d,
+                    "",
+                    0);
     if (err == GOAT_MODULE_JSON_OK && !records_valid(root, kind))
-        err = GOAT_MODULE_JSON_INVALID_FIELD;
+        err = report(&d, GOAT_MODULE_JSON_INVALID_FIELD, "", 0);
     if (err == GOAT_MODULE_JSON_OK) {
         *out = normalize(doc, kind, &err);
         if (!*out && err == GOAT_MODULE_JSON_OK)
             err = GOAT_MODULE_JSON_MEMORY;
+        if (err)
+            report(&d, err, "", 0);
     }
     yyjson_doc_free(doc);
-    return err;
+    return d.first == GOAT_MODULE_JSON_MEMORY ? d.first : err;
+}
+
+goat_module_json_error goat_module_json_read(const char *data,
+                                             size_t length,
+                                             goat_module_json_kind kind,
+                                             yyjson_doc **out) {
+    return goat_module_json_read_diagnostics(data, length, kind, out, NULL, NULL);
 }
 
 const char *goat_module_json_error_string(goat_module_json_error error) {
