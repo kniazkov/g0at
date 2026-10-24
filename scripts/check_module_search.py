@@ -343,9 +343,11 @@ with tempfile.TemporaryDirectory(prefix='goat-search-') as temp:
                 assert result['filesystem'] == 3 and result['native_code'], result
                 paths(result['attempted'], [local / 'missing/1.gbin', denied / 'missing/1.gbin'])
         finally:
-            restore(blocked, 0o755 if directory else 0o644)
+            # Restore parent enumeration first: icacls needs attribute access
+            # to the child even though its DACL editing rights were retained.
             if os.name == 'nt' and directory:
                 restore(denied_wrapper, 0o755)
+            restore(blocked, 0o755 if directory else 0o644)
     if os.name != 'nt':
         # Exact lookup needs search permission, not directory enumeration permission.
         put(explicit / 'missing/1.gbin', archive(name='missing')[0])
