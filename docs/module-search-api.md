@@ -1,4 +1,4 @@
-# Ordered module directory search (#188)
+# Ordered module directory search (#188, #237)
 
 `vm/module_search.h` supplies the shared lookup primitive for build and run.
 It is an internal, nonexecuting API, not yet CLI integration (#191/#218), graph
@@ -51,10 +51,41 @@ failure or validator result, and a distinct status for absence, identity and has
 mismatch. Preparation failure and lookup failure clear the output pointer. NULL
 error pointers are supported. Release search objects with `free_module_search`
 and successful snapshots with `free_validated_module`. Allocation follows the
-existing fatal-OOM policy; recoverable loader OOM remains #236. More detailed
-path diagnostics/edge rules remain tracked in #237/#190.
+existing fatal-OOM policy; recoverable loader OOM remains #236. Dependency-chain enrichment remains tracked in #190.
 
 `scripts/check_module_search.py build/module_search_testing` exercises directory
 precedence, aliases, platform separators, real-root `.gmod`/`.goat`/`.gbin` behavior,
 fixed cwd/symlink roots, exact/nonrecursive lookup, first-candidate failure and
 snapshot ownership. Linux and MinGW CI run the same fixture suite.
+
+## Startup paths and strict failures (#237, decisions 49–55)
+
+At startup, call `prepare_module_search_from_environment(root, module_dir, ...)`
+to capture `GOAT_MODULE_PATH` through the UTF-8 platform adapter. It accepts both
+an unset variable and an empty value; empty components never imply cwd. Use an
+explicit `.` to include cwd. The explicit-snapshot API remains available for
+embedding/testing. Both APIs fix relative environment entries and `--module-dir`
+against the cwd at preparation, not against the main file's parent. Later cwd
+or environment mutations cannot redirect the retained search set. Capture must
+happen once at program startup; CLI/graph wiring remains the subsequent tasks.
+
+Only reliably absent paths permit trying the next directory. Access-denied
+files/directories, a file used as a directory, and dangling intermediate links
+stop lookup. Unused directories do not need to exist or be accessible. Existing
+candidate read failures are terminal even when the OS reports disappearance
+between inspection and read. A valid copy later in the list never masks failure.
+
+`format_module_search_error(error, name, version, consumer)` returns an owned
+English diagnostic (release with `FREE`). It distinguishes missing dependencies,
+filesystem failure, invalid/corrupt modules, identity mismatch and mainHash
+mismatch. The message includes the requested identity, supplied consumer, only
+actually checked paths in order, and the stopping path for candidate failures.
+Filesystem diagnostics include a readable category, operation, exact path and
+native error code; validation diagnostics retain their category/failure count.
+Detailed validator callbacks remain available through `find_module` options.
+No graph-derived consumer information is invented by this primitive.
+
+The shared fixture suite covers every rule 49–55 on Linux and Windows, including
+real denied-read and denied-directory access (chmod/unprivileged POSIX process
+or scoped Windows ACL restored in `finally`). CI requires permission checks to
+be enforced; unsupported local filesystems report that limitation explicitly.

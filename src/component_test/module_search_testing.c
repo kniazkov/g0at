@@ -2,6 +2,9 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Fixed search paths and first-candidate validation fixture driver.
  */
+#ifndef _WIN32
+#    define _POSIX_C_SOURCE 200809L
+#endif
 #include "lib/allocate.h"
 #include "vm/module_search.h"
 
@@ -11,6 +14,9 @@
 #include <string.h>
 #ifdef _WIN32
 #    include <direct.h>
+void begin_module_search_permissions(void);
+void end_module_search_permissions(void);
+unsigned long probe_module_search_access(const char *path, int directory);
 #    define chdir _chdir
 #else
 #    include <unistd.h>
@@ -56,15 +62,30 @@ int main(int argc, char **argv) {
     fs_error_t arguments_error = {0};
     assert(fs_arguments(&argc, &argv, &arguments_error));
     clear_fs_error(&arguments_error);
+    begin_module_search_permissions();
+    if (argc == 4 && !strcmp(argv[1], "--probe")) {
+        printf("%lu\n", probe_module_search_access(argv[2], !strcmp(argv[3], "directory")));
+        end_module_search_permissions();
+        free_fs_arguments(argc, argv);
+        assert(!get_allocated_memory_size());
+        return 0;
+    }
 #endif
-    assert(argc == 8);
+    assert(argc == 10);
     module_search_t *search = NULL;
     module_search_error_t error = {0};
-    module_search_status_t status = prepare_module_search(argv[1],
-                                                          *argv[2] ? argv[2] : NULL,
-                                                          *argv[3] ? argv[3] : NULL,
-                                                          &search,
-                                                          &error);
+    module_search_status_t status;
+    if (!strcmp(argv[8], "process"))
+        status = prepare_module_search_from_environment(argv[1],
+                                                        *argv[2] ? argv[2] : NULL,
+                                                        &search,
+                                                        &error);
+    else
+        status = prepare_module_search(argv[1],
+                                       *argv[2] ? argv[2] : NULL,
+                                       !strcmp(argv[8], "absent") ? NULL : argv[3],
+                                       &search,
+                                       &error);
     printf("{\"status\":%d,\"root\":", status);
     quoted(search ? module_search_root(search) : NULL);
     fputs(",\"directories\":[", stdout);
@@ -75,11 +96,22 @@ int main(int argc, char **argv) {
             quoted(module_search_directory(search, i));
         }
     }
-    puts("]}");
+    fputs("],\"operation\":", stdout);
+    quoted(error.filesystem.operation);
+    fputs(",\"error_path\":", stdout);
+    quoted(error.filesystem.path);
+    printf(",\"native_code\":%lu}\n", error.filesystem.native_code);
     fflush(stdout);
     if (status == MODULE_SEARCH_OK) {
         /* Python may retarget the root link after preparation, before lookup. */
         assert(getchar() == '\n');
+        if (*argv[9]) {
+#ifdef _WIN32
+            assert(!_putenv_s("GOAT_MODULE_PATH", argv[9]));
+#else
+            assert(!setenv("GOAT_MODULE_PATH", argv[9], 1));
+#endif
+        }
         if (*argv[7])
             assert(!chdir(argv[7]));
         validated_module_t *module = (void *)(uintptr_t)1;
@@ -95,7 +127,17 @@ int main(int argc, char **argv) {
                 putchar(',');
             quoted(error.attempted[i]);
         }
-        fputs("],\"archive\":", stdout);
+        fputs("],\"native_code\":", stdout);
+        printf("%lu", error.filesystem.native_code);
+        fputs(",\"operation\":", stdout);
+        quoted(error.filesystem.operation);
+        fputs(",\"error_path\":", stdout);
+        quoted(error.filesystem.path);
+        char *diagnostic = format_module_search_error(&error, argv[4], argv[5], "fixture.goat");
+        fputs(",\"diagnostic\":", stdout);
+        quoted(diagnostic);
+        FREE(diagnostic);
+        fputs(",\"archive\":", stdout);
         quoted(module ? validated_module_archive(module) : NULL);
         /* Reuse one graph-wide search set; clearing prior diagnostics cannot
          * invalidate a previously returned snapshot. */
@@ -133,6 +175,7 @@ int main(int argc, char **argv) {
     free_module_search(search);
     clear_module_search_error(&error);
 #ifdef _WIN32
+    end_module_search_permissions();
     free_fs_arguments(argc, argv);
 #endif
     assert(!get_allocated_memory_size());

@@ -41,6 +41,21 @@ module_search_status_t prepare_module_search(const char *root,
                                              const char *environment,
                                              module_search_t **out,
                                              module_search_error_t *error);
+/** Capture GOAT_MODULE_PATH through the UTF-8 OS adapter at program startup.
+ * Unset and empty values are valid. Subsequent environment/cwd changes have no effect.
+ */
+module_search_status_t prepare_module_search_from_environment(const char *root,
+                                                              const char *module_dir,
+                                                              module_search_t **out,
+                                                              module_search_error_t *error);
+/** Owned English diagnostic (FREE), including consumer and only checked paths.
+ * Structured filesystem/validation details remain available for richer frontends.
+ * NULL error/name/version/consumer arguments are permitted.
+ */
+char *format_module_search_error(const module_search_error_t *error,
+                                 const char *name,
+                                 const char *version,
+                                 const char *consumer);
 void free_module_search(module_search_t *search);
 void clear_module_search_error(module_search_error_t *error);
 const char *module_search_root(const module_search_t *search);
