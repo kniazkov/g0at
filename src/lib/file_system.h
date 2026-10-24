@@ -47,6 +47,21 @@ void clear_fs_error(fs_error_t *error);
 bool validate_fs_path(const char *path, size_t length, fs_error_t *error);
 char *join_fs_path(const char *directory, const char *name, fs_error_t *error);
 char *absolute_fs_path(const char *path, fs_error_t *error);
+/** @brief Resolve an existing path including symbolic links, returning owned UTF-8.
+ * Distinct canonical hard-link names remain distinct. Windows output uses / and
+ * rejects drive-relative and current-drive-root-relative input. Free with FREE.
+ */
+char *canonical_fs_path(const char *path, fs_error_t *error);
+/** @brief Read a regular file with a checked opened handle, never blocking on a FIFO.
+ * Follows symbolic links. On success data is owned (FREE), size excludes a trailing
+ * convenience NUL, and size <= limit. On failure both outputs are cleared.
+ * No shell expansion or trimming. Windows incomplete paths are rejected.
+ */
+bool read_fs_regular_file(const char *path,
+                          size_t limit,
+                          void **data,
+                          size_t *size,
+                          fs_error_t *error);
 char *temporary_fs_directory(fs_error_t *error);
 /** @brief Returns an owned UTF-8 environment value; absence is FS_NOT_FOUND. */
 char *fs_environment(const char *name, fs_error_t *error);

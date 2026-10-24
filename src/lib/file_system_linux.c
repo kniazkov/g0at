@@ -55,6 +55,63 @@ char *absolute_fs_path(const char *path, fs_error_t *error) {
     return out;
 }
 
+char *canonical_fs_path(const char *path, fs_error_t *error) {
+    if (!fs_valid(path, error))
+        return NULL;
+    char *resolved = realpath(path, NULL);
+    if (!resolved) {
+        fs_native_error(error, "canonical path", path);
+        return NULL;
+    }
+    if (!fs_valid(resolved, error)) {
+        free(resolved);
+        return NULL;
+    }
+    char *out = ALLOC(strlen(resolved) + 1);
+    strcpy(out, resolved);
+    free(resolved);
+    return out;
+}
+
+bool read_fs_regular_file(const char *path,
+                          size_t limit,
+                          void **data,
+                          size_t *size,
+                          fs_error_t *error) {
+    if (data)
+        *data = NULL;
+    if (size)
+        *size = 0;
+    if (!data || !size || limit == SIZE_MAX)
+        return fs_fail(error, FS_INVALID, EINVAL, "regular file output/limit", path);
+    if (!fs_valid(path, error))
+        return false;
+    /* O_NONBLOCK prevents waiting for a writer if a regular path is replaced by
+     * a FIFO. Only the opened descriptor's type authorizes any read. */
+    int fd = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+    if (fd < 0)
+        return fs_native_error(error, "open regular file", path);
+    struct stat info;
+    bool ok = !fstat(fd, &info);
+    if (!ok)
+        fs_native_error(error, "stat opened regular file", path);
+    else if (!S_ISREG(info.st_mode))
+        ok = fs_fail(error, FS_INVALID, EINVAL, "require regular file", path);
+    else if (info.st_size < 0 || (uint64_t)info.st_size > limit)
+        ok = fs_fail(error, FS_INVALID, EFBIG, "regular file size limit", path);
+    if (!ok) {
+        close(fd);
+        return false;
+    }
+    FILE *file = fdopen(fd, "rb");
+    if (!file) {
+        fs_native_error(error, "regular file stream", path);
+        close(fd);
+        return false;
+    }
+    return fs_read_regular_stream(file, path, limit, data, size, error);
+}
+
 char *fs_environment(const char *name, fs_error_t *error) {
     if (!fs_valid(name, error))
         return NULL;

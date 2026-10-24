@@ -4161,3 +4161,20 @@ and compiler build identifiers without adding a producer or packaging-machine da
 Compiler provenance generation, CLI display and interactive author choice during
 merge remain later tasks rather than responsibilities of this API.
 [Contract and tests](../../module-information-api.md).
+
+### Source graph construction (#186)
+
+The shared `module_sources_read` API reads a fully validated `.gmod` or a direct
+source input and creates an owned source-text snapshot. Descriptor and source
+paths are canonicalized before relative resolution, using real directories rather
+than symlink directories. Different hardlink paths remain distinct files.
+Depth-first traversal uses an explicit stack: main is file zero, cycles terminate,
+and includes in unexecuted branches and functions are discovered as well. Nearby
+files and unused dependency declarations do not implicitly add sources.
+
+Discovery reuses the common scanner's literals, comments and escaping, checking
+include syntax and brackets without executing code. Full language parsing and file
+scopes belong to subsequent compilation phases; CLI integration and runtime include
+remain separate tasks. Logical names and external flags are separate from absolute
+build paths; those paths and source text must not be serialized into `.gbin`.
+See the [source API](../../module-sources-api.md) for ownership, limits and tests.

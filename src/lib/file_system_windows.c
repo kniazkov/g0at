@@ -171,6 +171,126 @@ static HANDLE open_path(const char *path, DWORD access, bool follow, DWORD share
     return handle;
 }
 
+static bool source_path_valid(const char *path, fs_error_t *error) {
+    if (!fs_valid(path, error))
+        return false;
+    size_t length = strlen(path);
+    bool slash = path[0] == '/' || path[0] == '\\';
+    bool second_slash = length > 1 && (path[1] == '/' || path[1] == '\\');
+    bool drive_relative =
+        length > 1 && path[1] == ':' && (length == 2 || (path[2] != '/' && path[2] != '\\'));
+    if ((slash && !second_slash) || drive_relative)
+        return fs_fail(error,
+                       FS_INVALID,
+                       ERROR_INVALID_NAME,
+                       "incomplete Windows source path",
+                       path);
+    /* Device namespaces are not source paths. Extended DOS/UNC paths are fine. */
+    if (length >= 4 && slash && second_slash && path[2] == '.')
+        return fs_fail(error, FS_INVALID, ERROR_INVALID_NAME, "device source path", path);
+    return true;
+}
+
+char *canonical_fs_path(const char *path, fs_error_t *error) {
+    if (!source_path_valid(path, error))
+        return NULL;
+    HANDLE handle = open_path(path,
+                              FILE_READ_ATTRIBUTES,
+                              true,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE);
+    if (handle == INVALID_HANDLE_VALUE) {
+        fs_native_error(error, "open canonical path", path);
+        return NULL;
+    }
+    DWORD count =
+        GetFinalPathNameByHandleW(handle, NULL, 0, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+    char *out = NULL;
+    if (count) {
+        wchar_t *wide = ALLOC(((size_t)count + 1) * sizeof(*wide));
+        DWORD n = GetFinalPathNameByHandleW(handle,
+                                            wide,
+                                            count + 1,
+                                            FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+        if (n && n <= count) {
+            char *raw = fs_utf8(wide);
+            if (raw) {
+                const char *start = raw;
+                if (!strncmp(raw, "\\\\?\\UNC\\", 8)) {
+                    /* Keep UNC semantics while dropping the extended prefix. */
+                    raw[6] = '/';
+                    start = raw + 6;
+                } else if (!strncmp(raw, "\\\\?\\", 4))
+                    start = raw + 4;
+                out = ALLOC(strlen(start) + 1);
+                strcpy(out, start);
+                for (char *p = out; *p; p++)
+                    if (*p == '\\')
+                        *p = '/';
+                FREE(raw);
+            }
+        } else if (n)
+            SetLastError(ERROR_INSUFFICIENT_BUFFER);
+        FREE(wide);
+    }
+    if (!out)
+        fs_native_error(error, "canonical path", path);
+    if (!CloseHandle(handle) && out) {
+        fs_native_error(error, "close canonical path", path);
+        FREE(out);
+        out = NULL;
+    }
+    return out;
+}
+
+bool read_fs_regular_file(const char *path,
+                          size_t limit,
+                          void **data,
+                          size_t *size,
+                          fs_error_t *error) {
+    if (data)
+        *data = NULL;
+    if (size)
+        *size = 0;
+    if (!data || !size || limit == SIZE_MAX)
+        return fs_fail(error,
+                       FS_INVALID,
+                       ERROR_INVALID_PARAMETER,
+                       "regular file output/limit",
+                       path);
+    if (!source_path_valid(path, error))
+        return false;
+    HANDLE handle =
+        open_path(path, GENERIC_READ, true, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE);
+    if (handle == INVALID_HANDLE_VALUE)
+        return fs_native_error(error, "open regular file", path);
+    BY_HANDLE_FILE_INFORMATION info;
+    bool ok = GetFileInformationByHandle(handle, &info) != 0;
+    if (!ok)
+        fs_native_error(error, "stat opened regular file", path);
+    else if (GetFileType(handle) != FILE_TYPE_DISK
+             || (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+        ok = fs_fail(error, FS_INVALID, ERROR_INVALID_DATA, "require regular file", path);
+    else if ((((uint64_t)info.nFileSizeHigh << 32) | info.nFileSizeLow) > limit)
+        ok = fs_fail(error, FS_INVALID, ERROR_FILE_TOO_LARGE, "regular file size limit", path);
+    if (!ok) {
+        CloseHandle(handle);
+        return false;
+    }
+    int fd = _open_osfhandle((intptr_t)handle, _O_RDONLY | _O_BINARY | _O_NOINHERIT);
+    if (fd < 0) {
+        fs_fail(error, FS_IO, errno, "regular file descriptor", path);
+        CloseHandle(handle);
+        return false;
+    }
+    FILE *file = _fdopen(fd, "rb");
+    if (!file) {
+        fs_fail(error, FS_IO, errno, "regular file stream", path);
+        _close(fd);
+        return false;
+    }
+    return fs_read_regular_stream(file, path, limit, data, size, error);
+}
+
 bool inspect_fs_path(const char *path, bool follow_links, fs_info_t *info, fs_error_t *error) {
     if (!info)
         return fs_fail(error, FS_INVALID, EINVAL, "stat output", path);

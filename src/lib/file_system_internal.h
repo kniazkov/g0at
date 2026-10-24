@@ -17,3 +17,11 @@ bool fs_valid(const char *path, fs_error_t *error);
 wchar_t *fs_wide(const char *text);
 char *fs_utf8(const wchar_t *text);
 #endif
+
+/** @brief Bounded reader consumes an already validated regular-file stream. */
+bool fs_read_regular_stream(FILE *file,
+                            const char *path,
+                            size_t limit,
+                            void **data,
+                            size_t *size,
+                            fs_error_t *error);

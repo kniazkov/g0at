@@ -106,3 +106,55 @@ bool publish_fs_replace(const char *prepared, const char *destination, fs_error_
         return fs_fail(error, FS_INVALID, EINVAL, "publish regular unique file", prepared);
     return rename_fs_path(prepared, destination, error);
 }
+
+bool fs_read_regular_stream(FILE *file,
+                            const char *path,
+                            size_t limit,
+                            void **data,
+                            size_t *size,
+                            fs_error_t *error) {
+    size_t capacity = limit < 4096 ? limit : 4096, used = 0;
+    unsigned char *buffer = ALLOC(capacity + 1);
+    bool ok = true;
+    while (true) {
+        if (used == capacity) {
+            int next = FGETC(file);
+            if (next == EOF) {
+                if (FERROR(file))
+                    ok = fs_fail(error, FS_IO, errno ? errno : EIO, "read regular file", path);
+                break;
+            }
+            if (used == limit) {
+                ok = fs_fail(error, FS_INVALID, EFBIG, "regular file size limit", path);
+                break;
+            }
+            size_t grown = capacity > limit / 2 ? limit : capacity * 2;
+            if (!grown)
+                grown = 1;
+            unsigned char *replacement = ALLOC(grown + 1);
+            memcpy(replacement, buffer, used);
+            FREE(buffer);
+            buffer = replacement;
+            capacity = grown;
+            buffer[used++] = (unsigned char)next;
+        }
+        size_t count = FREAD(buffer + used, 1, capacity - used, file);
+        used += count;
+        if (FERROR(file)) {
+            ok = fs_fail(error, FS_IO, errno ? errno : EIO, "read regular file", path);
+            break;
+        }
+        if (FEOF(file))
+            break;
+    }
+    if (FCLOSE(file) && ok)
+        ok = fs_fail(error, FS_IO, errno ? errno : EIO, "close regular file", path);
+    if (!ok) {
+        FREE(buffer);
+        return false;
+    }
+    buffer[used] = 0;
+    *data = buffer;
+    *size = used;
+    return true;
+}
