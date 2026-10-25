@@ -188,6 +188,16 @@ initialization rules; MAIN/DIR push the dynamic built-in values. END finishes th
 current top-level file evaluation; its caller decides program completion versus
 returning the initialized scope. No compiler may renumber old opcodes.
 
+Assignment preflight appends CHECKPROP=77 (arg1 string descriptor), CHECKINDEX=78
+(arg1 index count), CHECKVAR=79 (arg1 string descriptor), and CHECKBOUND=80
+(arg1 declaration descriptor, subject to the same declaration checks as BSTORE).
+All have zero flags/arg0. They leave the stack unchanged: CHECKPROP observes the
+top receiver, CHECKINDEX the receiver followed by its indices; CHECKVAR and
+CHECKBOUND resolve the current lexical destination. They check access and
+writability without reading the old value or creating a placeholder. Final stores
+still revalidate. Existing IDs and the v1 layout are unchanged; older readers
+reject the new unknown opcodes rather than execute them incorrectly.
+
 Unused operands are zero. ARG must immediately precede ILOAD64/RLOAD/FUNC; these
 instructions cannot be independent branch/entry targets. For ILOAD64/RLOAD the
 ARG.arg1 supplies low 32 bits and the following arg1 supplies high 32 bits;

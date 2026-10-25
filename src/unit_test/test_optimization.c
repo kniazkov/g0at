@@ -92,7 +92,8 @@ bool test_optimization_modes() {
         code_builder_t *code = create_code_builder();
         data_builder_t *data = create_data_builder();
         generate_bytecode_from_node(root, code, data);
-        ASSERT(code->size == (disabled ? 22 : 8));
+        ASSERT(code->size == (disabled ? 24 : 8));
+        ASSERT(opcode_count(code, CHECKVAR) == (disabled ? 2 : 0));
         ASSERT(opcode_count(code, TRUE) == disabled);
         ASSERT(opcode_count(code, JIF) == disabled);
         ASSERT(opcode_count(code, JUMP) == disabled);

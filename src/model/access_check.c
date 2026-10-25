@@ -3,6 +3,7 @@
  * @brief Shared language-level property access, independent of VM operand evaluation.
  */
 #include "access.h"
+#include "array.h"
 #include "builtins/registry.h"
 #include "common_methods.h"
 #include "module_files.h"
@@ -135,7 +136,7 @@ model_status_t create_accessible_property(const function_access_t *access,
         && get_object_module(object) != access->module)
         return MSTAT_FOREIGN_OBJECT;
     model_status_t status = create_object_property(object, key, value, constant);
-    if (status == MSTAT_OK && object->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+    if (value && status == MSTAT_OK && object->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
         field_cell_t *cell = get_own_field_cell(object, key);
         cell->file_id = access->file_id;
     }
@@ -269,7 +270,8 @@ operation_result_t write_accessible_property_result(const function_access_t *acc
         result.trace = module_file_exception(module_scope_file(found.storage)).trace;
         return result;
     }
-    return access_status_result(write_accessible_property(access, object, key, value), value);
+    return access_status_result(write_accessible_property(access, object, key, value),
+                                value ? value : get_null_object());
 }
 
 operation_result_t access_index(process_t *process,
@@ -285,4 +287,23 @@ operation_result_t access_index(process_t *process,
         return operation_exception(get_exception_invalid_argument());
     return value ? write_accessible_property_result(access, object, indices.items[0], value)
                  : read_accessible_property(access, object, indices.items[0]);
+}
+
+operation_result_t check_accessible_index_write(const function_access_t *access,
+                                                object_t *object,
+                                                object_array_t indices) {
+    if (object->vtbl->type == TYPE_ARRAY)
+        return check_array_index_write(object, indices);
+    if (indices.size != 1)
+        return operation_exception(get_exception_invalid_argument());
+    return check_accessible_property_write(access, object, indices.items[0]);
+}
+
+operation_result_t
+check_accessible_property_write(const function_access_t *access, object_t *object, object_t *key) {
+    return write_accessible_property_result(access, object, key, NULL);
+}
+
+model_status_t check_field_cell_write(object_t *storage, field_cell_t *cell) {
+    return set_field_cell_value(storage, cell, NULL);
 }

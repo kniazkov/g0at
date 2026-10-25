@@ -102,7 +102,11 @@ static instruction_descriptor_t descriptors[] = {
     {.code = U"INCLUDE", .arg_1_is_unsigned_integer = true},
     {.code = U"IMPORT", .arg_1_is_string = true},
     {.code = U"MAIN"},
-    {.code = U"DIR"}};
+    {.code = U"DIR"},
+    {.code = U"CHECKPROP", .arg_1_is_string = true},
+    {.code = U"CHECKINDEX", .arg_1_is_unsigned_integer = true},
+    {.code = U"CHECKVAR", .arg_1_is_string = true},
+    {.code = U"CHECKBOUND", .arg_1_is_unsigned_integer = true}};
 
 /** @brief Defines the column width for instruction numbers in the bytecode text representation. */
 #define NUMBER_COLUMN_SIZE 8

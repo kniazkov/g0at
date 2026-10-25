@@ -49,7 +49,8 @@ typedef struct {
     uint32_t first, count, file, line, column, function;
 } bytecode_location_t;
 
-_Static_assert(BSTORE == 72 && MODULE_DIR == 76, "v1 opcode numbering");
+_Static_assert(BSTORE == 72 && MODULE_DIR == 76 && CHECKPROP == 77 && CHECKBOUND == 80,
+               "v1 opcode numbering");
 
 /* These are checked views of an explicit wire layout, never an ABI-dependent dump. */
 _Static_assert(sizeof(instruction_t) == 8 && offsetof(instruction_t, arg0) == 2

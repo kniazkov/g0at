@@ -110,6 +110,14 @@ static bool index_value(const array_object_t *array, object_array_t indices, siz
     return true;
 }
 
+/** @brief Reuses the exact assignment bounds check without reading or changing an element. */
+operation_result_t check_array_index_write(object_t *obj, object_array_t indices) {
+    size_t index;
+    if (!index_value((const array_object_t *)obj, indices, &index))
+        return operation_exception(get_exception_invalid_argument());
+    return operation_success(get_null_object());
+}
+
 /** @brief Reads an element and returns an owned reference. */
 static operation_result_t get_index(process_t *process, object_t *obj, object_array_t indices) {
     array_object_t *array = (array_object_t *)obj;

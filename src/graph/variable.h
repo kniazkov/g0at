@@ -27,3 +27,7 @@ typedef struct variable_t {
     /** @brief Name may be supplied or shadowed by runtime prototypes. */
     bool dynamic_lookup;
 } variable_t;
+
+/** @brief Checks variable writability without reading or changing its cell. */
+instr_index_t
+generate_variable_write_check(const node_t *node, code_builder_t *code, data_builder_t *data);

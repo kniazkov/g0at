@@ -144,7 +144,7 @@ bool validate_bytecode_image(bytecode_t *c) {
         bool arg0 =
             in.opcode == FUNC || in.opcode == CALL || in.opcode == CALLM || in.opcode == INHERIT;
         bool arg1 = false;
-        if (in.opcode > MODULE_DIR || in.flags || (!arg0 && in.arg0)) {
+        if (in.opcode > CHECKBOUND || in.flags || (!arg0 && in.arg0)) {
             valid = false;
             break;
         }
@@ -168,6 +168,7 @@ bool validate_bytecode_image(bytecode_t *c) {
                 break;
             case GETINDEX:
             case SETINDEX:
+            case CHECKINDEX:
                 arg1 = true;
                 break;
             case INHERIT:
@@ -178,6 +179,7 @@ bool validate_bytecode_image(bytecode_t *c) {
             case DCONST:
             case BLOAD:
             case BSTORE:
+            case CHECKBOUND:
                 arg1 = true;
                 valid = in.arg1 < c->data_descriptor_count
                         && c->data_descriptors[in.arg1].kind == DATA_DECLARATION;
@@ -223,6 +225,8 @@ bool validate_bytecode_image(bytecode_t *c) {
             case STORE:
             case GETPROP:
             case SETPROP:
+            case CHECKPROP:
+            case CHECKVAR:
             case MODULE_IMPORT: /* IMPORT: execution and module semantics belong to the module
                                    loader. */
                 arg1 = true;
@@ -240,7 +244,8 @@ bool validate_bytecode_image(bytecode_t *c) {
     }
     for (size_t i = 0; valid && i < c->instructions_count; ++i) {
         instruction_t in = c->instructions[i];
-        if ((in.opcode == BLOAD || in.opcode == BSTORE) && !declared[in.arg1])
+        if ((in.opcode == BLOAD || in.opcode == BSTORE || in.opcode == CHECKBOUND)
+            && !declared[in.arg1])
             valid = false;
     }
     FREE(declared);

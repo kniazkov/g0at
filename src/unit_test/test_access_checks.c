@@ -62,6 +62,11 @@ bool test_access_policy(void) {
     ASSERT(can_access_field(&child, prot) && !can_access_field(outside, prot));
     ASSERT(can_access_field(&owner, internal) && !can_access_field(&child, internal));
     ASSERT(can_access_field(outside, pub));
+    /* Preflight shares final-write policy but never updates values or reserves fields. */
+    ASSERT(write_accessible_property(outside, a, pub->key, NULL) == MSTAT_OK);
+    ASSERT(pub->object == one);
+    ASSERT(check_field_cell_write(a, fixed) == MSTAT_PROPERTY_IS_CONSTANT);
+    ASSERT(write_accessible_property(outside, a, secret->key, NULL) == MSTAT_ACCESS_DENIED);
     ASSERT(write_accessible_property(outside, a, pub->key, two) == MSTAT_OK);
     ASSERT(write_accessible_property(outside, a, fixed->key, two) == MSTAT_PROPERTY_IS_CONSTANT);
     ASSERT(write_accessible_property(outside, a, secret->key, two) == MSTAT_ACCESS_DENIED);
@@ -70,6 +75,10 @@ bool test_access_policy(void) {
            == MSTAT_PROPERTY_NOT_FOUND);
     ASSERT(write_accessible_property(outside, a, new_key, one) == MSTAT_FOREIGN_OBJECT);
     ASSERT(create_accessible_property(outside, a, new_key, one, false) == MSTAT_FOREIGN_OBJECT);
+    ASSERT(write_accessible_property(outside, a, new_key, NULL) == MSTAT_FOREIGN_OBJECT);
+    size_t field_count = get_object_field_count(a);
+    ASSERT(write_accessible_property(&owner, a, new_key, NULL) == MSTAT_OK);
+    ASSERT(get_object_field_count(a) == field_count && !get_own_field_cell(a, new_key));
     ASSERT(create_accessible_property(&owner, a, new_key, one, false) == MSTAT_OK);
     field_cell_t *other = field(proc, unrelated, U"secret", two, ACCESS_PRIVATE, false);
     ASSERT(!can_access_field(&owner, other));
@@ -106,6 +115,21 @@ bool test_access_policy(void) {
     ASSERT(lookup_accessible_property(&owner, copy, secret->key, true).status
            == MSTAT_ACCESS_DENIED);
     ASSERT(write_accessible_property(outside, copy, get_boolean_object(true), two) == MSTAT_OK);
+    object_t *items[] = {one, two};
+    object_t *array = create_array_object(proc, (object_array_t){items, 2});
+    object_t *index = get_static_integer_object(1);
+    operation_result_t checked =
+        check_accessible_index_write(outside, array, (object_array_t){&index, 1});
+    ASSERT(!checked.is_exception);
+    DECREF(checked.value);
+    operation_result_t read = access_index(proc, outside, array, (object_array_t){&index, 1}, NULL);
+    ASSERT(!read.is_exception && read.value == two);
+    DECREF(read.value);
+    index = get_static_integer_object(2);
+    checked = check_accessible_index_write(outside, array, (object_array_t){&index, 1});
+    ASSERT(checked.is_exception && checked.value == get_exception_invalid_argument());
+    DECREF(checked.value);
+    DECREF(array);
     DECREF(copy);
     DECREF(new_key);
     clear_function_access(&owner, true);
