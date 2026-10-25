@@ -200,6 +200,17 @@ string_value_t bytecode_to_text(const bytecode_t *code) {
     return append_char(&builder, U'\n');
 }
 
+bytecode_t *borrow_bytecode_image(const bytecode_t *source) {
+    if (!source)
+        return NULL;
+    bytecode_t *code = ALLOC(sizeof(*code));
+    *code = *source;
+    code->borrowed_buffer = true;
+    code->native_functions = NULL;
+    code->declaration_unit = NULL;
+    return code;
+}
+
 void free_bytecode(bytecode_t *code) {
     release_module_identity(code->declaration_unit);
     if (code->native_functions) {
@@ -207,7 +218,8 @@ void free_bytecode(bytecode_t *code) {
             release_native_function_descriptor(code->native_functions[i]);
         FREE(code->native_functions);
     }
-    FREE((void *)code->buffer);
+    if (!code->borrowed_buffer)
+        FREE((void *)code->buffer);
     FREE(code);
 }
 

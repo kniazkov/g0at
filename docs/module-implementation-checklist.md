@@ -43,7 +43,7 @@
 - [x] 27. [#238](https://github.com/kniazkov/g0at/issues/238) — Независимость версий зависимостей библиотеки ([API и проверки](module-dependencies-api.md))
 - [x] 28. [#189](https://github.com/kniazkov/g0at/issues/189) — Итеративная проверка графа зависимостей ([API и проверки](module-graph-api.md))
 - [x] 29. [#190](https://github.com/kniazkov/g0at/issues/190) — Детерминированная диагностика зависимостей ([API и проверки](module-graph-api.md))
-- [ ] 30. [#192](https://github.com/kniazkov/g0at/issues/192) — Загрузка снимка графа модулей в память
+- [x] 30. [#192](https://github.com/kniazkov/g0at/issues/192) — Загрузка снимка графа модулей в память ([API и проверки](module-snapshot-api.md))
 - [ ] 31. [#236](https://github.com/kniazkov/g0at/issues/236) — Поведение при нехватке памяти при загрузке
 - [ ] 32. [#235](https://github.com/kniazkov/g0at/issues/235) — Идентичность экземпляров модулей и копий архива
 - [ ] 33. [#196](https://github.com/kniazkov/g0at/issues/196) — Ленивая однократная инициализация файлов
