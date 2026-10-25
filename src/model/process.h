@@ -27,6 +27,11 @@ struct process_t {
     uint32_t launch_file;       /**< Entry source index inside launch_module. */
     object_t *launch_directory; /**< Owned shared directory, also a GC root. */
 
+    /** @brief Explicit termination is not an exception; no more Goat code may run. */
+    bool exit_requested;
+    /** @brief First selected portable status (0..255), retained through host cleanup. */
+    int exit_code;
+
     /** @brief A unique identifier for the process. */
     uint64_t id;
 

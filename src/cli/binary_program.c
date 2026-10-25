@@ -118,7 +118,7 @@ int execute_program(const options_t *options,
         }
         thread = thread->next;
     } while (thread != process->main_thread);
-    if (!output_native_report(options, report, process))
+    if (!output_native_report(options, report, process) && !process->exit_requested)
         status = -1;
     destroy_process(process);
     return status;

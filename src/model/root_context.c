@@ -30,7 +30,7 @@ static object_array_t get_keys(const object_t *obj) {
     enum { type_count = sizeof(type_properties) / sizeof(pair_t) };
 
     static object_static_string_t type_names[type_count];
-    static object_t *keys[64];
+    static object_t *keys[BUILTIN_FUNCTION_COUNT + 2 + type_count];
     static size_t key_count = 0;
     if (key_count == 0) {
         object_array_t builtin = get_builtin_context_keys();

@@ -81,7 +81,7 @@ static int run_interactive(options_t *opt) {
        session can be recreated on top of them. */
     object_t *session_vars = NULL;
 
-    for (;;) {
+    while (!process->exit_requested) {
         if (!stdout_at_line_start()) {
             print_utf8(U"\n");
         }
@@ -312,8 +312,9 @@ static int run_interactive(options_t *opt) {
     DECREFIF(session_vars);
     destroy_code_builder(session_code);
     destroy_data_builder(session_data);
+    int status = process->exit_requested ? process->exit_code : 0;
     destroy_process(process);
-    return 0;
+    return status;
 }
 
 /** @brief Compile/execute with an already fixed canonical launch path. */

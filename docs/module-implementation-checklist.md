@@ -60,7 +60,7 @@
 - [x] 44. [#231](https://github.com/kniazkov/g0at/issues/231) — Проверка аналитических контрактов функций
 - [x] 45. [#234](https://github.com/kniazkov/g0at/issues/234) — Диагностика исходников в скомпилированных модулях
 - [x] 46. [#206](https://github.com/kniazkov/g0at/issues/206) — Встроенные __main__ и __dir__
-- [ ] 47. [#207](https://github.com/kniazkov/g0at/issues/207) — Верхнеуровневый return и exit
+- [x] 47. [#207](https://github.com/kniazkov/g0at/issues/207) — Верхнеуровневый return и exit ([API и проверки](module-exit-api.md))
 - [ ] 48. [#217](https://github.com/kniazkov/g0at/issues/217) — Сериализация инициализации между потоками
 - [ ] 49. [#232](https://github.com/kniazkov/g0at/issues/232) — Проверка нативных специализаций по каждому вызову
 - [ ] 50. [#211](https://github.com/kniazkov/g0at/issues/211) — Интеграция нативной сборки с .gmod

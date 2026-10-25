@@ -19,7 +19,8 @@ typedef enum {
     BUILTIN_EFFECT_NONE = 0,
     BUILTIN_EFFECT_OUTPUT = 1,
     BUILTIN_EFFECT_BINDINGS = 2,
-    BUILTIN_EFFECT_INPUT = 4
+    BUILTIN_EFFECT_INPUT = 4,
+    BUILTIN_EFFECT_TERMINATION = 8
 } builtin_effect_t;
 
 /** @brief Every native function supplies both executors; descriptors are immutable singletons. */

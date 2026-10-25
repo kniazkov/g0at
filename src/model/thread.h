@@ -40,6 +40,10 @@ struct thread_t {
     /** @brief Pending native-call or unhandled exception, owned and traced by GC. */
     exception_t exception;
 
+    /** @brief Dynamic included/imported initializer depth, propagated through calls.
+     * Direct launch is excluded. Future thread serialization uses this same context. */
+    size_t initialization_depth;
+
     /** @brief Backend failure status; independent of Goat exceptions. */
     uint32_t native_status;
 

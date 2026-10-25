@@ -1,0 +1,4 @@
+true
+RETURN_OUTSIDE_FUNCTION
+finally
+continued

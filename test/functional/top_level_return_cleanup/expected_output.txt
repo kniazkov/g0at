@@ -1,0 +1,8 @@
+inner catch
+inner finally
+RETURN_OUTSIDE_FUNCTION
+outer finally
+RETURN_OUTSIDE_FUNCTION
+RETURN_OUTSIDE_FUNCTION
+replacement
+continued

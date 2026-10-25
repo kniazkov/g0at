@@ -1632,6 +1632,21 @@ All examples are valid. No license-catalog match is required. Inspection display
 
 ## Top-level return and exit: decisions 76–80
 
+**Implementation (#207):** top-level `return` raises
+`Exceptions.RETURN_OUTSIDE_FUNCTION`, including during direct execution. It is
+catchable and follows ordinary `finally` rules. `exit` accepts exactly one integer
+in `0..255`; invalid arity, type or range raises `Exceptions.INVALID_ARGUMENT`.
+A valid call in a dynamic include/import initializer raises
+`Exceptions.EXIT_DURING_INITIALIZATION`, also through functions and callbacks.
+After initialization the same function can terminate the whole program. Normal
+exit preserves the selected OS status and runs no further Goat code, including
+catch/finally blocks. Direct launch is not an imported initializer. These rules
+also apply to indirect calls and the verified in-memory module execution path.
+The CLI REPL ends with the selected status as well. See the
+[implementation and test boundary](../../module-exit-api.md): complete concurrent
+shutdown, bounded output flushing and cleanup-service integration remain #230;
+thread initialization serialization remains #217.
+
 ### 76. Return outside a function raises an exception
 
 ```goat

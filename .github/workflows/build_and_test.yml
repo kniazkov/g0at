@@ -110,6 +110,7 @@ jobs:
           python3 scripts/check_module_import_execution.py build/${{ matrix.compiler }}/module_import_execution_testing
           python3 scripts/check_module_interface.py build/${{ matrix.compiler }}/module_import_execution_testing
           python3 scripts/check_module_source_diagnostics.py build/${{ matrix.compiler }}/module_import_execution_testing
+          python3 scripts/check_module_exit.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
           python3 scripts/check_module_context_constants.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
           python3 scripts/check_module_function_provenance.py build/${{ matrix.compiler }}/module_import_execution_testing
           python3 scripts/check_module_assignment_access.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
@@ -357,6 +358,7 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_import_execution.py build/module_import_execution_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_interface.py build/module_import_execution_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_source_diagnostics.py build/module_import_execution_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_exit.py build/module_import_execution_testing.exe build/goat.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_context_constants.py build/module_import_execution_testing.exe build/goat.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_function_provenance.py build/module_import_execution_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_assignment_access.py build/module_import_execution_testing.exe build/goat.exe

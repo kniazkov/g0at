@@ -1,0 +1,8 @@
+const value = func() { println("value"); return 123; };
+try { return value(); } catch (e) { println(e); }
+const fail = func() { throw "expression failure"; };
+try { return fail(); } catch (e) { println(e); }
+for (var i = 0; i < 2; i++) {
+    try { return i; } catch (e) { println(e); }
+}
+println(value());
