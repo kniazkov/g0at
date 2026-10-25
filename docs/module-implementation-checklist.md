@@ -50,7 +50,7 @@
 - [x] 34. [#197](https://github.com/kniazkov/g0at/issues/197) — Сохранение ошибок инициализации
 - [x] 35. [#229](https://github.com/kniazkov/g0at/issues/229) — Точные правила распространения исключений и finally
 - [x] 36. [#239](https://github.com/kniazkov/g0at/issues/239) — Инициализация: таймаут и идентичность исключения
-- [ ] 37. [#225](https://github.com/kniazkov/g0at/issues/225) — Проверка семантики незавершённых областей
+- [x] 37. [#225](https://github.com/kniazkov/g0at/issues/225) — Проверка семантики незавершённых областей
 - [ ] 38. [#226](https://github.com/kniazkov/g0at/issues/226) — Проверка прототипов после ошибки инициализации
 - [ ] 39. [#194](https://github.com/kniazkov/g0at/issues/194) — Оператор include для исходных файлов
 - [ ] 40. [#195](https://github.com/kniazkov/g0at/issues/195) — Оператор import для готовых модулей
