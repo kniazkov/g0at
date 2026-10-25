@@ -5,6 +5,7 @@
 #pragma once
 
 #include "context.h"
+#include "exception.h"
 #include "lib/string_ext.h"
 #include "vm/module_bytecode.h"
 
@@ -75,12 +76,26 @@ module_file_state_t module_file_state(const module_file_t *file);
 /** @brief Borrowed owning image and process. */
 bytecode_t *module_file_bytecode(const module_file_t *file);
 process_t *module_file_process(const module_file_t *file);
+/** @brief Borrowed original exception, or NULL for a file that has not failed. */
+object_t *module_file_failure(const module_file_t *file);
+/** @brief Borrowed failure of a declaring file; unknown identities return NULL. */
+object_t *module_files_failure(process_t *process, module_t *module, uint32_t file_id);
+/** @brief Borrowed file only for its exact persistent scope; otherwise NULL. */
+module_file_t *module_scope_file(const object_t *scope);
+/** @brief Failure only for an exact persistent scope, not ordinary escaped values. */
+object_t *module_scope_failure(const object_t *scope);
 /** @brief Executor returns true only after normal completion of the file top level.
  * The frame uses the persistent scope, no caller locals or receiver. The executor
  * must restore any descendant frames before returning, and must not free frame.
- * It owns propagation of exceptions; saved failure payloads are added by #197.
+ * On failure, transfer one owned reference to the final thrown value into failure.
+ * C NULL is not a thrown value; the Goat null singleton is valid. A false result
+ * without a payload is converted to INVALID_OPERATION. A payload also overrides
+ * a true result, so an escaping exception cannot be silently recorded as success.
  */
-typedef bool (*module_file_executor_t)(module_file_t *file, context_t *frame, void *data);
+typedef bool (*module_file_executor_t)(module_file_t *file,
+                                       context_t *frame,
+                                       void *data,
+                                       exception_t *failure);
 
 typedef enum {
     MODULE_INITIALIZE_OK,
@@ -92,14 +107,18 @@ typedef enum {
  * First entry reserves declarations and calls execute exactly once. Reentrant
  * cycles and completed files return the same borrowed scope without executing.
  * An escaping failure is terminal, never retried. Invalid arguments clear scope
- * and do not change state. No filesystem access or image mutation occurs.
+ * and do not change state. Both output pointers are required and cleared on entry;
+ * failure receives an owned reference to the original saved value. The caller must
+ * release or propagate it before reusing the output. No filesystem access or image
+ * mutation occurs. The executor is never invoked again after failure.
  * This is not a scheduler: cross-thread serialization belongs to #217.
  */
 module_initialize_status_t initialize_module_file(module_file_t *file,
                                                   context_t *caller,
                                                   module_file_executor_t execute,
                                                   void *data,
-                                                  object_t **scope);
+                                                  object_t **scope,
+                                                  exception_t *failure);
 /** @brief Format current root-to-leaf initialization chain, optionally ending at
  * target (e.g. the declaration read too early). Names are escaped, indices and
  * external markers disambiguate source files. Caller frees with FREE_STRING.

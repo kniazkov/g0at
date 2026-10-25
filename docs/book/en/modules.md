@@ -4336,3 +4336,14 @@ existing-scope return on include cycles, reserved top-level declarations and
 early-read diagnostics. State and call chains live outside immutable bytecode.
 Operator dispatch is integrated separately in #194/#195; saved exceptions are
 #197. See [API and tests](../../module-initialization-api.md).
+
+## Saved initialization failures (#197)
+
+The file retains the original thrown value as a garbage-collection root. Repeated
+entry never reruns the initializer and returns the same exception, including its
+visible mutations. Failed scope access and calls of escaped functions propagate
+that value; clone/flat do not remove function provenance, and incomplete scopes
+cannot be copied. Calls are checked before native dispatch. Ordinary escaped values
+and successfully initialized files are not revoked. The gate has an explicit owned
+exception output, independent of the main thread. See
+[API and regression tests](../../module-initialization-api.md).

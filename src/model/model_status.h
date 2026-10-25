@@ -15,5 +15,6 @@ typedef enum {
     MSTAT_PROPERTY_IS_CONSTANT,    /**< Property is constant and cannot be modified */
     MSTAT_ACCESS_DENIED,           /**< The winning declaration is not accessible */
     MSTAT_UNINITIALIZED,           /**< A known declaration has not executed yet */
+    MSTAT_FAILED_FILE,             /**< File scope initialization failed; payload is retained */
     MSTAT_FOREIGN_OBJECT,          /**< Another module owns the object being extended */
 } model_status_t;

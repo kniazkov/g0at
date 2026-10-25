@@ -14,6 +14,11 @@
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
     if (count < 1)
         return operation_exception(get_exception_invalid_argument());
+    object_t *failure = object_observation_failure(args[0], &thread->context->access);
+    if (failure) {
+        INCREF(failure);
+        return operation_exception(failure);
+    }
     string_value_t value = object_to_string_with_access(args[0], &thread->context->access);
     return operation_success(create_string_object(thread->process, value));
 }

@@ -250,9 +250,11 @@ static bool exec_VAR(runtime_t *runtime, instruction_t instr, thread_t *thread) 
                                                        false);
     DECREF(value);
     if (result != MSTAT_OK)
-        return dispatch_exception(runtime,
-                                  thread,
-                                  (exception_t){access_status_result(result, NULL).value});
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){
+                access_status_result(result, module_scope_failure(thread->context->data)).value});
     thread->instr_id++;
     return true;
 }
@@ -272,9 +274,11 @@ static bool exec_CONST(runtime_t *runtime, instruction_t instr, thread_t *thread
                                                        true);
     DECREF(value);
     if (result != MSTAT_OK)
-        return dispatch_exception(runtime,
-                                  thread,
-                                  (exception_t){access_status_result(result, NULL).value});
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){
+                access_status_result(result, module_scope_failure(thread->context->data)).value});
     thread->instr_id++;
     return true;
 }
@@ -287,12 +291,13 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
     }
     object_t *key = load_string(runtime, thread->process, string_id);
     object_t *value = peek_object_from_stack(thread->data_stack, 0);
-    model_status_t status =
-        write_accessible_property(&thread->context->access, thread->context->data, key, value);
-    if (status != MSTAT_OK)
-        return dispatch_exception(runtime,
-                                  thread,
-                                  (exception_t){access_status_result(status, NULL).value});
+    operation_result_t result = write_accessible_property_result(&thread->context->access,
+                                                                 thread->context->data,
+                                                                 key,
+                                                                 value);
+    if (result.is_exception)
+        return dispatch_exception(runtime, thread, (exception_t){result.value});
+    DECREF(result.value);
     thread->instr_id++;
     return true;
 }
@@ -324,8 +329,7 @@ static bool exec_SETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
     object_t *obj = pop_object_from_stack(thread->data_stack);
     object_t *value = peek_object_from_stack(thread->data_stack, 0);
     operation_result_t result =
-        access_status_result(write_accessible_property(&thread->context->access, obj, key, value),
-                             value);
+        write_accessible_property_result(&thread->context->access, obj, key, value);
     DECREF(obj);
     if (result.is_exception)
         return dispatch_exception(runtime, thread, (exception_t){result.value});
@@ -748,6 +752,12 @@ static bool exec_INHERIT(runtime_t *runtime, instruction_t instr, thread_t *thre
 /** @brief Takes an owned snapshot before opening the loop scope. */
 static bool exec_SNAPSHOT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *source = pop_object_from_stack(thread->data_stack);
+    object_t *failure = module_scope_failure(source);
+    if (failure) {
+        INCREF(failure);
+        DECREF(source);
+        return dispatch_exception(runtime, thread, (exception_t){failure});
+    }
     object_t *snapshot =
         source->vtbl->type == TYPE_ARRAY
             ? create_array_object(thread->process, get_array_elements(source))
@@ -1000,9 +1010,10 @@ static bool exec_declaration(runtime_t *runtime, instruction_t instr, thread_t *
     }
     DECREF(value);
     if (status != MSTAT_OK)
-        return dispatch_exception(runtime,
-                                  thread,
-                                  (exception_t){access_status_result(status, NULL).value});
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){access_status_result(status, module_scope_failure(storage)).value});
     thread->instr_id++;
     return true;
 }
@@ -1026,9 +1037,10 @@ static bool exec_binding(runtime_t *runtime, instruction_t instr, thread_t *thre
                                             found.cell,
                                             peek_object_from_stack(thread->data_stack, 0));
     if (found.status != MSTAT_OK)
-        return dispatch_exception(runtime,
-                                  thread,
-                                  (exception_t){access_status_result(found.status, NULL).value});
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){access_status_result(found.status, found.value).value});
     if (!write) {
         INCREF(found.value);
         push_object_onto_stack(thread->data_stack, found.value);

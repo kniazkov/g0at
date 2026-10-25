@@ -47,7 +47,7 @@
 - [x] 31. [#236](https://github.com/kniazkov/g0at/issues/236) — Поведение при нехватке памяти при загрузке ([API и проверки](module-memory-api.md))
 - [x] 32. [#235](https://github.com/kniazkov/g0at/issues/235) — Идентичность экземпляров модулей и копий архива
 - [x] 33. [#196](https://github.com/kniazkov/g0at/issues/196) — Ленивая однократная инициализация файлов ([API и проверки](module-initialization-api.md))
-- [ ] 34. [#197](https://github.com/kniazkov/g0at/issues/197) — Сохранение ошибок инициализации
+- [x] 34. [#197](https://github.com/kniazkov/g0at/issues/197) — Сохранение ошибок инициализации
 - [ ] 35. [#229](https://github.com/kniazkov/g0at/issues/229) — Точные правила распространения исключений и finally
 - [ ] 36. [#239](https://github.com/kniazkov/g0at/issues/239) — Инициализация: таймаут и идентичность исключения
 - [ ] 37. [#225](https://github.com/kniazkov/g0at/issues/225) — Проверка семантики незавершённых областей

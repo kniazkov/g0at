@@ -11,6 +11,7 @@
 #include "lib/avl_tree.h"
 #include "lib/string_ext.h"
 #include "lib/vector.h"
+#include "module_files.h"
 #include "object.h"
 #include "object_state.h"
 #include "process.h"
@@ -341,6 +342,74 @@ flat_object_with_access(process_t *process, object_t *source, const function_acc
     destroy_transfer(transfer);
     destroy_vector(ancestors);
     return target;
+}
+
+operation_result_t copy_object_with_access(process_t *process,
+                                           object_t *source,
+                                           const function_access_t *access,
+                                           bool flatten) {
+    object_t *failure = module_scope_failure(source);
+    if (failure) {
+        INCREF(failure);
+        return operation_exception(failure);
+    }
+    module_file_t *file = module_scope_file(source);
+    if (file && module_file_state(file) != MODULE_FILE_INITIALIZED)
+        return operation_exception(get_exception_invalid_operation());
+    if (flatten && source->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+        vector_t *visited = create_vector();
+        append_to_vector(visited, source);
+        for (size_t i = 0; i < visited->size && !failure; i++) {
+            object_t *object = visited->data[i];
+            failure = module_scope_failure(object);
+            file = module_scope_file(object);
+            if (!failure && file && module_file_state(file) != MODULE_FILE_INITIALIZED)
+                failure = get_exception_invalid_operation();
+            object_array_t parents = get_inheritance_prototypes(object);
+            for (size_t j = 0; j < parents.size; j++)
+                if (!contains_storage(visited, parents.items[j]))
+                    append_to_vector(visited, parents.items[j]);
+        }
+        destroy_vector(visited);
+        if (failure) {
+            INCREF(failure);
+            return operation_exception(failure);
+        }
+    }
+    return operation_success(flatten ? flat_object_with_access(process, source, access)
+                                     : clone_object_with_access(process, source, access));
+}
+
+object_t *object_observation_failure(object_t *source, const function_access_t *access) {
+    vector_t *visited = create_vector();
+    append_to_vector(visited, source);
+    object_t *failure = NULL;
+    for (size_t i = 0; i < visited->size && !failure; i++) {
+        object_t *object = visited->data[i];
+        failure = module_scope_failure(object);
+        if (failure)
+            break;
+        if (object->vtbl->type == TYPE_ARRAY) {
+            object_array_t items = get_array_elements(object);
+            for (size_t j = 0; j < items.size; j++)
+                if (!contains_storage(visited, items.items[j]))
+                    append_to_vector(visited, items.items[j]);
+        } else if (object->vtbl->type == TYPE_USER_DEFINED_OBJECT) {
+            object_array_t keys = get_object_keys(object);
+            for (size_t j = 0; j < keys.size; j++) {
+                field_cell_t *cell = get_own_field_cell(object, keys.items[j]);
+                if (!cell || cell->pending_initialization
+                    || (access && !can_access_field(access, cell)))
+                    continue;
+                if (!contains_storage(visited, cell->key))
+                    append_to_vector(visited, cell->key);
+                if (!contains_storage(visited, cell->object))
+                    append_to_vector(visited, cell->object);
+            }
+        }
+    }
+    destroy_vector(visited);
+    return failure;
 }
 
 /** @brief Context used while rendering an object in Goat notation. */
