@@ -50,6 +50,7 @@ context_t *create_context_with_protos_in_file(process_t *process,
     init_function_access_in_file(&ctx->access, module, file_id);
     add_function_access_domain(&ctx->access, get_object_access_domain(ctx->data));
     ctx->native_disabled = caller->native_disabled;
+    ctx->file_initialization_boundary = false;
     ctx->iteration_index = 0;
     ctx->pending_flow = FLOW_NORMAL;
     ctx->pending_value = NULL;

@@ -6,6 +6,7 @@
 
 #include "lib/allocate.h"
 #include "module/module_json_internal.h"
+#include "module_file_declarations.h"
 #include "process.h"
 
 #include <assert.h>
@@ -16,6 +17,8 @@ struct module_file_t {
     string_value_t name;
     bool external;
     object_t *scope;
+    module_file_state_t state;
+    module_file_t *initialization_parent;
 };
 
 struct module_files_t {
@@ -196,4 +199,88 @@ void destroy_module_files(process_t *process) {
         release_module_identity(set->identity);
         FREE(set);
     }
+}
+
+module_file_state_t module_file_state(const module_file_t *file) {
+    return file ? file->state : MODULE_FILE_UNINITIALIZED;
+}
+
+bytecode_t *module_file_bytecode(const module_file_t *file) {
+    return file ? file->owner->code : NULL;
+}
+
+process_t *module_file_process(const module_file_t *file) {
+    return file ? file->owner->process : NULL;
+}
+
+module_initialize_status_t initialize_module_file(module_file_t *file,
+                                                  context_t *caller,
+                                                  module_file_executor_t execute,
+                                                  void *data,
+                                                  object_t **scope) {
+    if (scope)
+        *scope = NULL;
+    if (!file || !caller || !execute || !scope
+        || (caller != get_root_context() && caller->data->process != file->owner->process))
+        return MODULE_INITIALIZE_ARGUMENT;
+    if (file->state == MODULE_FILE_FAILED)
+        return MODULE_INITIALIZE_FAILED;
+    if (file->state == MODULE_FILE_INITIALIZED || file->state == MODULE_FILE_INITIALIZING) {
+        *scope = file->scope;
+        return MODULE_INITIALIZE_OK;
+    }
+    process_t *process = file->owner->process;
+    file->state = MODULE_FILE_INITIALIZING;
+    file->initialization_parent = process->initializing_file;
+    process->initializing_file = file;
+    bool success = prepare_module_file_declarations(file);
+    if (success) {
+        context_t *frame = create_module_file_context(file, caller);
+        frame->file_initialization_boundary = true;
+        success = execute(file, frame, data);
+        destroy_context(frame);
+    }
+    process->initializing_file = file->initialization_parent;
+    file->initialization_parent = NULL;
+    file->state = success ? MODULE_FILE_INITIALIZED : MODULE_FILE_FAILED;
+    if (!success)
+        return MODULE_INITIALIZE_FAILED;
+    *scope = file->scope;
+    return MODULE_INITIALIZE_OK;
+}
+
+static void append_initialization_file(string_builder_t *builder, const module_file_t *file) {
+    string_value_t escaped = string_to_string_notation(U"", file->name);
+    append_string_value(builder, escaped);
+    FREE_STRING(escaped);
+    string_value_t suffix =
+        format_string(file->external ? U" [external file %u]" : U" [file %u]", file->id);
+    append_string_value(builder, suffix);
+    FREE_STRING(suffix);
+}
+
+string_value_t module_initialization_chain(process_t *process, const module_file_t *target) {
+    if (!process || (target && target->owner->process != process))
+        return EMPTY_STRING_VALUE;
+    size_t count = 0;
+    for (module_file_t *file = process->initializing_file; file; file = file->initialization_parent)
+        ++count;
+    module_file_t **chain = count ? ALLOC(count * sizeof(*chain)) : NULL;
+    size_t index = count;
+    for (module_file_t *file = process->initializing_file; file; file = file->initialization_parent)
+        chain[--index] = file;
+    string_builder_t builder;
+    init_string_builder(&builder, 0);
+    for (size_t i = 0; i < count; ++i) {
+        if (i)
+            append_static_string(&builder, U" -> ");
+        append_initialization_file(&builder, chain[i]);
+    }
+    FREE(chain);
+    if (target && process->initializing_file != target) {
+        if (count)
+            append_static_string(&builder, U" -> ");
+        append_initialization_file(&builder, target);
+    }
+    return (string_value_t){builder.data, builder.length, builder.data != NULL};
 }

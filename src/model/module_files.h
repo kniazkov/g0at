@@ -61,3 +61,48 @@ context_t *create_module_file_context(module_file_t *file, context_t *caller);
 /** Internal process lifecycle: mark scopes before GC; free after all objects. */
 void mark_module_files(const process_t *process);
 void destroy_module_files(process_t *process);
+
+/** @brief Runtime state, separate from immutable bytecode and shared by all includes. */
+typedef enum {
+    MODULE_FILE_UNINITIALIZED,
+    MODULE_FILE_INITIALIZING,
+    MODULE_FILE_INITIALIZED,
+    MODULE_FILE_FAILED
+} module_file_state_t;
+
+/** @brief NULL returns UNINITIALIZED; use identity accessors to validate a file. */
+module_file_state_t module_file_state(const module_file_t *file);
+/** @brief Borrowed owning image and process. */
+bytecode_t *module_file_bytecode(const module_file_t *file);
+process_t *module_file_process(const module_file_t *file);
+/** @brief Executor returns true only after normal completion of the file top level.
+ * The frame uses the persistent scope, no caller locals or receiver. The executor
+ * must restore any descendant frames before returning, and must not free frame.
+ * It owns propagation of exceptions; saved failure payloads are added by #197.
+ */
+typedef bool (*module_file_executor_t)(module_file_t *file, context_t *frame, void *data);
+
+typedef enum {
+    MODULE_INITIALIZE_OK,
+    MODULE_INITIALIZE_ARGUMENT,
+    MODULE_INITIALIZE_FAILED
+} module_initialize_status_t;
+
+/** @brief Synchronous, single-thread initialization gate for include/import consumers.
+ * First entry reserves declarations and calls execute exactly once. Reentrant
+ * cycles and completed files return the same borrowed scope without executing.
+ * An escaping failure is terminal, never retried. Invalid arguments clear scope
+ * and do not change state. No filesystem access or image mutation occurs.
+ * This is not a scheduler: cross-thread serialization belongs to #217.
+ */
+module_initialize_status_t initialize_module_file(module_file_t *file,
+                                                  context_t *caller,
+                                                  module_file_executor_t execute,
+                                                  void *data,
+                                                  object_t **scope);
+/** @brief Format current root-to-leaf initialization chain, optionally ending at
+ * target (e.g. the declaration read too early). Names are escaped, indices and
+ * external markers disambiguate source files. Caller frees with FREE_STRING.
+ * Capture while the executor is active, before unwinding its frame.
+ */
+string_value_t module_initialization_chain(process_t *process, const module_file_t *target);

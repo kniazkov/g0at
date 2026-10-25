@@ -30,6 +30,9 @@ struct context_t {
     /** @brief Inherited by retry descendants, discarded on return or exception unwinding. */
     bool native_disabled;
 
+    /** @brief Stops VM transfers at a synchronously executed file initializer. */
+    bool file_initialization_boundary;
+
     /** @brief Next offset in a for-in snapshot retained on the operand stack. */
     size_t iteration_index;
     /** @brief Suspended transfer owned by a running finally context. */

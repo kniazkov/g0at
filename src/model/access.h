@@ -33,8 +33,9 @@ struct field_cell_t {
     uint32_t file_id; /**< Declaring file index within the retained module instance. */
     /** @brief Distinguishes same-key declarations belonging to different objects. */
     access_domain_t *domain;
-    module_t *binding_unit;  /**< Owned load identity; never persisted as a pointer. */
-    uint32_t declaration_id; /**< File-local descriptor index plus one; zero means dynamic. */
+    module_t *binding_unit;      /**< Owned load identity; never persisted as a pointer. */
+    uint32_t declaration_id;     /**< File-local descriptor index plus one; zero means dynamic. */
+    bool pending_initialization; /**< Reserved file declaration, not yet executed. */
 };
 
 /** @brief Retains storage, keeping its cell alive. Does not own the cell independently. */
@@ -128,6 +129,8 @@ field_cell_t *create_object_field_in_file(object_t *obj,
                                           bool selected);
 /** @brief Trusted storage write: respects constness; language callers must check access first. */
 model_status_t set_field_cell_value(object_t *storage, field_cell_t *cell, object_t *value);
+/** @brief Completes a reserved declaration once; does not permit ordinary early writes. */
+model_status_t initialize_field_cell(object_t *storage, field_cell_t *cell, object_t *value);
 /** @brief Metadata of an existing own property, not an inherited lookup or an access check.
  * Built-in properties are external; user fields carry their explicit modifier.
  */

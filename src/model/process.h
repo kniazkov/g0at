@@ -20,6 +20,8 @@ struct process_t {
     module_t *module;
     /** @brief Owned per-module file scopes/images, destroyed after managed objects. */
     struct module_files_t *module_files;
+    /** @brief Borrowed top of the single-thread file initialization stack. */
+    struct module_file_t *initializing_file;
     /** @brief A unique identifier for the process. */
     uint64_t id;
 
