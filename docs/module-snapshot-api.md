@@ -50,6 +50,31 @@ transitive or unrelated module without the consumer's direct import. Expected
 hashes were verified before any runtime was published. Diamonds reuse one
 prepared target. Index enumeration does not flatten the metadata.
 
+## Build identity and physical copies (#235)
+
+The launch snapshot is the instance registry. It contains one node and one runtime
+file set per verified `(name, version, mainHash)` identity. Graph discovery indexes
+name/version and rejects conflicting expected or actual hashes before constructing
+runtime objects; it never silently creates two builds of the same name/version.
+`module_snapshot_find` performs an exact, allocation-free inventory lookup of all
+three strings. It returns `SIZE_MAX` on any mismatch, without searching the disk,
+normalizing versions or granting access to another consumer's dependencies.
+
+All incoming edges for one identity reuse its file scopes, field cells, mutable
+state and access identity. A separate version has its own scopes and rights even
+if its bytecode matches. Public fields remain module-internal, external fields are
+accessible from other versions, and foreign objects cannot be extended. Separate
+launch snapshots never share mutable state or access identities.
+
+Archive path, informational metadata and native variants are not part of the
+main identity. The search chooses the first candidate as one complete archive;
+only that archive's verified native payloads are retained. No later copy is read
+to supplement missing or incompatible variants. Changing search order can select
+a different complete copy for a new launch, but not augment an existing instance.
+Native selection/required mode and the lazy initialization machine remain their
+own tasks; this registry supplies a single persistent state owner, not a second
+initialization mechanism.
+
 This is the shared loader/runtime preparation API, not completed CLI or language
 `import` execution. Lazy initialization, the `include`/`import` state machines,
 cross-module VM calls and CLI routing remain their ordered tasks
@@ -109,6 +134,30 @@ Core сохраняет штатное завершение с сообщени�
 зависимости не происходит. Все ожидаемые хеши проверены до публикации процесса.
 Ромб использует один подготовленный общий узел; метаданные не уплощаются.
 
+## Идентичность сборки и физические копии (#235)
+
+Снимок запуска служит реестром экземпляров: одной проверенной тройке
+`(name, version, mainHash)` соответствует один узел и один набор файлов runtime.
+Поиск графа индексирует имя/версию и отклоняет конфликт ожидаемых или фактического
+хеша до создания runtime, а не создаёт две сборки одной версии.
+`module_snapshot_find` точно сравнивает все три строки без выделения памяти,
+нормализации версий и чтения файлов; несовпадение даёт `SIZE_MAX`. Это инвентарный
+API, а не import и не разрешение доступа к чужой зависимости.
+
+Все входящие связи одной сущности используют общие области, ячейки, изменяемое
+состояние и идентификатор доступа. Другая версия получает отдельные области и
+права даже при совпадении байткода: public остаётся внутренним, external доступен
+другим версиям, расширение чужого объекта запрещено. Разные снимки запуска не
+разделяют изменяемое состояние или идентификаторы доступа.
+
+Путь архива, информационные метаданные и нативные варианты не входят в основную
+идентичность. Выбирается первый найденный архив целиком, сохраняются только его
+проверенные нативные части. Поздняя копия не читается для дополнения отсутствующих
+или неподходящих вариантов. Новый запуск с другим порядком поиска может выбрать
+другую полную копию, но не дополнить уже созданный экземпляр. Нативный выбор,
+required и машина ленивой инициализации остаются своими задачами; реестр задаёт
+единого владельца постоянного состояния, а не дублирует механизм инициализации.
+
 Это общий API подготовки загрузчика и runtime, а не готовое исполнение `import`
 или CLI. Ленивая инициализация, машины состояний `include`/`import`, межмодульные
 вызовы VM и маршрутизация CLI остаются последовательным задачам
@@ -131,3 +180,22 @@ on Linux x86-64/AArch64 and Windows UCRT64/MINGW64/MINGW32.
 повреждения, хеша и идентичности; неперехваченное исключение VM; цепочку из 512
 модулей со стеком 256 КиБ на POSIX; неизменяемость образов и независимость оболочек.
 Он включён в CI Linux x86-64/AArch64 и Windows UCRT64/MINGW64/MINGW32.
+
+### Identity regression suite (#235)
+
+`python3 scripts/check_module_identity.py build/module_identity_testing` exercises
+shared external-cell updates through diamond consumers, separate-version access
+boundaries with identical bytecode, independent launch state, exact triple lookup,
+identical/informationally different physical copies, first-copy native ownership,
+and rejection of conflicting hashes before any runtime is published. It runs with
+the existing snapshot suite on every Linux and Windows CI configuration. Tests use
+the shared runtime/access APIs; language-level import and one-time initialization
+remain covered by their subsequent tasks.
+
+`check_module_identity.py` проверяет общую external-ячейку потребителей ромба,
+раздельные права версий с одинаковым байткодом, независимость запусков, точную
+тройку идентичности, физические копии с одинаковыми или различными информационными
+метаданными, нативные части только первого архива и отказ при конфликте хешей до
+создания runtime. Набор включён во все Linux/Windows задания CI рядом с проверками
+снимка. Используется общий API runtime/доступа; языковой import и однократная
+инициализация проверяются своими последующими задачами.

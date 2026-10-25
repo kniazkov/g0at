@@ -121,6 +121,21 @@ module_files_t *module_snapshot_files(module_snapshot_t *snapshot, size_t node) 
     return snapshot && node < snapshot->count ? snapshot->files[node] : NULL;
 }
 
+size_t module_snapshot_find(const module_snapshot_t *snapshot,
+                            const char *name,
+                            const char *version,
+                            const char *hash) {
+    if (!snapshot || !name || !version || !hash)
+        return SIZE_MAX;
+    for (size_t i = 0; i < snapshot->count; ++i) {
+        const module_graph_node_t *node = module_graph_node(snapshot->graph, i);
+        if (!strcmp(node->name, name) && !strcmp(node->version, version)
+            && !strcmp(node->hash, hash))
+            return i;
+    }
+    return SIZE_MAX;
+}
+
 size_t module_snapshot_dependency_count(const module_snapshot_t *snapshot, size_t consumer) {
     return snapshot && consumer < snapshot->count
                ? snapshot->offsets[consumer + 1] - snapshot->offsets[consumer]

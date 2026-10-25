@@ -169,106 +169,111 @@ def fixture(project, **kwargs):
     return put(project / 'root.gbin', archive('app', **kwargs)[0])
 
 
-subprocess.run([EXE], check=True, timeout=10)
-with tempfile.TemporaryDirectory(prefix='goat-snapshot-') as directory:
-    base = Path(directory)
+def main():
+    subprocess.run([EXE], check=True, timeout=10)
+    with tempfile.TemporaryDirectory(prefix='goat-snapshot-') as directory:
+        base = Path(directory)
 
-    for files in [1, 3, 11]:
-        root = fixture(base / f'files-{files}', files=files)
-        result = run(root)
-        assert node(result, 'app')['values'] == list(range(100, 100 + files))
-        assert node(result, 'app')['label'] == 'старый 😀'
+        for files in [1, 3, 11]:
+            root = fixture(base / f'files-{files}', files=files)
+            result = run(root)
+            assert node(result, 'app')['values'] == list(range(100, 100 + files))
+            assert node(result, 'app')['label'] == 'старый 😀'
 
-    for mutation in ['replace', 'delete', 'corrupt']:
-        project = base / mutation
-        c_blob, c = archive('c', value=30, native=True)
-        b_blob, b = archive('b', dependencies=[c], value=20, dormant_import='c@1')
-        root = fixture(project, dependencies=[b], value=10, files=3, native=True)
-        put(project / 'modules/b/1.gbin', b_blob)
-        put(project / 'modules/c/1.gbin', c_blob)
-        old_native = hashlib.sha256('never OS-load: старый 😀'.encode()).hexdigest()
+        for mutation in ['replace', 'delete', 'corrupt']:
+            project = base / mutation
+            c_blob, c = archive('c', value=30, native=True)
+            b_blob, b = archive('b', dependencies=[c], value=20, dormant_import='c@1')
+            root = fixture(project, dependencies=[b], value=10, files=3, native=True)
+            put(project / 'modules/b/1.gbin', b_blob)
+            put(project / 'modules/c/1.gbin', c_blob)
+            old_native = hashlib.sha256('never OS-load: старый 😀'.encode()).hexdigest()
 
-        def mutate():
+            def mutate():
+                if mutation == 'replace':
+                    new_c_blob, new_c = archive('c', value=300, native=True, label='new')
+                    new_b_blob, new_b = archive('b', dependencies=[new_c], value=200, label='new')
+                    put(project / 'modules/c/1.gbin', new_c_blob)
+                    put(project / 'modules/b/1.gbin', new_b_blob)
+                    fixture(project, dependencies=[new_b], value=1000, files=3, native=True, label='new')
+                elif mutation == 'delete':
+                    for path in project.rglob('*.gbin'):
+                        path.unlink()
+                else:
+                    for path in project.rglob('*.gbin'):
+                        path.write_bytes(b'not a zip')
+
+            result = run(root, mutate=mutate)
+            assert node(result, 'app')['values'] == [10, 11, 12]
+            assert node(result, 'b')['values'] == [20] and node(result, 'c')['values'] == [30]
+            assert node(result, 'app')['native'] == [old_native]
+            assert node(result, 'c')['native'] == [old_native]
             if mutation == 'replace':
-                new_c_blob, new_c = archive('c', value=300, native=True, label='new')
-                new_b_blob, new_b = archive('b', dependencies=[new_c], value=200, label='new')
-                put(project / 'modules/c/1.gbin', new_c_blob)
-                put(project / 'modules/b/1.gbin', new_b_blob)
-                fixture(project, dependencies=[new_b], value=1000, files=3, native=True, label='new')
-            elif mutation == 'delete':
-                for path in project.rglob('*.gbin'):
-                    path.unlink()
+                fresh = run(root)
+                assert node(fresh, 'app')['values'] == [1000, 1001, 1002]
+                assert node(fresh, 'b')['values'] == [200] and node(fresh, 'c')['values'] == [300]
+                assert node(fresh, 'c')['native'] != [old_native]
             else:
-                for path in project.rglob('*.gbin'):
-                    path.write_bytes(b'not a zip')
+                # The search constructor needs an existing root; restore only root after deletion.
+                if mutation == 'delete':
+                    fixture(project, dependencies=[b])
+                run(root, status=2)
 
-        result = run(root, mutate=mutate)
-        assert node(result, 'app')['values'] == [10, 11, 12]
-        assert node(result, 'b')['values'] == [20] and node(result, 'c')['values'] == [30]
-        assert node(result, 'app')['native'] == [old_native]
-        assert node(result, 'c')['native'] == [old_native]
-        if mutation == 'replace':
-            fresh = run(root)
-            assert node(fresh, 'app')['values'] == [1000, 1001, 1002]
-            assert node(fresh, 'b')['values'] == [200] and node(fresh, 'c')['values'] == [300]
-            assert node(fresh, 'c')['native'] != [old_native]
-        else:
-            # The search constructor needs an existing root; restore only root after deletion.
-            if mutation == 'delete':
-                fixture(project, dependencies=[b])
+        project = base / 'diamond'
+        c_blob, c = archive('c', value=3)
+        b_blob, b = archive('b', dependencies=[c], value=2)
+        d_blob, d = archive('d', dependencies=[c], value=4)
+        root = fixture(project, dependencies=[b, d], value=1)
+        for name, blob in [('b', b_blob), ('c', c_blob), ('d', d_blob)]:
+            put(project / f'modules/{name}/1.gbin', blob)
+        put(project / 'modules/unreachable/1.gbin', b'corrupt but not reachable')
+        result = run(root)
+        assert result['checks'] == 4
+        assert node(result, 'b')['targets'] == node(result, 'd')['targets']
+        assert len(node(result, 'app')['targets']) == 2
+
+        project = base / 'versions'
+        one_blob, one = archive('same', version='1', value=11)
+        two_blob, two = archive('same', version='2', value=22)
+        b_blob, b = archive('b', dependencies=[one], value=1)
+        root = fixture(project, dependencies=[b, two])
+        for path, blob in [('same/1', one_blob), ('same/2', two_blob), ('b/1', b_blob)]:
+            put(project / f'modules/{path}.gbin', blob)
+        result = run(root, mutate=lambda: shutil.rmtree(project / 'modules'))
+        assert node(result, 'same', '1')['values'] == [11]
+        assert node(result, 'same', '2')['values'] == [22]
+
+        for failure in ['missing', 'corrupt', 'hash', 'identity']:
+            project = base / f'bad-{failure}'
+            c_blob, c = archive('c')
+            if failure == 'hash':
+                c['hash'] = '0' * 64
+            b_blob, b = archive('b', dependencies=[c], dormant_import='c@1')
+            root = fixture(project, dependencies=[b], native=True)
+            put(project / 'modules/b/1.gbin', b_blob)
+            if failure != 'missing':
+                put(project / 'modules/c/1.gbin', b'bad' if failure == 'corrupt' else
+                    archive('wrong')[0] if failure == 'identity' else c_blob)
             run(root, status=2)
+            run(root, status=2, mode='no-diagnostics')
 
-    project = base / 'diamond'
-    c_blob, c = archive('c', value=3)
-    b_blob, b = archive('b', dependencies=[c], value=2)
-    d_blob, d = archive('d', dependencies=[c], value=4)
-    root = fixture(project, dependencies=[b, d], value=1)
-    for name, blob in [('b', b_blob), ('c', c_blob), ('d', d_blob)]:
-        put(project / f'modules/{name}/1.gbin', blob)
-    put(project / 'modules/unreachable/1.gbin', b'corrupt but not reachable')
-    result = run(root)
-    assert result['checks'] == 4
-    assert node(result, 'b')['targets'] == node(result, 'd')['targets']
-    assert len(node(result, 'app')['targets']) == 2
+        root = fixture(base / 'throw', throwing=True)
+        result = run(root, mutate=lambda: root.unlink())
+        assert node(result, 'app')['failures'] == 1
+        assert node(result, 'app')['values'] == [100]
 
-    project = base / 'versions'
-    one_blob, one = archive('same', version='1', value=11)
-    two_blob, two = archive('same', version='2', value=22)
-    b_blob, b = archive('b', dependencies=[one], value=1)
-    root = fixture(project, dependencies=[b, two])
-    for path, blob in [('same/1', one_blob), ('same/2', two_blob), ('b/1', b_blob)]:
-        put(project / f'modules/{path}.gbin', blob)
-    result = run(root, mutate=lambda: shutil.rmtree(project / 'modules'))
-    assert node(result, 'same', '1')['values'] == [11]
-    assert node(result, 'same', '2')['values'] == [22]
+        project = base / 'deep'
+        dependency = None
+        for i in reversed(range(512)):
+            blob, dependency = archive(f'm{i}', dependencies=[dependency] if dependency else [], value=i)
+            put(project / f'modules/m{i}/1.gbin', blob)
+        root = fixture(project, dependencies=[dependency])
+        result = run(root, small_stack=True)
+        assert result['checks'] == 513
+        assert node(result, 'm511')['values'] == [511]
 
-    for failure in ['missing', 'corrupt', 'hash', 'identity']:
-        project = base / f'bad-{failure}'
-        c_blob, c = archive('c')
-        if failure == 'hash':
-            c['hash'] = '0' * 64
-        b_blob, b = archive('b', dependencies=[c], dormant_import='c@1')
-        root = fixture(project, dependencies=[b], native=True)
-        put(project / 'modules/b/1.gbin', b_blob)
-        if failure != 'missing':
-            put(project / 'modules/c/1.gbin', b'bad' if failure == 'corrupt' else
-                archive('wrong')[0] if failure == 'identity' else c_blob)
-        run(root, status=2)
-        run(root, status=2, mode='no-diagnostics')
+    print(f'Module snapshots: {COUNT} fixtures passed')
 
-    root = fixture(base / 'throw', throwing=True)
-    result = run(root, mutate=lambda: root.unlink())
-    assert node(result, 'app')['failures'] == 1
-    assert node(result, 'app')['values'] == [100]
 
-    project = base / 'deep'
-    dependency = None
-    for i in reversed(range(512)):
-        blob, dependency = archive(f'm{i}', dependencies=[dependency] if dependency else [], value=i)
-        put(project / f'modules/m{i}/1.gbin', blob)
-    root = fixture(project, dependencies=[dependency])
-    result = run(root, small_stack=True)
-    assert result['checks'] == 513
-    assert node(result, 'm511')['values'] == [511]
-
-print(f'Module snapshots: {COUNT} fixtures passed')
+if __name__ == "__main__":
+    main()

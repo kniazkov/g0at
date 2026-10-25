@@ -4319,3 +4319,12 @@ corruption. Core terminates with a clear diagnostic on memory exhaustion or
 size overflow; size arithmetic is checked before allocation. These are process
 resource limits, including MINGW32, not a new bytecode format version.
 [API and controlled negative tests](../../module-memory-api.md).
+
+### Module identity registry (#235)
+
+The launch snapshot maps the exact name, version and main-hash triple to one set
+of scopes and access rights. Consumers of the same build share mutable state;
+different versions and separate launches are independent. One physical archive
+is selected as a whole: later copies never supplement its native variants. Exact
+inventory lookup does not replace a direct import or grant additional access.
+[Contract and checks](../../module-snapshot-api.md).
