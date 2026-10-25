@@ -4420,3 +4420,12 @@ field provenance after assignment; and no implicit export of nested fields.
 The existing function-access and field-cell mechanisms enforce these rules,
 without wrapping re-exported values or granting the caller's rights.
 [Runtime contract and mapped end-to-end checks](../../module-function-provenance.md).
+
+## Assignment access and evaluation order (#227)
+
+Executable scenarios cover rules 13–25 for named and computed access. Assignment
+retains its receiver and indices, checks writability without creating a field,
+and only then evaluates RHS. Compound assignment also retains the old value.
+Final writes recheck current rights and array bounds; RHS effects are not rolled
+back on failure. Source analysis preserves this order during optimization.
+[Runtime contract and mapped end-to-end checks](../../module-assignment-access.md).

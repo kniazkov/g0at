@@ -612,7 +612,8 @@ create_property(object_t *obj, object_t *key, object_t *value, bool constant) {
             && get_domain_field_cell(obj, key, uobj->domain))) {
         return MSTAT_PROPERTY_ALREADY_EXISTS;
     }
-    append_field(obj, key, value, constant, ACCESS_FILE, uobj->module, uobj->domain, true);
+    if (value)
+        append_field(obj, key, value, constant, ACCESS_FILE, uobj->module, uobj->domain, true);
     return MSTAT_OK;
 }
 
@@ -964,6 +965,8 @@ static model_status_t write_field(object_t *storage, field_cell_t *cell, object_
         return MSTAT_UNINITIALIZED;
     if (cell->is_constant)
         return MSTAT_PROPERTY_IS_CONSTANT;
+    if (!value)
+        return MSTAT_OK; /* Nonmutating assignment preflight. */
     /* Retain first: assigning a borrowed value to its own cell must be safe. */
     if (value != storage)
         INCREF(value);

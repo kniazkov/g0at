@@ -85,5 +85,9 @@ typedef enum {
         73,             /**< Initializes a fixed local file once and pushes its persistent scope. */
     MODULE_IMPORT = 74, /**< Reserved v1 literal module name reference. */
     MODULE_MAIN = 75,   /**< Reserved dynamic main module value. */
-    MODULE_DIR = 76     /**< Reserved dynamic module directory value. */
+    MODULE_DIR = 76,    /**< Reserved dynamic module directory value. */
+    CHECKPROP = 77,     /**< Checks named write on top receiver, retaining stack operands. */
+    CHECKINDEX = 78,    /**< Checks write on receiver plus arg1 indices, retaining operands. */
+    CHECKVAR = 79,      /**< Checks a named lexical write without changing the stack. */
+    CHECKBOUND = 80     /**< Checks a declaration-bound write without changing the stack. */
 } opcode_t;

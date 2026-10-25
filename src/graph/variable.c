@@ -124,6 +124,20 @@ generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_
     return add_instruction(code, (instruction_t){.opcode = STORE, .arg1 = index});
 }
 
+instr_index_t
+generate_variable_write_check(const node_t *node, code_builder_t *code, data_builder_t *data) {
+    const variable_t *expr = (const variable_t *)node;
+    if (expr->declarator && expr->declarator->modifier != ACCESS_FILE && !expr->dynamic_lookup)
+        return add_instruction(
+            code,
+            (instruction_t){.opcode = CHECKBOUND,
+                            .arg1 = add_declaration_to_data_segment(data, expr->declarator)});
+    return add_instruction(
+        code,
+        (instruction_t){.opcode = CHECKVAR,
+                        .arg1 = add_string_to_data_segment_ex(data, expr->name)});
+}
+
 /** @brief Implements node_vtbl_t::analyze_reachability. */
 static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {

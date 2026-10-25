@@ -365,6 +365,52 @@ static bool exec_SETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
     return true;
 }
 
+/** @brief Preflight uses the same property policy and leaves the retained address untouched. */
+static bool exec_write_check(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    if (instr.arg1 >= runtime->code->data_descriptor_count)
+        return false;
+    object_t *key = load_string(runtime, thread->process, instr.arg1);
+    object_t *receiver = instr.opcode == CHECKVAR ? thread->context->data
+                                                  : peek_object_from_stack(thread->data_stack, 0);
+    operation_result_t result =
+        check_accessible_property_write(&thread->context->access, receiver, key);
+    if (result.is_exception)
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){result.value, retain_exception_trace(result.trace)});
+    DECREF(result.value);
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Validates a retained receiver and index tuple without reading the old value. */
+static bool exec_CHECKINDEX(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    object_stack_t *stack = thread->data_stack;
+    require_object_stack_size(stack, 1);
+    if (instr.arg1 > stack->size - 1)
+        fail_stack_underflow();
+    size_t receiver_index = stack->size - instr.arg1 - 1;
+    operation_result_t result = check_accessible_index_write(
+        &thread->context->access,
+        stack->objects[receiver_index],
+        (object_array_t){stack->objects + receiver_index + 1, instr.arg1});
+    if (result.is_exception)
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){result.value, retain_exception_trace(result.trace)});
+    DECREF(result.value);
+    thread->instr_id++;
+    return true;
+}
+
+/** @brief Reserved opcodes remain invalid even after later opcodes extend the table. */
+static bool exec_reserved(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    runtime->status = 1;
+    return false;
+}
+
 /** @brief Executes indexing with borrowed stack operands and an owned result. */
 static bool execute_index(runtime_t *runtime, instruction_t instr, thread_t *thread, bool store) {
     object_stack_t *stack = thread->data_stack;
@@ -1074,15 +1120,17 @@ static bool exec_binding(runtime_t *runtime, instruction_t instr, thread_t *thre
                                                     thread->context->data,
                                                     runtime->code->declaration_unit,
                                                     instr.arg1 + 1);
-    bool write = instr.opcode == BSTORE;
+    bool check = instr.opcode == CHECKBOUND;
+    bool write = instr.opcode == BSTORE || check;
     if (!write && found.status == MSTAT_PROPERTY_NOT_FOUND) {
         found.status = MSTAT_OK;
         found.value = get_null_object();
     }
     if (write && found.status == MSTAT_OK)
-        found.status = set_field_cell_value(found.storage,
-                                            found.cell,
-                                            peek_object_from_stack(thread->data_stack, 0));
+        found.status = check ? check_field_cell_write(found.storage, found.cell)
+                             : set_field_cell_value(found.storage,
+                                                    found.cell,
+                                                    peek_object_from_stack(thread->data_stack, 0));
     if (found.status != MSTAT_OK)
         return dispatch_exception(
             runtime,
@@ -1247,7 +1295,9 @@ static instr_executor_t executors[] = {
     exec_LOOP_ENTER,  exec_LOOP_JUMP,      exec_DUPN,          exec_ROTATE,
     exec_SNAPSHOT,    exec_ITER_NEXT,      exec_FINALLY_ENTER, exec_FINALLY_LEAVE,
     exec_FINALLY_END, exec_declaration,    exec_declaration,   exec_binding,
-    exec_binding,     exec_MODULE_INCLUDE, exec_MODULE_IMPORT
+    exec_binding,     exec_MODULE_INCLUDE, exec_MODULE_IMPORT, exec_reserved,
+    exec_reserved,    exec_write_check,    exec_CHECKINDEX,    exec_write_check,
+    exec_binding
     // Additional opcodes can be added here in the future...
 };
 

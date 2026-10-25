@@ -127,7 +127,8 @@ field_cell_t *create_object_field_in_file(object_t *obj,
                                           uint32_t file_id,
                                           access_domain_t *domain,
                                           bool selected);
-/** @brief Trusted storage write: respects constness; language callers must check access first. */
+/** @brief Trusted storage write: respects constness; language callers must check access first.
+ * A C NULL value checks writability without changing the cell. */
 model_status_t set_field_cell_value(object_t *storage, field_cell_t *cell, object_t *value);
 /** @brief Completes a reserved declaration once; does not permit ordinary early writes. */
 model_status_t initialize_field_cell(object_t *storage, field_cell_t *cell, object_t *value);
@@ -181,6 +182,7 @@ property_lookup_t lookup_accessible_property(const function_access_t *access,
                                              object_t *key,
                                              bool private_slots);
 bool can_access_field(const function_access_t *access, const field_cell_t *cell);
+/** @brief Creation/write APIs accept C NULL for a nonmutating assignment preflight. */
 model_status_t create_accessible_property(const function_access_t *access,
                                           object_t *object,
                                           object_t *key,
@@ -193,7 +195,8 @@ model_status_t write_accessible_property(const function_access_t *access,
 /** @brief Language reads return null for absence; failures carry standard exceptions. */
 operation_result_t
 read_accessible_property(const function_access_t *access, object_t *object, object_t *key);
-/** @brief Write result retaining the original failed-file exception payload. */
+/** @brief Write result retaining the original failed-file exception payload.
+ * C NULL checks without mutation and returns Goat null on success. */
 operation_result_t write_accessible_property_result(const function_access_t *access,
                                                     object_t *object,
                                                     object_t *key,
@@ -231,3 +234,14 @@ operation_result_t copy_object_with_access(process_t *process,
 object_t *object_observation_failure(object_t *object, const function_access_t *access);
 /** @brief Borrowed full failure record from the same observation traversal. */
 exception_t object_observation_exception(object_t *object, const function_access_t *access);
+
+/** @brief Validates a retained index destination without evaluating it or creating a field. */
+operation_result_t check_accessible_index_write(const function_access_t *access,
+                                                object_t *object,
+                                                object_array_t indices);
+
+/** @brief Nonmutating property preflight sharing final-write resolution and exception traces. */
+operation_result_t
+check_accessible_property_write(const function_access_t *access, object_t *object, object_t *key);
+/** @brief Checks a resolved declaration cell without changing its value or metadata. */
+model_status_t check_field_cell_write(object_t *storage, field_cell_t *cell);

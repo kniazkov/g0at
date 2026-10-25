@@ -75,5 +75,9 @@
   "INCLUDE": 73,
   "IMPORT": 74,
   "MAIN": 75,
-  "DIR": 76
+  "DIR": 76,
+  "CHECKPROP": 77,
+  "CHECKINDEX": 78,
+  "CHECKVAR": 79,
+  "CHECKBOUND": 80
 }

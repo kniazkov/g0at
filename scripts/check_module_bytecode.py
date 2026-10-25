@@ -30,7 +30,7 @@ def check(metadata, image, status=OK, entry=0):
         assert result.stdout.strip() == str(entry).encode(), (COUNT, result.stdout, entry)
 
 
-def image(instructions, files, functions=(), locations=None, strings=(), vectors=()):
+def image(instructions, files, functions=(), locations=None, strings=(), vectors=(), declarations=()):
     """Encode the v1 wire layout independently; tuples use their on-disk order."""
     ni = len(instructions)
     payload, descriptors = bytearray(), []
@@ -43,6 +43,11 @@ def image(instructions, files, functions=(), locations=None, strings=(), vectors
         payload.extend(bytes((-len(payload)) % 8))
         raw = struct.pack('<' + 'I' * len(vector), *vector)
         descriptors.append((len(payload), len(raw), 2, len(vector)))
+        payload.extend(raw)
+    for declaration in declarations:
+        payload.extend(bytes((-len(payload)) % 8))
+        raw = struct.pack('<4I', 0x4445434c, *declaration)
+        descriptors.append((len(payload), len(raw), 3, 1))
         payload.extend(raw)
     if locations is None:
         locations = [(first, count, i, 1, 1, 0) for i, (first, count, entry, reserved) in enumerate(files)]
@@ -197,6 +202,25 @@ check(BASE, import_code(['math@1']), IMPORTS)
 check(imports, minimal)  # An optimizer may remove every IMPORT instruction.
 check(changed(BASE, 'dependencies', [dependency(), dependency('unused')]),
       import_code(['math@1']))
+
+# Assignment preflight is append-only and preserves each operand's descriptor kind.
+for op in [77, 79]:
+    check(BASE, image([instruction(2), instruction(op)], [(0, 2, 0, 0)], strings=['x']))
+    check(BASE, image([instruction(2), instruction(op)], [(0, 2, 0, 0)], vectors=[[]]), IMAGE)
+    check(BASE, image([instruction(2), instruction(op, 1)], [(0, 2, 0, 0)], strings=['x']), IMAGE)
+for count in [0, 1, MAX]:
+    check(BASE, image([instruction(2), instruction(78, count)], [(0, 2, 0, 0)]))
+# CHECKBOUND must identify a valid declaration actually declared in this image.
+check(BASE, image([instruction(2), instruction(80)], [(0, 2, 0, 0)], strings=['x']), IMAGE)
+check(BASE, image([instruction(2), instruction(80, 1)], [(0, 2, 0, 0)],
+                  strings=['x'], declarations=[(0, 0, 0)]), IMAGE)
+check(BASE, image([instruction(2), instruction(69, 1), instruction(80, 1)], [(0, 3, 0, 0)],
+                  strings=['x'], declarations=[(0, 0, 0)]))
+for op in range(77, 81):
+    check(BASE, image([instruction(2), instruction(op, arg0=1)], [(0, 2, 0, 0)],
+                      strings=['x']), IMAGE)
+    check(BASE, image([instruction(2), (op, 1, 0, 0)], [(0, 2, 0, 0)],
+                      strings=['x']), IMAGE)
 
 # Corruptions are rejected without executing any user instruction.
 for op, operand in [(255, 0), (3, MAX), (73, 1), (74, MAX), (13, 0), (0, 1)]:

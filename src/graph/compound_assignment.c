@@ -132,6 +132,7 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
         first = generate_bytecode_from_expression(member->object, code, data);
         retained = 1;
         property = add_string_to_data_segment_ex(data, member->name);
+        add_instruction(code, (instruction_t){.opcode = CHECKPROP, .arg1 = property});
         add_instruction(code, (instruction_t){.opcode = DUP});
         add_instruction(code, (instruction_t){.opcode = GETPROP, .arg1 = property});
     } else if (target->vtbl->type == NODE_INDEX_ACCESS) {
@@ -140,11 +141,13 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
         for (size_t i = 0; i < index->count; i++)
             generate_bytecode_from_expression(index->indices[i], code, data);
         retained = (uint32_t)index->count + 1;
+        add_instruction(code, (instruction_t){.opcode = CHECKINDEX, .arg1 = index->count});
         add_instruction(code, (instruction_t){.opcode = DUPN, .arg1 = retained});
         add_instruction(code, (instruction_t){.opcode = GETINDEX, .arg1 = index->count});
     } else {
         assert(target->vtbl->type == NODE_VARIABLE);
-        first = generate_bytecode_from_expression((expression_t *)target, code, data);
+        first = generate_variable_write_check(target, code, data);
+        generate_bytecode_from_expression((expression_t *)target, code, data);
     }
     generate_bytecode_from_expression((expression_t *)get_node_child((node_t *)expr->operation, 1),
                                       code,

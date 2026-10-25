@@ -25,3 +25,6 @@ operation_result_t slice_array(object_t *obj, size_t begin, size_t end);
 /** @brief Formats notation, or joins values with a borrowed string/character separator. */
 operation_result_t
 array_to_string(object_t *obj, object_t *separator_object, const function_access_t *access);
+
+/** @brief Checks index arity, type and current bounds without reading or writing an element. */
+operation_result_t check_array_index_write(object_t *obj, object_array_t indices);

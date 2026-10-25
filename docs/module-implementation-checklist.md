@@ -55,7 +55,7 @@
 - [x] 39. [#194](https://github.com/kniazkov/g0at/issues/194) — Оператор include для исходных файлов
 - [x] 40. [#195](https://github.com/kniazkov/g0at/issues/195) — Оператор import для готовых модулей
 - [x] 41. [#228](https://github.com/kniazkov/g0at/issues/228) — Переэкспорт и происхождение функций
-- [ ] 42. [#227](https://github.com/kniazkov/g0at/issues/227) — Права и порядок вычисления присваиваний
+- [x] 42. [#227](https://github.com/kniazkov/g0at/issues/227) — Права и порядок вычисления присваиваний
 - [ ] 43. [#205](https://github.com/kniazkov/g0at/issues/205) — Экспорт интерфейса и анализатор потребителя
 - [ ] 44. [#231](https://github.com/kniazkov/g0at/issues/231) — Проверка аналитических контрактов функций
 - [ ] 45. [#234](https://github.com/kniazkov/g0at/issues/234) — Диагностика исходников в скомпилированных модулях

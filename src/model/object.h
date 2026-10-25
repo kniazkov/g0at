@@ -162,13 +162,13 @@ typedef struct {
     object_t *(*get_property)(const object_t *obj, const object_t *key);
 
     /**
-     * @brief Adds a new property to an object.
+     * @brief Adds a new property, or checks creation without mutation for C NULL value.
      * `constant`: If `true`, the property will be marked as constant and cannot be modified
      * after creation.
      */
     model_status_t (*create_property)(object_t *obj, object_t *key, object_t *value, bool constant);
 
-    /** @brief Sets a property on an object. */
+    /** @brief Sets a property, or checks writability without mutation when value is C NULL. */
     model_status_t (*set_property)(object_t *obj, object_t *key, object_t *value);
 
     /** @brief Reads indices; borrowed receiver/list, owned result or exception. */
@@ -385,13 +385,13 @@ static inline object_t *get_object_property(const object_t *obj, const object_t 
     return obj->vtbl->get_property(obj, key);
 }
 
-/** @brief Creates a property on an object. */
+/** @brief Creates a property, or checks creation without mutation when value is C NULL. */
 static inline model_status_t
 create_object_property(object_t *obj, object_t *key, object_t *value, bool constant) {
     return obj->vtbl->create_property(obj, key, value, constant);
 }
 
-/** @brief Sets a property on an object. */
+/** @brief Sets a property, or checks writability without mutation when value is C NULL. */
 static inline model_status_t set_object_property(object_t *obj, object_t *key, object_t *value) {
     return obj->vtbl->set_property(obj, key, value);
 }

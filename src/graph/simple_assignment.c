@@ -16,10 +16,11 @@
 #include "codegen/source_builder.h"
 #include "common_methods.h"
 #include "declarations.h"
-#include "graph/variable.h"
+#include "index_access.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
 #include "lib/string_ext.h"
+#include "member_access.h"
 #include "statement.h"
 #include "variable.h"
 
@@ -47,6 +48,14 @@ typedef struct {
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const assignment_t *expr = (const assignment_t *)node;
+    node_t *target = &expr->left_operand->base.base;
+    if (target->vtbl->type != NODE_VARIABLE) {
+        for (size_t i = 0; i < get_node_child_count(target); i++) {
+            calculate_expression((expression_t *)get_node_child(target, i), state, arena);
+            if (state->control_flow != FLOW_NORMAL)
+                return make_bottom_element();
+        }
+    }
     const lattice_element_t *value = calculate_expression(expr->right_operand, state, arena);
     if (state->control_flow == FLOW_NORMAL
         && expr->left_operand->base.base.vtbl->type == NODE_VARIABLE) {
@@ -61,7 +70,6 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
     }
     if (state->control_flow == FLOW_NORMAL
         && expr->left_operand->base.base.vtbl->type != NODE_VARIABLE) {
-        calculate_expression(&expr->left_operand->base, state, arena);
         forget_abstract_values(state);
     }
     return value;
@@ -90,24 +98,53 @@ generate_indented_goat_code(const node_t *node, source_builder_t *builder, size_
 /** @brief Generates bytecode for simple assignment operation. */
 static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data) {
     const simple_assignment_t *expr = (const simple_assignment_t *)node;
-    instr_index_t first = generate_bytecode_from_expression(expr->base.right_operand, code, data);
-    generate_bytecode_assign_from_node(&expr->base.left_operand->base.base, code, data);
+    node_t *target = &expr->base.left_operand->base.base;
+    instr_index_t first;
+    uint32_t retained = 0, property = 0;
+    if (target->vtbl->type == NODE_MEMBER_ACCESS) {
+        const member_access_t *member = (const member_access_t *)target;
+        first = generate_bytecode_from_expression(member->object, code, data);
+        retained = 1;
+        property = add_string_to_data_segment_ex(data, member->name);
+        add_instruction(code, (instruction_t){.opcode = CHECKPROP, .arg1 = property});
+    } else if (target->vtbl->type == NODE_INDEX_ACCESS) {
+        const index_access_t *index = (const index_access_t *)target;
+        first = generate_bytecode_from_expression(index->object, code, data);
+        for (size_t i = 0; i < index->count; i++)
+            generate_bytecode_from_expression(index->indices[i], code, data);
+        retained = (uint32_t)index->count + 1;
+        add_instruction(code, (instruction_t){.opcode = CHECKINDEX, .arg1 = index->count});
+    } else {
+        assert(target->vtbl->type == NODE_VARIABLE);
+        first = generate_variable_write_check(target, code, data);
+    }
+    generate_bytecode_from_expression(expr->base.right_operand, code, data);
+    if (retained) {
+        add_instruction(code, (instruction_t){.opcode = ROTATE, .arg1 = retained});
+        add_instruction(code,
+                        target->vtbl->type == NODE_MEMBER_ACCESS
+                            ? (instruction_t){.opcode = SETPROP, .arg1 = property}
+                            : (instruction_t){.opcode = SETINDEX, .arg1 = retained - 1});
+    } else {
+        generate_bytecode_assign_from_node(target, code, data);
+    }
     return first;
 }
 
 /** @brief Implements node_vtbl_t::analyze_reachability. */
 static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    node_t *target = get_node_child(node, 0);
+    if (target->vtbl->type != NODE_VARIABLE)
+        visit_reachable_children(target, state, collector);
     const lattice_element_t *value =
         visit_reachable_node(get_node_child(node, 1), state, collector);
-    node_t *target = get_node_child(node, 0);
     if ((*state)->control_flow == FLOW_NORMAL) {
         if (target->vtbl->type == NODE_VARIABLE) {
             const declarator_t *decl = ((variable_t *)target)->declarator;
             if (decl)
                 set_in_abstract_state(*state, decl, value);
         } else {
-            visit_reachable_node(target, state, collector);
             forget_abstract_values(*state);
         }
     }
@@ -117,10 +154,10 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
 /** @brief Implements node_vtbl_t::collect_direct_effects. */
 static void
 collect_direct_effects(const node_t *node, function_summary_t *summary, arena_t *arena) {
-    collect_node_direct_effects(get_node_child(node, 1), summary, arena);
     node_t *target = get_node_child(node, 0);
     if (target->vtbl->type != NODE_VARIABLE)
         collect_node_direct_effects(target, summary, arena);
+    collect_node_direct_effects(get_node_child(node, 1), summary, arena);
     record_function_access(summary, target, FUNCTION_CAPTURE_WRITE, arena);
 }
 
