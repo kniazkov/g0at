@@ -44,6 +44,8 @@ def image(order, padding=0, modifier=None, constant=False):
     metadata = copy.deepcopy(BASE)
     metadata['files'] = [dict(name=f'absent-{i}.goat', entry=v[2], external=False)
                          for i, v in enumerate(files)]
+    if modifier == 2:
+        metadata['externals'] = {'x': {'mutable': not constant}}
     return metadata, result
 
 

@@ -13,7 +13,8 @@ typedef struct {
     const bytecode_t *code;
     size_t first, count, used;
     size_t *scope, *parent, *queue;
-    bool valid;
+    bool *function_body;
+    bool valid, syntactic;
 } declaration_walk_t;
 
 static void enqueue(declaration_walk_t *walk, size_t address, size_t scope) {
@@ -22,6 +23,8 @@ static void enqueue(declaration_walk_t *walk, size_t address, size_t scope) {
         return;
     }
     size_t offset = address - walk->first;
+    if (walk->syntactic && walk->function_body[offset])
+        return;
     if (walk->scope[offset] != SIZE_MAX) {
         if (walk->scope[offset] != scope)
             walk->valid = false;
@@ -40,13 +43,18 @@ static void scan(declaration_walk_t *walk, size_t entry) {
         instruction_t instr = walk->code->instructions[address];
         switch (instr.opcode) {
             case END:
-            case RET:
-            case THROW:
             case FINALLY_END:
                 continue;
+            case RET:
+            case THROW:
+                if (!walk->syntactic || address + 1 == walk->first + walk->count)
+                    continue;
+                break;
             case JUMP:
                 enqueue(walk, instr.arg1, scope);
-                continue;
+                if (!walk->syntactic || address + 1 == walk->first + walk->count)
+                    continue;
+                break;
             case JIF:
             case LAND:
             case LOR:
@@ -88,7 +96,8 @@ static void scan(declaration_walk_t *walk, size_t entry) {
                 /* Visit normal continuation as well as the cleanup entry queued above. */
                 enqueue(walk, instr.arg1, walk->parent[scope - 1]);
                 continue;
-            case LOOP_JUMP:
+            case LOOP_JUMP: {
+                size_t lexical_scope = scope;
                 while (scope
                        && walk->code->instructions[walk->first + scope - 1].opcode != LOOP_ENTER)
                     scope = walk->parent[scope - 1];
@@ -96,7 +105,10 @@ static void scan(declaration_walk_t *walk, size_t entry) {
                     walk->valid = false;
                 else
                     enqueue(walk, instr.arg1, scope);
+                if (walk->syntactic && address + 1 < walk->first + walk->count)
+                    enqueue(walk, address + 1, lexical_scope);
                 continue;
+            }
             default:
                 break;
         }
@@ -104,57 +116,94 @@ static void scan(declaration_walk_t *walk, size_t entry) {
     }
 }
 
-bool prepare_module_file_declarations(module_file_t *file) {
-    if (!file)
+bool visit_module_file_declarations(const bytecode_t *code,
+                                    uint32_t file,
+                                    bool syntactic,
+                                    module_declaration_visitor_t visitor,
+                                    void *context) {
+    if (!code || file >= code->file_count || !visitor)
         return false;
-    bytecode_t *code = module_file_bytecode(file);
-    bytecode_file_t record = code->files[module_file_id(file)];
-    size_t count = record.count;
-    if (count > SIZE_MAX / sizeof(size_t))
+    bytecode_file_t record = code->files[file];
+    if (record.count > SIZE_MAX / sizeof(size_t))
         return false;
     declaration_walk_t walk = {.code = code,
                                .first = record.first,
                                .count = record.count,
-                               .valid = true};
+                               .valid = true,
+                               .syntactic = syntactic};
     walk.scope = ALLOC(record.count * sizeof(size_t));
     walk.parent = CALLOC(record.count * sizeof(size_t));
     walk.queue = ALLOC(record.count * sizeof(size_t));
     for (size_t i = 0; i < record.count; ++i)
         walk.scope[i] = SIZE_MAX;
+    if (syntactic) {
+        walk.function_body = CALLOC(record.count * sizeof(bool));
+        for (size_t i = 0; i < code->location_count; ++i) {
+            bytecode_location_t location = code->locations[i];
+            if (location.file == file && location.function)
+                for (size_t j = 0; j < location.count; ++j)
+                    walk.function_body[location.first + j - record.first] = true;
+        }
+    }
     scan(&walk, record.entry);
+    for (size_t i = 0; walk.valid && i < record.count; ++i) {
+        size_t address = record.first + i;
+        instruction_t instr = code->instructions[address];
+        if (walk.scope[i] != 0 || (instr.opcode != DVAR && instr.opcode != DCONST))
+            continue;
+        declaration_descriptor_t declaration;
+        walk.valid = get_bytecode_declaration(code, instr.arg1, &declaration)
+                     && visitor(code, address, &declaration, context);
+    }
+    FREE(walk.function_body);
+    FREE(walk.queue);
+    FREE(walk.parent);
+    FREE(walk.scope);
+    return walk.valid;
+}
+
+typedef struct {
+    object_t *scope;
+    vector_t *names, *indices;
+} pending_declarations_t;
+
+static bool reserve_name(const bytecode_t *code,
+                         size_t address,
+                         const declaration_descriptor_t *declaration,
+                         void *context) {
+    pending_declarations_t *pending = context;
+    data_descriptor_t text = code->data_descriptors[declaration->name];
+    object_t *key =
+        create_string_object(pending->scope->process,
+                             (string_value_t){(const gchar_t *)(code->data + text.offset),
+                                              text.size / sizeof(gchar_t) - 1,
+                                              false});
+    bool valid = !get_own_field_cell(pending->scope, key);
+    for (size_t n = 0; n < pending->names->size; ++n)
+        if (!compare_objects_using_vtbl(pending->names->data[n], key))
+            valid = false;
+    append_to_vector(pending->names, key);
+    append_to_vector(pending->indices, (void *)(uintptr_t)(address + 1));
+    return valid;
+}
+
+bool prepare_module_file_declarations(module_file_t *file) {
+    if (!file)
+        return false;
+    bytecode_t *code = module_file_bytecode(file);
     object_t *scope = module_file_scope(file);
     /* Validate all names before publishing any cells. */
     vector_t *names = create_vector();
     vector_t *indices = create_vector();
-    for (size_t i = 0; walk.valid && i < record.count; ++i) {
-        instruction_t instr = code->instructions[record.first + i];
-        if (walk.scope[i] != 0 || (instr.opcode != DVAR && instr.opcode != DCONST))
-            continue;
-        declaration_descriptor_t declaration;
-        if (!get_bytecode_declaration(code, instr.arg1, &declaration)) {
-            walk.valid = false;
-            break;
-        }
-        data_descriptor_t text = code->data_descriptors[declaration.name];
-        object_t *key =
-            create_string_object(scope->process,
-                                 (string_value_t){(const gchar_t *)(code->data + text.offset),
-                                                  text.size / sizeof(gchar_t) - 1,
-                                                  false});
-        if (get_own_field_cell(scope, key))
-            walk.valid = false;
-        for (size_t n = 0; n < names->size; ++n)
-            if (!compare_objects_using_vtbl(names->data[n], key))
-                walk.valid = false;
-        append_to_vector(names, key);
-        append_to_vector(indices, (void *)(uintptr_t)(i + 1));
-    }
-    if (walk.valid) {
+    pending_declarations_t pending = {scope, names, indices};
+    bool valid =
+        visit_module_file_declarations(code, module_file_id(file), false, reserve_name, &pending);
+    if (valid) {
         if (!code->declaration_unit)
             code->declaration_unit = create_module_identity();
         for (size_t n = 0; n < names->size; ++n) {
             size_t i = (size_t)(uintptr_t)indices->data[n] - 1;
-            instruction_t instr = code->instructions[record.first + i];
+            instruction_t instr = code->instructions[i];
             declaration_descriptor_t declaration;
             get_bytecode_declaration(code, instr.arg1, &declaration);
             field_cell_t *cell =
@@ -168,7 +217,7 @@ bool prepare_module_file_declarations(module_file_t *file) {
                                             get_object_access_domain(scope),
                                             true);
             if (!cell) {
-                walk.valid = false;
+                valid = false;
                 break;
             }
             cell->pending_initialization = true;
@@ -180,8 +229,5 @@ bool prepare_module_file_declarations(module_file_t *file) {
         DECREF((object_t *)names->data[n]);
     destroy_vector(indices);
     destroy_vector(names);
-    FREE(walk.queue);
-    FREE(walk.parent);
-    FREE(walk.scope);
-    return walk.valid;
+    return valid;
 }

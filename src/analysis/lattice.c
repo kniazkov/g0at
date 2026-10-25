@@ -190,7 +190,8 @@ const lattice_element_t *make_builtin_function_element(arena_t *arena,
 static bool same_function(const lattice_element_t *left, const lattice_element_t *right) {
     const known_function_element_t *a = (const known_function_element_t *)left;
     const known_function_element_t *b = (const known_function_element_t *)right;
-    return a->node == b->node && a->owner == b->owner && a->builtin == b->builtin;
+    return a->node == b->node && a->owner == b->owner && a->builtin == b->builtin
+           && a->imported == b->imported;
 }
 
 const lattice_element_t *make_array_element() {

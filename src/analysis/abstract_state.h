@@ -55,6 +55,7 @@ struct abstract_state_t {
 
     /** @brief An untracked write may have shadowed root-provided names. */
     bool builtin_bindings_unknown;
+    bool module_constants; /**< Preserve original file-scope constants in module analysis only. */
 
     /** @brief Shared failure flag for isolated return-type analysis; NULL during normal analysis.
      */

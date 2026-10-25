@@ -2,6 +2,7 @@
 # Copyright 2026 Ivan Kniazkov
 """Independent portable module images and strict JSON/binary cross-checks."""
 import copy
+from module_interface_fixtures import with_external_declarations
 import json
 from pathlib import Path
 import struct
@@ -11,7 +12,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 VECTORS = ROOT / 'docs/module-format-v1/vectors'
 EXE = str(Path(sys.argv[1]).resolve())
-OK, ARGUMENT, JSON, IMAGE, FILES, FUNCTIONS, PARAMETERS, IMPORTS = range(8)
+OK, ARGUMENT, JSON, IMAGE, FILES, FUNCTIONS, PARAMETERS, IMPORTS, EXTERNALS = range(9)
 COUNT = 0
 MAX = 0xffffffff
 BASE = json.loads((VECTORS / 'empty.module.json').read_text())
@@ -158,13 +159,19 @@ for value in [None, {}, 'functions']:
     check(changed(BASE, 'functions', value), minimal, JSON)
 # Own exports resolve by functionId, never by array offset or count.
 for fid in [1, MAX]:
-    check(changed(funcmeta, 'externals', {'f': {'mutable': False, 'type': 'function', 'functionId': fid}}), code)
+    exported = changed(funcmeta, 'externals', {'f': {'mutable': False, 'type': 'function', 'functionId': fid}})
+    exported_code = with_external_declarations(exported, code)
+    check(exported, exported_code, entry=exported['files'][0]['entry'])
+    check(exported, code, FILES)  # A fabricated entry is not a matching interface.
 for fid in [0, 2, 3, MAX + 1]:
     check(changed(funcmeta, 'externals', {'f': {'mutable': False, 'type': 'function', 'functionId': fid}}), code, JSON)
 check(changed(BASE, 'externals', {'f': {'mutable': False, 'functionId': 1}}), minimal, JSON)
 # Foreign functionRef resolution is deliberately deferred to the checked dependency graph.
-check(changed(BASE, 'externals', {'f': {'mutable': False, 'functionRef':
-                                      {'module': 'other', 'version': '1', 'functionId': MAX}}}), minimal)
+exported = changed(BASE, 'externals', {'f': {'mutable': False, 'functionRef':
+                                      {'module': 'other', 'version': '1', 'functionId': MAX}}})
+check(exported, minimal, EXTERNALS)
+exported_code = with_external_declarations(exported, minimal)
+check(exported, exported_code, entry=exported['files'][0]['entry'])
 # Native metadata own-ID references are rejected by the strict JSON reader already.
 native = json.loads((VECTORS / 'native-description.json').read_text())
 variant = {k: native[k] for k in ['target', 'specializations']}
@@ -221,6 +228,51 @@ for op in range(77, 81):
                       strings=['x']), IMAGE)
     check(BASE, image([instruction(2), (op, 1, 0, 0)], [(0, 2, 0, 0)],
                       strings=['x']), IMAGE)
+
+# Entry interface must describe actual file-scope external declaration cells.
+# No initializer executes: syntactic fallthrough retains declarations after abrupt
+# transfer, but nested blocks, function bodies and post-END padding cannot export.
+def declaration_image(prefix=(), suffix=(), modifier=2, mutable=False, name='x'):
+    instructions = [*prefix, instruction(7), instruction(69 if mutable else 70, 1),
+                    *suffix, instruction(2)]
+    return image(instructions, [(0, len(instructions), 0, 0)], strings=[name],
+                 declarations=[(0, 0, modifier)])
+
+
+external = changed(BASE, 'externals', {'x': {'mutable': False}})
+for name in ['x', 'Ж\0😀']:
+    named = changed(BASE, 'externals', {name: {'mutable': False}})
+    check(named, declaration_image(name=name))
+check(external, declaration_image())
+check(BASE, declaration_image(), EXTERNALS)  # Missing export record.
+check(changed(BASE, 'externals', {'y': {'mutable': False}}), declaration_image(), EXTERNALS)
+check(changed(BASE, 'externals', {'x': {'mutable': True}}), declaration_image(), EXTERNALS)
+check(external, declaration_image(mutable=True), EXTERNALS)
+check(changed(BASE, 'externals', {'x': {'mutable': True}}), declaration_image(mutable=True))
+for modifier in [0, 1, 3, 4]:
+    check(external, declaration_image(modifier=modifier), EXTERNALS)
+    check(BASE, declaration_image(modifier=modifier))
+for prefix in [[instruction(7), instruction(55)], [instruction(7), instruction(50)],
+               [instruction(3, 3)], [instruction(3, 0)]]:
+    check(external, declaration_image(prefix=prefix))
+for prefix, suffix in [([instruction(51)], [instruction(52), instruction(5)]),
+                        ([instruction(2)], [])]:
+    code = declaration_image(prefix=prefix, suffix=suffix)
+    check(BASE, code)
+    check(external, code, EXTERNALS)
+# A syntactic duplicate cannot hide behind one metadata key.
+check(external, image([instruction(7), instruction(70, 1), instruction(7),
+                       instruction(70, 2), instruction(2)], [(0, 5, 0, 0)],
+                      strings=['x'], declarations=[(0, 0, 2), (0, 0, 2)]), EXTERNALS)
+# Root FUNC expression does not make an external inside its body a file export.
+function_code = image([instruction(1, 4), instruction(47), instruction(5), instruction(2),
+                       instruction(7), instruction(70, 1), instruction(7), instruction(50)],
+                      [(0, 8, 0, 0)], [(1, 0, 1, 4, 0, 0, MAX, 0)],
+                      [(0, 4, 0, 1, 1, 0), (4, 4, 0, 2, 1, 1)],
+                      strings=['x'], declarations=[(0, 0, 2)])
+function_meta = changed(BASE, 'functions', [dict(functionId=1, file=0, instruction=1, parameters=[])])
+check(function_meta, function_code)
+check(changed(function_meta, 'externals', {'x': {'mutable': False}}), function_code, EXTERNALS)
 
 # Corruptions are rejected without executing any user instruction.
 for op, operand in [(255, 0), (3, MAX), (73, 1), (74, MAX), (13, 0), (0, 1)]:

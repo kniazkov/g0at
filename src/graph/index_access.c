@@ -5,6 +5,7 @@
 #include "index_access.h"
 
 #include "analysis/abstract_state.h"
+#include "analysis/module_interface.h"
 #include "analysis/reachability.h"
 #include "codegen/code_builder.h"
 #include "codegen/source_builder.h"
@@ -107,8 +108,17 @@ generate_bytecode_assign(const node_t *node, code_builder_t *code, data_builder_
 
 /** @brief Indexing can invoke arbitrary type behavior, so invalidate mutable facts. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
-    for (size_t i = 0; i < get_child_count(node); i++)
-        calculate_expression((expression_t *)get_child(node, i), state, arena);
+    const index_access_t *index = (const index_access_t *)node;
+    const lattice_element_t *object = calculate_expression(index->object, state, arena);
+    const lattice_element_t *key = make_top_element();
+    for (size_t i = 0; i < index->count; i++)
+        key = calculate_expression(index->indices[i], state, arena);
+    if (is_module_scope_element(object) && index->count == 1
+        && key->type == LATTICE_STRING_CONSTANT)
+        return module_interface_member_at(object,
+                                          ((const string_constant_element_t *)key)->value,
+                                          arena,
+                                          node);
     forget_abstract_values(state);
     return make_top_element();
 }
@@ -116,7 +126,18 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
 /** @brief Visits receiver/indices in evaluation order and invalidates mutable facts. */
 static const lattice_element_t *
 analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
-    visit_reachable_children(node, state, collector);
+    const index_access_t *index = (const index_access_t *)node;
+    const lattice_element_t *object =
+        visit_reachable_node((node_t *)index->object, state, collector);
+    const lattice_element_t *key = make_top_element();
+    for (size_t i = 0; i < index->count; i++)
+        key = visit_reachable_node((node_t *)index->indices[i], state, collector);
+    if (is_module_scope_element(object) && index->count == 1
+        && key->type == LATTICE_STRING_CONSTANT)
+        return module_interface_member_at(object,
+                                          ((const string_constant_element_t *)key)->value,
+                                          (*state)->arena,
+                                          node);
     forget_abstract_values(*state);
     return make_top_element();
 }

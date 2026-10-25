@@ -7,6 +7,8 @@
 #include "member_access.h"
 
 #include "analysis/abstract_state.h"
+#include "analysis/module_interface.h"
+#include "analysis/reachability.h"
 #include "codegen/c_string_methods.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
@@ -109,7 +111,15 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
         if (value->type == LATTICE_STRING)
             return make_integer_element();
     }
-    return make_top_element();
+    return module_interface_member_at(value, member->name, arena, node);
+}
+
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    const member_access_t *member = (const member_access_t *)node;
+    const lattice_element_t *object =
+        visit_reachable_node((node_t *)member->object, state, collector);
+    return module_interface_member_at(object, member->name, (*state)->arena, node);
 }
 
 static bool can_generate_c_code(const node_t *node,
@@ -123,7 +133,7 @@ static bool can_generate_c_code(const node_t *node,
 /** @brief Virtual table for member access expressions. */
 static node_vtbl_t member_access_vtbl = {
     .type = NODE_MEMBER_ACCESS,
-    .analyze_reachability = visit_reachable_children,
+    .analyze_reachability = analyze_reachability,
     .is_pure = children_are_pure,
     .simplify = no_simplification,
     .collect_direct_effects = collect_child_effects,

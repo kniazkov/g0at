@@ -36,7 +36,7 @@ static int compile(const char *source, const char *output) {
     module_compilation_t *compilation = NULL;
     module_compilation_error_t compile_error = {0};
     module_writer_error_t write_error = {0};
-    module_graph_t *graph = NULL;
+    module_graph_t *graph = NULL, *source_graph = NULL;
     fs_error_t filesystem = {0};
     size_t length = strlen(source);
     bool descriptor = length >= 5 && !strcmp(source + length - 5, ".gmod");
@@ -71,10 +71,13 @@ static int compile(const char *source, const char *output) {
                                                    source);
         FPRINTF(stderr, "Dependency binding failed: %s\n", message ? message : "unknown error");
         FREE(message);
-    } else if (!compile_module_sources_with_dependencies(sources,
-                                                         dependencies,
-                                                         &compilation,
-                                                         &compile_error)) {
+    } else if (validate_source_graph(imports, search, NULL, &source_graph)) {
+        report_graph(source_graph, MODULE_GRAPH_INVALID);
+    } else if (!compile_module_sources_with_graph(sources,
+                                                  dependencies,
+                                                  source_graph,
+                                                  &compilation,
+                                                  &compile_error)) {
         FPRINTF(stderr,
                 "file %zu:%zu:%zu: %s\n",
                 compile_error.file,
@@ -82,6 +85,15 @@ static int compile(const char *source, const char *output) {
                 compile_error.column,
                 compile_error.message ? compile_error.message : "compilation failed");
     } else {
+        for (size_t i = 0; i < compilation->warning_count; ++i) {
+            const module_compilation_warning_t *warning = compilation->warnings + i;
+            FPRINTF(stderr,
+                    "file %zu:%zu:%zu: warning: %s\n",
+                    warning->file,
+                    warning->row,
+                    warning->column,
+                    warning->message);
+        }
         module_writer_input_t input = {
             .metadata = compilation->metadata,
             .bytecode = {compilation->code->buffer, compilation->code->buffer_size}};
@@ -106,6 +118,7 @@ static int compile(const char *source, const char *output) {
     free(stage);
     clear_fs_error(&filesystem);
     free_module_graph(graph);
+    free_module_graph(source_graph);
     clear_module_writer_error(&write_error);
     free_module_compilation(compilation);
     clear_module_compilation_error(&compile_error);

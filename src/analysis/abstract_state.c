@@ -74,6 +74,7 @@ abstract_state_t *create_abstract_state(arena_t *arena) {
     state->return_value = NULL;
     state->call_frame = NULL;
     state->builtin_bindings_unknown = false;
+    state->module_constants = false;
     state->type_analysis_incomplete = NULL;
     state->call_graph_node = NULL;
     state->recursive_group = NULL;
@@ -96,6 +97,7 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     copy->return_value = state->return_value;
     copy->call_frame = state->call_frame;
     copy->builtin_bindings_unknown = state->builtin_bindings_unknown;
+    copy->module_constants = state->module_constants;
     copy->call_budget = state->call_budget;
     copy->type_analysis_incomplete = state->type_analysis_incomplete;
     copy->call_graph_node = state->call_graph_node;
@@ -196,6 +198,7 @@ abstract_state_t *join_abstract_states(const abstract_state_t *left,
                                : FLOW_UNREACHABLE;
     result->return_value = left->return_value == right->return_value ? left->return_value : NULL;
     result->call_frame = left->call_frame;
+    result->module_constants = left->module_constants && right->module_constants;
     result->builtin_bindings_unknown =
         left->builtin_bindings_unknown || right->builtin_bindings_unknown;
     result->call_budget = left->call_budget;
@@ -258,7 +261,22 @@ static const node_t *local_owner(const node_t *node) {
     return node;
 }
 
-static void forget_entry(void *context, void *key, value_t ignored) {
+static void forget_entry(void *context, void *key, value_t value) {
+    const declarator_t *decl = key;
+    /* Original file-scope constant cells cannot be replaced by an unknown call.
+       Do not extend this to lexical function declarations: flat closures can
+       redirect them to mutable copied cells. Universal body analysis still seeds
+       captures with TOP, so this does not specialize a contract to one closure. */
+    if (((abstract_state_t *)context)->module_constants && decl != get_builtin_declarator()
+        && decl->base.vtbl && decl->base.vtbl->type == NODE_CONSTANT_DECLARATOR
+        && !local_owner(&decl->base)) {
+        const lattice_pair_t *pair = value.ptr;
+        if (pair->current->type != LATTICE_TYPED_ARRAY)
+            return;
+        /* The binding is immutable, not the array's elements. */
+        set_in_abstract_state(context, key, make_array_element());
+        return;
+    }
     set_in_abstract_state(context, key, make_top_element());
 }
 

@@ -2,6 +2,7 @@
 # Copyright 2026 Ivan Kniazkov
 """Whole dependency preflight: independent errors, cached nodes and every path."""
 import copy
+from module_interface_fixtures import with_external_declarations
 import hashlib
 import io
 import json
@@ -60,11 +61,12 @@ def archive(name, version='1', dependencies=(), refs=None, file='main.goat', nat
                                       symbol='goat_fn_1_v1',
                                       signature=dict(id='goat.adapter.v1', arguments=[], result='null'),
                                       when=dict(argumentTypes=[]))])]
-    metadata['mainHash'] = ref.main_hash(metadata, IMAGE)
+    code = with_external_declarations(metadata, IMAGE)
+    metadata['mainHash'] = ref.main_hash(metadata, code)
     stream = io.BytesIO()
     with zipfile.ZipFile(stream, 'w', compression=zipfile.ZIP_STORED) as z:
         z.writestr('module.json', json.dumps(metadata).encode())
-        z.writestr('bytecode.bin', IMAGE)
+        z.writestr('bytecode.bin', code)
         for path, data in libraries.items():
             z.writestr(path, data)
     return stream.getvalue(), dict(name=name, version=version, hash=metadata['mainHash'])

@@ -419,6 +419,7 @@ typedef struct {
     struct node_t *node;
     struct abstract_call_frame_t *owner;
     const struct builtin_function_t *builtin;
+    const struct imported_function_t *imported; /**< Borrowed metadata, never an AST body. */
 } known_function_element_t;
 
 /** @brief Records a function body and the activation containing its captures. */

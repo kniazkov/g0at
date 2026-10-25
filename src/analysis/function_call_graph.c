@@ -4,9 +4,11 @@
  */
 #include "function_call_graph.h"
 
+#include "abstract_state.h"
 #include "function_return.h"
 #include "graph/expression.h"
 #include "graph/variable.h"
+#include "module_interface.h"
 
 node_t *resolve_immutable_function(const node_t *expression) {
     /* Cyclic aliases and excessively long chains remain unknown. */
@@ -80,16 +82,30 @@ void observe_function_call(function_call_graph_node_t *caller,
         target = add_node(caller->graph, summary);
         kind = target ? CALL_TARGET_USER : CALL_TARGET_LIMIT;
     }
-    if (!target)
+    uint32_t imported_effects = FUNCTION_EFFECT_UNKNOWN;
+    if (callee->type == LATTICE_KNOWN_FUNCTION
+        && ((const known_function_element_t *)callee)->imported) {
+        abstract_state_t *state = create_abstract_state(caller->graph->arena);
+        interpret_imported_call(((const known_function_element_t *)callee)->imported,
+                                args,
+                                count,
+                                state,
+                                &imported_effects);
+        destroy_abstract_state(state);
+        kind = CALL_TARGET_IMPORTED;
+    }
+    if (!target && kind != CALL_TARGET_IMPORTED)
         caller->complete = false;
     for (function_call_edge_t *edge = caller->edges; edge; edge = edge->next) {
-        if (edge->site == site && edge->target == target && edge->kind == kind)
+        if (edge->site == site && edge->target == target && edge->kind == kind
+            && edge->imported_effects == imported_effects)
             return;
     }
     function_call_edge_t *edge = alloc_zeroed_from_arena(caller->graph->arena, sizeof(*edge));
     edge->site = site;
     edge->target = target;
     edge->kind = kind;
+    edge->imported_effects = imported_effects;
     if (caller->tail)
         caller->tail->next = edge;
     else

@@ -2,6 +2,7 @@
 # Copyright 2026 Ivan Kniazkov
 """Cross-part checks in every native mode, without opening any DLL/SO."""
 import copy
+from module_interface_fixtures import with_external_declarations
 import hashlib
 import json
 from pathlib import Path
@@ -60,6 +61,7 @@ def module(name='app', version='1', native=True):
 
 def hashed(m, code=IMAGE):
     m = copy.deepcopy(m)
+    code = with_external_declarations(m, code)
     projection = dict(m, native=[])
     m['mainHash'] = ref.main_hash(projection, code)
     return m
@@ -68,6 +70,7 @@ def hashed(m, code=IMAGE):
 def archive(m, code=IMAGE, libraries=None, rehash=True):
     if rehash:
         m = hashed(m, code)
+    code = with_external_declarations(m, code)
     if libraries is None:
         libraries = {v['library']: b'not executable' for v in m.get('native', [])}
     # These are semantic fixtures, not golden compressed bytes; host zlib is irrelevant.

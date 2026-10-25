@@ -9,7 +9,12 @@
 typedef struct function_call_graph_t function_call_graph_t;
 typedef struct function_call_graph_node_t function_call_graph_node_t;
 
-typedef enum { CALL_TARGET_USER, CALL_TARGET_UNKNOWN, CALL_TARGET_LIMIT } call_target_kind_t;
+typedef enum {
+    CALL_TARGET_USER,
+    CALL_TARGET_IMPORTED,
+    CALL_TARGET_UNKNOWN,
+    CALL_TARGET_LIMIT
+} call_target_kind_t;
 
 /** @brief One call site and possible target; unknown/limited targets have no target node. */
 typedef struct function_call_edge_t {
@@ -17,6 +22,7 @@ typedef struct function_call_edge_t {
     const node_t *site;
     function_call_graph_node_t *target;
     call_target_kind_t kind;
+    uint32_t imported_effects; /**< Complete or unknown bound from applicable metadata. */
 } function_call_edge_t;
 
 struct function_call_graph_node_t {

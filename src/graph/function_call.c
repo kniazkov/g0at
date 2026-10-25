@@ -12,6 +12,7 @@
 #include "analysis/function_effects.h"
 #include "analysis/function_return.h"
 #include "analysis/lattice.h"
+#include "analysis/module_interface.h"
 #include "analysis/native_builtin.h"
 #include "analysis/reachability.h"
 #include "codegen/c_call.h"
@@ -43,6 +44,8 @@ typedef struct {
 
     /** @brief The number of arguments in the function call. */
     size_t args_count;
+    bool module_noncallable;
+    bool module_unknown;
 } function_call_t;
 
 /** @brief Implements @ref node_vtbl_t::get_child_count. */
@@ -97,17 +100,35 @@ static const lattice_element_t *calculate(node_t *node, abstract_state_t *state,
             args[0] = receiver;
             return method->interpret(state, args, expr->args_count + 1);
         }
-        function = make_top_element();
+        function = module_interface_member_at(receiver, member->name, arena, node);
     } else {
         function = calculate_expression(expr->func_object, state, arena);
     }
     if (state->control_flow != FLOW_NORMAL)
         return make_bottom_element();
+    if (state->module_constants && !state->call_frame) {
+        bool top_level = true;
+        for (const node_t *owner = node->parent; owner; owner = owner->parent)
+            top_level &= owner->vtbl->type != NODE_FUNCTION_OBJECT;
+        if (top_level) {
+            bool scalar = function->type == LATTICE_NULL || is_numeric_lattice_element(function)
+                          || is_string_lattice_element(function)
+                          || is_character_lattice_element(function)
+                          || is_boolean_lattice_element(function);
+            ((function_call_t *)node)->module_noncallable |= scalar;
+            ((function_call_t *)node)->module_unknown |= !scalar;
+        }
+    }
     if (state->c_expressions && state->c_expressions->graph)
         return interpret_c_call(node, args, expr->args_count, state);
     const builtin_function_t *builtin = resolve_native_builtin(get_node_child(node, 0));
     if (builtin && expr->args_count >= builtin->min_args)
         return builtin->interpret(state, args, expr->args_count);
+    if (function->type == LATTICE_KNOWN_FUNCTION
+        && ((const known_function_element_t *)function)->imported) {
+        observe_function_call(state->call_graph_node, node, function, args, expr->args_count);
+        return interpret_function_call(function, args, expr->args_count, state);
+    }
     if (state->recursive_group)
         return interpret_recursive_call(node, function, args, expr->args_count, state);
     observe_function_call(state->call_graph_node, node, function, args, expr->args_count);
@@ -198,6 +219,13 @@ analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_
             node->flags |= NODE_FLAG_PURE;
         return interpret_function_call(callee, args, count, *state);
     }
+    if (callee->type == LATTICE_KNOWN_FUNCTION
+        && ((const known_function_element_t *)callee)->imported)
+        return interpret_imported_call(((const known_function_element_t *)callee)->imported,
+                                       args,
+                                       count,
+                                       *state,
+                                       NULL);
     forget_abstract_values(*state);
     return make_top_element();
 }
@@ -288,4 +316,10 @@ void set_function_call_arguments(node_t *node,
     expr->args = (expression_t **)alloc_from_arena(arena, args_count * sizeof(expression_t *));
     memcpy(expr->args, args, args_count * sizeof(expression_t *));
     expr->args_count = args_count;
+}
+
+bool module_call_is_noncallable(const node_t *node) {
+    return node && node->vtbl->type == NODE_FUNCTION_CALL
+           && ((const function_call_t *)node)->module_noncallable
+           && !((const function_call_t *)node)->module_unknown;
 }

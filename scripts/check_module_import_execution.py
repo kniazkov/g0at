@@ -45,6 +45,7 @@ with tempfile.TemporaryDirectory(prefix='goat-import-execution-') as temporary:
         entries = {name: archive.read(name) for name in archive.namelist()}
     metadata = json.loads(entries['module.json'])
     metadata['main'] = 1
+    metadata['externals'] = {'value': dict(mutable=False, type='integer', value=42)}
     metadata['mainHash'] = ref.main_hash(metadata, entries['bytecode.bin'])
     entries['module.json'] = json.dumps(metadata).encode()
     with zipfile.ZipFile(library, 'w', compression=zipfile.ZIP_STORED) as archive:

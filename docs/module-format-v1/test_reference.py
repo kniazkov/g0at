@@ -28,6 +28,51 @@ class FormatTests(unittest.TestCase):
         with self.assertRaises((ValueError, UnicodeError)):
             r.normalize(value, kind)
 
+    def test_summary_consistency(self):
+        integer, string = {'type':'integer'}, {'type':'string'}
+        def check(left, right, la=None, ra=None, valid=True, arity=1):
+            a = {'when':{} if la is None else {'arguments':la}, **left}
+            b = {'when':{} if ra is None else {'arguments':ra}, **right}
+            for summaries in [[a,b], [b,a]]:
+                value = {'formatVersion':1, 'summaries':summaries}
+                if valid:
+                    self.assertIsNotNone(r.normalize_analysis(value, arity))
+                else:
+                    with self.assertRaises(ValueError): r.normalize_analysis(value, arity)
+        ri, rs = {'result':integer}, {'result':string}
+        check(ri, rs, valid=False)
+        check(ri, rs, valid=False, arity=0)
+        check(ri, rs, [integer], [string])
+        check(ri, rs, [{'type':'numeric'}], [integer], valid=False)
+        check(ri, rs, [{'nonNull':True}], [{'type':'null'}])
+        check(ri, rs, [{},integer], [string,{}], valid=False, arity=2)
+        check(ri, rs, [integer,{}], [string,{}], arity=2)
+        for kind, av, bv in [('integer', -(1<<63), (1<<63)-1),
+                             ('integer', 9007199254740992, 9007199254740993),
+                             ('boolean', False, True), ('string', 'a\0b', 'a\0c'),
+                             ('character', '😀', '\0'),
+                             ('real', '0000000000000000', '8000000000000000'),
+                             ('real', '7ff8000000000001', '7ff8000000000002')]:
+            a, b = {'type':kind, 'value':av}, {'type':kind, 'value':bv}
+            check({'result':a}, {'result':b}, valid=False)
+            check(ri, rs, [a], [b])
+            check(ri, rs, [a], [a], valid=False)
+        a = {'type':'integer','range':{'min':-3,'max':0}}
+        b = {'type':'integer','range':{'min':1,'max':4}}
+        check(ri, rs, [a], [b])
+        check({'result':a}, {'result':b}, valid=False)
+        b['range']['min'] = 0
+        check({'result':a}, {'result':b})
+        check(ri, rs, [a], [b], valid=False)
+        ai, astr = {'type':'array','elements':integer}, {'type':'array','elements':string}
+        check({'result':ai}, {'result':astr})
+        check(ri, rs, [ai], [astr], valid=False)
+        check({'result':{'type':'array','empty':True}}, {'result':ai})
+        check({'result':{'type':'numeric'}}, ri)
+        check({'normalReturn':False}, ri)
+        check({'effects':{'may':['input'],'unknown':False}},
+              {'effects':{'may':['output'],'unknown':False}})
+
     def test_strict_json(self):
         for text in ['{"a":1,"\\u0061":2}', '{"n":1e0}', '{"n":1.0}',
                      '{"n":NaN}', '\ufeff{}', '{"s":"\\ud800"}', '{"s":"\\udc00"}']:
