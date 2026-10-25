@@ -20,7 +20,13 @@ static bool same_location(bytecode_location_t a, bytecode_location_t b) {
     return a.file == b.file && a.line == b.line && a.column == b.column && a.function == b.function;
 }
 
-bytecode_t *link_code_and_data(code_builder_t *cb, data_builder_t *db) {
+bytecode_t *link_module_code_and_data(code_builder_t *cb,
+                                      data_builder_t *db,
+                                      const bytecode_file_t *files,
+                                      size_t file_count) {
+    if (!cb || !db || !files || !file_count || file_count > UINT32_MAX || cb->size > UINT32_MAX
+        || db->descriptors_count > UINT32_MAX || db->data_size > UINT32_MAX)
+        return NULL;
     size_t functions = 0;
     for (size_t i = 0; i < cb->size; ++i)
         functions += cb->instructions[i].opcode == FUNC;
@@ -29,12 +35,12 @@ bytecode_t *link_code_and_data(code_builder_t *cb, data_builder_t *db) {
         locations += !i || !same_location(cb->locations[i - 1], cb->locations[i]);
     uint64_t od = 64 + (uint64_t)cb->size * 8;
     uint64_t of = od + (uint64_t)db->descriptors_count * 16;
-    uint64_t on = of + 16;
+    uint64_t on = of + (uint64_t)file_count * 16;
     uint64_t ol = on + (uint64_t)functions * 32;
     uint64_t payload = ol + (uint64_t)locations * 24;
     uint64_t total = payload + db->data_size;
     if (total > UINT32_MAX || total > SIZE_MAX)
-        abort();
+        return NULL;
     bytecode_function_t *records = CALLOC((functions ? functions : 1) * sizeof(*records));
     uint8_t *bytes = CALLOC((size_t)total);
     memcpy(bytes, BINARY_FILE_SIGNATURE, 8);
@@ -43,7 +49,7 @@ bytecode_t *link_code_and_data(code_builder_t *cb, data_builder_t *db) {
                          (uint32_t)total,
                          (uint32_t)cb->size,
                          (uint32_t)db->descriptors_count,
-                         1,
+                         (uint32_t)file_count,
                          (uint32_t)functions,
                          (uint32_t)locations,
                          64,
@@ -66,7 +72,7 @@ bytecode_t *link_code_and_data(code_builder_t *cb, data_builder_t *db) {
         if (in.opcode == FUNC) {
             records[function] = (bytecode_function_t){cb->function_ids[i] ? cb->function_ids[i]
                                                                           : (uint32_t)function + 1,
-                                                      0,
+                                                      cb->locations[i].file,
                                                       (uint32_t)i,
                                                       i ? cb->instructions[i - 1].arg1 : 0,
                                                       in.arg1,
@@ -120,7 +126,14 @@ bytecode_t *link_code_and_data(code_builder_t *cb, data_builder_t *db) {
                 write_le32(bytes + payload + d.offset + j, word);
             }
     }
-    write_le32(bytes + of + 4, (uint32_t)cb->size);
+    for (size_t i = 0; i < file_count; ++i) {
+        const uint32_t words[] = {files[i].first,
+                                  files[i].count,
+                                  files[i].entry,
+                                  files[i].reserved};
+        for (size_t j = 0; j < 4; ++j)
+            write_le32(bytes + of + i * 16 + j * 4, words[j]);
+    }
     bytecode_t *code = CALLOC(sizeof(*code));
     code->buffer = bytes;
     code->buffer_size = (size_t)total;
@@ -130,10 +143,18 @@ bytecode_t *link_code_and_data(code_builder_t *cb, data_builder_t *db) {
     code->data_descriptor_count = db->descriptors_count;
     code->data = bytes + payload;
     code->files = (const bytecode_file_t *)(bytes + of);
-    code->file_count = 1;
+    code->file_count = file_count;
     code->functions = (const bytecode_function_t *)(bytes + on);
     code->function_count = functions;
     code->locations = (const bytecode_location_t *)(bytes + ol);
     code->location_count = locations;
+    return code;
+}
+
+bytecode_t *link_code_and_data(code_builder_t *cb, data_builder_t *db) {
+    bytecode_file_t file = {0, (uint32_t)cb->size, 0, 0};
+    bytecode_t *code = link_module_code_and_data(cb, db, &file, 1);
+    if (!code)
+        abort();
     return code;
 }

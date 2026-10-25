@@ -25,7 +25,7 @@ uint32_t add_declaration_to_data_segment(data_builder_t *builder, const declarat
             return e->index;
     declaration_descriptor_t descriptor = {DECLARATION_TAG,
                                            add_string_to_data_segment_ex(builder, decl->name),
-                                           0,
+                                           builder->file,
                                            decl->modifier};
     struct declaration_entry_t *entry = ALLOC(sizeof(*entry));
     *entry = (struct declaration_entry_t){
@@ -74,6 +74,7 @@ data_builder_t *create_data_builder(void) {
     builder->descriptors_capacity = INITIAL_DESCRIPTORS_LIST_CAPACITY;
     builder->strings = create_avl_tree(compare_string_keys);
     builder->declarations = NULL;
+    builder->file = 0;
     builder->strings->copy_key = copy_string_key;
     builder->strings->destroy_key = FREE;
     return builder;

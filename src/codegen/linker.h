@@ -17,3 +17,11 @@
  * responsibility to free this memory once it is no longer needed.
  */
 bytecode_t *link_code_and_data(code_builder_t *code_builder, data_builder_t *data_builder);
+
+/** @brief Link a module with explicit contiguous file instruction ranges.
+ * Returns NULL for invalid arguments or a module exceeding the v1 image size limit.
+ */
+bytecode_t *link_module_code_and_data(code_builder_t *code,
+                                      data_builder_t *data,
+                                      const bytecode_file_t *files,
+                                      size_t count);

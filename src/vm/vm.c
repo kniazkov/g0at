@@ -38,6 +38,7 @@ typedef struct {
 typedef bool (*instr_executor_t)(runtime_t *runtime, instruction_t instr, thread_t *thread);
 
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception);
+static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule);
 
 /** @brief Loads a string from the bytecode or retrieves it from the cache. */
 static object_t *load_string(runtime_t *runtime, process_t *process, uint32_t string_id) {
@@ -1093,6 +1094,76 @@ static bool exec_binding(runtime_t *runtime, instruction_t instr, thread_t *thre
     return true;
 }
 
+/** @brief A synchronous initializer reuses the caller image and string cache. */
+typedef struct {
+    runtime_t *runtime;
+    thread_t *thread;
+} file_execution_t;
+
+static bool
+execute_included_file(module_file_t *file, context_t *frame, void *data, exception_t *failure) {
+    file_execution_t *execution = data;
+    runtime_t *runtime = execution->runtime;
+    thread_t *thread = execution->thread;
+    if (module_file_bytecode(file) != runtime->code)
+        return false;
+    context_t *caller = thread->context;
+    instr_index_t address = thread->instr_id;
+    uint32_t args[ARGS_CAPACITY];
+    memcpy(args, thread->args, sizeof(args));
+    int args_count = thread->args_count;
+    int status = runtime->status;
+    exception_t saved = thread->exception;
+    thread->exception = (exception_t){0};
+    size_t stack_size = thread->data_stack->size;
+    frame->unwinding_index = stack_size ? stack_size - 1 : BAD_STACK_INDEX;
+    thread->context = frame;
+    thread->instr_id = module_file_entry(file);
+    thread->args_count = 0;
+    runtime->status = 0;
+    execute_instructions(runtime, thread, false);
+    bool success = runtime->status == 0 && !thread->exception.value;
+    *failure = thread->exception;
+    thread->exception = saved;
+    while (thread->context != frame)
+        thread->context = destroy_context(thread->context);
+    trim_to_context(thread, frame);
+    thread->context = caller;
+    thread->instr_id = address;
+    memcpy(thread->args, args, sizeof(args));
+    thread->args_count = args_count;
+    runtime->status = status;
+    return success;
+}
+
+/** @brief Executes a fixed local-file link without opening any source path. */
+static bool exec_MODULE_INCLUDE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    module_files_t *files = find_module_files(thread->process, thread->context->module);
+    module_file_t *file = module_files_get(files, instr.arg1);
+    if (!file || module_file_bytecode(file) != runtime->code)
+        return dispatch_exception(runtime,
+                                  thread,
+                                  (exception_t){.value = get_exception_invalid_operation()});
+    file_execution_t execution = {runtime, thread};
+    object_t *scope = NULL;
+    exception_t failure = {0};
+    module_initialize_status_t status = initialize_module_file(file,
+                                                               thread->context,
+                                                               execute_included_file,
+                                                               &execution,
+                                                               &scope,
+                                                               &failure);
+    if (status != MODULE_INITIALIZE_OK) {
+        if (!failure.value)
+            failure.value = get_exception_invalid_operation();
+        return dispatch_exception(runtime, thread, failure);
+    }
+    INCREF(scope);
+    push_object_onto_stack(thread->data_stack, scope);
+    thread->instr_id++;
+    return true;
+}
+
 /** @brief Array of instruction execution functions for the Goat virtual machine. */
 static instr_executor_t executors[] = {
     exec_NOP,      /**< No operation - does nothing. */
@@ -1155,49 +1226,77 @@ static instr_executor_t executors[] = {
     exec_SETINDEX, /**< Writes through the indexing virtual method. */
     exec_ARRAY,    /**< Creates a new array. */
     exec_INHERIT,  /**< Enters an explicitly derived object. */
-    exec_LOOP_ENTER,  exec_LOOP_JUMP,     exec_DUPN,          exec_ROTATE,      exec_SNAPSHOT,
-    exec_ITER_NEXT,   exec_FINALLY_ENTER, exec_FINALLY_LEAVE, exec_FINALLY_END, exec_declaration,
-    exec_declaration, exec_binding,       exec_binding
+    exec_LOOP_ENTER,  exec_LOOP_JUMP,     exec_DUPN,          exec_ROTATE,        exec_SNAPSHOT,
+    exec_ITER_NEXT,   exec_FINALLY_ENTER, exec_FINALLY_LEAVE, exec_FINALLY_END,   exec_declaration,
+    exec_declaration, exec_binding,       exec_binding,       exec_MODULE_INCLUDE
     // Additional opcodes can be added here in the future...
 };
 
-int run(process_t *proc, bytecode_t *code) {
-    // preparing the environment
-    runtime_t runtime;
-    runtime.code = code;
-    runtime.status = 0;
-    if ((proc->string_cache_size = code->data_descriptor_count) > 0) {
-        proc->string_cache = CALLOC(code->data_descriptor_count * sizeof(object_t *));
-    }
-
-    // execution
+/** @brief Nested file execution never schedules another thread mid-initializer. */
+static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule) {
     bool flag = true;
-    thread_t *thread = proc->main_thread;
-    if (thread->context->file_initialization_boundary)
-        thread->context->unwinding_index =
-            thread->data_stack->size ? thread->data_stack->size - 1 : BAD_STACK_INDEX;
     while (flag) {
-        if (thread->instr_id >= code->instructions_count
-            || code->instructions[thread->instr_id].opcode
+        if (thread->instr_id >= runtime->code->instructions_count
+            || runtime->code->instructions[thread->instr_id].opcode
                    >= sizeof(executors) / sizeof(*executors)) {
             FPRINTF(stderr, "Invalid bytecode instruction address or opcode.\n");
-            runtime.status = 1;
+            runtime->status = 1;
             break;
         }
         thread->context->instruction = thread->instr_id;
-        instruction_t instr = code->instructions[thread->instr_id];
-        instr_executor_t exec = executors[instr.opcode];
-        flag = exec(&runtime, instr, thread);
-        thread = thread->next;
+        instruction_t instr = runtime->code->instructions[thread->instr_id];
+        flag = executors[instr.opcode](runtime, instr, thread);
+        if (schedule)
+            thread = thread->next;
     }
+}
 
-    // cleanup
-    for (size_t index = 0; index < code->data_descriptor_count; index++) {
+/** @brief Cache lifetime is one outer VM entry, never a nested include. */
+static void prepare_string_cache(process_t *proc, bytecode_t *code) {
+    proc->string_cache_size = code->data_descriptor_count;
+    proc->string_cache =
+        proc->string_cache_size ? CALLOC(proc->string_cache_size * sizeof(object_t *)) : NULL;
+}
+
+static void finish_string_cache(process_t *proc) {
+    for (size_t index = 0; index < proc->string_cache_size; index++)
         DECREFIF(proc->string_cache[index]);
-    }
     FREE(proc->string_cache);
     proc->string_cache = NULL;
     proc->string_cache_size = 0;
     collect_garbage(proc);
+}
+
+int run(process_t *proc, bytecode_t *code) {
+    runtime_t runtime = {code, 0};
+    prepare_string_cache(proc, code);
+    thread_t *thread = proc->main_thread;
+    if (thread->context->file_initialization_boundary)
+        thread->context->unwinding_index =
+            thread->data_stack->size ? thread->data_stack->size - 1 : BAD_STACK_INDEX;
+    execute_instructions(&runtime, thread, true);
+    finish_string_cache(proc);
     return runtime.status;
+}
+
+int run_module_file(process_t *proc, module_file_t *file) {
+    if (!proc || !file || module_file_process(file) != proc)
+        return 1;
+    bytecode_t *code = module_file_bytecode(file);
+    runtime_t runtime = {code, 0};
+    prepare_string_cache(proc, code);
+    thread_t *thread = proc->main_thread;
+    file_execution_t execution = {&runtime, thread};
+    object_t *scope = NULL;
+    exception_t failure = {0};
+    module_initialize_status_t status = initialize_module_file(file,
+                                                               thread->context,
+                                                               execute_included_file,
+                                                               &execution,
+                                                               &scope,
+                                                               &failure);
+    clear_exception(&thread->exception);
+    thread->exception = failure;
+    finish_string_cache(proc);
+    return status == MODULE_INITIALIZE_OK ? 0 : 1;
 }

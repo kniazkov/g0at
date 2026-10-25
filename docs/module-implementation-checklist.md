@@ -52,7 +52,7 @@
 - [x] 36. [#239](https://github.com/kniazkov/g0at/issues/239) — Инициализация: таймаут и идентичность исключения
 - [x] 37. [#225](https://github.com/kniazkov/g0at/issues/225) — Проверка семантики незавершённых областей
 - [x] 38. [#226](https://github.com/kniazkov/g0at/issues/226) — Проверка прототипов после ошибки инициализации
-- [ ] 39. [#194](https://github.com/kniazkov/g0at/issues/194) — Оператор include для исходных файлов
+- [x] 39. [#194](https://github.com/kniazkov/g0at/issues/194) — Оператор include для исходных файлов
 - [ ] 40. [#195](https://github.com/kniazkov/g0at/issues/195) — Оператор import для готовых модулей
 - [ ] 41. [#228](https://github.com/kniazkov/g0at/issues/228) — Переэкспорт и происхождение функций
 - [ ] 42. [#227](https://github.com/kniazkov/g0at/issues/227) — Права и порядок вычисления присваиваний
@@ -245,7 +245,7 @@
 
 - [ ] 145: required при запуске требует совместимую специализацию главного модуля; зависимости могут исполняться на VM; загрузка остаётся ленивой: [#210](https://github.com/kniazkov/g0at/issues/210), [#232](https://github.com/kniazkov/g0at/issues/232)
 
-- [ ] 146: относительный include разрешается от настоящего исходного файла после разрешения символических ссылок: [#186](https://github.com/kniazkov/g0at/issues/186), [#194](https://github.com/kniazkov/g0at/issues/194)
+- [x] 146: относительный include разрешается от настоящего исходного файла после разрешения символических ссылок: [#186](https://github.com/kniazkov/g0at/issues/186), [#194](https://github.com/kniazkov/g0at/issues/194)
 
 - [ ] 147: равноправные потоки удерживают VM и модули до завершения всех потоков; exit завершает весь процесс: [#217](https://github.com/kniazkov/g0at/issues/217), [#230](https://github.com/kniazkov/g0at/issues/230)
 
@@ -265,7 +265,7 @@
 
 - [ ] 155: ошибка извлечения исправной DLL/SO — однократное предупреждение и VM для этой библиотеки в auto, завершение с ошибкой в required; повреждение всегда фатально: [#210](https://github.com/kniazkov/g0at/issues/210)
 
-- [ ] 156: идентичность исходника по каноническому пути; разные пути жёстких ссылок дают разные области и базы include: [#186](https://github.com/kniazkov/g0at/issues/186), [#194](https://github.com/kniazkov/g0at/issues/194)
+- [x] 156: идентичность исходника по каноническому пути; разные пути жёстких ссылок дают разные области и базы include: [#186](https://github.com/kniazkov/g0at/issues/186), [#194](https://github.com/kniazkov/g0at/issues/194)
 
 - [ ] 157: main и локальный/выходной modules привязаны к настоящему .gmod; явный относительный --module-dir — к рабочему каталогу: [#186](https://github.com/kniazkov/g0at/issues/186), [#188](https://github.com/kniazkov/g0at/issues/188), [#191](https://github.com/kniazkov/g0at/issues/191)
 

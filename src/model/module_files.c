@@ -129,6 +129,14 @@ module_file_t *module_files_get(module_files_t *files, uint32_t id) {
     return files && id < files->code->file_count ? files->files + id : NULL;
 }
 
+module_files_t *find_module_files(process_t *process, const module_t *module) {
+    if (process && module)
+        for (module_files_t *set = process->module_files; set; set = set->next)
+            if (set->identity == module)
+                return set;
+    return NULL;
+}
+
 module_file_t *module_files_main(module_files_t *files) {
     return files ? module_files_get(files, files->main) : NULL;
 }

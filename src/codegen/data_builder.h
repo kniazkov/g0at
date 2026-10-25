@@ -18,6 +18,7 @@ typedef struct data_builder_t data_builder_t;
 
 /** @brief A builder for managing and adding static data to the bytecode file. */
 struct data_builder_t {
+    uint32_t file; /**< Local file whose declarations are currently generated. */
     /** @brief Array of data descriptors. */
     data_descriptor_t *descriptors;
 

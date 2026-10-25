@@ -42,6 +42,8 @@ bool create_module_files_from_snapshot(process_t *process,
 /** Borrowed process-lifetime views. NULL sets have zero files/no members. */
 size_t module_files_count(const module_files_t *files);
 module_file_t *module_files_get(module_files_t *files, uint32_t id);
+/** @brief Borrowed file set for an exact process-owned module identity; no I/O. */
+module_files_t *find_module_files(process_t *process, const module_t *module);
 module_file_t *module_files_main(module_files_t *files);
 /** The wire buffer is immutable; the wrapper's VM caches remain outside it. */
 bytecode_t *module_files_bytecode(module_files_t *files);

@@ -4391,3 +4391,13 @@ branches: an unfinished prototype raises a catchable error, a failed one the
 original exception. Neither a partial copy nor source mutation is permitted.
 After successful initialization the same graph can be flattened.
 [Rules 41–45 checks](../../module-initialization-api.md).
+
+## Executable source includes (#194)
+
+The source compiler now binds literal includes to local file indices and emits
+one immutable multi-file image. The VM executes each include through the shared
+lazy initialization gate and returns its persistent scope, without inheriting
+caller locals or reopening source paths. Symlink aliases share initialization;
+distinct hardlink paths do not. Saved modules execute after their sources are
+removed. [Compiler/runtime API and end-to-end checks](../../source-include-api.md).
+Full public CLI integration remains the separate #191 step.
