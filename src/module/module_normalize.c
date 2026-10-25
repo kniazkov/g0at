@@ -220,6 +220,96 @@ static void sort(context *ctx, value *array, sort_kind kind, bool unique) {
     free(items);
 }
 
+/** ValueFacts describes sets of values, not observed executions. Keep this wire
+ * check independent of the VM: every array pair intersects at the empty array,
+ * even when their element descriptions are disjoint. Numeric is a union, not a
+ * separate runtime type. Inputs here have already passed facts() validation.
+ */
+static unsigned facts_types(value *facts) {
+    const char *names[] = {"null",
+                           "boolean",
+                           "integer",
+                           "real",
+                           "character",
+                           "string",
+                           "function",
+                           "array",
+                           "object"};
+    value *type = get(facts, "type");
+    unsigned mask = (1u << 9) - 1;
+    if (is(type, "numeric"))
+        mask = (1u << 2) | (1u << 3);
+    else if (type)
+        for (size_t i = 0; i < sizeof(names) / sizeof(*names); ++i)
+            if (is(type, names[i])) {
+                mask = 1u << i;
+                break;
+            }
+    if (get(facts, "nonNull"))
+        mask &= ~1u;
+    return mask;
+}
+
+static void integer_bounds(value *facts, int64_t *min, int64_t *max) {
+    value *constant = get(facts, "value"), *range = get(facts, "range");
+    *min = constant ? number(constant) : range ? number(get(range, "min")) : INT64_MIN;
+    *max = constant ? number(constant) : range ? number(get(range, "max")) : INT64_MAX;
+}
+
+/** Exact existence test for the current, validated ValueFacts vocabulary. No
+ * arithmetic on real values: their wire constants preserve signed zero/NaN bits.
+ */
+static bool facts_intersect(value *a, value *b) {
+    unsigned common = facts_types(a) & facts_types(b);
+    value *av = get(a, "value"), *bv = get(b, "value");
+    if (common & (1u << 2)) {
+        int64_t amin, amax, bmin, bmax;
+        integer_bounds(a, &amin, &amax);
+        integer_bounds(b, &bmin, &bmax);
+        if (amin <= bmax && bmin <= amax)
+            return true;
+        common &= ~(1u << 2);
+    }
+    if (!common)
+        return false;
+    if (!av || !bv)
+        return true;
+    if (common & (1u << 1))
+        return yyjson_mut_get_bool(av) == yyjson_mut_get_bool(bv);
+    /* Other scalar constants are strings, including exact binary64 bit strings.
+     * The null constant was removed; compound values cannot carry value. */
+    return !text_compare(av, bv);
+}
+
+static bool conditions_intersect(value *a, value *b, size_t count) {
+    value *aa = get(get(a, "when"), "arguments");
+    value *ba = get(get(b, "when"), "arguments");
+    for (size_t i = 0; i < count; ++i)
+        if (!facts_intersect(yyjson_mut_arr_get(aa, i), yyjson_mut_arr_get(ba, i)))
+            return false;
+    return true;
+}
+
+/** Detect incompatible normal-result claims, not different effect upper bounds.
+ * A no-normal-return summary has no result and never conflicts merely because
+ * another applicable summary constrains its (vacuous) normal result. */
+static void consistent_summaries(context *ctx, value *function, value *summaries) {
+    size_t count = yyjson_mut_arr_size(summaries);
+    size_t arity = yyjson_mut_arr_size(get(function, "parameters"));
+    for (size_t i = 0; i < count; ++i) {
+        value *a = yyjson_mut_arr_get(summaries, i), *ar = get(a, "result");
+        if (!ar)
+            continue;
+        for (size_t j = i + 1; j < count; ++j) {
+            value *b = yyjson_mut_arr_get(summaries, j), *br = get(b, "result");
+            if (br && !facts_intersect(ar, br) && conditions_intersect(a, b, arity)) {
+                require(ctx, false);
+                return;
+            }
+        }
+    }
+}
+
 static void analysis(context *ctx, value *function) {
     value *a = get(function, "analysis");
     if (!a)
@@ -264,6 +354,9 @@ static void analysis(context *ctx, value *function) {
         }
     }
     sort(ctx, summaries, SORT_CANONICAL, true); /* Duplicates BEFORE removing empty claims. */
+    if (ctx->error)
+        return;
+    consistent_summaries(ctx, function, summaries);
     if (ctx->error)
         return;
     for (i = yyjson_mut_arr_size(summaries); i > 0; i--)

@@ -16,7 +16,8 @@ typedef enum {
     MODULE_BYTECODE_FILES,
     MODULE_BYTECODE_FUNCTIONS,
     MODULE_BYTECODE_PARAMETERS,
-    MODULE_BYTECODE_IMPORTS
+    MODULE_BYTECODE_IMPORTS,
+    MODULE_BYTECODE_EXTERNALS
 } module_bytecode_status_t;
 
 /** @brief First failing stage, with an optional table/instruction index. */

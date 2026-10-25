@@ -44,7 +44,8 @@ static uint32_t called_effects(const function_call_graph_node_t *node) {
             found = true;
             effects |= edge->kind == CALL_TARGET_USER && edge->target
                            ? edge->target->summary->effects
-                           : FUNCTION_EFFECT_UNKNOWN;
+                       : edge->kind == CALL_TARGET_IMPORTED ? edge->imported_effects
+                                                            : FUNCTION_EFFECT_UNKNOWN;
         }
         if (!found)
             effects |= FUNCTION_EFFECT_UNKNOWN;

@@ -8,6 +8,7 @@
 #include "lib/allocate.h"
 #include "lib/string_ext.h"
 #include "lib/wire.h"
+#include "model/module_file_declarations.h"
 #include "module/module_json_internal.h"
 
 #include <string.h>
@@ -106,6 +107,68 @@ check_imports(const bytecode_t *code, const yyjson_val *root, size_t *index) {
     return status;
 }
 
+typedef struct {
+    yyjson_val *externals;
+    bool *seen;
+    size_t matched;
+    size_t *index;
+} interface_check_t;
+
+static bool check_declaration(const bytecode_t *code,
+                              size_t instruction,
+                              const declaration_descriptor_t *declaration,
+                              void *context) {
+    if (declaration->modifier != ACCESS_EXTERNAL)
+        return true;
+    interface_check_t *check = context;
+    *check->index = instruction;
+    const data_descriptor_t *name = code->data_descriptors + declaration->name;
+    yyjson_obj_iter iterator = yyjson_obj_iter_with(check->externals);
+    yyjson_val *key;
+    size_t i = 0;
+    while ((key = yyjson_obj_iter_next(&iterator))) {
+        if (same_name((const gchar_t *)(code->data + name->offset), name->count, key)) {
+            yyjson_val *external = yyjson_obj_iter_get_val(key);
+            if (check->seen[i]
+                || yyjson_get_bool(yyjson_obj_get(external, "mutable"))
+                       != (code->instructions[instruction].opcode == DVAR))
+                return false;
+            check->seen[i] = true;
+            ++check->matched;
+            return true;
+        }
+        ++i;
+    }
+    return false;
+}
+
+static module_bytecode_status_t
+check_interface(const bytecode_t *code, yyjson_val *root, size_t *index) {
+    yyjson_val *externals = yyjson_obj_get(root, "externals");
+    size_t count = yyjson_obj_size(externals);
+    uint32_t main = number(root, "main");
+    /* No interface facts or external declarations needs no lexical reconstruction. */
+    bool needed = count != 0;
+    bytecode_file_t file = code->files[main];
+    for (size_t i = file.first; !needed && i - file.first < file.count; ++i) {
+        instruction_t instruction = code->instructions[i];
+        declaration_descriptor_t declaration;
+        if ((instruction.opcode == DVAR || instruction.opcode == DCONST)
+            && get_bytecode_declaration(code, instruction.arg1, &declaration)
+            && declaration.modifier == ACCESS_EXTERNAL)
+            needed = true;
+    }
+    if (!needed)
+        return MODULE_BYTECODE_OK;
+    interface_check_t check = {externals, CALLOC(count ? count * sizeof(bool) : 1), 0, index};
+    bool valid = visit_module_file_declarations(code, main, true, check_declaration, &check)
+                 && check.matched == count;
+    FREE(check.seen);
+    if (valid)
+        *index = SIZE_MAX;
+    return valid ? MODULE_BYTECODE_OK : MODULE_BYTECODE_EXTERNALS;
+}
+
 module_bytecode_status_t read_module_bytecode(const char *metadata,
                                               size_t metadata_size,
                                               const void *image,
@@ -136,6 +199,8 @@ module_bytecode_status_t read_module_bytecode(const char *metadata,
     result.status = check_tables(code, root, &result.index);
     if (!result.status)
         result.status = check_imports(code, root, &result.index);
+    if (!result.status)
+        result.status = check_interface(code, root, &result.index);
     if (!result.status) {
         *entry = code->files[number(root, "main")].entry;
         *out = code;
@@ -157,6 +222,7 @@ const char *module_bytecode_status_string(module_bytecode_status_t status) {
                                         "file table mismatch",
                                         "function table mismatch",
                                         "parameter name mismatch",
-                                        "import/dependency mismatch"};
+                                        "import/dependency mismatch",
+                                        "external interface mismatch"};
     return (unsigned)status < sizeof(names) / sizeof(names[0]) ? names[status] : "unknown status";
 }

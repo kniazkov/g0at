@@ -196,6 +196,46 @@ def unique(records, key, message):
     require(len(set(keys)) == len(keys), message)
 
 
+def facts_intersect(a, b):
+    """Existence of a value satisfying both validated, normalized descriptions."""
+    def types(v):
+        kind = v.get("type")
+        kinds = ({"integer", "real"} if kind == "numeric" else {kind}) if kind else {
+            "null", "boolean", "integer", "real", "character", "string",
+            "function", "array", "object"}
+        return kinds - {"null"} if v.get("nonNull") else kinds
+
+    common = types(a) & types(b)
+    if "integer" in common:
+        def bounds(v):
+            if "value" in v:
+                return v["value"], v["value"]
+            return v.get("range", {}).get("min", -(1 << 63)), v.get("range", {}).get("max", (1 << 63)-1)
+        amin, amax = bounds(a)
+        bmin, bmax = bounds(b)
+        if amin <= bmax and bmin <= amax:
+            return True
+        common.remove("integer")
+    if not common:
+        return False
+    # Any pair of array descriptions admits the empty array. Scalar constants
+    # use exact wire values (including binary64 bits), not arithmetic equality.
+    return "value" not in a or "value" not in b or a["value"] == b["value"]
+
+
+def consistent_summaries(summaries, arity):
+    for i, a in enumerate(summaries):
+        if "result" not in a:
+            continue
+        for b in summaries[i + 1:]:
+            if "result" not in b or facts_intersect(a["result"], b["result"]):
+                continue
+            aa = a["when"].get("arguments", [{}] * arity)
+            ba = b["when"].get("arguments", [{}] * arity)
+            require(not all(facts_intersect(x, y) for x, y in zip(aa, ba)),
+                    "contradictory normal-result summaries")
+
+
 def normalize_analysis(value, arity):
     shape(value, DEFS["analysis"])
     summaries = []
@@ -217,6 +257,7 @@ def normalize_analysis(value, arity):
                 del s["effects"]
         summaries.append(s)
     unique(summaries, canonical, "duplicate normalized summary")
+    consistent_summaries(summaries, arity)
     summaries = sorted((s for s in summaries if set(s) != {"when"}), key=canonical)
     return {"formatVersion": 1, "summaries": summaries} if summaries else None
 

@@ -19,3 +19,6 @@ typedef struct parser_memory_t parser_memory_t;
  * from declaration nodes.
  */
 void interpret(node_t *root_node, parser_memory_t *memory, analysis_collector_t *collector);
+
+/** Interpret original module file scopes without rewriting the graph. */
+void interpret_module(node_t *root_node, parser_memory_t *memory, analysis_collector_t *collector);

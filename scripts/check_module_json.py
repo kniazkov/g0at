@@ -62,7 +62,60 @@ def unknown_fields(value, kind):
             read(modify(value, path, altered) if path else altered, kind, 'unknown JSON field')
 
 
+def summary_consistency():
+    """Wire facts can detect contradictions without executing dependency code."""
+    def check(left, right, left_args=None, right_args=None, error=False, arity=1):
+        summaries = [dict(when={} if args is None else dict(arguments=args), **claim)
+                     for claim, args in [(left, left_args), (right, right_args)]]
+        module = dict(M, functions=[dict(functionId=1, file=0, instruction=0,
+            parameters=[dict(name=f'p{i}') for i in range(arity)],
+            analysis=dict(formatVersion=1, summaries=summaries))])
+        read(module, error=error)
+        module['functions'][0]['analysis']['summaries'].reverse()
+        read(module, error=error)
+
+    integer, string = dict(type='integer'), dict(type='string')
+    ri, rs = dict(result=integer), dict(result=string)
+    check(ri, rs, error=True)
+    check(ri, rs, error=True, arity=0)
+    check(ri, rs, [integer], [string])  # Disjoint call conditions.
+    check(ri, rs, [dict(type='numeric')], [integer], error=True)
+    check(ri, rs, [dict(nonNull=True)], [dict(type='null')])
+    check(ri, rs, [dict(nonNull=True)], [integer], error=True)
+    check(ri, rs, [dict(type='integer', range=dict(min=-3, max=0))],
+          [dict(type='integer', range=dict(min=1, max=4))])
+    check(ri, rs, [dict(type='integer', range=dict(min=-3, max=0))],
+          [dict(type='integer', range=dict(min=0, max=4))], error=True)
+    check(ri, rs, [{}, integer], [{}, string], arity=2)
+    check(ri, rs, [{}, integer], [integer, {}], arity=2, error=True)
+    for kind, a, b in [('integer', -(1 << 63), (1 << 63)-1),
+                       ('integer', 9007199254740992, 9007199254740993),
+                       ('boolean', True, False), ('character', '😀', '\0'),
+                       ('string', 'a\0b', 'a\0c'),
+                       ('real', '0000000000000000', '8000000000000000'),
+                       ('real', '7ff8000000000001', '7ff8000000000002')]:
+        fa, fb = dict(type=kind, value=a), dict(type=kind, value=b)
+        check(dict(result=fa), dict(result=fb), error=True)
+        check(ri, rs, [fa], [fb])
+        check(ri, rs, [fa], [fa], error=True)
+    check(dict(result=dict(type='integer', range=dict(min=-5, max=-1))),
+          dict(result=dict(type='integer', range=dict(min=0, max=5))), error=True)
+    check(dict(result=dict(type='integer', range=dict(min=-5, max=0))),
+          dict(result=dict(type='integer', range=dict(min=0, max=5))))
+    check(dict(result=dict(type='numeric')), ri)
+    check(dict(result=dict(type='null')), dict(result=dict(nonNull=True)), error=True)
+    ai, astr = dict(type='array', elements=integer), dict(type='array', elements=string)
+    check(dict(result=ai), dict(result=astr))  # Both permit the empty array.
+    check(ri, rs, [ai], [astr], error=True)
+    check(dict(result=dict(type='array', empty=True)), dict(result=ai))
+    check(dict(normalReturn=False), ri)  # No normal-return assertion is vacuous.
+    check(dict(effects=dict(may=['input'], unknown=False)),
+          dict(effects=dict(may=['output'], unknown=False)))  # Upper bounds intersect.
+    check(dict(result=integer, effects=dict(may=[], unknown=False)), ri)
+
+
 def main():
+    summary_consistency()
     expected = dict(G, dependencies={}, native=dict(mode='auto', target='host'))
     assert read(G, 'gmod') == expected
     assert read(dict(G, dependencies={}, native={}), 'gmod') == expected

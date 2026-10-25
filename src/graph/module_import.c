@@ -4,6 +4,8 @@
  */
 #include "module_import.h"
 
+#include "analysis/abstract_state.h"
+#include "analysis/module_interface.h"
 #include "codegen/code_builder.h"
 #include "codegen/data_builder.h"
 #include "codegen/source_builder.h"
@@ -17,6 +19,7 @@ typedef struct {
     expression_t base;
     string_view_t identity;
     node_t *literal;
+    const module_interface_t *interface;
 } import_t;
 
 static string_value_t generate_goat_code(const node_t *node) {
@@ -38,9 +41,22 @@ static instr_index_t generate_bytecode(node_t *node, code_builder_t *code, data_
     return add_instruction(code, (instruction_t){.opcode = MODULE_IMPORT, .arg1 = descriptor});
 }
 
+static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
+    /* Initialization can call arbitrary user code. Even a known interface does not
+       grant permission to erase its effects or preserve mutable caller facts. */
+    forget_abstract_values(state);
+    const module_interface_t *interface = ((import_t *)node)->interface;
+    return interface ? make_module_scope_element(arena, interface) : make_top_element();
+}
+
+static const lattice_element_t *
+analyze_reachability(node_t *node, abstract_state_t **state, analysis_collector_t *collector) {
+    return calculate(node, *state, (*state)->arena);
+}
+
 static node_vtbl_t import_vtbl = {
     .type = NODE_MODULE_IMPORT,
-    .analyze_reachability = reachability_unknown,
+    .analyze_reachability = analyze_reachability,
     .is_pure = not_pure,
     .simplify = no_simplification,
     .collect_direct_effects = unknown_direct_effects,
@@ -56,7 +72,7 @@ static node_vtbl_t import_vtbl = {
     .get_related_count = no_related_nodes,
     .get_related = no_related_node,
     .get_relation_type = no_relation_type,
-    .calculate = unknown_abstract_value,
+    .calculate = calculate,
     .execute = execute_nothing,
     .generate_goat_code = generate_goat_code,
     .generate_indented_goat_code = generate_indented_goat_code,
@@ -74,4 +90,9 @@ node_t *create_module_import_node(arena_t *arena, string_view_t identity, node_t
     expr->identity = copy_string_to_arena(arena, identity.data, identity.length);
     expr->literal = literal;
     return &expr->base.base;
+}
+
+void set_module_import_interface(node_t *node, const module_interface_t *interface) {
+    if (node && node->vtbl->type == NODE_MODULE_IMPORT)
+        ((import_t *)node)->interface = interface;
 }

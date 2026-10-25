@@ -52,6 +52,7 @@
 #include "test_member_access.h"
 #include "test_model.h"
 #include "test_module_identity.h"
+#include "test_module_interface.h"
 #include "test_modulo.h"
 #include "test_multiplication.h"
 #include "test_mutual_recursion.h"
@@ -295,6 +296,9 @@ static test_description_t test_list[] = {
     {"unknown expression values", test_unknown_expression_values},
     {"unknown values in analysis", test_unknown_values_in_analysis},
     {"valueless nodes and known values", test_valueless_nodes_and_known_values},
+    {"module interface values", test_module_interface_values},
+    {"module interface calls", test_module_interface_calls},
+    {"module interface references", test_module_interface_references},
     {"lattice examples", test_lattice_examples},
     {"lattice boundaries", test_lattice_boundaries},
     {"lattice arrays", test_lattice_arrays},

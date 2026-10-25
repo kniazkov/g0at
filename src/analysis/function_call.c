@@ -9,6 +9,7 @@
 #include "graph/expression.h"
 #include "graph/node.h"
 #include "model/builtin_function.h"
+#include "module_interface.h"
 
 /** @brief Arena-owned identity; exit states live only while the invocation is active. */
 typedef struct abstract_call_frame_t {
@@ -57,6 +58,13 @@ const lattice_element_t *interpret_function_call(const lattice_element_t *functi
             return make_bottom_element();
         }
     }
+    if (function->type == LATTICE_KNOWN_FUNCTION
+        && ((const known_function_element_t *)function)->imported)
+        return interpret_imported_call(((const known_function_element_t *)function)->imported,
+                                       args,
+                                       count,
+                                       caller,
+                                       NULL);
     /* Call dependencies are not solved by the initial return-type pass. */
     if (caller->type_analysis_incomplete) {
         *caller->type_analysis_incomplete = true;

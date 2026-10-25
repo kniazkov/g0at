@@ -50,3 +50,19 @@ The component harness consumes independent JSON/image fixtures without running
 user code. GitHub CI runs these checks on Linux x86_64/aarch64 and Windows MinGW.
 The image unit tests and CLI corruption tests also cover invalid unreachable
 instructions, full-width sparse IDs, ownership mismatches and unchanged bytes.
+
+## Entry interface consistency (#205)
+
+After file/function/parameter/import checks, the reader checks `externals` against
+entry-file declarations. Names and mutability must match exactly; public/private,
+nested object/block and function-body declarations cannot impersonate an external
+entry binding. This uses the same scope walker as pending file declarations, in
+nonexecuting syntactic mode: lexical fallthrough after throw/return/branches keeps
+unreachable source declarations in the interface, but END ends the file body and
+function-location runs are excluded. Disconnected bytes after END do not establish
+an export. The runtime reservation path keeps its original reachable-only mode.
+
+`MODULE_BYTECODE_EXTERNALS` is appended to the status enumeration (existing values
+are unchanged). This check validates declaration structure, not the truth of an
+export's type/value or analytical summary. Those guarantees remain the producer's
+responsibility; dependency code is never run to confirm them.

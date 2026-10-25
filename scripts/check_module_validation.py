@@ -2,6 +2,7 @@
 # Copyright 2026 Ivan Kniazkov
 """Shared archive fixtures for the compiler/loader/inspect/merge validation API."""
 import copy
+from module_interface_fixtures import with_external_declarations
 import hashlib
 import io
 import json
@@ -71,6 +72,7 @@ def pack(parts):
 
 def archive(m=None, code=IMAGE, payloads=None, rehash=True, raw_json=None):
     m = copy.deepcopy(m if m is not None else module())
+    code = with_external_declarations(m, code)
     if rehash:
         m['mainHash'] = ref.main_hash(dict(m, native=[]), code)
     parts = {'module.json': raw_json if raw_json is not None else json.dumps(m).encode(),

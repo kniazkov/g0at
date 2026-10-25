@@ -4429,3 +4429,19 @@ and only then evaluates RHS. Compound assignment also retains the old value.
 Final writes recheck current rights and array bounds; RHS effects are not rolled
 back on failure. Source analysis preserves this order during optimization.
 [Runtime contract and mapped end-to-end checks](../../module-assignment-access.md).
+
+
+## Implemented interface analysis (#205)
+
+The module compiler now exports the entry file's external declarations and only
+completed, proven function summaries. Consumers use the validated metadata
+without executing or reanalyzing dependency code. Mutable bindings remain dynamic;
+function IDs do not serialize closure captures. Applicable summaries must cover
+all possible arguments, while missing facts remain unknown. Import initialization,
+access checks, side effects and exceptions are preserved even for known constants.
+
+The v1 contract does not encode callback relationships, result aliases or deep
+independence: these must not be inferred from const or purity. Conflicting result
+facts under overlapping conditions are rejected without proving the dependency's
+implementation. See [the compiler/analyzer API](../../module-interface-api.md)
+for ownership, graph resolution, precision limits and executable tests.
