@@ -48,6 +48,20 @@ module_file_t *module_files_main(module_files_t *files);
 /** The wire buffer is immutable; the wrapper's VM caches remain outside it. */
 bytecode_t *module_files_bytecode(module_files_t *files);
 module_t *module_files_identity(module_files_t *files);
+/** Trusted graph loader only: bind a validated import descriptor to a direct
+ * dependency's main file. Both sets must belong to the same process. Bindings
+ * and string caches are memory-only and never alter the bytecode wire buffer.
+ * Repeating the same binding is harmless; replacing a target is rejected.
+ */
+bool bind_module_files_import(module_files_t *consumer,
+                              uint32_t descriptor,
+                              module_files_t *target);
+/** Borrowed prebound main file; unbound/out-of-range descriptors return NULL. */
+module_file_t *module_files_import(module_files_t *consumer, uint32_t descriptor);
+/** Borrowed process-lifetime string cache entry for a validated string descriptor.
+ * Cached objects are GC roots and never shared by descriptor number across images.
+ */
+object_t *module_files_string(module_files_t *files, uint32_t descriptor);
 /** Non-NULL file required for these identity/diagnostic accessors. */
 uint32_t module_file_id(const module_file_t *file);
 instr_index_t module_file_entry(const module_file_t *file);

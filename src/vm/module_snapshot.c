@@ -4,6 +4,8 @@
  */
 #include "module_snapshot.h"
 
+#include "goat/module_identity.h"
+#include "lib/allocate.h"
 #include "model/process.h"
 
 #include <stdlib.h>
@@ -94,6 +96,38 @@ module_graph_status_t load_module_snapshot(const char *archive,
         if (!created) {
             free_module_snapshot(snapshot);
             return MODULE_GRAPH_MEMORY;
+        }
+    }
+    /* Resolve only edges of this consumer, never the global snapshot inventory.
+       Validation already guarantees canonical literals and complete exact hashes. */
+    for (size_t i = 0; i < count; ++i) {
+        const bytecode_t *code = module_files_bytecode(snapshot->files[i]);
+        for (size_t j = 0; j < code->instructions_count; ++j) {
+            instruction_t instruction = code->instructions[j];
+            if (instruction.opcode != MODULE_IMPORT)
+                continue;
+            const data_descriptor_t *descriptor = code->data_descriptors + instruction.arg1;
+            goat_module_import_wide_t spec;
+            if (!goat_module_parse_import_wide((const gchar_t *)(code->data + descriptor->offset),
+                                               descriptor->count,
+                                               &spec)
+                || !spec.has_version) {
+                free_module_snapshot(snapshot);
+                return MODULE_GRAPH_INVALID;
+            }
+            char *name = encode_utf8_view((string_view_t){spec.name.data, spec.name.length}, NULL);
+            char *version =
+                encode_utf8_view((string_view_t){spec.version.data, spec.version.length}, NULL);
+            size_t target = module_snapshot_import(snapshot, i, name, version);
+            FREE(name);
+            FREE(version);
+            if (target == SIZE_MAX
+                || !bind_module_files_import(snapshot->files[i],
+                                             instruction.arg1,
+                                             snapshot->files[target])) {
+                free_module_snapshot(snapshot);
+                return MODULE_GRAPH_INVALID;
+            }
         }
     }
     *out = snapshot;

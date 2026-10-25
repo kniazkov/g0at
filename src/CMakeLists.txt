@@ -56,7 +56,7 @@ file(GLOB core_sources
   cli/*.c
 )
 list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/lib/sha256.c" "${CMAKE_CURRENT_SOURCE_DIR}/lib/zip_archive.c")
-list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_validation.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_writer.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_search.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_dependencies.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_graph.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_graph_diagnostics.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_snapshot.c")
+list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/common/module_compilation.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_validation.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_writer.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_search.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_dependencies.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_graph.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_graph_diagnostics.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_snapshot.c")
 # Build the native runtime separately; never depend on VM internals or its allocator.
 add_library(goat_native STATIC native/strings.c native/str.c lib/number_format.c lib/unicode.c)
 set_target_properties(goat_native PROPERTIES
@@ -150,7 +150,7 @@ add_executable(module_consistency_testing component_test/module_consistency_test
 target_link_libraries(module_consistency_testing PRIVATE core m)
 
 # One validation library for compiler, loader, inspect and merge.
-add_library(goat_validation STATIC vm/module_validation.c vm/module_writer.c vm/module_search.c vm/module_dependencies.c vm/module_graph.c vm/module_graph_diagnostics.c vm/module_snapshot.c)
+add_library(goat_validation STATIC common/module_compilation.c vm/module_validation.c vm/module_writer.c vm/module_search.c vm/module_dependencies.c vm/module_graph.c vm/module_graph_diagnostics.c vm/module_snapshot.c)
 target_link_libraries(goat_validation PUBLIC core)
 target_include_directories(goat_validation PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 add_executable(module_validation_testing component_test/module_validation_testing.c)
@@ -210,3 +210,5 @@ endif()
 
 add_executable(source_include_testing component_test/source_include_testing.c)
 target_link_libraries(source_include_testing PRIVATE goat_validation m)
+add_executable(module_import_execution_testing component_test/module_import_execution_testing.c)
+target_link_libraries(module_import_execution_testing PRIVATE goat_validation m)

@@ -53,7 +53,7 @@
 - [x] 37. [#225](https://github.com/kniazkov/g0at/issues/225) — Проверка семантики незавершённых областей
 - [x] 38. [#226](https://github.com/kniazkov/g0at/issues/226) — Проверка прототипов после ошибки инициализации
 - [x] 39. [#194](https://github.com/kniazkov/g0at/issues/194) — Оператор include для исходных файлов
-- [ ] 40. [#195](https://github.com/kniazkov/g0at/issues/195) — Оператор import для готовых модулей
+- [x] 40. [#195](https://github.com/kniazkov/g0at/issues/195) — Оператор import для готовых модулей
 - [ ] 41. [#228](https://github.com/kniazkov/g0at/issues/228) — Переэкспорт и происхождение функций
 - [ ] 42. [#227](https://github.com/kniazkov/g0at/issues/227) — Права и порядок вычисления присваиваний
 - [ ] 43. [#205](https://github.com/kniazkov/g0at/issues/205) — Экспорт интерфейса и анализатор потребителя

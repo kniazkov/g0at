@@ -1,0 +1,206 @@
+/** @file module_import_execution_testing.c
+ * @copyright 2026 Ivan Kniazkov
+ * @brief Literal imports through compilation, whole-graph preflight and execution.
+ */
+#include "common/module_compilation.h"
+#include "lib/allocate.h"
+#include "lib/io.h"
+#include "model/thread.h"
+#include "vm/gc.h"
+#include "vm/module_graph_diagnostics.h"
+#include "vm/module_snapshot.h"
+#include "vm/module_writer.h"
+#include "vm/vm.h"
+
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static void report_graph(const module_graph_t *graph, module_graph_status_t status) {
+    char *message = format_module_graph_diagnostics(graph);
+    FPRINTF(stderr, "Invalid module graph: %d\n%s", status, message ? message : "");
+    FREE(message);
+}
+
+static int compile(const char *source, const char *output) {
+    int result = 1;
+    module_sources_t *sources = NULL;
+    module_sources_error_t source_error = {0};
+    module_imports_t *imports = NULL;
+    module_imports_error_t import_error = {0};
+    module_search_t *search = NULL;
+    module_search_error_t search_error = {0};
+    module_dependencies_t *dependencies = NULL;
+    module_dependencies_error_t dependency_error = {0};
+    module_compilation_t *compilation = NULL;
+    module_compilation_error_t compile_error = {0};
+    module_writer_error_t write_error = {0};
+    module_graph_t *graph = NULL;
+    fs_error_t filesystem = {0};
+    size_t length = strlen(source);
+    bool descriptor = length >= 5 && !strcmp(source + length - 5, ".gmod");
+    char *stage = malloc(strlen(output) + sizeof(".pending.gbin"));
+    assert(stage);
+    strcpy(stage, output);
+    strcat(stage, ".pending.gbin");
+    bool staged = false;
+    if (module_sources_read(source, descriptor, NULL, &sources, &source_error)) {
+        FPRINTF(stderr,
+                "%s:%zu:%zu: %s\n",
+                source_error.path ? source_error.path : source,
+                source_error.row,
+                source_error.column,
+                source_error.message ? source_error.message : "source discovery failed");
+    } else if (prepare_module_search_from_environment(source, NULL, &search, &search_error)) {
+        FPRINTF(stderr, "Search preparation failed: %d\n", search_error.status);
+    } else if (module_imports_collect(sources, 0, &imports, &import_error)) {
+        FPRINTF(stderr,
+                "file %zu:%zu:%zu: %s\n",
+                import_error.site.file,
+                import_error.site.row,
+                import_error.site.column,
+                import_error.message ? import_error.message : "import collection failed");
+    } else if (bind_source_dependencies(imports, search, NULL, &dependencies, &dependency_error)) {
+        const module_import_dependency_t *dependency =
+            dependency_error.index < imports->count ? imports->dependencies + dependency_error.index
+                                                    : NULL;
+        char *message = format_module_search_error(&dependency_error.search,
+                                                   dependency ? dependency->name : NULL,
+                                                   dependency ? dependency->version : NULL,
+                                                   source);
+        FPRINTF(stderr, "Dependency binding failed: %s\n", message ? message : "unknown error");
+        FREE(message);
+    } else if (!compile_module_sources_with_dependencies(sources,
+                                                         dependencies,
+                                                         &compilation,
+                                                         &compile_error)) {
+        FPRINTF(stderr,
+                "file %zu:%zu:%zu: %s\n",
+                compile_error.file,
+                compile_error.row,
+                compile_error.column,
+                compile_error.message ? compile_error.message : "compilation failed");
+    } else {
+        module_writer_input_t input = {
+            .metadata = compilation->metadata,
+            .bytecode = {compilation->code->buffer, compilation->code->buffer_size}};
+        if (module_write_file(stage, &input, NULL, &write_error)) {
+            FPRINTF(stderr, "Module packaging failed: %d\n", write_error.status);
+        } else {
+            staged = true;
+            module_graph_status_t status = validate_module_graph(stage, search, NULL, &graph);
+            if (status) {
+                report_graph(graph, status);
+            } else if (!prepare_fs_replace(stage, output, &filesystem)
+                       || !publish_fs_replace(stage, output, &filesystem)) {
+                FPRINTF(stderr, "Publication failed: %d\n", filesystem.status);
+            } else {
+                staged = false;
+                result = 0;
+            }
+        }
+    }
+    if (staged)
+        assert(remove_fs_entry(stage, NULL));
+    free(stage);
+    clear_fs_error(&filesystem);
+    free_module_graph(graph);
+    clear_module_writer_error(&write_error);
+    free_module_compilation(compilation);
+    clear_module_compilation_error(&compile_error);
+    free_module_dependencies(dependencies);
+    clear_module_dependencies_error(&dependency_error);
+    free_module_search(search);
+    clear_module_search_error(&search_error);
+    free_module_imports(imports);
+    free_module_sources(sources);
+    clear_module_sources_error(&source_error);
+    return result;
+}
+
+static int execute(const char *archive, bool frozen) {
+    int result = 1;
+    module_search_t *search = NULL;
+    module_search_error_t search_error = {0};
+    module_snapshot_t *snapshot = NULL;
+    module_graph_t *diagnostics = NULL;
+    if (prepare_module_search_from_environment(archive, NULL, &search, &search_error)) {
+        FPRINTF(stderr, "Search preparation failed: %d\n", search_error.status);
+    } else {
+        module_graph_status_t status =
+            load_module_snapshot(archive, search, NULL, &snapshot, &diagnostics);
+        if (status) {
+            report_graph(diagnostics, status);
+        } else {
+            size_t count = module_snapshot_count(snapshot);
+            unsigned char **images = calloc(count, sizeof(*images));
+            assert(images);
+            for (size_t i = 0; i < count; i++) {
+                const bytecode_t *code =
+                    validated_module_bytecode(module_snapshot_module(snapshot, i));
+                images[i] = malloc(code->buffer_size);
+                assert(images[i]);
+                memcpy(images[i], code->buffer, code->buffer_size);
+            }
+            if (frozen) {
+                FPRINTF(stdout, "READY\n");
+                fflush(stdout);
+                assert(getchar() != EOF);
+            }
+            process_t *process = module_snapshot_process(snapshot);
+            module_files_t *files = module_snapshot_files(snapshot, 0);
+            module_file_t *main_file = module_files_main(files);
+            result = run_module_file(process, main_file);
+            module_file_state_t state = module_file_state(main_file);
+            object_t *scope = module_file_scope(main_file);
+            /* These are borrowed from the persistent file, which remains a GC root.
+             * Do not add extra roots that could hide a runtime retention defect. */
+            exception_t failure = module_file_exception(main_file);
+            assert(state == (result ? MODULE_FILE_FAILED : MODULE_FILE_INITIALIZED));
+            assert(process->main_thread->exception.value == failure.value);
+            assert(process->main_thread->exception.trace == failure.trace);
+            collect_garbage(process);
+            assert(run_module_file(process, main_file) == result);
+            assert(module_file_state(main_file) == state);
+            assert(module_file_scope(main_file) == scope);
+            exception_t repeated = module_file_exception(main_file);
+            assert(repeated.value == failure.value && repeated.trace == failure.trace);
+            assert(process->main_thread->exception.value == failure.value);
+            assert(process->main_thread->exception.trace == failure.trace);
+            if (result && process->main_thread->exception.value) {
+                function_access_t observer;
+                init_function_access(&observer, module_files_identity(files));
+                string_value_t message =
+                    object_to_string_with_access(process->main_thread->exception.value, &observer);
+                fprintf_utf8(stderr, U"Uncaught: %s\n", message.data);
+                FREE_STRING(message);
+                clear_function_access(&observer, true);
+            }
+            for (size_t i = 0; i < count; i++) {
+                const bytecode_t *code =
+                    validated_module_bytecode(module_snapshot_module(snapshot, i));
+                assert(!memcmp(images[i], code->buffer, code->buffer_size));
+                free(images[i]);
+            }
+            free(images);
+        }
+    }
+    free_module_graph(diagnostics);
+    free_module_snapshot(snapshot);
+    free_module_search(search);
+    clear_module_search_error(&search_error);
+    return result;
+}
+
+int main(int argc, char **argv) {
+    int result = 2;
+    if (argc == 4 && !strcmp(argv[1], "compile"))
+        result = compile(argv[2], argv[3]);
+    else if (argc == 3 && (!strcmp(argv[1], "binary") || !strcmp(argv[1], "frozen")))
+        result = execute(argv[2], !strcmp(argv[1], "frozen"));
+    else
+        FPRINTF(stderr, "Usage: compile SOURCE OUTPUT | binary ARCHIVE | frozen ARCHIVE\n");
+    assert(!get_allocated_memory_size());
+    return result;
+}

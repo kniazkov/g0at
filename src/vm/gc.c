@@ -35,7 +35,8 @@ static void mark_objects_in_context_and_stack(thread_t *thread) {
 static void mark_reachable_objects(process_t *proc) {
     mark_module_files(proc);
     for (size_t index = 0; index < proc->string_cache_size; index++) {
-        mark_object(proc->string_cache[index]);
+        if (proc->string_cache[index])
+            mark_object(proc->string_cache[index]);
     }
     for (size_t index = 0; index < proc->gc_roots_size; index++) {
         mark_object(proc->gc_roots[index]);
