@@ -26,6 +26,18 @@ module_bytecode_status_t create_module_files(process_t *process,
                                              size_t image_size,
                                              module_files_t **out,
                                              module_bytecode_error_t *error);
+/** Trusted snapshot path: metadata and code must be a fully validated, matching
+ * module pair. Does not reparse, revalidate or copy the immutable bytecode image.
+ * The process owns fresh scopes and a runtime wrapper with independent bindings.
+ * The caller must retain the source image until AFTER destroy_process, including
+ * all image-backed objects and wrappers. Metadata is borrowed only for this call.
+ * Invalid NULL arguments or unrepresentable file storage clear out and return false.
+ * This API neither executes files nor grants partial graphs permission to run.
+ */
+bool create_module_files_from_snapshot(process_t *process,
+                                       const yyjson_doc *metadata,
+                                       const bytecode_t *code,
+                                       module_files_t **out);
 /** Borrowed process-lifetime views. NULL sets have zero files/no members. */
 size_t module_files_count(const module_files_t *files);
 module_file_t *module_files_get(module_files_t *files, uint32_t id);

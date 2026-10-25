@@ -91,6 +91,9 @@ typedef struct {
     /** @brief The buffer (file) size in bytes. */
     size_t buffer_size;
 
+    /** @brief True only for wrappers borrowing a separately owned immutable image. */
+    bool borrowed_buffer;
+
     /** @brief Pointer to the list of instructions (type: instruction_t*). */
     const instruction_t *instructions;
 
@@ -128,7 +131,15 @@ bool get_bytecode_declaration(const bytecode_t *code,
  */
 string_value_t bytecode_to_text(const bytecode_t *code);
 
-/** @brief Frees the memory allocated by the bytecode structure. */
+/** @brief Creates a runtime wrapper over a trusted, validated immutable image.
+ * The source buffer must outlive the wrapper and all its image-backed objects.
+ * Native bindings and declaration identity start empty and are owned separately;
+ * neither mutable state nor ownership is inherited from source. NULL yields NULL.
+ * Release the wrapper with free_bytecode, which does not release its borrowed image.
+ */
+bytecode_t *borrow_bytecode_image(const bytecode_t *source);
+
+/** @brief Frees the runtime wrapper and its owned resources, including an owned image. */
 void free_bytecode(bytecode_t *code);
 
 /** @brief Binds or clears FUNC metadata before execution; retains the descriptor on success. */

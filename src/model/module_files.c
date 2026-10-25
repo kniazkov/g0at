@@ -27,6 +27,40 @@ struct module_files_t {
     module_file_t *files;
 };
 
+/** Take ownership of the wrapper, borrowing parsed metadata only during construction. */
+static module_files_t *create_files(process_t *process, const yyjson_doc *doc, bytecode_t *code) {
+    yyjson_val *root = yyjson_doc_get_root(doc);
+    int64_t main = 0;
+    bool valid = goat_json_integer(yyjson_obj_get(root, "main"), &main);
+    assert(valid && main >= 0 && (uint64_t)main < code->file_count);
+    (void)valid;
+    module_files_t *set = CALLOC(sizeof(*set));
+    set->process = process;
+    set->identity = create_module_identity();
+    set->code = code;
+    set->main = (uint32_t)main;
+    set->files = CALLOC(code->file_count * sizeof(*set->files));
+    yyjson_val *records = yyjson_obj_get(root, "files");
+    object_t *builtins = get_root_context()->data;
+    for (size_t i = 0; i < code->file_count; ++i) {
+        module_file_t *file = set->files + i;
+        file->owner = set;
+        file->id = (uint32_t)i;
+        yyjson_val *record = yyjson_arr_get(records, i);
+        yyjson_val *name = yyjson_obj_get(record, "name");
+        file->name = decode_utf8_n(yyjson_get_str(name), yyjson_get_len(name));
+        file->external = yyjson_get_bool(yyjson_obj_get(record, "external"));
+        file->scope = create_user_defined_object_in_file(process,
+                                                         (object_array_t){&builtins, 1},
+                                                         set->identity,
+                                                         file->id);
+        set_inheritance_prototype_count(file->scope, 0);
+    }
+    set->next = process->module_files;
+    process->module_files = set;
+    return set;
+}
+
 module_bytecode_status_t create_module_files(process_t *process,
                                              const char *metadata,
                                              size_t metadata_size,
@@ -65,38 +99,22 @@ module_bytecode_status_t create_module_files(process_t *process,
                 (module_bytecode_error_t){MODULE_BYTECODE_IMAGE, SIZE_MAX, GOAT_MODULE_JSON_OK};
         return MODULE_BYTECODE_IMAGE;
     }
-    yyjson_val *root = yyjson_doc_get_root(doc);
-    int64_t main = 0;
-    bool valid = goat_json_integer(yyjson_obj_get(root, "main"), &main);
-    assert(valid && main >= 0 && (uint64_t)main < code->file_count);
-    (void)valid;
-    module_files_t *set = CALLOC(sizeof(*set));
-    set->process = process;
-    set->identity = create_module_identity();
-    set->code = code;
-    set->main = (uint32_t)main;
-    set->files = CALLOC(code->file_count * sizeof(*set->files));
-    yyjson_val *records = yyjson_obj_get(root, "files");
-    object_t *builtins = get_root_context()->data;
-    for (size_t i = 0; i < code->file_count; ++i) {
-        module_file_t *file = set->files + i;
-        file->owner = set;
-        file->id = (uint32_t)i;
-        yyjson_val *record = yyjson_arr_get(records, i);
-        yyjson_val *name = yyjson_obj_get(record, "name");
-        file->name = decode_utf8_n(yyjson_get_str(name), yyjson_get_len(name));
-        file->external = yyjson_get_bool(yyjson_obj_get(record, "external"));
-        file->scope = create_user_defined_object_in_file(process,
-                                                         (object_array_t){&builtins, 1},
-                                                         set->identity,
-                                                         file->id);
-        set_inheritance_prototype_count(file->scope, 0);
-    }
+    *out = create_files(process, doc, code);
     yyjson_doc_free(doc);
-    set->next = process->module_files;
-    process->module_files = set;
-    *out = set;
     return MODULE_BYTECODE_OK;
+}
+
+bool create_module_files_from_snapshot(process_t *process,
+                                       const yyjson_doc *metadata,
+                                       const bytecode_t *code,
+                                       module_files_t **out) {
+    if (out)
+        *out = NULL;
+    if (!process || !metadata || !code || !out
+        || code->file_count > SIZE_MAX / sizeof(module_file_t))
+        return false;
+    *out = create_files(process, metadata, borrow_bytecode_image(code));
+    return true;
 }
 
 size_t module_files_count(const module_files_t *files) {

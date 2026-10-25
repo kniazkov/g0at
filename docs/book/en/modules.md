@@ -4306,3 +4306,6 @@ and safely escape labels, including embedded zero bytes. Explicit reporting may
 materialize exponentially many paths; graph validation itself does not. No
 execution or new archive reads occur. CLI wiring remains #191/#218.
 See [ordering, ownership and tests](../../module-graph-api.md).
+
+
+The process-lifetime launch snapshot (#192) is described in [module-snapshot-api.md](../../module-snapshot-api.md). Whole-graph preflight completes before runtime scopes exist; subsequent dependency lookup uses only retained data. Runtime wrappers borrow immutable images, and native payloads remain pinned even after archive replacement or deletion. CLI/import execution is integrated by its later checklist tasks.
