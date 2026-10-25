@@ -274,6 +274,24 @@ function_meta = changed(BASE, 'functions', [dict(functionId=1, file=0, instructi
 check(function_meta, function_code)
 check(changed(function_meta, 'externals', {'x': {'mutable': False}}), function_code, EXTERNALS)
 
+# Reserved launch names remain immutable even in independently authored images.
+# Literal strings/property keys are not lexical declarations and remain legal.
+for name in ['__main__', '__dir__']:
+    for op in [16, 17, 18, 79]:  # VAR, CONST, STORE, CHECKVAR
+        check(BASE, image([instruction(2), instruction(op)], [(0, 2, 0, 0)],
+                          strings=[name]), IMAGE)
+    for op in [13, 15, 19, 20, 77]:  # SLOAD/VLOAD and property operations
+        check(BASE, image([instruction(2), instruction(op)], [(0, 2, 0, 0)],
+                          strings=[name]))
+    for op in [69, 70]:
+        check(BASE, image([instruction(2), instruction(op, 1)], [(0, 2, 0, 0)],
+                          strings=[name], declarations=[(0, 0, 0)]), IMAGE)
+    check(BASE, image([instruction(2)], [(0, 1, 0, 0)],
+                      strings=[name], vectors=[(0,)]), IMAGE)
+# Exact matches only, not a prefix ban or NUL-terminated comparison.
+for name in ['__main__x', '__dir__\0x']:
+    check(BASE, image([instruction(2), instruction(16)], [(0, 2, 0, 0)], strings=[name]))
+
 # Corruptions are rejected without executing any user instruction.
 for op, operand in [(255, 0), (3, MAX), (73, 1), (74, MAX), (13, 0), (0, 1)]:
     broken = image([instruction(2), instruction(op, operand)], [(0, 2, 0, 0)])

@@ -98,6 +98,8 @@ constant_declaration_pair_t create_synthetic_constant_declaration_node(arena_t *
  * and graph construction.
  */
 const declarator_t *get_builtin_declarator();
+/** @brief Reserved, startup-dependent constants; never user-defined bindings. */
+bool is_launch_constant_name(string_view_t name);
 void set_declaration_modifier(node_t *declaration, access_modifier_t modifier);
 bool has_access_modifiers(const node_t *node);
 

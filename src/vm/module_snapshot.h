@@ -11,6 +11,8 @@ typedef struct module_snapshot module_snapshot_t;
 /** Read and validate the entire reachable graph before constructing runtime
  * scopes. Success owns one process, all module scopes, immutable images, metadata
  * and native payloads. Nothing is executed, extracted or OS-loaded here.
+ * Node zero is the direct launch entry. Its identity and the canonical startup
+ * path already retained by search fix __main__/__dir__ before any code executes.
  * Inputs/search/options are borrowed only during this call. Neither later lookup
  * nor execution needs the source archives. Out is cleared on every failure;
  * optional diagnostics receives the owned INVALID graph (otherwise discarded).

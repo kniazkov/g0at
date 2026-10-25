@@ -17,6 +17,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#    include <direct.h>
+#    define chdir _chdir
+#else
+#    include <unistd.h>
+#endif
+
 static void report_graph(const module_graph_t *graph, module_graph_status_t status) {
     char *message = format_module_graph_diagnostics(graph);
     FPRINTF(stderr, "Invalid module graph: %d\n%s", status, message ? message : "");
@@ -132,7 +139,7 @@ static int compile(const char *source, const char *output) {
     return result;
 }
 
-static int execute(const char *archive, bool frozen) {
+static int execute(const char *archive, bool frozen, const char *directory) {
     int result = 1;
     module_search_t *search = NULL;
     module_search_error_t search_error = {0};
@@ -160,6 +167,8 @@ static int execute(const char *archive, bool frozen) {
                 FPRINTF(stdout, "READY\n");
                 fflush(stdout);
                 assert(getchar() != EOF);
+                if (directory)
+                    assert(chdir(directory) == 0);
             }
             process_t *process = module_snapshot_process(snapshot);
             module_files_t *files = module_snapshot_files(snapshot, 0);
@@ -221,9 +230,13 @@ int main(int argc, char **argv) {
     if (argc == 4 && !strcmp(argv[1], "compile"))
         result = compile(argv[2], argv[3]);
     else if (argc == 3 && (!strcmp(argv[1], "binary") || !strcmp(argv[1], "frozen")))
-        result = execute(argv[2], !strcmp(argv[1], "frozen"));
+        result = execute(argv[2], !strcmp(argv[1], "frozen"), NULL);
+    else if (argc == 4 && !strcmp(argv[1], "frozen-chdir"))
+        result = execute(argv[2], true, argv[3]);
     else
-        FPRINTF(stderr, "Usage: compile SOURCE OUTPUT | binary ARCHIVE | frozen ARCHIVE\n");
+        FPRINTF(stderr,
+                "Usage: compile SOURCE OUTPUT | binary ARCHIVE | frozen ARCHIVE | frozen-chdir "
+                "ARCHIVE DIR\n");
     assert(!get_allocated_memory_size());
     return result;
 }

@@ -1,0 +1,1 @@
+for (const __dir__ in [1]) {}

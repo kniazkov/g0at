@@ -1,0 +1,6 @@
+one write 1 1 mainValue boolean
+one write 2 2 directory string
+one write 4 4 observed boolean
+one function 3 0 - analyzed:boolean
+one c-support 3 0 - unsupported
+none unreachable 5 0 - -

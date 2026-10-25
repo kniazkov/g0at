@@ -346,6 +346,8 @@ static test_description_t test_list[] = {
     {"access flat cells", test_access_flat_cells},
     {"access observation", test_access_observation},
     {"access analysis", test_access_analysis},
+    {"process launch", test_process_launch},
+    {"process launch VM", test_process_launch_vm},
     {"root object call", test_root_object_call}};
 
 int get_number_of_tests() {

@@ -1028,3 +1028,8 @@ static declarator_t builtin_declarator = {
 const declarator_t *get_builtin_declarator() {
     return &builtin_declarator;
 }
+
+bool is_launch_constant_name(string_view_t name) {
+    return (name.length == 8 && !MEMCMP(name.data, U"__main__", 8))
+           || (name.length == 7 && !MEMCMP(name.data, U"__dir__", 7));
+}

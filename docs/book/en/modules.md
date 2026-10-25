@@ -229,6 +229,23 @@ A function observes the value associated with its declaration file, not its call
 
 Resources are not embedded yet. Application data resides beside the program and can be located using __dir__. Metadata-driven resource packaging and a reading API may be added later.
 
+Implementation (#206): the prepared process retains the canonical launch directory
+and the entry file's module/file identity outside the immutable bytecode. Variable
+reads use the executing function's existing declaration identity; neither caller
+rights nor a copied receiver changes it. Imports use that same process directory.
+The analyzer treats these values as runtime-dependent, so both branches remain
+available. The current native generator leaves bodies requiring these runtime
+constants to the VM rather than embedding their values; this is the supported
+fallback, not a native specialization of a launch-dependent value.
+
+`scripts/check_module_context_constants.py` checks compiled direct/imported use,
+includes, callbacks, closures, reexports, clone/flat, relocation, canonical aliases,
+frozen startup state, Unicode paths, and reserved names in nested scopes. With the Goat executable
+it also checks standalone source launch with optimization disabled/enabled and
+native auto selection, including retargeting the original link during native
+preparation before VM fallback. Archive execution here uses the existing validated module
+component path; general `.gmod`/`.gbin` CLI integration remains #191.
+
 ## Build directories and unified search
 
 A repository root uses `<name>/<version>.gbin`, for example `geometry/1.2.0.gbin`. There is no separate version directory containing module.gbin. Metadata name/version must match the request; do not recursively discover arbitrary archives.

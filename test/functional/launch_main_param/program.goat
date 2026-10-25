@@ -1,0 +1,1 @@
+const f=func(__main__){return 1;};

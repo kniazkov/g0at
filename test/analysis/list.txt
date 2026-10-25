@@ -329,3 +329,5 @@ iteration_types
 conditional_types
 finally_types
 access_external
+
+launch_constants

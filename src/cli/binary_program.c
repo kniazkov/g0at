@@ -95,6 +95,10 @@ int execute_program(const options_t *options,
         FREE_STRING(text);
     }
     process_t *process = create_process();
+    if (!prepare_process_launch(process, process->module, 0, options->launch_path)) {
+        destroy_process(process);
+        return -1;
+    }
     if (code->file_count)
         process->main_thread->instr_id = code->files[0].entry;
     int status = run(process, code);
@@ -121,7 +125,7 @@ int execute_program(const options_t *options,
 }
 
 int run_binary_program(const options_t *options) {
-    binary_program_t program = load_binary_program(options->input_file->full_path);
+    binary_program_t program = load_binary_program(options->launch_path);
     if (!program.code) {
         FPRINTF(stderr,
                 "Invalid, incompatible or unreadable Goat binary. Recompile the source with this "

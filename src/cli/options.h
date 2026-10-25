@@ -24,6 +24,8 @@ typedef enum { NATIVE_OFF, NATIVE_AUTO, NATIVE_REQUIRED } native_execution_mode_
 struct options_t {
     /** @brief Path to the input file. */
     path_t *input_file;
+    /** @brief Borrowed canonical launch path captured before reading/preparing input. */
+    const char *launch_path;
 
     bool compile_only; /**< Save a .gbin artifact without executing it. */
     bool run_binary;   /**< Load a .gbin artifact without parsing or compiling. */
