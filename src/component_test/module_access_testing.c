@@ -78,7 +78,18 @@ static void model_cases(void) {
             assert(can_access_field(&rights[who], cells[i]) == allowed[who][i]);
             assert(lookup_accessible_property(&rights[who], obj, cells[i]->key, false).status
                    == expected);
+            field_cell_t before = *cells[i];
             assert(write_accessible_property(&rights[who], obj, cells[i]->key, two) == expected);
+            /* Rules 9–10: writers replace values, never declaration identity or rights. */
+            assert(get_own_field_cell(obj, before.key) == cells[i]);
+            assert(cells[i]->key == before.key && cells[i]->module == before.module);
+            assert(cells[i]->file_id == before.file_id && cells[i]->domain == before.domain);
+            assert(cells[i]->modifier == before.modifier);
+            assert(cells[i]->is_constant == before.is_constant);
+            assert(cells[i]->binding_unit == before.binding_unit);
+            assert(cells[i]->declaration_id == before.declaration_id);
+            assert(cells[i]->pending_initialization == before.pending_initialization);
+            assert(cells[i]->object == (allowed[who][i] ? two : before.object));
         }
         object_t *keys = snapshot_object_keys_with_access(p, obj, &rights[who]);
         assert(get_array_elements(keys).size == 3 - who);

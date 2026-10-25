@@ -57,8 +57,9 @@ operand preservation, saved failures, invalid literals/internal paths, complete
 preflight of dead-code dependencies, changed hashes and execution after every
 archive/source is deleted. All retained image bytes are compared after execution.
 The same suite runs on every Linux and Windows CI target. Public CLI integration
-(#191), interface analysis (#205) and re-export declarations (#228) remain separate
-checklist steps; this change does not add public command-line switches.
+(#191) and interface analysis (#205) remain separate checklist steps;
+[function provenance and re-exports](module-function-provenance.md) are tested
+separately; this change does not add public command-line switches.
 
 ## Русский
 
@@ -117,5 +118,6 @@ VM выбирает образ текущего лексического кон�
 пути, полный preflight невыполняемых зависимостей, изменённые хеши и исполнение
 после удаления всех архивов и исходников. Байты всех образов сравниваются после
 исполнения. Набор выполняется на каждой Linux/Windows-платформе CI. Публичная CLI
-(#191), анализ интерфейсов (#205) и объявления реэкспорта (#228) остаются отдельными
-шагами; новых пользовательских флагов здесь нет.
+(#191) и анализ интерфейсов (#205) остаются отдельными шагами;
+[происхождение функций и переэкспорт](module-function-provenance.md) проверяются
+отдельно; новых пользовательских флагов здесь нет.
