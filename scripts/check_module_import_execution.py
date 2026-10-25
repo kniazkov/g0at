@@ -2,7 +2,6 @@
 # Copyright 2026 Ivan Kniazkov
 """Compile literal imports and execute immutable verified module graphs (#195)."""
 import json
-import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -11,16 +10,10 @@ import tempfile
 import zipfile
 
 EXE = str(Path(sys.argv[1]).resolve())
-COUNT = 0
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'docs/module-format-v1'))
 import reference as ref
-
-
-def put(path, text):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding='utf-8')
-    return path
+from module_execution_support import ExecutionSuite, put
 
 
 def info(path):
@@ -29,54 +22,9 @@ def info(path):
 
 
 with tempfile.TemporaryDirectory(prefix='goat-import-execution-') as temporary:
-    root = Path(temporary)
-    unrelated = root / 'unrelated'
-    unrelated.mkdir()
-
-    class Project:
-        def __init__(self, name):
-            self.root = root / name
-            self.modules = self.root / 'modules'
-            self.modules.mkdir(parents=True)
-            self.environment = dict(os.environ, GOAT_MODULE_PATH=str(self.modules))
-
-        def invoke(self, mode, path, output=None, expected='', fail=False):
-            global COUNT
-            COUNT += 1
-            command = [EXE, mode, str(path)]
-            if output is not None:
-                command.append(str(output))
-            result = subprocess.run(command, capture_output=True, timeout=60,
-                                    cwd=unrelated, env=self.environment)
-            assert (result.returncode != 0) if fail else (result.returncode == 0), (
-                COUNT, command, result.returncode, result.stdout, result.stderr)
-            actual = result.stdout.decode('utf-8').replace('\r\n', '\n')
-            assert actual == expected, (COUNT, command, actual, expected, result.stderr)
-            if fail:
-                assert result.stderr, (COUNT, 'missing diagnostic', command)
-            return result
-
-        def compile(self, name, code, version='1', files=None, defaults=None, fail=False):
-            directory = self.root / 'sources' / (name + '-' + version)
-            source = put(directory / 'main.goat', code)
-            for filename, content in (files or {}).items():
-                put(directory / filename, content)
-            descriptor = {'formatVersion': 1, 'name': name, 'version': version,
-                          'main': 'main.goat'}
-            if defaults is not None:
-                descriptor['dependencies'] = defaults
-            source = put(directory / 'module.gmod', json.dumps(descriptor))
-            artifact = self.root / 'app.gbin' if name == 'app' else self.modules / name / (version + '.gbin')
-            artifact.parent.mkdir(parents=True, exist_ok=True)
-            self.invoke('compile', source, artifact, fail=fail)
-            if fail:
-                assert not artifact.exists()
-            return artifact
-
-        def run(self, code, expected, **kwargs):
-            artifact = self.compile('app', code, **kwargs)
-            self.invoke('binary', artifact, expected=expected)
-            return artifact
+    suite = ExecutionSuite(EXE, temporary)
+    unrelated = suite.unrelated
+    Project = suite.project
 
     p = Project('identity-versions')
     for version in ['1', '2']:
@@ -253,10 +201,10 @@ with tempfile.TemporaryDirectory(prefix='goat-import-execution-') as temporary:
         stdout, stderr = process.communicate(b'\n', timeout=60)
         assert process.returncode == 0, (process.returncode, stdout, stderr)
         assert stdout.decode('utf-8').replace('\r\n', '\n') == 'inner once\nснимок 😀\nснимок 😀\n'
-        COUNT += 1
+        suite.count += 1
     finally:
         if process.poll() is None:
             process.kill()
             process.communicate()
 
-print(f'Module import execution checks passed: {COUNT}')
+print(f'Module import execution checks passed: {suite.count}')

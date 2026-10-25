@@ -4411,3 +4411,12 @@ keeps declaring-module code and string caches separate across functions, callbac
 and nested includes, with no archive reopening or immutable-image changes.
 [Compiler/runtime contract and end-to-end checks](../../source-import-api.md).
 Public CLI integration remains the separate #191 step.
+
+## Function provenance and re-exports (#228)
+
+Multifile and cross-module execution checks cover rules 1–12: retained function
+rights through callbacks, closures and re-exports; independent variable cells;
+field provenance after assignment; and no implicit export of nested fields.
+The existing function-access and field-cell mechanisms enforce these rules,
+without wrapping re-exported values or granting the caller's rights.
+[Runtime contract and mapped end-to-end checks](../../module-function-provenance.md).
