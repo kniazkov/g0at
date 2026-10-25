@@ -9,14 +9,13 @@
 
 static operation_result_t
 execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *thread) {
-    return operation_success(
-        flat_object_with_access(thread->process, receiver, &thread->context->access));
+    return copy_object_with_access(thread->process, receiver, &thread->context->access, true);
 }
 
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
-    return count ? operation_success(
-                       flat_object_with_access(thread->process, args[0], &thread->context->access))
-                 : operation_exception(get_exception_invalid_argument());
+    if (!count)
+        return operation_exception(get_exception_invalid_argument());
+    return copy_object_with_access(thread->process, args[0], &thread->context->access, true);
 }
 
 static const lattice_element_t *

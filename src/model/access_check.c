@@ -4,6 +4,7 @@
  */
 #include "access.h"
 #include "common_methods.h"
+#include "module_files.h"
 
 operation_result_t add_objects_with_access(process_t *process,
                                            object_t *left,
@@ -12,6 +13,11 @@ operation_result_t add_objects_with_access(process_t *process,
     if ((left->vtbl->type != TYPE_STRING && left->vtbl->type != TYPE_CHARACTER)
         || (right->vtbl->type != TYPE_USER_DEFINED_OBJECT && right->vtbl->type != TYPE_ARRAY))
         return add_objects(process, left, right);
+    object_t *failure = object_observation_failure(right, access);
+    if (failure) {
+        INCREF(failure);
+        return operation_exception(failure);
+    }
     string_value_t text = object_to_string_with_access(right, access);
     object_t *string = create_string_object(process, text);
     operation_result_t result = add_objects(process, left, string);
@@ -45,6 +51,9 @@ bool can_access_field(const function_access_t *access, const field_cell_t *cell)
 
 static property_lookup_t
 cell_result(const function_access_t *access, object_t *storage, field_cell_t *cell) {
+    object_t *failure = module_scope_failure(storage);
+    if (failure)
+        return (property_lookup_t){MSTAT_FAILED_FILE, storage, cell, failure};
     bool allowed = can_access_field(access, cell);
     model_status_t status = !allowed                       ? MSTAT_ACCESS_DENIED
                             : cell->pending_initialization ? MSTAT_UNINITIALIZED
@@ -58,6 +67,9 @@ property_lookup_t lookup_bound_property(const function_access_t *access,
                                         uint32_t id) {
     for (size_t s = 0; s <= access->lexical_scopes->size; s++) {
         object_t *storage = s ? access->lexical_scopes->data[s - 1] : current;
+        object_t *failure = module_scope_failure(storage);
+        if (failure)
+            return (property_lookup_t){MSTAT_FAILED_FILE, storage, NULL, failure};
         for (size_t i = 0; i < get_object_field_count(storage); i++) {
             field_cell_t *cell = get_object_field_at(storage, i);
             if (cell->binding_unit == unit && cell->declaration_id == id)
@@ -80,6 +92,9 @@ property_lookup_t lookup_accessible_property(const function_access_t *access,
                                              object_t *object,
                                              object_t *key,
                                              bool private_slots) {
+    object_t *failure = module_scope_failure(object);
+    if (failure)
+        return (property_lookup_t){MSTAT_FAILED_FILE, object, NULL, failure};
     object_array_t topology = get_object_topology(object);
     /* A granted private declaration is a slot, not a fallback after a denied ordinary lookup. */
     if (private_slots) {
@@ -95,6 +110,9 @@ property_lookup_t lookup_accessible_property(const function_access_t *access,
     }
     for (size_t i = 0; i <= topology.size; i++) {
         object_t *storage = i ? topology.items[i - 1] : object;
+        failure = module_scope_failure(storage);
+        if (failure)
+            return (property_lookup_t){MSTAT_FAILED_FILE, storage, NULL, failure};
         field_cell_t *cell = get_own_field_cell(storage, key);
         if (cell)
             return cell_result(access, storage, cell);
@@ -110,6 +128,8 @@ model_status_t create_accessible_property(const function_access_t *access,
                                           object_t *key,
                                           object_t *value,
                                           bool constant) {
+    if (module_scope_failure(object))
+        return MSTAT_FAILED_FILE;
     if (object->vtbl->type == TYPE_USER_DEFINED_OBJECT
         && get_object_module(object) != access->module)
         return MSTAT_FOREIGN_OBJECT;
@@ -157,6 +177,12 @@ operation_result_t access_status_result(model_status_t status, object_t *value) 
         case MSTAT_OK:
             INCREF(value);
             return operation_success(value);
+        case MSTAT_FAILED_FILE:
+            if (value) {
+                INCREF(value);
+                return operation_exception(value);
+            }
+            return operation_exception(get_exception_invalid_operation());
         case MSTAT_ACCESS_DENIED:
             exception = get_exception_access_denied();
             break;
@@ -193,6 +219,16 @@ read_accessible_property(const function_access_t *access, object_t *object, obje
     return access_status_result(found.status, found.value);
 }
 
+operation_result_t write_accessible_property_result(const function_access_t *access,
+                                                    object_t *object,
+                                                    object_t *key,
+                                                    object_t *value) {
+    property_lookup_t found = lookup_accessible_property(access, object, key, true);
+    if (found.status == MSTAT_FAILED_FILE)
+        return access_status_result(found.status, found.value);
+    return access_status_result(write_accessible_property(access, object, key, value), value);
+}
+
 operation_result_t access_index(process_t *process,
                                 const function_access_t *access,
                                 object_t *object,
@@ -204,8 +240,6 @@ operation_result_t access_index(process_t *process,
                      : object->vtbl->get_index(process, object, indices);
     if (indices.size != 1)
         return operation_exception(get_exception_invalid_argument());
-    return value ? access_status_result(
-                       write_accessible_property(access, object, indices.items[0], value),
-                       value)
+    return value ? write_accessible_property_result(access, object, indices.items[0], value)
                  : read_accessible_property(access, object, indices.items[0]);
 }

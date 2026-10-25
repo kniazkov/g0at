@@ -18,6 +18,7 @@ struct module_file_t {
     bool external;
     object_t *scope;
     module_file_state_t state;
+    object_t *failure;
     module_file_t *initialization_parent;
 };
 
@@ -182,8 +183,11 @@ context_t *create_module_file_context(module_file_t *file, context_t *caller) {
 
 void mark_module_files(const process_t *process) {
     for (module_files_t *set = process->module_files; set; set = set->next)
-        for (size_t i = 0; i < set->code->file_count; ++i)
+        for (size_t i = 0; i < set->code->file_count; ++i) {
             mark_object(set->files[i].scope);
+            if (set->files[i].failure)
+                mark_object(set->files[i].failure);
+        }
 }
 
 void destroy_module_files(process_t *process) {
@@ -213,18 +217,51 @@ process_t *module_file_process(const module_file_t *file) {
     return file ? file->owner->process : NULL;
 }
 
+object_t *module_file_failure(const module_file_t *file) {
+    return file && file->state == MODULE_FILE_FAILED ? file->failure : NULL;
+}
+
+object_t *module_files_failure(process_t *process, module_t *module, uint32_t file_id) {
+    if (!process || !module)
+        return NULL;
+    for (module_files_t *set = process->module_files; set; set = set->next)
+        if (set->identity == module)
+            return module_file_failure(module_files_get(set, file_id));
+    return NULL;
+}
+
+module_file_t *module_scope_file(const object_t *scope) {
+    if (!scope || !scope->process)
+        return NULL;
+    for (module_files_t *set = scope->process->module_files; set; set = set->next)
+        for (size_t i = 0; i < set->code->file_count; ++i)
+            if (set->files[i].scope == scope)
+                return set->files + i;
+    return NULL;
+}
+
+object_t *module_scope_failure(const object_t *scope) {
+    return module_file_failure(module_scope_file(scope));
+}
+
 module_initialize_status_t initialize_module_file(module_file_t *file,
                                                   context_t *caller,
                                                   module_file_executor_t execute,
                                                   void *data,
-                                                  object_t **scope) {
+                                                  object_t **scope,
+                                                  exception_t *failure) {
     if (scope)
         *scope = NULL;
-    if (!file || !caller || !execute || !scope
+    if (failure)
+        failure->value = NULL;
+    if (!file || !caller || !execute || !scope || !failure
         || (caller != get_root_context() && caller->data->process != file->owner->process))
         return MODULE_INITIALIZE_ARGUMENT;
-    if (file->state == MODULE_FILE_FAILED)
+    if (file->state == MODULE_FILE_FAILED) {
+        failure->value = file->failure;
+        INCREF(failure->value);
         return MODULE_INITIALIZE_FAILED;
+    }
     if (file->state == MODULE_FILE_INITIALIZED || file->state == MODULE_FILE_INITIALIZING) {
         *scope = file->scope;
         return MODULE_INITIALIZE_OK;
@@ -237,14 +274,22 @@ module_initialize_status_t initialize_module_file(module_file_t *file,
     if (success) {
         context_t *frame = create_module_file_context(file, caller);
         frame->file_initialization_boundary = true;
-        success = execute(file, frame, data);
+        success = execute(file, frame, data, failure);
         destroy_context(frame);
     }
     process->initializing_file = file->initialization_parent;
     file->initialization_parent = NULL;
+    success = success && !failure->value;
     file->state = success ? MODULE_FILE_INITIALIZED : MODULE_FILE_FAILED;
-    if (!success)
+    if (!success) {
+        if (!failure->value) {
+            failure->value = get_exception_invalid_operation();
+            INCREF(failure->value);
+        }
+        file->failure = failure->value;
+        INCREF(file->failure);
         return MODULE_INITIALIZE_FAILED;
+    }
     *scope = file->scope;
     return MODULE_INITIALIZE_OK;
 }

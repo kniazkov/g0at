@@ -9,6 +9,7 @@
 #include "common_methods.h"
 #include "context.h"
 #include "lib/allocate.h"
+#include "module_files.h"
 #include "native_library.h"
 #include "native_services.h"
 #include "object.h"
@@ -54,6 +55,13 @@ static object_array_t get_topology(const object_t *obj) {
 static bool static_call(object_t *obj, uint16_t arg_count, object_t *receiver, thread_t *thread) {
     require_object_stack_size(thread->data_stack, arg_count);
     const builtin_function_t *descriptor = ((builtin_function_object_t *)obj)->descriptor;
+    object_t *failure = receiver ? module_scope_failure(receiver) : NULL;
+    if (failure) {
+        INCREF(failure);
+        DECREFIF(thread->exception.value);
+        thread->exception.value = failure;
+        return false;
+    }
     object_t **args = arg_count ? ALLOC(arg_count * sizeof(*args)) : NULL;
     for (size_t i = 0; i < arg_count; i++)
         args[i] = pop_object_from_stack(thread->data_stack);
@@ -352,6 +360,14 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
 static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, thread_t *thread) {
     require_object_stack_size(thread->data_stack, arg_count);
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
+    object_t *failure =
+        module_files_failure(thread->process, dfobj->access.module, dfobj->access.file_id);
+    if (failure) {
+        INCREF(failure);
+        DECREFIF(thread->exception.value);
+        thread->exception.value = failure;
+        return false;
+    }
     /* A method call resolves names through the receiver, which a native specialization does not
        model. Keep such calls on the bytecode path until receiver-aware name resolution exists.
        The same holds for functions created inside a method body: their closure inherits the

@@ -12,6 +12,11 @@
 
 /** @brief Runtime executor; the shared caller has checked minimum arity. */
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
+    object_t *failure = object_observation_failure(args[0], &thread->context->access);
+    if (failure) {
+        INCREF(failure);
+        return operation_exception(failure);
+    }
     string_value_t str = object_to_string_with_access(args[0], &thread->context->access);
     if (str.data) {
         print_utf8_view(VALUE_TO_VIEW(str));

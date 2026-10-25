@@ -30,7 +30,25 @@ static object_t *key(const gchar_t *text, object_static_string_t *storage) {
     return get_static_string_object(storage, text);
 }
 
-static bool execute(module_file_t *file, context_t *frame, void *data) {
+static module_initialize_status_t initialize_checked(module_file_t *file,
+                                                     context_t *caller,
+                                                     module_file_executor_t execute,
+                                                     void *data,
+                                                     object_t **scope) {
+    exception_t failure = {0};
+    module_initialize_status_t status =
+        initialize_module_file(file, caller, execute, data, scope, &failure);
+    if (status == MODULE_INITIALIZE_FAILED && file) {
+        assert(failure.value == module_file_failure(file));
+        object_t *pending = module_file_process(file)->main_thread->exception.value;
+        if (pending)
+            assert(failure.value == pending);
+    }
+    DECREFIF(failure.value);
+    return status;
+}
+
+static bool execute(module_file_t *file, context_t *frame, void *data, exception_t *failure) {
     test_t *test = data;
     process_t *process = module_file_process(file);
     uint32_t id = module_file_id(file);
@@ -65,12 +83,11 @@ static bool execute(module_file_t *file, context_t *frame, void *data) {
     if (!fails && file == test->first) {
         module_file_t *second = module_files_get(test->files, 1 - id);
         assert(module_file_state(second) == MODULE_FILE_UNINITIALIZED);
-        assert(initialize_module_file(second, frame, execute, test, &scope)
-               == MODULE_INITIALIZE_OK);
+        assert(initialize_checked(second, frame, execute, test, &scope) == MODULE_INITIALIZE_OK);
         assert(scope == module_file_scope(second));
         assert(module_file_state(second) == MODULE_FILE_INITIALIZED);
     } else if (!fails) {
-        assert(initialize_module_file(test->first, frame, execute, test, &scope)
+        assert(initialize_checked(test->first, frame, execute, test, &scope)
                == MODULE_INITIALIZE_OK);
         assert(scope == module_file_scope(test->first));
         assert(lookup_accessible_property(&frame->access, scope, x, false).status
@@ -111,6 +128,8 @@ static bool execute(module_file_t *file, context_t *frame, void *data) {
             FREE(utf8);
             FREE_STRING(text);
         }
+        failure->value = thread->exception.value;
+        INCREF(failure->value);
         return false;
     }
     if (!strcmp(test->mode, "caught")) {
@@ -174,26 +193,24 @@ int main(int argc, char **argv) {
     test_t test = {.files = files, .first = first, .mode = argv[1]};
     context_t *caller = process->main_thread->context;
     object_t *scope = (void *)(uintptr_t)1;
-    assert(initialize_module_file(NULL, caller, execute, &test, &scope)
-               == MODULE_INITIALIZE_ARGUMENT
+    assert(initialize_checked(NULL, caller, execute, &test, &scope) == MODULE_INITIALIZE_ARGUMENT
            && !scope);
-    assert(initialize_module_file(first, NULL, execute, &test, &scope)
-           == MODULE_INITIALIZE_ARGUMENT);
-    assert(initialize_module_file(first, caller, NULL, &test, &scope)
-           == MODULE_INITIALIZE_ARGUMENT);
-    assert(initialize_module_file(first, caller, execute, &test, NULL)
+    assert(initialize_checked(first, NULL, execute, &test, &scope) == MODULE_INITIALIZE_ARGUMENT);
+    assert(initialize_checked(first, caller, NULL, &test, &scope) == MODULE_INITIALIZE_ARGUMENT);
+    assert(initialize_checked(first, caller, execute, &test, NULL) == MODULE_INITIALIZE_ARGUMENT);
+    assert(initialize_module_file(first, caller, execute, &test, &scope, NULL)
            == MODULE_INITIALIZE_ARGUMENT);
     process_t *foreign = create_process();
-    assert(initialize_module_file(first, foreign->main_thread->context, execute, &test, &scope)
+    assert(initialize_checked(first, foreign->main_thread->context, execute, &test, &scope)
            == MODULE_INITIALIZE_ARGUMENT);
     destroy_process(foreign);
     assert(module_file_state(first) == MODULE_FILE_UNINITIALIZED);
     if (!strcmp(argv[1], "early") || !strcmp(argv[1], "return")) {
-        assert(initialize_module_file(first, caller, execute, &test, &scope)
+        assert(initialize_checked(first, caller, execute, &test, &scope)
                == MODULE_INITIALIZE_FAILED);
         assert(!scope && module_file_state(first) == MODULE_FILE_FAILED);
         assert(process->main_thread->context == caller && process->main_thread->exception.value);
-        assert(initialize_module_file(first, caller, execute, &test, &scope)
+        assert(initialize_checked(first, caller, execute, &test, &scope)
                == MODULE_INITIALIZE_FAILED);
         assert(test.calls[module_file_id(first)] == 1);
         assert(!memcmp(copy, code->buffer, code->buffer_size));
@@ -203,7 +220,7 @@ int main(int argc, char **argv) {
         puts("OK");
         return 0;
     }
-    assert(initialize_module_file(first, caller, execute, &test, &scope) == MODULE_INITIALIZE_OK);
+    assert(initialize_checked(first, caller, execute, &test, &scope) == MODULE_INITIALIZE_OK);
     assert(scope == module_file_scope(first));
     assert(module_file_state(first) == MODULE_FILE_INITIALIZED);
     assert(module_file_state(module_files_get(files, 2)) == MODULE_FILE_UNINITIALIZED);
@@ -215,8 +232,7 @@ int main(int argc, char **argv) {
            == MSTAT_OK);
     destroy_context(frame);
     for (unsigned i = 0; i < 4; ++i)
-        assert(initialize_module_file(first, caller, execute, &test, &scope)
-               == MODULE_INITIALIZE_OK);
+        assert(initialize_checked(first, caller, execute, &test, &scope) == MODULE_INITIALIZE_OK);
     assert(get_object_integer_value(get_own_field_cell(scope, x)->object).value == 37);
     assert(test.calls[0] == 1 && test.calls[1] == 1);
     string_value_t empty = module_initialization_chain(process, NULL);
@@ -227,12 +243,10 @@ int main(int argc, char **argv) {
     module_file_t *failed = module_files_main(other);
     assert(module_file_state(failed) == MODULE_FILE_UNINITIALIZED);
     test_t failure = {.files = other, .first = failed, .fail = true, .mode = argv[1]};
-    assert(initialize_module_file(failed, caller, execute, &failure, &scope)
-               == MODULE_INITIALIZE_FAILED
+    assert(initialize_checked(failed, caller, execute, &failure, &scope) == MODULE_INITIALIZE_FAILED
            && !scope);
     assert(module_file_state(failed) == MODULE_FILE_FAILED);
-    assert(initialize_module_file(failed, caller, execute, &failure, &scope)
-               == MODULE_INITIALIZE_FAILED
+    assert(initialize_checked(failed, caller, execute, &failure, &scope) == MODULE_INITIALIZE_FAILED
            && !scope);
     assert(failure.calls[module_file_id(failed)] == 1);
     empty = module_initialization_chain(process, NULL);

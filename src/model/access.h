@@ -193,6 +193,11 @@ model_status_t write_accessible_property(const function_access_t *access,
 /** @brief Language reads return null for absence; failures carry standard exceptions. */
 operation_result_t
 read_accessible_property(const function_access_t *access, object_t *object, object_t *key);
+/** @brief Write result retaining the original failed-file exception payload. */
+operation_result_t write_accessible_property_result(const function_access_t *access,
+                                                    object_t *object,
+                                                    object_t *key,
+                                                    object_t *value);
 operation_result_t access_status_result(model_status_t status, object_t *value);
 /** @brief Specialized indices retain virtual semantics; dictionary indices use access checks. */
 operation_result_t access_index(process_t *process,
@@ -211,3 +216,16 @@ clone_object_with_access(process_t *process, object_t *object, const function_ac
 /** @brief Transfers actual ancestors once, retaining hidden cells and ordinary lookup winners. */
 object_t *
 flat_object_with_access(process_t *process, object_t *object, const function_access_t *access);
+
+/** @brief Language copying checks failed scopes before materializing any fields.
+ * Clone preserves prototype references; flat checks all actual prototype ancestors.
+ */
+operation_result_t copy_object_with_access(process_t *process,
+                                           object_t *object,
+                                           const function_access_t *access,
+                                           bool flatten);
+
+/** @brief Borrow the first failed scope observable by recursive container formatting.
+ * Hidden and pending fields are not inspected; cycles terminate without recursion.
+ */
+object_t *object_observation_failure(object_t *object, const function_access_t *access);

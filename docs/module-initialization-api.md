@@ -19,8 +19,24 @@ execution mode specified for `exit` (#207).
 The callback must complete synchronously, restore its nested contexts and return
 true only on normal completion. The gate owns and destroys its supplied context.
 The callback must propagate exceptions rather than turn them into success.
-An escaping failure marks the file failed and never retries side effects; storing
-and rethrowing the original payload is the next task #197. This API is not an OS
+An escaping failure marks the file failed and never retries side effects. The
+executor and gate both take an explicit `exception_t *failure` output: the executor
+transfers one owned reference on failure; the gate returns an owned reference to
+the same value on every failed entry. Both gate outputs are required and cleared
+on entry; release or propagate a previous output before reusing it. A false
+executor result without a payload is an invalid-operation failure; a payload
+cannot be silently discarded by returning true. The Goat null singleton is a
+valid exception, unlike C NULL. No implicit main-thread exception slot is used.
+
+The file retains the exact original value as a GC root. It is neither copied nor
+frozen; mutations visible through an escaped ordinary error object remain visible
+on later failures. `module_file_failure`, `module_files_failure`, and
+`module_scope_failure` expose borrowed values. Lookup/write/copy operations and
+escaped function calls propagate this value. Function provenance survives cloning
+and flattening, and the call guard runs before native selection. A scope cannot be
+copied while uninitialized/initializing, so a premature copy cannot bypass a later
+failure. Ordinary escaped values are not revoked. A failed prototype blocks access
+when traversal reaches it, not access to a descendant's own fields. This API is not an OS
 thread lock; the scheduler's serialization policy is #217.
 
 A recursive include of an initializing file returns the same borrowed scope
@@ -71,8 +87,25 @@ images. Language operator dispatch and complete CLI routing remain #194/#195 and
 возвращает true только при нормальном завершении. Переданный контекст принадлежит
 машине состояний; самостоятельно освобождать его нельзя. Исключение, вышедшее из
 файла, означает неудачу, а не успешное завершение. Неудача терминальна и не
-повторяет побочные эффекты. Хранение исходного исключения и повторный выброс
-добавляются в #197; сериализация потоков относится к #217.
+повторяет побочные эффекты. Исполнитель и машина состояний принимают явный выход `exception_t *failure`:
+исполнитель передаёт владение одной ссылкой на окончательно вышедшее значение,
+а машина состояний возвращает принадлежащую вызывающему ссылку на тот же объект
+при каждом неудачном обращении. Оба выхода обязательны и очищаются при входе;
+предыдущую ссылку нужно освободить либо передать дальше до повторного использования.
+False без исключения означает INVALID_OPERATION; true вместе с исключением также
+не считается успехом. Goat null допустим как исключение, C NULL означает его
+отсутствие. Не используется неявный слот главного потока; сериализация потоков
+относится к #217.
+
+Файл удерживает исходное значение как корень GC, не копирует и не замораживает его.
+Изменения обычного объекта ошибки видны при повторном выбросе. Внутренние функции
+`module_file_failure`, `module_files_failure`, `module_scope_failure` возвращают
+заимствованную ссылку. Чтение, запись, копирование неудачной области и вызов ранее
+переданной функции распространяют то же значение. Происхождение функции сохраняется
+через clone/flat, проверка вызова предшествует выбору native. Незавершённую область
+копировать нельзя, иначе копия могла бы обойти последующую неудачу. Обычные значения
+не отзываются. Неудачный прототип блокирует только обращение, дошедшее до него,
+а не собственные поля потомка.
 
 Повторный вход в уже выполняющийся файл при цикле include сразу возвращает ту же
 область без повторного вызова исполнителя. После успешного завершения возвращается
@@ -94,3 +127,19 @@ VM дополняет текст ошибки активной цепочкой 
 Компонентные тесты проверяют машину состояний и настоящее исполнение VM на
 независимо закодированных образах. Синтаксическое исполнение include/import и
 полная CLI-интеграция остаются задачами #194/#195 и #191.
+
+## Saved-failure regression tests / Проверки сохранённой неудачи
+
+`module_initialization_errors_testing` and
+`scripts/check_module_initialization_errors.py` verify exact payload identity,
+mutable exception values, GC retention, repeated failed entry without side effects,
+failed scope reads/writes/copies, escaped function calls and their copies, and
+unaffected ordinary values and successfully initialized files. These internal-API
+checks prepare the operator-level integration in #194/#195; #229 expands the
+exception/finally scenario matrix.
+
+Тесты проверяют идентичность и изменение исключения, сохранение при GC,
+повторный вход без эффектов, чтение/запись/копирование неудачной области и вызовы
+утёкших функций/их копий. Обычные значения и успешно завершённые файлы остаются
+работоспособными. Полная интеграция операторов относится к #194/#195, расширенная
+матрица распространения исключений/finally — к #229.
