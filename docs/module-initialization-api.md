@@ -249,3 +249,39 @@ part of #194/#195, which consume this shared gate.
 исходного файла; повторные обращения из разных файлов и модулей сохраняют значение,
 исходную трассировку, однократность эффектов и неизменность байткода после GC.
 Защитные таймауты существуют только в тестовом стенде, не в runtime языка.
+
+## Unfinished scopes (#225) / Незавершённые области
+
+Rules 36–40 are checked by `module_incomplete_scopes_testing` and
+`scripts/check_module_incomplete_scopes.py`. A reserved declaration is a real cell,
+not a missing property: an early read or write raises a catchable uninitialized
+error and does not populate, replace, or fail that cell's file by itself. After
+normal declaration execution the same cell becomes available under its original
+access and constness rules. Observation omits pending declarations rather than
+printing null or exposing their keys; this does not make direct access succeed.
+Ordinary visibility filtering still applies to ready declarations.
+
+The checked clone/flat operation rejects the file scope until initialization
+finishes. Ordinary objects created during initialization remain copyable.
+Inheritance retains the actual scope as a prototype without copying its pending
+cells. Early inherited access raises the same kind of error; later access sees
+completed declarations and subsequent permitted mutations. The tests check both
+successful and failing operations, caught errors, file states and side effects.
+These are VM/model integration checks; source include/import dispatch is still
+integrated separately by #194/#195.
+
+Правила 36–40 проверяются теми же компонентными тестами. Зарезервированное
+объявление — настоящая ячейка, а не отсутствующее поле: раннее чтение или запись
+вызывает перехватываемую ошибку, не заполняет и не заменяет ячейку и само по себе
+не переводит её файл в состояние неудачи. После выполнения объявления доступна
+та же ячейка с прежними правами и константностью. Наблюдение пропускает неготовые
+объявления, не подставляя null и не выдавая их ключи; прямой доступ при этом всё
+ещё вызывает ошибку. Готовые объявления также фильтруются по обычным правам.
+
+Проверяемая операция clone/flat запрещает копирование самой области до завершения
+инициализации. Обычные созданные объекты остаются копируемыми. Наследование
+сохраняет ссылку на область-прототип без копирования неготовых ячеек. Раннее чтение
+через потомка вызывает такую же ошибку, а позднее видит готовые объявления и их
+допустимые изменения. Тесты проверяют успешные и ошибочные операции, перехват,
+состояния файлов и побочные эффекты. Это интеграционные проверки VM/модели;
+исполнение исходных include/import подключается отдельно в #194/#195.

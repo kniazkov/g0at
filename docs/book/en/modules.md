@@ -4369,3 +4369,13 @@ termination does not become a saved initialization error. After failure, every
 repeat through the shared include/import gate returns the same value and original
 trace, not a trace from the new caller; the initializer and its side effects never
 run again. [Contract and synchronized tests](../../module-initialization-api.md).
+
+## Unfinished-scope checks (#225)
+
+Reserved declarations cannot be read or written before their declaration executes;
+catching this error permits initialization to continue. Printing and key snapshots
+omit unfinished declarations while applying normal access checks. Clone/flat reject
+the unfinished file scope, but ordinary objects remain copyable. Inheritance keeps
+the scope as a live prototype: early access fails, later access sees its completed
+cells. Positive and negative VM/model tests cover state, cell identity and effects
+for rules 36–40. [Contract and checks](../../module-initialization-api.md).
