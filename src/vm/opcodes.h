@@ -80,9 +80,10 @@ typedef enum {
     DVAR,
     DCONST, /**< Declare a field using the declaration descriptor at arg1. */
     BLOAD,
-    BSTORE,              /**< Read/write the lexical declaration identified by arg1. */
-    MODULE_INCLUDE = 73, /**< Reserved v1 local-file reference; module execution is separate. */
-    MODULE_IMPORT = 74,  /**< Reserved v1 literal module name reference. */
-    MODULE_MAIN = 75,    /**< Reserved dynamic main module value. */
-    MODULE_DIR = 76      /**< Reserved dynamic module directory value. */
+    BSTORE, /**< Read/write the lexical declaration identified by arg1. */
+    MODULE_INCLUDE =
+        73,             /**< Initializes a fixed local file once and pushes its persistent scope. */
+    MODULE_IMPORT = 74, /**< Reserved v1 literal module name reference. */
+    MODULE_MAIN = 75,   /**< Reserved dynamic main module value. */
+    MODULE_DIR = 76     /**< Reserved dynamic module directory value. */
 } opcode_t;

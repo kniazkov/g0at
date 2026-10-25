@@ -207,3 +207,6 @@ if(GOAT_TEST_ALLOC_FAILURE)
   add_executable(module_memory_testing component_test/module_memory_testing.c)
   target_link_libraries(module_memory_testing PRIVATE goat_validation m)
 endif()
+
+add_executable(source_include_testing component_test/source_include_testing.c)
+target_link_libraries(source_include_testing PRIVATE goat_validation m)

@@ -57,6 +57,8 @@ typedef enum {
     /** @brief Static string node type. */
     NODE_STATIC_STRING,
 
+    NODE_MODULE_INCLUDE, /**< Resolved literal source include. */
+
     /** @brief Integer literal node type. */
     NODE_INTEGER,
 

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "bytecode.h"
+#include "model/module_files.h"
 #include "model/process.h"
 
 /**
@@ -17,3 +18,12 @@
  * incomplete.
  */
 int run(process_t *proc, bytecode_t *code);
+
+/** @brief Execute one prepared module file through its once-only initialization gate.
+ * The process retains the persistent scope and original failure. Included files
+ * execute synchronously using fixed local links and never reopen source paths.
+ * The caller frame, instruction pointer and operands survive this outer VM entry.
+ * On failure the originating exception is stored in the main thread, as for run.
+ * Not a reentrant VM entry: invoke only when no run is active in this process.
+ */
+int run_module_file(process_t *proc, module_file_t *file);
