@@ -90,6 +90,8 @@ object_t *module_scope_failure(const object_t *scope);
 /** @brief Executor returns true only after normal completion of the file top level.
  * The frame uses the persistent scope, no caller locals or receiver. The executor
  * must restore any descendant frames before returning, and must not free frame.
+ * Blocking I/O is allowed: the gate imposes no deadline or execution budget.
+ * It waits for the executor to return normally or with an escaping exception.
  * On failure, transfer one owned reference to the final thrown value into failure.
  * C NULL is not a thrown value; the Goat null singleton is valid. A false result
  * without a payload is converted to INVALID_OPERATION. A payload also overrides
@@ -111,9 +113,13 @@ typedef enum {
  * cycles and completed files return the same borrowed scope without executing.
  * An escaping failure is terminal, never retried. Invalid arguments clear scope
  * and do not change state. Both output pointers are required and cleared on entry;
- * failure receives an owned reference to the original saved value. The caller must
+ * failure receives owned references to the original saved value AND origin trace,
+ * never a clone or a new trace from the repeated caller. The caller must
  * release or propagate it before reusing the output. No filesystem access or image
  * mutation occurs. The executor is never invoked again after failure.
+ * There is no initialization timeout, polling watchdog or elapsed-time failure:
+ * INITIALIZING lasts until the synchronous executor returns. External process
+ * termination is outside this contract and does not produce a cached timeout.
  * This is not a scheduler: cross-thread serialization belongs to #217.
  */
 module_initialize_status_t initialize_module_file(module_file_t *file,

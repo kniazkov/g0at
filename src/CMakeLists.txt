@@ -196,6 +196,9 @@ target_link_libraries(module_initialization_errors_testing PRIVATE goat_validati
 add_executable(module_exception_propagation_testing component_test/module_exception_propagation_testing.c)
 target_link_libraries(module_exception_propagation_testing PRIVATE goat_validation m)
 
+add_executable(module_initialization_contract_testing component_test/module_initialization_contract_testing.c)
+target_link_libraries(module_initialization_contract_testing PRIVATE goat_validation m)
+
 if(GOAT_TEST_ALLOC_FAILURE)
   add_executable(module_memory_testing component_test/module_memory_testing.c)
   target_link_libraries(module_memory_testing PRIVATE goat_validation m)
