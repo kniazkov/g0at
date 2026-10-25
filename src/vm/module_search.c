@@ -18,14 +18,14 @@ struct module_search {
 };
 
 static char *copy(const char *s, size_t n) {
-    char *p = ALLOC(n + 1);
+    char *p = ALLOC(allocation_size_add(n, 1));
     memcpy(p, s, n);
     p[n] = 0;
     return p;
 }
 
 static void append(char ***items, size_t *count, char *value) {
-    char **next = ALLOC((*count + 1) * sizeof(char *));
+    char **next = ALLOC(allocation_size_multiply(allocation_size_add(*count, 1), sizeof(char *)));
     if (*count)
         memcpy(next, *items, *count * sizeof(char *));
     FREE(*items);
@@ -252,7 +252,7 @@ static void diagnostic_append(char **text, size_t *length, const char *format, .
     int size = vsnprintf(NULL, 0, format, measure);
     va_end(measure);
     if (size >= 0) {
-        char *next = ALLOC(*length + (size_t)size + 1);
+        char *next = ALLOC(allocation_size_add(allocation_size_add(*length, (size_t)size), 1));
         if (*length)
             memcpy(next, *text, *length);
         vsnprintf(next + *length, (size_t)size + 1, format, args);
@@ -280,7 +280,9 @@ char *format_module_search_error(const module_search_error_t *error,
                 cause = "filesystem access or inspection failure";
                 break;
             case MODULE_SEARCH_INVALID_MODULE:
-                cause = "invalid or corrupt module";
+                cause = error->validation.status == MODULE_VALIDATION_MEMORY
+                            ? "out of memory while loading module"
+                            : "invalid or corrupt module";
                 break;
             case MODULE_SEARCH_IDENTITY:
                 cause = "module name/version mismatch";

@@ -10,3 +10,90 @@
  
      zi->ci.size_centralExtra = size_extrafield_global;
      zip64local_putValue_inmemory(zi->ci.central_header,(uLong)CENTRALHEADERMAGIC,4);
+--- a/contrib/minizip/unzip.c
++++ b/contrib/minizip/unzip.c
+@@ -325 +325 @@ extern int ZEXPORT unzStringFileNameCompare (const char*  fileName1,
+-local ZPOS64_T unz64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_filefunc_def, voidpf filestream) {
++local ZPOS64_T unz64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_filefunc_def, voidpf filestream, int *status) {
+@@ -342 +342,2 @@ local ZPOS64_T unz64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_f
+-    if (buf==NULL)
++    if (buf==NULL) {
++        *status = Z_MEM_ERROR;
+@@ -343,0 +345 @@ local ZPOS64_T unz64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_f
++    }
+@@ -386 +388 @@ local ZPOS64_T unz64local_SearchCentralDir64(const zlib_filefunc64_32_def* pzlib
+-                                             voidpf filestream) {
++                                             voidpf filestream, int *status) {
+@@ -405 +407,2 @@ local ZPOS64_T unz64local_SearchCentralDir64(const zlib_filefunc64_32_def* pzlib
+-    if (buf==NULL)
++    if (buf==NULL) {
++        *status = Z_MEM_ERROR;
+@@ -406,0 +410 @@ local ZPOS64_T unz64local_SearchCentralDir64(const zlib_filefunc64_32_def* pzlib
++    }
+@@ -492 +496 @@ local unzFile unzOpenInternal(const void *path,
+-                              int is64bitOpenFunction) {
++                              int is64bitOpenFunction, int *status) {
+@@ -506,0 +511,3 @@ local unzFile unzOpenInternal(const void *path,
++    int local_status;
++    if (status == NULL) status = &local_status;
++    *status = UNZ_BADZIPFILE;
+@@ -528 +535,5 @@ local unzFile unzOpenInternal(const void *path,
+-    central_pos = unz64local_SearchCentralDir64(&us.z_filefunc,us.filestream);
++    central_pos = unz64local_SearchCentralDir64(&us.z_filefunc,us.filestream,status);
++    if (*status == Z_MEM_ERROR) {
++        ZCLOSE64(us.z_filefunc, us.filestream);
++        return NULL;
++    }
+@@ -590 +601,5 @@ local unzFile unzOpenInternal(const void *path,
+-        central_pos = unz64local_SearchCentralDir(&us.z_filefunc,us.filestream);
++        central_pos = unz64local_SearchCentralDir(&us.z_filefunc,us.filestream,status);
++        if (*status == Z_MEM_ERROR) {
++            ZCLOSE64(us.z_filefunc, us.filestream);
++            return NULL;
++        }
+@@ -664,0 +680,4 @@ local unzFile unzOpenInternal(const void *path,
++        *status = UNZ_OK;
++    } else {
++        *status = Z_MEM_ERROR;
++        ZCLOSE64(us.z_filefunc, us.filestream);
+@@ -676 +695 @@ extern unzFile ZEXPORT unzOpen2(const char *path,
+-        return unzOpenInternal(path, &zlib_filefunc64_32_def_fill, 0);
++        return unzOpenInternal(path, &zlib_filefunc64_32_def_fill, 0, NULL);
+@@ -679 +698 @@ extern unzFile ZEXPORT unzOpen2(const char *path,
+-        return unzOpenInternal(path, NULL, 0);
++        return unzOpenInternal(path, NULL, 0, NULL);
+@@ -691 +710 @@ extern unzFile ZEXPORT unzOpen2_64(const void *path,
+-        return unzOpenInternal(path, &zlib_filefunc64_32_def_fill, 1);
++        return unzOpenInternal(path, &zlib_filefunc64_32_def_fill, 1, NULL);
+@@ -694 +713,16 @@ extern unzFile ZEXPORT unzOpen2_64(const void *path,
+-        return unzOpenInternal(path, NULL, 1);
++        return unzOpenInternal(path, NULL, 1, NULL);
++}
++
++/* Goat extension: distinguish exhausted memory from malformed input. */
++extern unzFile ZEXPORT unzOpen2_64_status(const void *path,
++                                        zlib_filefunc64_def* functions,
++                                        int *status) {
++    if (functions != NULL) {
++        zlib_filefunc64_32_def io;
++        io.zfile_func64 = *functions;
++        io.zopen32_file = NULL;
++        io.ztell32_file = NULL;
++        io.zseek32_file = NULL;
++        return unzOpenInternal(path, &io, 1, status);
++    }
++    return unzOpenInternal(path, NULL, 1, status);
+@@ -698 +732 @@ extern unzFile ZEXPORT unzOpen(const char *path) {
+-    return unzOpenInternal(path, NULL, 0);
++    return unzOpenInternal(path, NULL, 0, NULL);
+@@ -702 +736 @@ extern unzFile ZEXPORT unzOpen64(const void *path) {
+-    return unzOpenInternal(path, NULL, 1);
++    return unzOpenInternal(path, NULL, 1, NULL);
+--- a/contrib/minizip/unzip.h
++++ b/contrib/minizip/unzip.h
+@@ -191,0 +192,5 @@ extern unzFile ZEXPORT unzOpen2(const char *path,
++/* Goat extension; optional status is UNZ_OK, Z_MEM_ERROR or UNZ_BADZIPFILE. */
++extern unzFile ZEXPORT unzOpen2_64_status(const void *path,
++                                         zlib_filefunc64_def* functions,
++                                         int *status);
++

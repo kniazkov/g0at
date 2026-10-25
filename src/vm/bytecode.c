@@ -252,7 +252,8 @@ bool bind_bytecode_native_function(bytecode_t *code,
     if (!code->native_functions) {
         if (!function)
             return true;
-        code->native_functions = CALLOC(code->instructions_count * sizeof(*code->native_functions));
+        code->native_functions = CALLOC(
+            allocation_size_multiply(code->instructions_count, sizeof(*code->native_functions)));
     }
     retain_native_function_descriptor(function);
     release_native_function_descriptor(code->native_functions[instruction]);

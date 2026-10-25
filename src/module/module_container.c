@@ -484,6 +484,8 @@ goat_container_status goat_module_container_read_report(const void *data,
         local = (goat_container_error){.entry_index = SIZE_MAX};
         r->readable = !read_part(zip, r, &r->bytes, &local);
         checked(&rs, GOAT_CONTAINER_CHECK_CONTENT, &local, r);
+        if (local.status == GOAT_CONTAINER_MEMORY)
+            goto done;
     }
     if (json->readable) {
         rs.json = json;
@@ -496,6 +498,8 @@ goat_container_status goat_module_container_read_report(const void *data,
                                               &rs);
         if (!je)
             checked(&rs, GOAT_CONTAINER_CHECK_JSON, NULL, json);
+        else if (je == GOAT_MODULE_JSON_MEMORY)
+            goto done;
     } else {
         skipped(&rs, GOAT_CONTAINER_CHECK_JSON, GOAT_CONTAINER_CHECK_CONTENT, json);
     }
@@ -515,10 +519,16 @@ goat_container_status goat_module_container_read_report(const void *data,
         checked(&rs, GOAT_CONTAINER_CHECK_DECLARATIONS, &local, NULL);
         bool declarations_ok = !local.status;
         if (declarations_ok && count) {
+            if (count > SIZE_MAX / sizeof(*c->native)) {
+                fail(&local, GOAT_CONTAINER_MEMORY, SIZE_MAX, 0, 0);
+                checked(&rs, GOAT_CONTAINER_CHECK_NATIVE_HASH, &local, NULL);
+                goto done;
+            }
             c->native = calloc(count, sizeof(*c->native));
             if (!c->native) {
                 fail(&local, GOAT_CONTAINER_MEMORY, SIZE_MAX, 0, 0);
                 checked(&rs, GOAT_CONTAINER_CHECK_NATIVE_HASH, &local, NULL);
+                goto done;
             } else {
                 c->native_count = count;
             }
@@ -574,6 +584,8 @@ goat_container_status goat_module_container_read_report(const void *data,
             else if (!matches)
                 fail(&local, GOAT_CONTAINER_MAIN_HASH, json->index, 0, 0);
             checked(&rs, GOAT_CONTAINER_CHECK_MAIN_HASH, &local, json);
+            if (local.status == GOAT_CONTAINER_MEMORY)
+                goto done;
             c->bytecode = bytecode->bytes;
             bytecode->bytes = (zip_view_t){0};
         } else {

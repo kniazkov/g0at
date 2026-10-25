@@ -22,6 +22,15 @@ if(NOT GOAT_UTF32_TARGET)
 endif()
 include_directories(. ../include)
 
+# Separate fault-injection builds only. Production binaries expose no failure knob.
+option(GOAT_TEST_ALLOC_FAILURE "Instrument allocations for loader resource tests" OFF)
+if(GOAT_TEST_ALLOC_FAILURE)
+  add_library(goat_allocation_fault STATIC component_test/allocation_fault.c)
+  link_libraries(goat_allocation_fault)
+  add_compile_options("-include" "${CMAKE_CURRENT_SOURCE_DIR}/component_test/allocation_fault.h")
+  add_compile_definitions(GOAT_TEST_ALLOC_FAILURE)
+endif()
+
 add_library(yyjson STATIC ../third_party/yyjson/yyjson.c)
 target_include_directories(yyjson PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/yyjson")
 set_target_properties(yyjson PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -178,3 +187,8 @@ target_link_libraries(module_graph_testing PRIVATE goat_validation m)
 
 add_executable(module_snapshot_testing component_test/module_snapshot_testing.c)
 target_link_libraries(module_snapshot_testing PRIVATE goat_validation m)
+
+if(GOAT_TEST_ALLOC_FAILURE)
+  add_executable(module_memory_testing component_test/module_memory_testing.c)
+  target_link_libraries(module_memory_testing PRIVATE goat_validation m)
+endif()

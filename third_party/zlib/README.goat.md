@@ -15,17 +15,17 @@ sha256sum git-archive-v1.3.2.tar
 SHA-256: `9a0323b8dcde2417150eeaa8ccccae0cb0d7f62b72c3dedafb4cd63df7ba0b45`.
 This is the Git archive checksum, not the checksum of a GitHub release asset.
 `UPSTREAM.sha256` also records the original bytes of every copied upstream file.
-`LOCAL.patch` records the sole source change. The original upstream copyright
+`LOCAL.patch` records the local source changes. The original upstream copyright
 and license notices remain in all copied files.
 
 Исходная поставка — checkout точного тега; выше зафиксированы commit и SHA-256
 его воспроизводимого tar. Это не checksum автоматически созданного ZIP GitHub.
 `UPSTREAM.sha256` фиксирует также каждый скопированный исходный файл до правки;
-`LOCAL.patch` содержит единственную локальную правку исходников.
+`LOCAL.patch` содержит локальные правки исходников.
 
 ## Contents and local changes / состав и изменения
 
-28 C/header files (1,227,516 bytes including the small local fix):
+28 C/header files (1,228,976 bytes including local fixes):
 
 - zlib: adler32, crc32 (with generated table), deflate, inflate, inffast,
   inftrees, trees, zutil; their headers, zlib.h, zconf.h, gzguts.h.
@@ -35,13 +35,26 @@ and license notices remain in all copied files.
   in upstream skipset.h (canonical license: https://www.apache.org/licenses/LICENSE-2.0).
 - Goat adds this README, CMakeLists.txt, checksums and LOCAL.patch.
 
-Only `contrib/minizip/zip.c` changes: check the allocation of `central_header`
-before writing through it, returning `ZIP_INTERNALERROR` on failure. No codec
-algorithm, compression setting or wire-format behavior is changed.
+Local source changes:
 
-Единственная правка исходников — проверка результата выделения `central_header`
-в zip.c перед разыменованием. Возвращается `ZIP_INTERNALERROR`; алгоритмы кодека
-и байты успешной записи не меняются. Полный текст изменения — в LOCAL.patch.
+- `contrib/minizip/zip.c`: check allocation of `central_header` before writing,
+  returning `ZIP_INTERNALERROR` on failure.
+- `contrib/minizip/unzip.c` and `unzip.h`: add the error-aware
+  `unzOpen2_64_status` entry point. Allocation failures in either central-directory
+  search or the final handle report `Z_MEM_ERROR`, close the memory stream, and
+  stop immediately. The original open APIs remain source/ABI compatible. This
+  lets Goat distinguish resource exhaustion from malformed ZIP input without
+  discarding the upstream index cross-check.
+
+No codec algorithm, compression setting or successful wire-format behavior changes.
+`LOCAL.patch` records both changes against the pinned upstream files.
+
+Локальные правки: zip.c проверяет выделение `central_header` перед записью;
+unzip.c/unzip.h предоставляют `unzOpen2_64_status`, различающий нехватку памяти
+и повреждение архива. Отказ выделения при поиске каталога или создании дескриптора
+сразу возвращает `Z_MEM_ERROR` и закрывает поток. Исходные API совместимы;
+алгоритмы кодека и байты успешной записи не меняются. Обёртка сохраняет проверку
+индекса сторонней библиотекой. Полный текст правок — в `LOCAL.patch`.
 
 CMake compiles eight zlib C files and three MiniZip C files as static targets
 `goat_zlib` and `goat_minizip`. Settings are target-local. No upstream build

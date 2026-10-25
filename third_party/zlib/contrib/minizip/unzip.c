@@ -322,7 +322,7 @@ extern int ZEXPORT unzStringFileNameCompare (const char*  fileName1,
   Locate the Central directory of a zipfile (at the end, just before
     the global comment)
 */
-local ZPOS64_T unz64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_filefunc_def, voidpf filestream) {
+local ZPOS64_T unz64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_filefunc_def, voidpf filestream, int *status) {
     unsigned char* buf;
     ZPOS64_T uSizeFile;
     ZPOS64_T uBackRead;
@@ -339,8 +339,10 @@ local ZPOS64_T unz64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_f
         uMaxBack = uSizeFile;
 
     buf = (unsigned char*)ALLOC(BUFREADCOMMENT+4);
-    if (buf==NULL)
+    if (buf==NULL) {
+        *status = Z_MEM_ERROR;
         return CENTRALDIRINVALID;
+    }
 
     uBackRead = 4;
     while (uBackRead<uMaxBack)
@@ -383,7 +385,7 @@ local ZPOS64_T unz64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_f
     the global comment)
 */
 local ZPOS64_T unz64local_SearchCentralDir64(const zlib_filefunc64_32_def* pzlib_filefunc_def,
-                                             voidpf filestream) {
+                                             voidpf filestream, int *status) {
     unsigned char* buf;
     ZPOS64_T uSizeFile;
     ZPOS64_T uBackRead;
@@ -402,8 +404,10 @@ local ZPOS64_T unz64local_SearchCentralDir64(const zlib_filefunc64_32_def* pzlib
         uMaxBack = uSizeFile;
 
     buf = (unsigned char*)ALLOC(BUFREADCOMMENT+4);
-    if (buf==NULL)
+    if (buf==NULL) {
+        *status = Z_MEM_ERROR;
         return CENTRALDIRINVALID;
+    }
 
     uBackRead = 4;
     while (uBackRead<uMaxBack)
@@ -489,7 +493,7 @@ local ZPOS64_T unz64local_SearchCentralDir64(const zlib_filefunc64_32_def* pzlib
 */
 local unzFile unzOpenInternal(const void *path,
                               zlib_filefunc64_32_def* pzlib_filefunc64_32_def,
-                              int is64bitOpenFunction) {
+                              int is64bitOpenFunction, int *status) {
     unz64_s us;
     unz64_s *s;
     ZPOS64_T central_pos;
@@ -504,6 +508,9 @@ local unzFile unzOpenInternal(const void *path,
                                    (same than number_entry on nospan) */
 
     int err=UNZ_OK;
+    int local_status;
+    if (status == NULL) status = &local_status;
+    *status = UNZ_BADZIPFILE;
 
     if (unz_copyright[0]!=' ')
         return NULL;
@@ -525,7 +532,11 @@ local unzFile unzOpenInternal(const void *path,
     if (us.filestream==NULL)
         return NULL;
 
-    central_pos = unz64local_SearchCentralDir64(&us.z_filefunc,us.filestream);
+    central_pos = unz64local_SearchCentralDir64(&us.z_filefunc,us.filestream,status);
+    if (*status == Z_MEM_ERROR) {
+        ZCLOSE64(us.z_filefunc, us.filestream);
+        return NULL;
+    }
     if (central_pos!=CENTRALDIRINVALID)
     {
         uLong uS;
@@ -587,7 +598,11 @@ local unzFile unzOpenInternal(const void *path,
     }
     else
     {
-        central_pos = unz64local_SearchCentralDir(&us.z_filefunc,us.filestream);
+        central_pos = unz64local_SearchCentralDir(&us.z_filefunc,us.filestream,status);
+        if (*status == Z_MEM_ERROR) {
+            ZCLOSE64(us.z_filefunc, us.filestream);
+            return NULL;
+        }
         if (central_pos==CENTRALDIRINVALID)
             err=UNZ_ERRNO;
 
@@ -662,6 +677,10 @@ local unzFile unzOpenInternal(const void *path,
     {
         *s=us;
         unzGoToFirstFile((unzFile)s);
+        *status = UNZ_OK;
+    } else {
+        *status = Z_MEM_ERROR;
+        ZCLOSE64(us.z_filefunc, us.filestream);
     }
     return (unzFile)s;
 }
@@ -673,10 +692,10 @@ extern unzFile ZEXPORT unzOpen2(const char *path,
     {
         zlib_filefunc64_32_def zlib_filefunc64_32_def_fill;
         fill_zlib_filefunc64_32_def_from_filefunc32(&zlib_filefunc64_32_def_fill,pzlib_filefunc32_def);
-        return unzOpenInternal(path, &zlib_filefunc64_32_def_fill, 0);
+        return unzOpenInternal(path, &zlib_filefunc64_32_def_fill, 0, NULL);
     }
     else
-        return unzOpenInternal(path, NULL, 0);
+        return unzOpenInternal(path, NULL, 0, NULL);
 }
 
 extern unzFile ZEXPORT unzOpen2_64(const void *path,
@@ -688,18 +707,33 @@ extern unzFile ZEXPORT unzOpen2_64(const void *path,
         zlib_filefunc64_32_def_fill.zopen32_file = NULL;
         zlib_filefunc64_32_def_fill.ztell32_file = NULL;
         zlib_filefunc64_32_def_fill.zseek32_file = NULL;
-        return unzOpenInternal(path, &zlib_filefunc64_32_def_fill, 1);
+        return unzOpenInternal(path, &zlib_filefunc64_32_def_fill, 1, NULL);
     }
     else
-        return unzOpenInternal(path, NULL, 1);
+        return unzOpenInternal(path, NULL, 1, NULL);
+}
+
+/* Goat extension: distinguish exhausted memory from malformed input. */
+extern unzFile ZEXPORT unzOpen2_64_status(const void *path,
+                                        zlib_filefunc64_def* functions,
+                                        int *status) {
+    if (functions != NULL) {
+        zlib_filefunc64_32_def io;
+        io.zfile_func64 = *functions;
+        io.zopen32_file = NULL;
+        io.ztell32_file = NULL;
+        io.zseek32_file = NULL;
+        return unzOpenInternal(path, &io, 1, status);
+    }
+    return unzOpenInternal(path, NULL, 1, status);
 }
 
 extern unzFile ZEXPORT unzOpen(const char *path) {
-    return unzOpenInternal(path, NULL, 0);
+    return unzOpenInternal(path, NULL, 0, NULL);
 }
 
 extern unzFile ZEXPORT unzOpen64(const void *path) {
-    return unzOpenInternal(path, NULL, 1);
+    return unzOpenInternal(path, NULL, 1, NULL);
 }
 
 /*

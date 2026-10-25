@@ -47,3 +47,8 @@ size_t get_allocated_memory_size(void);
 
 /** @brief Lists live allocations to stderr; a no-op without MEMORY_DEBUG. */
 void print_list_of_memory_blocks(void);
+
+/** @brief Checked byte-count arithmetic; overflow follows the fatal allocation policy. */
+size_t allocation_size_add(size_t left, size_t right);
+/** @brief Checked array byte count, including a zero count or element size. */
+size_t allocation_size_multiply(size_t count, size_t size);

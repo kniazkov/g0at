@@ -101,9 +101,15 @@ static void inspect(const goat_module_container *container, void *context) {
         d.state = status ? MODULE_CHECK_FAILED : MODULE_CHECK_PASSED;
         d.detail = status;
         d.index = d.bytecode.index;
+        if (d.bytecode.json_error == GOAT_MODULE_JSON_MEMORY)
+            v->result.status = MODULE_VALIDATION_MEMORY;
     }
     goat_module_json_free(json);
     report(v, d);
+    if (v->result.status == MODULE_VALIDATION_MEMORY) {
+        skip(v, MODULE_CHECK_NATIVE, MODULE_CHECK_BYTECODE);
+        return;
+    }
     d = (module_validation_diagnostic_t){.check = MODULE_CHECK_NATIVE,
                                          .entry = {(const uint8_t *)"module.json", 11},
                                          .index = SIZE_MAX};
@@ -186,6 +192,8 @@ module_validation_result_t validate_module(const void *data,
         skip(&v, MODULE_CHECK_NATIVE, MODULE_CHECK_CONTAINER);
     }
     if (status || v.result.failures) {
+        if (status == GOAT_CONTAINER_MEMORY)
+            v.result.status = MODULE_VALIDATION_MEMORY;
         if (!v.result.status)
             v.result.status = MODULE_VALIDATION_CORRUPT;
         goat_module_container_free(container);

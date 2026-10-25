@@ -240,6 +240,10 @@ zip_status_t zip_archive_open(const void *data, size_t size, zip_archive_t **out
     if (!a)
         return ZIP_MEMORY;
     a->layout = info;
+    if (info.count > SIZE_MAX / sizeof(*a->entries)) {
+        zip_archive_close(a);
+        return ZIP_MEMORY;
+    }
     if (info.count) {
         a->entries = calloc(info.count, sizeof(*a->entries));
         if (!a->entries) {
@@ -303,9 +307,10 @@ zip_status_t zip_archive_open(const void *data, size_t size, zip_archive_t **out
     if (!status) {
         memory_stream stream = {.input = data, .size = size};
         zlib_filefunc64_def io = callbacks(&stream);
-        unzFile file = unzOpen2_64("memory", &io);
+        int open_status = UNZ_OK;
+        unzFile file = unzOpen2_64_status("memory", &io, &open_status);
         if (!file)
-            status = ZIP_FORMAT;
+            status = open_status == Z_MEM_ERROR ? ZIP_MEMORY : ZIP_FORMAT;
         else {
             unz_global_info64 global;
             if (unzGetGlobalInfo64(file, &global) != UNZ_OK || global.number_entry != info.count)
