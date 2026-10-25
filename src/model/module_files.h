@@ -48,6 +48,9 @@ module_file_t *module_files_main(module_files_t *files);
 /** The wire buffer is immutable; the wrapper's VM caches remain outside it. */
 bytecode_t *module_files_bytecode(module_files_t *files);
 module_t *module_files_identity(module_files_t *files);
+/** @brief Immutable logical metadata, borrowed for the process lifetime. */
+string_view_t module_files_name(const module_files_t *files);
+string_view_t module_files_version(const module_files_t *files);
 /** Trusted graph loader only: bind a validated import descriptor to a direct
  * dependency's main file. Both sets must belong to the same process. Bindings
  * and string caches are memory-only and never alter the bytecode wire buffer.

@@ -9,8 +9,14 @@
 #include "analysis_test_support.h"
 #include "cli/options.h"
 #include "codegen/linker.h"
+/* The metadata reader and public adapter ABI independently name their zero status.
+ * This test joins both APIs; keep the metadata enum local to this translation unit. */
+#define GOAT_NATIVE_OK GOAT_MODULE_NATIVE_OK
+#include "common/module_compilation.h"
+#undef GOAT_NATIVE_OK
 #include "lib/allocate.h"
 #include "model/context.h"
+#include "model/module_files.h"
 #include "model/native_library.h"
 #include "model/object.h"
 #include "model/process.h"
@@ -246,6 +252,14 @@ static bool backend_failures(void) {
         ASSERT(run(proc, code) != 0 && calls() == before + 1);
         thread_t *thread = proc->main_thread;
         ASSERT(!thread->exception.value);
+        ASSERT(exception_trace_size(thread->exception.trace) >= 2);
+        const exception_trace_frame_t *origin = exception_trace_frame(thread->exception.trace, 0);
+        const exception_trace_frame_t *caller = exception_trace_frame(thread->exception.trace, 1);
+        ASSERT(origin && origin->module == proc->module && origin->file_id == 0);
+        ASSERT(origin->instruction == code->functions[0].body && origin->native_entry);
+        ASSERT(caller && caller->module == thread->context->module && !caller->native_entry);
+        ASSERT(caller->instruction == thread->context->instruction);
+        ASSERT(code->instructions[caller->instruction].opcode == CALL);
         context_t *handler = thread->context;
         while (handler && handler->control_flow != FLOW_THROW)
             handler = handler->previous;
@@ -260,6 +274,77 @@ static bool backend_failures(void) {
         free_bytecode(code);
         destroy_process(proc);
     }
+    return true;
+}
+
+/** @brief Native origins use the callee identity, never the caller's equal file index. */
+static bool foreign_native_origin(void) {
+    bytecode_t *code = compile(U"var f=func(n){throw 123;};");
+    ASSERT(code && bind_function(code, 0, 4));
+    instr_index_t body = code->functions[0].body;
+    process_t *proc = create_process();
+    ASSERT(!run(proc, code));
+    object_t *function = variable(proc, U"f");
+    module_t *foreign = create_module_identity();
+    function_access_t *access = get_function_access(function);
+    clear_function_access(access, true);
+    init_function_access_in_file(access, foreign, 7);
+    thread_t *thread = proc->main_thread;
+    thread->context->access.file_id = 7;
+    thread->context->instruction = 123;
+    push_object_onto_stack(thread->data_stack, create_integer_object(proc, 0));
+    int64_t before = calls();
+    ASSERT(!call_object(function, 1, NULL, thread) && calls() == before + 1);
+    ASSERT(!thread->exception.value && thread->native_status == GOAT_NATIVE_BAD_REQUEST);
+    const exception_trace_t *trace = retain_exception_trace(thread->exception.trace);
+    const exception_trace_frame_t *origin = exception_trace_frame(trace, 0);
+    const exception_trace_frame_t *caller = exception_trace_frame(trace, 1);
+    ASSERT(origin && origin->module == foreign && origin->file_id == 7);
+    ASSERT(origin->instruction == body);
+    ASSERT(caller && caller->module == proc->module && caller->module != foreign);
+    ASSERT(caller->file_id == 7 && caller->instruction == 123);
+    free_bytecode(code);
+    destroy_process(proc);
+    release_module_identity(foreign);
+    /* Trace owns its identities and instruction numbers after process/image teardown. */
+    ASSERT(exception_trace_frame(trace, 0)->instruction == body);
+    release_exception_trace(trace);
+    return true;
+}
+
+/** @brief Native failure text is resolved solely from checked compiled module data. */
+static bool mapped_native_origin(void) {
+    char source[] = "external f=func(n){\n    throw 123;\n};\nf(0);";
+    module_source_t file = {.path = "/private/build-machine/math.goat",
+                            .name = "math.goat",
+                            .external = true,
+                            .source = source,
+                            .length = sizeof(source) - 1};
+    module_sources_t sources = {.files = &file, .count = 1};
+    module_compilation_t *compilation = NULL;
+    module_compilation_error_t error = {0};
+    ASSERT(compile_module_sources(&sources, &compilation, &error));
+    process_t *proc = create_process();
+    module_files_t *files = NULL;
+    ASSERT(
+        create_module_files_from_snapshot(proc, compilation->metadata, compilation->code, &files));
+    ASSERT(bind_function(module_files_bytecode(files), 0, 4));
+    int64_t before = calls();
+    ASSERT(run_module_file(proc, module_files_main(files)) != 0 && calls() == before + 1);
+    const exception_trace_t *trace = proc->main_thread->exception.trace;
+    ASSERT(trace && exception_trace_frame(trace, 0)->native_entry);
+    string_value_t text = format_exception_trace(proc, trace);
+    ASSERT(STRSTR(text.data, U"source@0.0.0: math.goat (external file #0):2:11, f [native entry]"));
+    ASSERT(!STRSTR(text.data, U"private") && !STRSTR(text.data, U"throw 123"));
+    ASSERT(run_module_file(proc, module_files_main(files)) != 0 && calls() == before + 1);
+    ASSERT(proc->main_thread->exception.trace == trace);
+    string_value_t repeated = format_exception_trace(proc, proc->main_thread->exception.trace);
+    ASSERT(STRCMP(text.data, repeated.data) == 0);
+    FREE_STRING(text);
+    FREE_STRING(repeated);
+    destroy_process(proc);
+    free_module_compilation(compilation);
+    clear_module_compilation_error(&error);
     return true;
 }
 
@@ -391,6 +476,8 @@ bool test_native_calls(const char *provider, const char *generated, const char *
         {"evaluation order, extras, aliases, rebinding and builtins", evaluation_and_identity},
         {"native call preserves context, stack and numeric edges", native_without_context},
         {"backend failures stop without retry or Goat catch", backend_failures},
+        {"native failure preserves foreign callee origin and caller", foreign_native_origin},
+        {"native diagnostics resolve compiled logical source mapping", mapped_native_origin},
         {"noncanonical boolean results are rejected before commit", invalid_boolean_result},
         {"unmatched signature preserves bytecode throw/catch", fallback_exception},
         {"resource retry scope restores native entry after exception unwind", retry_exception}};

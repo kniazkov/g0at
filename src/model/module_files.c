@@ -28,6 +28,7 @@ struct module_files_t {
     module_t *identity;
     bytecode_t *code;
     uint32_t main;
+    string_value_t name, version;
     module_file_t *files;
     object_t **strings;
     module_file_t **imports;
@@ -45,6 +46,10 @@ static module_files_t *create_files(process_t *process, const yyjson_doc *doc, b
     set->identity = create_module_identity();
     set->code = code;
     set->main = (uint32_t)main;
+    yyjson_val *name = yyjson_obj_get(root, "name");
+    yyjson_val *version = yyjson_obj_get(root, "version");
+    set->name = decode_utf8_n(yyjson_get_str(name), yyjson_get_len(name));
+    set->version = decode_utf8_n(yyjson_get_str(version), yyjson_get_len(version));
     if (code->data_descriptor_count) {
         set->strings = CALLOC(code->data_descriptor_count * sizeof(*set->strings));
         set->imports = CALLOC(code->data_descriptor_count * sizeof(*set->imports));
@@ -255,6 +260,8 @@ void destroy_module_files(process_t *process) {
             FREE_STRING(set->files[i].name);
             release_exception_trace(set->files[i].failure.trace);
         }
+        FREE_STRING(set->name);
+        FREE_STRING(set->version);
         FREE(set->strings);
         FREE(set->imports);
         FREE(set->files);
@@ -399,4 +406,12 @@ string_value_t module_initialization_chain(process_t *process, const module_file
         append_initialization_file(&builder, target);
     }
     return (string_value_t){builder.data, builder.length, builder.data != NULL};
+}
+
+string_view_t module_files_name(const module_files_t *files) {
+    return files ? (string_view_t){files->name.data, files->name.length} : (string_view_t){0};
+}
+
+string_view_t module_files_version(const module_files_t *files) {
+    return files ? (string_view_t){files->version.data, files->version.length} : (string_view_t){0};
 }

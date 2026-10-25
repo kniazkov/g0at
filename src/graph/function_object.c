@@ -428,6 +428,15 @@ fobj_generate_bytecode(node_t *node, code_builder_t *code, data_builder_t *data)
                                     .arg0 = (uint16_t)expr->arguments->arg_count,
                                     .arg1 = arg_names_idx});
     code->function_ids[first + 1] = node->bytecode_function_id;
+    /* A direct declaration gives this code a diagnostic label, not an identity.
+     * Aliases and runtime assignments do not rename it; unnamed expressions keep
+     * the wire sentinel and remain distinguishable through their function ID. */
+    const node_t *parent = node->parent;
+    if (parent
+        && (parent->vtbl->type == NODE_VARIABLE_DECLARATOR
+            || parent->vtbl->type == NODE_CONSTANT_DECLARATOR))
+        code->function_names[first + 1] =
+            add_string_to_data_segment_ex(data, ((const declarator_t *)parent)->name);
     return first;
 }
 
@@ -440,7 +449,11 @@ fobj_generate_bytecode_deferred(const node_t *node, code_builder_t *code, data_b
     }
     bytecode_location_t saved = code->location;
     code->location.function = node->bytecode_function_id;
-    code->location.line = code->location.column = 0;
+    /* Synthetic empty bodies still belong to the function definition. */
+    code->location.line =
+        node->position && node->position->begin ? (uint32_t)node->position->begin->row : 0;
+    code->location.column =
+        node->position && node->position->begin ? (uint32_t)node->position->begin->column : 0;
     instr_index_t first;
     if (expr->body->statements->size == 0) {
         first = add_instruction(code, (instruction_t){.opcode = NIL});
