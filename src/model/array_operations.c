@@ -128,10 +128,10 @@ operation_result_t sort_array_elements(object_t *obj) {
 operation_result_t
 array_to_string(object_t *obj, object_t *separator_object, const function_access_t *access) {
     array_object_t *array = (array_object_t *)obj;
-    object_t *failure = object_observation_failure(obj, access);
-    if (failure) {
-        INCREF(failure);
-        return operation_exception(failure);
+    exception_t failure = object_observation_exception(obj, access);
+    if (failure.value) {
+        INCREF(failure.value);
+        return (operation_result_t){failure.value, true, failure.trace};
     }
     if (!separator_object)
         return operation_success(

@@ -237,13 +237,11 @@ bool test_trim_function() {
     push_object_onto_stack(thread->data_stack, get_static_integer_object(42));
     ASSERT(!call_object(function, 1, NULL, thread));
     ASSERT(thread->exception.value == get_exception_invalid_operation());
-    DECREFIF(thread->exception.value);
-    thread->exception.value = NULL;
+    clear_exception(&thread->exception);
 
     ASSERT(!call_object(function, 0, NULL, thread));
     ASSERT(thread->exception.value == get_exception_invalid_argument());
-    DECREFIF(thread->exception.value);
-    thread->exception.value = NULL;
+    clear_exception(&thread->exception);
 
     DECREF(str);
     destroy_process(proc);
@@ -368,18 +366,15 @@ bool test_instance_of_function() {
     push_object_onto_stack(thread->data_stack, create_integer_object(proc, 1));
     ASSERT(!call_object(function, 1, NULL, thread));
     ASSERT(thread->exception.value == get_exception_invalid_argument());
-    DECREFIF(thread->exception.value);
-    thread->exception.value = NULL;
+    clear_exception(&thread->exception);
 
     ASSERT(!call_object(function, 0, NULL, thread));
     ASSERT(thread->exception.value == get_exception_invalid_argument());
-    DECREFIF(thread->exception.value);
-    thread->exception.value = NULL;
+    clear_exception(&thread->exception);
 
     ASSERT(!call_object(function, 0, get_root_object(), thread));
     ASSERT(thread->exception.value == get_exception_invalid_argument());
-    DECREFIF(thread->exception.value);
-    thread->exception.value = NULL;
+    clear_exception(&thread->exception);
 
     destroy_process(proc);
     return true;

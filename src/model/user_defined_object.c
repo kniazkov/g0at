@@ -351,7 +351,9 @@ operation_result_t copy_object_with_access(process_t *process,
     object_t *failure = module_scope_failure(source);
     if (failure) {
         INCREF(failure);
-        return operation_exception(failure);
+        return (operation_result_t){failure,
+                                    true,
+                                    module_file_exception(module_scope_file(source)).trace};
     }
     module_file_t *file = module_scope_file(source);
     if (file && module_file_state(file) != MODULE_FILE_INITIALIZED)
@@ -373,21 +375,21 @@ operation_result_t copy_object_with_access(process_t *process,
         destroy_vector(visited);
         if (failure) {
             INCREF(failure);
-            return operation_exception(failure);
+            return (operation_result_t){failure, true, module_file_exception(file).trace};
         }
     }
     return operation_success(flatten ? flat_object_with_access(process, source, access)
                                      : clone_object_with_access(process, source, access));
 }
 
-object_t *object_observation_failure(object_t *source, const function_access_t *access) {
+exception_t object_observation_exception(object_t *source, const function_access_t *access) {
     vector_t *visited = create_vector();
     append_to_vector(visited, source);
-    object_t *failure = NULL;
-    for (size_t i = 0; i < visited->size && !failure; i++) {
+    exception_t failure = {0};
+    for (size_t i = 0; i < visited->size && !failure.value; i++) {
         object_t *object = visited->data[i];
-        failure = module_scope_failure(object);
-        if (failure)
+        failure = module_file_exception(module_scope_file(object));
+        if (failure.value)
             break;
         if (object->vtbl->type == TYPE_ARRAY) {
             object_array_t items = get_array_elements(object);
@@ -410,6 +412,10 @@ object_t *object_observation_failure(object_t *source, const function_access_t *
     }
     destroy_vector(visited);
     return failure;
+}
+
+object_t *object_observation_failure(object_t *source, const function_access_t *access) {
+    return object_observation_exception(source, access).value;
 }
 
 /** @brief Context used while rendering an object in Goat notation. */

@@ -54,6 +54,8 @@ context_t *create_context_with_protos_in_file(process_t *process,
     ctx->iteration_index = 0;
     ctx->pending_flow = FLOW_NORMAL;
     ctx->pending_value = NULL;
+    ctx->pending_trace = NULL;
+    ctx->instruction = BAD_INSTR_INDEX;
     ctx->pending_address = BAD_INSTR_INDEX;
     ctx->previous = caller;
     ctx->control_flow = FLOW_NORMAL;
@@ -78,6 +80,7 @@ context_t *destroy_context(context_t *context) {
        by a closure). */
     DECREF(context->data);
     DECREFIF(context->pending_value);
+    release_exception_trace(context->pending_trace);
     release_module_identity(context->module);
     context_t *previous = context->previous;
     FREE(context);

@@ -99,9 +99,8 @@ static void release(object_t *obj) {
 }
 
 static operation_result_t bitwise_not(process_t *process, object_t *obj) {
-    return (operation_result_t){
-        create_integer_object(process, invert_integer(get_object_integer_value(obj).value)),
-        false};
+    return operation_success(
+        create_integer_object(process, invert_integer(get_object_integer_value(obj).value)));
 }
 
 static operation_result_t
@@ -111,7 +110,7 @@ bitwise_binary(process_t *process, object_t *left, object_t *right, bitwise_kind
     int64_t a = get_object_integer_value(left).value, b = get_object_integer_value(right).value;
     if ((kind == BIT_SHIFT_LEFT || kind == BIT_SHIFT_RIGHT) && (b < 0 || b > 63))
         return operation_exception(get_exception_invalid_argument());
-    return (operation_result_t){create_integer_object(process, bitwise_integer(a, b, kind)), false};
+    return operation_success(create_integer_object(process, bitwise_integer(a, b, kind)));
 }
 
 static operation_result_t bitwise_and(process_t *process, object_t *left, object_t *right) {

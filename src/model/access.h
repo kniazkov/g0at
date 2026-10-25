@@ -229,3 +229,5 @@ operation_result_t copy_object_with_access(process_t *process,
  * Hidden and pending fields are not inspected; cycles terminate without recursion.
  */
 object_t *object_observation_failure(object_t *object, const function_access_t *access);
+/** @brief Borrowed full failure record from the same observation traversal. */
+exception_t object_observation_exception(object_t *object, const function_access_t *access);

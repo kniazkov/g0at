@@ -44,7 +44,7 @@ static module_initialize_status_t initialize_checked(module_file_t *file,
         if (pending)
             assert(failure.value == pending);
     }
-    DECREFIF(failure.value);
+    clear_exception(&failure);
     return status;
 }
 
@@ -128,8 +128,7 @@ static bool execute(module_file_t *file, context_t *frame, void *data, exception
             FREE(utf8);
             FREE_STRING(text);
         }
-        failure->value = thread->exception.value;
-        INCREF(failure->value);
+        *failure = retain_exception(thread->exception);
         return false;
     }
     if (!strcmp(test->mode, "caught")) {

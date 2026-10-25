@@ -161,7 +161,7 @@ static operation_result_t compare_values(object_t *left, object_t *right, compar
         FREE_STRING(a);
         FREE_STRING(b);
     }
-    return (operation_result_t){get_boolean_object(comparison_matches(order, kind)), false};
+    return operation_success(get_boolean_object(comparison_matches(order, kind)));
 }
 
 operation_result_t common_less(process_t *process, object_t *obj1, object_t *obj2) {

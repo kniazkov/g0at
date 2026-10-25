@@ -4347,3 +4347,15 @@ cannot be copied. Calls are checked before native dispatch. Ordinary escaped val
 and successfully initialized files are not revoked. The gate has an explicit owned
 exception output, independent of the main thread. See
 [API and regression tests](../../module-initialization-api.md).
+
+## Exception propagation and finally (#229)
+
+A file fails only after the final exception escapes its initializer. An internal
+catch permits successful completion; catching a dependency failure does not fail
+the consumer. An uncaught exception crosses the active chain with the same value
+and original trace. Completed dependencies remain ready; a later ordinary
+function failure does not revoke them. A new exception from catch or finally
+replaces only the current propagation, not the saved failure of an earlier
+failed file. Finally executes on the first exit, never when retrieving a saved
+failure again. Trace metadata is separate from both the mutable exception value
+and immutable bytecode. [Ownership and test matrix](../../module-initialization-api.md).

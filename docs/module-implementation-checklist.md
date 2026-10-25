@@ -48,7 +48,7 @@
 - [x] 32. [#235](https://github.com/kniazkov/g0at/issues/235) — Идентичность экземпляров модулей и копий архива
 - [x] 33. [#196](https://github.com/kniazkov/g0at/issues/196) — Ленивая однократная инициализация файлов ([API и проверки](module-initialization-api.md))
 - [x] 34. [#197](https://github.com/kniazkov/g0at/issues/197) — Сохранение ошибок инициализации
-- [ ] 35. [#229](https://github.com/kniazkov/g0at/issues/229) — Точные правила распространения исключений и finally
+- [x] 35. [#229](https://github.com/kniazkov/g0at/issues/229) — Точные правила распространения исключений и finally
 - [ ] 36. [#239](https://github.com/kniazkov/g0at/issues/239) — Инициализация: таймаут и идентичность исключения
 - [ ] 37. [#225](https://github.com/kniazkov/g0at/issues/225) — Проверка семантики незавершённых областей
 - [ ] 38. [#226](https://github.com/kniazkov/g0at/issues/226) — Проверка прототипов после ошибки инициализации

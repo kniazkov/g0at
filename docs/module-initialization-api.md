@@ -135,11 +135,65 @@ VM дополняет текст ошибки активной цепочкой 
 mutable exception values, GC retention, repeated failed entry without side effects,
 failed scope reads/writes/copies, escaped function calls and their copies, and
 unaffected ordinary values and successfully initialized files. These internal-API
-checks prepare the operator-level integration in #194/#195; #229 expands the
-exception/finally scenario matrix.
+checks prepare the operator-level integration in #194/#195. The exception/finally
+scenario matrix is covered below (#229).
 
 Тесты проверяют идентичность и изменение исключения, сохранение при GC,
 повторный вход без эффектов, чтение/запись/копирование неудачной области и вызовы
 утёкших функций/их копий. Обычные значения и успешно завершённые файлы остаются
-работоспособными. Полная интеграция операторов относится к #194/#195, расширенная
-матрица распространения исключений/finally — к #229.
+работоспособными. Полная интеграция операторов относится к #194/#195. Расширенная матрица
+распространения исключений/finally описана ниже (#229).
+
+## Propagation and finally (#229) / Распространение и finally
+
+The gate records only the exception that ultimately leaves its own initializer.
+A caught exception does not fail that file. An uncaught child failure is passed
+unchanged through each active consumer; an already initialized dependency is not
+revoked. A catch or finally that throws a new value gives the current consumer a
+new failure without changing the child's saved one. Repeated failed entry does
+not execute any body or cleanup again. Ordinary function failures after successful
+file initialization do not change that file's state.
+
+`exception_t` owns both its value and an optional immutable, reference-counted
+origin trace. `retain_exception` retains both; `clear_exception` releases both and
+clears the record. Move the complete record when transferring ownership, not only
+`value`. Trace frames identify the module, source-file index and VM instruction,
+from the throwing context towards its callers. `module_file_exception` and
+`module_files_exception` return borrowed records; retain before storing or
+propagating. Cleanup suspension preserves the same trace. A replacement exception
+captures its own origin. Traces never modify the thrown object or bytecode and
+are freed when the last exception record releases them; caught exceptions do not
+accumulate process-lifetime trace storage.
+
+Машина состояний запоминает только окончательное исключение, вышедшее из своего
+инициализатора. Перехваченная ошибка не блокирует файл. Ошибка дочернего файла
+передаётся через активных потребителей без замены, а уже готовая зависимость
+остаётся готовой. Новая ошибка из catch/finally меняет ошибку текущего потребителя,
+но не ранее сохранённую ошибку зависимости. Повторный вход не выполняет тело или
+finally заново; ошибка обычной функции готового файла не меняет его состояние.
+
+`exception_t` владеет значением и отдельной неизменяемой трассировкой со счётчиком
+ссылок. `retain_exception` и `clear_exception` работают с обеими частями; при
+передаче владения переносится вся запись, не только `value`. Кадры содержат
+идентичность модуля, индекс исходного файла и инструкцию VM, начиная с места
+выброса. `module_file_exception` и `module_files_exception` возвращают
+заимствованную запись. Приостановка для finally сохраняет трассировку; новое
+исключение получает собственную. Трассировка не изменяет объект ошибки или
+байткод и освобождается после последней владеющей ссылки.
+
+`module_exception_propagation_testing` with
+`scripts/check_module_exception_propagation.py` exercises every rule 26–35 using
+real VM handlers/cleanup and synchronous nested initialization callbacks. These
+are internal integration tests; source include/import dispatch remains #194/#195.
+
+The matrix has 120 independently encoded fixtures: rules 26–35 × two instruction
+layouts × internal or identically named external files × object/null/integer
+payloads. It checks exact origin instructions, shared and replacement traces, GC,
+bytecode immutability, caller-stack preservation and repeated caught exceptions
+without retained trace allocations.
+
+Матрица содержит 120 независимо закодированных сценариев: правила 26–35, два
+расположения инструкций, внутренние либо одноимённые внешние файлы и три типа
+исключений (объект/null/целое). Проверяются исходные инструкции, общие и заменённые
+трассировки, GC, неизменность байткода, стек вызывающего кода и отсутствие
+накопления трассировок при многократном перехвате.
