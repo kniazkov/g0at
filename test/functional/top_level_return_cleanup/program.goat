@@ -1,0 +1,11 @@
+try {
+    try { return; } catch (e) { println("inner catch"); throw e; }
+    finally { println("inner finally"); }
+} catch (e) { println(e); } finally { println("outer finally"); }
+try { try { throw "original"; } finally { return; } }
+catch (e) { println(e); }
+try { try { throw "original"; } catch (e) { return; } }
+catch (e) { println(e); }
+try { try { return; } finally { throw "replacement"; } }
+catch (e) { println(e); }
+println("continued");

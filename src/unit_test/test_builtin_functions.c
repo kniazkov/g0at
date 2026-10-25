@@ -23,7 +23,7 @@ static const builtin_function_t *lookup(const gchar_t *name) {
 bool test_builtin_registry() {
     size_t count;
     const builtin_function_t *const *functions = get_builtin_functions(&count);
-    ASSERT(count == 52);
+    ASSERT(count == 53 && count == BUILTIN_FUNCTION_COUNT);
     ASSERT(get_object_keys(get_root_context()->data).size == count + 2 + 10);
     for (size_t i = 0; i < count; i++) {
         const builtin_function_t *f = functions[i];
@@ -38,6 +38,7 @@ bool test_builtin_registry() {
         ASSERT(f->effects
                == ((!STRCMP(f->name, U"print") || !STRCMP(f->name, U"println"))
                        ? BUILTIN_EFFECT_OUTPUT
+                   : !STRCMP(f->name, U"exit")  ? BUILTIN_EFFECT_TERMINATION
                    : !STRCMP(f->name, U"input") ? BUILTIN_EFFECT_INPUT
                                                 : BUILTIN_EFFECT_NONE));
     }
@@ -81,17 +82,17 @@ bool test_builtin_numeric_results() {
     for (size_t f = 0; f < total; f++) {
         const builtin_function_t *descriptor = functions[f];
         if (descriptor == &builtin_print || descriptor == &builtin_println
-            || descriptor == &builtin_input || descriptor == &builtin_int
-            || descriptor == &builtin_ord || descriptor == &builtin_chr
-            || descriptor == &builtin_trim || descriptor == &builtin_instance_of
-            || descriptor == &builtin_char_at || descriptor == &builtin_substring
-            || descriptor == &builtin_contains || descriptor == &builtin_index_of
-            || descriptor == &builtin_last_index_of || descriptor == &builtin_starts_with
-            || descriptor == &builtin_ends_with || descriptor == &builtin_is_empty
-            || descriptor == &builtin_is_blank || descriptor == &builtin_to_upper_case
-            || descriptor == &builtin_to_lower_case || descriptor == &builtin_replace
-            || descriptor == &builtin_repeat || descriptor == &builtin_format
-            || descriptor == &builtin_str)
+            || descriptor == &builtin_input || descriptor == &builtin_exit
+            || descriptor == &builtin_int || descriptor == &builtin_ord
+            || descriptor == &builtin_chr || descriptor == &builtin_trim
+            || descriptor == &builtin_instance_of || descriptor == &builtin_char_at
+            || descriptor == &builtin_substring || descriptor == &builtin_contains
+            || descriptor == &builtin_index_of || descriptor == &builtin_last_index_of
+            || descriptor == &builtin_starts_with || descriptor == &builtin_ends_with
+            || descriptor == &builtin_is_empty || descriptor == &builtin_is_blank
+            || descriptor == &builtin_to_upper_case || descriptor == &builtin_to_lower_case
+            || descriptor == &builtin_replace || descriptor == &builtin_repeat
+            || descriptor == &builtin_format || descriptor == &builtin_str)
             continue;
         for (size_t i = 0; i < sizeof(samples) / sizeof(*samples); i++) {
             for (size_t j = 0;

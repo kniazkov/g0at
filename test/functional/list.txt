@@ -594,3 +594,8 @@ launch_dir_external
 launch_dir_dead
 launch_dir_closure_assign
 launch_dir_loop_var
+
+top_level_return_catch
+top_level_return_cleanup
+top_level_return_expression
+top_level_return_uncaught

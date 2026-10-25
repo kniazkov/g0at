@@ -22,7 +22,9 @@ bool test_exceptions_object(void) {
                               U"PROPERTY_NOT_FOUND",
                               U"ACCESS_DENIED",
                               U"FOREIGN_OBJECT",
-                              U"UNINITIALIZED_DECLARATION"};
+                              U"UNINITIALIZED_DECLARATION",
+                              U"RETURN_OUTSIDE_FUNCTION",
+                              U"EXIT_DURING_INITIALIZATION"};
     object_t *values[] = {get_exception_division_by_zero(),
                           get_exception_immutable_object(),
                           get_exception_invalid_argument(),
@@ -32,7 +34,9 @@ bool test_exceptions_object(void) {
                           get_exception_property_not_found(),
                           get_exception_access_denied(),
                           get_exception_foreign_object(),
-                          get_exception_uninitialized_declaration()};
+                          get_exception_uninitialized_declaration(),
+                          get_exception_return_outside_function(),
+                          get_exception_exit_during_initialization()};
     object_array_t keys = get_object_keys(exceptions);
     ASSERT(keys.size == sizeof(names) / sizeof(*names));
     process_t *process = create_process();

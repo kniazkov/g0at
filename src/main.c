@@ -50,5 +50,5 @@ int main(int argc, char **argv) {
     print_list_of_memory_blocks();
 
     /* Avoid Windows system() confusing a child exit code of -1 with launch failure. */
-    return ret_val == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+    return ret_val >= 0 && ret_val <= 255 ? ret_val : EXIT_FAILURE;
 }

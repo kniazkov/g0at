@@ -771,14 +771,20 @@ static bool start_cleanup(thread_t *thread,
 /** @brief Runs intervening cleanups before committing an owned return value. */
 static bool return_value(runtime_t *runtime, thread_t *thread, object_t *ret_value) {
     context_t *ctx = thread->context;
+    /* Validate the transfer before entering any finally. A top-level return is
+       an exception at the return statement, so an enclosing catch must see it
+       before its finally runs. Never cross an included file into its caller. */
+    context_t *target = ctx;
+    while (target && target->control_flow != FLOW_RETURN && !target->file_initialization_boundary)
+        target = target->previous;
+    if (!target || target->file_initialization_boundary) {
+        DECREF(ret_value);
+        return dispatch_exception(runtime,
+                                  thread,
+                                  (exception_t){.value = get_exception_return_outside_function()});
+    }
     context_t *next = ctx;
-    while (next && next->control_flow != FLOW_RETURN) {
-        if (next->file_initialization_boundary) {
-            DECREF(ret_value);
-            return dispatch_exception(runtime,
-                                      thread,
-                                      (exception_t){.value = get_exception_invalid_operation()});
-        }
+    while (next != target) {
         if (next->control_flow == FLOW_FINALLY)
             return start_cleanup(thread, next, FLOW_RETURN, ret_value, BAD_INSTR_INDEX);
         next = next->previous;
@@ -1170,6 +1176,7 @@ static bool exec_binding(runtime_t *runtime, instruction_t instr, thread_t *thre
 typedef struct {
     runtime_t *runtime;
     thread_t *thread;
+    bool direct_entry;
 } file_execution_t;
 
 static bool
@@ -1193,7 +1200,16 @@ execute_module_file(module_file_t *file, context_t *frame, void *data, exception
     thread->instr_id = module_file_entry(file);
     thread->args_count = 0;
     runtime->status = 0;
+    /* Only the outer direct entry is ordinary program execution. A callback
+       into that module while an include/import is active remains restricted. */
+    bool initializer =
+        thread->initialization_depth || frame->module != thread->process->launch_module
+        || module_file_id(file) != thread->process->launch_file || !execution->direct_entry;
+    if (initializer)
+        thread->initialization_depth++;
     execute_instructions(runtime, thread, false);
+    if (initializer)
+        thread->initialization_depth--;
     bool success = runtime->status == 0 && !thread->exception.value;
     *failure = thread->exception;
     thread->exception = saved;
@@ -1322,7 +1338,7 @@ static instr_executor_t executors[] = {
 /** @brief Nested file execution never schedules another thread mid-initializer. */
 static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule) {
     bool flag = true;
-    while (flag) {
+    while (flag && !thread->process->exit_requested) {
         /* Calls, returns, callbacks and exception unwinds all change lexical
            context. Resolve the image here rather than guessing at each edge. */
         runtime->files = find_module_files(thread->process, thread->context->module);
@@ -1368,16 +1384,18 @@ int run(process_t *proc, bytecode_t *code) {
             thread->data_stack->size ? thread->data_stack->size - 1 : BAD_STACK_INDEX;
     execute_instructions(&runtime, thread, true);
     finish_string_cache(proc);
-    return runtime.status;
+    return proc->exit_requested ? proc->exit_code : runtime.status;
 }
 
 int run_module_file(process_t *proc, module_file_t *file) {
     if (!proc || !file || module_file_process(file) != proc)
         return 1;
+    if (proc->exit_requested)
+        return proc->exit_code;
     bytecode_t *code = module_file_bytecode(file);
     runtime_t runtime = {.code = code, .entry_code = code};
     thread_t *thread = proc->main_thread;
-    file_execution_t execution = {&runtime, thread};
+    file_execution_t execution = {&runtime, thread, true};
     object_t *scope = NULL;
     exception_t failure = {0};
     module_initialize_status_t status = initialize_module_file(file,
@@ -1389,5 +1407,5 @@ int run_module_file(process_t *proc, module_file_t *file) {
     clear_exception(&thread->exception);
     thread->exception = failure;
     finish_string_cache(proc);
-    return status == MODULE_INITIALIZE_OK ? 0 : 1;
+    return proc->exit_requested ? proc->exit_code : status == MODULE_INITIALIZE_OK ? 0 : 1;
 }

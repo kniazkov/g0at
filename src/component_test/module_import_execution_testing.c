@@ -174,41 +174,51 @@ static int execute(const char *archive, bool frozen, const char *directory) {
             module_files_t *files = module_snapshot_files(snapshot, 0);
             module_file_t *main_file = module_files_main(files);
             result = run_module_file(process, main_file);
-            module_file_state_t state = module_file_state(main_file);
-            object_t *scope = module_file_scope(main_file);
-            /* These are borrowed from the persistent file, which remains a GC root.
-             * Do not add extra roots that could hide a runtime retention defect. */
-            exception_t failure = module_file_exception(main_file);
-            assert(state == (result ? MODULE_FILE_FAILED : MODULE_FILE_INITIALIZED));
-            assert(process->main_thread->exception.value == failure.value);
-            assert(process->main_thread->exception.trace == failure.trace);
-            string_value_t original_trace = format_exception_trace(process, failure.trace);
-            collect_garbage(process);
-            assert(run_module_file(process, main_file) == result);
-            assert(module_file_state(main_file) == state);
-            assert(module_file_scope(main_file) == scope);
-            exception_t repeated = module_file_exception(main_file);
-            assert(repeated.value == failure.value && repeated.trace == failure.trace);
-            assert(process->main_thread->exception.value == failure.value);
-            assert(process->main_thread->exception.trace == failure.trace);
-            string_value_t repeated_trace = format_exception_trace(process, repeated.trace);
-            assert(original_trace.length == repeated_trace.length);
-            assert(!original_trace.length
-                   || !memcmp(original_trace.data,
-                              repeated_trace.data,
-                              original_trace.length * sizeof(*original_trace.data)));
-            FREE_STRING(repeated_trace);
-            if (result && process->main_thread->exception.value) {
-                function_access_t observer;
-                init_function_access(&observer, module_files_identity(files));
-                string_value_t message =
-                    object_to_string_with_access(process->main_thread->exception.value, &observer);
-                fprintf_utf8(stderr, U"Uncaught: %s\n", message.data);
-                FREE_STRING(message);
-                fprintf_utf8(stderr, U"%s", original_trace.data);
-                clear_function_access(&observer, true);
+            if (process->exit_requested) {
+                /* Termination is not exception unwinding or successful file completion.
+                 * Inspect only process state, then retain the image immutability checks. */
+                assert(result == process->exit_code);
+                assert(!process->main_thread->exception.value);
+                assert(run_module_file(process, main_file) == result);
+                assert(!process->main_thread->exception.value);
+            } else {
+                module_file_state_t state = module_file_state(main_file);
+                object_t *scope = module_file_scope(main_file);
+                /* These are borrowed from the persistent file, which remains a GC root.
+                 * Do not add extra roots that could hide a runtime retention defect. */
+                exception_t failure = module_file_exception(main_file);
+                assert(state == (result ? MODULE_FILE_FAILED : MODULE_FILE_INITIALIZED));
+                assert(process->main_thread->exception.value == failure.value);
+                assert(process->main_thread->exception.trace == failure.trace);
+                string_value_t original_trace = format_exception_trace(process, failure.trace);
+                collect_garbage(process);
+                assert(run_module_file(process, main_file) == result);
+                assert(module_file_state(main_file) == state);
+                assert(module_file_scope(main_file) == scope);
+                exception_t repeated = module_file_exception(main_file);
+                assert(repeated.value == failure.value && repeated.trace == failure.trace);
+                assert(process->main_thread->exception.value == failure.value);
+                assert(process->main_thread->exception.trace == failure.trace);
+                string_value_t repeated_trace = format_exception_trace(process, repeated.trace);
+                assert(original_trace.length == repeated_trace.length);
+                assert(!original_trace.length
+                       || !memcmp(original_trace.data,
+                                  repeated_trace.data,
+                                  original_trace.length * sizeof(*original_trace.data)));
+                FREE_STRING(repeated_trace);
+                if (result && process->main_thread->exception.value) {
+                    function_access_t observer;
+                    init_function_access(&observer, module_files_identity(files));
+                    string_value_t message =
+                        object_to_string_with_access(process->main_thread->exception.value,
+                                                     &observer);
+                    fprintf_utf8(stderr, U"Uncaught: %s\n", message.data);
+                    FREE_STRING(message);
+                    fprintf_utf8(stderr, U"%s", original_trace.data);
+                    clear_function_access(&observer, true);
+                }
+                FREE_STRING(original_trace);
             }
-            FREE_STRING(original_trace);
             for (size_t i = 0; i < count; i++) {
                 const bytecode_t *code =
                     validated_module_bytecode(module_snapshot_module(snapshot, i));

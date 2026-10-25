@@ -41,6 +41,9 @@ object_t *get_function_cosh(void);
 extern const builtin_function_t builtin_ends_with;
 object_t *get_function_ends_with(void);
 
+extern const builtin_function_t builtin_exit;
+object_t *get_function_exit(void);
+
 extern const builtin_function_t builtin_exp;
 object_t *get_function_exp(void);
 
@@ -160,6 +163,68 @@ object_t *get_function_trim(void);
 
 extern const builtin_function_t builtin_trunc;
 object_t *get_function_trunc(void);
+
+/** @brief One registry list also defines exact static key-storage capacity. */
+#define GOAT_BUILTIN_FUNCTIONS(X)                                                                  \
+    X(abs)                                                                                         \
+    X(acos)                                                                                        \
+    X(asin)                                                                                        \
+    X(atan)                                                                                        \
+    X(cbrt)                                                                                        \
+    X(ceil)                                                                                        \
+    X(char_at)                                                                                     \
+    X(chr)                                                                                         \
+    X(contains)                                                                                    \
+    X(cos)                                                                                         \
+    X(cosh)                                                                                        \
+    X(ends_with)                                                                                   \
+    X(exit)                                                                                        \
+    X(exp)                                                                                         \
+    X(exp2)                                                                                        \
+    X(expm1)                                                                                       \
+    X(floor)                                                                                       \
+    X(fmod)                                                                                        \
+    X(format)                                                                                      \
+    X(hypot)                                                                                       \
+    X(index_of)                                                                                    \
+    X(input)                                                                                       \
+    X(instance_of)                                                                                 \
+    X(int)                                                                                         \
+    X(is_blank)                                                                                    \
+    X(is_empty)                                                                                    \
+    X(last_index_of)                                                                               \
+    X(log)                                                                                         \
+    X(log10)                                                                                       \
+    X(log1p)                                                                                       \
+    X(log2)                                                                                        \
+    X(max)                                                                                         \
+    X(min)                                                                                         \
+    X(ord)                                                                                         \
+    X(pow)                                                                                         \
+    X(print)                                                                                       \
+    X(println)                                                                                     \
+    X(repeat)                                                                                      \
+    X(replace)                                                                                     \
+    X(round)                                                                                       \
+    X(sign)                                                                                        \
+    X(sin)                                                                                         \
+    X(sinh)                                                                                        \
+    X(sqrt)                                                                                        \
+    X(starts_with)                                                                                 \
+    X(str)                                                                                         \
+    X(substring)                                                                                   \
+    X(tan)                                                                                         \
+    X(tanh)                                                                                        \
+    X(to_lower_case)                                                                               \
+    X(to_upper_case)                                                                               \
+    X(trim)                                                                                        \
+    X(trunc)
+
+#define BUILTIN_COUNT_ENTRY(name) +1
+
+enum { BUILTIN_FUNCTION_COUNT = 0 GOAT_BUILTIN_FUNCTIONS(BUILTIN_COUNT_ENTRY) };
+
+#undef BUILTIN_COUNT_ENTRY
 
 /** @brief Enumerates the native function registry. */
 const builtin_function_t *const *get_builtin_functions(size_t *count);
