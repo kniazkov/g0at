@@ -14,6 +14,7 @@
 #include "model/process.h"
 #include "model/thread.h"
 #include "test_macro.h"
+#include "vm/gc.h"
 #include "vm/vm.h"
 
 #include <stdio.h>
@@ -624,5 +625,84 @@ bool test_flat_method(void) {
     DECREF(key);
     DECREF(nested);
     destroy_process(proc);
+    return true;
+}
+
+/** @brief Preparation owns its input, survives GC, and is immutable after success. */
+bool test_process_launch(void) {
+    process_t *proc = create_process();
+    ASSERT(!prepare_process_launch(NULL, proc->module, 0, "/app.goat"));
+    ASSERT(!prepare_process_launch(proc, NULL, 0, "/app.goat"));
+    ASSERT(!prepare_process_launch(proc, proc->module, 0, NULL));
+    ASSERT(!prepare_process_launch(proc, proc->module, 0, "app.goat"));
+    ASSERT(!prepare_process_launch(proc, proc->module, 0, "/\xff/app.goat"));
+    ASSERT(!proc->launch_module && !proc->launch_directory && !proc->launch_file);
+    char path[] = "/\xd0\xbf\xd1\x83\xd1\x82\xd1\x8c/\xf0\x9f\x98\x80/app.goat";
+    module_t *module = create_module_identity();
+    ASSERT(prepare_process_launch(proc, module, 23, path));
+    ASSERT(proc->launch_module == module && proc->launch_file == 23);
+    release_module_identity(module);
+    object_t *directory = proc->launch_directory;
+    path[1] = 'x';
+    ASSERT(!prepare_process_launch(proc, proc->module, 0, "/other/app.goat"));
+    ASSERT(proc->launch_module == module && proc->launch_file == 23);
+    ASSERT(proc->launch_directory == directory);
+    for (size_t i = 0; i < 3; i++) {
+        collect_garbage(proc);
+        string_value_t value = convert_object_to_string(directory);
+        ASSERT(value.length == 7 && !STRCMP(value.data, U"/путь/😀"));
+        FREE_STRING(value);
+    }
+    destroy_process(proc);
+    proc = create_process();
+#ifdef _WIN32
+    ASSERT(prepare_process_launch(proc, proc->module, 0, "C:/app.goat"));
+    string_value_t root = convert_object_to_string(proc->launch_directory);
+    ASSERT(root.length == 3 && !STRCMP(root.data, U"C:/"));
+#else
+    ASSERT(prepare_process_launch(proc, proc->module, 0, "/app.goat"));
+    string_value_t root = convert_object_to_string(proc->launch_directory);
+    ASSERT(root.length == 1 && !STRCMP(root.data, U"/"));
+#endif
+    FREE_STRING(root);
+    destroy_process(proc);
+    return true;
+}
+
+/** @brief VLOAD uses exact module/file provenance and the process-wide directory. */
+bool test_process_launch_vm(void) {
+    code_builder_t *builder = create_code_builder();
+    data_builder_t *data = create_data_builder();
+    uint32_t main_name = add_string_to_data_segment_ex(data, (string_view_t){U"__main__", 8});
+    uint32_t dir_name = add_string_to_data_segment_ex(data, (string_view_t){U"__dir__", 7});
+    add_instruction(builder, (instruction_t){.opcode = VLOAD, .arg1 = main_name});
+    add_instruction(builder, (instruction_t){.opcode = VLOAD, .arg1 = dir_name});
+    add_instruction(builder, (instruction_t){.opcode = END});
+    bytecode_t *code = link_code_and_data(builder, data);
+    destroy_code_builder(builder);
+    destroy_data_builder(data);
+    for (size_t mode = 0; mode < 4; mode++) {
+        process_t *proc = create_process();
+        module_t *foreign = create_module_identity();
+        if (mode)
+            ASSERT(prepare_process_launch(proc,
+                                          mode == 3 ? foreign : proc->module,
+                                          mode == 2 ? 1 : 0,
+                                          "/program/app.goat"));
+        release_module_identity(foreign);
+        ASSERT(run(proc, code) == 0);
+        ASSERT(proc->main_thread->data_stack->size == 2);
+        object_t *directory = pop_object_from_stack(proc->main_thread->data_stack);
+        string_value_t value = convert_object_to_string(directory);
+        ASSERT(mode ? !STRCMP(value.data, U"/program") : value.length == 0);
+        FREE_STRING(value);
+        DECREF(directory);
+        object_t *main = pop_object_from_stack(proc->main_thread->data_stack);
+        ASSERT(main == get_boolean_object(mode == 1));
+        DECREF(main);
+        collect_garbage(proc);
+        destroy_process(proc);
+    }
+    free_bytecode(code);
     return true;
 }

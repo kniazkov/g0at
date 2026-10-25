@@ -17,6 +17,14 @@ static bool string_index(const bytecode_t *c, uint32_t index) {
     return index < c->data_descriptor_count && c->data_descriptors[index].kind == DATA_STRING;
 }
 
+/** @brief Called only after all string payload bounds/scalars have been checked. */
+static bool launch_constant(const bytecode_t *c, uint32_t index) {
+    const data_descriptor_t *descriptor = c->data_descriptors + index;
+    const gchar_t *name = (const gchar_t *)(c->data + descriptor->offset);
+    return (descriptor->count == 8 && !MEMCMP(name, U"__main__", 8))
+           || (descriptor->count == 7 && !MEMCMP(name, U"__dir__", 7));
+}
+
 static bool target(const bytecode_t *c, uint32_t index, const bytecode_file_t *file) {
     if (index < file->first || index - file->first >= file->count)
         return false;
@@ -123,6 +131,20 @@ bool validate_bytecode_image(bytecode_t *c) {
     }
     if (previous != payload_size)
         return false;
+    /* Forward references are legal: inspect names only after every referenced
+       string has passed its bounds checks. Unused binding descriptors are still
+       declarations and may not reserve a launch constant. */
+    for (size_t i = 0; i < c->data_descriptor_count; ++i) {
+        data_descriptor_t descriptor = c->data_descriptors[i];
+        const uint8_t *payload = c->data + descriptor.offset;
+        if (descriptor.kind == DATA_DECLARATION && launch_constant(c, read_le32(payload + 4)))
+            return false;
+        if (descriptor.kind == DATA_PARAMETERS) {
+            for (size_t j = 0; j < descriptor.count; ++j)
+                if (launch_constant(c, read_le32(payload + j * 4)))
+                    return false;
+        }
+    }
     previous = 0;
     for (size_t i = 0; i < c->file_count; ++i) {
         const bytecode_file_t *f = c->files + i;
@@ -231,6 +253,10 @@ bool validate_bytecode_image(bytecode_t *c) {
                                    loader. */
                 arg1 = true;
                 valid = string_index(c, in.arg1);
+                if (valid
+                    && (in.opcode == VAR || in.opcode == CONST || in.opcode == STORE
+                        || in.opcode == CHECKVAR))
+                    valid = !launch_constant(c, in.arg1);
                 break;
             case MODULE_INCLUDE: /* INCLUDE */
                 arg1 = true;

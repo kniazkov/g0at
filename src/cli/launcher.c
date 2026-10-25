@@ -316,7 +316,8 @@ static int run_interactive(options_t *opt) {
     return 0;
 }
 
-int go(options_t *opt) {
+/** @brief Compile/execute with an already fixed canonical launch path. */
+static int go_prepared(options_t *opt) {
     long previously_allocated = get_allocated_memory_size();
     if (opt->language) {
         set_language(opt->language);
@@ -340,7 +341,7 @@ int go(options_t *opt) {
         return status;
     }
 
-    string_value_t code = read_utf8_file(opt->input_file->full_path);
+    string_value_t code = read_utf8_file(opt->launch_path);
     if (code.data == NULL) {
         fprintf_utf8(stderr, get_messages()->cannot_read_source_file, opt->input_file->normal_path);
         return -1;
@@ -524,4 +525,19 @@ int go(options_t *opt) {
     }
 
     return ret_code;
+}
+
+int go(options_t *opt) {
+    if (opt->interactive)
+        return go_prepared(opt);
+    char *canonical = canonical_fs_path(opt->input_file->full_path, NULL);
+    if (!canonical) {
+        FPRINTF(stderr, "Could not resolve program launch path.\n");
+        return -1;
+    }
+    options_t prepared = *opt;
+    prepared.launch_path = canonical;
+    int result = go_prepared(&prepared);
+    FREE(canonical);
+    return result;
 }

@@ -98,6 +98,13 @@ module_graph_status_t load_module_snapshot(const char *archive,
             return MODULE_GRAPH_MEMORY;
         }
     }
+    if (!prepare_process_launch(snapshot->process,
+                                module_files_identity(snapshot->files[0]),
+                                module_file_id(module_files_main(snapshot->files[0])),
+                                module_search_root(search))) {
+        free_module_snapshot(snapshot);
+        return MODULE_GRAPH_ARGUMENT;
+    }
     /* Resolve only edges of this consumer, never the global snapshot inventory.
        Validation already guarantees canonical literals and complete exact hashes. */
     for (size_t i = 0; i < count; ++i) {

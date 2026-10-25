@@ -131,3 +131,8 @@ bool test_clone_method(void);
 
 /** @brief Tests shallow flattening and receiver identity. */
 bool test_flat_method(void);
+
+/** @brief Immutable startup context ownership, Unicode, invalid inputs and GC. */
+bool test_process_launch(void);
+/** @brief Runtime launch constants use exact module/file identities. */
+bool test_process_launch_vm(void);

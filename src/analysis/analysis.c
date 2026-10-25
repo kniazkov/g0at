@@ -258,6 +258,24 @@ static bool writes_pending_constant(const node_t *node,
     return false;
 }
 
+/** @brief Reserved launch constants cannot be shadowed, including hidden binders. */
+static void check_launch_declaration(const declarator_t *decl,
+                                     parser_memory_t *memory,
+                                     compilation_error_t **errors) {
+    if (!is_launch_constant_name(decl->name))
+        return;
+    const node_t *positioned = &decl->base;
+    while (positioned->parent && !positioned->position)
+        positioned = positioned->parent;
+    compilation_error_t *error = create_error_from_node(memory->errors,
+                                                        positioned,
+                                                        ERROR,
+                                                        get_messages()->reserved_launch_constant,
+                                                        decl->name.data);
+    error->next = *errors;
+    *errors = error;
+}
+
 /**
  * @brief Binds names within a subtree, skipping nested functions.
  * Implicit declarations are queued for insertion after traversal to avoid invalidating
@@ -275,6 +293,7 @@ static void bind_variables_from_node_and_children(node_t *node,
                                               errors,
                                               options);
         declarator_t *decl = get_catch_declarator(node);
+        check_launch_declaration(decl, memory, errors);
         add_symbol_to_scope(decl->base.scope, decl->name.data, decl);
         bind_variables_from_node_and_children(get_node_child(node, 1),
                                               memory,
@@ -290,6 +309,7 @@ static void bind_variables_from_node_and_children(node_t *node,
                                               errors,
                                               options);
         declarator_t *decl = get_for_in_declarator(node);
+        check_launch_declaration(decl, memory, errors);
         add_symbol_to_scope(decl->base.scope, decl->name.data, decl);
         bind_variables_from_node_and_children(get_node_child(node, 3),
                                               memory,
@@ -300,12 +320,32 @@ static void bind_variables_from_node_and_children(node_t *node,
     }
     if (is_declarator(node->vtbl->type)) {
         declarator_t *declarator = (declarator_t *)node;
+        check_launch_declaration(declarator, memory, errors);
         add_symbol_to_scope(node->scope, declarator->name.data, declarator);
     } else if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
         /* Bind nested functions later so closures can refer to later declarations. */
         return;
     } else if (node->vtbl->type == NODE_VARIABLE) {
         variable_t *var = (variable_t *)node;
+        if (is_launch_constant_name(var->name)) {
+            var->declarator = get_builtin_declarator();
+            var->dynamic_lookup = false;
+            const node_t *parent = node->parent;
+            node_type_t type = parent ? parent->vtbl->type : NODE_ROOT;
+            if (is_compound_assignment_target(node)
+                || (type == NODE_SIMPLE_ASSIGNMENT && get_node_child(parent, 0) == node)
+                || (type >= NODE_PREFIX_INCREMENT && type <= NODE_POSTFIX_DECREMENT)) {
+                compilation_error_t *error =
+                    create_error_from_node(memory->errors,
+                                           node,
+                                           ERROR,
+                                           get_messages()->reserved_launch_constant,
+                                           var->name.data);
+                error->next = *errors;
+                *errors = error;
+            }
+            return;
+        }
         declarator_t *declarator = find_symbol_in_scope_and_parents(node->scope, var->name.data);
         if (inheritance_binding_is_dynamic(node, declarator)) {
             var->dynamic_lookup = true;

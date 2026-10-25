@@ -1,0 +1,1 @@
+Error in 'program.goat', 1.17: Built-in constant '__dir__' cannot be assigned or redeclared

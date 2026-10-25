@@ -63,6 +63,8 @@ static relation_type_t get_relation_type(const node_t *node, size_t index) {
 /** @brief Implements @ref node_vtbl_t::calculate. */
 static const lattice_element_t *calculate(node_t *node, abstract_state_t *state, arena_t *arena) {
     const variable_t *expr = (const variable_t *)node;
+    if (is_launch_constant_name(expr->name))
+        return expr->name.length == 8 ? make_boolean_element() : make_string_element();
     if (expr->dynamic_lookup)
         return make_top_element();
     if (expr->name.length == 4 && !MEMCMP(expr->name.data, U"this", 4))

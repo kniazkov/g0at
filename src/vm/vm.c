@@ -232,6 +232,24 @@ static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     if (string_id >= runtime->code->data_descriptor_count) {
         return false; // bad bytecode
     }
+    const data_descriptor_t *descriptor = runtime->code->data_descriptors + string_id;
+    const gchar_t *name = (const gchar_t *)(runtime->code->data + descriptor->offset);
+    object_t *constant = NULL;
+    if (descriptor->count == 8 && !MEMCMP(name, U"__main__", 8)) {
+        process_t *process = thread->process;
+        constant = get_boolean_object(process->launch_module == thread->context->access.module
+                                      && process->launch_file == thread->context->access.file_id);
+    } else if (descriptor->count == 7 && !MEMCMP(name, U"__dir__", 7)) {
+        constant = thread->process->launch_directory;
+        if (!constant)
+            constant = create_string_object(thread->process, (string_value_t){0});
+    }
+    if (constant) {
+        INCREF(constant);
+        push_object_onto_stack(thread->data_stack, constant);
+        thread->instr_id++;
+        return true;
+    }
     object_t *key = load_string(runtime, thread->process, string_id);
     operation_result_t result =
         read_accessible_property(&thread->context->access, thread->context->data, key);

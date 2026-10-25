@@ -1,0 +1,5 @@
+var mainValue = __main__;
+var directory = __dir__;
+const f=func(){return __main__;};
+var observed=f();
+if(__main__){println("direct");}else{println("imported");}

@@ -22,6 +22,11 @@ struct process_t {
     struct module_files_t *module_files;
     /** @brief Borrowed top of the single-thread file initialization stack. */
     struct module_file_t *initializing_file;
+    /** @brief Frozen direct-entry identity and shared directory, outside immutable images. */
+    module_t *launch_module;
+    uint32_t launch_file;       /**< Entry source index inside launch_module. */
+    object_t *launch_directory; /**< Owned shared directory, also a GC root. */
+
     /** @brief A unique identifier for the process. */
     uint64_t id;
 
@@ -64,3 +69,12 @@ process_t *create_process();
 
 /** @brief Destroys a process and frees all its resources, including threads and objects. */
 void destroy_process(process_t *process);
+
+/** @brief Set launch context exactly once, before execution. canonical_path is the
+ * already resolved startup path (no filesystem access here). Retains module and
+ * owns a UTF-32 directory value. Returns false for invalid/repeated preparation.
+ */
+bool prepare_process_launch(process_t *process,
+                            module_t *module,
+                            uint32_t file_id,
+                            const char *canonical_path);
