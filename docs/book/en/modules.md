@@ -4292,5 +4292,17 @@ publication of a named artifact. Before publication the compiler must validate t
 final temporary archive with `validate_module_graph` and the same original search
 object. This catches dependencies back to the final root's own name/version,
 including an old installed application copy. Caching is per pass.
-This is the common internal preflight; CLI wiring remains #191/#218 and diagnostic
-presentation #190. See [API, ownership and tests](../../module-graph-api.md).
+This is the common internal preflight; CLI wiring remains #191/#218. See [API, ownership and tests](../../module-graph-api.md).
+
+
+### Deterministic dependency diagnostics (#190)
+
+`vm/module_graph_diagnostics.h` sorts full identity chains, error types and
+positions, preserving every path to a shared failed module and its retained
+validation causes. Hash conflicts include all request paths and terminal expected
+SHA-256 hashes, not just a witness pair. Cycles have genuine closed witnesses.
+The common structured callback and English formatter preserve bounded positions
+and safely escape labels, including embedded zero bytes. Explicit reporting may
+materialize exponentially many paths; graph validation itself does not. No
+execution or new archive reads occur. CLI wiring remains #191/#218.
+See [ordering, ownership and tests](../../module-graph-api.md).

@@ -43,7 +43,8 @@ typedef struct {
 typedef struct {
     module_graph_issue_kind_t kind;
     size_t node, edge, other_edge; /**< SIZE_MAX for inapplicable indices. */
-    const char *reference;         /**< Export name for REFERENCE; NULL otherwise. */
+    const char *reference;         /**< Bounded export name for REFERENCE; NULL otherwise. */
+    size_t reference_length;       /**< Bytes, including any embedded NUL. */
 } module_graph_issue_t;
 
 /** Validate the complete reachable graph with one fixed search path snapshot.
@@ -78,6 +79,16 @@ size_t module_graph_issue_count(const module_graph_t *graph);
 const module_graph_node_t *module_graph_node(const module_graph_t *graph, size_t index);
 const module_graph_edge_t *module_graph_edge(const module_graph_t *graph, size_t index);
 const module_graph_issue_t *module_graph_issue(const module_graph_t *graph, size_t index);
+
+/** Failed and skipped archive checks retained with owned bounded entry/field
+ * bytes and archive labels, even when options.report is NULL. Passed checks are
+ * not retained. Original callbacks still observe every check once synchronously.
+ * Views (including all nested strings) are borrowed until free_module_graph.
+ * Invalid graph/node/index yields zero/NULL. Discovery order is not output order.
+ */
+size_t module_graph_validation_count(const module_graph_t *graph, size_t node);
+const module_validation_diagnostic_t *
+module_graph_validation(const module_graph_t *graph, size_t node, size_t index);
 
 /** Called synchronously with root-to-target edge indices. Return false to stop
  * enumeration. Views are borrowed for the callback only; do not mutate graph.

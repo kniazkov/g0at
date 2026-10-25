@@ -79,7 +79,7 @@ def put(path, data):
 def run(root, status=0, mode='module', summary=False):
     global COUNT
     COUNT += 1
-    args = [EXE, mode, str(root), str(root)] + (['summary'] if summary else [])
+    args = [EXE, mode, str(root), str(root)] + ([summary if isinstance(summary, str) else 'summary'] if summary else [])
     def small_stack():
         import resource
         _, hard = resource.getrlimit(resource.RLIMIT_STACK)
@@ -109,6 +109,31 @@ def chains(result, paths):
             for path in paths}
 
 
+def diagnostic_rows(result):
+    """Compare semantic rows, never incidental discovery indices."""
+    rows = []
+    for row in result['diagnostics']:
+        path = [result['nodes'][0]] + [result['nodes'][result['edges'][i]['to']]
+                                     for i in row['path']]
+        chain = tuple((n['name'], n['version']) for n in path)
+        expected = result['edges'][row['path'][-1]]['hash'] if row['path'] else ''
+        rows.append((chain, row['kind'], row['reference'], expected, row.get('validation')))
+    return rows
+
+
+def rewrite_metadata(blob, change):
+    with zipfile.ZipFile(io.BytesIO(blob)) as source:
+        entries = {name: source.read(name) for name in source.namelist()}
+    metadata = json.loads(entries['module.json'])
+    change(metadata)
+    entries['module.json'] = json.dumps(metadata).encode()
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, 'w', compression=zipfile.ZIP_STORED) as target:
+        for name, data in entries.items():
+            target.writestr(name, data)
+    return stream.getvalue()
+
+
 def fref(name, version='1', fid=1):
     return dict(module=name, version=version, functionId=fid)
 
@@ -129,7 +154,9 @@ with tempfile.TemporaryDirectory(prefix='goat-graph-') as temp:
         return record
 
     root_archive()
-    assert run(root)['checks'] == 1
+    result = run(root)
+    assert result['checks'] == 1
+    assert result['diagnostics'] == [] and result['diagnostic_text'] == ''
     c = install('c')
     b = install('b', [c])
     root_archive([b])
@@ -277,6 +304,152 @@ with tempfile.TemporaryDirectory(prefix='goat-graph-') as temp:
     result = run(root, 2)
     assert CYCLE in kinds(result) and HASH in kinds(result)
     assert result['checks'] == 2  # final root wins over the old installed app
+    # Full-chain diagnostics, not graph discovery order; every conflict request
+    # must appear, including two paths expecting the actual hash.
+    shared = install('shared')
+    first = install('first', [shared])
+    second = install('second', [dict(shared, hash='0' * 64)])
+    third = install('third', [shared])
+    fourth = install('fourth', [dict(shared, hash='1' * 64)])
+    source = project / 'diagnostics.goat'
+    put(source, 'import "third@1"; import "second@1"; import "first@1"; import "fourth@1";')
+    result = run(source, 2, mode='goat')
+    baseline = diagnostic_rows(result)
+    conflicts = [r for r in baseline if r[1] == CONFLICT]
+    assert len(conflicts) == 4, conflicts
+    assert {r[0][-2][0] for r in conflicts} == {'first', 'second', 'third', 'fourth'}
+    assert {r[3] for r in conflicts} == {shared['hash'], '0' * 64, '1' * 64}
+    assert [r[0] for r in baseline] == sorted(r[0] for r in baseline)
+    assert all(h in result['diagnostic_text'] for h in (shared['hash'], '0' * 64, '1' * 64))
+    put(source, 'import "fourth@1"; import "first@1"; import "second@1"; import "third@1";')
+    reordered = run(source, 2, mode='goat')
+    assert diagnostic_rows(reordered) == baseline
+    assert reordered['diagnostic_text'] == result['diagnostic_text']
+    # A late incoming chain is not lost because the bad node was already cached.
+    late = install('late', [first])
+    put(source, 'import "late@1"; import "second@1"; import "first@1"; import "third@1";')
+    result = run(source, 2, mode='goat')
+    conflicts = [r for r in diagnostic_rows(result) if r[1] == CONFLICT]
+    assert len(conflicts) == 4
+    assert any(tuple(n[0] for n in r[0]) == ('<source>', 'late', 'first', 'shared')
+               for r in conflicts)
+    # Multiple positioned schema failures in a shared corrupt archive: all paths
+    # preserve the same owned field/entry bytes after inputs/search are released.
+    blob, shared = archive('shared')
+    blob = rewrite_metadata(blob, lambda m: m.update(name=False, version=42))
+    put(project / 'modules/shared/1.gbin', blob)
+    result = run(source, 2, mode='goat')
+    rows = diagnostic_rows(result)
+    schema = [r for r in rows if r[4] and r[4]['state'] == 1 and
+              r[4]['field'] in ('/name', '/version')]
+    assert len(schema) == 8, schema
+    paths = sorted({r[0] for r in schema})
+    assert len(paths) == 4 and result['checks'] == 5
+    for chain in paths:
+        errors = [r[4] for r in schema if r[0] == chain]
+        assert [e['field'] for e in errors] == ['/name', '/version'], errors
+        assert all(e['entry'] == 'module.json' for e in errors)
+    assert any(r[4] and r[4]['state'] == 2 for r in rows)
+    assert [r[0] for r in rows] == sorted(r[0] for r in rows)
+    assert '/name' in result['diagnostic_text'] and '/version' in result['diagnostic_text']
+    assert run(source, 2, mode='goat')['diagnostic_text'] == result['diagnostic_text']
+    # Sorting references uses their actual export positions, not JSON key order.
+    shared = install('shared')
+    refs = {'zebra': fref('shared', fid=8), 'alpha': fref('shared', fid=9)}
+    first = install('first', [shared], refs=refs)
+    root_archive([first, missing])
+    result = run(root, 2)
+    baseline = diagnostic_rows(result)
+    assert [r[2] for r in baseline if r[1] == REFERENCE] == ['alpha', 'zebra']
+    first2 = install('first', [shared], refs=dict(reversed(list(refs.items()))))
+    assert first == first2  # Object key permutations do not alter identity.
+    reordered = run(root, 2)
+    assert diagnostic_rows(reordered) == baseline
+    assert reordered['diagnostic_text'] == result['diagnostic_text']
+    # Export keys are length-bearing strings; embedded NUL must not erase suffixes.
+    zero_refs = {'alpha\x00z': fref('shared', fid=8), 'alpha\x00a': fref('shared', fid=9)}
+    first = install('first', [shared], refs=zero_refs)
+    root_archive([first])
+    nul_result = run(root, 2)
+    names = [r[2] for r in diagnostic_rows(nul_result) if r[1] == REFERENCE]
+    assert names == ['alpha\x00a', 'alpha\x00z'], names
+    assert all(r['reference_length'] == 7 for r in nul_result['diagnostics'])
+    assert 'alpha\\x00a' in nul_result['diagnostic_text']
+    assert 'alpha\\x00z' in nul_result['diagnostic_text']
+    # Full chain ordering precedes error kind; all same-chain errors use kind order.
+    keys = [(r[0], r[1]) for r in baseline]
+    assert keys == sorted(keys)
+    # Cyclic diagnostics are finite, include the terminal repeated node, and repeat stably.
+    first = install('first', [dict(name='app', version='1', hash='0' * 64)])
+    root_archive([first])
+    result = run(root, 2)
+    cycles = [r for r in diagnostic_rows(result) if r[1] == CYCLE]
+    assert len(cycles) == 1 and tuple(n[0] for n in cycles[0][0]) == ('app', 'first', 'app')
+    assert run(root, 2)['diagnostic_text'] == result['diagnostic_text']
+    # A canonical DFS back edge can have another noncyclic path to its consumer;
+    # only paths which really repeat the terminal node are cycle witnesses.
+    cyclea = install('cyclea', [dict(name='cycleb', version='1', hash='0' * 64)])
+    cycleb = install('cycleb', [dict(name='cyclea', version='1', hash='1' * 64)])
+    root_archive([cycleb, cyclea])
+    result = run(root, 2)
+    cycles = [r for r in diagnostic_rows(result) if r[1] == CYCLE]
+    assert cycles and all(r[0][-1] in r[0][:-1] for r in cycles), cycles
+    assert {tuple(n[0] for n in r[0]) for r in cycles} == {
+        ('app', 'cyclea', 'cycleb', 'cyclea'),
+        ('app', 'cycleb', 'cyclea', 'cycleb')}
+    assert len(cycles) == 2
+    # Failed/skipped snapshots are retained without any observer callback.
+    put(root, b'bad ZIP')
+    observed = run(root, 2)
+    unobserved = run(root, 2, mode='module-null')
+    assert unobserved['checks'] == 0 and unobserved['nodes'][0]['validation_count'] > 0
+    assert diagnostic_rows(unobserved) == diagnostic_rows(observed)
+    assert unobserved['diagnostic_text'] == observed['diagnostic_text']
+    # ZIP entry names are bounded bytes, not assumed UTF-8 or NUL-terminated.
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, 'w', compression=zipfile.ZIP_STORED) as z:
+        z.writestr('module.json', b'{}')
+        z.writestr('bytecode.bin', b'')
+        z.writestr('native/bad_.so', b'opaque')
+    bad_name = b'native/bad\xff.so'
+    put(root, stream.getvalue().replace(b'native/bad_.so', bad_name))
+    result = run(root, 2)
+    assert any(bytes(r['validation']['entry_bytes']) == bad_name
+               for r in result['diagnostics'] if r.get('validation')), result
+    assert r'native/bad\xff.so' in result['diagnostic_text'], result
+    # Field and export strings retain control characters and backslashes safely.
+    key = 'line\n\\suffix'
+    blob, _ = archive('app', refs={key: fref('absent')})
+    put(root, rewrite_metadata(blob, lambda m: m['externals'][key].update(mutable=42)))
+    result = run(root, 2)
+    assert any(key in r['validation']['field']
+               for r in result['diagnostics'] if r.get('validation')), result
+    assert r'line\x0a\\suffix' in result['diagnostic_text'], result
+    # Preserve ordinary Unicode while neutralizing display controls in exports.
+    blob, _ = archive('app', refs={key: fref('absent') for key in
+                                  ('café', 'x\u0085z', 'x\u202ez', 'x\u2069z')})
+    put(root, blob)
+    result = run(root, 2)
+    assert 'café' in result['diagnostic_text']
+    assert all(escaped in result['diagnostic_text'] for escaped in
+               (r'x\u0085z', r'x\u202ez', r'x\u2069z'))
+    # Physical names with controls are permitted by POSIX, not by Windows.
+    if sys.platform != 'win32':
+        label = put(project / 'line\n\\label.gbin', b'bad ZIP')
+        result = run(label, 2)
+        assert r'line\x0a\\label.gbin' in result['diagnostic_text'], result
+    # Independent hash-check types sort before locations (native entry before
+    # module.json even though lexical entry ordering alone would reverse them).
+    blob, _ = archive('app', native=True)
+    def damage_hashes(metadata):
+        metadata['mainHash'] = '0' * 64
+        metadata['native'][0]['hash'] = '0' * 64
+    put(root, rewrite_metadata(blob, damage_hashes))
+    result = run(root, 2)
+    errors = [r['validation'] for r in result['diagnostics'] if r.get('validation')
+              and r['validation']['container_status'] in (12, 13)]
+    assert [r['container_status'] for r in errors] == [13, 12], errors
+    assert [r['entry'] for r in errors] == ['native/test.so', 'module.json'], errors
     # Deep chain: no artificial depth limit; path traversal/free also iterative.
     dep = None
     depth = 2500
@@ -286,6 +459,16 @@ with tempfile.TemporaryDirectory(prefix='goat-graph-') as temp:
     result = run(root, summary=True)
     assert result['node_count'] == result['checks'] == depth + 1
     assert result['last_path_length'] == depth
+    # The formatter/report pass must also survive a deep failing chain on a small stack.
+    dep = dict(name='deepmissing', version='1', hash='0' * 64)
+    for i in reversed(range(depth)):
+        dep = install(f'deep{i}', [dep])
+    root_archive([dep])
+    result = run(root, 2, summary='diagnostics')
+    assert result['node_count'] == depth + 2 and result['checks'] == depth + 1
+    assert len(result['diagnostics']) == 1
+    assert len(result['diagnostics'][0]['path']) == depth + 1
+    assert 'deepmissing' in result['diagnostic_text']
     # Exponentially many paths must not be materialized during validation.
     deps = [install('bottom')]
     levels = 32

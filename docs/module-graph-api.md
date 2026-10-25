@@ -3,8 +3,8 @@
 `vm/module_graph.h` is the shared, nonexecuting whole-graph validation layer for
 compiler, loader and inspection consumers. It complements, rather than changes,
 `module_dependencies.h`: binding one consumer's direct imports is not a complete
-preflight. CLI integration remains #191/#218; presentation and deterministic
-sorting of dependency diagnostics remain #190.
+preflight. CLI integration remains #191/#218. Deterministic presentation is provided by
+`vm/module_graph_diagnostics.h` (#190).
 
 `validate_module_graph` reads and validates the root archive, including when its
 path differs from its search-path location. `validate_source_graph` accepts
@@ -90,8 +90,8 @@ reachability. No test requires executing imported user or native code.
 `vm/module_graph.h` — общий неисполняющий слой проверки полного графа для
 компилятора, загрузчика и инспектора. Он дополняет `module_dependencies.h`:
 привязка непосредственных импортов одного потребителя не заменяет полный проход.
-Подключение CLI остаётся в #191/#218, представление и детерминированная сортировка
-диагностики — в #190.
+Подключение CLI остаётся в #191/#218. Детерминированное представление
+предоставляет `vm/module_graph_diagnostics.h` (#190).
 
 `validate_module_graph` читает и проверяет корневой архив, даже если он находится
 не в каталоге поиска. `validate_source_graph` принимает собранные точные импорты. Неиспользованные значения `.gmod` не вызывают поиск; импорты из
@@ -172,3 +172,86 @@ functionRef разрешается в проверенном графе без �
 версии, ромбы и кеширование ошибок, глубокие цепочки, циклы, независимые ошибочные
 ветви, конфликты хешей и альтернативные пути, достижимость functionRef. Исполнять
 пользовательский или нативный код зависимостей для этих тестов не требуется.
+
+
+## Deterministic diagnostic presentation (#190)
+
+`report_module_graph_diagnostics` reports complete root-to-error paths. It orders
+identity chains component by component by exact UTF-8 name/version bytes, with a
+shorter prefix first; then graph issue kind, validation stage/detail/state and
+underlying cause, then ZIP entry, bounded JSON field, index and export name.
+Remaining structured details and expected hashes break ties, never discovery
+indices, locale, hash-table iteration or callback arrival order. The order of
+`module_graph_issue` itself is an implementation detail, not the presentation API.
+
+Every path to a shared failed module receives the search cause and its original
+failed/skipped validation checks. The graph owns bounded copies of archive labels,
+ZIP names and JSON fields, even after a failed snapshot and caller inputs are gone.
+`module_graph_validation_count` / `module_graph_validation` expose these checks;
+the original options callback still observes each unique archive only once.
+Skipped checks remain distinct from errors and never count as successful checks.
+Function-reference locations preserve export names including embedded zero bytes.
+
+A conflict produces one diagnostic for **every incoming request path**, including
+requests matching the actual hash and repeated equal expectations. Each line
+contains its terminal expected SHA-256 and the actual hash, if available. It does
+not choose only a conflicting witness pair. Hash mismatches remain edge-specific.
+Cycle presentation considers all cyclic edges and emits only genuine finite
+closed witnesses, not an unrelated approach to a DFS back edge.
+
+`format_module_graph_diagnostics` produces owned English text (`FREE`), an empty
+string for a successful graph, or NULL for a NULL graph. It preserves the full
+chain and checked search paths, stopping path, cause and location. Quoting escapes
+control bytes, embedded zero, quotes, backslashes and malformed UTF-8 bytes;
+well-formed Unicode remains readable. The callback API provides structured views,
+not a machine protocol encoded in message wording. Inspector report codes/JSON
+and command wiring remain their separate checklist tasks.
+
+Only an explicit presentation call expands and sorts output paths. Memory is
+proportional to these rows and their chains, potentially exponential because all
+paths are required. Cyclic-edge reachability adds polynomial work before path
+expansion; unrelated acyclic branches are not expanded into discarded cycle
+witnesses. Traversal remains iterative without a dependency-depth limit. Returning
+false from the report callback stops delivery and releases temporary rows; it does
+not revoke the already owned graph. Reporting performs no new I/O or execution.
+
+## Детерминированное представление диагностики (#190)
+
+`report_module_graph_diagnostics` выдаёт полные цепочки от корня до ошибки.
+Сортировка сравнивает компоненты имя/версия по точным байтам UTF-8, короткий
+префикс раньше длинного; затем вид ошибки графа, этап/подтип/состояние проверки и
+исходную причину; затем ZIP-запись, ограниченное длиной JSON-поле, индекс и имя
+экспорта. Остальные структурные сведения и ожидаемые хеши разрешают равенство.
+Индексы обнаружения, локаль, порядок хеш-таблиц и поступления callback не влияют.
+Сам порядок `module_graph_issue` внутренний, это не API представления.
+
+Каждый путь к общему неисправному модулю получает причину поиска и исходные
+неуспешные/пропущенные проверки. Граф владеет ограниченными длиной копиями меток
+архивов, ZIP-имён и JSON-полей после освобождения неисправного снимка и входов.
+`module_graph_validation_count` / `module_graph_validation` открывают эти записи;
+исходный callback options по-прежнему видит проверку каждого архива только один
+раз. Пропущенная проверка отличима от ошибки и не считается успешной. Позиции
+functionRef сохраняют имя экспорта целиком, в том числе встроенный нулевой байт.
+
+Конфликт выдаёт запись для **каждой цепочки входящего запроса**, включая запросы
+с фактическим хешем и повторяющиеся равные ожидания. Каждая строка содержит
+ожидаемый SHA-256 последнего ребра и фактический хеш, если он доступен. Диагностика
+не ограничивается парой свидетельств конфликта. Несовпадение хеша относится к
+конкретному ребру. Для циклов рассматриваются все циклические рёбра и выводятся
+только настоящие конечные замкнутые цепочки, а не любой подход к обратному ребру DFS.
+
+`format_module_graph_diagnostics` возвращает английский текст во владение (`FREE`),
+пустую строку для корректного графа или NULL для NULL-графа. Сохраняются полная
+цепочка, проверенные пути поиска, путь остановки, причина и позиция. В кавычках
+экранируются управляющие байты, нуль, кавычки, обратная косая черта и некорректный
+UTF-8; корректный Unicode остаётся читаемым. Callback предоставляет структуру,
+а не машинный протокол, закодированный формулировками. Коды/JSON инспектора и
+подключение команд остаются отдельными задачами чеклиста.
+
+Только явный запрос представления разворачивает и сортирует пути. Память
+пропорциональна строкам и длинам цепочек, потенциально экспоненциальным из-за
+требования всех путей. Проверка достижимости циклических рёбер добавляет
+полиномиальную работу перед развёрткой; посторонние ациклические ветви не
+разворачиваются в отбрасываемые свидетельства цикла. Обход итеративный, без
+предела глубины. false из callback прекращает выдачу и освобождает временные
+строки, но не уже принадлежащий вызывающему граф. Нового I/O и исполнения нет.
