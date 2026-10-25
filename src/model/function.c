@@ -386,6 +386,15 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
                    && (entry->flags & GOAT_NATIVE_PURE)) {
             retry = true;
         } else {
+            /* Native adapters do not allocate a VM call frame. Preserve the callee's
+             * module/file and body location alongside the caller chain before reporting
+             * this terminal backend failure. It remains a backend error, not a catchable
+             * Goat exception, and must never cause a second execution of the body. */
+            clear_exception(&thread->exception);
+            thread->exception.trace = capture_native_exception_trace(thread->context,
+                                                                     dfobj->access.module,
+                                                                     dfobj->access.file_id,
+                                                                     dfobj->first_instr_id);
             return false;
         }
     }

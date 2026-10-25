@@ -109,7 +109,7 @@ target_link_libraries (goat core goat_module m)
 file(GLOB unit_testing_exe unit_testing.c unit_test/*.c)
 message(STATUS "Found unit testing sources: ${unit_testing_exe}")
 add_executable(unit_testing ${unit_testing_exe})
-target_link_libraries (unit_testing core yyjson m)
+target_link_libraries (unit_testing core goat_validation yyjson m)
 
 add_executable(analysis_testing analysis_testing.c)
 target_link_libraries(analysis_testing core yyjson m)

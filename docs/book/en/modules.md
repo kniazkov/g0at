@@ -4464,3 +4464,18 @@ directions, and shallow-clone nested sharing. Compilation and execution are
 observed separately: visible dependency initializers run only during execution.
 Unit tests check metadata-only effect bounds and retained versus invalidated facts.
 See [the interface contract test matrix](../../module-interface-api.md).
+
+### Compiled source diagnostics implemented (#234)
+
+The compiler preserves declaration function names in the existing bytecode function
+records, including nested functions, without renaming through aliases. Anonymous
+functions keep the v1 sentinel; empty bodies retain definition coordinates.
+`format_exception_trace` resolves the immutable exception origin using checked
+module/file/location tables, without opening sources or archives. Output retains
+module name/version, escaped logical filename, external marker/index, line/column
+and function name (`<anonymous>` or `<top-level>` when appropriate). Initialization
+retries preserve the original origin even after GC. Native backend errors use the
+same mapping and explicitly mark `[native entry]`: the status-only ABI supplies
+the callee body-entry location, not an exact failing expression. No source text or
+absolutized build path is serialized. The component runner uses the shared API;
+full CLI integration follows in #191. See [API and checks](../../module-source-diagnostics-api.md).

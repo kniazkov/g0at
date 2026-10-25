@@ -271,6 +271,53 @@ with tempfile.TemporaryDirectory(prefix='goat-source-include-') as temp:
         shutil.rmtree(aliases)
         invoke('binary', artifact, expected, cwd=unrelated)
 
+    # Function labels live in the existing bytecode string table, not JSON schema
+    # extensions; nested/anonymous functions retain independent source-order IDs.
+    diagnostic_root = root / 'diagnostic-mapping'
+    main = put(diagnostic_root / 'main.goat',
+               'const outer = func() {\n'
+               '  const inner = func() {};\n'
+               '  return func() { return 1; };\n'
+               '};\n'
+               'const alias = outer;\n'
+               'const other = include "other.goat";\n')
+    put(diagnostic_root / 'other.goat',
+        'public outer = func() {\n  throw "diagnostic-payload";\n};\n' +
+        ''.join(f'const f{i} = func() {{ return {i}; }};\n' for i in range(160)))
+    artifact = root / 'diagnostic-mapping.gbin'
+    invoke('compile', main, '', output=artifact)
+    metadata(artifact, root)
+    with zipfile.ZipFile(artifact) as archive:
+        wire = archive.read('bytecode.bin')
+    header = struct.unpack_from('<8s14I', wire)
+    records = [struct.unpack_from('<8I', wire, header[12] + 32*i)
+               for i in range(header[7])]
+
+    def label(record):
+        if record[6] == 0xffffffff:
+            return None
+        offset, size, kind, count = struct.unpack_from('<4I', wire,
+                                                       header[10] + 16*record[6])
+        assert kind == 1 and size == 4*(count + 1)
+        return wire[header[14] + offset:header[14] + offset + 4*count].decode('utf-32-le')
+
+    assert [(r[0], r[1], label(r)) for r in records[:4]] == [
+        (1, 0, 'outer'), (2, 0, 'inner'), (3, 0, None), (4, 1, 'outer')]
+    assert [label(r) for r in records[4:]] == [f'f{i}' for i in range(160)]
+    locations = [struct.unpack_from('<6I', wire, header[13] + 24*i)
+                 for i in range(header[8])]
+    empty_body = records[1][3]
+    empty_location = next(l for l in locations if l[0] <= empty_body < l[0] + l[1])
+    assert empty_location[2:] == (0, 2, 17, 2), empty_location
+    throw_locations = [l for l in locations if l[2] == 1 and l[5] == 4 and l[3] == 2]
+    assert throw_locations and all(l[4] > 0 for l in throw_locations)
+    # Relocation cannot change logical paths, source maps, names, or code identity.
+    relocated = root / 'relocated-mapping'
+    shutil.copytree(diagnostic_root, relocated)
+    second = root / 'relocated-mapping.gbin'
+    invoke('compile', relocated / 'main.goat', '', output=second, cwd=unrelated)
+    assert artifact.read_bytes() == second.read_bytes()
+
     # A bounded deep chain exercises nested VM boundaries and local include indices.
     deep = root / 'deep'
     depth = 100

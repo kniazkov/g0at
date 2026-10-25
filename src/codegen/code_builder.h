@@ -23,6 +23,7 @@ struct code_builder_t {
      */
     instruction_t *instructions;
     bytecode_location_t *locations; /**< Build-only per-instruction source locations. */
+    uint32_t *function_names;       /**< String descriptor at FUNC; UINT32_MAX if anonymous. */
     uint32_t *function_ids;         /**< Nonzero only at a FUNC instruction. */
     bytecode_location_t location;   /**< Current source/function context. */
     uint32_t next_function_id;      /**< Source traversal ordinal, including removed functions. */

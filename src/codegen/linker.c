@@ -77,7 +77,7 @@ bytecode_t *link_module_code_and_data(code_builder_t *cb,
                                                       i ? cb->instructions[i - 1].arg1 : 0,
                                                       in.arg1,
                                                       in.arg0,
-                                                      UINT32_MAX,
+                                                      cb->function_names[i],
                                                       0};
             ++function;
         }

@@ -58,7 +58,7 @@
 - [x] 42. [#227](https://github.com/kniazkov/g0at/issues/227) — Права и порядок вычисления присваиваний
 - [x] 43. [#205](https://github.com/kniazkov/g0at/issues/205) — Экспорт интерфейса и анализатор потребителя
 - [x] 44. [#231](https://github.com/kniazkov/g0at/issues/231) — Проверка аналитических контрактов функций
-- [ ] 45. [#234](https://github.com/kniazkov/g0at/issues/234) — Диагностика исходников в скомпилированных модулях
+- [x] 45. [#234](https://github.com/kniazkov/g0at/issues/234) — Диагностика исходников в скомпилированных модулях
 - [ ] 46. [#206](https://github.com/kniazkov/g0at/issues/206) — Встроенные __main__ и __dir__
 - [ ] 47. [#207](https://github.com/kniazkov/g0at/issues/207) — Верхнеуровневый return и exit
 - [ ] 48. [#217](https://github.com/kniazkov/g0at/issues/217) — Сериализация инициализации между потоками

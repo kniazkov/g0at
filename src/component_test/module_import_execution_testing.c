@@ -173,6 +173,7 @@ static int execute(const char *archive, bool frozen) {
             assert(state == (result ? MODULE_FILE_FAILED : MODULE_FILE_INITIALIZED));
             assert(process->main_thread->exception.value == failure.value);
             assert(process->main_thread->exception.trace == failure.trace);
+            string_value_t original_trace = format_exception_trace(process, failure.trace);
             collect_garbage(process);
             assert(run_module_file(process, main_file) == result);
             assert(module_file_state(main_file) == state);
@@ -181,6 +182,13 @@ static int execute(const char *archive, bool frozen) {
             assert(repeated.value == failure.value && repeated.trace == failure.trace);
             assert(process->main_thread->exception.value == failure.value);
             assert(process->main_thread->exception.trace == failure.trace);
+            string_value_t repeated_trace = format_exception_trace(process, repeated.trace);
+            assert(original_trace.length == repeated_trace.length);
+            assert(!original_trace.length
+                   || !memcmp(original_trace.data,
+                              repeated_trace.data,
+                              original_trace.length * sizeof(*original_trace.data)));
+            FREE_STRING(repeated_trace);
             if (result && process->main_thread->exception.value) {
                 function_access_t observer;
                 init_function_access(&observer, module_files_identity(files));
@@ -188,8 +196,10 @@ static int execute(const char *archive, bool frozen) {
                     object_to_string_with_access(process->main_thread->exception.value, &observer);
                 fprintf_utf8(stderr, U"Uncaught: %s\n", message.data);
                 FREE_STRING(message);
+                fprintf_utf8(stderr, U"%s", original_trace.data);
                 clear_function_access(&observer, true);
             }
+            FREE_STRING(original_trace);
             for (size_t i = 0; i < count; i++) {
                 const bytecode_t *code =
                     validated_module_bytecode(module_snapshot_module(snapshot, i));
