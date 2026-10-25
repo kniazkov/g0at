@@ -7,6 +7,7 @@
 #include "analysis/analysis.h"
 #include "cli/options.h"
 #include "codegen/linker.h"
+#include "graph/module_import.h"
 #include "graph/module_include.h"
 #include "lib/allocate.h"
 #include "lib/arena.h"
@@ -83,6 +84,79 @@ static bool bind_includes(const module_source_t *source,
     return bound == source->includes.count;
 }
 
+/** Flatten collected sites once, preserving exact pairs without reparsing defaults. */
+typedef struct {
+    module_import_site_t site;
+    const module_import_dependency_t *dependency;
+} import_binding_t;
+
+static int compare_binding(const void *left, const void *right) {
+    const import_binding_t *a = left, *b = right;
+    if (a->site.file != b->site.file)
+        return a->site.file < b->site.file ? -1 : 1;
+    return a->site.offset < b->site.offset ? -1 : a->site.offset != b->site.offset;
+}
+
+static bool matching_dependencies(const module_imports_t *imports,
+                                  const module_dependencies_t *dependencies) {
+    if (imports->count != module_dependencies_count(dependencies))
+        return false;
+    const yyjson_doc *doc = module_dependencies_metadata(dependencies);
+    yyjson_val *records = doc ? yyjson_doc_get_root((yyjson_doc *)doc) : NULL;
+    if (imports->count && (!yyjson_is_arr(records) || yyjson_arr_size(records) != imports->count))
+        return false;
+    for (size_t i = 0; i < imports->count; ++i) {
+        yyjson_val *record = yyjson_arr_get(records, i);
+        const char *name = yyjson_get_str(yyjson_obj_get(record, "name"));
+        const char *version = yyjson_get_str(yyjson_obj_get(record, "version"));
+        if (!name || !version || strcmp(name, imports->dependencies[i].name)
+            || strcmp(version, imports->dependencies[i].version))
+            return false;
+    }
+    return true;
+}
+
+static bool bind_imports(size_t file,
+                         const import_binding_t *bindings,
+                         size_t count,
+                         size_t *cursor,
+                         parser_memory_t *memory,
+                         token_groups_t *groups) {
+    for (token_t *token = groups->identifiers.first;
+         token && *cursor < count && bindings[*cursor].site.file == file;) {
+        token_t *next = token->next_in_group;
+        const import_binding_t *binding = bindings + *cursor;
+        size_t offset = token->position->begin->offset;
+        if (offset > binding->site.offset)
+            return false;
+        if (offset == binding->site.offset) {
+            token_t *literal = token->right;
+            if (token->text.length != 6 || MEMCMP(token->text.data, U"import", 6) || !literal
+                || !literal->node || literal->node->vtbl->type != NODE_STATIC_STRING)
+                return false;
+            const module_import_dependency_t *dep = binding->dependency;
+            size_t name_length = strlen(dep->name), version_length = strlen(dep->version);
+            if (version_length > SIZE_MAX - 2 || name_length > SIZE_MAX - version_length - 2)
+                return false;
+            char *identity = ALLOC(name_length + version_length + 2);
+            memcpy(identity, dep->name, name_length);
+            identity[name_length] = '@';
+            memcpy(identity + name_length + 1, dep->version, version_length + 1);
+            string_value_t wide = decode_utf8(identity);
+            FREE(identity);
+            if (!wide.data)
+                return false;
+            node_t *node =
+                create_module_import_node(memory->graph, VALUE_TO_VIEW(wide), literal->node);
+            FREE_STRING(wide);
+            collapse_tokens_to_token(memory, token, literal, TOKEN_EXPRESSION, node);
+            ++*cursor;
+        }
+        token = next;
+    }
+    return *cursor == count || bindings[*cursor].site.file != file;
+}
+
 static yyjson_doc *normalized(yyjson_mut_doc *doc) {
     size_t length = 0;
     char *json = yyjson_mut_write(doc, 0, &length);
@@ -93,7 +167,9 @@ static yyjson_doc *normalized(yyjson_mut_doc *doc) {
     return out;
 }
 
-static yyjson_doc *metadata(const module_sources_t *sources, const bytecode_t *code) {
+static yyjson_doc *metadata(const module_sources_t *sources,
+                            const bytecode_t *code,
+                            const module_dependencies_t *dependencies) {
     yyjson_mut_doc *doc = yyjson_mut_doc_new(NULL);
     yyjson_mut_val *root = yyjson_mut_obj(doc);
     yyjson_mut_doc_set_root(doc, root);
@@ -116,6 +192,13 @@ static yyjson_doc *metadata(const module_sources_t *sources, const bytecode_t *c
                            "mainHash",
                            "0000000000000000000000000000000000000000000000000000000000000000");
     yyjson_mut_obj_add_uint(doc, root, "main", 0);
+    const yyjson_doc *dependency_metadata = module_dependencies_metadata(dependencies);
+    if (dependency_metadata)
+        yyjson_mut_obj_add_val(
+            doc,
+            root,
+            "dependencies",
+            yyjson_val_mut_copy(doc, yyjson_doc_get_root((yyjson_doc *)dependency_metadata)));
     yyjson_mut_val *files = yyjson_mut_arr(doc);
     yyjson_mut_obj_add_val(doc, root, "files", files);
     for (size_t i = 0; i < sources->count; ++i) {
@@ -166,6 +249,13 @@ static yyjson_doc *metadata(const module_sources_t *sources, const bytecode_t *c
 bool compile_module_sources(const module_sources_t *sources,
                             module_compilation_t **out,
                             module_compilation_error_t *error) {
+    return compile_module_sources_with_dependencies(sources, NULL, out, error);
+}
+
+bool compile_module_sources_with_dependencies(const module_sources_t *sources,
+                                              const module_dependencies_t *dependencies,
+                                              module_compilation_t **out,
+                                              module_compilation_error_t *error) {
     if (out)
         *out = NULL;
     if (error)
@@ -178,6 +268,49 @@ bool compile_module_sources(const module_sources_t *sources,
         fail(error, 0, NULL, "invalid source graph");
         return false;
     }
+    for (size_t i = 0; i < sources->count; ++i) {
+        const module_source_t *source = sources->files + i;
+        if (!source->source || !source->name || !source->name[0]
+            || source->length > SIZE_MAX / sizeof(gchar_t) - 1
+            || source->includes.count > SIZE_MAX / sizeof(source_include_t)
+            || source->includes.count > SIZE_MAX / sizeof(size_t)
+            || (source->includes.count && (!source->includes.items || !source->targets))) {
+            fail(error, i, NULL, "invalid source snapshot");
+            return false;
+        }
+    }
+    module_imports_t *imports = NULL;
+    module_imports_error_t import_error = {0};
+    if (module_imports_collect(sources, 0, &imports, &import_error)) {
+        fail(error, import_error.site.file, NULL, import_error.message);
+        if (error) {
+            error->row = import_error.site.row;
+            error->column = import_error.site.column;
+        }
+        return false;
+    }
+    if (!matching_dependencies(imports, dependencies)) {
+        fail(error, 0, NULL, "source imports require exactly matching direct dependency bindings");
+        free_module_imports(imports);
+        return false;
+    }
+    size_t binding_count = 0, binding_cursor = 0;
+    for (size_t i = 0; i < imports->count; ++i) {
+        if (imports->dependencies[i].count > SIZE_MAX / sizeof(import_binding_t) - binding_count) {
+            fail(error, 0, NULL, "too many import bindings");
+            free_module_imports(imports);
+            return false;
+        }
+        binding_count += imports->dependencies[i].count;
+    }
+    import_binding_t *bindings = binding_count ? ALLOC(binding_count * sizeof(*bindings)) : NULL;
+    size_t position = 0;
+    for (size_t i = 0; i < imports->count; ++i)
+        for (size_t j = 0; j < imports->dependencies[i].count; ++j)
+            bindings[position++] =
+                (import_binding_t){imports->dependencies[i].sites[j], imports->dependencies + i};
+    if (binding_count)
+        qsort(bindings, binding_count, sizeof(*bindings), compare_binding);
     module_compilation_t *result = CALLOC(sizeof(*result));
     result->count = sources->count;
     result->entries = CALLOC(sources->count * sizeof(*result->entries));
@@ -188,14 +321,6 @@ bool compile_module_sources(const module_sources_t *sources,
     bool ok = false;
     for (size_t i = 0; i < sources->count; ++i) {
         const module_source_t *source = sources->files + i;
-        if (!source->source || !source->name || !source->name[0]
-            || source->length > SIZE_MAX / sizeof(gchar_t) - 1
-            || source->includes.count > SIZE_MAX / sizeof(source_include_t)
-            || source->includes.count > SIZE_MAX / sizeof(size_t)
-            || (source->includes.count && (!source->includes.items || !source->targets))) {
-            fail(error, i, NULL, "invalid source snapshot");
-            goto done;
-        }
         parser_memory_t *memory = memories + i;
         *memory = (parser_memory_t){create_arena(64),
                                     create_arena(64),
@@ -217,6 +342,10 @@ bool compile_module_sources(const module_sources_t *sources,
         }
         if (!bind_includes(source, sources->count, memory, &groups)) {
             fail(error, i, NULL, "source include graph does not match its snapshot");
+            goto done;
+        }
+        if (!bind_imports(i, bindings, binding_count, &binding_cursor, memory, &groups)) {
+            fail(error, i, NULL, "source import sites do not match their snapshot");
             goto done;
         }
         parsing_result_t parsed = {0};
@@ -270,7 +399,7 @@ bool compile_module_sources(const module_sources_t *sources,
         fail(error, 0, NULL, "module image size limit exceeded");
         goto done;
     }
-    result->metadata = metadata(sources, result->code);
+    result->metadata = metadata(sources, result->code, dependencies);
     if (!result->metadata) {
         fail(error, 0, NULL, "invalid generated module metadata");
         goto done;
@@ -298,6 +427,8 @@ bool compile_module_sources(const module_sources_t *sources,
     result = NULL;
     ok = true;
 done:
+    FREE(bindings);
+    free_module_imports(imports);
     destroy_code_builder(cb);
     destroy_data_builder(db);
     for (size_t i = 0; i < sources->count; ++i) {

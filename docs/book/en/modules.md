@@ -4401,3 +4401,13 @@ caller locals or reopening source paths. Symlink aliases share initialization;
 distinct hardlink paths do not. Saved modules execute after their sources are
 removed. [Compiler/runtime API and end-to-end checks](../../source-include-api.md).
 Full public CLI integration remains the separate #191 step.
+
+## Executable ready-module imports (#195)
+
+Literal imports now compile against exact verified direct dependencies and return
+the dependency's persistent entry scope through the shared lazy initialization
+gate. Repeated imports share state; different versions remain independent. The VM
+keeps declaring-module code and string caches separate across functions, callbacks
+and nested includes, with no archive reopening or immutable-image changes.
+[Compiler/runtime contract and end-to-end checks](../../source-import-api.md).
+Public CLI integration remains the separate #191 step.

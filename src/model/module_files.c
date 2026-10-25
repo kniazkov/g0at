@@ -29,6 +29,8 @@ struct module_files_t {
     bytecode_t *code;
     uint32_t main;
     module_file_t *files;
+    object_t **strings;
+    module_file_t **imports;
 };
 
 /** Take ownership of the wrapper, borrowing parsed metadata only during construction. */
@@ -43,6 +45,10 @@ static module_files_t *create_files(process_t *process, const yyjson_doc *doc, b
     set->identity = create_module_identity();
     set->code = code;
     set->main = (uint32_t)main;
+    if (code->data_descriptor_count) {
+        set->strings = CALLOC(code->data_descriptor_count * sizeof(*set->strings));
+        set->imports = CALLOC(code->data_descriptor_count * sizeof(*set->imports));
+    }
     set->files = CALLOC(code->file_count * sizeof(*set->files));
     yyjson_val *records = yyjson_obj_get(root, "files");
     object_t *builtins = get_root_context()->data;
@@ -95,7 +101,8 @@ module_bytecode_status_t create_module_files(process_t *process,
             *error = (module_bytecode_error_t){MODULE_BYTECODE_JSON, SIZE_MAX, json};
         return MODULE_BYTECODE_JSON;
     }
-    if (code->file_count > SIZE_MAX / sizeof(module_file_t)) {
+    if (code->file_count > SIZE_MAX / sizeof(module_file_t)
+        || code->data_descriptor_count > SIZE_MAX / sizeof(void *)) {
         yyjson_doc_free(doc);
         free_bytecode(code);
         if (error)
@@ -115,7 +122,8 @@ bool create_module_files_from_snapshot(process_t *process,
     if (out)
         *out = NULL;
     if (!process || !metadata || !code || !out
-        || code->file_count > SIZE_MAX / sizeof(module_file_t))
+        || (code->file_count > SIZE_MAX / sizeof(module_file_t)
+            || code->data_descriptor_count > SIZE_MAX / sizeof(void *)))
         return false;
     *out = create_files(process, metadata, borrow_bytecode_image(code));
     return true;
@@ -147,6 +155,41 @@ bytecode_t *module_files_bytecode(module_files_t *files) {
 
 module_t *module_files_identity(module_files_t *files) {
     return files ? files->identity : NULL;
+}
+
+bool bind_module_files_import(module_files_t *consumer,
+                              uint32_t descriptor,
+                              module_files_t *target) {
+    if (!consumer || !target || consumer->process != target->process
+        || descriptor >= consumer->code->data_descriptor_count)
+        return false;
+    module_file_t *main = module_files_main(target);
+    if (consumer->imports[descriptor] && consumer->imports[descriptor] != main)
+        return false;
+    consumer->imports[descriptor] = main;
+    return true;
+}
+
+module_file_t *module_files_import(module_files_t *consumer, uint32_t descriptor) {
+    return consumer && descriptor < consumer->code->data_descriptor_count
+               ? consumer->imports[descriptor]
+               : NULL;
+}
+
+object_t *module_files_string(module_files_t *files, uint32_t descriptor) {
+    if (!files || descriptor >= files->code->data_descriptor_count)
+        return NULL;
+    object_t *string = files->strings[descriptor];
+    if (!string) {
+        const data_descriptor_t *data = files->code->data_descriptors + descriptor;
+        string = create_string_object(
+            files->process,
+            (string_value_t){(const gchar_t *)(files->code->data + data->offset),
+                             data->size / sizeof(gchar_t) - 1,
+                             false});
+        files->strings[descriptor] = string;
+    }
+    return string;
 }
 
 uint32_t module_file_id(const module_file_t *file) {
@@ -190,12 +233,16 @@ context_t *create_module_file_context(module_file_t *file, context_t *caller) {
 }
 
 void mark_module_files(const process_t *process) {
-    for (module_files_t *set = process->module_files; set; set = set->next)
+    for (module_files_t *set = process->module_files; set; set = set->next) {
+        for (size_t i = 0; i < set->code->data_descriptor_count; ++i)
+            if (set->strings[i])
+                mark_object(set->strings[i]);
         for (size_t i = 0; i < set->code->file_count; ++i) {
             mark_object(set->files[i].scope);
             if (set->files[i].failure.value)
                 mark_object(set->files[i].failure.value);
         }
+    }
 }
 
 void destroy_module_files(process_t *process) {
@@ -208,6 +255,8 @@ void destroy_module_files(process_t *process) {
             FREE_STRING(set->files[i].name);
             release_exception_trace(set->files[i].failure.trace);
         }
+        FREE(set->strings);
+        FREE(set->imports);
         FREE(set->files);
         free_bytecode(set->code);
         release_module_identity(set->identity);

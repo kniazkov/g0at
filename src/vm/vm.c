@@ -26,6 +26,10 @@
 typedef struct {
     /** @brief Pointer to the bytecode being executed. */
     bytecode_t *code;
+    /** @brief Standalone entry image when a context has no module-file owner. */
+    bytecode_t *entry_code;
+    /** @brief Current image owner and its independent descriptor cache. */
+    module_files_t *files;
     /** @brief Nonzero if an instruction failed. */
     int status;
 } runtime_t;
@@ -42,6 +46,8 @@ static void execute_instructions(runtime_t *runtime, thread_t *thread, bool sche
 
 /** @brief Loads a string from the bytecode or retrieves it from the cache. */
 static object_t *load_string(runtime_t *runtime, process_t *process, uint32_t string_id) {
+    if (runtime->files)
+        return module_files_string(runtime->files, string_id);
     object_t *string = process->string_cache[string_id];
     if (string == NULL) {
         data_descriptor_t descriptor = runtime->code->data_descriptors[string_id];
@@ -1094,19 +1100,19 @@ static bool exec_binding(runtime_t *runtime, instruction_t instr, thread_t *thre
     return true;
 }
 
-/** @brief A synchronous initializer reuses the caller image and string cache. */
+/** @brief A synchronous initializer shares runtime control, not image-local caches. */
 typedef struct {
     runtime_t *runtime;
     thread_t *thread;
 } file_execution_t;
 
 static bool
-execute_included_file(module_file_t *file, context_t *frame, void *data, exception_t *failure) {
+execute_module_file(module_file_t *file, context_t *frame, void *data, exception_t *failure) {
     file_execution_t *execution = data;
     runtime_t *runtime = execution->runtime;
     thread_t *thread = execution->thread;
-    if (module_file_bytecode(file) != runtime->code)
-        return false;
+    bytecode_t *caller_code = runtime->code;
+    module_files_t *caller_files = runtime->files;
     context_t *caller = thread->context;
     instr_index_t address = thread->instr_id;
     uint32_t args[ARGS_CAPACITY];
@@ -1133,14 +1139,14 @@ execute_included_file(module_file_t *file, context_t *frame, void *data, excepti
     memcpy(thread->args, args, sizeof(args));
     thread->args_count = args_count;
     runtime->status = status;
+    runtime->code = caller_code;
+    runtime->files = caller_files;
     return success;
 }
 
-/** @brief Executes a fixed local-file link without opening any source path. */
-static bool exec_MODULE_INCLUDE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    module_files_t *files = find_module_files(thread->process, thread->context->module);
-    module_file_t *file = module_files_get(files, instr.arg1);
-    if (!file || module_file_bytecode(file) != runtime->code)
+/** @brief Both module operators use the same persistent initialization gate. */
+static bool execute_file_link(runtime_t *runtime, thread_t *thread, module_file_t *file) {
+    if (!file)
         return dispatch_exception(runtime,
                                   thread,
                                   (exception_t){.value = get_exception_invalid_operation()});
@@ -1149,7 +1155,7 @@ static bool exec_MODULE_INCLUDE(runtime_t *runtime, instruction_t instr, thread_
     exception_t failure = {0};
     module_initialize_status_t status = initialize_module_file(file,
                                                                thread->context,
-                                                               execute_included_file,
+                                                               execute_module_file,
                                                                &execution,
                                                                &scope,
                                                                &failure);
@@ -1162,6 +1168,18 @@ static bool exec_MODULE_INCLUDE(runtime_t *runtime, instruction_t instr, thread_
     push_object_onto_stack(thread->data_stack, scope);
     thread->instr_id++;
     return true;
+}
+
+/** @brief Executes a fixed local-file link without opening any source path. */
+static bool exec_MODULE_INCLUDE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    module_files_t *files = find_module_files(thread->process, thread->context->module);
+    return execute_file_link(runtime, thread, module_files_get(files, instr.arg1));
+}
+
+/** @brief Uses only the consumer's preflighted direct dependency binding. */
+static bool exec_MODULE_IMPORT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
+    module_files_t *files = find_module_files(thread->process, thread->context->module);
+    return execute_file_link(runtime, thread, module_files_import(files, instr.arg1));
 }
 
 /** @brief Array of instruction execution functions for the Goat virtual machine. */
@@ -1226,9 +1244,10 @@ static instr_executor_t executors[] = {
     exec_SETINDEX, /**< Writes through the indexing virtual method. */
     exec_ARRAY,    /**< Creates a new array. */
     exec_INHERIT,  /**< Enters an explicitly derived object. */
-    exec_LOOP_ENTER,  exec_LOOP_JUMP,     exec_DUPN,          exec_ROTATE,        exec_SNAPSHOT,
-    exec_ITER_NEXT,   exec_FINALLY_ENTER, exec_FINALLY_LEAVE, exec_FINALLY_END,   exec_declaration,
-    exec_declaration, exec_binding,       exec_binding,       exec_MODULE_INCLUDE
+    exec_LOOP_ENTER,  exec_LOOP_JUMP,      exec_DUPN,          exec_ROTATE,
+    exec_SNAPSHOT,    exec_ITER_NEXT,      exec_FINALLY_ENTER, exec_FINALLY_LEAVE,
+    exec_FINALLY_END, exec_declaration,    exec_declaration,   exec_binding,
+    exec_binding,     exec_MODULE_INCLUDE, exec_MODULE_IMPORT
     // Additional opcodes can be added here in the future...
 };
 
@@ -1236,6 +1255,11 @@ static instr_executor_t executors[] = {
 static void execute_instructions(runtime_t *runtime, thread_t *thread, bool schedule) {
     bool flag = true;
     while (flag) {
+        /* Calls, returns, callbacks and exception unwinds all change lexical
+           context. Resolve the image here rather than guessing at each edge. */
+        runtime->files = find_module_files(thread->process, thread->context->module);
+        runtime->code =
+            runtime->files ? module_files_bytecode(runtime->files) : runtime->entry_code;
         if (thread->instr_id >= runtime->code->instructions_count
             || runtime->code->instructions[thread->instr_id].opcode
                    >= sizeof(executors) / sizeof(*executors)) {
@@ -1251,7 +1275,7 @@ static void execute_instructions(runtime_t *runtime, thread_t *thread, bool sche
     }
 }
 
-/** @brief Cache lifetime is one outer VM entry, never a nested include. */
+/** @brief Standalone-image fallback cache; module images own separate caches. */
 static void prepare_string_cache(process_t *proc, bytecode_t *code) {
     proc->string_cache_size = code->data_descriptor_count;
     proc->string_cache =
@@ -1268,7 +1292,7 @@ static void finish_string_cache(process_t *proc) {
 }
 
 int run(process_t *proc, bytecode_t *code) {
-    runtime_t runtime = {code, 0};
+    runtime_t runtime = {.code = code, .entry_code = code};
     prepare_string_cache(proc, code);
     thread_t *thread = proc->main_thread;
     if (thread->context->file_initialization_boundary)
@@ -1283,15 +1307,14 @@ int run_module_file(process_t *proc, module_file_t *file) {
     if (!proc || !file || module_file_process(file) != proc)
         return 1;
     bytecode_t *code = module_file_bytecode(file);
-    runtime_t runtime = {code, 0};
-    prepare_string_cache(proc, code);
+    runtime_t runtime = {.code = code, .entry_code = code};
     thread_t *thread = proc->main_thread;
     file_execution_t execution = {&runtime, thread};
     object_t *scope = NULL;
     exception_t failure = {0};
     module_initialize_status_t status = initialize_module_file(file,
                                                                thread->context,
-                                                               execute_included_file,
+                                                               execute_module_file,
                                                                &execution,
                                                                &scope,
                                                                &failure);
