@@ -14,6 +14,8 @@
 typedef struct {
     module_graph_node_t view;
     size_t first, count;
+    module_validation_diagnostic_t *validation;
+    size_t validation_count, validation_capacity;
 } node_t;
 
 struct module_graph {
@@ -52,6 +54,52 @@ static void *grow(void *old, size_t *capacity, size_t size) {
     FREE(old);
     *capacity = next;
     return result;
+}
+
+/* Validation callback views may refer to temporary archive or JSON storage.
+ * Retain every unsuccessful check independently of whether the caller requests
+ * live callbacks; positions must remain usable after the failed archive dies. */
+typedef struct {
+    module_graph_t *graph;
+    size_t node;
+    const module_validation_options_t *original;
+} validation_capture_t;
+
+static void *copy_bytes(const void *bytes, size_t size) {
+    if (!bytes)
+        return NULL;
+    if (size == SIZE_MAX)
+        abort();
+    unsigned char *copy = ALLOC(size + 1);
+    memcpy(copy, bytes, size);
+    copy[size] = 0;
+    return copy;
+}
+
+static void capture_validation(const module_validation_diagnostic_t *event, void *context) {
+    validation_capture_t *capture = context;
+    if (event->state != MODULE_CHECK_PASSED) {
+        node_t *node = &capture->graph->nodes[capture->node];
+        if (node->validation_count == node->validation_capacity)
+            node->validation =
+                grow(node->validation, &node->validation_capacity, sizeof(*node->validation));
+        module_validation_diagnostic_t *copy = &node->validation[node->validation_count++];
+        *copy = *event;
+        copy->archive = copy_text(event->archive);
+        copy->entry.data = copy_bytes(event->entry.data, event->entry.size);
+        copy->field = copy_bytes(event->field, event->field_length);
+    }
+    if (capture->original && capture->original->report)
+        capture->original->report(event, capture->original->context);
+}
+
+static module_validation_options_t capture_options(validation_capture_t *capture) {
+    module_validation_options_t options = {.max_archive = SIZE_MAX, .max_expanded = SIZE_MAX};
+    if (capture->original)
+        options = *capture->original;
+    options.report = capture_validation;
+    options.context = capture;
+    return options;
 }
 
 static yyjson_val *metadata(const validated_module_t *snapshot) {
@@ -118,11 +166,12 @@ static void issue(module_graph_t *graph,
                   size_t node,
                   size_t edge,
                   size_t other,
-                  const char *reference) {
+                  const char *reference,
+                  size_t reference_length) {
     if (graph->issue_count == graph->issue_capacity)
         graph->issues = grow(graph->issues, &graph->issue_capacity, sizeof(*graph->issues));
     graph->issues[graph->issue_count++] =
-        (module_graph_issue_t){kind, node, edge, other, reference};
+        (module_graph_issue_t){kind, node, edge, other, reference, reference_length};
 }
 
 static int compare_requests(const void *left, const void *right) {
@@ -176,12 +225,12 @@ static void check_hashes(module_graph_t *graph) {
         if (!edge->hash)
             continue;
         if (actual && strcmp(edge->hash, actual))
-            issue(graph, MODULE_GRAPH_HASH, edge->to, i, SIZE_MAX, NULL);
+            issue(graph, MODULE_GRAPH_HASH, edge->to, i, SIZE_MAX, NULL, 0);
         size_t prior = first[edge->to];
         if (prior == SIZE_MAX)
             first[edge->to] = i;
         else if (strcmp(edge->hash, graph->edges[prior].hash))
-            issue(graph, MODULE_GRAPH_CONFLICT, edge->to, i, prior, NULL);
+            issue(graph, MODULE_GRAPH_CONFLICT, edge->to, i, prior, NULL, 0);
     }
     FREE(first);
 }
@@ -207,7 +256,7 @@ static void check_cycles(module_graph_t *graph) {
         size_t index = node->first + frame->next++;
         size_t to = graph->edges[index].to;
         if (color[to] == 1)
-            issue(graph, MODULE_GRAPH_CYCLE, to, index, SIZE_MAX, NULL);
+            issue(graph, MODULE_GRAPH_CYCLE, to, index, SIZE_MAX, NULL, 0);
         else if (!color[to]) {
             color[to] = 1;
             stack[depth++] = (frame_t){to, 0};
@@ -278,7 +327,8 @@ static void check_references(module_graph_t *graph) {
                           owner,
                           SIZE_MAX,
                           SIZE_MAX,
-                          yyjson_get_str(key));
+                          yyjson_get_str(key),
+                          yyjson_get_len(key));
                 continue;
             }
             bool found = false;
@@ -303,7 +353,8 @@ static void check_references(module_graph_t *graph) {
                       owner,
                       SIZE_MAX,
                       SIZE_MAX,
-                      yyjson_get_str(key));
+                      yyjson_get_str(key),
+                      yyjson_get_len(key));
         }
     }
     FREE(queue);
@@ -317,12 +368,19 @@ static module_graph_status_t finish(module_graph_t *graph,
     for (size_t i = 1; i < graph->node_count; i++) {
         module_graph_node_t *node = &graph->nodes[i].view;
         validated_module_t *snapshot = NULL;
-        module_search_status_t status =
-            find_module(search, node->name, node->version, NULL, options, &snapshot, &node->search);
+        validation_capture_t capture = {graph, i, options};
+        module_validation_options_t captured = capture_options(&capture);
+        module_search_status_t status = find_module(search,
+                                                    node->name,
+                                                    node->version,
+                                                    NULL,
+                                                    &captured,
+                                                    &snapshot,
+                                                    &node->search);
         if (status != MODULE_SEARCH_OK) {
             if (node->search.count)
                 node->archive = copy_text(node->search.attempted[node->search.count - 1]);
-            issue(graph, MODULE_GRAPH_SEARCH, i, SIZE_MAX, SIZE_MAX, NULL);
+            issue(graph, MODULE_GRAPH_SEARCH, i, SIZE_MAX, SIZE_MAX, NULL, 0);
             continue;
         }
         node->snapshot = snapshot;
@@ -360,13 +418,15 @@ module_graph_status_t validate_module_graph(const char *archive,
     if (!read_fs_regular_file(archive, limit, &data, &size, &node->search.filesystem)) {
         node->search.status = MODULE_SEARCH_IO;
     } else {
-        node->search.validation = validate_module(data, size, archive, options, &snapshot);
+        validation_capture_t capture = {graph, 0, options};
+        module_validation_options_t captured = capture_options(&capture);
+        node->search.validation = validate_module(data, size, archive, &captured, &snapshot);
         if (node->search.validation.status != MODULE_VALIDATION_OK)
             node->search.status = MODULE_SEARCH_INVALID_MODULE;
     }
     FREE(data);
     if (node->search.status) {
-        issue(graph, MODULE_GRAPH_SEARCH, 0, SIZE_MAX, SIZE_MAX, NULL);
+        issue(graph, MODULE_GRAPH_SEARCH, 0, SIZE_MAX, SIZE_MAX, NULL, 0);
     } else {
         yyjson_val *root = metadata(snapshot);
         node->name = copy_text(yyjson_get_str(yyjson_obj_get(root, "name")));
@@ -427,6 +487,13 @@ void free_module_graph(module_graph_t *graph) {
         FREE((void *)node->archive);
         free_validated_module((validated_module_t *)node->snapshot);
         clear_module_search_error(&node->search);
+        for (size_t j = 0; j < graph->nodes[i].validation_count; j++) {
+            module_validation_diagnostic_t *event = &graph->nodes[i].validation[j];
+            FREE((void *)event->archive);
+            FREE((void *)event->entry.data);
+            FREE((void *)event->field);
+        }
+        FREE(graph->nodes[i].validation);
     }
     for (size_t i = 0; i < graph->edge_count; i++)
         FREE((void *)graph->edges[i].hash);
@@ -459,6 +526,17 @@ const module_graph_edge_t *module_graph_edge(const module_graph_t *graph, size_t
 
 const module_graph_issue_t *module_graph_issue(const module_graph_t *graph, size_t index) {
     return graph && index < graph->issue_count ? &graph->issues[index] : NULL;
+}
+
+size_t module_graph_validation_count(const module_graph_t *graph, size_t node) {
+    return graph && node < graph->node_count ? graph->nodes[node].validation_count : 0;
+}
+
+const module_validation_diagnostic_t *
+module_graph_validation(const module_graph_t *graph, size_t node, size_t index) {
+    return graph && node < graph->node_count && index < graph->nodes[node].validation_count
+               ? &graph->nodes[node].validation[index]
+               : NULL;
 }
 
 /* Prune siblings that cannot reach the requested endpoint before enumerating

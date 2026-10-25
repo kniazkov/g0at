@@ -42,7 +42,7 @@
 - [x] 26. [#237](https://github.com/kniazkov/g0at/issues/237) — Точные правила путей GOAT_MODULE_PATH
 - [x] 27. [#238](https://github.com/kniazkov/g0at/issues/238) — Независимость версий зависимостей библиотеки ([API и проверки](module-dependencies-api.md))
 - [x] 28. [#189](https://github.com/kniazkov/g0at/issues/189) — Итеративная проверка графа зависимостей ([API и проверки](module-graph-api.md))
-- [ ] 29. [#190](https://github.com/kniazkov/g0at/issues/190) — Детерминированная диагностика зависимостей
+- [x] 29. [#190](https://github.com/kniazkov/g0at/issues/190) — Детерминированная диагностика зависимостей ([API и проверки](module-graph-api.md))
 - [ ] 30. [#192](https://github.com/kniazkov/g0at/issues/192) — Загрузка снимка графа модулей в память
 - [ ] 31. [#236](https://github.com/kniazkov/g0at/issues/236) — Поведение при нехватке памяти при загрузке
 - [ ] 32. [#235](https://github.com/kniazkov/g0at/issues/235) — Идентичность экземпляров модулей и копий архива
@@ -235,7 +235,7 @@
 
 ## Дополнительные решения
 
-- [ ] 126–131: граф зависимостей и диагностика: [#189](https://github.com/kniazkov/g0at/issues/189), [#190](https://github.com/kniazkov/g0at/issues/190)
+- [x] 126–131: граф зависимостей и диагностика: [#189](https://github.com/kniazkov/g0at/issues/189), [#190](https://github.com/kniazkov/g0at/issues/190)
 - [ ] 132: хранение модулей до завершения программы: [#192](https://github.com/kniazkov/g0at/issues/192)
 - [ ] 133–140: потоки и сериализация инициализации: [#216](https://github.com/kniazkov/g0at/issues/216), [#217](https://github.com/kniazkov/g0at/issues/217)
 - [ ] 143: главный файл выполняется без блокировки и ограничений инициализатора; динамический контекст include/import: [#217](https://github.com/kniazkov/g0at/issues/217)

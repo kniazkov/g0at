@@ -4,6 +4,7 @@
  */
 #include "lib/allocate.h"
 #include "vm/module_graph.h"
+#include "vm/module_graph_diagnostics.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -45,6 +46,79 @@ static void paths(yyjson_mut_doc *doc,
     }
 }
 
+typedef struct {
+    yyjson_mut_doc *doc;
+    yyjson_mut_val *rows;
+    bool stop;
+} diagnostics_t;
+
+static bool diagnostic(const module_graph_diagnostic_t *d, void *context) {
+    diagnostics_t *out = context;
+    yyjson_mut_doc *doc = out->doc;
+    yyjson_mut_val *row = yyjson_mut_obj(doc), *path = yyjson_mut_arr(doc);
+    yyjson_mut_obj_add_uint(doc, row, "kind", d->kind);
+    yyjson_mut_obj_add_uint(doc, row, "node", d->node);
+    yyjson_mut_obj_add_uint(doc, row, "edge", d->edge);
+    yyjson_mut_obj_add_strncpy(doc,
+                               row,
+                               "reference",
+                               d->reference ? d->reference : "",
+                               d->reference_length);
+    yyjson_mut_obj_add_uint(doc, row, "reference_length", d->reference_length);
+    for (size_t i = 0; i < d->path_count; i++)
+        yyjson_mut_arr_add_uint(doc, path, d->path[i]);
+    yyjson_mut_obj_add_val(doc, row, "path", path);
+    if (d->validation) {
+        const module_validation_diagnostic_t *v = d->validation;
+        yyjson_mut_val *item = yyjson_mut_obj(doc);
+        yyjson_mut_obj_add_uint(doc, item, "check", v->check);
+        yyjson_mut_obj_add_uint(doc, item, "state", v->state);
+        yyjson_mut_obj_add_int(doc, item, "detail", v->detail);
+        yyjson_mut_obj_add_uint(doc, item, "index", v->index);
+        yyjson_mut_val *entry_bytes = yyjson_mut_arr(doc);
+        bool ascii = true;
+        for (size_t i = 0; i < v->entry.size; i++) {
+            yyjson_mut_arr_add_uint(doc, entry_bytes, v->entry.data[i]);
+            ascii = ascii && v->entry.data[i] < 128;
+        }
+        yyjson_mut_obj_add_val(doc, item, "entry_bytes", entry_bytes);
+        yyjson_mut_obj_add_val(
+            doc,
+            item,
+            "entry",
+            yyjson_mut_strncpy(doc,
+                               ascii && v->entry.data ? (const char *)v->entry.data : "",
+                               ascii ? v->entry.size : 0));
+        yyjson_mut_obj_add_int(doc, item, "container_status", v->container.status);
+        yyjson_mut_obj_add_int(doc, item, "zip_error", v->container.zip_error);
+        yyjson_mut_obj_add_int(doc, item, "json_error", v->container.json_error);
+        yyjson_mut_obj_add_val(doc,
+                               item,
+                               "field",
+                               yyjson_mut_strncpy(doc, v->field ? v->field : "", v->field_length));
+        yyjson_mut_obj_add_val(doc, row, "validation", item);
+    }
+    yyjson_mut_arr_append(out->rows, row);
+    return !out->stop;
+}
+
+static void diagnostics(yyjson_mut_doc *doc, yyjson_mut_val *root, const module_graph_t *graph) {
+    diagnostics_t out = {doc, yyjson_mut_arr(doc), false};
+    assert(!report_module_graph_diagnostics(graph, NULL, NULL));
+    assert(report_module_graph_diagnostics(graph, diagnostic, &out));
+    yyjson_mut_obj_add_val(doc, root, "diagnostics", out.rows);
+    if (yyjson_mut_arr_size(out.rows)) {
+        out.rows = yyjson_mut_arr(doc);
+        out.stop = true;
+        assert(!report_module_graph_diagnostics(graph, diagnostic, &out));
+        assert(yyjson_mut_arr_size(out.rows) == 1);
+    }
+    char *text = format_module_graph_diagnostics(graph);
+    assert(text);
+    yyjson_mut_obj_add_strcpy(doc, root, "diagnostic_text", text);
+    FREE(text);
+}
+
 static void contracts(const module_search_t *search) {
     module_graph_t *graph = (void *)(uintptr_t)1;
     assert(validate_module_graph(NULL, search, NULL, &graph) == MODULE_GRAPH_ARGUMENT);
@@ -55,8 +129,12 @@ static void contracts(const module_search_t *search) {
     assert(!module_graph_issue(NULL, 0));
     assert(!module_graph_node_count(NULL) && !module_graph_edge_count(NULL));
     assert(!module_graph_issue_count(NULL));
+    assert(!module_graph_validation_count(NULL, 0));
+    assert(!module_graph_validation(NULL, 0, 0));
     assert(!module_graph_paths(NULL, 0, SIZE_MAX, NULL, NULL));
     free_module_graph(NULL);
+    assert(!report_module_graph_diagnostics(NULL, diagnostic, NULL));
+    assert(!format_module_graph_diagnostics(NULL));
     if (!search)
         return;
     module_import_dependency_t deps[] = {{.name = "absent", .version = "1"},
@@ -104,8 +182,11 @@ int main(int argc, char **argv) {
         module_sources_error_t source_error = {0};
         module_imports_error_t import_error = {0};
         int status;
-        if (!strcmp(argv[1], "module")) {
-            status = validate_module_graph(argv[3], search, &options, &graph);
+        if (!strcmp(argv[1], "module") || !strcmp(argv[1], "module-null")) {
+            status = validate_module_graph(argv[3],
+                                           search,
+                                           !strcmp(argv[1], "module-null") ? NULL : &options,
+                                           &graph);
         } else {
             assert(!module_sources_read(argv[3],
                                         !strcmp(argv[1], "gmod"),
@@ -143,6 +224,11 @@ int main(int argc, char **argv) {
             yyjson_mut_obj_add_uint(doc, obj, "search_status", node->search.status);
             yyjson_mut_obj_add_uint(doc, obj, "references_skipped", node->references_skipped);
             yyjson_mut_obj_add_uint(doc, obj, "attempts", node->search.count);
+            size_t validation_count = module_graph_validation_count(graph, i);
+            yyjson_mut_obj_add_uint(doc, obj, "validation_count", validation_count);
+            assert(!module_graph_validation(graph, i, validation_count));
+            for (size_t j = 0; j < validation_count; j++)
+                assert(module_graph_validation(graph, i, j)->state != MODULE_CHECK_PASSED);
             if (node->snapshot) {
                 yyjson_val *metadata = yyjson_doc_get_root(
                     goat_module_container_metadata(validated_module_container(node->snapshot)));
@@ -167,10 +253,12 @@ int main(int argc, char **argv) {
             yyjson_mut_obj_add_uint(doc, obj, "node", issue->node);
             yyjson_mut_obj_add_uint(doc, obj, "edge", issue->edge);
             yyjson_mut_obj_add_uint(doc, obj, "other_edge", issue->other_edge);
-            yyjson_mut_obj_add_strcpy(doc,
-                                      obj,
-                                      "reference",
-                                      issue->reference ? issue->reference : "");
+            yyjson_mut_obj_add_strncpy(doc,
+                                       obj,
+                                       "reference",
+                                       issue->reference ? issue->reference : "",
+                                       issue->reference_length);
+            yyjson_mut_obj_add_uint(doc, obj, "reference_length", issue->reference_length);
             yyjson_mut_arr_append(issues, obj);
         }
         if (summary) {
@@ -184,6 +272,8 @@ int main(int argc, char **argv) {
             }
         }
         assert(!module_graph_node(graph, module_graph_node_count(graph)));
+        assert(!module_graph_validation_count(graph, module_graph_node_count(graph)));
+        assert(!module_graph_validation(graph, module_graph_node_count(graph), 0));
         assert(!module_graph_edge(graph, module_graph_edge_count(graph)));
         assert(!module_graph_issue(graph, module_graph_issue_count(graph)));
         assert(!module_graph_paths(graph, module_graph_node_count(graph), SIZE_MAX, path, NULL));
@@ -200,6 +290,8 @@ int main(int argc, char **argv) {
         yyjson_mut_obj_add_val(doc, root, "nodes", nodes);
         yyjson_mut_obj_add_val(doc, root, "edges", edges);
         yyjson_mut_obj_add_val(doc, root, "issues", issues);
+        if (graph && (!summary || !strcmp(argv[4], "diagnostics")))
+            diagnostics(doc, root, graph);
         char *json = yyjson_mut_write(doc, 0, NULL);
         assert(json);
         puts(json);
