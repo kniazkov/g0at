@@ -226,6 +226,8 @@ static int execute(const char *archive, bool frozen, const char *directory) {
 }
 
 int main(int argc, char **argv) {
+    fs_error_t arguments_error = {0};
+    assert(fs_arguments(&argc, &argv, &arguments_error));
     int result = 2;
     if (argc == 4 && !strcmp(argv[1], "compile"))
         result = compile(argv[2], argv[3]);
@@ -237,6 +239,8 @@ int main(int argc, char **argv) {
         FPRINTF(stderr,
                 "Usage: compile SOURCE OUTPUT | binary ARCHIVE | frozen ARCHIVE | frozen-chdir "
                 "ARCHIVE DIR\n");
+    free_fs_arguments(argc, argv);
+    clear_fs_error(&arguments_error);
     assert(!get_allocated_memory_size());
     return result;
 }
