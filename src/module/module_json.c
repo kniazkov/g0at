@@ -274,10 +274,10 @@ shape(yyjson_val *v, const json_schema *s, diagnostics *d, const char *path, siz
             else {
                 if (s->keys)
                     err = shape(key, s->keys, d, p, length);
-                if (child) {
+                if (child && err != GOAT_MODULE_JSON_MEMORY) {
                     goat_module_json_error value_error =
                         shape(yyjson_obj_iter_get_val(key), child, d, p, length);
-                    if (!err)
+                    if (!err || value_error == GOAT_MODULE_JSON_MEMORY)
                         err = value_error;
                 }
             }

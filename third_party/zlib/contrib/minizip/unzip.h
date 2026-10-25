@@ -189,6 +189,11 @@ extern unzFile ZEXPORT unzOpen2(const char *path,
       for read/write the zip file (see ioapi.h)
 */
 
+/* Goat extension; optional status is UNZ_OK, Z_MEM_ERROR or UNZ_BADZIPFILE. */
+extern unzFile ZEXPORT unzOpen2_64_status(const void *path,
+                                         zlib_filefunc64_def* functions,
+                                         int *status);
+
 extern unzFile ZEXPORT unzOpen2_64(const void *path,
                                    zlib_filefunc64_def* pzlib_filefunc_def);
 /*

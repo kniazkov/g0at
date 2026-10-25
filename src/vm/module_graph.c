@@ -36,7 +36,7 @@ typedef struct {
 static char *copy_text(const char *text) {
     if (!text)
         return NULL;
-    size_t size = strlen(text) + 1;
+    size_t size = allocation_size_add(strlen(text), 1);
     char *copy = ALLOC(size);
     memcpy(copy, text, size);
     return copy;
@@ -45,10 +45,8 @@ static char *copy_text(const char *text) {
 /* The core allocation policy is fatal OOM, including impossible address-space
  * growth. This does not introduce an artificial graph size or depth limit. */
 static void *grow(void *old, size_t *capacity, size_t size) {
-    if (*capacity > SIZE_MAX / 2 || (*capacity ? *capacity * 2 : 16) > SIZE_MAX / size)
-        abort();
-    size_t next = *capacity ? *capacity * 2 : 16;
-    void *result = CALLOC(next * size);
+    size_t next = *capacity ? allocation_size_multiply(*capacity, 2) : 16;
+    void *result = CALLOC(allocation_size_multiply(next, size));
     if (*capacity)
         memcpy(result, old, *capacity * size);
     FREE(old);
@@ -68,9 +66,7 @@ typedef struct {
 static void *copy_bytes(const void *bytes, size_t size) {
     if (!bytes)
         return NULL;
-    if (size == SIZE_MAX)
-        abort();
-    unsigned char *copy = ALLOC(size + 1);
+    unsigned char *copy = ALLOC(allocation_size_add(size, 1));
     memcpy(copy, bytes, size);
     copy[size] = 0;
     return copy;
@@ -148,11 +144,11 @@ static size_t add_node(module_graph_t *graph, const char *name, const char *vers
     graph->nodes[index].view.name = copy_text(name);
     graph->nodes[index].view.version = copy_text(version);
     if (!graph->table_capacity || graph->node_count > graph->table_capacity / 2) {
-        if (graph->table_capacity > SIZE_MAX / 2 / sizeof(*graph->table))
-            abort();
-        graph->table_capacity = graph->table_capacity ? graph->table_capacity * 2 : 32;
+        graph->table_capacity =
+            graph->table_capacity ? allocation_size_multiply(graph->table_capacity, 2) : 32;
         FREE(graph->table);
-        graph->table = CALLOC(graph->table_capacity * sizeof(*graph->table));
+        graph->table =
+            CALLOC(allocation_size_multiply(graph->table_capacity, sizeof(*graph->table)));
         for (size_t i = 0; i <= index; i++)
             insert(graph, i);
     } else {
@@ -200,9 +196,7 @@ static void expand(module_graph_t *graph, size_t index) {
     yyjson_val *root = metadata(graph->nodes[index].view.snapshot);
     yyjson_val *array = yyjson_obj_get(root, "dependencies");
     size_t count = yyjson_arr_size(array);
-    if (count > SIZE_MAX / sizeof(request_t))
-        abort();
-    request_t *requests = ALLOC(count * sizeof(*requests));
+    request_t *requests = ALLOC(allocation_size_multiply(count, sizeof(*requests)));
     for (size_t i = 0; i < count; i++) {
         yyjson_val *record = yyjson_arr_get(array, i);
         requests[i] = (request_t){yyjson_get_str(yyjson_obj_get(record, "name")),
@@ -214,7 +208,7 @@ static void expand(module_graph_t *graph, size_t index) {
 }
 
 static void check_hashes(module_graph_t *graph) {
-    size_t *first = ALLOC(graph->node_count * sizeof(*first));
+    size_t *first = ALLOC(allocation_size_multiply(graph->node_count, sizeof(*first)));
     for (size_t i = 0; i < graph->node_count; i++)
         first[i] = SIZE_MAX;
     for (size_t i = 0; i < graph->edge_count; i++) {
@@ -241,7 +235,7 @@ typedef struct {
 
 static void check_cycles(module_graph_t *graph) {
     unsigned char *color = CALLOC(graph->node_count);
-    frame_t *stack = ALLOC(graph->node_count * sizeof(*stack));
+    frame_t *stack = ALLOC(allocation_size_multiply(graph->node_count, sizeof(*stack)));
     size_t depth = 1;
     stack[0] = (frame_t){0, 0};
     color[0] = 1;
@@ -282,8 +276,8 @@ static bool has_references(const node_t *node) {
  * Invalid edges cannot grant authority; independent valid branches still can.
  * A missing target behind a failed edge is unknown, not a spurious new error. */
 static void check_references(module_graph_t *graph) {
-    bool *seen = CALLOC(graph->node_count * sizeof(*seen));
-    size_t *queue = ALLOC(graph->node_count * sizeof(*queue));
+    bool *seen = CALLOC(allocation_size_multiply(graph->node_count, sizeof(*seen)));
+    size_t *queue = ALLOC(allocation_size_multiply(graph->node_count, sizeof(*queue)));
     for (size_t owner = 0; owner < graph->node_count; owner++) {
         node_t *node = &graph->nodes[owner];
         if (!has_references(node))
@@ -377,6 +371,10 @@ static module_graph_status_t finish(module_graph_t *graph,
                                                     &captured,
                                                     &snapshot,
                                                     &node->search);
+        if (node->search.validation.status == MODULE_VALIDATION_MEMORY) {
+            free_module_graph(graph);
+            return MODULE_GRAPH_MEMORY;
+        }
         if (status != MODULE_SEARCH_OK) {
             if (node->search.count)
                 node->archive = copy_text(node->search.attempted[node->search.count - 1]);
@@ -425,6 +423,10 @@ module_graph_status_t validate_module_graph(const char *archive,
             node->search.status = MODULE_SEARCH_INVALID_MODULE;
     }
     FREE(data);
+    if (node->search.validation.status == MODULE_VALIDATION_MEMORY) {
+        free_module_graph(graph);
+        return MODULE_GRAPH_MEMORY;
+    }
     if (node->search.status) {
         issue(graph, MODULE_GRAPH_SEARCH, 0, SIZE_MAX, SIZE_MAX, NULL, 0);
     } else {
@@ -445,10 +447,11 @@ module_graph_status_t validate_source_graph(const module_imports_t *imports,
                                             module_graph_t **out) {
     if (out)
         *out = NULL;
-    if (!imports || !search || !out || (imports->count && !imports->dependencies)
-        || imports->count > SIZE_MAX / sizeof(request_t))
+    if (!imports || !search || !out || (imports->count && !imports->dependencies))
         return MODULE_GRAPH_ARGUMENT;
-    request_t *requests = ALLOC(imports->count * sizeof(*requests));
+    if (imports->count > SIZE_MAX / sizeof(request_t))
+        return MODULE_GRAPH_MEMORY;
+    request_t *requests = ALLOC(allocation_size_multiply(imports->count, sizeof(*requests)));
     bool valid = true;
     for (size_t i = 0; i < imports->count; i++) {
         const module_import_dependency_t *dep = &imports->dependencies[i];
@@ -543,10 +546,10 @@ module_graph_validation(const module_graph_t *graph, size_t node, size_t index) 
  * paths. A layered diamond elsewhere must not cause exponential work merely
  * to report one unrelated path. Reverse adjacency is temporary O(V + E). */
 static bool *ancestors(const module_graph_t *graph, size_t goal) {
-    size_t *first = ALLOC(graph->node_count * sizeof(*first));
-    size_t *next = ALLOC(graph->edge_count * sizeof(*next));
-    size_t *queue = ALLOC(graph->node_count * sizeof(*queue));
-    bool *reachable = CALLOC(graph->node_count * sizeof(*reachable));
+    size_t *first = ALLOC(allocation_size_multiply(graph->node_count, sizeof(*first)));
+    size_t *next = ALLOC(allocation_size_multiply(graph->edge_count, sizeof(*next)));
+    size_t *queue = ALLOC(allocation_size_multiply(graph->node_count, sizeof(*queue)));
+    bool *reachable = CALLOC(allocation_size_multiply(graph->node_count, sizeof(*reachable)));
     for (size_t i = 0; i < graph->node_count; i++)
         first[i] = SIZE_MAX;
     for (size_t i = 0; i < graph->edge_count; i++) {
@@ -583,9 +586,9 @@ bool module_graph_paths(const module_graph_t *graph,
         return false;
     size_t goal = final_edge == SIZE_MAX ? node : graph->edges[final_edge].from;
     bool *reachable = ancestors(graph, goal);
-    frame_t *stack = ALLOC(graph->node_count * sizeof(*stack));
-    size_t *path = ALLOC(graph->node_count * sizeof(*path));
-    bool *seen = CALLOC(graph->node_count * sizeof(*seen));
+    frame_t *stack = ALLOC(allocation_size_multiply(graph->node_count, sizeof(*stack)));
+    size_t *path = ALLOC(allocation_size_multiply(graph->node_count, sizeof(*path)));
+    bool *seen = CALLOC(allocation_size_multiply(graph->node_count, sizeof(*seen)));
     size_t depth = 1;
     stack[0] = (frame_t){0, 0};
     seen[0] = true;

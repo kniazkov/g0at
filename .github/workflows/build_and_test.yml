@@ -108,6 +108,12 @@ jobs:
           python3 scripts/check_module_json.py build/${{ matrix.compiler }}/module_json_testing
           python3 scripts/check_module_canonical.py build/${{ matrix.compiler }}/module_json_testing
           python3 scripts/check_module_hash.py build/${{ matrix.compiler }}/module_json_testing
+      - name: Module loading allocation failures
+        run: |
+          cmake -S src -B build/memory-fault -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=${{ matrix.compiler }} -DGOAT_TEST_ALLOC_FAILURE=ON
+          cmake --build build/memory-fault --parallel 2 --target module_memory_testing
+          python3 scripts/check_module_memory.py build/memory-fault/module_memory_testing
       - name: Module JSON with nonzero automatic-variable initialization
         run: |
           cmake -S src -B build/json-stack-pattern \
@@ -343,6 +349,15 @@ jobs:
         env:
           BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
         run: '"$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_cleanup_service.py build/cleanup_service_testing.exe'
+      - name: Module loading allocation failures
+        shell: msys2 {0}
+        env:
+          BENCHMARK_PYTHON: ${{ steps.benchmark-python.outputs.python-path }}
+        run: |
+          cmake -S src -B build/memory-fault -G "MinGW Makefiles" \
+            -DCMAKE_BUILD_TYPE=Debug -DGOAT_TEST_ALLOC_FAILURE=ON
+          cmake --build build/memory-fault --parallel 2 --target module_memory_testing
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_memory.py build/memory-fault/module_memory_testing.exe
       - name: Check Windows API target compatibility
         shell: msys2 {0}
         run: bash scripts/check_windows_target.sh build/windows-target

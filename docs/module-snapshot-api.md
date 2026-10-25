@@ -8,9 +8,11 @@ file scopes. Missing, corrupt, cyclic or hash-conflicting dependencies return no
 runnable snapshot, including dependencies in unreachable source branches.
 
 An optional diagnostics output owns the invalid graph; without that output it is
-freed automatically. Argument/memory failure clears both outputs. The current
-core allocator's fatal-OOM policy is unchanged; bounded-allocation and injected
-failure coverage is expanded separately in #236. No partially prepared runtime is
+freed automatically. Argument/memory failure clears both outputs. The core allocator's fatal-OOM policy is unchanged: it reports exhaustion or
+size overflow and exits with failure. Recoverable allocation failures in the
+shared JSON/ZIP validator return `MODULE_GRAPH_MEMORY`, not a corruption error.
+Loading stops immediately without scanning another copy or preparing user code.
+See [resource-failure checks](module-memory-api.md) for #236. No partially prepared runtime is
 published. Validation callbacks run only during preflight and must not execute
 user code or mutate inputs.
 
@@ -66,8 +68,11 @@ through the existing VM API without claiming those later features.
 
 Необязательный выход диагностики передаёт во владение неисправный граф; иначе
 он освобождается автоматически. Ошибка аргументов или памяти очищает оба выхода.
-Сохраняется существующая политика аварийного завершения core при нехватке памяти;
-расширенные граничные и управляемые отказы проверяются отдельно в #236.
+Core сохраняет штатное завершение с сообщением о нехватке памяти или переполнении
+размера и ненулевым кодом. Восстановимые отказы выделения общего JSON/ZIP валидатора
+возвращают `MODULE_GRAPH_MEMORY`, а не ошибку повреждения. Загрузка немедленно
+останавливается без поиска другой копии и подготовки пользовательского кода.
+Проверки #236 описаны в [контракте ресурсных отказов](module-memory-api.md).
 Частично подготовленный процесс наружу не передаётся. Callback проверки работает
 только во время preflight и не должен выполнять пользовательский код или менять
 входные данные.

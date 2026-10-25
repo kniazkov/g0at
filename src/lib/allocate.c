@@ -60,6 +60,22 @@ static memory_header_t *first_block = NULL;
 static memory_header_t *last_block = NULL;
 #endif
 
+size_t allocation_size_add(size_t left, size_t right) {
+    if (right > SIZE_MAX - left) {
+        FPRINTF(stderr, "\nAllocation size overflow.\n");
+        exit(EXIT_FAILURE);
+    }
+    return left + right;
+}
+
+size_t allocation_size_multiply(size_t count, size_t size) {
+    if (size && count > SIZE_MAX / size) {
+        FPRINTF(stderr, "\nAllocation size overflow.\n");
+        exit(EXIT_FAILURE);
+    }
+    return count * size;
+}
+
 #ifdef MEMORY_DEBUG
 void *_ALLOC(size_t size, const char *file_name, int line) {
 #else

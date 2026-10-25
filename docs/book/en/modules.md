@@ -4309,3 +4309,13 @@ See [ordering, ownership and tests](../../module-graph-api.md).
 
 
 The process-lifetime launch snapshot (#192) is described in [module-snapshot-api.md](../../module-snapshot-api.md). Whole-graph preflight completes before runtime scopes exist; subsequent dependency lookup uses only retained data. Runtime wrappers borrow immutable images, and native payloads remain pinned even after archive replacement or deletion. CLI/import execution is integrated by its later checklist tasks.
+
+### Implemented resource-failure checks (#236)
+
+The shared snapshot loader stops graph processing on memory exhaustion, does not
+try another physical copy, and never publishes a partial runtime. JSON/ZIP
+allocation failures retain the memory category rather than becoming format
+corruption. Core terminates with a clear diagnostic on memory exhaustion or
+size overflow; size arithmetic is checked before allocation. These are process
+resource limits, including MINGW32, not a new bytecode format version.
+[API and controlled negative tests](../../module-memory-api.md).
