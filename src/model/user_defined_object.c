@@ -229,6 +229,7 @@ static object_t *clone_in_module(process_t *process,
                                             cell->module,
                                             domain,
                                             get_own_field_cell(obj, cell->key) == cell);
+        copied->pending_initialization = cell->pending_initialization;
         copied->file_id = cell->file_id;
         copied->declaration_id = cell->declaration_id;
         copied->binding_unit =
@@ -282,6 +283,7 @@ static void flatten_storage(transfer_t *transfer, object_t *target, object_t *so
                                           old->module,
                                           transfer_domain(transfer, old->domain),
                                           selected);
+        cell->pending_initialization = old->pending_initialization;
         cell->file_id = old->file_id;
         cell->declaration_id = old->declaration_id;
         cell->binding_unit = old->binding_unit ? retain_module_identity(old->binding_unit) : NULL;
@@ -387,7 +389,8 @@ static void render_object_value_notation(notation_renderer_t *renderer, object_t
  */
 static void child_pair_to_string(void *data, void *key, value_t value) {
     notation_renderer_t *renderer = (notation_renderer_t *)data;
-    if (renderer->access && !can_access_field(renderer->access, value.ptr))
+    if (((field_cell_t *)value.ptr)->pending_initialization
+        || (renderer->access && !can_access_field(renderer->access, value.ptr)))
         return;
     if (renderer->builder->length > renderer->mark + 1) {
         append_char(renderer->builder, ',');
@@ -882,6 +885,8 @@ model_status_t set_field_cell_value(object_t *storage, field_cell_t *cell, objec
 }
 
 static model_status_t write_field(object_t *storage, field_cell_t *cell, object_t *value) {
+    if (cell->pending_initialization)
+        return MSTAT_UNINITIALIZED;
     if (cell->is_constant)
         return MSTAT_PROPERTY_IS_CONSTANT;
     /* Retain first: assigning a borrowed value to its own cell must be safe. */
@@ -917,7 +922,8 @@ typedef struct {
 
 static void collect_accessible_key(void *data, void *key, value_t value) {
     key_observer_t *observer = data;
-    if (!observer->access || can_access_field(observer->access, value.ptr))
+    if (!((field_cell_t *)value.ptr)->pending_initialization
+        && (!observer->access || can_access_field(observer->access, value.ptr)))
         append_to_vector(observer->keys, key);
 }
 
@@ -933,4 +939,21 @@ object_t *snapshot_object_keys_with_access(process_t *process,
         create_array_object(process, (object_array_t){(object_t **)keys->data, keys->size});
     destroy_vector(keys);
     return result;
+}
+
+model_status_t initialize_field_cell(object_t *storage, field_cell_t *cell, object_t *value) {
+    if (!cell || !cell->pending_initialization)
+        return MSTAT_PROPERTY_ALREADY_EXISTS;
+    bool found = false;
+    for (size_t i = 0; i < get_object_field_count(storage); ++i)
+        if (get_object_field_at(storage, i) == cell)
+            found = true;
+    if (!found)
+        return MSTAT_PROPERTY_NOT_FOUND;
+    bool constant = cell->is_constant;
+    cell->pending_initialization = false;
+    cell->is_constant = false;
+    model_status_t status = write_field(storage, cell, value);
+    cell->is_constant = constant;
+    return status;
 }

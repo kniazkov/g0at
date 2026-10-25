@@ -4328,3 +4328,11 @@ different versions and separate launches are independent. One physical archive
 is selected as a whole: later copies never supplement its native variants. Exact
 inventory lookup does not replace a direct import or grant additional access.
 [Contract and checks](../../module-snapshot-api.md).
+
+## Lazy initialization implementation (#196)
+
+The file state machine in `model/module_files.h` provides one-time execution,
+existing-scope return on include cycles, reserved top-level declarations and
+early-read diagnostics. State and call chains live outside immutable bytecode.
+Operator dispatch is integrated separately in #194/#195; saved exceptions are
+#197. See [API and tests](../../module-initialization-api.md).

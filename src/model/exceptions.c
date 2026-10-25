@@ -7,7 +7,7 @@
 
 /** @brief Implements @ref object_vtbl_t::get_keys. */
 static object_array_t get_keys(const object_t *obj) {
-    static object_t *keys[9] = {NULL};
+    static object_t *keys[10] = {NULL};
     if (!keys[0]) {
         keys[0] = get_exception_division_by_zero();
         keys[1] = get_exception_immutable_object();
@@ -18,6 +18,7 @@ static object_array_t get_keys(const object_t *obj) {
         keys[6] = get_exception_property_not_found();
         keys[7] = get_exception_access_denied();
         keys[8] = get_exception_foreign_object();
+        keys[9] = get_exception_uninitialized_declaration();
     }
     return (object_array_t){keys, sizeof(keys) / sizeof(*keys)};
 }

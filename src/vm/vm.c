@@ -13,6 +13,7 @@
 #include "lib/split64.h"
 #include "model/common_methods.h"
 #include "model/context.h"
+#include "model/module_files.h"
 #include "model/thread.h"
 
 #include <assert.h>
@@ -668,6 +669,12 @@ static bool return_value(runtime_t *runtime, thread_t *thread, object_t *ret_val
     context_t *ctx = thread->context;
     context_t *next = ctx;
     while (next && next->control_flow != FLOW_RETURN) {
+        if (next->file_initialization_boundary) {
+            DECREF(ret_value);
+            return dispatch_exception(runtime,
+                                      thread,
+                                      (exception_t){get_exception_invalid_operation()});
+        }
         if (next->control_flow == FLOW_FINALLY)
             return start_cleanup(thread, next, FLOW_RETURN, ret_value, BAD_INSTR_INDEX);
         next = next->previous;
@@ -795,7 +802,7 @@ static bool exec_LOOP_JUMP(runtime_t *runtime, instruction_t instr, thread_t *th
         goto invalid;
     context_t *target = thread->context;
     while (target && target->control_flow != FLOW_LOOP) {
-        if (target->control_flow == FLOW_RETURN)
+        if (target->control_flow == FLOW_RETURN || target->file_initialization_boundary)
             goto invalid;
         target = target->previous;
     }
@@ -827,6 +834,10 @@ invalid:
 /** @brief Executes @ref LEAVE. */
 static bool exec_LEAVE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     context_t *context = thread->context;
+    if (context->file_initialization_boundary) {
+        runtime->status = 1;
+        return false;
+    }
     object_t *object = context->data;
     INCREF(object);
     thread->context = destroy_context(context);
@@ -837,7 +848,7 @@ static bool exec_LEAVE(runtime_t *runtime, instruction_t instr, thread_t *thread
 
 /** @brief Executes @ref RESTORE without producing a block result. */
 static bool exec_RESTORE(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    if (thread->context == get_root_context()) {
+    if (thread->context == get_root_context() || thread->context->file_initialization_boundary) {
         runtime->status = 1;
         return false;
     }
@@ -864,10 +875,23 @@ static bool exec_TRY(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 
 /** @brief Unwinds to a handler, transferring ownership of the thrown object. */
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception) {
+    if (exception.value == get_exception_uninitialized_declaration()
+        && thread->process->initializing_file) {
+        string_value_t chain = module_initialization_chain(thread->process, NULL);
+        string_builder_t builder;
+        init_string_builder(&builder, 0);
+        append_static_string(&builder, U"UNINITIALIZED_DECLARATION: ");
+        append_string_value(&builder, chain);
+        FREE_STRING(chain);
+        DECREF(exception.value);
+        exception.value =
+            create_string_object(thread->process,
+                                 (string_value_t){builder.data, builder.length, true});
+    }
     context_t *root = get_root_context();
     context_t *handler = thread->context;
-    while (handler != root && handler->control_flow != FLOW_THROW
-           && handler->control_flow != FLOW_FINALLY)
+    while (handler != root && !handler->file_initialization_boundary
+           && handler->control_flow != FLOW_THROW && handler->control_flow != FLOW_FINALLY)
         handler = handler->previous;
     if (handler->control_flow == FLOW_FINALLY)
         return start_cleanup(thread, handler, FLOW_THROW, exception.value, BAD_INSTR_INDEX);
@@ -882,7 +906,7 @@ static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t
         DECREF(value);
     }
     thread->args_count = 0;
-    if (handler == root) {
+    if (handler == root || handler->file_initialization_boundary) {
         DECREFIF(thread->exception.value);
         thread->exception = exception;
         runtime->status = 1;
@@ -960,10 +984,16 @@ static bool exec_declaration(runtime_t *runtime, instruction_t instr, thread_t *
     object_t *value = pop_object_from_stack(thread->data_stack);
     object_t *storage = thread->context->data;
     bool constant = instr.opcode == DCONST;
+    field_cell_t *cell = get_own_field_cell(storage, key);
+    bool reserved = cell && cell->pending_initialization
+                    && cell->binding_unit == runtime->code->declaration_unit
+                    && cell->declaration_id == instr.arg1 + 1;
     model_status_t status =
-        create_accessible_property(&thread->context->access, storage, key, value, constant);
-    if (status == MSTAT_OK) {
-        field_cell_t *cell = get_own_field_cell(storage, key);
+        reserved
+            ? initialize_field_cell(storage, cell, value)
+            : create_accessible_property(&thread->context->access, storage, key, value, constant);
+    if (status == MSTAT_OK && !reserved) {
+        cell = get_own_field_cell(storage, key);
         cell->modifier = (access_modifier_t)d.modifier;
         cell->declaration_id = instr.arg1 + 1;
         cell->binding_unit = retain_module_identity(runtime->code->declaration_unit);
@@ -1087,6 +1117,9 @@ int run(process_t *proc, bytecode_t *code) {
     // execution
     bool flag = true;
     thread_t *thread = proc->main_thread;
+    if (thread->context->file_initialization_boundary)
+        thread->context->unwinding_index =
+            thread->data_stack->size ? thread->data_stack->size - 1 : BAD_STACK_INDEX;
     while (flag) {
         if (thread->instr_id >= code->instructions_count
             || code->instructions[thread->instr_id].opcode

@@ -680,6 +680,7 @@ DECLARE_STATIC_OBJECT(exception_property_is_constant)
 DECLARE_STATIC_OBJECT(exception_property_not_found)
 DECLARE_STATIC_OBJECT(exception_access_denied)
 DECLARE_STATIC_OBJECT(exception_foreign_object)
+DECLARE_STATIC_OBJECT(exception_uninitialized_declaration)
 
 /** @brief Dispatches bitwise inversion with owned result or exception. */
 static inline operation_result_t bitwise_not_object(process_t *process, object_t *obj) {

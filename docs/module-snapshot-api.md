@@ -71,14 +71,13 @@ main identity. The search chooses the first candidate as one complete archive;
 only that archive's verified native payloads are retained. No later copy is read
 to supplement missing or incompatible variants. Changing search order can select
 a different complete copy for a new launch, but not augment an existing instance.
-Native selection/required mode and the lazy initialization machine remain their
-own tasks; this registry supplies a single persistent state owner, not a second
+Native selection/required mode remain separate; the [lazy initialization gate](module-initialization-api.md) now owns one-time entry. This registry supplies a single persistent state owner, not a second
 initialization mechanism.
 
 This is the shared loader/runtime preparation API, not completed CLI or language
-`import` execution. Lazy initialization, the `include`/`import` state machines,
+`import` execution. Saved failures, the `include`/`import` executors,
 cross-module VM calls and CLI routing remain their ordered tasks
-#196/#197/#194/#195/#191/#218. The tests execute already prepared file bytecode
+#197/#194/#195/#191/#218. The tests execute already prepared file bytecode
 through the existing VM API without claiming those later features.
 
 # Снимок запуска в памяти (#192)
@@ -155,13 +154,13 @@ API, а не import и не разрешение доступа к чужой з
 проверенные нативные части. Поздняя копия не читается для дополнения отсутствующих
 или неподходящих вариантов. Новый запуск с другим порядком поиска может выбрать
 другую полную копию, но не дополнить уже созданный экземпляр. Нативный выбор,
-required и машина ленивой инициализации остаются своими задачами; реестр задаёт
+required остаются отдельными задачами; [машина ленивой инициализации](module-initialization-api.md) уже управляет однократным входом; реестр задаёт
 единого владельца постоянного состояния, а не дублирует механизм инициализации.
 
 Это общий API подготовки загрузчика и runtime, а не готовое исполнение `import`
-или CLI. Ленивая инициализация, машины состояний `include`/`import`, межмодульные
+или CLI. Сохранение ошибок, исполнители `include`/`import`, межмодульные
 вызовы VM и маршрутизация CLI остаются последовательным задачам
-#196/#197/#194/#195/#191/#218. Тесты исполняют уже подготовленный байткод файлов
+#197/#194/#195/#191/#218. Тесты исполняют уже подготовленный байткод файлов
 через существующий API VM, не объявляя последующие возможности готовыми.
 
 ## Automated checks / Автоматические проверки
@@ -189,13 +188,13 @@ boundaries with identical bytecode, independent launch state, exact triple looku
 identical/informationally different physical copies, first-copy native ownership,
 and rejection of conflicting hashes before any runtime is published. It runs with
 the existing snapshot suite on every Linux and Windows CI configuration. Tests use
-the shared runtime/access APIs; language-level import and one-time initialization
-remain covered by their subsequent tasks.
+the shared runtime/access APIs; language-level import remains a subsequent task; one-time initialization has
+its own [component tests](module-initialization-api.md).
 
 `check_module_identity.py` проверяет общую external-ячейку потребителей ромба,
 раздельные права версий с одинаковым байткодом, независимость запусков, точную
 тройку идентичности, физические копии с одинаковыми или различными информационными
 метаданными, нативные части только первого архива и отказ при конфликте хешей до
 создания runtime. Набор включён во все Linux/Windows задания CI рядом с проверками
-снимка. Используется общий API runtime/доступа; языковой import и однократная
-инициализация проверяются своими последующими задачами.
+снимка. Используется общий API runtime/доступа; языковой import остаётся последующей задачей, а однократная
+инициализация проверяется [отдельным набором](module-initialization-api.md).

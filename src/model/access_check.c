@@ -46,10 +46,10 @@ bool can_access_field(const function_access_t *access, const field_cell_t *cell)
 static property_lookup_t
 cell_result(const function_access_t *access, object_t *storage, field_cell_t *cell) {
     bool allowed = can_access_field(access, cell);
-    return (property_lookup_t){allowed ? MSTAT_OK : MSTAT_ACCESS_DENIED,
-                               storage,
-                               cell,
-                               allowed ? cell->object : NULL};
+    model_status_t status = !allowed                       ? MSTAT_ACCESS_DENIED
+                            : cell->pending_initialization ? MSTAT_UNINITIALIZED
+                                                           : MSTAT_OK;
+    return (property_lookup_t){status, storage, cell, status == MSTAT_OK ? cell->object : NULL};
 }
 
 property_lookup_t lookup_bound_property(const function_access_t *access,
@@ -126,7 +126,7 @@ model_status_t write_accessible_property(const function_access_t *access,
                                          object_t *key,
                                          object_t *value) {
     property_lookup_t found = lookup_accessible_property(access, object, key, true);
-    if (found.status == MSTAT_ACCESS_DENIED)
+    if (found.status != MSTAT_OK && found.status != MSTAT_PROPERTY_NOT_FOUND)
         return found.status;
     if (object->vtbl->type != TYPE_USER_DEFINED_OBJECT)
         return set_object_property(object, key, value);
@@ -159,6 +159,9 @@ operation_result_t access_status_result(model_status_t status, object_t *value) 
             return operation_success(value);
         case MSTAT_ACCESS_DENIED:
             exception = get_exception_access_denied();
+            break;
+        case MSTAT_UNINITIALIZED:
+            exception = get_exception_uninitialized_declaration();
             break;
         case MSTAT_FOREIGN_OBJECT:
             exception = get_exception_foreign_object();
