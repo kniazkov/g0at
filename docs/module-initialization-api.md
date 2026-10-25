@@ -285,3 +285,41 @@ integrated separately by #194/#195.
 допустимые изменения. Тесты проверяют успешные и ошибочные операции, перехват,
 состояния файлов и побочные эффекты. Это интеграционные проверки VM/модели;
 исполнение исходных include/import подключается отдельно в #194/#195.
+
+## Prototype failures (#226) / Ошибки прототипов
+
+Rules 41–45 are exercised by `module_failed_prototypes_testing` and
+`scripts/check_module_failed_prototypes.py` using independently encoded multi-file
+images and the actual initialization gate. Descendant own fields remain usable
+when a prototype fails, but inherited field access propagates the original error.
+Shallow clone of the ordinary descendant preserves prototype references without
+reading their fields. Clone of the failed file scope itself remains forbidden.
+Flat validates all actual ancestors before creating a result, including deeper
+and additional inheritance branches; a ready branch cannot hide a failed or
+initializing branch. Failure returns an exception, never a partial object, and
+leaves the source intact. Successful initialization enables the same flat operation.
+Source include/import syntax is integrated separately by #194/#195.
+
+Правила 41–45 проверяются независимо закодированными многофайловыми образами и
+реальным механизмом инициализации. Собственные поля потомка доступны после ошибки
+прототипа; наследуемые поля передают исходное исключение. Поверхностный clone
+обычного потомка сохраняет ссылки на прототипы без чтения их полей. Копировать саму
+неудачную область файла по-прежнему нельзя. Flat проверяет всех фактических предков
+до создания результата, включая дальние и дополнительные ветви наследования;
+готовая ветвь не скрывает неудачную или незавершённую. Ошибка не возвращает
+частичный объект и не меняет исходный. После успешной инициализации тот же flat
+разрешён. Исходный синтаксис include/import подключается отдельно в #194/#195.
+
+The ordinary `child.clone()` method syntax reaches the root built-in without
+reading failed prototype values when no declaration shadows `clone`. A slot of
+that name in the failed scope (including an inaccessible or unfinished slot)
+still shadows the built-in and propagates the failure; earlier ordinary overrides
+keep their usual behavior. This narrow read fallback does not relax assignment,
+ordinary inherited-field lookup, or cloning the failed scope itself.
+
+Обычный вызов `child.clone()` находит корневую встроенную операцию без чтения
+значений неудачного прототипа, если `clone` не затенён объявлением. Ячейка с таким
+именем в неудачной области, в том числе недоступная или неготовая, сохраняет
+затенение и передаёт ошибку; более приоритетные обычные переопределения работают
+как прежде. Это узкое правило чтения не ослабляет присваивание, доступ к прочим
+наследуемым полям или запрет копирования самой неудачной области.

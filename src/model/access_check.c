@@ -3,6 +3,7 @@
  * @brief Shared language-level property access, independent of VM operand evaluation.
  */
 #include "access.h"
+#include "builtins/registry.h"
 #include "common_methods.h"
 #include "module_files.h"
 
@@ -211,9 +212,45 @@ operation_result_t access_status_result(model_status_t status, object_t *value) 
     return operation_exception(exception);
 }
 
+/** @brief Allows the root clone operation without reading a failed prototype's fields.
+ *
+ * A shallow clone of an ordinary descendant preserves its prototype references. Resolving that
+ * built-in must not itself read the failed scope. A declared slot still shadows the built-in,
+ * even when its value is inaccessible, and ordinary lookup and assignment remain unchanged.
+ */
+static object_t *unshadowed_clone_after_failure(object_t *object, object_t *key, object_t *failed) {
+    object_t *root = get_root_object();
+    object_t *builtin = get_object_property(root, key);
+    if (object == failed || builtin != get_function_clone())
+        return NULL;
+    object_array_t topology = get_object_topology(object);
+    bool blocked = false;
+    for (size_t i = 0; i < topology.size; i++) {
+        object_t *storage = topology.items[i];
+        blocked = blocked || storage == failed;
+        if (!blocked)
+            continue;
+        if (storage == root)
+            return builtin;
+        /* Inspect declaration presence, not the failed declaration's value. */
+        if (get_own_field_cell(storage, key))
+            return NULL;
+        if (storage->vtbl->type != TYPE_USER_DEFINED_OBJECT && get_object_property(storage, key))
+            return NULL;
+    }
+    return NULL;
+}
+
 operation_result_t
 read_accessible_property(const function_access_t *access, object_t *object, object_t *key) {
     property_lookup_t found = lookup_accessible_property(access, object, key, true);
+    if (found.status == MSTAT_FAILED_FILE && !found.cell) {
+        object_t *builtin = unshadowed_clone_after_failure(object, key, found.storage);
+        if (builtin) {
+            INCREF(builtin);
+            return operation_success(builtin);
+        }
+    }
     if (found.status == MSTAT_PROPERTY_NOT_FOUND)
         return operation_success(get_null_object());
     operation_result_t result = access_status_result(found.status, found.value);

@@ -4379,3 +4379,15 @@ the unfinished file scope, but ordinary objects remain copyable. Inheritance kee
 the scope as a live prototype: early access fails, later access sees its completed
 cells. Positive and negative VM/model tests cover state, cell identity and effects
 for rules 36–40. [Contract and checks](../../module-initialization-api.md).
+
+## Prototype checks after initialization failure (#226)
+
+A failed scope prototype does not revoke an ordinary descendant's own fields.
+Access to the failed prototype's fields propagates its saved exception. Built-in
+clone of a descendant copies own fields and preserves prototype references, so it
+remains available; this does not permit cloning the failed scope itself. Flat
+preflights the complete actual prototype graph, including transitive and additional
+branches: an unfinished prototype raises a catchable error, a failed one the
+original exception. Neither a partial copy nor source mutation is permitted.
+After successful initialization the same graph can be flattened.
+[Rules 41–45 checks](../../module-initialization-api.md).
