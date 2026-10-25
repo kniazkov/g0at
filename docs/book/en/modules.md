@@ -4359,3 +4359,13 @@ replaces only the current propagation, not the saved failure of an earlier
 failed file. Finally executes on the first exit, never when retrieving a saved
 failure again. Trace metadata is separate from both the mutable exception value
 and immutable bytecode. [Ownership and test matrix](../../module-initialization-api.md).
+
+## No timeout and repeated rethrow (#239)
+
+A synchronous initializer may wait for blocking I/O without a time limit: its
+initializing state lasts until the executor actually completes. There is no
+internal seconds budget, watchdog, or elapsed-time failure. External process
+termination does not become a saved initialization error. After failure, every
+repeat through the shared include/import gate returns the same value and original
+trace, not a trace from the new caller; the initializer and its side effects never
+run again. [Contract and synchronized tests](../../module-initialization-api.md).

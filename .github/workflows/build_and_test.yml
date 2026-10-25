@@ -103,6 +103,7 @@ jobs:
           python3 scripts/check_module_initialization.py build/${{ matrix.compiler }}/module_initialization_testing
           python3 scripts/check_module_initialization_errors.py build/${{ matrix.compiler }}/module_initialization_errors_testing
           python3 scripts/check_module_exception_propagation.py build/${{ matrix.compiler }}/module_exception_propagation_testing
+          python3 scripts/check_module_initialization_contract.py build/${{ matrix.compiler }}/module_initialization_contract_testing
           python3 scripts/check_module_imports.py build/${{ matrix.compiler }}/module_imports_testing
           python3 scripts/check_module_files.py build/${{ matrix.compiler }}/module_files_testing
           python3 scripts/test_module_access.py build/${{ matrix.compiler }}/module_access_testing
@@ -340,6 +341,7 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_initialization.py build/module_initialization_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_initialization_errors.py build/module_initialization_errors_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_exception_propagation.py build/module_exception_propagation_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_initialization_contract.py build/module_initialization_contract_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_imports.py build/module_imports_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_files.py build/module_files_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/test_module_access.py build/module_access_testing.exe

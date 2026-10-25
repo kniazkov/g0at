@@ -197,3 +197,55 @@ without retained trace allocations.
 исключений (объект/null/целое). Проверяются исходные инструкции, общие и заменённые
 трассировки, GC, неизменность байткода, стек вызывающего кода и отсутствие
 накопления трассировок при многократном перехвате.
+
+## No deadline and stable rethrow (#239) / Без таймаута и замены исключения
+
+The synchronous gate has no timer, watchdog, instruction budget or elapsed-time
+failure. It leaves a file in `MODULE_FILE_INITIALIZING` while its executor is
+blocked in I/O and changes the state only when that executor returns. Terminating
+the process from outside is not an initializer timeout and cannot be recorded as
+one. This contract does not remove unrelated limits such as native cleanup-service
+startup deadlines or test-harness watchdogs.
+
+Every repeated request for a failed file returns retained references to exactly
+its saved value and origin trace. A different caller, another source-file context,
+GC, or mutations of the thrown object do not recapture the trace, clone the value,
+or re-execute the initializer. A caller may clear its owned exception record
+without changing the file's retained error. Multiple independently owned returned
+records remain valid at the same time.
+
+Синхронный механизм не содержит таймера, watchdog, лимита инструкций или ошибки по
+истечении времени. При блокирующем вводе-выводе файл остаётся в состоянии
+`MODULE_FILE_INITIALIZING` до возвращения исполнителя. Внешнее завершение процесса
+не считается таймаутом инициализации и не записывается как её ошибка. Этот контракт
+не отменяет независимых ограничений, например срока запуска уборщика нативных
+файлов или защитного таймаута тестового стенда.
+
+Повторный запрос неудачного файла возвращает владеющие ссылки на то же значение и
+ту же исходную трассировку. Другой вызывающий файл или контекст, GC и изменения
+объекта ошибки не создают новую трассировку, копию значения или повторный запуск.
+Освобождение возвращённой записи вызывающим кодом не уничтожает сохранённую ошибку
+файла; несколько полученных записей могут существовать одновременно.
+
+`module_initialization_contract_testing` and
+`scripts/check_module_initialization_contract.py` use a framed stdin stream and
+an explicit READY/release handshake inside the active executor. One fixture keeps
+blocking input pending beyond five seconds, then releases it; other cases have no
+artificial delay. The finite observation is a regression guard against the former
+proposed five-second limit, not a claim that a test can wait forever. The API and
+implementation impose no deadline. Success and object/null/integer failure cases
+vary instruction layout and internal/external source identity. Repeated calls
+from different file/module contexts check the same value, origin trace, one-shot
+side effects, GC survival and immutable bytecode. Harness watchdogs only prevent
+hung tests; they do not run in the language runtime. Operator dispatch remains
+part of #194/#195, which consume this shared gate.
+
+Тест использует явные сигналы READY/release внутри активного исполнителя. Один
+сценарий удерживает блокирующий ввод дольше пяти секунд и затем разрешает его;
+остальные идут без искусственных задержек. Конечное наблюдение защищает от
+возвращения ранее обсуждавшегося пятисекундного ограничения, но не выдаётся за
+проверку бесконечного ожидания. API и реализация не устанавливают срок. Проверены
+успех и исключения объект/null/целое при разных размещениях инструкций и признаках
+исходного файла; повторные обращения из разных файлов и модулей сохраняют значение,
+исходную трассировку, однократность эффектов и неизменность байткода после GC.
+Защитные таймауты существуют только в тестовом стенде, не в runtime языка.

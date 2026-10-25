@@ -49,7 +49,7 @@
 - [x] 33. [#196](https://github.com/kniazkov/g0at/issues/196) — Ленивая однократная инициализация файлов ([API и проверки](module-initialization-api.md))
 - [x] 34. [#197](https://github.com/kniazkov/g0at/issues/197) — Сохранение ошибок инициализации
 - [x] 35. [#229](https://github.com/kniazkov/g0at/issues/229) — Точные правила распространения исключений и finally
-- [ ] 36. [#239](https://github.com/kniazkov/g0at/issues/239) — Инициализация: таймаут и идентичность исключения
+- [x] 36. [#239](https://github.com/kniazkov/g0at/issues/239) — Инициализация: таймаут и идентичность исключения
 - [ ] 37. [#225](https://github.com/kniazkov/g0at/issues/225) — Проверка семантики незавершённых областей
 - [ ] 38. [#226](https://github.com/kniazkov/g0at/issues/226) — Проверка прототипов после ошибки инициализации
 - [ ] 39. [#194](https://github.com/kniazkov/g0at/issues/194) — Оператор include для исходных файлов
@@ -239,7 +239,7 @@
 - [ ] 132: хранение модулей до завершения программы: [#192](https://github.com/kniazkov/g0at/issues/192)
 - [ ] 133–140: потоки и сериализация инициализации: [#216](https://github.com/kniazkov/g0at/issues/216), [#217](https://github.com/kniazkov/g0at/issues/217)
 - [ ] 143: главный файл выполняется без блокировки и ограничений инициализатора; динамический контекст include/import: [#217](https://github.com/kniazkov/g0at/issues/217)
-- [ ] 141–142: таймаут и идентичность исключения: [#239](https://github.com/kniazkov/g0at/issues/239), [#197](https://github.com/kniazkov/g0at/issues/197)
+- [x] 141–142: таймаут и идентичность исключения: [#239](https://github.com/kniazkov/g0at/issues/239), [#197](https://github.com/kniazkov/g0at/issues/197)
 
 - [ ] 144: другие потоки используют готовые объявления главного файла без ожидания его завершения; неготовые объявления вызывают исключение: [#217](https://github.com/kniazkov/g0at/issues/217)
 
