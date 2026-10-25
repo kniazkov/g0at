@@ -57,9 +57,8 @@ static bool static_call(object_t *obj, uint16_t arg_count, object_t *receiver, t
     const builtin_function_t *descriptor = ((builtin_function_object_t *)obj)->descriptor;
     object_t *failure = receiver ? module_scope_failure(receiver) : NULL;
     if (failure) {
-        INCREF(failure);
-        DECREFIF(thread->exception.value);
-        thread->exception.value = failure;
+        clear_exception(&thread->exception);
+        thread->exception = retain_exception(module_file_exception(module_scope_file(receiver)));
         return false;
     }
     object_t **args = arg_count ? ALLOC(arg_count * sizeof(*args)) : NULL;
@@ -82,8 +81,8 @@ static bool static_call(object_t *obj, uint16_t arg_count, object_t *receiver, t
         DECREF(args[i]);
     FREE(args);
     if (result.is_exception) {
-        DECREFIF(thread->exception.value);
-        thread->exception.value = result.value;
+        clear_exception(&thread->exception);
+        thread->exception = (exception_t){result.value, retain_exception_trace(result.trace)};
         return false;
     }
     push_object_onto_stack(thread->data_stack, result.value);
@@ -363,9 +362,9 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
     object_t *failure =
         module_files_failure(thread->process, dfobj->access.module, dfobj->access.file_id);
     if (failure) {
-        INCREF(failure);
-        DECREFIF(thread->exception.value);
-        thread->exception.value = failure;
+        clear_exception(&thread->exception);
+        thread->exception = retain_exception(
+            module_files_exception(thread->process, dfobj->access.module, dfobj->access.file_id));
         return false;
     }
     /* A method call resolves names through the receiver, which a native specialization does not

@@ -36,10 +36,9 @@ static bool execute(module_file_t *file, context_t *frame, void *data, exception
     return test->contradictory;
 }
 
-static void clear_exception(thread_t *thread, object_t *expected) {
+static void clear_thread_exception(thread_t *thread, object_t *expected) {
     assert(thread->exception.value == expected);
-    DECREF(thread->exception.value);
-    thread->exception.value = NULL;
+    clear_exception(&thread->exception);
 }
 
 static void blocked_call(object_t *fn, object_t *receiver, thread_t *thread, object_t *payload) {
@@ -49,7 +48,7 @@ static void blocked_call(object_t *fn, object_t *receiver, thread_t *thread, obj
     assert(!call_object(fn, 0, receiver, thread));
     assert(thread->context == context && thread->data_stack->size == stack);
     assert(thread->instr_id == instruction && thread->native_attempts == attempts);
-    clear_exception(thread, payload);
+    clear_thread_exception(thread, payload);
 }
 
 int main(int argc, char **argv) {
@@ -116,8 +115,7 @@ int main(int argc, char **argv) {
     assert(!output && error.value == payload && test.calls == 1);
     assert(module_file_failure(file) == payload && module_scope_failure(scope) == payload);
     assert(module_files_failure(process, frame->module, module_file_id(file)) == payload);
-    DECREF(error.value);
-    error.value = NULL;
+    clear_exception(&error);
     /* Only the saved failure roots the payload; surviving ordinary values are rooted separately. */
     object_t *roots[] = {ordinary, copy, flat, function, function_copy};
     for (size_t i = 0; i < sizeof(roots) / sizeof(*roots); ++i)
@@ -134,8 +132,7 @@ int main(int argc, char **argv) {
         assert(initialize_module_file(file, thread->context, execute, &test, &output, &error)
                == MODULE_INITIALIZE_FAILED);
         assert(!output && error.value == payload && test.calls == 1);
-        DECREF(error.value);
-        error.value = NULL;
+        clear_exception(&error);
     }
     property_lookup_t lookup = lookup_accessible_property(&frame->access, scope, visible, false);
     assert(lookup.status == MSTAT_FAILED_FILE && lookup.value == payload);
@@ -193,8 +190,7 @@ int main(int argc, char **argv) {
                                   &error)
            == MODULE_INITIALIZE_FAILED);
     assert(error.value == payload && module_file_failure(contradictory) == payload);
-    DECREF(error.value);
-    error.value = NULL;
+    clear_exception(&error);
     assert(initialize_module_file(contradictory,
                                   thread->context,
                                   execute,
@@ -203,8 +199,7 @@ int main(int argc, char **argv) {
                                   &error)
            == MODULE_INITIALIZE_FAILED);
     assert(error.value == payload && inconsistent.calls == 1);
-    DECREF(error.value);
-    error.value = NULL;
+    clear_exception(&error);
     destroy_context(frame);
     for (size_t i = 0; i < sizeof(roots) / sizeof(*roots); ++i) {
         remove_gc_root(process, roots[i]);

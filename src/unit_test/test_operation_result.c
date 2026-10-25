@@ -154,7 +154,7 @@ static void record_release(object_t *obj) {
 /** @brief Returns an owned alias of the right operand, normally or exceptionally. */
 static operation_result_t return_right(process_t *proc, object_t *left, object_t *right) {
     INCREF(right);
-    return (operation_result_t){right, return_exception};
+    return (operation_result_t){right, return_exception, NULL};
 }
 
 bool test_operation_result_ownership(void) {

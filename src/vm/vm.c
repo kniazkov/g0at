@@ -229,7 +229,10 @@ static bool exec_VLOAD(runtime_t *runtime, instruction_t instr, thread_t *thread
     operation_result_t result =
         read_accessible_property(&thread->context->access, thread->context->data, key);
     if (result.is_exception)
-        return dispatch_exception(runtime, thread, (exception_t){result.value});
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){result.value, retain_exception_trace(result.trace)});
     push_object_onto_stack(thread->data_stack, result.value);
     thread->instr_id++;
     return true;
@@ -254,7 +257,11 @@ static bool exec_VAR(runtime_t *runtime, instruction_t instr, thread_t *thread) 
             runtime,
             thread,
             (exception_t){
-                access_status_result(result, module_scope_failure(thread->context->data)).value});
+                access_status_result(result, module_scope_failure(thread->context->data)).value,
+                result == MSTAT_FAILED_FILE
+                    ? retain_exception_trace(
+                          module_file_exception(module_scope_file(thread->context->data)).trace)
+                    : NULL});
     thread->instr_id++;
     return true;
 }
@@ -278,7 +285,11 @@ static bool exec_CONST(runtime_t *runtime, instruction_t instr, thread_t *thread
             runtime,
             thread,
             (exception_t){
-                access_status_result(result, module_scope_failure(thread->context->data)).value});
+                access_status_result(result, module_scope_failure(thread->context->data)).value,
+                result == MSTAT_FAILED_FILE
+                    ? retain_exception_trace(
+                          module_file_exception(module_scope_file(thread->context->data)).trace)
+                    : NULL});
     thread->instr_id++;
     return true;
 }
@@ -296,7 +307,10 @@ static bool exec_STORE(runtime_t *runtime, instruction_t instr, thread_t *thread
                                                                  key,
                                                                  value);
     if (result.is_exception)
-        return dispatch_exception(runtime, thread, (exception_t){result.value});
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){result.value, retain_exception_trace(result.trace)});
     DECREF(result.value);
     thread->instr_id++;
     return true;
@@ -313,7 +327,10 @@ static bool exec_GETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
     operation_result_t result = read_accessible_property(&thread->context->access, obj, key);
     DECREF(obj);
     if (result.is_exception)
-        return dispatch_exception(runtime, thread, (exception_t){result.value});
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){result.value, retain_exception_trace(result.trace)});
     push_object_onto_stack(thread->data_stack, result.value);
     thread->instr_id++;
     return true;
@@ -332,7 +349,10 @@ static bool exec_SETPROP(runtime_t *runtime, instruction_t instr, thread_t *thre
         write_accessible_property_result(&thread->context->access, obj, key, value);
     DECREF(obj);
     if (result.is_exception)
-        return dispatch_exception(runtime, thread, (exception_t){result.value});
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){result.value, retain_exception_trace(result.trace)});
     DECREF(result.value);
     thread->instr_id++;
     return true;
@@ -360,7 +380,10 @@ static bool execute_index(runtime_t *runtime, instruction_t instr, thread_t *thr
         DECREF(operand);
     }
     if (result.is_exception)
-        return dispatch_exception(runtime, thread, (exception_t){result.value});
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){result.value, retain_exception_trace(result.trace)});
     push_object_onto_stack(stack, result.value);
     thread->instr_id++;
     return true;
@@ -401,7 +424,10 @@ static bool execute_unary_operation(runtime_t *runtime,
     operation_result_t result = operation(thread->process, operand);
     DECREF(operand);
     if (result.is_exception)
-        return dispatch_exception(runtime, thread, (exception_t){result.value});
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){result.value, retain_exception_trace(result.trace)});
     push_object_onto_stack(thread->data_stack, result.value);
     thread->instr_id++;
     return true;
@@ -441,7 +467,10 @@ execute_binary_operation(runtime_t *runtime,
     DECREF(first);
     DECREF(second);
     if (result.is_exception)
-        return dispatch_exception(runtime, thread, (exception_t){result.value});
+        return dispatch_exception(
+            runtime,
+            thread,
+            (exception_t){result.value, retain_exception_trace(result.trace)});
     push_object_onto_stack(thread->data_stack, result.value);
     thread->instr_id++;
     return true;
@@ -613,7 +642,7 @@ static bool exec_CALL(runtime_t *runtime, instruction_t instr, thread_t *thread)
     DECREF(func);
     if (!result && thread->exception.value) {
         exception_t exception = thread->exception;
-        thread->exception.value = NULL;
+        thread->exception = (exception_t){0};
         return dispatch_exception(runtime, thread, exception);
     }
     if (!result)
@@ -632,7 +661,7 @@ static bool exec_CALLM(runtime_t *runtime, instruction_t instr, thread_t *thread
     DECREF(receiver);
     if (!result && thread->exception.value) {
         exception_t exception = thread->exception;
-        thread->exception.value = NULL;
+        thread->exception = (exception_t){0};
         return dispatch_exception(runtime, thread, exception);
     }
     if (!result)
@@ -677,7 +706,7 @@ static bool return_value(runtime_t *runtime, thread_t *thread, object_t *ret_val
             DECREF(ret_value);
             return dispatch_exception(runtime,
                                       thread,
-                                      (exception_t){get_exception_invalid_operation()});
+                                      (exception_t){.value = get_exception_invalid_operation()});
         }
         if (next->control_flow == FLOW_FINALLY)
             return start_cleanup(thread, next, FLOW_RETURN, ret_value, BAD_INSTR_INDEX);
@@ -752,11 +781,11 @@ static bool exec_INHERIT(runtime_t *runtime, instruction_t instr, thread_t *thre
 /** @brief Takes an owned snapshot before opening the loop scope. */
 static bool exec_SNAPSHOT(runtime_t *runtime, instruction_t instr, thread_t *thread) {
     object_t *source = pop_object_from_stack(thread->data_stack);
-    object_t *failure = module_scope_failure(source);
-    if (failure) {
-        INCREF(failure);
+    exception_t failure = module_file_exception(module_scope_file(source));
+    if (failure.value) {
+        failure = retain_exception(failure);
         DECREF(source);
-        return dispatch_exception(runtime, thread, (exception_t){failure});
+        return dispatch_exception(runtime, thread, failure);
     }
     object_t *snapshot =
         source->vtbl->type == TYPE_ARRAY
@@ -768,7 +797,7 @@ static bool exec_SNAPSHOT(runtime_t *runtime, instruction_t instr, thread_t *thr
     if (!snapshot)
         return dispatch_exception(runtime,
                                   thread,
-                                  (exception_t){get_exception_invalid_operation()});
+                                  (exception_t){.value = get_exception_invalid_operation()});
     push_object_onto_stack(thread->data_stack, snapshot);
     thread->instr_id++;
     return true;
@@ -885,6 +914,8 @@ static bool exec_TRY(runtime_t *runtime, instruction_t instr, thread_t *thread) 
 
 /** @brief Unwinds to a handler, transferring ownership of the thrown object. */
 static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t exception) {
+    if (!exception.trace)
+        exception.trace = capture_exception_trace(thread->context, thread->instr_id);
     if (exception.value == get_exception_uninitialized_declaration()
         && thread->process->initializing_file) {
         string_value_t chain = module_initialization_chain(thread->process, NULL);
@@ -903,8 +934,10 @@ static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t
     while (handler != root && !handler->file_initialization_boundary
            && handler->control_flow != FLOW_THROW && handler->control_flow != FLOW_FINALLY)
         handler = handler->previous;
-    if (handler->control_flow == FLOW_FINALLY)
+    if (handler->control_flow == FLOW_FINALLY) {
+        handler->pending_trace = exception.trace;
         return start_cleanup(thread, handler, FLOW_THROW, exception.value, BAD_INSTR_INDEX);
+    }
     size_t size = handler == root || handler->unwinding_index == BAD_STACK_INDEX
                       ? 0
                       : handler->unwinding_index + 1;
@@ -917,13 +950,14 @@ static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t
     }
     thread->args_count = 0;
     if (handler == root || handler->file_initialization_boundary) {
-        DECREFIF(thread->exception.value);
+        clear_exception(&thread->exception);
         thread->exception = exception;
         runtime->status = 1;
         return false;
     }
     instr_index_t address = handler->jump_address[0];
     thread->context = destroy_context(handler);
+    release_exception_trace(exception.trace);
     push_object_onto_stack(thread->data_stack, exception.value);
     thread->instr_id = address;
     return true;
@@ -931,7 +965,7 @@ static bool dispatch_exception(runtime_t *runtime, thread_t *thread, exception_t
 
 /** @brief Executes @ref THROW; the top value survives stack and context unwinding. */
 static bool exec_THROW(runtime_t *runtime, instruction_t instr, thread_t *thread) {
-    exception_t exception = {pop_object_from_stack(thread->data_stack)};
+    exception_t exception = {.value = pop_object_from_stack(thread->data_stack)};
     return dispatch_exception(runtime, thread, exception);
 }
 
@@ -962,15 +996,17 @@ static bool exec_FINALLY_END(runtime_t *runtime, instruction_t instr, thread_t *
     }
     control_flow_t flow = ctx->pending_flow;
     object_t *value = ctx->pending_value;
+    const exception_trace_t *trace = ctx->pending_trace;
     instr_index_t address = ctx->pending_address;
     ctx->pending_value = NULL;
+    ctx->pending_trace = NULL;
     trim_to_context(thread, ctx);
     thread->context = destroy_context(ctx);
     switch (flow) {
         case FLOW_RETURN:
             return return_value(runtime, thread, value);
         case FLOW_THROW:
-            return dispatch_exception(runtime, thread, (exception_t){value});
+            return dispatch_exception(runtime, thread, (exception_t){value, trace});
         case FLOW_LOOP:
             return exec_LOOP_JUMP(runtime, (instruction_t){.arg1 = address}, thread);
         case FLOW_NORMAL:
@@ -1013,7 +1049,11 @@ static bool exec_declaration(runtime_t *runtime, instruction_t instr, thread_t *
         return dispatch_exception(
             runtime,
             thread,
-            (exception_t){access_status_result(status, module_scope_failure(storage)).value});
+            (exception_t){access_status_result(status, module_scope_failure(storage)).value,
+                          status == MSTAT_FAILED_FILE
+                              ? retain_exception_trace(
+                                    module_file_exception(module_scope_file(storage)).trace)
+                              : NULL});
     thread->instr_id++;
     return true;
 }
@@ -1040,7 +1080,11 @@ static bool exec_binding(runtime_t *runtime, instruction_t instr, thread_t *thre
         return dispatch_exception(
             runtime,
             thread,
-            (exception_t){access_status_result(found.status, found.value).value});
+            (exception_t){access_status_result(found.status, found.value).value,
+                          found.status == MSTAT_FAILED_FILE
+                              ? retain_exception_trace(
+                                    module_file_exception(module_scope_file(found.storage)).trace)
+                              : NULL});
     if (!write) {
         INCREF(found.value);
         push_object_onto_stack(thread->data_stack, found.value);
@@ -1140,6 +1184,7 @@ int run(process_t *proc, bytecode_t *code) {
             runtime.status = 1;
             break;
         }
+        thread->context->instruction = thread->instr_id;
         instruction_t instr = code->instructions[thread->instr_id];
         instr_executor_t exec = executors[instr.opcode];
         flag = exec(&runtime, instr, thread);

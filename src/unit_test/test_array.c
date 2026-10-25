@@ -195,6 +195,7 @@ array_call(process_t *proc, object_t *array, const gchar_t *name, object_t **arg
     if (!call_object(method, (uint16_t)count, array, proc->main_thread)) {
         object_t *error = proc->main_thread->exception.value;
         proc->main_thread->exception.value = NULL;
+        clear_exception(&proc->main_thread->exception);
         return operation_exception(error);
     }
     return operation_success(pop_object_from_stack(proc->main_thread->data_stack));

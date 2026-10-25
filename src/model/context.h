@@ -10,6 +10,7 @@
 #include "access.h"
 #include "common/control_flow.h"
 #include "common/types.h"
+#include "exception.h"
 #include "object.h"
 
 #include <stdbool.h>
@@ -38,6 +39,8 @@ struct context_t {
     /** @brief Suspended transfer owned by a running finally context. */
     control_flow_t pending_flow;
     object_t *pending_value;
+    const exception_trace_t *pending_trace; /**< Owned origin of a suspended throw. */
+    instr_index_t instruction;              /**< Last instruction executed in this context. */
     instr_index_t pending_address;
 
     /** @brief A pointer to the previous context in the stack. */

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "exception.h"
 #include "goat/unicode.h"
 #include "lib/value.h"
 #include "model_status.h"
@@ -17,16 +18,17 @@ typedef struct object_t object_t;
 typedef struct {
     object_t *value;
     bool is_exception;
+    const exception_trace_t *trace; /**< Borrowed from a process-owned failed file, if any. */
 } operation_result_t;
 
 /** @brief Transfers an owned value into a normal operation result. */
 static inline operation_result_t operation_success(object_t *value) {
-    return (operation_result_t){value, false};
+    return (operation_result_t){value, false, NULL};
 }
 
 /** @brief Transfers an owned value into an exceptional operation result. */
 static inline operation_result_t operation_exception(object_t *value) {
-    return (operation_result_t){value, true};
+    return (operation_result_t){value, true, NULL};
 }
 
 typedef struct process_t process_t;

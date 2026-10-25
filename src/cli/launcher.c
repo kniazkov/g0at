@@ -270,8 +270,7 @@ static int run_interactive(options_t *opt) {
             }
             thread->instr_id = entry;
             thread->args_count = 0;
-            DECREFIF(thread->exception.value);
-            thread->exception.value = NULL;
+            clear_exception(&thread->exception);
 
             run(process, bytecode);
             if (thread->exception.value) {

@@ -78,6 +78,9 @@ bytecode_t *module_file_bytecode(const module_file_t *file);
 process_t *module_file_process(const module_file_t *file);
 /** @brief Borrowed original exception, or NULL for a file that has not failed. */
 object_t *module_file_failure(const module_file_t *file);
+/** @brief Borrowed full saved record; retain_exception before storing or propagating. */
+exception_t module_file_exception(const module_file_t *file);
+exception_t module_files_exception(process_t *process, module_t *module, uint32_t file_id);
 /** @brief Borrowed failure of a declaring file; unknown identities return NULL. */
 object_t *module_files_failure(process_t *process, module_t *module, uint32_t file_id);
 /** @brief Borrowed file only for its exact persistent scope; otherwise NULL. */

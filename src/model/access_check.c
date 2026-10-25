@@ -13,10 +13,10 @@ operation_result_t add_objects_with_access(process_t *process,
     if ((left->vtbl->type != TYPE_STRING && left->vtbl->type != TYPE_CHARACTER)
         || (right->vtbl->type != TYPE_USER_DEFINED_OBJECT && right->vtbl->type != TYPE_ARRAY))
         return add_objects(process, left, right);
-    object_t *failure = object_observation_failure(right, access);
-    if (failure) {
-        INCREF(failure);
-        return operation_exception(failure);
+    exception_t failure = object_observation_exception(right, access);
+    if (failure.value) {
+        INCREF(failure.value);
+        return (operation_result_t){failure.value, true, failure.trace};
     }
     string_value_t text = object_to_string_with_access(right, access);
     object_t *string = create_string_object(process, text);
@@ -216,7 +216,10 @@ read_accessible_property(const function_access_t *access, object_t *object, obje
     property_lookup_t found = lookup_accessible_property(access, object, key, true);
     if (found.status == MSTAT_PROPERTY_NOT_FOUND)
         return operation_success(get_null_object());
-    return access_status_result(found.status, found.value);
+    operation_result_t result = access_status_result(found.status, found.value);
+    if (found.status == MSTAT_FAILED_FILE)
+        result.trace = module_file_exception(module_scope_file(found.storage)).trace;
+    return result;
 }
 
 operation_result_t write_accessible_property_result(const function_access_t *access,
@@ -224,8 +227,11 @@ operation_result_t write_accessible_property_result(const function_access_t *acc
                                                     object_t *key,
                                                     object_t *value) {
     property_lookup_t found = lookup_accessible_property(access, object, key, true);
-    if (found.status == MSTAT_FAILED_FILE)
-        return access_status_result(found.status, found.value);
+    if (found.status == MSTAT_FAILED_FILE) {
+        operation_result_t result = access_status_result(found.status, found.value);
+        result.trace = module_file_exception(module_scope_file(found.storage)).trace;
+        return result;
+    }
     return access_status_result(write_accessible_property(access, object, key, value), value);
 }
 

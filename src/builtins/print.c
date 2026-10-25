@@ -12,10 +12,10 @@
 
 /** @brief Runtime executor; the shared caller has checked minimum arity. */
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
-    object_t *failure = object_observation_failure(args[0], &thread->context->access);
-    if (failure) {
-        INCREF(failure);
-        return operation_exception(failure);
+    exception_t failure = object_observation_exception(args[0], &thread->context->access);
+    if (failure.value) {
+        INCREF(failure.value);
+        return (operation_result_t){failure.value, true, failure.trace};
     }
     string_value_t str = object_to_string_with_access(args[0], &thread->context->access);
     if (str.data) {

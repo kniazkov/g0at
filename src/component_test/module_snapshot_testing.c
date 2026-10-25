@@ -71,8 +71,7 @@ static int execute(module_snapshot_t *snapshot, module_files_t *files, module_fi
     } else {
         assert(thread->context == get_root_context());
         assert(thread->exception.value);
-        DECREF(thread->exception.value);
-        thread->exception.value = NULL;
+        clear_exception(&thread->exception);
     }
     return status;
 }

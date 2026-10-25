@@ -38,13 +38,13 @@ execute_method(object_t *receiver, object_t **args, uint16_t count, thread_t *th
                 end++;
             }
             if (!index_overflow && index < count) {
-                object_t *failure =
-                    object_observation_failure(args[index], &thread->context->access);
-                if (failure) {
+                exception_t failure =
+                    object_observation_exception(args[index], &thread->context->access);
+                if (failure.value) {
                     FREE_STRING(format);
                     FREE(builder.data);
-                    INCREF(failure);
-                    return operation_exception(failure);
+                    INCREF(failure.value);
+                    return (operation_result_t){failure.value, true, failure.trace};
                 }
                 string_value_t arg_value =
                     object_to_string_with_access(args[index], &thread->context->access);

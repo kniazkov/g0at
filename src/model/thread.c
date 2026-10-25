@@ -50,7 +50,7 @@ void destroy_thread(thread_t *thread) {
     while (context != NULL && context != root_context) {
         context = destroy_context(context);
     }
-    DECREFIF(thread->exception.value);
+    clear_exception(&thread->exception);
     destroy_object_stack(thread->data_stack);
     FREE(thread);
 }
