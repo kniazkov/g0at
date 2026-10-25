@@ -8,6 +8,7 @@
 #include "analysis/function_call.h"
 #include "analysis/function_summary.h"
 #include "analysis/module_interface.h"
+#include "graph/declarations.h"
 #include "test_macro.h"
 
 #include <stdio.h>
@@ -60,7 +61,61 @@ bool test_module_interface_values() {
     return true;
 }
 
+/** Const bindings and pure results do not establish deep independence (#231). */
+static bool test_contract_invalidation(void) {
+    const char *contracts[] = {
+        "{\"when\":{},\"result\":{\"type\":\"array\"},"
+        "\"effects\":{\"may\":[],\"unknown\":false}}",
+        "{\"when\":{},\"effects\":{\"may\":[\"externalRead\"],\"unknown\":false}}",
+        "{\"when\":{},\"effects\":{\"may\":[\"output\"],\"unknown\":true}}",
+        "{\"when\":{},\"effects\":{\"may\":[\"externalWrite\"],\"unknown\":false}}",
+        "{\"when\":{},\"result\":{\"type\":\"array\"}}"};
+    const uint32_t expected_effects[] = {FUNCTION_EFFECT_NONE,
+                                         FUNCTION_EFFECT_EXTERNAL_READ,
+                                         FUNCTION_EFFECT_UNKNOWN,
+                                         FUNCTION_EFFECT_EXTERNAL_WRITE,
+                                         FUNCTION_EFFECT_UNKNOWN};
+    node_vtbl_t constant = {.type = NODE_CONSTANT_DECLARATOR};
+    for (size_t i = 0; i < sizeof(contracts) / sizeof(*contracts); i++) {
+        arena_t *arena = create_arena(8);
+        char json[512];
+        snprintf(json, sizeof(json), "{\"analysis\":{\"summaries\":[%s]}}", contracts[i]);
+        yyjson_doc *doc = raw(json);
+        ASSERT(doc);
+        imported_function_t function = {"owner", "1", 1, yyjson_doc_get_root(doc)};
+        abstract_state_t *state = create_abstract_state(arena);
+        state->module_constants = true;
+        declarator_t items = {.base = {.vtbl = &constant}};
+        declarator_t result_alias = {.base = {.vtbl = &constant}};
+        declarator_t scalar = {.base = {.vtbl = &constant}};
+        declarator_t variable = {0};
+        const lattice_element_t *array = make_typed_array_element(arena, LATTICE_INTEGER);
+        const lattice_element_t *number = make_integer_constant_element(arena, 42);
+        set_in_abstract_state(state, &items, array);
+        set_in_abstract_state(state, &result_alias, array);
+        set_in_abstract_state(state, &scalar, number);
+        set_in_abstract_state(state, &variable, number);
+        uint32_t effects;
+        interpret_imported_call(&function, NULL, 0, state, &effects);
+        ASSERT(effects == expected_effects[i]);
+        bool invalidates = i >= 2;
+        ASSERT(get_from_abstract_state(state, &items)->type
+               == (invalidates ? LATTICE_ARRAY : LATTICE_TYPED_ARRAY));
+        ASSERT(get_from_abstract_state(state, &result_alias)->type
+               == (invalidates ? LATTICE_ARRAY : LATTICE_TYPED_ARRAY));
+        ASSERT(get_from_abstract_state(state, &variable)->type
+               == (invalidates ? LATTICE_TOP : LATTICE_INTEGER_CONSTANT));
+        ASSERT(get_from_abstract_state(state, &scalar) == number);
+        ASSERT(state->control_flow == FLOW_NORMAL);
+        destroy_abstract_state(state);
+        yyjson_doc_free(doc);
+        destroy_arena(arena);
+    }
+    return true;
+}
+
 bool test_module_interface_calls() {
+    ASSERT(test_contract_invalidation());
     arena_t *arena = create_arena(8);
     yyjson_doc *doc =
         raw("{\"analysis\":{\"summaries\":["

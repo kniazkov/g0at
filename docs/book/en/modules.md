@@ -1772,6 +1772,8 @@ println(lib.next()); // 2.
 
 Distinguish reference immutability from function properties. Provide detailed summaries of captured-state reads and writes, argument mutation, I/O, possible exceptions, and program termination. Distinguish proven results from unknown properties. External const alone does not establish purity or permit precomputing calls.
 
+In the closed v1 schema, const identifies the binding only. Aggregate `externalRead`/`externalWrite` and I/O effects can be exported when proved; missing information stays unknown. Detailed captures, argument mutation, exception and termination relations are not encoded by v1. An empty complete effect set does not promise termination or absence of exceptions.
+
 ### 88. Effects can depend on a callback argument
 
 ```goat
@@ -1790,6 +1792,8 @@ lib.apply(func(x) {
 
 Metadata records invocation of callback and the dependence of apply's effects on it. A consumer may refine the summary when it can analyze a concrete callback. Otherwise effects remain unknown and the call is not considered pure.
 
+The closed v1 schema has no callback-dependency relation. Until such a relation has a versioned representation, the producer must retain unknown effects rather than promote one observed pure callback to a universal purity proof. Consumers do not execute callbacks or dependency code during analysis.
+
 ### 89. The result can alias an argument
 
 ```goat
@@ -1805,6 +1809,8 @@ println(items); // [1, 2, 3].
 ```
 
 Support a summary stating that the result is the same object as argument 0. The analyzer must account for shared changes to result and items without library sources. An unproven relationship is unknown, not independence.
+
+The closed v1 schema does not yet encode argument-result alias relations. Its conservative implementation therefore retains possible sharing: result type or purity does not establish independence, and unknown mutation invalidates refinements of potentially shared arrays, including arrays held by const bindings.
 
 ### 90. A fresh outer object may share nested values
 
@@ -1822,6 +1828,8 @@ println(items);   // [[1, 3]].
 ```
 
 A fresh-result summary is insufficient to prove deep independence. Describe proven nested sharing; if exact relationships cannot be established, conservatively retain possible shared state. Crossing a module boundary does not turn clone into deep copying.
+
+V1 does not encode freshness or nested-sharing relations. Consumers must not infer deep independence from a return type, const binding or complete empty effect set. Shared nested mutation is preserved even when dependency sources are unavailable.
 
 ## Native specializations and selection guards: decisions 91–95
 
@@ -3004,7 +3012,7 @@ Acceptance: a function with multiple parameters retains their order and names; a
 
 ## Structure of the function analysis contract
 
-Schema design for issue #244: store the analysis contract in functions[].analysis independently of native specializations. Grounded in src/analysis/lattice.h, function_summary.h, function_summary.c, function_return.c and function_purity.c at commit 31f1f89d4e86a71f5375d4602bf0223d99d55965. This specifies metadata and implementation requirements; serialization is not yet implemented.
+Schema design for issue #244: store the analysis contract in functions[].analysis independently of native specializations. Grounded in src/analysis/lattice.h, function_summary.h, function_summary.c, function_return.c and function_purity.c at commit 31f1f89d4e86a71f5375d4602bf0223d99d55965. This specifies the metadata contract implemented by the module compiler; unavailable relational facts remain unknown.
 
 ### Container and scope
 
@@ -4445,3 +4453,14 @@ independence: these must not be inferred from const or purity. Conflicting resul
 facts under overlapping conditions are rejected without proving the dependency's
 implementation. See [the compiler/analyzer API](../../module-interface-api.md)
 for ownership, graph resolution, precision limits and executable tests.
+
+## Verified analytical contracts (#231)
+
+Decisions 86–90 use the existing closed v1 summaries and conservative state
+invalidation, without adding callback/alias/deep-copy fields. Archive-only
+regressions verify mutable function replacement, captured counter effects,
+callbacks with output, mutation and exceptions, result/argument aliasing in both
+directions, and shallow-clone nested sharing. Compilation and execution are
+observed separately: visible dependency initializers run only during execution.
+Unit tests check metadata-only effect bounds and retained versus invalidated facts.
+See [the interface contract test matrix](../../module-interface-api.md).

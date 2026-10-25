@@ -65,5 +65,30 @@ Verification uses `scripts/check_module_interface.py` with the existing
 `module_import_execution_testing` harness, plus analyzer, JSON/canonical and
 format-reference suites. Compilation is observed separately from execution;
 archive-only dependencies with visible initializers verify that analysis does not
-run their code. CLI build integration remains #191; further analytical-contract
-acceptance cases remain #231.
+run their code. CLI build integration remains #191.
+
+## Analytical-contract acceptance (#231)
+
+The closed v1 schema cannot encode callback dependency, argument-result alias,
+freshness or nested sharing. These relations remain unknown, not false. The
+existing analyzer invalidates potentially affected state rather than inventing
+independence. Const protects a binding, not the contents of its array. A complete
+empty effect bound is not permission to remove a call or assume it cannot throw.
+
+`check_module_interface.py` extends the existing cross-platform CI suite:
+
+| Decision | Archive-only regression and metadata assertion |
+| --- | --- |
+| 86 | Replace `calculate`; results change from 4 to 6; mutable export has no fixed facts and consumer calls stay unknown. |
+| 87 | Constant `next` retains captured reads/writes; consecutive results differ; neither producer nor consumer publishes a constant result. |
+| 88 | A pure observed callback does not prove universal purity; consumer callbacks print, mutate captured state and throw; no stale scalar fact survives. |
+| 89 | A pure identity can return its argument; mutation through either reference is visible through the other; no stale integer-element promise survives. |
+| 90 | Clone has an independent outer array but shared inner arrays; bidirectional nested mutations remain visible without source files. |
+
+Each compile invocation must produce no stdout. Dependency initializers have
+visible output and source directories are removed before consumer compilation;
+expected output is asserted only during explicit execution. Metadata assertions
+exercise producer/consumer analysis separately from runtime checks. Existing
+unit tests exercise precise effect bounds and conservative unknown-state behavior
+directly, including const-held mutable arrays. No new wire-format or alternate
+analysis/invalidation mechanism is introduced.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright 2026 Ivan Kniazkov
-"""Producer interfaces and metadata-only consumer analysis (#205)."""
+"""Producer interfaces and metadata-only consumer contracts (#205, #231)."""
 import json
 from pathlib import Path
 import shutil
@@ -139,6 +139,120 @@ with tempfile.TemporaryDirectory(prefix='goat-module-interface-') as temporary:
     for name in ['callback', 'uncertain']:
         record = next(f for f in doc['functions'] if f['functionId'] == fields[name]['functionId'])
         assert 'analysis' not in record, record
+
+    # Decisions 86–90: archives alone must retain dynamic/alias semantics.
+    # Compilation is a separate invocation requiring empty stdout, even though
+    # every dependency initializer below has an observable output operation.
+    p = suite.project('mutable-function-contract')
+    library = p.compile('library', '''
+        println("mutable init");
+        external var calculate = func(x) { return x + 1; };
+        calculate(3);
+    ''')
+    assert exports(library)['calculate'] == {'mutable': True}
+    shutil.rmtree(p.root / 'sources' / 'library-1')
+    app = p.run('''
+        const lib = import "library@1";
+        external first = lib.calculate(3);
+        lib.calculate = func(x) { return x * 2; };
+        external second = lib.calculate(3);
+        println(first); println(second);
+    ''', 'mutable init\n4\n6\n')
+    assert exports(app)['first'] == {'mutable': False}
+    assert exports(app)['second'] == {'mutable': False}
+
+    p = suite.project('constant-function-effects')
+    library = p.compile('library', '''
+        println("counter init");
+        var counter = 0;
+        external next = func() { counter += 1; return counter; };
+        next();
+    ''')
+    doc = metadata(library)
+    record = next(f for f in doc['functions']
+                  if f['functionId'] == doc['externals']['next']['functionId'])
+    summaries = record['analysis']['summaries']
+    assert any(set(s.get('effects', {}).get('may', [])) ==
+               {'externalRead', 'externalWrite'} for s in summaries), record
+    assert all('value' not in s.get('result', {}) for s in summaries), record
+    shutil.rmtree(p.root / 'sources' / 'library-1')
+    app = p.run('''
+        const lib = import "library@1";
+        external first = lib.next(); external second = lib.next();
+        println(first); println(second);
+    ''', 'counter init\n2\n3\n')
+    assert 'value' not in exports(app)['first']
+    assert 'value' not in exports(app)['second']
+
+    p = suite.project('callback-contract')
+    library = p.compile('library', '''
+        println("callback init");
+        external apply = func(callback, value) { return callback(value); };
+        apply(func(x) { return x; }, 1);
+    ''')
+    doc = metadata(library)
+    record = next(f for f in doc['functions']
+                  if f['functionId'] == doc['externals']['apply']['functionId'])
+    # Observing a pure callback does not prove purity for arbitrary callbacks.
+    assert 'analysis' not in record, record
+    shutil.rmtree(p.root / 'sources' / 'library-1')
+    app = p.run('''
+        const lib = import "library@1";
+        var state = 0;
+        lib.apply(func(x) { state = x; println(x); return x; }, 5);
+        external observed = state;
+        println(observed);
+        lib.apply(func(x) { state += x; return x; }, 2);
+        println(state);
+    ''', 'callback init\n5\n5\n7\n')
+    assert 'value' not in exports(app)['observed'], exports(app)
+    # Callback exceptions must not become a normal result or disappear.
+    failure = p.compile('throwing', '''
+        const lib = import "library@1";
+        lib.apply(func(x) { println("throwing callback"); throw x; }, "failure");
+        println("unreachable");
+    ''')
+    p.invoke('binary', failure, expected='callback init\nthrowing callback\n', fail=True)
+
+    p = suite.project('result-alias-contract')
+    library = p.compile('library', '''
+        println("alias init");
+        external identity = func(value) { return value; };
+        identity([1, 2]);
+    ''')
+    shutil.rmtree(p.root / 'sources' / 'library-1')
+    app = p.run('''
+        const lib = import "library@1";
+        const items = [1, 2];
+        const result = lib.identity(items);
+        result.push("shared");
+        external observed = items[2];
+        println(items); println(observed);
+        items[0] = "reverse";
+        println(result);
+    ''', 'alias init\n[1,2,"shared"]\nshared\n["reverse",2,"shared"]\n')
+    assert exports(app)['observed'].get('type') != 'integer', exports(app)
+
+    p = suite.project('nested-sharing-contract')
+    p.compile('library', '''
+        println("copy init");
+        external copy = func(value) { return value.clone(); };
+        copy([[1]]);
+    ''')
+    shutil.rmtree(p.root / 'sources' / 'library-1')
+    app = p.run('''
+        const lib = import "library@1";
+        const items = [[1]];
+        const result = lib.copy(items);
+        result.push([2]);
+        result[0].push("shared");
+        external observed = items[0][1];
+        println(items); println(result); println(observed);
+        items[0][0] = "reverse";
+        println(result);
+    ''', 'copy init\n[[1,"shared"]]\n[[1,"shared"],[2]]\nshared\n'
+           '[["reverse","shared"],[2]]\n')
+    assert exports(app)['observed'].get('type') != 'integer', exports(app)
 
     p = suite.project('static-call-diagnostics')
     p.compile('values', 'external scalar = 42; external var dynamic = 42;')
