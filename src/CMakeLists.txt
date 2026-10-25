@@ -187,6 +187,8 @@ target_link_libraries(module_graph_testing PRIVATE goat_validation m)
 
 add_executable(module_snapshot_testing component_test/module_snapshot_testing.c)
 target_link_libraries(module_snapshot_testing PRIVATE goat_validation m)
+add_executable(module_identity_testing component_test/module_identity_testing.c)
+target_link_libraries(module_identity_testing PRIVATE goat_validation m)
 
 if(GOAT_TEST_ALLOC_FAILURE)
   add_executable(module_memory_testing component_test/module_memory_testing.c)

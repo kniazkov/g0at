@@ -36,6 +36,17 @@ size_t module_snapshot_count(const module_snapshot_t *snapshot);
 const module_graph_t *module_snapshot_graph(const module_snapshot_t *snapshot);
 const validated_module_t *module_snapshot_module(const module_snapshot_t *snapshot, size_t node);
 module_files_t *module_snapshot_files(module_snapshot_t *snapshot, size_t node);
+/** Exact immutable build identity within this launch. Physical archive paths,
+ * informational metadata and native variants are not identity components.
+ * Returns SIZE_MAX for absent/invalid arguments or any mismatch (including hash).
+ * This is an internal inventory lookup, NOT an import or access grant. Language
+ * imports must use the consumer-local bindings below. No I/O or new instance is
+ * created; repeated lookup returns the same node, scopes and access identity.
+ */
+size_t module_snapshot_find(const module_snapshot_t *snapshot,
+                            const char *name,
+                            const char *version,
+                            const char *hash);
 /** Consumer-local immediate bindings, never a global/transitive search. All
  * bindings are fixed during preparation, pinning the verified target/hash.
  * SIZE_MAX means absent/invalid. No filesystem access or fallback is performed.

@@ -99,6 +99,7 @@ jobs:
           python3 scripts/check_module_dependencies.py build/${{ matrix.compiler }}/module_dependencies_testing
           python3 scripts/check_module_graph.py build/${{ matrix.compiler }}/module_graph_testing
           python3 scripts/check_module_snapshot.py build/${{ matrix.compiler }}/module_snapshot_testing
+          python3 scripts/check_module_identity.py build/${{ matrix.compiler }}/module_identity_testing
           python3 scripts/check_module_imports.py build/${{ matrix.compiler }}/module_imports_testing
           python3 scripts/check_module_files.py build/${{ matrix.compiler }}/module_files_testing
           python3 scripts/test_module_access.py build/${{ matrix.compiler }}/module_access_testing
@@ -332,6 +333,7 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_dependencies.py build/module_dependencies_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_graph.py build/module_graph_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_snapshot.py build/module_snapshot_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_identity.py build/module_identity_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_imports.py build/module_imports_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_files.py build/module_files_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/test_module_access.py build/module_access_testing.exe
