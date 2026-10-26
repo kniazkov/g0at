@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/09-vm-and-values.md) · [Previous chapter](08-bytecode-generation.md) · [Next chapter](10-contexts-and-closures.md)
 
-Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
 
 <a id="section-9-1"></a>
 
@@ -97,7 +97,7 @@ When loading a variable, the VM first requests an own property of the current co
 Separate table methods read, create, and modify properties. A name's existence, the ability to read it, and the ability to change it are therefore different questions. The same object mechanism underlies execution environments and the closures in the next chapter.
 
 > [!CAUTION]
-> The C object API is broader than Goat's available syntax. This version has no bracket access through `obj[key]`, nor user constructs for specifying an arbitrary prototype list. Property access through `obj.name` and method calls are available and are examined in chapter 10. Having corresponding model methods does not mean every feature is already available in source programs.
+> The C object API and source syntax are different layers. Indexed access `obj[key]`, property access `obj.name`, and method calls are implemented. They share the file/module access checks described in [Appendix I](appendix-i-access-control.md); indexing is not a way to bypass visibility.
 
 <a id="section-9-7"></a>
 

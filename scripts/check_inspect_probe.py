@@ -502,7 +502,8 @@ with tempfile.TemporaryDirectory(prefix='goat-inspect-probe-') as temporary:
 
     # Keep actual removal unavailable until after the public five-second wait.
     # The inspector reports the outcome separately and does not kill the janitor.
-    for mode, state in [('valid', 'passed'), ('load-crash', 'crashed')]:
+    for mode, state in [('valid', 'passed'), ('load-exit-zero', 'failed'),
+                        ('load-crash', 'crashed'), ('load-hang', 'timeout')]:
         case = Case(root, 'cleanup-timeout-' + mode, worker)
         case.exe = HOST
         gate = case.marker / 'allow-cleanup'
@@ -513,7 +514,9 @@ with tempfile.TemporaryDirectory(prefix='goat-inspect-probe-') as temporary:
                         GOAT_INSPECT_CLEANER_PID=str(cleaner_pid))
         cleaner = None
         try:
-            report, elapsed = case.report(valid, mode, 1)
+            report, elapsed = case.report(valid, mode, 1, '--probe-timeout', '1')
+            assert case.events().splitlines().count('loaded') == 1, case.events()
+            assert 'called' not in case.events(), case.events()
             assert 4 <= elapsed < 15, elapsed
             cleaner = ProcessWatch(int(cleaner_pid.read_text()))
             assert cleaner.alive(), 'Timed-out janitor was terminated by caller'
@@ -534,6 +537,14 @@ with tempfile.TemporaryDirectory(prefix='goat-inspect-probe-') as temporary:
                 cleaner.wait(20)
                 cleaner.close()
         checked('cleanup timeout preserves ' + state + ' probe, janitor continues and eventually removes files')
+
+        # No retry belongs to the failed inspection. A separate user invocation
+        # must still probe afresh, without a persistent failed-result cache.
+        probe, _ = case.loading(valid, mode, 0, '--probe-timeout', '1')
+        assert probe['state'] == state, probe
+        assert case.events().splitlines().count('loaded') == 2, case.events()
+        assert 'called' not in case.events(), case.events()
+        checked('explicit new inspection retries after ' + state + ' and cleanup timeout')
 
     case = Case(root, 'owner-killed-before-extraction', worker)
     case.exe = HOST

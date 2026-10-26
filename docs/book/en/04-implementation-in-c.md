@@ -2,6 +2,8 @@
 
 [Contents](index.md) · [Русский](../ru/04-implementation-in-c.md) · [Previous chapter](03-program-pipeline.md) · [Next chapter](05-lexical-analysis.md)
 
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
+
 Edition 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-4-1"></a>
@@ -104,7 +106,7 @@ The [ALLOC, CALLOC, and FREE wrappers](https://github.com/kniazkov/g0at/blob/cf5
 
 ## 4.6. Strings and Containers: Who Owns the Data?
 
-Ownership (the responsibility to release memory after use) is not determined merely by the presence of a pointer. [value.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/lib/value.h) makes this distinction explicit. `string_view_t` contains an address and length but does not own the string. `string_value_t` additionally contains `should_free`; results are released through `FREE_STRING`, which respects this flag. Length is measured in `wchar_t` units, excluding the terminating zero.
+Ownership (the responsibility to release memory after use) is not determined merely by the presence of a pointer. [value.h](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/lib/value.h) makes this distinction explicit. `string_view_t` contains an address and length but does not own the string. `string_value_t` additionally contains `should_free`; results are released through `FREE_STRING`, which respects this flag. Length is measured in 32-bit `gchar_t` units (Unicode scalars), excluding the terminating zero; it is independent of the platform’s `wchar_t`.
 
 Copying such a structure does not necessarily copy its text. A view into arena storage is usable only while that arena remains alive. For this reason, the [variable constructor](https://github.com/kniazkov/g0at/blob/cf51b8cb27a102d15260c7822ce503404462b0fd/src/graph/variable.c), for example, copies a token's name into the graph arena: the name must survive token cleanup.
 

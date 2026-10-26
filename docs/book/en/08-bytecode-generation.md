@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/08-bytecode-generation.md) · [Previous chapter](07-ast-and-name-binding.md) · [Next chapter](09-vm-and-values.md)
 
-Revision 4. Implementation described: [commit ae26b84, method calls and the `this` constant](https://github.com/kniazkov/g0at/tree/ae26b849471233f3329214f3c170a7a26a756118).
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
 
 <a id="section-8-1"></a>
 
@@ -20,7 +20,7 @@ The examples below use `--optimize none` to expose this stage: otherwise, consta
 
 [code_builder.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/codegen/code_builder.c) accumulates a dynamic instruction array. Appending returns an index, or instruction number. A VM jump address is such an index, rather than a machine memory address or a byte offset. The array grows, so a pointer to an element must not be kept across further appends; the generator obtains the element again by index when patching a jump.
 
-[data_builder.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/codegen/data_builder.c) separately accumulates bytes and descriptors (records locating data blocks). A descriptor contains an offset and a size. Instructions refer to data by descriptor number. New blocks are aligned to four-byte boundaries. Strings are null-terminated sequences of `wchar_t`; equal strings reuse an entry through an AVL-tree table.
+[data_builder.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/codegen/data_builder.c) separately accumulates bytes and descriptors (records locating data blocks). A descriptor contains an offset and a size. Instructions refer to data by descriptor number. New blocks are aligned to four-byte boundaries. Builder strings use 32-bit `gchar_t`; equal strings reuse an entry through an AVL-tree table. The portable image encodes string scalars explicitly in little-endian order, not by writing host `wchar_t` memory.
 
 The segment contains more than string literals. It also holds variable names and arrays of string indices identifying function parameters. Thus, `VLOAD` receives the index of a name string, rather than a local register number.
 
@@ -142,6 +142,6 @@ The `CALL` at 5 transfers control to the body at 10. With `x = 3`, the condition
 This internal image is distinct from the saved `.gbin` format handled by [binary.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/vm/binary.c), which part V will cover.
 
 > [!CAUTION]
-> The internal representation depends on platform data sizes and representations, including `wchar_t`. Eight bytes per instruction do not by themselves make the entire image portable across platforms.
+> The v1 image uses explicit fixed-width little-endian encoding and checked decoding, not a dump of C structures. Ready bytes are immutable; string caches, bindings and execution state live outside them. See [format v1](../../module-format-v1/README.md) and [chapter 26](26-separate-compilation.md).
 
 The virtual machine executes bytecode. Producing processor machine code is the native backend’s task, which the book turns to in part V.

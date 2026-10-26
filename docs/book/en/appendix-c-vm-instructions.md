@@ -2,19 +2,19 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-c-vm-instructions.md) · [Previous](appendix-b-language.md) · [Next](appendix-d-builtins.md)
 
-Revision 4. Implementation described: [commit ae26b84, method calls and the `this` constant](https://github.com/kniazkov/g0at/tree/ae26b849471233f3329214f3c170a7a26a756118).
+Updated for the implemented module system (#220); source baseline: [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a).
 
 <a id="section-c-1"></a>
 
 ## C.1. Format and notation
 
-[bytecode.h](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/vm/bytecode.h) defines an 8-byte instruction: `opcode` (8 bits), `flags` (8), `arg0` (16), and `arg1` (32). The table lists all 56 codes in [opcodes.h](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/vm/opcodes.h) order. Handlers are in [vm.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/vm/vm.c). Numeric codes belong to this format revision, not a promise that the enum will never change.
+[bytecode.h](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/vm/bytecode.h) defines an 8-byte instruction: `opcode` (8 bits), `flags` (8), `arg0` (16), and `arg1` (32). The first table lists the original core codes in [opcodes.h](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/vm/opcodes.h) order. Handlers are in [vm.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/vm/vm.c). Numeric codes belong to this format revision, not a promise that the enum will never change.
 
 `S` is the retained stack prefix; the top is on the right. `result` is a normal result without an exception. `target`, `body`, and `handler` are instruction indices; `data id` / `name id` are data-descriptor indices, not pointers. Unused operands are `—`. The auxiliary `ARG` buffer is not the object stack.
 
 <a id="section-c-2"></a>
 
-## C.2. Complete list
+## C.2. Core instructions
 
 | Code | Instruction | Operands | Stack | Action |
 | --- | --- | --- | --- | --- |
@@ -113,7 +113,7 @@ stack boundary. `FINALLY_LEAVE arg1` starts cleanup after normal completion, sav
 the continuation address. `FINALLY_END` destroys the running cleanup context and
 resumes its saved normal, return, exception or loop transfer. Non-local transfers
 visit protected contexts automatically; a running cleanup is never entered again.
-Pending values belong to their contexts and are marked by GC. Format 10 validates
+Pending values belong to their contexts and are marked by GC. The portable v1 decoder validates
 both address operands when loading saved bytecode.
 
 ## Collection snapshots
@@ -125,4 +125,16 @@ current `LOOP_ENTER` context. It pushes the next value and advances the cursor, 
 jumps to `arg1` when exhausted. The snapshot remains on the operand stack as a GC root.
 Each item is bound by `ENTER` / `CONST` in a fresh context. `LOOP_JUMP` unwinds that
 context while retaining the snapshot, and loop exit restores the loop context and
-pops the snapshot. Saved format version 9 validates the `ITER_NEXT` target.
+pops the snapshot. The portable v1 decoder validates the `ITER_NEXT` target.
+
+## Module and access instructions
+
+The current [portable v1 format](../../module-format-v1/README.md) supersedes historical
+format numbers. `DVAR`/`DCONST` carry declaration descriptors; `BLOAD`/`BSTORE` preserve
+lexical cell identity. `MODULE_INCLUDE` initializes a fixed local file once and returns
+its retained scope; `MODULE_IMPORT` resolves the prepared dependency binding.
+`MODULE_MAIN`/`MODULE_DIR` obtain contextual values. `CHECKPROP`, `CHECKINDEX`, `CHECKVAR`
+and `CHECKBOUND` check writes before the corresponding mutation; denied writes do not
+silently create replacement fields. Operand validation and the full opcode inventory
+are defined by `src/vm/opcodes.h`, `src/vm/bytecode.c` and the format tables, not by a
+historical instruction count. Ready bytecode remains immutable; runtime caches live outside it.

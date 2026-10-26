@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-a-terminology.md) · [Previous](29-performance-measurement.md) · [Next](appendix-b-language.md)
 
-Revision 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
+Updated for the implemented module system (#220); source baseline: [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a).
 
 This glossary fixes terminology used in the book. English structure and flag names remain unchanged in source references. Sharing the word “summary” does not make a declaration summary and a specialization proof the same structure.
 
@@ -52,4 +52,4 @@ This glossary fixes terminology used in the book. English structure and flag nam
 | Регрессия | Regression | Reappearance of a previously fixed defect. |
 | Медиана | Median | The middle element of a sorted odd-sized sample. |
 
-Terms refer to the described implementation. For example, “separate compilation” does not mean a system of imported source modules, and “purity” does not broaden the numeric ABI. See chapters 14–20 and 23–26.
+Separate compilation includes named `.gmod` libraries, verified `.gbin` archives, and explicit imports. A declaration summary, an analytical contract and a native per-call guard are distinct. See [chapter 30](30-modules.md) and the [module contract](modules.md); purity does not admit arbitrary objects to the scalar/string ABI.

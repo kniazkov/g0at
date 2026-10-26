@@ -2,6 +2,8 @@
 
 [Contents](index.md) · [Русский](../ru/02-implemented-language.md) · [Previous chapter](01-project-purpose.md) · [Next chapter](03-program-pipeline.md)
 
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
+
 Edition 4. Implementation described: [commit 64c80b9](https://github.com/kniazkov/g0at/tree/64c80b96ce695db13867266653f3fc6c0416dc26).
 
 <a id="section-2-1"></a>
@@ -10,7 +12,7 @@ Edition 4. Implementation described: [commit 64c80b9](https://github.com/kniazko
 
 To understand an interpreter, we first need to establish what it executes. The expression `6 / 4` looks familiar, but its result depends on the language rules: it could be an integer, a real number, or an error. Such rules constitute language semantics (the meaning of its constructs and operations).
 
-Goat uses familiar notation: `var`, `const`, `if`, `func`, `return`, braces, and calls with parentheses. Similar notation does not imply complete agreement with C or JavaScript. This chapter covers the implemented behavior needed for the rest of the book. Full reference tables are planned for the appendices.
+Goat uses familiar notation: `var`, `const`, `if`, `func`, `return`, braces, and calls with parentheses. Similar notation does not imply complete agreement with C or JavaScript. This chapter covers the implemented behavior needed for the rest of the book. Full reference tables are provided in the appendices.
 
 The examples are stored in a [shared directory](../examples/). After building the interpreter, run them from the repository root. For example, on Linux:
 
@@ -26,7 +28,7 @@ In Windows PowerShell:
 
 Native execution is disabled here: we are examining the language rules implemented by the VM (the program that executes bytecode instructions).
 
-Character values store an unsigned 32-bit code and use single quotes: `'a'`, `'😀'`. `ord(c)` returns the code; `chr(n)` converts an integer to a character, retaining its lower 32 bits. Literal escapes include `\0` for zero and `\U0001f600` for an eight-digit hexadecimal code. These forms also preserve character values when regenerating source. String conversion uses UTF-16 pairs only on platforms with 16-bit `wchar_t`; generated native C stores character codes in `uint32_t`.
+Character values store an unsigned 32-bit code and use single quotes: `'a'`, `'😀'`. `ord(c)` returns the code; `chr(n)` converts an integer to a character, retaining its lower 32 bits. Literal escapes include `\0` for zero and `\U0001f600` for an eight-digit hexadecimal code. These forms also preserve character values when regenerating source. Internal strings use 32-bit Unicode scalars (`gchar_t`) on every platform; UTF-16 conversion belongs only at Windows API boundaries. Generated native C also uses 32-bit character codes.
 
 <a id="section-2-2"></a>
 
@@ -149,7 +151,7 @@ It prints `10`, `0`, `1`, `10`, and `11`, on separate lines. A variable declared
 `return` leaves the containing function immediately; an exception transfers control to its handler. Neither performs the remaining step of that iteration.
 
 > [!CAUTION]
-> `while`, `do/while`, `break`, and `continue` are not implemented. There is no general comma-expression operator: `i++, j++` is not a supported step. Multiple declarations such as `var i = 0, j = 3` are permitted in the initializer.
+> `while`, `do/while`, `break`, and `continue` are implemented; see the [language reference](appendix-b-language.md). There is no general comma-expression operator: `i++, j++` is not a supported step. Multiple declarations such as `var i = 0, j = 3` are permitted in the initializer.
 
 <a id="section-2-5"></a>
 

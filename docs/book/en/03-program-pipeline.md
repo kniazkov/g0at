@@ -2,6 +2,8 @@
 
 [Contents](index.md) · [Русский](../ru/03-program-pipeline.md) · [Previous chapter](02-implemented-language.md) · [Next chapter](04-implementation-in-c.md)
 
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
+
 Edition 3. Implementation described: [commit cf51b8c, including `for`](https://github.com/kniazkov/g0at/tree/cf51b8cb27a102d15260c7822ce503404462b0fd).
 
 <a id="section-3-1"></a>
@@ -215,3 +217,5 @@ When a native variant is saved, `.gbin` also contains information for binding th
 Different failures belong to different stages. An unmatched bracket prevents tree construction. A function unsupported by the C generator may still be valid for the VM. An external compiler failure is not equivalent to a Goat syntax error. An execution exception occurs after program preparation. Messages, analysis reports, and native execution reports should therefore be read with the stage that produced them in mind.
 
 The following parts will examine these broad steps internally. Each already has a concrete input, an observable result, and a place in a working example: text, a tree, analysis information, bytecode, a library, or a saved program file.
+
+The examples in this chapter use the standalone source pipeline. Named `.gmod` modules and sources using include/import use the multi-file pipeline, ZIP containers and the separate module ABI. Their lazy-loading, required-mode and no-replay rules are described in [chapter 30](30-modules.md) and [chapter 25](25-native-dispatch-and-vm-fallback.md).

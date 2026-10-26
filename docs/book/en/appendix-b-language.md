@@ -2,7 +2,7 @@
 
 [Contents](index.md) · [Русский](../ru/appendix-b-language.md) · [Previous](appendix-a-terminology.md) · [Next](appendix-c-vm-instructions.md)
 
-Revision 4. Implementation described: [commit 64c80b9](https://github.com/kniazkov/g0at/tree/64c80b96ce695db13867266653f3fc6c0416dc26).
+Updated for the implemented module system (#220); source baseline: [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a).
 
 <a id="section-b-1"></a>
 
@@ -13,7 +13,7 @@ Values are `null`, booleans `true`/`false`, 64-bit integers, real `double` value
 A function is written `func(a, b) { ... }`, a call `f(a, b)`, and a return `return e;` or `return;`. Without an explicit return, the result is `null`. A condition is `if (e) statement` with optional `else`. Exceptions use `throw e;` and `try statement catch (name) { ... }`. A block `{ ... }` is an expression returning its context object. Semicolons make boundaries explicit; a newline is not itself a statement-termination rule.
 
 > [!CAUTION]
-> Imports are not implemented. `while` / `do/while`, `obj.name`, `obj[key]`, `Exceptions.INVALID_ARGUMENT` and call chains such as `f()()` are supported.
+> `include` and `import` are implemented; see [chapter 30](30-modules.md). `while` / `do/while`, `obj.name`, `obj[key]`, `Exceptions.INVALID_ARGUMENT` and call chains such as `f()()` are supported.
 
 `for (initial; condition; step) statement` executes initialization once and checks the condition before every iteration. A successful check is followed by the body and step. Initialization accepts one expression or a `var`/`const` declaration, including multiple declarators; condition and step each accept one expression. Every slot is optional, but both semicolons are required. An absent condition is true; `;` is an empty body. Header declarations have loop scope, and the body has a fresh nested scope per iteration. `return` and exceptions skip the remaining body and step. See [chapter 2](02-implemented-language.md) for examples.
 
@@ -51,7 +51,7 @@ The table goes from strongest binding to weakest. It describes grouping, not sid
 | 14 | `\|\|` | Left associative; short circuit |
 | 15 | `=` | Right associative |
 
-Power needs qualification: `-2 ** 2` means `-(2 ** 2)`, but `2 ** -2` is also valid. `2 ** 3 ** 2` means `2 ** (3 ** 2)`. Actual pass order and prefix handling are in [parser.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/parser/parser.c) and [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/parser/parsing_unary_operations.c).
+Power needs qualification: `-2 ** 2` means `-(2 ** 2)`, but `2 ** -2` is also valid. `2 ** 3 ** 2` means `2 ** (3 ** 2)`. Actual pass order and prefix handling are in [parser.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/parser/parser.c) and [parsing_unary_operations.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/parser/parsing_unary_operations.c).
 
 <a id="section-b-3"></a>
 
@@ -91,7 +91,7 @@ The model's ordinary exception strings are `DIVISION_BY_ZERO`, `IMMUTABLE_OBJECT
 
 Parse errors, native ABI failures, and the fatal empty-stack check are not these language exceptions. Chapter 5 describes lexical limitations; appendix G summarizes implementation boundaries.
 
-Main sources: [integer.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/real.c), [string.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/string.c), [common_methods.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/common_methods.c), [bitwise.h](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/bitwise.h), [exceptions.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/model/exceptions.c). Examples in chapters 2, 6, 9, and 12 demonstrate executable cases of these rules.
+Main sources: [integer.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/model/integer.c), [real.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/model/real.c), [string.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/model/string.c), [common_methods.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/model/common_methods.c), [bitwise.h](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/lib/bitwise.h), [exceptions.c](https://github.com/kniazkov/g0at/blob/5b98271e26cb17bdc5589aaf827316016ba2e00a/src/model/exceptions.c). Examples in chapters 2, 6, 9, and 12 demonstrate executable cases of these rules.
 
 <a id="section-b-index"></a>
 
@@ -157,8 +157,8 @@ An empty array prints as `[ ]`, including inside other objects and arrays.
 
 ## Object.clone()
 
-This section describes the current implementation. The agreed extension for access
-modifiers, method adaptation, and capture transfer is in [appendix I](appendix-i-access-control.md).
+This section describes shallow copying. Implemented access modifiers, method
+adaptation, and capture transfer are specified in [appendix I](appendix-i-access-control.md).
 
 `obj.clone()` dispatches to the receiver's virtual `clone` method. It is inherited
 from `Object` and can be overridden by an ordinary property, just like `instanceOf`.
@@ -259,15 +259,11 @@ const point = { x = 3; y = 4; };
 for (key in point) println(key + "=" + point[key]);
 ```
 
-`object.flat()` produces a new user-defined object whose sole prototype is `Object`.
-It copies own and inherited properties shallowly, except properties of `Object`
-itself. Duplicate keys follow normal prototype lookup precedence, including lexical
-prototype contexts. All copied properties are mutable, even when originally constant.
-The original object and its prototypes are unchanged. Use `for (key in object.flat())`
-to enumerate the materialized properties. For arrays and other builtin types, `flat()`
-returns the same receiver. Like `clone` and `instanceOf`, it is an ordinary overridable
-method; a detached call (`const flatten = Object.flat; flatten(value)`) accepts the value explicitly.
-
-This describes current behavior. The design for retaining hidden/shadowed cells and
-adapting methods during `flat()` is in [appendix I](appendix-i-access-control.md);
-the [examples](access-control-examples.md) specify the expected future semantics.
+`object.flat()` copies all own and inherited cells except `Object`, including hidden
+and shadowed cells, while retaining ordinary lookup winners. Its sole prototype is
+`Object`; lexical fallback contexts are not inheritance edges. Copied cells are mutable,
+but retain access modifiers and declaring file/module identities. Directly transferred
+methods and their captures are adapted; nested objects remain shared. Enumeration still
+filters by the observer's rights, so `for (key in object.flat())` does not expose hidden
+cells. Non-user-defined values return the same receiver. See the implemented rules in
+[appendix I](appendix-i-access-control.md) and [examples](access-control-examples.md).

@@ -2,6 +2,8 @@
 
 [Contents](index.md) · [Русский](../ru/05-lexical-analysis.md) · [Previous chapter](04-implementation-in-c.md) · [Next chapter](06-syntax-analysis.md)
 
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
+
 Edition 4. Implementation described: [commit 64c80b9](https://github.com/kniazkov/g0at/tree/64c80b96ce695db13867266653f3fc6c0416dc26).
 
 <a id="section-5-1"></a>
@@ -16,7 +18,7 @@ The main implementation is in [scanner.c](https://github.com/kniazkov/g0at/blob/
 
 ## 5.2. Encoding, a Working Copy, and Coordinates
 
-[File reading](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/io.c) uses [UTF-8 decoding](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/string_ext.c). The result is stored in `wchar_t` units: on platforms with 16-bit `wchar_t`, a supplementary Unicode character may occupy two units. The internal string length therefore need not equal the number of visible characters, much less the file's byte count.
+[File reading](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/io.c) uses [UTF-8 decoding](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/lib/string_ext.c). The result is stored in 32-bit `gchar_t` Unicode scalars on every platform. A supplementary character occupies one unit. The scalar count can still differ from the number of visible graphemes and from the UTF-8 byte count.
 
 The scanner creates its own text copy in the token arena and preprocesses it by replacing carriage returns `\r` and comments with spaces. `get_token` then skips whitespace. A newline does not become a separate delimiter token.
 

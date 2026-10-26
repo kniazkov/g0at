@@ -2,13 +2,13 @@
 
 [Contents](index.md) · [Русский](../ru/22-c-code-generation.md) · [Previous chapter](21-ast-transformations.md) · [Next chapter](23-native-abi.md)
 
-Revision 7. Implementation described: [commit 64c80b9](https://github.com/kniazkov/g0at/tree/64c80b96ce695db13867266653f3fc6c0416dc26).
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
 
 <a id="section-22-1"></a>
 
 ## 22.1. Why C is the intermediate language
 
-After analysis, some functions are known to support execution with fixed numeric types. The next task is to express their computations so that an external compiler can produce machine code. Goat uses C text as its intermediate representation at this stage. The backend (the part that produces target code) has no machine-instruction generator of its own.
+After analysis, some functions are known to support execution with fixed scalar representations. The next task is to express their computations so that an external compiler can produce machine code. Goat uses C text as its intermediate representation at this stage. The backend (the part that produces target code) has no machine-instruction generator of its own.
 
 The result is a module of specializations, not a standalone C program. It contains no `main`, Goat source reader, or main VM loop. Top-level execution, `println`, and unsupported functions remain in bytecode. Producing a `.c` file therefore does not mean that the entire program has been translated to C.
 
@@ -22,7 +22,7 @@ The inputs are the AST and the proofs from part IV. The outputs are module sourc
 
 Functions receive ordinal identifiers starting at 1; specialization entries start at 0. Signatures are sorted by parameter count and types, so call-observation order does not determine output order. A name such as `g_f1_i_` denotes the first function's integer specialization; `r_` denotes a real parameter. These are generator names, not source variable names.
 
-Internal names use the short `g_` prefix: parameters `g_p0`, locals `g_l0`, and temporaries `g_t0`. Each function definition is preceded by a comment with its source name, parameters, and source position; unnamed functions use `<anonymous>`. Definitions and support entities are separated by blank lines. Public ABI types and the exported `goat_native_query_v1` name retain their spelling for compatibility.
+Internal names use the short `g_` prefix: parameters `g_p0`, locals `g_l0`, and temporaries `g_t0`. Each function definition is preceded by a comment with its source name, parameters, and source position; unnamed functions use `<anonymous>`. Definitions and support entities are separated by blank lines. Public ABI types and the exported `goat_native_query_v2` name retain their spelling for compatibility.
 
 Identifiers belong to this module. Adding a function to the source may change the numbering; they are not persistent names across program revisions.
 
@@ -36,7 +36,7 @@ C's argument-evaluation order does not establish the order Goat requires. The ge
 
 [c_arithmetic.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/codegen/c_arithmetic.c) transfers those actions into the surrounding sequence and saves operands in temporaries named `g_t0`, `g_t1`, and so on. Binary arithmetic evaluates the left operand before the right. [c_call.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/codegen/c_call.c) handles arguments left to right; the C call itself receives already evaluated temporaries in parameter order. Extra arguments are also evaluated, although the called function does not use them.
 
-Each local has one proven representation: `int64_t`, `double`, or `bool`. Declarations and assignments preserve it. A condition becomes a branch; `return` returns the required numeric type. The generator uses proofs for the particular specialization and accepts an optimized AST replacement only where it agrees with those proofs.
+Each local has one proven representation: `int64_t`, `double`, `bool`, character or string. Declarations and assignments preserve it. A condition becomes a branch; `return` returns the required numeric type. The generator uses proofs for the particular specialization and accepts an optimized AST replacement only where it agrees with those proofs.
 
 <a id="section-22-4"></a>
 
@@ -82,7 +82,7 @@ The last line follows from argument order: the right assignment produces `1`, th
 [c_module_output.c](https://github.com/kniazkov/g0at/blob/64c80b96ce695db13867266653f3fc6c0416dc26/src/codegen/c_module_output.c) then also removes dependent functions. Successful independent specializations remain available. Generation is transactional at function level: publication follows successful completion, rather than the first successfully emitted line.
 
 > [!CAUTION]
-> The supported numeric subset is the one in [chapter 20](20-native-eligibility.md): literals, locals, `+`, `-`, `*`, numeric comparisons, `++`/`--`, branches, `for` loops, returns, and proven static calls. General generation of division, strings, objects, exceptions, and closures is absent. A function definition is additionally rejected when its combined count of parameters, locals, and temporaries exceeds 128. This bounds the frame before the native stack check.
+> The numeric examples illustrate only part of the supported scalar subset in [chapter 20](20-native-eligibility.md). Strings, booleans, characters and selected built-ins have dedicated lowering paths; arbitrary objects, closures and general exception handling do not follow from this. A function definition is rejected when its combined parameters, locals and temporaries exceed 128, bounding the frame before the native stack check.
 
 The omitted-specialization counter describes candidates rejected while forming the module. It is not a count of every Goat function outside the native subset.
 
@@ -129,7 +129,7 @@ Native calls also support `acos`, `asin`, `atan`, `cbrt`, `ceil`, `cos`, `cosh`,
 `int` preserves an integer argument and truncates a finite real argument toward zero when it lies in `[-2^63, 2^63)`. Otherwise it returns the supplied fallback or integer zero. The fallback is evaluated even when conversion succeeds.
 
 > [!CAUTION]
-> Native `int` currently accepts only integer and real source operands. For a real source operand, an explicit fallback must have integer representation. Boolean and string conversions remain available in the VM. Mutable aliases, unresolved targets, and expressions without a C representation prevent native lowering.
+> Native `int` accepts integer, real and boolean source operands. For a real source operand, an explicit fallback must have integer representation. String conversion remains on the VM. Mutable aliases, unresolved targets, and expressions without a C representation prevent native lowering.
 
 <a id="section-22-6"></a>
 

@@ -2,7 +2,9 @@
 
 [Contents](index.md) · [Русский](../ru/25-native-dispatch-and-vm-fallback.md) · [Previous chapter](24-library-compilation-and-loading.md) · [Next chapter](26-separate-compilation.md)
 
-Revision 4. Implementation described: [commit d8eb008, without a cumulative native execution budget](https://github.com/kniazkov/g0at/tree/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7).
+Updated in #220 against the implemented baseline [5b98271](https://github.com/kniazkov/g0at/tree/5b98271e26cb17bdc5589aaf827316016ba2e00a). Commit-pinned links to earlier revisions below are historical implementation references; current contracts are linked explicitly.
+
+This chapter’s resource-limit retry and query-ABI counters describe the standalone source/program path. **ZIP modules use another contract:** declarative per-call guards, root-only required preparation, lazy libraries, and no VM replay after module adapter entry (including RESOURCE_LIMIT). Detected ABI violations are terminal for the process, not catchable Goat errors. See [module dispatch](../../module-dispatch-api.md), [loading](../../module-loading-api.md), and [chapter 23](23-native-abi.md).
 
 <a id="section-25-1"></a>
 
@@ -18,7 +20,7 @@ In [function.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f
 
 ## 25.2. Selecting by actual types
 
-By `CALL`, argument expressions have been evaluated and their objects are on the VM stack. Dispatch inspects them without popping: there must be enough formal arguments, and each object in use must exactly match the selected specialization's `I64` or `F64` tag.
+By `CALL`, argument expressions have been evaluated and their objects are on the VM stack. Dispatch inspects them without popping: there must be enough formal arguments, and each object in use must exactly match the selected specialization's exact scalar tag.
 
 If no entry matches, the VM executes the body. An integer argument is not converted to a real merely to fit a native signature. Nor is a missing argument filled in for a native call: the ordinary VM will bind it to `null`.
 
@@ -44,15 +46,15 @@ extra
 7
 ```
 
-After successful native preparation, numeric calls use two specializations of `identity`. The string call and the call without an argument remain in the VM. `extra` is printed once before entering `identity`; purity of its body does not make the entire call expression, including its arguments, pure.
+After successful native preparation, numeric and string calls use the corresponding specializations of `identity`; the call without an argument remains in the VM. `extra` is printed once before entering `identity`: purity of its body does not make the entire call expression, including arguments, pure.
 
 <a id="section-25-3"></a>
 
 ## 25.3. Success is committed after result validation
 
-Before invoking the adapter, required numbers are copied from objects into an ABI-value array. Original objects remain on the stack. `attempts` increases immediately before entering the adapter.
+Before invoking the adapter, required scalars are represented in an ABI-value array. Original objects remain on the stack. `attempts` increases immediately before entering the adapter.
 
-On `OK`, the expected result type and zero reserved field are checked. The number is then boxed into an ordinary Goat object, all actual arguments are popped with reference releases, the result is pushed, and the instruction pointer advances beyond `CALL`. `succeeded` increases.
+On `OK`, the expected result type and zero reserved field are checked. The validated result is then converted into an ordinary Goat object, all actual arguments are popped with reference releases, the result is pushed, and the instruction pointer advances beyond `CALL`. `succeeded` increases.
 
 Until that point, an unsuccessful attempt does not consume arguments. This matters for a permitted retry: the VM can begin the body with the same values without evaluating argument expressions again.
 
@@ -141,6 +143,6 @@ The default for an ordinary source file is `off`. For `--run` of a saved `.gbin`
 
 `bound` counts bound functions, not specializations; `omitted` counts rejected generator candidates. `attempts`, `succeeded`, and `retries` describe execution and are summed across VM threads. A failed preliminary stack check can produce a retry without increasing `attempts`.
 
-For `25-dispatch.goat` with normal stack headroom, the values are `bound=1`, `attempts=3`, `succeeded=3`, and `retries=0`. The other two `identity` calls execute in bytecode and are not failed native attempts. With `--compile`, there is no execution, so call counters remain zero even after successful preparation.
+For `25-dispatch.goat` with normal stack headroom, the values are `bound=1`, `attempts=4`, `succeeded=4`, and `retries=0`. The remaining `identity` call executes in bytecode and is not a failed native attempt. With `--compile`, there is no execution, so call counters remain zero even after successful preparation.
 
 CLI policy and reporting are in [native_execution.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/cli/native_execution.c); the adapter guard is in [c_adapter.c](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/src/codegen/c_adapter.c). [check_native_call.sh](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/scripts/check_native_call.sh) checks the call boundary, while [check_native_modes.sh](https://github.com/kniazkov/g0at/blob/d8eb008bc6c2fd5625cef9720f921a0dd7131ee7/scripts/check_native_modes.sh) checks modes, effects, and VM fallback.
