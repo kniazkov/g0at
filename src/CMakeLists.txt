@@ -244,6 +244,10 @@ add_executable(source_include_testing component_test/source_include_testing.c)
 target_link_libraries(source_include_testing PRIVATE goat_validation m)
 add_executable(module_import_execution_testing component_test/module_import_execution_testing.c)
 target_link_libraries(module_import_execution_testing PRIVATE goat_validation m)
+# Instrument only this acceptance executable, not production libraries. GNU ld
+# and lld (including the existing MinGW targets) wrap external call sites.
+set_property(TARGET module_import_execution_testing APPEND_STRING PROPERTY LINK_FLAGS
+  " -Wl,--wrap=analyze,--wrap=interpret_module,--wrap=run,--wrap=run_module_file")
 
 add_executable(module_serialization_testing component_test/module_serialization_testing.c)
 target_link_libraries(module_serialization_testing PRIVATE goat_validation m)

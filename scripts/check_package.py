@@ -126,6 +126,12 @@ int main(void) {
         contents = report.read_text(encoding="utf-8")
         assert "preparation=ready" in contents, contents
         assert re.search(r"succeeded=[1-9][0-9]*", contents), contents
+        # Exercise module-v1 delivery with the relocated release tools too, not
+        # only the legacy bytecode/library pair above. The shared suite removes
+        # producer sources and compiler access before executing its delivered tree.
+        subprocess.run([sys.executable, str(Path(__file__).resolve().with_name(
+            "check_module_delivery.py")), str(exe), str(inspector), compiler],
+            cwd=work, env=environment, check=True, timeout=300)
         print(f"Package OK: {archive.name}")
 
 

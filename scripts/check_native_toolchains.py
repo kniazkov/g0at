@@ -74,6 +74,15 @@ with tempfile.TemporaryDirectory(prefix="goat-toolchain-tests-") as directory:
     output = run(target="host+avx2")
     if "unsupported native target" not in output:
         check("explicit AVX2 profile retains target suffix", "+avx2 available=1" in output)
+    sha2 = run(target="host+sha2")
+    if "unsupported native target" not in sha2:
+        check("explicit ARM SHA2 profile retains target suffix", "+sha2 available=1" in sha2)
+        listed = run(target="linux-aarch64-gnu+sha2", mode="list")
+        check("explicit ARM SHA2 target is discoverable", "linux-aarch64-gnu+sha2 available=1" in listed)
+    else:
+        check("ARM SHA2 profile rejects non-ARM host", "unsupported native target" in sha2)
+    check("unmodeled crypto PMULL profile is rejected", "unsupported native target" in run(target="linux-aarch64-gnu+crypto"))
+    check("unknown CPU profile is not silently downgraded", "unsupported native target" in run(target="host+unmodeled"))
     # Discover only controlled known names. GCC's internal tool search remains explicit.
     for name in ("cc", "gcc", "clang"):
         shutil.copy2(exe, root / (name + suffix))

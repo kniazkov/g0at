@@ -38,7 +38,8 @@ ELF/PE: успешный exit компилятора с чужой библио�
 `windows-x86_64-mingw64`, `windows-x86_64-ucrt64`, `windows-x86-mingw32`.
 Наличие имени цели не означает доступности toolchain. `host` выбирает профиль
 исполняющего процесса, а не переменную MSYSTEM. Базы: x86-64/SSE2,
-Armv8-A/FP/NEON, x86/i686. Явный суффикс `+avx2` для x86-64 повышает CPU-требования;
+Armv8-A/FP/NEON, x86/i686. Явные суффиксы `+avx2` для x86-64 и `+sha2`
+для AArch64 повышают CPU-требования; `+sha2` добавляет SHA1/SHA2 без AES/PMULL.
 прочие неподдерживаемые профили отклоняются. Все исходники встроенного runtime
 перекомпилируются теми же целевыми флагами: host-архив не переносится в чужую цель.
 
@@ -103,8 +104,9 @@ The environment must remain unchanged within a context.
 Backends support linux-x86_64-gnu, linux-aarch64-gnu, windows-x86_64-mingw64,
 windows-x86_64-ucrt64 and windows-x86-mingw32. A recognized target is not a promise
 of an installed toolchain. Host derives the running process profile, not MSYSTEM.
-Baselines are x86-64/SSE2, Armv8-A/FP/NEON and x86/i686. An explicit +avx2 x86-64
-profile raises CPU requirements; unsupported profiles fail closed. Bundled runtime
+Baselines are x86-64/SSE2, Armv8-A/FP/NEON and x86/i686. Explicit +avx2 (x86-64) and +sha2
+(AArch64) profiles raise CPU requirements. The latter requires SHA1/SHA2, not
+AES/PMULL. Unsupported profiles fail closed. Bundled runtime
 sources are rebuilt with the same target flags instead of linking a host-only archive.
 
 ELF inspection follows compiler-resolved dynamic dependencies and combines their
@@ -151,3 +153,5 @@ are omitted too. VM and legacy direct-native semantics remain unchanged. If no o
 specialization remains, required fails before user code. Ordinary specializations
 use type-wide argument summaries, not observed values: observing square(7) also
 permits the same adapter for square(9).
+
+Сквозная приёмка / End-to-end acceptance: [#219](module-delivery-tests.md).

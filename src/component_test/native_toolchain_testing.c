@@ -27,6 +27,18 @@ static int compiler(int argc, char **argv) {
         assert(!FCLOSE(file));
     }
     FREE(log);
+    /* Optional exact argv audit; the legacy discovery log stays unchanged. */
+    char *arguments_log = fs_environment("GOAT_TOOLCHAIN_ARGUMENTS_LOG", NULL);
+    if (arguments_log) {
+        FILE *file = FOPEN(arguments_log, "ab");
+        assert(file);
+        for (int i = 1; i < argc; i++) {
+            assert(FWRITE(argv[i], 1, strlen(argv[i]) + 1, file) == strlen(argv[i]) + 1);
+        }
+        assert(fputc('\n', file) != EOF);
+        assert(!FCLOSE(file));
+    }
+    FREE(arguments_log);
     char *failure = fs_environment("GOAT_TOOLCHAIN_FAIL", NULL);
     const char *basename = argv[0];
     for (const char *p = argv[0]; *p; p++)
