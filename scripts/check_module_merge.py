@@ -74,8 +74,16 @@ def success(out, *sources, **kwargs):
     doc = metadata(out)
     lines = p.stdout.decode('utf-8').splitlines()
     assert len(lines) == 1, p.stdout
-    for text in (str(out), doc['name'], doc['version'], str(len(doc.get('native', [])))):
-        assert text in lines[0], (text, lines)
+    # Paths are quoted, including escaped Windows separators. Compare decoded
+    # values rather than searching for raw filesystem strings in display text.
+    decoder = json.JSONDecoder()
+    path, offset = decoder.raw_decode(lines[0])
+    assert path == str(out), (path, out)
+    assert lines[0][offset:offset + 2] == ': ', lines
+    name, offset = decoder.raw_decode(lines[0], offset + 2)
+    assert name == doc['name'] and lines[0][offset] == '@', lines
+    version, offset = decoder.raw_decode(lines[0], offset + 1)
+    assert version == doc['version'], lines
     assert lines[0].endswith(f"; {len(doc.get('native', []))} native variants"), lines
     with zipfile.ZipFile(out) as z:
         assert z.read('module.json') == ref.canonical(doc)
@@ -160,6 +168,9 @@ with tempfile.TemporaryDirectory(prefix='goat-merge-') as directory:
         target = root / name
         success(target, src)
         assert target.read_bytes() == GOLDEN and not Path(str(target) + '.gbin').exists()
+    if os.name != 'nt':
+        # Exercise display escaping even when CI is not running on Windows.
+        success(root / 'literal\\backslash', src)
     dash_dir = root / 'dash-dir'; dash_dir.mkdir()
     run('--', '-', str(src), cwd=dash_dir)
     assert (dash_dir / '-').read_bytes() == GOLDEN
@@ -181,7 +192,7 @@ with tempfile.TemporaryDirectory(prefix='goat-merge-') as directory:
     later = root / 'must-not-open-after-damage'
     for sources in ((corrupted, later), (src, corrupted, later)):
         p = fail_preserving(out, *sources)
-        assert str(corrupted).encode() in p.stderr and str(later).encode() not in p.stderr
+        assert json.dumps(str(corrupted), ensure_ascii=False).encode() in p.stderr and json.dumps(str(later), ensure_ascii=False).encode() not in p.stderr
     bad_docs = []
     doc = copy.deepcopy(BASE); doc['mainHash'] = '0' * 64
     bad_docs.append(pack(doc, rehash=False))
@@ -294,9 +305,10 @@ with tempfile.TemporaryDirectory(prefix='goat-merge-') as directory:
         before = set(root.iterdir())
         p = run(destination, a, b, status=1)
         assert b'Choose author order' not in p.stderr and set(root.iterdir()) == before
-        assert str(destination).encode() in p.stderr, p.stderr
+        assert json.dumps(str(destination), ensure_ascii=False).encode() in p.stderr, p.stderr
     fail_preserving(out, root)
-    target = put(root / 'link-target', pack())
+    target_bytes = pack()
+    target = put(root / 'link-target', target_bytes)
     link = root / 'symlink'
     try:
         link.symlink_to(target)
@@ -307,7 +319,7 @@ with tempfile.TemporaryDirectory(prefix='goat-merge-') as directory:
         success(root / 'linked-source', link)
         for sources in ((a, b), (link, src)):
             p = run(link, *sources, status=1)
-            assert link.is_symlink() and target.read_bytes() == pack()
+            assert link.is_symlink() and target.read_bytes() == target_bytes
             assert b'Choose author order' not in p.stderr
         target.unlink()
         run(link, src, status=1)
