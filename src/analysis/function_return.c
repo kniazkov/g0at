@@ -5,6 +5,7 @@
 #include "function_return.h"
 
 #include "abstract_state.h"
+#include "access.h"
 #include "function_call_graph.h"
 #include "function_summary.h"
 #include "graph/expression.h"
@@ -50,7 +51,11 @@ static const lattice_element_t *evaluate_signature(function_summary_set_t *set,
     const node_t *unit = set->function;
     while (unit->parent)
         unit = unit->parent;
-    state->concurrent_bindings = requires_concurrency_safe_optimization(unit);
+    /* Exported functions can be invoked concurrently even if their own source
+       never starts a thread. This is a universal body proof, unlike observing
+       the single-threaded top level before any spawn-capable operation. */
+    state->concurrent_bindings =
+        requires_concurrency_safe_optimization(unit) || requires_access_safe_optimization(unit);
     state->type_analysis_incomplete = incomplete;
     state->c_expressions = expressions;
     state->recursive_group = group;

@@ -14,14 +14,18 @@ with tempfile.TemporaryDirectory(prefix='goat-module-threads-') as temporary:
     suite = ExecutionSuite(sys.argv[1], temporary)
     suffix = '.exe' if sys.platform == 'win32' else ''
     lifetime = Path(sys.argv[1]).resolve().with_name('module_thread_lifetime_testing' + suffix)
-    source = put(Path(temporary) / 'lifetime/main.goat',
+    source = put(Path(temporary) / 'lifetime путь😀/main.goat',
                  'bootstrap(); public value = 42; public f = func() { '
                  'const c = include "child.goat"; return c.value; };')
     put(source.parent / 'child.goat', 'public value = 17;')
-    checked = subprocess.run([str(lifetime), str(source)], capture_output=True, timeout=30)
-    assert checked.returncode == 0 and checked.stdout.strip() == b'OK', (
-        checked.returncode, checked.stdout, checked.stderr)
-    suite.count += 1
+    # Native Path spelling includes backslashes on Windows; a relative spelling
+    # also verifies that launch context comes from the canonical source graph.
+    for spelling in [str(source), source.name]:
+        checked = subprocess.run([str(lifetime), spelling], cwd=source.parent,
+                                 capture_output=True, timeout=30)
+        assert checked.returncode == 0 and checked.stdout.strip() == b'OK', (
+            spelling, checked.returncode, checked.stdout, checked.stderr)
+        suite.count += 1
     goat = str(Path(sys.argv[2]).resolve())
 
     def program(name, code, expected, files=None, cli=True):

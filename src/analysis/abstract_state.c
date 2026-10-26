@@ -138,10 +138,6 @@ static bool concurrent_mutable(const abstract_state_t *state, const declarator_t
 
 bool requires_concurrency_safe_optimization(const node_t *node) {
     node_type_t type = node->vtbl->type;
-    /* Exported code may be called from a thread created by a different unit. */
-    if ((type == NODE_VARIABLE_DECLARATOR || type == NODE_CONSTANT_DECLARATOR)
-        && ((const declarator_t *)node)->modifier != ACCESS_FILE)
-        return true;
     if (type == NODE_MODULE_IMPORT || type == NODE_MODULE_INCLUDE || type == NODE_INDEX_ACCESS)
         return true;
     string_view_t name = {0};

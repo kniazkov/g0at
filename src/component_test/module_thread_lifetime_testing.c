@@ -149,10 +149,14 @@ int main(int argc, char **argv) {
                                              compilation->metadata,
                                              compilation->code,
                                              &files));
+    uint32_t main_file = module_file_id(module_files_main(files));
+    assert(main_file < sources->count);
+    /* Source discovery already resolved links and normalized platform separators.
+       argv is UTF-8, but may still be relative or use Windows backslashes. */
     assert(prepare_process_launch(process,
                                   module_files_identity(files),
-                                  module_file_id(module_files_main(files)),
-                                  argv[1]));
+                                  main_file,
+                                  sources->files[main_file].path));
     object_static_string_t key = {0};
     assert(create_object_property(
                module_file_scope(module_files_main(files)),

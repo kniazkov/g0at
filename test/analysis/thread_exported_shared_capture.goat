@@ -1,0 +1,3 @@
+external var shared = 0;
+external work = func() { shared = 1; return shared; };
+work();
