@@ -55,6 +55,10 @@ with tempfile.TemporaryDirectory(prefix="goat-toolchain-tests-") as directory:
     check("same probe in one context uses cache", sum(" -std=c11" in line for line in calls) == 2)
     output = run()
     check("new process reprobes", len(log.read_text().splitlines()) > len(calls))
+    unicode_temp = root / "временные файлы 漢字"
+    unicode_temp.mkdir()
+    output = run(extra={name: str(unicode_temp) for name in ("TMPDIR", "TMP", "TEMP")})
+    check("real compiler probe supports Unicode temporary root", "available=1" in output)
     log.write_text("")
     output = run(repetitions="2", mode="vary-timeout")
     check("different timeout has a distinct cache key", sum(" -std=c11" in line for line in log.read_text().splitlines()) == 4)

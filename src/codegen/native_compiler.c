@@ -234,32 +234,36 @@ native_compile_result_t compile_native_library_in_context(native_build_context_t
                                    "runtime_str.c",
                                    "runtime_number_format.c",
                                    "runtime_unicode.c"};
-    char *runtime_sources[4] = {0};
     const char **arguments = ALLOC((count + 12) * sizeof(*arguments));
     size_t index = 0;
     arguments[index++] = compiler;
     for (size_t i = 0; i < count; i++)
         arguments[index++] = flags[i];
+#    ifdef _WIN32
+    /* GCC otherwise puts assembler output in inherited TEMP, whose Unicode
+       path older MinGW tools cannot open. Keep every intermediate in the
+       managed working directory without mutating the owner's environment. */
+    arguments[index++] = "-save-temps=obj";
+#    endif
     arguments[index++] = "-o";
-    arguments[index++] = output;
-    arguments[index++] = input;
+    /* The process API sets this Unicode directory through the native OS API.
+       Keep compiler-visible input paths relative ASCII names: external Windows
+       toolchains need not decode our UTF-8 absolute directory names in argv. */
+    arguments[index++] = name;
+    arguments[index++] = "./module.c";
     if (bundled)
-        arguments[index++] = runtime;
+        arguments[index++] = GOAT_NATIVE_ARCHIVE_NAME;
     if (source_runtime)
-        for (size_t i = 0; i < 4; i++) {
-            runtime_sources[i] = join_fs_path(directory, runtime_names[i], NULL);
-            arguments[index++] = runtime_sources[i];
-        }
+        for (size_t i = 0; i < 4; i++)
+            arguments[index++] = runtime_names[i];
     arguments[index++] = "-lm";
     arguments[index] = NULL;
     native_compiler_run_in_context(context,
                                    &result,
                                    arguments,
-                                   NULL,
+                                   directory,
                                    options ? options->deadline : 0);
     FREE(arguments);
-    for (size_t i = 0; i < 4; i++)
-        FREE(runtime_sources[i]);
     if (result.status == NATIVE_COMPILE_OK) {
         if (!publish_output(output, target, &error)) {
             result.status = NATIVE_COMPILE_IO_ERROR;

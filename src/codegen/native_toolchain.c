@@ -222,10 +222,14 @@ static char *resolve_compiler(const char *name) {
 
 static char *run(native_toolchain_context_t *ctx,
                  const char *const *argv,
+                 const char *directory,
                  child_deadline_t deadline,
                  bool *timeout,
                  char **diagnostic) {
-    child_options_t options = {.executable = argv[0], .arguments = argv, .deadline = deadline};
+    child_options_t options = {.executable = argv[0],
+                               .arguments = argv,
+                               .working_directory = directory,
+                               .deadline = deadline};
     child_result_t *result = ALLOC(sizeof(*result));
     cleanup_status_t status = run_cleanup_process(ctx->cleanup, &options, result);
     char *text = NULL;
@@ -269,7 +273,7 @@ static char *resolve_dependency(const char *name, void *opaque) {
     sprintf(option, "-print-file-name=%s", name);
     const char *argv[] = {resolver->compiler, option, NULL};
     char *error = NULL;
-    char *answer = run(resolver->ctx, argv, resolver->deadline, &resolver->timed_out, &error);
+    char *answer = run(resolver->ctx, argv, NULL, resolver->deadline, &resolver->timed_out, &error);
     FREE(option);
     FREE(error);
     if (!answer)
@@ -404,7 +408,6 @@ probe(native_toolchain_context_t *ctx, const char *compiler, const char *target,
                            candidate->requirements.os == GOAT_OS_WINDOWS ? "probe.dll" : "probe.so",
                            NULL)
             : NULL;
-    FREE(directory);
     FILE *file = source ? FOPEN(source, "wb") : NULL;
     if (!file) {
         candidate->diagnostic = copy_text("cannot write compiler probe source");
@@ -427,9 +430,10 @@ probe(native_toolchain_context_t *ctx, const char *compiler, const char *target,
     size_t common = count;
     argv[count++] = "-dM";
     argv[count++] = "-E";
-    argv[count++] = source;
+    argv[count++] = "probe.c";
     argv[count] = NULL;
-    char *macros = run(ctx, argv, deadline, &candidate->timed_out, &candidate->diagnostic);
+    char *macros =
+        run(ctx, argv, directory, deadline, &candidate->timed_out, &candidate->diagnostic);
     if (!macros)
         goto done;
     candidate->name = has_macro(macros, "__clang__")  ? copy_text("Clang")
@@ -443,12 +447,17 @@ probe(native_toolchain_context_t *ctx, const char *compiler, const char *target,
         goto done;
     }
     count = common;
+    /* MinGW assembler cannot open Unicode TMP paths: keep intermediates in this
+     * cleaner-owned cwd with ASCII names, without changing inherited environment. */
+    if (candidate->requirements.os == GOAT_OS_WINDOWS)
+        argv[count++] = "-save-temps=obj";
     argv[count++] = "-o";
-    argv[count++] = library;
-    argv[count++] = source;
+    argv[count++] = candidate->requirements.os == GOAT_OS_WINDOWS ? "probe.dll" : "probe.so";
+    argv[count++] = "probe.c";
     argv[count++] = "-lm";
     argv[count] = NULL;
-    char *output = run(ctx, argv, deadline, &candidate->timed_out, &candidate->diagnostic);
+    char *output =
+        run(ctx, argv, directory, deadline, &candidate->timed_out, &candidate->diagnostic);
     if (!output)
         goto done;
     FREE(output);
@@ -466,6 +475,7 @@ done:
     /* Only the shared cleaner removes these paths, after its owned process trees stop. */
     FREE(source);
     FREE(library);
+    FREE(directory);
     return candidate;
 }
 

@@ -79,7 +79,9 @@ static int fixture(int argc, char **argv) {
                 output = argv[i + 1];
         if (!output)
             return 93;
-        marker("compiler.output", output);
+        char *absolute_output = absolute_fs_path(output, NULL);
+        marker("compiler.output", absolute_output);
+        FREE(absolute_output);
         marker("compiler.pid", NULL);
         if (getenv("GOAT_NATIVE_TEST_BLOCK")) {
             const char *arguments[] = {"fixture", "worker", NULL};
