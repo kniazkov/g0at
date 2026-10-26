@@ -13,11 +13,13 @@ compiler = shutil.which(sys.argv[2] if len(sys.argv) > 2 else os.environ.get("CC
 assert compiler, "a real C compiler is required"
 compiler = str(Path(compiler).resolve())
 passed = 0
+last_output = ""
+last_error = ""
 
 
 def check(name, condition):
     global passed
-    assert condition, name
+    assert condition, (name, last_output, last_error)
     passed += 1
     print("[ ok ]", name)
 
@@ -31,12 +33,21 @@ with tempfile.TemporaryDirectory(prefix="goat-toolchain-tests-") as directory:
     env = dict(os.environ, GOAT_TOOLCHAIN_REAL=compiler, GOAT_TOOLCHAIN_LOG=str(log))
 
     def run(cc=str(wrapper), target="host", timeout="10", repetitions="1", mode="select", extra=None):
+        global last_output, last_error
         current = dict(env)
         current.update(extra or {})
         result = subprocess.run([str(exe), mode, cc, target, timeout, repetitions],
                                 env=current, text=True, capture_output=True, timeout=120)
+        last_output, last_error = result.stdout, result.stderr
         assert result.returncode == 0, (result.stdout, result.stderr)
         return result.stdout
+
+    def selected_is(output, expected):
+        for line in output.splitlines():
+            if line.startswith("round=") and " selected=" in line:
+                actual = line.split(" selected=", 1)[1]
+                return actual != "none" and Path(actual).resolve() == expected.resolve()
+        return False
 
     output = run(repetitions="2")
     check("real compiler probe succeeds without loading", output.count("available=1") == 2)
@@ -77,10 +88,10 @@ with tempfile.TemporaryDirectory(prefix="goat-toolchain-tests-") as directory:
     check("ordinary selection stops at first successful candidate", "selected=none" not in output and all(selected + suffix + " " in line for line in log.read_text().splitlines()))
     log.write_text("")
     output = run(cc="PATH", extra=dict(isolation, GOAT_TOOLCHAIN_FAIL=selected + suffix))
-    check("rejected preferred candidate permits stable fallback", "selected=" + str(root / (fallback + suffix)) in output)
+    check("rejected preferred candidate permits stable fallback", selected_is(output, root / (fallback + suffix)))
     output = run(cc="PATH", timeout="2", extra=dict(isolation,
         GOAT_TOOLCHAIN_MODE="hang-query", GOAT_TOOLCHAIN_MODE_FOR=selected + suffix))
-    check("timed out candidate does not block fallback", "selected=" + str(root / (fallback + suffix)) in output and "timeout=1" in output)
+    check("timed out candidate does not block fallback", selected_is(output, root / (fallback + suffix)) and "timeout=1" in output)
     output = run(cc="PATH", extra={"PATH": str(root / "unsearched")})
     check("compiler outside PATH is not discovered by hidden scanning", "no supported C compiler" in output)
     output = run(cc="PATH", mode="list", target="host", extra=isolation)

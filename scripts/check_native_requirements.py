@@ -100,6 +100,8 @@ def main():
         data = elf(); data[5] = 2
         check(data, False)
         check(pe(), target="msvcrt", contains="10.0.0.0 0.0.0.0")
+        data = pe(); data[1794:1801] = b"_iob\0\0\0"
+        check(data, target="msvcrt")
         check(pe("ucrtbase.dll"), target="ucrt")
         check(pe("api-ms-win-crt-runtime-l1-1-0.dll"), target="ucrt")
         check(pe(), False, target="ucrt")
@@ -109,7 +111,7 @@ def main():
         data = pe(); struct.pack_into("<I", data, 152 + 112 + 13 * 8, 0x1000)
         check(data, False, target="msvcrt")
         data = pe(); data[1794:1801] = b"future\0"
-        check(data, False, target="msvcrt")
+        check(data, False, target="msvcrt", contains="msvcrt.dll!future")
         data = pe(); struct.pack_into("<Q", data, 1536, 0x8000000000000001)
         check(data, False, target="msvcrt")
         check(b"not executable", False)

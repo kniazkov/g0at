@@ -25,6 +25,7 @@ typedef struct {
     char *paths[DEPENDENCY_LIMIT];
     size_t count;
     const char *error;
+    char detail[512];
 } inspection_t;
 
 static bool range(image_t image, uint64_t offset, uint64_t length) {
@@ -344,6 +345,7 @@ static bool known_pe_symbol(const char *name, bool kernel) {
                                               "_initialize_onexit_table",
                                               "_initterm",
                                               "_initterm_e",
+                                              "_iob",
                                               "_lock",
                                               "_onexit",
                                               "_register_onexit_function",
@@ -522,8 +524,14 @@ static bool pe(inspection_t *state, image_t image) {
             const char *function = location == UINT64_MAX
                                        ? NULL
                                        : string_at(image, location + 2, image.size - location - 2);
-            if (!function || !known_pe_symbol(function, !msvcrt && !ucrt))
-                return failure(state, "PE import symbol is outside the Windows 10 CRT profile");
+            if (!function || !known_pe_symbol(function, !msvcrt && !ucrt)) {
+                snprintf(state->detail,
+                         sizeof(state->detail),
+                         "PE import symbol is outside the Windows 10 CRT profile: %.128s!%.256s",
+                         name,
+                         function ? function : "<invalid>");
+                return failure(state, state->detail);
+            }
         }
         if (!symbols_end)
             return failure(state, "Unterminated PE import symbol table");

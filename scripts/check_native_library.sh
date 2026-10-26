@@ -47,7 +47,11 @@ current='successful compiler diagnostics and closed standard input'
 cat > "$output_dir/warning" <<'SH'
 #!/bin/sh
 if read -r ignored; then exit 9; fi
-printf 'compiler warning on success\n'
+# Keep machine-readable discovery queries intact; this fixture tests diagnostics
+# from the selected compiler's actual generated-C build, not corrupted query output.
+for arg do
+    case "$arg" in */module.c) printf 'compiler warning on success\n'; break;; esac
+done
 exec "$REAL_CC" "$@"
 SH
 chmod +x "$output_dir/warning"
