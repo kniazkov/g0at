@@ -113,6 +113,16 @@ def main():
             data = pe("ucrtbase.dll"); encoded = symbol.encode() + b"\0"
             data[1794:1794 + len(encoded)] = encoded
             check(data, target="ucrt")
+        for symbol in ("__lc_codepage", "__p___mb_cur_max", "_setjmp3", "localeconv",
+                       "longjmp", "strchr", "___lc_codepage_func", "___mb_cur_max_func", "_setjmp"):
+            data = pe(); encoded = symbol.encode() + b"\0"
+            data[1794:1794 + len(encoded)] = encoded
+            check(data, target="msvcrt")
+        for symbol in ("__intrinsic_setjmp", "longjmp", "strchr"):
+            data = pe("api-ms-win-crt-private-l1-1-0.dll")
+            encoded = symbol.encode() + b"\0"
+            data[1794:1794 + len(encoded)] = encoded
+            check(data, target="ucrt")
         data = pe(); data[1794:1801] = b"future\0"
         data[1858:1866] = b"Unknown\0"
         check(data, False, target="msvcrt", contains=("msvcrt.dll!future", "KERNEL32.dll!Unknown"))
