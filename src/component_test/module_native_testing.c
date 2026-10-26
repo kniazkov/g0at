@@ -2,6 +2,11 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Independent platform-selection fixtures; OS loading is test-only.
  */
+/* Assertions perform fixture setup as well as validation. Keep both active
+ * when exercising an optimized Release core. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include "lib/file_system.h"
 #include "lib/wire.h"
 #include "module_native.h"
