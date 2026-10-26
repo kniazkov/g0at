@@ -4,7 +4,7 @@
 set -euo pipefail
 mkdir -p /work/source
 # Avoid copying the host's .git or glibc build tree into the musl build.
-for item in src scripts docs test example include third_party README.md README.ru.md LICENSE.txt; do
+for item in .github src scripts docs test example include third_party README.md README.ru.md LICENSE.txt; do
     cp -a "/source/$item" /work/source/
 done
 cd /work/source
