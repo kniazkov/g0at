@@ -36,6 +36,8 @@ typedef struct {
     const goat_module_string_v1 *strings;
     size_t count;
     module_native_entry_t entry;
+    thread_t *thread;
+    bool host_exception;
 } call_memory_t;
 
 static void *GOAT_MODULE_CALL allocate_memory(void *state, uint64_t size) {
@@ -82,6 +84,26 @@ static uint32_t GOAT_MODULE_CALL to_lower(uint32_t value) {
     return (uint32_t)TOLOWER(value);
 }
 
+/** @brief Native calls keep the caller's dynamic initialization context. */
+static uint32_t GOAT_MODULE_CALL request_exit(void *state,
+                                              uint32_t count,
+                                              uint32_t type,
+                                              int64_t code) {
+    call_memory_t *memory = state;
+    thread_t *thread = memory->thread;
+    process_execution_enter(thread->process);
+    if (!memory->host_exception) {
+        operation_result_t result = count == 1 && type == GOAT_MODULE_INTEGER
+                                        ? request_program_exit(thread, code)
+                                        : operation_exception(get_exception_invalid_argument());
+        clear_exception(&thread->exception);
+        thread->exception = (exception_t){result.value, retain_exception_trace(result.trace)};
+        memory->host_exception = true;
+    }
+    process_execution_leave(thread->process);
+    return GOAT_MODULE_HOST_EXCEPTION;
+}
+
 static const goat_module_services_v1 services = {sizeof(goat_module_services_v1),
                                                  0,
                                                  allocate_memory,
@@ -89,7 +111,8 @@ static const goat_module_services_v1 services = {sizeof(goat_module_services_v1)
                                                  deallocate_all,
                                                  is_space,
                                                  to_upper,
-                                                 to_lower};
+                                                 to_lower,
+                                                 request_exit};
 
 static bool contains(const void *base, size_t size, const void *pointer, size_t length) {
     uintptr_t begin = (uintptr_t)base, address = (uintptr_t)pointer;
@@ -293,7 +316,7 @@ module_native_call_status_t call_module_native(module_files_t *files,
         CALLOC(allocation_size_multiply(formal_count, sizeof(*arguments)));
     goat_module_string_v1 *strings =
         CALLOC(allocation_size_multiply(formal_count, sizeof(*strings)));
-    call_memory_t memory = {.strings = strings, .count = formal_count};
+    call_memory_t memory = {.strings = strings, .count = formal_count, .thread = thread};
     module_native_call_status_t outcome = MODULE_NATIVE_FALLBACK;
     for (size_t i = 0; i < formal_count; i++) {
         object_t *arg = i < actual_count
@@ -369,6 +392,19 @@ module_native_call_status_t call_module_native(module_files_t *files,
                                                          &memory,
                                                          &native_status);
     process_execution_resume(thread->process, depth);
+    if (memory.host_exception && native_status == GOAT_MODULE_HOST_EXCEPTION) {
+        /* A language exception requested through the host is not a broken ABI.
+           The operation already happened, so it must never replay on the VM. */
+        if (!thread->exception.trace)
+            thread->exception.trace = capture_native_exception_trace(thread->context,
+                                                                     module_files_identity(files),
+                                                                     file_id,
+                                                                     body);
+        outcome = MODULE_NATIVE_ERROR;
+        goto done;
+    }
+    if (memory.host_exception)
+        error = GOAT_ABI_CALL_FAILED;
     if (error != GOAT_ABI_OK) {
         outcome = failure(files,
                           function,

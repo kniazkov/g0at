@@ -39,7 +39,8 @@ enum {
     GOAT_NATIVE_BAD_REQUEST = 2,
     GOAT_NATIVE_ABI_MISMATCH = 3,
     GOAT_NATIVE_RESOURCE_LIMIT = 4,
-    GOAT_NATIVE_EXTERNAL_ERROR = 5
+    GOAT_NATIVE_EXTERNAL_ERROR = 5,
+    GOAT_NATIVE_HOST_EXCEPTION = 6
 };
 
 enum { GOAT_NATIVE_PURE = 1 };
@@ -117,6 +118,15 @@ typedef struct goat_native_services_v2_t {
     int(GOAT_NATIVE_CALL *string_is_space)(gchar_t value);
     gchar_t(GOAT_NATIVE_CALL *string_to_upper)(gchar_t value);
     gchar_t(GOAT_NATIVE_CALL *string_to_lower)(gchar_t value);
+    /** Optional termination service, after the unchanged memory/string prefix.
+     * Check GOAT_NATIVE_EXIT_SERVICES_SIZE before use. Valid exit never returns;
+     * rejected calls return HOST_EXCEPTION, which must be returned immediately.
+     * count/type preserve language validation; code is used only for one I64.
+     */
+    uint32_t(GOAT_NATIVE_CALL *request_exit)(void *state,
+                                             uint32_t count,
+                                             uint32_t type,
+                                             int64_t code);
 } goat_native_services_v2_t;
 
 /** @brief Borrowed host context. State is opaque to native code and thread-confined.
@@ -138,6 +148,23 @@ typedef struct goat_native_context_v2_t {
 #    define GOAT_NATIVE_STRING_SERVICES_SIZE                                                       \
         (offsetof(goat_native_services_v2_t, string_to_lower)                                      \
          + sizeof(((goat_native_services_v2_t *)0)->string_to_lower))
+
+/** @brief Optional termination callback prefix; old consumers remain compatible. */
+#    define GOAT_NATIVE_EXIT_SERVICES_SIZE                                                         \
+        (offsetof(goat_native_services_v2_t, request_exit)                                         \
+         + sizeof(((goat_native_services_v2_t *)0)->request_exit))
+
+/** @brief Requests shared host termination, never a private C/OS exit. */
+static inline uint32_t goat_native_request_exit(const goat_native_context_v2_t *context,
+                                                uint32_t count,
+                                                uint32_t type,
+                                                int64_t code) {
+    if (!context || !context->services
+        || context->services->struct_size < GOAT_NATIVE_EXIT_SERVICES_SIZE
+        || !context->services->request_exit)
+        return GOAT_NATIVE_ABI_MISMATCH;
+    return context->services->request_exit(context->state, count, type, code);
+}
 
 /** @brief Checks the memory-service prefix before entering a generated module. */
 static inline int goat_native_has_memory_services(const goat_native_context_v2_t *context) {

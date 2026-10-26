@@ -39,11 +39,11 @@ struct process_t {
     uint32_t launch_file;       /**< Entry source index inside launch_module. */
     object_t *launch_directory; /**< Owned shared directory, also a GC root. */
 
-    /** @brief Explicit termination is not an exception; no more Goat code may run. */
+    /** @brief Host-requested VM cancellation; language exit terminates the OS process. */
     bool exit_requested;
     /** @brief Terminal backend contract failure; stops all further Goat execution. */
     bool native_failed;
-    /** @brief First selected portable status (0..255), retained through host cleanup. */
+    /** @brief Host cancellation status; not the language exit atomic arbiter. */
     int exit_code;
 
     /** @brief A unique identifier for the process. */
@@ -104,3 +104,10 @@ void process_execution_leave(process_t *process);
 /** @brief Drop all execution-lock recursion before a blocking wait; restore exactly afterward. */
 size_t process_execution_suspend(process_t *process);
 void process_execution_resume(process_t *process, size_t depth);
+
+/** @brief Common VM/native exit boundary. Range and dynamic initialization are checked
+ * before process-wide arbitration. Rejected calls return an ordinary exception;
+ * accepted calls never return and do not unwind or destroy live VM/native state.
+ * The caller provides its own live thread context (under the model lock).
+ */
+operation_result_t request_program_exit(thread_t *thread, int64_t code);

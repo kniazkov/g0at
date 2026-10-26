@@ -38,7 +38,8 @@ enum {
     GOAT_MODULE_BAD_REQUEST = 2,
     GOAT_MODULE_ABI_MISMATCH = 3,
     GOAT_MODULE_RESOURCE_LIMIT = 4,
-    GOAT_MODULE_EXTERNAL_ERROR = 5
+    GOAT_MODULE_EXTERNAL_ERROR = 5,
+    GOAT_MODULE_HOST_EXCEPTION = 6
 };
 
 /** Borrowed Unicode scalars, no terminator required. All padding must be zero.
@@ -73,6 +74,16 @@ typedef struct goat_module_services_v1 {
     uint32_t(GOAT_MODULE_CALL *is_space)(uint32_t value);
     uint32_t(GOAT_MODULE_CALL *to_upper)(uint32_t value);
     uint32_t(GOAT_MODULE_CALL *to_lower)(uint32_t value);
+    /** Optional appended service. Check GOAT_MODULE_EXIT_SERVICES_SIZE first.
+     * count/type preserve exact language arity/type checks; code is used only for
+     * one INTEGER argument. A valid exit never returns. A rejected call returns
+     * HOST_EXCEPTION and the adapter must immediately return that status without
+     * further effects; the host propagates the original Goat exception, no replay.
+     */
+    uint32_t(GOAT_MODULE_CALL *request_exit)(void *state,
+                                             uint32_t count,
+                                             uint32_t type,
+                                             int64_t code);
 } goat_module_services_v1;
 
 typedef struct goat_module_context_v1 {
@@ -82,6 +93,22 @@ typedef struct goat_module_context_v1 {
 
 #define GOAT_MODULE_SERVICES_SIZE                                                                  \
     (offsetof(goat_module_services_v1, to_lower) + sizeof(((goat_module_services_v1 *)0)->to_lower))
+
+#define GOAT_MODULE_EXIT_SERVICES_SIZE                                                             \
+    (offsetof(goat_module_services_v1, request_exit)                                               \
+     + sizeof(((goat_module_services_v1 *)0)->request_exit))
+
+/** @brief Optional host termination; reject old providers without reading past the prefix. */
+static inline uint32_t goat_module_request_exit(const goat_module_context_v1 *context,
+                                                uint32_t count,
+                                                uint32_t type,
+                                                int64_t code) {
+    if (!context || !context->services
+        || context->services->struct_size < GOAT_MODULE_EXIT_SERVICES_SIZE
+        || !context->services->request_exit)
+        return GOAT_MODULE_ABI_MISMATCH;
+    return context->services->request_exit(context->state, count, type, code);
+}
 
 typedef uint32_t(GOAT_MODULE_CALL *goat_module_adapter_v1)(uint32_t abi_version,
                                                            const goat_module_context_v1 *context,

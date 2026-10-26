@@ -81,7 +81,8 @@ specializations.
 
 Synchronization publishes readiness and values safely; it does not turn arbitrary
 user read-modify-write sequences into atomic operations. The full bounded explicit
-`exit`/external-cleanup protocol is a separate task (#230).
+`exit`/external-cleanup protocol is implemented separately by #230
+([API](module-exit-api.md)); it does not wait for blocked workers.
 
 # Конкурентная инициализация и потоки программы (#217)
 
@@ -157,7 +158,8 @@ callback-функции spawn по-прежнему могут получать 
 
 Синхронизация публикует готовность и значения, но не делает произвольные составные
 операции пользователя атомарными. Полный ограниченный по времени протокол явного
-`exit` и внешней очистки относится к #230.
+`exit` и внешней очистки реализован в #230 ([API](module-exit-api.md));
+он не ждёт завершения заблокированных потоков.
 
 
 ## Acceptance coverage / Приёмочные проверки

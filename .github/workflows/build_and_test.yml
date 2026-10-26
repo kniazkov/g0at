@@ -100,6 +100,7 @@ jobs:
           python3 scripts/check_module_library.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/module_library_testing ${{ matrix.compiler }}
           python3 scripts/check_module_loading.py build/${{ matrix.compiler }}/module_loading_testing build/${{ matrix.compiler }}/module_import_execution_testing ${{ matrix.compiler }}
           python3 scripts/check_module_cli.py build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native_toolchain_testing ${{ matrix.compiler }}
+          python3 scripts/check_native_exit.py build/${{ matrix.compiler }}/module_dispatch_testing ${{ matrix.compiler }}
           python3 scripts/check_module_dispatch.py build/${{ matrix.compiler }}/module_dispatch_testing
           python3 scripts/check_module_consistency.py build/${{ matrix.compiler }}/module_consistency_testing
           python3 scripts/check_module_validation.py build/${{ matrix.compiler }}/module_validation_testing
@@ -121,6 +122,7 @@ jobs:
           python3 scripts/check_module_import_execution.py build/${{ matrix.compiler }}/module_import_execution_testing
           python3 scripts/check_module_interface.py build/${{ matrix.compiler }}/module_import_execution_testing
           python3 scripts/check_module_source_diagnostics.py build/${{ matrix.compiler }}/module_import_execution_testing
+          python3 scripts/check_process_exit.py build/${{ matrix.compiler }}/process_exit_testing build/${{ matrix.compiler }}/process_exit_failure_testing build/${{ matrix.compiler }}/process_exit_delayed_testing
           python3 scripts/check_module_exit.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
           python3 scripts/check_module_threads.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
           python3 scripts/check_module_context_constants.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/goat
@@ -360,6 +362,7 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_library.py build/module_import_execution_testing.exe build/module_library_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_loading.py build/module_loading_testing.exe build/module_import_execution_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_cli.py build/goat.exe build/native_toolchain_testing.exe gcc
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_exit.py build/module_dispatch_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_dispatch.py build/module_dispatch_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_consistency.py build/module_consistency_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_validation.py build/module_validation_testing.exe
@@ -381,6 +384,7 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_import_execution.py build/module_import_execution_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_interface.py build/module_import_execution_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_source_diagnostics.py build/module_import_execution_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_process_exit.py build/process_exit_testing.exe build/process_exit_failure_testing.exe build/process_exit_delayed_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_exit.py build/module_import_execution_testing.exe build/goat.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_threads.py build/module_import_execution_testing.exe build/goat.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_context_constants.py build/module_import_execution_testing.exe build/goat.exe

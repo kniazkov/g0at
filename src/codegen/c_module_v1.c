@@ -121,11 +121,19 @@ static void bridge(source_builder_t *builder) {
                       1,
                       U"return (gchar_t)g_v1_context->services->to_lower((uint32_t)value);");
     add_static_source(builder, 0, U"}");
+    add_static_source(builder,
+                      0,
+                      U"static uint32_t GOAT_NATIVE_CALL g_v1_exit(void *state, uint32_t count, "
+                      U"uint32_t type, int64_t code) {");
+    add_static_source(builder, 1, U"return goat_module_request_exit(state, count, type, code);");
+    add_static_source(builder, 0, U"}");
     add_static_source(builder, 0, U"static const goat_native_services_v2_t g_v1_services = {");
     add_static_source(builder,
                       1,
                       U"sizeof(goat_native_services_v2_t), g_v1_allocate, g_v1_deallocate,");
-    add_static_source(builder, 1, U"g_v1_deallocate_all, g_v1_space, g_v1_upper, g_v1_lower");
+    add_static_source(builder,
+                      1,
+                      U"g_v1_deallocate_all, g_v1_space, g_v1_upper, g_v1_lower, g_v1_exit");
     add_static_source(builder, 0, U"};");
     add_static_source(
         builder,

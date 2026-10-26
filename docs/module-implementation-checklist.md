@@ -66,7 +66,7 @@
 - [x] 50. [#211](https://github.com/kniazkov/g0at/issues/211) — Интеграция нативной сборки с .gmod ([API и проверки](module-build-api.md))
 - [x] 51. [#210](https://github.com/kniazkov/g0at/issues/210) — Ленивая загрузка нативных библиотек ([API и проверки](module-loading-api.md))
 - [x] 52. [#191](https://github.com/kniazkov/g0at/issues/191) — Интеграция сборки .gmod в CLI ([API и проверки](module-cli-api.md))
-- [ ] 53. [#230](https://github.com/kniazkov/g0at/issues/230) — Полная семантика exit и очистки
+- [x] 53. [#230](https://github.com/kniazkov/g0at/issues/230) — Полная семантика exit и очистки ([API и проверки](module-exit-api.md))
 - [ ] 54. [#212](https://github.com/kniazkov/g0at/issues/212) — goat-inspect: просмотр метаданных
 - [ ] 55. [#223](https://github.com/kniazkov/g0at/issues/223) — Машиночитаемый вывод goat-inspect
 - [ ] 56. [#214](https://github.com/kniazkov/g0at/issues/214) — goat-inspect: безопасная пробная загрузка

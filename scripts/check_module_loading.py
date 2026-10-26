@@ -101,6 +101,10 @@ def custom(root, name, original, kind='valid', edit=None):
              ' if(fputc(c,f)==EOF || fclose(f))abort();}'
              ' atomic_flag_clear_explicit(&marker_lock,memory_order_release);}',
              '__attribute__((constructor)) static void loaded(void) { mark(\'L\'); }']
+    if kind in ('nonreturning-loop', 'nonreturning-block'):
+        parts.append('__attribute__((destructor)) static void unloaded(void) { mark(\'U\'); }')
+    if kind == 'nonreturning-block':
+        parts.append('#ifdef _WIN32\n#include <windows.h>\n#else\n#include <unistd.h>\n#endif')
     if kind != 'descriptor-missing':
         qualifier = '' if kind == 'descriptor-writable' else 'const '
         parts.append('GOAT_MODULE_EXPORT ' + qualifier + 'unsigned char goat_module_descriptor_v1[] = {'
@@ -113,7 +117,11 @@ def custom(root, name, original, kind='valid', edit=None):
                      '(uint32_t abi,const goat_module_context_v1*c,uint32_t n,'
                      'const goat_module_value_v1*a,goat_module_value_v1*r){'
                      '(void)abi;(void)c;(void)n;mark(\'C\');')
-        if kind == 'bad-status':
+        if kind == 'nonreturning-loop':
+            parts.append('for(;;){atomic_signal_fence(memory_order_seq_cst);}}')
+        elif kind == 'nonreturning-block':
+            parts.append('\n#ifdef _WIN32\nSleep(INFINITE);\n#else\nfor(;;)pause();\n#endif\nreturn 0;}')
+        elif kind == 'bad-status':
             parts.append('return GOAT_MODULE_RESOURCE_LIMIT;}')
         elif kind == 'bad-result':
             parts.append('r->tag=GOAT_MODULE_STRING;r->payload=1;return 0;}')
@@ -173,13 +181,17 @@ class Owner:
         self.watches.append(watch)
         return watch
 
-    def end(self, code=0, cleanup=True):
+    def end(self, code=0, cleanup=True, explicit_exit=False):
         self.process.stdin.close()
         actual = self.process.wait(timeout=120)
         stderr = self.process.stderr.read()
         self.reader.join(timeout=5)
         assert actual == code, (actual, code, self.lines, stderr)
         records = [line[7:] for line in stderr.splitlines() if line.startswith(b'RESULT ')]
+        if explicit_exit:
+            # A valid language exit terminates the host too: no RESULT epilogue.
+            assert not records and not stderr, stderr
+            return {'stderr': stderr}
         assert len(records) == 1, stderr
         result = json.loads(records[0])
         result['stderr'] = stderr
@@ -509,8 +521,10 @@ with tempfile.TemporaryDirectory(prefix='goat-loading-') as temporary:
                 cleaner.kill()
                 cleaner.wait()
                 owner.resume()
-                result = owner.end(23 if explicit_exit else 0, cleanup=False)
-                assert owner.lines == ['49','READY','64'] and result['nodes'][0]['loaded']
+                result = owner.end(23 if explicit_exit else 0, cleanup=False, explicit_exit=explicit_exit)
+                assert owner.lines == ['49','READY','64']
+                if not explicit_exit:
+                    assert result['nodes'][0]['loaded']
                 assert directory.is_dir()
                 shutil.rmtree(directory)
         checked('after cleaner death user code and native calls continue; normal/exit codes preserved')
@@ -525,6 +539,29 @@ with tempfile.TemporaryDirectory(prefix='goat-loading-') as temporary:
         assert owner.lines == ['ENTRY-END','ENTRY-FINISHED','49'] and owner.calls() == b'LC'
         assert result['nodes'][0]['loaded']
         checked('first lazy native call after entry thread ends retains snapshot until final worker')
+
+        # Unlike an in-process mock adapter, these calls execute inside a real
+        # extracted DLL/SO. The marker is written at native entry before the
+        # noncooperative operation; stdin is a separate explicit exit barrier.
+        nonreturning = graft('nonreturning', 'external f=func(x){return x*x;}; '
+                             'spawn(f,7); println("EXIT-READY"); input(); '
+                             'try { exit(23); } finally { println("UNREACHABLE"); }')
+        for kind in ('nonreturning-loop', 'nonreturning-block'):
+            archive = custom(root, kind, nonreturning, kind)
+            for mode in ('auto', 'required'):
+                owner = start(kind + '-' + mode, archive, mode)
+                assert owner.line() == 'EXIT-READY'
+                until(lambda: owner.calls() == b'LC', timeout=40)
+                cleaner = owner.watch()
+                directory = until(lambda: next(owner.directory.glob('goat-run-*'), None))
+                assert directory.is_dir() and list(directory.iterdir()) and cleaner.alive()
+                assert owner.process.poll() is None
+                owner.resume()
+                owner.end(23, cleanup=False, explicit_exit=True)
+                assert owner.lines == ['EXIT-READY'] and owner.calls() == b'LC'
+                cleaner.wait(timeout=40)
+                assert owner.mark('cleaner.done') == 'done' and not directory.exists()
+            checked(kind + ': process exit interrupts live DLL/SO, then cleaner removes it')
 
         owner = start('killed-owner', valid, 'required', 'hold')
         assert owner.line() == '49' and owner.line() == '64' and owner.line() == 'HOLD'

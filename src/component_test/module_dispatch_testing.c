@@ -9,18 +9,26 @@
 #include "lib/binary_file.h"
 #include "lib/file_system.h"
 #include "lib/io.h"
+#include "lib/process_channel.h"
 #include "model/module_native.h"
+#include "model/native_library.h"
+#include "model/native_services.h"
 #include "vm/vm.h"
 
 #include <assert.h>
 #include <inttypes.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 void test_module_dispatch_identity(void);
 
-static unsigned calls, resolutions, cleanups;
+static atomic_uint calls;
+static unsigned resolutions, cleanups;
+static atomic_bool native_entered;
+static os_mutex_t *block_mutex;
+static os_condition_t *block_condition;
 static bool fail_resolution;
 static yyjson_val *actions, *specializations;
 
@@ -108,6 +116,109 @@ static uint32_t GOAT_MODULE_CALL allocated_string(uint32_t abi,
     return GOAT_MODULE_SUCCESS;
 }
 
+/** Native host-service calls, without any independent C/OS termination path. */
+static uint32_t GOAT_MODULE_CALL native_exit(uint32_t abi,
+                                             const goat_module_context_v1 *context,
+                                             uint32_t count,
+                                             const goat_module_value_v1 *args,
+                                             goat_module_value_v1 *result) {
+    (void)result;
+    assert(abi == GOAT_MODULE_ABI_VERSION);
+    ++calls;
+    return goat_module_request_exit(context,
+                                    count,
+                                    count ? args[0].tag : 0,
+                                    count ? (int64_t)args[0].payload : 0);
+}
+
+static uint32_t GOAT_MODULE_CALL native_exit_ignored(uint32_t abi,
+                                                     const goat_module_context_v1 *context,
+                                                     uint32_t count,
+                                                     const goat_module_value_v1 *args,
+                                                     goat_module_value_v1 *result) {
+    (void)native_exit(abi, context, count, args, result);
+    *result = (goat_module_value_v1){GOAT_MODULE_INTEGER, 0, 0};
+    return GOAT_MODULE_SUCCESS;
+}
+
+FIXED_ADAPTER(forged_exception, GOAT_MODULE_INTEGER, 0, 0, GOAT_MODULE_HOST_EXCEPTION)
+
+static uint32_t GOAT_MODULE_CALL native_loop(uint32_t abi,
+                                             const goat_module_context_v1 *context,
+                                             uint32_t count,
+                                             const goat_module_value_v1 *args,
+                                             goat_module_value_v1 *result) {
+    (void)abi;
+    (void)context;
+    (void)count;
+    (void)args;
+    (void)result;
+    atomic_store_explicit(&native_entered, true, memory_order_release);
+    for (;;) { /* Deliberately noncooperative native code. */
+    }
+}
+
+static uint32_t GOAT_MODULE_CALL native_block(uint32_t abi,
+                                              const goat_module_context_v1 *context,
+                                              uint32_t count,
+                                              const goat_module_value_v1 *args,
+                                              goat_module_value_v1 *result) {
+    (void)abi;
+    (void)context;
+    (void)count;
+    (void)args;
+    (void)result;
+    assert(lock_os_mutex(block_mutex) == OS_THREAD_OK);
+    atomic_store_explicit(&native_entered, true, memory_order_release);
+    for (;;)
+        assert(wait_os_condition(block_condition, block_mutex) == OS_THREAD_OK);
+}
+
+static uint32_t GOAT_MODULE_CALL native_wait(uint32_t abi,
+                                             const goat_module_context_v1 *context,
+                                             uint32_t count,
+                                             const goat_module_value_v1 *args,
+                                             goat_module_value_v1 *result) {
+    (void)abi;
+    (void)context;
+    (void)count;
+    (void)args;
+    while (!atomic_load_explicit(&native_entered, memory_order_acquire)) {
+    }
+    *result = (goat_module_value_v1){GOAT_MODULE_INTEGER, 0, 0};
+    return GOAT_MODULE_SUCCESS;
+}
+
+/** Exact optional-prefix boundaries; no extension access with an old provider. */
+static void exit_service_prefixes(void) {
+    goat_module_services_v1 module = {0};
+    goat_module_context_v1 module_context = {&module, NULL};
+    module.struct_size = GOAT_MODULE_SERVICES_SIZE;
+    assert(goat_module_request_exit(&module_context, 1, GOAT_MODULE_INTEGER, 7)
+           == GOAT_MODULE_ABI_MISMATCH);
+    module.struct_size = GOAT_MODULE_EXIT_SERVICES_SIZE - 1;
+    assert(goat_module_request_exit(&module_context, 1, GOAT_MODULE_INTEGER, 7)
+           == GOAT_MODULE_ABI_MISMATCH);
+    module.struct_size = GOAT_MODULE_EXIT_SERVICES_SIZE;
+    assert(goat_module_request_exit(&module_context, 1, GOAT_MODULE_INTEGER, 7)
+           == GOAT_MODULE_ABI_MISMATCH);
+    goat_native_services_v2_t legacy = {0};
+    goat_native_context_v2_t legacy_context = {&legacy, NULL};
+    legacy.struct_size = GOAT_NATIVE_STRING_SERVICES_SIZE;
+    assert(goat_native_request_exit(&legacy_context, 1, GOAT_NATIVE_I64, 7)
+           == GOAT_NATIVE_ABI_MISMATCH);
+    legacy.struct_size = GOAT_NATIVE_EXIT_SERVICES_SIZE - 1;
+    assert(goat_native_request_exit(&legacy_context, 1, GOAT_NATIVE_I64, 7)
+           == GOAT_NATIVE_ABI_MISMATCH);
+    legacy.struct_size = GOAT_NATIVE_EXIT_SERVICES_SIZE;
+    assert(goat_native_request_exit(&legacy_context, 1, GOAT_NATIVE_I64, 7)
+           == GOAT_NATIVE_ABI_MISMATCH);
+    native_memory_t standalone = {0};
+    legacy_context = init_native_context(&standalone);
+    assert(goat_native_request_exit(&legacy_context, 1, GOAT_NATIVE_I64, 7)
+           == GOAT_NATIVE_BAD_REQUEST);
+}
+
 static goat_module_adapter_v1 lookup(const char *action) {
     struct {
         const char *name;
@@ -125,7 +236,13 @@ static goat_module_adapter_v1 lookup(const char *action) {
                    {"status-mismatch", status_mismatch},
                    {"status-resource", status_resource},
                    {"status-unknown", status_unknown},
-                   {"string", allocated_string}};
+                   {"string", allocated_string},
+                   {"exit", native_exit},
+                   {"exit-ignored", native_exit_ignored},
+                   {"exit-forged", forged_exception},
+                   {"loop", native_loop},
+                   {"block", native_block},
+                   {"wait", native_wait}};
 
     for (size_t i = 0; i < sizeof(entries) / sizeof(*entries); ++i)
         if (!strcmp(action, entries[i].name))
@@ -159,12 +276,20 @@ static void cleanup(void *state) {
 }
 
 int main(int argc, char **argv) {
+    if (argc == 2 && !strcmp(argv[1], "--exit-prefixes")) {
+        exit_service_prefixes();
+        assert(!get_allocated_memory_size());
+        puts("OK");
+        return 0;
+    }
     if (argc == 2 && !strcmp(argv[1], "--identity")) {
         test_module_dispatch_identity();
         assert(!get_allocated_memory_size());
         puts("OK");
         return 0;
     }
+    assert(create_os_mutex(&block_mutex) == OS_THREAD_OK);
+    assert(create_os_condition(&block_condition) == OS_THREAD_OK);
     fs_error_t argument_error = {0};
     assert(fs_arguments(&argc, &argv, &argument_error));
     assert(argc == 4);
@@ -198,7 +323,24 @@ int main(int argc, char **argv) {
                                   module_files_identity(files),
                                   (uint32_t)main_file,
                                   sources->files[main_file].path));
-    bool bound = strcmp(argv[3], "off") && yyjson_arr_size(specializations);
+    const char *legacy_path = yyjson_get_str(yyjson_obj_get(root, "legacyLibrary"));
+    native_library_result_t legacy = {0};
+    if (legacy_path) {
+        legacy = load_native_library(legacy_path);
+        assert(legacy.status == NATIVE_LIBRARY_OK);
+        native_function_descriptor_t *function =
+            create_native_function_descriptor(legacy.library, 1);
+        assert(function);
+        bytecode_t *code = module_files_bytecode(files);
+        for (size_t i = 0; i < code->instructions_count; ++i) {
+            if (code->instructions[i].opcode == FUNC) {
+                assert(bind_bytecode_native_function(code, (instr_index_t)i, function));
+                break;
+            }
+        }
+        release_native_function_descriptor(function);
+    }
+    bool bound = !legacy_path && strcmp(argv[3], "off") && yyjson_arr_size(specializations);
     bool binding_failure = yyjson_get_bool(yyjson_obj_get(root, "bindingFailure"));
     if (bound) {
         yyjson_mut_doc *variant = yyjson_mut_doc_new(NULL);
@@ -261,6 +403,7 @@ int main(int argc, char **argv) {
         assert(calls == before_calls && resolutions == before_resolutions);
     }
     destroy_process(process);
+    destroy_native_library_result(&legacy);
     assert(cleanups == (unsigned)bound);
     yyjson_doc_free(configuration);
     free_module_compilation(compilation);
@@ -268,6 +411,8 @@ int main(int argc, char **argv) {
     free_module_sources(sources);
     clear_module_sources_error(&source_error);
     free_fs_arguments(argc, argv);
+    assert(destroy_os_condition(block_condition) == OS_THREAD_OK);
+    assert(destroy_os_mutex(block_mutex) == OS_THREAD_OK);
     assert(!get_allocated_memory_size());
     return result;
 }

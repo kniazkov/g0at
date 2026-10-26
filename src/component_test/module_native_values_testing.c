@@ -72,8 +72,15 @@ static uint32_t GOAT_MODULE_CALL lower(uint32_t value) {
     return value == 'A' ? 'a' : value;
 }
 
-static goat_module_services_v1 services =
-    {sizeof(goat_module_services_v1), 0, allocate, release, release_all, space, upper, lower};
+static goat_module_services_v1 services = {
+    .struct_size = GOAT_MODULE_SERVICES_SIZE,
+    .allocate = allocate,
+    .deallocate = release,
+    .deallocate_all = release_all,
+    .is_space = space,
+    .to_upper = upper,
+    .to_lower = lower,
+};
 static goat_module_context_v1 context = {&services, NULL};
 static unsigned calls;
 #ifdef _WIN32

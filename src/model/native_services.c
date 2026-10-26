@@ -70,6 +70,15 @@ static gchar_t GOAT_NATIVE_CALL string_to_lower(gchar_t value) {
     return (gchar_t)TOLOWER(value);
 }
 
+static uint32_t GOAT_NATIVE_CALL request_exit(void *state,
+                                              uint32_t count,
+                                              uint32_t type,
+                                              int64_t code) {
+    native_memory_t *memory = state;
+    return memory->exit_callback ? memory->exit_callback(state, count, type, code)
+                                 : GOAT_NATIVE_BAD_REQUEST;
+}
+
 /** @brief Shared immutable table; mutable state belongs exclusively to each invocation. */
 static const goat_native_services_v2_t services = {sizeof(goat_native_services_v2_t),
                                                    allocate_memory,
@@ -77,7 +86,8 @@ static const goat_native_services_v2_t services = {sizeof(goat_native_services_v
                                                    deallocate_all_memory,
                                                    string_is_space,
                                                    string_to_upper,
-                                                   string_to_lower};
+                                                   string_to_lower,
+                                                   request_exit};
 
 goat_native_context_v2_t init_native_context(native_memory_t *memory) {
     return (goat_native_context_v2_t){&services, memory};

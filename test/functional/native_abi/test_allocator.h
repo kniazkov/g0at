@@ -24,13 +24,12 @@ static inline void GOAT_NATIVE_CALL test_clear(void *state) {
 
 /** @brief Numeric fixtures prove that passing a context does not require heap allocation. */
 static inline goat_native_context_v2_t test_context(void) {
-    static const goat_native_services_v2_t services = {sizeof(goat_native_services_v2_t),
-                                                       test_unexpected_allocate,
-                                                       test_unexpected_deallocate,
-                                                       test_clear,
-                                                       NULL,
-                                                       NULL,
-                                                       NULL};
+    static const goat_native_services_v2_t services = {
+        .struct_size = GOAT_NATIVE_STRING_SERVICES_SIZE,
+        .allocate = test_unexpected_allocate,
+        .deallocate = test_unexpected_deallocate,
+        .deallocate_all = test_clear,
+    };
     return (goat_native_context_v2_t){&services, NULL};
 }
 
