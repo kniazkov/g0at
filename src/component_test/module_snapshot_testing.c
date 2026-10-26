@@ -81,6 +81,9 @@ static void arguments(void) {
     module_graph_t *graph = (void *)(uintptr_t)1;
     assert(load_module_snapshot(NULL, NULL, NULL, &snapshot, &graph) == MODULE_GRAPH_ARGUMENT);
     assert(!snapshot && !graph);
+    assert(load_module_snapshot_memory(NULL, 1, "memory", NULL, NULL, &snapshot, &graph)
+           == MODULE_GRAPH_ARGUMENT);
+    assert(!snapshot && !graph);
     assert(load_module_snapshot(NULL, NULL, NULL, NULL, NULL) == MODULE_GRAPH_ARGUMENT);
     assert(!module_snapshot_count(NULL));
     assert(!module_snapshot_process(NULL));
@@ -109,6 +112,31 @@ int main(int argc, char **argv) {
     module_search_t *search = NULL;
     module_search_error_t error = {0};
     assert(!prepare_module_search(argv[1], NULL, NULL, &search, &error));
+    void *root_bytes = NULL;
+    size_t root_size = 0;
+    bool read_root = read_fs_regular_file(argv[1], UINT32_MAX - 1, &root_bytes, &root_size, NULL);
+    module_graph_status_t memory_status = MODULE_GRAPH_ARGUMENT;
+    if (read_root) {
+        module_snapshot_t *memory_snapshot = NULL;
+        module_graph_t *memory_diagnostics = NULL;
+        memory_status = load_module_snapshot_memory(root_bytes,
+                                                    root_size,
+                                                    "<unpublished-memory-root>",
+                                                    search,
+                                                    NULL,
+                                                    &memory_snapshot,
+                                                    &memory_diagnostics);
+        FREE(root_bytes);
+        if (!memory_status) {
+            assert(memory_snapshot && !memory_diagnostics);
+            assert(module_snapshot_count(memory_snapshot));
+            borrowed_views(validated_module_bytecode(module_snapshot_module(memory_snapshot, 0)));
+        } else {
+            assert(!memory_snapshot);
+        }
+        free_module_snapshot(memory_snapshot);
+        free_module_graph(memory_diagnostics);
+    }
     process_t *probe = create_process();
     uint64_t prior_process = probe->id;
     destroy_process(probe);
@@ -122,6 +150,8 @@ int main(int argc, char **argv) {
                                                         &options,
                                                         &snapshot,
                                                         no_diagnostics ? NULL : &diagnostics);
+    if (read_root)
+        assert(memory_status == status);
     free_module_search(search);
     clear_module_search_error(&error);
     /* All input search/path state is gone before the synchronization barrier. */

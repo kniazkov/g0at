@@ -10,6 +10,10 @@
 
 /** @brief Structure to hold localized error messages. */
 typedef struct {
+    const gchar_t *native_targets_available;
+    const gchar_t *native_targets_none;
+    const gchar_t *native_targets_failed;
+    const gchar_t *native_targets_selected;
     const gchar_t const *help;
     const gchar_t const *memory_leak;
     const gchar_t const *no_input_file;

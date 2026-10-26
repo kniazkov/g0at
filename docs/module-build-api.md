@@ -68,7 +68,8 @@ PE проверяет разрядность, runtime и разрешённый 
 Существующие native/unit/runtime suites сохраняются. Нижняя версия Windows 10
 и старые glibc требуют отдельного контрольного окружения: CI на текущем runner
 не объявляется проверкой запуска на этих нижних границах. Представление
-`--list-native-targets` и полноценный `.gmod` CLI остаются #191; OS loader — #210.
+`--list-native-targets` и `.gmod` CLI подключены в #191 ([команды](module-cli-api.md));
+ленивая OS-загрузка реализована в #210.
 
 ## English
 
@@ -128,7 +129,8 @@ unsafe manual removal while processes are still writing.
 The six native-artifact/toolchain/requirements/cleanup/module-build/module-native-values
 scripts run in CI alongside existing suites. Current runners do not establish actual
 execution on minimum Windows 10/older-glibc systems; those require dedicated validation.
-The full .gmod CLI and list-native-targets presentation remain #191; OS loading is #210.
+The .gmod CLI and list-native-targets presentation are integrated in #191
+([commands](module-cli-api.md)); lazy OS loading is provided by #210.
 
 ## Граница символов ABI v1 / ABI v1 character boundary
 

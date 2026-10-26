@@ -123,6 +123,12 @@ static void contracts(const module_search_t *search) {
     module_graph_t *graph = (void *)(uintptr_t)1;
     assert(validate_module_graph(NULL, search, NULL, &graph) == MODULE_GRAPH_ARGUMENT);
     assert(!graph);
+    assert(validate_module_graph_memory(NULL, 1, "memory", search, NULL, &graph)
+           == MODULE_GRAPH_ARGUMENT);
+    assert(!graph);
+    assert(validate_module_graph_memory(NULL, 0, "", search, NULL, &graph)
+           == MODULE_GRAPH_ARGUMENT);
+    assert(!graph);
     assert(validate_source_graph(NULL, search, NULL, &graph) == MODULE_GRAPH_ARGUMENT);
     assert(!graph);
     assert(!module_graph_node(NULL, 0) && !module_graph_edge(NULL, 0));
@@ -187,6 +193,26 @@ int main(int argc, char **argv) {
                                            search,
                                            !strcmp(argv[1], "module-null") ? NULL : &options,
                                            &graph);
+            void *bytes = NULL;
+            size_t length = 0;
+            if (read_fs_regular_file(argv[3], UINT32_MAX - 1, &bytes, &length, NULL)) {
+                module_graph_t *memory = NULL;
+                int memory_status = validate_module_graph_memory(bytes,
+                                                                 length,
+                                                                 "<unpublished-memory-root>",
+                                                                 search,
+                                                                 NULL,
+                                                                 &memory);
+                FREE(bytes);
+                assert(memory_status == status);
+                assert(module_graph_node_count(memory) == module_graph_node_count(graph));
+                assert(module_graph_edge_count(memory) == module_graph_edge_count(graph));
+                assert(module_graph_issue_count(memory) == module_graph_issue_count(graph));
+                for (size_t i = 0; i < module_graph_issue_count(graph); i++)
+                    assert(module_graph_issue(memory, i)->kind
+                           == module_graph_issue(graph, i)->kind);
+                free_module_graph(memory);
+            }
         } else {
             assert(!module_sources_read(argv[3],
                                         !strcmp(argv[1], "gmod"),

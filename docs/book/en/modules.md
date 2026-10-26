@@ -244,7 +244,7 @@ frozen startup state, Unicode paths, and reserved names in nested scopes. With t
 it also checks standalone source launch with optimization disabled/enabled and
 native auto selection, including retargeting the original link during native
 preparation before VM fallback. Archive execution here uses the existing validated module
-component path; general `.gmod`/`.gbin` CLI integration remains #191.
+component path and the public CLI described in [module-cli-api.md](../../module-cli-api.md).
 
 ## Build directories and unified search
 
@@ -4198,8 +4198,8 @@ All these fields are excluded from the main hash, not from correctness checks.
 Types, closed records and duplicates are checked before normalization; extracting
 information cannot hide invalid technical fields. Repackaging preserves authors
 and compiler build identifiers without adding a producer or packaging-machine data.
-Compiler provenance generation, CLI display and interactive author choice during
-merge remain later tasks rather than responsibilities of this API.
+The CLI build records compiler provenance (#191). Metadata display and interactive
+author choice during merge remain separate consumers rather than responsibilities of this API.
 [Contract and tests](../../module-information-api.md).
 
 ### Source graph construction (#186)
@@ -4214,8 +4214,8 @@ files and unused dependency declarations do not implicitly add sources.
 
 Discovery reuses the common scanner's literals, comments and escaping, checking
 include syntax and brackets without executing code. Full language parsing and file
-scopes belong to subsequent compilation phases; CLI integration and runtime include
-remain separate tasks. Logical names and external flags are separate from absolute
+scopes belong to subsequent compilation phases, composed by the CLI (#191);
+runtime include uses the shared initialization gate. Logical names and external flags are separate from absolute
 build paths; those paths and source text must not be serialized into `.gbin`.
 See the [source API](../../module-sources-api.md) for ownership, limits and tests.
 
@@ -4273,7 +4273,7 @@ Only exact `<name>/<version>.gbin` candidates are probed. The first existing fil
 is read into an owned snapshot and fully validated; corruption, wrong identity,
 expected-mainHash mismatch or I/O failure never fall through to another copy.
 No recursive scan, version selection, graph traversal or code loading occurs.
-This is a tested internal API; CLI and whole-graph integration remain separate.
+The CLI (#191) composes this API with whole-graph validation before user code.
 See [API and tests](../../module-search-api.md).
 
 
@@ -4292,7 +4292,7 @@ stops lookup rather than hiding the problem with a later copy. Diagnostics ident
 the requested name/version and supplied consumer, distinguish absence from
 filesystem/validation/identity/hash failures, and list only actually checked paths.
 The diagnostic includes the stopping path and underlying filesystem cause/code.
-These remain internal APIs; CLI and dependency-graph integration are separate tasks.
+The CLI (#191) uses these APIs for its dependency-graph search.
 See [API and tests](../../module-search-api.md).
 
 ### Consumer-local dependency binding (#238)
@@ -4306,7 +4306,7 @@ of successful application lookups. Only direct records are emitted: neither
 transitive records nor external bytecode/native payloads are embedded.
 
 One binding covers one consumer, not the complete graph. The iterative graph API
-(#189) supplies shared-node caching and cycle detection; CLI wiring remains #191/#218;
+(#189) supplies shared-node caching and cycle detection, integrated by CLI #191;
 the entire graph must be checked before execution/publication. The Linux/Windows
 fixtures inspect per-consumer edges and independently bind their targets.
 See [API, ownership and tests](../../module-dependencies-api.md).
@@ -4332,7 +4332,7 @@ publication of a named artifact. Before publication the compiler must validate t
 final temporary archive with `validate_module_graph` and the same original search
 object. This catches dependencies back to the final root's own name/version,
 including an old installed application copy. Caching is per pass.
-This is the common internal preflight; CLI wiring remains #191/#218. See [API, ownership and tests](../../module-graph-api.md).
+This common preflight is used by CLI #191 before publication and execution. See [API, ownership and tests](../../module-graph-api.md).
 
 
 ### Deterministic dependency diagnostics (#190)
@@ -4344,11 +4344,11 @@ SHA-256 hashes, not just a witness pair. Cycles have genuine closed witnesses.
 The common structured callback and English formatter preserve bounded positions
 and safely escape labels, including embedded zero bytes. Explicit reporting may
 materialize exponentially many paths; graph validation itself does not. No
-execution or new archive reads occur. CLI wiring remains #191/#218.
+execution or new archive reads occur. CLI #191 uses this formatter for graph failures.
 See [ordering, ownership and tests](../../module-graph-api.md).
 
 
-The process-lifetime launch snapshot (#192) is described in [module-snapshot-api.md](../../module-snapshot-api.md). Whole-graph preflight completes before runtime scopes exist; subsequent dependency lookup uses only retained data. Runtime wrappers borrow immutable images, and native payloads remain pinned even after archive replacement or deletion. CLI/import execution is integrated by its later checklist tasks.
+The process-lifetime launch snapshot (#192) is described in [module-snapshot-api.md](../../module-snapshot-api.md). Whole-graph preflight completes before runtime scopes exist; subsequent dependency lookup uses only retained data. Runtime wrappers borrow immutable images, and native payloads remain pinned even after archive replacement or deletion. CLI #191 executes the resulting retained graph without reopening its archives.
 
 ### Implemented resource-failure checks (#236)
 
@@ -4440,7 +4440,7 @@ lazy initialization gate and returns its persistent scope, without inheriting
 caller locals or reopening source paths. Symlink aliases share initialization;
 distinct hardlink paths do not. Saved modules execute after their sources are
 removed. [Compiler/runtime API and end-to-end checks](../../source-include-api.md).
-Full public CLI integration remains the separate #191 step.
+Public CLI integration is described in [module-cli-api.md](../../module-cli-api.md).
 
 ## Executable ready-module imports (#195)
 
@@ -4450,7 +4450,7 @@ gate. Repeated imports share state; different versions remain independent. The V
 keeps declaring-module code and string caches separate across functions, callbacks
 and nested includes, with no archive reopening or immutable-image changes.
 [Compiler/runtime contract and end-to-end checks](../../source-import-api.md).
-Public CLI integration remains the separate #191 step.
+Public CLI integration is described in [module-cli-api.md](../../module-cli-api.md).
 
 ## Function provenance and re-exports (#228)
 
@@ -4510,7 +4510,7 @@ retries preserve the original origin even after GC. Native backend errors use th
 same mapping and explicitly mark `[native entry]`: the status-only ABI supplies
 the callee body-entry location, not an exact failing expression. No source text or
 absolutized build path is serialized. The component runner uses the shared API;
-full CLI integration follows in #191. See [API and checks](../../module-source-diagnostics-api.md).
+the module CLI uses the same formatter (#191). See [API and checks](../../module-source-diagnostics-api.md).
 
 
 ## Serialized initialization and equal execution threads (#217)
@@ -4561,7 +4561,7 @@ are errors, never permission to repeat execution. Binding uses the exact module
 instance and its own functionId; clone/flat capture redirection does not inherit
 the original native implementation's safety. [API and tests](../../module-dispatch-api.md)
 separate this dispatch mechanism from native production #211, lazy loading #210
-and full CLI integration #191.
+and the public CLI described in [module-cli-api.md](../../module-cli-api.md).
 
 ## Implemented native build backend (#211)
 
@@ -4583,8 +4583,8 @@ fail; the producer never substitutes build-host glibc as the artifact minimum.
 Temporary builds and probes share cleaner #245, including direct .goat execution.
 READY precedes build files and compiler startup. Saved libraries and archives are
 not cleaner-owned. See [module-build-api.md](../../module-build-api.md) for the API,
-limits and automated checks. Full .gmod CLI/target-list presentation remain #191;
-lazy OS library loading is provided separately by #210.
+limits and automated checks. The .gmod CLI and target listing are integrated in #191;
+lazy OS library loading is provided by #210.
 
 
 ## Implemented lazy library loading (#210)
@@ -4606,5 +4606,41 @@ removes files after actual Goat process termination. Death of an already ready
 cleaner does not change the running program's result.
 
 See [API and verification](../../module-loading-api.md). This runtime layer does
-not claim completion of CLI integration #191, bounded exit #230 or the isolated
-inspect probe #214.
+not claim completion of bounded exit #230 or the isolated inspect probe #214.
+CLI #191 composes it with compilation using the same cleanup service.
+
+
+## Module command line (#191)
+
+Build a named module without executing it:
+
+```sh
+goat build app.gmod --native off
+```
+
+The result is `modules/<name>/<version>.gbin` beside the real description file.
+`--module-dir ./output` selects a different output root relative to the initial
+working directory. Existing output is replaced atomically only after full graph
+validation. The description is completely validated before CLI overrides; invalid
+fields cannot be repaired with `--native off` or `--native-target`.
+
+`goat app.gmod` or `goat run app.gmod` builds an in-memory snapshot and runs it
+without publishing an archive. `goat app.gbin` or `goat run app.gbin` runs a ready
+module without compiling C. `--compile app.gmod` is the build-only spelling.
+Legacy direct `.goat`, separate compilation and `--run` binary execution remain;
+include/import sources use the common multifile pipeline. A standalone source's
+imports require exact versions; it is not a substitute for a named `.gmod`.
+
+Module descriptions default to auto/host; explicit native options override their
+settings independently. Ready ZIP modules default to auto. Use `--native off`
+for VM-only execution; metadata and hashes of all variants are still validated.
+`--list-native-targets` reports only successfully probed toolchains, marks automatic
+selection and shows failures separately. At least one success yields status 0.
+`--cc` selects one compiler, and `--native-probe-timeout` sets a positive integer
+probe budget in seconds, not a user-program build deadline.
+
+Options can follow the input path. `--` separates literal program arguments.
+Compiler provenance is stable across packaging and excluded from mainHash.
+Build and execution share one cleanup service and its one-warning fallback policy.
+See [commands, paths and verification](../../module-cli-api.md). Bounded exit and
+the separate inspect/merge tools remain subsequent checklist tasks.

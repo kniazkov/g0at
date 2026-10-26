@@ -3,7 +3,7 @@
 `vm/module_graph.h` is the shared, nonexecuting whole-graph validation layer for
 compiler, loader and inspection consumers. It complements, rather than changes,
 `module_dependencies.h`: binding one consumer's direct imports is not a complete
-preflight. CLI integration remains #191/#218. Deterministic presentation is provided by
+preflight. CLI #191 composes these APIs. Deterministic presentation is provided by
 `vm/module_graph_diagnostics.h` (#190).
 
 `validate_module_graph` reads and validates the root archive, including when its
@@ -70,13 +70,17 @@ require a successful full-graph status before those operations. Release the resu
 with `free_module_graph`; accessor views are borrowed.
 
 Before publishing a named artifact, the compiler must also call
-`validate_module_graph` on its final temporary archive, reusing the **same original
-search object**. Source preflight has a synthetic root and authorizes dependency
+`validate_module_graph` on its final temporary archive, or
+`validate_module_graph_memory` on the exact completed archive bytes, reusing the
+**same original search object**. Source preflight has a synthetic root and authorizes dependency
 analysis only: it cannot establish the final artifact's identity. The final pass
 catches a dependency that imports an old installed copy of the application's own
 name/version, which becomes a back edge to the actual archive root. This validates
 the final artifact anew; caching is per pass, not across compilation phases.
-CLI/compiler wiring of this publication gate remains #191.
+CLI #191 uses the memory entry point before atomic publication. Its diagnostic
+label never causes the root bytes to be reopened; dependency lookup, named-root
+identity, hash conflict and cycle checks are identical to the file entry point.
+The result owns validated copies, not caller-owned archive storage.
 
 Core allocation follows the existing fatal-OOM policy; loader-wide OOM behavior remains #236.
 
@@ -90,7 +94,7 @@ reachability. No test requires executing imported user or native code.
 `vm/module_graph.h` — общий неисполняющий слой проверки полного графа для
 компилятора, загрузчика и инспектора. Он дополняет `module_dependencies.h`:
 привязка непосредственных импортов одного потребителя не заменяет полный проход.
-Подключение CLI остаётся в #191/#218. Детерминированное представление
+CLI #191 объединяет эти API. Детерминированное представление
 предоставляет `vm/module_graph_diagnostics.h` (#190).
 
 `validate_module_graph` читает и проверяет корневой архив, даже если он находится
@@ -156,14 +160,17 @@ functionRef разрешается в проверенном графе без �
 `free_module_graph`.
 
 Перед публикацией именованного артефакта компилятор обязан также вызвать
-`validate_module_graph` для окончательного временного архива, передав **тот же
+`validate_module_graph` для окончательного временного архива либо
+`validate_module_graph_memory` для точных байтов готового архива, передав **тот же
 исходный поисковый объект**. Исходная проверка имеет синтетический корень и
 разрешает только анализ зависимостей, но не устанавливает идентичность готового
 артефакта. Финальный проход обнаружит зависимость, импортирующую старую установленную
 копию приложения с той же парой имя/версия: для окончательного архива это обратное
 ребро в настоящий корень. Готовый артефакт проверяется заново; кеш действует внутри
-прохода, а не между фазами компиляции. Подключение этого барьера публикации остаётся
-в #191.
+прохода, а не между фазами компиляции. CLI #191 использует вход из памяти перед
+атомарной публикацией. Диагностическая метка не вызывает повторного чтения корня;
+поиск зависимостей, идентичность корня, конфликты хешей и циклы проверяются так же,
+как для файла. Результат владеет копиями, а не памятью вызывающего.
 
 Сохраняется общая аварийная политика выделения памяти;
 поведение загрузчика при нехватке памяти относится к #236.

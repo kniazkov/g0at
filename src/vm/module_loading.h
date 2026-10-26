@@ -55,6 +55,7 @@ void clear_module_loading_result(module_loading_result_t *result);
 
 typedef struct {
     size_t extraction_attempts, loader_attempts, warnings;
+    size_t bound_functions; /**< Distinct functions in the selected lazy-bound variant. */
     bool loaded, unavailable;
 } module_loading_statistics_t;
 

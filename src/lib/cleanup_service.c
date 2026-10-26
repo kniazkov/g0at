@@ -525,3 +525,13 @@ bool cleanup_service_main(int argc, char **argv, int *exit_code) {
     child_close_channel((uintptr_t)watch);
     return true;
 }
+
+bool cleanup_service_startup_result(cleanup_service_t *s, cleanup_status_t *status) {
+    if (!s || !status || lock_os_mutex(s->mutex) != OS_THREAD_OK)
+        return false;
+    bool attempted = s->attempted;
+    if (attempted)
+        *status = s->startup;
+    unlock_os_mutex(s->mutex);
+    return attempted;
+}

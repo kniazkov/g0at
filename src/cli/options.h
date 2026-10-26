@@ -34,6 +34,13 @@ struct options_t {
     /** @brief Execute Goat commands entered interactively from the console, line by line. */
     bool interactive;
 
+    bool build_module;         /**< Explicit build command, restricted to .gmod input. */
+    bool run_command;          /**< Explicit run command; dispatch follows the input format. */
+    bool list_native_targets;  /**< Enumerate verified toolchains without an input file. */
+    bool native_explicit;      /**< Native mode was supplied rather than defaulted. */
+    path_t *module_directory;  /**< Owned explicit repository/output directory. */
+    const char *native_target; /**< Borrowed optional native build target override. */
+
     /**
      * @brief Interactive session data object holding names declared on previous lines.
      *

@@ -51,9 +51,32 @@ options_t *parse_options(int argc, char **argv) {
 
     options_t *opt = create_options();
 
-    bool native_explicit = false, optimization_explicit = false;
+    bool optimization_explicit = false, positional_only = false;
     for (int index = 1; index < argc; index++) {
         char *arg = argv[index];
+
+        if (positional_only) {
+            if (!opt->input_file)
+                opt->input_file = create_path(arg);
+            else
+                append_to_vector(opt->script_args, arg);
+            continue;
+        }
+        if (!strcmp(arg, "--")) {
+            positional_only = true;
+            continue;
+        }
+        if (!opt->input_file && (!strcmp(arg, "build") || !strcmp(arg, "run"))) {
+            if (opt->build_module || opt->run_command) {
+                FPRINTF(stderr, "Only one build/run command is allowed.\n");
+                goto error;
+            }
+            opt->build_module = !strcmp(arg, "build");
+            opt->run_command = !strcmp(arg, "run");
+            if (opt->build_module)
+                opt->compile_only = true;
+            continue;
+        }
 
         if (strcmp(arg, "/?") == 0) {
             goto help;
@@ -95,6 +118,24 @@ options_t *parse_options(int argc, char **argv) {
                 continue;
             }
 
+            if (!strcmp(arg, "--list-native-targets")) {
+                opt->list_native_targets = true;
+                continue;
+            }
+            if (!strcmp(arg, "--module-dir") || !strcmp(arg, "--native-target")) {
+                if (++index >= argc || !argv[index][0] || argv[index][0] == '-') {
+                    fprintf_utf8(stderr, get_messages()->missing_specification, arg);
+                    goto error;
+                }
+                if (!strcmp(arg, "--module-dir")) {
+                    free_path(opt->module_directory);
+                    opt->module_directory = create_path(argv[index]);
+                } else {
+                    opt->native_target = argv[index];
+                }
+                continue;
+            }
+
             if (!strcmp(arg, "--cc")) {
                 if (++index >= argc || !argv[index][0] || argv[index][0] == '-') {
                     fprintf_utf8(stderr, get_messages()->missing_specification, arg);
@@ -128,7 +169,7 @@ options_t *parse_options(int argc, char **argv) {
             }
 
             if (strcmp(arg, "--native") == 0) {
-                native_explicit = true;
+                opt->native_explicit = true;
                 if (index + 1 >= argc || !argv[index + 1][0] || argv[index + 1][0] == '-') {
                     fprintf_utf8(stderr, get_messages()->missing_specification, arg);
                     goto error;
@@ -238,16 +279,38 @@ options_t *parse_options(int argc, char **argv) {
         }
     }
 
+    bool module_input = opt->input_file && opt->input_file->extension
+                        && !strcasecmp(opt->input_file->extension, "gmod");
+    if (opt->list_native_targets) {
+        if (opt->input_file || opt->interactive || opt->compile_only || opt->run_binary
+            || opt->run_command || opt->build_module || opt->module_directory || opt->native_target
+            || opt->native_explicit || optimization_explicit || opt->print_c || opt->save_c
+            || opt->save_library || opt->print_source_code || opt->print_analysis
+            || opt->analysis_output_file || opt->graph_output_file || opt->print_native
+            || opt->native_output_file || opt->print_bytecode || opt->enable_warnings) {
+            FPRINTF(stderr, "Incompatible --list-native-targets options.\n");
+            goto error;
+        }
+        return opt;
+    }
+    if ((opt->build_module && !module_input)
+        || (opt->run_command && (opt->compile_only || opt->run_binary))
+        || (opt->native_target && !module_input)) {
+        FPRINTF(stderr, "Incompatible build/run or --native-target input.\n");
+        goto error;
+    }
+
     if (!opt->interactive && !opt->input_file) {
         fprintf_utf8(stderr, get_messages()->no_input_file);
         goto error;
     }
 
     if (opt->interactive
-        && (opt->compile_only || opt->run_binary || opt->print_c || opt->save_c || opt->save_library
-            || opt->print_source_code || opt->print_analysis || opt->analysis_output_file
-            || opt->graph_output_file || opt->print_native || opt->native_output_file
-            || opt->native_execution == NATIVE_REQUIRED)) {
+        && (opt->build_module || opt->run_command || opt->module_directory || opt->native_target
+            || opt->compile_only || opt->run_binary || opt->print_c || opt->save_c
+            || opt->save_library || opt->print_source_code || opt->print_analysis
+            || opt->analysis_output_file || opt->graph_output_file || opt->print_native
+            || opt->native_output_file || opt->native_execution == NATIVE_REQUIRED)) {
         fprintf_utf8(stderr, get_messages()->interactive_conflict);
         goto error;
     }
@@ -261,7 +324,7 @@ options_t *parse_options(int argc, char **argv) {
         FPRINTF(stderr, "Incompatible --compile/--run options.\n");
         goto error;
     }
-    if (opt->run_binary && !native_explicit)
+    if (opt->run_binary && !opt->native_explicit)
         opt->native_execution = NATIVE_AUTO;
     if ((opt->print_c || opt->save_c || opt->save_library)
         && (opt->optimization_level == OPTIMIZATION_NONE || opt->print_analysis
@@ -269,7 +332,8 @@ options_t *parse_options(int argc, char **argv) {
         fprintf_utf8(stderr, get_messages()->bad_c_options);
         goto error;
     }
-    if ((opt->native_execution != NATIVE_OFF && opt->optimization_level == OPTIMIZATION_NONE)
+    if ((!module_input && opt->native_execution != NATIVE_OFF
+         && opt->optimization_level == OPTIMIZATION_NONE)
         || ((opt->print_c || opt->save_c || opt->save_library)
             && (opt->native_execution != NATIVE_OFF || opt->print_native
                 || opt->native_output_file))) {
@@ -280,7 +344,7 @@ options_t *parse_options(int argc, char **argv) {
         fprintf_utf8(stderr, get_messages()->native_report_conflict);
         goto error;
     }
-    if (!binary_program_options_valid(opt))
+    if (!module_input && !binary_program_options_valid(opt))
         goto error;
     return opt;
 
@@ -299,6 +363,7 @@ void destroy_options(options_t *opt) {
     free_path(opt->graph_output_file);
     free_path(opt->analysis_output_file);
     free_path(opt->native_output_file);
+    free_path(opt->module_directory);
     destroy_vector(opt->script_args);
     FREE(opt);
 }
