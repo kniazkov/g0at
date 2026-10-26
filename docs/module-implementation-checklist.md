@@ -61,7 +61,7 @@
 - [x] 45. [#234](https://github.com/kniazkov/g0at/issues/234) — Диагностика исходников в скомпилированных модулях
 - [x] 46. [#206](https://github.com/kniazkov/g0at/issues/206) — Встроенные __main__ и __dir__
 - [x] 47. [#207](https://github.com/kniazkov/g0at/issues/207) — Верхнеуровневый return и exit ([API и проверки](module-exit-api.md))
-- [ ] 48. [#217](https://github.com/kniazkov/g0at/issues/217) — Сериализация инициализации между потоками
+- [x] 48. [#217](https://github.com/kniazkov/g0at/issues/217) — Сериализация инициализации между потоками ([API и проверки](module-serialization-api.md))
 - [ ] 49. [#232](https://github.com/kniazkov/g0at/issues/232) — Проверка нативных специализаций по каждому вызову
 - [ ] 50. [#211](https://github.com/kniazkov/g0at/issues/211) — Интеграция нативной сборки с .gmod
 - [ ] 51. [#210](https://github.com/kniazkov/g0at/issues/210) — Ленивая загрузка нативных библиотек

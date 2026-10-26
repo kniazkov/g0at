@@ -331,3 +331,6 @@ finally_types
 access_external
 
 launch_constants
+
+thread_shared_bindings
+thread_native_callback

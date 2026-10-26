@@ -5,6 +5,11 @@
 #pragma once
 #include "model/builtin_function.h"
 
+extern const builtin_function_t builtin_spawn;
+object_t *get_function_spawn(void);
+extern const builtin_function_t builtin_join;
+object_t *get_function_join(void);
+
 extern const builtin_function_t builtin_abs;
 object_t *get_function_abs(void);
 
@@ -166,6 +171,8 @@ object_t *get_function_trunc(void);
 
 /** @brief One registry list also defines exact static key-storage capacity. */
 #define GOAT_BUILTIN_FUNCTIONS(X)                                                                  \
+    X(spawn)                                                                                       \
+    X(join)                                                                                        \
     X(abs)                                                                                         \
     X(acos)                                                                                        \
     X(asin)                                                                                        \

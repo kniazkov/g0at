@@ -4,6 +4,7 @@
  */
 #include "function_call.h"
 
+#include "builtins/registry.h"
 #include "function_summary.h"
 #include "graph/declarations.h"
 #include "graph/expression.h"
@@ -83,6 +84,19 @@ const lattice_element_t *interpret_function_call(const lattice_element_t *functi
         if (count < builtin->min_args) {
             caller->control_flow = FLOW_UNREACHABLE;
             return make_bottom_element();
+        }
+        if (builtin == &builtin_spawn) {
+            /* A callback starts later, not as an inline call in the creator's state.
+               Register its type signature, but never import synchronous effects. */
+            caller->concurrent_bindings = true;
+            if (count && args[0]->type == LATTICE_KNOWN_FUNCTION) {
+                const known_function_element_t *callback =
+                    (const known_function_element_t *)args[0];
+                if (callback->node)
+                    register_function_specialization(get_function_summaries(callback->node),
+                                                     args + 1,
+                                                     count - 1);
+            }
         }
         if (builtin->effects & BUILTIN_EFFECT_BINDINGS)
             forget_abstract_values(caller);

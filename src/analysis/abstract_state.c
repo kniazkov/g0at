@@ -7,6 +7,8 @@
 #include "abstract_state.h"
 
 #include "graph/declarations.h"
+#include "graph/member_access.h"
+#include "graph/variable.h"
 #include "lattice.h"
 #include "lib/allocate.h"
 
@@ -75,6 +77,7 @@ abstract_state_t *create_abstract_state(arena_t *arena) {
     state->call_frame = NULL;
     state->builtin_bindings_unknown = false;
     state->module_constants = false;
+    state->concurrent_bindings = false;
     state->type_analysis_incomplete = NULL;
     state->call_graph_node = NULL;
     state->recursive_group = NULL;
@@ -98,12 +101,60 @@ abstract_state_t *clone_abstract_state(const abstract_state_t *state) {
     copy->call_frame = state->call_frame;
     copy->builtin_bindings_unknown = state->builtin_bindings_unknown;
     copy->module_constants = state->module_constants;
+    copy->concurrent_bindings = state->concurrent_bindings;
     copy->call_budget = state->call_budget;
     copy->type_analysis_incomplete = state->type_analysis_incomplete;
     copy->call_graph_node = state->call_graph_node;
     copy->recursive_group = state->recursive_group;
     copy->c_expressions = state->c_expressions;
     return copy;
+}
+
+/** @brief Captured mutable cells are shared; ordinary uncaptured locals remain precise. */
+static const node_t *declaration_owner(const node_t *node) {
+    while (node && node->vtbl->type != NODE_FUNCTION_OBJECT)
+        node = node->parent;
+    return node;
+}
+
+static bool
+captures_declaration(const node_t *node, const declarator_t *decl, const node_t *owner) {
+    if (node->vtbl->type == NODE_VARIABLE && ((const variable_t *)node)->declarator == decl
+        && declaration_owner(node) != owner)
+        return true;
+    for (size_t i = 0; i < get_node_child_count(node); ++i)
+        if (captures_declaration(get_node_child(node, i), decl, owner))
+            return true;
+    return false;
+}
+
+static bool concurrent_mutable(const abstract_state_t *state, const declarator_t *decl) {
+    if (!state->concurrent_bindings || !decl || decl == get_builtin_declarator() || !decl->base.vtbl
+        || decl->base.vtbl->type == NODE_CONSTANT_DECLARATOR)
+        return false;
+    const node_t *owner = declaration_owner(&decl->base);
+    return !owner || captures_declaration(owner, decl, owner);
+}
+
+bool requires_concurrency_safe_optimization(const node_t *node) {
+    node_type_t type = node->vtbl->type;
+    /* Exported code may be called from a thread created by a different unit. */
+    if ((type == NODE_VARIABLE_DECLARATOR || type == NODE_CONSTANT_DECLARATOR)
+        && ((const declarator_t *)node)->modifier != ACCESS_FILE)
+        return true;
+    if (type == NODE_MODULE_IMPORT || type == NODE_MODULE_INCLUDE || type == NODE_INDEX_ACCESS)
+        return true;
+    string_view_t name = {0};
+    if (type == NODE_VARIABLE)
+        name = ((const variable_t *)node)->name;
+    else if (type == NODE_MEMBER_ACCESS)
+        name = ((const member_access_t *)node)->name;
+    if (name.length == 5 && !MEMCMP(name.data, U"spawn", 5))
+        return true;
+    for (size_t i = 0; i < get_node_child_count(node); ++i)
+        if (requires_concurrency_safe_optimization(get_node_child(node, i)))
+            return true;
+    return false;
 }
 
 const lattice_element_t *set_in_abstract_state(abstract_state_t *state,
@@ -119,6 +170,8 @@ const lattice_element_t *set_in_abstract_state_at(abstract_state_t *state,
     if (declarator == get_builtin_declarator())
         state->builtin_bindings_unknown = true;
     add_analysis_event(state->collector, ANALYSIS_VALUE_WRITE, node, declarator, value);
+    if (concurrent_mutable(state, declarator))
+        value = make_top_element();
     lattice_pair_t *pair =
         (lattice_pair_t *)get_from_avl_tree(state->values, (void *)declarator).ptr;
     if (pair) {
@@ -147,6 +200,10 @@ const lattice_element_t *get_from_abstract_state(const abstract_state_t *state,
                                                  const declarator_t *declarator) {
     lattice_pair_t *pair =
         (lattice_pair_t *)get_from_avl_tree(state->values, (void *)declarator).ptr;
+    if (concurrent_mutable(state, declarator))
+        return make_top_element();
+    if (state->concurrent_bindings && pair && pair->current->type == LATTICE_TYPED_ARRAY)
+        return make_array_element();
     return pair ? pair->current : NULL;
 }
 
@@ -199,6 +256,7 @@ abstract_state_t *join_abstract_states(const abstract_state_t *left,
     result->return_value = left->return_value == right->return_value ? left->return_value : NULL;
     result->call_frame = left->call_frame;
     result->module_constants = left->module_constants && right->module_constants;
+    result->concurrent_bindings = left->concurrent_bindings || right->concurrent_bindings;
     result->builtin_bindings_unknown =
         left->builtin_bindings_unknown || right->builtin_bindings_unknown;
     result->call_budget = left->call_budget;
@@ -309,6 +367,7 @@ void apply_abstract_call_state(abstract_state_t *caller,
                                const abstract_state_t *result,
                                const node_t *function) {
     caller->builtin_bindings_unknown |= result->builtin_bindings_unknown;
+    caller->concurrent_bindings |= result->concurrent_bindings;
     call_copy_t copy = {caller, function};
     avl_tree_for_each(result->values, copy_call_entry, &copy);
 }

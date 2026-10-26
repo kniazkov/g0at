@@ -8,6 +8,7 @@
 
 #include "common/types.h"
 #include "exception.h"
+#include "lib/os_thread.h"
 #include "object_stack.h"
 
 #include <stddef.h>
@@ -51,6 +52,18 @@ struct thread_t {
     size_t native_attempts;
     size_t native_successes;
     size_t native_retries;
+
+    /** @brief OS execution handle, joined once by the VM after all program threads finish. */
+    os_thread_t *worker;
+    /** @brief Retained callable until the worker starts, also visible to GC via its stack. */
+    object_t *start_function;
+    uint16_t start_argument_count;
+    bool program_worker;
+    bool finished;
+    bool failure_observed;
+    int execution_status;
+    /** @brief Waiting relationship, protected by the process execution mutex. */
+    thread_t *waiting_for;
 
     /** @brief The data stack used by the thread. */
     object_stack_t *data_stack;

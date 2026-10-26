@@ -116,11 +116,12 @@ static void scan(declaration_walk_t *walk, size_t entry) {
     }
 }
 
-bool visit_module_file_declarations(const bytecode_t *code,
-                                    uint32_t file,
-                                    bool syntactic,
-                                    module_declaration_visitor_t visitor,
-                                    void *context) {
+static bool visit_declarations(const bytecode_t *code,
+                               uint32_t file,
+                               bool syntactic,
+                               module_declaration_visitor_t visitor,
+                               void *context,
+                               bool legacy) {
     if (!code || file >= code->file_count || !visitor)
         return false;
     bytecode_file_t record = code->files[file];
@@ -149,11 +150,17 @@ bool visit_module_file_declarations(const bytecode_t *code,
     for (size_t i = 0; walk.valid && i < record.count; ++i) {
         size_t address = record.first + i;
         instruction_t instr = code->instructions[address];
-        if (walk.scope[i] != 0 || (instr.opcode != DVAR && instr.opcode != DCONST))
+        bool plain = legacy && (instr.opcode == VAR || instr.opcode == CONST);
+        if (walk.scope[i] != 0 || (!plain && instr.opcode != DVAR && instr.opcode != DCONST))
             continue;
         declaration_descriptor_t declaration;
-        walk.valid = get_bytecode_declaration(code, instr.arg1, &declaration)
-                     && visitor(code, address, &declaration, context);
+        if (plain) {
+            declaration = (declaration_descriptor_t){.name = instr.arg1, .modifier = ACCESS_FILE};
+            walk.valid = instr.arg1 < code->data_descriptor_count;
+        } else {
+            walk.valid = get_bytecode_declaration(code, instr.arg1, &declaration);
+        }
+        walk.valid = walk.valid && visitor(code, address, &declaration, context);
     }
     FREE(walk.function_body);
     FREE(walk.queue);
@@ -165,6 +172,7 @@ bool visit_module_file_declarations(const bytecode_t *code,
 typedef struct {
     object_t *scope;
     vector_t *names, *indices;
+    bool remaining;
 } pending_declarations_t;
 
 static bool reserve_name(const bytecode_t *code,
@@ -178,7 +186,12 @@ static bool reserve_name(const bytecode_t *code,
                              (string_value_t){(const gchar_t *)(code->data + text.offset),
                                               text.size / sizeof(gchar_t) - 1,
                                               false});
-    bool valid = !get_own_field_cell(pending->scope, key);
+    field_cell_t *existing = get_own_field_cell(pending->scope, key);
+    if (existing && pending->remaining) {
+        DECREF(key);
+        return true;
+    }
+    bool valid = !existing;
     for (size_t n = 0; n < pending->names->size; ++n)
         if (!compare_objects_using_vtbl(pending->names->data[n], key))
             valid = false;
@@ -187,17 +200,14 @@ static bool reserve_name(const bytecode_t *code,
     return valid;
 }
 
-bool prepare_module_file_declarations(module_file_t *file) {
-    if (!file)
+static bool prepare_scope(bytecode_t *code, uint32_t file_id, object_t *scope, bool remaining) {
+    if (!code || !scope || file_id >= code->file_count)
         return false;
-    bytecode_t *code = module_file_bytecode(file);
-    object_t *scope = module_file_scope(file);
     /* Validate all names before publishing any cells. */
     vector_t *names = create_vector();
     vector_t *indices = create_vector();
-    pending_declarations_t pending = {scope, names, indices};
-    bool valid =
-        visit_module_file_declarations(code, module_file_id(file), false, reserve_name, &pending);
+    pending_declarations_t pending = {scope, names, indices, remaining};
+    bool valid = visit_declarations(code, file_id, false, reserve_name, &pending, true);
     if (valid) {
         if (!code->declaration_unit)
             code->declaration_unit = create_module_identity();
@@ -205,15 +215,20 @@ bool prepare_module_file_declarations(module_file_t *file) {
             size_t i = (size_t)(uintptr_t)indices->data[n] - 1;
             instruction_t instr = code->instructions[i];
             declaration_descriptor_t declaration;
-            get_bytecode_declaration(code, instr.arg1, &declaration);
+            bool plain = instr.opcode == VAR || instr.opcode == CONST;
+            if (plain)
+                declaration =
+                    (declaration_descriptor_t){.name = instr.arg1, .modifier = ACCESS_FILE};
+            else
+                get_bytecode_declaration(code, instr.arg1, &declaration);
             field_cell_t *cell =
                 create_object_field_in_file(scope,
                                             names->data[n],
                                             get_null_object(),
-                                            instr.opcode == DCONST,
+                                            instr.opcode == DCONST || instr.opcode == CONST,
                                             (access_modifier_t)declaration.modifier,
                                             get_object_module(scope),
-                                            module_file_id(file),
+                                            file_id,
                                             get_object_access_domain(scope),
                                             true);
             if (!cell) {
@@ -221,7 +236,7 @@ bool prepare_module_file_declarations(module_file_t *file) {
                 break;
             }
             cell->pending_initialization = true;
-            cell->declaration_id = instr.arg1 + 1;
+            cell->declaration_id = plain ? 0 : instr.arg1 + 1;
             cell->binding_unit = retain_module_identity(code->declaration_unit);
         }
     }
@@ -230,4 +245,29 @@ bool prepare_module_file_declarations(module_file_t *file) {
     destroy_vector(indices);
     destroy_vector(names);
     return valid;
+}
+
+bool prepare_module_file_declarations(module_file_t *file) {
+    return file
+           && prepare_file_scope_declarations(module_file_bytecode(file),
+                                              module_file_id(file),
+                                              module_file_scope(file));
+}
+
+bool visit_module_file_declarations(const bytecode_t *code,
+                                    uint32_t file,
+                                    bool syntactic,
+                                    module_declaration_visitor_t visitor,
+                                    void *context) {
+    return visit_declarations(code, file, syntactic, visitor, context, false);
+}
+
+bool prepare_file_scope_declarations(bytecode_t *code, uint32_t file_id, object_t *scope) {
+    return prepare_scope(code, file_id, scope, false);
+}
+
+bool prepare_remaining_file_scope_declarations(bytecode_t *code,
+                                               uint32_t file_id,
+                                               object_t *scope) {
+    return prepare_scope(code, file_id, scope, true);
 }

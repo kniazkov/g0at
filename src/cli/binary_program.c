@@ -106,7 +106,7 @@ int execute_program(const options_t *options,
     do {
         if (thread->native_status)
             FPRINTF(stderr, "Native backend failed (status %u).\n", thread->native_status);
-        if (thread->exception.value) {
+        if (thread->exception.value && !thread->failure_observed) {
             /* Unwinding has removed function grants; retain only the entry module. */
             function_access_t observer;
             init_function_access(&observer, process->module);

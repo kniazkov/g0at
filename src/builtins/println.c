@@ -3,13 +3,18 @@
  * @brief Runtime and abstract implementations of println.
  */
 #include "lib/io.h"
+#include "model/process.h"
+#include "model/thread.h"
 #include "registry.h"
 
 /** @brief Prints the same value as print, followed by one newline. */
 static operation_result_t execute(object_t **args, uint16_t count, thread_t *thread) {
     operation_result_t result = builtin_print.execute(args, count, thread);
-    if (!result.is_exception)
+    if (!result.is_exception) {
+        size_t depth = process_execution_suspend(thread->process);
         print_utf8(U"\n");
+        process_execution_resume(thread->process, depth);
+    }
     return result;
 }
 

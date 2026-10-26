@@ -19,7 +19,8 @@ static void *echo(void *data) {
 
 static void *foreign_unlock(void *data) {
     os_mutex_t *mutex = data;
-    return unlock_os_mutex(mutex) == OS_THREAD_INVALID && try_lock_os_mutex(mutex) == OS_THREAD_BUSY
+    return !os_mutex_depth(mutex) && unlock_os_mutex(mutex) == OS_THREAD_INVALID
+                   && try_lock_os_mutex(mutex) == OS_THREAD_BUSY
                ? data
                : NULL;
 }
@@ -69,7 +70,9 @@ static bool misuse(void) {
     ASSERT(join_os_thread(NULL, NULL) == OS_THREAD_INVALID);
     ASSERT(destroy_os_thread(NULL) == OS_THREAD_OK);
     ASSERT(create_os_mutex(NULL) == OS_THREAD_INVALID);
+    ASSERT(create_os_recursive_mutex(NULL) == OS_THREAD_INVALID);
     ASSERT(lock_os_mutex(NULL) == OS_THREAD_INVALID);
+    ASSERT(os_mutex_depth(NULL) == 0);
     ASSERT(try_lock_os_mutex(NULL) == OS_THREAD_INVALID);
     ASSERT(unlock_os_mutex(NULL) == OS_THREAD_INVALID);
     ASSERT(create_os_condition(NULL) == OS_THREAD_INVALID);
@@ -97,6 +100,32 @@ static bool misuse(void) {
     ASSERT(signal_os_condition(condition) == OS_THREAD_OK);
     ASSERT(broadcast_os_condition(condition) == OS_THREAD_OK);
     ASSERT(destroy_os_condition(condition) == OS_THREAD_OK);
+    ASSERT(destroy_os_mutex(mutex) == OS_THREAD_OK);
+    return true;
+}
+
+/* Joining a try-lock probe is deterministic: the owner retains the mutex throughout. */
+static bool recursive(void) {
+    os_mutex_t *mutex;
+    ASSERT(create_os_recursive_mutex(&mutex) == OS_THREAD_OK);
+    ASSERT(os_mutex_depth(mutex) == 0);
+    ASSERT(lock_os_mutex(mutex) == OS_THREAD_OK);
+    ASSERT(lock_os_mutex(mutex) == OS_THREAD_OK);
+    ASSERT(try_lock_os_mutex(mutex) == OS_THREAD_OK);
+    for (unsigned depth = 3; depth; --depth) {
+        ASSERT(os_mutex_depth(mutex) == depth);
+        os_thread_t *thread;
+        ASSERT(destroy_os_mutex(mutex) == OS_THREAD_BUSY);
+        ASSERT(create_os_thread(&thread, foreign_unlock, mutex, 0) == OS_THREAD_OK);
+        void *result;
+        ASSERT(join_os_thread(thread, &result) == OS_THREAD_OK && result == mutex);
+        ASSERT(destroy_os_thread(thread) == OS_THREAD_OK);
+        ASSERT(unlock_os_mutex(mutex) == OS_THREAD_OK);
+    }
+    ASSERT(unlock_os_mutex(mutex) == OS_THREAD_INVALID);
+    ASSERT(os_mutex_depth(mutex) == 0);
+    ASSERT(try_lock_os_mutex(mutex) == OS_THREAD_OK);
+    ASSERT(unlock_os_mutex(mutex) == OS_THREAD_OK);
     ASSERT(destroy_os_mutex(mutex) == OS_THREAD_OK);
     return true;
 }
@@ -165,11 +194,14 @@ typedef struct {
     os_mutex_t *mutex;
     os_condition_t *condition;
     unsigned request, response;
+    bool recursive;
 } exchange_t;
 
 static void *consumer(void *data) {
     exchange_t *task = data;
     if (lock_os_mutex(task->mutex) != OS_THREAD_OK)
+        return NULL;
+    if (task->recursive && lock_os_mutex(task->mutex) != OS_THREAD_OK)
         return NULL;
     for (unsigned i = 1; i <= 100; i++) {
         while (task->request != i)
@@ -179,21 +211,31 @@ static void *consumer(void *data) {
         if (signal_os_condition(task->condition) != OS_THREAD_OK)
             return NULL;
     }
+    if (task->recursive && unlock_os_mutex(task->mutex) != OS_THREAD_OK)
+        return NULL;
     return unlock_os_mutex(task->mutex) == OS_THREAD_OK ? data : NULL;
 }
 
-static bool signal_exchange(void) {
-    exchange_t task = {0};
-    ASSERT(create_os_mutex(&task.mutex) == OS_THREAD_OK);
+static bool signal_exchange(bool recursive) {
+    exchange_t task = {.recursive = recursive};
+    ASSERT((recursive ? create_os_recursive_mutex(&task.mutex) : create_os_mutex(&task.mutex))
+           == OS_THREAD_OK);
     ASSERT(create_os_condition(&task.condition) == OS_THREAD_OK);
     os_thread_t *thread;
     ASSERT(create_os_thread(&thread, consumer, &task, 0) == OS_THREAD_OK);
     ASSERT(lock_os_mutex(task.mutex) == OS_THREAD_OK);
+    if (recursive)
+        ASSERT(lock_os_mutex(task.mutex) == OS_THREAD_OK);
     for (unsigned i = 1; i <= 100; i++) {
         task.request = i;
         ASSERT(signal_os_condition(task.condition) == OS_THREAD_OK);
         while (task.response != i)
             ASSERT(wait_os_condition(task.condition, task.mutex) == OS_THREAD_OK);
+    }
+    if (recursive) {
+        ASSERT(os_mutex_depth(task.mutex) == 2);
+        ASSERT(unlock_os_mutex(task.mutex) == OS_THREAD_OK);
+        ASSERT(destroy_os_mutex(task.mutex) == OS_THREAD_BUSY);
     }
     ASSERT(unlock_os_mutex(task.mutex) == OS_THREAD_OK);
     void *result;
@@ -206,8 +248,8 @@ static bool signal_exchange(void) {
 
 bool run_os_thread_tests(void) {
     size_t before = get_allocated_memory_size();
-    return lifecycle() && misuse() && concurrent() && signal_exchange()
-           && get_allocated_memory_size() == before;
+    return lifecycle() && misuse() && recursive() && concurrent() && signal_exchange(false)
+           && signal_exchange(true) && get_allocated_memory_size() == before;
 }
 
 bool test_os_threads(void) {

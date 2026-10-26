@@ -23,7 +23,7 @@ static const builtin_function_t *lookup(const gchar_t *name) {
 bool test_builtin_registry() {
     size_t count;
     const builtin_function_t *const *functions = get_builtin_functions(&count);
-    ASSERT(count == 53 && count == BUILTIN_FUNCTION_COUNT);
+    ASSERT(count == 55 && count == BUILTIN_FUNCTION_COUNT);
     ASSERT(get_object_keys(get_root_context()->data).size == count + 2 + 10);
     for (size_t i = 0; i < count; i++) {
         const builtin_function_t *f = functions[i];
@@ -38,10 +38,29 @@ bool test_builtin_registry() {
         ASSERT(f->effects
                == ((!STRCMP(f->name, U"print") || !STRCMP(f->name, U"println"))
                        ? BUILTIN_EFFECT_OUTPUT
+                   : (!STRCMP(f->name, U"spawn") || !STRCMP(f->name, U"join"))
+                       ? BUILTIN_EFFECT_BINDINGS
                    : !STRCMP(f->name, U"exit")  ? BUILTIN_EFFECT_TERMINATION
                    : !STRCMP(f->name, U"input") ? BUILTIN_EFFECT_INPUT
                                                 : BUILTIN_EFFECT_NONE));
     }
+    /* Thread operations are not numeric functions. Their abstract domains and
+       binding effects conservatively account for concurrently executed code. */
+    ASSERT(lookup(U"spawn") == &builtin_spawn && lookup(U"join") == &builtin_join);
+    ASSERT(builtin_spawn.min_args == 1 && builtin_join.min_args == 0);
+    ASSERT(builtin_spawn.interpret(NULL, NULL, 1)->type == LATTICE_INTEGER);
+    ASSERT(builtin_join.interpret(NULL, NULL, 1)->type == LATTICE_TOP);
+    process_t *inactive = create_process();
+    object_t *callable = get_function_sign();
+    operation_result_t spawn_result = builtin_spawn.execute(&callable, 1, inactive->main_thread);
+    ASSERT(spawn_result.is_exception && spawn_result.value == get_exception_invalid_operation());
+    DECREF(spawn_result.value);
+    object_t *id = create_integer_object(inactive, 1);
+    operation_result_t join_result = builtin_join.execute(&id, 1, inactive->main_thread);
+    ASSERT(join_result.is_exception && join_result.value == get_exception_invalid_operation());
+    DECREF(join_result.value);
+    DECREF(id);
+    destroy_process(inactive);
     ASSERT(!lookup(U"pi") && !lookup(U"Exceptions") && !lookup(U"sig") && !lookup(U"signx"));
     const gchar_t raw[] = {U's', U'i', U'g', U'n', U'x'};
     ASSERT(find_builtin_function((string_view_t){raw, 4}) == lookup(U"sign"));
@@ -83,6 +102,7 @@ bool test_builtin_numeric_results() {
         const builtin_function_t *descriptor = functions[f];
         if (descriptor == &builtin_print || descriptor == &builtin_println
             || descriptor == &builtin_input || descriptor == &builtin_exit
+            || descriptor == &builtin_spawn || descriptor == &builtin_join
             || descriptor == &builtin_int || descriptor == &builtin_ord
             || descriptor == &builtin_chr || descriptor == &builtin_trim
             || descriptor == &builtin_instance_of || descriptor == &builtin_char_at
@@ -182,7 +202,7 @@ bool test_builtin_errors() {
     for (size_t i = 0; i < count; i++) {
         const builtin_function_t *f = functions[i];
         if (f == &builtin_print || f == &builtin_println || f == &builtin_input || f == &builtin_int
-            || f == &builtin_str)
+            || f == &builtin_str || f == &builtin_spawn || f == &builtin_join)
             continue;
         for (size_t bad = 0; bad < f->min_args; bad++) {
             for (int kind = 0; kind < 5; kind++) {

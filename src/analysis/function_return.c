@@ -47,6 +47,10 @@ static const lattice_element_t *evaluate_signature(function_summary_set_t *set,
                                                    bool *incomplete,
                                                    c_expression_context_t *expressions) {
     abstract_state_t *state = create_abstract_state(set->arena);
+    const node_t *unit = set->function;
+    while (unit->parent)
+        unit = unit->parent;
+    state->concurrent_bindings = requires_concurrency_safe_optimization(unit);
     state->type_analysis_incomplete = incomplete;
     state->c_expressions = expressions;
     state->recursive_group = group;

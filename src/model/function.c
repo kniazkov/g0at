@@ -310,11 +310,13 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
     }
     goat_native_value_v2_t result = {0};
     thread->native_attempts++;
+    size_t execution_depth = process_execution_suspend(thread->process);
     uint32_t status = entry->invoke(GOAT_NATIVE_ABI_VERSION,
                                     &native_context,
                                     entry->parameter_count,
                                     args,
                                     &result);
+    process_execution_resume(thread->process, execution_depth);
     FREE(args);
     if (status == GOAT_NATIVE_OK && (result.type != entry->return_type || result.reserved))
         status = GOAT_NATIVE_BAD_REQUEST;

@@ -18,9 +18,13 @@ struct module_file_t {
     bool external;
     object_t *scope;
     module_file_state_t state;
+    bool direct_entry;
     exception_t failure;
     module_file_t *initialization_parent;
 };
+
+/** @brief Diagnostic stack follows execution, not an unrelated OS thread. */
+static _Thread_local module_file_t *current_initializing_file;
 
 struct module_files_t {
     module_files_t *next;
@@ -272,7 +276,13 @@ void destroy_module_files(process_t *process) {
 }
 
 module_file_state_t module_file_state(const module_file_t *file) {
-    return file ? file->state : MODULE_FILE_UNINITIALIZED;
+    if (!file)
+        return MODULE_FILE_UNINITIALIZED;
+    process_t *process = file->owner->process;
+    process_execution_enter(process);
+    module_file_state_t state = file->state;
+    process_execution_leave(process);
+    return state;
 }
 
 bytecode_t *module_file_bytecode(const module_file_t *file) {
@@ -283,12 +293,37 @@ process_t *module_file_process(const module_file_t *file) {
     return file ? file->owner->process : NULL;
 }
 
+/** @brief Wait only for a foreign included initializer, never for ordinary direct main. */
+static void await_file_publication(const module_file_t *file) {
+    process_t *process = file->owner->process;
+    if (file->state != MODULE_FILE_INITIALIZING || file->direct_entry
+        || os_mutex_depth(process->initialization_mutex))
+        return;
+    ++process->initialization_waiters;
+    broadcast_os_condition(process->threads_changed);
+    size_t depth = process_execution_suspend(process);
+    os_thread_status_t status = lock_os_mutex(process->initialization_mutex);
+    assert(status == OS_THREAD_OK);
+    process_execution_resume(process, depth);
+    --process->initialization_waiters;
+    status = unlock_os_mutex(process->initialization_mutex);
+    assert(status == OS_THREAD_OK);
+    (void)status;
+}
+
 object_t *module_file_failure(const module_file_t *file) {
-    return file && file->state == MODULE_FILE_FAILED ? file->failure.value : NULL;
+    return module_file_exception(file).value;
 }
 
 exception_t module_file_exception(const module_file_t *file) {
-    return file && file->state == MODULE_FILE_FAILED ? file->failure : (exception_t){0};
+    if (!file)
+        return (exception_t){0};
+    process_t *process = file->owner->process;
+    process_execution_enter(process);
+    await_file_publication(file);
+    exception_t result = file->state == MODULE_FILE_FAILED ? file->failure : (exception_t){0};
+    process_execution_leave(process);
+    return result;
 }
 
 exception_t module_files_exception(process_t *process, module_t *module, uint32_t file_id) {
@@ -322,12 +357,13 @@ object_t *module_scope_failure(const object_t *scope) {
     return module_file_failure(module_scope_file(scope));
 }
 
-module_initialize_status_t initialize_module_file(module_file_t *file,
+static module_initialize_status_t initialize_file(module_file_t *file,
                                                   context_t *caller,
                                                   module_file_executor_t execute,
                                                   void *data,
                                                   object_t **scope,
-                                                  exception_t *failure) {
+                                                  exception_t *failure,
+                                                  bool direct) {
     if (scope)
         *scope = NULL;
     if (failure)
@@ -335,18 +371,42 @@ module_initialize_status_t initialize_module_file(module_file_t *file,
     if (!file || !caller || !execute || !scope || !failure
         || (caller != get_root_context() && caller->data->process != file->owner->process))
         return MODULE_INITIALIZE_ARGUMENT;
+    process_t *process = file->owner->process;
+    process_execution_enter(process);
+    bool locked = false;
+    /* Completed files do not contend on the initializer lock. A directly executing
+       entry file exposes declaration readiness, not all-or-nothing file readiness. */
+    if (file->state == MODULE_FILE_UNINITIALIZED
+        || (file->state == MODULE_FILE_INITIALIZING && !file->direct_entry)) {
+        if (!direct) {
+            ++process->initialization_waiters;
+            broadcast_os_condition(process->threads_changed);
+            size_t depth = process_execution_suspend(process);
+            os_thread_status_t status = lock_os_mutex(process->initialization_mutex);
+            assert(status == OS_THREAD_OK);
+            (void)status;
+            process_execution_resume(process, depth);
+            --process->initialization_waiters;
+            locked = true;
+        }
+    }
+    module_initialize_status_t result = MODULE_INITIALIZE_OK;
     if (file->state == MODULE_FILE_FAILED) {
         *failure = retain_exception(file->failure);
-        return MODULE_INITIALIZE_FAILED;
+        result = MODULE_INITIALIZE_FAILED;
+        goto done;
     }
     if (file->state == MODULE_FILE_INITIALIZED || file->state == MODULE_FILE_INITIALIZING) {
         *scope = file->scope;
-        return MODULE_INITIALIZE_OK;
+        goto done;
     }
-    process_t *process = file->owner->process;
+    file->direct_entry = direct;
     file->state = MODULE_FILE_INITIALIZING;
-    file->initialization_parent = process->initializing_file;
-    process->initializing_file = file;
+    file->initialization_parent = current_initializing_file;
+    current_initializing_file = file;
+    module_file_t *previous = process->initializing_file;
+    if (!direct)
+        process->initializing_file = file;
     bool success = prepare_module_file_declarations(file);
     if (success) {
         context_t *frame = create_module_file_context(file, caller);
@@ -356,20 +416,53 @@ module_initialize_status_t initialize_module_file(module_file_t *file,
             failure->trace = capture_exception_trace(frame, frame->instruction);
         destroy_context(frame);
     }
-    process->initializing_file = file->initialization_parent;
+    if (!direct)
+        process->initializing_file = previous;
+    current_initializing_file = file->initialization_parent;
     file->initialization_parent = NULL;
     success = success && !failure->value;
-    file->state = success ? MODULE_FILE_INITIALIZED : MODULE_FILE_FAILED;
     if (!success) {
         if (!failure->value) {
             failure->value = get_exception_invalid_operation();
             INCREF(failure->value);
         }
         file->failure = retain_exception(*failure);
-        return MODULE_INITIALIZE_FAILED;
+        result = MODULE_INITIALIZE_FAILED;
+    } else {
+        *scope = file->scope;
     }
-    *scope = file->scope;
-    return MODULE_INITIALIZE_OK;
+    /* Value/trace/readiness become observable together under execution_mutex. */
+    file->state = success ? MODULE_FILE_INITIALIZED : MODULE_FILE_FAILED;
+done:
+    if (locked) {
+        os_thread_status_t status = unlock_os_mutex(process->initialization_mutex);
+        assert(status == OS_THREAD_OK);
+        (void)status;
+    }
+    process_execution_leave(process);
+    return result;
+}
+
+module_initialize_status_t initialize_module_file(module_file_t *file,
+                                                  context_t *caller,
+                                                  module_file_executor_t execute,
+                                                  void *data,
+                                                  object_t **scope,
+                                                  exception_t *failure) {
+    return initialize_file(file, caller, execute, data, scope, failure, false);
+}
+
+module_initialize_status_t initialize_module_file_direct(module_file_t *file,
+                                                         context_t *caller,
+                                                         module_file_executor_t execute,
+                                                         void *data,
+                                                         object_t **scope,
+                                                         exception_t *failure) {
+    return initialize_file(file, caller, execute, data, scope, failure, true);
+}
+
+bool module_initialization_active(process_t *process) {
+    return current_initializing_file && current_initializing_file->owner->process == process;
 }
 
 static void append_initialization_file(string_builder_t *builder, const module_file_t *file) {
@@ -386,11 +479,11 @@ string_value_t module_initialization_chain(process_t *process, const module_file
     if (!process || (target && target->owner->process != process))
         return EMPTY_STRING_VALUE;
     size_t count = 0;
-    for (module_file_t *file = process->initializing_file; file; file = file->initialization_parent)
+    for (module_file_t *file = current_initializing_file; file; file = file->initialization_parent)
         ++count;
     module_file_t **chain = count ? ALLOC(count * sizeof(*chain)) : NULL;
     size_t index = count;
-    for (module_file_t *file = process->initializing_file; file; file = file->initialization_parent)
+    for (module_file_t *file = current_initializing_file; file; file = file->initialization_parent)
         chain[--index] = file;
     string_builder_t builder;
     init_string_builder(&builder, 0);
@@ -400,7 +493,7 @@ string_value_t module_initialization_chain(process_t *process, const module_file
         append_initialization_file(&builder, chain[i]);
     }
     FREE(chain);
-    if (target && process->initializing_file != target) {
+    if (target && current_initializing_file != target) {
         if (count)
             append_static_string(&builder, U" -> ");
         append_initialization_file(&builder, target);

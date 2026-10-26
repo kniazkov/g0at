@@ -33,11 +33,15 @@ os_thread_status_t join_os_thread(os_thread_t *thread, void **result);
 os_thread_status_t destroy_os_thread(os_thread_t *thread);
 
 os_thread_status_t create_os_mutex(os_mutex_t **out);
-/** @brief Nonrecursive: recursive lock reports DEADLOCK rather than waiting forever. */
+/** @brief Creates a reentrant mutex: each successful lock/try-lock requires an unlock. */
+os_thread_status_t create_os_recursive_mutex(os_mutex_t **out);
+/** @brief Locks; owner reentry on a nonrecursive mutex reports DEADLOCK. */
 os_thread_status_t lock_os_mutex(os_mutex_t *mutex);
 os_thread_status_t try_lock_os_mutex(os_mutex_t *mutex);
 /** @brief Only the owning thread may unlock; misuse reports INVALID. */
 os_thread_status_t unlock_os_mutex(os_mutex_t *mutex);
+/** @brief Current caller's acquisition depth, or zero for NULL/unowned/foreign-owned mutex. */
+size_t os_mutex_depth(const os_mutex_t *mutex);
 /** @brief Requires no concurrent users; locked mutexes/active condition waits return BUSY. */
 os_thread_status_t destroy_os_mutex(os_mutex_t *mutex);
 
@@ -45,6 +49,7 @@ os_thread_status_t create_os_condition(os_condition_t **out);
 /** @brief Atomically releases an owned mutex and waits, returning with it locked again.
  * Always test the predicate in a loop: wakeups may be spurious. All concurrent waits on one
  * condition must use the same mutex. Signal/broadcast do not store notifications.
+ * A recursive mutex is fully released during the wait and its original depth is restored.
  */
 os_thread_status_t wait_os_condition(os_condition_t *condition, os_mutex_t *mutex);
 os_thread_status_t signal_os_condition(os_condition_t *condition);

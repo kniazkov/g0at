@@ -37,6 +37,8 @@ struct os_thread_t {
 struct os_mutex_t {
     atomic_uintptr_t owner;
     atomic_uint condition_waiters;
+    bool recursive;
+    size_t depth; /* Accessed only by the owner while the native lock is held. */
 #ifdef _WIN32
     SRWLOCK native;
 #else
@@ -155,13 +157,15 @@ os_thread_status_t destroy_os_thread(os_thread_t *thread) {
     return OS_THREAD_OK;
 }
 
-os_thread_status_t create_os_mutex(os_mutex_t **out) {
+static os_thread_status_t create_mutex(os_mutex_t **out, bool recursive) {
     if (!out)
         return OS_THREAD_INVALID;
     *out = NULL;
     os_mutex_t *mutex = ALLOC(sizeof(*mutex));
     atomic_init(&mutex->owner, 0);
     atomic_init(&mutex->condition_waiters, 0);
+    mutex->recursive = recursive;
+    mutex->depth = 0;
 #ifdef _WIN32
     InitializeSRWLock(&mutex->native);
 #else
@@ -174,17 +178,35 @@ os_thread_status_t create_os_mutex(os_mutex_t **out) {
     return OS_THREAD_OK;
 }
 
+os_thread_status_t create_os_mutex(os_mutex_t **out) {
+    return create_mutex(out, false);
+}
+
+os_thread_status_t create_os_recursive_mutex(os_mutex_t **out) {
+    return create_mutex(out, true);
+}
+
+static os_thread_status_t reenter_mutex(os_mutex_t *mutex) {
+    if (!mutex->recursive)
+        return OS_THREAD_DEADLOCK;
+    if (mutex->depth == SIZE_MAX)
+        return OS_THREAD_ERROR;
+    mutex->depth++;
+    return OS_THREAD_OK;
+}
+
 os_thread_status_t lock_os_mutex(os_mutex_t *mutex) {
     if (!mutex)
         return OS_THREAD_INVALID;
     if (atomic_load(&mutex->owner) == current_owner())
-        return OS_THREAD_DEADLOCK;
+        return reenter_mutex(mutex);
 #ifdef _WIN32
     AcquireSRWLockExclusive(&mutex->native);
 #else
     if (pthread_mutex_lock(&mutex->native))
         return OS_THREAD_ERROR;
 #endif
+    mutex->depth = 1;
     atomic_store(&mutex->owner, current_owner());
     return OS_THREAD_OK;
 }
@@ -193,7 +215,7 @@ os_thread_status_t try_lock_os_mutex(os_mutex_t *mutex) {
     if (!mutex)
         return OS_THREAD_INVALID;
     if (atomic_load(&mutex->owner) == current_owner())
-        return OS_THREAD_DEADLOCK;
+        return reenter_mutex(mutex);
 #ifdef _WIN32
     if (!TryAcquireSRWLockExclusive(&mutex->native))
         return OS_THREAD_BUSY;
@@ -202,6 +224,7 @@ os_thread_status_t try_lock_os_mutex(os_mutex_t *mutex) {
     if (error)
         return error == EBUSY ? OS_THREAD_BUSY : OS_THREAD_ERROR;
 #endif
+    mutex->depth = 1;
     atomic_store(&mutex->owner, current_owner());
     return OS_THREAD_OK;
 }
@@ -209,16 +232,23 @@ os_thread_status_t try_lock_os_mutex(os_mutex_t *mutex) {
 os_thread_status_t unlock_os_mutex(os_mutex_t *mutex) {
     if (!mutex || atomic_load(&mutex->owner) != current_owner())
         return OS_THREAD_INVALID;
+    if (--mutex->depth)
+        return OS_THREAD_OK;
     atomic_store(&mutex->owner, 0);
 #ifdef _WIN32
     ReleaseSRWLockExclusive(&mutex->native);
 #else
     if (pthread_mutex_unlock(&mutex->native)) {
+        mutex->depth = 1;
         atomic_store(&mutex->owner, current_owner());
         return OS_THREAD_ERROR;
     }
 #endif
     return OS_THREAD_OK;
+}
+
+size_t os_mutex_depth(const os_mutex_t *mutex) {
+    return mutex && atomic_load(&mutex->owner) == current_owner() ? mutex->depth : 0;
 }
 
 os_thread_status_t destroy_os_mutex(os_mutex_t *mutex) {
@@ -255,6 +285,8 @@ os_thread_status_t create_os_condition(os_condition_t **out) {
 os_thread_status_t wait_os_condition(os_condition_t *condition, os_mutex_t *mutex) {
     if (!condition || !mutex || atomic_load(&mutex->owner) != current_owner())
         return OS_THREAD_INVALID;
+    size_t depth = mutex->depth;
+    mutex->depth = 0;
     atomic_fetch_add(&condition->waiters, 1);
     atomic_fetch_add(&mutex->condition_waiters, 1);
     atomic_store(&mutex->owner, 0);
@@ -263,6 +295,7 @@ os_thread_status_t wait_os_condition(os_condition_t *condition, os_mutex_t *mute
 #else
     bool success = pthread_cond_wait(&condition->native, &mutex->native) == 0;
 #endif
+    mutex->depth = depth;
     atomic_store(&mutex->owner, current_owner());
     atomic_fetch_sub(&mutex->condition_waiters, 1);
     atomic_fetch_sub(&condition->waiters, 1);

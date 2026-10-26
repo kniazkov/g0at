@@ -31,3 +31,16 @@ int run(process_t *proc, bytecode_t *code);
  * Not a reentrant VM entry: invoke only when no run is active in this process.
  */
 int run_module_file(process_t *proc, module_file_t *file);
+
+/** @brief Starts an equal program thread invoking callable with retained arguments.
+ * Called with the process execution lock held during an active run. The returned
+ * integer is a process-local handle; failures are ordinary catchable exceptions.
+ */
+operation_result_t spawn_program_thread(thread_t *caller,
+                                        object_t *callable,
+                                        object_t *const *arguments,
+                                        uint16_t count);
+/** @brief Waits for a program thread; returns its result or its original exception.
+ * Self/cyclic waits and waits during dynamic initialization are rejected.
+ */
+operation_result_t join_program_thread(thread_t *caller, uint64_t id);

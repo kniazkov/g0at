@@ -184,6 +184,16 @@ bool test_vm_throw_uncaught(void) {
     process_t *proc = create_process();
     ASSERT(run(proc, code) != 0);
     ASSERT(proc->main_thread->exception.value == get_null_object());
+    /* Reusing a process starts a new observation epoch. A prior entry exception
+       consumed by join must not suppress a fresh uncaught exception. */
+    clear_exception(&proc->main_thread->exception);
+    proc->main_thread->failure_observed = true;
+    proc->main_thread->execution_status = 99;
+    proc->main_thread->instr_id = 0;
+    ASSERT(run(proc, code) != 0);
+    ASSERT(!proc->main_thread->failure_observed);
+    ASSERT(proc->main_thread->exception.value == get_null_object());
+    ASSERT(proc->main_thread->execution_status != 99);
     free_bytecode(code);
     destroy_process(proc);
     return true;

@@ -55,6 +55,7 @@ struct abstract_state_t {
 
     /** @brief An untracked write may have shadowed root-provided names. */
     bool builtin_bindings_unknown;
+    bool concurrent_bindings; /**< Shared mutable facts cannot survive concurrent execution. */
     bool module_constants; /**< Preserve original file-scope constants in module analysis only. */
 
     /** @brief Shared failure flag for isolated return-type analysis; NULL during normal analysis.
@@ -154,3 +155,6 @@ void forget_captured_abstract_values(abstract_state_t *state, const node_t *func
  */
 abstract_state_t *
 widen_loop_state(const abstract_state_t *head, const abstract_state_t *back_edge, bool *stable);
+
+/** @brief Conservatively detects capabilities that can start asynchronous program code. */
+bool requires_concurrency_safe_optimization(const struct node_t *root);

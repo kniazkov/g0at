@@ -110,14 +110,22 @@ The recursive `factorial` finds its own name through the environment. Each call 
 
 ## 10.6. Processes and threads in this implementation
 
-[process.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/model/process.c) creates a process with an identifier, object lists, and one main thread. [thread.c](https://github.com/kniazkov/g0at/blob/ae26b849471233f3329214f3c170a7a26a756118/src/model/thread.c) creates a thread with a current context, stack, instruction index, auxiliary operands, and exception state. The thread also holds native-attempt counters.
+`process_t` owns shared runtime state and a circular list of `thread_t` records.
+Each thread retains its current context, data stack, instruction index, operands,
+exception and native-attempt counters. Since #217, `spawn(callable, ...arguments)`
+starts an OS-backed execution in this same model; `join(id)` returns its result or
+propagates its original exception. A recursive execution mutex protects shared
+model operations and is released between VM instructions and around blocking waits.
 
-Thread links form a circular list. After an instruction, the VM loop selects `thread->next`. With one thread, this is the same thread again. These are the internal structures through which execution and garbage collection operate.
+All program threads are equal. Finishing the entry execution does not release
+shared state or terminate other threads; ordinary cleanup waits for the last
+program execution, including descendants created by surviving threads. A distinct
+recursive initialization mutex serializes include/import, with dynamic spawn/join
+restrictions. The directly executed entry file is excluded from those restrictions.
+See [concurrency API](../../module-serialization-api.md).
 
-> [!CAUTION]
-> This version of the language has no user facilities for creating threads or synchronizing them. A circular list and a pointer switch in the VM do not implement parallel execution of a user program on multiple cores.
-
-Here, “process” also denotes a Goat runtime structure, rather than an automatically created separate operating-system process. These names should be read according to their actual role in the code.
+A Goat `process_t` is a runtime structure, not an automatically created operating-
+system process. Internal OS mutexes do not introduce user-language mutex objects.
 
 <a id="section-10-7"></a>
 

@@ -1,0 +1,3 @@
+const worker = func(value) { var local = value + 1; return local * 2; };
+const start = spawn;
+const id = start(worker, 20);
