@@ -67,11 +67,31 @@ static int compiler(int argc, char **argv) {
         return 3;
     }
     FREE(mode);
-    const char **args = ALLOC(((size_t)argc + 1) * sizeof(*args));
+    /* Test-only control library: a real versioned libc dependency, never patched metadata. */
+    bool module = false;
+    for (int i = 1; i < argc; i++)
+        module |= !strcmp(argv[i], "./module.c");
+    char *extra_source = module ? fs_environment("GOAT_TOOLCHAIN_EXTRA_SOURCE", NULL) : NULL;
+    const char **args = ALLOC(((size_t)argc + 2) * sizeof(*args));
     args[0] = real;
     for (int i = 1; i < argc; i++)
         args[i] = argv[i];
-    args[argc] = NULL;
+    size_t count = (size_t)argc;
+    if (extra_source)
+        args[count++] = extra_source;
+    args[count] = NULL;
+    /* Optional exact argv audit; the legacy discovery log stays unchanged. */
+    char *arguments_log = fs_environment("GOAT_TOOLCHAIN_ARGUMENTS_LOG", NULL);
+    if (arguments_log) {
+        FILE *file = FOPEN(arguments_log, "ab");
+        assert(file);
+        for (size_t i = 1; i < count; i++) {
+            assert(FWRITE(args[i], 1, strlen(args[i]) + 1, file) == strlen(args[i]) + 1);
+        }
+        assert(fputc('\n', file) != EOF);
+        assert(!FCLOSE(file));
+    }
+    FREE(arguments_log);
     child_options_t options = {.executable = real,
                                .arguments = args,
                                .capture_output = true,
@@ -83,6 +103,7 @@ static int compiler(int argc, char **argv) {
     int code = result->status == CHILD_EXITED ? (int)result->exit_code : 4;
     destroy_child_process(child);
     FREE(args);
+    FREE(extra_source);
     FREE(real);
     return code;
 }

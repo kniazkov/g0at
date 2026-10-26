@@ -8,6 +8,8 @@
 #    undef NDEBUG
 #endif
 
+#include "analysis/analysis.h"
+#include "analysis/interpreter.h"
 #include "common/module_build.h"
 #include "common/module_compilation.h"
 #include "lib/allocate.h"
@@ -20,6 +22,7 @@
 #include "vm/vm.h"
 
 #include <assert.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +33,55 @@
 #else
 #    include <unistd.h>
 #endif
+
+/* Link-time observers cover the actual production analyzer/interpreter and VM
+ * entry points. Positive controls below prevent a disconnected observer from
+ * turning the metadata-only assertion into a vacuous zero. */
+/* Observers run before the VM lock and must remain safe for concurrent entry. */
+static atomic_size_t analyzer_calls, interpreter_calls, execution_calls;
+
+compilation_error_t *
+__real_analyze(node_t *, parser_memory_t *, options_t *, analysis_collector_t *);
+void __real_interpret_module(node_t *, parser_memory_t *, analysis_collector_t *);
+int __real_run(process_t *, bytecode_t *);
+int __real_run_module_file(process_t *, module_file_t *);
+
+/** @brief Count front-end analysis entries in this test executable only. */
+compilation_error_t *__wrap_analyze(node_t *root,
+                                    parser_memory_t *memory,
+                                    options_t *options,
+                                    analysis_collector_t *collector) {
+    atomic_fetch_add_explicit(&analyzer_calls, 1, memory_order_relaxed);
+    return __real_analyze(root, memory, options, collector);
+}
+
+/** @brief Count abstract interpretation entries in this test executable only. */
+void __wrap_interpret_module(node_t *root,
+                             parser_memory_t *memory,
+                             analysis_collector_t *collector) {
+    atomic_fetch_add_explicit(&interpreter_calls, 1, memory_order_relaxed);
+    __real_interpret_module(root, memory, collector);
+}
+
+/** @brief Count legacy VM entries as well as module execution entries. */
+int __wrap_run(process_t *process, bytecode_t *code) {
+    atomic_fetch_add_explicit(&execution_calls, 1, memory_order_relaxed);
+    return __real_run(process, code);
+}
+
+/** @brief Count module VM entries without changing execution semantics. */
+int __wrap_run_module_file(process_t *process, module_file_t *file) {
+    atomic_fetch_add_explicit(&execution_calls, 1, memory_order_relaxed);
+    return __real_run_module_file(process, file);
+}
+
+static void report_contract_counts(void) {
+    FPRINTF(stdout,
+            "analysis=%zu interpretation=%zu execution=%zu\n",
+            atomic_load_explicit(&analyzer_calls, memory_order_relaxed),
+            atomic_load_explicit(&interpreter_calls, memory_order_relaxed),
+            atomic_load_explicit(&execution_calls, memory_order_relaxed));
+}
 
 static void report_graph(const module_graph_t *graph, module_graph_status_t status) {
     char *message = format_module_graph_diagnostics(graph);
@@ -260,6 +312,24 @@ static int execute(const char *archive, bool frozen, const char *directory) {
     return result;
 }
 
+static int metadata_contract(const char *archive) {
+    module_search_t *search = NULL;
+    module_search_error_t error = {0};
+    module_graph_t *graph = NULL;
+    int result = prepare_module_search_from_environment(archive, NULL, &search, &error);
+    if (!result)
+        result = validate_module_graph(archive, search, NULL, &graph);
+    if (result)
+        FPRINTF(stderr, "Metadata contract validation failed: %d\n", result);
+    else
+        assert(module_graph_node_count(graph) > 0);
+    free_module_graph(graph);
+    free_module_search(search);
+    clear_module_search_error(&error);
+    report_contract_counts();
+    return result;
+}
+
 int main(int argc, char **argv) {
     fs_error_t arguments_error = {0};
     assert(fs_arguments(&argc, &argv, &arguments_error));
@@ -268,7 +338,15 @@ int main(int argc, char **argv) {
         free_fs_arguments(argc, argv);
         return result;
     }
-    if (argc == 4 && !strcmp(argv[1], "compile"))
+    if (argc == 3 && !strcmp(argv[1], "metadata-contract"))
+        result = metadata_contract(argv[2]);
+    else if (argc == 4 && !strcmp(argv[1], "compile-contract")) {
+        result = compile(argv[2], argv[3], NULL);
+        report_contract_counts();
+    } else if (argc == 3 && !strcmp(argv[1], "binary-contract")) {
+        result = execute(argv[2], false, NULL);
+        report_contract_counts();
+    } else if (argc == 4 && !strcmp(argv[1], "compile"))
         result = compile(argv[2], argv[3], NULL);
     else if (argc == 7 && !strcmp(argv[1], "native-build")) {
         module_build_options_t options = {.override_mode = strcmp(argv[4], "descriptor") != 0,

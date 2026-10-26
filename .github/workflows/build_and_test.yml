@@ -102,6 +102,8 @@ jobs:
           python3 scripts/check_module_inspect.py build/${{ matrix.compiler }}/goat-inspect ${{ matrix.compiler }}
           python3 scripts/check_inspect_probe.py build/${{ matrix.compiler }}/goat-inspect build/${{ matrix.compiler }}/module_import_execution_testing ${{ matrix.compiler }} build/${{ matrix.compiler }}/inspect_probe_testing
           python3 scripts/check_module_cli.py build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native_toolchain_testing ${{ matrix.compiler }}
+          python3 scripts/check_module_delivery.py build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/goat-inspect ${{ matrix.compiler }}
+          python3 scripts/check_module_delivery_requirements.py audit build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native_toolchain_testing build/${{ matrix.compiler }}/module_native_testing ${{ matrix.compiler }}
           python3 scripts/check_native_exit.py build/${{ matrix.compiler }}/module_dispatch_testing ${{ matrix.compiler }}
           python3 scripts/check_module_dispatch.py build/${{ matrix.compiler }}/module_dispatch_testing
           python3 scripts/check_module_consistency.py build/${{ matrix.compiler }}/module_consistency_testing
@@ -137,6 +139,20 @@ jobs:
           python3 scripts/check_module_information.py build/${{ matrix.compiler }}/module_json_testing build/${{ matrix.compiler }}/module_writer_testing
           python3 scripts/check_module_information_merge.py build/${{ matrix.compiler }}/module_json_testing
           python3 scripts/check_module_merge.py build/${{ matrix.compiler }}/goat-merge ${{ matrix.compiler }}
+      - name: Execute newer-built module at its declared glibc minimum
+        # Select a controlled userspace from the actual produced requirement.
+        # Require exact equality with the module minimum, not just a newer libc.
+        run: |
+          python3 scripts/check_module_delivery_requirements.py prepare-floor build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native_toolchain_testing ${{ matrix.compiler }} build/runtime-floor
+          runtime_image=$(python3 scripts/check_module_delivery_requirements.py floor-image build/runtime-floor)
+          docker run --rm --network bridge \
+            -v "$PWD:/source:ro" "$runtime_image" bash -euxo pipefail -c '
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc libc6-dev cmake make python3
+              cmake -S /source/src -B /tmp/goat-floor -DCMAKE_BUILD_TYPE=Release
+              cmake --build /tmp/goat-floor --parallel 2 --target goat
+              python3 /source/scripts/check_module_delivery_requirements.py verify-floor /tmp/goat-floor/goat /source/build/runtime-floor
+            '
       - name: Strict module JSON
         run: |
           python3 scripts/check_module_json.py build/${{ matrix.compiler }}/module_json_testing
@@ -270,6 +286,7 @@ jobs:
         run: |
           cmake --build build/release-${{ matrix.compiler }} --target module_import_execution_testing
           python3 scripts/check_module_multifile_access.py build/release-${{ matrix.compiler }}/module_import_execution_testing build/release-${{ matrix.compiler }}/goat
+          python3 scripts/check_module_interface.py build/release-${{ matrix.compiler }}/module_import_execution_testing
       - name: Smoke test release
         run: ./goat example/hello_world.goat
       - name: Compare release native modes
@@ -342,8 +359,15 @@ jobs:
           install: >-
             diffutils
             ${{ matrix.prefix }}-gcc
+            mingw-w64-x86_64-gcc
+            mingw-w64-ucrt-x86_64-gcc
             ${{ matrix.prefix }}-cmake
             ${{ matrix.prefix }}-make
+      - name: Locate both Windows native delivery compilers
+        shell: msys2 {0}
+        run: |
+          echo "GOAT_DELIVERY_MINGW64_CC=$(cygpath -w /mingw64/bin/gcc.exe)" >> "$GITHUB_ENV"
+          echo "GOAT_DELIVERY_UCRT64_CC=$(cygpath -w /ucrt64/bin/gcc.exe)" >> "$GITHUB_ENV"
       - name: Build and test
         shell: msys2 {0}
         run: MSYS2_ARG_CONV_EXCL='*' cmd.exe /d /c 'scripts\build_mingw.cmd'
@@ -373,6 +397,8 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_inspect.py build/goat-inspect.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_inspect_probe.py build/goat-inspect.exe build/module_import_execution_testing.exe gcc build/inspect_probe_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_cli.py build/goat.exe build/native_toolchain_testing.exe gcc
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_delivery.py build/goat.exe build/goat-inspect.exe gcc
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_delivery_requirements.py audit build/goat.exe build/native_toolchain_testing.exe build/module_native_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_exit.py build/module_dispatch_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_dispatch.py build/module_dispatch_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_consistency.py build/module_consistency_testing.exe
@@ -534,6 +560,7 @@ jobs:
         run: |
           cmake --build build/release --target module_import_execution_testing
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_multifile_access.py build/release/module_import_execution_testing.exe build/release/goat.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_interface.py build/release/module_import_execution_testing.exe
       - name: Compare release native modes
         shell: msys2 {0}
         run: bash scripts/check_native_modes.sh build/release/goat.exe build/functional_testing.exe "build/native modes release"

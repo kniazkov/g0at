@@ -283,6 +283,38 @@ with tempfile.TemporaryDirectory(prefix='goat-module-interface-') as temporary:
     diagnostic = p.invoke('compile', p.root / 'sources/dynamic-1/module.gmod', dynamic)
     assert b'not callable' not in diagnostic.stderr, diagnostic.stderr
 
+    # Link-time counters observe the real production analysis and VM entry
+    # points. Positive controls prove they are connected on every CI target.
+    p = suite.project('instrumented-metadata-contract')
+    library = p.compile('library', '''
+        println("dependency initialized");
+        external twice = func(x) { return x * 2; };
+        twice(21);
+    ''')
+    assert next(f for f in metadata(library)['functions']
+                if f['functionId'] == exports(library)['twice']['functionId'])['analysis']['summaries']
+    producer = p.root / 'sources/library-1/module.gmod'
+    library.unlink()
+    p.invoke('compile-contract', producer, library,
+             expected='analysis=1 interpretation=1 execution=0\n')
+    shutil.rmtree(producer.parent)
+    p.invoke('metadata-contract', library,
+             expected='analysis=0 interpretation=0 execution=0\n')
+    # Reading proven summaries must not reconstruct/analyze a dependency AST.
+    # Only this consumer's single source file enters the analyzer.
+    app = p.compile('app', '''
+        const library = import "library@1";
+        println(library.twice(21));
+    ''')
+    app.unlink()
+    p.invoke('compile-contract', p.root / 'sources/app-1/module.gmod', app,
+             expected='analysis=1 interpretation=1 execution=0\n')
+    shutil.rmtree(p.root / 'sources')
+    p.invoke('metadata-contract', app,
+             expected='analysis=0 interpretation=0 execution=0\n')
+    p.invoke('binary-contract', app,
+             expected='dependency initialized\n42\nanalysis=0 interpretation=0 execution=2\n')
+
     p = suite.project('initialization-preserved')
     p.compile('failure', 'external answer = 42; println("before throw"); throw "broken";')
     app = p.compile('app', 'const m = import "failure@1"; println(m.answer);')

@@ -74,7 +74,7 @@
 - [x] 58. [#215](https://github.com/kniazkov/g0at/issues/215) — goat-merge: объединение вариантов ([CLI и публикация](module-merge-api.md))
 - [x] 59. [#224](https://github.com/kniazkov/g0at/issues/224) — Проверка графа inspect и автономность merge
 - [x] 60. [#218](https://github.com/kniazkov/g0at/issues/218) — Многофайловые тесты модели доступа ([AC-01–AC-28](book/ru/access-control-examples.md#проверки-на-реальных-файлах-и-модулях-218))
-- [ ] 61. [#219](https://github.com/kniazkov/g0at/issues/219) — Сквозные тесты сборки и поставки
+- [x] 61. [#219](https://github.com/kniazkov/g0at/issues/219) — Сквозные тесты сборки и поставки ([проверки и нижние границы](module-delivery-tests.md))
 - [ ] 62. [#220](https://github.com/kniazkov/g0at/issues/220) — Актуализация русской и английской книги
 
 ## Ключевые зависимости и разделение ответственности

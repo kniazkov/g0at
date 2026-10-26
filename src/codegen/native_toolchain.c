@@ -97,7 +97,8 @@ bool native_toolchain_target(const char *target, goat_native_environment *out) {
     *out = (goat_native_environment){0};
     const char *suffix = target ? strchr(target, '+') : NULL;
     if (suffix) {
-        if (strcmp(suffix, "+avx2"))
+        bool sha2 = !strcmp(suffix, "+sha2");
+        if (!sha2 && strcmp(suffix, "+avx2"))
             return false;
         size_t length = (size_t)(suffix - target);
         char *base = ALLOC(length + 1);
@@ -105,8 +106,14 @@ bool native_toolchain_target(const char *target, goat_native_environment *out) {
         base[length] = 0;
         bool supported = native_toolchain_target(base, out);
         FREE(base);
-        if (!supported || out->architecture != GOAT_ARCH_X86_64)
+        if (!supported || out->architecture != (sha2 ? GOAT_ARCH_AARCH64 : GOAT_ARCH_X86_64))
             return false;
+        if (sha2) {
+            /* +sha2 enables SHA1/SHA256 only. +crypto would also enable PMULL,
+             * which v1 cannot describe independently from AES. */
+            out->cpu_features |= GOAT_CPU_SHA1 | GOAT_CPU_SHA2;
+            return true;
+        }
         out->cpu_features |= GOAT_CPU_SSE3 | GOAT_CPU_SSSE3 | GOAT_CPU_SSE4_1 | GOAT_CPU_SSE4_2
                              | GOAT_CPU_AVX | GOAT_CPU_AVX2;
         return true;
@@ -152,11 +159,14 @@ static const char *target_name(const goat_native_environment *env) {
     for (size_t i = 0; i < sizeof(targets) / sizeof(*targets); i++) {
         goat_native_environment candidate;
         native_toolchain_target(targets[i], &candidate);
-        if (same_platform(env, &candidate))
+        if (same_platform(env, &candidate)) {
+            if (env->architecture == GOAT_ARCH_AARCH64 && (env->cpu_features & GOAT_CPU_SHA2))
+                return "linux-aarch64-gnu+sha2";
             return (env->cpu_features & GOAT_CPU_AVX2) ? (i == 0   ? "linux-x86_64-gnu+avx2"
                                                           : i == 2 ? "windows-x86_64-mingw64+avx2"
                                                                    : "windows-x86_64-ucrt64+avx2")
                                                        : targets[i];
+        }
     }
     return "unsupported";
 }
@@ -171,6 +181,8 @@ static const char *const *target_flags(const goat_native_environment *env) {
         count++;
     const char **flags = ALLOC((count + 3) * sizeof(*flags));
     memcpy(flags, base, count * sizeof(*flags));
+    if (env->architecture == GOAT_ARCH_AARCH64 && (env->cpu_features & GOAT_CPU_SHA2))
+        flags[2] = "-march=armv8-a+sha2";
     if (env->cpu_features & GOAT_CPU_AVX2) {
         flags[count++] = "-mavx2";
         /* GCC enables POPCNT with AVX2; v1 has no independent POPCNT requirement. */
@@ -334,7 +346,10 @@ static bool macros_match(const char *text, const goat_native_environment *env) {
                            "__SSE4_2__",
                            "__ARM_FEATURE_SVE",
                            "__ARM_FEATURE_ATOMICS",
-                           "__ARM_FEATURE_CRYPTO"};
+                           "__ARM_FEATURE_CRYPTO",
+                           "__ARM_FEATURE_AES",
+                           "__ARM_FEATURE_SHA2",
+                           "__ARM_FEATURE_SVE2"};
     const uint64_t bits[] = {GOAT_CPU_AVX,
                              GOAT_CPU_AVX2,
                              GOAT_CPU_AVX512F,
@@ -347,7 +362,10 @@ static bool macros_match(const char *text, const goat_native_environment *env) {
                              GOAT_CPU_SSE4_2,
                              GOAT_CPU_SVE,
                              GOAT_CPU_LSE,
-                             GOAT_CPU_AES};
+                             GOAT_CPU_AES,
+                             GOAT_CPU_AES,
+                             GOAT_CPU_SHA2,
+                             GOAT_CPU_SVE2};
     for (size_t i = 0; i < sizeof(extra) / sizeof(*extra); i++)
         if (has_macro(text, extra[i]) != ((env->cpu_features & bits[i]) != 0))
             return false;
