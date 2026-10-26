@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright 2026 Ivan Kniazkov
 # Distributed under the MIT license; see LICENSE.txt.
-"""Execute the matching RU/EN module tutorial and validate local book links.
+"""Execute the matching README/book module tutorial and validate local links.
 
 Usage: python scripts/check_module_book.py path/to/goat
 The goat-inspect and goat-merge executables must be beside goat. The examples
@@ -38,30 +38,58 @@ COMMANDS = [
 ]
 
 
+def check_tutorial(path):
+    """Match commands in each entry point to the tutorial executed below."""
+    text = path.read_text(encoding='utf-8')
+    blocks = re.findall(r'<!-- module-book-cli -->\s*```sh\n(.*?)```', text, re.S)
+    assert len(blocks) == 1, (path, 'one marked runnable tutorial required')
+    commands = [line.strip() for line in blocks[0].splitlines() if line.strip()]
+    assert commands == COMMANDS, (path, 'tutorial drift', commands)
+
+
+def check_links(path):
+    """Check local file destinations; external URLs and anchors are not fetched."""
+    text = path.read_text(encoding='utf-8')
+    assert sum(line.startswith('```') for line in text.splitlines()) % 2 == 0, (
+        path, 'unclosed fenced code block')
+    # Code blocks illustrate text and URLs, not document navigation.
+    prose = re.sub(r'```.*?```', '', text, flags=re.S)
+    prose = re.sub(r'`[^`]*`', '', prose)
+    for target in re.findall(r'\[[^\]\n]+\]\(([^\s)]+)\)', prose):
+        if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', target) or target.startswith('#'):
+            continue
+        filename = unquote(target.split('#', 1)[0])
+        assert (path.parent / filename).exists(), (path, 'broken link', target)
+
+
 def check_books():
-    """Keep published CLI examples executable, synchronized, and discoverable."""
+    """Keep README/book CLI examples synchronized and documentation navigable."""
     pages = {}
     for language in ('ru', 'en'):
         pages[language] = {p.name for p in (BOOK / language).glob('*.md')}
-        chapter = (BOOK / language / '30-modules.md').read_text(encoding='utf-8')
-        blocks = re.findall(r'<!-- module-book-cli -->\s*```sh\n(.*?)```',
-                            chapter, re.S)
-        assert len(blocks) == 1, (language, 'one marked runnable tutorial required')
-        commands = [line.strip() for line in blocks[0].splitlines() if line.strip()]
-        assert commands == COMMANDS, (language, 'tutorial drift', commands)
+        check_tutorial(BOOK / language / '30-modules.md')
         for path in (BOOK / language).glob('*.md'):
-            text = path.read_text(encoding='utf-8')
-            assert sum(line.startswith('```') for line in text.splitlines()) % 2 == 0, (
-                path, 'unclosed fenced code block')
-            # Code blocks illustrate text and URLs, not book navigation.
-            prose = re.sub(r'```.*?```', '', text, flags=re.S)
-            prose = re.sub(r'`[^`]*`', '', prose)
-            for target in re.findall(r'\[[^\]\n]+\]\(([^\s)]+)\)', prose):
-                if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', target) or target.startswith('#'):
-                    continue
-                filename = unquote(target.split('#', 1)[0])
-                assert (path.parent / filename).exists(), (path, 'broken link', target)
+            check_links(path)
     assert pages['ru'] == pages['en'], ('unpaired book pages', pages)
+    for filename in ('README.md', 'README.ru.md'):
+        check_tutorial(ROOT / filename)
+        check_links(ROOT / filename)
+
+
+def readme_snippets():
+    """Read the snippets actually displayed to users, never duplicate their code."""
+    snippets = {}
+    for marker in ('closure', 'loop'):
+        pair = []
+        for filename in ('README.md', 'README.ru.md'):
+            text = (ROOT / filename).read_text(encoding='utf-8')
+            blocks = re.findall(r'<!-- readme-' + marker +
+                                r' -->\s*```(?:text|goat)\n(.*?)```', text, re.S)
+            assert len(blocks) == 1, (filename, marker, 'one runnable snippet required')
+            pair.append(blocks[0])
+        assert pair[0] == pair[1], (marker, 'RU/EN source snippet drift')
+        snippets[marker] = pair[0]
+    return snippets
 
 
 def metadata(path):
@@ -70,6 +98,7 @@ def metadata(path):
 
 
 check_books()
+snippets = readme_snippets()
 count = 0
 with tempfile.TemporaryDirectory(prefix='goat-book-') as temporary:
     root = Path(temporary) / 'module tutorial'
@@ -89,6 +118,21 @@ with tempfile.TemporaryDirectory(prefix='goat-book-') as temporary:
             assert result.stdout.decode('utf-8').replace('\r\n', '\n') == expected, (
                 command, result.stdout, result.stderr)
         return result
+
+    for marker, source in snippets.items():
+        path = root / (marker + '.goat')
+        path.write_text(source, encoding='utf-8')
+        run('goat ' + path.name + ' --native off',
+            expected='5\n' if marker == 'closure' else '10\n')
+
+    shutil.copyfile(ROOT / 'example/hello_world.goat', root / 'hello.goat')
+    run('goat hello.goat', expected='it works!\n')
+    shutil.copyfile(BOOK / 'examples/22-native-module.goat', root / 'program.goat')
+    # These are the README's standalone saved-program commands. Unlike .gmod,
+    # direct .goat defaults to VM-only compilation without a native compiler.
+    run('goat --compile program.goat', expected='')
+    (root / 'program.goat').unlink()
+    run('goat --run program.gbin', expected='7\n6\n4.0\n')
 
     for index, command in enumerate(COMMANDS):
         result = run(command, expected='' if index < 2 else '25\n' if index < 4 else None)
@@ -127,4 +171,4 @@ with tempfile.TemporaryDirectory(prefix='goat-book-') as temporary:
     run('goat-merge standalone-copy.gbin modules/tutorial/1.0.gbin')
     assert metadata(root / 'standalone-copy.gbin') == metadata(app)
 
-print(f'Module book checks passed: {count} commands, matching RU/EN tutorial and local links')
+print(f'Module book checks passed: {count} commands, matching RU/EN README/book tutorial and local links')
