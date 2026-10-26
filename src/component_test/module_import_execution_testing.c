@@ -2,6 +2,12 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Literal imports through compilation, whole-graph preflight and execution.
  */
+/* This acceptance harness uses assertions for checks and setup operations.
+ * Keep them active when testing an optimized Release core as well. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
+
 #include "common/module_build.h"
 #include "common/module_compilation.h"
 #include "lib/allocate.h"
