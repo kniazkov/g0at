@@ -41,6 +41,8 @@ struct process_t {
 
     /** @brief Explicit termination is not an exception; no more Goat code may run. */
     bool exit_requested;
+    /** @brief Terminal backend contract failure; stops all further Goat execution. */
+    bool native_failed;
     /** @brief First selected portable status (0..255), retained through host cleanup. */
     int exit_code;
 

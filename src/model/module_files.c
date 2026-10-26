@@ -7,6 +7,7 @@
 #include "lib/allocate.h"
 #include "module/module_json_internal.h"
 #include "module_file_declarations.h"
+#include "module_native.h"
 #include "process.h"
 
 #include <assert.h>
@@ -36,6 +37,7 @@ struct module_files_t {
     module_file_t *files;
     object_t **strings;
     module_file_t **imports;
+    module_native_binding_t *native;
 };
 
 /** Take ownership of the wrapper, borrowing parsed metadata only during construction. */
@@ -166,6 +168,21 @@ module_t *module_files_identity(module_files_t *files) {
     return files ? files->identity : NULL;
 }
 
+module_native_binding_t *module_files_native(const module_files_t *files) {
+    return files ? files->native : NULL;
+}
+
+bool set_module_files_native(module_files_t *files, module_native_binding_t *binding) {
+    if (!files || !binding || files->native || files->process->execution
+        || files->process->native_failed)
+        return false;
+    for (size_t i = 0; i < files->code->file_count; i++)
+        if (files->files[i].state != MODULE_FILE_UNINITIALIZED)
+            return false;
+    files->native = binding;
+    return true;
+}
+
 bool bind_module_files_import(module_files_t *consumer,
                               uint32_t descriptor,
                               module_files_t *target) {
@@ -264,6 +281,7 @@ void destroy_module_files(process_t *process) {
             FREE_STRING(set->files[i].name);
             release_exception_trace(set->files[i].failure.trace);
         }
+        destroy_module_native_binding(set->native);
         FREE_STRING(set->name);
         FREE_STRING(set->version);
         FREE(set->strings);

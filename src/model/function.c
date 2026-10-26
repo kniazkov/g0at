@@ -10,6 +10,7 @@
 #include "context.h"
 #include "lib/allocate.h"
 #include "module_files.h"
+#include "module_native.h"
 #include "native_library.h"
 #include "native_services.h"
 #include "object.h"
@@ -164,6 +165,8 @@ typedef struct {
 
     /** @brief The starting instruction ID for this function. */
     instr_index_t first_instr_id;
+    /** @brief Explicit module-local code identity, independent of body address. */
+    uint32_t function_id;
 
     /** @brief The lexical closure environment of the function. */
     object_t *closure;
@@ -359,6 +362,8 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
 
 /** @brief Chooses native execution before allocating a bytecode call context. */
 static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, thread_t *thread) {
+    if (thread->process->native_failed)
+        return false;
     require_object_stack_size(thread->data_stack, arg_count);
     object_dynamic_function_t *dfobj = (object_dynamic_function_t *)obj;
     object_t *failure =
@@ -369,13 +374,27 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
             module_files_exception(thread->process, dfobj->access.module, dfobj->access.file_id));
         return false;
     }
+    module_files_t *module = find_module_files(thread->process, dfobj->access.module);
+    bool module_native = module_files_native(module) != NULL;
+    if ((!receiver || receiver == dfobj->closure) && !thread->context->native_disabled
+        && !dfobj->native_disabled) {
+        module_native_call_status_t status = call_module_native(module,
+                                                                dfobj->access.file_id,
+                                                                dfobj->function_id,
+                                                                dfobj->first_instr_id,
+                                                                dfobj->arg_count,
+                                                                arg_count,
+                                                                thread);
+        if (status != MODULE_NATIVE_FALLBACK)
+            return status == MODULE_NATIVE_COMPLETE;
+    }
     /* A method call resolves names through the receiver, which a native specialization does not
        model. Keep such calls on the bytecode path until receiver-aware name resolution exists.
        The same holds for functions created inside a method body: their closure inherits the
        method context, so native execution would bypass the receiver, even after the closure
        escapes to an outer scope. */
     const goat_native_entry_v2_t *entry =
-        receiver || thread->context->native_disabled || dfobj->native_disabled
+        module_native || receiver || thread->context->native_disabled || dfobj->native_disabled
             ? NULL
             : select_native_entry(dfobj, arg_count, thread->data_stack);
     bool retry = false;
@@ -527,6 +546,11 @@ object_t *create_function_object(process_t *process,
     return &obj->base;
 }
 
+void set_function_code_identity(object_t *function, uint32_t function_id) {
+    if (function && function->vtbl == &dynamic_vtbl)
+        ((object_dynamic_function_t *)function)->function_id = function_id;
+}
+
 function_access_t *get_function_access(object_t *function) {
     return function->vtbl == &dynamic_vtbl ? &((object_dynamic_function_t *)function)->access
                                            : NULL;
@@ -544,6 +568,7 @@ object_t *create_transferred_function(process_t *process, object_t *source) {
                                               original->closure,
                                               NULL,
                                               true);
+    set_function_code_identity(result, original->function_id);
     function_access_t *access = get_function_access(result);
     clear_function_access(access, true);
     init_function_access_in_file(access, original->access.module, original->access.file_id);

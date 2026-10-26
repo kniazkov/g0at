@@ -642,6 +642,9 @@ object_t *create_function_object(process_t *process,
                                  native_function_descriptor_t *native_function,
                                  bool native_disabled);
 
+/** @brief Attach the separately assigned, module-local function code identity. */
+void set_function_code_identity(object_t *function, uint32_t function_id);
+
 /** @brief Macro to declare a getter function for a static object. */
 #define DECLARE_STATIC_OBJECT(name) object_t *get_##name();
 
