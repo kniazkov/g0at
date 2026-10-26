@@ -21,6 +21,7 @@ if [[ ${OS:-} == Windows_NT ]]; then
 fi
 export CC="$compiler_env"
 export GOAT_LANGUAGE=en
+export GOAT_PIPELINE_REAL_COMPILER="$compiler_env"
 mkdir -p "$output_dir/temporary"
 workspace_env="$output_dir/temporary"
 if [[ ${OS:-} == Windows_NT ]]; then workspace_env="$(cygpath -am "$workspace_env")"; fi
@@ -125,25 +126,30 @@ current='build compiler substitutes'
 "$compiler" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 -I"$repo_root/include" \
     "${shared[@]}" -DGOAT_NATIVE_BUILD "$repo_root/test/functional/native_pipeline/empty.c" -o "$output_dir/empty.$ext"
 "$compiler" -I"$runtime_include" -std=c11 -Wall -Wextra -Werror -pedantic-errors -O2 \
-    "$repo_root/test/functional/native_pipeline/compiler.c" -o "$output_dir/invalid-compiler$exe"
+    "$repo_root/test/functional/native_pipeline/compiler.c" -I"$repo_root/src" \
+    "$repo_root/src/lib/windows_command_line.c" "$repo_root/src/lib/allocate.c" -o "$output_dir/invalid-compiler$exe"
 cp "$output_dir/invalid-compiler$exe" "$output_dir/wrong-compiler$exe"
+cp "$output_dir/invalid-compiler$exe" "$output_dir/failing-compiler$exe"
 export GOAT_PIPELINE_WRONG_LIBRARY="$output_dir/empty.$ext"
 if [[ ${OS:-} == Windows_NT ]]; then
     export GOAT_PIPELINE_WRONG_LIBRARY="$(cygpath -am "$GOAT_PIPELINE_WRONG_LIBRARY")"
 fi
-for stage in compile load bind; do
+for stage in unavailable compile load bind; do
     broken=goat-no-such-compiler
+    if [[ $stage == compile ]]; then broken="$output_dir/failing-compiler$exe"; fi
     if [[ $stage == load ]]; then broken="$output_dir/invalid-compiler$exe"; fi
     if [[ $stage == bind ]]; then broken="$output_dir/wrong-compiler$exe"; fi
-    if [[ ${OS:-} == Windows_NT && $stage != compile ]]; then broken="$(cygpath -am "$broken")"; fi
+    if [[ ${OS:-} == Windows_NT && $stage != unavailable ]]; then broken="$(cygpath -am "$broken")"; fi
     for mode in auto required; do
         current="$stage failure (native=$mode)"
         stem="$stage-$mode"
         CC="$broken" run "$stem" --native "$mode" --save-native "$output_dir/$stem.report" "$fixtures/numeric.goat"
-        field "$output_dir/$stem.report" preparation "$stage-error"
+        state="$stage-error"
+        if [[ $stage == unavailable ]]; then state=unavailable; fi
+        field "$output_dir/$stem.report" preparation "$state"
         field "$output_dir/$stem.report" attempts 0
-        grep -q "Native preparation failed ($stage-error)" "$output_dir/$stem.err"
-        if [[ $mode == auto ]]; then
+        grep -q "Native preparation failed ($state)" "$output_dir/$stem.err"
+        if [[ $mode == auto && $stage == unavailable ]]; then
             [[ $(cat "$output_dir/$stem.status") == 0 ]]
             same_text "$fixtures/numeric.out" "$output_dir/$stem.out"
         else

@@ -91,6 +91,12 @@ jobs:
           python3 scripts/check_module_bytecode.py build/${{ matrix.compiler }}/module_bytecode_testing
           python3 scripts/check_module_native.py build/${{ matrix.compiler }}/module_native_testing
           python3 scripts/check_module_abi.py build/${{ matrix.compiler }}/module_abi_testing
+          python3 scripts/check_native_artifact.py build/${{ matrix.compiler }}/native_artifact_testing ${{ matrix.compiler }}
+          python3 scripts/check_native_requirements.py build/${{ matrix.compiler }}/native_requirements_testing
+          python3 scripts/check_native_toolchains.py build/${{ matrix.compiler }}/native_toolchain_testing ${{ matrix.compiler }}
+          python3 scripts/check_native_cleanup.py build/${{ matrix.compiler }}/native_cleanup_testing ${{ matrix.compiler }}
+          python3 scripts/check_module_native_values.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/module_native_values_testing ${{ matrix.compiler }}
+          python3 scripts/check_module_build.py build/${{ matrix.compiler }}/module_import_execution_testing ${{ matrix.compiler }}
           python3 scripts/check_module_dispatch.py build/${{ matrix.compiler }}/module_dispatch_testing
           python3 scripts/check_module_consistency.py build/${{ matrix.compiler }}/module_consistency_testing
           python3 scripts/check_module_validation.py build/${{ matrix.compiler }}/module_validation_testing
@@ -342,6 +348,12 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_bytecode.py build/module_bytecode_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_native.py build/module_native_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_abi.py build/module_abi_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_artifact.py build/native_artifact_testing.exe gcc
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_requirements.py build/native_requirements_testing.exe
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_toolchains.py build/native_toolchain_testing.exe gcc
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_cleanup.py build/native_cleanup_testing.exe gcc
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_native_values.py build/module_import_execution_testing.exe build/module_native_values_testing.exe gcc
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_build.py build/module_import_execution_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_dispatch.py build/module_dispatch_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_consistency.py build/module_consistency_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_validation.py build/module_validation_testing.exe

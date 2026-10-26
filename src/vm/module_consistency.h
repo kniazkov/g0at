@@ -44,6 +44,15 @@ module_consistency_status_t match_module_descriptor(const goat_module_container 
                                                     const void *snapshot,
                                                     size_t size);
 
+/** Compare the same descriptor fields before an archive has been written.
+ * metadata and variant must already pass the metadata schema; snapshot is an
+ * owned/readable exact envelope. Shares all matching rules with container API.
+ */
+module_consistency_status_t match_module_descriptor_metadata(const yyjson_val *metadata,
+                                                             const yyjson_val *variant,
+                                                             const void *snapshot,
+                                                             size_t size);
+
 /** Resolve all functionRef exports of owner through its transitive dependencies.
  * Each supplied container must have passed local consistency validation. Edges
  * resolve by exact name/version/mainHash, not global functionId or node position.

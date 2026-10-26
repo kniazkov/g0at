@@ -78,15 +78,11 @@ static bool equal_value(const yyjson_val *a, const yyjson_val *b) {
     return equal;
 }
 
-module_consistency_status_t match_module_descriptor(const goat_module_container *container,
-                                                    size_t variant_index,
-                                                    const void *snapshot,
-                                                    size_t size) {
-    if (!container || !snapshot)
-        return MODULE_CONSISTENCY_ARGUMENT;
-    const yyjson_val *metadata = root(container);
-    yyjson_val *variant = yyjson_arr_get(yyjson_obj_get(metadata, "native"), variant_index);
-    if (!variant)
+module_consistency_status_t match_module_descriptor_metadata(const yyjson_val *metadata,
+                                                             const yyjson_val *variant,
+                                                             const void *snapshot,
+                                                             size_t size) {
+    if (!metadata || !variant || !snapshot)
         return MODULE_CONSISTENCY_ARGUMENT;
     yyjson_doc *doc = NULL;
     if (goat_module_descriptor_read(snapshot, size, &doc))
@@ -102,6 +98,17 @@ module_consistency_status_t match_module_descriptor(const goat_module_container 
             equal_value(yyjson_obj_get(variant, fields[i]), yyjson_obj_get(descriptor, fields[i]));
     yyjson_doc_free(doc);
     return equal ? MODULE_CONSISTENCY_OK : MODULE_CONSISTENCY_DESCRIPTOR;
+}
+
+module_consistency_status_t match_module_descriptor(const goat_module_container *container,
+                                                    size_t variant_index,
+                                                    const void *snapshot,
+                                                    size_t size) {
+    if (!container || !snapshot)
+        return MODULE_CONSISTENCY_ARGUMENT;
+    const yyjson_val *metadata = root(container);
+    const yyjson_val *variant = yyjson_arr_get(yyjson_obj_get(metadata, "native"), variant_index);
+    return match_module_descriptor_metadata(metadata, variant, snapshot, size);
 }
 
 static bool identity(const yyjson_val *a, const yyjson_val *b, const char *name) {

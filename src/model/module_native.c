@@ -299,7 +299,8 @@ module_native_call_status_t call_module_native(module_files_t *files,
         object_t *arg = i < actual_count
                             ? peek_object_from_stack(thread->data_stack, actual_count - 1 - i)
                             : get_null_object();
-        if (!convert_argument(arg, arguments + i, strings + i))
+        if (!convert_argument(arg, arguments + i, strings + i)
+            || !goat_module_value_valid(arguments + i, readable, &memory))
             goto done;
     }
     yyjson_val *specs = yyjson_obj_get(yyjson_doc_get_root(binding->metadata), "specializations");

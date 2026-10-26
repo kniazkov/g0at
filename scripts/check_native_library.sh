@@ -8,6 +8,7 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 mkdir -p "$output_dir"
 output_dir="$(realpath "$output_dir")"
 compiler="$(command -v "${CC:-cc}")"
+export REAL_CC="$compiler"
 passed=0
 current='compile shared library and call numeric adapters'
 printf 'Starting native library testing...\n'
@@ -46,7 +47,11 @@ current='successful compiler diagnostics and closed standard input'
 cat > "$output_dir/warning" <<'SH'
 #!/bin/sh
 if read -r ignored; then exit 9; fi
-printf 'compiler warning on success\n'
+# Keep machine-readable discovery queries intact; this fixture tests diagnostics
+# from the selected compiler's actual generated-C build, not corrupted query output.
+for arg do
+    case "$arg" in */module.c) printf 'compiler warning on success\n'; break;; esac
+done
 exec "$REAL_CC" "$@"
 SH
 chmod +x "$output_dir/warning"
@@ -82,13 +87,16 @@ expect_failure() {
     clean
 }
 expect_failure "$output_dir/missing-compiler"
-grep -q 'cannot start compiler' "$output_dir/stderr.txt"
+grep -Eq 'cannot start compiler|not found|No compiler|no compiler' "$output_dir/stderr.txt"
 # CC is an executable, not a shell command or a list of compiler flags.
 expect_failure "$compiler -O3"
 ok
 current='compiler diagnostics and nonzero exit'
 cat > "$output_dir/fail" <<'SH'
 #!/bin/sh
+user_build=0
+for arg do case "$arg" in */module.c) user_build=1;; esac; done
+[ "$user_build" = 1 ] || exec "$REAL_CC" "$@"
 printf 'compiler stdout\n'
 printf 'compiler stderr\n' >&2
 exit 23
@@ -102,6 +110,9 @@ ok
 current='compiler terminated by signal'
 cat > "$output_dir/signal" <<'SH'
 #!/bin/sh
+user_build=0
+for arg do case "$arg" in */module.c) user_build=1;; esac; done
+[ "$user_build" = 1 ] || exec "$REAL_CC" "$@"
 kill -TERM $$
 SH
 chmod +x "$output_dir/signal"
@@ -111,6 +122,9 @@ ok
 current='missing compiler artifact and bounded diagnostic capture'
 cat > "$output_dir/no-artifact" <<'SH'
 #!/bin/sh
+user_build=0
+for arg do case "$arg" in */module.c) user_build=1;; esac; done
+[ "$user_build" = 1 ] || exec "$REAL_CC" "$@"
 exit 0
 SH
 chmod +x "$output_dir/no-artifact"
@@ -118,6 +132,9 @@ expect_failure "$output_dir/no-artifact"
 grep -q 'file operation failed' "$output_dir/stderr.txt"
 cat > "$output_dir/verbose" <<'SH'
 #!/bin/sh
+user_build=0
+for arg do case "$arg" in */module.c) user_build=1;; esac; done
+[ "$user_build" = 1 ] || exec "$REAL_CC" "$@"
 head -c 100000 /dev/zero | tr '\000' x
 exit 2
 SH
@@ -129,6 +146,9 @@ ok
 current='empty or symlink compiler artifacts are rejected'
 cat > "$output_dir/empty-output" <<'SH'
 #!/bin/sh
+user_build=0
+for arg do case "$arg" in */module.c) user_build=1;; esac; done
+[ "$user_build" = 1 ] || exec "$REAL_CC" "$@"
 previous=''
 for arg do
     if [ "$previous" = '-o' ]; then : > "$arg"; fi
@@ -139,6 +159,9 @@ chmod +x "$output_dir/empty-output"
 expect_failure "$output_dir/empty-output"
 cat > "$output_dir/symlink-output" <<'SH'
 #!/bin/sh
+user_build=0
+for arg do case "$arg" in */module.c) user_build=1;; esac; done
+[ "$user_build" = 1 ] || exec "$REAL_CC" "$@"
 previous=''
 for arg do
     if [ "$previous" = '-o' ]; then ln -s module.c "$arg"; fi

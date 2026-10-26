@@ -4562,3 +4562,26 @@ instance and its own functionId; clone/flat capture redirection does not inherit
 the original native implementation's safety. [API and tests](../../module-dispatch-api.md)
 separate this dispatch mechanism from native production #211, lazy loading #210
 and full CLI integration #191.
+
+## Implemented native build backend (#211)
+
+`build_module` compiles a verified `.gmod` graph into immutable bytecode and at
+most one native variant. API overrides independently replace descriptor mode and
+target; absent values use auto/host. Required counts only own specializations,
+including includes, not dependency code. Building neither executes initializers
+nor loads DLL/SO code. Native presence does not change the main hash.
+
+Compilers are discovered only through PATH or explicitly selected with --cc.
+Ordinary selection stops at the first successful candidate; enumeration explores
+all supported candidates. Compilation/link probes share one monotonic budget,
+with a cache limited to the current invocation. Generated user C failure after
+selection is not hidden by VM fallback. All runtime sources use the same baseline
+CPU flags; explicit +avx2 raises requirements. ELF dependency requirements, PE
+imports and final descriptors are checked without loading code. Unknown requirements
+fail; the producer never substitutes build-host glibc as the artifact minimum.
+
+Temporary builds and probes share cleaner #245, including direct .goat execution.
+READY precedes build files and compiler startup. Saved libraries and archives are
+not cleaner-owned. See [module-build-api.md](../../module-build-api.md) for the API,
+limits and automated checks. Full .gmod CLI/target-list presentation remain #191;
+OS library loading remains #210.

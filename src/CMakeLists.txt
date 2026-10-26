@@ -56,7 +56,7 @@ file(GLOB core_sources
   cli/*.c
 )
 list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/lib/sha256.c" "${CMAKE_CURRENT_SOURCE_DIR}/lib/zip_archive.c")
-list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/common/module_compilation.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_validation.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_writer.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_search.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_dependencies.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_graph.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_graph_diagnostics.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_snapshot.c")
+list(REMOVE_ITEM core_sources "${CMAKE_CURRENT_SOURCE_DIR}/common/module_build.c" "${CMAKE_CURRENT_SOURCE_DIR}/common/module_compilation.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_validation.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_writer.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_search.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_dependencies.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_graph.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_graph_diagnostics.c" "${CMAKE_CURRENT_SOURCE_DIR}/vm/module_snapshot.c")
 # Build the native runtime separately; never depend on VM internals or its allocator.
 add_library(goat_native STATIC native/strings.c native/str.c lib/number_format.c lib/unicode.c)
 set_target_properties(goat_native PROPERTIES
@@ -80,6 +80,13 @@ add_custom_command(
     "${native_headers_dir}/native_abi.h"
     "${native_headers_dir}/native_runtime.h"
     "${native_headers_dir}/native_strings.h"
+    "${native_headers_dir}/module_abi.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/native/strings.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/native/str.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/lib/number_format.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/lib/number_format.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/lib/unicode.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/lib/unicode_data.inc"
     "${CMAKE_CURRENT_SOURCE_DIR}/../scripts/embed_native_runtime.cmake"
   COMMENT "Embedding native runtime headers and static library"
   VERBATIM
@@ -153,7 +160,7 @@ add_executable(module_consistency_testing component_test/module_consistency_test
 target_link_libraries(module_consistency_testing PRIVATE core m)
 
 # One validation library for compiler, loader, inspect and merge.
-add_library(goat_validation STATIC common/module_compilation.c vm/module_validation.c vm/module_writer.c vm/module_search.c vm/module_dependencies.c vm/module_graph.c vm/module_graph_diagnostics.c vm/module_snapshot.c)
+add_library(goat_validation STATIC common/module_build.c common/module_compilation.c vm/module_validation.c vm/module_writer.c vm/module_search.c vm/module_dependencies.c vm/module_graph.c vm/module_graph_diagnostics.c vm/module_snapshot.c)
 target_link_libraries(goat_validation PUBLIC core)
 target_include_directories(goat_validation PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 add_executable(module_validation_testing component_test/module_validation_testing.c)
@@ -224,3 +231,14 @@ add_executable(module_thread_lifetime_testing component_test/module_thread_lifet
 target_link_libraries(module_thread_lifetime_testing PRIVATE goat_validation m)
 target_compile_definitions(module_thread_lifetime_testing PRIVATE LIFETIME_NATIVE_PATH="$<TARGET_FILE:module_thread_native_fixture>")
 add_dependencies(module_thread_lifetime_testing module_thread_native_fixture)
+
+add_executable(native_toolchain_testing component_test/native_toolchain_testing.c)
+target_link_libraries(native_toolchain_testing PRIVATE core m)
+add_executable(native_requirements_testing component_test/native_requirements_testing.c)
+target_link_libraries(native_requirements_testing PRIVATE core m)
+add_executable(native_cleanup_testing component_test/native_cleanup_testing.c)
+target_link_libraries(native_cleanup_testing PRIVATE core m)
+add_executable(module_native_values_testing component_test/module_native_values_testing.c)
+target_link_libraries(module_native_values_testing PRIVATE goat_validation m)
+add_executable(native_artifact_testing component_test/native_artifact_testing.c)
+target_link_libraries(native_artifact_testing PRIVATE core m)

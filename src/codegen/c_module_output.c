@@ -9,7 +9,7 @@
 #include "c_lowering.h"
 #include "lib/allocate.h"
 
-c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
+static c_module_output_t generate(arena_t *arena, const c_module_t *module, bool legacy_metadata) {
     c_module_output_t output = {0};
     size_t count = module ? module->count : 0;
     c_generation_result_t *results = count ? CALLOC(count * sizeof(*results)) : NULL;
@@ -79,10 +79,19 @@ c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
             FREE_STRING(result->source);
         }
     }
-    c_emit_native_module(builder, module, results, output.generated_count);
+    if (legacy_metadata)
+        c_emit_native_module(builder, module, results, output.generated_count);
     output.source = build_source(builder);
     destroy_source_builder(builder);
     FREE(results);
     FREE(blocked);
     return output;
+}
+
+c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module) {
+    return generate(arena, module, true);
+}
+
+c_module_output_t generate_c_module_implementation(arena_t *arena, const c_module_t *module) {
+    return generate(arena, module, false);
 }

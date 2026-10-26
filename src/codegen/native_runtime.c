@@ -25,6 +25,7 @@ static const struct {
              {"native_abi.h", native_abi_data, sizeof(native_abi_data)},
              {"native_runtime.h", native_runtime_data, sizeof(native_runtime_data)},
              {"native_strings.h", native_strings_data, sizeof(native_strings_data)},
+             {"module_abi.h", module_abi_data, sizeof(module_abi_data)},
              {GOAT_NATIVE_ARCHIVE_NAME, native_archive_data, sizeof(native_archive_data)}};
 
 static char *runtime_path(const char *source, const char *name) {
@@ -84,4 +85,35 @@ void remove_native_runtime_files(const char *source_path) {
         remove_fs_entry(path, NULL);
         FREE(path);
     }
+}
+
+bool write_native_runtime_sources(const char *source_path) {
+    for (size_t i = 0; i + 1 < sizeof(files) / sizeof(*files); ++i) {
+        char *path = runtime_path(source_path, files[i].name);
+        bool success = write_runtime_file(path, files[i].data, files[i].size);
+        FREE(path);
+        if (!success)
+            return false;
+    }
+
+    static const struct {
+        const char *name;
+        const unsigned char *data;
+        size_t size;
+    } sources[] = {
+        {"runtime_strings.c", runtime_strings_data, sizeof(runtime_strings_data)},
+        {"runtime_str.c", runtime_str_data, sizeof(runtime_str_data)},
+        {"runtime_number_format.c", runtime_number_format_data, sizeof(runtime_number_format_data)},
+        {"runtime_unicode.c", runtime_unicode_data, sizeof(runtime_unicode_data)},
+        {"number_format.h", number_format_header_data, sizeof(number_format_header_data)},
+        {"unicode_data.inc", unicode_table_data, sizeof(unicode_table_data)}};
+
+    for (size_t i = 0; i < sizeof(sources) / sizeof(*sources); ++i) {
+        char *path = runtime_path(source_path, sources[i].name);
+        bool success = write_runtime_file(path, sources[i].data, sources[i].size);
+        FREE(path);
+        if (!success)
+            return false;
+    }
+    return true;
 }

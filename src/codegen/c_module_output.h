@@ -22,3 +22,6 @@ typedef struct c_module_output_t {
 
 /** @brief Emits closed successful dependencies without changing inventory or analysis proofs. */
 c_module_output_t generate_c_module(arena_t *arena, const c_module_t *module);
+
+/** @brief Same definitions and internal adapters, without exporting the legacy query ABI. */
+c_module_output_t generate_c_module_implementation(arena_t *arena, const c_module_t *module);

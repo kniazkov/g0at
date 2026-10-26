@@ -13,3 +13,8 @@ void remove_native_runtime_files(const char *source_path);
 
 /** @brief Stable filename used for the exported and privately staged static library. */
 #define GOAT_NATIVE_ARCHIVE_NAME "libgoat_native.a"
+
+/** @brief Stage public headers and runtime C sources for compilation with the selected target.
+ * Never uses the host archive. Same collision rules as write_native_runtime_files.
+ */
+bool write_native_runtime_sources(const char *source_path);

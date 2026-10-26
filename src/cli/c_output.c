@@ -7,6 +7,7 @@
 #include "codegen/c_module_output.h"
 #include "codegen/native_compiler.h"
 #include "codegen/native_runtime.h"
+#include "codegen/native_toolchain.h"
 #include "lib/allocate.h"
 #include "lib/file_system.h"
 #include "lib/io.h"
@@ -55,17 +56,40 @@ static bool save_library(const options_t *options, const gchar_t *source) {
         return false;
     }
     char *compiler_value = fs_environment("CC", NULL);
-    const char *compiler = compiler_value;
-    if (!compiler || !compiler[0])
-        compiler =
-#ifdef _WIN32
-            "gcc";
-#else
-            "cc";
-#endif
-    /* Keep the final component unresolved: rename replaces a symlink, never its target. */
-    native_compile_result_t result = compile_native_library(source, compiler, path->normal_path);
-    FREE(compiler_value);
+    const char *compiler = options->native_compiler ? options->native_compiler : compiler_value;
+    native_build_context_t *context = options->native_build_context;
+    if (context)
+        retain_native_build_context(context);
+    else
+        context = create_native_build_context(NULL);
+    native_toolchain_context_t *toolchains =
+        create_native_toolchain_context(native_build_cleanup(context));
+    native_toolchain_search_t search =
+        find_native_toolchains(toolchains,
+                               "host",
+                               compiler && *compiler ? compiler : NULL,
+                               options->native_probe_timeout,
+                               false);
+    if (!search.selected) {
+        FPRINTF(stderr,
+                "Native compiler unavailable: %s\n",
+                search.diagnostic ? search.diagnostic : "no suitable compiler");
+        destroy_native_toolchain_search(&search);
+        destroy_native_toolchain_context(toolchains);
+        release_native_build_context(context);
+        FREE(compiler_value);
+        free_path(path);
+        return false;
+    }
+    compiler = search.selected->compiler;
+    native_compile_options_t compile_options = {.arguments = search.selected->flags,
+                                                .runtime_sources = true};
+    /* Keep the final component unresolved: publication replaces a symlink, never its target. */
+    native_compile_result_t result = compile_native_library_in_context(context,
+                                                                       source,
+                                                                       compiler,
+                                                                       path->normal_path,
+                                                                       &compile_options);
     if (result.diagnostics_length) {
         FWRITE(result.diagnostics, 1, result.diagnostics_length, stderr);
         if (result.diagnostics[result.diagnostics_length - 1] != '\n')
@@ -97,6 +121,10 @@ static bool save_library(const options_t *options, const gchar_t *source) {
         FPRINTF(stderr, "\n");
     }
     destroy_native_compile_result(&result);
+    destroy_native_toolchain_search(&search);
+    destroy_native_toolchain_context(toolchains);
+    release_native_build_context(context);
+    FREE(compiler_value);
     free_path(path);
     return success;
 }

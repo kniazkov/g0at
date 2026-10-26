@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 typedef struct options_t options_t;
+typedef struct native_build_context_t native_build_context_t;
 
 /** @brief Optional analysis and code optimization level. */
 typedef enum { OPTIMIZATION_NONE, OPTIMIZATION_ALL } optimization_level_t;
@@ -80,6 +81,9 @@ struct options_t {
     /** @brief Optional execution counters, separate from the program output. */
     /** @brief Positive compiler-probe budget in seconds; never limits user C compilation. */
     uint32_t native_probe_timeout;
+    native_build_context_t
+        *native_build_context;   /**< Borrowed optional cleanup context shared by this run. */
+    const char *native_compiler; /**< Explicit --cc executable; borrowed from argv. */
     bool print_native;
     path_t *native_output_file;
 

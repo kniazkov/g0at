@@ -2,6 +2,7 @@
  * @copyright 2026 Ivan Kniazkov
  * @brief Literal imports through compilation, whole-graph preflight and execution.
  */
+#include "common/module_build.h"
 #include "common/module_compilation.h"
 #include "lib/allocate.h"
 #include "lib/io.h"
@@ -30,7 +31,8 @@ static void report_graph(const module_graph_t *graph, module_graph_status_t stat
     FREE(message);
 }
 
-static int compile(const char *source, const char *output) {
+static int compile(const char *source, const char *output, const module_build_options_t *options) {
+    module_build_t *build = NULL;
     int result = 1;
     module_sources_t *sources = NULL;
     module_sources_error_t source_error = {0};
@@ -80,11 +82,17 @@ static int compile(const char *source, const char *output) {
         FREE(message);
     } else if (validate_source_graph(imports, search, NULL, &source_graph)) {
         report_graph(source_graph, MODULE_GRAPH_INVALID);
-    } else if (!compile_module_sources_with_graph(sources,
-                                                  dependencies,
-                                                  source_graph,
-                                                  &compilation,
-                                                  &compile_error)) {
+    } else if (options ? !build_module(sources,
+                                       dependencies,
+                                       source_graph,
+                                       options,
+                                       &build,
+                                       &compile_error)
+                       : !compile_module_sources_with_graph(sources,
+                                                            dependencies,
+                                                            source_graph,
+                                                            &compilation,
+                                                            &compile_error)) {
         FPRINTF(stderr,
                 "file %zu:%zu:%zu: %s\n",
                 compile_error.file,
@@ -92,6 +100,11 @@ static int compile(const char *source, const char *output) {
                 compile_error.column,
                 compile_error.message ? compile_error.message : "compilation failed");
     } else {
+        if (build) {
+            compilation = build->compilation;
+            if (build->warning)
+                FPRINTF(stderr, "warning: %s\n", build->warning);
+        }
         for (size_t i = 0; i < compilation->warning_count; ++i) {
             const module_compilation_warning_t *warning = compilation->warnings + i;
             FPRINTF(stderr,
@@ -104,6 +117,9 @@ static int compile(const char *source, const char *output) {
         module_writer_input_t input = {
             .metadata = compilation->metadata,
             .bytecode = {compilation->code->buffer, compilation->code->buffer_size}};
+        module_writer_native_t native = {0};
+        if (build)
+            input = module_build_writer_input(build, &native);
         if (module_write_file(stage, &input, NULL, &write_error)) {
             FPRINTF(stderr, "Module packaging failed: %d\n", write_error.status);
         } else {
@@ -127,7 +143,10 @@ static int compile(const char *source, const char *output) {
     free_module_graph(graph);
     free_module_graph(source_graph);
     clear_module_writer_error(&write_error);
-    free_module_compilation(compilation);
+    if (build)
+        free_module_build(build);
+    else
+        free_module_compilation(compilation);
     clear_module_compilation_error(&compile_error);
     free_module_dependencies(dependencies);
     clear_module_dependencies_error(&dependency_error);
@@ -239,9 +258,21 @@ int main(int argc, char **argv) {
     fs_error_t arguments_error = {0};
     assert(fs_arguments(&argc, &argv, &arguments_error));
     int result = 2;
+    if (cleanup_service_main(argc, argv, &result)) {
+        free_fs_arguments(argc, argv);
+        return result;
+    }
     if (argc == 4 && !strcmp(argv[1], "compile"))
-        result = compile(argv[2], argv[3]);
-    else if (argc == 3 && (!strcmp(argv[1], "binary") || !strcmp(argv[1], "frozen")))
+        result = compile(argv[2], argv[3], NULL);
+    else if (argc == 7 && !strcmp(argv[1], "native-build")) {
+        module_build_options_t options = {.override_mode = strcmp(argv[4], "descriptor") != 0,
+                                          .mode = !strcmp(argv[4], "off")        ? NATIVE_OFF
+                                                  : !strcmp(argv[4], "required") ? NATIVE_REQUIRED
+                                                                                 : NATIVE_AUTO,
+                                          .target = strcmp(argv[5], "descriptor") ? argv[5] : NULL,
+                                          .compiler = strcmp(argv[6], "auto") ? argv[6] : NULL};
+        result = compile(argv[2], argv[3], &options);
+    } else if (argc == 3 && (!strcmp(argv[1], "binary") || !strcmp(argv[1], "frozen")))
         result = execute(argv[2], !strcmp(argv[1], "frozen"), NULL);
     else if (argc == 4 && !strcmp(argv[1], "frozen-chdir"))
         result = execute(argv[2], true, argv[3]);

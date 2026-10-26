@@ -5,6 +5,8 @@
 #include "module_compilation.h"
 
 #include "analysis/analysis.h"
+#include "analysis/c_body.h"
+#include "analysis/c_contract.h"
 #include "analysis/function_call_graph.h"
 #include "analysis/function_effects.h"
 #include "analysis/function_return.h"
@@ -631,6 +633,22 @@ bool compile_module_sources_with_graph(const module_sources_t *sources,
                                        const module_graph_t *graph,
                                        module_compilation_t **out,
                                        module_compilation_error_t *error) {
+    return compile_module_sources_with_backend(sources,
+                                               dependencies,
+                                               graph,
+                                               NULL,
+                                               NULL,
+                                               out,
+                                               error);
+}
+
+bool compile_module_sources_with_backend(const module_sources_t *sources,
+                                         const module_dependencies_t *dependencies,
+                                         const module_graph_t *graph,
+                                         module_compilation_backend_t backend,
+                                         void *context,
+                                         module_compilation_t **out,
+                                         module_compilation_error_t *error) {
     if (out)
         *out = NULL;
     if (error)
@@ -769,6 +787,8 @@ bool compile_module_sources_with_graph(const module_sources_t *sources,
         analyze_function_direct_effects(root);
         analyze_function_c_expressions(root);
         propagate_function_effects(calls, 64);
+        analyze_function_c_contracts(root);
+        analyze_function_c_bodies(calls, 64);
         if (cb->size > UINT32_MAX) {
             fail(error, i, NULL, "module instruction limit exceeded");
             goto done;
@@ -829,6 +849,8 @@ bool compile_module_sources_with_graph(const module_sources_t *sources,
         fail(error, check.index, NULL, module_bytecode_status_string(status));
         goto done;
     }
+    if (backend && !backend((const node_t *const *)roots, sources->count, result, context, error))
+        goto done;
     *out = result;
     result = NULL;
     ok = true;
