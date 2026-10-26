@@ -98,8 +98,8 @@ ZIP-модули по умолчанию используют auto; прежни
 Проверки CLI находятся в `scripts/check_module_cli.py`; существующие проверки
 исходников, бинарного запуска, compiler discovery, native и очистки сохраняются.
 Результат тестов подтверждается CI каждого изменения, а не наличием документации.
-Ограниченное завершение `exit` остаётся #230, инструменты inspect/merge —
-последующими задачами. CLI не объявляет их готовыми.
+Ограниченное завершение `exit` реализовано в #230 ([API](module-exit-api.md));
+инструменты inspect/merge остаются последующими задачами.
 
 ## English
 
@@ -197,4 +197,5 @@ format/ABI checks.
 CLI coverage lives in `scripts/check_module_cli.py`; existing source, standalone
 binary, toolchain, native and cleanup checks remain. Actual test outcomes are
 established by each change's CI, not by the existence of this document. Bounded
-exit remains #230; inspect and merge tools remain subsequent checklist tasks.
+exit is implemented in #230 ([API](module-exit-api.md)); inspect and merge tools
+remain subsequent checklist tasks.

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """#211 native consumers: synchronized cleaner/compiler lifetime, failure policy and artifacts."""
+import json
 import os
 from pathlib import Path
 import queue
@@ -138,8 +139,12 @@ with tempfile.TemporaryDirectory(prefix='goat-native-cleanup-данные-') as 
                 assert owner.line() == '9'
                 error = owner.end(23 if explicit_exit else 0)
                 assert not error, error
-                fields = dict(line.split('=', 1) for line in report.read_text().splitlines())
-                assert int(fields['succeeded']) > 0, fields
+                if explicit_exit:
+                    # Exit never returns through host-side report/destructor code.
+                    assert not report.exists(), report
+                else:
+                    fields = dict(line.split('=', 1) for line in report.read_text().splitlines())
+                    assert int(fields['succeeded']) > 0, fields
         ok('cleaner death after native READY: auto/required keep real native execution and normal/exit status')
 
         for explicit_exit in (False, True):
@@ -154,7 +159,50 @@ with tempfile.TemporaryDirectory(prefix='goat-native-cleanup-данные-') as 
             assert not error, error
             cleaner.wait()
             assert not list(normal.root.glob('goat-run-*'))
-        ok('ordinary/exit native completion unloads library then cleaner removes all intermediates')
+        ok('ordinary/exit completion: cleaner waits for owner death before deleting intermediates')
+
+        # The public CLI runs module descriptors in memory and archives via the
+        # verified snapshot loader. Both share the exact same prestarted cleaner.
+        for explicit_exit in (False, True):
+            project = root / ('module-exit-' + str(explicit_exit))
+            project.mkdir()
+            (project / 'main.goat').write_text(
+                'external f=func(n){return n+1;}; println(f(8)); '
+                'println("READY"); input(); println(f(9)); '
+                + ('try { exit(23); } finally { println("UNREACHABLE"); }'
+                   if explicit_exit else ''), encoding='utf-8')
+            descriptor = project / 'module.gmod'
+            descriptor.write_text(json.dumps(dict(formatVersion=1, name='cleanup-module',
+                                                   version='1', main='main.goat')), encoding='utf-8')
+            producer = start('module-build-' + str(explicit_exit),
+                             ['build', descriptor, '--native', 'required', '--cc', compiler])
+            assert not producer.end()
+            assert producer.marker('cleaner.done') == '0'
+            assert not list(producer.root.glob('goat-run-*'))
+            archive = project / 'modules/cleanup-module/1.gbin'
+            assert archive.is_file()
+            for form, path in [('descriptor', descriptor), ('archive', archive)]:
+                for mode in ('auto', 'required'):
+                    owner = start(f'module-{form}-{mode}-{explicit_exit}',
+                                  ['run', path, '--native', mode, '--cc', compiler])
+                    assert owner.line() == '9' and owner.line() == 'READY'
+                    cleaner = owner.watch('cleaner.pid')
+                    directories = list(owner.root.glob('goat-run-*'))
+                    assert len(directories) == 1 and cleaner.alive(), directories
+                    libraries = [item for item in directories[0].rglob('*')
+                                 if item.suffix in ('.dll', '.so')]
+                    assert libraries, directories
+                    # User stdin is an explicit lifetime barrier: the owner and
+                    # loaded library are still alive until the test releases it.
+                    assert owner.process.poll() is None and all(p.is_file() for p in libraries)
+                    owner.continue_run()
+                    assert owner.line() == '10'
+                    assert not owner.end(23 if explicit_exit else 0)
+                    assert owner.lines.get(timeout=5) is None
+                    cleaner.wait(timeout=40)
+                    assert owner.marker('cleaner.done') == '0'
+                    assert not directories[0].exists() and archive.is_file()
+        ok('module descriptor/archive auto/required: cleanup after owner termination, saved archive retained')
 
         exported = root / 'export.goat'
         exported.write_text('const f=func(n){return n+1;};println(f(8));', encoding='utf-8')

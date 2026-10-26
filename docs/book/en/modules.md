@@ -1632,7 +1632,7 @@ All examples are valid. No license-catalog match is required. Inspection display
 
 ## Top-level return and exit: decisions 76–80
 
-**Implementation (#207):** top-level `return` raises
+**Implementation (#207, #230):** top-level `return` raises
 `Exceptions.RETURN_OUTSIDE_FUNCTION`, including during direct execution. It is
 catchable and follows ordinary `finally` rules. `exit` accepts exactly one integer
 in `0..255`; invalid arity, type or range raises `Exceptions.INVALID_ARGUMENT`.
@@ -1643,9 +1643,10 @@ exit preserves the selected OS status and runs no further Goat code, including
 catch/finally blocks. Direct launch is not an imported initializer. These rules
 also apply to indirect calls and the verified in-memory module execution path.
 The CLI REPL ends with the selected status as well. See the
-[implementation and test boundary](../../module-exit-api.md): complete concurrent
-shutdown, bounded output flushing and cleanup-service integration remain #230;
-thread initialization serialization remains #217.
+[implementation and tests](../../module-exit-api.md): #230 adds atomic process-wide
+termination with one bounded stdout/stderr flush and the existing independent
+cleaner; #217 supplies thread initialization serialization. A valid exit does
+not return to the host, run destructors or write a deferred native report.
 
 ### 76. Return outside a function raises an exception
 
@@ -4166,7 +4167,8 @@ calls validate arguments and returned status/type/payload and never retry on the
 VM after native entry. The new interface is separate from the legacy query ABI;
 real control libraries exercise it on all existing CI architectures, including
 MINGW32. OS loading (#210) and per-call VM dispatch/clone/flat bindings (#232)
-are separate layers, not implied by descriptor validity. Full exit remains #230.
+are separate layers, not implied by descriptor validity. The shared exit service
+and bounded process shutdown are implemented by #230.
 
 ### Implemented native/bytecode consistency (#233)
 
@@ -4548,8 +4550,8 @@ until **all** program threads finish, including threads created by other survivi
 threads. Completion of the entry execution does not terminate the VM.
 
 See [the implementation API](../../module-serialization-api.md). These rules do not
-introduce user mutexes or complete the separate bounded `exit`/cleanup protocol
-tracked by #230.
+introduce user mutexes. The bounded process-wide `exit`/cleanup protocol is
+implemented separately by #230; explicit exit does not join blocked workers.
 
 
 ### Per-call native specialization checks implemented (#232)
@@ -4605,8 +4607,8 @@ a VM retry. Libraries outlive every program thread, while the separate cleaner
 removes files after actual Goat process termination. Death of an already ready
 cleaner does not change the running program's result.
 
-See [API and verification](../../module-loading-api.md). This runtime layer does
-not claim completion of bounded exit #230 or the isolated inspect probe #214.
+See [API and verification](../../module-loading-api.md). This runtime layer
+composes with bounded process exit #230; the isolated inspect probe remains #214.
 CLI #191 composes it with compilation using the same cleanup service.
 
 
@@ -4644,3 +4646,25 @@ Compiler provenance is stable across packaging and excluded from mainHash.
 Build and execution share one cleanup service and its one-warning fallback policy.
 See [commands, paths and verification](../../module-cli-api.md). Bounded exit and
 the separate inspect/merge tools remain subsequent checklist tasks.
+
+
+### Implemented process-wide exit and cleanup (#230)
+
+A valid `exit` now enters a single atomic OS-process arbiter, not a cooperative
+VM flag. The selected status cannot be replaced by another thread or an output
+failure. An independent watchdog bounds both stdout/stderr flushes by one common
+monotonic second, including stream locks and blocked writes. Successful early
+flushes exit immediately. The OS terminates other threads even inside native
+code; libraries are not unloaded beneath them. No user finally, host destructor,
+C termination handler or deferred native report runs after explicit exit.
+
+An optional size-checked tail on both native host-service tables routes exit
+through the same argument and dynamic-initializer checks. Rejected calls raise
+the original Goat exception without native replay; existing ABI prefixes stay
+compatible. Code generation keeps unsupported exit-containing functions on VM
+instead of emitting an independent C exit.
+
+Normal entry-file completion still waits for all program threads and descendants.
+The common prestarted cleaner observes actual process death on both normal and
+explicit exit, then deletes only owned temporary artifacts; saved archives remain.
+It is not restarted or awaited by exit. See the [API and acceptance coverage](../../module-exit-api.md).

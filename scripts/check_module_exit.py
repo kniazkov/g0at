@@ -30,9 +30,12 @@ with tempfile.TemporaryDirectory(prefix='goat-module-exit-') as temporary:
         project = suite.project(name)
         archive = project.compile('app', code, files=files)
         invoke(project, [suite.exe, 'binary', str(archive)], expected, status, diagnostic)
-        # Multi-file CLI loading belongs to #191. These cases already compile
-        # their real source graph and execute the verified snapshot above.
-        if source and not files:
+        # Exercise the public CLI too, including real multi-file source and
+        # retained ZIP snapshots, not just the component execution entry point.
+        invoke(project, [goat, '--native', 'off', str(archive)], expected, status, diagnostic)
+        descriptor = project.root / 'sources/app-1/module.gmod'
+        invoke(project, [goat, '--native', 'off', str(descriptor)], expected, status, diagnostic)
+        if source:
             path = project.root / 'sources/app-1/main.goat'
             configurations = [('none', 'off'), ('all', 'off')]
             if name in ['normal-no-unwind', 'exit-indirect-expression']:
@@ -83,8 +86,9 @@ with tempfile.TemporaryDirectory(prefix='goat-module-exit-') as temporary:
     invoke(p, [goat, '--compile', '--native', 'off', str(source_path)], '')
     invoke(p, [goat, '--run', '--native', 'off', str(source_path.with_suffix('.gbin'))],
            'binary', 7)
+    # Explicit exit never resumes host-side report writing or destruction.
     invoke(p, [goat, '--save-native', str(p.root / 'missing/report'), str(source_path)],
-           'binary', 7, 'Could not write native report')
+           'binary', 7)
     result = subprocess.run([goat, '--interactive'], input=b'exit(7);\nprintln("unreachable");\n',
                             capture_output=True, timeout=60, cwd=suite.unrelated)
     suite.count += 1

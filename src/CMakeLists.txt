@@ -255,3 +255,14 @@ add_executable(module_native_values_testing component_test/module_native_values_
 target_link_libraries(module_native_values_testing PRIVATE goat_validation m)
 add_executable(native_artifact_testing component_test/native_artifact_testing.c)
 target_link_libraries(native_artifact_testing PRIVATE core m)
+
+add_executable(process_exit_testing component_test/process_exit_testing.c)
+target_link_libraries(process_exit_testing PRIVATE core goat_validation m)
+
+add_executable(process_exit_failure_testing component_test/process_exit_testing.c lib/process_exit.c)
+target_compile_definitions(process_exit_failure_testing PRIVATE GOAT_TEST_PROCESS_EXIT_FAILURE=1)
+target_link_libraries(process_exit_failure_testing PRIVATE core goat_validation m)
+
+add_executable(process_exit_delayed_testing component_test/process_exit_testing.c lib/process_exit.c)
+target_compile_definitions(process_exit_delayed_testing PRIVATE GOAT_TEST_PROCESS_EXIT_FAILURE=2)
+target_link_libraries(process_exit_delayed_testing PRIVATE core goat_validation m)

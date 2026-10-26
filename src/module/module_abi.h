@@ -43,7 +43,10 @@ bool goat_module_value_valid(const goat_module_value_v1 *value,
                              void *state);
 bool goat_module_context_valid(const goat_module_context_v1 *context);
 
-/** Invoke exactly once; any failure after entry is terminal, never VM fallback.
+/** Invoke exactly once; failures never cause VM fallback.
+ * A HOST_EXCEPTION status is a language exception only when the model host has
+ * recorded the matching rejected service request. This low-level validator still
+ * reports CALL_FAILED; an unbacked/forged status is a terminal ABI violation.
  * Model module_native dispatch supplies guards and VM conversion. Arguments must already be the
  * formal slots. Result is zeroed before entry and cleared on every failure. native_status reports
  * the raw adapter status (including unknown codes), or UINT32_MAX before entry.

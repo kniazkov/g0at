@@ -45,9 +45,23 @@ null/boolean и строковые равенства/исключения. Не
 Новый ABI не даёт доступ к VM-объектам. Услуги памяти выполняются хостом с тем же
 opaque state; только внешний владелец делает bulk cleanup. Unicode-услуги используют
 17.0.0; полное изменение регистра не сводится к циклу простых scalar callbacks.
-Exit не является самостоятельным C exit: общий механизм завершения и его
-интеграционные проверки остаются #207/#230. Неподдержанные операции не становятся
+Exit не является самостоятельным C exit: общий механизм завершения реализован
+в #207/#230 ([API](module-exit-api.md)). Неподдержанные операции не становятся
 нативными только из-за наличия подходящей скалярной сигнатуры.
+
+В #230 к таблице сервисов добавлен необязательный хвост `request_exit`; прежний
+обязательный размер `GOAT_MODULE_SERVICES_SIZE` заканчивается на `to_lower` и не
+меняется. Перед обращением к хвосту проверяются `GOAT_MODULE_EXIT_SERVICES_SIZE`
+и указатель callback; старые провайдеры без хвоста допустимы. Допустимый exit
+не возвращается. Отказ проверок аргументов/контекста возвращает
+`GOAT_MODULE_HOST_EXCEPTION` (6), который адаптер немедленно передаёт наружу.
+Только при наличии действительно сохранённого исключения хоста runtime
+превращает этот статус в обычное исключение Goat; поддельный статус, игнорирование
+отказа или продолжение с успешным статусом остаются нарушением ABI. Повтора на VM
+нет. Legacy native v2 получает такой же необязательный хвост с собственными
+именами типов, `GOAT_NATIVE_EXIT_SERVICES_SIZE` и `GOAT_NATIVE_HOST_EXCEPTION`;
+приведение разных ABI друг к другу по-прежнему запрещено. Формат значений,
+номер модульного ABI и встроенное описание не меняются.
 
 ### Границы и проверки
 
@@ -98,6 +112,18 @@ Unicode services use 17.0.0; full string case mapping needs the pinned algorithm
 not just a loop of simple scalar callbacks. Exit uses the common Goat mechanism
 in #207/#230, not independent C termination. Unsupported operations do not become
 native merely because their signatures contain scalar types.
+
+#230 appends an optional `request_exit` service tail. The mandatory
+`GOAT_MODULE_SERVICES_SIZE` prefix still ends at `to_lower`; existing providers
+remain valid. Check `GOAT_MODULE_EXIT_SERVICES_SIZE` and the callback before use.
+Valid exit never returns. Rejected argument/context checks return
+`GOAT_MODULE_HOST_EXCEPTION` (6), which the adapter must propagate immediately.
+Only an actual pending host exception permits the runtime to interpret this
+status as a Goat exception. A forged status or an adapter ignoring the rejected
+request remains an ABI violation. No VM replay occurs. Legacy native v2 has an
+equivalent optional tail with its own types, `GOAT_NATIVE_EXIT_SERVICES_SIZE` and
+`GOAT_NATIVE_HOST_EXCEPTION`; the two ABIs must not be reinterpreted. Value wire
+layouts, module ABI version and embedded descriptors are unchanged.
 
 `module_guards.h` performs no user code, overload, callback or property access.
 It uses exact types; missing arguments are null and extra already-evaluated

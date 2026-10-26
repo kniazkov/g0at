@@ -284,12 +284,34 @@ static const goat_native_entry_v2_t *select_native_entry(const object_dynamic_fu
     return NULL;
 }
 
+/** @brief VM-owned optional service; memory-only native hosts remain independent. */
+static uint32_t GOAT_NATIVE_CALL native_request_exit(void *state,
+                                                     uint32_t count,
+                                                     uint32_t type,
+                                                     int64_t code) {
+    native_memory_t *memory = state;
+    thread_t *thread = memory->thread;
+    if (!thread)
+        return GOAT_NATIVE_BAD_REQUEST;
+    process_execution_enter(thread->process);
+    if (!memory->host_exception) {
+        operation_result_t result = count == 1 && type == GOAT_NATIVE_I64
+                                        ? request_program_exit(thread, code)
+                                        : operation_exception(get_exception_invalid_argument());
+        clear_exception(&thread->exception);
+        thread->exception = (exception_t){result.value, retain_exception_trace(result.trace)};
+        memory->host_exception = true;
+    }
+    process_execution_leave(thread->process);
+    return GOAT_NATIVE_HOST_EXCEPTION;
+}
+
 /** @brief Commits one native result; backend failures never execute the body a second time. */
 static bool
 invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_t *thread) {
     goat_native_value_v2_t *args =
         entry->parameter_count ? CALLOC(entry->parameter_count * sizeof(*args)) : NULL;
-    native_memory_t memory = {0};
+    native_memory_t memory = {.thread = thread, .exit_callback = native_request_exit};
     goat_native_context_v2_t native_context = init_native_context(&memory);
     for (uint32_t i = 0; i < entry->parameter_count; i++) {
         object_t *arg = peek_object_from_stack(thread->data_stack, count - 1 - i);
@@ -321,6 +343,13 @@ invoke_native_entry(const goat_native_entry_v2_t *entry, uint16_t count, thread_
                                     &result);
     process_execution_resume(thread->process, execution_depth);
     FREE(args);
+    if (memory.host_exception && status == GOAT_NATIVE_HOST_EXCEPTION) {
+        thread->native_status = GOAT_NATIVE_OK;
+        goat_native_deallocate_all(&native_context);
+        return false;
+    }
+    if (memory.host_exception)
+        status = GOAT_NATIVE_BAD_REQUEST;
     if (status == GOAT_NATIVE_OK && (result.type != entry->return_type || result.reserved))
         status = GOAT_NATIVE_BAD_REQUEST;
     if (status == GOAT_NATIVE_OK && result.type == GOAT_NATIVE_STRING
@@ -403,6 +432,13 @@ static bool dynamic_call(object_t *obj, uint16_t arg_count, object_t *receiver, 
             retry = true;
         } else if (invoke_native_entry(entry, arg_count, thread)) {
             return true;
+        } else if (!thread->native_status && thread->exception.value) {
+            if (!thread->exception.trace)
+                thread->exception.trace = capture_native_exception_trace(thread->context,
+                                                                         dfobj->access.module,
+                                                                         dfobj->access.file_id,
+                                                                         dfobj->first_instr_id);
+            return false;
         } else if (thread->native_status == GOAT_NATIVE_RESOURCE_LIMIT
                    && (entry->flags & GOAT_NATIVE_PURE)) {
             retry = true;

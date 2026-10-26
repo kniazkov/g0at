@@ -9,6 +9,7 @@
 #include "access.h"
 #include "context.h"
 #include "lib/allocate.h"
+#include "lib/process_exit.h"
 #include "module_files.h"
 #include "object_list.h"
 #include "thread.h"
@@ -21,6 +22,9 @@
 static atomic_uint_fast64_t last_process_id;
 
 process_t *create_process() {
+    /* Prearm before any user/native code can hold a Windows loader lock.
+       If unavailable, valid exit still terminates immediately with its code. */
+    (void)process_exit_prepare();
     process_t *process = (process_t *)CALLOC(sizeof(process_t));
     if (create_os_recursive_mutex(&process->execution_mutex) != OS_THREAD_OK
         || create_os_recursive_mutex(&process->initialization_mutex) != OS_THREAD_OK
@@ -122,4 +126,12 @@ size_t process_execution_suspend(process_t *process) {
 void process_execution_resume(process_t *process, size_t depth) {
     for (size_t i = 0; i < depth; ++i)
         process_execution_enter(process);
+}
+
+operation_result_t request_program_exit(thread_t *thread, int64_t code) {
+    if (!thread || code < 0 || code > 255)
+        return operation_exception(get_exception_invalid_argument());
+    if (thread->initialization_depth)
+        return operation_exception(get_exception_exit_during_initialization());
+    process_exit_request((unsigned)code);
 }

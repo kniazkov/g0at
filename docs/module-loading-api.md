@@ -81,7 +81,7 @@ OS loading может исполнить конструкторы, а прове
 Наличие теста не означает успешный запуск: результаты проверяются на каждом PR.
 
 CLI `.gmod`/`.gbin` подключён в #191 ([команды](module-cli-api.md)); завершение
-с ограниченными сроками и сбросом вывода остаётся #230; проба `goat-inspect` — #214.
+с ограниченными сроками и сбросом вывода реализовано в #230 ([API](module-exit-api.md)); проба `goat-inspect` — #214.
 Временная прямая `.goat` компиляция уже использует тот же сервис по #211.
 В объединённом запуске build→execution владелец CLI #191 согласует политику
 одного сообщения между потребителями общего сервиса; один экземпляр уборщика
@@ -166,7 +166,7 @@ ABI, per-call dispatch, native building and the cleanup service. Test presence
 is not a pass claim: actual results are checked for each PR.
 
 The `.gmod`/`.gbin` CLI is integrated in #191 ([commands](module-cli-api.md));
-bounded shutdown and output flushing remain #230; isolated `goat-inspect` loading remains #214. Temporary
+bounded shutdown and output flushing are implemented in #230 ([API](module-exit-api.md)); isolated `goat-inspect` loading remains #214. Temporary
 direct `.goat` compilation already shares this cleanup service through #211.
 The combined build→execution CLI owner (#191) coordinates one-warning policy
 across service consumers; sharing a cleaner does not merge
