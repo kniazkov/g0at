@@ -509,12 +509,12 @@ with tempfile.TemporaryDirectory(prefix='goat-loading-') as temporary:
 
         late = graft('late-worker', 'external f=func(x){return x*x;}; '
                      'const t=spawn(func(){input();println(f(7));}); println("ENTRY-END");')
-        owner = start('late-worker', late, 'required')
-        assert owner.line() == 'ENTRY-END'
+        owner = start('late-worker', late, 'required', 'late-worker')
+        assert owner.line() == 'ENTRY-END' and owner.line() == 'ENTRY-FINISHED'
         assert not (owner.directory / 'cleaner.pid').exists() and not owner.calls()
         owner.resume()
         result = owner.end()
-        assert owner.lines == ['ENTRY-END','49'] and owner.calls() == b'LC'
+        assert owner.lines == ['ENTRY-END','ENTRY-FINISHED','49'] and owner.calls() == b'LC'
         assert result['nodes'][0]['loaded']
         checked('first lazy native call after entry thread ends retains snapshot until final worker')
 

@@ -16,9 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
-#    include "lib/windows_target.h"
-
-#    include <windows.h>
+#    include <process.h>
 #else
 #    include <unistd.h>
 #endif
@@ -37,7 +35,7 @@ static void marker(const char *name, const char *value) {
         FPRINTF(file, "%s\n", value);
     else {
 #ifdef _WIN32
-        FPRINTF(file, "%lu\n", (unsigned long)GetCurrentProcessId());
+        FPRINTF(file, "%lu\n", (unsigned long)_getpid());
 #else
         FPRINTF(file, "%lu\n", (unsigned long)getpid());
 #endif
@@ -53,8 +51,26 @@ static void report(void *state, size_t node, const char *message) {
     FPRINTF(stderr, "WARNING %zu %s\n", node, message);
 }
 
+static void *observe_entry_completion(void *state) {
+    process_t *process = state;
+    process_execution_enter(process);
+    while (!process->main_thread->finished)
+        assert(wait_os_condition(process->threads_changed, process->execution_mutex)
+               == OS_THREAD_OK);
+    FPRINTF(stdout, "ENTRY-FINISHED\n");
+    FFLUSH(stdout);
+    process_execution_leave(process);
+    return NULL;
+}
+
 static bool write_bytes(void *state, FILE *file, const void *data, size_t size) {
     ++writes;
+    if (writes == 1 && fault && !strcmp(fault, "late-worker")) {
+        process_t *process = state;
+        process_execution_enter(process);
+        assert(process->main_thread->finished);
+        process_execution_leave(process);
+    }
     if (writes == 1 && fault
         && (!strcmp(fault, "exit-write") || !strcmp(fault, "exit-write-fail"))) {
         process_t *process = state;
@@ -132,7 +148,16 @@ static int execute(int argc, char **argv) {
         assert(getchar() != EOF);
     }
     process_t *process = module_snapshot_process(snapshot);
+    os_thread_t *observer = NULL;
+    if (!strcmp(fault, "late-worker")) {
+        assert(!process->main_thread->finished);
+        assert(create_os_thread(&observer, observe_entry_completion, process, 0) == OS_THREAD_OK);
+    }
     int status = run_module_file(process, module_files_main(module_snapshot_files(snapshot, 0)));
+    if (observer) {
+        assert(join_os_thread(observer, NULL) == OS_THREAD_OK);
+        assert(destroy_os_thread(observer) == OS_THREAD_OK);
+    }
     const char *directory = module_snapshot_native_directory(snapshot);
     if (directory)
         marker("directory", directory);
@@ -174,6 +199,9 @@ static int execute(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
+    /* Pipe handshakes must not depend on whether another thread called input()
+       before or after the main thread emitted its progress line. */
+    SETBUF(stdout, NULL);
     fs_error_t error = {0};
     assert(fs_arguments(&argc, &argv, &error));
     int status = execute(argc, argv);

@@ -9,8 +9,8 @@
 
 #include "lib/allocate.h"
 #include "lib/file_system.h"
-#include "lib/windows_target.h"
 #include "lib/wire.h"
+#include "module_library_platform.h"
 #include "native_library_platform.h"
 #include "vm/module_consistency.h"
 
@@ -19,8 +19,6 @@
 #ifdef __linux__
 #    include <dlfcn.h>
 #    include <link.h>
-#elif defined(_WIN32)
-#    include <windows.h>
 #endif
 
 typedef struct {
@@ -128,34 +126,11 @@ static void *symbol_address(module_library_t *library, const char *symbol) {
 }
 #elif defined(_WIN32)
 static bool image_range(module_library_t *library, const void *pointer, size_t length, bool code) {
-    uintptr_t first = (uintptr_t)pointer;
-    if (!pointer || !length || length > UINTPTR_MAX - first)
-        return false;
-    uintptr_t last = first + length;
-    while (first < last) {
-        MEMORY_BASIC_INFORMATION information;
-        if (!VirtualQuery((void *)first, &information, sizeof(information))
-            || information.AllocationBase != library->handle || information.State != MEM_COMMIT
-            || information.Type != MEM_IMAGE || (information.Protect & PAGE_GUARD))
-            return false;
-        DWORD protection = information.Protect & 0xff;
-        if (code ? protection != PAGE_EXECUTE_READ
-                 : protection != PAGE_READONLY && protection != PAGE_EXECUTE_READ)
-            return false;
-        uintptr_t begin = (uintptr_t)information.BaseAddress;
-        if (information.RegionSize > UINTPTR_MAX - begin || begin + information.RegionSize <= first)
-            return false;
-        first = begin + information.RegionSize;
-    }
-    return true;
+    return module_windows_image_range(library->handle, pointer, length, code);
 }
 
 static void *symbol_address(module_library_t *library, const char *symbol) {
-    FARPROC function = GetProcAddress((HMODULE)library->handle, symbol);
-    void *address = NULL;
-    _Static_assert(sizeof(function) == sizeof(address), "Windows symbol pointer representation");
-    memcpy(&address, &function, sizeof(address));
-    return address;
+    return module_windows_symbol_address(library->handle, symbol);
 }
 #else
 static bool image_range(module_library_t *library, const void *pointer, size_t length, bool code) {
