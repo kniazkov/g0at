@@ -147,7 +147,7 @@ jobs:
           docker run --rm --network bridge \
             -v "$PWD:/source:ro" ubuntu:22.04 bash -euxo pipefail -c '
               apt-get update
-              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc cmake make python3
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc libc6-dev cmake make python3
               cmake -S /source/src -B /tmp/goat-floor -DCMAKE_BUILD_TYPE=Release
               cmake --build /tmp/goat-floor --parallel 2 --target goat
               python3 /source/scripts/check_module_delivery_requirements.py verify-floor /tmp/goat-floor/goat /source/build/runtime-floor
