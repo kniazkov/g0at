@@ -200,8 +200,6 @@ static void variants(yyjson_val *metadata, const goat_native_environment *target
         fputs("  Warning: no compatible native variant; VM execution remains possible.\n", stdout);
     if (valid && matches > 1)
         fputs("  Warning: ambiguous compatible native variants.\n", stdout);
-    fputs("  Loading: not checked (metadata inspection; isolated probe is not implemented yet).\n",
-          stdout);
 }
 
 static void module_text(const module_graph_node_t *node,
@@ -247,6 +245,97 @@ static void module_text(const module_graph_node_t *node,
     variants(metadata, target, node->snapshot != NULL);
 }
 
+/* Profiles describe facts, not merely a compatible machine. Never execute a
+ * selected foreign target, even if its OS/CPU happens to match this process. */
+static bool same_environment(const goat_native_environment *a, const goat_native_environment *b) {
+    if (a->os != b->os || a->architecture != b->architecture || a->bits != b->bits
+        || a->little_endian != b->little_endian || a->runtime != b->runtime
+        || a->cpu_features != b->cpu_features || a->os_version.known != b->os_version.known
+        || a->runtime_version.known != b->runtime_version.known)
+        return false;
+    for (size_t i = 0; i < 4; ++i)
+        if ((a->os_version.known && a->os_version.components[i] != b->os_version.components[i])
+            || (a->runtime_version.known
+                && a->runtime_version.components[i] != b->runtime_version.components[i]))
+            return false;
+    return true;
+}
+
+static void capture_text(const char *name, const child_output_t *output) {
+    printf("    %s (%zu bytes%s): ", name, output->size, output->truncated ? ", truncated" : "");
+    putchar('"');
+    for (size_t i = 0; i < output->size; ++i) {
+        unsigned c = output->data[i];
+        if (c < 32 || c >= 127 || c == '"' || c == '\\')
+            printf("\\x%02x", c);
+        else
+            putchar((int)c);
+    }
+    puts("\"");
+}
+
+static bool probe_path_text(const size_t *edges, size_t count, void *context) {
+    const module_graph_t *graph = context;
+    fputs("    Dependency path: root", stdout);
+    for (size_t i = 0; i < count; ++i) {
+        const module_graph_edge_t *edge = module_graph_edge(graph, edges[i]);
+        const module_graph_node_t *node = module_graph_node(graph, edge->to);
+        fputs(" -> ", stdout);
+        if (node->name)
+            quoted(node->name, strlen(node->name));
+        if (node->version) {
+            putchar('@');
+            quoted(node->version, strlen(node->version));
+        }
+    }
+    putchar('\n');
+    return true;
+}
+
+static void probe_text(const inspect_probe_reports_t *reports, size_t i) {
+    const inspect_probe_result_t *p = reports->results[i];
+    if (!p) {
+        printf("  Loading: not checked (%s).\n",
+               !reports->graph_valid    ? "whole graph validation failed"
+               : !reports->local_target ? "foreign target profile"
+                                        : "no unique compatible native variant");
+        return;
+    }
+    printf("  Loading: %s; stage=%s; library index=%zu\n",
+           inspect_probe_state_name(p->state),
+           inspect_probe_stage_name(p->stage),
+           reports->selected[i]);
+    printf("    Completed: load=%s descriptor=%s symbols=%s unload=%s\n",
+           p->load_completed ? "yes" : "no",
+           p->descriptor_completed ? "yes" : "no",
+           p->symbols_completed ? "yes" : "no",
+           p->unload_completed ? "yes" : "no");
+    if (p->child.status == CHILD_EXITED)
+        printf("    Child exit code: %lld\n", (long long)p->child.exit_code);
+    if (p->child.status == CHILD_SIGNALED)
+        printf("    Child signal: %d\n", p->child.signal_number);
+    if (p->diagnostic[0]) {
+        printf("    %s: ", p->abi_error || p->infrastructure_error ? "Error" : "Warning");
+        quoted(p->diagnostic, strlen(p->diagnostic));
+        putchar('\n');
+    }
+    capture_text("stdout", &p->child.out);
+    capture_text("stderr", &p->child.err);
+    printf("    Cleanup: %s\n", reports->cleanup.status == CLEANUP_OK ? "passed" : "failed");
+    if (reports->cleanup.status != CLEANUP_OK) {
+        printf("    Cleanup error: status=%d system=%lu\n",
+               reports->cleanup.status,
+               reports->cleanup.native_code);
+        if (reports->temporary_directory) {
+            fputs("    Temporary directory (last known path): ", stdout);
+            quoted(reports->temporary_directory, strlen(reports->temporary_directory));
+            putchar('\n');
+        }
+        if (reports->cleanup.status == CLEANUP_TIMEOUT)
+            puts("    Janitor may still be working; manual deletion is unsafe while it runs.");
+    }
+}
+
 static bool timeout_valid(const char *text) {
     uint64_t value = 0;
     if (!*text)
@@ -265,11 +354,11 @@ static bool timeout_valid(const char *text) {
 static const char *help_text =
     "Usage: goat-inspect [--module-dir DIR] [--target PROFILE.json]\n"
     "                    [--json] [--probe-timeout SECONDS] ARCHIVE\n"
-    "Inspect metadata and the entire dependency graph without executing code.\n"
+    "Validate metadata and the entire dependency graph without executing bytecode.\n"
     "Paths are literal; no suffix is added. -- ends option parsing.\n"
-    "Text and JSON report v1 describe metadata. Isolated native probing\n"
-    "is not implemented yet. No loading is claimed.\n"
-    "--probe-timeout validates a future probe budget (default 5 seconds).\n"
+    "Compatible local native libraries are loaded in isolated child processes.\n"
+    "Constructors may execute: process isolation is NOT a security sandbox.\n"
+    "--probe-timeout bounds each complete probe (default 5 seconds).\n"
     "--help, --version: display information without opening archives.\n";
 
 bool inspect_wants_json(int argc, char **argv) {
@@ -303,6 +392,7 @@ static int early_result(bool json,
                                 result,
                                 code,
                                 message,
+                                NULL,
                                 NULL,
                                 NULL))
             return 1;
@@ -381,7 +471,8 @@ int inspect_module_command(int argc, char **argv) {
                                       NULL,
                                       NULL,
                                       "help",
-                                      help_text)
+                                      help_text,
+                                      NULL)
                        ? 0
                        : 1;
         fputs(help_text, stdout);
@@ -400,7 +491,8 @@ int inspect_module_command(int argc, char **argv) {
                                       NULL,
                                       NULL,
                                       "version",
-                                      "goat-inspect 1 (module format v1)")
+                                      "goat-inspect 1 (module format v1)",
+                                      NULL)
                        ? 0
                        : 1;
         fputs("goat-inspect 1 (module format v1)\n", stdout);
@@ -408,6 +500,7 @@ int inspect_module_command(int argc, char **argv) {
     }
     goat_native_environment target;
     goat_native_environment_detect(&target);
+    goat_native_environment host = target;
     if (profile) {
         fs_error_t fs = {0};
         void *bytes = NULL;
@@ -493,6 +586,63 @@ int inspect_module_command(int argc, char **argv) {
         nodes[i] = module_graph_node(graph, i);
     qsort(nodes, count, sizeof(*nodes), node_compare);
     bool success = status == MODULE_GRAPH_OK && !inspection.failed;
+    inspect_probe_reports_t probes = {.graph_valid = success,
+                                      .local_target = same_environment(&target, &host),
+                                      .count = count};
+    probes.results = ALLOC(allocation_size_multiply(count, sizeof(*probes.results)));
+    probes.selected = ALLOC(allocation_size_multiply(count, sizeof(*probes.selected)));
+    cleanup_service_t *service = NULL;
+    bool service_attempted = false;
+    uint64_t timeout_ms = timeout ? (uint64_t)strtoull(timeout, NULL, 10) * 1000 : 5000;
+    for (size_t i = 0; i < count; ++i) {
+        probes.results[i] = NULL;
+        probes.selected[i] = SIZE_MAX;
+        if (!probes.graph_valid || !probes.local_target)
+            continue;
+        const goat_module_container *container = validated_module_container(nodes[i]->snapshot);
+        const uint32_t abi = 1;
+        goat_native_error native_error;
+        if (goat_module_native_select(container,
+                                      &target,
+                                      &abi,
+                                      1,
+                                      &probes.selected[i],
+                                      &native_error)
+            != GOAT_NATIVE_OK)
+            continue;
+        if (!service_attempted) {
+            service_attempted = true;
+            service = create_cleanup_service(NULL);
+        }
+        probes.results[i] = ALLOC(sizeof(*probes.results[i]));
+        inspect_probe_module(service,
+                             container,
+                             probes.selected[i],
+                             i,
+                             timeout_ms,
+                             probes.results[i]);
+        if (probes.results[i]->abi_error || probes.results[i]->infrastructure_error)
+            success = false;
+    }
+    if (service) {
+        const char *directory = cleanup_service_directory(service);
+        if (directory) {
+            char *copy = ALLOC(strlen(directory) + 1);
+            strcpy(copy, directory);
+            probes.temporary_directory = copy;
+        }
+        probes.cleanup = finish_cleanup_service(service);
+        for (size_t i = 0; i < count; ++i)
+            if (probes.results[i] && probes.results[i]->child.cleanup_error
+                && probes.cleanup.status == CLEANUP_OK) {
+                probes.cleanup.status = CLEANUP_TREE_FAILED;
+                probes.cleanup.native_code = probes.results[i]->child.cleanup_error;
+            }
+        if (probes.cleanup.status != CLEANUP_OK)
+            success = false;
+        destroy_cleanup_service(service);
+    }
+
     bool written = true;
     if (json) {
         written = write_inspect_json(archive,
@@ -506,17 +656,29 @@ int inspect_module_command(int argc, char **argv) {
                                      inspection.failed || !graph ? "REPORT_FAILED" : NULL,
                                      "Inspection could not retain its report data.",
                                      NULL,
-                                     NULL);
+                                     NULL,
+                                     &probes);
     } else {
-        for (size_t i = 0; i < count; ++i)
+        for (size_t i = 0; i < count; ++i) {
             module_text(nodes[i], &inspection, &target);
+            probe_text(&probes, i);
+            if (probes.results[i] && probes.results[i]->state != INSPECT_PROBE_PASSED)
+                for (size_t n = 0; n < count; ++n)
+                    if (module_graph_node(graph, n) == nodes[i])
+                        module_graph_paths(graph, n, SIZE_MAX, probe_path_text, graph);
+        }
         char *diagnostics = format_module_graph_diagnostics(graph);
         if (diagnostics && *diagnostics)
             printf("Diagnostics:\n%s", diagnostics);
         FREE(diagnostics);
         printf("Inspection: %s\n",
-               success ? "passed (metadata and graph only; loading not checked)" : "failed");
+               success ? "passed (see individual native probe outcomes)" : "failed");
     }
+    for (size_t i = 0; i < count; ++i)
+        FREE(probes.results[i]);
+    FREE(probes.results);
+    FREE(probes.selected);
+    FREE((void *)probes.temporary_directory);
     FREE(nodes);
     free_module_graph(graph);
     free_module_search(search);

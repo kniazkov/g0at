@@ -63,27 +63,36 @@ No separate JSON list of incompatibility reasons is introduced; the text
 formatter supplies those explanations using the common selector. Requirements,
 ABI, compiler and specialization metadata remain in `metadata.native`.
 
-At stage #223, `loading` is always `{state: "not_checked", reason: {code,
-message}}`. The reason distinguishes `VALIDATION_FAILED`,
-`NO_COMPATIBLE_VARIANT`, and `PROBE_NOT_IMPLEMENTED`. There are no invented
-stdout/stderr captures, cleanup successes or child exit statuses. No bytecode,
-user function or DLL/SO constructor is executed by this stage.
+An unperformed probe has `loading: {state: "not_checked", reason: {code,
+message}}`. Reasons distinguish `VALIDATION_FAILED` (the entire graph must pass),
+`FOREIGN_TARGET`, `NO_COMPATIBLE_VARIANT`, `AMBIGUOUS_NATIVE_VARIANT`, and
+`NOT_SELECTED`. No captured streams, cleanup successes or child exit statuses
+are invented for an unperformed probe. An explicit target differing from the
+current environment is metadata-only. Bytecode and exported user functions are
+never executed; a performed probe can execute DLL/SO constructors/destructors.
 
-The schema reserves the isolated-probe branch for #214: `loading.state` is
-`checked`, and separate `probe` and `cleanup` objects are present. A probe has
-`state` (`passed`, `failed`, `crashed`, `timeout`), `stage` (`start`, `load`,
-`descriptor`, `symbols`, `unload`, `exit`, `capture`), nullable integer `exitCode`
-and `signal`, `capture`, and `diagnostics`. Successful loading is not successful
-probe completion until explicit unload and normal child termination succeed.
+A performed isolated probe has `loading.state: "checked"`, with separate `probe`
+and `cleanup` objects. A probe has `state` (`passed`, `failed`, `crashed`,
+`timeout`), `stage` (`start`, `load`, `descriptor`, `symbols`, `unload`, `exit`,
+`capture`), nullable integer `exitCode` and `signal`, `capture`, and `diagnostics`.
+`completedStages` lists successfully completed `load`, `descriptor`, `symbols`
+and `unload` stages in order; it does not imply that later termination succeeded.
+Successful loading is not successful probe completion until explicit unload,
+a valid service result and normal child termination succeed within the original
+deadline. One selected variant receives at most one attempt per unique module.
+
 `capture.stdout` and `capture.stderr` each contain `dataBase64` (standard padded
 Base64, without line breaks) and boolean `truncated`. Each is limited to the
 first 65536 bytes independently; exactly 65536 bytes are not truncated unless
 additional bytes arrived. Arbitrary bytes survive decoding unchanged. A cleanup
 object has `state` (`passed` or `failed`), its own `diagnostics`, and
 `remainingPaths`; cleanup failure never replaces the original probe result.
-These schema branches define the reporting contract, not a claim that #223
-performs probes. The future producer must obey the previously specified time,
-process-tree isolation, capture and external-cleanup rules.
+On failure, optional `temporaryDirectory` identifies the known absolute owned
+directory; it is omitted if no path is known. `remainingPaths: []` does not claim
+the directory is absent when cleanup failed: no current existence is asserted
+without evidence. After the separate 5-second client wait times out, the janitor
+may still be retrying within its 30-second budget; immediate manual deletion is
+unsafe. See the [process-isolation limits and cleanup contract](module-inspect-api.md).
 
 ### Diagnostics and deterministic ordering
 
@@ -144,9 +153,17 @@ only where prerequisites permit it, and skipped checks remain structural.
 | `NO_NATIVE_VARIANT` | No native variant matches the selected environment; VM remains possible. |
 | `AMBIGUOUS_NATIVE_VARIANT` | More than one variant matches; no arbitrary winner is chosen. |
 | `REPORT_FAILED` | Handled report construction/infrastructure failure. |
+| `PROBE_ABI_INVALID` | Loaded descriptor or declared symbol violates the native ABI (error). |
+| `PROBE_INFRASTRUCTURE_FAILED` | Probe launch, service protocol or capture infrastructure failed (error). |
+| `PROBE_CRASHED` | Probe process crashed (warning). |
+| `PROBE_TIMEOUT` | Probe did not finish within its original deadline (warning). |
+| `PROBE_LOAD_FAILED` | OS loader could not load the selected library (warning). |
+| `PROBE_UNLOAD_FAILED` | Explicit library unload failed (warning). |
+| `PROBE_FAILED` | Other unsuccessful probe termination (warning). |
+| `CLEANUP_TIMEOUT` | Cleanup result wait expired; the janitor may still be working (error). |
+| `CLEANUP_FAILED` | Owned process tree or temporary artifacts could not be cleaned (error). |
 
-Probe and cleanup diagnostic codes are assigned with #214 before those branches
-are emitted. All diagnostic objects retain nonempty code/message requirements;
+All diagnostic objects retain nonempty code/message requirements;
 platform errno or loader text is never a stable code. Unknown future codes must
 not cause consumers to misclassify severity or skipped state.
 
@@ -160,7 +177,7 @@ not cause consumers to misclassify severity or skipped state.
 
 `goat-inspect --json archive` выводит в stdout ровно один документ UTF-8 JSON
 и перевод строки, в том числе при штатно обработанных ошибках. Баннеры,
-диагностика вне JSON и вывод будущего дочернего процесса туда не примешиваются.
+диагностика вне JSON и вывод дочернего процесса туда не примешиваются.
 `--json` распознаётся среди опций до `--`; после `--` это буквальное имя файла.
 Ошибки параметров и профиля цели дают 2 до проверки архива; ошибки чтения,
 архива, графа и инфраструктуры дают 1; успех, в том числе с предупреждениями
@@ -210,25 +227,36 @@ not cause consumers to misclassify severity or skipped state.
 текстовый форматтер через общий селектор. Требования, ABI, компилятор и
 специализации сохраняются в `metadata.native`.
 
-В #223 `loading` всегда имеет вид `{state: "not_checked", reason: {code,
-message}}`. Причины: `VALIDATION_FAILED`, `NO_COMPATIBLE_VARIANT`,
-`PROBE_NOT_IMPLEMENTED`. Выдуманных захватов stdout/stderr, успешной очистки
-и кодов дочернего процесса нет. Байткод, функции и конструкторы DLL/SO
-на этом этапе не выполняются.
+Невыполненная проба имеет вид `loading: {state: "not_checked", reason: {code,
+message}}`. Причины: `VALIDATION_FAILED` (нужна проверка всего графа),
+`FOREIGN_TARGET`, `NO_COMPATIBLE_VARIANT`, `AMBIGUOUS_NATIVE_VARIANT`,
+`NOT_SELECTED`. Захваты stdout/stderr, успешная очистка и коды дочернего процесса
+для невыполненной пробы не выдумываются. Явная цель, отличающаяся от текущей
+среды, проверяется только по метаданным. Байткод и экспортируемые функции не
+исполняются; выполненная проба может исполнять конструкторы/деструкторы DLL/SO.
 
-Для #214 схема резервирует ветвь `loading.state: checked` с отдельными
+Выполненная изолированная проба имеет `loading.state: "checked"` с отдельными
 `probe` и `cleanup`. Проба содержит `state` (`passed`, `failed`, `crashed`,
 `timeout`), `stage` (`start`, `load`, `descriptor`, `symbols`, `unload`, `exit`,
 `capture`), целые либо null `exitCode`/`signal`, `capture`, `diagnostics`.
-Успех требует явной выгрузки и нормального завершения дочернего процесса.
+`completedStages` перечисляет по порядку успешно завершённые `load`, `descriptor`,
+`symbols`, `unload`; это ещё не означает успешное завершение процесса.
+Успех требует явной выгрузки, достоверного служебного результата и нормального
+завершения до исходного дедлайна. Выбранный вариант получает не более одной
+попытки на уникальный модуль.
+
 `capture.stdout` и `capture.stderr` содержат `dataBase64` (стандартный Base64
 с padding без переносов) и логическое `truncated`. Независимо сохраняются
 первые 65536 байт каждого потока; ровно 65536 без продолжения не усечены.
 Произвольные байты точно восстанавливаются декодированием. Очистка содержит
 `state` (`passed`/`failed`), собственные `diagnostics` и `remainingPaths`;
-её ошибка не затирает исход пробы. Это резерв контракта, а не реализованная
-в #223 проба. Её будущая реализация сохраняет ранее согласованные ограничения
-времени, изоляцию дерева процессов, захват и внешнюю очистку.
+её ошибка не затирает исход пробы. При ошибке необязательный `temporaryDirectory`
+указывает известный абсолютный собственный каталог; если путь неизвестен,
+поле отсутствует. При неуспешной очистке `remainingPaths: []` не утверждает,
+что каталог отсутствует: текущее существование не выдумывается без доказательств.
+После отдельного 5-секундного ожидания клиента служба ещё может повторять удаление
+в пределах 30-секундного срока; немедленное ручное удаление небезопасно.
+См. [границы изоляции процесса и контракт очистки](module-inspect-api.md).
 
 ### Диагностики и порядок
 
@@ -286,7 +314,16 @@ message}}`. Причины: `VALIDATION_FAILED`, `NO_COMPATIBLE_VARIANT`,
 | `NO_NATIVE_VARIANT` | Нет подходящего native-варианта; VM остаётся возможной. |
 | `AMBIGUOUS_NATIVE_VARIANT` | Подходит несколько вариантов; произвольного выбора нет. |
 | `REPORT_FAILED` | Обработанная ошибка построения отчёта/инфраструктуры. |
+| `PROBE_ABI_INVALID` | Descriptor или объявленный символ нарушает native ABI (ошибка). |
+| `PROBE_INFRASTRUCTURE_FAILED` | Ошибка запуска, служебного протокола или захвата пробы (ошибка). |
+| `PROBE_CRASHED` | Аварийное завершение процесса пробы (предупреждение). |
+| `PROBE_TIMEOUT` | Проба не завершилась до исходного дедлайна (предупреждение). |
+| `PROBE_LOAD_FAILED` | Загрузчик ОС не смог загрузить выбранную библиотеку (предупреждение). |
+| `PROBE_UNLOAD_FAILED` | Явная выгрузка библиотеки не удалась (предупреждение). |
+| `PROBE_FAILED` | Иное неуспешное завершение пробы (предупреждение). |
+| `CLEANUP_TIMEOUT` | Истекло ожидание результата очистки; служба ещё может работать (ошибка). |
+| `CLEANUP_FAILED` | Не удалось очистить собственное дерево процессов или временные данные (ошибка). |
 
-Коды проб и очистки назначаются в #214 до вывода этих ветвей. Непустые code и
-message обязательны; errno и текст загрузчика не используются как code.
+Непустые code и message обязательны; errno и текст загрузчика не используются
+как code.
 Неизвестный будущий код не отменяет явно указанную severity/невыполненность.

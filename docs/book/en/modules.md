@@ -4677,7 +4677,7 @@ compatibility explanations from the shared selector. Literal paths need no
 `.gbin` extension; `--module-dir` and `--target profile.json` use the common search
 and strict target contracts. Safely validated metadata remains available when
 other archive checks fail; unavailable metadata is not replaced by invented
-empty fields. Bytecode and native code are never executed by this stage.
+empty fields. Metadata inspection does not execute bytecode or exported functions.
 
 The final contract above is implemented in ordered stages. #223 now supplies
 `goat-inspect --json archive`: one versioned report on success or handled error,
@@ -4686,7 +4686,26 @@ with `reportVersion: 1`, `success`, `exitCode`, `input`, `target`, `modules`, an
 checks and unknown metadata are structural, not fictional successes or empty
 interfaces. Integers and normalized information are preserved without binary64
 rounding. The [complete schema and code catalog](../../module-inspect-report-v1.md)
-define all fields and reserved probe-result branches. #214 supplies isolated
-load probes; currently both text and JSON always state that loading is not
-checked. Metadata compatibility is not proof of library loading. See also
-[the command, statuses and boundaries](../../module-inspect-api.md).
+define all fields, including separate probe and cleanup results.
+
+### Implemented isolated native inspection (#214)
+
+After the entire graph passes validation, each unique module receives at most
+one isolated load/descriptor/symbol/unload probe of its selected compatible native
+variant. Explicit foreign targets remain metadata-only. Bytecode and exported
+functions are never executed, but library constructors/destructors may run.
+Process-tree ownership, EOF stdin, a temporary working directory and independently
+bounded stdout/stderr captures are established before library code executes.
+`--probe-timeout` is a positive integer in seconds, default 5, covering launch
+through normal child termination without extensions for output. A service success
+message alone is not success: explicit unload and exit 0 are also required.
+
+Process isolation is **not a security sandbox** and cannot prevent all constructor
+side effects. The shared external janitor survives inspector death; its separate
+5-second result wait does not cancel its 30-second deletion retry budget. Cleanup
+errors retain the original probe result and known temporary path; immediate manual
+deletion after timeout is unsafe while the janitor may still be working.
+Native unavailability is a warning when graph validation and cleanup succeed;
+ABI violations and infrastructure/cleanup failures are errors. Metadata
+compatibility alone is not proof of library loading. See
+[the command, statuses and isolation limits](../../module-inspect-api.md).

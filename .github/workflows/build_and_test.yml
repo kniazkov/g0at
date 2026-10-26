@@ -100,6 +100,7 @@ jobs:
           python3 scripts/check_module_library.py build/${{ matrix.compiler }}/module_import_execution_testing build/${{ matrix.compiler }}/module_library_testing ${{ matrix.compiler }}
           python3 scripts/check_module_loading.py build/${{ matrix.compiler }}/module_loading_testing build/${{ matrix.compiler }}/module_import_execution_testing ${{ matrix.compiler }}
           python3 scripts/check_module_inspect.py build/${{ matrix.compiler }}/goat-inspect ${{ matrix.compiler }}
+          python3 scripts/check_inspect_probe.py build/${{ matrix.compiler }}/goat-inspect build/${{ matrix.compiler }}/module_import_execution_testing ${{ matrix.compiler }} build/${{ matrix.compiler }}/inspect_probe_testing
           python3 scripts/check_module_cli.py build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native_toolchain_testing ${{ matrix.compiler }}
           python3 scripts/check_native_exit.py build/${{ matrix.compiler }}/module_dispatch_testing ${{ matrix.compiler }}
           python3 scripts/check_module_dispatch.py build/${{ matrix.compiler }}/module_dispatch_testing
@@ -363,6 +364,7 @@ jobs:
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_library.py build/module_import_execution_testing.exe build/module_library_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_loading.py build/module_loading_testing.exe build/module_import_execution_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_inspect.py build/goat-inspect.exe gcc
+          "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_inspect_probe.py build/goat-inspect.exe build/module_import_execution_testing.exe gcc build/inspect_probe_testing.exe
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_cli.py build/goat.exe build/native_toolchain_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_native_exit.py build/module_dispatch_testing.exe gcc
           "$(cygpath -u "$BENCHMARK_PYTHON")" scripts/check_module_dispatch.py build/module_dispatch_testing.exe

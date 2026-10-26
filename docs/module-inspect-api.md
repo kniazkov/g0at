@@ -1,11 +1,12 @@
-# Metadata inspector (#212) / Просмотр метаданных
+# Module inspector (#212, #223, #214) / Инспектор модулей
 
 ## Русский
 
 `goat-inspect` — отдельный исполняемый файл, включённый в обычную сборку и
-release-пакет. Этап #212 предоставляет текстовую инспекцию метаданных и полного
-достижимого графа зависимостей. Он не исполняет байткод, не вызывает экспортируемые
-функции, не извлекает и не загружает DLL/SO и не повторяет анализ программы.
+release-пакет. Он проверяет метаданные и полный достижимый граф зависимостей,
+затем пробует подходящие native-библиотеки в отдельных процессах. Байткод и
+экспортируемые функции не исполняются; повторного анализа программы нет.
+Конструкторы и деструкторы DLL/SO при пробе могут исполняться.
 
 ```sh
 goat-inspect module.gbin
@@ -43,34 +44,85 @@ CPU-возможности. Соответствие метаданным не �
 целостности архива. При ошибке JSON/схемы сведения не выдумываются; неисполненные
 проверки и причины показываются общим диагностическим API отдельно от ошибок.
 
-Коды завершения этого этапа: `0` — граф прошёл проверку, в том числе без подходящего
-native-варианта; `1` — ошибка чтения, валидации, графа или инфраструктуры вывода;
+Коды завершения: `0` — граф прошёл проверку, в том числе с предупреждениями
+о недоступности native; `1` — ошибка чтения, валидации, графа, ABI, очистки
+или инфраструктуры;
 `2` — неверные аргументы либо профиль цели. Аргументы проверяются до открытия
 архива. `--help` и `--version` завершаются с `0`. Общий адаптер `fs_arguments`
 сохраняет Unicode-пути Windows без преобразования через ANSI.
 
-### Граница реализации
+### Изолированная проба (#214)
 
-Полный согласованный контракт inspect остаётся в книге. Этап #223 добавляет
-`--json`: один отчёт `reportVersion: 1`, включая штатные ошибки и справку/версию.
-Его полная [схема и каталог кодов](module-inspect-report-v1.md) фиксируют типы,
-недоступные сведения, невыполненные проверки и отделение метаданных от результата
-загрузки. JSON не содержит отдельного списка причин несовместимости; они остаются
-в тексте. `--probe-timeout` проверяет положительное целое число секунд с контролем
-переполнения (по умолчанию 5). #214 добавит изолированную пробную загрузку; пока
-оба формата честно сообщают `not_checked`, без выдуманных захватов вывода.
+После успешной проверки **всего** графа каждый уникальный модуль получает не более
+одной пробы выбранного совместимого варианта. Ошибки не вызывают повторной попытки
+или перебора других вариантов. При явной чужой цели выполняются только проверки
+метаданных и хешей: загрузка помечается `not_checked`. Совместимость с чужой целью
+не проверяется загрузчиком текущей машины и не требует локального C-компилятора.
 `--no-probe` не поддерживается.
 
-Проверка CLI: `python3 scripts/check_module_inspect.py build/goat-inspect`.
-Общие наборы проверки native и валидации дополнительно покрывают причины
-несовместимости и безопасный metadata callback. JSON проверяется по полной схеме; OS-пробы остаются задачей #214.
+`--probe-timeout` задаёт положительное целое число секунд (по умолчанию 5);
+ноль, переполнение и нецелые значения отвергаются до открытия архива. Один
+монотонный срок начинается при попытке запуска дочернего процесса и включает
+запуск, загрузку, descriptor, символы, явную выгрузку и завершение процесса.
+Вывод и служебные сообщения не продлевают его. Успех требует достоверного
+служебного результата, явной выгрузки и нормального завершения с кодом 0 до
+дедлайна; одного сообщения об успехе или одного кода 0 недостаточно.
+
+До исполнения библиотечного кода дочерний процесс получает stdin с немедленным
+EOF, отдельный временный рабочий каталог и владение всем деревом потомков.
+Потомки завершаются при любом исходе пробы до удаления файлов. stdout и stderr
+одновременно считываются с начала процесса: отдельно сохраняются первые 65536
+байт каждого потока, остальное отбрасывается без остановки чтения. Ровно 65536
+байт без продолжения не считаются усечением. Текст экранирует управляющие и
+непечатные байты; JSON хранит точные байты как стандартный Base64 с padding без
+переносов и отдельный `truncated`. Служебный результат передаётся по другому
+каналу; содержимое stdout не может его подменить.
+
+Это **изоляция процесса, не security sandbox**: конструкторы/деструкторы могут
+иметь побочные эффекты, в том числе обращаться к абсолютным путям вне временного
+каталога. Проба не доказывает безопасность библиотеки или успех будущего запуска.
+
+Общая внешняя служба очистки запускается до извлечения и исполнения, переживает
+аварийное завершение инспектора и удаляет только принадлежащие ему временные
+данные. Ожидание подтверждённого результата очистки ограничено отдельными
+5 секундами; служба имеет общий 30-секундный срок повторов удаления занятых файлов.
+Истечение клиентского ожидания не отменяет и не перезапускает очистку. Ошибка
+очистки сохраняется отдельно от исхода пробы; известный временный каталог
+указывается для диагностики. После тайм-аута служба ещё может работать, поэтому
+немедленное ручное удаление небезопасно. Старые и посторонние каталоги не очищаются.
+
+Ошибки загрузчика/выгрузки, авария и тайм-аут пробы — предупреждения при корректном
+графе и успешной очистке: исполнение через VM остаётся возможным, но не обещанным.
+Несовместимый descriptor или отсутствующий объявленный символ — ошибка ABI;
+ошибки инфраструктуры, захвата и очистки тоже дают код 1.
+
+### Форматы и проверки
+
+`--json` выводит один отчёт `reportVersion: 1`, включая штатные ошибки и
+справку/версию. [Схема и каталог кодов](module-inspect-report-v1.md) разделяют
+метаданные, невыполненные проверки, результат пробы и результат очистки. JSON
+не содержит отдельного списка причин несовместимости; они остаются в тексте.
+Без выполненной пробы захваты вывода и успех загрузки не выдумываются.
+
+Проверка метаданных CLI: `python3 scripts/check_module_inspect.py build/goat-inspect`.
+Общие наборы native, валидации, дочерних процессов и службы очистки дополняют
+сквозные проверки изолированных проб: стадии загрузки/выгрузки, ABI, бинарный
+вывод, дедлайны, EOF stdin, единичная проба общего узла, аварии, отказы запуска,
+гибель владельца после готовности уборщика и отдельная ошибка ожидания очистки
+с продолжающейся уборкой. Инъекции отказов собраны только в тестовом executable;
+рабочая утилита их не поддерживает. JSON проверяется по полной схеме:
+
+```sh
+python3 scripts/check_inspect_probe.py build/goat-inspect build/module_import_execution_testing cc build/inspect_probe_testing
+```
 
 ## English
 
 `goat-inspect` is a separate executable included in normal builds and release
-packages. Step #212 supplies text inspection of metadata and the entire reachable
-dependency graph. It neither executes bytecode or exported functions nor extracts
-or loads DLL/SO files, and does not repeat program analysis.
+packages. It validates metadata and the entire reachable dependency graph, then
+probes matching native libraries in separate processes. It executes neither
+bytecode nor exported functions and does not repeat program analysis. DLL/SO
+constructors and destructors may execute during a probe.
 
 ```sh
 goat-inspect module.gbin
@@ -109,23 +161,73 @@ proof of archive integrity. Invalid JSON/schema does not produce invented module
 information. Shared diagnostics distinguish failed checks from skipped checks
 and explain prerequisites.
 
-Handled exit statuses at this stage are `0` for a valid graph, including no
-compatible native variant; `1` for read, validation, graph or output-infrastructure
-errors; and `2` for invalid arguments or target profiles. Arguments are validated
+Handled exit statuses are `0` for a valid graph, including native-availability
+warnings; `1` for read, validation, graph, ABI, cleanup or infrastructure errors;
+and `2` for invalid arguments or target profiles. Arguments are validated
 before opening the archive. `--help` and `--version` return `0`. The common
 `fs_arguments` adapter preserves Windows Unicode paths without ANSI round trips.
 
-### Implementation boundary
+### Isolated probe (#214)
 
-The complete agreed inspect contract remains in the book. Step #223 adds
-`--json`: one `reportVersion: 1` report, including handled errors and help/version.
-Its complete [schema and code catalog](module-inspect-report-v1.md) define types,
-unavailable information, skipped checks, and metadata versus loading results.
-JSON has no separate incompatibility-reason list; those explanations remain in
-text. `--probe-timeout` validates positive integer seconds with overflow checks
-(default 5). Isolated loading belongs to #214; both current formats honestly
-report `not_checked`, with no invented captured streams. `--no-probe` is unsupported.
+Only after successful validation of the **entire** graph does each unique module
+receive at most one probe of its selected compatible variant. Failures never
+cause retries or fallback to another variant. An explicitly foreign target gets
+metadata/hash checks only, with loading marked `not_checked`. Compatibility with
+a foreign target is not tested using the local loader and needs no local C
+compiler. `--no-probe` is unsupported.
 
-Run `python3 scripts/check_module_inspect.py build/goat-inspect` for CLI coverage.
-The shared native/validation suites additionally cover compatibility explanations
-and safe metadata callbacks. JSON coverage validates the full report schema; OS probes remain #214.
+`--probe-timeout` accepts positive integer seconds (default 5); zero, overflow
+and nonintegers are rejected before opening the archive. A single monotonic
+deadline starts at the attempted child launch and includes launch, load,
+descriptor, symbols, explicit unload and process termination. Output and service
+messages never extend it. Success requires a valid service result, explicit
+unload and normal child exit 0 before the deadline; a success message alone or
+exit 0 alone is insufficient.
+
+Before any library code runs, the child receives immediate-EOF stdin, a separate
+temporary working directory and ownership of its entire descendant tree.
+Descendants are stopped on every probe outcome, before files are deleted.
+stdout and stderr are drained concurrently from process start: the first 65536
+bytes of each are retained independently, with further bytes discarded while
+reading continues. Exactly 65536 bytes without more output is not truncation.
+Text escapes control/nonprintable bytes; JSON preserves exact bytes as standard
+padded Base64 without line breaks plus a separate `truncated` flag. The service
+result uses a separate channel; stdout content cannot impersonate it.
+
+This is **process isolation, not a security sandbox**: constructors/destructors
+can have side effects, including access to absolute paths outside the temporary
+directory. A probe proves neither library safety nor future program success.
+
+The shared external cleanup service starts before extraction/execution, survives
+inspector crashes and deletes only owned temporary data. Waiting for its actual
+cleanup result has a separate 5-second limit; the service has one 30-second retry
+budget for deleting busy files. Client timeout neither cancels nor restarts
+cleanup. Cleanup failure is reported separately without replacing the probe
+outcome; the known temporary directory is included for diagnosis. After timeout
+the service may still be working, so immediate manual deletion is unsafe. Old
+and unrelated directories are not scavenged.
+
+Load/unload errors, crashes and probe timeouts are warnings when graph validation
+and cleanup succeed: VM execution may remain possible, but is not guaranteed.
+An incompatible descriptor or missing declared symbol is an ABI error;
+infrastructure, capture and cleanup failures also return 1.
+
+### Formats and tests
+
+`--json` emits one `reportVersion: 1` report, including handled errors and
+help/version. The [schema and code catalog](module-inspect-report-v1.md) separate
+metadata, skipped checks, probe outcome and cleanup outcome. JSON has no separate
+incompatibility-reason list; those explanations remain in text. Unperformed
+probes never produce invented captured streams or loading successes.
+
+Run `python3 scripts/check_module_inspect.py build/goat-inspect` for metadata CLI
+coverage. Shared native, validation, child-process and cleanup-service suites
+complement end-to-end isolated-probe coverage: load/unload stages, ABI, binary
+output, deadlines, EOF stdin, one probe per shared node, crashes, startup failures,
+owner death after janitor readiness, and separate cleanup-wait failure with
+continuing cleanup. Fault hooks are compiled only into the test executable, not
+the production utility. JSON is checked against the full report schema:
+
+```sh
+python3 scripts/check_inspect_probe.py build/goat-inspect build/module_import_execution_testing cc build/inspect_probe_testing
+```

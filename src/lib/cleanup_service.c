@@ -164,14 +164,14 @@ const char *cleanup_service_directory(const cleanup_service_t *s) {
 /* Bounded NUL-delimited argv follows an absolute monotonic deadline and argc. */
 typedef struct {
     uint64_t deadline;
-    uint32_t argc, executable_size, directory_size;
+    uint32_t argc, executable_size, directory_size, result_channel;
 } run_header_t;
 
 cleanup_status_t
 run_cleanup_process(cleanup_service_t *s, const child_options_t *options, child_result_t *result) {
     if (!s || !options || !result || !options->arguments || !options->arguments[0]
-        || options->capture_output || options->empty_stdin || options->result_channel
-        || options->parent_watch || options->survive_parent || options->service_channel)
+        || options->capture_output || options->empty_stdin || options->parent_watch
+        || options->survive_parent || options->service_channel)
         return CLEANUP_INVALID;
     size_t count = 0, size = sizeof(run_header_t);
     size_t executable_size = options->executable ? strlen(options->executable) + 1 : 0;
@@ -193,7 +193,8 @@ run_cleanup_process(cleanup_service_t *s, const child_options_t *options, child_
     run_header_t header = {options->deadline,
                            (uint32_t)count,
                            (uint32_t)executable_size,
-                           (uint32_t)directory_size};
+                           (uint32_t)directory_size,
+                           options->result_channel ? 1u : 0u};
     memcpy(data, &header, sizeof(header));
     size_t offset = sizeof(header);
     if (executable_size) {
@@ -348,6 +349,17 @@ static void real_pause(void *unused, unsigned milliseconds) {
 
 static bool real_remove(void *unused, const char *path, fs_error_t *error) {
     (void)unused;
+#ifdef GOAT_INSPECT_PROBE_TESTING
+    char *gate = fs_environment("GOAT_INSPECT_PROBE_CLEANUP_GATE", NULL);
+    fs_info_t info;
+    bool blocked = gate && !inspect_fs_path(gate, false, &info, NULL);
+    FREE(gate);
+    if (blocked) {
+        error->status = FS_ACCESS;
+        error->operation = "test cleanup release gate";
+        return false;
+    }
+#endif
     return remove_fs_tree(path, error);
 }
 
@@ -356,7 +368,8 @@ static child_process_t *start_managed(void *data, size_t size) {
         return NULL;
     run_header_t header;
     memcpy(&header, data, sizeof(header));
-    if (!header.argc || header.argc > 4096 || header.executable_size > size - sizeof(header))
+    if (!header.argc || header.argc > 4096 || header.result_channel > 1
+        || header.executable_size > size - sizeof(header))
         return NULL;
     char *cursor = (char *)data + sizeof(header), *end = (char *)data + size;
     char *executable = NULL;
@@ -394,7 +407,8 @@ static child_process_t *start_managed(void *data, size_t size) {
                                    .arguments = args,
                                    .deadline = header.deadline,
                                    .empty_stdin = true,
-                                   .capture_output = true};
+                                   .capture_output = true,
+                                   .result_channel = header.result_channel != 0};
         process = start_child_process(&options);
     }
     FREE(args);
@@ -489,6 +503,15 @@ static int serve(uintptr_t watch, uintptr_t channel, child_deadline_t startup_de
         tree_failed |= result->cleanup_error != 0;
         destroy_child_process(process);
     }
+#ifdef GOAT_INSPECT_PROBE_TESTING
+    char *marker = fs_environment("GOAT_INSPECT_PROBE_CLEANUP_MARKER", NULL);
+    FILE *marker_file = marker ? FOPEN(marker, "wb") : NULL;
+    if (marker_file) {
+        FPRINTF(marker_file, "%s\n", directory);
+        FCLOSE(marker_file);
+    }
+    FREE(marker);
+#endif
     cleanup_retry_ops_t ops = {real_now, real_pause, real_remove, NULL};
     cleanup_result_t result = tree_failed
                                   ? (cleanup_result_t){.status = CLEANUP_TREE_FAILED}

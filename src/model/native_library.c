@@ -328,6 +328,12 @@ get_native_function_entry(const native_function_descriptor_t *function, uint32_t
 }
 
 #if !defined(__linux__) && !defined(_WIN32)
+bool close_native_library_handle_checked(void *handle, char **diagnostic) {
+    (void)handle;
+    (void)diagnostic;
+    return false;
+}
+
 void close_native_library_handle(void *handle) {
     (void)handle;
 }

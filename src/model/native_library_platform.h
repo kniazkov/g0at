@@ -8,6 +8,7 @@
 /** @brief Platform helpers; diagnostics use the project allocator. */
 void *open_native_library_handle(const char *path, char **diagnostic);
 void close_native_library_handle(void *handle);
+bool close_native_library_handle_checked(void *handle, char **diagnostic);
 char *copy_native_library_diagnostic(const char *text);
 
 /** @brief Requires conservative stack headroom before entering a native adapter. */

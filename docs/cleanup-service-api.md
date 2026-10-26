@@ -22,8 +22,10 @@ ACK с тем же сроком завершает согласование. О�
 Потребитель auto предупреждает один раз и выбирает VM до конца запуска; required
 возвращает ошибку. Эти политики интегрируются задачами потребителей.
 
-`run_cleanup_process` синхронно передаёт уборщику executable, рабочий каталог, argv и абсолютный
-срок процесса. Весь вывод ограниченно захватывается, stdin пуст. Остальные поля
+`run_cleanup_process` синхронно передаёт уборщику executable, рабочий каталог, argv,
+абсолютный срок процесса и необязательный `result_channel`. Последний включает
+отдельный служебный канал результата, не смешанный с stdout/stderr. Весь вывод
+ограниченно захватывается, stdin пуст. Остальные поля
 `child_options_t` должны быть нулевыми. Результат процесса копируется в выходной
 `child_result_t`; CLEANUP_OK здесь означает доставленный результат, а не нулевой
 exit code. Это **регистрация до запуска**, а не передача PID уже запущенного
@@ -103,8 +105,10 @@ deadline; late readiness never revokes a sticky failure. There are no relaunches
 Consumers implement one warning plus run-wide VM fallback in auto, or a startup
 error in required.
 
-`run_cleanup_process` synchronously delegates executable, working directory, argv and an absolute
-process deadline. Output capture is bounded and stdin is empty; other
+`run_cleanup_process` synchronously delegates executable, working directory, argv,
+an absolute process deadline and optional `result_channel`. The latter enables a
+separate service-result channel, never mixed with stdout/stderr. Output capture
+is bounded and stdin is empty; other
 `child_options_t` fields must be zero. CLEANUP_OK means the child result was
 received, not that its exit code was zero. The cleaner launches the owned tree
 through #213 itself, establishing ownership **before launch**, rather than
