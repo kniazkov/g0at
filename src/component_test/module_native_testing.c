@@ -59,6 +59,18 @@ static void api_checks(void) {
         assert(((unsigned char *)&e)[i] == 0);
     assert(goat_native_environment_read("{}", 2, NULL) != GOAT_MODULE_JSON_OK);
     assert(!goat_native_environment_detect(NULL));
+    goat_native_compatibility_result result = {123, 456};
+    assert(goat_module_native_compatibility(NULL, &e, NULL, 0, &result) == GOAT_NATIVE_ARGUMENT);
+    assert(!result.reasons && !result.missing_cpu_features);
+    assert(goat_module_native_compatibility(NULL, &e, NULL, 0, NULL) == GOAT_NATIVE_ARGUMENT);
+    assert(!goat_native_cpu_feature_name(0));
+    assert(!goat_native_cpu_feature_name(GOAT_CPU_SSE2 | GOAT_CPU_AVX));
+    assert(!goat_native_cpu_feature_name(UINT64_C(1) << 63));
+    assert(!strcmp(goat_native_cpu_feature_name(GOAT_CPU_AVX2), "avx2"));
+    for (unsigned reason = 1; reason <= GOAT_NATIVE_REASON_ABI; reason <<= 1)
+        assert(strcmp(
+            goat_native_compatibility_reason_string((goat_native_compatibility_reason)reason),
+            "unknown native compatibility reason"));
     puts("Native metadata API checks passed");
 }
 
@@ -188,8 +200,40 @@ int main(int argc, char **argv) {
     size_t repeated = 456;
     assert(goat_module_native_select(container, &e, abis, abi_count, &repeated, NULL) == status);
     assert(repeated == selected);
+    yyjson_val *variants =
+        yyjson_obj_get(yyjson_doc_get_root(goat_module_container_metadata(container)), "native");
+    printf("{\"compatibility\":[");
+    size_t matches = 0;
+    for (size_t i = 0; i < yyjson_arr_size(variants); ++i) {
+        goat_native_compatibility_result result = {0};
+        goat_native_status match = goat_module_native_compatibility(yyjson_arr_get(variants, i),
+                                                                    &e,
+                                                                    abis,
+                                                                    abi_count,
+                                                                    &result);
+        if (match == GOAT_NATIVE_OK) {
+            ++matches;
+            assert(!result.reasons && !result.missing_cpu_features);
+        } else if (match == GOAT_NATIVE_NO_MATCH) {
+            assert(result.reasons);
+            assert(!!(result.reasons & GOAT_NATIVE_REASON_CPU) == !!result.missing_cpu_features);
+        } else {
+            assert(match == GOAT_NATIVE_INVALID_METADATA);
+            assert(status == GOAT_NATIVE_INVALID_METADATA);
+        }
+        printf("%s{\"status\":%d,\"reasons\":%u,\"missingCpu\":%" PRIu64 "}",
+               i ? "," : "",
+               match,
+               result.reasons,
+               result.missing_cpu_features);
+    }
+    if (status != GOAT_NATIVE_INVALID_METADATA)
+        assert(status
+               == (matches == 0   ? GOAT_NATIVE_NO_MATCH
+                   : matches == 1 ? GOAT_NATIVE_OK
+                                  : GOAT_NATIVE_AMBIGUOUS));
     free(abis);
-    printf("{\"status\":%d,\"selected\":", status);
+    printf("],\"status\":%d,\"selected\":", status);
     if (status) {
         assert(selected == SIZE_MAX);
         puts("null}");

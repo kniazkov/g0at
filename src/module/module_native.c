@@ -34,7 +34,7 @@ static uint32_t number(const yyjson_val *v) {
     return (uint32_t)n;
 }
 
-static goat_native_version version(yyjson_val *v) {
+static goat_native_version version(const yyjson_val *v) {
     goat_native_version result = {.known = true};
     for (size_t i = 0; i < yyjson_arr_size(v); i++)
         result.components[i] = number(yyjson_arr_get(v, i));
@@ -58,7 +58,7 @@ static bool version_at_least(goat_native_version actual,
 
 /* A bit known for the other architecture is contradictory metadata, unlike a
  * future nonempty name, which is structurally valid but never satisfied here. */
-static bool target(yyjson_val *v, goat_native_environment *out, bool *unknown) {
+static bool target(const yyjson_val *v, goat_native_environment *out, bool *unknown) {
     memset(out, 0, sizeof(*out));
     *unknown = false;
     out->os = is(yyjson_obj_get(v, "os"), "linux") ? GOAT_OS_LINUX : GOAT_OS_WINDOWS;
@@ -143,7 +143,7 @@ finish(goat_native_error *error, goat_native_status status, size_t index) {
     return status;
 }
 
-static bool variant_valid(yyjson_val *variant) {
+static bool variant_valid(const yyjson_val *variant) {
     goat_native_environment required;
     bool unknown;
     if (!target(yyjson_obj_get(variant, "target"), &required, &unknown))
@@ -185,6 +185,88 @@ goat_native_status goat_module_native_validate(const goat_module_container *cont
     return goat_module_native_validate_diagnostics(container, error, NULL, NULL);
 }
 
+goat_native_status goat_module_native_compatibility(const yyjson_val *variant,
+                                                    const goat_native_environment *environment,
+                                                    const uint32_t *supported_abis,
+                                                    size_t abi_count,
+                                                    goat_native_compatibility_result *out) {
+    if (out)
+        memset(out, 0, sizeof(*out));
+    if (!variant || !environment || !out || (!supported_abis && abi_count))
+        return GOAT_NATIVE_ARGUMENT;
+    if (!variant_valid(variant))
+        return GOAT_NATIVE_INVALID_METADATA;
+    goat_native_environment required;
+    bool unknown;
+    target(yyjson_obj_get(variant, "target"), &required, &unknown);
+    uint32_t abi = number(yyjson_obj_get(variant, "goatAbiVersion"));
+    bool abi_supported = false;
+    for (size_t i = 0; i < abi_count; ++i)
+        abi_supported |= supported_abis[i] == abi;
+    if (!abi_supported)
+        out->reasons |= GOAT_NATIVE_REASON_ABI;
+    if (environment->os != required.os)
+        out->reasons |= GOAT_NATIVE_REASON_OS;
+    if (environment->architecture != required.architecture)
+        out->reasons |= GOAT_NATIVE_REASON_ARCHITECTURE;
+    if (environment->bits != required.bits)
+        out->reasons |= GOAT_NATIVE_REASON_BITS;
+    if (!environment->little_endian)
+        out->reasons |= GOAT_NATIVE_REASON_ENDIAN;
+    if (environment->runtime != required.runtime)
+        out->reasons |= GOAT_NATIVE_REASON_RUNTIME;
+    if (!version_at_least(environment->os_version, required.os_version, false))
+        out->reasons |= environment->os_version.known ? GOAT_NATIVE_REASON_OS_VERSION
+                                                      : GOAT_NATIVE_REASON_UNKNOWN_OS_VERSION;
+    if (!version_at_least(environment->runtime_version, required.runtime_version, true))
+        out->reasons |= environment->runtime_version.known
+                            ? GOAT_NATIVE_REASON_RUNTIME_VERSION
+                            : GOAT_NATIVE_REASON_UNKNOWN_RUNTIME_VERSION;
+    if (unknown)
+        out->reasons |= GOAT_NATIVE_REASON_UNKNOWN_CPU;
+    out->missing_cpu_features = requirements(required) & ~environment->cpu_features;
+    if (out->missing_cpu_features)
+        out->reasons |= GOAT_NATIVE_REASON_CPU;
+    return out->reasons ? GOAT_NATIVE_NO_MATCH : GOAT_NATIVE_OK;
+}
+
+const char *goat_native_compatibility_reason_string(goat_native_compatibility_reason reason) {
+    switch (reason) {
+        case GOAT_NATIVE_REASON_OS:
+            return "different or unknown operating system";
+        case GOAT_NATIVE_REASON_ARCHITECTURE:
+            return "different or unknown process architecture";
+        case GOAT_NATIVE_REASON_BITS:
+            return "different process bitness";
+        case GOAT_NATIVE_REASON_ENDIAN:
+            return "little-endian execution is required";
+        case GOAT_NATIVE_REASON_RUNTIME:
+            return "different or unknown system runtime family";
+        case GOAT_NATIVE_REASON_OS_VERSION:
+            return "operating system version is below the required minimum";
+        case GOAT_NATIVE_REASON_RUNTIME_VERSION:
+            return "runtime version is below the required minimum";
+        case GOAT_NATIVE_REASON_UNKNOWN_OS_VERSION:
+            return "required operating system version cannot be verified";
+        case GOAT_NATIVE_REASON_UNKNOWN_RUNTIME_VERSION:
+            return "required runtime version cannot be verified";
+        case GOAT_NATIVE_REASON_CPU:
+            return "required CPU features or prerequisites are unavailable";
+        case GOAT_NATIVE_REASON_UNKNOWN_CPU:
+            return "unknown required CPU feature cannot be verified";
+        case GOAT_NATIVE_REASON_ABI:
+            return "unsupported Goat native ABI version";
+    }
+    return "unknown native compatibility reason";
+}
+
+const char *goat_native_cpu_feature_name(uint64_t bit) {
+    for (size_t i = 0; i < sizeof(features) / sizeof(*features); ++i)
+        if (features[i].bit == bit)
+            return features[i].name;
+    return NULL;
+}
+
 goat_native_status goat_module_native_select(const goat_module_container *container,
                                              const goat_native_environment *environment,
                                              const uint32_t *supported_abis,
@@ -203,27 +285,15 @@ goat_native_status goat_module_native_select(const goat_module_container *contai
     size_t selected = SIZE_MAX, ambiguous = SIZE_MAX;
     for (size_t i = 0; i < yyjson_arr_size(variants); i++) {
         yyjson_val *v = yyjson_arr_get(variants, i);
-        goat_native_environment required;
-        bool unknown;
-        if (!target(yyjson_obj_get(v, "target"), &required, &unknown))
-            return finish(error, GOAT_NATIVE_INVALID_METADATA, i);
-        yyjson_val *library = yyjson_obj_get(v, "library");
-        const char *suffix = required.os == GOAT_OS_WINDOWS ? ".dll" : ".so";
-        size_t length = yyjson_get_len(library), n = strlen(suffix);
-        if (length < n || memcmp(yyjson_get_str(library) + length - n, suffix, n))
-            return finish(error, GOAT_NATIVE_INVALID_METADATA, i);
-        uint32_t abi = number(yyjson_obj_get(v, "goatAbiVersion"));
-        bool abi_supported = false;
-        for (size_t j = 0; j < abi_count; j++)
-            abi_supported |= supported_abis[j] == abi;
-        uint64_t needed = requirements(required);
-        if (unknown || !abi_supported || environment->os != required.os
-            || environment->architecture != required.architecture
-            || environment->bits != required.bits || !environment->little_endian
-            || environment->runtime != required.runtime
-            || !version_at_least(environment->os_version, required.os_version, false)
-            || !version_at_least(environment->runtime_version, required.runtime_version, true)
-            || (environment->cpu_features & needed) != needed)
+        goat_native_compatibility_result compatibility;
+        goat_native_status match = goat_module_native_compatibility(v,
+                                                                    environment,
+                                                                    supported_abis,
+                                                                    abi_count,
+                                                                    &compatibility);
+        if (match == GOAT_NATIVE_INVALID_METADATA || match == GOAT_NATIVE_ARGUMENT)
+            return finish(error, match, i);
+        if (match != GOAT_NATIVE_OK)
             continue;
         if (selected != SIZE_MAX)
             ambiguous = i;
@@ -257,7 +327,7 @@ const char *goat_native_status_string(goat_native_status status) {
 }
 
 size_t goat_module_native_function_count(const yyjson_val *variant) {
-    yyjson_val *specs = yyjson_obj_get((yyjson_val *)variant, "specializations");
+    yyjson_val *specs = yyjson_obj_get(variant, "specializations");
     size_t count = 0;
     for (size_t j = 0; j < yyjson_arr_size(specs); ++j) {
         int64_t id = 0;

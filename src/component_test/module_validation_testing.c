@@ -52,6 +52,20 @@ static void report(const module_validation_diagnostic_t *d, void *context) {
     puts("}");
 }
 
+typedef struct {
+    const char *archive;
+    char *json;
+    size_t size, count;
+} metadata_capture_t;
+
+static void metadata(const char *archive, const yyjson_doc *doc, void *context) {
+    metadata_capture_t *capture = context;
+    assert(!strcmp(archive, capture->archive));
+    assert(!capture->count++);
+    assert(
+        !goat_module_json_write(doc, GOAT_MODULE_METADATA, false, &capture->json, &capture->size));
+}
+
 static void api_checks(void) {
     validated_module_t *module = (void *)(uintptr_t)1;
     assert(validate_module(NULL, 1, NULL, NULL, &module).status == MODULE_VALIDATION_ARGUMENT);
@@ -87,16 +101,19 @@ int main(int argc, char **argv) {
     assert(size < capacity && !FERROR(stdin));
     bool file_mode = !strcmp(argv[1], "file");
     size_t events = 0;
+    const char *label = argc > 2 ? argv[2] : "memory fixture.gbin";
+    metadata_capture_t captured = {.archive = label};
     module_validation_options_t options = {.max_archive = SIZE_MAX,
                                            .max_expanded = SIZE_MAX,
                                            .report = report,
-                                           .context = &events};
+                                           .context = &events,
+                                           .metadata = metadata,
+                                           .metadata_context = &captured};
     if (argc > 3)
         options.max_archive = (size_t)strtoull(argv[3], NULL, 10);
     if (argc > 4)
         options.max_expanded = (size_t)strtoull(argv[4], NULL, 10);
     validated_module_t *module = (void *)(uintptr_t)1;
-    const char *label = argc > 2 ? argv[2] : "memory fixture.gbin";
     module_validation_result_t result =
         file_mode ? validate_module_file(label, &options, &module)
                   : validate_module(input, size, label, &options, &module);
@@ -147,10 +164,18 @@ int main(int argc, char **argv) {
     free_fs_arguments(argc, argv);
 #endif
     assert(!get_allocated_memory_size());
-    printf("{\"status\":%d,\"failures\":%zu,\"skipped\":%zu,\"events\":%zu}\n",
+    printf("{\"status\":%d,\"failures\":%zu,\"skipped\":%zu,\"events\":%zu,\"metadata\":",
            result.status,
            result.failures,
            result.skipped,
            events);
+    /* The copied metadata remains usable after the invalid/valid snapshot and
+     * input storage have both gone away; it is not an executable snapshot. */
+    if (captured.json)
+        fwrite(captured.json, 1, captured.size, stdout);
+    else
+        fputs("null", stdout);
+    puts("}");
+    goat_module_json_free(captured.json);
     return 0;
 }

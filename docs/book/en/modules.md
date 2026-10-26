@@ -4644,8 +4644,7 @@ probe budget in seconds, not a user-program build deadline.
 Options can follow the input path. `--` separates literal program arguments.
 Compiler provenance is stable across packaging and excluded from mainHash.
 Build and execution share one cleanup service and its one-warning fallback policy.
-See [commands, paths and verification](../../module-cli-api.md). Bounded exit and
-the separate inspect/merge tools remain subsequent checklist tasks.
+See [commands, paths and verification](../../module-cli-api.md). The separate inspect/merge tools are integrated by their own checklist tasks.
 
 
 ### Implemented process-wide exit and cleanup (#230)
@@ -4668,3 +4667,20 @@ Normal entry-file completion still waits for all program threads and descendants
 The common prestarted cleaner observes actual process death on both normal and
 explicit exit, then deletes only owned temporary artifacts; saved archives remain.
 It is not restarted or awaited by exit. See the [API and acceptance coverage](../../module-exit-api.md).
+
+### Implemented metadata inspection (#212)
+
+`goat-inspect archive` now validates the entire reachable dependency graph and
+prints stable, escaped text: identity and hashes, dependencies, all producers,
+native compiler information, exports with mutability/known type, and per-variant
+compatibility explanations from the shared selector. Literal paths need no
+`.gbin` extension; `--module-dir` and `--target profile.json` use the common search
+and strict target contracts. Safely validated metadata remains available when
+other archive checks fail; unavailable metadata is not replaced by invented
+empty fields. Bytecode and native code are never executed by this stage.
+
+The final contract above is implemented in ordered stages: #223 supplies the
+versioned JSON renderer, and #214 supplies isolated load probes. Currently
+`--json` is explicitly unavailable, and text always reports loading as not
+checked. Metadata compatibility must not be mistaken for proven library loading.
+See [the implemented command, statuses and boundaries](../../module-inspect-api.md).

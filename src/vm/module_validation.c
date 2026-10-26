@@ -69,6 +69,10 @@ static void native_report(goat_native_status status, size_t index, void *context
 static void inspect(const goat_module_container *container, void *context) {
     validation *v = context;
     v->inspected = true;
+    if (v->options.metadata)
+        v->options.metadata(v->archive,
+                            goat_module_container_metadata(container),
+                            v->options.metadata_context);
     zip_view_t bytes = goat_module_container_bytecode(container);
     char *json = NULL;
     size_t length = 0;

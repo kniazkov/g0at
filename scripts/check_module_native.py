@@ -104,6 +104,31 @@ for abi in (2, 3, 4294967295):
 for supported in ((2,), (3,), (4294967295,)):
     check([base], NO_MATCH, abis=supported)
 
+# Inspector explanations are the selector's own decisions, with independent reasons.
+def reasons(v=base, **kwargs):
+    return run([v], **kwargs)['compatibility'][0]
+
+assert reasons()['reasons'] == 0
+assert reasons(abis=())['reasons'] == 1 << 11
+assert reasons(mode='unknown-os')['reasons'] == 1 << 0
+assert reasons(mode='unknown-arch')['reasons'] == 1 << 1
+assert reasons(mode='big-endian')['reasons'] == 1 << 3
+assert reasons(mode='unknown-runtime')['reasons'] == 1 << 4
+assert reasons(profile=target(os_version=[4]))['reasons'] == 1 << 5
+assert reasons(variant(target(runtime_version=[2, 28])),
+               profile=target(runtime_version=[2, 9]))['reasons'] == 1 << 6
+assert reasons(mode='unknown-os-version')['reasons'] == 1 << 7
+assert reasons(variant(target(runtime_version=[2, 28])),
+               mode='unknown-runtime-version')['reasons'] == 1 << 8
+assert reasons(mode='unknown-runtime-version')['reasons'] == 0
+assert reasons(mode='no-features') == dict(status=NO_MATCH, reasons=1 << 9, missingCpu=1 << 1)
+assert reasons(variant(target(features=['sse2', 'future-cpu'])))['reasons'] == 1 << 10
+missing = reasons(variant(target(features=['avx2'])))
+assert missing['reasons'] == 1 << 9 and missing['missingCpu'] == (1 << 6) | (1 << 7)
+combined = reasons(variant(target('windows', 'x86', runtime_version=[2]),
+                           library='native/other.dll', abi=2), profile=target(os_version=[1]))
+assert combined['reasons'] == sum(1 << bit for bit in (0, 1, 2, 4, 5, 6, 9, 11))
+
 # All supported architectural and runtime profiles, independent of machine running tests.
 profiles = [target(), target(architecture='aarch64'), target(family='musl'),
             target('windows', family='msvcrt'), target('windows', family='ucrt'),

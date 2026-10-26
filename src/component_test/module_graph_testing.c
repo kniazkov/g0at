@@ -165,6 +165,12 @@ static void report(const module_validation_diagnostic_t *diagnostic, void *conte
         (*(size_t *)context)++;
 }
 
+static void metadata(const char *archive, const yyjson_doc *doc, void *context) {
+    assert(archive && *archive);
+    assert(yyjson_is_obj(yyjson_doc_get_root(doc)));
+    (*(size_t *)context)++;
+}
+
 int main(int argc, char **argv) {
 #ifdef _WIN32
     fs_error_t args_error = {0};
@@ -180,8 +186,13 @@ int main(int argc, char **argv) {
         module_search_error_t search_error = {0};
         assert(!prepare_module_search(argv[2], NULL, NULL, &search, &search_error));
         contracts(search);
-        size_t checks = 0;
-        module_validation_options_t options = {SIZE_MAX, SIZE_MAX, report, &checks};
+        size_t checks = 0, metadata_count = 0;
+        module_validation_options_t options = {.max_archive = SIZE_MAX,
+                                               .max_expanded = SIZE_MAX,
+                                               .report = report,
+                                               .context = &checks,
+                                               .metadata = metadata,
+                                               .metadata_context = &metadata_count};
         module_graph_t *graph = NULL;
         module_sources_t *sources = NULL;
         module_imports_t *imports = NULL;
@@ -226,6 +237,12 @@ int main(int argc, char **argv) {
                 status += 100;
         }
         free_module_sources(sources);
+        if (strcmp(argv[1], "module-null") && graph) {
+            size_t valid_nodes = 0;
+            for (size_t i = 0; i < module_graph_node_count(graph); i++)
+                valid_nodes += module_graph_node(graph, i)->snapshot != NULL;
+            assert(metadata_count >= valid_nodes && metadata_count <= checks);
+        }
         free_module_imports(imports);
         free_module_search(search);
         clear_module_search_error(&search_error);

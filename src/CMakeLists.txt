@@ -117,6 +117,9 @@ message(STATUS "Found core sources: ${core_sources}")
 
 file(GLOB goat_exe main.c)
 message(STATUS "Found interpreter sources: ${goat_exe}")
+add_executable(goat-inspect inspect.c)
+target_link_libraries(goat-inspect core goat_validation goat_module m)
+
 add_executable(goat ${goat_exe})
 target_link_libraries (goat core goat_validation goat_module m)
 
