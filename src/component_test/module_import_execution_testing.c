@@ -22,6 +22,7 @@
 #include "vm/vm.h"
 
 #include <assert.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +37,8 @@
 /* Link-time observers cover the actual production analyzer/interpreter and VM
  * entry points. Positive controls below prevent a disconnected observer from
  * turning the metadata-only assertion into a vacuous zero. */
-static size_t analyzer_calls, interpreter_calls, execution_calls;
+/* Observers run before the VM lock and must remain safe for concurrent entry. */
+static atomic_size_t analyzer_calls, interpreter_calls, execution_calls;
 
 compilation_error_t *
 __real_analyze(node_t *, parser_memory_t *, options_t *, analysis_collector_t *);
@@ -49,7 +51,7 @@ compilation_error_t *__wrap_analyze(node_t *root,
                                     parser_memory_t *memory,
                                     options_t *options,
                                     analysis_collector_t *collector) {
-    ++analyzer_calls;
+    atomic_fetch_add_explicit(&analyzer_calls, 1, memory_order_relaxed);
     return __real_analyze(root, memory, options, collector);
 }
 
@@ -57,28 +59,28 @@ compilation_error_t *__wrap_analyze(node_t *root,
 void __wrap_interpret_module(node_t *root,
                              parser_memory_t *memory,
                              analysis_collector_t *collector) {
-    ++interpreter_calls;
+    atomic_fetch_add_explicit(&interpreter_calls, 1, memory_order_relaxed);
     __real_interpret_module(root, memory, collector);
 }
 
 /** @brief Count legacy VM entries as well as module execution entries. */
 int __wrap_run(process_t *process, bytecode_t *code) {
-    ++execution_calls;
+    atomic_fetch_add_explicit(&execution_calls, 1, memory_order_relaxed);
     return __real_run(process, code);
 }
 
 /** @brief Count module VM entries without changing execution semantics. */
 int __wrap_run_module_file(process_t *process, module_file_t *file) {
-    ++execution_calls;
+    atomic_fetch_add_explicit(&execution_calls, 1, memory_order_relaxed);
     return __real_run_module_file(process, file);
 }
 
 static void report_contract_counts(void) {
     FPRINTF(stdout,
             "analysis=%zu interpretation=%zu execution=%zu\n",
-            analyzer_calls,
-            interpreter_calls,
-            execution_calls);
+            atomic_load_explicit(&analyzer_calls, memory_order_relaxed),
+            atomic_load_explicit(&interpreter_calls, memory_order_relaxed),
+            atomic_load_explicit(&execution_calls, memory_order_relaxed));
 }
 
 static void report_graph(const module_graph_t *graph, module_graph_status_t status) {
