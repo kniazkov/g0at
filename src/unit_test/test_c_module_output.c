@@ -8,6 +8,7 @@
 #include "analysis_test_support.h"
 #include "cli/c_output.h"
 #include "codegen/c_module_output.h"
+#include "codegen/c_module_v1.h"
 #include "goat/unicode.h"
 #include "graph/replacement.h"
 #include "lib/allocate.h"
@@ -32,6 +33,55 @@ static bool reject_definition(const node_t *node,
                               size_t indent) {
     add_static_source(builder, 0, U"/* partial definition must be discarded */");
     return fail_c_generation(context, node, C_GENERATION_UNSUPPORTED);
+}
+
+static bool module_v1_output(arena_t *arena) {
+    node_t *roots[] = {analyzed(arena, U"const f=func(n){return n+1;};f(2);f(2.5);"),
+                       analyzed(arena, U"const f=func(n){return n*2;};f(3);")};
+    ASSERT(roots[0] && roots[1]);
+    c_module_t *first = create_c_module(arena, roots[0]);
+    c_module_t *second = create_c_module(arena, roots[1]);
+    ASSERT(first->count == 2 && second->count == 1);
+    ((node_t *)first->head->summary->function)->bytecode_function_id = 7;
+    ((node_t *)second->head->summary->function)->bytecode_function_id = 91;
+    c_module_v1_output_t output = generate_c_module_v1(arena, (const node_t *const *)roots, 2);
+    ASSERT(output.generated_count == 3 && output.specializations);
+    ASSERT(!STRSTR(output.source.data, U"goat_native_query_v2"));
+    yyjson_val *specs = yyjson_doc_get_root(output.specializations);
+    ASSERT(yyjson_arr_size(specs) == 3);
+    ASSERT(yyjson_get_uint(yyjson_obj_get(yyjson_arr_get(specs, 0), "functionId")) == 7);
+    ASSERT(yyjson_get_uint(yyjson_obj_get(yyjson_arr_get(specs, 1), "functionId")) == 7);
+    ASSERT(yyjson_get_uint(yyjson_obj_get(yyjson_arr_get(specs, 2), "functionId")) == 91);
+    ASSERT(STRSTR(output.source.data, U"g_f7_i_") && STRSTR(output.source.data, U"g_f91_i_"));
+    ASSERT(STRSTR(output.source.data, U"goat_fn_1_v1")
+           && STRSTR(output.source.data, U"goat_fn_3_v1"));
+    c_module_v1_output_t repeat = generate_c_module_v1(arena, (const node_t *const *)roots, 2);
+    ASSERT(!STRCMP(output.source.data, repeat.source.data));
+    const char metadata[] = "{\"name\":\"demo\",\"version\":\"1\",\"mainHash\":"
+                            "\"1111111111111111111111111111111111111111111111111111111111111111\"}";
+    const char target[] = "{\"architecture\":\"x86_64\",\"bits\":64,\"cpuFeatures\":[\"sse2\"],"
+                          "\"endian\":\"little\",\"minimumOs\":[0],\"os\":\"linux\",\"runtime\":{"
+                          "\"family\":\"glibc\",\"minimumVersion\":[2,17]}}";
+    yyjson_doc *main = yyjson_read(metadata, sizeof(metadata) - 1, 0);
+    yyjson_doc *platform = yyjson_read(target, sizeof(target) - 1, 0);
+    ASSERT(main && platform);
+    string_value_t source = append_c_module_v1_descriptor(VALUE_TO_VIEW(output.source),
+                                                          main,
+                                                          yyjson_doc_get_root(platform),
+                                                          output.specializations);
+    ASSERT(source.data && STRSTR(source.data, U"goat_module_descriptor_v1[]"));
+    ASSERT(STRSTR(source.data, U"goat_fn_3_v1"));
+    FREE_STRING(source);
+    source = append_c_module_v1_descriptor(VALUE_TO_VIEW(output.source),
+                                           NULL,
+                                           yyjson_doc_get_root(platform),
+                                           output.specializations);
+    ASSERT(!source.data);
+    yyjson_doc_free(main);
+    yyjson_doc_free(platform);
+    destroy_c_module_v1_output(&repeat);
+    destroy_c_module_v1_output(&output);
+    return true;
 }
 
 bool test_c_module_output(void) {
@@ -107,6 +157,7 @@ bool test_c_module_output(void) {
     ASSERT(!first.generated_count && !first.omitted_count && first.source.data);
     ASSERT(!STRSTR(first.source.data, U"static inline"));
     FREE_STRING(first.source);
+    ASSERT(module_v1_output(arena));
     destroy_arena(arena);
     return true;
 }

@@ -24,6 +24,9 @@
 
 int main(int argc, char **argv) {
 #ifdef TEST_NATIVE_COMPILER
+    int cleanup_code;
+    if (cleanup_service_main(argc, argv, &cleanup_code))
+        return cleanup_code;
     assert(argc == 4);
     string_value_t source = read_utf8_file(argv[3]);
     assert(source.data);

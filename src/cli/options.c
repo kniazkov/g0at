@@ -95,6 +95,15 @@ options_t *parse_options(int argc, char **argv) {
                 continue;
             }
 
+            if (!strcmp(arg, "--cc")) {
+                if (++index >= argc || !argv[index][0] || argv[index][0] == '-') {
+                    fprintf_utf8(stderr, get_messages()->missing_specification, arg);
+                    goto error;
+                }
+                opt->native_compiler = argv[index];
+                continue;
+            }
+
             if (!strcmp(arg, "--native-probe-timeout")) {
                 if (++index >= argc) {
                     fprintf_utf8(stderr, get_messages()->missing_specification, arg);

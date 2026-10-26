@@ -114,6 +114,9 @@ def main():
                 1, mode)
             run('empty-string', 'const f = func(x) { return x; }; println(f(""));', '\n',
                 [spec(['string'], 'first', 'string')], 1, mode)
+            run('non-scalar-string-fallback', 'const f = func(x) { return 7; }; '
+                'println(f(str(chr(55296))));', '7\n',
+                [spec(['string'], 'positive')], 0, mode, resolutions=0)
             run('ordinary-object-no-conversion', 'var count = 0; '
                 'const f = func(x) { return 7; }; '
                 'const value = { public toString = func() { count += 1; return "oops"; }; }; '

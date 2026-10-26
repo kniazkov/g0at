@@ -75,10 +75,11 @@ make_name(arena_t *arena, size_t function_id, const function_summary_t *summary)
     return result;
 }
 
-static void collect(c_module_t *module, arena_t *arena, const node_t *node, size_t *ordinal) {
+static void
+collect(c_module_t *module, arena_t *arena, const node_t *node, size_t *ordinal, bool stable_ids) {
     node = replacement_original(node);
     if (node->vtbl->type == NODE_FUNCTION_OBJECT) {
-        size_t function_id = ++*ordinal;
+        size_t function_id = stable_ids ? node->bytecode_function_id : ++*ordinal;
         const function_summary_set_t *set = get_function_summaries(node);
         const function_summary_t *previous = NULL;
         for (;;) {
@@ -105,7 +106,7 @@ static void collect(c_module_t *module, arena_t *arena, const node_t *node, size
         }
     }
     for (size_t i = 0; i < get_node_child_count(node); i++)
-        collect(module, arena, get_node_child(node, i), ordinal);
+        collect(module, arena, get_node_child(node, i), ordinal, stable_ids);
 }
 
 static void dependencies(c_module_t *module, arena_t *arena, c_module_function_t *entry) {
@@ -148,11 +149,13 @@ static void dependencies(c_module_t *module, arena_t *arena, c_module_function_t
     }
 }
 
-c_module_t *create_c_module(arena_t *arena, const node_t *root) {
+static c_module_t *
+create(arena_t *arena, const node_t *const *roots, size_t count, bool stable_ids) {
     c_module_t *module = alloc_zeroed_from_arena(arena, sizeof(*module));
     size_t ordinal = 0;
-    if (root)
-        collect(module, arena, root, &ordinal);
+    for (size_t i = 0; i < count; ++i)
+        if (roots[i])
+            collect(module, arena, roots[i], &ordinal, stable_ids);
     for (c_module_function_t *entry = module->head; entry; entry = entry->next)
         dependencies(module, arena, entry);
     bool changed;
@@ -173,4 +176,12 @@ c_module_t *create_c_module(arena_t *arena, const node_t *root) {
     for (const c_module_function_t *entry = module->head; entry; entry = entry->next)
         module->available_count += entry->available;
     return module;
+}
+
+c_module_t *create_c_module(arena_t *arena, const node_t *root) {
+    return create(arena, &root, 1, false);
+}
+
+c_module_t *create_c_module_roots(arena_t *arena, const node_t *const *roots, size_t count) {
+    return create(arena, roots, count, true);
 }

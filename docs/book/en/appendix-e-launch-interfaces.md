@@ -28,6 +28,8 @@ Options are also recognized after the input filename. Option values are separate
 | `--run` | Load and execute `.gbin` without source analysis or a compiler. |
 | `--optimize none\|all` | Default `all`; `none` disables optimizing analysis, not required name binding. |
 | `--native off\|auto\|required` | Default `off` for source, `auto` for `--run`. |
+| `--cc EXECUTABLE` | Select one C compiler, without fallback to another executable. Inherits its environment. |
+| `--native-probe-timeout SECONDS` | Positive integer probe budget, default 10. Does not limit user C compilation. |
 | `--print-native` | Preparation and counter report on stdout. |
 | `--save-native file` | The same report in the specified UTF-8 file. |
 | `--print-analysis` | Analysis-observation log on stdout. |

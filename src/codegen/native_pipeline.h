@@ -4,6 +4,7 @@
  */
 #pragma once
 #include "graph/node.h"
+#include "native_compiler.h"
 #include "vm/bytecode.h"
 
 typedef enum {
@@ -12,7 +13,9 @@ typedef enum {
     NATIVE_PREPARE_IO_ERROR,
     NATIVE_PREPARE_COMPILE_ERROR,
     NATIVE_PREPARE_LOAD_ERROR,
-    NATIVE_PREPARE_BIND_ERROR
+    NATIVE_PREPARE_BIND_ERROR,
+    NATIVE_PREPARE_CLEANUP_ERROR,
+    NATIVE_PREPARE_UNAVAILABLE
 } native_prepare_status_t;
 
 typedef struct {
@@ -32,3 +35,25 @@ native_prepare_result_t prepare_native_artifact(const node_t *root,
                                                 bytecode_t *code,
                                                 const char *compiler,
                                                 const char *destination);
+
+/** @brief Shares the owner's lazy cleaner with discovery and all temporary consumers. */
+native_prepare_result_t
+prepare_native_execution_in_context(const node_t *root,
+                                    bytecode_t *code,
+                                    const char *compiler,
+                                    native_build_context_t *context,
+                                    const native_compile_options_t *options);
+native_prepare_result_t prepare_native_artifact_in_context(const node_t *root,
+                                                           bytecode_t *code,
+                                                           const char *compiler,
+                                                           const char *destination,
+                                                           native_build_context_t *context,
+                                                           const native_compile_options_t *options);
+
+/** @brief Direct-run policy: probe only when own generated functions exist, sharing one cleaner. */
+native_prepare_result_t prepare_native_discovered(const node_t *root,
+                                                  bytecode_t *code,
+                                                  const char *compiler,
+                                                  const char *destination,
+                                                  native_build_context_t *context,
+                                                  uint32_t probe_timeout);

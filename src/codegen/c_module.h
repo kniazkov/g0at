@@ -38,3 +38,6 @@ c_module_t *create_c_module(arena_t *arena, const node_t *root);
 /** @brief Finds by function identity and exact parameter types, including summary snapshots. */
 const c_module_function_t *c_module_find(const c_module_t *module,
                                          const function_summary_t *summary);
+
+/** @brief Shared inventory for linked module roots, using their assigned bytecode function IDs. */
+c_module_t *create_c_module_roots(arena_t *arena, const node_t *const *roots, size_t count);

@@ -226,6 +226,9 @@ static void print_hex(const child_output_t *out) {
 }
 
 static int fixture_main(int argc, char **argv) {
+    int cleanup_code;
+    if (cleanup_service_main(argc, argv, &cleanup_code))
+        return cleanup_code;
     if (argc > 2 && !strcmp(argv[1], "--worker"))
         return worker(argc, argv);
     if (argc < 2)

@@ -5,6 +5,7 @@
 #include "lib/allocate.h"
 #include "lib/windows_command_line.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,6 +46,17 @@ int main(int argc, char **argv) {
     const char *mode = getenv("FIXTURE_MODE");
     if (!mode)
         mode = "pass";
+    bool user_build = false;
+    for (int i = 1; i < argc; i++) {
+        const char *base = strrchr(argv[i], '/');
+        if (!base)
+            base = strrchr(argv[i], '\\');
+        base = base ? base + 1 : argv[i];
+        if (!strcmp(base, "module.c"))
+            user_build = true;
+    }
+    if (!user_build)
+        mode = "pass";
     if (!strcmp(mode, "absent"))
         return 0;
     if (!strcmp(mode, "exit")) {
@@ -64,10 +76,10 @@ int main(int argc, char **argv) {
         if (!strcmp(argv[i], "-o") && i + 1 < argc)
             output = argv[i + 1];
         size_t n = strlen(argv[i]);
-        if (n > 2 && !strcmp(argv[i] + n - 2, ".c"))
+        if (n > 8 && !strcmp(argv[i] + n - 8, "module.c"))
             source = argv[i];
     }
-    if (!source || !output)
+    if (user_build && (!source || !output))
         return 91;
     if (!strcmp(mode, "empty")) {
         FILE *file = fopen(output, "wb");

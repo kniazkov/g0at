@@ -3,6 +3,7 @@
  * @brief Compile an already resolved source graph without reopening its files.
  */
 #pragma once
+#include "graph/node.h"
 #include "module_sources.h"
 #include "vm/bytecode.h"
 #include "vm/module_dependencies.h"
@@ -62,3 +63,20 @@ bool compile_module_sources_with_graph(const module_sources_t *sources,
                                        module_compilation_error_t *error);
 /** @brief Release all compilation results; accepts NULL. */
 void free_module_compilation(module_compilation_t *compilation);
+
+/** Optional backend runs only after verified immutable bytecode/metadata are complete,
+ * while source analysis graphs are still alive. Never retain graph pointers.
+ * Returning false aborts the transaction and releases the compilation.
+ */
+typedef bool (*module_compilation_backend_t)(const node_t *const *roots,
+                                             size_t count,
+                                             module_compilation_t *compilation,
+                                             void *context,
+                                             module_compilation_error_t *error);
+bool compile_module_sources_with_backend(const module_sources_t *sources,
+                                         const module_dependencies_t *dependencies,
+                                         const module_graph_t *graph,
+                                         module_compilation_backend_t backend,
+                                         void *context,
+                                         module_compilation_t **out,
+                                         module_compilation_error_t *error);

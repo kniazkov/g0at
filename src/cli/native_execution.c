@@ -30,6 +30,10 @@ static const char *status_name(native_prepare_status_t status) {
             return "load-error";
         case NATIVE_PREPARE_BIND_ERROR:
             return "bind-error";
+        case NATIVE_PREPARE_CLEANUP_ERROR:
+            return "cleanup-error";
+        case NATIVE_PREPARE_UNAVAILABLE:
+            return "unavailable";
     }
     return "unknown";
 }
@@ -43,13 +47,20 @@ static bool prepare(const options_t *options,
     if (options->native_execution == NATIVE_OFF)
         return true;
     char *compiler_value = fs_environment("CC", NULL);
-    const char *compiler = compiler_value;
+    const char *compiler = options->native_compiler ? options->native_compiler : compiler_value;
+    native_build_context_t *context = options->native_build_context;
+    if (context)
+        retain_native_build_context(context);
+    else
+        context = create_native_build_context(NULL);
     native_prepare_result_t prepared =
-        destination ? prepare_native_artifact(root,
-                                              code,
-                                              compiler && *compiler ? compiler : NULL,
-                                              destination)
-                    : prepare_native_execution(root, code, compiler && *compiler ? compiler : NULL);
+        prepare_native_discovered(root,
+                                  code,
+                                  compiler && *compiler ? compiler : NULL,
+                                  destination,
+                                  context,
+                                  options->native_probe_timeout);
+    release_native_build_context(context);
     FREE(compiler_value);
     report->preparation = status_name(prepared.status);
     report->bound_functions = prepared.bound_functions;
@@ -64,8 +75,11 @@ static bool prepare(const options_t *options,
                                          : "No native functions could be bound");
         FPUTC('\n', stderr);
     }
+    bool fallback = prepared.status == NATIVE_PREPARE_EMPTY
+                    || prepared.status == NATIVE_PREPARE_CLEANUP_ERROR
+                    || prepared.status == NATIVE_PREPARE_UNAVAILABLE;
     destroy_native_prepare_result(&prepared);
-    return ready || options->native_execution == NATIVE_AUTO;
+    return ready || (fallback && options->native_execution == NATIVE_AUTO);
 }
 
 bool output_native_report(const options_t *options,

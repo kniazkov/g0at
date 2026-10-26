@@ -11,6 +11,7 @@
 #include "lib/binary_file.h"
 #include "model/native_library.h"
 #include "native_compiler.h"
+#include "native_toolchain.h"
 #include "vm/binary.h"
 
 #include <stdio.h>
@@ -73,15 +74,20 @@ static bool validate(const c_module_t *module,
     return true;
 }
 
-static native_prepare_result_t
-prepare(const node_t *root, bytecode_t *code, const char *compiler, const char *destination) {
+static native_prepare_result_t prepare(const node_t *root,
+                                       bytecode_t *code,
+                                       const char *compiler,
+                                       const char *destination,
+                                       native_build_context_t *context,
+                                       const native_compile_options_t *options,
+                                       uint32_t probe_timeout) {
     native_prepare_result_t result = {.status = NATIVE_PREPARE_BIND_ERROR};
     if (!root || !code || code->native_functions) {
         result.diagnostic =
             copy_native_library_diagnostic("Native preparation requires fresh bytecode");
         return result;
     }
-    if (!compiler) {
+    if (!compiler && !probe_timeout) {
 #ifdef _WIN32
         compiler = "gcc";
 #else
@@ -94,6 +100,9 @@ prepare(const node_t *root, bytecode_t *code, const char *compiler, const char *
     result.omitted_specializations = output.omitted_count;
     native_workspace_t *workspace = NULL;
     native_library_result_t loaded = {0};
+    native_toolchain_context_t *toolchains = NULL;
+    native_toolchain_search_t search = {0};
+    native_compile_options_t selected_options = {0};
     if (!output.generated_count) {
         result.status = NATIVE_PREPARE_EMPTY;
         if (has_access_blocker(root))
@@ -101,16 +110,42 @@ prepare(const node_t *root, bytecode_t *code, const char *compiler, const char *
                 "Access checks require VM execution; no safe native function could be bound");
         goto done;
     }
-    workspace = create_native_workspace();
+    if (!context || ensure_cleanup_service(native_build_cleanup(context)) != CLEANUP_OK) {
+        result.status = NATIVE_PREPARE_CLEANUP_ERROR;
+        result.diagnostic = copy_native_library_diagnostic(
+            "Temporary native cleanup service did not become ready; compiler was not started");
+        goto done;
+    }
+    if (probe_timeout) {
+        toolchains = create_native_toolchain_context(native_build_cleanup(context));
+        search = find_native_toolchains(toolchains, "host", compiler, probe_timeout, false);
+        if (!search.selected) {
+            result.status = NATIVE_PREPARE_UNAVAILABLE;
+            result.diagnostic = copy_native_library_diagnostic(
+                search.diagnostic ? search.diagnostic
+                                  : "No suitable native compiler was discovered");
+            goto done;
+        }
+        compiler = search.selected->compiler;
+        selected_options.arguments = search.selected->flags;
+        selected_options.runtime_sources = true;
+        options = &selected_options;
+    }
+    workspace = create_native_workspace_in_context(context);
     if (!workspace) {
         result.status = NATIVE_PREPARE_IO_ERROR;
         result.diagnostic = copy_native_library_diagnostic("Cannot create native workspace");
         goto done;
     }
-    native_compile_result_t compiled =
-        compile_native_library(output.source.data, compiler, workspace->library);
+    native_compile_result_t compiled = compile_native_library_in_context(context,
+                                                                         output.source.data,
+                                                                         compiler,
+                                                                         workspace->library,
+                                                                         options);
     if (compiled.status != NATIVE_COMPILE_OK) {
-        result.status = NATIVE_PREPARE_COMPILE_ERROR;
+        result.status = compiled.status == NATIVE_COMPILE_CLEANUP_ERROR
+                            ? NATIVE_PREPARE_CLEANUP_ERROR
+                            : NATIVE_PREPARE_COMPILE_ERROR;
         result.diagnostic = copy_native_library_diagnostic(
             compiled.diagnostics && *compiled.diagnostics ? compiled.diagnostics
                                                           : "Native compilation failed");
@@ -165,6 +200,8 @@ prepare(const node_t *root, bytecode_t *code, const char *compiler, const char *
     }
     result.status = result.bound_functions ? NATIVE_PREPARE_READY : NATIVE_PREPARE_EMPTY;
 done:
+    destroy_native_toolchain_search(&search);
+    destroy_native_toolchain_context(toolchains);
     destroy_native_library_result(&loaded);
     destroy_native_workspace(workspace);
     FREE_STRING(output.source);
@@ -179,12 +216,46 @@ void destroy_native_prepare_result(native_prepare_result_t *result) {
 
 native_prepare_result_t
 prepare_native_execution(const node_t *root, bytecode_t *code, const char *compiler) {
-    return prepare(root, code, compiler, NULL);
+    native_build_context_t *context = create_native_build_context(NULL);
+    native_prepare_result_t result = prepare(root, code, compiler, NULL, context, NULL, 0);
+    release_native_build_context(context);
+    return result;
 }
 
 native_prepare_result_t prepare_native_artifact(const node_t *root,
                                                 bytecode_t *code,
                                                 const char *compiler,
                                                 const char *destination) {
-    return prepare(root, code, compiler, destination);
+    native_build_context_t *context = create_native_build_context(NULL);
+    native_prepare_result_t result = prepare(root, code, compiler, destination, context, NULL, 0);
+    release_native_build_context(context);
+    return result;
+}
+
+native_prepare_result_t
+prepare_native_execution_in_context(const node_t *root,
+                                    bytecode_t *code,
+                                    const char *compiler,
+                                    native_build_context_t *context,
+                                    const native_compile_options_t *options) {
+    return prepare(root, code, compiler, NULL, context, options, 0);
+}
+
+native_prepare_result_t
+prepare_native_artifact_in_context(const node_t *root,
+                                   bytecode_t *code,
+                                   const char *compiler,
+                                   const char *destination,
+                                   native_build_context_t *context,
+                                   const native_compile_options_t *options) {
+    return prepare(root, code, compiler, destination, context, options, 0);
+}
+
+native_prepare_result_t prepare_native_discovered(const node_t *root,
+                                                  bytecode_t *code,
+                                                  const char *compiler,
+                                                  const char *destination,
+                                                  native_build_context_t *context,
+                                                  uint32_t probe_timeout) {
+    return prepare(root, code, compiler, destination, context, NULL, probe_timeout);
 }

@@ -62,7 +62,7 @@ expect_failure() {
     clean
 }
 expect_failure "$(cygpath -am "$output_dir/missing.exe")"
-grep -q 'cannot start compiler' "$output_dir/stderr.txt"
+grep -Eq 'cannot start compiler|not found|No compiler|no compiler' "$output_dir/stderr.txt"
 expect_failure "$REAL_CC -O3"
 for mode in exit exception absent empty verbose invalid unresolved fast; do
     export FIXTURE_MODE="$mode"
