@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 # Copyright 2026 Ivan Kniazkov
 """Module-v1 native producer integration; real compiler and immutable archive checks."""
-import ctypes
 import hashlib
 import json
 import os
 from pathlib import Path
 import shutil
-import struct
 import subprocess
 import sys
 import tempfile
@@ -65,7 +63,8 @@ with tempfile.TemporaryDirectory(prefix='goat-module-build-') as temporary:
     assert variant['goatAbiVersion'] == 1
     fid = doc['externals']['square']['functionId']
     assert all(item['functionId'] == fid for item in variant['specializations'])
-    assert invoke('binary', p[1]).stdout == b'49\n'
+    output = invoke('binary', p[1]).stdout
+    assert output == ('49' + os.linesep).encode(), output
     main_hash = doc['mainHash']
     bytecode = files['bytecode.bin']
     saved = root / ('saved.dll' if os.name == 'nt' else 'saved.so')
@@ -90,7 +89,8 @@ with tempfile.TemporaryDirectory(prefix='goat-module-build-') as temporary:
     assert doc['native'][0]['specializations']
     functions = {f['functionId']: f for f in doc['functions']}
     assert all(functions[s['functionId']]['file'] == 1 for s in doc['native'][0]['specializations'])
-    assert invoke('binary', p[1]).stdout == b'42\n'
+    output = invoke('binary', p[1]).stdout
+    assert output == ('42' + os.linesep).encode(), output
 
     p = project('missing', 'const f=func(x){return x+1;}; f(3);')
     run = build(p, cc=str(root / 'absent'))
