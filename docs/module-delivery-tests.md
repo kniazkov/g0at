@@ -38,17 +38,20 @@ PMULL отсутствующим полем метаданных.
 маркер вызова ([добавление ABI в glibc](https://sourceware.org/pipermail/glibc-cvs/2021q4/075514.html)). Тестовая обёртка добавляет этот исходник в штатную компиляцию
 вместе со всем runtime; метаданные не редактируются. Проверяются реальные
 version requirements ELF, установленный производителем минимум и рост требований
-относительно обычного варианта (на Ubuntu 24.04 это 2.14 для x86-64 и 2.17 для
-AArch64). Затем CI собирает только исполняющий Goat внутри Ubuntu 22.04
+относительно обычного варианта. Минимум контрольного варианта равен максимуму
+обычного требования и 2.35; более высокое требование зависимостей не теряется.
+В наблюдаемой матрице обычные варианты требовали 2.14 (x86-64 GCC), 2.17
+(AArch64) или 2.36 (x86-64 Clang); это результаты конкретных toolchain, не константы
+формата. `floor-image DEST` выбирает Ubuntu 22.04 для минимума 2.35 или Debian
+bookworm для 2.36. Затем CI собирает только исполняющий Goat в выбранной среде
 и вызывает `verify-floor GOAT DEST` с тем же архивом. Проверка требует **точного
 совпадения** реальной glibc с заявленным минимумом, а не просто большей версии,
 и подтверждает реальный native-вызов и маркер конструктора без исходников и
 компилятора. Запуск обычных вариантов непосредственно на glibc 2.14/2.17 этой
-проверкой не заявляется. Контейнер
-использует архитектуру runner, без эмуляции. Сейчас контрольное окружение имеет
-glibc 2.35. Это не объявляет 2.35 универсальным минимумом всех модулей: минимум
-каждого варианта по-прежнему выводится из его бинарника и зависимостей. Если
-требования изменятся, тест завершится ошибкой, требуя пересмотра окружения.
+проверкой не заявляется. Контейнер использует архитектуру runner, без эмуляции.
+Ни 2.35, ни 2.36 не объявляются универсальным минимумом всех модулей: минимум
+каждого варианта по-прежнему выводится из его бинарника и зависимостей. Минимум
+вне проверенного набора сред завершает тест ошибкой, требуя пересмотра окружения.
 
 **Контрольный запуск на Windows 10 пока не выполнен:** `windows-latest` не
 является доказательством нижней границы. План отдельной проверки: предоставить
@@ -115,18 +118,20 @@ from a constructor, checks the result and writes an execution marker
 ([glibc ABI introduction](https://sourceware.org/pipermail/glibc-cvs/2021q4/075514.html)). A test-only
 compiler wrapper adds this source to the ordinary whole-runtime build; metadata
 is never rewritten. ELF version requirements, producer-derived minimum and the
-increase over the ordinary variant are checked (ordinary Ubuntu 24.04 variants
-require 2.14 on x86-64 / 2.17 on AArch64). CI builds the consuming Goat inside
-Ubuntu 22.04, then runs
+increase over the ordinary variant are checked: the control minimum is the
+maximum of the ordinary requirement and 2.35, never discarding a higher dependency
+requirement. Observed ordinary values were 2.14 (x86-64 GCC), 2.17 (AArch64) and
+2.36 (x86-64 Clang), not format constants. `floor-image DEST` selects Ubuntu 22.04
+for minimum 2.35 or Debian bookworm for 2.36. CI builds the consuming Goat in the
+selected userspace, then runs
 `verify-floor GOAT DEST` against that unchanged module. Verification demands
 **exact equality** between actual glibc and the declared minimum, and proves
 native calls and the constructor marker without sources or compiler access.
 This does not claim execution of ordinary variants directly on glibc 2.14/2.17.
-Both runner architectures run
-natively, without emulation. The current controlled runtime is glibc 2.35;
-this is not a universal v1 minimum. Each variant's minimum remains derived from
-its image and dependency closure. Changed requirements fail the test rather
-than silently claiming that a newer runtime proves the minimum.
+Both runner architectures run natively, without emulation. Neither 2.35 nor 2.36
+is a universal v1 minimum. Each variant's minimum remains derived from its image
+and dependency closure. A minimum outside the controlled environment set fails
+the test rather than silently claiming that a newer runtime proves the minimum.
 
 **Windows 10 execution remains unverified.** windows-latest is not evidence for
 the lower boundary. The separate validation plan requires a Windows 10 VM/runner

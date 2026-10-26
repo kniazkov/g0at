@@ -140,12 +140,13 @@ jobs:
           python3 scripts/check_module_information_merge.py build/${{ matrix.compiler }}/module_json_testing
           python3 scripts/check_module_merge.py build/${{ matrix.compiler }}/goat-merge ${{ matrix.compiler }}
       - name: Execute newer-built module at its declared glibc minimum
-        # Ubuntu 22.04 provides glibc 2.35 on both native runner architectures.
+        # Select a controlled userspace from the actual produced requirement.
         # Require exact equality with the module minimum, not just a newer libc.
         run: |
           python3 scripts/check_module_delivery_requirements.py prepare-floor build/${{ matrix.compiler }}/goat build/${{ matrix.compiler }}/native_toolchain_testing ${{ matrix.compiler }} build/runtime-floor
+          runtime_image=$(python3 scripts/check_module_delivery_requirements.py floor-image build/runtime-floor)
           docker run --rm --network bridge \
-            -v "$PWD:/source:ro" ubuntu:22.04 bash -euxo pipefail -c '
+            -v "$PWD:/source:ro" "$runtime_image" bash -euxo pipefail -c '
               apt-get update
               DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc libc6-dev cmake make python3
               cmake -S /source/src -B /tmp/goat-floor -DCMAKE_BUILD_TYPE=Release

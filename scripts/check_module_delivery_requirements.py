@@ -3,8 +3,8 @@
 """Run a newer-built native module at its exact declared glibc floor, not the host's.
 
 prepare-floor GOAT WRAPPER CC DEST runs on the ordinary Linux builder.
-verify-floor GOAT DEST runs
-inside the older userspace with a Goat built there. No source or compiler is
+floor-image DEST selects a bounded known runtime image from the actual artifact.
+verify-floor GOAT DEST runs inside the older userspace with a Goat built there. No source or compiler is
 needed by the delivered artifact. A changed floor is a failure requiring a new
 verified environment, never a successful skip or edited metadata.
 """
@@ -48,7 +48,6 @@ def prepare(goat, wrapper, compiler, destination):
             ordinary_metadata = json.loads(container.read('module.json'))
             ordinary_bytecode = container.read('bytecode.bin')
         ordinary_minimum = ordinary_metadata['native'][0]['target']['runtime']['minimumVersion']
-        assert (ordinary_minimum + [0] * 4)[:4] <= [2, 35, 0, 0], ordinary_minimum
         # The ordinary variant may legitimately require only glibc 2.14/2.17.
         # Give this CONTROL variant a real 2.35 ABI dependency, compiling it with
         # the same baseline flags and embedded runtime. The producer must discover
@@ -95,9 +94,10 @@ __attribute__((constructor)) static void verify_floor_dependency(void) {
             assert target['os'] == 'linux' and target['runtime']['family'] == 'glibc'
             expected = max((ordinary_minimum + [0] * 4)[:4], [2, 35, 0, 0])
             assert (target['runtime']['minimumVersion'] + [0] * 4)[:4] == expected
-            assert target['runtime']['minimumVersion'] == [2, 35], (
-                'The verified Ubuntu 22.04 floor is glibc 2.35; provide a matching real '
-                'environment if compiler/dependency requirements change', target)
+            control_minimum = target['runtime']['minimumVersion']
+            runtime_image(control_minimum)  # Unknown floors need a real new environment, not a skip.
+            host_version = list(map(int, host[1].split('.')))
+            assert (host_version + [0] * 4)[:4] > expected, (host, target)
             assert hashlib.sha256(container.read(variant['library'])).hexdigest() == variant['hash']
             library = source / 'control.so'
             library.write_bytes(container.read(variant['library']))
@@ -109,8 +109,27 @@ __attribute__((constructor)) static void verify_floor_dependency(void) {
         assert executed.stdout == b'49\n' and marker.read_bytes() == b'memcmpeq-2.35\n'
         shutil.copyfile(archive, destination / 'module.gbin')
     assert sorted(p.name for p in destination.iterdir()) == ['module.gbin']
-    print(f'Ordinary minimum {ordinary_minimum}; control minimum [2, 35] from real '
+    print(f'Ordinary minimum {ordinary_minimum}; control minimum {control_minimum} including real '
           '__memcmpeq@GLIBC_2.35 dependency; metadata discovered by producer')
+
+
+def runtime_image(requirement):
+    # Exact runtime-version verification still runs INSIDE the selected image.
+    # libc dependencies may genuinely raise the ordinary floor (e.g. DT_RELR).
+    images = {(2, 35, 0, 0): 'ubuntu:22.04', (2, 36, 0, 0): 'debian:bookworm-slim'}
+    version = tuple((requirement + [0] * 4)[:4])
+    assert version in images, (
+        'No verified exact-runtime image for this native minimum; add and execute one', requirement)
+    return images[version]
+
+
+def floor_image(destination):
+    with zipfile.ZipFile(destination / 'module.gbin') as container:
+        metadata = json.loads(container.read('module.json'))
+    assert len(metadata['native']) == 1
+    target = metadata['native'][0]['target']
+    assert target['os'] == 'linux' and target['runtime']['family'] == 'glibc', target
+    return runtime_image(target['runtime']['minimumVersion'])
 
 
 def verify(goat, destination):
@@ -299,7 +318,10 @@ def audit(goat, wrapper, selector, compiler):
 if __name__ == '__main__':
     mode, executable, *arguments = sys.argv[1:]
     executable = str(Path(executable).resolve())
-    if mode == 'prepare-floor':
+    if mode == 'floor-image':
+        assert not arguments
+        print(floor_image(Path(executable)))
+    elif mode == 'prepare-floor':
         prepare(executable, arguments[0], arguments[1], Path(arguments[2]).resolve())
     elif mode == 'verify-floor':
         verify(executable, Path(arguments[0]).resolve())
