@@ -1,7 +1,12 @@
 #include "lib/file_system.h"
 #include "module_hash.h"
+#include "module_information_merge.h"
 #include "module_json.h"
 
+/* This test executable intentionally keeps checks and their calls in Release. */
+#ifdef NDEBUG
+#    undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -116,6 +121,178 @@ static int read_stdin(goat_module_json_kind kind, int canonical) {
     return 0;
 }
 
+/* Test transport only; production owns validation, choice and retry semantics. */
+static int merge_stdin(void) {
+#ifdef _WIN32
+    _setmode(_fileno(stdin), _O_BINARY);
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
+    size_t capacity = 2 * 1024 * 1024;
+    char *buffer = malloc(capacity);
+    if (!buffer)
+        return 2;
+    size_t length = FREAD(buffer, 1, capacity, stdin);
+    yyjson_doc *request = length < capacity && !FERROR(stdin)
+                              ? yyjson_read(buffer, length, YYJSON_READ_NUMBER_AS_RAW)
+                              : NULL;
+    free(buffer);
+    if (!request)
+        return 2;
+    yyjson_val *root = yyjson_doc_get_root(request);
+    yyjson_val *sources = yyjson_obj_get(root, "inputs");
+    yyjson_val *responses = yyjson_obj_get(root, "responses");
+    size_t count = yyjson_arr_size(sources);
+    yyjson_doc **inputs = calloc(count ? count : 1, sizeof(*inputs));
+    FILE *answers = tmpfile();
+    assert(inputs && answers && yyjson_is_arr(sources) && yyjson_is_arr(responses));
+    for (size_t i = 0; i < count; i++) {
+        size_t size = 0;
+        char *bytes = yyjson_val_write(yyjson_arr_get(sources, i), 0, &size);
+        assert(bytes);
+        inputs[i] = yyjson_read(bytes, size, YYJSON_READ_NUMBER_AS_RAW);
+        free(bytes);
+        assert(inputs[i]);
+    }
+    size_t index, maximum;
+    yyjson_val *response;
+    yyjson_arr_foreach(responses, index, maximum, response) {
+        assert(yyjson_is_str(response));
+        size_t size = yyjson_get_len(response);
+        assert(FWRITE(yyjson_get_str(response), 1, size, answers) == size);
+        assert(FPUTC('\n', answers) != EOF);
+    }
+    assert(!FSEEK(answers, 0, SEEK_SET));
+    bool interactive = yyjson_get_bool(yyjson_obj_get(root, "interactive"));
+    yyjson_doc_free(request);
+    goat_information_merge *plan = NULL;
+    goat_information_merge_diagnostic diagnostic;
+    goat_information_merge_error error =
+        goat_information_merge_prepare((const yyjson_doc *const *)inputs,
+                                       count,
+                                       &plan,
+                                       &diagnostic);
+    for (size_t i = 0; i < count; i++)
+        yyjson_doc_free(inputs[i]);
+    free(inputs); /* All plan strings must survive destruction of input trees. */
+    yyjson_doc *output = NULL;
+    if (!error)
+        error = goat_information_merge_interactive(plan, interactive, answers, stderr, &output);
+    goat_information_merge_free(plan);
+    FCLOSE(answers);
+    if (error) {
+        assert(!output);
+        FPRINTF(stderr, "%s\n", goat_information_merge_error_string(error));
+        return 1;
+    }
+    char *bytes = NULL;
+    size_t size = 0;
+    assert(goat_json_canonical(yyjson_doc_get_root(output), &bytes, &size) == GOAT_MODULE_JSON_OK);
+    yyjson_doc_free(output); /* Result is independent of the released plan too. */
+    assert(FWRITE(bytes, 1, size, stdout) == size);
+    goat_module_json_free(bytes);
+    return 0;
+}
+
+static void merge_api_checks(void) {
+    goat_information_merge *plan = (goat_information_merge *)(uintptr_t)1;
+    goat_information_merge_diagnostic diagnostic;
+    assert(goat_information_merge_prepare(NULL, 0, &plan, &diagnostic)
+           == GOAT_INFORMATION_MERGE_INVALID_INPUT);
+    assert(!plan);
+    assert(!goat_information_merge_needs_order(NULL));
+    assert(!goat_information_merge_candidates(NULL));
+    goat_information_merge_free(NULL);
+    yyjson_doc *output = (yyjson_doc *)(uintptr_t)1;
+    assert(goat_information_merge_finish(NULL, NULL, 0, &output)
+           == GOAT_INFORMATION_MERGE_INVALID_INPUT);
+    assert(!output);
+    assert(goat_information_merge_interactive(NULL, false, NULL, NULL, &output)
+           == GOAT_INFORMATION_MERGE_INVALID_INPUT);
+    assert(!output);
+    size_t order[3] = {99, 99, 99};
+    assert(goat_information_merge_parse_order("3 1 2", 5, 3, order) == GOAT_INFORMATION_MERGE_OK);
+    assert(order[0] == 2 && order[1] == 0 && order[2] == 1);
+    assert(goat_information_merge_parse_order("1 1 2", 5, 3, order)
+           == GOAT_INFORMATION_MERGE_ORDER_DUPLICATE);
+    assert(goat_information_merge_parse_order("", 0, 3, order)
+           == GOAT_INFORMATION_MERGE_ORDER_EMPTY);
+    assert(goat_information_merge_parse_order("1 2", 3, 3, order)
+           == GOAT_INFORMATION_MERGE_ORDER_MISSING);
+    assert(goat_information_merge_parse_order("1 2 x", 5, 3, order)
+           == GOAT_INFORMATION_MERGE_ORDER_NUMBER);
+    assert(goat_information_merge_parse_order("1 2 4", 5, 3, order)
+           == GOAT_INFORMATION_MERGE_ORDER_RANGE);
+    const char *base = "{\"formatVersion\":1,\"bytecodeVersion\":1,\"name\":\"empty\","
+                       "\"version\":\"1\",\"main\":0,\"mainHash\":"
+                       "\"72d3cefa18d306a696a64a3a825101ffa99277b90147763acfb8b8eea1fe641f\","
+                       "\"files\":[{\"name\":\"main.goat\",\"entry\":0,\"external\":false}],"
+                       "\"authors\":[{\"name\":\"a\"},{\"name\":\"b\"}]}";
+    yyjson_doc *descriptor = yyjson_read(base, strlen(base), YYJSON_READ_NUMBER_AS_RAW);
+    const yyjson_doc *inputs[] = {descriptor, descriptor};
+    assert(goat_information_merge_prepare(inputs, 2, &plan, &diagnostic)
+           == GOAT_INFORMATION_MERGE_OK);
+    assert(goat_information_merge_needs_order(plan));
+    assert(yyjson_arr_size(goat_information_merge_candidates(plan)) == 2);
+    assert(goat_information_merge_finish(plan, NULL, 0, &output)
+           == GOAT_INFORMATION_MERGE_ORDER_REQUIRED);
+    assert(!output);
+    assert(goat_information_merge_interactive(plan, false, NULL, NULL, &output)
+           == GOAT_INFORMATION_MERGE_ORDER_REQUIRED);
+    assert(!output);
+    size_t duplicate[] = {0, 0}, selected[] = {1, 0}, outside[] = {0, 2};
+    assert(goat_information_merge_finish(plan, selected, 1, &output)
+           == GOAT_INFORMATION_MERGE_ORDER_MISSING);
+    assert(!output);
+    assert(goat_information_merge_finish(plan, outside, 2, &output)
+           == GOAT_INFORMATION_MERGE_ORDER_RANGE);
+    assert(!output);
+    assert(goat_information_merge_finish(plan, duplicate, 2, &output)
+           == GOAT_INFORMATION_MERGE_ORDER_DUPLICATE);
+    assert(!output);
+    assert(goat_information_merge_finish(plan, selected, 2, &output) == GOAT_INFORMATION_MERGE_OK);
+    goat_information_merge_free(plan);
+    yyjson_val *authors = yyjson_obj_get(yyjson_doc_get_root(output), "authors");
+    assert(!strcmp(yyjson_get_str(yyjson_obj_get(yyjson_arr_get(authors, 0), "name")), "b"));
+    yyjson_doc_free(output);
+    assert(goat_information_merge_prepare(inputs, 1, &plan, NULL) == GOAT_INFORMATION_MERGE_OK);
+    yyjson_doc_free(descriptor);
+    assert(!goat_information_merge_needs_order(plan));
+    assert(goat_information_merge_finish(plan, selected, 2, &output)
+           == GOAT_INFORMATION_MERGE_INVALID_INPUT);
+    assert(!output);
+    assert(goat_information_merge_interactive(plan, false, NULL, NULL, &output)
+           == GOAT_INFORMATION_MERGE_OK);
+    yyjson_doc_free(output);
+    goat_information_merge_free(plan);
+    descriptor = yyjson_read(base, strlen(base), YYJSON_READ_NUMBER_AS_RAW);
+    yyjson_mut_doc *empty = yyjson_doc_mut_copy(descriptor, NULL);
+    yyjson_doc_free(descriptor);
+    yyjson_mut_obj_remove_key(yyjson_mut_doc_get_root(empty), "authors");
+    descriptor = yyjson_mut_doc_imut_copy(empty, NULL);
+    yyjson_mut_doc_free(empty);
+    inputs[0] = descriptor;
+    assert(goat_information_merge_prepare(inputs, 1, &plan, NULL) == GOAT_INFORMATION_MERGE_OK);
+    yyjson_doc_free(descriptor);
+    assert(!goat_information_merge_needs_order(plan));
+    assert(!goat_information_merge_candidates(plan));
+    assert(goat_information_merge_finish(plan, selected, 0, &output)
+           == GOAT_INFORMATION_MERGE_INVALID_INPUT);
+    assert(!output);
+    assert(goat_information_merge_interactive(plan, false, NULL, NULL, &output)
+           == GOAT_INFORMATION_MERGE_OK);
+    yyjson_doc_free(output);
+    goat_information_merge_free(plan);
+    /* Invalid complete descriptors never produce a plan. */
+    const char *bad = "{\"version\":null}";
+    descriptor = yyjson_read(bad, strlen(bad), 0);
+    inputs[0] = descriptor;
+    assert(goat_information_merge_prepare(inputs, 1, &plan, &diagnostic)
+           == GOAT_INFORMATION_MERGE_INVALID_INPUT);
+    assert(!plan && diagnostic.source_index == 0 && diagnostic.json_error);
+    yyjson_doc_free(descriptor);
+    puts("[ ok ] module information merge API");
+}
+
 /* Programmatically constructed values must not bypass canonical validation. */
 static void canonical_api_checks(void) {
     char *out = (char *)(uintptr_t)1;
@@ -222,6 +399,8 @@ static void diagnostic_checks(void) {
 }
 
 int main(int argc, char **argv) {
+    if (argc == 2 && !strcmp(argv[1], "--information-merge"))
+        return merge_stdin();
     if (argc == 2 && !strcmp(argv[1], "--information-module"))
         return read_stdin(GOAT_MODULE_METADATA, 6);
     if (argc == 2 && !strcmp(argv[1], "--information-gmod"))
@@ -271,6 +450,7 @@ int main(int argc, char **argv) {
     assert(goat_module_information(bad_info, GOAT_MODULE_GMOD, NULL)
            == GOAT_MODULE_JSON_INVALID_FIELD);
     yyjson_doc_free(bad_info);
+    merge_api_checks();
     canonical_api_checks();
     diagnostic_checks();
     puts("Starting module JSON testing...");
